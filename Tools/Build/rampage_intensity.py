@@ -8,14 +8,21 @@ assumes). So its phase ladder CANNOT be inherited - every intensity has to autho
 hand four times is how the four ladders drift apart.
 
 WHAT INTENSITY MEANS HERE (rev 2026-09). Intensity 4 IS the shipped, play-tested arena and
-nothing about it moves; intensity 1 is the same arena made BIGGER AND EASIER TO HIT, and 2-3
-interpolate. Four axes, all pointing the same way:
+nothing about it moves; intensity 1 is the same arena made BIGGER, DENSER AND EASIER TO HIT,
+and 2-3 interpolate. Five axes, all pointing the same way:
 
-    intensity  ->  SMALLER PRISMS + SMALLER NUCLEUS + FEWER CRYSTALS + MORE WILDLIFE
+    intensity  ->  LESS FLORA + SMALLER PRISMS + SMALLER NUCLEUS + FEWER CRYSTALS
+                   + MORE WILDLIFE
 
+  * Flora: 5.00x / 3.67x / 2.33x / 1.00x the authored PLANT COUNT, via this script's SCALES ->
+    SpawnProfileSO.FloraPopulationScale. Intensity 1 grows five times intensity 4's forest -
+    295 plants and 49,150 prisms against 59 and 9,830 - so there is simply more to shoot,
+    everywhere. **This is the one axis that costs COLLIDERS**, and it is gated on two cells
+    the game already ships (see assert_collider_budget). The per-plant BUDGET stays 1.0: more
+    flora means more PLANTS, not bigger ones.
   * Prisms: 1.60x / 1.40x / 1.20x / 1.00x the authored leaf, via this script's PRISM_SCALES ->
     SpawnProfileSO.FloraPrismScale. A fatter leaf is an easier target for the cone and an
-    easier surface to skim, at the SAME prism count - so the collider budget does not move.
+    easier surface to skim, and it is FREE in colliders - the same prisms, larger.
   * Nucleus: prefab scale 500 / 400 / 300 / 200, via each cell config's NucleusPrefab. A core
     size is authored as a config pointing at a resized prefab, never a scene override or a
     localScale tweak on a shared prefab (Docs/ECOSYSTEM.md 13.1).
@@ -25,11 +32,8 @@ interpolate. Four axes, all pointing the same way:
   * Wildlife: 1x / 2x / 3x / 4x the authored population, via FAUNA_SCALES ->
     SpawnProfileSO.FaunaPopulationScale.
 
-The FOREST (plant count, per-plant budget) is still identical at every intensity - what changes
-is how big each of its prisms is.
-
-VOLUME IS THE SPINE, so the prism ladder lands straight on the phase ladder and the four cells
-no longer share one. The exponent is PER FAMILY and this is the whole reason the species table
+VOLUME IS THE SPINE, so both forest axes land straight on the phase ladder and the four cells
+do not share one. The exponent is PER FAMILY and this is the whole reason the species table
 below carries a `family` column: a BranchingFlora lays leafSize on all three axes (volume goes
 as s^3), while a PhyllotacticFlora reads only leafSize.x/y and takes its lengths from its own
 structure - segment and reach - so its prisms get THICKER, not longer, and volume goes as s^2.
@@ -38,8 +42,10 @@ Getting that wrong overstates intensity 1's forest by 1.6x.
 Each intensity's volume ladder is the shipped intensity-4 ladder times that intensity's forest
 ratio, so every cell keeps the SAME relationship between its forest and its gates (Frenzy at
 4.11x the mature forest, Restless at 28.5% of it) and intensity 4 reproduces the play-tested
-numbers to the digit. The COUNT ladder does not move at all - the prism count is identical
-everywhere, which is also the statement that the collider budget is flat across the ladder.
+numbers to the digit. The COUNT ladder is derived from the prism count and therefore moves with
+it - and because Frenzy freezes planting AND growth, that gate is what actually bounds the
+prism-collider envelope: intensity 1 tops out at 50,000 prisms, not at the ~73,000 its plant
+cap would otherwise want.
 
 This script is the model. It computes the seeded prism count and full-grown volume from the
 same numbers the game reads, derives the thresholds from those, and emits the cell configs and
@@ -85,24 +91,39 @@ CELL_DIR = os.path.join(REPO, "Assets", "_SO_Assets", "Cell Configs", "Rampage C
 #                   structural ... does NOT read LeafSize.z".
 BRANCHING, PHYLLOTACTIC = 3, 2
 
+# `cap` is that species' authored MaxLivePopulation, reproduced here ONLY so the report can
+# print the always-on heart-collider line (one crystal collider per live plant). It is OWNED BY
+# `Tools/Build/author_flora_populations.py` and this script never writes it - same rule, and the
+# same reason, as FAUNA_SPECIES below.
 SPECIES = [
-    # name       plants budget  leaf_vol  band(min,max)  family
-    ("Cacti",    26,    160,    75.0,     (0.10, 0.95),  BRANCHING),
-    ("Spire",    10,    190,    15.0,     (0.30, 0.97),  PHYLLOTACTIC),
-    ("Pine",     10,    150,    16.0,     (0.14, 0.90),  BRANCHING),
-    ("Rosette",   7,    170,    17.0,     (0.40, 0.96),  PHYLLOTACTIC),
-    ("Coral",     6,    180,    10.6,     (0.10, 0.80),  PHYLLOTACTIC),
+    # name       plants budget  leaf_vol  band(min,max)  family        cap
+    ("Cacti",    26,    160,    75.0,     (0.10, 0.95),  BRANCHING,    39),
+    ("Spire",    10,    190,    15.0,     (0.30, 0.97),  PHYLLOTACTIC, 15),
+    ("Pine",     10,    150,    16.0,     (0.14, 0.90),  BRANCHING,    15),
+    ("Rosette",   7,    170,    17.0,     (0.40, 0.96),  PHYLLOTACTIC, 10),
+    ("Coral",     6,    180,    10.6,     (0.10, 0.80),  PHYLLOTACTIC,  9),
 ]
 
 # (FloraPopulationScale, FloraPlantBudgetScale) per intensity, 1-indexed.
 #
-# FLAT at 1.0/1.0 across all four: the forest is no longer what intensity varies (see the
-# module docstring). 1.0 is intensity 4's shipped, play-tested arena, so every intensity is
-# now that arena and the collider envelope is the one that was already measured - the ladder
-# does not run up from it in this dimension at all. Kept as a per-intensity table rather than
-# a constant because it is the natural place for a future forest ladder to come back, and
-# because the emitter and the self-test both read it.
-SCALES = [(1.00, 1.00), (1.00, 1.00), (1.00, 1.00), (1.00, 1.00)]
+# HOW MANY PLANTS. Intensity 1 grows FIVE TIMES intensity 4's forest and 2-3 interpolate
+# linearly (the ladder is 1 + 4*(4-i)/3, to 2dp - the numbers are written out rather than
+# computed so the asset states exactly what the game reads). Intensity 4 stays at 1.0: the
+# shipped, play-tested arena, untouched.
+#
+# **This is the axis that costs COLLIDERS**, and it is the only one that does. Prism size,
+# nucleus size and crystal count are all free in that currency; plant count is not, because
+# every plant is prisms (LOD-cullable box colliders, disabled at Frenzy) plus ONE always-on
+# heart crystal collider that no phase culls. The report prints both lines and
+# `assert_collider_budget` fails the build if either leaves the envelope this cell has
+# precedent for - see it for the two reference points and why the COUNT backstop, not the cap,
+# is what actually bounds the prism side.
+#
+# The plant BUDGET stays 1.0 at every intensity: "five times the flora" is five times as many
+# plants, not five times as big a plant. Growing the budget instead would multiply prisms
+# without multiplying the thing the player reads (how much forest there is), and it would
+# compound with FloraPrismScale on the same prisms.
+SCALES = [(5.00, 1.00), (3.67, 1.00), (2.33, 1.00), (1.00, 1.00)]
 
 # SpawnProfileSO.FaunaPopulationScale per intensity, 1-indexed: intensity N carries N times
 # the authored wildlife. Intensity 1 is 1.0 - the exact Blob-authored population Rampage has
@@ -198,7 +219,7 @@ def forest(intensity: int):
     prism_scale = PRISM_SCALES[intensity - 1]
     rows, plants_total, prisms_total, volume_total = [], 0, 0, 0.0
 
-    for name, plants, budget, leaf_vol, _band, family in SPECIES:
+    for name, plants, budget, leaf_vol, _band, family, _cap in SPECIES:
         leaf_vol = CALIBRATION.get(name, leaf_vol)
         # Both scalars floor at 1 in C# (Mathf.Max(1, ...)), so a small species never vanishes.
         n = max(1, round_half_up(plants * pop_scale))
@@ -224,6 +245,64 @@ def forest(intensity: int):
 def nucleus_world_radius(intensity: int) -> float:
     """World radius of this intensity's nucleus, as Cell.MeasurePrefabRadius computes it."""
     return NUCLEI[intensity - 1][0] * NUCLEUS_MESH_HALF_EXTENT
+
+
+def flora_cap(intensity: int) -> int:
+    """Live PLANT ceiling for this intensity - and therefore its always-on crystal count.
+
+    Every live plant carries exactly one heart crystal, whose collider no phase LOD culls, so
+    this number IS the always-on collider line for the flora half of the cell
+    (Docs/ECOSYSTEM.md 32.7). It is `MaxLivePopulation` through `Cell.ResolveFloraCap`, i.e.
+    through the same FloraPopulationScale the seed floors get - the scalar moves floor AND cap
+    together, which is the whole reason it bounds a standing population at all.
+    """
+    pop_scale, _budget = SCALES[intensity - 1]
+    return sum(max(1, round_half_up(cap * pop_scale))
+               for _n, _p, _b, _lv, _bd, _fam, cap in SPECIES)
+
+
+# The two collider reference points this cell is held against. Both are SHIPPED elsewhere in
+# the game, which is the point - they are precedent, not opinion.
+#
+#   PRISMS: Scurry's intensity-4 Atlantis, ~69,000 laid prisms, the heaviest authored
+#     environment in the game (CLAUDE.md, Cell environments). Rampage's prisms are LOD-cullable
+#     boxes exactly as Atlantis' are.
+#   CRYSTALS: the freestyle Lattice cell, 1,080 plants at cap - "the largest collider budget of
+#     any cell" (Docs/ECOSYSTEM.md 36), and every one of those is an always-on heart collider.
+#
+# A ladder that stays inside both is inside ground the engine has already been shown to hold.
+PRISM_CEILING = 69_000
+CRYSTAL_CEILING = 1_080
+
+
+def assert_collider_budget() -> None:
+    """The hard gate. Flora POPULATION is the one axis of this ladder that costs colliders.
+
+    Two separate lines, because they are culled differently and bounded differently:
+
+      * PRISMS are LOD-cullable and are bounded by the cell's own COUNT backstop, not by the
+        plant cap - `FrenzyEnter` freezes planting AND growth, and it is derived from the
+        seeded forest, so it scales with the ladder automatically. That gate, not the cap, is
+        the number to compare against Atlantis: at the cap the forest would want ~1.5x more
+        prisms than the gate ever lets it lay.
+      * CRYSTALS are NOT cullable - one heart per live plant, always on - so the cap IS the
+        line, and it is compared against the heaviest cell the game already ships.
+    """
+    for i in range(1, 5):
+        _rows, plants, prisms, volume = forest(i)
+        gate = thresholds(prisms, volume)["FrenzyEnter"]
+        crystals = flora_cap(i)
+        assert gate <= PRISM_CEILING, (
+            f"intensity {i} freezes planting at {gate:,} prisms, past the {PRISM_CEILING:,} "
+            f"of Atlantis - the heaviest authored environment the game ships. Lower "
+            f"SCALES[{i - 1}]'s population scale.")
+        assert crystals <= CRYSTAL_CEILING, (
+            f"intensity {i} reaches {crystals:,} live plants, i.e. {crystals:,} ALWAYS-ON "
+            f"heart-crystal colliders, past the {CRYSTAL_CEILING:,} of the Lattice cell - the "
+            f"largest collider budget in the game. Lower SCALES[{i - 1}]'s population scale.")
+        assert prisms < gate, (
+            f"intensity {i}'s seeded forest ({prisms:,} prisms) already meets its own count "
+            f"backstop ({gate:,}) - it would boot into Frenzy with planting frozen.")
 
 
 def fauna(intensity: int):
@@ -400,24 +479,28 @@ def cell_config_yaml(i: int) -> str:
     t = thresholds(prisms, volume)
     fauna_scale = FAUNA_SCALES[i - 1]
     prism_scale = PRISM_SCALES[i - 1]
+    pop_scale = SCALES[i - 1][0]
+    frenzy_count = t["FrenzyEnter"]
+    crystals = flora_cap(i)
     nuc_scale, nucleus_file_id, nucleus_guid = NUCLEI[i - 1]
     desc = (
         f"Demolition arena cell, intensity {i} of 4 - {CROWD_WORDS[i - 1]}: {plants} seeded plants "
         f"totalling ~{prisms} prisms of cacti, spires, pines, rosettes and coral, filling the "
         "volume from just outside the nucleus out to the membrane, across all three domains, "
-        "each plant one of the four elemental variations. The PLANT AND PRISM COUNTS ARE THE "
-        "SAME AT EVERY INTENSITY - what intensity changes is how BIG things are and how "
-        f"contested they get: prisms at {prism_scale:g}x the authored leaf (bigger is an easier "
-        f"target for the cone and an easier surface to skim), a nucleus at prefab scale "
-        f"{nuc_scale} (~{int(round(nuc_scale * NUCLEUS_MESH_HALF_EXTENT))}u radius), "
-        f"{fauna_scale:g}x the authored wildlife, and - authored in the scene, not here - "
-        f"{CRYSTAL_WORDS[i - 1]}. Intensity 4 is the shipped, play-tested arena exactly; 1 is "
-        "the same arena made bigger and easier to hit. The nucleus stays clear (the planting "
-        "band is clamped outside it) and is the crystals' contested ground. The mature forest "
-        f"is ~{int(volume):,} volume, and this cell's VOLUME thresholds are the play-tested "
-        "intensity-4 ladder scaled by that - so Frenzy sits the same 4.11x above the forest at "
-        "every level. Pending an in-editor re-measure; regenerate with "
-        "Tools/Build/rampage_intensity.py rather than hand-editing."
+        "each plant one of the four elemental variations. Intensity 4 is the shipped, "
+        "play-tested arena EXACTLY; 1 is that same arena made bigger, denser and easier to "
+        f"hit: {pop_scale:g}x the plant count, prisms at {prism_scale:g}x the authored leaf "
+        "(bigger is an easier target for the cone and an easier surface to skim), a nucleus at "
+        f"prefab scale {nuc_scale} "
+        f"(~{int(round(nuc_scale * NUCLEUS_MESH_HALF_EXTENT))}u radius), {fauna_scale:g}x the "
+        f"authored wildlife, and - authored in the scene, not here - {CRYSTAL_WORDS[i - 1]}. "
+        "The nucleus stays clear (the planting band is clamped outside it) and is the crystals' "
+        f"contested ground. The mature forest is ~{int(volume):,} volume, and this cell's VOLUME "
+        "thresholds are the play-tested intensity-4 ladder scaled by that - so Frenzy sits the "
+        f"same 4.11x above the forest at every level. Collider envelope: up to {frenzy_count:,} "
+        f"prisms (LOD-cullable, and the count backstop freezes growth there) plus {crystals} "
+        "always-on heart-crystal colliders at the plant cap. Pending an in-editor re-measure; "
+        "regenerate with Tools/Build/rampage_intensity.py rather than hand-editing."
     )
     wrapped = _wrap_yaml_scalar(desc)
     return f"""%YAML 1.1
@@ -549,7 +632,7 @@ def main() -> int:
     print(f"THE FOREST at intensity 4 (the shipped, play-tested arena): {plants} plants, "
           f"{prisms} prisms, {int(volume):,} volume at full growth")
     for name, n, b, pr, v in rows:
-        fam = next(f for nm, _p, _b, _lv, _bd, f in SPECIES if nm == name)
+        fam = next(f for nm, _p, _b, _lv, _bd, f, _c in SPECIES if nm == name)
         print(f"    {name:<9}{n:>3} plants x {b:>3} budget = {pr:>5} prisms  {int(v):>10,} vol"
               f"   (prism volume scales as s^{fam})")
     print(f"    ladder    frenzy {t['FrenzyEnterVolume']:,} / {t['FrenzyExitVolume']:,} vol, "
@@ -564,21 +647,32 @@ def main() -> int:
           f"{t['FrenzyEnterVolume'] / volume:.2f}x above the mature forest, so flora alone "
           f"never freezes planting)")
 
-    print("\nWHAT INTENSITY ACTUALLY CHANGES - bigger and easier at 1, the shipped arena at 4")
-    print(f"{'':11}{'prism':>6}{'nucleus':>9}{'forest vol':>13}{'frenzy enter':>14}"
-          f"{'restless':>11}{'fauna':>7}   crystals [authored in the scene]")
+    print("\nWHAT INTENSITY CHANGES - bigger and easier at 1, the shipped arena at 4")
+    print(f"{'':11}{'flora':>7}{'plants':>8}{'prisms':>9}{'prism':>7}{'nucleus':>10}"
+          f"{'fauna':>7}   crystals [authored in the scene]")
+    for i in range(1, 5):
+        _, plants_i, prisms_i, _volume_i = forest(i)
+        nuc = NUCLEI[i - 1][0]
+        print(f"intensity {i}{SCALES[i - 1][0]:>6.2f}x{plants_i:>8,}{prisms_i:>9,}"
+              f"{PRISM_SCALES[i - 1]:>6.2f}x{nuc:>6} ({int(round(nucleus_world_radius(i))):>3}u)"
+              f"{FAUNA_SCALES[i - 1]:>6.1f}x   {CRYSTAL_WORDS[i - 1]}")
+
+    print("\nWHAT THAT LANDS ON - the ladders derived from it")
+    print(f"{'':11}{'forest vol':>13}{'frenzy vol':>13}{'restless vol':>14}"
+          f"{'frenzy count':>14}{'crystal colliders':>19}")
     for i in range(1, 5):
         _, _, prisms_i, volume_i = forest(i)
         t_i = thresholds(prisms_i, volume_i)
-        nuc = NUCLEI[i - 1][0]
-        print(f"intensity {i}{PRISM_SCALES[i - 1]:>6.2f}x"
-              f"{nuc:>5} ({int(round(nucleus_world_radius(i))):>3}u)"
-              f"{int(volume_i):>13,}{t_i['FrenzyEnterVolume']:>14,}"
-              f"{t_i['RestlessEnterVolume']:>11,}{FAUNA_SCALES[i - 1]:>6.1f}x"
-              f"   {CRYSTAL_WORDS[i - 1]}")
-    print("    prism COUNT is 9,830 at every intensity, so the collider budget is flat across "
-          "the ladder;\n    what changes is how big each prism is, and the volume ladder "
-          "follows it so 'crowded'\n    means the same thing at every level.")
+        print(f"intensity {i}{int(volume_i):>13,}{t_i['FrenzyEnterVolume']:>13,}"
+              f"{t_i['RestlessEnterVolume']:>14,}{t_i['FrenzyEnter']:>14,}"
+              f"{flora_cap(i):>19,}")
+    print(f"    COLLIDERS: the prism side is bounded by the count backstop, not by the plant "
+          f"cap -\n    Frenzy freezes planting AND growth, so intensity 1 tops out at "
+          f"{thresholds(*forest(1)[2:])['FrenzyEnter']:,} prisms against\n    Atlantis' "
+          f"{PRISM_CEILING:,}. The crystal side is NOT cullable (one always-on heart per live "
+          f"plant),\n    so the cap IS the line: {flora_cap(1):,} at intensity 1 against the "
+          f"Lattice cell's {CRYSTAL_CEILING:,}.\n    Both are asserted; population is the ONE "
+          f"axis of this ladder that costs colliders at all.")
 
     print("\nWILDLIFE (seed batch / floor / cap, after FaunaPopulationScale)")
     for i in range(1, 5):
@@ -611,28 +705,34 @@ def main() -> int:
         "the forest now wants a HIGHER Frenzy gate than the authored one - holding the " \
         "shipped ladder would freeze planting before the arena is full. Re-author it."
 
-    # Regression 2: the PRISM COUNT is flat across the ladder (intensity scales prism SIZE,
-    # never prism count) and the VOLUME ladder is not. Both halves matter:
-    #   * the flat count is the collider-budget statement - if it ever stops being flat, the
-    #     "no collider cost" claim in the docs stops being true and has to be re-argued;
-    #   * a volume ladder that did NOT move with the forest would leave the heavier intensities
-    #     freezing planting early, which is the Docs/ECOSYSTEM.md 4.6 trap this script exists
-    #     for. Each intensity must sit strictly above the next.
-    for i in range(1, 4):
-        _, _, prisms_i, volume_i = forest(i)
-        assert prisms_i == prisms4, \
-            f"intensity {i} prism count drifted from 4: {prisms_i} != {prisms4} - intensity " \
-            f"must scale prism SIZE, not count, or the collider budget stops being flat"
-        t_i = thresholds(prisms_i, volume_i)
-        assert t_i["FrenzyEnter"] == t4["FrenzyEnter"] and t_i["FrenzyExit"] == t4["FrenzyExit"], \
-            f"intensity {i} COUNT ladder drifted from 4 - it rides prism count, which is flat"
-
+    # Regression 2: EVERY ladder runs the same way - strictly decreasing from intensity 1 to
+    # intensity 4, which is the whole spec ("1 is the easiest, 4 is the shipped arena"). The
+    # count ladder is in here now: it used to be flat, because intensity scaled prism SIZE
+    # only; five times the FLORA at intensity 1 makes the prism count a ladder too, and with
+    # it the collider envelope - see assert_collider_budget, which is the gate that claim now
+    # answers to. A volume ladder that did NOT move with the forest would leave the heavier
+    # intensities freezing planting early, which is the Docs/ECOSYSTEM.md 4.6 trap this script
+    # exists for.
     ladders = [thresholds(*forest(i)[2:]) for i in range(1, 5)]
     for key in ("RestlessEnterVolume", "RestlessExitVolume",
-                "FrenzyEnterVolume", "FrenzyExitVolume"):
+                "FrenzyEnterVolume", "FrenzyExitVolume",
+                "FrenzyEnter", "FrenzyExit"):
         seq = [l[key] for l in ladders]
         assert all(a > b for a, b in zip(seq, seq[1:])), \
             f"{key} is not strictly decreasing across the intensity ladder: {seq}"
+
+    for key in ("plants", "prisms"):
+        seq = [forest(i)[1 if key == "plants" else 2] for i in range(1, 5)]
+        assert all(a > b for a, b in zip(seq, seq[1:])), \
+            f"the {key} ladder is not strictly decreasing: {seq}"
+
+    assert forest(1)[1] == 5 * forest(4)[1], \
+        f"intensity 1 must grow FIVE TIMES intensity 4's plants, got {forest(1)[1]} vs " \
+        f"{forest(4)[1]} - that is the spec, not a tuning value"
+
+    # THE HARD GATE. Population is the one axis here that costs colliders, so it is checked
+    # against two cells the game already ships rather than against a number invented here.
+    assert_collider_budget()
 
     # Regression 2b: every intensity keeps the SAME relationship between its forest and its
     # gates - that is the whole reason the ladder is SCALED from intensity 4 rather than
@@ -652,6 +752,13 @@ def main() -> int:
     # Regression 2c: the two NEW ladders. Both must END on the shipped, play-tested arena -
     # intensity 4 is the thing a human already approved and this change must not move it - and
     # both must climb monotonically from there, because "intensity 1 is the easiest" is the spec.
+    assert SCALES[-1] == (1.0, 1.0), \
+        "intensity 4 must grow the AUTHORED forest (population and budget scales exactly 1.0)"
+    assert all(a[0] > b[0] for a, b in zip(SCALES, SCALES[1:])), \
+        f"population ladder is not strictly decreasing: {[x[0] for x in SCALES]}"
+    assert all(x[1] == 1.0 for x in SCALES), \
+        "the per-plant BUDGET is deliberately flat - 'more flora' is more PLANTS, and growing " \
+        "the budget would compound with FloraPrismScale on the very same prisms"
     assert PRISM_SCALES[-1] == 1.0, \
         "intensity 4 must lay the AUTHORED leaf (prism scale exactly 1.0) - it is the arena " \
         "that was play-tested and nothing here may resize it"
@@ -686,7 +793,7 @@ def main() -> int:
     for i in range(1, 5):
         r = nucleus_world_radius(i)
         assert r < MEMBRANE_RADIUS, f"intensity {i}'s nucleus ({r:.0f}u) reaches the membrane"
-        for name, _p, _b, _lv, (_inner, outer), _fam in SPECIES:
+        for name, _p, _b, _lv, (_inner, outer), _fam, _cap in SPECIES:
             assert r < outer * MEMBRANE_RADIUS, \
                 f"intensity {i}'s nucleus ({r:.0f}u) reaches {name}'s outer planting radius " \
                 f"({outer * MEMBRANE_RADIUS:.0f}u) - that species would collapse to one shell"
@@ -698,10 +805,11 @@ def main() -> int:
         f"fauna ladder is not strictly increasing: {FAUNA_SCALES}"
 
     print("\nself-test OK: intensity 4 reproduces the shipped, play-tested ladder to the digit; "
-          "the prism,\nnucleus, volume and fauna ladders are all monotonic and end on it; the "
-          "prism COUNT is flat\nacross the ladder; every intensity's forest fits under its own "
-          "Frenzy gate at the same 4.11x;\nand every nucleus guid names a shipped prefab at the "
-          "scale this model claims.")
+          "the flora,\nprism, nucleus, volume, count and fauna ladders are all monotonic and "
+          "end on it; intensity 1\ngrows exactly 5x intensity 4's plants; every intensity's "
+          "forest fits under its own Frenzy gate\nat the same 4.11x; every nucleus guid names a "
+          "shipped prefab at the scale this model claims;\nand the collider budget clears both "
+          "shipped reference cells.")
 
     print("\nOPEN - RE-MEASURE THIS LADDER IN-EDITOR (Docs/ECOSYSTEM.md §40, §27.4).\n\n"
           "The intensity-4 volume ladder is AUTHORED, not derived: it is held at the "

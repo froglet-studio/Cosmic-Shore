@@ -16,17 +16,18 @@ MonoBehaviour:
   Description: Demolition arena cell, intensity 4 of 4 - a teeming arena: 59 seeded plants totalling
     ~9830 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
     outside the nucleus out to the membrane, across all three domains, each plant one of the
-    four elemental variations. The PLANT AND PRISM COUNTS ARE THE SAME AT EVERY INTENSITY -
-    what intensity changes is how BIG things are and how contested they get: prisms at 1x
+    four elemental variations. Intensity 4 is the shipped, play-tested arena EXACTLY; 1 is
+    that same arena made bigger, denser and easier to hit: 1x the plant count, prisms at 1x
     the authored leaf (bigger is an easier target for the cone and an easier surface to
     skim), a nucleus at prefab scale 200 (~196u radius), 4x the authored wildlife, and -
-    authored in the scene, not here - a single contested crystal. Intensity 4 is the
-    shipped, play-tested arena exactly; 1 is the same arena made bigger and easier to hit.
-    The nucleus stays clear (the planting band is clamped outside it) and is the crystals'
-    contested ground. The mature forest is ~396,178 volume, and this cell's VOLUME
-    thresholds are the play-tested intensity-4 ladder scaled by that - so Frenzy sits the
-    same 4.11x above the forest at every level. Pending an in-editor re-measure; regenerate
-    with Tools/Build/rampage_intensity.py rather than hand-editing.
+    authored in the scene, not here - a single contested crystal. The nucleus stays clear
+    (the planting band is clamped outside it) and is the crystals' contested ground. The
+    mature forest is ~396,178 volume, and this cell's VOLUME thresholds are the play-tested
+    intensity-4 ladder scaled by that - so Frenzy sits the same 4.11x above the forest at
+    every level. Collider envelope: up to 10,000 prisms (LOD-cullable, and the count
+    backstop freezes growth there) plus 88 always-on heart-crystal colliders at the plant
+    cap. Pending an in-editor re-measure; regenerate with Tools/Build/rampage_intensity.py
+    rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 4
   CellEndGameScore: 0

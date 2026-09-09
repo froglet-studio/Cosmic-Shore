@@ -7425,20 +7425,38 @@ reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all struc
 still reaches its authored budget and still occupies its own volume. **Plants read as chunkier,
 not larger.**
 
-### 42.5 Collider budget: unchanged, and that is the point
+### 42.5 Collider budget: this scalar is free, and its sibling is not
 
-Prism **count** is untouched — the prisms are larger, not more numerous — so the active-collider
-envelope is identical at every scale. `Tools/Build/rampage_intensity.py` asserts the count is flat
-across its ladder, because the day it stops being flat the "no collider cost" claim stops being
-true and has to be re-argued.
+**`FloraPrismScale` costs nothing in colliders.** Prism count is untouched — the prisms are
+larger, not more numerous — so the active-collider envelope is identical at every scale. That is a
+property of *this* capability and it is why it is the cheap dial to reach for.
+
+**It is not a property of a cell's intensity ladder.** Rampage's ladder also scales
+`FloraPopulationScale` (5× the plants at intensity 1), and *that* one is priced in colliders on two
+separate lines — LOD-cullable prisms bounded by the cell's own `FrenzyEnter` count backstop, and
+**always-on heart crystals bounded by the plant cap**, one per live plant, which no phase LOD
+culls. `rampage_intensity.py`'s `assert_collider_budget` holds both against cells the game already
+ships (Atlantis' ~69,000 prisms; the Lattice cell's 1,080 plants at cap).
+
+The general rule the pair states: **when a cell scales its flora, ask which of the three scalars
+it is reaching for, because only one of them is free.** Size is free, per-plant budget multiplies
+prisms without multiplying plants, and population multiplies both prisms and always-on crystals.
 
 ### 42.6 The Rampage ladder it was built for
 
 Intensity 4 is the shipped, play-tested arena and nothing about it moves; 1 is the same arena
-bigger and easier to hit. Prisms **1.60 / 1.40 / 1.20 / 1.00×**, nucleus **500 / 400 / 300 / 200**
-(prefab scale; world radius 490 / 392 / 294 / 196), and each intensity's volume ladder is the
-play-tested intensity-4 ladder **scaled by its own forest ratio** — so intensity 4 reproduces to
-the digit and every level keeps Frenzy at 4.11× its mature forest and Restless at 28.5% of it.
+bigger, denser and easier to hit. Flora **5.00 / 3.67 / 2.33 / 1.00×** (295 / 217 / 137 / 59
+plants, 49,150 / 36,160 / 22,820 / 9,830 prisms), prisms **1.60 / 1.40 / 1.20 / 1.00×**, nucleus
+**500 / 400 / 300 / 200** (prefab scale; world radius 490 / 392 / 294 / 196), and each intensity's
+volume ladder is the play-tested intensity-4 ladder **scaled by its own forest ratio** — so
+intensity 4 reproduces to the digit and every level keeps Frenzy at 4.11× its mature forest and
+Restless at 28.5% of it.
+
+The per-plant **budget** stays 1.00× at every level, deliberately: "more flora" is more PLANTS,
+not bigger ones. Growing the budget would multiply prisms without multiplying the thing the player
+reads — how much forest there is — and it would compound with `FloraPrismScale` on the very same
+prisms. Collider envelope: **50,000 / 37,000 / 23,250 / 10,000** prisms (the count backstop, which
+freezes growth, rather than the plant cap) and **440 / 323 / 205 / 88** always-on heart crystals.
 
 The **nucleus** half follows §13.1: a new core size is a new `CellConfigDataSO` pointing at a
 **resized prefab** — never a scene override, never a `localScale` tweak on a shared prefab, and
@@ -7459,10 +7477,13 @@ Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four i
   per-intensity s² factor, so an error is amplified 2.56× at Rampage's intensity 1. One
   `Cell.LiveVolume` measurement per intensity corrects all four ladders through the script's
   `CALIBRATION` dict.
-- **Not playtested.** Intensity 1's cactus is 8 × 8 × 4.8 against the authored 5 × 5 × 3, and
-  since branch spacing does not scale with it the plants get denser. Confirm that reads as *easy
-  to hit* rather than *fused*; if it fuses, lower `PRISM_SCALES[0]` — do not scale the branch
-  step, which is what makes a plant its own size.
+- **Not playtested, and intensity 1 is now the heaviest cell in any arcade mode.** Its cactus is
+  8 × 8 × 4.8 against the authored 5 × 5 × 3 *and* there are five times as many plants, so the
+  two densities compound. Confirm it reads as *easy to hit* rather than *fused*, and profile it:
+  the arithmetic clears both shipped reference cells, which is the gate, but it is not a frame
+  time. If prisms fuse, lower `PRISM_SCALES[0]` (never the branch step, which is what makes a
+  plant its own size); if the frame rate is the problem, lower `SCALES[0]`'s population scale,
+  which is the only axis of the ladder that moves colliders at all.
 - **A wider crystal spread at intensity 1** is the one coupling most likely to want tuning: the
   nucleus is 2.5× wider, so the contested crystals sit in 15.6× the volume. It is offset by that
   level carrying twice the roster in crystals and by the objective arrow pointing at the nearest

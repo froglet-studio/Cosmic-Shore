@@ -6,10 +6,11 @@ Rampage is the **Dolphin-only demolition race**, and the destructive analog of C
 Capture ("Scurry"): every domain races to be the first to DESTROY **2,000 hostile
 prisms**. A forest of big cacti and other breakable flora fills the cell from just
 outside the nucleus out to the membrane, and the arena's **contested crystals** respawn
-inside the nucleus at the centre of it all. **Intensity means SIZE and SCARCITY**: at 1 the
-prisms are 1.6x the authored leaf and the nucleus is 2.5x as wide, with twice the roster in
-crystals; at 4 everything is back to the shipped, play-tested arena with a single contested
-crystal for the whole lobby. Same 9,830 prisms at every level - bigger, not more.
+inside the nucleus at the centre of it all. **Intensity means HOW MUCH FOREST, HOW BIG, and
+HOW SCARCE**: at 1 there are **five times as many plants** (295 against 59), their prisms are
+1.6x the authored leaf, the nucleus is 2.5x as wide and there are twice the roster in crystals;
+at 4 everything is back to the shipped, play-tested arena — 59 plants, authored leaves, a single
+contested crystal for the whole lobby.
 
 **The loop is the Dolphin's own economy, made into a sport.** Nothing here is scripted —
 the mode simply arranges the arena so the vessel's existing spine becomes the game:
@@ -66,10 +67,10 @@ economy itself; this file only arranges around it.
   `rule.IsObjectiveReached`
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
-- **Intensity**: **4 levels** — **smaller prisms, smaller nucleus, fewer crystals, more
-  wildlife**, over a forest whose plant and prism COUNTS are identical at every level.
-  Intensity 4 is the shipped, play-tested arena exactly. `CellTypeChoiceOptions.IntensityWise`
-  over four cell configs. See "Four intensities" below.
+- **Intensity**: **4 levels** — **less flora, smaller prisms, smaller nucleus, fewer crystals,
+  more wildlife**. Intensity 4 is the shipped, play-tested arena exactly; 1 grows five times its
+  forest. `CellTypeChoiceOptions.IntensityWise` over four cell configs. See "Four intensities"
+  below — and note that flora POPULATION is the one axis of the ladder that costs colliders.
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
 - **Objective arrow**: `RampageObjectiveProvider` — points at the **nearest** contested omni
   crystal and **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
@@ -186,13 +187,16 @@ their own crystal effects so the blast exists on their machine at all. Full reco
 ## Four intensities — bigger and easier at 1, the shipped arena at 4
 
 PeelTheCage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
-forest, then for a while touched it not at all. It now moves **four** things, all in the same
-direction, around a fixed point: **intensity 4 IS the shipped, play-tested arena and nothing
-about it changes.** Intensity 1 is that same arena made bigger and easier to hit, and 2–3
-interpolate.
+forest, then for a while touched it not at all, and now thickens it again — five-fold — alongside
+everything else. It moves **five** things, all in the same direction, around a fixed point:
+**intensity 4 IS the shipped, play-tested arena and nothing about it changes.** Intensity 1 is
+that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
+| **flora** (`FloraPopulationScale`) | **5.00×** | 3.67× | 2.33× | **1.00×** (authored) |
+| …seeded plants | **295** | 217 | 137 | **59** |
+| …seeded prisms | **49,150** | 36,160 | 22,820 | **9,830** |
 | **prism size** (`FloraPrismScale`) | **1.60×** | 1.40× | 1.20× | **1.00×** (authored) |
 | …a cactus leaf | 8 × 8 × 4.8 | 7 × 7 × 4.2 | 6 × 6 × 3.6 | **5 × 5 × 3** |
 | **nucleus** (`NucleusPrefab`) | `Nucleus500` | `Nucleus` | `Nucleus300` | **`HalfNucleus`** |
@@ -201,21 +205,29 @@ interpolate.
 | …for a 4-player lobby | 8 | 4 | 3 | **1** |
 | **wildlife** (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
 | …tadpoles / sharks at cap | 6 / 2 | 12 / 4 | 18 / 6 | **24 / 8** |
-| seeded forest | 9,830 prisms | 9,830 | 9,830 | 9,830 |
-| …at full growth | 1,530,311 vol | 1,039,932 | 667,264 | **396,178** |
-| `FrenzyEnterVolume` | 6,300,000 | 4,280,000 | 2,750,000 | **1,630,000** |
-| `RestlessEnterVolume` | 436,000 | 297,000 | 190,000 | **113,000** |
-| `FrenzyEnter` (count) | 10,000 | 10,000 | 10,000 | **10,000** |
+| forest at full growth | 7,651,558 vol | 3,808,056 | 1,559,724 | **396,178** |
+| `FrenzyEnterVolume` | 31,480,000 | 15,670,000 | 6,420,000 | **1,630,000** |
+| `RestlessEnterVolume` | 2,182,000 | 1,086,000 | 445,000 | **113,000** |
+| `FrenzyEnter` (count) | 50,000 | 37,000 | 23,250 | **10,000** |
+| **always-on crystal colliders** | **440** | 323 | 205 | **88** |
+
+**Why flora COUNT is the headline axis.** Prism size makes a target easier to *hit*; plant count
+makes there be *more of them, everywhere*. At intensity 1 a pilot flying any line through the
+cytoplasm crosses forest continuously rather than hunting for the next stand, which is what makes
+the difference read as "easy" rather than merely "chunky". The per-plant BUDGET stays 1.00× at
+every level: more flora means more **plants**, not bigger ones — growing the budget instead would
+multiply prisms without multiplying the thing the player actually reads, and it would compound
+with `FloraPrismScale` on the very same prisms.
 
 **Why size is a difficulty axis.** The Dolphin's cone destroys whatever it engulfs, so a fatter
 leaf is a bigger thing to engulf — and, because the meter fills by *skimming*, a bigger surface
 to charge off on the way in. It also makes a ram less punishing to aim around. Nothing implements
 "easier"; it falls out of the geometry, exactly as the crystal count falls out of the roster.
 
-**Why the prism COUNT does not move with it.** 9,830 prisms at every intensity is the statement
-that **the collider budget is flat across the ladder** — the prisms are larger, not more numerous.
-It is also what keeps the count backstop (`FrenzyEnter` 10,000) shared, and it is asserted rather
-than assumed: `rampage_intensity.py` fails if the count ever stops being flat.
+**The prism COUNT moves too, and it is the expensive half.** Prism SIZE is free in colliders —
+the same prisms, larger. Prism COUNT is not, and five times the flora is five times the prisms:
+**49,150 at intensity 1 against 9,830 at 4**. That is the one axis of this ladder with a
+collider price, and it is gated rather than asserted-away — see "Collider impact" below.
 
 **The per-family exponent is the part that is easy to get wrong.** `FloraPrismScale` multiplies a
 plant's authored `leafSize`, and the two flora families spend that differently:
@@ -271,19 +283,47 @@ Everything defining the arena's silhouette and rules is still one constant at al
 | held constant at every intensity | value |
 |---|---|
 | `MembranePrefab` | `CapsuleMembrane`, r **1200** |
-| the forest's SHAPE | 59 plants / 9,830 seeded prisms — the counts, not the sizes |
-| `FrenzyEnter` count backstop | 10,000 — it rides prism count, which is flat |
+| the forest's SPECIES | five, unforked, in the same planting bands |
+| per-plant budget (`FloraPlantBudgetScale`) | **1.00× everywhere** — intensity adds plants, never bigger plants |
 | prism target | 2000 — vary the arena, not the finish line |
 | fauna + flora species assets | unforked (the fauna are the SHARED Blob assets) |
 
-**Collider impact — flat across the ladder, and that is the point.** Every intensity lays the
-same **9,830** flora prisms; intensity only changes how big each one is, and a bigger prism is not
-a second collider. The worst case is therefore still intensity 4's shipped forest at 2.8× the Blob
-envelope as documented headroom, and the `FrenzyEnter` 10,000 count backstop is the same at all
-four. The two nucleus prefabs added for the ladder are single-mesh visuals with no collider.
-The fauna ladder is the cheap dimension — a tadpole is one body prism plus its heart, a shark a
-small spindled body, so 8 → 32 creatures is tens of prisms against 9,830, and creature sensing
-rides the Burst density grid, not physics. At most 8 crystals (one trigger each) at intensity 1.
+**Collider impact — the hard gate, and the ONE axis that pays it.**
+
+Prism SIZE, nucleus size and crystal count are all free in colliders. **Flora population is not**,
+and it is now 5× at intensity 1 — so the budget has to be argued rather than waved through. Two
+lines, because they are culled differently and bounded differently:
+
+| | I1 | I2 | I3 | I4 | held against |
+|---|---|---|---|---|---|
+| **prisms** (LOD-cullable, off at Frenzy) | 50,000 | 37,000 | 23,250 | 10,000 | Atlantis, **69,000** |
+| **heart crystals** (ALWAYS ON, no phase culls them) | 440 | 323 | 205 | 88 | Lattice cell, **1,080** |
+
+- **The prism line is the count BACKSTOP, not the plant cap.** `FrenzyEnter` freezes planting
+  *and* growth, and it is derived from the seeded forest, so it scales with the ladder on its own
+  — intensity 1 tops out at **50,000** prisms rather than the ~73,000 its plant cap would
+  otherwise want. The reference is Scurry's intensity-4 Atlantis (~69,000), the heaviest authored
+  environment the game ships, and Rampage's prisms are the same LOD-cullable boxes.
+- **The crystal line is the cap**, because every live plant carries one heart crystal whose
+  collider no phase LOD culls (`Docs/ECOSYSTEM.md §32.7`). 440 at intensity 1 against the
+  freestyle Lattice cell's 1,080 — "the largest collider budget of any cell", and opt-in there
+  where this is a mode default.
+
+Both are **asserted, not asserted-away**: `rampage_intensity.py`'s `assert_collider_budget`
+fails the build if either leaves those envelopes, and the reference numbers are cells the game
+already ships rather than figures invented for this ladder.
+
+The other dimensions stay cheap. The two nucleus prefabs are single-mesh visuals with no
+collider. The fauna ladder is a rounding error — a tadpole is one body prism plus its heart, a
+shark a small spindled body, so 8 → 32 creatures is tens of prisms against tens of thousands, and
+creature sensing rides the Burst density grid rather than physics. At most 8 arena crystals (one
+trigger each), at intensity 1.
+
+⚠ **Intensity 1 is the heaviest cell in any arcade mode and has not been profiled.** The
+arithmetic clears both shipped reference points, which is the gate; it is not a frame-rate
+measurement. Watch the DiagnosticsHUD's prism count and frame time on the lowest-spec target
+before this ladder is considered settled — and if it needs to come down, `SCALES[0]`'s population
+scale is the dial, because it is the only one that moves colliders at all.
 
 ### How it is authored
 
@@ -295,10 +335,16 @@ one field:
 
 | profile | `FloraPopulationScale` | `FloraPlantBudgetScale` | `FloraPrismScale` | `FaunaPopulationScale` |
 |---|---|---|---|---|
-| 1 | 1.00 | 1.00 | **1.60** | **1.0** |
-| 2 | 1.00 | 1.00 | **1.40** | **2.0** |
-| 3 | 1.00 | 1.00 | **1.20** | **3.0** |
-| 4 | 1.00 | 1.00 | **1.00** | **4.0** |
+| 1 | **5.00** | 1.00 | **1.60** | **1.0** |
+| 2 | **3.67** | 1.00 | **1.40** | **2.0** |
+| 3 | **2.33** | 1.00 | **1.20** | **3.0** |
+| 4 | **1.00** | 1.00 | **1.00** | **4.0** |
+
+The population ladder is the linear interpolation `1 + 4·(4−i)/3` written out to 2 dp — the
+numbers are literals rather than a computation so the asset states exactly what the game reads.
+`FloraPopulationScale` moves the seed floors **and** `MaxLivePopulation` together, which is why
+it bounds a standing population at all (a floor-only scalar is clamped away above ~1.5×) and why
+the crystal-collider line above is the cap rather than the seed count.
 
 The four cell configs now also differ in `NucleusPrefab` (see the ladder above) and in their
 `PhaseThresholds` **volume** pair. A core size is authored as a config pointing at a **resized

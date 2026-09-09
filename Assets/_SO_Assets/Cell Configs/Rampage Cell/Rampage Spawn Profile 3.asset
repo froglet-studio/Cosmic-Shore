@@ -16,7 +16,7 @@ MonoBehaviour:
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
-  FloraPopulationScale: 1.0
+  FloraPopulationScale: 2.33
   FloraPlantBudgetScale: 1.0
   FloraPrismScale: 1.2
   SupportedFloras:
