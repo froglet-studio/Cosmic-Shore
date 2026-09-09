@@ -1170,11 +1170,13 @@ successive correct fixes keep buying diminishing amounts of the same complaint, 
 layer below the one being fixed** (it rode a fully-held DRIFT for two playtests, and a drift is a
 control the pilot is STEERING with, so a threshold on it makes "nothing may happen at full drift"
 impossible to state); **a value smoothed for one consumer is not a reading of the thing it was
-smoothed from** (`VesselTransformer.DriftHold01` names itself like a trigger reading and is the
-value the drift BLEND runs on — eased on any non-analog device, derived there from the drift TIER
-FLAGS rather than the trigger at all, and written only inside an `Update` that early-returns while
-the vessel is stationary, so it FREEZES rather than going stale; it survives for the blend that
-owns it, with the trap in its own doc comment); **a rule inherited "for free" from a shared path is
+smoothed from** (the retired `VesselTransformer.DriftHold01` named itself like a trigger reading
+and was `_frameTriggerSum`, the value the drift BLEND runs on — eased on any non-analog device,
+derived there from the drift TIER FLAGS rather than the trigger at all, and written only inside an
+`Update` that early-returns while the vessel is stationary, so it FREEZES rather than going stale.
+The accessor was retired with the mechanic and the trap moved onto `_frameTriggerSum`'s own doc
+comment, because **a public surface that must never be read is a trap generator, not a trap
+record**); **a rule inherited "for free" from a shared path is
 only free while the new act agrees with what that rule was protecting** (riding the ordinary strike
 path handed the reversal the touch ledger and the cooldown pacing for nothing, and also the
 approaching-contact gate and the depenetration, both of which were protecting *the ball never

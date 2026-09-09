@@ -238,12 +238,24 @@ def main():
          "SweptCylinder.Contains spans [-Depth, +Depth] when mirrored"),
         (src_imp, r"float half = mirrored \? depth : depth \* 0\.5f;",
          "the broadphase half-extent is the full depth when mirrored"),
-        (src_imp, r"Vector3 broadCentre = mirrored \? origin : origin \+ axis \* half;",
+        (src_imp, r"Vector3 cylinderSweepCentre = mirrored \? origin : origin \+ axis \* half;",
          "the broadphase sphere centres on the emitter when mirrored"),
+        # Two sweeps ride that broadphase — crystals and LIFEFORM HEARTS — and both SPEND what
+        # they touch. They must share the centre, the radius AND the narrowphase, or a mirrored
+        # plate reaches one and not the other and the blast's two halves disagree about what
+        # they touched. The narrowphase is pinned to carrying `mirrored` for the same reason.
+        (src_imp, r"var cylinderNarrowphase = new SweptCylinder\(origin, axis, depth, radius, mirrored\);",
+         "the cylinder narrowphase carries the mirror flag"),
+        (src_imp, r"SweepCrystals\(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase\);",
+         "the crystal sweep rides that broadphase and narrowphase"),
+        (src_imp, r"SweepLifeformHearts\(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase\);",
+         "the lifeform-heart sweep rides the SAME broadphase and narrowphase"),
     ]
     missing = [label for text, pattern, label in shipped if not re.search(pattern, text)]
     check(not missing, "every mirrored expression above is the one that SHIPS",
-          "all 8 pinned" if not missing else "MISSING: " + "; ".join(missing))
+          # Derived, never a literal: a hardcoded count silently goes stale the first time
+          # a pin is added and then reports fewer checks than actually ran.
+          f"all {len(shipped)} pinned" if not missing else "MISSING: " + "; ".join(missing))
 
     # 3d. the flag must reach the query. A serialized bool nothing forwards is the exact shape
     # of a feature that is authored, documented, and does nothing.

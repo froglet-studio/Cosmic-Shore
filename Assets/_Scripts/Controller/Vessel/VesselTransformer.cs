@@ -246,40 +246,34 @@ public class VesselTransformer : MonoBehaviour
         private float _singleDriftDamp;
         private float _sharpDriftRotMult = 1f;
         private float _sharpDriftDamp;
+        /// <summary>
+        /// The smoothed analog drift-trigger sum this frame — 0 released, 1 at the single tier,
+        /// 2 buried — and <b>the drift BLEND's own value, not a reading of the control.</b>
+        /// <see cref="ApplyAnalogDrift"/> is the consumer it exists for.
+        ///
+        /// It is right for anything describing the drift the pilot is actually getting, and wrong
+        /// for anything gating a rule on "is the pilot holding this", because everything that
+        /// makes it good at the first job disqualifies it from the second: on a non-gamepad device
+        /// it is EASED (so it ramps in over ~80 ms and keeps decaying after release), on those
+        /// devices it is derived from the drift TIER FLAGS rather than from the trigger at all (a
+        /// single tier reads 1 of 2), the deferred ease-out zeroes it, and it is written only
+        /// inside <see cref="Update"/>, which early-returns on an inactive or stationary vessel —
+        /// so it does not go stale, it FREEZES.
+        ///
+        /// The Scarab spent two playtests learning that. Its REVERSE modifier gated on a public
+        /// 0..1 accessor over this field, then on a raw trigger read, then on a hysteretic latch
+        /// over that read, and none behaved like the button the pilot thought they were holding —
+        /// because none of them was one. It was moved onto a real bound button, and then the whole
+        /// mechanic was retired; the accessor went with it (a public surface that must never be
+        /// read is a trap generator, not a trap record) and this comment is what survives. General
+        /// rule: <b>a value smoothed for one consumer is not a reading of the thing it was
+        /// smoothed from</b> — gate a rule on a control, and leave the eased copy to the feel it
+        /// was built for.
+        /// </summary>
         private float _frameTriggerSum;
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
-
-        /// <summary>The analog trigger sum's full-scale value: one trigger buried on a
-        /// single-trigger drift, or both buried on the two-trigger scheme (see
-        /// <see cref="GetTriggerSum"/>).</summary>
-        public const float MaxDriftTriggerSum = 2f;
-
-        /// <summary>
-        /// How far the drift TRIGGER is held this frame, 0..1 over the whole analog range — 0
-        /// released, 0.5 at the single tier, 1 buried (the sharp tier saturated).
-        ///
-        /// <b>THIS IS THE DRIFT BLEND'S OWN VALUE, NOT A READING OF THE CONTROL.</b> It is the
-        /// smoothed <c>_frameTriggerSum</c> that <see cref="ApplyAnalogDrift"/> runs on, which is
-        /// what makes it right for anything describing the drift the pilot is actually getting —
-        /// and wrong for anything gating a rule on "is the pilot holding this". Everything that
-        /// makes it good at the first job disqualifies it from the second: on a non-gamepad device
-        /// it is EASED (so it ramps in over ~80 ms and keeps decaying after release), on those
-        /// devices it is derived from the drift TIER FLAGS rather than from the trigger at all (a
-        /// single tier reads 0.5), the deferred ease-out zeroes it, and it is written only inside
-        /// <see cref="Update"/>, which early-returns on an inactive or stationary vessel — so it
-        /// does not go stale, it FREEZES.
-        ///
-        /// The Scarab spent two playtests learning that. Its REVERSE modifier gated on this, then
-        /// on a raw trigger read, then on a hysteretic latch over that read, and none of them
-        /// behaved like the button the pilot thought they were holding — because none of them was
-        /// one. (It was moved onto a real bound button, and then the whole mechanic was retired;
-        /// the trap is what survives.) General rule: <b>a value smoothed for one consumer is not a
-        /// reading of the thing it was smoothed from</b> — gate a rule on a control, and leave the
-        /// eased copy to the feel it was built for.
-        /// </summary>
-        public float DriftHold01 => Mathf.Clamp01(_frameTriggerSum / MaxDriftTriggerSum);
 
         private bool _driftSpeedHeld;
         private float _heldDriftSpeed;
@@ -416,7 +410,7 @@ public class VesselTransformer : MonoBehaviour
             _driftEaseOutPending = false;
             _driftSpeedHeld = false;
             _heldDriftSpeed = 0f;
-            _frameTriggerSum = 0f;   // DriftHold01 must not report a previous life's held trigger
+            _frameTriggerSum = 0f;   // never carry a previous life's held trigger into the blend
             RestoreDriftBase();
             _singleDriftRotMult = 1f;
             _singleDriftDamp = 0f;
@@ -1068,20 +1062,6 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.VesselAnimation?.FlareEngine();
             else
                 VesselStatus.VesselAnimation?.StopFlareEngine();
-        }
-
-        /// <summary>Age every velocity modifier out without displacing anything — the
-        /// externally-driven branch of <see cref="Update"/>.</summary>
-        private void AgeVelocityModifiers()
-        {
-            for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
-            {
-                var modifier = VelocityModifiers[i];
-                modifier.elapsedTime += Time.deltaTime;
-                if (modifier.elapsedTime >= modifier.duration) VelocityModifiers.RemoveAt(i);
-                else VelocityModifiers[i] = modifier;
-            }
-            velocityShift = Vector3.zero;
         }
 
         /// <param name="translationRestricted">While true, every modifier still ages out, but

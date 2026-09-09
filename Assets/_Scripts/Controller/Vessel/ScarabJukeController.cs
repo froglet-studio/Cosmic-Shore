@@ -118,7 +118,6 @@ namespace CosmicShore.Gameplay
         float _gestureRollSign;
         Coroutine _ownerRoll;
 
-
         /// <summary>Raised when the juke arms (true, cooldown elapsed) or is spent (false, the
         /// instant a juke fires). The HUD binds this to the Charge-row strike icon's pip.</summary>
         public event Action<bool> OnJukeChargeChanged;
@@ -324,9 +323,9 @@ namespace CosmicShore.Gameplay
             else   // Commit
             {
                 // THE UPGRADE. The same push has now reached the limit, so the pilot committed —
-                // top the dash up to full, open the steal window, and let the plate fly (the
-                // blast applies its own gates at THIS moment rather than at the moment the nudge
-                // started, and reads the reverse modifier here too).
+                // top the dash up to full, open the steal window, and let the plate fly. The blast
+                // applies its own gates at THIS moment rather than at the moment the nudge
+                // started, which is the whole reason a slow push can still blast.
                 _gestureCommitted = true;
                 float remaining = Mathf.Max(0f, 1f - _gestureStrength01);
                 _gestureStrength01 = 1f;
@@ -416,10 +415,11 @@ namespace CosmicShore.Gameplay
         /// rotation override — is skipped there, leaving only the visual child's local rotation.
         /// A replica must never author either: the root rotation is the owner's NetworkTransform
         /// to write, and BlockRotationOverride is read by the owner-written prism lay.
-        /// </summary>
+        ///
         /// <para>A COMMITTED juke spins the visual through 360°; a PARTIAL one LEANS out to
         /// <see cref="partialLeanDegrees"/> × strength at mid-dash and eases back, so the two
         /// read as different acts rather than as the same act at different sizes.</para>
+        /// </summary>
         IEnumerator RollRoutine(float rollSign, float strength01, bool committed, VesselTransformer transformer)
         {
             _rolling = true;

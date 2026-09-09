@@ -1673,7 +1673,6 @@ namespace CosmicShore.Gameplay
         void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed,
             Vector3 n, bool deliberate, bool bladeHit = false, float bladeT = 0f)
         {
-            var root = vessel.Transform;
             // Re-color the ball to the striker's domain - every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
             // Unless ownership is LOCKED (SCARAB.md §4.2 — every Scarab-forged ball belongs to its
@@ -1757,8 +1756,7 @@ namespace CosmicShore.Gameplay
                         ? vessel.Transform.GetComponentInParent<NetworkObject>()
                         : null;
                     ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
-                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId,
-                                     bladeHit && bladeT > 0.66f);
+                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
                 }
 
                 OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
@@ -2065,8 +2063,7 @@ namespace CosmicShore.Gameplay
         /// punish) plus one rare alert, and a ball strike is none of them.
         /// </summary>
         [ClientRpc]
-        void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId,
-                              bool tipHit)
+        void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId, bool tipHit)
         {
             if (settings == null) return;
 

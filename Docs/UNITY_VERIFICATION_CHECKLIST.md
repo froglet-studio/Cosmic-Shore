@@ -3898,9 +3898,13 @@ some part of the retired modifier survived.
    grapple hooks, the camera's anchor hold + the `CameraManager` forwarders,
    `VesselTransformer`'s external-motion mode, the `ScarabGrapple` log channel, and the prefab
    component.
-2. The held-drift **REVERSE MODIFIER** — with it `ScarabJukeController.DriftHold01` /
-   `IsDriftFullyHeld` / `n_DriftFullyHeld` / `driftFullHoldThreshold` / `driftHoldReleaseThreshold`,
+2. The held-drift **REVERSE MODIFIER** — with it `ScarabJukeController.IsDriftFullyHeld` /
+   `n_DriftFullyHeld` / `driftFullHoldThreshold` / `driftHoldReleaseThreshold`,
    the buried-drift partial-juke refusal, `VesselTransformer.DriftTriggerHeld01`,
+   `VesselTransformer.DriftHold01` + `MaxDriftTriggerSum` (kept for one pass "for the blend that
+   owns it", then deleted — the blend reads `_frameTriggerSum` directly, so the accessor was a
+   public surface with no consumer; the trap moved to that field's doc comment), and the dead
+   `VesselTransformer.AgeVelocityModifiers` left behind by item 1's external-motion mode,
    `ScarabCavitationBlast.IsBlastReversed` + `OnBlastReversedChanged`, and
    `ScarabHUDView.SetBlastReversed` + `blastReversedColor` +
    `ScarabHUDController.HandleBlastReversedChanged`.

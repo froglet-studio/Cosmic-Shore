@@ -37,16 +37,16 @@ namespace CosmicShore.Gameplay
     /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
     /// merely shedding their shields.
     ///
-    /// THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.8). Authored on the blast prefab
+    /// THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). Authored on the blast prefab
     /// (<c>AOECylindricalExplosion.mirrorAboutStartPlane</c>), the volume is reflected through the
     /// start plane — the plane through the hull whose normal is the dash — so it reaches as far
     /// BEHIND the pilot as in front, doubling what one punch claims. The velocity is untouched and
     /// uniform across the whole doubled field, which is the entire point: the back half does not
     /// throw mass backwards, it drags mass FORWARD through the ship. Mass behind a Scarab is no
     /// longer safe from its own punch, and a ball behind one can be brought to the front of the
-    /// fight. Nothing here has to know about it — the plate expresses its own volume — and the
-    /// blast is deliberately unaffected by the phase button, so the punch is one shape whichever
-    /// way the pilot is holding their hands.
+    /// fight. Nothing here has to know about it — the plate expresses its own volume — and no
+    /// input modifies it, so the punch is ONE shape whichever way the pilot is holding their
+    /// hands. (A held-button modifier over it was built twice and cut both times; SCARAB.md §3.8.)
     ///
     /// TWO EARLIER SHAPES ARE RETIRED HERE, and both were the held drift reaching for the punch.
     /// It once SHEATHED (a juke under a full hold fired no plate at all), which the analog juke
@@ -123,7 +123,6 @@ namespace CosmicShore.Gameplay
         // cost more than it saves.
         void Update()
         {
-
             bool ready = IsBlastReady;
             if (ready == _wasReady) return;
             _wasReady = ready;
@@ -170,8 +169,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The vessel's circumscribing hull-collider radius in world units, or 0 when
-        /// nothing measurable is wired.</summary>
-        public static float MeasureHullRadius(VesselImpactor impactor)
+        /// nothing measurable is wired. Split out of <see cref="ResolveVesselColliderRadius"/> so
+        /// the MEASUREMENT and the fallback-plus-warning are separable; deliberately private —
+        /// it was briefly public for the retired grapple and nothing outside this class needs
+        /// it.</summary>
+        static float MeasureHullRadius(VesselImpactor impactor)
         {
             var colliders = impactor != null ? impactor.HullColliders : null;
             float best = 0f;

@@ -767,9 +767,12 @@ that is the point — the drift is just the drift, and *"nothing interesting sho
 full drift"* is now a true sentence about this vessel.
 
 **Retired with it: three readings of the trigger that each looked like a level and were not.**
-`VesselTransformer.DriftHold01` (`_frameTriggerSum`, the SMOOTHED value `ApplyAnalogDrift` runs on)
-survives for the drift blend that owns it and is read by nothing else; its doc comment now carries
-the trap so the next reader does not repeat it. `VesselTransformer.DriftTriggerHeld01`,
+`VesselTransformer.DriftHold01` — a public 0..1 accessor over `_frameTriggerSum`, the SMOOTHED
+value `ApplyAnalogDrift` runs on — is **deleted** along with its `MaxDriftTriggerSum` constant: it
+was left standing for one pass "for the blend that owns it", which was not true (the blend reads
+the field directly), so what survived was a public surface with no consumer and a standing
+invitation to gate on it again. The trap now lives on `_frameTriggerSum`'s own doc comment, where
+the value actually is. `VesselTransformer.DriftTriggerHeld01`,
 `ScarabJukeController.IsDriftFullyHeld`, its `n_DriftFullyHeld` NetworkVariable, and
 `ScarabPhaseReversal` (with its whole file) are **deleted** — the apparatus existed to make a
 threshold on a steering control behave like a button, the answer turned out to be a button, and the
@@ -801,10 +804,14 @@ the Dolphin's Echo Sight and every future hold (see below).
    it inherits every property of a steering input and makes "nothing may happen at full drift"
    impossible to state.
 2. **A value smoothed for one consumer is not a reading of the thing it was smoothed from.**
-   `VesselTransformer.DriftHold01` names itself like a trigger reading and is `_frameTriggerSum` —
+   `VesselTransformer.DriftHold01` named itself like a trigger reading and was `_frameTriggerSum` —
    eased on any non-analog device, derived there from the drift TIER FLAGS rather than the trigger
    at all, and written only inside an `Update` that early-returns while the vessel is stationary,
-   so it FREEZES rather than going stale. The trap is recorded in its own doc comment.
+   so it FREEZES rather than going stale. Its **corollary, learned one pass later:** the accessor
+   was first kept "for the blend that owns it" and the blend never read it — so the retirement left
+   a public 0..1 property with no consumer, which is exactly the shape a future gate reaches for.
+   It is deleted and the trap moved onto `_frameTriggerSum`. *A public surface that must never be
+   read is a trap generator, not a trap record.*
 3. **A threshold on a held ANALOG control needs hysteresis; a threshold on a discrete act does
    not.** A bare `≥ 0.95` re-evaluated per frame dropped the modifier on every wobble of a trigger
    pressed to its stop.
@@ -2524,7 +2531,7 @@ implementation time.
    gamepad/desktop-only at v1?
 9a. **AI and a held modifier** (§3.8): **CLOSED — the mechanic it described is retired.** Kept for
    the trap. While the ball reversal rode a held drift, an AI drift was BINARY — the non-gamepad
-   trigger sum reports 1 or 2 for the whole ability, so `DriftHold01` read as FULLY HELD for a
+   trigger sum reports 1 or 2 for the whole ability, so the drift hold read as FULLY HELD for a
    bot's entire drift and it reversed every ball it struck and every plate it threw. That shipped
    ungated on the grounds that a reversal is one instantaneous act with no state, but it was a real
    behavioural difference nobody had authored. *A capability an AI acquires by accident is a design

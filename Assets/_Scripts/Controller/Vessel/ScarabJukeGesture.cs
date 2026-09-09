@@ -7,9 +7,8 @@ namespace CosmicShore.Gameplay
         None,
         /// <summary>A new push crossed the engage threshold — fire the dash at this strength.</summary>
         Begin,
-        /// <summary>The push in flight reached the stick's limit — upgrade it to a committed dash
-        /// (steal window, full displacement, and the cavitation plate — inverted while the drift
-        /// is buried).</summary>
+        /// <summary>The push in flight reached the stick's limit — upgrade it to a committed dash:
+        /// the steal window, the full displacement and the cavitation plate.</summary>
         Commit,
         /// <summary>The stick came back inside the release band — the push is over.</summary>
         End,
