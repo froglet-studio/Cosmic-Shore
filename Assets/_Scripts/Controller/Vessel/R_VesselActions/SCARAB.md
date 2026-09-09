@@ -1567,8 +1567,10 @@ peer reads its own interpolated transform.
 ### 5.2 The cooldown — why the switch was single-use, and what refills it now
 
 **The defect.** `Scarab.prefab` authors two resource meters; the second, "Switch Charges", shipped
-with `resourceGainRate: 0` and `initialAmount: 0.34` — one charge out of a three-charge meter
-(`PlaceSwitchActionSO.chargesPerFullMeter 3`, so a switch costs 1/3 of it). The only thing in the
+with `resourceGainRate: 0` and `initialAmount: 0.34` — one charge out of the three-charge meter
+`PlaceSwitchActionSO.chargesPerFullMeter` authored *at the time* (a switch cost 1/3 of it; the
+bank is retired and both are **1** today, see "ONE RING AT A TIME" below — this paragraph describes
+the defect as it shipped, not the asset as it stands). The only thing in the
 project that ever put a charge back is `ScarabSwitchChargeByCrystalEffect` (+0.334), and
 `ScarabImpactorDataContainer` wires it into the four **elemental** crystal branches —
 `vesselMassCrystalEffects`, `vesselChargeCrystalEffects`, `vesselSpaceCrystalEffects`,
@@ -1626,9 +1628,11 @@ aperture) and Charge already owns a cooldown (the cavitation blast, §3.4). Scal
 either would double-dip that element or put two unrelated meanings on one flower, so the cadence is
 a flat authored number — the same ruling §7 makes for `placementDistance`.
 
-**A pilot holds at most `maxLiveSwitches` (3) unspent switches.** An unstruck switch lives for the
-whole match by design — nothing expires, nothing is culled — which was harmless when a pilot could
-place one and is not harmless when they can place one every twenty seconds forever. Freestyle makes
+**A pilot holds at most `maxLiveSwitches` (**1** since 2026-09-06) unspent switches.** An unstruck
+switch lives for the whole match by design — nothing expires, nothing is culled — which was harmless
+when a pilot could place one and is not harmless when they can place one every twenty seconds
+forever. At the shipped ceiling of 1 the rule below fires on the pilot's every second placement, so
+it is the common path rather than the edge case it was written as. Freestyle makes
 that literal: there is no match end, so an unbounded placer would silt the lava lamp with rings. So
 placing past the ceiling **retires that pilot's oldest standing ring**
 (`PlaceSwitchActionExecutor.RegisterAndEnforceCeiling` → `ScarabSwitch.Retire`). Three properties

@@ -248,10 +248,13 @@ borrowed it as its court could not seed a plant inside its own arena. The one re
 survive — a standard crystal respawns in the nucleus volume — is accepted: it is clutter in a
 volume a court-mode has already filled with play, not mass the ecology cannot reach.
 
-**What the anchors cost.** 14 plants at a 40-prism budget = **560 prisms** at every intensity, and
-**4,894–12,908 volume** depending on the species, standing from the first seconds and folded into
-both bands of the cell's ladder rather than left for it to discover. Collider budget: **14
-always-on** heart colliders (one per plant); the 560 body prisms are LOD-cullable boxes. Each
+**What the anchors cost.** 14 plants at every intensity, but a different KIND of plant at each,
+so the mass differs where the collider count does not: **560 / 420 / 560 / 1,540 prisms** and
+**7,986 / 21,113 / 42,000 / 71,441 volume** (Spire / Gyroid / Cacti / Quasicrystal), standing from
+the first seconds and folded into both bands of the cell's ladder rather than left for it to
+discover — which is why BOTH ladders are per-intensity here and not just the volume one. Collider
+budget: **14 always-on** heart colliders (one per plant) at every setting, which is the number that
+stays flat while everything else about the field changes; the body prisms are LOD-cullable boxes. Each
 species' four elements roll uniformly, so a quarter of the anchors are **Charge** and therefore
 shielded (`Flora.ResolveShieldPeriod`) — shielded mass is never food and leaves the fauna
 targeting grids, so those anchors are the durable ones. Emergent, not authored.
