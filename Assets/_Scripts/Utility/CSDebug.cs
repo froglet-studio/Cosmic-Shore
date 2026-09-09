@@ -146,6 +146,14 @@ namespace CosmicShore.Utility
         /// channel; every real fault on that path is a warning and is unaffected by this flag.
         /// </summary>
         ToyBox = 1 << 13,
+        /// <summary>
+        /// <c>[Skein]</c> — one line per Skein cable build: the seed it landed on, and the rails,
+        /// prisms and rings it laid. It exists because that mode's whole claim is that the runtime
+        /// generator and <c>Tools/Build/skein_budget.py</c> agree, and this is the reading you
+        /// compare against the model's own table in one glance. A cable that cannot be laid at all
+        /// is an ERROR and is unaffected by this flag. Off by default like every channel.
+        /// </summary>
+        SkeinCable = 1 << 14,
         All = ~0
     }
 

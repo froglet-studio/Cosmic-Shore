@@ -423,6 +423,14 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 case GameModes.Hijack:
                     return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Skein:
+                    // Mandatory rather than a nicety, for Switchback's reason: every ring on the
+                    // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
+                    // is. The arrow is per-viewer by construction, which is what a per-pilot fact
+                    // needs - and repainting the next ring in the pilot's domain colour would
+                    // spend the switch vocabulary's RESERVED colour on a ring that hands nobody a
+                    // domain.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Skein");
                 default:
                     return null;
             }

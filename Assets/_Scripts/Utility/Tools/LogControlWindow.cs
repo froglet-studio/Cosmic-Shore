@@ -463,6 +463,7 @@ namespace CosmicShore.Utility
             (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
             (CSLogChannel.MouseFlight,  "[MouseFlight] one-thumb mouse controls engaged"),
             (CSLogChannel.PrismscapeRide, "[GunVesselTransformer] ride dimension (grind vs roll)"),
+            (CSLogChannel.SkeinCable,   "[Skein] cable build (seed, rails, prisms, rings)"),
         };
 
         void DrawStackTraceRow(string label, LogType type)

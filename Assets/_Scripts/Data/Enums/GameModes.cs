@@ -156,8 +156,35 @@ namespace CosmicShore.Data
         // 50, not 48: Tollway took 48 and Headlong 49 on bleeding-edge while this was in flight.
         Breakwater = 50,
 
+        // Skein (51): the Urchin-only cable race - the first mode built around the vessel's
+        // GRIND rather than around what the grind can steal. A trefoil-knot cable hangs in the
+        // cell, wrapped in one family of rails whose radii BREATHE: each strand oscillates
+        // between 45 and 135 units with its own phase, so at every station the strands cover
+        // the whole band, and each spends part of the lap as the direct inner path and part
+        // spiralling out. Ride an outward-bound strand and it carries you out; the inward
+        // phase is 1.315x shorter, so the fast line means CHANGING STRANDS. Rails END, and
+        // every end is AIMED - run one off its tip and its own tangent throws you onto a live
+        // rail somewhere else, so "hold the throttle and the arena navigates for you" is a
+        // property of the geometry rather than a bonus anyone authored. Ordered rings are
+        // threaded in sequence; two are wide collars that swallow the whole cable (the start
+        // and the finish, so nobody wins or loses for the lane they were in) and the rest sit
+        // on ONE specific rail, so the question is never "can you thread it" but "can you be
+        // on that rail when you get there". First DOMAIN whose LEAD RUNNER threads the last
+        // ring wins - the gate-race fold, reusing metric 9 outright.
+        // See _Scripts/Controller/Arcade/SKEIN.md.
+        //
+        // 51, and it took THREE renumbers to get here: Tollway took 48 and Headlong 49 while
+        // this branch was in flight, and Breakwater took 50 in the window between this
+        // branch's review pass and its push. That is the trap DRUMFIRE.md records, hit a
+        // third time - two parallel branches each take "the next free id", git merges two
+        // additions to opposite ends of one enum without a conflict, and the duplicate
+        // surfaces as CS0152 in whichever switch has to tell them apart. Never assume the
+        // last row is the highest, and re-run check_switch_label_collisions.py after a merge.
+        Skein = 51,
+
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 47) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 49) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

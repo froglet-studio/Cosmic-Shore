@@ -140,17 +140,21 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 48 = IDs 0..50 with 7, 31 and 47 deliberately skipped (retired Freestyle /
+            // 49 = IDs 0..51 with 7, 31 and 47 deliberately skipped (retired Freestyle /
             // never assigned / retired Drumfire — see GameModes.cs). Deliberately a hard-coded
             // number rather than one derived from the enum: the whole point is that ADDING a
             // mode fails here, so a human confirms the addition was intended and that its ID
             // reuses none of 7, 31 or 47.
             // It has drifted nine times now (33 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 46 ->
-            // 47 -> 48),
+            // 47 -> 49 across two modes in one merge window),
             // so GameModes.cs carries a pointer back to this test and the next mode can update
-            // it at the source.
+            // it at the source. Skein took 51 rather than 48: Tollway and Headlong claimed 48
+            // and 49 while its branch was in flight, and Breakwater claimed 50 between that
+            // branch's review pass and its push. Three renumbers, one enum - the
+            // parallel-branch collision DRUMFIRE.md records, and the reason
+            // check_switch_label_collisions.py has to be re-run after every merge.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(48, values.Length,
+            Assert.AreEqual(49, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
