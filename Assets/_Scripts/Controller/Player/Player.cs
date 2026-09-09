@@ -46,6 +46,17 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// How many SPECTATORS are currently watching this pilot. Server-write, everyone-read,
+        /// so the watched pilot's own HUD can say it and any peer could. Written only by
+        /// <see cref="ClientPlayerVesselInitializer"/>'s server side from
+        /// <see cref="SpectatorSession"/>'s watch book, which is the one place that knows who is
+        /// watching whom - a spectator has no Player object of its own to hang the answer on.
+        /// Reset per scene like <see cref="NetArenaReady"/>: a stale count would claim an
+        /// audience the next match does not have.
+        /// </summary>
+        public NetworkVariable<int> NetSpectatorCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>
         /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
         /// and analytics. Replicated so any peer can build the match roster (player_ids on
         /// game_started) from settled network state rather than from a local party roster,
@@ -147,6 +158,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <inheritdoc />
         public bool IsArenaReady => !IsSpawned || NetArenaReady.Value;
+
+        /// <summary>Viewers watching this pilot right now; 0 offline or unspawned.</summary>
+        public int SpectatorCount => IsSpawned ? NetSpectatorCount.Value : 0;
+
+        /// <summary>Server-only write of <see cref="NetSpectatorCount"/>. No-op off the server.</summary>
+        public void SetSpectatorCountServer(int count)
+        {
+            if (!IsServer || !IsSpawned) return;
+            count = count < 0 ? 0 : count;
+            if (NetSpectatorCount.Value != count) NetSpectatorCount.Value = count;
+        }
 
         public void ReportArenaReady()
         {
@@ -520,6 +542,15 @@ namespace CosmicShore.Gameplay
             // names separately after spawn. IsLocalUser filters out AI via !IsInitializedAsAI.
             if (IsLocalUser)
             {
+                // A spectator must never own a Player: the host declines to mint one when the
+                // spectator approval payload reaches it (SpectatorSession). If one arrived
+                // anyway the payload was lost on the wire, and this machine is about to be
+                // spawned a vessel into a match it only meant to watch - say so, loudly.
+                if (SpectatorSession.IsLocalSpectator)
+                    Debug.LogError("[Player] A SPECTATOR was handed a Player object - the spectator " +
+                                   "approval payload did not reach the host (SpectatorSession). This " +
+                                   "client will be spawned as a pilot. See Docs/PartySystem/SPECTATOR.md.");
+
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {
@@ -681,6 +712,9 @@ namespace CosmicShore.Gameplay
                 // machine had laid a prism - the panel's whole job, skipped, with nothing to
                 // show for it. AI carry it true because they have no machine to wait for.
                 NetArenaReady.Value = IsInitializedAsAI;
+                // Nobody is watching the match that has not started yet. The watch book is
+                // re-applied by the new scene's initializer as each viewer re-reports.
+                NetSpectatorCount.Value = 0;
             }
 
             // Force-sync local properties from NetworkVariables.

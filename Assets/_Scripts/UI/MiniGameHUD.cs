@@ -183,6 +183,7 @@ namespace CosmicShore.UI
             EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            EnsureSpectatorBadge();
             PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
@@ -895,6 +896,19 @@ namespace CosmicShore.UI
         /// The COUNT does not come through here - it arrives on every monitor tick through
         /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
         /// </summary>
+        /// <summary>
+        /// The eye under the goal stack that appears while somebody is spectating this pilot.
+        /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
+        /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
+        /// missing from whichever one the next scene copies (Docs/GAME_MODE_TOPBAR.md).
+        /// </summary>
+        void EnsureSpectatorBadge()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+            SpectatorWatchBadge.Ensure(stack.transform, gameData);
+        }
+
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;
