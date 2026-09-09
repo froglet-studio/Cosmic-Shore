@@ -8,7 +8,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Switchback: a golf-timed race through an ORDERED course of switch gates. The first domain
+    /// A golf-timed race through an ORDERED course of switches - Switchback's gates and
+    /// Breakwater's stations are the same fact, so both modes author an asset on this ONE rule.
+    /// Switchback: The first domain
     /// whose LEAD RUNNER threads the last gate wins; that domain's pilots all score the finish
     /// time, everyone else a sentinel encoding how much course their best pilot had left.
     ///
@@ -28,6 +30,26 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Switchback", fileName = "SwitchbackScoringRule")]
     public class SwitchbackScoringRuleSO : ScoringRuleSO
     {
+        [Tooltip("What one unit of this course is CALLED on the scoreboard and the defeat reveal - " +
+                 "\"Gate\" for Switchback, \"Station\" for Breakwater. The rule is shared by both " +
+                 "ordered-switch races, so the noun has to be authored rather than hardcoded; the " +
+                 "goal row is unaffected because it is keyed on the METRIC and reads \"Thread " +
+                 "switches\" for either.")]
+        [SerializeField] string unitNoun = "Gate";
+
+        /// <summary>
+        /// The authored noun, or "Gate" when the asset predates this field.
+        ///
+        /// <para><b>The fallback is in CODE, deliberately, and not a field initializer.</b> Unity
+        /// fills a key a serialized asset does not carry with the TYPE default - an EMPTY string -
+        /// not with the initializer above, so the shipped SwitchbackScoringRule.asset (authored
+        /// before this field existed) would otherwise render "3 Left" and " LEFT". That is the
+        /// SpawnProfileSO trap the ecology notes record, reached from the scoring side: a new
+        /// serialized field is a silent regression on every asset already on disk unless the
+        /// reader treats "absent" as a real case.</para>
+        /// </summary>
+        string Unit => string.IsNullOrWhiteSpace(unitNoun) ? "Gate" : unitNoun;
+
         /// <summary>
         /// A domain's course progress is its LEAD RUNNER's gate count. See the class summary -
         /// this is the whole reason the fold is a seam rather than four copies of a sum.
@@ -95,8 +117,8 @@ namespace CosmicShore.Gameplay
                     // Per PILOT, so the row adds up: gates flown + gates left = the course.
                     // The domain fold is the lead runner, so a domain reading here would sit a
                     // trailing teammate's own gate count beside the ace's remainder.
-                    : $"{RemainingForPlayer(gameData, s)} Gates Left",
-                $"{LiveMetric(s)} Gates")).ToList();
+                    : $"{RemainingForPlayer(gameData, s)} {Unit}s Left",
+                $"{LiveMetric(s)} {Unit}s")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -104,6 +126,7 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "COURSE TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "GATES LEFT", RemainingForPlayer(gameData, localStats), false);
+                : new ScoreReveal("DEFEAT", $"{Unit.ToUpperInvariant()}S LEFT",
+                                  RemainingForPlayer(gameData, localStats), false);
     }
 }

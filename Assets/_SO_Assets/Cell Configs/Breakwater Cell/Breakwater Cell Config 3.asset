@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Breakwater Cell Config 3
+  m_EditorClassIdentifier:
+  CellName: Breakwater
+  Description: The Breakwater arena at intensity 3 - 2,506 prisms across 14
+    stations of port radius 50, plus 546 prisms of shoal rubble strung along the
+    legs as ammunition. Each station is a 42-bar danger weave over an 18-unit
+    eye, ringed by a 12-block collar inside a 86-plate dish. Everything is
+    Domains.Blue, so it is hostile to every pilot and every round pays
+    ammunition. No nucleus (the stations are the landmarks, and this cell's
+    crystals respawn on noNucleusSpawnRadius instead), no EnvironmentPrefab (the
+    course is rolled per match, so BreakwaterController stands the arena up
+    itself once the poses exist), and no flora or fauna - in a nucleus-less cell
+    herbivores eat opposing-domain mass and the whole arena is Blue, so a food
+    web would graze the plugs open on its own. PhaseThresholds ride THIS
+    intensity's own measured baseline; regenerate with
+    Tools/Build/author_breakwater_assets.py rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 3
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: dbc11bd72f4e0822935e5d296b63ae70, type: 2}
+  EnvironmentPrefab: {fileID: 0}
+  EnvironmentIntensity: 3
+  SenseRadiusOverride: 1250
+  PhaseThresholds:
+    RestlessEnter: 3206
+    RestlessExit: 3006
+    FrenzyEnter: 6106
+    FrenzyExit: 5506
+    RestlessEnterVolume: 555317
+    RestlessExitVolume: 543317
+    FrenzyEnterVolume: 735317
+    FrenzyExitVolume: 705317
