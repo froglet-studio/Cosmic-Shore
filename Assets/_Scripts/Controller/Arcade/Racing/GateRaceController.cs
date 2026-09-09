@@ -121,6 +121,46 @@ namespace CosmicShore.Gameplay
         // what stops SyncGameEnd_ClientRpc raising them a second time.
         protected override bool HasEndGame => false;
 
+        // ── What a subclass supplies ──────────────────────────────────────
+
+        /// <summary>Mode name for log lines, so a message names the mode that emitted it.</summary>
+        protected abstract string ModeName { get; }
+
+        /// <summary>
+        /// Laps of the ring set that make one race. 1 = an open chain flown once (Switchback);
+        /// more = a closed circuit (Headlong), where the ring count and the RACE LENGTH stop
+        /// being the same number.
+        /// </summary>
+        protected virtual int LapsPerRace => 1;
+
+        /// <summary>Gate-threadings that finish the race - the target the monitor ends on.</summary>
+        protected int RaceLength => _rings.Count * Mathf.Max(1, LapsPerRace);
+
+        /// <summary>
+        /// Which RING a pilot on <paramref name="threaded"/> gates must fly next. The identity
+        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is.
+        /// </summary>
+        protected int RingIndexFor(int threaded) =>
+            _rings.Count == 0 ? -1 : (LapsPerRace > 1 ? threaded % _rings.Count : threaded);
+
+        /// <summary>
+        /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built.
+        /// <paramref name="gateCount"/> is the authored target; a mode whose course wraps should
+        /// treat it as the RACE length and lay <c>gateCount / LapsPerRace</c> rings.
+        /// </summary>
+        protected abstract List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer);
+
+        /// <summary>The cell shell the course is laid inside, resolved from the live cell.</summary>
+        protected void ResolveShell(out float inner, out float outer)
+        {
+            var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
+            // ExpectedNucleusWorldRadius measures the CONFIG's nucleus prefab without
+            // instantiating it, so unlike NucleusWorldRadius it answers correctly this early.
+            float nucleus = cell != null ? cell.ExpectedNucleusWorldRadius : 0f;
+            inner = nucleus > 0f ? nucleus * innerRadiusNucleusFactor : courseInnerRadiusFallback;
+            outer = Mathf.Max(inner + 120f, courseOuterRadius);
+        }
+
         protected readonly List<RaceGate> _course = new();
         protected readonly List<RaceGateRing> _rings = new();
         readonly Dictionary<IPlayer, PilotRun> _runs = new();
