@@ -125,8 +125,23 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/DRUMFIRE.md.
         Drumfire = 47,
 
+        // Skein (48): the Urchin-only cable race - the first mode built around the vessel's
+        // GRIND rather than around what the grind can steal. A trefoil-knot cable hangs in the
+        // cell, wrapped in two shells of rails: an inner shell that is nearly straight and
+        // therefore fast, and an outer one that corkscrews and therefore is not. Rails END,
+        // and every end is AIMED - run one off its tip and its own tangent throws you onto a
+        // live rail somewhere else, so "hold the throttle and the arena navigates for you" is
+        // a property of the geometry rather than a bonus anyone authored. Twenty-four ordered
+        // rings are threaded in sequence; two are wide collars that swallow the whole cable
+        // (the start and the finish, so nobody wins or loses for the lane they were in) and
+        // the other twenty-two sit on ONE specific rail, so the question is never "can you
+        // thread it" but "can you be on that rail when you get there". First DOMAIN whose LEAD
+        // RUNNER threads the last ring wins - Switchback's fold, reusing metric 9 outright.
+        // See _Scripts/Controller/Arcade/SKEIN.md.
+        Skein = 48,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 46) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 47) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }
