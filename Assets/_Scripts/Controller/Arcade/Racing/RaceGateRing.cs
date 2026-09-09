@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One gate of a Switchback course: a SWITCH ring you thread (CLAUDE.md, "Switch";
+    /// One gate of a race course: a SWITCH ring you thread (CLAUDE.md, "Switch";
     /// Docs/ToySystem/ARCHITECTURE.md § "The switch"), drawn in the prism shader at the radius
     /// its own crossing test uses.
     ///
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
     /// units per physics tick, so a trigger volume can be flown through between two samples
     /// while a swept segment cannot be missed.</para>
     /// </summary>
-    public class SwitchbackGateRing : MonoBehaviour
+    public class RaceGateRing : MonoBehaviour
     {
         /// <summary>Position in the ordered course. Matches the index a pilot reports.</summary>
         public int Index { get; private set; }
@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
         /// A ring drawn SMALLER than its trigger is the legal direction: a crossing still always
         /// fires. Drawing one LARGER would be the lie the switch law forbids.</para>
         /// </summary>
-        public void Build(int index, in SwitchbackGate gate, ThemeManagerDataContainerSO theme,
+        public void Build(int index, in RaceGate gate, ThemeManagerDataContainerSO theme,
                           float bloomSeconds)
         {
             Index = index;

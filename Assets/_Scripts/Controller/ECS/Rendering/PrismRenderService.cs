@@ -175,6 +175,12 @@ namespace CosmicShore.ECS
                 return "OFF (config: Use Instanced Rendering unchecked)";
             }
 
+            // The device gate comes first: on a GPU whose compute kernels cannot load,
+            // CosmicShoreEntitiesBootstrap creates the world EMPTY on purpose, so the
+            // "missing system" line below would be true but would name the wrong cause.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+                return $"OFF (Entities Graphics unsupported on this device: {EntitiesGraphicsSupportProbe.Reason})";
+
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
             if (world.GetExistingSystemManaged<EntitiesGraphicsSystem>() == null)
@@ -230,6 +236,21 @@ namespace CosmicShore.ECS
                 s_pendingVisibility.Clear();
                 LiveEntityCount = 0;
                 _epoch++;
+            }
+
+            // Same gate the ICustomBootstrap applies: never construct EntitiesGraphicsSystem
+            // on a device whose compute kernels will not load. Its OnCreate throws, Entities
+            // keeps the half-built system, and the first frame to touch it crashes the process
+            // (Docs/PRISM_ECS_MIGRATION.md §8). The legacy MeshRenderer path is the answer.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+            {
+                if (!_loggedWorldBootstrap)
+                {
+                    _loggedWorldBootstrap = true;
+                    Debug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
+                                     EntitiesGraphicsSupportProbe.Reason + "); staying on the legacy MeshRenderer path.");
+                }
+                return false;
             }
 
             var world = World.DefaultGameObjectInjectionWorld;

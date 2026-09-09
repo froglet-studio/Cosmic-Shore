@@ -219,11 +219,14 @@ def read(rel):
 SCRIPT_PATHS = {
     "SwitchbackController":        "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs",
     "SwitchbackCourse":            "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackCourse.cs",
-    "SwitchbackGateRing":          "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackGateRing.cs",
-    "SwitchbackObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackObjectiveProvider.cs",
-    "SwitchThreadScoring":         "Assets/_Scripts/Controller/Arcade/Switchback/SwitchThreadScoring.cs",
-    "SwitchbackScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Scoring/SwitchbackScoringRuleSO.cs",
-    "SwitchbackGateTurnMonitor":   "Assets/_Scripts/Controller/Arcade/TurnMonitors/SwitchbackGateTurnMonitor.cs",
+    # These five became SHARED with Headlong and moved to Arcade/Racing (Headlong branch,
+    # 2026-09). Their GUIDs are minted from the STABLE NAME above, not the path, so the move was
+    # a git mv of file + meta and every scene reference survived - only the paths change here.
+    "SwitchbackGateRing":          "Assets/_Scripts/Controller/Arcade/Racing/RaceGateRing.cs",
+    "SwitchbackObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Racing/RaceGateObjectiveProvider.cs",
+    "SwitchThreadScoring":         "Assets/_Scripts/Controller/Arcade/Racing/SwitchThreadScoring.cs",
+    "SwitchbackScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Scoring/GateRaceScoringRuleSO.cs",
+    "SwitchbackGateTurnMonitor":   "Assets/_Scripts/Controller/Arcade/Racing/RaceGateTurnMonitor.cs",
     "SwitchbackCourseTests":       "Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs",
 }
 for k, p in SCRIPT_PATHS.items():
@@ -469,10 +472,13 @@ SHELL = {"courseOuterRadius": "1080", "courseInnerRadiusFallback": "480",
 for field, want in SHELL.items():
     if f"  {field}: {want}\n" not in NEW_FIELDS:
         errors.append(f"scene shell {field} is not {want} - update SHELL and the two readers below")
-    m = re.search(rf"{field}\s*=\s*([0-9.]+)f;", read("Assets/_Scripts/Controller/Arcade/Switchback/"
-                                                       "SwitchbackController.cs"))
+    # Two of the three moved to the shared base when Headlong arrived; firstGateDistance is
+    # still Switchback's own. Search both rather than guessing which owns which.
+    _srcs = read("Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs") + \
+            read("Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs")
+    m = re.search(rf"{field}\s*=\s*([0-9.]+)f;", _srcs)
     if not m or float(m.group(1)) != float(want):
-        errors.append(f"SwitchbackController.{field} default disagrees with the scene ({want})")
+        errors.append(f"gate-race {field} default disagrees with the scene ({want})")
 
 _tests = read("Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs")
 for const, want in (("Inner", SHELL["courseInnerRadiusFallback"]),
