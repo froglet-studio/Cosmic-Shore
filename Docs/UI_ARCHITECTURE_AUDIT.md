@@ -206,7 +206,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **DONE, 2026-09-08.** Deleted. Re-measured post-F1 rather than trusting the pre-F1 note ("both canvas forks" — there is one canvas now): zero references of ANY kind, and not reachable by `Resources.Load`, asset bundle, Addressables or by name. **It also had no controller script**, which is the fact that settles it. Along the way: `Docs/GAMECANVAS.md §9` claimed F1 had already deleted it, and that was false — §5.2.1 | — | *Closed.* |
 | **F7** | §2.13 **call-to-action badges never light up** | **DONE, 2026-09-08 — RETIRED** (product decision). The audit called it a TODO; measured, the foundation was dead: the only producer (`QuestSystem`) and the only click consumer (`TutorialFlowController`) are in no scene or prefab, dismissal rides the inert `DailyChallengeSystem.prefab`, and the addressing data is stale past repair — 7 of the 16 live modes share one id, 4 carry a non-member, and none of the 13 modes added since the enum was written has an entry. Removed: 3 C# files, the enum, 2 prefabs, 73 components and 57 indicator objects across 9 scenes/prefabs, and the wiring in 11 files. Tool + gate: `Tools/Build/retire_call_to_action.py --check`. §2.13.1 | — | *Closed.* |
-| **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
+| **F8** | §4.2 **no dedicated disconnect UI** | **DONE, 2026-09-09.** `DisconnectNotice` — a runtime-built overlay on a `DontDestroyOnLoad` root, so it exists in game scenes too (a toast cannot: `ToastService` is scene-bound and is destroyed by the very reload a disconnect triggers). Offers `ReconnectService` directly. Two things the prompt assumed turned out not to hold: **`ReconnectButton` is in no scene or prefab**, so there was no reconnect affordance to reuse anywhere; and **`BootStatusBroadcaster` suppresses connection-lost during transitions deliberately**, so reusing it would have re-litigated a considered decision. §4.2.1 | — | *Closed.* |
 
 ## 0.4 Structural findings that are NOT bugs
 
@@ -1470,13 +1470,64 @@ The splash's status line (`BootStatusPanel`/`BootStatusBroadcaster`) doubles as 
 
 ## 4.2 Errors, disconnects, and matchmaking
 
-### Losing your connection: **there is no dedicated disconnect UI**
+### Losing your connection: ~~**there is no dedicated disconnect UI**~~ — **one shipped 2026-09-09, §4.2.1**
 
 Stated plainly, because a redesign needs to know: **no popup, no banner, no modal exists for connection loss.** The chain: `NetworkMonitor` polls reachability every 5s and raises `OnNetworkLost`; every listener is non-visual (app state machine, offline caching, analytics buffering). The `Disconnected` app state is raised and **no UI script anywhere subscribes to app-state changes**. The only "connection lost" string authored in any scene is the Bootstrap splash's "Connection lost. Tap retry." — and that is deliberately suppressed during expected transitions.
 
 What the player actually experiences on a mid-game connection/host loss: transport failure → full teardown → fade to black → Menu_Main reloads → their own solo session is recreated → **at most a small text toast ("Connection lost")** on the rebuilt menu. No dialog, no reconnect affordance. And because the menu toast service is scene-bound, **a failure surfaced while still in a game scene has no toast surface at all**.
 
 Contrast: a **remote** player dropping *is* surfaced in-game ("**{name}** disconnected" toast, SkimRace-fork modes only). Your own drop is not.
+
+### 4.2.1 The disconnect notice — F8, shipped 2026-09-09
+
+**`DisconnectNotice`** (`_Scripts/UI/Elements/`) + **`DisconnectNoticeConfigSO`**
+(`Resources/DisconnectNoticeConfig`), installed once from `AppManager.Start`. On
+`NetworkMonitorData.OnNetworkLost` it puts up a modal notice over whatever scene the player is in,
+offering **Reconnect** (`ReconnectService.ReconnectAsync` — the existing in-place boot-chain re-run)
+and **Continue Offline**; on `OnNetworkFound` it says so and hides itself.
+
+**Why it builds its own canvas rather than being authored into a scene.** The previous notice was a
+toast, and `ToastService` is a scene-bound MonoBehaviour that subscribes in `OnEnable` — so it is
+destroyed and recreated by a scene load, and is **absent entirely in a game scene**.
+`PartyInviteController.BounceToSoloMenuAsync` already documents raising its notice only *after*
+recovery for exactly that reason. A notice that can be dropped by the event it is reporting on is
+not a notice, so this one lives on a `DontDestroyOnLoad` root with its own canvas at sorting order
+32000 and outlives the reload a disconnect triggers.
+
+**Two things F8's prompt assumed, which did not hold** — both worth recording, because both would
+have sent the work the wrong way:
+
+1. **"Reuse `ReconnectButton`"** — `ReconnectButton` is in **no scene and no prefab**. There was no
+   reconnect affordance on screen anywhere, for a mid-session drop *or* for a player who booted
+   offline, even though `Docs/OFFLINE_MODE.md` §7 presents the pair as shipped. So the notice does
+   not wrap that button; it calls `ReconnectService` directly, which is the part that was real.
+2. **"Reuse the boot status surface"** — `BootStatusPanel` is persistent, SOAP-driven and already
+   has a retry button, which makes it look like the obvious host. But `BootStatusBroadcaster`'s
+   class doc records that connection-lost raises *during transitions* are **suppressed on purpose**:
+   those flows own their own recovery and "tap retry" would be misleading there. Reusing it would
+   have re-litigated a considered decision rather than reusing a component. The notice honours the
+   same window instead (`SuppressDuringLaunch`), so the two surfaces never both speak.
+
+**It changes no network or session state, deliberately.** The existing recovery paths are good and
+keep their ownership — a transport failure still bounces to a working solo menu, a boot with no
+network still falls back to the offline host. This only makes the event legible and puts the
+recovery one tap away.
+
+**The deeper gap it does NOT close, stated because it is the more consequential one.**
+`OfflineModeService.EnterOfflineSessionAsync` has exactly one caller — `AuthenticationSceneController`,
+the boot chain. **A mid-session network loss therefore never enters offline mode**, so
+`GameDataSO.IsOfflineSession` stays false and every existing offline surface stays dark:
+`OfflineUIGate` gates nothing (the menu keeps offering invites, leaderboards and purchases that
+will now fail), and `OnlineStatusIndicator` keeps reading online. Making a mid-session drop enter
+the same state a cold boot does would light all of that up with no new UI at all — but it is a
+behavioural change with its own blast radius (it tears down the Relay session and starts a local
+host), so it belongs in its own change, next to `Docs/OFFLINE_MODE.md` rather than here. The
+service-level guards §7.1 describes still refuse the doomed work either way; it is the *offering*
+of it that is wrong.
+
+Copy and palette live in the config asset rather than in C#, because this is runtime-built UI and
+§5.7 lists exactly that as "not editable by a designer without touching C#" — keeping the strings in
+an asset limits that to the layout. Guard: `DisconnectNoticeTests`.
 
 ### Party/join failures
 
