@@ -173,6 +173,16 @@ namespace CosmicShore.UI
 
         readonly List<SO_Vessel> _availableShips = new();
 
+        // The Arena's vessel picker. An arena card can be flown in several hulls, so its panel
+        // asks the pilot to PICK one and Start stays dead until they have (an arcade card locks to
+        // one hull and never asks). Both are per session: re-armed on every card open, host and
+        // client alike, and cleared on close - which is exactly "go back and come in again to
+        // pick again".
+        int _availableShipIndex = -1;
+        bool _vesselConfirmed;
+
+        bool RequiresVesselConfirmation => _activePanel is ArenaLaunchPanel;
+
         /// <summary>
         /// True when this modal is being shown on a non-host client via RPC.
         /// Host-only controls (intensity, player count, start button) are read-only.
@@ -483,6 +493,7 @@ namespace CosmicShore.UI
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _vesselConfirmed = false;
 
             // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
             // and Start button the rest of this method is talking about.
@@ -498,6 +509,8 @@ namespace CosmicShore.UI
             ApplyWeeklyChallengePresentation();
             InitializeConfigControls(selectedGame);
             InitializeDefaultShipFromAvailable();
+            RefreshVesselPicker();
+            RefreshStartAvailability();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
@@ -611,6 +624,12 @@ namespace CosmicShore.UI
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
             _activePanel.OnLeaderboardRequested += OpenWeeklyLeaderboard;
 
+            if (_activePanel is ArenaLaunchPanel arena)
+            {
+                arena.OnVesselCycleRequested   += HandleVesselCycleRequested;
+                arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
+            }
+
             _activePanelWired = true;
         }
 
@@ -641,6 +660,12 @@ namespace CosmicShore.UI
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
             _activePanel.OnLeaderboardRequested -= OpenWeeklyLeaderboard;
+
+            if (_activePanel is ArenaLaunchPanel arena)
+            {
+                arena.OnVesselCycleRequested   -= HandleVesselCycleRequested;
+                arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
+            }
 
             _activePanelWired = false;
         }
@@ -1245,7 +1270,82 @@ namespace CosmicShore.UI
             if (!chosen)
                 chosen = _availableShips[0];
 
+            _availableShipIndex = _availableShips.IndexOf(chosen);
             SetSelectedShipInternal(chosen);
+        }
+
+        #endregion
+
+        #region Vessel picker (Arena)
+
+        /// <summary>Redraw the active panel's vessel picker, if it has one.</summary>
+        void RefreshVesselPicker()
+        {
+            if (_activePanel is not ArenaLaunchPanel arena) return;
+
+            var ship = _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count
+                ? _availableShips[_availableShipIndex]
+                : null;
+            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
+        }
+
+        void HandleVesselCycleRequested(int direction)
+        {
+            if (_vesselConfirmed || _availableShips.Count == 0) return;
+
+            int count = _availableShips.Count;
+            _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            RefreshVesselPicker();
+        }
+
+        void HandleVesselConfirmRequested()
+        {
+            if (_vesselConfirmed) return;
+            if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
+
+            _vesselConfirmed = true;
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            // Re-assert the pick: the local player's NetDefaultVesselType is owner-written and
+            // this is the moment the pilot actually committed to it.
+            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            RefreshVesselPicker();
+            RefreshStartAvailability();
+        }
+
+        /// <summary>
+        /// The ONE place Start's availability is decided, so the weekly-challenge lock and the
+        /// Arena's vessel gate cannot disagree about it: both conditions are read here, and every
+        /// path that could change either calls this rather than the panel directly.
+        /// </summary>
+        void RefreshStartAvailability()
+        {
+            if (!_activePanel) return;
+
+            if (RequiresVesselConfirmation && !_vesselConfirmed)
+            {
+                _activePanel.SetStartAvailable(false, "SELECT A VESSEL");
+                return;
+            }
+
+            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
+            // dead, but everything else the window shows (the objective, this week's mode, and the
+            // leaderboard the button beside it opens) is still worth reading. Closing the card
+            // outright, which is what it used to do, made the board unreachable between runs.
+            var service = WeeklyChallengeService.Instance;
+            bool canStart = !_weeklyChallengeLocked || service == null || service.CanAttempt;
+
+            // Deliberately NO countdown in the reason. It is written once, when the card opens,
+            // and a modal can sit open for minutes - a ticking value that does not tick is worse
+            // than no value. The card in the grid behind this one already counts down.
+            _activePanel.SetStartAvailable(canStart,
+                canStart ? null
+                : service != null && service.CompletedThisWeek
+                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
+                    : "PLAYED TODAY - COME BACK TOMORROW");
         }
 
         #endregion
@@ -1889,6 +1989,7 @@ namespace CosmicShore.UI
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _vesselConfirmed = false;
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -1923,6 +2024,14 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
                     "[ArcadeConfigModal] Start refused - this week's challenge attempt is spent.");
+                return;
+            }
+
+            // Same shape for the Arena's vessel gate: the disabled button is not the whole gate.
+            if (RequiresVesselConfirmation && !_vesselConfirmed)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ArcadeConfigModal] Start refused - no vessel confirmed yet.");
                 return;
             }
 
@@ -2075,21 +2184,7 @@ namespace CosmicShore.UI
             _activePanel.SetAddAIAvailable(!weekly);
             _activePanel.SetLeaderboardAvailable(weekly);
 
-            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
-            // dead, but everything else the window shows (the objective, this week's mode, and the
-            // leaderboard the button beside it opens) is still worth reading. Closing the card
-            // outright, which is what it used to do, made the board unreachable between runs.
-            var service = WeeklyChallengeService.Instance;
-            bool canStart = !weekly || service == null || service.CanAttempt;
-
-            // Deliberately NO countdown in the reason. It is written once, when the card opens,
-            // and a modal can sit open for minutes - a ticking value that does not tick is worse
-            // than no value. The card in the grid behind this one already counts down.
-            _activePanel.SetStartAvailable(canStart,
-                canStart ? null
-                : service != null && service.CompletedThisWeek
-                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
-                    : "PLAYED TODAY - COME BACK TOMORROW");
+            RefreshStartAvailability();
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
@@ -2306,6 +2401,7 @@ namespace CosmicShore.UI
             }
 
             _selectedGame = game;
+            _vesselConfirmed = false;
 
             config.ResetState();
             config.SelectedGame = game;
@@ -2319,20 +2415,33 @@ namespace CosmicShore.UI
             InitializeGameMetaView(game);
             InitializeConfigControls(game);
             InitializeDefaultShipFromAvailable();
+            RefreshVesselPicker();
+            RefreshStartAvailability();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
-            // Move the APP SHELL to the arcade screen first, so the card the host opened is
-            // drawn on the screen it belongs to rather than over whatever the guest was looking
-            // at - and so closing the modal leaves them there instead of somewhere unrelated.
+            // Move the APP SHELL to the screen the card belongs to first, so the card the host
+            // opened is drawn on it rather than over whatever the guest was looking at - and so
+            // closing the modal leaves them there instead of somewhere unrelated. An Arena card
+            // sits over the Arena grid; anything else over the arcade screen.
             // ScreenSwitcher.NavigateTo refuses ARK for a guest on purpose (no browsing the
             // arcade in someone else's party); FollowHostToArcadeScreen is the host-driven
             // entry point past that guard, and nothing on the guest's own UI calls it.
-            if (Switcher) Switcher.FollowHostToArcadeScreen();
+            if (Switcher)
+            {
+                if (_activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
+                else                                  Switcher.FollowHostToArcadeScreen();
+            }
 
-            Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
-            ModalWindowIn();
+            // A panel with a window of its own (Arena, Maelstrom) opened it in SelectLaunchPanel;
+            // this window is only the surface for the panels that are its children - the same
+            // gate OpenFor applies on the host.
+            if (!_activePanel || !_activePanel.HostModal)
+            {
+                Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
+                ModalWindowIn();
+            }
 
             // The panel SelectLaunchPanel brought up is the whole surface and is already showing -
             // the host has committed PC + DC + intensity, and there is no second screen to move to.
@@ -2357,8 +2466,17 @@ namespace CosmicShore.UI
             if (!UsesLaunchPanels) return;
 
             _isClientMode = false;
+            _vesselConfirmed = false;
             DespawnAllChips();
+
+            // A panel in its own window is closed through the panel, exactly as the host's close
+            // does it - ModalWindowOut below only reaches THIS window. Under the same _closing
+            // guard, because that window reports its close back as OnHostModalClosed and a guest
+            // must not answer it with a second close broadcast.
+            _closing = true;
+            if (_activePanel) _activePanel.Hide();
             ModalWindowOut();
+            _closing = false;
         }
 
         /// <summary>

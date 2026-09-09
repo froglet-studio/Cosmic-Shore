@@ -101,9 +101,9 @@ namespace CosmicShore.Editor
                 "  • Hijack: prisms a DOMAIN must STEAL to win (race to N) - ownership flips, " +
                 "not destruction, so the same prism can pay both sides all match. Default " +
                 EndConditionOverridesSO.DefaultHijackStealTarget + ".\n" +
-                "  \u2022 Drumfire: match length in SECONDS, not a target - the mode ends on the " +
-                "clock and is scored on volume destroyed, so its rule never reaches an " +
-                "objective. Default " + EndConditionOverridesSO.DefaultDrumfireSeconds + ".",
+                "  • Tollway: TOLLS a DOMAIN needs to win (race to N) - a toll is any ball " +
+                "threading a ring one of your pilots planted, whoever's ball it was, default " +
+                EndConditionOverridesSO.DefaultTollwayTollTarget + ".",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -125,7 +125,7 @@ namespace CosmicShore.Editor
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
-            int dr  = Mathf.Max(0, EditorGUILayout.IntField("Drumfire - Match Seconds", _config.drumfireSeconds));
+            int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -144,7 +144,7 @@ namespace CosmicShore.Editor
                     _config.switchbackGateTarget = sw;
                     _config.breakwaterStationTarget = bw;
                     _config.hijackStealTarget = hj;
-                    _config.drumfireSeconds = dr;
+                    _config.tollwayTollTarget = tw;
                 });
 
             EditorGUILayout.Space();
@@ -165,7 +165,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
-            EditorGUILayout.LabelField("Drumfire", (dr > 0 ? dr.ToString() : EndConditionOverridesSO.DefaultDrumfireSeconds + " (default)") + " seconds");
+            EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -210,7 +210,7 @@ namespace CosmicShore.Editor
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
-                   "Drumfire: " + Fmt(_config.drumfireSecondsBuild, "default " + EndConditionOverridesSO.DefaultDrumfireSeconds) + " seconds";
+                   "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

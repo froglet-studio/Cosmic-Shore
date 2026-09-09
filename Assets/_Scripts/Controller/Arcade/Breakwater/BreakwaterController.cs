@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Scoring")]
         [Tooltip("Drag BreakwaterScoringRule.asset - the per-mode scoring strategy (end condition, " +
-                 "scores, results). A second ASSET of SwitchbackScoringRuleSO, not a second script: " +
+                 "scores, results). A second ASSET of GateRaceScoringRuleSO, not a second script: " +
                  "it reads the metric and GameDataSO.SwitchTargetCount and already folds a domain " +
                  "by its BEST pilot, which is exactly this mode's rule too.")]
         [SerializeField] ScoringRuleSO rule;
@@ -659,7 +659,11 @@ namespace CosmicShore.Gameplay
                 var go = new GameObject($"Station_{i + 1:00}");
                 go.transform.SetParent(root, false);
                 var ring = go.AddComponent<RaceGateRing>();
-                ring.Build(i, course[i].Position, course[i].Axis, course[i].PortRadius,
+                // RaceGate, not a Breakwater type: bleeding-edge's gate-race extraction settled
+                // the shared-struct question the other way from this branch's first cut, and
+                // theirs merged first. A station's port radius IS the ring's mouth, so the
+                // conversion is total and lossless.
+                ring.Build(i, new RaceGate(course[i].Position, course[i].Axis, course[i].PortRadius),
                            theme, ringBloomSeconds);
                 _rings.Add(ring);
             }

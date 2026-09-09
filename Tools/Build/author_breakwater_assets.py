@@ -20,7 +20,7 @@ written.
 WHAT THIS AUTHORS
 
   - .cs.meta for the seven new Breakwater scripts, plus the Breakwater/ folder's own .meta
-  - the scoring rule: a SECOND ASSET on the EXISTING SwitchbackScoringRuleSO. A station is a switch
+  - the scoring rule: a SECOND ASSET on the EXISTING GateRaceScoringRuleSO. A station is a switch
     threaded in order - the same fact - so metric 9 (SwitchesThreaded), BestByDomain, the goal-stack
     row and the comeback source are all reused verbatim. Zero new scoring code.
   - four CellConfigDataSO on an IntensityWise ladder, with PhaseThresholds IMPORTED from
@@ -282,7 +282,7 @@ EXISTING = {
     "CellConfigDataSO":         "01f934d50526431a9392a6ceca1dc33d",
     "SpawnProfileSO":           "e8d8aa5d835249798a256e18f2f7d912",
     # the scoring rule SCRIPT is Switchback's - a second asset, not a second class
-    "SwitchbackScoringRuleSO":  "349cc0c9402590262de23356775d43cc",
+    "GateRaceScoringRuleSO":   "349cc0c9402590262de23356775d43cc",
     # donor scene wiring to swap out
     "SalvoController":          "b406a35c42d10f9370f84601bf14c5c1",
     "SalvoPrismTurnMonitor":    "52fe72c1598aa36a548373e88c0ac2ca",
@@ -454,7 +454,7 @@ emit(BREAKWATER_DOC + ".meta",
      f"  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
 
-# ══ 2. Scoring rule: a SECOND ASSET on SwitchbackScoringRuleSO ═══════════════════════════════
+# ══ 2. Scoring rule: a SECOND ASSET on GateRaceScoringRuleSO ════════════════════════════════
 #
 # metric 9 = ScoringMetric.SwitchesThreaded, read from the enum. That class already reads its metric
 # plus GameDataSO.SwitchTargetCount and already overrides DomainValue -> BestByDomain, which is
@@ -462,16 +462,16 @@ emit(BREAKWATER_DOC + ".meta",
 # two-pilot domain twice the course. golfRules 1 for the same reason Switchback's is: the winning
 # domain's pilots carry a finish time and everyone else a sentinel, so lower is better.
 #
-# unitNoun is what the SCOREBOARD and the defeat reveal call one unit of this course. The rule is
-# shared with Switchback, whose units are GATES, and a Breakwater course is made of STATIONS - so
-# the noun is authored here rather than hardcoded in a rule two modes read. It is authored
-# EXPLICITLY and not left to the C# initializer: Unity fills a key an asset does not carry with the
-# TYPE default (an empty string), never with the field initializer, which is the same trap the
-# SpawnProfileSO block below guards against. (SwitchbackScoringRule.asset predates the field and is
-# deliberately NOT rewritten here - the rule's reader treats an absent noun as "Gate".)
+# NO unitNoun, and that is a known cost rather than a choice. This branch added one to the rule so
+# a Breakwater readout could say STATIONS where Switchback says GATES; bleeding-edge's gate-race
+# extraction rewrote the same script (SwitchbackScoringRuleSO -> GateRaceScoringRuleSO) without it
+# and hardcoded "Gates", and theirs merged first. Authoring the key anyway would author nothing -
+# Unity silently drops a key it cannot bind on the first re-save - so the field is dropped here and
+# Breakwater's scoreboard and defeat reveal read GATES until the platform adoption restores a noun.
+# See BREAKWATER.md, "Adopting the gate-race platform".
 emit("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset",
-     HEADER_FOR(EXISTING["SwitchbackScoringRuleSO"], "BreakwaterScoringRule") +
-     f"  unitNoun: Station\n  metric: {METRIC_SWITCHES_THREADED}\n  golfRules: 1\n")
+     HEADER_FOR(EXISTING["GateRaceScoringRuleSO"], "BreakwaterScoringRule") +
+     f"  metric: {METRIC_SWITCHES_THREADED}\n  golfRules: 1\n")
 emit("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset.meta",
      asset_meta(G_ASSET["BreakwaterScoringRule"]))
 
@@ -581,6 +581,7 @@ emit(f"{CELL_DIR}/Breakwater Spawn Profile.asset",
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
   FloraPopulationScale: 1
+  FloraPrismScale: 1
   FloraPlantBudgetScale: 1
   SupportedFloras: []
   FaunaExcludeLocalDomain: 0
@@ -1174,7 +1175,7 @@ KEY_CHECKS = [
      ["Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs",
       "Assets/_Scripts/ScriptableObjects/SO_Game.cs"]),
     ("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset",
-     ["Assets/_Scripts/Controller/Arcade/Scoring/SwitchbackScoringRuleSO.cs",
+     ["Assets/_Scripts/Controller/Arcade/Scoring/GateRaceScoringRuleSO.cs",
       "Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs"]),
     (f"{CELL_DIR}/Breakwater Spawn Profile.asset",
      ["Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs"]),

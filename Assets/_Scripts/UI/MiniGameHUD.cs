@@ -400,15 +400,22 @@ namespace CosmicShore.UI
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
                 case GameModes.Switchback:
-                    // The arrow is Switchback's ONLY answer to "which of these identical rings
+                    // The arrow is a gate race's ONLY answer to "which of these identical rings
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
                     // shared world says whose turn a ring is.
-                    return CreateProviderComponent<SwitchbackObjectiveProvider>("ObjectiveProvider_Switchback");
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Headlong:
+                    // Same provider: it asks whichever GateRaceController is in the scene, and on
+                    // a lapped circuit "your next gate" is the only thing that distinguishes two
+                    // pilots on the same ring at the same moment.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Headlong");
+                case GameModes.Tollway:
+                    return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
                 case GameModes.Breakwater:
-                    // Same argument as Switchback and then some: the stations are identical to
-                    // each other AND identical to every domain, so the arrow is the only thing
-                    // that says which breakwater is yours next. Its own provider rather than
-                    // Switchback's, because that one is hard-bound to SwitchbackController.
+                    // ITS OWN provider, and that is the open item rather than the design:
+                    // RaceGateObjectiveProvider asks whichever GateRaceController is in the
+                    // scene, and BreakwaterController is not one yet. It should be - see
+                    // BREAKWATER.md, "Adopting the gate-race platform".
                     return CreateProviderComponent<BreakwaterObjectiveProvider>("ObjectiveProvider_Breakwater");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the

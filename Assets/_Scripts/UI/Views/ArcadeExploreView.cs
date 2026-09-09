@@ -28,8 +28,9 @@ namespace CosmicShore.UI
         // every runtime listener behind it (SelectGame among them). See EnsureGridCapacity.
         [Inject] Container _container;
 
-        [Tooltip("Roster this grid draws INSTEAD of the injected arcade one. Leave empty for the " +
-                 "Arcade.\n\nThis is how a second card grid exists without a second implementation " +
+        [Tooltip("Roster this grid draws INSTEAD of the injected MASTER list (every card, which the " +
+                 "client-side mode lookup needs). The Arcade names ArcadeGames, the Arena " +
+                 "ArenaGames; empty draws everything.\n\nThis is how a second card grid exists without a second implementation " +
                  "of one: the Arena is the same view, the same cards, the same launch modal and the " +
                  "same config - pointed at its own SO_GameList. A parallel screen would have to " +
                  "re-derive progression locks, favourites, party picks and the daily challenge, and " +

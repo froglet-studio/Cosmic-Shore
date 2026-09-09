@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="StartMonitor"/> from <see cref="EndConditionOverridesSO"/> (FrogletTools &gt;
     /// Game Modes &gt; End Game Conditions; never a per-scene field), synced to every client via
     /// NetworkVariable, and published to <see cref="GameDataSO.SwitchTargetCount"/>. Structural
-    /// clone of <see cref="SwitchbackGateTurnMonitor"/> reading its own overrides key and its own
+    /// clone of <see cref="RaceGateTurnMonitor"/> reading its own overrides key and its own
     /// controller.
     ///
     /// <para>It is a SEPARATE CLASS rather than a reuse, and that is a measured conclusion rather
@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
     /// of the objective row - m:ss formatting, no glyph, no target - over a number that is
     /// neither seconds nor a time. This mode has no clock at all; it ends when a domain's lead
     /// runner threads the last station. An override returning the base default would also be the
-    /// only structural difference from <see cref="SwitchbackGateTurnMonitor"/>, which reads as a
+    /// only structural difference from <see cref="RaceGateTurnMonitor"/>, which reads as a
     /// behavioural divergence between two monitors that are deliberately identical.</para>
     /// </summary>
     public class BreakwaterStationTurnMonitor : TurnMonitor

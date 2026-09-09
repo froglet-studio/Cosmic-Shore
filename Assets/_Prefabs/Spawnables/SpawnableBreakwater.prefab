@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 04ec80260b189f66d27e39f3a68a52ee, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  seed: 48
+  seed: 50
   domain: 3
   children: []
   leafPrefab: {fileID: 0}

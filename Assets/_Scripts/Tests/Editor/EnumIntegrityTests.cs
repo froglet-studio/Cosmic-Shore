@@ -140,15 +140,17 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 47 = IDs 0..48 with 7 and 31 deliberately skipped (retired Freestyle / never
-            // assigned — see GameModes.cs). Deliberately a hard-coded number rather than one
-            // derived from the enum: the whole point is that ADDING a mode fails here, so a
-            // human confirms the addition was intended and that its ID reuses neither 7 nor 31.
-            // It has drifted six times now (33 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47), so
-            // GameModes.cs carries a pointer back to this test and the next mode can update it
-            // at the source.
+            // 48 = IDs 0..50 with 7, 31 and 47 deliberately skipped (retired Freestyle /
+            // never assigned / retired Drumfire — see GameModes.cs). Deliberately a hard-coded
+            // number rather than one derived from the enum: the whole point is that ADDING a
+            // mode fails here, so a human confirms the addition was intended and that its ID
+            // reuses none of 7, 31 or 47.
+            // It has drifted nine times now (33 -> 42 -> 43 -> 44 -> 45 -> 46 -> 47 -> 46 ->
+            // 47 -> 48),
+            // so GameModes.cs carries a pointer back to this test and the next mode can update
+            // it at the source.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(47, values.Length,
+            Assert.AreEqual(48, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -171,16 +173,19 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.SkimRace, 33)]
         [TestCase(GameModes.Joust, 34)]
         [TestCase(GameModes.Scurry, 35)]
-        // The four newest modes are pinned deliberately, not for completeness: Switchback and
+        // The newest modes are pinned deliberately, not for completeness: Switchback and
         // Drumfire were authored on PARALLEL branches, both claimed 45, and git merged the two
         // additions cleanly into a file that then carried 45 twice. The member that lost its
         // explicit value in that merge took the next IMPLICIT one - a shift no reflection test
         // can see, because the compiler bakes the value in and keeps no record that it was
         // ever written down. Pinning the tail of the enum is the only thing that catches it.
+        // It happened a SECOND time while Breakwater was in flight: Tollway took 48 and Headlong
+        // 49 on bleeding-edge, so Breakwater moved to 50 at merge. 47 is Drumfire's grave.
         [TestCase(GameModes.Switchback, 45)]
         [TestCase(GameModes.Hijack, 46)]
-        [TestCase(GameModes.Drumfire, 47)]
-        [TestCase(GameModes.Breakwater, 48)]
+        [TestCase(GameModes.Tollway, 48)]
+        [TestCase(GameModes.Headlong, 49)]
+        [TestCase(GameModes.Breakwater, 50)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

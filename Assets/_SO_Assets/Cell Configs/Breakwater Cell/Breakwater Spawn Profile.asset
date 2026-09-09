@@ -17,6 +17,7 @@ MonoBehaviour:
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
   FloraPopulationScale: 1
+  FloraPrismScale: 1
   FloraPlantBudgetScale: 1
   SupportedFloras: []
   FaunaExcludeLocalDomain: 0
