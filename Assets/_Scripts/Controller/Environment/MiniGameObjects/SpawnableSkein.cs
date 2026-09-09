@@ -132,8 +132,13 @@ namespace CosmicShore.Gameplay
             }
             _gates.AddRange(build.Gates);
 
-            CSDebug.Log($"[Skein] Cable seed {cable}: {_rails.Count} rails, {_cachedLays.Count} prisms, " +
-                        $"{build.Gates.Count} rings, N={strandCount}.");
+            // A CHANNEL, not a plain Log: this is bring-up telemetry for a finished generator, and
+            // one line per arena build is exactly what CLAUDE.md moves off CSDebug.Log. It is kept
+            // rather than deleted because it is the reading you hold against skein_budget.py's own
+            // ladder table to confirm the runtime laid the cable the model proved.
+            CSDebug.LogVerbose(CSLogChannel.SkeinCable,
+                $"[Skein] Cable seed {cable}: {_rails.Count} rails, {_cachedLays.Count} prisms, " +
+                $"{build.Gates.Count} rings, N={strandCount}.");
         }
 
         /// <summary>

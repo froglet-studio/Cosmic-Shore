@@ -87,12 +87,20 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Retry window when <see cref="courseBuildTimeoutSeconds"/> is 0.
         ///
-        /// <para>The sentinel is not a nicety: the three gate-race scenes were serialized before
-        /// that field existed, and this project has been bitten by a new serialized field reading
-        /// <c>default(float)</c> on an already-serialized component rather than its initializer
-        /// (see <c>Cell.PhaseTickIntervalSeconds</c> and <c>Cell.retireSuctionSeconds</c>). An
-        /// initializer here would therefore risk shipping a 0-second window - one attempt, which
-        /// is precisely the bug the retry exists to fix, silently restored.</para>
+        /// <para><b>Why a sentinel and not just an initializer.</b> The two cases are not the
+        /// same and it is worth being exact, because getting it backwards costs an afternoon.
+        /// A field ABSENT from an asset's YAML keeps its C# initializer - proven here by
+        /// <c>GunVesselTransformer</c>, whose nine ride-tuning fields appear in no prefab and
+        /// whose play-tested behaviour depends on values like <c>throttleRestPosition = 0.5f</c>.
+        /// A field PRESENT with a stale value overrides the initializer, which is why
+        /// <c>Cell.retireSuctionSeconds</c> carries a 0-sentinel: it is serialized as 0 in twelve
+        /// scenes. (<c>Cell.PhaseTickIntervalSeconds</c> is a <c>const</c> and is not evidence
+        /// either way.)</para>
+        ///
+        /// <para>So the initializer alone would work TODAY - the field is in no scene - and stops
+        /// working the first time anyone opens a gate-race scene and saves it, because Unity then
+        /// writes <c>courseBuildTimeoutSeconds: 0</c> and that 0 wins forever after. A one-attempt
+        /// window is precisely the bug the retry exists to fix, restored silently by a save.</para>
         ///
         /// <para>6 s against a known ~1 s wait (<c>InitDelayMs</c>): generous, because the cost
         /// of waiting too long is a slightly later countdown and the cost of waiting too little

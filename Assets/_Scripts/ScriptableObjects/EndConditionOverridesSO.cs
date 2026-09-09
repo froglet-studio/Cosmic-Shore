@@ -308,6 +308,7 @@ namespace CosmicShore.ScriptableObjects
         /// SkeinRingTurnMonitor for the target and by SkeinController for how many to lay.</summary>
         public int GetSkeinRingTarget() =>
             skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget;
+
         /// <summary>
         /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by

@@ -166,7 +166,7 @@ namespace CosmicShore.Data
 
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 47) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 48) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

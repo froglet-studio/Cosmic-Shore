@@ -449,6 +449,12 @@ namespace CosmicShore.Gameplay
                         $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
         }
 
+        /// <summary>Latched once the scene is known to have NO start-line provider, so the
+        /// lookup below costs one search per SCENE rather than one per spawn. Deliberately not
+        /// latched when a provider exists and merely declines: that is a "not yet", and the next
+        /// spawn should ask again.</summary>
+        bool _noModeSpawnLine;
+
         /// <summary>
         /// Ask the scene's mode controller for a start line, and install it if it has one.
         ///
@@ -456,12 +462,6 @@ namespace CosmicShore.Gameplay
         /// objects are included for the same reason the turn monitor's lookup does: a controller
         /// that has not been enabled yet is still the scene's controller.</para>
         /// </summary>
-        /// <summary>Latched once the scene is known to have NO start-line provider, so the
-        /// lookup below costs one search per SCENE rather than one per spawn. Deliberately not
-        /// latched when a provider exists and merely declines: that is a "not yet", and the next
-        /// spawn should ask again.</summary>
-        bool _noModeSpawnLine;
-
         bool TryInstallModeSpawnLine()
         {
             if (_noModeSpawnLine) return false;
