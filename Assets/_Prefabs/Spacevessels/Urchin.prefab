@@ -4373,6 +4373,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.02481143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.105
       objectReference: {fileID: 0}
@@ -4449,6 +4464,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: VesselJet (JetTopRight)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.02481143
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
@@ -4531,6 +4561,21 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.02481143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.127
       objectReference: {fileID: 0}
@@ -4607,6 +4652,21 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: VesselJet (JetBottomRight)
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.1145143
+      objectReference: {fileID: 0}
+    - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
+        type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.02481143
       objectReference: {fileID: 0}
     - target: {fileID: 1007919433217068805, guid: 55ceca573be662744948afc745f8840b,
         type: 3}

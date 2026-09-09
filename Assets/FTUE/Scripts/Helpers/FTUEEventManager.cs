@@ -16,14 +16,6 @@ namespace CosmicShore.Core
         public static void RaiseNextPressed() => OnNextPressed?.Invoke();
 
         /// <summary>
-        /// Fired when a Call-To-Action card is selected in the arcade menu.
-        /// Carries the target ID so subscribers can react accordingly.
-        /// </summary>
-        public static event Action<CallToActionTargetType> OnCTAClicked;
-        public static void RaiseCTAClicked(CallToActionTargetType id)
-            => OnCTAClicked?.Invoke(id);
-        
-        /// <summary>
         /// Fired when the player enters a game mode.
         /// Is only fired if the user has not completed the FTUE.
         /// </summary>
