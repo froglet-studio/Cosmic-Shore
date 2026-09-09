@@ -355,6 +355,7 @@ namespace CosmicShore.Gameplay
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     IsCurrent = isCurrent,
                     Apply = () => SelectCell(capturedCell, capturedConfig),
+                    BuildPreview = parent => BuildShellPreview(capturedConfig, parent),
                 });
             }
         }
@@ -408,6 +409,27 @@ namespace CosmicShore.Gameplay
             else CSDebug.LogWarning($"[CellSelector] {prefab.name} generated no points - " +
                                     $"{DisplayNameOf(config)} shows as an empty slot.");
             return built;
+        }
+
+        /// <summary>
+        /// A scale model of <paramref name="config"/> for the app shell's preview window - the
+        /// same model the matrix station shows, so a world looks the same whichever surface the
+        /// player chose it from.
+        ///
+        /// <para>Two things a STATION does are deliberately left off. There is no idle spin,
+        /// because the preview camera already orbits and the two would compose into a tumble; and
+        /// there is no bloom-in, because that camera renders one frame the instant it is handed a
+        /// model and measures the model to frame it - against a model still scaled to zero it
+        /// would frame nothing, from far too close.</para>
+        /// </summary>
+        GameObject BuildShellPreview(CellConfigDataSO config, Transform parent)
+        {
+            if (!config || !_def || !parent) return null;
+
+            var miniature = ResolveMiniature(config);
+            if (!miniature.IsValid) return null;
+
+            return ToyFactory.AddMiniatureBody(parent, miniature, Context, $"{config.name} Preview");
         }
 
         GameObject AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature,
