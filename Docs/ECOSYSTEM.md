@@ -4081,15 +4081,23 @@ intensities over two configs would otherwise serve the same arena for 3 and 4 in
 
 ## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
 
+> ⚠ **The forest half of this section is SUPERSEDED by §43** (Sep 2026). Rampage's ladder now
+> scales the forest again — 5.00 / 3.67 / 2.33 / 1.00× the plant count and 1.60 / 1.40 / 1.20 /
+> 1.00× the leaf — because "bigger and easier to hit at intensity 1" is what the mode wanted and
+> the earlier attempt failed for a reason §43 names: it thinned rather than thickened, which just
+> made a smaller arena. The crystal and wildlife columns below are unchanged and still shipped,
+> and `FaunaPopulationScale` (§29.1) is untouched — read §43 for the current forest numbers.
+
 Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
-the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
-intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+the plants of intensity 4). At this pass it no longer touched the forest at all — **every
+intensity grew intensity 4's arena, prism for prism** — and instead moved two things in opposite
+directions:
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
 | wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
-| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+| forest *(at this pass; see §43)* | 9,830 seeded prisms — identical at every intensity | | | |
 
 The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
 capabilities and one general rule came out of it.
