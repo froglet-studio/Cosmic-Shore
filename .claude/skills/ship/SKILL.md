@@ -294,6 +294,27 @@ Walk every changed file against these gates:
   rather than deleting the checks or living with the abort. Also worth asking of any `--check`:
   does it diff against DISK, or only validate its own recipe in memory? Those are very different
   promises and the flag name does not distinguish them.
+  **Sweep the whole family, not just yours** — it is one line and it turns "mine is green" into a
+  tally: `for f in Tools/Build/author_*_assets.py; do printf '%-46s ' "$(basename $f)"; timeout 120
+  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. Measured 2026-09: **7 of 11 are
+  RED**, in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  platform change deleted while the generator that authors it was left untouched. That second
+  class is the one to carry: **a generator that owns an asset's content is a second place every
+  schema change has to land, and it does not fail at the time of the change** — it fails months
+  later, on somebody else's branch, the next time anyone runs it.
+
+- **A LONG branch invalidates its own earlier rounds, and the doc from round 2 is the last place
+  anyone looks.** The rule "a threshold that is a function of X must be re-derived when X moves"
+  is normally about two branches or two authors; on a multi-round branch it is about YOU. Round 3
+  of one branch sized a prism specifically to clear a PhysX sample step at the vessel's then
+  speed, and wrote the derivation up as *"an 8-10% margin"*; round 4 doubled that speed on the
+  user's request and added a launch kick. Nothing failed — no gate covered it, and the round-3
+  prose went on describing a vessel the branch no longer shipped, with the margin actually
+  **negative** (measured: the mode's signature manoeuvre landing 5 times in 6). So at §2, list
+  every constant the branch DERIVED from another, and re-derive each against the values the
+  branch is shipping NOW. Then close it the way it should have been closed: put the derivation in
+  the offline model so it recomputes, and add a mirror gate that re-reads the source values out
+  of the shipped assets — a transcription is only true on the day it is made.
 
 - **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
   The absence-claim rule below covers comments that rot. This is the variant that was never true
