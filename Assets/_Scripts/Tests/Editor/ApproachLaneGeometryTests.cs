@@ -5,31 +5,34 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The approach-lane contract, held against Drumfire's own shipped numbers.
+    /// The approach-lane contract, held against a WORKED EXAMPLE - the numbers Drumfire shipped
+    /// before that mode was removed (2026-09).
     ///
-    /// <para>Every assertion here is a property the MODE depends on, not a restatement of the
-    /// formula: a lane must miss the drum (or a pilot flying their crystals flies into it), it
-    /// must pass the drum somewhere in the MIDDLE of its crystal band (or the aiming lesson is
-    /// only taught on the way in), the last crystal must still be inside the membrane, lanes must
-    /// be one-per-spawn-slot, and growing the roster must not disturb the lanes already laid.</para>
+    /// <para>Every assertion here is a property any lane mode depends on, not a restatement of the
+    /// formula: a lane must miss the central target (or a pilot flying their own crystals flies
+    /// into it), it must pass that target somewhere in the MIDDLE of its crystal band (or the shots
+    /// on the way in are worth many times the ones on the way out - a conic blast's yield falls as
+    /// the square of its range), the last crystal must still be inside the membrane, lanes must be
+    /// one-per-spawn-slot, and growing the roster must not disturb the lanes already laid.</para>
     ///
-    /// <para>The numbers are the ones <c>Tools/Build/author_drumfire_assets.py</c> writes onto
-    /// <c>MinigameDrumfire</c>'s crystal manager and <c>Tools/Build/drumfire_arena.py</c> measures
-    /// the arena against. If a playtest retunes them there, this suite is where the retune is
-    /// checked for the things a measurement cannot see.</para>
+    /// <para>The constants below are that retired mode's, kept deliberately: they are a set of
+    /// numbers a whole arena was once measured against, so they exercise the geometry at realistic
+    /// magnitudes rather than at invented ones. <see cref="ApproachLaneGeometry"/> is live platform
+    /// code with no consumer today; this suite is what a future lane mode inherits, and the mode
+    /// that adopts it should re-point these constants at its own arena.</para>
     /// </summary>
     public class ApproachLaneGeometryTests
     {
-        // ── Drumfire's shipped lane band (mirrors author_drumfire_assets.py) ──
+        // ── The worked example's lane band (Drumfire's shipped numbers) ──
         const float RingRadius = 1120f;
         const float Offset = 420f;
         const float Lead = 640f;
         const float Length = 800f;
 
-        // The drum, from SpawnableDrum's serialized defaults.
-        const float DrumRadius = 320f;
+        // The central target the lanes must miss (the retired drum's serialized radius).
+        const float TargetRadius = 320f;
 
-        // Cell membrane, from the Drumfire cell's membrane prefab (matches drumfire_arena.py).
+        // Cell membrane, from that arena's membrane prefab.
         const float MembraneRadius = 1200f;
 
         static readonly Vector3 Center = new(12f, -7f, 4f);
@@ -62,22 +65,22 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Lane_ClearsTheDrum([Values(1, 2, 3, 4, 6)] int lanes)
+        public void Lane_ClearsTheCentralTarget([Values(1, 2, 3, 4, 6)] int lanes)
         {
-            // If the lane's closest approach were inside the drum, a pilot flying their own
+            // If the lane's closest approach were inside the target, a pilot flying their own
             // crystals would fly into the target - the one thing the standoff exists to prevent.
             for (int lane = 0; lane < lanes; lane++)
-                Assert.Greater(ClosestApproach(lane, lanes), DrumRadius,
-                    $"Lane {lane} of {lanes} runs through the drum.");
+                Assert.Greater(ClosestApproach(lane, lanes), TargetRadius,
+                    $"Lane {lane} of {lanes} runs through the central target.");
         }
 
         [Test]
         public void Lane_StaysCloseEnoughToBeWorthShootingAt()
         {
-            // The other side of the same trade: a standoff far outside the drum turns every shot
+            // The other side of the same trade: a standoff far outside the target turns every shot
             // into a long-range poke, and blast yield falls as the square of range.
-            Assert.Less(ClosestApproach(0, 4), DrumRadius * 2f,
-                "The lane stands so far off the drum that a full-energy blast barely reaches it.");
+            Assert.Less(ClosestApproach(0, 4), TargetRadius * 2f,
+                "The lane stands so far off the target that a full-energy blast barely reaches it.");
         }
 
         [Test]
