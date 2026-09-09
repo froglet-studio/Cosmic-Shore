@@ -28,6 +28,5 @@ MonoBehaviour:
   MaxPlayersAllowed: 1
   MinIntensity: 2
   MaxIntensity: 2
-  CallToActionTargetType: 436
   ViewUserAction: 0
   PlayUserAction: 0

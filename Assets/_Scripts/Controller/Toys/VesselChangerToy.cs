@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     /// freestyle control once the swap completes (mirroring
     /// <c>MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync</c>).
     /// </summary>
-    public sealed class VesselChangerToy : MatrixToy
+    public sealed class VesselChangerToy : MatrixToy, IToyShellSurface
     {
         const int RestoreDelayMs = 600;
 
@@ -33,6 +33,11 @@ namespace CosmicShore.Gameplay
         readonly List<VesselClassType> _offered = new();
         readonly List<Transform> _stationBodies = new();
         readonly List<VesselClassType> _emblemScratch = new();
+
+        // Its own list, never _offered or _emblemScratch: the shell can be asked at any moment,
+        // including while the matrix is open (whose list is index-aligned with live stations) or
+        // between two emblem slot builds.
+        readonly List<VesselClassType> _shellScratch = new();
 
         Domains _lastDomain;
         bool _hasDomain;
@@ -217,6 +222,55 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[VesselChanger] → {target}.");
         }
 
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        // A swap in flight has no settled answer to "what are you flying", so the card greys out
+        // rather than offering a hull against a hull that no longer exists.
+        bool IToyShellSurface.ShellAvailable
+        {
+            get
+            {
+                var init = Context?.VesselInitializer;
+                return init != null && !init.IsSwapping;
+            }
+        }
+
+        /// <summary>
+        /// The whole collection, the hull you fly flagged as current - not the matrix's
+        /// "everything except what you fly". The matrix says that by having no station for your
+        /// own ship; a flat list has to name it, and dropping the row would leave the player
+        /// unable to see which hull they are on.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            bool hasCurrent = TryGetCurrentVessel(out var current);
+            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _shellScratch, exclude: null);
+
+            Color accent = PreviewColor();
+
+            foreach (var vessel in _shellScratch)
+            {
+                var captured = vessel;
+                bool isCurrent = hasCurrent && vessel == current;
+
+                // No Apply on the hull you are already flying: that row is there to be READ.
+                System.Action apply = null;
+                if (!isCurrent) apply = () => SelectVessel(captured);
+
+                into.Add(new ToyShellOption
+                {
+                    Label = vessel.ToString(),
+                    Detail = isCurrent ? "flying" : "",
+                    Accent = accent,
+                    IsCurrent = isCurrent,
+                    Apply = apply,
+                    BuildPreview = parent => BuildShellPreview(captured, parent),
+                });
+            }
+        }
+
         // ── Domain recolour ──────────────────────────────────────────────────
 
         // Re-tint every mini ship the instant the player's domain changes (via the domain-changer
@@ -245,6 +299,26 @@ namespace CosmicShore.Gameplay
         /// different hull"), falling back to the toy's accent when the theme/player isn't available.
         /// </summary>
         Color PreviewColor() => ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
+
+        /// <summary>
+        /// The hull for the app shell's preview window - the same LIVE model the station shows, in
+        /// the ship's own materials, so a name in a list becomes a ship.
+        ///
+        /// <para>It is marked for the vessel vision band exactly as the station is, and that costs
+        /// nothing here: the preview camera sits about three radii off the model, which is far
+        /// inside the band's near cutoff, so the mark resolves to zero and what renders is the
+        /// hull itself. Which is the right answer for a picture whose whole job is "what does this
+        /// ship look like".</para>
+        /// </summary>
+        GameObject BuildShellPreview(VesselClassType vessel, Transform parent)
+        {
+            if (!parent) return null;
+            if (!ToyVesselRoster.TryBuildLiveHull(Context, vessel, StationRadius, out var model))
+                return null;
+
+            model.transform.SetParent(parent, false);
+            return model;
+        }
 
         async UniTaskVoid RestoreControlAfterSwap(CancellationToken ct)
         {

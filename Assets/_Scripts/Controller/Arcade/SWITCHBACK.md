@@ -23,12 +23,20 @@ that its 110°/s turn rate could not otherwise make, **boost** down the straight
   `MinigameRampage.unity` (whose AI roster is already four Dolphins and whose spawn ring is
   already cell-relative), then pointed at the **Skim Race cell**
 - **GameMode enum**: `GameModes.Switchback = 45`
-- **Controller**: `SwitchbackController : MultiplayerDomainGamesController` — 1 round / 1 turn,
+- **Platform**: `GateRaceController` (`Controller/Arcade/Racing/`) — the shared gate-race base
+  this mode was extracted into when Headlong landed: course broadcast, ring spawning, crossing
+  detection, the owner-detects/server-records round trip, AI steering and the final-score
+  snapshot all live there, and a subclass supplies its NAME, its COURSE and whether that course
+  WRAPS. Switchback is the OPEN-chain case (`LapsPerRace = 1`); Headlong is the lapped one.
+  `SwitchThreadScoring`, `RaceGateRing`, `RaceGateTurnMonitor` and `RaceGateObjectiveProvider`
+  moved with it — same files, same guids, renamed off the mode.
+- **Controller**: `SwitchbackController : GateRaceController` — 1 round / 1 turn,
   `HasEndGame = false`, server winner detection in `OnTurnEndedCustom`, snapshot
   `SyncFinalScores_ClientRpc`; plus the course build, its replication, and the crossing loop
-- **Scoring**: `SwitchbackScoringRule.asset` (`SwitchbackScoringRuleSO`) — metric
+- **Scoring**: `SwitchbackScoringRule.asset` (`GateRaceScoringRuleSO`, shared with
+  Headlong) — metric
   `ScoringMetric.SwitchesThreaded` (**9**, new), golf-timed
-- **Turn monitor**: `SwitchbackGateTurnMonitor` — resolves the gate count from
+- **Turn monitor**: `RaceGateTurnMonitor` — resolves the gate count from
   `EndConditionOverridesSO.GetSwitchbackGateTarget()` (default **20**, FrogletTools ▸ Game Modes
   ▸ End Game Conditions — never a per-scene field), syncs via NetworkVariable →
   `GameDataSO.SwitchTargetCount`
@@ -65,7 +73,7 @@ further. Switchback is therefore the first mode to fold a domain by **max**.
 That needed one platform change, and it was made as a **seam rather than four overrides**:
 `ScoringRuleSO.DomainValue(GameDataSO, Domains)` is a new virtual defaulting to
 `ScoringMetrics.SumByDomain` — byte-for-byte the old behaviour for every existing mode — and
-`SwitchbackScoringRuleSO` overrides it to the new `ScoringMetrics.BestByDomain`. Five readers go
+`GateRaceScoringRuleSO` overrides it to the new `ScoringMetrics.BestByDomain`. Five readers go
 through it: `Remaining`, `ResolveWinner`, `ResolvePlacementOrder`, `DomainDelta`, and
 `MultiplayerDomainGamesController.SyncDomainSumsRoutine` (the HUD's own domain boxes).
 
@@ -181,7 +189,7 @@ radius its own crossing test uses, via the one builder every switch in the game 
 
 **Every gate looks the same, on purpose.** Which ring is *yours* next is a per-pilot fact, and the
 platform already has a per-viewer answer: the **objective arrow**
-(`SwitchbackObjectiveProvider`). Repainting the next gate in the pilot's domain colour was the
+(`RaceGateObjectiveProvider`). Repainting the next gate in the pilot's domain colour was the
 obvious alternative and is wrong twice — it spends the reserved domain colour on something that
 grants no domain, and it makes two pilots flying side by side see different worlds.
 
@@ -336,7 +344,7 @@ switchback generator asserts the two match.
 | `GameDataSO` | `SwitchTargetCount` + both resets |
 | `Player` | `ReportSwitchThreaded_ServerRpc` |
 | `ElementalComebackSystem` | `SwitchesThreaded` source (max-folded), default for the mode, direction |
-| `MiniGameHUD` | Switchback → `SwitchbackObjectiveProvider` |
+| `MiniGameHUD` | Switchback and Headlong → `RaceGateObjectiveProvider` |
 | `EndConditionOverridesSO` (+ window + asset) | `switchbackGateTarget` live/build/getter, default 20 |
 | `author_objective_icons.py` | the metric-9 glyph |
 
@@ -524,7 +532,8 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   left edge); the rows do not overlap in a way that matters (spacing −142.08 against 456-tall rows
   holding 202.72-tall cards, so the CARDS never overlap, and the clone is a later sibling anyway,
   so it raycasts first); `GameCard.SetLocked` is symmetric and `_originalBgColor` initialises to
-  `Color.white`; the `CallToActionIndicator` is a 96×96 corner badge with `RaycastTarget: 0`;
+  `Color.white`; (the `CallToActionIndicator` corner badge this line described was retired
+  with the call-to-action surface, 2026-09-08 — `Docs/UI_ARCHITECTURE_AUDIT.md §2.13.1`);
   `MinigameLaunchPanel.Handles` accepts every non-Maelstrom card and is not a `HostModal`, so
   `OpenFor` always calls `ModalWindowIn`; `ArcadeDPadNav` never writes `interactable`; and the
   progression chain cannot single a slot out, since ten of the thirteen roster modes — Switchback

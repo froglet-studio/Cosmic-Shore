@@ -75,6 +75,16 @@ namespace CosmicShore.Core
         CancellationTokenSource _cts;
         bool _navigated;
 
+        /// <summary>
+        /// True once the flow has deliberately stopped on a surface the player must act on
+        /// (the guest-login panel, or username entry). It is what tells a legitimate "waiting
+        /// for a human" apart from a stall, and it is cleared the moment they act - or the
+        /// moment a sign-in lands underneath them.
+        /// </summary>
+        bool _awaitingPlayerInput;
+
+        bool _signedInSubscribed;
+
         AuthenticationData AuthData => _authDataVariable?.Value;
 
         // ──────────────────────────────────────────────
@@ -94,6 +104,8 @@ namespace CosmicShore.Core
 
         void OnDisable()
         {
+            UnsubscribeSignedIn();
+
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -108,6 +120,11 @@ namespace CosmicShore.Core
         void Start()
         {
             ClearStatusMessages();
+
+            // Subscribed here rather than in OnEnable: [Inject] fields are populated after
+            // Awake and before Start, so _authDataVariable is still null in OnEnable.
+            SubscribeSignedIn();
+
             RunAuthFlowAsync(_cts.Token).Forget();
         }
 
@@ -133,6 +150,16 @@ namespace CosmicShore.Core
                 {
                     CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {safetyTimeout}s. Force-navigating to main menu.");
                     await ShowOfflineNoticeAsync(ct);
+                    NavigateToMainMenu();
+                }
+                else if (winnerIndex == 0 && !_navigated && !_awaitingPlayerInput)
+                {
+                    // The core flow finishing is what retires the safety timeout above, so a
+                    // finish that neither navigated nor left the player something to act on
+                    // retires the only thing that was going to rescue the boot. Nothing here
+                    // is expected to hit this today - it exists so that the next branch added
+                    // to the flow cannot strand the boot silently.
+                    CSDebug.LogWarning("[AuthScene] Auth flow finished without navigating and with no surface for the player. Force-navigating to main menu.");
                     NavigateToMainMenu();
                 }
             }
@@ -285,6 +312,7 @@ namespace CosmicShore.Core
 
         async UniTaskVoid OnGuestLoginAsync(CancellationToken ct)
         {
+            _awaitingPlayerInput = false;   // they acted - this is no longer a parked boot
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
             ShowLoading("Signing in…");
@@ -385,6 +413,7 @@ namespace CosmicShore.Core
         {
             if (_usernameSubmitInFlight) return;
             _usernameSubmitInFlight = true;
+            _awaitingPlayerInput = false;   // they acted - this is no longer a parked boot
 
             // Cleared on every path that leaves the player able to try again. NOT cleared once
             // navigation starts - there is no going back to this screen.
@@ -458,6 +487,8 @@ namespace CosmicShore.Core
             if (authPanel) authPanel.SetActive(true);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
             HideLoading();
+            EnsureGuestLoginVisible();
+            ParkForPlayerInput("guest sign-in");
         }
 
         void ShowUsernameSetup()
@@ -465,6 +496,104 @@ namespace CosmicShore.Core
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
             HideLoading();
+            ParkForPlayerInput("username entry");
+        }
+
+        /// <summary>
+        /// The auth panel's ONLY control. It ships inactive in <c>Authentication.unity</c> and
+        /// nothing ever activated it, so showing the panel drew a bare background with no button
+        /// and (after <see cref="HideLoading"/>) no text - a dead end the player reads as a hung
+        /// loading screen. Asserting it here as well as in the scene keeps the guarantee next to
+        /// the code path that depends on it.
+        /// </summary>
+        void EnsureGuestLoginVisible()
+        {
+            if (!guestLoginButton)
+            {
+                CSDebug.LogWarning("[AuthScene] Auth panel shown with no guest login button wired - " +
+                                   "the player has no way forward from this screen.");
+                return;
+            }
+
+            if (!guestLoginButton.gameObject.activeSelf)
+            {
+                CSDebug.LogWarning("[AuthScene] Guest login button was inactive - activating it so the auth panel is usable.");
+                guestLoginButton.gameObject.SetActive(true);
+            }
+
+            guestLoginButton.interactable = true;
+        }
+
+        /// <summary>
+        /// Records - and just as importantly ANNOUNCES - that the boot has deliberately stopped
+        /// and is waiting for a human. A terminal state that logs nothing is indistinguishable
+        /// from a hang: this one produced a completely silent console while the whole online
+        /// stack came up healthily behind a screen the player could not act on.
+        /// </summary>
+        void ParkForPlayerInput(string what)
+        {
+            _awaitingPlayerInput = true;
+            CSDebug.Log($"[AuthScene] Waiting for the player: {what}. " +
+                        "The boot stops here until they act, or until a sign-in lands.");
+        }
+
+        /// <summary>
+        /// The boot's self-healing net, and the reason it is needed: the splash timer that loads
+        /// this scene and the UGS sign-in round trip are independent clocks, so the scene can
+        /// legitimately conclude "not signed in", park on the auth panel, and have the sign-in
+        /// land a heartbeat later. Everything downstream of that raise - the presence lobby, the
+        /// Relay session, the host - then comes up behind a screen that is never going to move.
+        /// Resume instead.
+        /// </summary>
+        void SubscribeSignedIn()
+        {
+            if (_signedInSubscribed) return;
+
+            var signedIn = AuthData?.OnSignedIn;
+            if (signedIn == null) return;
+
+            signedIn.OnRaised += HandleSignedInWhileWaiting;
+            _signedInSubscribed = true;
+        }
+
+        void UnsubscribeSignedIn()
+        {
+            if (!_signedInSubscribed) return;
+
+            var signedIn = AuthData?.OnSignedIn;
+            if (signedIn != null)
+                signedIn.OnRaised -= HandleSignedInWhileWaiting;
+
+            _signedInSubscribed = false;
+        }
+
+        void HandleSignedInWhileWaiting()
+        {
+            if (_navigated || !_awaitingPlayerInput) return;
+
+            CSDebug.Log("[AuthScene] Sign-in landed while the boot was waiting for the player - resuming.");
+            _awaitingPlayerInput = false;
+            ResumeAfterLateSignInAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        async UniTaskVoid ResumeAfterLateSignInAsync(CancellationToken ct)
+        {
+            try
+            {
+                // OnSignedIn is also raised from the SDK's own SignedIn event, whose continuation
+                // is not guaranteed to be Unity's thread - and SOAP raises listeners INLINE, so
+                // everything below would be running wherever that raise came from. A no-op when
+                // we are already on the main thread (Docs/THREADING.md).
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
+
+                await HandlePostAuthFlowAsync(ct);
+            }
+            catch (OperationCanceledException) { /* scene destroyed - expected */ }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Resume after a late sign-in failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
+            }
         }
 
         void ShowLoading(string text = "Loading…")
@@ -518,6 +647,7 @@ namespace CosmicShore.Core
         {
             if (_navigated) return;
             _navigated = true;
+            _awaitingPlayerInput = false;
 
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
             CSDebug.Log("[AuthScene] Navigating to Main Menu...");

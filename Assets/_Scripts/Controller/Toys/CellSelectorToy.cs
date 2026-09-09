@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// game - is fast), and the multi-second world build happens only when a player flies into
     /// a model and asks for it.
     /// </summary>
-    public sealed class CellSelectorToy : MatrixToy
+    public sealed class CellSelectorToy : MatrixToy, IToyShellSurface
     {
         CellSelectorToyDefinitionSO _def;
 
@@ -308,6 +308,58 @@ namespace CosmicShore.Gameplay
                             $"clear loose trail mass: {_def.ClearLooseTrailMass}).");
         }
 
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        // Mid-swap the cell has no settled identity, so the list would mislabel which world is
+        // current - the same reason ResolveOffer refuses to open the matrix then.
+        bool IToyShellSurface.ShellAvailable
+        {
+            get
+            {
+                var cell = HostCell;
+                return cell && !cell.IsSwappingConfig;
+            }
+        }
+
+        /// <summary>
+        /// The cell's own rotation, the world you are in flagged as current. Choosing it is the
+        /// freestyle RESET, exactly as flying its haloed model is - so unlike the other surfaces
+        /// the current row stays actionable.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            var cell = HostCell;
+            if (!cell) return;
+
+            var authored = _def ? _def.Cells : null;
+            var source = authored is { Count: > 0 } ? authored : cell.AvailableConfigs;
+            if (source == null) return;
+
+            var seen = new HashSet<CellConfigDataSO>();
+            foreach (var config in source)
+            {
+                if (!config || !seen.Add(config)) continue;
+
+                var capturedConfig = config;
+                var capturedCell = cell;
+                bool isCurrent = config == cell.Config;
+
+                into.Add(new ToyShellOption
+                {
+                    Label = DisplayNameOf(config),
+                    Detail = isCurrent
+                        ? "you are here - choose it again to reset"
+                        : config.EnvironmentPrefab ? "" : "no environment",
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    IsCurrent = isCurrent,
+                    Apply = () => SelectCell(capturedCell, capturedConfig),
+                    BuildPreview = parent => BuildShellPreview(capturedConfig, parent),
+                });
+            }
+        }
+
         // ── Scale models ─────────────────────────────────────────────────────
 
         /// <summary>
@@ -357,6 +409,27 @@ namespace CosmicShore.Gameplay
             else CSDebug.LogWarning($"[CellSelector] {prefab.name} generated no points - " +
                                     $"{DisplayNameOf(config)} shows as an empty slot.");
             return built;
+        }
+
+        /// <summary>
+        /// A scale model of <paramref name="config"/> for the app shell's preview window - the
+        /// same model the matrix station shows, so a world looks the same whichever surface the
+        /// player chose it from.
+        ///
+        /// <para>Two things a STATION does are deliberately left off. There is no idle spin,
+        /// because the preview camera already orbits and the two would compose into a tumble; and
+        /// there is no bloom-in, because that camera renders one frame the instant it is handed a
+        /// model and measures the model to frame it - against a model still scaled to zero it
+        /// would frame nothing, from far too close.</para>
+        /// </summary>
+        GameObject BuildShellPreview(CellConfigDataSO config, Transform parent)
+        {
+            if (!config || !_def || !parent) return null;
+
+            var miniature = ResolveMiniature(config);
+            if (!miniature.IsValid) return null;
+
+            return ToyFactory.AddMiniatureBody(parent, miniature, Context, $"{config.name} Preview");
         }
 
         GameObject AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature,

@@ -116,17 +116,35 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/HIJACK.md.
         Hijack = 46,
 
-        // Drumfire (47): the Dolphin-only rhythm range. A great DRUM of prisms hangs in the
-        // middle of the cell and every pilot gets their own firing lane - a line of crystals
-        // that runs PAST the drum rather than into it, so the target is always off to one side.
-        // Fly the lane, drift to hold your line, swing the nose onto the drum and touch the next
-        // crystal to let the jaws go: fly, aim, shoot, repeat. TIME ends it and the VOLUME each
-        // domain tears out of the drum is the score. See
-        // _Scripts/Controller/Arcade/DRUMFIRE.md.
-        Drumfire = 47,
+        // 47 was Drumfire, the Dolphin-only rhythm range: a prism DRUM at the cell centre
+        // and a firing lane of crystals per pilot, clock-ended and scored on volume. Removed
+        // 2026-09 - it read as Rampage (same hull, same weapon, same 'aim the cone at a lot of
+        // mass') without offering enough of its own to earn a second slot. Its lane geometry
+        // survives as a platform capability (ApproachLaneGeometry,
+        // CrystalManager.CrystalPlacementMode.ApproachLanes) and the mode itself is in git.
+        // 47 IS RESERVED FOREVER, exactly like 7 and 31 - saved selections still carry it.
+
+        // Tollway (48): the Scarab-only ring race, built on the one Scarab idea no mode had
+        // used - a switch pays its PLACER when ANY ball threads it, friend or enemy. Plant
+        // rings in the court's own TOLL POSTS (unconstrained placement made the mode one move
+        // long); every ball that threads one pays the pilot who planted it and raises
+        // a 255-prism scarab-wing monument on the spot, so the arena is built by the scoring.
+        // Rings are consumed when they pay and must be replanted. First DOMAIN to the toll
+        // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.
+        Tollway = 48,
+
+        // Headlong (49): the Rhino-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first domain whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Rhino's FLAT-OUT turn radius - the tightest circle it can fly without dropping
+        // the ramp boost - so a corner is a decision rather than a chore: thread it and keep
+        // 910 u/s, or turn properly and pay six seconds winding the ramp back up. Intensity is
+        // how many corners let you choose. See _Scripts/Controller/Arcade/HEADLONG.md.
+        Headlong = 49,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 46) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 47) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }

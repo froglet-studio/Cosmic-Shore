@@ -1445,6 +1445,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// THIS CELL's take on a plant's authored leaf size, after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FloraPrismScale"/> - how chunky this biome's flora reads.
+        ///
+        /// <para><b>Ask the CELL, never the profile</b>, for the same reason
+        /// <see cref="ResolveFloraPopulation"/> says so: a biome's spawner class is chosen by an
+        /// unrelated field, so a rule implemented in one producer is dead code in exactly the
+        /// modes that asked for it.</para>
+        ///
+        /// <para><b>This is not a lifeform LEVEL.</b> It is a per-CELL constant, so every plant of
+        /// a species in this cell is the same size and a plant's size says nothing about its own
+        /// history - which is the thing Docs/ECOSYSTEM.md 40 retired. It is applied once, at
+        /// <c>Flora.Initialize</c>, and never again in that plant's life.</para>
+        ///
+        /// <para><b>It lands on the volume ladder.</b> Volume is the spine, so a cell that scales
+        /// its prisms must re-derive its own <c>PhaseThresholds</c> - and the exponent differs per
+        /// flora family (branching s^3, phyllotactic s^2, since the latter reads only
+        /// <c>leafSize.x/y</c> and takes its lengths from its own structure). Prism COUNT and
+        /// therefore the collider budget are unchanged.</para>
+        /// </summary>
+        public float ResolveFloraPrismScale(float authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFloraPrism(authored) : authored;
+        }
+
+        /// <summary>
         /// This cell's live cap for a flora species: <see cref="FloraConfigurationSO.MaxLivePopulation"/>
         /// through <see cref="ResolveFloraPopulation"/>. 0 stays 0 (uncapped).
         /// </summary>

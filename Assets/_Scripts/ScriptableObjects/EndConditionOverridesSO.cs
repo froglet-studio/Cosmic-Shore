@@ -63,22 +63,19 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
         public const int DefaultHijackStealTarget = 750;
+        /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultTollwayTollTarget = 4;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
 
-        /// <summary>
-        /// Drumfire match length in SECONDS, used when <see cref="drumfireSeconds"/> is 0
-        /// (auto/default). The only end-game number here that is a clock rather than a count:
-        /// Drumfire has no race target, so this IS its end condition. 75s covers ONE unhurried
-        /// pass down a firing lane with room to spare, which is all the mode is sized for: the
-        /// drum holds roughly one pass of ammunition for a full lobby (Tools/Build/
-        /// drumfire_arena.py measures it), so a longer clock would only leave pilots flying at
-        /// a ball that is already gone.
-        /// </summary>
-        public const int DefaultDrumfireSeconds = 75;
+        /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
+        /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
+        /// to size the circuit, so the two cannot drift.</summary>
+        public const int DefaultHeadlongGateTarget = 24;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -150,13 +147,17 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
-        [Tooltip("Drumfire: how many SECONDS a match runs. Drumfire has no race target - the " +
-                 "clock is the end condition and the volume each domain tears out of the drum " +
-                 "is the score - so this is the one entry here that is a duration. 75 covers one " +
-                 "unhurried pass down a lane; the drum only holds about one pass of ammunition " +
-                 "for a full lobby, so raising it mostly adds time with nothing left to shoot. " +
-                 "0 = default (75).")]
-        [Min(0)] public int drumfireSeconds = 75;
+        [Tooltip("Headlong: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int headlongGateTarget = 24;
+
+        [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
+                 "threading a ring one of that domain's pilots planted, so the count is a " +
+                 "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
+                 "goal race: a ring must be planted, survive, and be threaded, which is " +
+                 "slower than shooting at a net and faster than tearing down a wreck.")]
+        [Min(0)] public int tollwayTollTarget = 8;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -172,9 +173,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
-
-        [Min(0)] public int drumfireSecondsBuild = 75;
+        [Min(0)] public int tollwayTollTargetBuild = 8;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -286,12 +287,23 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
-        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// <c>RaceGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
         /// for how many gates to lay - so the course a pilot flies and the number their goal row
         /// counts to are the same authority.
         /// </summary>
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
+        /// <summary>
+        /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by
+        /// <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c> to size
+        /// the circuit - so the finish line and the course cannot drift apart.
+        /// </summary>
+        public int GetHeadlongGateTarget() =>
+            headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
+
+        /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
         /// steal count, so teammates pool.
@@ -299,14 +311,13 @@ namespace CosmicShore.ScriptableObjects
         public int GetHijackStealTarget() =>
             hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget;
 
-        /// Drumfire match length in seconds: the configured value when &gt; 0, otherwise
-        /// <see cref="DefaultDrumfireSeconds"/>. Unlike every other accessor here this is not
-        /// compared against a domain sum - it is handed to
-        /// <c>DrumfireTimeTurnMonitor</c> as the countdown, and the winner is whichever domain
-        /// leads on volume when it expires.
+        /// <summary>
+        /// Tollway toll target ("race to N" tolls collected): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultTollwayTollTarget"/>. Compared against a DOMAIN's summed
+        /// toll count, so teammates pool.
         /// </summary>
-        public int GetDrumfireSeconds() =>
-            drumfireSeconds > 0 ? drumfireSeconds : DefaultDrumfireSeconds;
+        public int GetTollwayTollTarget() =>
+            tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
@@ -329,7 +340,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
+                GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
             };
 
@@ -351,8 +364,9 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
+            headlongGateTarget == headlongGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
-            drumfireSeconds == drumfireSecondsBuild;
+            tollwayTollTarget == tollwayTollTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -370,8 +384,9 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
+            headlongGateTarget = headlongGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
-            drumfireSeconds = drumfireSecondsBuild;
+            tollwayTollTarget = tollwayTollTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -390,8 +405,9 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
+            headlongGateTargetBuild = headlongGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
-            drumfireSecondsBuild = drumfireSeconds;
+            tollwayTollTargetBuild = tollwayTollTarget;
         }
     }
 }

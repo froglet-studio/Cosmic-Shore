@@ -109,6 +109,14 @@ Acceptance criteria:
 > **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
 > unchanged; re-check the verification-checklist aspect list before closing.
 
+> **Applied (branch `claude/safeareafitter-canvas-audit-sj1cxp`).** The "not yet applied to any
+> shipping prefab" criterion above is superseded: every canvas that carries player-facing UI now
+> carries the split. The per-layer decision table — which layers are content, which are deliberately
+> full-bleed, and why some host the component while others get a fitted parent — is
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3, and Style Foundation §8 no longer says "ships dormant"
+> (v0.3.3). Run the `ui-redesign-tracker` skill to re-verify the criteria and move the status row;
+> this branch did not hand-edit it.
+
 ## T2 — Finish canvas resolution migration
 
 **Spec:** Style Foundation §5 · **Audit ref:** §1.3
@@ -378,7 +386,7 @@ Anything found during implementation that needs a design decision. The implement
 | 7 | Typography art | T5/T6 | ~~Display, Body small and the three Data roles are spec-authored, not on the source page.~~ **RESOLVED — kept, and marked as such.** §4's table now daggers those five rows with a footnote stating they carry no guide backing and are open to revision in a way the transcribed six are not. | RESOLVED |
 | 8 | Typography art | — | ~~The button caps rule has a documented exception that v0.3 dropped.~~ **RESOLVED — caps is unconditional; the exception is retired with the Port screen** (already cut from the overhaul). §4 records the decision so it is not relitigated. | RESOLVED |
 | 9 | Typography art | T5 | ~~A live countdown renders in the button face, not a Data role.~~ **RESOLVED — `<mspace>` generalised.** It now applies to any live-updating numeric in **any** face, not just the Aldrich Data roles. `X` is per-face, `TabularText` takes the face as a parameter, and T5 reports the digit advance for **both** Aldrich and Chakra Petch SemiBold. | RESOLVED |
-| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal, 6 sites across `LeaderboardsMenu` and `DailyChallengeLeaderboardView`. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
+| 10 | T4 impl | T8 | **Local-player leaderboard row highlight has no token.** `#1AB2B2` teal — 3 sites in `LeaderboardsMenu`, since `DailyChallengeLeaderboardView` (the other 3) was deleted with the PlayFab-era daily challenge. §10.10 specifies only a `*` marker — the teal is undocumented. Is it CTA (§3 "focus, selection"), a new token, or should the `*` be the only marker? | OPEN |
 | 11 | T4 impl | T8 | **No positive/gain hue.** `#33FF66` in `ScoreNumberAnimator` / `HUDAnimationSettingsSO` for a score increase. §2's gap table proposes `danger` and reuses CTA for *attention*, but never names a **gain** green distinct from CTA. Does gain reuse CTA, or is CTA reserved for interactivity? | OPEN |
 | 12 | T4 impl | T8 | **§11 has one text colour and the UI uses four.** `PrivacyConsentOverlay` needs secondary (`#C2C7D4`), tertiary (`#99A1B2`), placeholder (`#737887`) and a hyperlink (`#59B8F2`); `ToastNotificationManager` needs a neutral toast surface (`#1A1A26`, where both §11 surfaces are blue-tinted); `ResourceDisplay` needs gauge normal + threshold; `GameCard` needs the locked-card tint §10.6 calls "grey" without a value. 16 literals total. Add tokens, or re-theme these onto the existing eight? | OPEN |
 

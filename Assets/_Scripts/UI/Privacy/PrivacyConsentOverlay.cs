@@ -103,13 +103,21 @@ namespace CosmicShore.UI
             gameObject.AddComponent<GraphicRaycaster>();
 
             // Scrim: dims the game behind and swallows clicks so nothing underneath reacts.
+            // It BLEEDS - a dimmer that stopped at the safe area would leave lit strips of live
+            // gameplay under the cutout - so the panels ride a fitted sibling above it rather than
+            // being its children (Docs/UI_ARCHITECTURE_AUDIT.md §1.3).
             var scrim = NewRect("Scrim", transform);
             Stretch(scrim);
             var scrimImage = scrim.gameObject.AddComponent<Image>();
             scrimImage.color = new Color(0.02f, 0.02f, 0.04f, 0.88f);
 
-            _agePanel = BuildAgeGate(scrim).gameObject;
-            _consentPanel = BuildConsent(scrim).gameObject;
+            // Both panels are centred and fixed-size, so nothing is clipped today; fitted anyway so
+            // that under a ONE-SIDED cutout they stay centred in the usable area rather than in a
+            // screen a slice of which the player cannot see.
+            var content = SafeAreaLayer.Create(transform);
+
+            _agePanel = BuildAgeGate(content).gameObject;
+            _consentPanel = BuildConsent(content).gameObject;
 
             // Resume mid-flow: an age-checked player only owes the consent answer.
             bool ageDone = _analytics.AgeChecked;

@@ -25,7 +25,7 @@ namespace CosmicShore.Core
         static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
         // See AuthenticationManager.ResetStatics — a stale API handle wraps a dead AuthContext,
-        // and CatalogLoaded gates the load path for StoreScreen/DailyChallengeModal.
+        // and CatalogLoaded gates the load path for StoreScreen.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
