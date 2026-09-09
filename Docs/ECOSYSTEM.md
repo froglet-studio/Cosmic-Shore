@@ -7417,16 +7417,46 @@ The one reason for the clamp that **survives** is real and accepted: a standard 
 respawns in the nucleus volume, so a court-mode's plants share space with its crystal respawn. That
 is clutter in a volume the mode has already filled with play, not mass the ecology cannot reach.
 
+**Four callers clear the flag, and only three of them are court modes — name the fourth.** The
+setters are Astro League, Scarab Scramble, Tollway *and the Arkway's traversal cells*
+(`CellConveyor`, which clears it for the whole-cell diet its protect-the-Ark mechanic rides on,
+§41). The Arkway is not a court: its nucleus is still an ordinary core marker, and its traversal
+configs are drawn from `Cell.AvailableConfigs`, which author real flora. So this change lets an
+Arkway cell's plants grow into its nucleus where they were previously clamped out. That follows
+from the rule rather than working around it — with no control zone, herbivores eat opposing mass
+inside the nucleus too, so a plant there is reachable food — and the residual crystal-respawn
+clutter is the same accepted cost. It is called out because *it was not the change's motivating
+case*: the flag is a platform capability, so a clamp keyed on it moves every caller, including
+ones a branch never opened.
+
 ### What Tollway seeds, and what it costs
 
-14 **NetworkSynced** Spire flora (`Tollway Anchor Flora`, `SpreadElements` over the four canonical
-`Spire Flora <Element>` assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of the
-intensity-1 court the retired posts used — capped at 40 live prisms each by the config's
-cell-level `MaxTotalSpawnedObjectsOverride`, reseeded every 20 s toward a floor and cap of 14.
+14 **NetworkSynced** flora per intensity (`Tollway Anchor Flora <Species>`, `SpreadElements` over
+that species' four canonical element assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of
+the intensity-1 court the retired posts used — reseeded every 20 s toward a floor and cap of 14.
 
-- **560 prisms / ~7,986 volume** standing from the first seconds, folded into BOTH bands of the
-  cell's volume ladder rather than left for it to discover.
-- **14 always-on colliders** (one heart each); the body prisms are LOD-cullable boxes.
+**Each intensity grows a different KIND of plant**, one per growth family, ordered by standing
+plant volume so the marker grows with the court:
+
+| I | Court | Species | Family | Prisms/plant | Leaf vol | Forest |
+|---|---|---|---|---|---|---|
+| 1 | 480u | Spire | `PhyllotacticFlora` | 40 (cell override) | 14.26 | 560 prisms / 7,986 vol |
+| 2 | 560u | Gyroid | `AssembledFlora` | 30 (own geometry) | 50.27 | 420 / 21,113 |
+| 3 | 640u | Cacti | `BranchingFlora` | 40 (cell override) | 75.00 | 560 / 42,000 |
+| 4 | 720u | Quasicrystal | `AssembledFlora` | 110 (own geometry) | 46.39 | 1,540 / 71,441 |
+
+A **lattice species keeps its own per-plant budget** — a gyroid octagon is 24 prisms around one
+crystal and a quasicrystal heart cell is one vertex's strut tree, so a cell-imposed number does not
+thin the plant, it truncates a shape mid-figure (§32.7/§36's "plant COUNT is the only lever", met
+from the arena side). Only Spire and Cacti take the cell's `MaxTotalSpawnedObjectsOverride`.
+
+- The standing forest is folded into BOTH bands of the cell's volume ladder rather than left for it
+  to discover, and **both ladders are per-intensity** — the four species differ in prism COUNT as
+  well as prism size, so one shared count backstop would be four times too tight at one end.
+  The generator asserts a forest never reaches half its own `RestlessEnterVolume` (worst case:
+  Quasicrystal at 30%), or the ladder would describe the scenery rather than the match.
+- **14 always-on colliders at every intensity** (one heart each) — that is what keeps the collider
+  budget flat while everything else about the field changes; the body prisms are LOD-cullable boxes.
 - A quarter of the anchors roll **Charge** and are therefore shielded (`Flora.ResolveShieldPeriod`),
   which takes them out of the fauna targeting grids entirely — so the field thins unevenly as the
   cleanup crew grazes it. Emergent, untested, and the levers if it goes wrong are the reseed

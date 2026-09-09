@@ -39,7 +39,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Every living plant with a heart. May contain destroyed entries between a
         /// scene teardown and the next query; every accessor here prunes them.</summary>
-        public static IReadOnlyList<Flora> Live => s_live;
+        public static IReadOnlyList<Flora> Live
+        {
+            get
+            {
+                Prune();
+                return s_live;
+            }
+        }
 
         public static void Register(Flora flora)
         {

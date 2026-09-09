@@ -25,7 +25,15 @@ produces byte-identical output. Validates the whole result in memory and only th
 
 Run from the repo root:  python3 Tools/Build/author_tollway_assets.py [--check]
 
---check validates without writing (CI / pre-commit use).
+--check validates without writing AND DIFFS EVERY GENERATED FILE AGAINST DISK, naming the first
+differing line. Those are two different promises and the flag name distinguishes neither: this
+script shipped for a day with a --check that only re-derived its content in memory and ran its own
+cross-file asserts, which proves the SCRIPT is self-consistent and says nothing at all about what
+is on disk. It passed cheerfully with `Mode: 47` hand-edited into the arcade card. Negative
+controls, all three re-run whenever this block is touched: mutate the card's Mode (names
+ArcadeGameTollway.asset line 15), delete TollwaySettings.asset ("missing on disk"), rename a
+GameObject in the scene (names MinigameTollway.unity line 649). A gate nobody has watched FAIL is
+a gate nobody should trust.
 
 See Assets/_Scripts/Controller/Arcade/TOLLWAY.md for what these numbers mean.
 """
@@ -1267,7 +1275,42 @@ for rel in _stale:
     print("   retiring", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # Diff every generated file against DISK, not just against this script's own recipe.
+    # A --check that re-derives its content in memory and validates its own cross-file asserts
+    # proves the SCRIPT is self-consistent and says NOTHING about what shipped: this one passed
+    # cheerfully with `Mode: 47` hand-edited into the arcade card. Negative-controlled by doing
+    # exactly that and watching it fail (see the module docstring). `author_switchback_assets.py`
+    # already had this shape; the "does it diff disk or memory?" question is the one the flag
+    # name cannot answer for you.
+    drifted = []
+    for rel, content in files.items():
+        full = os.path.join(ROOT, rel)
+        try:
+            with open(full, encoding="utf-8") as fh:
+                on_disk = fh.read()
+        except FileNotFoundError:
+            drifted.append((rel, "missing on disk"))
+            continue
+        if on_disk == content:
+            continue
+        want = content.splitlines()
+        have = on_disk.splitlines()
+        where = "end of file"
+        for i in range(max(len(want), len(have))):
+            w = want[i] if i < len(want) else "<no line>"
+            h = have[i] if i < len(have) else "<no line>"
+            if w != h:
+                where = f"line {i + 1}: disk {h!r} != authored {w!r}"
+                break
+        drifted.append((rel, where))
+
+    if drifted:
+        print(f"--check: {len(drifted)} file(s) differ from the authored output:")
+        for rel, where in sorted(drifted):
+            print(f"  - {rel}\n      {where}")
+        sys.exit(1)
+
+    print(f"\n--check: OK, all {len(files)} generated file(s) match disk.")
     sys.exit(0)
 
 for rel, content in files.items():
