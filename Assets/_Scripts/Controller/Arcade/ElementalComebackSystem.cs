@@ -184,6 +184,7 @@ namespace CosmicShore.Gameplay
                                            // so it accumulates on the same stat and folds by the
                                            // same lead runner. No new source - a second one
                                            // reading the same field could only ever disagree.
+                case GameModes.Redline:    // a lapped circuit: the same stat, the same fold
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;

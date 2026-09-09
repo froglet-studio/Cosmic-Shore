@@ -133,7 +133,13 @@ contagion chain keeps the original planter's credit and upgrade state.
 its device gate to **gamepad OR keyboard** — the keyboard Manta previously could neither boost
 nor turn, which read as a broken vessel on desktop. Time's map multiplier (1.3) reaches it
 through the fleet-shared `VesselTransformer.CurrentBoostAmount` path; nothing Manta-local
-consumes it.
+consumes it. **An autopilot Soars too (2026-09, with Redline):** `AIPilot` writes only stick and
+throttle, so an AI Manta could never boost. The executor now carries an autopilot drive — both
+triggers held at a boost intent that is *how straight the stick is* (full under
+`aiBoostStickBand` 0.35, fading linearly to nothing at full deflection), which mirrors the human
+trade rather than inventing a policy. Gated on `AIPilot.AutoPilotEnabled`, not on the player
+being an AI, so the lava-lamp Manta and a released companion fly the same kit a human does; no
+net trigger, so no Yastri for a bot. `REDLINE.md` §5.
 
 **Wake rings — built, then CUT (2026-09).** The remake shipped a Soar wake-ring layer (a
 boost ring laid behind the Manta while boosting, threadable for a velocity surge; a "Wake

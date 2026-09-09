@@ -195,9 +195,19 @@ namespace CosmicShore.Data
         // parallel-branch collision the Skein note above records, hit a fourth time.
         Bloomrush = 52,
 
+        // Redline (53): the Manta-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first DOMAIN whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Manta's FULL-BOOST turn radius - the 237u circle it holds with both triggers
+        // flat - and since Soar is the OVERLAP of the triggers and Yastri their DIFFERENCE, a
+        // corner is one question: how much Soar is it worth? Intensity is how many corners a
+        // lap asks it at. The solver is Headlong's, the cut is the Manta's. See
+        // _Scripts/Controller/Arcade/REDLINE.md.
+        Redline = 53,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 50) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 51) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
