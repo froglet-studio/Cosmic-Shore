@@ -1093,7 +1093,7 @@ MonoBehaviour:
   confirmUsernameButton: {fileID: 532112921}
   usernameStatusText: {fileID: 1498739108}
   cachedAuthTimeout: 3
-  playerDataTimeout: 5
+  playerDataTimeout: 15
   safetyTimeout: 10
   networkHostTimeout: 3
 --- !u!1001 &715852000
