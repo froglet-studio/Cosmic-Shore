@@ -619,6 +619,19 @@ fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass 
 reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the feel is one asset rather than
 a per-view constant.
 
+**The grid owns its ROWS, not just its cards.** `ArcadeExploreView.NormalizeGridRows` runs at the
+end of every populate and settles two things the fill loop leaves open. A row is **shown iff it
+holds a visible card** — the fill loop switches every card off and the filled ones back on, but a
+card inside an inactive ROW is not `activeInHierarchy` whatever its own flag says, so a row left
+disabled in the scene silently deletes four modes with no error and nothing to distinguish it from
+"not shipped yet" (the Arena work disabled all three arcade rows in Menu_Main and the whole grid
+came up empty). And every row takes the **first row's height**, because the grid stacks rows with a
+NEGATIVE spacing and does not control child height: the gap between two rows is that row's own
+height plus the spacing, Menu_Main authors 384.74 / 365.31 / 456.00 around identical 202.72-tall
+cards, and a row this view CLONES inherits the last one — 71 units of unexplained air above the
+overflow row. General rule: **with a layout group that does not control child size, a non-uniform
+child is a non-uniform gap, and a negative spacing makes it look deliberate.**
+
 **It cannot leave a card invisible, and that is a structural choice, not tuning.** The first cut
 tweened each card's own `CanvasGroup` with DOTween and the arcade grid came up EMPTY — every card
 sat at the alpha 0 the reveal had written and nothing ever brought it back, which on screen reads
