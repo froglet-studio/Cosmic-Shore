@@ -675,8 +675,11 @@ namespace CosmicShore.Core
             { "player_count", _gameData.SelectedPlayerCount.Value },
             { "ai_count", _gameData.RequestedAIBackfillCount },
             // More than one connected human this session (AI backfill doesn't count).
-            // Metric meaning changed 2026-07-20: was the retired IsMultiplayerMode config
-            // flag; every game now runs the networked single-host model.
+            // Metric meaning changed 2026-07-20: this deliberately no longer reads
+            // GameDataSO.IsMultiplayerMode. That field is the mode's AUTHORED
+            // SO_Game.IsMultiplayer config flag; every game runs the networked single-host
+            // model regardless, so the honest analytics answer is how many humans actually
+            // connected. Do not "restore" it to the config flag.
             { "is_multiplayer", Unity.Netcode.NetworkManager.Singleton != null
                 && Unity.Netcode.NetworkManager.Singleton.ConnectedClientsIds.Count > 1 }
         };

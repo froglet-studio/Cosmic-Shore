@@ -185,8 +185,9 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            // No IsMultiplayer field in the trace: C5 retired GameDataSO.IsMultiplayerMode
-            // because every mode runs the networked single-host model.
+            // No IsMultiplayer field in the trace: GameDataSO.IsMultiplayerMode is the
+            // mode's authored config flag, not a fact about this launch — every mode runs the
+            // networked single-host model, so it says nothing the rest of the line does not.
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +

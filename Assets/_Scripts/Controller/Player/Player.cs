@@ -412,13 +412,30 @@ namespace CosmicShore.Gameplay
         public bool IsLocalUser => IsMultiplayerOwner;
 
         // The human pilot on THIS machine, in every mode. IsLocalUser covers the networked
-        // path; the second clause covers a non-AI Player whose NetworkObject is not spawned,
-        // where IsLocalUser reports false for a human. The legacy non-networked single-player
-        // spawn that produced that state was deleted 2026-07-20 - the clause is kept so no
-        // future spawn path can slip a human past a platform system by not being spawned.
+        // path; the second clause covers the legacy non-networked single-player spawn
+        // (PlayerSpawner -> InitializeForSinglePlayerMode), where the Player is a plain
+        // Instantiate and IsSpawned is false, so IsLocalUser reports false for a human.
         // Platform systems bind on THIS so a mode cannot escape them by spawn path.
         public bool IsLocalPilot => IsLocalUser || (!IsSpawned && !IsInitializedAsAI);
-       
+
+        IPlayer.InitializeData InitializeData;
+
+        public void InitializeForSinglePlayerMode(IPlayer.InitializeData data, IVessel vessel)
+        {
+            InitializeData = data;
+            IsInitializedAsAI = InitializeData.IsAI;
+            // Single-player & legacy menu spawns default to Jade. Multiplayer overrides
+            // via NetDomain (server-write) before the vessel is initialized.
+            Domain = Domains.Jade;
+            Name = InitializeData.PlayerName;
+            AvatarId = InitializeData.AvatarId;
+            InputController.Initialize();
+            ToggleInputPause(true);
+            Vessel = vessel;
+            RoundStats.Name = Name;
+            RoundStats.Domain = Domain;
+        }
+
         /// <summary>
         /// TODO -> A temp way to initialize in multiplayer, try for better approach.
         /// </summary>

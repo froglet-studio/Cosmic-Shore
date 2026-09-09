@@ -52,12 +52,12 @@ namespace CosmicShore.Gameplay
         bool IsLocalUser { get; }
         /// <summary>
         /// The human pilot ON THIS MACHINE — the player whose camera and input this client owns.
-        /// Broader than <see cref="IsLocalUser"/> by exactly one case: a non-AI Player whose
-        /// NetworkObject is not spawned, so <c>IsSpawned</c> is false and <see cref="IsLocalUser"/>
-        /// reports false for a human. The legacy non-networked single-player spawn path that used
-        /// to produce that state was deleted 2026-07-20 (solo is now a Relay host with AI backfill);
-        /// the clause is kept deliberately so no future spawn path can slip a human past a platform
-        /// system by not being network-spawned.
+        /// Broader than <see cref="IsLocalUser"/> by exactly one case: the legacy NON-NETWORKED
+        /// single-player spawn path (<see cref="PlayerSpawner"/> → <c>InitializeForSinglePlayerMode</c>,
+        /// used by the single-player minigame scenes and BenchmarkStressTest) never network-spawns
+        /// its Player, so <c>IsSpawned</c> is false there and <see cref="IsLocalUser"/> reports
+        /// false for a human. That path was retired on the party/presence line on 2026-07-20 and
+        /// is LIVE again since the 2026-09-07 merge — it is wired into three scenes.
         ///
         /// Use this — never <see cref="IsLocalUser"/> — for anything that must hold in EVERY game
         /// mode, so a mode cannot opt out of a platform system by using another spawn path. The
@@ -86,6 +86,7 @@ namespace CosmicShore.Gameplay
         /// Id of the owner client of this player in multiplayer
         /// </summary>
         ulong OwnerClientNetId { get; }
+        void InitializeForSinglePlayerMode(InitializeData data, IVessel vessel);
         void InitializeForMultiplayerMode(IVessel vessel);
         void ToggleGameObject(bool toggle);
         void DestroyPlayer();

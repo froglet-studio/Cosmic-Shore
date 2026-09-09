@@ -430,20 +430,21 @@ namespace CosmicShore.UI
             out int maxSlots,
             out string matchName)
         {
-            memberCount = Mathf.Max(0, player.PartyMemberCount);
-            // ALWAYS the local display size (4). A remote's published PartyMaxSlots is only a
-            // fallback for a peer that has not published one, and it is CLAMPED to our own
-            // display size: a peer on an older build still publishes the transport capacity, and
-            // "x/6" must never reach the screen. The party size is a game rule, identical for
-            // everyone, so it is not actually a per-peer value at all.
-            int localDisplay = connectionData != null ? connectionData.PartyDisplaySlots : 0;
-            maxSlots = localDisplay > 0
-                     ? localDisplay
-                     : Mathf.Max(0, player.PartyMaxSlots);
             matchName = player.MatchName;
 
             // Tier 2 defaults - what this peer claims about a party we are not in.
             // Overwritten by the local roster below if they turn out to be ours.
+            //
+            // The Advertised* prefix is the point: these are a REMOTE's published scalars,
+            // a hint, never an answer about our own party (Docs/PresenceSystem/BUGS.md B15).
+            // The pre-merge upstream line read the unprefixed PartyMemberCount/PartyMaxSlots
+            // here; that is exactly the read the rename exists to make unspellable.
+            //
+            // FOLLOW-UP (from upstream's deleted block, worth keeping): a peer on an older
+            // build publishes the TRANSPORT capacity, so AdvertisedPartyMaxSlots can be 6 and
+            // "x/6" can reach the screen. Party size is a game rule identical for everyone,
+            // so this could clamp to connectionData.PartyDisplaySlots. Deliberately NOT done
+            // as part of a merge fix - it is a behaviour change and wants its own test.
             memberCount = Mathf.Max(0, player.AdvertisedPartyMemberCount);
             maxSlots = player.AdvertisedPartyMaxSlots > 0 ? player.AdvertisedPartyMaxSlots
                       : (Roster != null ? Roster.MaxSlots : 0);

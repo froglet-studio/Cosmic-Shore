@@ -53,6 +53,7 @@ namespace CosmicShore.Gameplay
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
+                    gameData.IsMultiplayerMode,
                     (int)gameData.selectedVesselClass.Value,
                     gameData.SelectedIntensity.Value,
                     gameData.SelectedPlayerCount.Value,
@@ -600,7 +601,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         [ClientRpc]
         void SyncGameConfigToClients_ClientRpc(
-            string sceneName, int gameMode,
+            string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
             int domainCount, bool isMaelstrom, float comebackRate,
             string matchId, string partyId, bool inviteTriggered,
@@ -616,6 +617,7 @@ namespace CosmicShore.Gameplay
 
             gameData.SceneName = sceneName;
             gameData.GameMode = (GameModes)gameMode;
+            gameData.IsMultiplayerMode = isMultiplayer;
             gameData.selectedVesselClass.Value = (VesselClassType)vesselClass;
             gameData.SelectedIntensity.Value = intensity;
             gameData.SelectedPlayerCount.Value = playerCount;
@@ -629,11 +631,7 @@ namespace CosmicShore.Gameplay
             LoadInsights.Mark("Game config received from server");
             LoadInsights.SetGameContext(
                 sceneName, ((GameModes)gameMode).ToString(), intensity, playerCount,
-                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount,
-                // The RPC no longer carries an isMultiplayer flag: C5 retired
-                // IsMultiplayerMode because every mode runs the networked single-host
-                // model, so there is nothing left to sync. Matches GameDataSO.InvokeGameLaunch.
-                isMultiplayer: true);
+                Mathf.Max(0, playerCount - aiBackfillCount), aiBackfillCount, isMultiplayer);
 
             // LAST: everything above is now authoritative on this client. Cell.AssignConfig
             // refuses to make its sticky IntensityWise choice until this is true, because the

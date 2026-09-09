@@ -86,6 +86,7 @@ namespace CosmicShore.Utility
         public bool IsWeeklyChallenge;
         public bool IsTraining;
         public bool IsMission;
+        public bool IsMultiplayerMode;
 
         /// <summary>
         /// True once the AUTHORITATIVE game config exists on THIS peer: immediately on the server,
@@ -398,6 +399,7 @@ namespace CosmicShore.Utility
 
             SceneName = game.SceneName;
             GameMode = game.Mode;
+            IsMultiplayerMode = game.IsMultiplayer;
             ComebackRatePerScoreDeficit = game.ComebackRatePerScoreDeficit;
 
             // Publish the mode's legal hulls BEFORE clamping, so the clamp and every later
@@ -578,11 +580,7 @@ namespace CosmicShore.Utility
                 SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
                 SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
                 RequestedAIBackfillCount,
-                // Always networked since C5 retired IsMultiplayerMode: every mode runs the
-                // single-host model and a solo launch is a party of one plus AI backfill.
-                // The solo-vs-party distinction the header used to carry is now readable
-                // off humanPlayers, which this call already reports.
-                isMultiplayer: true);
+                IsMultiplayerMode);
             OnLaunchGame?.Raise();
         }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
@@ -772,6 +770,7 @@ namespace CosmicShore.Utility
         public void ResetAllData()
         {
             GameMode = GameModes.Random;
+            IsMultiplayerMode = false;
             // ActiveSession is intentionally NOT reset here. Under the "Always
             // InParty" model the field is the single source of truth for the
             // live UGS Relay session reference (shared with HCS via
@@ -990,6 +989,28 @@ namespace CosmicShore.Utility
             return (removedPlayers + removedStats) > 0;
         }
         
+        /// <summary>
+        /// Hands each of the two players the OTHER's vessel — the Cellular Duel ownership swap
+        /// between rounds. Both halves are required: <c>IPlayer.ChangeVessel</c> re-points the
+        /// player at its new hull, and <c>IVessel.ChangePlayer</c> re-binds the platform laws
+        /// (prism occlusion corridor, speed tunnel, rear view) that key off IsLocalPilot and
+        /// never reach VesselController.Initialize on this path.
+        /// </summary>
+        public void SwapVessels()
+        {
+            var player0 = Players[0];
+            var player1 = Players[1];
+
+            var vessel0 = player0.Vessel;
+            var vessel1 = player1.Vessel;
+
+            player0.ChangeVessel(vessel1);
+            player1.ChangeVessel(vessel0);
+
+            vessel0.ChangePlayer(player1);
+            vessel1.ChangePlayer(player0);
+        }
+
         // -----------------------------------------------------------------------------------------
         // Queries / Scores
 
