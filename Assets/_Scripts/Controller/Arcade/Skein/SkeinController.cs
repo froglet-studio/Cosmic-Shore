@@ -27,8 +27,15 @@ namespace CosmicShore.Gameplay
     /// scene for the <see cref="SpawnableSkein"/> component and found nothing, ever - because
     /// <c>SpawnableBase.Spawn()</c> does not instantiate itself, it lays prisms into a plain
     /// container and stays a prefab asset. The rings and the objective arrow never appeared in a
-    /// single match. Reading the config instead answers immediately, on the server, before a
-    /// prism is laid.</para>
+    /// single match.</para>
+    ///
+    /// <para>Its replacement had the same shape and shipped the same symptom: <c>Cell.Config</c>
+    /// is not "this cell's configuration", it is "the configuration this cell has LATCHED", and
+    /// it latches a full second after this runs. The platform calls <see cref="BuildCourse"/>
+    /// exactly ONCE, so a null read is not a slow read, it is a race that never runs again -
+    /// no rings, no scoring, no turn end, and one error on the host console. What answers this
+    /// early, on the server, before a prism is laid, is <c>Cell.ExpectedConfig</c>: the config
+    /// this cell WILL choose, derived from the same intensity the server already holds.</para>
     /// </summary>
     public class SkeinController : GateRaceController
     {
@@ -70,17 +77,27 @@ namespace CosmicShore.Gameplay
         protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
         {
             var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-            if (cell == null || cell.Config == null)
+
+            // ExpectedConfig, never Config: this runs at OnNetworkSpawn and the cell does not
+            // latch its config until Initialize, a full second later. See the class remarks.
+            var config = cell != null ? cell.ExpectedConfig : null;
+            if (config == null)
             {
-                CSDebug.LogError("[Skein] No Cell with an assigned config - the cable's settings " +
-                                 "live on the cell config, so the course cannot be built.");
+                // Reported, not logged: the platform retries this every frame, so a LogError
+                // here is a per-frame path. Until the window closes this is simply "not yet".
+                CourseFailureDetail =
+                    "No Cell whose config is knowable - the cable's settings live on the cell " +
+                    "config. A Skein cell must be IntensityWise (its choice is derivable from " +
+                    "the intensity the server already holds); a Random multi-config cell " +
+                    "cannot answer before it rolls, by design.";
                 return null;
             }
 
-            if (cell.Config.EnvironmentPrefab is not SpawnableSkein arena)
+            if (config.EnvironmentPrefab is not SpawnableSkein arena)
             {
-                CSDebug.LogError("[Skein] The cell config's EnvironmentPrefab is not a " +
-                                 "SpawnableSkein, so there is no cable to hang rings on.");
+                CourseFailureDetail =
+                    $"The cell config '{config.name}' authors no SpawnableSkein " +
+                    "EnvironmentPrefab, so there is no cable to hang rings on.";
                 return null;
             }
 
@@ -106,9 +123,10 @@ namespace CosmicShore.Gameplay
                 return course;
             }
 
-            CSDebug.LogError($"[Skein] Could not lay a {settings.GateCount}-ring cable at " +
-                             $"N={settings.StrandCount} in six seeds. Check " +
-                             "Tools/Build/skein_budget.py against these settings.");
+            CourseFailureDetail =
+                $"Could not lay a {settings.GateCount}-ring cable at N={settings.StrandCount} " +
+                "in six seeds - this one will not fix itself by waiting. Check " +
+                "Tools/Build/skein_budget.py against these settings.";
             return null;
         }
 

@@ -77,6 +77,32 @@ namespace CosmicShore.Gameplay
                  "reported course is reproduced.")]
         [SerializeField] protected int courseSeed;
 
+        [Tooltip("How long the server keeps re-trying a course build that could not run yet. " +
+                 "A course built from PURE GEOMETRY (Switchback, Headlong) either works on the " +
+                 "first frame or never, and spends this on nothing; a course built from SCENE " +
+                 "state (Skein reads the cable off the cell config) needs it, because that " +
+                 "state does not exist at OnNetworkSpawn. 0 = the built-in default.")]
+        [SerializeField, Min(0f)] float courseBuildTimeoutSeconds;
+
+        /// <summary>
+        /// Retry window when <see cref="courseBuildTimeoutSeconds"/> is 0.
+        ///
+        /// <para>The sentinel is not a nicety: the three gate-race scenes were serialized before
+        /// that field existed, and this project has been bitten by a new serialized field reading
+        /// <c>default(float)</c> on an already-serialized component rather than its initializer
+        /// (see <c>Cell.PhaseTickIntervalSeconds</c> and <c>Cell.retireSuctionSeconds</c>). An
+        /// initializer here would therefore risk shipping a 0-second window - one attempt, which
+        /// is precisely the bug the retry exists to fix, silently restored.</para>
+        ///
+        /// <para>6 s against a known ~1 s wait (<c>InitDelayMs</c>): generous, because the cost
+        /// of waiting too long is a slightly later countdown and the cost of waiting too little
+        /// is a match with no rings in it.</para>
+        /// </summary>
+        const float DefaultCourseBuildTimeoutSeconds = 6f;
+
+        float CourseBuildTimeout =>
+            courseBuildTimeoutSeconds > 0f ? courseBuildTimeoutSeconds : DefaultCourseBuildTimeoutSeconds;
+
         [Header("AI")]
         [Tooltip("Distance at which an AI stops lining up on its gate's axis and commits to the " +
                  "fly-through point on the far side.")]
@@ -151,6 +177,17 @@ namespace CosmicShore.Gameplay
         protected abstract List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer);
 
         /// <summary>
+        /// Why the last <see cref="BuildCourse"/> returned null, in one sentence, for the ONE
+        /// error the platform prints if the retry window closes.
+        ///
+        /// <para>A subclass must set this rather than logging its own: <c>BuildCourse</c> is
+        /// retried every frame until it works, so a <c>LogError</c> inside it is a per-frame
+        /// path and would bury the console under hundreds of copies of a message that was only
+        /// ever true about one frame.</para>
+        /// </summary>
+        protected string CourseFailureDetail { get; set; }
+
+        /// <summary>
         /// A mode-specific AI aim point, consulted BEFORE the gate logic. Return false (the
         /// default) to fly at the next gate the ordinary way.
         ///
@@ -189,6 +226,12 @@ namespace CosmicShore.Gameplay
         readonly List<IPlayer> _stalePilots = new();
 
         bool _courseBuilt;
+
+        // Course-build retry, server only. The seed is captured ONCE so a course is never a
+        // function of how many frames the scene took to become answerable.
+        int _pendingCourseSeed;
+        bool _awaitingCourse;
+        float _courseRetryDeadline;
         bool _finalResultsSent;
         bool _arenaBuildAnnounced;
         bool _warnedCourseMissing;
@@ -229,12 +272,15 @@ namespace CosmicShore.Gameplay
             _arenaBuildAnnounced = true;
             PrismTrailBuilder.BeginArenaBuild();
 
-            if (IsServer) GenerateAndBroadcastCourse();
+            _awaitingCourse = false;
+
+            if (IsServer) BeginCourseGeneration();
             else RequestCourse_ServerRpc();
         }
 
         public override void OnNetworkDespawn()
         {
+            _awaitingCourse = false;
             ReleaseArenaBuildAnnouncement();
             ClearCourse();
             base.OnNetworkDespawn();
@@ -254,29 +300,74 @@ namespace CosmicShore.Gameplay
 
         // ── Course ────────────────────────────────────────────────────────
 
-        void GenerateAndBroadcastCourse()
+        /// <summary>
+        /// Start building the course, and keep trying until it works or the window closes.
+        ///
+        /// <para><b>Why a window and not one attempt.</b> A gate race whose course is PURE
+        /// GEOMETRY (Switchback's walk, Headlong's relaxation) is answerable on the frame this
+        /// runs and a retry costs it nothing. A gate race whose course is a property of the
+        /// SCENE is not: Skein's rings sit on the cable authored on the cell config, and
+        /// <c>Cell</c> does not latch its config until <c>Initialize</c> runs on
+        /// <c>OnInitializeGame</c>, a full second after <c>OnNetworkSpawn</c>. With a single
+        /// attempt that is not a slow build, it is a build that never happens again - no rings,
+        /// no scoring, no turn end, and one error on the host console. Skein shipped exactly
+        /// that.</para>
+        ///
+        /// <para>The seed is drawn ONCE, here, so retrying cannot change which course this match
+        /// gets: a course that depended on how many frames the cell took to answer would differ
+        /// between two runs of the same build for no reason a player could see.</para>
+        /// </summary>
+        void BeginCourseGeneration()
+        {
+            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _courseRetryDeadline = Time.time + CourseBuildTimeout;
+            _awaitingCourse = true;
+            TickCourseGeneration();
+        }
+
+        /// <summary>One attempt, plus the decision to keep waiting or to give up loudly.</summary>
+        void TickCourseGeneration()
+        {
+            if (!_awaitingCourse) return;
+
+            if (TryGenerateAndBroadcastCourse())
+            {
+                _awaitingCourse = false;
+                return;
+            }
+
+            if (Time.time < _courseRetryDeadline) return;
+
+            _awaitingCourse = false;
+
+            // Nothing this mode can do but say so - loudly, and with the numbers that have to
+            // change. Returning silently used to hang the match outright: no rings, no
+            // scoring, no turn end, and one error on the host console only.
+            ResolveShell(out float inner, out float outer);
+            CSDebug.LogError(
+                $"[{ModeName}] Course generation FAILED for {AuthoredGateTarget()} gates in " +
+                $"shell {inner:F0}..{outer:F0} after {CourseBuildTimeout:F1}s of retries. " +
+                (string.IsNullOrEmpty(CourseFailureDetail)
+                    ? "Widen the shell or shorten the course."
+                    : CourseFailureDetail));
+            ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>The attempt itself. False means "not this frame" - the caller decides
+        /// whether that is a wait or a failure.</summary>
+        bool TryGenerateAndBroadcastCourse()
         {
             // ONE authority for the race length: the same overrides key the turn monitor reads
             // for the target. Read here rather than waiting for the monitor to publish it, so the
             // course cannot be built before the number that describes it exists - and cannot
             // disagree with it either.
             int gateCount = AuthoredGateTarget();
-            int seed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            int seed = _pendingCourseSeed;
 
             ResolveShell(out float inner, out float outer);
             List<RaceGate> course = BuildCourse(seed, gateCount, inner, outer);
 
-            if (course == null || course.Count == 0)
-            {
-                // Nothing this mode can do but say so - loudly, and with the numbers that have to
-                // change. Returning silently used to hang the match outright: no rings, no
-                // scoring, no turn end, and one error on the host console only.
-                CSDebug.LogError(
-                    $"[{ModeName}] Course generation FAILED for {gateCount} gates in shell " +
-                    $"{inner:F0}..{outer:F0}. Widen the shell or shorten the course.");
-                ReleaseArenaBuildAnnouncement();
-                return;
-            }
+            if (course == null || course.Count == 0) return false;
 
             // The generators work about the ORIGIN; the spawn ring, the membrane and the nucleus
             // are all measured from the CELL. They coincide in the shipped scenes and would stop
@@ -295,6 +386,7 @@ namespace CosmicShore.Gameplay
 
             ApplyCourse(course);
             BroadcastCourse(course, default);
+            return true;
         }
 
         /// <summary>
@@ -467,6 +559,11 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // Ahead of every guard below: the course is built while the turn has NOT started
+            // (that is what the arena-build announcement is holding the connecting panel for),
+            // so a retry gated on IsTurnRunning would never run.
+            if (_awaitingCourse) TickCourseGeneration();
+
             if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
 

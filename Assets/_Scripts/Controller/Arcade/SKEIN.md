@@ -657,3 +657,100 @@ always belonged), and the gap perturbation exposed the scan-window bug above.
 
 **Still unverified in the editor:** everything about how it plays. The rings and the arrow have
 still never been seen.
+
+---
+
+## 13. The first playtest: no rings, and an arrow pointing at a crystal
+
+Both halves of that report, and they are two different bugs that happen to look like one.
+
+### 13.1 The arrow — an enum MOVE follows references, and no serialized integer
+
+`ArcadeGameSkein.asset` carried `Mode: 48`. The mode is **50**.
+
+When the merge collided `Skein = 48` with upstream's `Tollway = 48`, Skein moved to 50 and every
+C# reference followed it, because they are references — `GameModes.Skein`. The card's `Mode` is a
+serialized **int**. It did not follow, and nothing said so:
+
+* `check_enum_member_references.py` asks whether a NAME exists. `Mode: 48` contains no name.
+* `check_switch_label_collisions.py` reads C#. The card is YAML.
+* `author_skein_assets.py --check` was **green**, because the generator emitted `Mode: 48` too.
+  The asset and the thing that authors the asset agreed with each other about the wrong number.
+
+So `MiniGameHUD.CreateObjectiveProviderForGameMode` matched `case GameModes.Tollway`, and
+`TollwayObjectiveProvider` falls back to the cell's crystals when no free flora heart is standing.
+The Skein cell authors no flora. The arrow pointed at the crystal — correctly, for a mode this
+was not.
+
+> **General rule.** Renaming or renumbering an enum member is a compile-time event for code and a
+> **silent** one for data. Every serialized integer that encoded the old value has to be swept by
+> hand, and a generator that owns such an asset is a *second* place the change has to land — where
+> `--check` will happily prove the two copies of the wrong number still match.
+
+Fixed in three places that must move together: the asset, `author_skein_assets.py`'s emit, and its
+`register_progression()` (which was still trying to unlock 48 — already present as Tollway, so it
+would have reported "already registered" forever while Skein stayed locked).
+
+### 13.2 The rings — `Cell.Config` is a LATCH, not a description
+
+`SkeinController.BuildCourse` read `cell.Config` and got null, on every match.
+
+`Cell.Config` is `runtime.Config`, and `runtime.Config` is written by `AssignConfig`, which runs
+from `Cell.Initialize`, which runs on `OnInitializeGame` behind `InitDelayMs` — **1000 ms**.
+`GateRaceController.OnNetworkSpawn` runs at t≈0. So the read was a full second early, every time.
+
+This is the *second* cut of this bug with the same symptom and a different cause. The first read
+the scene for a `SpawnableSkein` component that `SpawnableBase.Spawn()` never instantiates; the
+fix moved to the config, which answers the *object* question correctly and the *timing* question
+not at all. One never-resolves for another.
+
+The platform already had the shape of the answer and only for one property:
+`ExpectedNucleusWorldRadius` exists precisely because `NucleusWorldRadius` reads 0 during the
+spawn chain. **The same split was missing for the config itself**, so every consumer that needs it
+early has to invent one. `Cell.ExpectedConfig` is that twin — the config this cell has, or the one
+it *will* choose:
+
+* It **answers or declines; it never guesses.** A `Random` multi-config cell returns null rather
+  than rolling, because an unlatched roll is a *different* roll from the one `AssignConfig` will
+  make, and a confident wrong answer is worse than a null.
+* A client that cannot yet know its intensity returns null too. That costs nothing here: the
+  course is built on the SERVER and BROADCAST, so a client receives what the server derived
+  instead of deriving it — the same split `CrystalManager.IntensityScaled` records.
+* It is deliberately **silent**. It is a prediction, not a decision, so the misauthored-config
+  warnings stay on `AssignConfig`, which is asked once.
+
+**`ExpectedNucleusWorldRadius` was deliberately NOT routed through it.** It could be — it would
+stop returning 0 for multi-config cells, which is arguably the bug it was written for — but it
+would then move the spawn ring outward in the **twelve** shipped modes whose cells are
+`IntensityWise` and whose scenes set `arrangeSpawnPointsAroundCell`. Its own summary states the 0
+as the contract and its callers are written against it. That is a play-tested change to modes this
+branch was not asked to touch; it is left as a known, stated gap.
+
+### 13.3 The platform half: one attempt is not a slow build, it is a race that never runs again
+
+`GateRaceController` called `BuildCourse` **exactly once**, at `OnNetworkSpawn`, and logged a
+failure if it returned null. For Switchback and Headlong that is correct — their courses are pure
+geometry, answerable on that frame or never. Skein is the first subclass whose course is a
+property of the **scene**, and for it a single attempt turns "not ready yet" into "no rings, no
+scoring, no turn end, for the whole match."
+
+The platform now retries every frame until it works or `courseBuildTimeoutSeconds` (6 s) expires.
+Three details are each load-bearing:
+
+* **The seed is drawn once**, in `BeginCourseGeneration`, not per attempt — or the course would be
+  a function of how many frames the cell took to answer, and two runs of the same build would
+  differ for no reason a player could see.
+* **The retry ticks above `Update`'s guards.** The course is built while the turn has *not*
+  started (that is what the arena-build announcement is holding the connecting panel for), so a
+  retry gated on `IsTurnRunning` would never run at all.
+* **A retried method must not log.** `BuildCourse` runs every frame now, so a `LogError` inside it
+  is a per-frame path. A subclass sets `CourseFailureDetail` instead, and the platform prints it
+  once, if and only if the window closes.
+
+The ordering that makes the retry safe was already there: `RaceGateTurnMonitor.StartMonitor` reads
+`AuthoritativeGateCount` at TURN start, and the turn cannot start while the arena-build bracket is
+open — which the controller holds until the course lands or the retry gives up.
+
+> **General rule.** When a one-shot read of scene state fails, ask whether the caller gets a second
+> chance. If it does not, the failure is not "sometimes slow", it is permanent — and it will
+> present as a feature that has never once worked rather than as a race.

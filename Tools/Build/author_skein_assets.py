@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the SKEIN game mode needs (GameModes.Skein = 48).
+Authors every serialized asset the SKEIN game mode needs (GameModes.Skein = 50).
 
 Idempotent and deterministic: every GUID is md5("CosmicShore/<stable name>"), so re-running
 produces byte-identical output and re-tuning is one edit here plus a re-run rather than N
@@ -335,7 +335,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
     return (HEADER + STUB
             + f"  m_Script: {{fileID: 11500000, guid: {EXISTING['SO_ArcadeGame']}, type: 3}}\n"
             + "  m_Name: ArcadeGameSkein\n  m_EditorClassIdentifier:\n"
-            + "  Mode: 48\n  IsMultiplayer: 1\n  DisplayName: Skein\n"
+            + "  Mode: 50\n  IsMultiplayer: 1\n  DisplayName: Skein\n"
             + "  Description: 'Urchins only, on a knot of rails that never quite closes. Latch\n"
             + "    on and the cable does the driving - your colour runs fast, theirs runs at a\n"
             + "    crawl, and every rail ENDS somewhere, aimed at another. Thread the rings in\n"
@@ -426,7 +426,7 @@ def register_roster() -> str:
 
 
 def register_progression():
-    """alwaysUnlockedModes += 48.
+    """alwaysUnlockedModes += 50.
 
     Without it the card renders, reports interactable, passes an EventSystem raycast and OPENS
     NOTHING - SetLocked(true) skips the SelectGame listener entirely. That is the same silent
@@ -439,14 +439,14 @@ def register_progression():
         src = open(full, encoding="utf-8").read()
         if not re.search(r"alwaysUnlockedModes:", src):
             return cand, None
-        if re.search(r"alwaysUnlockedModes:(\s*\n(\s*)- \d+)*[\s\S]{0,400}?^\s*- 48$", src, re.M):
+        if re.search(r"alwaysUnlockedModes:(\s*\n(\s*)- \d+)*[\s\S]{0,400}?^\s*- 50$", src, re.M):
             return cand, src
         m = re.search(r"(alwaysUnlockedModes:\n)((?:\s*- \d+\n)+)", src)
         if not m:
-            return cand, src.replace("alwaysUnlockedModes:", "alwaysUnlockedModes:\n  - 48", 1)
-        if re.search(r"^\s*- 48$", m.group(2), re.M):
+            return cand, src.replace("alwaysUnlockedModes:", "alwaysUnlockedModes:\n  - 50", 1)
+        if re.search(r"^\s*- 50$", m.group(2), re.M):
             return cand, src
-        return cand, src[:m.end(2)] + "  - 48\n" + src[m.end(2):]
+        return cand, src[:m.end(2)] + "  - 50\n" + src[m.end(2):]
     return None, None
 
 
