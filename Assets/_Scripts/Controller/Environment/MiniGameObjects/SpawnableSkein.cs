@@ -93,7 +93,11 @@ namespace CosmicShore.Gameplay
             _rails.Clear(); _positions.Clear(); _rotations.Clear();
             _railLayStart.Clear(); _gates.Clear();
 
-            int seed = cableSeed != 0 ? cableSeed : (seed != 0 ? seed : DefaultSeed);
+            // Through the PROPERTY, never a second copy of the fallback chain: declaring a
+            // local named `seed` also SHADOWS the inherited SpawnableBase field, so the
+            // inner `seed` bound to the local under construction (CS0165) rather than to
+            // the serialized one it was reaching for.
+            int cable = CableSeed;
             var settings = BuildCourseSettings();
 
             // A walk that cannot lay the full ring course is a DESIGNED path, not an error -
@@ -102,7 +106,7 @@ namespace CosmicShore.Gameplay
             // exist, i.e. a match that cannot end.
             SkeinCourse.SkeinBuild build = null;
             for (int attempt = 0; attempt < 6 && build == null; attempt++)
-                build = SkeinCourse.BuildAll(unchecked(seed + attempt * 7919), settings);
+                build = SkeinCourse.BuildAll(unchecked(cable + attempt * 7919), settings);
 
             if (build == null)
             {
@@ -128,7 +132,7 @@ namespace CosmicShore.Gameplay
             }
             _gates.AddRange(build.Gates);
 
-            CSDebug.Log($"[Skein] Cable seed {seed}: {_rails.Count} rails, {_cachedLays.Count} prisms, " +
+            CSDebug.Log($"[Skein] Cable seed {cable}: {_rails.Count} rails, {_cachedLays.Count} prisms, " +
                         $"{build.Gates.Count} rings, N={strandCount}.");
         }
 

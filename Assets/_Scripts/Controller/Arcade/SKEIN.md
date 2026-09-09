@@ -397,3 +397,52 @@ teardown — Switchback ships without that and leaks its closure across a scene-
 
 **Still unverified in the editor:** whether that AI actually races, and everything about how the
 mode plays. Nothing here has been run in Unity.
+
+### 10.1 What the editor caught that nothing here could — and the two gates that answer it
+
+Two compile errors reached the editor on this branch, one per round trip:
+
+| error | file | cause |
+|---|---|---|
+| `CS0246: 'GameDataSO' could not be found` | `SkeinScoringRuleSO.cs` | missing `using CosmicShore.Utility;` (`SpawnableSkein.cs` had the same defect for `CSDebug`) |
+| `CS0165: use of unassigned local variable 'seed'` | `SpawnableSkein.cs(96)` | `int seed = cableSeed != 0 ? cableSeed : (seed != 0 ? seed : DefaultSeed);` — the local **shadows** the inherited `SpawnableBase.seed`, so the inner name binds to the local under construction |
+
+Both are trivial for a real compiler and **structurally invisible to every check this repo can run
+offline**: there are no Unity managed assemblies here, and Roslyn abandons class-body binding when
+the base type lives in the `Assembly-CSharp` monolith (`Docs/ASSEMBLY_SPLIT.md`), so a `mcs`/dotnet
+pass over these files reports nothing about their bodies. `SkeinCourse.cs` compiles and *runs*
+outside Unity only because it is pure math with no Unity base type — the other five files cannot
+follow it.
+
+The second one is the more interesting failure. **CS0165 is the lucky half of that bug**: the
+compiler complains only because the local happens to be unassigned at that point. Had the
+initializer been well-defined, C# would have said *nothing at all* and the code would silently
+have read the local's default instead of the serialized field it was reaching for. The fix routes
+it through the `CableSeed` property, whose own doc comment already argued against exactly this —
+*"two derivations of one course is exactly the drift this avoids."* One expression, one place.
+
+Both classes are detectable **on syntax alone**, which is the whole point:
+
+- `Tools/Build/check_using_directives.py` — an unqualified first-party type with no `using` that
+  can reach it. Scoped to changed files: it must guess whether an unqualified name is first-party,
+  and project-wide that guess produces 143 false positives (`Key`, `Direction`, `Frame`, `Stats`
+  also exist in UnityEngine and NUnit).
+- `Tools/Build/check_self_referential_locals.py` — a local declarator naming itself in its own
+  initializer. Needs no type resolution at all, so **`--all` is clean over the whole tree** (0
+  findings across 1,849 files) and it is safe in CI.
+
+Writing the second gate is itself the cautionary tale. A first cut produced **~100 findings, every
+one false**, in three shapes: an optional parameter default (`void F(int n = 1)`, whose
+"initializer" runs on into the method body), a keyword in the type position (`else offset = offset
+/ d;` is a re-assignment, not a declaration), and an object-initializer property (`new Foo {
+options = development }` names *Foo's* property). All three are now self-test cases, alongside the
+real bug as a negative control. **A gate nobody has watched fail is a gate nobody should trust —
+and a gate that cries wolf a hundred times is one nobody reads.**
+
+The general rule, extending CLAUDE.md's *"a check that cannot resolve a type cannot see errors
+about that type"*: **the defect classes that survive an unresolvable compile are exactly the ones
+decidable on syntax, so gate those and say plainly that the rest needs the editor.** What remains
+editor-only here is every error that needs a symbol table — a member that does not exist, an
+override whose signature drifted, an argument type mismatch. Those were checked by hand against
+their declarations for all five gameplay files (every override, every interface implementation,
+every cross-system call); that is a hand check, not a gate, and it does not scale past this branch.
