@@ -67,20 +67,11 @@ namespace CosmicShore.UI
         [SerializeField] Image blastCooldownRing;
         [SerializeField] Color blastReadyColor = new(1f, 0.55f, 0.35f, 1f);
         [SerializeField] Color blastSpentColor = new(0.35f, 0.4f, 0.45f, 0.5f);
-        [Tooltip("Icon tint while the blast is REVERSED — the drift is fully held, so the next " +
-                 "committed juke fires an INVERTED plate: same cylinder, mass thrown back the " +
-                 "other way (SCARAB.md §3.8). A COOL tint against the ready colour's warm one, " +
-                 "because it is the same weapon pointing the other way rather than a weaker or " +
-                 "unavailable one — the pilot needs to know which way it throws BEFORE they " +
-                 "commit, so this is a readout of an intent, not a flash after the fact.")]
-        [SerializeField] Color blastReversedColor = new(0.4f, 0.75f, 1f, 1f);
         [SerializeField, Min(0.01f)] float blastTweenDuration = 0.15f;
         [SerializeField, Min(0f)] float blastSpendPunchScale = 0.3f;
 
         bool _energyReady;
         bool _seeded;
-        bool _blastReady = true;
-        bool _blastReversed;
 
         public override void Initialize()
         {
@@ -153,11 +144,10 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetBlastReady(bool ready, float cooldownSeconds)
         {
-            _blastReady = ready;
             if (blastIcon)
             {
                 blastIcon.DOKill();
-                blastIcon.DOColor(BlastIconColor(), blastTweenDuration)
+                blastIcon.DOColor(ready ? blastReadyColor : blastSpentColor, blastTweenDuration)
                          .SetLink(blastIcon.gameObject);
 
                 if (!ready && _seeded && blastSpendPunchScale > 0f)
@@ -180,24 +170,6 @@ namespace CosmicShore.UI
                                  .SetLink(blastCooldownRing.gameObject);
             }
         }
-
-        /// <summary>
-        /// The blast is INVERTED: the drift is fully held, so the next committed juke sweeps the
-        /// same plate the other way and throws everything it destroys back past the pilot. Tint
-        /// only — the cooldown is untouched, because this changes the punch's DIRECTION and
-        /// nothing about its cost — and the spent tint still wins underneath, since a reversed
-        /// blast can also be recharging.
-        /// </summary>
-        public void SetBlastReversed(bool reversed)
-        {
-            _blastReversed = reversed;
-            if (!blastIcon) return;
-            blastIcon.DOKill();
-            blastIcon.DOColor(BlastIconColor(), blastTweenDuration).SetLink(blastIcon.gameObject);
-        }
-
-        Color BlastIconColor()
-            => !_blastReady ? blastSpentColor : _blastReversed ? blastReversedColor : blastReadyColor;
 
         /// <summary>
         /// Re-anchor the captured rest scales after the base class applies its upgrade bump.

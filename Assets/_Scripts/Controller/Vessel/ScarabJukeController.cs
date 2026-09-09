@@ -50,12 +50,14 @@ namespace CosmicShore.Gameplay
     /// is a fine adjustment and carries none of them. That analog range is what lets a pilot trim
     /// their line beside a ball without punching it away.
     ///
-    /// A BURIED DRIFT REFUSES A PARTIAL JUKE. While the reverse modifier is held the left trigger
-    /// means exactly two things — drift, and "the next dash comes out backwards" — so the fine
-    /// adjustment is off the table for its duration and only a committed dash fires. The push is
-    /// not cancelled, merely not begun: it fires the moment it reaches the perimeter. The blast
-    /// already declined a partial juke on its own (its one fine-control gate); this closes the
-    /// other half, so under the hold a partial juke is not a plateless dash, it is not a dash.
+    /// THE DRIFT IS JUST THE DRIFT. A fully-held drift briefly carried the Scarab's REVERSE
+    /// modifier and, with it, a rule that refused a partial juke while the trigger was buried.
+    /// Both are retired: the grab is its own button now
+    /// (<see cref="ScarabPhaseGrabExecutor"/>), and this class no longer reads the drift at all.
+    /// The playtest sentence that ended it is worth keeping — *"nothing interesting should be
+    /// happening at full drift"* — because it is a statement about a CONTROL rather than about a
+    /// feature: the drift is what the pilot steers with, and a steering input that also decides
+    /// whether an ability fires can never be pushed to its limit for free.
     /// </summary>
     public class ScarabJukeController : NetworkBehaviour
     {
@@ -69,19 +71,6 @@ namespace CosmicShore.Gameplay
                  "quarter-push is a quarter-strength nudge with a lean instead of a spin. Sits " +
                  "above the input strategies' own stick deadzone so resting drift cannot fire it.")]
         [SerializeField, Range(0.05f, 0.95f)] float engageThreshold = 0.35f;
-        [Tooltip("Trigger depth (VesselTransformer.DriftTriggerHeld01, 0..1) at or above which " +
-                 "the drift ENGAGES the Scarab's REVERSE modifier. The cavitation plate inverts " +
-                 "and a ball strike negates the ball's velocity on this one predicate, so the " +
-                 "two can never disagree about what 'held' means.")]
-        [SerializeField, Range(0.5f, 1f)] float driftFullHoldThreshold = 0.9f;
-        [Tooltip("Trigger depth BELOW which an engaged reverse modifier RELEASES. The gap to the " +
-                 "engage threshold is deliberate and load-bearing: a buried analog trigger " +
-                 "wobbles a few percent under a working thumb, and a bare comparison drops the " +
-                 "modifier on every dip — which is what made the reversal read as cutting out at " +
-                 "random. Sits deep in the SHARP drift band (the trigger's top half) so letting " +
-                 "the reversal go is never confusable with easing off the drift. Set at or above " +
-                 "the engage threshold to collapse the band back to a bare comparison.")]
-        [SerializeField, Range(0.1f, 1f)] float driftHoldReleaseThreshold = 0.6f;
         [Tooltip("Flip the CW/CCW visual-roll mapping if it reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
         [Tooltip("Seconds between jukes. ZERO by design: the dash itself is free and always " +
@@ -113,7 +102,6 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         bool _rolling;
         bool _jukeArmed;
-        bool _driftHeldLatched;
         bool _lastJukeCommitted;
         float _lastJukeStrength01;
         float _lastJukeTime = float.NegativeInfinity;
@@ -157,51 +145,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The most recent juke's strength, 0..1 — the stick's radial deflection at
         /// fire time (1 for a committed juke).</summary>
         public float LastJukeStrength01 => _lastJukeStrength01;
-
-        /// <summary>
-        /// How far the drift trigger is held RIGHT NOW, 0..1
-        /// (<see cref="VesselTransformer.DriftTriggerHeld01"/>). 0 when the vessel has no
-        /// transformer yet.
-        ///
-        /// Deliberately the TRIGGER, not <c>VesselTransformer.DriftHold01</c>: that one is the
-        /// eased, tier-derived value the drift blend runs on, and reading it made the REVERSE
-        /// modifier ramp in, decay out and — on a non-analog device — report the state of the
-        /// drift ACTION instead of the control. The pilot's question is "am I burying the
-        /// trigger", so the answer has to be the trigger. See the property's own note.
-        /// </summary>
-        public float DriftHold01
-            => _status?.VesselTransformer ? _status.VesselTransformer.DriftTriggerHeld01 : 0f;
-
-        /// <summary>
-        /// True while the drift is FULLY HELD (trigger buried). THE ONE predicate for the Scarab's
-        /// REVERSE modifier: <see cref="ScarabCavitationBlast"/> inverts its plate on it, and a
-        /// hull strike on an Astro League ball negates the ball's velocity on it. One hold, one
-        /// meaning — everything this pilot touches goes the other way.
-        /// </summary>
-        public bool IsDriftFullyHeld
-            => !IsSpawned || IsOwner ? _driftHeldLatched : n_DriftFullyHeld.Value;
-
-        /// <summary>
-        /// OWNER → EVERYONE: is this pilot's drift fully held right now?
-        ///
-        /// The hold is read from <see cref="VesselTransformer.DriftHold01"/>, which comes off
-        /// <c>InputStatus.LeftTriggerAnalog</c> — and that is written by the local input strategy,
-        /// NOT replicated. So on the server's replica of a remote pilot's Scarab the trigger reads
-        /// 0 forever, and the ball strike path (which runs on the SERVER) could never see a remote
-        /// pilot's reversal: everyone but the host would hit an ordinary bounce. Same defect the
-        /// juke already fixed with <see cref="NotifyJukeFired_ServerRpc"/>, same family.
-        ///
-        /// It is a replicated LEVEL rather than an RPC'd edge because the hold is sustained — the
-        /// pilot buries the trigger and flies at the ball — which is exactly the shape a
-        /// NetworkVariable carries well. The known cost is the mirror of SCARAB.md §4.7's finding:
-        /// a hold that begins and ends inside one tick is coalesced away and the server never sees
-        /// it, so a trigger buried less than a tick before contact yields an ORDINARY strike. That
-        /// is the safe direction to fail — the reversal is the bonus, the bounce is the baseline.
-        /// The owner reads its own live value instead of this, so its own reversal never waits a
-        /// tick for its own input.
-        /// </summary>
-        readonly NetworkVariable<bool> n_DriftFullyHeld = new(
-            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
         /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
@@ -296,18 +239,6 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return;
 
-            // Resolve the reverse modifier, then publish it for the machines that cannot see this
-            // pilot's trigger (see n_DriftFullyHeld). Above the autopilot gate and above the
-            // IsLocalPilot gate below, because it is the OWNER's answer about its own vessel and
-            // must keep being answered even on a frame the fire path declines to run — and the
-            // LATCH in particular has to advance every frame on every machine that reads it
-            // locally, including the legacy non-networked spawn path where IsSpawned is false.
-            _driftHeldLatched = ScarabDriftReversal.LatchDriftHold(
-                _driftHeldLatched, DriftHold01, driftFullHoldThreshold, driftHoldReleaseThreshold);
-
-            if (IsSpawned && IsOwner && n_DriftFullyHeld.Value != _driftHeldLatched)
-                n_DriftFullyHeld.Value = _driftHeldLatched;
-
             // Cooldown re-arm: pure input pacing off the fire timestamp.
             if (!_jukeArmed && Time.time - _lastJukeTime >= jukeCooldownSeconds)
                 SetJukeArmed(true);
@@ -379,20 +310,6 @@ namespace CosmicShore.Gameplay
 
             if (action == ScarabJukeGestureAction.Begin)
             {
-                // A BURIED DRIFT REFUSES A PARTIAL JUKE OUTRIGHT. While the pilot is holding the
-                // reverse modifier the left trigger's whole contract is "drift, and the next dash
-                // comes out backwards" — a nudge that leans the hull 60° and shoves it sideways is
-                // a third thing they did not ask for, and it is what a light thumb resting on the
-                // right stick was producing mid-corner. The blast already declines a partial juke
-                // on its own (ScarabCavitationBlast's fine-control gate); this closes the other
-                // half, so under the hold a partial juke is not a plateless dash, it is not a dash.
-                //
-                // NOT a cancel: the gesture is simply not begun, so the SAME push still fires the
-                // instant it reaches the perimeter — Resolve returns Begin again there with
-                // atLimit true, i.e. a committed, reversed dash. Releasing the drift mid-push
-                // likewise hands the nudge straight back.
-                if (!atLimit && IsDriftFullyHeld) return;
-
                 // A NEW push. It cannot start inside a roll (the previous dash still owns the
                 // roll axis and the bridging-prism override), and it spends the armed juke.
                 if (!_jukeArmed || _rolling) return;
@@ -431,7 +348,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogVerbose(CSLogChannel.ScarabDash,
                     $"[ScarabJuke] {(upgrade ? "Upgraded to committed" : "Fired")}: " +
                     $"{(rollSign > 0f ? "CW" : "CCW")}, impulse {impulse01:F2}, " +
-                    $"{(committed ? "committed" : "partial")}, drift hold {DriftHold01:F2}, dir {shove}");
+                    $"{(committed ? "committed" : "partial")}, dir {shove}");
 
             _lastJukeTime = Time.time;
             _lastJukeCommitted = committed;

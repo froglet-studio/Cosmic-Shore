@@ -186,6 +186,7 @@ GameObject:
   - component: {fileID: 2645891037714460318}
   - component: {fileID: 7423918465920174777}
   - component: {fileID: 3901220300005001}
+  - component: {fileID: 8100000000000000105}
   m_Layer: 0
   m_Name: Scarab
   m_TagString: Player_Ship
@@ -637,6 +638,9 @@ MonoBehaviour:
   - InputEvent: 6
     ShipActions:
     - {fileID: 11400000, guid: 8761b36b8aad336452f5c21344c57c1c, type: 2}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 11400000, guid: 33834e1ae0c47e9ed1873f60fe381aa1, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
@@ -931,6 +935,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 8100000000000000101}
+  - {fileID: 8100000000000000105}
 --- !u!114 &8100000000000000101
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -957,6 +962,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _trails: []
+--- !u!114 &8100000000000000105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16e001e66dd138ce8330ae97dd07835c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &779933931439586912
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2319,8 +2336,6 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
   engageThreshold: 0.35
-  driftFullHoldThreshold: 0.9
-  driftHoldReleaseThreshold: 0.6
   invertRollDirection: 0
   jukeCooldownSeconds: 0
   jukeDurationSeconds: 0.5

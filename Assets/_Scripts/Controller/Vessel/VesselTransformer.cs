@@ -258,60 +258,28 @@ public class VesselTransformer : MonoBehaviour
 
         /// <summary>
         /// How far the drift TRIGGER is held this frame, 0..1 over the whole analog range — 0
-        /// released, 0.5 at the single tier, 1 buried (the sharp tier saturated). This is the
-        /// SMOOTHED per-frame value the drift blend itself runs on, so a reader that gates on
-        /// "fully held" (the Scarab's REVERSE modifier — it inverts its cavitation plate and
-        /// reverses a ball it strikes) agrees with the drift the pilot is actually getting.
+        /// released, 0.5 at the single tier, 1 buried (the sharp tier saturated).
         ///
-        /// It tracks the TRIGGER, not <c>VesselStatus.IsDrifting</c>, and deliberately so: the sum
-        /// is sampled unconditionally at the top of <see cref="Update"/>, before any drift flag is
-        /// consulted, so "the pilot has the trigger buried" is answerable on the frame it becomes
-        /// true rather than after the drift action has round-tripped through the input events. On a
-        /// non-gamepad device the underlying sum is binary and eases at DRIFT_EASE_SPEED, so a
-        /// keyboard drift reads as fully held ~80 ms after the key lands. It holds its last value
-        /// while <see cref="Update"/> is short-circuited (inactive or stationary vessel) and is
-        /// cleared by <see cref="ResetTransformer"/>.
+        /// <b>THIS IS THE DRIFT BLEND'S OWN VALUE, NOT A READING OF THE CONTROL.</b> It is the
+        /// smoothed <c>_frameTriggerSum</c> that <see cref="ApplyAnalogDrift"/> runs on, which is
+        /// what makes it right for anything describing the drift the pilot is actually getting —
+        /// and wrong for anything gating a rule on "is the pilot holding this". Everything that
+        /// makes it good at the first job disqualifies it from the second: on a non-gamepad device
+        /// it is EASED (so it ramps in over ~80 ms and keeps decaying after release), on those
+        /// devices it is derived from the drift TIER FLAGS rather than from the trigger at all (a
+        /// single tier reads 0.5), the deferred ease-out zeroes it, and it is written only inside
+        /// <see cref="Update"/>, which early-returns on an inactive or stationary vessel — so it
+        /// does not go stale, it FREEZES.
+        ///
+        /// The Scarab spent two playtests learning that. Its REVERSE modifier gated on this, then
+        /// on a raw trigger read, then on a hysteretic latch over that read, and none of them
+        /// behaved like the button the pilot thought they were holding — because none of them was
+        /// one. The modifier is a real bound button now
+        /// (<see cref="ScarabPhaseGrabExecutor"/>). General rule: <b>a value smoothed for one
+        /// consumer is not a reading of the thing it was smoothed from</b> — gate a rule on a
+        /// control, and leave the eased copy to the feel it was built for.
         /// </summary>
         public float DriftHold01 => Mathf.Clamp01(_frameTriggerSum / MaxDriftTriggerSum);
-
-        /// <summary>
-        /// How far the drift TRIGGER is physically held RIGHT NOW, 0..1 — read straight off the
-        /// input channel, with no smoothing, no drift-tier mediation and no dependence on this
-        /// component's Update having run.
-        ///
-        /// THIS IS THE ONE TO ASK when the question is "is the pilot burying the trigger", and
-        /// <see cref="DriftHold01"/> is NOT, however similar the two look.
-        /// <c>_frameTriggerSum</c> is a value engineered for the drift BLEND, and every property
-        /// that makes it good at that makes it wrong here: it is EASED on a non-analog device (so
-        /// it ramps in over ~80 ms and decays out after the trigger is already released — an
-        /// expiry, on a signal that is supposed to be a level); on those devices it is derived
-        /// from the drift TIER FLAGS rather than from the trigger at all, so it reports the state
-        /// of an action rather than of a control; the deferred ease-out ZEROES it; and it is only
-        /// written inside <see cref="Update"/>, which early-returns while the vessel is stationary
-        /// or inactive and therefore leaves the last value frozen in place. A reader gating a
-        /// GAMEPLAY RULE on it (the Scarab's REVERSE modifier) inherits all four as intermittency.
-        ///
-        /// The two-trigger scheme takes the MINIMUM of the pair, because there "fully held" means
-        /// both are buried — the sum's midpoint is one trigger buried, which is a different thing.
-        /// TOUCH is the one device that writes no analog trigger channel at all, so there (and
-        /// only there) the drift tier flags stand in: a touch drift has no depth, so a live one
-        /// IS fully held.
-        /// </summary>
-        public float DriftTriggerHeld01
-        {
-            get
-            {
-                var input = InputStatus;
-                if (input == null) return 0f;
-
-                if (input.ActiveInputDevice == InputDeviceType.Touch)
-                    return _sharpDriftActive || _singleDriftActive ? 1f : 0f;
-
-                return Mathf.Clamp01(singleTriggerDrift
-                    ? input.LeftTriggerAnalog
-                    : Mathf.Min(input.LeftTriggerAnalog, input.RightTriggerAnalog));
-            }
-        }
 
         private bool _driftSpeedHeld;
         private float _heldDriftSpeed;

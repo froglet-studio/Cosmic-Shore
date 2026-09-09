@@ -36,6 +36,21 @@ namespace CosmicShore.Gameplay
     /// non-cone yields no height and this class then falls back to <see cref="lengthPerRadius"/> —
     /// do not rely on that; give the helper a cylinder branch first if a second caller ever needs it.
     ///
+    /// IT CAN CLAIM ITS OWN MIRROR IMAGE (<see cref="mirrorAboutStartPlane"/>). Reflecting the
+    /// swept cylinder through the START PLANE — the plane through the spawn origin whose normal is
+    /// the sweep axis — doubles the volume into a cylinder of length 2L centred on the hull, while
+    /// the imparted velocity stays exactly what it was: ONE uniform vector along +axis, everywhere
+    /// in the doubled field. So the back half is not a second blast pointing the other way, it is
+    /// the SAME blast reaching behind the emitter and dragging what it finds there FORWARD, through
+    /// the hull and down-range. That is the whole point of the mode: mass behind you is no longer
+    /// safe from your own punch, and a ball behind you can be brought to the front of the fight.
+    ///
+    /// It is authored per PREFAB rather than being the shape's nature, because "reach behind me
+    /// too" is a weapon design decision and a future cylinder blast should not inherit it. Every
+    /// expression of the volume honours it together — the trigger box, the plate visual, the Burst
+    /// prism sweep, the crystal sweep's broadphase and its exact narrowphase — because a volume
+    /// that four consumers disagree about is four different weapons.
+    ///
     /// GEOMETRY LIVES IN WORLD UNITS ON A SCALE-1 ROOT. The cone drives a non-uniformly scaled
     /// container and then has to divide that scale back out of its capsule trigger, anisotropically
     /// (see <c>AOEConicExplosion.UpdateCapsuleTrigger</c>). This root is never scaled: the mesh
@@ -66,6 +81,15 @@ namespace CosmicShore.Gameplay
                  "timestep changes. 0 disables the hold entirely.")]
         [SerializeField, Min(0f)] float contactHoldSeconds = 0.05f;
 
+        [Tooltip("Claim the MIRROR IMAGE of the sweep as well, reflected through the START PLANE " +
+                 "(the plane through the spawn origin, normal = the sweep axis). The volume becomes " +
+                 "a cylinder of length 2x the sweep centred on the emitter instead of one that " +
+                 "starts at it. The VELOCITY is unchanged and uniform: everything in both halves " +
+                 "is thrown along +axis at the blast's own speed, so the back half DRAGS mass " +
+                 "forward through the emitter rather than throwing it away. Off by default - it is " +
+                 "a weapon design decision, not a property of the shape.")]
+        [SerializeField] bool mirrorAboutStartPlane;
+
         [Tooltip("The cylinder MESH. Unity's built-in cylinder is 2 units tall along its local Y " +
                  "and 1 unit across, so this child is posed with a +90 degree X roll (local +Y -> " +
                  "root +Z, the sweep axis) and scaled (diameter, halfLength, diameter). Leave it " +
@@ -90,8 +114,15 @@ namespace CosmicShore.Gameplay
         /// about to sweep (a preview, a HUD readout) without re-deriving it.</summary>
         public float PlateRadius => _radius;
 
-        /// <summary>The plate's axial reach.</summary>
+        /// <summary>The plate's axial reach in ONE direction. With
+        /// <see cref="MirrorsAboutStartPlane"/> the volume spans this far on BOTH sides of the
+        /// emitter, so its total axial extent is twice this.</summary>
         public float PlateLength => _length;
+
+        /// <summary>True when the plate also claims its mirror image about the start plane — the
+        /// doubled volume with one uniform velocity. Readable off the PREFAB before anything is
+        /// spawned, so a caller can describe the volume it is about to sweep.</summary>
+        public bool MirrorsAboutStartPlane => mirrorAboutStartPlane;
 
         /// <summary>The authored length:radius ratio, readable off the PREFAB before anything is
         /// spawned. A caller that needs to know how far this plate will sweep in order to place
@@ -147,7 +178,10 @@ namespace CosmicShore.Gameplay
             // frame as well as the magnitude it imparts.
             speed = ExplosionDuration > 0f ? _length / ExplosionDuration : 0f;
 
-            MaxScaleVector = new Vector3(MaxScale, MaxScale, _length);
+            // Descriptive only on this shape (the cylindrical path never scales its root), but
+            // it must not LIE about the extent: a mirrored plate spans _length on both sides.
+            MaxScaleVector = new Vector3(MaxScale, MaxScale,
+                                         mirrorAboutStartPlane ? _length * 2f : _length);
 
             Material = initStruct.OverrideMaterial;
 
@@ -236,8 +270,14 @@ namespace CosmicShore.Gameplay
             float sz = Mathf.Max(Mathf.Abs(lossy.z), 1e-4f);
             // A box scales componentwise (unlike a sphere or a capsule), so each axis divides out
             // its OWN factor and there is no anisotropy trap to fall into here.
-            _triggerBox.size = new Vector3(_radius * 2f / sx, _radius * 2f / sy, depth / sz);
-            _triggerBox.center = new Vector3(0f, 0f, depth * 0.5f / sz);
+            // MIRRORED: the box spans [-depth, +depth] about the emitter, so it is twice as deep
+            // and centred on the origin rather than on the sweep's midpoint. Vessel and Astro
+            // League BALL contacts resolve through this box, which is exactly what lets the back
+            // half reach a ball behind the pilot.
+            float axialSpan = mirrorAboutStartPlane ? depth * 2f : depth;
+            float axialCentre = mirrorAboutStartPlane ? 0f : depth * 0.5f;
+            _triggerBox.size = new Vector3(_radius * 2f / sx, _radius * 2f / sy, axialSpan / sz);
+            _triggerBox.center = new Vector3(0f, 0f, axialCentre / sz);
         }
 
         /// <summary>
@@ -249,8 +289,12 @@ namespace CosmicShore.Gameplay
         {
             if (!plateVisual) return;
             plateVisual.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            plateVisual.localPosition = new Vector3(0f, 0f, depth * 0.5f);
-            plateVisual.localScale = new Vector3(_radius * 2f, depth * 0.5f, _radius * 2f);
+            // The built-in cylinder's y scale is its HALF-length, so a mirrored plate (total span
+            // 2*depth) takes y = depth and sits centred on the emitter. The player has to be able
+            // to SEE the volume that just claimed a ball behind them.
+            plateVisual.localPosition = new Vector3(0f, 0f, mirrorAboutStartPlane ? 0f : depth * 0.5f);
+            plateVisual.localScale = new Vector3(
+                _radius * 2f, mirrorAboutStartPlane ? depth : depth * 0.5f, _radius * 2f);
         }
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)
@@ -324,7 +368,8 @@ namespace CosmicShore.Gameplay
                     ShapeTriggerBox(depth);
 
                     bool shouldContinue = impactor?.ProcessBatchCylinderFrame(
-                        transform.position, _axis, sweptTo, depth, _radius, Impulse) ?? true;
+                        transform.position, _axis, sweptTo, depth, _radius, Impulse,
+                        mirrorAboutStartPlane) ?? true;
 
                     sweptTo = Mathf.Max(sweptTo, depth);
 

@@ -363,8 +363,8 @@ namespace CosmicShore.Gameplay
                  "spin never appears to jump.")]
         [Range(0f, 0.6f)] public float strikePopAmount = 0.22f;
 
-        [Header("Scarab reversal (SCARAB.md §3.8)")]
-        [Tooltip("Below this ball speed a held-drift Scarab hull strike falls through to the " +
+        [Header("Scarab phase grab (SCARAB.md §3.8)")]
+        [Tooltip("Below this ball speed a phasing Scarab's hull strike falls through to the " +
                  "ORDINARY strike instead of reversing. A ball that is barely moving has no " +
                  "trajectory to send back, and 'nothing happens' is the one outcome a committed " +
                  "input must never produce.")]
@@ -387,13 +387,21 @@ namespace CosmicShore.Gameplay
                  "an ordinary hit.")]
         [Range(1f, 4f)] public float reversalPopMultiplier = 2f;
 
-        [Tooltip("Seconds after a reversal during which the GRABBING vessel and this ball do not " +
+        [Tooltip("Seconds after a GRAB during which the grabbing vessel and this ball do not " +
                  "interact at all — no depenetration, no bounce, no second reversal. The fling's " +
                  "signature case sends the ball along a heading that runs through the hull that " +
-                 "grabbed it, so the ball is phased through it. Long enough to cover the transit " +
-                 "and no longer: the vessel is ordinary mass to this ball again the moment it " +
-                 "expires.")]
-        [Min(0f)] public float reversalPassThroughSeconds = 0.35f;
+                 "grabbed it, so the ball is phased through it. It is a CAP: the window normally " +
+                 "ends the moment that vessel stops reporting an overlap.")]
+        [Min(0f)] public float phasePassThroughSeconds = 0.35f;
+
+        [Tooltip("Cap on the pass-through a MIRRORED cavitation blast arms when a phasing pilot " +
+                 "drags a ball forward from behind themselves. Longer than the grab's cap for a " +
+                 "structural reason rather than a feel one: this window is armed at the KICK, " +
+                 "with the ball still up to a full plate-length away, so it has to survive the " +
+                 "ball's whole flight to the hull. At the shipped plate (54u reach, 257 u/s " +
+                 "sweep) the worst case is ~0.25s; the rest is margin, and it costs nothing " +
+                 "because the window still ends the moment the ball is through.")]
+        [Min(0f)] public float blastDragPassThroughSeconds = 1f;
 
         [Tooltip("Seconds a ball's visual BLOOMS IN over when it comes into existence — the " +
                  "continuity-of-existence law applied to the payload itself (a Scarab-forged " +

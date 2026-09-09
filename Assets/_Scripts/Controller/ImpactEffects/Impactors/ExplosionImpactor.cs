@@ -241,12 +241,17 @@ namespace CosmicShore.Gameplay
         /// The cross-section is a DISC of constant <paramref name="radius"/>, and every prism the
         /// plate claims is shoved along <paramref name="axis"/> — the blast's own velocity —
         /// rather than radially from an origin.
+        ///
+        /// With <paramref name="mirrored"/> the slab is reflected through the start plane as well,
+        /// so one frame claims |axial| ∈ [sliceMin, sliceMax] rather than the forward interval.
+        /// The impulse is untouched: the mirrored half throws mass the SAME way, which is what
+        /// makes the back half drag mass forward through the emitter instead of away from it.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
         public bool ProcessBatchCylinderFrame(
             Vector3 origin, Vector3 axis, float sliceMin, float sliceMax, float radius,
-            in ExplosionImpulse impulse)
+            in ExplosionImpulse impulse, bool mirrored = false)
         {
             using (s_processBatch.Auto())
             {
@@ -259,17 +264,22 @@ namespace CosmicShore.Gameplay
                 // built a ball out of mass it visibly missed while its prism half, running the
                 // exact slab, agreed it had touched nothing there.
                 float depth = Mathf.Max(sliceMax, 0f);
-                float half = depth * 0.5f;
-                SweepCrystals(origin + axis * half,
+                // A MIRRORED plate is centred on the emitter and spans depth BOTH ways, so its
+                // bounding sphere is centred on the origin with the full half-diagonal - not on a
+                // midpoint that no longer exists. Getting this wrong under-reaches behind the
+                // pilot, which is the half of the volume the mirror was added for.
+                float half = mirrored ? depth : depth * 0.5f;
+                Vector3 broadCentre = mirrored ? origin : origin + axis * half;
+                SweepCrystals(broadCentre,
                               Mathf.Sqrt(half * half + radius * radius),
-                              new SweptCylinder(origin, axis, depth, radius));
+                              new SweptCylinder(origin, axis, depth, radius, mirrored));
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
 
                 return registry.ProcessExplosionCylinderFrame(
-                    origin, axis, sliceMin, sliceMax, radius, impulse,
+                    origin, axis, sliceMin, sliceMax, radius, mirrored, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
@@ -458,10 +468,12 @@ namespace CosmicShore.Gameplay
             public readonly Vector3 Axis;
             public readonly float Depth;
             public readonly float Radius;
+            public readonly bool Mirrored;
 
-            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius)
+            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius,
+                                 bool mirrored = false)
             {
-                Origin = origin; Axis = axis; Depth = depth; Radius = radius;
+                Origin = origin; Axis = axis; Depth = depth; Radius = radius; Mirrored = mirrored;
             }
 
             public bool IsValid => Radius > 0f;
@@ -473,7 +485,12 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 rel = point - Origin;
                 float s = Vector3.Dot(rel, Axis);
-                if (s < 0f || s > Depth) return false;
+                // A MIRRORED plate claims its own reflection through the start plane, so the axial
+                // test is on |s| and the volume runs [-Depth, +Depth]. Same expression the Burst
+                // job runs — these two must not drift, or the crystal half of a blast disagrees
+                // with the prism half about what it touched.
+                if (Mirrored) { if (s < -Depth || s > Depth) return false; }
+                else if (s < 0f || s > Depth) return false;
                 return Vector3.ProjectOnPlane(rel, Axis).sqrMagnitude <= Radius * Radius;
             }
         }
