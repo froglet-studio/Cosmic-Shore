@@ -23,10 +23,10 @@ MonoBehaviour:
   dogFightPointTarget: 90
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
+  tollwayTollTarget: 4
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   hijackStealTarget: 750
-  drumfireSeconds: 75
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -38,8 +38,8 @@ MonoBehaviour:
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
+  tollwayTollTargetBuild: 4
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   hijackStealTargetBuild: 750
-  drumfireSecondsBuild: 75
   autoRestoreBuildValuesBeforeBuild: 1

@@ -66,6 +66,21 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
    prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
    `Default*` pair.)
+4-i. **…and a SILENT prefab is not an unset one — check whether the KEY is present before you
+   trust either source.** Unity writes a component's serialized fields when it last saved that
+   prefab, then runs field initializers first and applies only the keys the YAML actually
+   carries. So a field added to the C# AFTER a prefab was last written appears nowhere in that
+   prefab, and the **initializer is the shipped value**. `Scarab.prefab`'s
+   `ScarabVesselTransformer` block is exactly this: it serializes only the inherited
+   `VesselTransformer` fields, and six Scarab-specific knobs (`baseTopSpeed`,
+   `accelerationPerSecond`, `coastDragPerSecond`, `doubleTapWindowSeconds`, `dashSpeed`,
+   `dashDurationSeconds`) are absent, so tuning them means editing the C#. This is the converse
+   of rule 4, not an exception to it — the rule is about which source is AUTHORITATIVE, and
+   reading a silent prefab as "unset" is as wrong as reading a class default over a real
+   override. Two consequences: `grep <field> <prefab>` returning nothing is a RESULT, not a
+   miss; and the moment anyone opens that prefab in the editor and saves, Unity writes all the
+   missing keys at their then-current values and the prefab becomes authoritative — so say in
+   the doc which source is live today.
 4a. **…and the AUTHORED number is not the EFFECTIVE one — trace the consumer before you tune
    against it.** Reading the field is only half the job; a tuning request is about the value
    that reaches the screen. `VesselTransformer.CurrentBoostAmount()` multiplies
@@ -493,6 +508,38 @@ which is the least diagnostic symptom in the fleet.
   `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
   the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
   the prefab every game scene wires by hand into `aiPlayerPrefab`.
+
+### 4.z Sizing a vessel's FX — a jet has TWO sizes and the documented dial reaches ONE
+
+`VesselTail.widthScale` / `VesselJet.widthScale` are the fleet's documented "this hull is a
+different size" dial, and `VesselFXWidth.Apply` walks **`TrailRenderer`s and nothing else**. A jet
+is not a trail renderer: `VesselJet.prefab` nests `vfx_Projectile_02`, which is **three
+`scalingMode: Hierarchy` particle systems beside one `Trail`**. So the plumes — most of what a jet
+actually draws — take their size from the **transform chain**, which is precisely the thing a
+`TrailRenderer` ignores and therefore precisely the thing `widthScale` was written not to be.
+
+- **A jet that authors no `m_LocalScale` renders at `(1,1,1)` x whatever its MOUNT inherited**,
+  which is nobody's decision. The Urchin's hang on engine nodes carrying a **1.75** scale and
+  shipped at **8.75x the reference girth and 40x its length** — the largest plumes in the fleet on
+  the smallest hull with the closest camera — while its ribbon sat correctly at 0.334 the whole
+  time. That split is why it survived review: half the jet was right, and the half that was wrong
+  had no dial pointing at it.
+- **The plume's dial is `m_LocalScale` on the jet instance**, target
+  **`(0.6, 0.6, 0.13) x |followOffset.z| / 20`** — the value BOTH hand-tuned hulls (Dolphin,
+  Squirrel) author, scaled by the camera ratio the ribbon already uses. Divide back through the
+  mount's own scale if it has one.
+- **Scale the TRANSFORM, not the particle module**, and only because these systems are
+  `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
+  `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
+- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+  hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
+  Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
+
+**The general shape, which is not about jets:** *when one object's size (or colour, or lifetime)
+is set by two unrelated mechanisms, a dial that reaches one of them reads as a dial that reaches
+the object.* Before tuning any per-vessel FX number, enumerate what the component the number lives
+on actually walks, and compare it against everything the prefab draws. Full record:
+`Docs/VESSEL_TAIL_AND_JETS.md` §3.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

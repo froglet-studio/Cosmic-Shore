@@ -749,6 +749,18 @@ the escalation for "when a wrong member name matters" — and prove your own gat
 was produced: inject the defect you care about, confirm the gate fires, restore, `cmp` the file.
 A gate you have not seen fail is not a gate.
 
+**The corollary for a BASELINE ERROR-SET DIFF — the standard "before == after, so my edit is
+clean" move.** That diff is only evidence if the harness can see the lines you changed, and the
+blindness above is per-file: a file whose base class is unresolved contributes a fixed set of
+declaration-level diagnostics that is *identical* before and after any body edit, so the diff
+comes back empty for a correct change and for a broken one alike. Measured in one session: a
+reduced island around `ExplosionImpactor` reported 14 errors with a merge resolution intact and
+**the same 14** with a call in that very hunk renamed to a nonexistent method. The fix is cheap —
+add the real dependency files until the base binds (four here: the base class, its interface, one
+struct, plus a small stub file for the engine types), then inject the typo INTO YOUR OWN HUNK and
+confirm exactly one new `CS0103` appears. Only then is "before == after" worth reporting, and only
+then should you diff your merged file against **both** parents rather than one.
+
 **A second, distinct blind spot: an error-typed OPERAND suppresses diagnostics on the whole
 expression it sits inside — even in a class whose base DOES bind.** The table above is about a
 base class failing to resolve (`MonoBehaviour`/`NetworkBehaviour` with no Unity assemblies), which

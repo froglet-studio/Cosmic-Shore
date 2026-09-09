@@ -53,10 +53,22 @@ namespace CosmicShore.Gameplay
             Vector3 crystalAt = crystalImpactee.transform.position;
             Vector3 blastAt = impactor.transform.position;
 
+            // THE BALL LEAVES THE WAY THE BLAST THROWS, WHICH IS NOT ALWAYS OUTWARD. Asking the
+            // blast is the whole fix: a spherical blast answers with the radial (unchanged), and a
+            // swept plate answers with its sweep axis at every position — which is what makes a
+            // MIRRORED plate drag what it claims FORWARD rather than pushing it away. Deriving the
+            // course from (crystal − blast) instead assumes every blast radiates, and on the rear
+            // half of a mirrored plate that is exactly backwards: a crystal astern forged a ball
+            // flying away behind the pilot while every prism beside it flew forward past them.
+            // The plate's own law is "everything it claims leaves along the sweep"; a forged ball
+            // is something it claims.
+            Vector3 thrown = impactor.BlastImpactVector(crystalAt);
             Vector3 radial = crystalAt - blastAt;
-            Vector3 course = radial.sqrMagnitude > 1e-4f
-                ? radial.normalized
-                : (status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : Vector3.forward);
+            Vector3 course = thrown.sqrMagnitude > 1e-4f
+                ? thrown.normalized
+                : radial.sqrMagnitude > 1e-4f
+                    ? radial.normalized
+                    : (status.Course.sqrMagnitude > 1e-4f ? status.Course.normalized : Vector3.forward);
 
             // The blast's own throw, in the same units it hands prism debris.
             float blastMagnitude = impactor.BlastImpulse.Speed * impactor.BlastImpulse.Inertia;

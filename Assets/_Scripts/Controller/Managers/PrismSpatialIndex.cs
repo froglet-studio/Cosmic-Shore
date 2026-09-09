@@ -411,6 +411,11 @@ namespace CosmicShore.Gameplay
     /// radiate; it shoves. Every prism it claims leaves along <see cref="Axis"/> at the blast's
     /// own speed, so the debris field travels with the punch instead of blooming out of it — the
     /// direction is a constant, which is also why this job does no per-hit normalize at all.
+    ///
+    /// <see cref="Mirrored"/> reflects the claimed volume through the START PLANE, doubling it
+    /// about the emitter — and deliberately does NOT reflect the impulse. That asymmetry is the
+    /// mode: the back half throws mass the same way the front half does, so a mirrored plate drags
+    /// what is behind the emitter forward THROUGH it rather than blowing it further away.
     /// </summary>
     [BurstCompile]
     public struct AOECylinderSweepQueryJob : IJobParallelFor
@@ -421,6 +426,7 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public float SliceMin;   // axial depth already swept (previous frame)
         [ReadOnly] public float SliceMax;   // this frame's sweep depth
         [ReadOnly] public float RadiusSq;   // the plate's radius, squared — CONSTANT along the sweep
+        [ReadOnly] public bool Mirrored;    // also claim the reflection through the start plane
 
         public NativeList<AOEHit>.ParallelWriter Hits;
 
@@ -433,9 +439,14 @@ namespace CosmicShore.Gameplay
 
             float3 rel = p.Position - Origin;
 
-            // Axial band: only the slab this frame newly covers.
+            // Axial band: only the slab this frame newly covers. MIRRORED tests |axial|, so one
+            // frame claims the two slabs [-SliceMax,-SliceMin] and [SliceMin, SliceMax] together.
+            // The tiling property survives exactly: successive frames' |axial| bands are
+            // consecutive and their union over the blast is |axial| <= the full reach, with the
+            // shared endpoints deduped by the caller's alreadyHit claim just as before.
             float s = math.dot(rel, Axis);
-            if (s < SliceMin || s > SliceMax) return;
+            float axial = Mirrored ? math.abs(s) : s;
+            if (axial < SliceMin || axial > SliceMax) return;
 
             // Radial band: constant radius about the axis — a true cylinder, flat end caps.
             float3 radial = rel - Axis * s;
@@ -2188,6 +2199,9 @@ namespace CosmicShore.Gameplay
         /// cylinder rather than a cone), and every hit's impact direction is
         /// <paramref name="axis"/> itself: the plate shoves what it claims along the sweep at the
         /// blast's own speed rather than radiating it from a point.
+        ///
+        /// <paramref name="mirrored"/> makes the slab two-sided (|axial| in the interval), which
+        /// doubles the volume about the emitter without touching the impulse.
         /// </summary>
         public bool ProcessExplosionCylinderFrame(
             Vector3 origin,
@@ -2195,6 +2209,7 @@ namespace CosmicShore.Gameplay
             float sliceMin,
             float sliceMax,
             float radius,
+            bool mirrored,
             in ExplosionImpulse impulse,
             Domains explosionDomain,
             bool affectSelf,
@@ -2232,6 +2247,7 @@ namespace CosmicShore.Gameplay
                     SliceMin = math.max(sliceMin, 0f),
                     SliceMax = sliceMax,
                     RadiusSq = radius * radius,
+                    Mirrored = mirrored,
                     Hits = _aoeHits.AsParallelWriter()
                 };
 

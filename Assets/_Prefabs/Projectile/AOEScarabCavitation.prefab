@@ -59,6 +59,7 @@ MonoBehaviour:
   debrisRestitution: 0.33333334
   lengthPerRadius: 1.2
   sweepSpeed: 257.14
+  mirrorAboutStartPlane: 1
   contactHoldSeconds: 0.05
   plateVisual: {fileID: 7412093556301884301}
 --- !u!33 &7412093556301884213
