@@ -40,8 +40,46 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool RequiresFreestyle;
 
+        /// <summary>
+        /// True when PICKING the row is the act - no second press. Set by a toy whose world form
+        /// is a <b>flip-set</b> (<see cref="SwapToySetCoordinator{T}"/>): there, the option IS a
+        /// toy you fly through, so there is no select-then-commit step in the world either and the
+        /// flat surface would be inventing one.
+        ///
+        /// <para>False - the default - is the <b>matrix</b> shape: the row selects, and the window's
+        /// Switch button commits. That is not fussiness, it is what these applies COST. A cell swap
+        /// suctions the world away and grows another behind a veil; a vessel swap despawns and
+        /// respawns a networked hull. Firing either from a stray tap in a scroll list is a
+        /// multi-second thing the player did not ask for, where a domain change is instant and
+        /// undone by picking another row.</para>
+        ///
+        /// <para>Declared by the toy rather than guessed at by the UI, for the reason
+        /// <see cref="ToyDefinitionSO.Category"/> is: the cost of applying is a property of what
+        /// the option DOES, and a menu that decided it per toy would be a second opinion about it.</para>
+        /// </summary>
+        public bool AppliesOnSelect;
+
         /// <summary>Do the thing. Null on a branch.</summary>
         public Action Apply;
+
+        /// <summary>
+        /// Build a display model of what this option would GIVE you, parented under the supplied
+        /// stage, or return null when the option has nothing to show.
+        ///
+        /// <para>Optional. It exists because a flat list can say "Blob Cell" and a picture can say
+        /// what that IS - and the only thing that knows what an option looks like is the toy that
+        /// offers it, exactly as the only thing that knows what it DOES is <see cref="Apply"/>. So
+        /// the cell selector hands back its own cached scale model and the vessel changer its own
+        /// mini hull: the same builders their world stations use, which is what stops the flat
+        /// preview and the station from drifting apart.</para>
+        ///
+        /// <para>The caller owns the returned object and destroys it. An implementation must
+        /// therefore build a NEW one rather than lending out something the toy is still using -
+        /// and must not generate anything expensive: the cell selector refuses rather than
+        /// triggering a ~34k-lay environment generation, which is the cost the whole
+        /// EnvironmentFree boot exists to avoid.</para>
+        /// </summary>
+        public Func<Transform, GameObject> BuildPreview;
 
         /// <summary>The next layer down, or null when this option is a leaf.</summary>
         public Func<List<ToyShellOption>> Expand;

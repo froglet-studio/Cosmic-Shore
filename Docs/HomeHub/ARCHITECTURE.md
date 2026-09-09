@@ -155,15 +155,22 @@ The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape
 | Window | Modal type | What it is |
 |---|---|---|
 | `ToyboxModal` on `ToyboxScreenModal` | `TOYBOX` (13) | The grid. One card per live toy, straight off `ToyShellRegistry`. |
-| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, and **Navigate**. |
+| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, its **variants**, and two verbs — **Navigate** and **Switch**. |
 
-**The detail window has one verb, and that is a deliberate narrowing.** The first cut let the menu
-drill into a toy's own options in place — a breadcrumb stack over
-`IToyShellSurface.BuildShellOptions`, so "change your domain" was *applied from the menu*. That
-made the app shell a second authority on what a toy does, which is the failure the single-writer
-rule exists to prevent, and it sat awkwardly against the toys being diegetic in the first place.
-Navigate replaces it: the player is put in front of the real ring, and from there the toy is the
-only thing that acts on the world.
+**The detail window has two verbs, and the second one came back on purpose.** The first cut let
+the menu drill into a toy's own options in place; the second removed that entirely, leaving
+Navigate alone, on the argument that a menu which applies a toy's actions is a second authority on
+what a toy does. Half of that argument survives and half of it was wrong.
+
+*What survives:* the menu never gets its own copy of what a toy does. Every row calls the toy's own
+`ToyShellOption.Apply` — "change your domain" here is literally `DomainChangerToySet.Apply`, the
+call the ring makes. One implementation, two surfaces, which is the whole point of
+`IToyShellSurface` and is not a second authority on anything.
+
+*What was wrong:* a player who does not want to fly had no way to change their domain at all, and
+"go and fly for it" is a tax rather than a design principle. So the window is an **in-UI toybox**,
+and Navigate is still there for everyone who would rather go to the ring — §4.1.1 below, which held
+this open as a real decision, is closed in the wire-it-in direction.
 
 **Its own modal TYPE, not a panel inside `TOYBOX`.** Same reason the Maelstrom's launch panel is
 its own window: a modal type is what `ScreenSwitcher` unwinds by, so gamepad B out of a toy lands
@@ -230,16 +237,106 @@ is the honest answer to *did the toggle take?*. It is checked, because the toggl
 transition is in flight or before the local vessel exists, and a refusal must not leave the ship
 teleported across the menu with the autopilot still driving it.
 
-### 4.1.1 Open: `BuildShellOptions` has eight producers and no consumer
+### 4.1.1 Resolved: `BuildShellOptions` had eight producers and no consumer
 
-Eight toys implement it and nothing calls it any more. It is deliberately **kept**, not deleted:
-it is the seam an in-menu option list plugs back into, and the configure window is its obvious
-home if a toy is ever given menu-side choices. But it is the mirror of the "authored copy with no
-producer" smell this project has burned itself on before, so it is a real decision, not an
-oversight — either wire it into `ToyConfigureModal` as an optional list, or remove it from
-`IToyShellSurface` and the eight toys. `ShellDefinition` and `ShellAvailable` are load-bearing and
-stay regardless. (`ToyOptionCard`, the UI component that drew those rows, had zero references
-after the reshape and was deleted.)
+It now has one. Eight toys implemented it and nothing called it; it was kept as the seam an
+in-menu option list would plug back into, and flagged as a real decision rather than an oversight
+— *either wire it into `ToyConfigureModal` as an optional list, or remove it from
+`IToyShellSurface` and the eight toys.* The first branch was taken. `ToyConfigureModal` draws the
+top layer as a scroll list of `ToyVariantCard`s, and the seam earned its keep exactly as written:
+**no toy needed a line of code to appear in it.**
+
+#### A row SELECTS; **Switch** COMMITS — except where the toy says otherwise
+
+The two shapes are not a UI preference, they are what these applies *cost*.
+
+| Shape | World form | Flat form | Why |
+|---|---|---|---|
+| `AppliesOnSelect = true` | a **flip-set** — the option IS a toy you fly through | the row is the act, no second press | instant, and undone by picking another row |
+| `AppliesOnSelect = false` (default) | a **matrix** — you fly a station to commit | the row selects, **Switch** commits | a cell swap suctions the world away and grows another behind a veil; a stray tap in a scroll list must not start one |
+
+Only `SwapToySetCoordinator` sets it today, which is the domain changer — so the three domain
+cards apply on the press and everything else is select-then-Switch. **The toy declares it, the menu
+does not decide it**, for the same reason `ToyDefinitionSO.Category` is declared in code: the cost
+of applying is a property of what the option does, and a menu that ruled on it per toy would be a
+second opinion about the toy.
+
+Switch is **drawn only for a list that has something for it to commit**, so the domain changer
+never shows a button that could never light up — an always-dead control reads as broken rather than
+as unnecessary.
+
+#### The picture answers "what IS that"
+
+A list can say *Blob Cell*; only a picture says what that is. `ToyShellOption.BuildPreview` is the
+optional seam — the toy builds a model of what the option would give you and the preview window
+frames it — and it is optional because most options have nothing to show, in which case the window
+keeps photographing the toy, which is still what Navigate would take you to.
+
+Two toys fill it in, both by handing back **the same model their own station shows**, which is what
+stops the flat preview and the world station drifting apart: `CellSelectorToy` its cached
+`CellMiniatureBuilder` scale model, `VesselChangerToy` its `ToyVesselRoster` live mini hull.
+
+Three details are each a bug if you get them wrong:
+
+- The model is built on a **private stage** at `(0, −90000, 0)` — far outside Menu_Main's 8000 far
+  clip, and on a different axis from the arcade's satellite arena at `+X 120000` so the two
+  previews cannot photograph each other. Dropped in place it would be a mystery object hanging in
+  the lava lamp, which the player is looking straight at whenever they are in freestyle.
+- **No bloom-in.** `ToyPreviewCamera` renders one frame the instant it is handed a model and
+  *measures* it to frame it; against a model still scaled to zero it would frame nothing, from far
+  too close.
+- **No idle spin.** The camera already orbits, and the two compose into a tumble.
+
+The camera **measures** rather than being told a size, because each toy builds at whatever radius
+its own stations use. And a failed build after a live one goes back to the toy: dropping the old
+model and returning early would leave the camera framing a destroyed transform.
+
+#### A branch opens in place, and the way back is a row
+
+The Lifeform Matrix is a tree in the world — kingdom, then species, then element — so it is a tree
+here. The way out is a **synthesized back row** at the top of the list rather than a control
+somebody has to author, which also means it composes with the one card template the designer drew.
+Only the **first** layer is ever rebuilt from the surface: a deeper one came from an option's
+`Expand`, a closure belonging to a list the rebuild would replace, and those layers are trees of
+authored content rather than live state.
+
+#### Two lifetime traps this window has to answer
+
+**A destroyed toy still passes `!= null`.** Every surface is a MonoBehaviour but the field is typed
+as the interface, so the null check is a plain reference comparison and keeps answering true after
+a cell swap has destroyed the toy — at which point reading `ShellAvailable` throws rather than
+returning false. `LiveSurface` does Unity's own lifetime check against the MonoBehaviour, and
+everything reads through it.
+
+**Switching a cell from this window destroys the toy that offered the switch.** That is now the
+*ordinary* path, not an edge case: the swap tears the toybox down and builds it again, and a NEW
+surface speaks for the same toy. So the window subscribes to `ToyShellRegistry.OnChanged` and
+re-binds by **definition**, falling back to display name for the code-built default toybox whose
+definitions are `CreateInstance`d per build and match no earlier reference at all — the same
+two-step, for the same reason, that `ToyPortraitLibrary` uses to find a toy's codex page. The
+definition itself is captured at bind, because it is an *asset* and is the one thing about a
+torn-down toy that survives.
+
+(`ToyOptionCard`, the UI component that drew the original rows, was deleted with the reshape and is
+not resurrected. `ToyVariantCard` is a smaller thing against a smaller card: fill, rim, name, and an
+optional detail line.)
+
+#### Colour: the rim is brighter than the base, in every state
+
+A variants list is usually **one toy's accent repeated down the whole column** — the cell selector
+paints every world in the selector's colour — with the domain changer as the exception that
+genuinely gives three. So the fill alone cannot say which row is selected, and the border carries
+that instead; both are driven from the one accent rather than authored separately.
+
+The rim stays brighter than the base at rest *and* selected. That is the invariant `Docs/PALETTE.md`
+§4.0 states for the prism tiers, where it held on nine of twelve tier×domain pairs by accident
+rather than by rule and each violation was separately rationalised before being recognised as one
+defect. A card is a different surface; the reading is one the player has already learnt.
+
+The rest fill is **muted, not dark** (0.45 of the accent, selected 0.80). The Toy Box grid draws
+its cards at the full accent, and a variants list two shades below that reads as a *disabled*
+version of the same product rather than as a different part of it. Only RGB is written — each
+graphic's authored alpha is captured once and put back, so a translucent plate stays translucent.
 
 ### 4.1.2 The arrival raises the platform's own objective arrow
 
@@ -292,9 +389,11 @@ The UI itself is hand-designed. What the code needs:
 > Box's own** and binds every serialized reference below: it converts one inherited `GameCard` into
 > a `ToyCardTemplate`, gives the grid a wrapping `GridLayoutGroup` in place of the arcade's
 > row-of-four nesting, creates the empty state, puts `ToyPreviewCamera` on the arcade's own preview
-> `RawImage`, re-captions the launch button NAVIGATE, and switches off the arcade content a toy has
-> no use for (the vessel picker, the intensity / player-count / domain-count steppers, the
-> objective box). **The party roster and friends column are deliberately NOT among them** — they
+> `RawImage`, re-captions the launch button NAVIGATE, converts the card inside the detail window's
+> scroll view into a `ToyVariantTemplate`, finds the SWITCH button, and switches off the arcade
+> content a toy has no use for (the vessel picker, the intensity / player-count / domain-count
+> steppers, the objective box). **The party roster and friends column are deliberately NOT among
+> them** — they
 > are kept ON in all four hub windows (§5.2). Arcade **branches** are switched off rather than
 > deleted — re-activating a GameObject is a cheaper mistake to undo than re-authoring one — and only
 > a component that would actively fight for an object the Toy Box KEEPS is removed:
@@ -332,13 +431,30 @@ The UI itself is hand-designed. What the code needs:
       name in a class and its parent and reports it as *"The same field name is serialized multiple
       times"* — a runtime error, not a warning.
 
-**Toy Box detail window** (`ToyConfigureModal`, `ModalType = TOYBOX_CONFIGURE`) — all eight filled
+**Toy Box detail window** (`ToyConfigureModal`, `ModalType = TOYBOX_CONFIGURE`) — twelve slots
 - [ ] `titleText` / `descriptionText` / `categoryText`
 - [ ] `preview` — a `ToyPreviewCamera` on the preview `RawImage`
-- [ ] `navigateButton` — the one verb; `backButton` — back to the grid
+- [ ] `navigateButton` — go and fly it; `backButton` — back to the grid
 - [ ] `crystalClickHandler` — the scene's `MenuCrystalClickHandler`. **Required**: without it
       Navigate can only warn, because entering freestyle is that component's job.
 - [ ] `screenSwitcher` — the base slot again
+- [ ] `variantsRoot` / `variantContent` / `variantCardPrefab` / `switchButton` — the variants list
+      (§4.1.1). The content is resolved through the **`ScrollRect`'s own `content`**, never by
+      looking for a child called `Content`: the modal's own root is *also* called `Content` and is
+      found first, which would bind the whole window as the card parent.
+- [ ] The **Switch** button is looked for by name (`Switch Button` / `SwitchButton` / `Switch`),
+      then by **caption**, and only then as a spare launch button — in that order, and it says so
+      in the log when it guesses. The designer makes this control by duplicating the one beside it,
+      so its name is whatever the duplicate inherited and the only thing that reliably says which
+      button is which is the word on it. It is resolved **before** the sweep that retires every
+      leftover launch button, and spared from it, or the tool would switch off the designer's
+      second button the first time it ran after they added it.
+
+      These four are **reported rather than required** by `wire_home_hub_scene.py --check` while
+      all four are empty — the scroll view is hand-authored UI and an un-wired feature is an honest
+      state on a checkout where it has not landed. The moment **any one** of them is filled the
+      group becomes required in full, because a half-wired list draws rows into nothing or draws
+      them with no way to commit. It arms itself; nobody has to remember to switch it on.
 
 **Every new script needs its `.meta` committed.** A `.cs` file pushed without one has no stable
 GUID: the editor mints a fresh one per machine, so every scene reference the wiring tool wrote

@@ -398,6 +398,11 @@ namespace CosmicShore.Editor.Froglet
         const string CardTemplateName = "ToyCardTemplate";
         const string EmptyStateName = "ToyboxEmptyState";
 
+        // The detail window's variant card, once converted. Renamed off the authored
+        // "ToyCardTemplate" so the scene does not carry two objects under that name doing two
+        // different jobs - and both names are accepted on lookup so a re-run is idempotent.
+        const string VariantTemplateName = "ToyVariantTemplate";
+
         // Arcade content the Toy Box's detail window inherited and a toy has no use for. Switched
         // OFF rather than deleted: the authoring is somebody's work, and re-activating a GameObject
         // is a cheaper mistake to undo than re-authoring one.
@@ -668,8 +673,15 @@ namespace CosmicShore.Editor.Froglet
             var navigate = FindIn(configure, "Navigate Button")
                            ?? plays.FirstOrDefault(p => p.activeInHierarchy)
                            ?? (plays.Count > 0 ? plays[0] : null);
+
+            // Resolved BEFORE the sweep below and spared from it. Switch is made by duplicating
+            // the button next to it, so it can easily still be carrying the arcade's own name -
+            // and a sweep that retires "every launch button that is not Navigate" would switch
+            // off the designer's second button the first time this tool ran after they added it.
+            var switchGo = ResolveSwitchButton(configure, navigate, dryRun, ref changed);
+
             foreach (var play in plays)
-                if (play != navigate) changed += Deactivate(play, dryRun);
+                if (play != navigate && play != switchGo) changed += Deactivate(play, dryRun);
 
             if (navigate)
             {
@@ -712,6 +724,20 @@ namespace CosmicShore.Editor.Froglet
                 body.alignment = TextAlignmentOptions.TopLeft;
             }
 
+            // The variants list: the scroll view the designer added inside ConfigurationDetailView,
+            // its Content, and the card it holds. Resolved through the ScrollRect's own `content`
+            // rather than by looking for a child called "Content" - the modal's own root is ALSO
+            // called Content and is found first, which would have bound the whole window as the
+            // card parent.
+            var detail = FindIn(configure, "ConfigurationDetailView");
+            var scroll = detail ? detail.GetComponentInChildren<ScrollRect>(true) : null;
+            var variantContent = scroll && scroll.content ? scroll.content : null;
+            var variantTemplate = EnsureVariantTemplate(configure, detail, variantContent, dryRun, ref changed);
+
+            if (detail && !scroll)
+                _log.Add("ConfigurationDetailView: no ScrollRect - the variants list has nowhere " +
+                         "to draw. Add the scroll view, then run this again.");
+
             var so = new SerializedObject(modal);
             changed += SetRef(so, "titleText", FindComponentIn<TMP_Text>(configure, "Game Name"),
                               "the toy's name", dryRun);
@@ -722,6 +748,14 @@ namespace CosmicShore.Editor.Froglet
             changed += SetRef(so, "preview", preview, "the live toy window", dryRun);
             changed += SetRef(so, "navigateButton", navigate ? navigate.GetComponent<Button>() : null,
                               "Navigate", dryRun);
+            changed += SetRef(so, "switchButton", switchGo ? switchGo.GetComponent<Button>() : null,
+                              "Switch", dryRun);
+            changed += SetRef(so, "variantsRoot", scroll ? scroll.gameObject : null,
+                              "the variants scroll view", dryRun);
+            changed += SetRef(so, "variantContent", variantContent, "the variants content", dryRun);
+            changed += SetRef(so, "variantCardPrefab",
+                              variantTemplate ? variantTemplate.GetComponent<ToyVariantCard>() : null,
+                              "the variant card template", dryRun);
             changed += SetRef(so, "backButton", back ? back.GetComponent<Button>() : null,
                               "Back", dryRun);
             changed += SetRef(so, "crystalClickHandler",
@@ -730,6 +764,163 @@ namespace CosmicShore.Editor.Froglet
             changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
             if (!dryRun) so.ApplyModifiedProperties();
             return changed;
+        }
+
+
+        /// <summary>
+        /// The <b>Switch</b> button — the second verb, which commits the selected variant without
+        /// flying anywhere.
+        ///
+        /// <para>It is looked for by NAME first, then by CAPTION, and only then as a second copy of
+        /// the launch button. That order is the point: the designer makes this control by
+        /// duplicating the one beside it, so its name is whatever the duplicate inherited and the
+        /// only thing that reliably says which button is which is the word on it. Guessing at a
+        /// second launch button is the last resort and says so in the log, because the two are
+        /// interchangeable from the outside and picking the wrong one puts Navigate's job on the
+        /// button reading SWITCH.</para>
+        /// </summary>
+        GameObject ResolveSwitchButton(GameObject configure, GameObject navigate, bool dryRun, ref int changed)
+        {
+            GameObject found = null;
+
+            foreach (var name in new[] { "Switch Button", "SwitchButton", "Switch" })
+            {
+                var go = FindIn(configure, name);
+                if (go && go != navigate) { found = go; break; }
+            }
+
+            if (!found)
+                found = AllButtonsIn(configure)
+                    .FirstOrDefault(b => b.gameObject != navigate && CaptionOf(b) == "SWITCH")
+                    ?.gameObject;
+
+            if (!found)
+            {
+                var spares = AllIn(configure, "Navigate Button").Concat(AllIn(configure, "Play Button"))
+                    .Where(go => go != navigate && go.activeInHierarchy).ToList();
+                if (spares.Count == 1)
+                {
+                    found = spares[0];
+                    _log.Add($"Switch: no button named or captioned SWITCH - taking the one spare " +
+                             $"launch button '{found.name}'. Rename it or set its caption if that is wrong.");
+                }
+            }
+
+            if (!found)
+            {
+                // Not an error. The window works with Navigate alone; the variants list simply has
+                // no way to commit a selection until this button exists.
+                if (!dryRun)
+                    _log.Add("Switch: no second button found in ToyboxGameConfigureModal - the " +
+                             "variants list will select but not commit. Add one and run this again.");
+                return null;
+            }
+
+            if (found.TryGetComponent(out Button button))
+                changed += StripForeignCalls(button, "Switch", dryRun);
+
+            if (!dryRun)
+            {
+                var caption = found.GetComponentInChildren<TMP_Text>(true);
+                if (caption && caption.text != "SWITCH")
+                {
+                    Undo.RecordObject(caption, "switch caption");
+                    caption.text = "SWITCH";
+                }
+            }
+
+            return found;
+        }
+
+        static List<Button> AllButtonsIn(GameObject root) =>
+            root ? root.GetComponentsInChildren<Button>(true).ToList() : new List<Button>();
+
+        static string CaptionOf(Button button)
+        {
+            var text = button ? button.GetComponentInChildren<TMP_Text>(true) : null;
+            return text ? text.text.Trim().ToUpperInvariant() : "";
+        }
+
+        /// <summary>
+        /// Turn the card the designer put inside the variants scroll view into the window's
+        /// <see cref="ToyVariantCard"/> template, and take it out of the Content so it is never
+        /// drawn as a row itself.
+        ///
+        /// <para>The same move <see cref="EnsureCardTemplate"/> makes for the toy grid, and for the
+        /// same reason: reusing the authored card is what keeps this list looking like the rest of
+        /// the menu without anybody authoring a second one. It is renamed off "ToyCardTemplate"
+        /// because the grid's template already carries that name, and two objects with one name
+        /// doing two jobs is a scene nobody can read.</para>
+        /// </summary>
+        GameObject EnsureVariantTemplate(GameObject configure, GameObject detail, Transform content,
+            bool dryRun, ref int changed)
+        {
+            var existing = FindIn(configure, VariantTemplateName);
+            if (existing) return existing;
+
+            // Whatever is sitting in the scroll's Content, else the authored name anywhere in the
+            // detail column - the designer may have parked it outside the Content already.
+            GameObject source = content && content.childCount > 0 ? content.GetChild(0).gameObject : null;
+            source ??= FindIn(detail, CardTemplateName);
+
+            if (!source)
+            {
+                if (!dryRun)
+                    _log.Add("ConfigurationDetailView: no card to convert into a variant template. " +
+                             "Put one card inside the scroll view's Content and run this again.");
+                return null;
+            }
+
+            _log.Add($"ConfigurationDetailView: convert '{source.name}' into '{VariantTemplateName}'.");
+            changed++;
+            if (dryRun) return null;
+
+            // Anything else parked in the Content is authoring scratch, not a row: the list is
+            // drawn from the pool and a leftover child would sit in it unbound and unpressable.
+            if (content)
+                for (int i = content.childCount - 1; i >= 0; i--)
+                {
+                    var child = content.GetChild(i).gameObject;
+                    if (child != source) Undo.DestroyObjectImmediate(child);
+                }
+
+            Undo.RecordObject(source, "toy variant template");
+            source.name = VariantTemplateName;
+            // Out of the Content: the template is instantiated per variant, never drawn itself.
+            source.transform.SetParent(configure.transform, false);
+
+            int ignored = 0;
+            ignored += RemoveComponent(source, "GameCard", false);
+            ignored += RemoveComponent(source, "ToyboxCard", false);
+
+            if (!source.GetComponent<Button>()) Undo.AddComponent<Button>(source);
+
+            var card = source.GetComponent<ToyVariantCard>();
+            if (!card) card = Undo.AddComponent<ToyVariantCard>(source);
+
+            var title = FindComponentIn<TMP_Text>(source, "GameTitle");
+            if (title)
+            {
+                // A variant's name runs from "Jade" to "Connect the Dots" to a cell config's own
+                // asset name. Left at a fixed single-line size the long ones CLIP, which reads as
+                // a broken card rather than as a long name - the same fix the grid's card needed.
+                Undo.RecordObject(title, "variant card title");
+                title.textWrappingMode = TextWrappingModes.Normal;
+                title.enableAutoSizing = true;
+                title.fontSizeMin = 12f;
+                title.fontSizeMax = Mathf.Max(18f, title.fontSize);
+                title.overflowMode = TextOverflowModes.Ellipsis;
+            }
+
+            var cardSo = new SerializedObject(card);
+            SetRef(cardSo, "background", FindComponentIn<Image>(source, "Background"), "the fill", false);
+            SetRef(cardSo, "border", FindComponentIn<Image>(source, "Border"), "the rim", false);
+            SetRef(cardSo, "nameText", title, "the variant name", false);
+            SetRef(cardSo, "detailText", FindComponentIn<TMP_Text>(source, "GameDetail"), "the detail line", false);
+            cardSo.ApplyModifiedProperties();
+
+            source.SetActive(false);
+            return source;
         }
 
         // ── slot helpers ─────────────────────────────────────────────────────

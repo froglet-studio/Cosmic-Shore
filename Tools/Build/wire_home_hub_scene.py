@@ -86,6 +86,20 @@ CONFIGURE_SLOTS = {
     "screenSwitcher": "the screen switcher",
 }
 
+# The variants list, added after this window shipped with Navigate alone. These are reported
+# rather than REQUIRED, and the trigger is the group itself: the scroll view they bind to is
+# hand-authored UI, so on a checkout where it has not landed yet an empty group is the honest
+# state and must not fail the gate. The moment any ONE of them is filled the designer has wired
+# it, and a HALF-wired list is a defect rather than a pending item - the window would draw rows
+# into nothing, or draw them with no way to commit a selection - so from then on the group is
+# required in full. It arms itself; nobody has to remember to switch it on.
+VARIANT_SLOTS = {
+    "variantsRoot": "the variants scroll view",
+    "variantContent": "the variants content",
+    "variantCardPrefab": "the variant card template",
+    "switchButton": "Switch",
+}
+
 SCRIPTS = {
     "MenuHubButton":        "Assets/_Scripts/UI/Elements/MenuHubButton.cs",
     "MenuAvailabilityView": "Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs",
@@ -93,6 +107,7 @@ SCRIPTS = {
     "ToyConfigureModal":    "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
     "ToyboxCard":           "Assets/_Scripts/UI/Elements/ToyboxCard.cs",
     "ToyPreviewCamera":     "Assets/_Scripts/UI/Elements/ToyPreviewCamera.cs",
+    "ToyVariantCard":       "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
     "ToyNavigationBeacon":  "Assets/_Scripts/Controller/Toys/ToyNavigationBeacon.cs",
     "HomeHubWiringWindow":  "Assets/_Scripts/Editor/FrogletTools/HomeHubWiringWindow.cs",
     "ArcadeScreen":         "Assets/_Scripts/UI/Screens/ArcadeScreen.cs",
@@ -194,9 +209,34 @@ def audit_slots(sc, go_name, comp_id, slots):
     return todo
 
 
+def audit_group(sc, go_name, comp_id, slots, pending):
+    """A group of slots that is required only once the designer has started on it.
+
+    Returns the outstanding items. An entirely empty group is not outstanding: it appends one
+    line to `pending`, which is printed as information and does not fail the check.
+    """
+    body = sc.docs[comp_id][1]
+    filled, missing = 0, []
+    for field, label in slots.items():
+        m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
+        if not m:
+            missing.append(f"{go_name}.{field}: field not serialized yet (script changed?)")
+        elif m.group(1) == "0":
+            missing.append(f"{go_name}.{field}: empty - needs {label}")
+        else:
+            filled += 1
+
+    if filled == 0:
+        pending.append(f"{go_name}: the variants list is not wired yet "
+                       f"({len(slots)} slots) - author the scroll view, then run "
+                       f"FrogletTools > Interface > Home Hub Wiring")
+        return []
+    return missing
+
+
 def audit(sc):
-    """Everything still to do, as a list of human-readable lines."""
-    todo = []
+    """Everything still to do, as a list of human-readable lines, plus what is merely pending."""
+    todo, pending = [], []
     guids = {k: guid_of(v) for k, v in SCRIPTS.items()}
 
     # A script with no committed .meta has no stable GUID, so every scene reference the editor
@@ -250,6 +290,7 @@ def audit(sc):
         comp = sc.script_on(tgc, guids["ToyConfigureModal"])
         if comp:
             todo += audit_slots(sc, "ToyConfigureModal", comp, CONFIGURE_SLOTS)
+            todo += audit_group(sc, "ToyConfigureModal", comp, VARIANT_SLOTS, pending)
 
     # the switcher's registry
     for fid, (t, c) in sc.docs.items():
@@ -273,7 +314,7 @@ def audit(sc):
     if "m_Name: 'MissionScreenModal '" in raw:
         todo.append("MissionScreenModal: name has a trailing space")
 
-    return todo
+    return todo, pending
 
 
 def main():
@@ -286,7 +327,10 @@ def main():
         return 2
 
     sc = Scene(SCENE)
-    todo = audit(sc)
+    todo, pending = audit(sc)
+
+    for line in pending:
+        print(f"  ~ {line}")
 
     if not todo:
         print("home hub wiring: clean")

@@ -1,3 +1,4 @@
+using System;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,21 @@ namespace CosmicShore.UI
     /// (this project's modals stay ACTIVE at alpha 0) would otherwise hold a full-size surface
     /// for the life of the session.</item>
     /// </list>
+    ///
+    /// <para><b>It also shows a VARIANT — and that one is not the live world, so it gets a stage of
+    /// its own.</b> Selecting a cell in the window's variants list asks the toy to build a scale
+    /// model of that world (<see cref="ToyShellOption.BuildPreview"/>), and there is nowhere in the
+    /// menu cell to put it: dropped in place it is a mystery object hanging in the lava lamp, and
+    /// the player is looking straight at the lava lamp the whole time they are in freestyle. So the
+    /// model is built on a private stage parked far outside every gameplay camera's far clip — the
+    /// same answer the arcade's satellite arena reaches for the same reason, with this camera's
+    /// Skybox clear giving it a clean backdrop for free. The stage sits on −Y where the satellite
+    /// sits on +X, so the two previews can never photograph each other.</para>
+    ///
+    /// <para>A variant is framed by MEASURING it rather than by being told its size. Each toy
+    /// builds its model at whatever radius its own stations use, so a camera that assumed a number
+    /// would frame the next toy's model wrong; a bounds walk per selection is right for a model
+    /// this class has never seen.</para>
     /// </summary>
     [RequireComponent(typeof(RawImage))]
     public class ToyPreviewCamera : MonoBehaviour
@@ -73,6 +89,22 @@ namespace CosmicShore.UI
         float _orbit;
         float _nextRender;
 
+        // The toy this window is bound to, kept so ClearVariant can go back to it. Deliberately
+        // separate from _subject, which is whatever is in frame right now - the toy, or a model.
+        Toy _toy;
+        Transform _stage;
+        GameObject _variant;
+
+        /// <summary>
+        /// Where a variant's model is built. Far outside Menu_Main's 8000 far clip so no gameplay
+        /// camera can see it, and on a different axis from the arcade's satellite arena (+X at
+        /// 120000) so the two previews cannot end up in each other's shots.
+        /// </summary>
+        static readonly Vector3 StageOrigin = new(0f, -90000f, 0f);
+
+        /// <summary>True while the window is showing a variant's model rather than the toy.</summary>
+        public bool IsShowingVariant => _variant;
+
         void Awake() => _surface = GetComponent<RawImage>();
 
         /// <summary>
@@ -81,8 +113,58 @@ namespace CosmicShore.UI
         /// </summary>
         public void Show(Toy toy)
         {
-            _subject = toy ? toy.transform : null;
-            _radius = toy ? Mathf.Max(1f, toy.SwitchRingRadius) : 40f;
+            _toy = toy;
+            DestroyVariant();
+            FrameToy();
+        }
+
+        /// <summary>
+        /// Show what an option would GIVE you, built by the toy that offers it. Returns false when
+        /// the option declines to build one (most do) - the window keeps showing the toy, which is
+        /// the honest picture rather than a blank surface.
+        /// </summary>
+        public bool ShowVariant(Func<Transform, GameObject> build)
+        {
+            // Whether one was showing decides what a FAILURE means. Dropping the old model and
+            // then returning early would leave the camera framing a destroyed transform, which is
+            // the one state this class must never be left in - so a failed build after a live one
+            // goes back to the toy, while a failed build with nothing showing leaves the shot
+            // exactly as it was rather than resetting the orbit on every unpreviewable row.
+            bool had = _variant;
+            DestroyVariant();
+
+            GameObject model = null;
+            if (build != null)
+            {
+                EnsureStage();
+                model = build(_stage);
+            }
+
+            if (!model)
+            {
+                if (had) FrameToy();
+                return false;
+            }
+
+            _variant = model;
+            Frame(model.transform, MeasureRadius(model));
+            return true;
+        }
+
+        /// <summary>Drop the variant's model and go back to photographing the toy itself.</summary>
+        public void ClearVariant()
+        {
+            if (!_variant) return;
+            DestroyVariant();
+            FrameToy();
+        }
+
+        void FrameToy() => Frame(_toy ? _toy.transform : null, _toy ? _toy.SwitchRingRadius : 40f);
+
+        void Frame(Transform subject, float radius)
+        {
+            _subject = subject;
+            _radius = Mathf.Max(1f, radius);
             _orbit = 0f;
 
             if (_subject) EnsureRig();
@@ -95,8 +177,41 @@ namespace CosmicShore.UI
 
         public void Hide()
         {
+            _toy = null;
+            DestroyVariant();
             _subject = null;
             if (_surface) _surface.enabled = false;
+        }
+
+        void EnsureStage()
+        {
+            if (_stage) return;
+            var go = new GameObject("ToyPreviewStage") { hideFlags = HideFlags.DontSave };
+            go.transform.position = StageOrigin;
+            _stage = go.transform;
+        }
+
+        void DestroyVariant()
+        {
+            if (!_variant) return;
+            Destroy(_variant);
+            _variant = null;
+        }
+
+        /// <summary>
+        /// The radius that frames <paramref name="model"/>: the extent of its renderers about
+        /// their own centre, never about the stage origin - a model built off-centre would
+        /// otherwise read as an oversized one and be framed from far too far away. Falls back to
+        /// the toy's ring for a model with no renderers, which frames nothing but frames it sanely.
+        /// </summary>
+        float MeasureRadius(GameObject model)
+        {
+            var renderers = model.GetComponentsInChildren<Renderer>(true);
+            if (renderers.Length == 0) return _toy ? Mathf.Max(1f, _toy.SwitchRingRadius) : 40f;
+
+            var bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            return Mathf.Max(1f, bounds.extents.magnitude);
         }
 
         void OnDisable()
@@ -105,6 +220,7 @@ namespace CosmicShore.UI
             // holding a 512x512 surface for a session it is not drawing is worth releasing anyway.
             ReleaseRig();
             _subject = null;
+            _toy = null;
         }
 
         void LateUpdate()
@@ -190,6 +306,8 @@ namespace CosmicShore.UI
         void ReleaseRig()
         {
             if (_camera) { Destroy(_camera.gameObject); _camera = null; }
+            DestroyVariant();
+            if (_stage) { Destroy(_stage.gameObject); _stage = null; }
             ReleaseTarget();
         }
 
