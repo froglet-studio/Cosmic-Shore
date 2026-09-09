@@ -457,6 +457,12 @@ namespace CosmicShore.Gameplay
                 _dollyRig = null;
             }
 
+            // Hand the watched ship's customizer its own vessel before the rig configures against
+            // it. Adopt, never Initialize: Initialize also raises OnInitializePlayerCamera, which
+            // announces "this is the local player's vessel" - and a spectator has no such vessel.
+            var customizer = vessel.VesselStatus?.VesselCameraCustomizer;
+            if (customizer != null) customizer.Adopt(vessel);
+
             cm.SetupGamePlayCameras(followTarget);
             cm.SnapPlayerCameraToTarget();
         }

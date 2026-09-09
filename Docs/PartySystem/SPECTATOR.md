@@ -158,6 +158,45 @@ The badge draws the same eye sprite as the friends row's Spectate button — one
 `Resources/UI/icon_Spectate` so a runtime-built badge can load it — so the button a viewer pressed
 and the mark their target sees are visibly the same act.
 
+### 4.3c A spectator needs no vessel of its own — but the fleet assumed one
+
+The spectator saw an empty arena for a completely mundane reason, and the shape of it is worth
+carrying past this feature.
+
+`VesselController.Initialize` hands a vessel's `VesselCameraCustomizer` its vessel **only for the
+local pilot** (`if (player.IsLocalUser) VesselStatus.VesselCameraCustomizer.Initialize(this)`),
+because that call also raises `OnInitializePlayerCamera` — the announcement that latches the
+gameplay rig onto the ship you are flying. Correct, and it means that on a machine with **no**
+local pilot every vessel in the match carries an un-initialized customizer. `Configure` then
+dereferenced that null field (`_cameraCtrl.SetFollowTarget(vessel.Transform)`), and the resulting
+`NullReferenceException` came out of `vessel.Initialize(player)`, i.e. out of the middle of
+`ClientPlayerVesselInitializer`'s pair loop — so the watched pilot was **never added to the
+roster**, `SpectatorController` had zero candidates, and the join timed out at 45 s with nothing
+in the log but a bind timeout. The isolation added in §4.3a is what turned it into one named line.
+
+The fix is two lines and no new concept:
+
+- `ApplyControlOverrides` falls back to its **own transform** when it has no vessel. That is not a
+  guess: `VesselStatus` `[RequireComponent]`s the customizer, so the component lives on the vessel
+  root and `transform` *is* the vessel it would have been handed.
+- `SpectatorController.ApplyCameraMode` calls the new **`VesselCameraCustomizer.Adopt(vessel)`**
+  before configuring the rig, so the watched ship's authored camera settings apply against the real
+  vessel. `Adopt`, never `Initialize`: the announcement `Initialize` raises means *this is the local
+  player's vessel*, and a spectator has none.
+
+`Configure` also stands down loudly rather than throwing when a vessel authors no
+`CameraSettingsSO`, for the same reason `RunEffectIsolated` exists: it runs inside a loop over
+every pilot, where one throw costs everyone after it.
+
+The general rule: **a system gated on "the local pilot" has a second, unstated assumption — that
+there IS one.** A spectator does not need a domain or a vessel; it needs every system that only
+ever ran with a local pilot present to survive the absence of one. Look for the null deref on the
+far side of such a gate, not for a way to fake a pilot.
+
+The two `No Player found to get domain!` errors on the viewer were downstream of the same throw:
+`VesselController.Initialize` assigns `VesselStatus.Player` on its first line, so a vessel reporting
+no player is one whose pair init never completed. They stop when the pair loop does.
+
 ### 4.4 The overlay and the exits
 
 `SpectatorOverlay` is a runtime ScreenSpaceOverlay canvas (sorting order 20000): ◀ /
