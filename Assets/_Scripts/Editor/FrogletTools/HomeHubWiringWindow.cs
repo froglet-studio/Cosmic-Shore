@@ -28,10 +28,11 @@ namespace CosmicShore.Editor.Froglet
     /// <c>Tools/Build/wire_home_hub_scene.py --check</c>, states the same contract from outside the
     /// editor and is what proves the work landed.</para>
     ///
-    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Locked</c> ("this
-    /// exists and you cannot open it yet" — its modal behind the lock is real) and Mission is
-    /// <c>Unavailable</c> ("this is not built"). Both stay DRAWN, because an entry that is simply
-    /// absent tells the player the game has two things in it, and the day it ships they have to
+    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Available</c>
+    /// since its launch window shipped (it was <c>Locked</c> — "this exists and you cannot open it
+    /// yet" — while the modal behind it was only a duplicate of the arcade's); Mission is
+    /// <c>Unavailable</c> ("this is not built") and stays DRAWN, because an entry that is simply
+    /// absent tells the player the game has three things in it, and the day it ships they have to
     /// re-learn the screen (<c>Docs/HomeHub/ARCHITECTURE.md</c> §2).</para>
     /// </summary>
     public class HomeHubWiringWindow : EditorWindow
@@ -69,7 +70,7 @@ namespace CosmicShore.Editor.Froglet
         {
             new() { ButtonName = "ArcadeButton",  Target = ScreenSwitcher.ModalWindows.ARCADE,  Availability = MenuAvailability.Available },
             new() { ButtonName = "ToyboxButton",  Target = ScreenSwitcher.ModalWindows.TOYBOX,  Availability = MenuAvailability.Available },
-            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Locked },
+            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Available },
             new() { ButtonName = "MissionButton", Target = ScreenSwitcher.ModalWindows.MISSION, Availability = MenuAvailability.Unavailable },
         };
 
@@ -82,6 +83,7 @@ namespace CosmicShore.Editor.Froglet
             ("ArenaScreenModal",         ScreenSwitcher.ModalWindows.ARENA),
             ("MissionScreenModal",       ScreenSwitcher.ModalWindows.MISSION),
             ("ToyboxGameConfigureModal", ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE),
+            ("ArenaGameConfigureModal",  ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE),
         };
 
         [MenuItem("FrogletTools/Interface/Home Hub Wiring", false, 20)]
@@ -108,8 +110,8 @@ namespace CosmicShore.Editor.Froglet
             EditorGUILayout.HelpBox(
                 "Duplicating the Arcade's screens copied its WIRING too: every hub button called " +
                 "OnClickArcadeNav and every screen modal declared ModalType ARCADE. This repoints " +
-                "them, registers the new windows with the ScreenSwitcher, and sets Arena to Locked " +
-                "and Mission to Unavailable.", MessageType.Info);
+                "them, registers the new windows with the ScreenSwitcher, and sets Mission to " +
+                "Unavailable (Arena is open: its launch window is real).", MessageType.Info);
 
             EditorGUILayout.Space();
 
@@ -490,6 +492,8 @@ namespace CosmicShore.Editor.Froglet
             var grid = FindIn(toybox, "GameGrid");
             var template = EnsureCardTemplate(toybox, FindIn(grid, "GameListRow"), dryRun, ref changed);
             changed += EnsureCardLayout(grid, dryRun);
+            changed += ShapeCardGrid(grid, dryRun);
+            changed += ShapeToyCard(template, FindIn(configure, VariantTemplateName), dryRun);
             if (grid)
                 for (int i = 0; i < grid.transform.childCount; i++)
                     changed += Deactivate(grid.transform.GetChild(i).gameObject, dryRun);
@@ -527,12 +531,12 @@ namespace CosmicShore.Editor.Froglet
                 Undo.DestroyObjectImmediate(stale);
 
             var layout = Undo.AddComponent<GridLayoutGroup>(grid);
-            layout.cellSize = new Vector2(260f, 96f);
-            layout.spacing = new Vector2(12f, 12f);
-            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.cellSize = ToyLayout.ToyCell;
+            layout.spacing = ToyLayout.ToySpacing;
+            layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
             layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
             layout.startAxis = GridLayoutGroup.Axis.Horizontal;
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childAlignment = ToyLayout.GridAlignment;
             layout.constraint = GridLayoutGroup.Constraint.Flexible;
             return 1;
         }
@@ -748,10 +752,10 @@ namespace CosmicShore.Editor.Froglet
             // and which one that is depends on sibling order rather than on anything meaningful.
             var title = FindComponentIn<TMP_Text>(FindIn(configure, "GameView"), "Game Name")
                         ?? FindComponentIn<TMP_Text>(configure, "Game Name");
-            changed += SizeType(title, 42f, 58f, "the toy's name", dryRun);
+            changed += SizeType(title, ToyLayout.TitleMin, ToyLayout.TitleMax, "the toy's name", dryRun);
 
             var body = FindComponentIn<TMP_Text>(configure, "Game Description");
-            changed += SizeType(body, 22f, 44f, "the toy's description", dryRun);
+            changed += SizeType(body, ToyLayout.BodyMin, ToyLayout.BodyMax, "the toy's description", dryRun);
             if (body && !dryRun && body.alignment != TextAlignmentOptions.TopLeft)
             {
                 // A paragraph starts at the top of its box. The arcade's caption was centred in
@@ -767,7 +771,7 @@ namespace CosmicShore.Editor.Froglet
             var variantsHeader = AllIn(configure, "Game Name")
                 .Select(go => go.GetComponent<TMP_Text>())
                 .FirstOrDefault(t => t && t != title);
-            changed += SizeType(variantsHeader, 34f, 44f, "the variants header", dryRun);
+            changed += SizeType(variantsHeader, ToyLayout.HeaderMin, ToyLayout.HeaderMax, "the variants header", dryRun);
 
             // The variants list: the scroll view the designer added inside ConfigurationDetailView,
             // its Content, and the card it holds. Resolved through the ScrollRect's own `content`
@@ -1106,6 +1110,23 @@ namespace CosmicShore.Editor.Froglet
                 }
             }
 
+            if (scroll.content.TryGetComponent(out GridLayoutGroup rows)
+                && (rows.cellSize != ToyLayout.VariantCell || rows.spacing != ToyLayout.VariantSpacing
+                    || rows.padding.left != ToyLayout.VariantPadding + ToyLayout.GridExtraLeft
+                    || rows.childAlignment != ToyLayout.GridAlignment))
+            {
+                _log.Add($"Scroll View/Content: rows at {ToyLayout.VariantCell.x:0}x{ToyLayout.VariantCell.y:0}, upper-left.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(rows, "variant rows");
+                    rows.cellSize = ToyLayout.VariantCell;
+                    rows.spacing = ToyLayout.VariantSpacing;
+                    rows.padding = ToyLayout.Padding(ToyLayout.VariantPadding);
+                    rows.childAlignment = ToyLayout.GridAlignment;
+                }
+            }
+
             var fitter = scroll.content.GetComponent<ContentSizeFitter>();
             if (!fitter)
             {
@@ -1133,10 +1154,11 @@ namespace CosmicShore.Editor.Froglet
         // A 275x100 cell, split so the name gets the upper band and the detail line the lower one.
         // Fractions rather than pixels: the cell size is the designer's to change, and a layout
         // authored in pixels stops being a layout the moment they do.
-        static readonly Vector2 CardTitleAnchorMin = new(0f, 0.4f);
-        static readonly Vector2 CardTitleAnchorMax = new(1f, 1f);
-        static readonly Vector2 CardDetailAnchorMin = new(0f, 0f);
-        static readonly Vector2 CardDetailAnchorMax = new(1f, 0.4f);
+        // The name BOTTOM-LEFT and the detail above it, both inset past the plate's chamfer.
+        static readonly Vector2 CardTitleAnchorMin = new(0.06f, 0.08f);
+        static readonly Vector2 CardTitleAnchorMax = new(0.74f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMin = new(0.06f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMax = new(0.94f, 0.88f);
 
         /// <summary>
         /// The variant card's own layout, type and slot wiring.
@@ -1165,21 +1187,26 @@ namespace CosmicShore.Editor.Froglet
                 if (!dryRun) component = Undo.AddComponent<ToyVariantCard>(card);
             }
 
+            changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
+
             var title = FindComponentIn<TMP_Text>(card, "GameTitle");
             if (title)
             {
                 changed += SetRect((RectTransform)title.transform,
                                    CardTitleAnchorMin, CardTitleAnchorMax,
-                                   new Vector2(18f, 0f), new Vector2(-18f, -10f),
+                                   Vector2.zero, Vector2.zero,
                                    "the variant name", dryRun);
 
                 // A NAME, not body copy: the floor is high enough that a long one shortens rather
                 // than turning into small print, and the ellipsis takes what is left over.
-                changed += SizeType(title, 22f, 34f, "the variant name", dryRun);
-                if (!dryRun && title.overflowMode != TextOverflowModes.Ellipsis)
+                changed += SizeType(title, ToyLayout.VariantNameMin, ToyLayout.VariantNameMax, "the variant name", dryRun);
+                if (!dryRun && (title.overflowMode != TextOverflowModes.Ellipsis
+                                || title.alignment != TextAlignmentOptions.BottomLeft))
                 {
                     Undo.RecordObject(title, "variant name overflow");
                     title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.BottomLeft;
                     title.alignment = TextAlignmentOptions.Left;
                 }
             }
@@ -1199,7 +1226,7 @@ namespace CosmicShore.Editor.Froglet
                     // The template's own face, so a card the designer restyled stays restyled.
                     detail.font = title.font;
                     detail.color = new Color(1f, 1f, 1f, 0.62f);
-                    detail.alignment = TextAlignmentOptions.Left;
+                    detail.alignment = TextAlignmentOptions.TopLeft;
                     detail.raycastTarget = false;
                     detail.text = string.Empty;
                 }
@@ -1209,9 +1236,9 @@ namespace CosmicShore.Editor.Froglet
             {
                 changed += SetRect((RectTransform)detail.transform,
                                    CardDetailAnchorMin, CardDetailAnchorMax,
-                                   new Vector2(18f, 10f), new Vector2(-18f, 0f),
+                                   Vector2.zero, Vector2.zero,
                                    "the variant detail line", dryRun);
-                changed += SizeType(detail, 15f, 21f, "the variant detail line", dryRun);
+                changed += SizeType(detail, ToyLayout.VariantDetailMin, ToyLayout.VariantDetailMax, "the variant detail line", dryRun);
             }
 
             if (!component || dryRun) return changed;
@@ -1227,6 +1254,287 @@ namespace CosmicShore.Editor.Froglet
             return changed;
         }
 
+
+        /// <summary>
+        /// The Toy Box's layout numbers, in ONE place. <c>Tools/Build/author_toybox_layout.py</c>
+        /// writes the same values into the scene from outside the editor (so the layout lands on
+        /// the branch rather than in somebody's working tree) and
+        /// <c>wire_home_hub_scene.py --check</c> audits them; the three must agree, and this is
+        /// the copy the editor reads.
+        ///
+        /// <para>Every type value is a BAND (autosize min..max), halved from the first pass's
+        /// 42-58 / 22-44 / 34-44 / 22-34 / 15-21 - on a window whose whole left column is three
+        /// labels those read as a poster. The toy card is 400x250 because the card the arcade
+        /// authored was 275x203 and the grid was forcing it into 260x96: the plates overran the
+        /// cell and the grid read as a strip of small overlapping tiles.</para>
+        /// </summary>
+        static class ToyLayout
+        {
+            public const float TitleMin = 28f, TitleMax = 36f;
+            public const float BodyMin = 16f, BodyMax = 22f;
+            public const float HeaderMin = 22f, HeaderMax = 28f;
+            public const float VariantNameMin = 16f, VariantNameMax = 22f;
+            public const float VariantDetailMin = 12f, VariantDetailMax = 14f;
+            public const float CardNameMin = 18f, CardNameMax = 26f;
+            public const float CardTaglineMin = 11f, CardTaglineMax = 14f;
+            public const float CardSectionMin = 10f, CardSectionMax = 13f;
+
+            public static readonly Vector2 ToyCell = new(400f, 250f);
+            public static readonly Vector2 ToySpacing = new(20f, 20f);
+            public const int ToyPadding = 16;
+            public static readonly Vector2 VariantCell = new(275f, 88f);
+            public static readonly Vector2 VariantSpacing = new(16f, 14f);
+            public const int VariantPadding = 12;
+
+            // Both grids start UPPER-LEFT: centred, a lone row (the Wanderway's one "Wander") sat
+            // in the middle of an empty strip and read as a misplaced card. The extra left inset
+            // keeps the first column off the window's edge now that nothing centres it.
+            public const TextAnchor GridAlignment = TextAnchor.UpperLeft;
+            public const int GridExtraLeft = 20;
+            public static RectOffset Padding(int all) => new(all + GridExtraLeft, all, all, all);
+
+            // The grid card shows its title and art only; the tagline/category lines stay
+            // authored and bound, switched off.
+            public const bool CardLabelsActive = false;
+
+            /// <summary>
+            /// pixelsPerUnitMultiplier that draws the plates' 9-slice at design scale on the card's
+            /// canvas. The sprites are authored at PPU 400 (design x4) and UGUI divides that by the
+            /// canvas's referencePixelsPerUnit before slicing - Menu_Main's is 240, so a 20-unit
+            /// border came out at 48 and the chamfer read at twice its size. Read off the canvas,
+            /// never written down, for the same reason author_toybox_layout.py reads it off the scene.
+            /// </summary>
+            public static float SliceMultiplier(GameObject card)
+            {
+                var canvas = card ? card.GetComponentInParent<Canvas>(true) : null;
+                return canvas ? canvas.referencePixelsPerUnit / 100f : 1f;
+            }
+
+            // card anchors as FRACTIONS of the cell - the cell is the designer's to change
+            public static readonly Vector2 PortraitMin = new(0.06f, 0.36f), PortraitMax = new(0.94f, 0.95f);
+            public static readonly Vector2 NameMin = new(0.06f, 0.06f), NameMax = new(0.94f, 0.34f);
+            public static readonly Vector2 TaglineMin = new(0.06f, 0.05f), TaglineMax = new(0.68f, 0.19f);
+            public static readonly Vector2 SectionMin = new(0.68f, 0.05f), SectionMax = new(0.94f, 0.19f);
+        }
+
+        /// <summary>
+        /// The toy grid's cell, spacing and padding, on EVERY pass (EnsureCardLayout only runs
+        /// when the grid has no layout yet), plus the fitter and top anchor that let it scroll -
+        /// the same fix the variants list needed (Docs/HomeHub/ARCHITECTURE.md 5.4.3).
+        /// </summary>
+        int ShapeCardGrid(GameObject grid, bool dryRun)
+        {
+            if (!grid) return 0;
+            int changed = 0;
+
+            if (grid.TryGetComponent(out GridLayoutGroup layout)
+                && (layout.cellSize != ToyLayout.ToyCell || layout.spacing != ToyLayout.ToySpacing
+                    || layout.padding.left != ToyLayout.ToyPadding + ToyLayout.GridExtraLeft
+                    || layout.childAlignment != ToyLayout.GridAlignment))
+            {
+                _log.Add($"GameGrid: cells at {ToyLayout.ToyCell.x:0}x{ToyLayout.ToyCell.y:0}.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(layout, "toy grid cells");
+                    layout.cellSize = ToyLayout.ToyCell;
+                    layout.spacing = ToyLayout.ToySpacing;
+                    layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
+                    layout.childAlignment = ToyLayout.GridAlignment;
+                }
+            }
+
+            var rect = (RectTransform)grid.transform;
+            var top = new Vector2(0.5f, 1f);
+            if (rect.anchorMin != new Vector2(0f, 1f) || rect.anchorMax != Vector2.one || rect.pivot != top)
+            {
+                _log.Add("GameGrid: anchor to the top of the viewport so the fitter can grow it.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(rect, "toy grid anchor");
+                    rect.pivot = top;
+                    rect.anchorMin = new Vector2(0f, 1f);
+                    rect.anchorMax = Vector2.one;
+                    rect.anchoredPosition = Vector2.zero;
+                    rect.sizeDelta = Vector2.zero;
+                }
+            }
+
+            if (!grid.TryGetComponent(out ContentSizeFitter fitter))
+            {
+                _log.Add("GameGrid: add a ContentSizeFitter so a third row of toys can scroll.");
+                changed++;
+                if (!dryRun) fitter = Undo.AddComponent<ContentSizeFitter>(grid);
+            }
+            if (fitter && fitter.verticalFit != ContentSizeFitter.FitMode.PreferredSize)
+            {
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(fitter, "toy grid fit");
+                    fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// A card's two plates - its Background and Border, plus the rim on its own root - drawn
+        /// SLICED and stretched to the card. The sprites carry a 9-slice border since
+        /// <c>author_toy_card_sprites.py</c>; drawn Simple they stretch the chamfer, which on a
+        /// 275x88 row squashes a 228x170 picture to 3:1 and reads as bent corners.
+        /// </summary>
+        int ShapePlates(GameObject card, bool dryRun)
+        {
+            if (!card) return 0;
+            int changed = 0;
+
+            var plates = new List<Image>();
+            if (card.TryGetComponent(out Image root) && root.sprite) plates.Add(root);
+            foreach (var name in new[] { "Background", "Border" })
+            {
+                var img = FindComponentIn<Image>(card, name);
+                if (!img) continue;
+                plates.Add(img);
+                changed += SetRect((RectTransform)img.transform, Vector2.zero, Vector2.one,
+                                   Vector2.zero, Vector2.zero, $"{card.name}/{name} stretched to the card", dryRun);
+            }
+
+            float multiplier = ToyLayout.SliceMultiplier(card);
+            foreach (var img in plates)
+            {
+                if (img.type == Image.Type.Sliced && Mathf.Approximately(img.pixelsPerUnitMultiplier, multiplier))
+                    continue;
+                _log.Add($"{card.name}/{img.name}: draw the plate sliced at x{multiplier:0.##}.");
+                changed++;
+                if (dryRun) continue;
+                Undo.RecordObject(img, "card plate");
+                img.type = Image.Type.Sliced;
+                img.fillCenter = true;
+                img.pixelsPerUnitMultiplier = multiplier;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// The card templates inherited a root <see cref="Mask"/> from the arcade card, which
+        /// clips every child to the rim sprite's alpha - i.e. to the chamfer, so the first letter
+        /// of a name lost its corner. Off rather than removed, so the component list is untouched.
+        /// </summary>
+        int DisableRootMask(GameObject card, bool dryRun)
+        {
+            if (!card || !card.TryGetComponent(out Mask mask) || !mask.enabled) return 0;
+            _log.Add($"{card.name}: switch the root Mask off (it clipped the text to the chamfer).");
+            if (!dryRun)
+            {
+                Undo.RecordObject(mask, "card mask");
+                mask.enabled = false;
+            }
+            return 1;
+        }
+
+        /// <summary>
+        /// The toy card's own layout: plates, a portrait filling the upper two thirds, the name
+        /// under it, and the tagline + category line <see cref="ToyboxCard"/> was already written
+        /// to show and had nothing bound to. Run on every pass, like <see cref="ShapeVariantCard"/>,
+        /// and for the same reason.
+        /// </summary>
+        int ShapeToyCard(GameObject card, GameObject variantTemplate, bool dryRun)
+        {
+            if (!card) return 0;
+            int changed = 0;
+
+            changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
+
+            var portrait = FindComponentIn<Image>(card, "VesselIcon");
+            if (portrait)
+            {
+                changed += SetRect((RectTransform)portrait.transform, ToyLayout.PortraitMin, ToyLayout.PortraitMax,
+                                   Vector2.zero, Vector2.zero, "the toy portrait", dryRun);
+                if (!portrait.preserveAspect)
+                {
+                    changed++;
+                    if (!dryRun) { Undo.RecordObject(portrait, "portrait aspect"); portrait.preserveAspect = true; }
+                }
+            }
+
+            var title = FindComponentIn<TMP_Text>(card, "GameTitle");
+            if (title)
+            {
+                changed += SetRect((RectTransform)title.transform, ToyLayout.NameMin, ToyLayout.NameMax,
+                                   Vector2.zero, Vector2.zero, "the toy name", dryRun);
+                changed += SizeType(title, ToyLayout.CardNameMin, ToyLayout.CardNameMax, "the toy card name", dryRun);
+                if (!dryRun && (title.overflowMode != TextOverflowModes.Ellipsis
+                                || title.alignment != TextAlignmentOptions.Left))
+                {
+                    Undo.RecordObject(title, "toy name overflow");
+                    title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.Left;
+                }
+            }
+
+            // The donor for the two new lines: the variant card's own detail line, so the card
+            // carries the project's font and material rather than TMP's defaults.
+            var donor = variantTemplate ? FindComponentIn<TMP_Text>(variantTemplate, "GameDetail") : title;
+            var tagline = EnsureCardLabel(card, "Tagline", donor, ToyLayout.TaglineMin, ToyLayout.TaglineMax,
+                                          ToyLayout.CardTaglineMin, ToyLayout.CardTaglineMax,
+                                          TextAlignmentOptions.TopLeft, 0.72f, dryRun, ref changed);
+            var section = EnsureCardLabel(card, "Section", donor, ToyLayout.SectionMin, ToyLayout.SectionMax,
+                                          ToyLayout.CardSectionMin, ToyLayout.CardSectionMax,
+                                          TextAlignmentOptions.TopRight, 0.6f, dryRun, ref changed);
+
+            // Bound and SWITCHED OFF: on the grid the title is the whole card (the arcade's cards
+            // carry a title and art, nothing else); the sentence lives on the detail window.
+            foreach (var extra in new[] { tagline, section })
+            {
+                if (!extra || extra.gameObject.activeSelf == ToyLayout.CardLabelsActive) continue;
+                _log.Add($"{card.name}/{extra.name}: {(ToyLayout.CardLabelsActive ? "shown" : "hidden")} on the grid card.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(extra.gameObject, "toy card label");
+                    extra.gameObject.SetActive(ToyLayout.CardLabelsActive);
+                }
+            }
+
+            if (dryRun || !card.TryGetComponent(out ToyboxCard toyCard)) return changed;
+            var so = new SerializedObject(toyCard);
+            changed += SetRef(so, "taglineText", tagline, "the toy tagline", false);
+            changed += SetRef(so, "sectionText", section, "the toy category", false);
+            so.ApplyModifiedProperties();
+            return changed;
+        }
+
+        TMP_Text EnsureCardLabel(GameObject card, string name, TMP_Text donor, Vector2 anchorMin, Vector2 anchorMax,
+                                 float min, float max, TextAlignmentOptions align, float alpha,
+                                 bool dryRun, ref int changed)
+        {
+            var label = FindComponentIn<TMP_Text>(card, name);
+            if (!label)
+            {
+                _log.Add($"{card.name}: add the {name} line.");
+                changed++;
+                if (dryRun) return null;
+
+                var go = new GameObject(name, typeof(RectTransform));
+                Undo.RegisterCreatedObjectUndo(go, "toy card label");
+                go.transform.SetParent(card.transform, false);
+                label = Undo.AddComponent<TextMeshProUGUI>(go);
+                if (donor) label.font = donor.font;
+                label.color = new Color(1f, 1f, 1f, alpha);
+                label.raycastTarget = false;
+                label.text = string.Empty;
+                label.overflowMode = TextOverflowModes.Ellipsis;
+                label.alignment = align;
+            }
+
+            changed += SetRect((RectTransform)label.transform, anchorMin, anchorMax,
+                               Vector2.zero, Vector2.zero, $"the {name} line", dryRun);
+            changed += SizeType(label, min, max, $"the toy card {name.ToLowerInvariant()}", dryRun);
+            return label;
+        }
 
         /// <summary>
         /// Give a label an autosize BAND, and only write when the band actually differs so a

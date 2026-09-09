@@ -38,6 +38,16 @@ namespace CosmicShore.UI
 
         static PrivacyConsentOverlay _instance;
 
+        /// <summary>
+        /// The overlay currently holding the screen, or null once the flow is resolved. The
+        /// Authentication scene reads this to PAUSE its boot while the player is still on the
+        /// age gate: the overlay is deliberately non-blocking, so without that wait the scene's
+        /// sign-in, profile-load and safety timeouts all expire behind the scrim and the player
+        /// surfaces in the menu having never been offered a username (the shipped symptom on a
+        /// first launch: "asked my birthday, then nothing, then the menu").
+        /// </summary>
+        public static PrivacyConsentOverlay Current => _instance;
+
         AnalyticsServiceFacade _analytics;
         PrivacyConsentConfigSO _config;
 

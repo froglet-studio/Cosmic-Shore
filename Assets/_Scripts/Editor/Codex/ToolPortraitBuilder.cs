@@ -104,15 +104,18 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// A flat fly-through ring in the local XY plane — the switch. Same low-poly torus the toy
-        /// draws (12 major × 6 minor segments, tube 8% of the radius), rebuilt here so the mesh has
-        /// an owner: the runtime's is a static cache with no hide flags, and borrowing it would
-        /// leave a mesh behind in the editor after every bake.
+        /// A flat fly-through ring in the local XY plane — the switch. The same torus the toy draws
+        /// (tube 8% of the radius), rebuilt here so the mesh has an owner: the runtime's is a static
+        /// cache with no hide flags, and borrowing it would leave a mesh behind in the editor after
+        /// every bake. Tessellated FINER than the runtime's 12 × 6: that count is sized for a ring
+        /// seen from a vessel in flight, and baked to a still picture drawn 330 px wide it read as
+        /// a dodecagon - "the icons look low-poly". Re-bake (FrogletTools > Interface > Codex) to
+        /// pick this up; the portraits are baked assets, not generated at runtime.
         /// </summary>
         static void AddRing(Transform parent, float radius, Material material,
             List<Object> temporaries)
         {
-            const int major = 12, minor = 6;
+            const int major = 48, minor = 12;
 
             var vertices = new Vector3[major * minor * 4];
             var triangles = new int[major * minor * 6];

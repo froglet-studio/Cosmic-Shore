@@ -89,6 +89,12 @@ namespace CosmicShore.UI
             // layouts share almost nothing, and a modal type is what ScreenSwitcher unwinds by,
             // so gamepad B out of the toy lands back on the grid instead of closing the Toy Box.
             TOYBOX_CONFIGURE = 16,
+
+            // The Arena's launch window. Its own modal TYPE for the reason the Maelstrom's is:
+            // the window is separate (it carries the vessel picker an arcade card has no use
+            // for), the authority is not - it is still driven by the ONE ArcadeGameConfigureModal
+            // through an ArenaLaunchPanel whose HostModal is this window.
+            ARENA_GAME_CONFIGURE = 17,
         }
 
         [System.Serializable]
@@ -500,7 +506,8 @@ namespace CosmicShore.UI
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
-                          or ModalWindows.ARCADE)
+                          or ModalWindows.ARCADE
+                          or ModalWindows.ARENA_GAME_CONFIGURE)
                 yield break;
 
             foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))
@@ -843,6 +850,18 @@ namespace CosmicShore.UI
             if (IsScreenDisabled(MenuScreens.ARK)) return;
             if (ScreenIsActive(MenuScreens.ARK)) return;
             NavigateTo(GetIndexForScreen(MenuScreens.ARK));
+        }
+
+        /// <summary>
+        /// The Arena counterpart of <see cref="FollowHostToArcadeScreen"/>: the host opened an
+        /// ARENA card, so the guest's app shell shows the Arena grid under the launch window the
+        /// same way the arcade screen sits under an arcade card. Host-driven only - nothing on the
+        /// guest's own UI calls it.
+        /// </summary>
+        public void FollowHostToArenaWindow()
+        {
+            if (ModalIsActive(ModalWindows.ARENA)) return;
+            OpenModal(ModalWindows.ARENA);
         }
 
         bool IsHostOrSolo()
