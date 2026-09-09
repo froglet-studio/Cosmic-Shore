@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the SKEIN game mode needs (GameModes.Skein = 50).
+Authors every serialized asset the SKEIN game mode needs (GameModes.Skein - the id is READ
+out of the enum, never transcribed; see _skein_mode_id).
 
 Idempotent and deterministic: every GUID is md5("CosmicShore/<stable name>"), so re-running
 produces byte-identical output and re-tuning is one edit here plus a re-run rather than N
@@ -29,6 +30,30 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
+
+
+def _skein_mode_id():
+    """
+    `GameModes.Skein`'s value, READ OUT OF THE ENUM rather than transcribed.
+
+    It has been renumbered three times - 48 -> 50 (Tollway and Headlong claimed 48 and 49 while
+    this branch was in flight) and 50 -> 51 (Breakwater claimed 50 between this branch's review
+    pass and its push). Each time it was hardcoded here in five places, which is five places to
+    forget. The ship skill's own rule: an id a generator HARDCODES is an id that goes stale on
+    the next upstream renumber - read it from its enum and the sweep disappears.
+
+    Hard failure rather than a fallback: a generator that authored an arcade card pointing at
+    the WRONG mode would be worse than one that refused to run, and it is exactly the failure a
+    fallback default would hide.
+    """
+    src = open(os.path.join(ROOT, "Assets", "_Scripts", "Data", "Enums", "GameModes.cs"),
+               encoding="utf-8").read()
+    m = re.search(r"^\s*Skein\s*=\s*(\d+)\s*,", src, re.M)
+    assert m, "GameModes.Skein not found - has the member been renamed?"
+    return int(m.group(1))
+
+
+MODE_ID = _skein_mode_id()
 sys.path.insert(0, os.path.join(ROOT, "Tools", "Build"))
 
 WRITES = []
@@ -335,7 +360,7 @@ def arcade_card(icon_active, icon_inactive, card_bg) -> str:
     return (HEADER + STUB
             + f"  m_Script: {{fileID: 11500000, guid: {EXISTING['SO_ArcadeGame']}, type: 3}}\n"
             + "  m_Name: ArcadeGameSkein\n  m_EditorClassIdentifier:\n"
-            + "  Mode: 50\n  IsMultiplayer: 1\n  DisplayName: Skein\n"
+            + f"  Mode: {MODE_ID}\n  IsMultiplayer: 1\n  DisplayName: Skein\n"
             + "  Description: 'Urchins only, on a knot of rails that never quite closes. Latch\n"
             + "    on and the cable does the driving - your colour runs fast, theirs runs at a\n"
             + "    crawl, and every rail ENDS somewhere, aimed at another. Thread the rings in\n"
@@ -426,7 +451,7 @@ def register_roster() -> str:
 
 
 def register_progression():
-    """alwaysUnlockedModes += 50.
+    """alwaysUnlockedModes += MODE_ID.
 
     Without it the card renders, reports interactable, passes an EventSystem raycast and OPENS
     NOTHING - SetLocked(true) skips the SelectGame listener entirely. That is the same silent
@@ -439,14 +464,14 @@ def register_progression():
         src = open(full, encoding="utf-8").read()
         if not re.search(r"alwaysUnlockedModes:", src):
             return cand, None
-        if re.search(r"alwaysUnlockedModes:(\s*\n(\s*)- \d+)*[\s\S]{0,400}?^\s*- 50$", src, re.M):
+        if re.search(rf"alwaysUnlockedModes:(\s*\n(\s*)- \d+)*[\s\S]{{0,400}}?^\s*- {MODE_ID}$", src, re.M):
             return cand, src
         m = re.search(r"(alwaysUnlockedModes:\n)((?:\s*- \d+\n)+)", src)
         if not m:
-            return cand, src.replace("alwaysUnlockedModes:", "alwaysUnlockedModes:\n  - 50", 1)
-        if re.search(r"^\s*- 50$", m.group(2), re.M):
+            return cand, src.replace("alwaysUnlockedModes:", f"alwaysUnlockedModes:\n  - {MODE_ID}", 1)
+        if re.search(rf"^\s*- {MODE_ID}$", m.group(2), re.M):
             return cand, src
-        return cand, src[:m.end(2)] + "  - 50\n" + src[m.end(2):]
+        return cand, src[:m.end(2)] + f"  - {MODE_ID}\n" + src[m.end(2):]
     return None, None
 
 

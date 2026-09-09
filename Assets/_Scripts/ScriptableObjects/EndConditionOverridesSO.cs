@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
@@ -71,6 +72,26 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
 
+        /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
+        /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
+        /// closed CIRCUIT. 15 is what the arena model sizes every
+        /// other number against (<c>Tools/Build/breakwater_arena.py</c>): change it and the prism
+        /// count, the volume and the cell's PhaseThresholds all move with it.
+        ///
+        /// <para><b>This is no longer the end-game target.</b> The start gate is threaded once and
+        /// the circuit every lap (<see cref="DefaultBreakwaterLaps"/>), so what a pilot must
+        /// thread is <see cref="GetBreakwaterCrossingTarget"/> = 29, while what the controller
+        /// lays is this 15. One number did both jobs while there was one lap; laps separate them,
+        /// and the getters are named for which question they answer.</para></summary>
+        public const int DefaultBreakwaterStationTarget = 15;
+
+        /// <summary>Breakwater laps used when <see cref="breakwaterLaps"/> is 0 (auto/default).
+        /// Each lap re-flies the same closed circuit FORWARD - see
+        /// <c>BreakwaterCourseSettings.DefaultLaps</c> for why the first gate is a start gate off
+        /// the circuit rather than on it. Raising this costs no arena mass at all: it re-uses the
+        /// stations already laid.</summary>
+        public const int DefaultBreakwaterLaps = 2;
+
         /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read by
         /// BOTH SkeinRingTurnMonitor (the target) and SkeinController (how many rings to lay), so
         /// the course and the number counting it cannot drift.</summary>
@@ -81,6 +102,7 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
         /// to size the circuit, so the two cannot drift.</summary>
         public const int DefaultHeadlongGateTarget = 24;
+
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -152,6 +174,17 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
+        [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
+                 "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
+                 "the cell's mass and its phase ladder with it. This is NOT the end-game target " +
+                 "- a pilot threads 1 + (stations-1)*laps rings. 0 = default (15).")]
+        [Min(0)] public int breakwaterStationTarget = 15;
+
+        [Tooltip("Breakwater: how many laps of the circuit. The start gate is threaded once " +
+                 "and the circuit every lap, so it costs no extra arena - 1 + 14*2 is 29 " +
+                 "crossings. Compared against a domain's LEAD RUNNER, not a sum. 0 = default (2).")]
+        [Min(0)] public int breakwaterLaps = 2;
+
         [Tooltip("Skein: rings in the cable course, which is both how many a pilot must thread " +
                  "to finish and how many the generator lays. 0 = use the default (24).")]
         [Min(0)] public int skeinRingTarget = 24;
@@ -168,6 +201,7 @@ namespace CosmicShore.ScriptableObjects
                  "slower than shooting at a net and faster than tearing down a wreck.")]
         [Min(0)] public int tollwayTollTarget = 8;
 
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -182,6 +216,9 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int breakwaterStationTargetBuild = 15;
+
+        [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
@@ -310,6 +347,29 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget;
 
         /// <summary>
+        /// How many Breakwater stations are LAID: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBreakwaterStationTarget"/>. Read by <c>BreakwaterController</c> to
+        /// build the course. This is the ARENA number, not the race number.
+        /// </summary>
+        public int GetBreakwaterStationTarget() =>
+            breakwaterStationTarget > 0 ? breakwaterStationTarget : DefaultBreakwaterStationTarget;
+
+        /// <summary>How many times a Breakwater course is flown: the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultBreakwaterLaps"/>.</summary>
+        public int GetBreakwaterLaps() =>
+            breakwaterLaps > 0 ? breakwaterLaps : DefaultBreakwaterLaps;
+
+        /// <summary>
+        /// The Breakwater RACE target - how many rings a pilot must thread ("thread all N
+        /// switches"): 29 for a start gate plus a fourteen-station circuit over two laps. Read by
+        /// <c>RaceGateTurnMonitor</c> for the end condition and the goal row, and it is
+        /// derived from the two numbers above rather than authored, so the race can never ask for
+        /// a crossing the course cannot offer. Compared against a domain's LEAD RUNNER
+        /// (<c>ScoringMetrics.BestByDomain</c>), never a sum.
+        /// </summary>
+        public int GetBreakwaterCrossingTarget() =>
+            BreakwaterCourseSettings.CrossingTarget(GetBreakwaterStationTarget(), GetBreakwaterLaps());
+
         /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by
         /// <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c> to size
@@ -355,6 +415,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
@@ -380,6 +441,8 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
+            breakwaterStationTarget == breakwaterStationTargetBuild &&
+            breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
@@ -401,6 +464,8 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
+            breakwaterStationTarget = breakwaterStationTargetBuild;
+            breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
@@ -423,6 +488,8 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
+            breakwaterStationTargetBuild = breakwaterStationTarget;
+            breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
             hijackStealTargetBuild = hijackStealTarget;

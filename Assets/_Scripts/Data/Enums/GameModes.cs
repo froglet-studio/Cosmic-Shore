@@ -142,7 +142,21 @@ namespace CosmicShore.Data
         // how many corners let you choose. See _Scripts/Controller/Arcade/HEADLONG.md.
         Headlong = 49,
 
-        // Skein (50): the Urchin-only cable race - the first mode built around the vessel's
+        // Breakwater (50): the Sparrow-only station race. A polar START GATE plus a closed
+        // fourteen-station CIRCUIT hangs on a generated walk through the cell - each station a
+        // shallow dish of plates flaring back toward you, its throat welded shut by a weave of
+        // DANGER bars around an 18-unit EYE. Closing on one you pick your way through: fire a
+        // skyburst and vaporise a door, flip to turret stance and saw the weave open, or thread
+        // the eye and take nothing but nerve. The walls you shoot ARE the ammunition (50 hostile
+        // prisms buy a rocket), so opening one door roughly funds the next and a clean thread
+        // banks a rocket for a station you cannot read. Two laps of the circuit = 29 crossings;
+        // the first DOMAIN's LEAD RUNNER home wins, so a teammate does not shorten the race.
+        // See _Scripts/Controller/Arcade/BREAKWATER.md.
+        //
+        // 50, not 48: Tollway took 48 and Headlong 49 on bleeding-edge while this was in flight.
+        Breakwater = 50,
+
+        // Skein (51): the Urchin-only cable race - the first mode built around the vessel's
         // GRIND rather than around what the grind can steal. A trefoil-knot cable hangs in the
         // cell, wrapped in one family of rails whose radii BREATHE: each strand oscillates
         // between 45 and 135 units with its own phase, so at every station the strands cover
@@ -159,14 +173,18 @@ namespace CosmicShore.Data
         // ring wins - the gate-race fold, reusing metric 9 outright.
         // See _Scripts/Controller/Arcade/SKEIN.md.
         //
-        // 50 and not 48: Tollway took 48 and Headlong 49 while this branch was in flight. The
-        // enum collision is the trap DRUMFIRE.md records - two parallel branches claiming one
-        // ID, merged cleanly by git into a file carrying the number twice.
-        Skein = 50,
+        // 51, and it took THREE renumbers to get here: Tollway took 48 and Headlong 49 while
+        // this branch was in flight, and Breakwater took 50 in the window between this
+        // branch's review pass and its push. That is the trap DRUMFIRE.md records, hit a
+        // third time - two parallel branches each take "the next free id", git merges two
+        // additions to opposite ends of one enum without a conflict, and the duplicate
+        // surfaces as CS0152 in whichever switch has to tell them apart. Never assume the
+        // last row is the highest, and re-run check_switch_label_collisions.py after a merge.
+        Skein = 51,
 
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 48) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 49) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

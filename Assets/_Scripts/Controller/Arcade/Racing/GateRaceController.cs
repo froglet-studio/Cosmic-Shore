@@ -167,15 +167,69 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual int LapsPerRace => 1;
 
+        /// <summary>
+        /// Rings at the FRONT of the course that are threaded ONCE and never come round again -
+        /// a lead-in the laps do not include. 0 for a course that is all circuit.
+        ///
+        /// <para><b>Why the platform carries this rather than one mode.</b> A closed circuit
+        /// cannot start fairly on its own: pilots spawn on an <c>EquatorialRing</c> and a fair
+        /// first gate sits on that ring's POLE, but a closed loop's tangent at an axial point is
+        /// PERPENDICULAR to the approach - measured over 400 seeds, presentation at such a gate
+        /// ran 12.8-90.0 deg with up to 73.5 deg of spread ACROSS PADS. Inside a bounded shell
+        /// that is unsatisfiable rather than untuned, so the answer is a start gate OFF the
+        /// circuit, and "off the circuit" is exactly a ring the laps skip. Breakwater needs it
+        /// today; any lapped course that wants a fair start needs it tomorrow.</para>
+        ///
+        /// <para>At 0 every expression below collapses to what it was, algebraically - which is
+        /// why Switchback and Headlong are untouched by this.</para>
+        /// </summary>
+        protected virtual int LeadInGates => 0;
+
         /// <summary>Gate-threadings that finish the race - the target the monitor ends on.</summary>
-        protected int RaceLength => _rings.Count * Mathf.Max(1, LapsPerRace);
+        protected int RaceLength => RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace);
 
         /// <summary>
         /// Which RING a pilot on <paramref name="threaded"/> gates must fly next. The identity
-        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is.
+        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is; with a
+        /// lead-in it wraps only over the lapped tail, so the start gate is never re-offered.
         /// </summary>
         protected int RingIndexFor(int threaded) =>
-            _rings.Count == 0 ? -1 : (LapsPerRace > 1 ? threaded % _rings.Count : threaded);
+            RingIndexFor(threaded, _rings.Count, LeadInGates, LapsPerRace);
+
+        // ── The fold, as pure arithmetic ──────────────────────────────────
+        //
+        // STATIC and public so it can be proven rather than reasoned about: GateRaceFoldTests
+        // asserts that at leadIn 0 these reproduce the pre-lead-in formulas exactly, over the
+        // whole parameter space, which is what makes adding a lead-in safe for the two modes that
+        // do not use one. Generalising a shared base by argument is how a third mode breaks the
+        // first two.
+
+        /// <summary>Threadings that finish a race of <paramref name="ringCount"/> rings, of which
+        /// the first <paramref name="leadIn"/> are flown once and the rest <paramref name="laps"/>
+        /// times.</summary>
+        public static int RaceLengthFor(int ringCount, int leadIn, int laps)
+        {
+            int lead = Mathf.Clamp(leadIn, 0, Mathf.Max(0, ringCount));
+            return lead + Mathf.Max(0, ringCount - lead) * Mathf.Max(1, laps);
+        }
+
+        /// <summary>The ring a pilot on <paramref name="threaded"/> threadings must fly next.</summary>
+        public static int RingIndexFor(int threaded, int ringCount, int leadIn, int laps)
+        {
+            if (ringCount <= 0) return -1;
+
+            int lead = Mathf.Clamp(leadIn, 0, ringCount);
+            if (threaded < lead) return threaded;
+
+            int lapped = ringCount - lead;
+            if (lapped <= 0) return ringCount - 1;          // every ring is lead-in: hold the last
+
+            // The open chain is the identity, exactly as before - a race of N gates ends at N, so
+            // `threaded` never reaches the wrap.
+            if (lead == 0 && Mathf.Max(1, laps) <= 1) return threaded;
+
+            return lead + (((threaded - lead) % lapped) + lapped) % lapped;
+        }
 
         /// <summary>
         /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built.
@@ -490,9 +544,32 @@ namespace CosmicShore.Gameplay
                 _rings.Add(ring);
             }
 
+            // Anything the MODE hangs off the course, while the panel still covers the screen.
+            // Before the release, deliberately: a mode that streams prisms opens its own
+            // arena-build bracket inside this call, so releasing first would leave a gap in which
+            // nothing is pending and the gate would slip the screen open onto a bare arena.
+            try
+            {
+                OnCourseRaised();
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[{ModeName}] OnCourseRaised threw - the course is up but the " +
+                                 $"mode's own geometry is missing. {e}");
+            }
+
             // The geometry exists: release the connecting panel.
             ReleaseArenaBuildAnnouncement();
         }
+
+        /// <summary>
+        /// Called once per peer, after the rings stand and before the connecting panel is
+        /// released. A mode with structure of its own (Breakwater's stations) builds it here.
+        /// Contained, because every step between OnNetworkSpawn and here runs inside the
+        /// arena-ready bracket: a throw that escaped would leave the bracket open, which is a
+        /// covered screen and no other symptom until the builder's 180-second stall cap.
+        /// </summary>
+        protected virtual void OnCourseRaised() { }
 
         /// <summary>
         /// An EARLIER gate standing in exactly this place, or null.

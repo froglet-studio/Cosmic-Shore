@@ -1,4 +1,4 @@
-# Skein — the Urchin cable race (`GameModes.Skein = 50`)
+# Skein — the Urchin cable race (`GameModes.Skein = 51`)
 
 **Urchin-only. First DOMAIN whose LEAD RUNNER threads the last ring wins.**
 

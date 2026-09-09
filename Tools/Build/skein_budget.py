@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The offline geometry proof for SKEIN (GameModes.Skein = 50) - the Urchin's rail race.
+The offline geometry proof for SKEIN (GameModes.Skein = 51) - the Urchin's rail race.
 
 WHAT THIS IS. `SpawnableSkein.cs` builds the arena in closed form; this file is the model that
 PROVES the arena satisfies the contracts the mode is built on, and `author_skein_assets.py`
