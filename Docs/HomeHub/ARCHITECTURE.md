@@ -338,6 +338,30 @@ its cards at the full accent, and a variants list two shades below that reads as
 version of the same product rather than as a different part of it. Only RGB is written — each
 graphic's authored alpha is captured once and put back, so a translucent plate stays translucent.
 
+#### The selected row also LIGHTS and LIFTS, and both come from the HUD's own style asset
+
+Tint alone is a small signal on a card whose neighbour is 20 units away, so the selected row gains
+a **glow behind it** and a **1.04 lift**. The glow is `AbilityLockupStyleSO.bloomSprite` — the same
+sprite the ability lockup puts behind an upgraded card and the goal stack puts behind its plate — so
+the Toy Box reads as one product with the HUD rather than as a menu that invented its own idea of
+"selected". Reading a HUD style from a menu surface is the established pattern here and not a new
+coupling: the arcade card's ability preview does the same thing for the same reason
+(`Docs/ArcadeLaunch/ARCHITECTURE.md`).
+
+Four details are each a decision:
+
+- The bloom is **built lazily**, only on a card that is actually selected, and a missing style asset
+  latches so a list with no asset behind it does not walk `Resources` once per row per redraw.
+- It is a **first sibling**, so it sits behind the authored art instead of over it, and its padding
+  is **12** rather than the lockup's 26 — the lockup's number is sized for a HUD card standing
+  alone, and a grid neighbour is 20 units away.
+- Its **hue comes from the option and its alpha from the style**: the glow says which row, the
+  product says how bright. On the domain changer that means the light itself says which domain.
+- `ApplySelection` is **idempotent** — re-binding the same state re-tints without restarting the
+  tweens (the accent can change under a row when a domain is re-picked), so a redraw cannot make a
+  settled card flicker. `OnDisable` kills both tweens and snaps to rest, because a pooled card is
+  hidden mid-tween every time the layer changes under it.
+
 ### 4.1.2 The arrival raises the platform's own objective arrow
 
 `ToyNavigationBeacon` points the standard `ObjectiveIndicator` at the toy for the length of the
@@ -560,6 +584,72 @@ definition's own line). `ToyConfigureModal` shows **`ToyPortraitLibrary.Body`** 
 the same one-liner for a toy the codex has not been scanned for. That adds no second place to
 describe a toy: the encyclopedia already owns authored prose per page, and a detail window and a
 card simply want different lengths of it.
+
+### 5.4.1 The type scale is the arcade's, and the arcade was labelling a card grid
+
+Three labels ARE this window's left column — the toy's name, its paragraph, and the header over
+the variants list — and all three arrived at the size a duplicate of the Arcade's configure modal
+gives them, where the title captions a grid of cards and the description is a footnote under a
+picture. Measured on the authored scene: name **43.2** fixed, header **36** fixed, description
+autosizing **14..36**, and the variant card's own name **27.36** fixed. The tool re-sizes each
+(`SizeType`) to `42..58`, `34..44`, `22..44` and `22..34`.
+
+**Every one is a BAND, not a size**, and that is the load-bearing half. A toy's name runs from
+"Wanderway" to "Connect the Dots"; its description is authored codex prose of no fixed length; a
+variant's name is a domain, a hull, or a cell config's own asset name. A fixed size is a promise
+that content cannot keep, and it breaks by CLIPPING — which reads as a broken label rather than as
+a long one. A band takes its ceiling when it fits and steps down when it does not. The band also
+forces `TextWrappingMode.Normal`: with nowhere to wrap, autosizing answers a long line by shrinking
+it to nothing, which is the same failure wearing a different costume.
+
+`SizeType` writes only when the band differs, so re-running the tool on an authored scene reports
+nothing and marks nothing dirty.
+
+**The title is resolved inside `GameView` specifically.** The variants header beside it is *also*
+called `Game Name` — the designer built the column by duplicating the one next to it — so a search
+by name alone answers with whichever is earlier in the hierarchy, which is a fact about sibling
+order rather than about the labels. The header is then taken as *the `Game Name` that is not the
+title*, and the modal's `titleText`/`descriptionText` are bound from the very references the type
+pass sized, so what the tool binds and what it sizes cannot be two different objects.
+
+### 5.4.2 The variant card, and the eleven-unit strip it inherited
+
+The card template is a duplicate of the Arcade's game card, so its `GameTitle` sits in the rect
+that card put a title in. On the toy window's `275 x 100` grid cell that resolves to an **11-unit
+strip near the top** which a 27pt line overflows downward — a caption that has slid off its own
+card, and most of why the first pass read as unfinished. `ShapeVariantCard` gives the name the
+cell's upper band (`0.4..1`, inset 18) and adds the **`GameDetail`** line under it (`0..0.4`).
+
+That second line is *created* rather than demanded from the designer, because it is the one thing a
+row says that its name cannot — "current", "flying", a painting's progress. `ToyVariantCard`
+already reads `ToyShellOption.Detail` into it; unwired, every row is a list of names with no state
+in it. The anchors are fractions rather than pixels: the cell size is the designer's to change, and
+a layout authored in pixels stops being a layout the moment they do.
+
+`ShapeVariantCard` runs on **every** pass, not only the conversion. The template survives a re-run,
+so a layout fix that only ran at conversion time would never reach a scene the tool had already
+touched — which is every scene that matters. It also owns the component add and all four slot
+binds, so the conversion path and the re-run path cannot produce two different cards.
+
+### 5.4.3 The variants list could not scroll, and a row below the fold was DEAD
+
+The authored `Content` sits at a stretch-x, top anchor with a zero size delta and a
+`ContentSizeFitter` whose fits are **both Unconstrained** — so its height is zero however many rows
+the grid lays into it, and a `ScrollRect` scrolls a content RECT, not the children inside it. The
+list therefore draws every row it is given and can only ever *reach* the ones already inside the
+viewport. The rest are clipped by the viewport's `Mask`, which cuts the drawing off and, being an
+`ICanvasRaycastFilter`, eats the press too: **invisible and unpressable, from one cause.**
+
+That is the arcade grid's own bug (CLAUDE.md, "Trusting an authored `ScrollRect` Content height"),
+reached from the other direction — there the content had a height and the wrong one, here it has
+none at all. It matters at the sizes this window actually runs: a `275 x 100` cell with `30`
+spacing, three columns and `50` top padding puts four rows at 570 units against a ~478-unit
+viewport, and the cell selector alone offers ten worlds.
+
+`ShapeVariantsList` sets the vertical fit to `PreferredSize` and switches **horizontal scrolling
+off** with it — the grid has a fixed three-column count in a content that stretches to the
+viewport's width, so there is never anything to reach sideways and leaving it on only lets a drag
+slide the whole list off its own column.
 
 ## 5.1 Known: five dead wirings in the doomed migration prefab
 

@@ -729,19 +729,45 @@ namespace CosmicShore.Editor.Froglet
             var back = closes.FirstOrDefault(c => c.activeInHierarchy)
                        ?? (closes.Count > 0 ? closes[0] : null);
 
-            // The window shows a PARAGRAPH where the arcade showed a caption, so the label has to
-            // be sized for one and allowed to wrap. Left at the arcade's size it reads as a
-            // footnote beside a picture - which is what the first pass shipped.
+            // ── type ─────────────────────────────────────────────────────────
+            // The window inherited the ARCADE's type scale, where the title labels a card grid and
+            // the description is a caption under a picture. Here those three labels ARE the left
+            // column - there is nothing else in it - so each is re-sized for the job it actually
+            // has rather than the one it was duplicated from.
+            //
+            // Every one is set as a BAND rather than a fixed size. That is not a hedge: a toy's
+            // name runs from "Wanderway" to "Connect the Dots", its description is authored prose
+            // of no fixed length, and a fixed size is a promise the content cannot keep - the long
+            // ones clip, and a clipped label reads as broken rather than as long. A band takes the
+            // ceiling when it fits and steps down when it does not, which is the same answer the
+            // grid card already needed.
+            //
+            // The title is resolved inside GameView specifically. The variants header beside it is
+            // ALSO called "Game Name" - the designer built the column by duplicating the one next
+            // to it - so a search by name alone answers with whichever is earlier in the hierarchy,
+            // and which one that is depends on sibling order rather than on anything meaningful.
+            var title = FindComponentIn<TMP_Text>(FindIn(configure, "GameView"), "Game Name")
+                        ?? FindComponentIn<TMP_Text>(configure, "Game Name");
+            changed += SizeType(title, 42f, 58f, "the toy's name", dryRun);
+
             var body = FindComponentIn<TMP_Text>(configure, "Game Description");
-            if (body && !dryRun && body.fontSize < 26f)
+            changed += SizeType(body, 22f, 44f, "the toy's description", dryRun);
+            if (body && !dryRun && body.alignment != TextAlignmentOptions.TopLeft)
             {
-                _log.Add("Game Description: size the label for body copy.");
+                // A paragraph starts at the top of its box. The arcade's caption was centred in
+                // one, which on a four-line description leaves it floating in the column.
+                _log.Add("Game Description: start the paragraph at the top of its box.");
                 changed++;
-                Undo.RecordObject(body, "toy description size");
-                body.fontSize = 28f;
-                body.textWrappingMode = TextWrappingModes.Normal;
+                Undo.RecordObject(body, "toy description flow");
                 body.alignment = TextAlignmentOptions.TopLeft;
             }
+
+            // ...and the header over the variants list, taken as the "Game Name" that is not the
+            // title. Sized under it, because it labels a section and the toy's name names the page.
+            var variantsHeader = AllIn(configure, "Game Name")
+                .Select(go => go.GetComponent<TMP_Text>())
+                .FirstOrDefault(t => t && t != title);
+            changed += SizeType(variantsHeader, 34f, 44f, "the variants header", dryRun);
 
             // The variants list: the scroll view the designer added inside ConfigurationDetailView,
             // its Content, and the card it holds. Resolved through the ScrollRect's own `content`
@@ -752,16 +778,17 @@ namespace CosmicShore.Editor.Froglet
             var scroll = detail ? detail.GetComponentInChildren<ScrollRect>(true) : null;
             var variantContent = scroll && scroll.content ? scroll.content : null;
             var variantTemplate = EnsureVariantTemplate(configure, detail, variantContent, dryRun, ref changed);
+            changed += ShapeVariantsList(scroll, dryRun);
 
             if (detail && !scroll)
                 _log.Add("ConfigurationDetailView: no ScrollRect - the variants list has nowhere " +
                          "to draw. Add the scroll view, then run this again.");
 
             var so = new SerializedObject(modal);
-            changed += SetRef(so, "titleText", FindComponentIn<TMP_Text>(configure, "Game Name"),
-                              "the toy's name", dryRun);
-            changed += SetRef(so, "descriptionText", FindComponentIn<TMP_Text>(configure, "Game Description"),
-                              "the toy's description", dryRun);
+            // The same two labels the type pass sized, by the same reference - so what the tool
+            // binds and what it sizes can never be two different objects.
+            changed += SetRef(so, "titleText", title, "the toy's name", dryRun);
+            changed += SetRef(so, "descriptionText", body, "the toy's description", dryRun);
             // The arcade's "Header" was the only candidate, and this window's authoring deleted
             // it - the category is a nice-to-have (the GRID card already shows it) and the label
             // is optional at runtime, so the tool offers several names rather than demanding one
@@ -991,7 +1018,14 @@ namespace CosmicShore.Editor.Froglet
             bool dryRun, ref int changed)
         {
             var existing = FindIn(configure, VariantTemplateName);
-            if (existing) return existing;
+            if (existing)
+            {
+                // Shaped on EVERY pass, not only the conversion. The template survives a re-run,
+                // so a layout fix that only ran at conversion time would never reach a scene the
+                // tool had already touched - which is every scene that matters.
+                changed += ShapeVariantCard(existing, dryRun);
+                return existing;
+            }
 
             // Whatever is sitting in the scroll's Content, else the authored name anywhere in the
             // detail column - the designer may have parked it outside the Content already.
@@ -1030,32 +1064,229 @@ namespace CosmicShore.Editor.Froglet
 
             if (!source.GetComponent<Button>()) Undo.AddComponent<Button>(source);
 
-            var card = source.GetComponent<ToyVariantCard>();
-            if (!card) card = Undo.AddComponent<ToyVariantCard>(source);
-
-            var title = FindComponentIn<TMP_Text>(source, "GameTitle");
-            if (title)
-            {
-                // A variant's name runs from "Jade" to "Connect the Dots" to a cell config's own
-                // asset name. Left at a fixed single-line size the long ones CLIP, which reads as
-                // a broken card rather than as a long name - the same fix the grid's card needed.
-                Undo.RecordObject(title, "variant card title");
-                title.textWrappingMode = TextWrappingModes.Normal;
-                title.enableAutoSizing = true;
-                title.fontSizeMin = 12f;
-                title.fontSizeMax = Mathf.Max(18f, title.fontSize);
-                title.overflowMode = TextOverflowModes.Ellipsis;
-            }
-
-            var cardSo = new SerializedObject(card);
-            SetRef(cardSo, "background", FindComponentIn<Image>(source, "Background"), "the fill", false);
-            SetRef(cardSo, "border", FindComponentIn<Image>(source, "Border"), "the rim", false);
-            SetRef(cardSo, "nameText", title, "the variant name", false);
-            SetRef(cardSo, "detailText", FindComponentIn<TMP_Text>(source, "GameDetail"), "the detail line", false);
-            cardSo.ApplyModifiedProperties();
+            // One method adds the card component, lays it out, gives it its second line and binds
+            // every slot - so the conversion and a later re-run cannot produce two different cards.
+            changed += ShapeVariantCard(source, false);
 
             source.SetActive(false);
             return source;
+        }
+
+
+        /// <summary>
+        /// Make the variants list actually SCROLL.
+        ///
+        /// <para>The authored Content sits at a stretch-x, top anchor with a zero size delta, so
+        /// its height is zero no matter how many rows the grid lays into it - and a ScrollRect
+        /// scrolls a content RECT, not the children inside it. With the fitter left Unconstrained
+        /// the list draws every row it is given and can only ever REACH the ones already inside the
+        /// viewport: the rest are clipped by the viewport's Mask, which cuts the drawing off and,
+        /// being a raycast filter, eats the press too. A card below the fold is therefore invisible
+        /// AND dead, which is the exact failure the arcade grid shipped the day it grew to a
+        /// thirteenth mode.</para>
+        ///
+        /// <para>Horizontal scrolling goes off with it. The grid is a fixed three-column count in a
+        /// content that stretches to the viewport's width, so there is never anything to reach
+        /// sideways - leaving it on only lets a drag slide the whole list off its own column.</para>
+        /// </summary>
+        int ShapeVariantsList(ScrollRect scroll, bool dryRun)
+        {
+            if (!scroll || !scroll.content) return 0;
+
+            int changed = 0;
+
+            if (scroll.horizontal)
+            {
+                _log.Add("Scroll View: vertical only (the grid's column count is fixed).");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(scroll, "variants scroll axis");
+                    scroll.horizontal = false;
+                }
+            }
+
+            var fitter = scroll.content.GetComponent<ContentSizeFitter>();
+            if (!fitter)
+            {
+                _log.Add("Scroll View/Content: add a ContentSizeFitter so the list can scroll.");
+                changed++;
+                if (!dryRun) fitter = Undo.AddComponent<ContentSizeFitter>(scroll.content.gameObject);
+            }
+
+            if (fitter && fitter.verticalFit != ContentSizeFitter.FitMode.PreferredSize)
+            {
+                _log.Add("Scroll View/Content: fit the HEIGHT to the rows - it was unconstrained, " +
+                         "so every row past the viewport was clipped and unpressable.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(fitter, "variants content fit");
+                    fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                }
+            }
+
+            return changed;
+        }
+
+
+        // A 275x100 cell, split so the name gets the upper band and the detail line the lower one.
+        // Fractions rather than pixels: the cell size is the designer's to change, and a layout
+        // authored in pixels stops being a layout the moment they do.
+        static readonly Vector2 CardTitleAnchorMin = new(0f, 0.4f);
+        static readonly Vector2 CardTitleAnchorMax = new(1f, 1f);
+        static readonly Vector2 CardDetailAnchorMin = new(0f, 0f);
+        static readonly Vector2 CardDetailAnchorMax = new(1f, 0.4f);
+
+        /// <summary>
+        /// The variant card's own layout, type and slot wiring.
+        ///
+        /// <para>Run on every pass. The template is a duplicate of the ARCADE's game card, so its
+        /// title sits in the band that card put a title in - which on a 275x100 cell is an
+        /// eleven-unit strip near the top that a 27pt line overflows downward. It reads as a
+        /// caption that has slid off its own card, and it is most of why the first pass looked
+        /// unfinished.</para>
+        ///
+        /// <para>The second line is CREATED here rather than demanded from the designer, because
+        /// it is the one thing a row says that its name cannot - "current", "flying", a painting's
+        /// progress - and a card that cannot say it is a list of names with no state in it.</para>
+        /// </summary>
+        int ShapeVariantCard(GameObject card, bool dryRun)
+        {
+            if (!card) return 0;
+
+            int changed = 0;
+
+            var component = card.GetComponent<ToyVariantCard>();
+            if (!component)
+            {
+                _log.Add($"{card.name}: add ToyVariantCard.");
+                changed++;
+                if (!dryRun) component = Undo.AddComponent<ToyVariantCard>(card);
+            }
+
+            var title = FindComponentIn<TMP_Text>(card, "GameTitle");
+            if (title)
+            {
+                changed += SetRect((RectTransform)title.transform,
+                                   CardTitleAnchorMin, CardTitleAnchorMax,
+                                   new Vector2(18f, 0f), new Vector2(-18f, -10f),
+                                   "the variant name", dryRun);
+
+                // A NAME, not body copy: the floor is high enough that a long one shortens rather
+                // than turning into small print, and the ellipsis takes what is left over.
+                changed += SizeType(title, 22f, 34f, "the variant name", dryRun);
+                if (!dryRun && title.overflowMode != TextOverflowModes.Ellipsis)
+                {
+                    Undo.RecordObject(title, "variant name overflow");
+                    title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.Left;
+                }
+            }
+
+            var detail = FindComponentIn<TMP_Text>(card, "GameDetail");
+            if (!detail && title)
+            {
+                _log.Add($"{card.name}: add the GameDetail line (\"current\", \"flying\", progress).");
+                changed++;
+                if (!dryRun)
+                {
+                    var go = new GameObject("GameDetail", typeof(RectTransform));
+                    Undo.RegisterCreatedObjectUndo(go, "variant detail line");
+                    go.transform.SetParent(card.transform, false);
+
+                    detail = Undo.AddComponent<TextMeshProUGUI>(go);
+                    // The template's own face, so a card the designer restyled stays restyled.
+                    detail.font = title.font;
+                    detail.color = new Color(1f, 1f, 1f, 0.62f);
+                    detail.alignment = TextAlignmentOptions.Left;
+                    detail.raycastTarget = false;
+                    detail.text = string.Empty;
+                }
+            }
+
+            if (detail)
+            {
+                changed += SetRect((RectTransform)detail.transform,
+                                   CardDetailAnchorMin, CardDetailAnchorMax,
+                                   new Vector2(18f, 10f), new Vector2(-18f, 0f),
+                                   "the variant detail line", dryRun);
+                changed += SizeType(detail, 15f, 21f, "the variant detail line", dryRun);
+            }
+
+            if (!component || dryRun) return changed;
+
+            var cardSo = new SerializedObject(component);
+            changed += SetRef(cardSo, "background", FindComponentIn<Image>(card, "Background"),
+                              "the fill", false);
+            changed += SetRef(cardSo, "border", FindComponentIn<Image>(card, "Border"),
+                              "the rim", false);
+            changed += SetRef(cardSo, "nameText", title, "the variant name", false);
+            changed += SetRef(cardSo, "detailText", detail, "the detail line", false);
+            cardSo.ApplyModifiedProperties();
+            return changed;
+        }
+
+
+        /// <summary>
+        /// Give a label an autosize BAND, and only write when the band actually differs so a
+        /// re-run on an already-authored scene reports nothing and dirties nothing.
+        ///
+        /// <para>A band rather than a size, everywhere: these labels carry toy names and authored
+        /// prose of no fixed length, and a fixed size on any of them is a clip waiting for the
+        /// first long one. Autosizing off at a fixed size is what the arcade authored, which is
+        /// correct for a caption over a card grid and wrong for the whole left column of a
+        /// window.</para>
+        /// </summary>
+        int SizeType(TMP_Text text, float min, float max, string label, bool dryRun)
+        {
+            if (!text) return 0;
+
+            if (text.enableAutoSizing
+                && Mathf.Approximately(text.fontSizeMin, min)
+                && Mathf.Approximately(text.fontSizeMax, max)
+                && text.textWrappingMode == TextWrappingModes.Normal)
+                return 0;
+
+            _log.Add($"{text.name}: size {label} at {min:0}-{max:0}.");
+            if (dryRun) return 1;
+
+            Undo.RecordObject(text, "toy window type");
+            text.enableAutoSizing = true;
+            text.fontSizeMin = min;
+            text.fontSizeMax = max;
+            // Without somewhere to wrap, a band answers a long line by shrinking it to nothing -
+            // which is the failure the band is here to avoid, wearing a different costume.
+            text.textWrappingMode = TextWrappingModes.Normal;
+            return 1;
+        }
+
+        /// <summary>
+        /// Anchor a rect, idempotently. Pivot is part of the comparison: the arcade's labels are
+        /// authored at a top-left pivot, so a rect that matched on anchors alone would be left
+        /// hanging off its own band.
+        /// </summary>
+        int SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax,
+                    Vector2 offsetMin, Vector2 offsetMax, string label, bool dryRun)
+        {
+            if (!rect) return 0;
+
+            var pivot = new Vector2(0.5f, 0.5f);
+            if (rect.anchorMin == anchorMin && rect.anchorMax == anchorMax
+                && rect.offsetMin == offsetMin && rect.offsetMax == offsetMax
+                && rect.pivot == pivot)
+                return 0;
+
+            _log.Add($"{rect.name}: lay out {label}.");
+            if (dryRun) return 1;
+
+            Undo.RecordObject(rect, "toy card layout");
+            rect.pivot = pivot;
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+            return 1;
         }
 
         // ── slot helpers ─────────────────────────────────────────────────────

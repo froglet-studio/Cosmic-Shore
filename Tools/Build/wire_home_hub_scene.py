@@ -327,6 +327,100 @@ def audit_inherited_arcade(sc):
     return todo
 
 
+# What the tool authors on the toy window's type and layout. The BAND is the contract, not the
+# numbers: every one of these labels carries content of no fixed length, so a fixed size is a
+# promise the content cannot keep and it breaks by clipping. See Docs/HomeHub/ARCHITECTURE.md
+# §5.4.1.  (path-under-the-modal, min, max, what it is)
+TYPE_BANDS = [
+    ("GameView/Game Name", 42.0, 58.0, "the toy's name"),
+    ("Game Description", 22.0, 44.0, "the toy's description"),
+    ("ToyVariantTemplate/GameTitle", 22.0, 34.0, "the variant name"),
+    ("ToyVariantTemplate/GameDetail", 15.0, 21.0, "the variant detail line"),
+]
+
+
+def tmp_on(sc, go):
+    """The TextMeshPro component on a GameObject, found by the fields it alone carries.
+
+    Matched on `m_fontSizeMin` rather than on TMP's script GUID: the GUID is a package's and
+    would be one more constant to keep true across an upgrade, while the field is the very thing
+    being audited.
+    """
+    for cid in sc.components(go):
+        t, c = sc.docs.get(cid, ("", ""))
+        if t == "114" and "m_fontSizeMin:" in c:
+            return cid
+    return None
+
+
+def go_at(sc, root_go, path):
+    """A GameObject named by a '/'-separated path under `root_go`, by NAME at each step.
+
+    Deliberately not a plain name search: this window carries two labels called `Game Name` (the
+    designer built the variants column by duplicating the one beside it), so a search by name
+    alone answers with whichever is earlier in the hierarchy - a fact about sibling order rather
+    than about the labels.
+    """
+    names = path.split("/")
+    for cand in sc.subtree(root_go):
+        if sc.name(cand) != names[-1]:
+            continue
+        # Walk back up and check every named ancestor in turn.
+        tf = sc._go_tf.get(cand)
+        ok, i = True, len(names) - 2
+        while i >= 0:
+            tf = sc._tf_parent.get(tf)
+            if not tf or sc.name(sc._tf_go.get(tf, "")) != names[i]:
+                ok = False
+                break
+            i -= 1
+        if ok:
+            return cand
+    return None
+
+
+def audit_variants_layout(sc, tgc, pending):
+    """The type scale and the one layout value that decides whether the list can scroll at all.
+
+    Reported as PENDING rather than outstanding: these are values the editor tool authors, and a
+    scene that has not been through it yet is un-run, not broken.
+    """
+    for path, lo, hi, label in TYPE_BANDS:
+        go = go_at(sc, tgc, path)
+        if not go:
+            continue
+        comp = tmp_on(sc, go)
+        if not comp:
+            continue
+        body = sc.docs[comp][1]
+        auto = re.search(r"^  m_enableAutoSizing: (\d+)", body, re.M)
+        lo_m = re.search(r"^  m_fontSizeMin: ([\d.]+)", body, re.M)
+        hi_m = re.search(r"^  m_fontSizeMax: ([\d.]+)", body, re.M)
+        if not (auto and lo_m and hi_m):
+            continue
+        if auto.group(1) == "1" and abs(float(lo_m.group(1)) - lo) < 0.01 \
+                and abs(float(hi_m.group(1)) - hi) < 0.01:
+            continue
+        pending.append(f"{path}: {label} is not on its {lo:.0f}-{hi:.0f} band "
+                       f"(autosize={auto.group(1)}, {lo_m.group(1)}-{hi_m.group(1)})")
+
+    # The one that is not a look question: with the fitter unconstrained the Content's height is
+    # zero however many rows the grid lays into it, so every row past the viewport is clipped by
+    # the mask - which also eats the press. Invisible AND unpressable, from one cause.
+    for go in sc.subtree(tgc):
+        if sc.name(go) != "Content":
+            continue
+        for cid in sc.components(go):
+            t, c = sc.docs.get(cid, ("", ""))
+            if t != "114" or "UnityEngine.UI.ContentSizeFitter" not in c:
+                continue
+            m = re.search(r"^  m_VerticalFit: (\d+)", c, re.M)
+            if m and m.group(1) != "2":
+                pending.append("Scroll View/Content: ContentSizeFitter vertical fit is "
+                               "unconstrained - the variants list cannot scroll, and every row "
+                               "past the viewport is clipped and unpressable")
+
+
 def audit(sc):
     """Everything still to do, as a list of human-readable lines, plus what is merely pending."""
     todo, pending = [], []
@@ -389,6 +483,7 @@ def audit(sc):
                 m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
                 if m and m.group(1) == "0":
                     pending.append(f"ToyConfigureModal.{field}: empty - {label}")
+            audit_variants_layout(sc, tgc, pending)
             todo += audit_inherited_arcade(sc)
 
     # the switcher's registry
