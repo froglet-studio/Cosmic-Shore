@@ -48,6 +48,17 @@ namespace CosmicShore.UI
 
         readonly List<ToyboxCard> _cards = new();
 
+        [Header("Card reveal")]
+        [SerializeField, Tooltip("Timing for the staggered card pop-in played when the window opens " +
+                                 "(the card-entrance block). Leave empty for the fleet defaults in CardGridReveal.")]
+        HUDAnimationSettingsSO cardRevealSettings;
+
+        // Every ModalWindowManager on this object. The scene's ToyboxScreenModal carries TWO -
+        // the base one the ScreenSwitcher opens (ModalType TOYBOX) and this subclass - so the
+        // reveal subscribes to all of them and whichever the switcher drives fires it.
+        readonly List<ModalWindowManager> _openSources = new();
+        readonly List<GameObject> _revealCards = new();
+
         // NOT serialized, and deliberately not named `screenSwitcher`: the base already serializes
         // a field by that name, and Unity refuses to serialize the same field name twice in a class
         // and its parent ("The same field name is serialized multiple times"). The authored slot is
@@ -62,6 +73,17 @@ namespace CosmicShore.UI
                 : FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (!configureModal)
                 configureModal = FindFirstObjectByType<ToyConfigureModal>(FindObjectsInactive.Include);
+
+            GetComponents(_openSources);
+            foreach (var source in _openSources)
+                source.OnModalOpened += PlayCardReveal;
+        }
+
+        void OnDestroy()
+        {
+            foreach (var source in _openSources)
+                if (source) source.OnModalOpened -= PlayCardReveal;
+            _openSources.Clear();
         }
 
         void OnEnable()
@@ -74,6 +96,18 @@ namespace CosmicShore.UI
         {
             base.OnDisable();
             ToyShellRegistry.OnChanged -= Refresh;
+        }
+
+        /// <summary>
+        /// Staggered pop-in of the live cards each time the window opens. Not played from
+        /// <see cref="Refresh"/>, which also runs on a registry change while the window is up.
+        /// </summary>
+        void PlayCardReveal()
+        {
+            _revealCards.Clear();
+            foreach (var card in _cards)
+                if (card) _revealCards.Add(card.gameObject);
+            CardGridReveal.Play(_revealCards, cardRevealSettings);
         }
 
         /// <summary>

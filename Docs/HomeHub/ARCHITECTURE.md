@@ -604,6 +604,32 @@ route in this project (`ModalWindowIn` carries an externally-deactivated recover
 cancelling on disable could kill the deferred toy action on exactly that route. It is cancelled on
 destroy, and superseded when a second handoff starts.
 
+## 4.3 Cards REVEAL on open, and the hub buttons stand down while any modal is up
+
+The sibling of §4.2, from the other end: a window OPENS without being enabled either, so anything
+that should happen "when the grid appears" cannot ride `OnEnable` and cannot ride repopulation
+(the arcade grid is populated once at `Start` and reused). `ModalWindowManager` therefore raises
+**`OnModalOpened`** after `isOn = true` in `ModalWindowIn`, and both card grids subscribe to it —
+`ArcadeExploreView` (arcade AND arena, one view) through its host modal, `ToyboxModal` through
+every `ModalWindowManager` on its own GameObject, since it carries two. `CardGridReveal.Play`
+then blooms the cards one by one: scale from 0.6 with a `CanvasGroup` fade, stagger capped so the
+whole row lands inside ~0.55 s however many cards there are, OutBack, `SetUpdate(true)` +
+`SetLink`. It is **scale and alpha only** — every grid here is laid out by a layout group, and a
+position tween fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass
+records). `CardGridReveal.Snap` is the no-animation seat for a re-populate that happens while the
+window is already open. The reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the
+feel is one asset rather than a per-view constant.
+
+The four home-hub buttons (`MenuHubButton`s under one container) are a separate rule with the
+same trigger: **visible iff no modal is open, freestyle is off and HOME is the screen**.
+`ScreenSwitcher.UpdateHubButtonsVisibility` fades the container's `CanvasGroup` (added if the
+container authors none, so nothing in the scene has to be wired) and is called from the four
+places that change any of those three facts — `CommitModalStackState`, the end of `NavigateTo`,
+and the freestyle enter/exit handlers — because the switcher already owns the modal stack, the
+screen index and the freestyle flag, and a button that watched any one of them alone would be
+wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
+can neither be clicked through a modal nor reached by gamepad navigation.
+
 ## 5. Scene wiring checklist
 
 The UI itself is hand-designed. What the code needs:

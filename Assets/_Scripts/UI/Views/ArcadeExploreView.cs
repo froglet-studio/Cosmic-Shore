@@ -70,6 +70,16 @@ namespace CosmicShore.UI
         // it if the scene's instance is replaced between enable and disable.
         ArcadeConfigSyncManager _pickSource;
 
+        [Header("Card Reveal")]
+        [Tooltip("Timing for the staggered card pop-in played when this grid's window opens " +
+                 "(the card-entrance block). Leave empty for the fleet defaults in CardGridReveal.")]
+        [SerializeField] HUDAnimationSettingsSO cardRevealSettings;
+
+        // The window this grid lives in. Its OnModalOpened is the reveal trigger: the window
+        // hides by CanvasGroup alpha, so OnEnable here fires at scene load, never on open.
+        ModalWindowManager _hostModal;
+        readonly List<GameObject> _revealCards = new();
+
         void OnEnable()
         {
             if (GameModeProgressionService.Instance != null)
@@ -99,6 +109,28 @@ namespace CosmicShore.UI
         {
             LoadoutSystem.Init();
             PopulateGameSelectionList();
+
+            _hostModal = GetComponentInParent<ModalWindowManager>(true);
+            if (_hostModal) _hostModal.OnModalOpened += PlayCardReveal;
+        }
+
+        void OnDestroy()
+        {
+            if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+        }
+
+        /// <summary>
+        /// The staggered pop-in of every visible card, in grid order, each time this grid's
+        /// window opens. Deliberately NOT played from PopulateGameSelectionList: that also runs
+        /// on a favourite toggle or a progression change while the window is up, and a settled
+        /// card must not flicker (Docs/HomeHub/ARCHITECTURE.md §4.1).
+        /// </summary>
+        void PlayCardReveal()
+        {
+            _revealCards.Clear();
+            foreach (var card in GameCards)
+                if (card) _revealCards.Add(card.gameObject);
+            CardGridReveal.Play(_revealCards, cardRevealSettings);
         }
 
         public void PopulateGameSelectionList()

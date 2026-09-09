@@ -520,6 +520,15 @@ namespace CosmicShore.Gameplay
             // names separately after spawn. IsLocalUser filters out AI via !IsInitializedAsAI.
             if (IsLocalUser)
             {
+                // A spectator must never own a Player: the host declines to mint one when the
+                // spectator approval payload reaches it (SpectatorSession). If one arrived
+                // anyway the payload was lost on the wire, and this machine is about to be
+                // spawned a vessel into a match it only meant to watch - say so, loudly.
+                if (SpectatorSession.IsLocalSpectator)
+                    Debug.LogError("[Player] A SPECTATOR was handed a Player object - the spectator " +
+                                   "approval payload did not reach the host (SpectatorSession). This " +
+                                   "client will be spawned as a pilot. See Docs/PartySystem/SPECTATOR.md.");
+
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {

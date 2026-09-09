@@ -112,7 +112,7 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: 5e2e92dee55c5fb4496c3c37cab9b01c,
+      objectReference: {fileID: 21300000, guid: 696b9385f751492b91f7d9da83d0a9fc,
         type: 3}
     - target: {fileID: 1891587296853781449, guid: b92b3887ba979304084627952eac749a,
         type: 3}
@@ -145,6 +145,30 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 2830809950527177555}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2618601652768853616 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7342719215500582278, guid: b92b3887ba979304084627952eac749a,
+    type: 3}
+  m_PrefabInstance: {fileID: 2830809950527177555}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &5211182312019998338 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1891587296853781449, guid: b92b3887ba979304084627952eac749a,
+    type: 3}
+  m_PrefabInstance: {fileID: 2830809950527177555}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &6016926791741024649
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -376,6 +400,13 @@ MonoBehaviour:
   backgroundImage: {fileID: 6547029907365947115}
   inviteButton: {fileID: 1421700359805221157}
   cancelButton: {fileID: 4272713570557155636}
+  joinButton: {fileID: 2618601652768853616}
+  joinButtonIcon: {fileID: 5211182312019998338}
+  joinSprite: {fileID: 21300000, guid: 696b9385f751492b91f7d9da83d0a9fc, type: 3}
+  spectateSprite: {fileID: 21300000, guid: bb16d5b96c304ea5a49e6c9e50aef832, type: 3}
+  joinTint: {r: 0.4, g: 0.885, b: 1, a: 1}
+  spectateTint: {r: 1, g: 0.85, b: 0.25, a: 1}
+  joinDisabledAlpha: 0.35
   onlineColor: {r: 1, g: 1, b: 1, a: 1}
   inLobbyColor: {r: 0.4, g: 0.8, b: 1, a: 1}
   inMatchColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}

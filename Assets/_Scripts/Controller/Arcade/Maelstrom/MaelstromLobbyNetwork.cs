@@ -129,12 +129,14 @@ namespace CosmicShore.Gameplay
             if (nm == null) return;
 
             var ids = nm.ConnectedClientsIds;
-            _ready.RemoveWhere(id => !ids.Contains(id));
+            _ready.RemoveWhere(id => !ids.Contains(id) || SpectatorSession.IsSpectatorClient(id));
 
+            // Spectators hold a seat but never a Ready button - they are not counted.
+            int players = SpectatorSession.CountHumanClients(nm);
             _readyCount.Value = _ready.Count;
-            _totalPlayers.Value = ids.Count;
+            _totalPlayers.Value = players;
 
-            if (ids.Count > 0 && _ready.Count >= ids.Count)
+            if (players > 0 && _ready.Count >= players)
             {
                 double snap = nm.ServerTime.Time + allReadySeconds;
                 if (snap < _deadline.Value) _deadline.Value = snap;

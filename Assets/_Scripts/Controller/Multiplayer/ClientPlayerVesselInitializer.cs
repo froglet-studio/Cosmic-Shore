@@ -377,6 +377,20 @@ namespace CosmicShore.Gameplay
 
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
             {
+                // A SPECTATOR has no local pair: it owns no Player, so "the local vessel
+                // resolved" can never come true and the gate below would spin the roster pull
+                // for its full 60s while the viewer sat on the opaque veil. Every pair the host
+                // sent has resolved, which is all a viewer needs. OnClientReady is deliberately
+                // NOT raised - it means "my vessel is initialised", and SpectatorController
+                // fades the veil on its own gate ("watching a vessel") instead.
+                if (SpectatorSession.IsLocalSpectator)
+                {
+                    _signalClientReadyWhenDone = false;
+                    _localPairResolved = true;
+                    _rosterRetryCts?.Cancel();
+                    return;
+                }
+
                 // The batch only counts as complete once the LOCAL pair actually
                 // resolved. The client-pull roster request fires from our own
                 // OnNetworkSpawn, so the host's reply can legitimately predate our

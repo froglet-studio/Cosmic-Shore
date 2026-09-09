@@ -153,6 +153,12 @@ namespace CosmicShore.UI
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
+        [Header("Home Hub Buttons")]
+        [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
+                 "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
+                 "The buttons' shared parent gets a CanvasGroup (added if missing) - no scene wiring.")]
+        [SerializeField] private float hubButtonsFadeSeconds = 0.2f;
+
         [Header("Gamepad Freestyle Toggle")]
         [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
@@ -163,6 +169,10 @@ namespace CosmicShore.UI
         private Coroutine navigateCoroutine;
         private bool _isInFreestyle;
         private float _freestyleToggleCooldownUntil;
+
+        // The hub row's CanvasGroup (the four MenuHubButtons' shared parent) and its live fade.
+        private CanvasGroup _hubButtonsGroup;
+        private Coroutine _hubButtonsFade;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -244,8 +254,77 @@ namespace CosmicShore.UI
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
             UpdateScreensInteractable();
             UpdateModalStackInteractable();
+            UpdateHubButtonsVisibility();
             Refocus();
         }
+
+        #region Home hub buttons
+
+        /// <summary>
+        /// The four hub buttons live under ONE parent on the HOME screen; that parent's
+        /// CanvasGroup (added here if the scene authored none) is what the gate drives. Found by
+        /// component rather than wired, so a hub entry added or moved in the scene is covered.
+        /// </summary>
+        private void ResolveHubButtonsGroup()
+        {
+            if (_hubButtonsGroup) return;
+            var hub = GetComponentInChildren<MenuHubButton>(true);
+            if (!hub || !hub.transform.parent) return;
+            var row = hub.transform.parent.gameObject;
+            _hubButtonsGroup = row.GetComponent<CanvasGroup>();
+            if (!_hubButtonsGroup) _hubButtonsGroup = row.AddComponent<CanvasGroup>();
+        }
+
+        /// <summary>
+        /// The hub buttons are visible only with NO modal open, on HOME, outside freestyle - they
+        /// fade out the moment any window opens over them and come back when the last one
+        /// closes. Interactable / raycasts follow immediately so a fading-out button cannot take
+        /// a click through the incoming window. Freestyle hides the whole screens group itself,
+        /// so this never has to fight that state.
+        /// </summary>
+        private void UpdateHubButtonsVisibility()
+        {
+            ResolveHubButtonsGroup();
+            if (!_hubButtonsGroup) return;
+
+            bool visible = activeModalStack.Count == 0
+                        && !InFreestyle
+                        && GetScreenIdForIndex(currentScreen) == MenuScreens.HOME;
+
+            _hubButtonsGroup.interactable = visible;
+            _hubButtonsGroup.blocksRaycasts = visible;
+
+            float target = visible ? 1f : 0f;
+            if (_hubButtonsFade != null)
+            {
+                StopCoroutine(_hubButtonsFade);
+                _hubButtonsFade = null;
+            }
+
+            if (hubButtonsFadeSeconds <= 0f || !isActiveAndEnabled)
+            {
+                _hubButtonsGroup.alpha = target;
+                return;
+            }
+            _hubButtonsFade = StartCoroutine(FadeHubButtons(target));
+        }
+
+        // Unscaled: the menu sits at timeScale 0 on every non-HOME screen and under most modals.
+        private IEnumerator FadeHubButtons(float target)
+        {
+            float from = _hubButtonsGroup.alpha;
+            float elapsed = 0f;
+            while (elapsed < hubButtonsFadeSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                _hubButtonsGroup.alpha = Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / hubButtonsFadeSeconds));
+                yield return null;
+            }
+            _hubButtonsGroup.alpha = target;
+            _hubButtonsFade = null;
+        }
+
+        #endregion
 
         #region Gamepad focus
 
@@ -465,6 +544,7 @@ namespace CosmicShore.UI
             CacheScreenComponents();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
+            UpdateHubButtonsVisibility();
 
             panelLocation = transform.position;
 
@@ -955,6 +1035,7 @@ namespace CosmicShore.UI
             currentScreen = ScreenIndex;
             SetReturnToScreen(screenId);
             UpdateNavBar(currentScreen);
+            UpdateHubButtonsVisibility();
             Refocus();
         }
 
@@ -1188,6 +1269,7 @@ namespace CosmicShore.UI
             // Hide NavBar and Screens via CanvasGroup
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
+            UpdateHubButtonsVisibility();
 
             ApplyFreestyleInputGate(true);
         }
@@ -1259,6 +1341,7 @@ namespace CosmicShore.UI
             // Show NavBar and Screens
             SetNavBarVisible(true);
             SetCanvasGroupVisible(screensCanvasGroup, true);
+            UpdateHubButtonsVisibility();
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
