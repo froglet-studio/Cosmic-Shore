@@ -330,6 +330,18 @@ measurement in § 7.
 - **Everything about how it plays.** Match length, readability of a two-shell braid at speed, and
   whether 22 strand-gates over ~2 laps is the right course length are all unmeasured.
 
-**Not yet written:** `SkeinCourse.cs`, `SpawnableSkein.cs`, `SkeinController.cs`,
+**Written and machine-verified:** `SkeinCourse.cs` — the generator, transcribed from the model and
+**compiled and RUN outside Unity** against stubbed `Vector3`/`Mathf` (Mono `mcs`). Compiling it
+caught two real defects that reading did not: target-typed `new(...)` (legal in Unity's C# 9,
+unparseable here) and — the one that mattered — **`seed * 2654435761` silently overflowing `int`**,
+which is a *determinism* bug rather than a compile nicety, since the offline model computes the
+same product in arbitrary precision and masks to 32 bits. Both sides now wrap identically.
+
+Measured over 60 seeds × 4 intensities: **231/240 lay a full 24-ring course first try**, and all 9
+that did not **recovered inside 4 re-rolls**. `TryGenerate` returning false is a designed path; the
+controller must re-roll rather than ship a short course, because a target naming a ring that does
+not exist is a match that cannot end.
+
+**Not yet written:** `SpawnableSkein.cs`, `SkeinController.cs`,
 `SkeinScoringRuleSO`, `SkeinGateTurnMonitor`, `SkeinObjectiveProvider`, the tests, the authoring
 script, the scene, and the registration (arcade card, roster, build settings, progression).
