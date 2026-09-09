@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
@@ -412,5 +413,183 @@ namespace CosmicShore.Tests
                         BreakwaterCourseSettings.PortRadiusForIntensity(intensity),
                         $"intensity {intensity}'s plug has no annulus left to weave.");
         }
+
+        /// <summary>
+        /// <b>The eye is the mode's central promise, so it is measured off the PRISMS rather than
+        /// off the constant that names it.</b>
+        ///
+        /// <para>EyeRadius is an input to the plug's clipping arithmetic, not a statement about
+        /// what the plug emits: a bar is <c>BarCross</c> wide, so a rake line clipped on its
+        /// CENTRELINE leaves half a cross-section of prism inside the hole. That shipped - the
+        /// k = 1 line stands at exactly 18.0, so the "is this line inside the eye" test was false
+        /// and six bar bodies straddled 16.5..19.5 at every station, a hexagon of inradius 16.5
+        /// against a documented 18. Every constant was individually correct and every other test
+        /// in this file passed.</para>
+        ///
+        /// <para>So this walks the emitted boxes and asks the only question that matters: how big
+        /// is the largest disc in the port plane that no prism intrudes on. The shadow of an
+        /// oriented box on that plane is a convex polygon, and the answer is the distance from the
+        /// station's axis to the nearest one.</para>
+        /// </summary>
+        [Test]
+        public void ThePlugLeavesTheWholeEyeClear([Values(1, 2, 3, 4)] int intensity)
+        {
+            float port = BreakwaterCourseSettings.PortRadiusForIntensity(intensity);
+            float eye = BreakwaterCourseSettings.EyeRadius;
+            float hull = BreakwaterCourseSettings.SparrowHullRadius;
+
+            float nearest = float.PositiveInfinity;
+            int bars = 0;
+
+            BreakwaterStationBuilder.Build(
+                new BreakwaterStation(Vector3.zero, Vector3.forward, port),
+                (pos, rot, scale, kind) =>
+                {
+                    if (kind != PrismKind.Danger) return;   // only the weave can reach the eye
+                    bars++;
+                    nearest = Mathf.Min(nearest, DistanceFromStationAxis(pos, rot, scale));
+                });
+
+            Assert.Greater(bars, 0, $"intensity {intensity} wove no plug at all.");
+            Assert.GreaterOrEqual(nearest, eye - 1e-3f,
+                $"intensity {intensity}: the nearest plug bar's BODY reaches {nearest:F3} from the " +
+                $"axis, inside the {eye} eye the collar advertises. Clip the rake against the " +
+                "bar's near edge, not its centreline.");
+            Assert.Greater(nearest, hull,
+                $"intensity {intensity}: the clear eye ({nearest:F3}) is narrower than the hull " +
+                $"({hull}) - unthreadable at any roll.");
+        }
+
+        /// <summary>
+        /// The collar is the rim a pilot lines up on, and its inner faces must land on the same
+        /// eye the weave is cut to. If the two disagree the station shows a mouth it does not
+        /// have (or hides one it does), and no amount of aiming skill can tell which.
+        /// </summary>
+        [Test]
+        public void TheCollarsInnerFaceLandsOnTheEye([Values(1, 2, 3, 4)] int intensity)
+        {
+            float port = BreakwaterCourseSettings.PortRadiusForIntensity(intensity);
+            float nearest = float.PositiveInfinity;
+            int blocks = 0;
+
+            BreakwaterStationBuilder.Build(
+                new BreakwaterStation(Vector3.zero, Vector3.forward, port),
+                (pos, rot, scale, kind) =>
+                {
+                    // The collar is the only Plain cube; the dish's plates are 7 x 7 x 1.5.
+                    if (kind != PrismKind.Plain) return;
+                    if (!Mathf.Approximately(scale.x, scale.z)) return;
+                    blocks++;
+                    nearest = Mathf.Min(nearest, DistanceFromStationAxis(pos, rot, scale));
+                });
+
+            Assert.AreEqual(12, blocks, $"intensity {intensity} laid {blocks} collar blocks.");
+            Assert.AreEqual(BreakwaterCourseSettings.EyeRadius, nearest, 1e-3f,
+                $"intensity {intensity}: the collar's inner face sits at {nearest:F3}, not on the " +
+                $"{BreakwaterCourseSettings.EyeRadius} eye the weave is cut to.");
+        }
+
+        /// <summary>
+        /// <b>No station may swallow a spawn pad.</b> Pilots spawn on the equatorial ring at 480,
+        /// which is INSIDE the 420..1080 shell the walk uses, and until this was added nothing in
+        /// the generator knew the ring existed - so a station's weave landed on a pad and a pilot
+        /// started the match embedded in Danger prisms. Measured before the fix: 7 of 14,400
+        /// pad-cases inside structure and 23 more within a hull radius of it.
+        /// </summary>
+        [Test]
+        public void NoStationEverReachesASpawnPad([Values(1, 2, 3, 4)] int intensity)
+        {
+            var settings = Settings(intensity);
+            float reject = BreakwaterCourse.StationReach(settings.PortRadius) +
+                           settings.SpawnPadClearance;
+
+            Assert.IsNotNull(settings.SpawnPads, "ForIntensity stopped seeding the spawn pads.");
+            Assert.Greater(settings.SpawnPads.Length, 0, "the pad ring is empty.");
+
+            float worst = float.PositiveInfinity;
+
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var course = BreakwaterCourse.Generate(SeedFor(seed, intensity), settings);
+                Assert.IsNotNull(course, $"intensity {intensity}, seed {seed}: no course.");
+
+                for (int i = 0; i < course.Count; i++)
+                    for (int p = 0; p < settings.SpawnPads.Length; p++)
+                        worst = Mathf.Min(worst,
+                            (settings.SpawnPads[p] - course[i].Position).magnitude);
+            }
+
+            Assert.GreaterOrEqual(worst, reject - 1e-2f,
+                $"intensity {intensity}: a station centre came within {worst:F1} of a spawn pad, " +
+                $"inside the {reject:F1} its own structure plus the authored clearance needs.");
+        }
+
+        /// <summary>
+        /// The pad test is opt-in, and a caller that leaves it off still gets a course. That is
+        /// what makes every other test in this file a test of the WALK rather than of the pads.
+        /// </summary>
+        [Test]
+        public void ACourseWithNoSpawnPadsStillGenerates([Values(1, 2, 3, 4)] int intensity)
+        {
+            var settings = Settings(intensity);
+            settings.SpawnPads = null;
+
+            var course = BreakwaterCourse.Generate(7919 + intensity, settings);
+            Assert.IsNotNull(course);
+            Assert.AreEqual(Stations, course.Count);
+        }
+
+        /// <summary>
+        /// Distance from the station's own axis (the +Z line through the origin, which is how
+        /// every station in these tests is posed) to an oriented box.
+        ///
+        /// <para>The box's shadow on the port plane is the convex hull of its eight projected
+        /// corners, so the answer is the distance from the origin to that polygon. Solved rather
+        /// than sampled - a grid sample can only ever over-report the clearance, which is the
+        /// direction that hides the defect this test exists for.</para>
+        /// </summary>
+        static float DistanceFromStationAxis(Vector3 centre, Quaternion rot, Vector3 scale)
+        {
+            var corners = new Vector2[8];
+            int n = 0;
+
+            for (int sx = -1; sx <= 1; sx += 2)
+                for (int sy = -1; sy <= 1; sy += 2)
+                    for (int sz = -1; sz <= 1; sz += 2)
+                    {
+                        Vector3 q = centre + rot * new Vector3(sx * scale.x, sy * scale.y, sz * scale.z) * 0.5f;
+                        corners[n++] = new Vector2(q.x, q.y);
+                    }
+
+            // The origin is inside the shadow iff it is on the same side of every hull edge; with
+            // only eight points, testing every ORDERED pair as a candidate edge is exact and
+            // cheaper to read than a hull construction.
+            float best = float.PositiveInfinity;
+            bool outside = false;
+
+            for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++)
+                {
+                    if (i == j) continue;
+                    Vector2 a = corners[i], b = corners[j];
+                    Vector2 e = b - a;
+                    if (e.sqrMagnitude < 1e-12f) continue;
+
+                    // A supporting line of the shadow: every corner on one side of it.
+                    bool supporting = true;
+                    for (int k = 0; k < 8 && supporting; k++)
+                        supporting = Cross(e, corners[k] - a) <= 1e-6f;
+                    if (!supporting) continue;
+
+                    if (Cross(e, -a) > 0f) outside = true;      // origin on the far side
+
+                    float t = Mathf.Clamp01(Vector2.Dot(-a, e) / e.sqrMagnitude);
+                    best = Mathf.Min(best, (a + e * t).magnitude);
+                }
+
+            return outside ? best : 0f;
+        }
+
+        static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
     }
 }

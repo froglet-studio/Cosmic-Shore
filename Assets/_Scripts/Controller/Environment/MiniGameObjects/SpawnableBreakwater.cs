@@ -136,6 +136,11 @@ namespace CosmicShore.Gameplay
                  "ammunition scatter can never block a racing line somewhere else on the course.")]
         [SerializeField, Min(0f)] float shoalSplineClearance = 30f;
 
+        [Tooltip("Closest a shoal cluster may sit to a pilot's spawn pad, in world units. The " +
+                 "spawn ring is inside the course shell, so rubble can otherwise be strung " +
+                 "through it.")]
+        [SerializeField, Min(0f)] float shoalSpawnPadClearance = 60f;
+
         [Tooltip("Radius of one 7-prism clump. At 8 no two cubes can interpenetrate at any " +
                  "rotation - see EmitCluster for the arithmetic - so rubble keeps reading as " +
                  "rubble rather than as one lumpy solid.")]
@@ -177,6 +182,26 @@ namespace CosmicShore.Gameplay
             // parameter hash is what makes a NEW course rebuild (the cache is hash-keyed), and
             // the explicit invalidate is what makes a hash COLLISION harmless. Same pairing as
             // SpawnableBase.SetSeed.
+            InvalidateCache();
+        }
+
+        Vector3[] _spawnPads;
+
+        /// <summary>
+        /// The pilots' spawn pads, IN THE SAME FRAME as the course (see <see cref="SetCourse"/>) -
+        /// so the caller applies the cell offset to both or to neither.
+        ///
+        /// <para>The shoals are strung along legs that pass through the spawn ring, so without
+        /// this a cluster of rubble can materialise on a pad. Unlike the course's own pad
+        /// rejection this is only a scoring term with a fallback, so it cannot change how many
+        /// prisms the arena lays - which is what keeps the measured PhaseThresholds exact.</para>
+        /// </summary>
+        public void SetSpawnPads(IReadOnlyList<Vector3> pads)
+        {
+            _spawnPads = pads == null || pads.Count == 0 ? null : new Vector3[pads.Count];
+            if (_spawnPads != null)
+                for (int i = 0; i < pads.Count; i++) _spawnPads[i] = pads[i];
+
             InvalidateCache();
         }
 
@@ -454,6 +479,16 @@ namespace CosmicShore.Gameplay
                     DistanceToSegment(centre, _course[i].Position, _course[i + 1].Position)
                     - shoalSplineClearance - clusterRadius);
 
+            // THE SPAWN PADS, for the same reason the walk rejects a station that reaches one:
+            // pilots spawn at 480 on the equator, inside the shell this rubble is strung through.
+            // A cluster is small enough that the odds are long, but this is a SCORING term with a
+            // best-margin fallback, so it can never drop a cluster and the arena's prism count is
+            // exactly the number the PhaseThresholds were measured against either way.
+            if (_spawnPads != null)
+                for (int i = 0; i < _spawnPads.Length; i++)
+                    margin = Mathf.Min(margin,
+                        (_spawnPads[i] - centre).magnitude - shoalSpawnPadClearance - clusterRadius);
+
             return margin;
         }
 
@@ -644,11 +679,16 @@ namespace CosmicShore.Gameplay
                 _course.Count,
                 System.HashCode.Combine(shoalOffsetMin, shoalOffsetMax, shoalStationClearance,
                     shoalSplineClearance),
-                System.HashCode.Combine(shoalClumpRadius, shoalPlacementAttempts));
+                System.HashCode.Combine(shoalClumpRadius, shoalPlacementAttempts,
+                    shoalSpawnPadClearance, _spawnPads?.Length ?? 0));
 
             for (int i = 0; i < _course.Count; i++)
                 hash = System.HashCode.Combine(hash, _course[i].Position, _course[i].Axis,
                     _course[i].PortRadius);
+
+            if (_spawnPads != null)
+                for (int i = 0; i < _spawnPads.Length; i++)
+                    hash = System.HashCode.Combine(hash, _spawnPads[i]);
 
             return hash;
         }

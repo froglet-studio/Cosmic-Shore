@@ -480,7 +480,7 @@ emit("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset.meta",
 # layAcrossFrames 0 because the stations are gameplay-critical: they must fully exist the moment
 # Spawn returns, which is the case SpawnableBase's own tooltip names ("race tracks, courses").
 SHOAL = dict(offset_min=40, offset_max=110, station_clearance=40, spline_clearance=30,
-             clump_radius=8, placement_attempts=12)
+             clump_radius=8, placement_attempts=12, spawn_pad_clearance=60)
 
 emit("Assets/_Prefabs/Spawnables/SpawnableBreakwater.prefab", f"""%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -545,6 +545,7 @@ MonoBehaviour:
   shoalSplineClearance: {SHOAL['spline_clearance']}
   shoalClumpRadius: {SHOAL['clump_radius']}
   shoalPlacementAttempts: {SHOAL['placement_attempts']}
+  shoalSpawnPadClearance: {SHOAL['spawn_pad_clearance']}
 """)
 emit("Assets/_Prefabs/Spawnables/SpawnableBreakwater.prefab.meta",
      prefab_meta(G_ASSET["SpawnableBreakwater.prefab"]))
@@ -911,11 +912,13 @@ for _rel, _name, _model_value, _label in [
     (_builder_cs, "DishPlateWidth", arena.DISH_PLATE[0], "dish plate width"),
     (_builder_cs, "DishPlateThickness", arena.DISH_PLATE[2], "dish plate thickness"),
     (_builder_cs, "DishJitter", arena.DISH_JITTER, "dish plate jitter"),
+    (_builder_cs, "DishHalfAngleDegrees", arena.DISH_HALF_ANGLE_DEG, "dish cone half-angle"),
     (_course_cs, "EyeRadius", arena.EYE_RADIUS, "threadable eye"),
     (_course_cs, "SparrowHullRadius", arena.SPARROW_HULL_RADIUS, "Sparrow hull radius"),
     (_course_cs, "DefaultInnerRadius", SHELL_INNER, "course shell, inner"),
     (_course_cs, "DefaultOuterRadius", SHELL_OUTER, "course shell, outer"),
     (_course_cs, "DefaultFirstStationDistance", FIRST_STATION_DISTANCE, "station 1 distance"),
+    (_course_cs, "DefaultSpawnRingRadius", SPAWN_RING_RADIUS, "spawn ring radius"),
     (_course_cs, "AttemptsPerStation", arena.ATTEMPTS_PER_STATION, "walk attempts per station"),
     (_course_cs, "ReseedAttempts", arena.RESEED_ATTEMPTS, "reseeds before shortening"),
     (_spawnable_cs, "ShoalClustersPerLeg", arena.SHOAL_CLUSTERS_PER_LEG, "shoal clusters per leg"),
@@ -951,7 +954,8 @@ for _field, _authored in (("shoalOffsetMin", SHOAL["offset_min"]),
                           ("shoalStationClearance", SHOAL["station_clearance"]),
                           ("shoalSplineClearance", SHOAL["spline_clearance"]),
                           ("shoalClumpRadius", SHOAL["clump_radius"]),
-                          ("shoalPlacementAttempts", SHOAL["placement_attempts"])):
+                          ("shoalPlacementAttempts", SHOAL["placement_attempts"]),
+                          ("shoalSpawnPadClearance", SHOAL["spawn_pad_clearance"])):
     _got = cs_const(_spawnable_cs, _field)
     if _got is not None and abs(_got - float(_authored)) > 1e-6:
         errors.append(f"prefab authors {_field} = {_authored} but SpawnableBreakwater.cs defaults "

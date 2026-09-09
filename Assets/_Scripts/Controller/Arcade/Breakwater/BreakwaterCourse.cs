@@ -74,6 +74,20 @@ namespace CosmicShore.Gameplay
         public float FirstStationDistance;
 
         /// <summary>
+        /// World positions no station's structure may reach - the pilots' spawn pads.
+        ///
+        /// <para>Null or empty disables the test, which is what every unit test that only cares
+        /// about the walk's shape passes.</para>
+        /// </summary>
+        public Vector3[] SpawnPads;
+
+        /// <summary>
+        /// Air left between a station's bounding sphere and the nearest spawn pad. See
+        /// <see cref="DefaultSpawnPadClearance"/>.
+        /// </summary>
+        public float SpawnPadClearance;
+
+        /// <summary>
         /// The Sparrow's own circumscribing radius, in world units: 12.32.
         ///
         /// <para>MEASURED from the shipped prefab rather than guessed, and the circumscribing
@@ -106,6 +120,30 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Station 1 sits this far along the pole. Matches the model's FIRST_STATION_DISTANCE.</summary>
         public const float DefaultFirstStationDistance = 660f;
+
+        /// <summary>
+        /// The equatorial spawn ring's radius: 480, matching the scene's
+        /// <c>spawnRingRadiusFloor</c> and the model's SPAWN_RING_RADIUS.
+        /// </summary>
+        public const float DefaultSpawnRingRadius = 480f;
+
+        /// <summary>
+        /// How much air a station must leave around a spawn pad, beyond its own bounding sphere:
+        /// <b>four hull radii</b>.
+        ///
+        /// <para><b>The spawn ring is INSIDE the course shell</b> - pads at 480 against a
+        /// 420..1080 walk - and nothing else in the generator knows the ring exists. Measured over
+        /// 400 seeds x 4 intensities x 2/3/4 seats, that put a pad inside a station's structure on
+        /// 7 of 14,400 pad-cases and within a hull radius of one on 23 more: a pilot who starts
+        /// the match embedded in Danger prisms, with no counterplay and nothing to explain it.
+        /// </para>
+        ///
+        /// <para>Four hull radii rather than one because a pilot spawns facing the cell and needs
+        /// room to SEE the wall and turn, not merely to not be inside it - and it is free:
+        /// measured, the rejection costs the walk nothing at any clearance from 0 to 60 (0
+        /// failures in 800 seeds x 4 intensities).</para>
+        /// </summary>
+        public const float DefaultSpawnPadClearance = 4f * SparrowHullRadius;
 
         /// <summary>
         /// The port rim for an intensity: <b>72 / 60 / 50 / 42</b>. A measured ladder rather than
@@ -184,6 +222,8 @@ namespace CosmicShore.Gameplay
                 OuterRadius = DefaultOuterRadius,
                 FirstStationDirection = Vector3.up,
                 FirstStationDistance = DefaultFirstStationDistance,
+                SpawnPads = BreakwaterCourse.SpawnPadRing(Vector3.zero, DefaultSpawnRingRadius),
+                SpawnPadClearance = DefaultSpawnPadClearance,
 
                 // StationCount is deliberately NOT set. It is the end-game target and lives in
                 // EndConditionOverridesSO, read by BOTH the turn monitor (the number that ends the
@@ -390,6 +430,12 @@ namespace CosmicShore.Gameplay
 
                     if (TooClose(pts, cand, separation)) continue;
 
+                    // NO STATION MAY SWALLOW A SPAWN PAD. Pilots spawn on the equatorial ring at
+                    // 480, which is INSIDE the 420..1080 shell, and nothing else in this walk
+                    // knows the ring exists - so without this a station's weave lands on a pad and
+                    // a pilot starts the match inside Danger prisms.
+                    if (ReachesSpawnPad(s, cand)) continue;
+
                     pts.Add(cand);
                     headings.Add(dir);
                     placed = true;
@@ -443,6 +489,68 @@ namespace CosmicShore.Gameplay
             float sq = minSeparation * minSeparation;
             for (int i = 0; i < pts.Count; i++)
                 if ((pts[i] - cand).sqrMagnitude < sq) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Bounding radius of one station's geometry about its own centre.
+        ///
+        /// <para>The dish rim is the farthest point: it sits at
+        /// <c>DishRatio * port</c> in the port plane and <c>(DishRatio - 1) * port / tan(a)</c>
+        /// BEHIND it along the axis, so the two combine as a hypotenuse. A sphere is deliberately
+        /// coarse - this number only ever REJECTS a candidate, so erring outward costs the walk a
+        /// little freedom and can never let prism near a pad.</para>
+        /// </summary>
+        public static float StationReach(float portRadius)
+        {
+            const float halfAngle = BreakwaterStationBuilder.DishHalfAngleDegrees * Mathf.Deg2Rad;
+            float invTan = Mathf.Cos(halfAngle) / Mathf.Sin(halfAngle);
+            float ratio = BreakwaterStationBuilder.DishRatio;
+
+            // The plate's own half-diagonal, so a plate straddling the rim is inside the sphere.
+            float plateHalf = new Vector3(BreakwaterStationBuilder.DishPlateWidth,
+                                          BreakwaterStationBuilder.DishPlateWidth,
+                                          BreakwaterStationBuilder.DishPlateThickness).magnitude * 0.5f;
+
+            float axial = (ratio - 1f) * invTan;
+            return portRadius * Mathf.Sqrt(ratio * ratio + axial * axial) + plateHalf;
+        }
+
+        /// <summary>
+        /// The spawn pads a course must keep clear of: the UNION over every seat count the card
+        /// allows (2, 3, 4).
+        ///
+        /// <para><c>CellSpawnFormation.EquatorialRing</c> puts slot <c>i</c> of <c>n</c> at
+        /// <c>i * 360/n</c> degrees from +Z on <c>y = 0</c>, so the union of 2, 3 and 4 seats is
+        /// {0, 90, 120, 180, 240, 270}. Taking the UNION rather than the live roster is what keeps
+        /// the course independent of how many pilots turned up: the geometry is generated once and
+        /// broadcast once, and must not change if a seat is added between the two.</para>
+        /// </summary>
+        public static Vector3[] SpawnPadRing(Vector3 centre, float radius)
+        {
+            var bearings = new[] { 0f, 90f, 120f, 180f, 240f, 270f };
+            var pads = new Vector3[bearings.Length];
+
+            for (int i = 0; i < bearings.Length; i++)
+            {
+                float t = bearings[i] * Mathf.Deg2Rad;
+                pads[i] = centre + new Vector3(Mathf.Sin(t), 0f, Mathf.Cos(t)) * radius;
+            }
+
+            return pads;
+        }
+
+        /// <summary>True when a station centred here would reach a spawn pad.</summary>
+        static bool ReachesSpawnPad(in BreakwaterCourseSettings s, Vector3 cand)
+        {
+            if (s.SpawnPads == null || s.SpawnPads.Length == 0) return false;
+
+            float reject = StationReach(s.PortRadius) + Mathf.Max(0f, s.SpawnPadClearance);
+            float sq = reject * reject;
+
+            for (int i = 0; i < s.SpawnPads.Length; i++)
+                if ((s.SpawnPads[i] - cand).sqrMagnitude < sq) return true;
+
             return false;
         }
 

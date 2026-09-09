@@ -338,7 +338,14 @@ namespace CosmicShore.Gameplay
                     $"{settings.MinStep:F0}..{settings.MaxStep:F0}, separation " +
                     $"{settings.MinSeparation:F0}, port {settings.PortRadius:F0}). Widen the " +
                     "shell or shorten the legs.");
+
+                // EVERY PEER OPENED A BRACKET IN OnNetworkSpawn, so releasing only the server's
+                // leaves each client holding its connecting panel on an arena that is never
+                // coming - until the panel's own 180-second stall cap gives up, with the one
+                // error that explains it on the HOST console. The failure is a configuration
+                // fault and is meant to degrade loudly, not to hang three machines silently.
                 ReleaseArenaBuildAnnouncement();
+                CourseUnavailable_ClientRpc();
                 return;
             }
 
@@ -449,6 +456,22 @@ namespace CosmicShore.Gameplay
             SyncCourse_ClientRpc(packed, course[0].PortRadius, target);
         }
 
+        /// <summary>
+        /// Told to every peer when generation gave up: there is no course and no arena, so stop
+        /// holding the connecting panel for one. The counterpart of the release the server does
+        /// for itself on the same branch - see <see cref="ReleaseArenaBuildAnnouncement"/>.
+        /// </summary>
+        [ClientRpc]
+        void CourseUnavailable_ClientRpc()
+        {
+            if (IsServer) return;   // already released on the failing branch
+
+            CSDebug.LogError("[Breakwater] The host reported that course generation failed; " +
+                             "this match has no stations. Check the host console for the shell " +
+                             "and leg numbers that have to change.");
+            ReleaseArenaBuildAnnouncement();
+        }
+
         [ClientRpc]
         void SyncCourse_ClientRpc(float[] packed, float portRadius, ClientRpcParams rpcParams = default)
         {
@@ -546,6 +569,12 @@ namespace CosmicShore.Gameplay
             // holding that reference would answer a later re-generation with an empty course.
             // Fourteen readonly structs is a free way to not have to know whether it kept it.
             arena.SetCourse(new List<BreakwaterStation>(_course));
+
+            // The pads in the COURSE'S frame - the course was offset onto the cell before it was
+            // broadcast, so these must be too, and every peer computes them from the same cell it
+            // built the rest of the arena around.
+            arena.SetSpawnPads(BreakwaterCourse.SpawnPadRing(ResolveCellCentre(),
+                                                             BreakwaterCourseSettings.DefaultSpawnRingRadius));
 
             var container = arena.Spawn(Intensity);
             if (container) container.name = "BreakwaterArena (prisms)";

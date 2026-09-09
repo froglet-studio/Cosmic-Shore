@@ -447,28 +447,51 @@ construction rather than by a special case carved for it. Three rakes at 60° is
 with no straight-line gap wider than the pitch at any bearing — two rakes leave a lattice of
 diamond holes a pilot can cheat through off-axis.
 
-Each line is clipped to the annulus `[18, port]`. A line closer to centre than the eye radius is
-**split into two runs**, one either side of the hole — that split is what actually cuts the eye out
-of the weave. A run is then divided into **equal** bars no longer than 62 units, `(3, 3, L)`,
-`PrismKind.Danger`. Equal rather than "as many full-length bars as fit plus a remainder", because a
-stub at the rim costs the same collider as a full bar and reads as damage rather than as structure.
+Each line is clipped to the annulus `[18, port]`. A line whose **bar body** comes closer to centre
+than the eye radius is **split into two runs**, one either side of the hole — that split is what
+actually cuts the eye out of the weave. A run is then divided into **equal** bars no longer than 62
+units, `(3, 3, L)`, `PrismKind.Danger`. Equal rather than "as many full-length bars as fit plus a
+remainder", because a stub at the rim costs the same collider as a full bar and reads as damage
+rather than as structure.
 
-Two geometric facts worth carrying, both verified against the shipped constants:
+#### The clip is against the bar's NEAR EDGE, not its centreline
 
-- **The eye's rim is exactly tangent to each rake's second line.** `(1 + 0.5) × 12 = 18`, which is
-  `EyeRadius` exactly — and 12, 1.5 and 18 are all exactly representable, so the `d < eye` test is
-  a clean false rather than a coin-flip at a tolerance. **Exactly one line per rake per sign is
-  split** (the `d = 6` one), i.e. six lines in the whole plug, and the threadable hole is exactly
-  the eye and no more. Retuning `RakePitch` or `EyeRadius` moves that coincidence, and the second
-  line then either splits (widening the hole) or is skipped.
+**This shipped wrong, and the reason it is worth reading is that every constant involved was
+individually correct.** A bar is `BarCross` = 3 wide, so a line whose *centre* stands exactly 18
+units off the axis still puts 1.5 units of prism inside the hole. The first cut tested the
+centreline — `if (d < eye)` — and `(1 + 0.5) × 12 = 18.0` is `EyeRadius` **exactly**, so for the
+`k = 1` line that test was a clean, deliberate-looking **false**: the line was emitted as one
+unsplit chord straight across the plug, and six bar bodies straddled **16.5 … 19.5** at every
+station, at every intensity. The keystone collar's inner faces sit at exactly 18, so **the station
+advertised a mouth 1.5 units wider than it had** — 16.5 clear, `1.34 ×` the hull rather than the
+documented `1.46 ×`.
+
+The fix is one line: clip against `d − BarCross / 2` and take the eye's half-chord *there*, which
+puts the nearest **corner** of the nearest bar at exactly `EyeRadius`. It costs intensity 1 six
+extra bars (78 → 84, the `k = 1` line now splitting into two runs that each need two) and every
+intensity ~92 units of bar length, which is why the `PhaseThresholds` moved with it.
+
+Two things generalise:
+
+- **An exact tangency in a clipping test is a warning, not a reassurance.** The old bullet here
+  read the `18 = 18` coincidence as a *virtue* ("a clean false rather than a coin-flip at a
+  tolerance") — the two numbers being exactly representable made the wrong branch perfectly
+  deterministic instead of intermittently wrong, which is worse, because it looks decided.
+- **A named constant is an INPUT to the arithmetic, not a claim about what the geometry emits.**
+  `EyeRadius = 18` was true of the clipping input and false of every prism laid. `ThePlugLeavesThe
+  WholeEyeClear` therefore measures the **emitted boxes** — the largest disc in the port plane no
+  prism shadow intrudes on — and `TheCollarsInnerFaceLandsOnTheEye` measures the collar the same
+  way, so the rim a pilot lines up on and the hole they fly through are proved to be the same
+  circle. Both were run against a negative control that restores the centreline clip and reports
+  16.5 at all four intensities.
+
+One more geometric fact worth carrying:
+
 - **The longest bar the ladder produces is 58.79 u** (intensity 4, the 30-unit offset line),
-  against the 62 cut and a `PrismScaleAnimator` clamp at 100. `EmitBarRun`'s own comment names
-  intensity 1's **58.48** (the 42-unit offset line) as the maximum; that is the maximum *for
-  intensity 1*, and the ladder-wide maximum is very slightly larger. Both are far inside the clamp,
-  so nothing is affected — but the clamp is the thing that would swallow an overshoot **in
-  silence** (the environment lay path writes `TargetScale` directly and never calls
-  `AdmitTargetScale`), which is why the model checks every emitted axis rather than trusting the
-  authored range.
+  against the 62 cut and a `PrismScaleAnimator` clamp at 100. It is far inside the clamp, but the
+  clamp is the thing that would swallow an overshoot **in silence** (the environment lay path
+  writes `TargetScale` directly and never calls `AdmitTargetScale`), which is why the model checks
+  every emitted axis rather than trusting the authored range.
 
 ### The keystone collar — the aim point
 
@@ -630,8 +653,8 @@ prisms/station                 257         211         140         117
 volume/station              53,984      40,927      28,598      21,928
 
 Arena totals (14 stations + shoals)
-arena prisms                 4,144       3,500       2,506       2,184
-arena volume               790,713     607,926     435,317     341,934
+arena prisms                 4,228       3,500       2,506       2,184
+arena volume               779,144     596,356     423,748     330,365
 x nominal (16/prism)          11.9        10.9        10.9         9.8
 
 Shoals: 546 prisms / 34,944 volume (constant at every intensity)
@@ -679,6 +702,38 @@ the scene's spawn formation to Symmetric breaks the fairness argument.
 The opening heading is a deflection of the **pole itself**, not of the ray back toward the cell
 centre: station 1 hangs at 660 inside a 420–1080 shell, so continuing outward is a legal leg and
 turning inward is not privileged. The first corner is drawn from the same cone as every other one.
+
+### …and no station may swallow a spawn pad
+
+**The spawn ring is INSIDE the course shell** — pads at 480 against a 420–1080 walk — and until it
+was measured, nothing in the generator knew the ring existed. The walk's only placement tests were
+the shell and `TooClose` (station-to-station), so a station could and did land on a pad: measured
+over 400 seeds × 4 intensities × 2/3/4 seats, **7 of 14,400 pad-cases put a pilot inside a
+station's structure** and 23 more put one within a hull radius of it. That pilot starts the match
+embedded in Danger prisms, with no counterplay and nothing on screen to explain it.
+
+`BreakwaterCourse.ReachesSpawnPad` rejects any candidate whose station would reach a pad, using
+`StationReach(port)` — the bounding sphere of the station's geometry, whose farthest point is the
+dish rim (`DishRatio × port` out in the port plane and `(DishRatio − 1) × port / tan 22°` behind
+it) — plus `DefaultSpawnPadClearance`, **four hull radii**. Three choices in that sentence:
+
+- **A bounding SPHERE, deliberately coarse.** The number only ever *rejects*, so erring outward
+  costs the walk a little freedom and can never let prism near a pad. Measured, it costs the walk
+  **nothing at all**: 0 generation failures over 800 seeds × 4 intensities at every clearance from
+  0 to 60.
+- **Four hull radii, not one.** A pilot spawns *facing* the cell and needs room to see the wall and
+  turn, not merely to not be inside it. The shipped sweep leaves **52.4 u** of air at the tightest
+  pad, against the 49.28 floor.
+- **The pad set is the UNION over 2, 3 and 4 seats** — `{0°, 90°, 120°, 180°, 240°, 270°}` — rather
+  than the live roster. The course is generated once and broadcast once, so keying it on the seat
+  count would let a seat added between those two moments invalidate the geometry every peer already
+  holds. *A generator that reads a number the network can still change has to be re-run when it
+  does; taking the union means it never has to be.*
+
+The shoals get the same treatment from the other side: `SpawnableBreakwater.SetSpawnPads` feeds
+`ClusterMargin`, which is a **scoring** term with a best-margin fallback rather than a rejection —
+so it can never drop a cluster, and the arena's prism count stays exactly the number the
+`PhaseThresholds` were measured against.
 
 ---
 
@@ -829,7 +884,7 @@ separation:
 Collider budget (MEASURED worst case, not asserted)
                                     I1          I2          I3          I4
 stations in radius                   2           3           3           4
-active prism colliders             556         675         462         510
+active prism colliders             568         675         462         393
 against band                     1,500       1,500       1,500       1,500
 ```
 
@@ -846,10 +901,10 @@ with exits 10% under their enters so a trail-caused Frenzy always releases with 
 
 ```
 Phase thresholds (volume is the spine; count is the backstop)
-  I1: baseline    790,713   RestlessEnter    910,713   FrenzyEnter  1,090,713
-  I2: baseline    607,926   RestlessEnter    727,926   FrenzyEnter    907,926
-  I3: baseline    435,317   RestlessEnter    555,317   FrenzyEnter    735,317
-  I4: baseline    341,934   RestlessEnter    461,934   FrenzyEnter    641,934
+  I1: baseline    779,144   RestlessEnter    899,144   FrenzyEnter  1,079,144
+  I2: baseline    596,356   RestlessEnter    716,356   FrenzyEnter    896,356
+  I3: baseline    423,748   RestlessEnter    543,748   FrenzyEnter    723,748
+  I4: baseline    330,365   RestlessEnter    450,365   FrenzyEnter    630,365
 ```
 
 Exits are `baseline + 108,000` and `baseline + 270,000`; counts ride `+700 / +500 / +3,600 /
@@ -1051,17 +1106,17 @@ $ python3 Tools/Build/author_breakwater_assets.py --check
 Validation passed (32 files).
   scene: shipped (read-only)
   stations 14  comeback 0.7 (2.45 levels at a quarter-of-target deficit)  sense radius 1250
-  I1: port 72   4,144 prisms     790,713 volume  ->  Restless    910,713  Frenzy  1,090,713
-  I2: port 60   3,500 prisms     607,926 volume  ->  Restless    727,926  Frenzy    907,926
-  I3: port 50   2,506 prisms     435,317 volume  ->  Restless    555,317  Frenzy    735,317
-  I4: port 42   2,184 prisms     341,934 volume  ->  Restless    461,934  Frenzy    641,934
+  I1: port 72   4,228 prisms     779,144 volume  ->  Restless    899,144  Frenzy  1,079,144
+  I2: port 60   3,500 prisms     596,356 volume  ->  Restless    716,356  Frenzy    896,356
+  I3: port 50   2,506 prisms     423,748 volume  ->  Restless    543,748  Frenzy    723,748
+  I4: port 42   2,184 prisms     330,365 volume  ->  Restless    450,365  Frenzy    630,365
 --check: no files written; all 32 files match what this script authors.
 ```
 
 Those rows are **imported from `breakwater_arena.py`, not retyped** — which is the whole point:
 the cell's `PhaseThresholds` are derived from the same arithmetic that builds the arena, so the two
 cannot drift. (Spot-checked against the shipped `Breakwater Cell Config 1.asset`: `RestlessEnter
-4844` = 4,144 + 700, `FrenzyExitVolume 1,060,713` = 790,713 + 270,000.)
+4928` = 4,228 + 700, `FrenzyExitVolume 1,049,144` = 779,144 + 270,000.)
 
 **Measured against its siblings, it is the only mode generator in this repo whose `--check`
 passes.** All five were run:
@@ -1146,7 +1201,12 @@ exactly:
 - Every base member `SpawnableBreakwater` calls was checked against the shipped
   `CellEnvironmentSpawnableBase` / `SpawnableBase` / `PrismTrailBuilder` rather than assumed.
 - `BreakwaterCourseTests` was **executed**: 49 cases, 0 failures, with 8 mutation controls
-  confirming each gate fires.
+  confirming each gate fires. Its four newest cases — the two that measure the eye off the
+  **emitted prisms** and the two that hold the spawn-pad clearance — were proved separately:
+  `DistanceFromStationAxis` was compiled and run against known controls (a unit box at 10 reports
+  9.5; a box on the axis reports 0), reproduces the Python model's independent convex-shadow
+  measurement to 1e-4 at all four intensities, and reports **16.5** when the near-edge clip is
+  reverted.
 - `Tools/Build/breakwater_arena.py` passes all of its proofs.
 - `check_conditional_compilation.py` and `check_enum_member_references.py` are clean.
 - `author_breakwater_assets.py --check` **exits 0** over all 32 authored files, with the cell's
@@ -1164,6 +1224,9 @@ Run this in order:
    facing a different way, each with a blue ring at its port and a woven danger plug in its throat.
    Station 1 is directly "above" the cell centre and every pilot is the same distance from it.
    The console shows `[Breakwater] Course seed …: 14 stations, intensity N, port radius …`.
+   **Look around from a standing start before touching the stick**: no station, dish or shoal
+   cluster is anywhere near the spawn pads — the walk rejects any station within its own bounding
+   sphere plus four hull radii of one, and the measured worst case leaves 52 units of air.
 3. **The three verbs.** (a) **Fire** a skyburst at a plug: a spherical hole appears — at intensity 4
    the whole plug goes with one rocket at resting Charge; at intensity 1 it does not, and where you
    aimed matters. (b) **Saw**: turret stance grinds the weave open. (c) **Thread**: fly the eye
@@ -1195,7 +1258,7 @@ Run this in order:
 14. **Comeback.** Let one domain fall ~4 stations behind: the trailing pilots' element flowers fill
     ~2.5 levels.
 15. **Collider budget.** With the profiler open, fly the tightest fold of the course at intensity 4
-    and confirm active prism colliders stay near the measured 510 rather than climbing with the
+    and confirm active prism colliders stay near the measured 675 rather than climbing with the
     whole arena.
 16. **Baselines.** FrogletTools ▸ Ecology ▸ **Measure Cell Environment Baselines** must agree with
     the *Phase thresholds* table. Disagreement means the C# and the model have drifted.
@@ -1220,6 +1283,26 @@ Run this in order:
 - **The mode has never been run.** Not once, in any form. Everything above is geometry, arithmetic
   and headless proof — the C# was compiled and executed outside the editor against Unity-type
   stubs, which is a real check of the arithmetic and no check at all of the engine.
+
+- ~~**The plug's rakes were clipped on their centreline, so the eye was 16.5 and not 18.**~~
+  **FIXED** — see "The clip is against the bar's NEAR EDGE" above. Measured off the emitted prisms
+  at all four intensities, the weave and the collar now both stand at exactly **18.0000**
+  (`1.461 ×` the hull), against a negative control that restores the old test and reports 16.5.
+  Cost: +6 bars at intensity 1 and −92 u of bar length everywhere, so every `PhaseThreshold` was
+  re-derived.
+
+- ~~**Nothing kept a station off a spawn pad.**~~ **FIXED** — see "…and no station may swallow a
+  spawn pad" above. 7 of 14,400 measured pad-cases put a pilot inside station structure; the walk
+  now rejects any candidate whose bounding sphere plus four hull radii reaches a pad, at zero cost
+  to the generation rate, and the shoals honour the same pads through `ClusterMargin`.
+
+- ~~**A total generation failure hung every client's connecting panel.**~~ **FIXED** — every peer
+  opens a `PrismTrailBuilder.BeginArenaBuild` bracket in `OnNetworkSpawn`, and the give-up branch
+  released only the **server's**, so each client held its panel until the 180-second stall cap with
+  the one explaining error on the host console. `CourseUnavailable_ClientRpc` now tells every peer,
+  which is what makes the branch degrade *loudly* rather than *silently on three machines*.
+  General shape: **a bracket opened on every peer has to be closed on every peer, including on the
+  path where the thing it was waiting for never happens.**
 
 - ~~**The reused scoring rule says "Gates", not "Stations".**~~ **FIXED.**
   `SwitchbackScoringRuleSO` hardcoded `"{n} Gates Left"`, `"{n} Gates"` and `"GATES LEFT"`, so a
@@ -1248,10 +1331,10 @@ Run this in order:
   from `plug_runs` directly), but a table that cannot be read literally is a table that gets
   quoted wrongly later.
 
-- **`EmitBarRun`'s comment names the wrong ladder maximum.** It says *"the longest bar the shipped
-  ladder produces is 58.5 units (intensity 1, the 42-unit offset line)"*; 58.481 is intensity 1's
-  maximum, and the ladder's is **58.788** at intensity 4 (the 30-unit offset line). Both are inside
-  the 62 cut and nowhere near the clamp, so nothing is wrong — the comment is.
+- ~~**`EmitBarRun`'s comment names the wrong ladder maximum.**~~ **FIXED** — it said *"58.5 units
+  (intensity 1, the 42-unit offset line)"*, which is intensity 1's maximum rather than the
+  ladder's; it now names **58.79** at intensity 4 (the 30-unit offset line). Both were always
+  inside the 62 cut and nowhere near the clamp, so nothing was wrong — the comment was.
 
 - **14 stations is unmeasured.** Chosen as the number the arena model sizes everything else against,
   not from a playtest. It is one editor field, but it also sizes the arena — raising it adds mass

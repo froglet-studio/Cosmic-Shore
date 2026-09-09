@@ -65,6 +65,8 @@ DISH_RATIO = 1.75          # R_dish / R_port
 DISH_PITCH = 14.0          # radial spacing of rings, and the plate pitch along a ring
 DISH_PLATE = (7.0, 7.0, 1.5)
 DISH_JITTER = 0.18         # +/- fraction applied to a plate's scale
+DISH_HALF_ANGLE_DEG = 22.0 # cone half-angle from the AXIS; sets the axial profile only,
+                           # so it prices nothing - it is here for station_reach()
 
 SHOAL_CLUSTERS_PER_LEG = 6
 SHOAL_PRISMS_PER_CLUSTER = 7
@@ -106,6 +108,20 @@ SHELL_INNER = 420.0
 SHELL_OUTER = 1080.0        # 0.9 x the CapsuleMembrane's authored 1200
 FIRST_STATION_DISTANCE = 660.0
 SPAWN_RING_RADIUS = 480.0
+
+# The spawn ring's pad BEARINGS, as the union over every seat count the card allows (2, 3, 4).
+# CellSpawnFormation.EquatorialRing puts slot i of n at i * 360/n degrees from +Z on y = 0, so the
+# union is {0, 90, 120, 180, 240, 270}. Taking the UNION rather than the live roster is what makes
+# the course independent of how many pilots turned up: the geometry is generated once, broadcast
+# once, and must not change if a seat is added between generation and spawn.
+SPAWN_PAD_BEARINGS_DEG = (0.0, 90.0, 120.0, 180.0, 240.0, 270.0)
+
+# No station's structure may reach a spawn pad. Four hull radii of air beyond the station's own
+# bounding sphere - measured, it costs the walk nothing (0 failures in 800 seeds x 4 intensities
+# at every clearance from 0 to 60), and without it a pilot spawns INSIDE the weave on about one
+# course in two hundred.
+SPARROW_HULL_RADIUS = 12.32
+SPAWN_PAD_CLEARANCE = 4.0 * SPARROW_HULL_RADIUS
 
 ATTEMPTS_PER_STATION = 32
 
@@ -169,21 +185,47 @@ CEILING_TURN_RADIUS = min_turn_radius(FLIGHT_STATES[-1][1])
 def plug_runs(port):
     """Every bar RUN in the plug, as lengths. Three rakes of parallel lines at 0/60/120 degrees,
     offset half a pitch so no line runs through the eye; each line clipped to the annulus
-    [EYE_RADIUS, port], which splits a line that passes the eye into two runs."""
+    [EYE_RADIUS, port], which splits a line that passes the eye into two runs.
+
+    THE CLIP IS AGAINST THE BAR'S NEAR EDGE, NOT ITS CENTRELINE. A bar is BAR_CROSS wide, so a
+    line whose centre stands exactly EYE_RADIUS off centre still puts BAR_CROSS/2 of prism inside
+    the hole. Clipping on `d` alone made the k=1 line (d = 18.0, identically EYE_RADIUS) an
+    unsplit full chord and left six bar bodies straddling 16.5..19.5 - a hexagon of inradius 16.5
+    at every station, against a keystone collar whose inner faces sit at exactly 18. The station
+    advertised a mouth it did not have. Clipping the near edge (`d - BAR_CROSS/2`) and taking the
+    eye's half-chord THERE puts the nearest corner of the nearest bar at exactly EYE_RADIUS."""
     runs = []
     k = 0
     while (k + 0.5) * RAKE_PITCH < port - RAKE_EDGE_MARGIN:
         d = (k + 0.5) * RAKE_PITCH
+        near = max(0.0, d - BAR_CROSS * 0.5)         # the bar's inner face, not its centreline
         half = math.sqrt(port * port - d * d)
         for _sign in (+1, -1):                       # both sides of the rake's centre line
-            if d < EYE_RADIUS:
-                inner = math.sqrt(EYE_RADIUS * EYE_RADIUS - d * d)
+            if near < EYE_RADIUS:
+                inner = math.sqrt(EYE_RADIUS * EYE_RADIUS - near * near)
                 runs.append(half - inner)
                 runs.append(half - inner)            # one run each side of the eye
             else:
                 runs.append(2.0 * half)
         k += 1
     return runs * len(RAKE_ANGLES)
+
+
+def eye_clearance(port):
+    """The radius of the largest disc in the port plane that NO plug bar body intrudes on.
+
+    For a line at perpendicular offset d, the bar body's nearest point to centre is at
+    (perp = d - BAR_CROSS/2, along = the run's inner end), so this is exactly what plug_runs'
+    near-edge clip is written to hold at EYE_RADIUS."""
+    worst = float('inf')
+    k = 0
+    while (k + 0.5) * RAKE_PITCH < port - RAKE_EDGE_MARGIN:
+        d = (k + 0.5) * RAKE_PITCH
+        near = max(0.0, d - BAR_CROSS * 0.5)
+        along = math.sqrt(EYE_RADIUS * EYE_RADIUS - near * near) if near < EYE_RADIUS else 0.0
+        worst = min(worst, math.hypot(near, along))
+        k += 1
+    return worst
 
 
 def plug_bars(port):
@@ -283,6 +325,25 @@ def shoal_totals(station_count):
 
 # ── The course walk, reproduced bit for bit ─────────────────────────────────────────────────
 
+def spawn_pads():
+    """World positions of every spawn pad the course must keep clear of."""
+    return [(SPAWN_RING_RADIUS * math.sin(math.radians(b)), 0.0,
+             SPAWN_RING_RADIUS * math.cos(math.radians(b))) for b in SPAWN_PAD_BEARINGS_DEG]
+
+
+def station_reach(port):
+    """Bounding radius of one station's geometry about its own centre.
+
+    The rim of the dish is the farthest point: it sits at radius DISH_RATIO * port in the port
+    plane and (DISH_RATIO - 1) * port / tan(a) BEHIND it along the axis. A sphere is deliberately
+    coarse - this number only ever REJECTS a candidate, so erring outward costs a little walk
+    freedom and never lets prism near a pad."""
+    inv_tan = math.cos(math.radians(DISH_HALF_ANGLE_DEG)) / math.sin(math.radians(DISH_HALF_ANGLE_DEG))
+    plate_half = math.sqrt((DISH_PLATE[0] * 0.5) ** 2 + (DISH_PLATE[1] * 0.5) ** 2 +
+                           (DISH_PLATE[2] * 0.5) ** 2)
+    return port * math.hypot(DISH_RATIO, (DISH_RATIO - 1.0) * inv_tan) + plate_half
+
+
 class Rng:
     """The specified xorshift32 BreakwaterCourse.Rng uses. Reproduced exactly so this model and
     the shipped C# generate the SAME course for a seed - which is what lets the proofs below be
@@ -369,6 +430,9 @@ def _clamp_turn(prev, cand, max_deg):
     return _norm(_rotate_about(prev, _norm(axis), max_deg))
 
 
+PADS = spawn_pads()
+
+
 def generate(seed, cfg, station_count=STATION_COUNT):
     """The constructive backtracking walk. Returns a list of (position, axis) or None.
 
@@ -377,6 +441,7 @@ def generate(seed, cfg, station_count=STATION_COUNT):
     two 55-degree rotations compose into a 110-degree hairpin between two PLACED stations."""
     rng = Rng(seed)
     sep = min_separation(cfg['port'], cfg['min_step'])
+    pad_reject = station_reach(cfg['port']) + SPAWN_PAD_CLEARANCE
 
     first = _mul((0.0, 1.0, 0.0), FIRST_STATION_DISTANCE)
     pts = [first]
@@ -406,6 +471,12 @@ def generate(seed, cfg, station_count=STATION_COUNT):
                 if r < SHELL_INNER or r > SHELL_OUTER:
                     continue
             if any(_len(_sub(p, cand)) < sep for p in pts):
+                continue
+            # NO STATION MAY SWALLOW A SPAWN PAD. Pilots spawn on the equatorial ring at 480,
+            # which is INSIDE the 420..1080 course shell, and nothing else in the walk knows the
+            # ring exists - so without this a station's weave lands on a pad and a pilot starts
+            # the match inside Danger prisms with no counterplay.
+            if any(_len(_sub(pad, cand)) < pad_reject for pad in PADS):
                 continue
             pts.append(cand)
             headings.append(cand_dir)
@@ -445,6 +516,7 @@ def sweep(seeds=400):
         min_leg = 1e9
         dubins_violations = 0
         max_stations_in_lod = 0
+        worst_pad_gap = 1e9
         for s in range(1, seeds + 1):
             course = generate(s * 7919 + idx, cfg)
             if course is None:
@@ -476,6 +548,13 @@ def sweep(seeds=400):
                 pres = math.degrees(math.acos(min(1.0, abs(_dot(_norm(axes[i]), incoming)))))
                 worst_present = max(worst_present, pres)
 
+            # SPAWN PADS. How much air is left between the nearest station's bounding sphere and
+            # the nearest pad - the quantity the walk's pad rejection exists to keep positive.
+            reach = station_reach(cfg['port'])
+            for pt in pts:
+                for pad in PADS:
+                    worst_pad_gap = min(worst_pad_gap, _len(_sub(pad, pt)) - reach)
+
             # THE COLLIDER MEASUREMENT. Sample along every leg and count how many stations fall
             # inside the collider-LOD radius at once. This is the number the budget is about,
             # and it is a property of how the walk FOLDS, not of the authored separation.
@@ -488,7 +567,8 @@ def sweep(seeds=400):
         report.append(dict(intensity=idx, fails=fails, worst_turn=worst_turn,
                            worst_present=worst_present, min_sep=min_sep_seen, min_leg=min_leg,
                            dubins_violations=dubins_violations,
-                           max_stations_in_lod=max_stations_in_lod))
+                           max_stations_in_lod=max_stations_in_lod,
+                           worst_pad_gap=worst_pad_gap))
     return report
 
 
@@ -604,6 +684,8 @@ def main():
               f"(leg <= 2R.sin(turn) at R={CEILING_TURN_RADIUS:.1f})")
         print(f"    MAX stations inside LOD  : {r['max_stations_in_lod']} "
               f"(radius {LOD_RADIUS:.0f} u)")
+        print(f"    air at nearest spawn pad : {r['worst_pad_gap']:.1f} u "
+              f"(rejection floor {SPAWN_PAD_CLEARANCE:.1f})")
         if r['fails']:
             fail.append(f"I{r['intensity']}: {r['fails']} generation failures")
         if r['worst_turn'] > c['max_turn'] + 0.01:
@@ -612,6 +694,21 @@ def main():
             fail.append(f"I{r['intensity']}: presentation cap exceeded ({r['worst_present']:.2f})")
         if r['dubins_violations']:
             fail.append(f"I{r['intensity']}: {r['dubins_violations']} unflyable corners")
+        if r['worst_pad_gap'] < SPAWN_PAD_CLEARANCE - 0.01:
+            fail.append(f"I{r['intensity']}: a station reaches within "
+                        f"{r['worst_pad_gap']:.1f} u of a spawn pad")
+
+        # THE EYE IS THE MODE'S CENTRAL PROMISE, so it is asserted rather than described. The
+        # bar bodies must leave EYE_RADIUS clear - the radius the keystone collar's inner faces
+        # already advertise - and the Sparrow must fit through it with margin.
+        clear = eye_clearance(c['port'])
+        print(f"    clear eye radius         : {clear:.3f} u "
+              f"({clear / SPARROW_HULL_RADIUS:.2f} x hull)")
+        if clear < EYE_RADIUS - 1e-4:
+            fail.append(f"I{r['intensity']}: plug bars intrude on the eye "
+                        f"({clear:.3f} < {EYE_RADIUS})")
+        if clear < SPARROW_HULL_RADIUS:
+            fail.append(f"I{r['intensity']}: the eye is narrower than the hull")
 
     print("\nCollider budget (MEASURED worst case, not asserted)")
     print(f"{'':<26}" + "".join(f"{'I'+str(i+1):>12}" for i in range(4)))

@@ -61,3 +61,4 @@ MonoBehaviour:
   shoalSplineClearance: 30
   shoalClumpRadius: 8
   shoalPlacementAttempts: 12
+  shoalSpawnPadClearance: 60

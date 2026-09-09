@@ -94,10 +94,10 @@ namespace CosmicShore.Gameplay
         /// <summary>Half-angle of the cone, measured from its AXIS (the usual convention) - so
         /// the shell makes 22 degrees with the flow and 68 with the port plane. See
         /// <see cref="EmitDish"/> for the axial profile this implies.</summary>
-        const float DishHalfAngleDegrees = 22f;
+        public const float DishHalfAngleDegrees = 22f;
 
-        const float DishPlateWidth = 7f;
-        const float DishPlateThickness = 1.5f;
+        public const float DishPlateWidth = 7f;
+        public const float DishPlateThickness = 1.5f;
 
         /// <summary>Per-plate scale jitter, +/- this fraction. Enough that the horn reads as
         /// wreckage rather than as a machined funnel; small enough that the thinnest axis stays
@@ -183,13 +183,25 @@ namespace CosmicShore.Gameplay
         /// rake passes through the eye and the thread exists at every bearing without a special
         /// case carved for it.
         ///
-        /// <para>Each line is clipped to the annulus [eye, port]. A line closer to centre than the
-        /// eye radius is SPLIT into two runs, one either side of the hole - which is what actually
-        /// cuts the eye out of the weave - and a line outside it is one run across the full chord.
-        /// A run is then cut into equal bars no longer than <see cref="MaxBarLength"/>: equal
-        /// rather than "as many full-length bars as fit plus a remainder", because a stub prism at
-        /// the rim costs the same collider as a full bar and reads as damage rather than as
-        /// structure.</para>
+        /// <para>Each line is clipped to the annulus [eye, port]. A line whose BAR BODY comes
+        /// closer to centre than the eye radius is SPLIT into two runs, one either side of the
+        /// hole - which is what actually cuts the eye out of the weave - and a line outside it is
+        /// one run across the full chord. A run is then cut into equal bars no longer than
+        /// <see cref="MaxBarLength"/>: equal rather than "as many full-length bars as fit plus a
+        /// remainder", because a stub prism at the rim costs the same collider as a full bar and
+        /// reads as damage rather than as structure.</para>
+        ///
+        /// <para><b>THE CLIP IS AGAINST THE BAR'S NEAR EDGE, NOT ITS CENTRELINE, and that is a
+        /// correctness fix rather than a refinement.</b> A bar is <see cref="BarCross"/> wide, so
+        /// a line whose centre stands exactly <see cref="BreakwaterCourseSettings.EyeRadius"/> off
+        /// centre still puts half a cross-section of prism inside the hole. Testing <c>d</c> alone
+        /// made the k = 1 line - at <c>(1 + 0.5) * 12 = 18.0</c>, identically the eye radius - an
+        /// UNSPLIT full chord, so six bar bodies straddled 16.5..19.5 and formed a hexagon of
+        /// inradius 16.5 at every station, at every intensity. The keystone collar's inner faces
+        /// sit at exactly 18, so the station advertised a mouth 1.5 units wider than it had.
+        /// Clipping the near edge (<c>d - BarCross / 2</c>) and taking the eye's half-chord THERE
+        /// puts the nearest corner of the nearest bar at exactly the eye radius - which is what
+        /// makes the documented 1.46x hull clearance true rather than 1.34x.</para>
         /// </summary>
         static void EmitPlug(Vector3 centre, Vector3 axis, Vector3 u, Vector3 v, float port,
                              Action<Vector3, Quaternion, Vector3, PrismKind> emit)
@@ -214,15 +226,18 @@ namespace CosmicShore.Gameplay
                 for (int k = 0; (k + 0.5f) * RakePitch < port - RakeEdgeMargin; k++)
                 {
                     float d = (k + 0.5f) * RakePitch;
+                    float near = Mathf.Max(0f, d - BarCross * 0.5f);  // the bar's inner FACE
                     float half = Mathf.Sqrt(portSq - d * d);          // half-chord at the rim
 
                     for (int sign = -1; sign <= 1; sign += 2)
                     {
                         Vector3 lineOrigin = centre + perp * (sign * d);
 
-                        if (d < eye)
+                        if (near < eye)
                         {
-                            float inner = Mathf.Sqrt(eyeSq - d * d);  // half-chord at the eye
+                            // Half-chord measured at the NEAR FACE, so the bar's nearest corner
+                            // - at (perp = near, along = inner) - lands exactly on the eye.
+                            float inner = Mathf.Sqrt(eyeSq - near * near);
                             float run = half - inner;
                             EmitBarRun(lineOrigin, dir, rot, inner, run, emit);
                             EmitBarRun(lineOrigin, dir, rot, -half, run, emit);
@@ -242,7 +257,7 @@ namespace CosmicShore.Gameplay
         /// no longer than <see cref="MaxBarLength"/>, and emit them.
         ///
         /// <para>The ceiling division is the whole reason the prism clamp never bites this arena:
-        /// the longest bar the shipped ladder produces is 58.5 units (intensity 1, the 42-unit
+        /// the longest bar the shipped ladder produces is 58.79 units (intensity 4, the 30-unit
         /// offset line), against a clamp at 100 that would have swallowed the difference in
         /// silence.</para>
         /// </summary>

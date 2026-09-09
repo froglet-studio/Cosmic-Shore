@@ -1277,7 +1277,20 @@ seeds** — intensity 1 originally ran the LONGEST legs with the TIGHTEST turn c
 corners at the easiest level, and inside a 660-unit-thick shell a long leg with little turn available
 walks into the wall and cannot come back. **Long legs and tight corners are the same constraint
 pulling opposite ways**, so the shipped ladder shortens the legs as it tightens the doors and lets the
-corners open (`legs 300-460/300-450/290-440/275-420`, `turn cap 45/50/55/60`). **(4) `MinSeparation`
+corners open (`legs 300-460/300-450/290-440/275-420`, `turn cap 45/50/55/60`). **(3b) A named constant is an INPUT to
+the arithmetic, not a claim about what the geometry EMITS** — the plug's rakes were clipped on
+their CENTRELINE, and a bar is 3 units wide, so a line standing at exactly `EyeRadius` was a clean
+`d < eye` false and left six bar bodies straddling 16.5..19.5: the collar advertised an 18-unit
+mouth the weave did not have (1.34x hull, not the documented 1.46x). The tests now measure the
+EMITTED boxes, not the constant that names them, against a negative control that restores the old
+clip. *An exact tangency inside a clipping test is a warning, not a reassurance — it makes the
+wrong branch deterministic instead of intermittent, which is worse, because it looks decided.*
+**(3c) A spawn ring inside a generated arena's own shell is a placement constraint nothing else
+will state** — pads sit at 480 inside the 420..1080 walk, and 7 of 14,400 measured pad-cases put a
+pilot INSIDE a station's Danger weave at match start; the walk now rejects any station whose
+bounding sphere plus four hull radii reaches a pad (measured: zero cost to the generation rate),
+and the pad set is the UNION over 2/3/4 seats rather than the live roster, so a seat added between
+generation and spawn cannot invalidate geometry every peer already holds. **(4) `MinSeparation`
 must stay BELOW the minimum leg** and is therefore DERIVED, `min(0.9*MinStep, 4*PortRadius)`:
 `TooClose` tests a candidate against every placed station INCLUDING its predecessor, so the spec's
 authored 420 against a 260 minimum leg would have rejected most of the step range and starved the
@@ -1286,7 +1299,7 @@ mirrors the xorshift32 walk and the station builder's `Hash01` bit for bit, givi
 position-identical (worst delta 0.002 u)** and every station's prism count and per-prism volume
 matching to **0.0000%**, which only became true once the model was taught to sum the dish's real
 jitter draws rather than price it at nominal. Everything else is the platform's: the course TRAVELS
-as geometry rather than as a seed (14 stations = 340 bytes, the whole wire cost of a 4,144-prism
+as geometry rather than as a seed (14 stations = 340 bytes, the whole wire cost of a 4,228-prism
 arena, since every station is closed form from its pose); detection is owner-detects/server-records
 on `IsNetworkOwner`; the arena is `Domains.Blue` everywhere so every pilot's rounds pay ammo on every
 door and the Sparrow's CHARGE-5 own-domain sparing can never make a station unopenable; there is **no
