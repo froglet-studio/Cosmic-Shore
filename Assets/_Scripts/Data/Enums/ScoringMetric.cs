@@ -54,7 +54,7 @@ namespace CosmicShore.Data
         // against its own copy, so a pilot cannot skip a gate and cannot be credited twice.
         //
         // The one metric whose domain fold is a MAX rather than a sum
-        // (SwitchbackScoringRuleSO.DomainValue): every pilot flies the SAME course, so a
+        // (GateRaceScoringRuleSO.DomainValue): every pilot flies the SAME course, so a
         // domain's progress is its lead runner's, and summing teammates would hand a two-pilot
         // domain twice the course.
         SwitchesThreaded = 9,

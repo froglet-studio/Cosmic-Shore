@@ -150,7 +150,7 @@ namespace CosmicShore.Data
         /// value it already holds - so a pilot can neither skip a gate nor be paid twice for one.
         ///
         /// Zero in every other mode. Monotonic and cumulative like every race metric, but folded
-        /// per domain by the BEST pilot rather than the sum (SwitchbackScoringRuleSO.DomainValue),
+        /// per domain by the BEST pilot rather than the sum (GateRaceScoringRuleSO.DomainValue),
         /// because every pilot flies the SAME course.
         /// </summary>
         int SwitchesThreaded { get; set; }
