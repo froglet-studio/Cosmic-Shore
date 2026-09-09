@@ -36,10 +36,11 @@ path a couple of hundred units ahead; the goal row reads `STEAL PRISMS 0/750`; t
 at the nearest burr still holding mass you could take.
 
 **0:10–0:30 — the arena is the tutorial.** Fly into the rail and you attach. On your colour's
-third you grind at 150. Crossing into a hostile third reads as **braking to 10** while the goal
+third you grind at 300. Crossing into a hostile third reads as **braking to 20** while the goal
 row ticks up as you crawl — that brake *is* the lesson that stealing is the score. Tap the spike
 trigger: the prisms ahead flip to your colour and the speed snaps back. The rail runs out and you
-**LAUNCH** at 150, aimed by construction at the burr ~200u ahead. Tap again mid-air — a spike's
+**LAUNCH** at 360 (the grind's 300 times the 1.2x end-of-ribbon kick), aimed by construction
+at the burr ~200u ahead. Tap again mid-air — a spike's
 velocity is `direction × speed + the vessel's`, so a volley thrown at grind speed reaches roughly
 3.5× further than one thrown at cruise — and the cascade rolls through the cluster.
 
@@ -257,7 +258,7 @@ burr, not once per rail**: two rails launch into every big burr and a burr is up
 so the naive per-rail walk costs ~27k prism reads per pilot per refresh to answer 18 questions.
 
 **The stall escape catches a PARKED ride, not a slow one.** `aiParkedSpeed` is 6 u/s, deliberately
-under the 10 u/s hostile crawl: a crawler is converting one prism per hop and will cross a
+under the 20 u/s hostile crawl: a crawler is converting one prism per hop and will cross a
 13-prism third in about ten seconds, which is a raid in progress and must never be read as a
 stall. What the escape is for is a ride that has genuinely stopped — a reversal caught in the
 throttle deadband, a ribbon whose prisms were taken out from under it. When it fires it excludes
@@ -340,7 +341,7 @@ item is a real check a human has to perform, in this order (load-bearing first).
 3. **THE LAUNCH IS AIMED.** Grind a rail to its end without steering. You must launch and fly
    into the burr. If you have to steer, the tangent geometry is wrong (re-run
    `hijack_budget.py`).
-4. **THE SPEED CLIFF READS.** 150 on your third, a visible brake to 10 on a hostile one, snapping
+4. **THE SPEED CLIFF READS.** 300 on your third, a visible brake to 20 on a hostile one, snapping
    back after a spike tap.
 5. **Roll a burr** — you attach and marble-roll the spines; yours grow, hostile ones flip one per
    hop.

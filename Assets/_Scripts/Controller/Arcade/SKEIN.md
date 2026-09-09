@@ -43,9 +43,9 @@ slower than not riding at all*. The spike tap fired ahead of a paint boundary is
 largest speed swing a pilot controls.
 
 **And the launches are free travel on top.** `CarrySpeedIntoFreeFlight` hands free flight the
-grind speed and `TickCarriedSpeed` bleeds it at a constant `detachSpeedDecayRate` 12 u/s² toward
-cruise — **833 u above cruise over 8.33 s**. The longest stroke in this arena is 420 u, half the
-budget.
+grind speed and `TickCarriedSpeed` bleeds it at a constant `detachSpeedDecayRate` 36 u/s² toward
+cruise — **295 u/s of excess spent over 8.2 s, worth ~1,208 u of travel above cruise**. The
+longest stroke in this arena is 420 u, a third of the budget.
 
 ---
 
@@ -73,7 +73,7 @@ does not pass near itself, and at this cable diameter it cannot: a tube of the r
 around a curve this long needs ~82% packing of the available shell, which is why the wandering
 candidate measured 6.4 u closest non-adjacent approach and listed the antiparallel fold as its own
 fatal flaw. A pilot whose ribbon ends at a fold catches a rail going the wrong way and is flung
-**backwards up the course at 150 u/s**, because `TrailFollower.Attach` seeds `Backward` from
+**backwards up the course at 300 u/s**, because `TrailFollower.Attach` seeds `Backward` from
 `dot(Course, HeadingAt) < 0`. Here there is nothing to reject, no redraw budget, and **no seed
 that can generate an unplayable arena.**
 
@@ -241,16 +241,47 @@ fuse.
 `VesselAttachPrismEffectSO` is dispatched from a PhysX trigger (`ImpactorBase.OnTriggerEnter`,
 enter-only, no sweep, no shell tier for plain prisms), sampled once per `FixedUpdate` — and the
 project's `Fixed Timestep` is exactly **0.04 s** with `m_AutoSyncTransforms: 0` — while
-`VesselTransformer.Update → MoveShip` **teleports** via `transform.position +=`. The effective
-sample step is `speed × max(frameTime, 0.04)` = **6.00 u at the 150 u/s a launch carries.**
+`VesselTransformer.Update → MoveShip` **teleports** via `transform.position +=`. So the vessel
+jumps `speed × 0.04` between two chances to be noticed, and above some speed it steps clean over
+a rail.
 
 A trigger fires on overlap, so the catch window is the Minkowski sum of the prism's collider
-cross-section and the hull's extent along travel. Measured: **3.46–3.53 u for a 3-wide rail**
-against a 6.00 u step — so **~41% of perpendicular re-attaches MISS at any frame rate ≥ 25 fps**,
-frame-rate- and phase-dependently, with nothing logged. The pilot just flies through the rail.
+cross-section and the hull's extent along travel — measured **3.46–3.53 u on a 3-wide rail** and
+**6.46–6.61 u on a 6-wide**, i.e. ~0.5 u of hull either way. Consecutive prisms' envelopes touch
+(8.0 u of extent against 8.0 u of spacing), so a rail is one continuous **tube** of radius
+`(cross-section + 0.5)/2`, and a ray crossing it at angle θ to its axis is inside for `2R/sin θ`.
 
-`(6, 6, 8)` gives a window of 6.46–6.61 u > 6.00 — **an 8–10% margin, and only at ≥ 25 fps**. At
-20 fps the cross-section would need to be ≥ 7.1.
+> **⚠ THE MARGIN IS NEGATIVE AT THE SHIPPED SPEEDS, AND THIS SECTION USED TO SAY OTHERWISE.**
+> `(6, 6, 8)` was chosen here to clear a 6.00 u step — the step at the **150 u/s** the grind ran
+> at when this was written. The rail speed then doubled and the launch gained a 1.2× kick in the
+> *next* round, and nothing re-derived the prism: a launch now leaves at **360 u/s**, meets its
+> target rail after 504–900 u of glide (`END_AIM_MIN`/`MAX`, both authored as TIMES), and is
+> still doing **255–306 u/s** when it gets there — a step of **10.2–12.2 u** against a chord of
+> **7.5 u at the 60° arrival cap** and **8.6 u at the median 48.5° arrival**.
+>
+> At most one sample can land inside a chord shorter than the step, and whether it does is a
+> phase coin toss, so `P(latch) = min(1, chord/step)` is exact. Measured per intensity by
+> `skein_budget.py`'s `measure_attach_latch`: **86.6% / 85.0% / 81.4% / 82.1%** — so roughly
+> **one aimed launch in six slips past the rail it was aimed at** and the pilot flies on, with
+> nothing logged. It is survivable (the pilot is still gliding, still pointed at the cable, and
+> catches it on a later pass as the carry decays) and it is *the mode's signature move landing
+> five times in six*.
+>
+> **It cannot be bought off with a fatter prism**, which is why the number is REPORTED rather
+> than gated: closing it needs a cross-section near **8**, and `prove_shield_clearance` asserts
+> the ceiling — at MASS 5 a rail's armour reaches `1.5 × leafSize`, so an 8-wide rail reaches
+> 12 u under armour against the 24 u closest strand pair, i.e. two lanes' armour exactly
+> touching and "which rail am I on" losing its answer. The measured trade, if it is ever wanted:
+> `(7,7,8)` buys **86.9%** for 1.36× the prism volume, `(8,8,8)` buys **93.5%** for 1.78× and
+> spends the whole armour budget.
+>
+> The general rule, and the reason the number now lives in the model instead of in this
+> paragraph: **a dimension chosen to clear a speed is a function of that speed, and nothing
+> fails when the speed moves — the prose simply goes on describing the old vessel.**
+> `prove_vessel_mirror` now re-reads `FriendlyTerrainSpeed`, `HostileTerrainSpeed`,
+> `DefaultThrottleScaler`, `detachSpeedDecayRate` and `endLaunchSpeedKick` out of
+> `Urchin.prefab` and `GunVesselTransformer.cs` on every run, so the model can no longer assume
+> a vessel the project does not ship.
 
 > **The cheap structural fix already exists and this mode does not take it.**
 > `ImpactorBase.AcceptImpacteeFromSweep` is the platform's swept-dispatch seam, complete with the
@@ -363,7 +394,7 @@ otherwise*.
 | Attach is a fixed-step trigger; `(3,3,6)` tunnels | **CONFIRMED** | **41.2% of perpendicular re-attaches miss** at ≥25 fps, 52.9% at 20 fps. `(6,6,8)` clears it by 8–10% and only above 25 fps; below that the cross-section would need ≥ 7.1. Kept. |
 | `Trail.Project` rides a uniform Catmull-Rom | **PARTIALLY** | Curvature does **not** bound a rideable rail. The gap rule is **5×** interior / **6.79×** one-sided at a rail end, not the 7× the design carried. The model asserts 4:1, inside both. |
 | A shielded prism costs an always-on collider | **REFUTED** | **CLAUDE.md was right and the survey was wrong.** A shield swaps the mesh and the mass, never the collider, and shielded prisms stay LOD-reclaimable — so shielded mass costs **zero** always-on colliders. The audit closed both of the verifier's residual uncertainties in its favour (no `MeshCollider` exists in any scene; the one suspicious prefab is referenced by nothing and carries neither shield component). What is **not** free is the GEOMETRY — see the shield-clearance gate below. |
-| The Slip ghost is inert | **REFUTED** | The ghost works, and the 65 u shell gap is **conservative**: carried speed decays at only 12 u/s², so 0.6 s of ghost covers ~88 u. 65 books a 26% margin. Do not raise it. |
+| The Slip ghost is inert | **REFUTED** | The ghost works, and the 65 u shell gap is **conservative**: carried speed decays at only 36 u/s² from a 360 u/s launch, so 0.6 s of ghost covers ~210 u. 65 books a 3.2x margin. Do not raise it. |
 | A launch leaves along the nose, not the rail | **PARTIALLY** | **The aim is bounded by the pilot's ATTITUDE error, not by the rail.** Lateral miss = `d·sin(nose error)` — 68 u over 200 u at 20°. So *"grind to the end and don't steer"* is a claim about a pilot who is actually pointing down the rail, and the 12 u trim tolerance is the geometry's contribution only. |
 | `AIPilot`'s orbit break fires while attached | **PARTIALLY** | **Do NOT ship the one-clause `IsAttached` exemption** — it fixes the less likely of two failures. Fix it **mode-side**, as Hijack already does: hand `SetExternalTargetProvider` a lead point *ahead on the vessel's own strand*. The range then falls every frame (which resets `OrbitDetector` before it can sweep 540°) **and** the bearing stays near the tangent (so `LookingAtCrystal` holds and `ram: 1` keeps `XDiff` at 1). **One mode-side closure buys both — no platform change.** |
 | `Attach` seeds `Backward` past 90° | **PARTIALLY** | The flip threshold is **asymmetric** — Forward→Backward at 110.49°, Backward→Forward at 69.51°, a 40.97° dead band — and a wrong-way attach costs **164 u** to recover from a cruise fly-in, **184 u** from a grind-speed transfer. Adds an **authoring rule the design was missing**: each rail's prisms must be laid in index order **along the race direction**, or `Backward` has no relation to "wrong way" and the whole hazard analysis is undefined. And the 60° cap is margin against the **coin flip** — at 90° `Dot(Course, heading) ≈ 0` and its sign is float noise — not against a clean threshold. |
@@ -415,7 +446,7 @@ OWN rail, and that single choice is what the orbit-break verdict called for: the
 every frame (which resets `OrbitDetector` before it can sweep past its threshold — an outer strand
 turns thousands of degrees per lap, where Hijack's 20° arcs never could) **and** the bearing stays
 near the tangent (which holds `LookingAtCrystal`, so the authored `ram: 1` keeps `XDiff` at 1 and
-the grind at 150 rather than collapsing to 30 u/s). Off-rail it flies at its own next ring and
+the grind at 300 rather than collapsing to 60 u/s). Off-rail it flies at its own next ring and
 *through* it, because `AIPilot` has no arrive-and-stop behaviour. The provider is cleared at
 teardown — Switchback ships without that and leaks its closure across a scene-reload replay.
 

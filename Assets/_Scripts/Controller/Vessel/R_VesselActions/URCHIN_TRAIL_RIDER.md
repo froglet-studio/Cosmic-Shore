@@ -964,7 +964,7 @@ A friendly grind runs at **300 u/s** against the Urchin's 65 u/s free-flight top
   `detachSpeedDecayRate` (**36 u/s**, so the kicked 360 → 65 spends ~8 seconds), then clears it. Constant-rate
   rather than exponential so the glide has a readable slope and actually *lands*.
 
-**Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 10 u/s —
+**Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 20 u/s —
 hands over nothing, so this can never brake a vessel and can never become a free speed floor. It is
 strictly momentum the pilot already had.
 
@@ -1155,7 +1155,7 @@ Nothing below can be checked without play mode.
     attached. (Only a rider still moving when the ribbon runs out is launched.)
 16d. **A LOOP is still infinite.** Ride a boost ring / omnicrystal ring (a closed ribbon). It must
     never launch you — a loop wraps rather than reflecting.
-16e. **The carry does not survive a life.** Launch off a ribbon at 150 and, while still gliding,
+16e. **The carry does not survive a life.** Launch off a ribbon at 360 and, while still gliding,
     end the turn / respawn / swap vessels. The new life must start at its ordinary cruise, not at
     the carried speed.
 17. **Refused attach.** Touch a prism with no trail (an environment/flora prism, a fauna body
@@ -1277,10 +1277,21 @@ samples a trigger once per fixed step (0.04 s). At the old 150 u/s that was 6 u 
 sample against a 6 u prism cross-section — already exactly marginal. At 300 it is 12 u, and off a
 kicked launch 14.4 u.
 
-It is a degradation of an already-marginal case rather than a new one, and the case it degrades is
-the *perpendicular* approach: a rail is a continuous tube of prisms laid 8 u apart, so an approach
-ALONG one (which is what every aimed launch in Skein and Hijack is, arriving at ≤60°) still puts
-several prisms in the path. **Watch for "I flew straight at a rail and went through it" in
-playtest.** The remedy if it bites is the one the Sparrow's rounds already have — a swept overlap
-on the attach path (`sweptVesselDetection`'s twin) — not a bigger collider, which would change
-what the rail feels like to fly near.
+**It has since been MEASURED, and the reassuring half of this paragraph was half right.** The
+hope was that a shallow approach saves it: a rail is a continuous tube (8 u of prism extent
+against 8 u of spacing), so a ray crossing at angle θ to its axis is inside for `2R/sin θ` rather
+than for one cross-section. That is true and it is not enough. `skein_budget.py`'s
+`measure_attach_latch` computes it per break from the arena's own recorded arrival angles and
+glide ranges: arrivals are capped at 60° and run a median 48.5°, giving chords of **7.5–8.6 u**
+against a step of **10.2–12.2 u** at the speed a launched pilot is actually doing when it meets
+the rail. At most one sample can land inside a chord shorter than the step, so
+`P(latch) = min(1, chord/step)` is exact — and it comes out at **81–87%**, i.e. roughly **one
+aimed launch in six slips past the rail it was aimed at**.
+
+Survivable, because the pilot is still gliding and still pointed at the cable and catches it on a
+later pass — and still the mode's signature move landing five times in six. The remedy is the one
+the Sparrow's rounds already have — a swept overlap on the attach path
+(`sweptVesselDetection`'s twin, via the existing `ImpactorBase.AcceptImpacteeFromSweep` seam) —
+and **not** a bigger collider: closing it that way needs a cross-section near 8, and at MASS 5 a
+rail's armour reaches `1.5 × leafSize`, so two lanes' shields would meet. Full derivation and the
+measured `(7,7,8)`/`(8,8,8)` trade: `Assets/_Scripts/Controller/Arcade/SKEIN.md` § 7.

@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] float DestroyedTerrainSpeed;
 
         [Tooltip("How quickly the ride's speed chases its target (1/s, exponential). The rail's " +
-                 "weight: crossing from a friendly prism (150) onto a hostile one (10) becomes " +
+                 "weight: crossing from a friendly prism (300) onto a hostile one (20) becomes " +
                  "a braking slide rather than a 15x snap, and letting go coasts to a stop.")]
         [SerializeField] float speedTrackingRate = 5f;
 

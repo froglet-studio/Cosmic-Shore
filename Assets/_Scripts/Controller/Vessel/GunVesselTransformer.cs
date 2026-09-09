@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
             // Detach-first, above any gate: Initialize re-runs on a LIVE component (vessel
             // swap, ownership change) and a stale subscription - or a stale launch - would pay
             // the previous pilot. A carry left standing would hand the incoming pilot a free
-            // 150 u/s they never rode for.
+            // 300 u/s they never rode for.
             ClearLaunchState();
 
             if (surfaceFollower)
@@ -453,14 +453,14 @@ namespace CosmicShore.Gameplay
         /// <see cref="TickCarriedSpeed"/> rather than snapped away.
         ///
         /// Only EXCESS is carried: a ride slower than what the pilot could fly anyway
-        /// (hostile terrain at 10 u/s) hands over nothing, so this can never brake a vessel and
+        /// (hostile terrain at 20 u/s) hands over nothing, so this can never brake a vessel and
         /// can never be a free speed floor - it is strictly momentum the pilot already had.
         /// </summary>
         void CarrySpeedIntoFreeFlight(float rideSpeed)
         {
             // A new detach REPLACES whatever the last one left bleeding off. A ride writes
-            // VesselStatus.Speed authoritatively, so a pilot who launched at 150, brushed a
-            // hostile ribbon and crawled at 10 really IS doing 10 when they let go - keeping the
+            // VesselStatus.Speed authoritatively, so a pilot who launched at 300, brushed a
+            // hostile ribbon and crawled at 20 really IS doing 20 when they let go - keeping the
             // old carry would hand back speed the vessel no longer had.
             _carriedSpeed = 0f;
 
@@ -575,7 +575,7 @@ namespace CosmicShore.Gameplay
 
             // The rail has WEIGHT: the grind speed chases the stick instead of being it, so
             // letting go coasts to a stop, a reversal swings through zero rather than
-            // snapping, and a friendly->hostile prism transition (150 -> 10) reads as braking
+            // snapping, and a friendly->hostile prism transition (300 -> 20) reads as braking
             // instead of a 15x jolt. The 2D marble already rode on this and it is what made
             // the surface feel right; the rail wants the same.
             if (_rideMode == RideMode.Trail)

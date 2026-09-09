@@ -236,6 +236,20 @@ LAUNCH_KICK = 1.2        # GunVesselTransformer.endLaunchSpeedKick
 LAUNCH_SPEED = None      # derived - see _derive()
 DECAY = 36.0             # GunVesselTransformer.detachSpeedDecayRate (u/s^2)
 TURN_RATE = 90.0         # Pitch/Yaw/RollScaler (deg/s), speed-independent
+
+# ── What the vessel can still CATCH at that speed ─────────────────────────────
+#
+# A prism attach is dispatched from a PhysX trigger (VesselAttachPrismEffectSO via
+# ImpactorBase.OnTriggerEnter - enter only, no sweep, no shell tier for a Plain prism), sampled
+# once per FixedUpdate, while MoveShip TELEPORTS in Update. So the vessel jumps `speed * dt`
+# between two chances to be noticed, and above some speed it steps straight over a rail.
+#
+# These two turn that into a number the model can report. Neither is a design value: the first
+# is the project's own fixed timestep and the second is the measured Minkowski contribution of
+# the hull's own impact collider (SKEIN.md section 7 measured 3.46-3.53 u of window on a 3-wide
+# rail and 6.46-6.61 on a 6-wide, i.e. ~0.5 u of hull either way).
+FIXED_TIMESTEP = 0.04     # ProjectSettings/DynamicsManager.asset, m_AutoSyncTransforms 0
+HULL_CATCH_EXTENT = 0.5   # u, measured
 MEMBRANE = 1200.0
 SPAWN_RING = 1000.0
 
@@ -243,8 +257,8 @@ SPAWN_RING = 1000.0
 #
 # LAUNCH_DECISION_SECONDS is the ask "the curve segments should have bigger gaps so you don't
 # just shoot into the next segment immediately - that is a good time to change segments",
-# turned into geometry. A launch leaves at the 150 u/s grind speed, so a free-flight window of
-# t seconds is t * GRIND_FRIENDLY of clear air. The old floor was 60 u = 0.40 s, which is a
+# turned into geometry. A launch leaves at LAUNCH_SPEED (the grind speed times the end-of-ribbon
+# kick), so a free-flight window of t seconds is t * LAUNCH_SPEED of clear air. The old floor was 60 u = 0.40 s, which is a
 # fifth of a human reaction plus a decision, and the trim ALSO preferred the nearest qualifying
 # landing - so the generator systematically produced the shortest legal hop. Both are fixed:
 # the floor is raised to a real window and the trim now takes the FURTHEST landing inside the
@@ -1442,6 +1456,7 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     ray = max((b.ray_len for b in breaks), default=0.0)
     ray_min = min((b.ray_len for b in breaks), default=0.0)
     self_gap = prove_no_self_bridge(breaks)
+    latch_mean, latch_med, latch_missable = measure_attach_latch(breaks)
 
     gpos = gate_world_positions(spine, strands, gates)
     gsep = float("inf")
@@ -1475,6 +1490,9 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
         print(f"        launch gap: shortest {ray_min:6.1f}u ({ray_min / GRIND_FRIENDLY:.2f}s)"
               f"  longest {ray:6.1f}u ({ray / GRIND_FRIENDLY:.2f}s)"
               f"   floor {END_AIM_MIN:.0f}u ({LAUNCH_DECISION_SECONDS:.1f}s)")
+        print(f"        re-attach: P(latch on the pass) mean {latch_mean*100:5.1f}%"
+              f"  median {latch_med*100:5.1f}%   {latch_missable}/{len(breaks)} breaks"
+              f" step past the catch window  [REPORTED, not gated - see SKEIN.md 7]")
         print(f"        break gap {BREAK_GAP:.0f}u ({BREAK_GAP / PRISM_SPACING:.0f} prisms); "
               f"closest a launch comes to its OWN strand {self_gap:6.1f}u "
               f"(floor {RAY_CLEARANCE:.0f}) - no self-bridge")
@@ -1534,12 +1552,115 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     assert rec >= slot, f"I{intensity}: recovery {rec:.1f}u < worst miss {slot:.1f}u"
     return dict(n=n, prisms=prisms, vol=vol, trails=nseg, breaks=len(breaks),
                 turn=worst_turn, miss=miss, arrival=arrival, gsep=gsep, laps=laps,
-                pins=pins, seen=seen, spacing=spacing)
+                pins=pins, seen=seen, spacing=spacing, latch=latch_mean)
 
 
 SKEIN_COURSE_CS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
     os.path.abspath(__file__)))), "Assets", "_Scripts", "Controller", "Arcade", "Skein",
     "SkeinCourse.cs")
+
+_ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "Assets")
+URCHIN_PREFAB = os.path.join(_ASSETS, "_Prefabs", "Spacevessels", "Urchin.prefab")
+GUN_TRANSFORMER_CS = os.path.join(_ASSETS, "_Scripts", "Controller", "Vessel",
+                                  "GunVesselTransformer.cs")
+
+
+def speed_after_gliding(distance):
+    """
+    How fast a launched pilot is still going `distance` units later.
+
+    The carry is EXCESS over cruise and `TickCarriedSpeed` bleeds it linearly at DECAY, so the
+    speed is v0 - DECAY*t and the distance is the integral of that - solved here by bisection
+    rather than by the quadratic, because the closed form has to be clamped at the moment the
+    excess reaches zero anyway and the bisection expresses that in one line.
+    """
+    excess = LAUNCH_SPEED - CRUISE
+    t_full = excess / DECAY
+    lo, hi = 0.0, t_full
+    for _ in range(60):
+        mid = 0.5 * (lo + hi)
+        if CRUISE * mid + excess * mid - 0.5 * DECAY * mid * mid < distance: lo = mid
+        else: hi = mid
+    return max(CRUISE, LAUNCH_SPEED - DECAY * min(lo, t_full))
+
+
+def measure_attach_latch(breaks):
+    """
+    The probability that an aimed launch is NOTICED by the rail it was aimed at, on the pass.
+
+    Reported, never asserted, and that is deliberate - see SKEIN.md section 7. The quantity is a
+    ratio of two things this model already knows exactly:
+
+      STEP   `speed * FIXED_TIMESTEP`, at the speed the pilot is doing when the ray meets the
+             target - i.e. after gliding `ray_len`, which trim_break already recorded.
+      CHORD  the length of the pilot's path that lies inside the rail's catch envelope. The
+             envelope is a TUBE (prism extent along the rail, 8.0u + hull, exceeds the 8.0u
+             prism spacing, so consecutive envelopes touch), and a ray crossing a tube of
+             radius R at angle theta to its axis is inside for `2R / sin(theta)`. theta is the
+             break's own measured `arrival`, which trim_break caps at ARRIVAL_ANGLE_MAX.
+
+    At most one sample can land inside a chord shorter than the step, and whether it does is a
+    phase coin toss, so P(latch) = min(1, chord/step) is exact rather than a heuristic.
+
+    THE POINT OF MEASURING IT HERE is that it is a function of the VESSEL's speed, and the
+    vessel's speed changed by 2.4x in one round after PRISM_SCALE had been chosen to clear it.
+    Nothing failed; a paragraph of arithmetic in SKEIN.md simply went on describing the old
+    vessel. A number the model recomputes cannot do that.
+
+    It is NOT asserted, because the obvious way to make an assert pass - widen the prism - runs
+    into `prove_shield_clearance`, which is the real ceiling and is asserted: at MASS 5 a rail's
+    armour reaches 1.5 x leafSize, so a cross-section big enough to close this deficit fuses two
+    lanes and ends the mode. The structural fix is a swept vessel attach, and it is fleet-wide.
+    """
+    radius = 0.5 * (max(PRISM_SCALE[0], PRISM_SCALE[1]) + HULL_CATCH_EXTENT)
+    ps = []
+    for b in breaks:
+        step = speed_after_gliding(b.ray_len) * FIXED_TIMESTEP
+        chord = 2.0 * radius / math.sin(math.radians(max(1e-3, b.arrival)))
+        ps.append(min(1.0, chord / step))
+    if not ps: return 1.0, 1.0, 0
+    ps.sort()
+    mean = sum(ps) / len(ps)
+    return mean, ps[len(ps) // 2], sum(1 for p in ps if p < 1.0)
+
+
+def prove_vessel_mirror(prefab=URCHIN_PREFAB, transformer=GUN_TRANSFORMER_CS):
+    """
+    The vessel facts above, re-read from the assets that actually ship.
+
+    This is the gate whose ABSENCE caused the stale arithmetic `measure_attach_latch` now
+    replaces: GRIND_FRIENDLY, CRUISE, LAUNCH_KICK and DECAY are transcriptions, and a
+    transcription is only true on the day it is made. Every window in this file is a TIME
+    multiplied by one of them, so one drifted number moves the whole arena silently.
+
+    Deliberately NOT in the control sequence, for prove_csharp_mirror's reason: it reads shipped
+    files rather than the model, so a perturbed global must not make it object.
+    """
+    import re as _re
+    try:
+        pre = open(prefab, encoding="utf-8", errors="replace").read()
+        tra = open(transformer, encoding="utf-8", errors="replace").read()
+    except OSError:
+        return None
+
+    def one(src, pattern, name):
+        hits = {float(m) for m in _re.findall(pattern, src)}
+        assert len(hits) == 1, f"{name}: expected one value in {src is pre and 'the prefab' or 'the script'}, found {sorted(hits)}"
+        return hits.pop()
+
+    checks = [
+        ("FriendlyTerrainSpeed", one(pre, r"FriendlyTerrainSpeed: ([\d.]+)", "FriendlyTerrainSpeed"), GRIND_FRIENDLY),
+        ("HostileTerrainSpeed", one(pre, r"HostileTerrainSpeed: ([\d.]+)", "HostileTerrainSpeed"), GRIND_HOSTILE),
+        ("DefaultThrottleScaler", one(pre, r"DefaultThrottleScaler: ([\d.]+)", "DefaultThrottleScaler"), CRUISE),
+        ("detachSpeedDecayRate", one(tra, r"detachSpeedDecayRate = ([\d.]+)f", "detachSpeedDecayRate"), DECAY),
+        ("endLaunchSpeedKick", one(tra, r"endLaunchSpeedKick = ([\d.]+)f", "endLaunchSpeedKick"), LAUNCH_KICK),
+    ]
+    for name, shipped, model in checks:
+        assert abs(shipped - model) < 1e-6, (
+            f"vessel drift: {name} is {shipped:g} in the shipped asset but this model assumes "
+            f"{model:g}. Every launch window here is a TIME times that number.")
+    return len(checks)
 
 
 def prove_csharp_mirror(path=SKEIN_COURSE_CS):
@@ -1601,6 +1722,7 @@ def prove_visibility_ladder(results, seed):
 def main():
     spine = Spine()
     mirrored = prove_csharp_mirror()
+    vessel_checks = prove_vessel_mirror()
     self_d, uT = prove_spine(spine)
     reach, lobe_clear = prove_cable_fits()
     seps = prove_strand_separation()
@@ -1624,6 +1746,8 @@ def main():
         print(f"  cable reach {reach:.1f} u -> {lobe_clear:.1f} u of clear air between lobes")
         print(f"  ladder mirrored into SkeinCourse.cs: "
               + (f"{mirrored} arrays agree" if mirrored else "source not present, unchecked"))
+        print(f"  vessel facts re-read from the shipped assets: "
+              + (f"{vessel_checks} agree" if vessel_checks else "assets not present, unchecked"))
         print(f"  widest collar {collar:.0f} u against a {collar_ceiling:.0f} u ceiling "
               f"(2r {2*r:.0f} - cable {A_MAX:.0f} - clearance {MIN_LOBE_CLEARANCE:.0f}) "
               f"- no collar encloses a second lobe")
