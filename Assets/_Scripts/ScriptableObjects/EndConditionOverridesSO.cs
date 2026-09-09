@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
