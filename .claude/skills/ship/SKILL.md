@@ -305,6 +305,32 @@ Walk every changed file against these gates:
   designer could falsify it from the inspector, take the class (here: rent by depth, as the
   sibling sweep already did) rather than restating the instance.
 
+- **Deleting a FIELD by pattern orphans its attributes, and the orphan adopts the next member.**
+  A regex that removes `[SerializeField] float thing = 1f;` leaves the `[Tooltip(...)]` block above
+  it — which then stacks onto whatever member follows, and `CS0579: Duplicate 'Tooltip'` names the
+  INNOCENT member several lines away. Multi-line attributes make this invisible in a diff read at
+  speed. When retiring a serialized field, delete the whole DECLARATION — attributes, doc comment,
+  trailing blank line — and read the two members either side of the hole afterwards. Same shape as
+  the merge trap above (§1, shared trailing lines), reached without a merge.
+
+- **A `try/catch` turns a hang into a silent degradation. That is worth having and it is not a
+  fix.** Containing an uncontained throw is the right engineering move — an exception inside a
+  covered-screen phase is otherwise a load screen and no other symptom — but the moment you ship it,
+  the bug stops presenting as "it hangs" and starts presenting as "it works but half of it is
+  missing", which reads as a *different, smaller* bug. If you add containment while still hunting a
+  cause, say so explicitly and keep hunting: a session shipped exactly this and the user's next
+  report ("it lost all the structure") was the same one-line defect wearing the fix as a costume.
+
+- **A successor rule resolved TWICE is resolved once wrong.** When a loop learns a new "what
+  follows what" (a circuit's closing leg, a wrap, a ring buffer), every index in that loop is part
+  of the change — and a raw `+ 1` sitting twenty lines below the call you did update is not a
+  smaller version of the same thing, it is the OLD rule surviving where nobody re-read. Resolve the
+  successor ONCE into a local and have everything in the body read from it, then gate it: a source
+  rule refusing any arithmetic index into the collection, with a negative control that re-injects
+  the line that shipped. Static analysis cannot see this — the model that mirrors the code computes
+  its own successors correctly, and unit tests that exercise the element builder never run the
+  assembler.
+
 - **A RETIREMENT leaves residue, and the residue is the part that later reads as a live
   feature.** When a branch builds a mechanic and then cuts it, sweep for what the cut could not
   see: a local whose only reader went (`var root = vessel.Transform;`), a helper with zero callers

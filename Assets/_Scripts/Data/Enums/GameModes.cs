@@ -142,6 +142,20 @@ namespace CosmicShore.Data
         // how many corners let you choose. See _Scripts/Controller/Arcade/HEADLONG.md.
         Headlong = 49,
 
+        // Breakwater (50): the Sparrow-only station race. A polar START GATE plus a closed
+        // fourteen-station CIRCUIT hangs on a generated walk through the cell - each station a
+        // shallow dish of plates flaring back toward you, its throat welded shut by a weave of
+        // DANGER bars around an 18-unit EYE. Closing on one you pick your way through: fire a
+        // skyburst and vaporise a door, flip to turret stance and saw the weave open, or thread
+        // the eye and take nothing but nerve. The walls you shoot ARE the ammunition (50 hostile
+        // prisms buy a rocket), so opening one door roughly funds the next and a clean thread
+        // banks a rocket for a station you cannot read. Two laps of the circuit = 29 crossings;
+        // the first DOMAIN's LEAD RUNNER home wins, so a teammate does not shorten the race.
+        // See _Scripts/Controller/Arcade/BREAKWATER.md.
+        //
+        // 50, not 48: Tollway took 48 and Headlong 49 on bleeding-edge while this was in flight.
+        Breakwater = 50,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 47) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
