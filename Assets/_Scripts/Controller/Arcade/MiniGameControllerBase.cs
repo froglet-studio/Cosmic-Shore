@@ -84,6 +84,29 @@ namespace CosmicShore.Gameplay
         {
         }
 
+        /// <summary>
+        /// The SINGLE-PLAYER turn-flow spine (<see cref="SinglePlayerMiniGameControllerBase"/>
+        /// subscribes this to <c>OnMiniGameTurnEnd</c>). The multiplayer side deliberately does
+        /// NOT use it: <see cref="MultiplayerMiniGameControllerBase"/> runs its own
+        /// server-authoritative ExecuteServerTurnEnd / ExecuteServerRoundEnd / ExecuteServerGameEnd
+        /// chain so the transitions are driven by the server and mirrored to clients by ClientRpc.
+        /// Both paths converge on the same OnTurnEndedCustom / OnRoundEndedCustom hooks.
+        /// </summary>
+        protected void EndTurn()
+        {
+            OnTurnEndedCustom();
+
+            if (ShouldResetPlayersOnTurnEnd)
+                gameData.ResetPlayers();
+
+            gameData.TurnsTakenThisRound++;
+
+            if (gameData.TurnsTakenThisRound >= numberOfTurnsPerRound)
+                EndRound();
+            else
+                SetupNewTurn();
+        }
+
         protected virtual void OnTurnEndedCustom()
         {
         }
@@ -95,10 +118,30 @@ namespace CosmicShore.Gameplay
             SetupNewTurn();
         }
 
+        protected void EndRound()
+        {
+            OnRoundEndedCustom();
+
+            gameData.RoundsPlayed++;
+            gameData.InvokeMiniGameRoundEnd();
+
+            if (HasEndGame && gameData.RoundsPlayed >= numberOfRounds)
+                EndGame();
+            else
+                SetupNewRound();
+        }
+
         protected virtual void OnRoundEndedCustom()
         {
         }
 
+        protected virtual void EndGame()
+        {
+            if (!ShowEndGameSequence) return;
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
+        }
 
         protected virtual void OnResetForReplay()
         {
