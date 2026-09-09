@@ -175,6 +175,10 @@ namespace CosmicShore.Gameplay
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
                 case GameModes.Switchback: // Score lands only at game end - gates are the live stat
+                case GameModes.Breakwater: // same shape: a station IS a switch threaded in order,
+                                           // so it accumulates on the same stat and folds by the
+                                           // same lead runner. No new source - a second one
+                                           // reading the same field could only ever disagree.
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;

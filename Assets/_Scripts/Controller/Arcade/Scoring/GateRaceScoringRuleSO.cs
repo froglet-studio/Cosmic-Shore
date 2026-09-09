@@ -33,6 +33,23 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Gate Race", fileName = "GateRaceScoringRule")]
     public class GateRaceScoringRuleSO : ScoringRuleSO
     {
+        [Tooltip("What ONE unit of this course is called in the scoreboard and the defeat " +
+                 "reveal - \"Gate\" for Switchback and Headlong, \"Station\" for Breakwater. " +
+                 "Three modes read this rule and they do not fly the same object, so the noun " +
+                 "is authored per ASSET rather than hardcoded in a script all three share. " +
+                 "Blank falls back to \"Gate\", which is what the two assets that predate the " +
+                 "field carry - Unity fills an absent key with the TYPE default (an empty " +
+                 "string), never with a C# field initializer, so the fallback has to be in the " +
+                 "READER and not in the declaration.")]
+        [SerializeField] string unitNoun;
+
+        /// <summary>Singular unit noun, defaulting to "Gate" for an asset that authors none.</summary>
+        string Unit => string.IsNullOrWhiteSpace(unitNoun) ? "Gate" : unitNoun.Trim();
+
+        /// <summary>Plural of <see cref="Unit"/>. Both nouns in play are regular; a future
+        /// irregular one wants a second field, not a pluralisation rule.</summary>
+        string Units => Unit + "s";
+
         /// <summary>
         /// A domain's course progress is its LEAD RUNNER's gate count. See the class summary -
         /// this is the whole reason the fold is a seam rather than four copies of a sum.
@@ -100,8 +117,8 @@ namespace CosmicShore.Gameplay
                     // Per PILOT, so the row adds up: gates flown + gates left = the course.
                     // The domain fold is the lead runner, so a domain reading here would sit a
                     // trailing teammate's own gate count beside the ace's remainder.
-                    : $"{RemainingForPlayer(gameData, s)} Gates Left",
-                $"{LiveMetric(s)} Gates")).ToList();
+                    : $"{RemainingForPlayer(gameData, s)} {Units} Left",
+                $"{LiveMetric(s)} {Units}")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
         }
@@ -109,6 +126,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "COURSE TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "GATES LEFT", RemainingForPlayer(gameData, localStats), false);
+                : new ScoreReveal("DEFEAT", $"{Units.ToUpperInvariant()} LEFT", RemainingForPlayer(gameData, localStats), false);
     }
 }

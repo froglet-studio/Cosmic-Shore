@@ -1484,6 +1484,41 @@ So: after any patch that ADDS a member to a large existing class, grep that clas
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
 
+### Trap: an UNRESOLVED BASE TYPE makes the compile blind to the whole class body
+
+The filtered-noise compile (§4, and the trap above) is weaker than it looks the moment inheritance
+is involved: **Roslyn abandons class-body binding when the base type is unresolved.** So for
+`class Foo : SomethingInAssembly-CSharp`, an `override` naming a member the base does not declare,
+a missing implementation of an abstract member, or a signature that no longer matches is reported
+as *nothing at all* — the same blind spot CLAUDE.md records for enum members inside serialized
+field defaults. A refactor that reparents a class onto a shared base therefore gets **zero**
+coverage from this harness, however clean the run looks.
+
+When you cannot resolve the base (you usually cannot — it is in the monolith), audit the fit
+TEXTUALLY and make the audit a gate:
+
+- every `abstract` member of the base has a matching `override` in the subclass;
+- every `override` in the subclass names a member the base declares `abstract` or `virtual`;
+- any member the design depends on is present on both sides.
+
+Regex both sides for `\b(public|protected|internal)\s+(abstract|virtual|override)\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]`,
+which catches expression-bodied properties and methods alike, and **negative-control it in both
+directions** (delete an implementation; add an override of a member that does not exist). A session
+that reparented a 1,255-line controller onto a shared base had this as its only out-of-editor
+safety net.
+
+### Trap: a harness that compiles COPIES stops being a gate the moment the tree moves
+
+Distinct from the trap above, and more embarrassing: a `.csproj` that lists files **copied into the
+scratch directory** proves something about the copies. They drift the instant you edit the tree, and
+"I widened the harness" then widens a set of stale files. A session shipped a compile error twice in
+a row this way, the second time immediately after saying the harness had been widened.
+
+Point `<Compile Include>` at the **real paths** — `/repo/Assets/.../Thing.cs` — so the gate cannot
+describe anything but what is about to be committed. Stubs (Unity attributes, `Mathf`, NUnit's
+`Assert`) stay local; the code under test never does. The same applies to a test runner: run the
+SHIPPED test file, not a copy of it, or `84/84 passing` is a claim about a snapshot.
+
 ### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
 
 The §4 harness compiles against .NET reference assemblies with no `UnityEngine.dll`, so every
