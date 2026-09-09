@@ -47,15 +47,21 @@ commit, ready-up and launch stay in exactly one place no matter which panel is o
 never launches anything.** The moment a panel starts making those calls there are two
 authorities on the same state, which is the failure the single-writer rule exists to prevent.
 
-Wiring **any** panel switches the modal to the one-panel layout wholesale. There is deliberately
-no half-way state where some controls come from a panel and some from the legacy Screen 1 /
-Screen 2 fields: two sources for one control is how a stale widget ends up driving live config.
+A panel is now **required**, not a layout choice: the legacy Screen 1 / Screen 2 fields are gone
+from the modal entirely (see §7). A card opened with no panel that accepts it logs which card, and
+draws nothing — rather than falling back to a half-way state, which is how a stale widget ends up
+driving live config.
+
+`UsesLaunchPanels` survives that removal for a different job: the scene holds a **second copy** of
+`ArcadeGameConfigureModal`, on the Maelstrom's own window, carrying the component purely as its
+`ModalWindowManager` and wiring no panels. Both copies subscribe to the sync manager's broadcasts,
+so the flag is what stops the panel-less one "opening" on every client and drawing an empty frame
+over the real one.
 
 ### 2.1 Every control resolves through ONE accessor — and a per-control fallback is the bug
 
 `ActiveIntensityButtons`, `ActiveDomainTiles`, `ActiveStartButton`, `ActiveWaitingLabel` and
-`ActivePreviewWindow` each answer from the **active panel** on the one-panel layout and from
-the **legacy serialized field** otherwise — never a mix.
+`ActivePreviewWindow` each answer from the **active panel**, or from nothing — never a mix.
 
 Falling back per-control would look harmless and be wrong twice over: the Maelstrom panel
 *deliberately* has no preview window, so a fallback would arm a live satellite arena into a
@@ -615,3 +621,40 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.
+
+
+---
+
+## 10. What the two-screen path left behind, and its removal
+
+The configure-then-pick-a-vessel pair of screens had been inert in the scene for a while — its
+Screen-2 references nulled, its roots hidden — while the code still carried both paths. It is now
+gone from the code too:
+
+| Removed | Why it was dead |
+|---|---|
+| `configurationDetailView` / `gameDetailView` + `SetScreenActive` and the four `Show…Screen` methods | nothing navigates between screens any more |
+| the ship summary view (`shipNameText`, `shipPlaceholderIcon`, the two icons, …) | Screen 2 drew it |
+| `previousShipButton` / `nextShipButton` + `OnNextShipClicked` / `OnPreviousShipClicked` | every arcade mode locks to one hull, which is what collapsed the flow |
+| `confirmConfigurationButton` / `backFromGameSelectButton` + `OnConfirmConfiguration` and the three back handlers | the commit moved to card-open (§3) |
+| the legacy `intensityButtons`, `domainInfoItems`, `startGameButton`, `waitingForOthersLabel`, `previewWindow` | the panel carries all five |
+| `dpadRowHighlights` + the highlight machinery | the list was empty in every scene instance; the Confirm row it also served is gone |
+| `shipClassTypeVariable` | the SAME asset `GameDataSO.VesselClassSelectedIndex` points at — the modal wrote one variable twice |
+| `ArcadeConfigSyncManager.NotifyScreenChanged` / `OnScreenChangedOnClient` / its ClientRpc | its only caller was that navigation |
+
+**Two things that look legacy and are not.** The player-count and domain-count steppers live under
+the old `ConfigurationDetailView`, but the scene's `MinigameLaunchPanel` was added onto
+`ConfigurationContent` — that root's parent, still active — so the steppers are on screen and
+driving live config. And `selectedGameName` / `selectedGameDescription` /
+`selectedGameFavoriteIcon` are still written on every card open; the panel draws its own copies,
+but these are not provably off-screen, so they stayed.
+
+**The dead YAML went with the code.** A `UnityEvent` persistent call to a deleted method logs an
+error on every press, and a prefab-instance modification naming a deleted field is never pruned by
+Unity — so both were stripped from `ArcadeGameConfigureModal.prefab` and `Menu_Main.unity`. The
+buttons those calls sat on still exist and are now inert; delete them in the editor when the
+layout is redesigned.
+
+**Left alone as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The channel is
+raised and nothing subscribes to it, in code or in any scene — a removal candidate, but a SOAP
+integration point rather than part of the two-screen path.

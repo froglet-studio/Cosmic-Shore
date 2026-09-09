@@ -31,7 +31,6 @@ MonoBehaviour:
   MaxPlayersAllowed: 4
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: 0.01

@@ -59,6 +59,33 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
   enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
   a duplicate-value check over the whole enum, not just your own rows.
+  **Two ways that collision actually arrives, and the second is the one review misses.** The
+  obvious one is both sides authoring the same literal. The subtle one is a member LOSING its
+  explicit value in the resolution and silently taking the next IMPLICIT one: keep-both on
+  `VolumeDestroyed = 9` / `SwitchesThreaded = 9` produced an enum where mine had no `= N` at all,
+  so it took `CombatPoints + 1` and collided with a `Jousts = 7` neither branch had touched. The
+  enum's own "never reorder, only append" comment cannot prevent this — nothing was reordered by
+  hand — so the duplicate-value check is the ONLY thing that catches it. Run it over the whole
+  enum, and separately assert every member still carries an explicit value if the enum requires
+  them.
+  **Two branches appending the IDENTICAL line to a list is silently deduplicated to one.** The
+  YAML trap above is about mis-concatenation; this is its mirror, omission by identity. Both
+  branches added `  - 45` to `ProgressionConfig`'s unlock list after the same anchor, git saw one
+  change, kept one line, and one mode's entry simply was not there — no conflict, no marker, and
+  the file still parses. Any list where two branches append a value derived from the same "next
+  free number" is exposed: count the entries against what both sides should SUM to, and check
+  your own value is present by name, not just that the list grew.
+  **A conflict whose two sides are two function BODIES shares the hunk's trailing lines.** Git
+  ends the hunk at the last differing line, so a common tail — a `return`, a closing call, a
+  `}` — belongs to whichever body you put LAST. Ordering the two bodies therefore silently
+  strips it from the other: `switches_threaded()` lost its `return m` and the generator crashed
+  with `'NoneType' object is not subscriptable` several frames away from the cause. After any
+  keep-both of two callables, check each one still ends the way it did on its own branch — or
+  just run the thing, which is what caught it here.
+  **A test mock of a wide interface is what a parallel branch breaks.** `IRoundStats` gained two
+  members, so every hand-written `IRoundStats` mock stopped compiling — and a broken test mock
+  takes `Assembly-CSharp-Editor` down for everyone, which no gameplay compile-check would show.
+  Grep for other implementers of any interface the base branch widened.
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
@@ -66,6 +93,16 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The dangling-operator test is necessary and NOT sufficient: the shared line the conflict split
+  on can be a COMPLETE statement.** A conflict is bounded by the lines both sides share, so when
+  two branches each add a function/member ending in the same closing line, git puts that line
+  OUTSIDE the hunk and keeping both bodies gives it to whichever side you place last — the other
+  falls off its own end. Three landed in one merge and only two had a dangling operator: a Python
+  `return m` shared by two generator functions (so `switches_threaded()` silently returned `None`
+  and the icon generator crashed), and a `/// <summary>` shared by two enum members (so the second
+  member's doc comment lost its opening tag). Neither is a syntax error in C#, and the Python one
+  is not caught by any parse. After every keep-both resolution, read the line immediately AFTER
+  the hunk and ask which side it belongs to — if the answer is "both", duplicate it.
   **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
   `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
   `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME
@@ -82,6 +119,29 @@ run the `/reorient` skill first and act on its verdict before shipping.
   (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
   the list in question) against what both sides should sum to, and verify every entry has exactly
   its expected key set with no stray duplicate keys — do not eyeball it.
+- **The shared-tail trap has a SOURCE-CODE form, and it produces no conflict marker at all.**
+  Two branches that each append a same-shaped function to the same file split on the shared
+  tail — `    return m` plus the blank lines — so git can hand that tail to whichever function
+  came last and silently TRUNCATE the other. The result parses fine; the truncated function
+  just falls off its end and returns `None`, and the crash surfaces later, deep inside a
+  library, naming neither the function nor the cause. This has now happened **twice on the
+  same file** (`author_objective_icons.py`, both times to the glyph function whose neighbour
+  the other branch added). After merging a file of parallel same-shaped functions, CALL each
+  one and assert it returned something — do not settle for a static "does it return?" check:
+  `ast.walk` descends into NESTED helpers, so a truncated function that happens to define two
+  local helpers reports two returns and looks healthy. Put the assert at the call site, where
+  it can name the offender.
+- **A generator's `--check` that validates only its own constants is not a gate.** The whole
+  claim of "the generator is the source, the assets are the build" rests on `--check` failing
+  when an asset drifts — and a `--check` that merely re-derives its content in memory and
+  verifies its own cross-file assertions proves the SCRIPT is self-consistent while saying
+  nothing about what shipped. One shipped that way: it asserted the enum still held the mode
+  id it expected, then passed cheerfully with an arcade card pointing at a different mode,
+  because it never re-read the card. Make `--check` diff every generated file against disk and
+  fail on any mismatch (naming the file and the first differing line) — then negative-control
+  it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
+  fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
+  so read it out of its enum instead and the sweep disappears.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -167,6 +227,54 @@ Walk every changed file against these gates:
   heuristic — a parse, a range check, a format sniff — to recover a fact the sender had and threw
   away.** Ask what makes the two cases different at the SOURCE; if the answer is "the type", the
   heuristic is a bug waiting for the one mode that uses both.
+
+- **A rule-guarding test that NAMES the members it knows about stops testing the rule the day a
+  member is added.** A law expressed over an enum ("only `Domain` may wear a playable domain",
+  "only these metrics fold by sum") is usually guarded by a test that enumerates the cases by
+  hand, because at two members a hand list and a loop look identical. Add a third and the test
+  still passes, still reads as the law's guard, and now covers two thirds of it — and the gap is
+  invisible, because nothing fails. `ToySwitchVocabularyTests` guarded the switch reservation by
+  naming `Neutral`; `ToySwitchSignal.Next` landed and the law went untested for it. Whenever a
+  branch adds an enum member, grep for tests that mention the SIBLING members by name and convert
+  them to enumerate the enum (`Enum.GetValues(...).Where(x => x != TheException)`), so the next
+  member is covered on the day it is added rather than the day someone remembers.
+
+- **A test that SUPPLIES the value under test proves the consequence, not the design.** A helper
+  that takes the interesting quantity as a parameter is trivially easy to test, and a suite built
+  on it can be thorough, green, and blind to the thing that actually decides the behaviour. The
+  Sparrow's three missile tiers are ranked-not-additive because of ONE line in
+  `VesselCombatHitLatch.Key`'s constructor (the three classes canonicalise to one key); every
+  upgrade test called `CombatHitScoring.Credit` with a hand-supplied `supersededRank`, so keying
+  the tiers apart — which makes a centre-punch pay 60 through three individually-correct fresh
+  windows — would not have moved a single assertion. **The tell: you are passing a value your
+  production code derives.** Find where it is derived and start the test there; if that is hard
+  to reach, that difficulty is the finding. Its close relative — **when a design lives in a lookup
+  KEY, a test that starts downstream of the lookup cannot see the design at all.**
+
+- **A gate that ABORTS looks exactly like a gate that passes, if nobody reads its output.** This
+  repo's `Tools/Build/author_*.py` generators do a one-time migration first (clone a donor scene,
+  patch its wiring) and validate everything they built AFTER it. When the donor moves on, the
+  migration's `assert` fires and takes every check below it — while `--check` is still in the
+  workflow, still cited in commit messages, and still exits in a way nobody looks at.
+  `author_dogfight_assets.py` validated *nothing* for months, including four checks a branch had
+  just added to guard its own scoring; `author_ribcage_assets.py` and
+  `author_wildlife_liberation_assets.py` are in that state now. So: **a green gate is only
+  evidence if you can name a failure it produced.** Before citing one, break the thing it guards
+  and watch it fail — and when a spent one-shot is the blocker, make it STAND DOWN (guard the
+  step, register the already-committed output so downstream checks describe the shipped artifact)
+  rather than deleting the checks or living with the abort. Also worth asking of any `--check`:
+  does it diff against DISK, or only validate its own recipe in memory? Those are very different
+  promises and the flag name does not distinguish them.
+
+- **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
+  The absence-claim rule below covers comments that rot. This is the variant that was never true
+  in the way it read: `Projectile.SweepVesselsAlong` used single static scratch and argued it was
+  safe because no vessel effect fires another projectile mid-sweep — correct, but only because
+  `ProjectileChainFire` happens to be authored as a projectile-PRISM effect, so the ship arm
+  cannot reach it. Nothing stops someone dropping it into a ship container. When a comment
+  explains why a hazard cannot arise, ask whether the reason is structural or editorial; if a
+  designer could falsify it from the inspector, take the class (here: rent by depth, as the
+  sibling sweep already did) rather than restating the instance.
 
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.

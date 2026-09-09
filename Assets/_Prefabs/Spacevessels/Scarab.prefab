@@ -482,7 +482,7 @@ MonoBehaviour:
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
-    initialAmount: 0.34
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -701,7 +701,7 @@ MonoBehaviour:
   cavitationBlast: {fileID: 2645891037714460318}
   energyResourceIndex: 0
   switchResourceIndex: 1
-  switchChargesPerFullMeter: 3
+  switchChargesPerFullMeter: 1
 
 --- !u!114 &2035987173373189047
 MonoBehaviour:

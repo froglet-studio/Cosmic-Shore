@@ -359,6 +359,18 @@ request.
 
 ### 7.2 Reconnect — and why it does NOT reload Bootstrap
 
+> ⚠ **`ReconnectButton` is in no scene and no prefab** (measured 2026-09-09). The service below is
+> real and is now reachable — `DisconnectNotice` calls it directly
+> (`Docs/UI_ARCHITECTURE_AUDIT.md §4.2.1`) — but the *button* this section describes has never been
+> placed, so a player who booted offline still has no in-menu retry control. Placing it on the
+> menu's `OfflineUIGate` offline-only list is the remaining work.
+>
+> ⚠ **A mid-session network loss never enters offline mode.** `EnterOfflineSessionAsync` has exactly
+> one caller — `AuthenticationSceneController`, the boot chain — so `IsOfflineSession` stays false
+> when the network drops mid-play and every surface in §7.1 stays dark while the menu keeps
+> offering online-only actions. The service-level guards still refuse the work; it is the offering
+> that is wrong. Own change, own blast radius (it tears down Relay and starts a local host).
+
 `ReconnectService` + `ReconnectButton`: one tap tears the offline host down, clears
 `IsOfflineSession`, resets the auth facade, and loads the **Authentication scene** — which *is*
 the boot chain (sign in → wait for the Relay host → load `Menu_Main` through Netcode). If the

@@ -129,10 +129,23 @@ namespace CosmicShore.Utility
         /// </summary>
         CrystalMorph = 1 << 11,
         /// <summary>
-        /// and speed, the ball's speed) and a release (fling vector). One line per event on the
-        /// server only; off by default like every channel. A refused grab is silent because it
-        /// is the ordinary case (every un-armed hull contact asks), not a fault.
+        /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
+        /// contact resolved to and therefore whether the vessel is grinding a ribbon or rolling
+        /// a surface.
+        ///
+        /// It logged unconditionally on every surface attach, which was tolerable while nothing
+        /// was built to be ridden and is per-contact console spam now that Hijack's arena is:
+        /// rolling a burr is that mode's main verb and every touch re-logged. Off by default
+        /// like every channel; a ride that fails to begin is still an error and is unaffected
+        /// by this flag.
         /// </summary>
+        PrismscapeRide = 1 << 12,
+        /// <summary>
+        /// <c>[ToyBox]</c> — the app shell's Toy Box: which toy a card bound, and the Navigate
+        /// handoff into freestyle (press, transition wait, arrival pose). Off by default like every
+        /// channel; every real fault on that path is a warning and is unaffected by this flag.
+        /// </summary>
+        ToyBox = 1 << 13,
         All = ~0
     }
 

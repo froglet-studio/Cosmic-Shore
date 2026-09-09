@@ -14,13 +14,13 @@ namespace CosmicShore.Core
         [Header("Arcade Setup")]
         [SerializeField] private CanvasGroup navigationBar;
         [SerializeField] private GameObject missionsGameObject;
-        [SerializeField] private List<CallToActionTarget> gameCards;
+        [SerializeField] private List<GameCard> gameCards;
         [SerializeField] private ScreenSwitcher screenSwitcher;
         [SerializeField] private IAnimator animator;
         [SerializeField] private TutorialFlowController flowController;
         [Tooltip("The one game card left unlocked during the tutorial. Defaults to the first " +
                  "game in the quest progression chain (Scurry).")]
-        [SerializeField] private CallToActionTargetType tutorialGameTarget = CallToActionTargetType.PlayGameScurry;
+        [SerializeField] private GameModes tutorialGameMode = GameModes.Scurry;
 
         public void SetupPreIntroUI()
         {
@@ -74,7 +74,7 @@ namespace CosmicShore.Core
                     Debug.Log("Button found");
                 }
 
-                bool isTutorialGame = card.TargetID == tutorialGameTarget;
+                bool isTutorialGame = card.GameMode == tutorialGameMode;
                 btn.interactable = isTutorialGame;
             }
         }

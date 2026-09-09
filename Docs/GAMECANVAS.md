@@ -11,12 +11,20 @@ is left to do in the editor.
 
 ## 0. The diagnosis in one paragraph
 
-There are **two forked GameCanvas assets**, and the six scenes that share the newer fork each carry
-**~1,770 unapplied overrides — of which 1,734 are byte-identical in all six**. An override parked in
-a scene always beats the prefab, so those 1,734 properties are effectively hand-maintained six
-times over: editing the prefab changes nothing in any of them. That is the mechanism behind
-"I have to go to all 3 scenes to make one common change". Only **20** override keys genuinely differ
-between the six scenes — the real per-mode configuration is tiny and always was.
+There are **two forked GameCanvas assets**, and the scenes that share the newer fork each carry
+**~1,770 unapplied overrides — of which 1,733 are byte-identical in every one of them**. An override
+parked in a scene always beats the prefab, so those properties are effectively hand-maintained once
+per scene: editing the prefab changes nothing in any of them. That is the mechanism behind "I have
+to go to every scene to make one common change". Only **16** override keys genuinely differ between
+the scenes — the real per-mode configuration is tiny and always was.
+
+> **Scope, re-measured 2026-09-07 (`Tools/Build/gamecanvas_unification_report.py`):** the fork is
+> on **15** scenes, not six — every mode cloned since (Drumfire, Hijack, Switchback, Salvo, Scarab
+> Scramble, Dog Fight, Bends, Wildlife Liberation, Peel the Cage) inherited the whole override blob
+> from its donor scene. And the overrides were only half the story: **every fork scene also carries
+> STRUCTURAL edits on its canvas instance** — 9 removed objects, 3 removed components and 3
+> scene-added components — identical across 12 of the 15. See §9. **The prefab asset was never what
+> ran.** The retirement is driven by **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier** (§9).
 
 ---
 
@@ -39,8 +47,11 @@ never reaches the six newer modes, and vice versa.
 
 | Fork | Scenes |
 |---|---|
-| `GameCanvas-SkimRace` (6) | SkimRace (Skim Race), Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage |
+| `GameCanvas-SkimRace` (15) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, PeelTheCage, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, Drumfire |
 | `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), DuelForTheCell, BenchmarkStressTest, Recording Studio ×2 |
+
+(The 6-scene table below §2 is the 2026-08 measurement kept for the record; the nine newer scenes
+carry the same 1,770-override / 9-removed / 3-added signature as Rampage.)
 
 ### Structural delta (root name normalised)
 
@@ -164,7 +175,12 @@ Again work with zero inspector wiring.
 
 ---
 
-## 6. What to do in Unity
+## 6. What to do in Unity (superseded — see §9)
+
+> **This section is the 2026-08 plan and is superseded by §9.** Its Step 1 (consolidate the uniform
+> overrides through the Prefab Kit) would have pushed the 1,733 values into the FORK, but the fork
+> is not what the scenes run (§9.1), and Step 3's "delete the instance and drag the prefab in by
+> hand, re-doing ~20 values" is now a button with a dry run. Kept for the reasoning; run §9.
 
 Tooling: **FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit**. Its **Validate** pass reads scene
 YAML directly (no scenes are opened), reports every instance carrying unapplied overrides, and
@@ -238,8 +254,12 @@ vessel-telemetry discovery, so the priority chain becomes explicit → profile �
 
 | Role | Path |
 |---|---|
-| Base canvas prefab | `Assets/_Prefabs/CORE/GameCanvas.prefab` |
-| Forked canvas prefab | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` |
+| The canvas prefab (the only one, once §9 lands) | `Assets/_Prefabs/CORE/GameCanvas.prefab` |
+| Forked canvas prefab (retired by §9) | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` |
+| Unifier (operations) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifier.cs` |
+| Unifier (window) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs` |
+| Offline report + CI gate | `Tools/Build/gamecanvas_unification_report.py` |
+| Per-mode scoreboard stats (the one real per-mode value) | `Assets/_Scripts/ScriptableObjects/GameModeStatsProfileSO.cs`, `Assets/Resources/GameModeStatsProfile.asset` |
 | Canvas behaviour | `Assets/_Scripts/UI/GameCanvas.cs` |
 | HUD (base / derived) | `Assets/_Scripts/UI/MiniGameHUD.cs`, `MultiplayerHUD.cs` |
 | HUD views | `Assets/_Scripts/UI/View/MinigameHUDView.cs`, `MultiplayerHUDView.cs` |
@@ -250,3 +270,168 @@ vessel-telemetry discovery, so the priority chain becomes explicit → profile �
 | Drift scanner (read) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (write) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Validation rules | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
+
+---
+
+## 9. The retirement: what actually ships, and the tool that unifies it (2026-09-07)
+
+### 9.1 The finding the override counts hid
+
+Reading the 15 fork scenes' `PrefabInstance` blocks in full — the `m_RemovedGameObjects`,
+`m_RemovedComponents`, `m_AddedGameObjects` and `m_AddedComponents` sections, not just
+`m_Modifications` — gives a different picture from "1,770 overrides":
+
+| | 12 scenes (Rampage family) | Joust | Scurry | Skim Race |
+|---|---|---|---|---|
+| Property overrides | 1,770–1,771 | 1,771 | 1,774 | 1,766 |
+| Removed objects | 9 (`Scoreboard/SinglePlayerView`, the whole `Scoreboard/MultiplayerView` subtree incl. both extra `TeamScorecard`s, `MultiplayerScores`, `MainHeader`, `Top Bar`, `Column Headers`, `BackgroundBottom`) | 10 (+ one stale id) | 9 | 9 |
+| Removed components | the prefab's own `MultiplayerHUD`, `Scoreboard`, and one stale id | same | same | **none** |
+| Added components | `MultiplayerHUD` (on `MiniGameHUD`), `Scoreboard` (on `ScoreboardController`), `EndGameSequencer` (on the nested `EndGameStatsPanel`) | + `AdaptiveCanvasScaler` | + `AdaptiveCanvasScaler` | `AdaptiveCanvasScaler` only |
+| Added objects | `ConnectingPanel.prefab` (nested, under the root), `BackgroudTop/Scroll View/…` (under `Scoreboard`) | + a second `NotificationUI.prefab` | same as the 12 | same as the 12 |
+
+So in 14 of 15 scenes the prefab's HUD and Scoreboard components are **removed and re-added as
+scene components** (their serialized values agree across all 14 to the field — only two stale
+renamed keys differ), the old end-game layout is deleted, and a newer one is added. The
+`m_TargetAssemblyTypeName` strings on the HUD's listeners still say `JoustHUD` / `ScurryHUD` —
+classes that no longer exist — which dates the replacement. **The canvas that ships is the fork
+minus that subtree plus those components, and it exists only as a scene-side edit, fifteen times.**
+Consolidating the 1,733 uniform overrides into the fork prefab (§6 Step 1) would therefore have
+produced a prefab nobody runs.
+
+Two smaller things the full read also settled:
+
+- **1,390 of a scene's 1,771 overrides address objects INSIDE nested prefabs** (the GameOverPanel's
+  scoreboard layout, the pause panel, the countdown), through fileIDs the outer prefab's YAML never
+  contains. That is why every earlier "look at the prefab" pass under-counted, and why a resolver
+  must treat an unresolvable target as *nested*, not as *stale*.
+- The 16 keys that differ everywhere are the ones already itemised in §3 (Skim Race's button
+  positions and 5-stat list, the Ready button's cosmetic type name, Joust's off-screen toast rect at
+  (−1416, −463)), plus **`m_MatchWidthOrHeight` — 1 in Skim Race, 0 elsewhere** — moot once the
+  `AdaptiveCanvasScaler` drives it. ~~`R_GameOverPanel.prefab` no longer exists~~ — **that was written before it was true.** The
+  prefab survived this pass and was still on `bleeding-edge`; it was deleted by F6 on 2026-09-08
+  (`Docs/UI_ARCHITECTURE_AUDIT.md §5.2.1`). The unification prompt named it at
+  `Assets/_Prefabs/UI Elements/Panels/R_GameOverPanel.prefab`, a path that has never existed in any
+  commit — the asset was always at `Assets/_Prefabs/R_GameOverPanel.prefab` — so the instruction
+  could not succeed and nothing reported that it had not. *Record a deletion by the path the asset
+  HAS, and re-check it, or the claim is never checkable.* The `CountdownDisplay`
+  override that points into `MiniGameHUD.prefab` is a dead key (no script declares it) and is dropped
+  with the rest.
+
+### 9.2 The one real per-mode value is now config
+
+`EventDrivenStatsProvider.statsToTrack` was the single override the audit called genuine per-mode
+data. It now resolves **explicit list → `Resources/GameModeStatsProfile` (keyed by
+`GameDataSO.GameMode`) → vessel-telemetry discovery**, and the shared prefab ships the list EMPTY.
+The asset carries the measured lists: `{Longest Drift, MaxBoost, PrismsDamaged}` for every mode,
+Skim Race's five, Joust leading with Jousts Won. Retuning a mode is one asset edit and **no scene
+carries a survivor override at all**, which is what lets the re-point clear everything.
+
+### 9.3 The tool — FrogletTools ▸ Game Modes ▸ GameCanvas Unifier
+
+> **Status: kept, half spent.** The migration has run — the fork is deleted, all 15 domain
+> scenes are on CORE, and `gamecanvas_unification_report.py --check` passes. Absorb, Re-point
+> and Delete fork are dormant until another canvas forks. **Fix prefab** and **Fix scene** stay
+> live and are worth re-running: the first enforces the contract and reverts nulled nested
+> references, the second reverts redundant scene overrides.
+
+Three steps, no options. Every row has a dry run; read it before the button beside it. The
+Prefab Kit's toolbar links here. The offline twin of the status column is
+`python3 Tools/Build/gamecanvas_unification_report.py`, whose `--check` is the CI gate for the
+end state (CORE at the contract, fork gone, no reference to its guid, every migrated scene on CORE
+with no structural edit and no non-default override).
+
+**A nested-instance override that NULLS a reference is reverted by Fix prefab, and the gate
+fails on one.** CORE nests other prefabs (`NotificationUI`, the pause menu), and an override on
+one of those instances that sets a script-declared reference to nothing is the shape §"Shared
+prefabs" already warns about: the nested asset looks correctly wired and the feature quietly does
+nothing. The absorbed CORE carried exactly one — `GameToastView.itemPrefab` on the nested
+`NotificationUI` — so every toast in every mode logged `[GameToastView] Missing references` and
+drew nothing, while `NotificationUI.prefab` itself was fully wired. `RevertNulledNestedReferences`
+reverts such overrides (Unity built-ins `m_*` and the runtime-resolved `gameController` are left
+alone) and `gamecanvas_unification_report.py --check` names any that remain.
+
+**The canvas contract, first.** The one in-game canvas is Scale-With-Screen-Size at
+**1920x1080** with an `AdaptiveCanvasScaler` on its root driving the width/height match from the
+live aspect. It has to be stated because **both prefab assets are authored at 800x450** — every
+fork scene was upgraded IN-SCENE by the Canvas Upgrader (its 1,733 identical overrides are the
+x2.4 rects plus the 1920x1080 reference), and the ten CORE scenes never were. The first re-point
+was run before the absorb, so it dropped Skim Race's overrides onto a CORE still at 800x450 and
+the scene came up at 800x450. Two things now make that impossible: **Fix prefab** ends by
+enforcing the contract, and **Fix scene** refuses while CORE is not at it.
+
+1. **Fix prefab** — `CORE/GameCanvas.prefab`. While the fork still exists and CORE has not yet
+   absorbed the shipped canvas, this is the absorb: the donor scene (Rampage — it holds the
+   majority value on every divergent key) is opened *additively*, its canvas instance is unpacked
+   ONE level in memory (nested prefabs stay nested), and the result is merged into CORE's loaded
+   contents **by hierarchy path** — objects the shipped canvas lacks are deleted (the dry run lists
+   each), objects it adds are moved in (`ConnectingPanel`, `BackgroudTop`, the nested
+   `NotificationUI.prefab` replacing CORE's plain one), components are paired by exact type,
+   **script-swapped in place** where CORE holds the base type (`MiniGameHUD → MultiplayerHUD`,
+   `MinigameHUDView → MultiplayerHUDView`, so the fileID and every scene reference survive), or
+   added / removed; every value is copied; every reference is remapped (a reference into the CORE
+   *asset* resolves to the same path in the contents; a reference to a scene-local object — the
+   donor's controller, the Ready button's persistent call — is dropped and listed, those being what
+   §5 made self-resolving; a persistent call whose target was dropped is deleted). `statsToTrack`
+   is cleared (§9.2). CORE keeps every fileID it had. The donor is closed **without saving**; if
+   Unity asks, Don't Save. Then — and on every later run, when it is the whole step — the
+   **contract** is applied through the Canvas Upgrader's own passes
+   (`CanvasUpgradeProcessor`): if the canvas is still at 800x450 it is upgraded (every rect x2.4,
+   reference 1920x1080, `referencePixelsPerUnit` x2.4) rather than merely relabelled; the scale
+   mode is forced to Scale-With-Screen-Size; `AdaptiveCanvasScaler` is added; and the canvas's
+   direct children are **smart re-anchored** (nearest corner/edge, visual position preserved at
+   16:9, stretched / edge-anchored / layout-driven elements left alone) so the layout holds on
+   16:10, 21:9, 4:3 and portrait. The upgrader's full per-rect report goes to the console.
+2. **Fix scene** — one button per scene, whatever family it is on. A scene **on the fork** is
+   re-pointed: the old instance's placement, scene-added objects and components the prefab does
+   not now carry, and **every scene-side reference into the canvas** (`countdownTimer` on every
+   controller, `volumeUI`, parents of added panels) are recorded by hierarchy path; the instance is
+   destroyed; a CORE instance is placed; everything recorded is re-applied and re-wired; the scene
+   is saved. No override survives (§9.2 — the one real per-mode value is config), a scene-added
+   object the prefab now carries at the same path is dropped (the 15 `ConnectingPanel`s, the
+   `BackgroudTop`s), as is one with the same NAME beside a prefab sibling (Joust's second
+   `NotificationUI`, the trace of remove-then-re-add). A scene **already on CORE** has every
+   override whose value merely repeats the prefab's dropped (`SerializedProperty.DataEquals`
+   against `GetCorrespondingObjectFromSource`, so a nested prefab's property is judged against what
+   CORE shows) — Unity never prunes those, and the absorb turns a scene's old 1920x1080 / x2.4
+   overrides into a wall that says nothing. Settings are identical before and after. Dry-run
+   first; then ONE scene; play-test; then **Fix all**. The log ends with the number of non-default
+   overrides the instance still carries; the target is 0.
+3. **Delete the fork.** Enabled only when nothing references its guid.
+
+Then **Validate & Push** on the panel at the bottom (it stages only what the tool recorded — the
+prefab, the scenes, the deleted fork), run `Tools/Build/gamecanvas_unification_report.py --check`,
+and `/ship-tools`. The unifier is a permanent tool: with the fork gone, its status column, the
+contract check and **Fix scene** are what keep the canvas unified when the next mode is cloned.
+
+**A prefab with a missing script cannot be saved, and CORE had one.** The first in-editor Fix
+prefab failed with *"You are trying to save a Prefab with a missing script … 'EndGameStatsPanel'"*:
+CORE carries an old end-game view (script guid `1b511b9bcb0249f6b4ab9a9103a0ec66`, no `.cs` in
+the project — its fields are `scoreRevealPanel` / `bestScoreText` / `connectingPanel`…) added onto
+the nested `EndGameStatsPanel`. Component pairing cannot see it (a missing script has no type and
+`GetComponents` returns null for it), so both Fix prefab paths now sweep
+`GameObjectUtility.RemoveMonoBehavioursWithMissingScript` over CORE's contents before saving and
+list what they removed. The shipped canvas carries none — a missing script never runs — so anything
+missing in CORE is dead by definition. `MinigameWildlifeBlitz` and `BenchmarkStressTest` reference
+the same dead guid at scene level; that is theirs to clean, not the unifier's.
+
+**Known cost, stated:** the ten CORE-family scenes (the single-player and tool scenes) were
+running the 800x450 canvas un-upgraded. After Fix prefab they inherit the 1920x1080 layout the
+fifteen game-mode scenes have shipped for months; the handful of rect overrides they carry
+(`m_AnchoredPosition` on a few nested elements, in 800-space units) will read slightly off until
+someone opens those scenes. They are legacy scenes; the fix was not widened to re-scale their
+overrides.
+
+### 9.4 What was decided in code rather than by hand, and why
+
+- **Donor = a scene, never the fork asset** (§9.1).
+- **Majority wins on every divergent key**, because the 12-scene family holds the majority value
+  on all sixteen; picking Rampage as donor makes that a property of the donor rather than a table.
+- **`AdaptiveCanvasScaler` fleet-wide, and 1920x1080 is a CONTRACT the tool enforces, not a
+  value it copies** — the four scenes that had the scaler are the oldest and most play-tested;
+  `m_MatchWidthOrHeight` stops being a scene value; and a re-point onto a CORE that is not at the
+  contract is refused rather than warned about, because the one time it ran it shipped an 800x450
+  Skim Race with nothing in the console.
+- **Zero survivors** — §9.2. If a survivor prefix is ever entered, it re-applies by path and the
+  gate's allow-list must grow with it.
+- **Same-named additions are leftovers** — a scene-added `NotificationUI` beside the prefab's own
+  is the trace of remove-then-re-add, not a second toast feed anybody designed.

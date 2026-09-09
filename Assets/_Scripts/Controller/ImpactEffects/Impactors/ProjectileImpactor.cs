@@ -35,6 +35,14 @@ namespace CosmicShore.Gameplay
             switch (impactee)
             {
                 case VesselImpactor shipImpactee:
+                    // Same ownership rule as the prism arm below: when this projectile sweeps
+                    // for vessels, the swept segment query OWNS hull contact and the PhysX
+                    // trigger is suppressed for it. Letting both run would double-dispatch
+                    // every hull the sweep already found - and the trigger cannot stand in for
+                    // the sweep anyway, because it samples one point per FIXED step (0.04 s
+                    // here), which at 375 u/s is a 15 u stride across a ~6 u hull window.
+                    if (Projectile.UsesSweptVesselDetection && !IsSweepDispatch)
+                        break;
                     if (Projectile.DisallowImpactOnVessel(shipImpactee.Vessel.VesselStatus.Domain))
                         break;
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileShipEffects)) return;
