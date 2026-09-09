@@ -7354,7 +7354,125 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
 
 ---
 
-## 42. A cell may say how big its prisms are (Sep 2026)
+## 42. A plant's HEART is a place things can be built on (Sep 2026)
+
+**Tollway needed a set of points of interest a player could plant a scoring ring in, and it built
+its own.** `TollwayTollPosts` was a seeded Fibonacci band of emblem markers: replicated from an
+`int`, drawn by the controller, with its own occupancy book, its own 60-line Python re-derivation
+in the generator to keep the two walks honest, and its own test suite. It worked. It was the wrong
+owner, and the second cut deleted the whole thing.
+
+**A flora crystal is the same affordance the ecology already produces everywhere.** It arrives with
+four properties a bespoke socket had to be given by hand:
+
+- it is **placed by the food web**, so the set is ALIVE — a plant can be grazed away and the seeder
+  brings it back, which is a supply of scoring surfaces that ebbs and flows without a single timer;
+- it is **already drawn** and already a thing a pilot flies at;
+- it is **already replicable** — `FloraConfigurationSO.NetworkSynced` (§ the flora network sync)
+  puts the planting DECISION on the wire, which is exactly the set a heart's world position is a
+  function of; and
+- it is a **joustable heart**, so killing an anchor to deny it — and taking an element level for
+  doing so — is counter-play nobody had to design.
+
+General rule: **before a mode builds a set of points of interest, check whether the platform
+already grows one.** It is the same shape as "the Cell owns the environment — minigames don't build
+parallel systems", reached from the other side: not *don't duplicate what the Cell owns*, but
+*look at what the Cell already produces before inventing a peer for it*.
+
+### `FloraHeartRegistry` — the index, and nothing else
+
+One flat list of living plants, registered in `Flora.Initialize` (after `Plant()`, so the first
+read is the planted position) and unregistered in `Flora.Die` and `OnDestroy`. It **leaves on
+death rather than on destruction**, because death RELEASES the heart (`ActivateCrystal`) and a
+crystal anyone can now collect is not a fixture. Entries are `Flora` references and a query reads
+`HeartTransform.position` live — an `AssembledFlora` moves its crystal onto its lattice site after
+seating it, and a plant on a moving container carries its heart with it, so a cached position is
+wrong for two independent reasons.
+
+It **spawns, moves, ages and removes nothing**. The `Cell` already counts live plants per-species
+(`liveFloraCounts`) but holds no positions, and a per-species dictionary cannot answer "the nearest
+heart to this line"; this is the flat list that can. `LifeForm.HeartTransform` is the accessor that
+made it possible and is the public form of an idiom `LifeForm` already used internally.
+
+### The nucleus planting clamp now reads `NucleusIsControlZone`
+
+`Flora.ResolvePlantRadius` clamped its band's inner edge outside the nucleus **unconditionally**,
+and `ClampToPlantingBand` pushed offspring out the same way. In a mode whose nucleus IS the court
+(Astro League, Scarab Scramble, Tollway) that made the entire arena un-plantable — Tollway could
+not seed a plant inside its own court, and any offspring seeded there would have been ejected to
+the wall one birth at a time.
+
+Both stated reasons for the clamp — nucleus mass is the **territorial claim**, and it is **excluded
+from the fauna targeting grids** — *are* the control zone, and a cell that sets
+`Cell.NucleusIsControlZone = false` has already declared it has none ("this nucleus is a wall, not
+a claim": herbivores eat opposing mass anywhere, `DominantDomain` reads the whole cell). The clamp
+now reads that flag. It does not relitigate the invariant; it applies the state the ecology already
+supports.
+
+This is **§25.1's trap from the other side.** There, a mode borrowed the nucleus as play geometry
+and silently inherited its *diet* semantics, so the food web could not remove one prism from the
+whole pitch. Here, a mode that borrowed it as its court could not put a plant inside its own arena.
+Same cause — geometry carrying semantics — opposite symptom. *Whenever a mode repurposes a
+Cell-owned visual, check what SEMANTICS it borrowed with the geometry, in both directions.*
+
+The one reason for the clamp that **survives** is real and accepted: a standard omni crystal
+respawns in the nucleus volume, so a court-mode's plants share space with its crystal respawn. That
+is clutter in a volume the mode has already filled with play, not mass the ecology cannot reach.
+
+**Four callers clear the flag, and only three of them are court modes — name the fourth.** The
+setters are Astro League, Scarab Scramble, Tollway *and the Arkway's traversal cells*
+(`CellConveyor`, which clears it for the whole-cell diet its protect-the-Ark mechanic rides on,
+§41). The Arkway is not a court: its nucleus is still an ordinary core marker, and its traversal
+configs are drawn from `Cell.AvailableConfigs`, which author real flora. So this change lets an
+Arkway cell's plants grow into its nucleus where they were previously clamped out. That follows
+from the rule rather than working around it — with no control zone, herbivores eat opposing mass
+inside the nucleus too, so a plant there is reachable food — and the residual crystal-respawn
+clutter is the same accepted cost. It is called out because *it was not the change's motivating
+case*: the flag is a platform capability, so a clamp keyed on it moves every caller, including
+ones a branch never opened.
+
+### What Tollway seeds, and what it costs
+
+14 **NetworkSynced** flora per intensity (`Tollway Anchor Flora <Species>`, `SpreadElements` over
+that species' four canonical element assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of
+the intensity-1 court the retired posts used — reseeded every 20 s toward a floor and cap of 14.
+
+**Each intensity grows a different KIND of plant**, one per growth family, ordered by standing
+plant volume so the marker grows with the court:
+
+| I | Court | Species | Family | Prisms/plant | Leaf vol | Forest |
+|---|---|---|---|---|---|---|
+| 1 | 480u | Spire | `PhyllotacticFlora` | 40 (cell override) | 14.26 | 560 prisms / 7,986 vol |
+| 2 | 560u | Gyroid | `AssembledFlora` | 30 (own geometry) | 50.27 | 420 / 21,113 |
+| 3 | 640u | Cacti | `BranchingFlora` | 40 (cell override) | 75.00 | 560 / 42,000 |
+| 4 | 720u | Quasicrystal | `AssembledFlora` | 110 (own geometry) | 46.39 | 1,540 / 71,441 |
+
+A **lattice species keeps its own per-plant budget** — a gyroid octagon is 24 prisms around one
+crystal and a quasicrystal heart cell is one vertex's strut tree, so a cell-imposed number does not
+thin the plant, it truncates a shape mid-figure (§32.7/§36's "plant COUNT is the only lever", met
+from the arena side). Only Spire and Cacti take the cell's `MaxTotalSpawnedObjectsOverride`.
+
+- The standing forest is folded into BOTH bands of the cell's volume ladder rather than left for it
+  to discover, and **both ladders are per-intensity** — the four species differ in prism COUNT as
+  well as prism size, so one shared count backstop would be four times too tight at one end.
+  The generator asserts a forest never reaches half its own `RestlessEnterVolume` (worst case:
+  Quasicrystal at 30%), or the ladder would describe the scenery rather than the match.
+- **14 always-on colliders at every intensity** (one heart each) — that is what keeps the collider
+  budget flat while everything else about the field changes; the body prisms are LOD-cullable boxes.
+- A quarter of the anchors roll **Charge** and are therefore shielded (`Flora.ResolveShieldPeriod`),
+  which takes them out of the fauna targeting grids entirely — so the field thins unevenly as the
+  cleanup crew grazes it. Emergent, untested, and the levers if it goes wrong are the reseed
+  cadence, the population or the fauna exclusion fraction. **Never shield the anchors to protect
+  them** (§35: a shield reaches 1.5 × `leafSize`, and it is a different mode).
+- Tollway is the **first shipped user of `FloraNetworkSync`**. The mechanism was complete and
+  unexercised; the Scramble-cloned scene already carried the component.
+
+Full mode record: `_Scripts/Controller/Arcade/TOLLWAY.md` § "Anchors"; the vessel half is
+`R_VesselActions/SCARAB.md` §5.3.
+
+---
+
+## 43. A cell may say how big its prisms are (Sep 2026)
 
 **`SpawnProfileSO.FloraPrismScale`** — the third flora scalar, beside `FloraPopulationScale`
 (how many plants) and `FloraPlantBudgetScale` (how big each plant gets). It says **how big each
@@ -7368,7 +7486,7 @@ size written onto them is one number serving four cells. Same shape as the argum
 without restocking Menu_Main; this one cannot edit a shared species without moving all four
 intensities together.
 
-### 42.1 It is NOT a lifeform level
+### 43.1 It is NOT a lifeform level
 
 §40 retired per-individual growth in both its forms — the spawn-time roll and the earned level —
 because *"how big is this thing"* must not be a hidden per-individual **history** the player
@@ -7380,7 +7498,7 @@ species and element are never different sizes. It is applied **exactly once**, a
 something about *where you are*, which is exactly what a biome is for — the same class of
 statement as "this cell's tadpoles are twice as numerous".
 
-### 42.2 Where it applies, and why the ordering is load-bearing
+### 43.2 Where it applies, and why the ordering is load-bearing
 
 `Flora.Initialize` → `ApplyCellPrismScale(cell)`, **before `base.Initialize`**.
 
@@ -7395,7 +7513,7 @@ replacing it. Resolution lives on the **Cell** (`Cell.ResolveFloraPrismScale`), 
 config, per §29's rule — which spawner a biome runs is decided by an unrelated field, and flora
 has four producers.
 
-### 42.3 A LATTICE species is exempt — the reader `PrismSizeFixedByGrowthRule` was kept for
+### 43.3 A LATTICE species is exempt — the reader `PrismSizeFixedByGrowthRule` was kept for
 
 `Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) was deliberately kept in §40 **with
 its reader gone**, as a standing guard: a lattice's bond offsets are a measured table in absolute
@@ -7406,7 +7524,7 @@ That guard is now doing its job. The prism scale is the next thing that wanted t
 and it was gated on the guard **on arrival** rather than rediscovering the hazard. *That is what
 keeping a reader-less guard is for*, and it is the argument against deleting the next one.
 
-### 42.4 It lands on the volume ladder, and the exponent is PER FAMILY
+### 43.4 It lands on the volume ladder, and the exponent is PER FAMILY
 
 Volume is the spine, so a cell that scales its prisms **must re-derive its own
 `PhaseThresholds`**. The trap is that the exponent is not 3:
@@ -7425,7 +7543,7 @@ reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all struc
 still reaches its authored budget and still occupies its own volume. **Plants read as chunkier,
 not larger.**
 
-### 42.5 Collider budget: this scalar is free, and its sibling is not
+### 43.5 Collider budget: this scalar is free, and its sibling is not
 
 **`FloraPrismScale` costs nothing in colliders.** Prism count is untouched — the prisms are
 larger, not more numerous — so the active-collider envelope is identical at every scale. That is a
@@ -7442,7 +7560,7 @@ The general rule the pair states: **when a cell scales its flora, ask which of t
 it is reaching for, because only one of them is free.** Size is free, per-plant budget multiplies
 prisms without multiplying plants, and population multiplies both prisms and always-on crystals.
 
-### 42.6 The Rampage ladder it was built for
+### 43.6 The Rampage ladder it was built for
 
 Intensity 4 is the shipped, play-tested arena and nothing about it moves; 1 is the same arena
 bigger, denser and easier to hit. Flora **5.00 / 3.67 / 2.33 / 1.00×** (295 / 217 / 137 / 59
@@ -7470,7 +7588,7 @@ the player spawn ring moves where a scene opts in.
 
 Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four intensities".
 
-### 42.7 Open
+### 43.7 Open
 
 - **The phyllotactic leaf volumes are still estimates** (Spire 15.0, Rosette 17.0, Coral 10.6 —
   those species shape prisms by role, so there is no authored field to read). They now carry a

@@ -63,12 +63,13 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
         public const int DefaultHijackStealTarget = 750;
+        /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultTollwayTollTarget = 4;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
-
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -139,7 +140,12 @@ namespace CosmicShore.ScriptableObjects
                  "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
-
+        [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
+                 "threading a ring one of that domain's pilots planted, so the count is a " +
+                 "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
+                 "goal race: a ring must be planted, survive, and be threaded, which is " +
+                 "slower than shooting at a net and faster than tearing down a wreck.")]
+        [Min(0)] public int tollwayTollTarget = 8;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -156,7 +162,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int hijackStealTargetBuild = 750;
-
+        [Min(0)] public int tollwayTollTargetBuild = 8;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -274,6 +280,8 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
+        /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
         /// steal count, so teammates pool.
@@ -281,6 +289,13 @@ namespace CosmicShore.ScriptableObjects
         public int GetHijackStealTarget() =>
             hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget;
 
+        /// <summary>
+        /// Tollway toll target ("race to N" tolls collected): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultTollwayTollTarget"/>. Compared against a DOMAIN's summed
+        /// toll count, so teammates pool.
+        /// </summary>
+        public int GetTollwayTollTarget() =>
+            tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
@@ -304,6 +319,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
+                GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
             };
 
@@ -325,7 +341,8 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
-            hijackStealTarget == hijackStealTargetBuild;
+            hijackStealTarget == hijackStealTargetBuild &&
+            tollwayTollTarget == tollwayTollTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -344,6 +361,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
+            tollwayTollTarget = tollwayTollTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -363,6 +381,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
+            tollwayTollTargetBuild = tollwayTollTarget;
         }
     }
 }

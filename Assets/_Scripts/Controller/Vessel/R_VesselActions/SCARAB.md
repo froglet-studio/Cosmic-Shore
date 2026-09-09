@@ -44,6 +44,42 @@
 > 50,773 volume per spent switch, not the retired 840-volume interior fill, which was only ever a
 > transient blip on top.
 
+> **STATUS UPDATE 4 (2026-09-05): the SWITCH RECHARGES, and a pilot holds at most three
+> standing.** The ability was, in practice, single-use: `Scarab.prefab` authors the "Switch
+> Charges" meter with `resourceGainRate 0` and **one** charge banked, and the only refill wired
+> anywhere in the game (`ScarabSwitchChargeByCrystalEffect`, +0.334) sits on the four **ELEMENTAL**
+> crystal branches — while both Scarab arenas stock **OMNI** crystals, which the skimmer converts
+> into a ball before the hull can ever collect them. So a Scarab placed one switch per life and the
+> whole §5 economy ("crystals make balls, balls through switches make energy") could not close.
+> `PlaceSwitchActionSO.rechargeSecondsPerCharge` (**20 s**) is the fix and the bank now starts
+> **full** (`initialAmount` 0.34 → 1, i.e. 3 charges). Details, and why the cadence is authored on
+> the ACTION rather than on the meter's own gain rate, are in §5.2.
+
+> **STATUS UPDATE 5 (2026-09-05): the switch's "it PAYS" half is wired, and a THIRD mode is
+> built on it.** `ScarabSwitch` now raises **`OnThreaded`** (static, every peer, carrying
+> `PlacerName`/`PlacerDomain`/`RingRadius`) and keeps a **`Live`** roster in the
+> `AstroLeagueBall.Live` shape. Until now a threading raised the dais and told nobody: nothing
+> outside the class could observe the event this whole ability is built around, so §5's second
+> job of a switch — *it pays* — existed only in this document. It now pays twice: the placer gets
+> a switch charge back (`chargeRefundOnThread`, §5.2) and, in the mode below, a point.
+> **`GameModes.Tollway = 48`** (`_Scripts/Controller/Arcade/TOLLWAY.md`) is the Scarab-only ring
+> race that finally makes §5's best idea load-bearing — *any ball threading your ring pays you,
+> friend or enemy* — with the dais as the arena the scoring builds. It answers §15's "what else
+> could a second Scarab mode be" differently from Scramble: there the scoring surfaces are the
+> arena's and permanent, here they are the PLAYERS' and consumed.
+>
+> **Revised the same week:** unconstrained placement made that mode one move long (plant a ring in
+> front of your own ball, nudge it through, repeat), so the ability grew an ANCHOR RULE (§5.3) —
+> **a ring is grafted onto a living plant's heart** (`ScarabSwitchAnchors`), in every arena, plus
+> **`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate`,
+> which Tollway installs to REFUSE a press that found no anchor. It takes away the WHERE and leaves
+> the pilot the facing and the choice of plant. An arena with no flora in reach places free, and
+> nothing installs a resolver in freestyle or Scramble, so placement there is unchanged. The general
+> lesson is recorded in TOLLWAY.md and is worth carrying to any future place-a-structure ability:
+> *if a player picks both where a scoring surface goes and what goes through it, the two collapse
+> into one move — constrain one of them* — with its corollary from the second cut: *before a mode
+> builds a set of points of interest, check whether the platform already grows one.*
+
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
 > mirrored as a proposal row in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2. Every file/line
@@ -1259,7 +1295,9 @@ nothing in this mode changes a pilot's domain, so the two readings never share a
 allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
 
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
-softened: because an enemy ball threading your switch still pays *you*, switches are worth
+softened — and since 2026-09-05 it is finally LOAD-BEARING somewhere: `GameModes.Tollway = 48`
+scores exactly this event (`_Scripts/Controller/Arcade/TOLLWAY.md`), reading the payer off the
+SWITCH rather than the ball: because an enemy ball threading your switch still pays *you*, switches are worth
 placing where the enemy's balls will go, i.e. defensively, in front of your own goal. The
 defensive play and the economic play are the same play. A player who ignores defence starves.
 
@@ -1525,6 +1563,220 @@ dais simply do not exist, forever. The in-repo precedent for the fix is `NetElem
 peer reads its own interpolated transform.
 
 ---
+
+### 5.2 The cooldown — why the switch was single-use, and what refills it now
+
+**The defect.** `Scarab.prefab` authors two resource meters; the second, "Switch Charges", shipped
+with `resourceGainRate: 0` and `initialAmount: 0.34` — one charge out of the three-charge meter
+`PlaceSwitchActionSO.chargesPerFullMeter` authored *at the time* (a switch cost 1/3 of it; the
+bank is retired and both are **1** today, see "ONE RING AT A TIME" below — this paragraph describes
+the defect as it shipped, not the asset as it stands). The only thing in the
+project that ever put a charge back is `ScarabSwitchChargeByCrystalEffect` (+0.334), and
+`ScarabImpactorDataContainer` wires it into the four **elemental** crystal branches —
+`vesselMassCrystalEffects`, `vesselChargeCrystalEffects`, `vesselSpaceCrystalEffects`,
+`vesselTimeCrystalEffects` — and deliberately **not** into `vesselCrystalEffects`, the OMNI branch,
+which this vessel leaves empty because its skimmer forges omni crystals into balls before the hull
+reaches them (`ScarabBallForgeBySkimmerCrystalEffectSO`, §4.1).
+
+Both Scarab arenas stock omni crystals. Astro League's contested anchor crystal is omni; Scramble
+runs `CrystalCountMode.PlayerCountPlusExtra` on omni crystals *because forging balls is the mode*.
+Elemental crystals appear there only as fauna hearts, once the cleanup crew is released at
+Restless. So the refill path existed, was correctly authored, and was **unreachable in the two
+places the vessel is played** — the switch was a one-shot, and the closed loop §5 describes
+("crystals make balls, balls through switches make energy, energy makes balls") could never turn
+more than once.
+
+*Generalisation worth carrying: an ability refilled by a resource its own mode converts into
+something else has no refill at all. Check what the ARENA actually stocks, not what the container
+is wired to.*
+
+**The fix.** `PlaceSwitchActionSO.rechargeSecondsPerCharge`, applied by
+`PlaceSwitchActionExecutor.Update` as a smooth per-frame trickle. The meter starts full. The
+crystal grant is untouched and still stacks: a Scarab that collects elemental crystals re-arms
+faster than one that does not, which keeps the authored effect meaningful instead of retiring it.
+
+**ONE RING AT A TIME (2026-09-06).** The first cut of the recharge shipped a **three-charge bank
+on a 20 s cadence**, and that made the interesting decision *when to spend the stack*: a pilot who
+banked could answer a rival's ring by planting three of their own, and a ring you can replace every
+twenty seconds is a consumable rather than a commitment. Both halves are now **1** —
+`chargesPerFullMeter 1` (the meter IS the single charge) and `maxLiveSwitches 1` (one ring standing
+in the world) — on a **60 s** recharge. Every press is now a commitment to a *place*, which is the
+decision §5.3's anchor rule exists to create; without the ceiling the anchor rule only constrained
+*where* while the bank still let you cover three wheres at once.
+
+**What keeps the loop turning is the refund, and it does more work now than it did.**
+`chargeRefundOnThread` is 1 and the cost is the whole meter, so a ring somebody threads — anybody,
+which is §5's whole idea — re-arms you **instantly**, and only a ring nobody uses costs you the
+full minute. The recharge is therefore the price of a *bad* placement, not the cadence of a good
+one. The failure case to watch in play is the pilot whose ring nobody threads: they spend a minute
+with no scoring surface at all, and if that reads as being locked out rather than as having made a
+bad call, `rechargeSecondsPerCharge` is the lever (a vessel number, so it moves freestyle, Scramble
+and Tollway together). Tollway re-derived its toll target 8 → 4 in the same pass for exactly this
+reason — a toll is several times the work it was.
+
+**Why the cadence is authored on the ACTION, not on the meter.** `ResourceSystem` already has a
+per-second `resourceGainRate`, and setting it to `1/60` would have been a one-line asset edit. It
+was rejected for three reasons: the meter's gain coroutine ticks at **1 Hz**, so a charge would
+arrive up to a second after it was earned; the number would live on the vessel prefab, a long way
+from the `chargesPerFullMeter` cost it is the counterpart to, where nobody reading the ability will
+find it; and it would make the meter's fill a *second* author of a quantity the action already
+owns — the multiple-writers trap CLAUDE.md records against the Dolphin's boost. `resourceGainRate`
+stays **0** and the action SO is the single author of both the cost and the cadence.
+
+**Why it is not element-scaled.** Mass already owns this ability's one parameter (the ring
+aperture) and Charge already owns a cooldown (the cavitation blast, §3.4). Scaling the recharge on
+either would double-dip that element or put two unrelated meanings on one flower, so the cadence is
+a flat authored number — the same ruling §7 makes for `placementDistance`.
+
+**A pilot holds at most `maxLiveSwitches` (**1** since 2026-09-06) unspent switches.** An unstruck
+switch lives for the whole match by design — nothing expires, nothing is culled — which was harmless
+when a pilot could place one and is not harmless when they can place one every twenty seconds
+forever. At the shipped ceiling of 1 the rule below fires on the pilot's every second placement, so
+it is the common path rather than the edge case it was written as. Freestyle makes
+that literal: there is no match end, so an unbounded placer would silt the lava lamp with rings. So
+placing past the ceiling **retires that pilot's oldest standing ring**
+(`PlaceSwitchActionExecutor.RegisterAndEnforceCeiling` → `ScarabSwitch.Retire`). Three properties
+make that legal rather than a timed cull:
+
+- The removal is caused by **this placement** — a player putting one switch too many into the world
+  — never by a clock. It is the same argument, and the same shape, as the ball's cell overload
+  (`AstroLeagueBall.DetonateAllLooseInCellServer`, §4.6).
+- **Nothing conserved is lost.** A standing switch is a generated ring mesh in the domain prism
+  material (`ToyFactory.AddSwitchRing` → `AddRingBody`), not prisms — the ring has carried no prism
+  mass since the interior fill was retired (STATUS UPDATE 3). The dais is the only prism mass a
+  switch ever creates, and a retired switch pays **no dais**, because nothing threaded it.
+- **Continuity of existence still applies**: the ring shrinks away over `retireSeconds` (0.5 s)
+  rather than blinking out.
+
+**What this does to the volume ladders — nothing, and here is why.** §8's Astro League ladder and
+Scramble's are both derived from **spent** switches (50,773 volume per dais), not placed ones, and
+a switch only pays out when a ball threads its mouth. The recharge raises how many switches can be
+*standing*, which costs no volume at all; it raises the ceiling on daises only to the extent that
+players actually thread more of them. The ladders are therefore left as authored, and the first
+playtest question is whether Restless now arrives sooner than §8 intends.
+
+**Known limitation, pre-existing and not fixed here: a switch can be missing on a third peer.**
+Placement rides the action handler's `SendButtonPressed_ServerRpc` → `ClientRpc`, so `PlaceSwitch`
+— gate, spend and build — runs on **every** peer against that peer's own meter, and the peers only
+agree a switch exists if their meters agree. The recharge is symmetric (every peer accumulates the
+same elapsed seconds) and the spend is symmetric (every peer performs it), so this change makes the
+meters agree *more* than they did. The remaining asymmetry is the crystal grant: an elemental
+crystal resolves server-side and its vessel effects are replayed only onto the **owner**
+(`CrystalManager.ReplayVesselCrystalEffects`), so in a match with three or more machines a third
+peer can be a charge short and refuse a switch the placer built. Gating only the owner would be
+**worse**, not better: the owner sends the RPC and then executes it from the ClientRpc like everyone
+else, so an owner-side refusal arrives too late to recall the switch the other peers have already
+built, turning a missing ring into a ghost one. The real fix is a can-this-action-run veto on
+`ShipActionSO` consulted in `R_VesselActionHandler.OnButtonPressed`, **before** the RPC goes out —
+a small shared-handler addition that would serve every future costed ability, and a deliberate
+follow-up rather than a scope creep on this one.
+
+| knob | asset | shipped | what it does |
+|---|---|---|---|
+| `rechargeSecondsPerCharge` | `PlaceSwitchAction.asset` | **60** | seconds to earn the charge back; 0 restores crystal-only refills |
+| `chargesPerFullMeter` | `PlaceSwitchAction.asset` | **1** | charges the meter holds; cost = the WHOLE meter |
+| `maxLiveSwitches` | `PlaceSwitchAction.asset` | **1** | unspent switches one pilot may have standing |
+| `chargeRefundOnThread` | `PlaceSwitchAction.asset` | **1** | a threaded ring refunds the whole meter, so a used ring is free |
+| `retireSeconds` | `PlaceSwitchAction.asset` | **0.5** | how long a retired ring takes to shrink away |
+| `initialAmount` (Switch Charges) | `Scarab.prefab` | **1** (was 0.34) | the bank starts full |
+| `anchorReach` | `PlaceSwitchAction.asset` | **70** | how far off the flight path a plant's heart may sit and still anchor the ring (§5.3); 0 disables anchoring |
+
+**The recharge is DRAWN on the Mass card.** `ScarabHUDController` pushes
+`VesselHUDView.SetAbilityCooldown(Element.Mass, remaining01)` off the same `OnResourceChanged` event
+it was already subscribed to, so the fleet's clockwise depleting veil sweeps over the switch icon
+while the bank is empty and clears — with the lockup's ready flash — the instant the first charge
+lands. No polling and no second clock: the meter IS the cooldown.
+
+The two readouts on that card answer different questions and it matters which is which. The **pip
+count** says how many rings the pilot HOLDS; the **veil** says whether the button does anything if
+pressed right now, so it is clear whenever ≥1 charge is banked even though the meter is still
+filling toward the next. At the shipped `chargesPerFullMeter 1` those two collapse onto the same
+moment and the veil carries the whole answer — but the split is kept rather than simplified away,
+because the count and the readiness are different questions the day anything reintroduces a bank.
+`ScarabHUDController.switchChargesPerFullMeter` must track the action SO (it is authored on
+`Scarab.prefab`, so the C# default alone is not enough — an instance override beats the class).
+That is the fleet's meaning of a veil and deliberately not "progress toward
+the next charge" — a tank of three cannot say both on one dial (the split CLAUDE.md records for the
+Sparrow's rocket bay), and a veil drawn over a button that works is the one reading a player cannot
+recover from.
+
+⚠ **A field added to an existing `.asset` deserializes as ZERO**, and for the recharge zero means
+*disabled* — which is exactly the state this section exists to end. **`anchorReach` is the second
+field with that hazard and the same answer**: zero disables anchoring, so a Scarab would go back to
+planting rings wherever the nose points and Tollway would refuse every press. All five new fields
+are written into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly;
+`PlaceSwitchActionSO.OnValidate` repairs the two where zero is nonsense (a zero ceiling would refuse
+every placement, a zero retire time would make a ring vanish) but deliberately leaves the recharge
+and the reach alone, because zero is a real authored choice for both and `OnValidate` does not run
+in a build.
+
+### 5.3 A ring is grafted onto a LIVING PLANT'S HEART
+
+**The vessel snaps its switch onto a flora crystal.** `ScarabSwitchAnchors.TryResolve` finds the
+nearest free plant heart within `PlaceSwitchActionSO.anchorReach` (70u) of the SEGMENT from the
+ship to the projected ring centre, and `PlaceSwitchActionExecutor` plants there instead of at the
+projected point. It happens in **every arena a Scarab flies in**, with nothing wired: an arena with
+no flora in reach places free, exactly as before, so freestyle and Scarab Scramble — neither of
+which authors any flora — are byte-for-byte unchanged.
+
+It exists because **placing a ring anywhere is degenerate wherever a ring scores**. With placement
+unconstrained and any ball paying the ring's owner, Tollway was one move — plant a ring in front of
+your own ball, nudge it through, repeat — and a minigame with no shot to get better at is not
+replayable. Anchoring takes away the WHERE and leaves the pilot the facing (still the course they
+flew in on) and the choice of plant.
+
+**Why the anchor is a flora crystal, and why that is a VESSEL rule.** The first shipped version of
+this was a mode-owned socket system — Tollway built, replicated, drew and tested its own seeded
+field of emblems. It worked and it was the wrong owner. A flora crystal is the same affordance the
+ecology already produces everywhere, and it arrives with four properties a bespoke socket had to be
+given by hand: it is **placed by the food web** (so the set is alive — grazeable, and re-seeded);
+it is **already drawn** and already a thing a pilot flies at; it is **already replicable**
+(`FloraConfigurationSO.NetworkSynced`); and it is a **joustable heart**, so killing an anchor to
+deny it — and taking an element level for doing so — is counter-play nobody had to design. The
+general rule: *before a mode builds a set of points of interest, check whether the platform already
+grows one.*
+
+Two properties of the geometry are load-bearing:
+
+- **Gate the PATH, not the projected point.** The centre is `placementDistance` (150u) AHEAD of the
+  nose, so a proximity test on that point is an ANNULUS — admitted 80–220u out, refused at every
+  range inside 80, i.e. point-blank, which is exactly where a pilot following a HUD arrow ends up.
+  That shipped once and read as a dead button. `FloraHeartRegistry.DistanceToSegment` is the fix
+  and `ScarabSwitchAnchorGeometryTests` is the guard.
+- **The anchor set must agree across peers if a mode RELIES on it.** A press re-executes on every
+  peer and nothing about a placed switch is replicated, so snapping to a discrete set is more
+  forgiving than the continuous placement it replaces — but only if the plants agree, and flora
+  are per-peer by default. A mode whose scoring depends on the anchors sets `NetworkSynced` on the
+  species it seeds (Tollway is the first shipped user of `FloraNetworkSync`). Where the snap is
+  only an assist, a disagreement costs nothing.
+
+#### `PlacementResolver` — a mode may still say WHERE
+
+`PlaceSwitchActionExecutor.PlacementResolver` is a static, null-by-default hook a mode installs to
+veto or relocate a placement. It now receives the vessel's own `anchored` answer, so the *finding*
+is the vessel's and only the *refusal* is the mode's — Tollway's whole resolver is
+`if (anchored) return true;` plus a toast. Nothing installs one in freestyle or in Scramble.
+
+Three properties are the contract, and a second mode that installs one inherits all three:
+
+- **It is the sibling of `ScarabBallForge.ForgeGate`**, and makes the same argument: a rule about
+  how a MODE uses an ability belongs to the mode. Put it on the vessel and every other arena
+  inherits it. (The ANCHORING is on the vessel precisely because it is not such a rule — it is how
+  this hull places a structure, in every arena.)
+- **It must be a pure function of replicated state.** It is consulted on every peer, because a
+  press re-executes on every peer through the action handler's ClientRpc — so a resolver that
+  answered differently on two machines would build a switch on one and not the other,
+  *permanently*, since nothing about a placed switch is replicated. Tollway's reads only
+  `anchored`, itself a function of the replicated flora slot list and `ScarabSwitch.Live`;
+  anything that lags (a ball's position, a velocity) has no business in one.
+- **It is consulted BEFORE the charge is spent**, so a refusal costs the pilot nothing but the
+  press — the same shape as the existing no-charge refusal — and its installer must remove it
+  identity-guarded on despawn, because a leaked resolver silently refuses every switch in the
+  next scene.
+
+The centre may MOVE (the anchor snap puts it exactly on the heart, which is also what makes
+occupancy an exact equality test rather than a fuzzy proximity one) but the AXIS never does: which
+way the mouth faces stays the placer's decision, in every mode.
 
 ## 6. The energy economy and balance
 

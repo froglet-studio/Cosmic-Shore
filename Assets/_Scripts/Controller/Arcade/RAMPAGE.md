@@ -363,7 +363,7 @@ applied once, in `Flora.Initialize`, **before** `base.Initialize` — which bind
 prefab's own seed prism, so applying it later would leave that one prism at the authored size.
 A **lattice** species is exempt via `Flora.PrismSizeFixedByGrowthRule`; Rampage has none, but that
 guard is why the next cell to try this cannot break the gyroid. Full record:
-`Docs/ECOSYSTEM.md §42`.
+`Docs/ECOSYSTEM.md §43`.
 
 `FaunaPopulationScale` is a **platform** capability, the twin of the flora scalars: it multiplies
 every species' `InitialSpawnCount`, `PopulationSize` **and `MaxLivePopulation`**. Rampage is why

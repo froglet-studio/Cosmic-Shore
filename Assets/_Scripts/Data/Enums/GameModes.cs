@@ -124,8 +124,17 @@ namespace CosmicShore.Data
         // CrystalManager.CrystalPlacementMode.ApproachLanes) and the mode itself is in git.
         // 47 IS RESERVED FOREVER, exactly like 7 and 31 - saved selections still carry it.
 
+        // Tollway (48): the Scarab-only ring race, built on the one Scarab idea no mode had
+        // used - a switch pays its PLACER when ANY ball threads it, friend or enemy. Plant
+        // rings in the court's own TOLL POSTS (unconstrained placement made the mode one move
+        // long); every ball that threads one pays the pilot who planted it and raises
+        // a 255-prism scarab-wing monument on the spot, so the arena is built by the scoring.
+        // Rings are consumed when they pay and must be replanted. First DOMAIN to the toll
+        // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.
+        Tollway = 48,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 45) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 46) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

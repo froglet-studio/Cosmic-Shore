@@ -51,7 +51,7 @@ MIGRATED_SCENES = [
     "MinigameHijack", "MinigameJoust_Gameplay", "MinigamePeelTheCage",
     "MinigameRampage", "MinigameSalvo", "MinigameScarabScramble",
     "MinigameScurryMultiplayer_Gameplay", "MinigameSkimRace", "MinigameSwitchback",
-    "MinigameWildlifeLiberation",
+    "MinigameTollway", "MinigameWildlifeLiberation",
 ]
 
 # Overrides the gate tolerates on a migrated scene's canvas instance. Root placement and
