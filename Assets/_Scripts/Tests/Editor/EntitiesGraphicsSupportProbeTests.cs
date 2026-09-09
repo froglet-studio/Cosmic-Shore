@@ -1,7 +1,7 @@
 #if UNITY_EDITOR
 using NUnit.Framework;
 using Unity.Entities;
-using CosmicShore.Gameplay;
+using CosmicShore.ECS;
 
 namespace CosmicShore.Tests
 {

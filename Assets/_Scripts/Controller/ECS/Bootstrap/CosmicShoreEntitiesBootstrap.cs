@@ -1,7 +1,7 @@
 using Unity.Entities;
 using UnityEngine;
 
-namespace CosmicShore.Gameplay
+namespace CosmicShore.ECS
 {
     /// <summary>
     /// The project's DOTS world bootstrap. Its ONE job is to keep Entities Graphics from being

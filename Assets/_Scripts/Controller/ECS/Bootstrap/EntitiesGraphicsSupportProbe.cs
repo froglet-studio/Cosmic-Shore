@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-namespace CosmicShore.Gameplay
+namespace CosmicShore.ECS
 {
     /// <summary>
     /// Answers ONE question before the DOTS default world is created: can Entities Graphics
