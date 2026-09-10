@@ -89,6 +89,12 @@ namespace CosmicShore.UI
             // layouts share almost nothing, and a modal type is what ScreenSwitcher unwinds by,
             // so gamepad B out of the toy lands back on the grid instead of closing the Toy Box.
             TOYBOX_CONFIGURE = 16,
+
+            // The Arena's launch window. Its own modal TYPE for the reason the Maelstrom's is:
+            // the window is separate (it carries the vessel picker an arcade card has no use
+            // for), the authority is not - it is still driven by the ONE ArcadeGameConfigureModal
+            // through an ArenaLaunchPanel whose HostModal is this window.
+            ARENA_GAME_CONFIGURE = 17,
         }
 
         [System.Serializable]
@@ -147,6 +153,16 @@ namespace CosmicShore.UI
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
+        [Header("Home Hub Buttons")]
+        [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
+                 "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
+                 "The buttons' shared parent gets a CanvasGroup (added if missing) - no scene wiring.")]
+        [SerializeField] private float hubButtonsFadeSeconds = 0.2f;
+        [Tooltip("Objects that stand down WITH the hub buttons - the HOME header's avatar and username " +
+                 "today. Each gets a CanvasGroup (added if missing) and follows the same fade, so a " +
+                 "window never opens over a live profile chip. Empty entries are ignored.")]
+        [SerializeField] private List<GameObject> hubCompanions = new();
+
         [Header("Gamepad Freestyle Toggle")]
         [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
         [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
@@ -157,6 +173,12 @@ namespace CosmicShore.UI
         private Coroutine navigateCoroutine;
         private bool _isInFreestyle;
         private float _freestyleToggleCooldownUntil;
+
+        // The hub row's CanvasGroup (the four MenuHubButtons' shared parent), every companion's,
+        // and their one shared fade.
+        private readonly List<CanvasGroup> _hubGroups = new();
+        private bool _hubGroupsResolved;
+        private Coroutine _hubButtonsFade;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -238,8 +260,102 @@ namespace CosmicShore.UI
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
             UpdateScreensInteractable();
             UpdateModalStackInteractable();
+            UpdateHubButtonsVisibility();
             Refocus();
         }
+
+        #region Home hub buttons
+
+        /// <summary>
+        /// The four hub buttons live under ONE parent on the HOME screen; that parent's
+        /// CanvasGroup (added here if the scene authored none) is what the gate drives. Found by
+        /// component rather than wired, so a hub entry added or moved in the scene is covered.
+        /// The <see cref="hubCompanions"/> (avatar, username) join the same list, so one fade
+        /// moves the whole header.
+        /// </summary>
+        private void ResolveHubButtonsGroup()
+        {
+            if (_hubGroupsResolved) return;
+            _hubGroupsResolved = true;
+            _hubGroups.Clear();
+
+            var hub = GetComponentInChildren<MenuHubButton>(true);
+            if (hub && hub.transform.parent)
+                _hubGroups.Add(EnsureGroup(hub.transform.parent.gameObject));
+
+            foreach (var companion in hubCompanions)
+                if (companion) _hubGroups.Add(EnsureGroup(companion));
+        }
+
+        private static CanvasGroup EnsureGroup(GameObject go)
+        {
+            if (!go.TryGetComponent<CanvasGroup>(out var cg))
+                cg = go.AddComponent<CanvasGroup>();
+            return cg;
+        }
+
+        /// <summary>
+        /// The hub buttons are visible only with NO modal open, on HOME, outside freestyle - they
+        /// fade out the moment any window opens over them and come back when the last one
+        /// closes. Interactable / raycasts follow immediately so a fading-out button cannot take
+        /// a click through the incoming window. Freestyle hides the whole screens group itself,
+        /// so this never has to fight that state.
+        /// </summary>
+        private void UpdateHubButtonsVisibility()
+        {
+            ResolveHubButtonsGroup();
+            if (_hubGroups.Count == 0) return;
+
+            bool visible = activeModalStack.Count == 0
+                        && !InFreestyle
+                        && GetScreenIdForIndex(currentScreen) == MenuScreens.HOME;
+
+            foreach (var group in _hubGroups)
+            {
+                if (!group) continue;
+                group.interactable = visible;
+                group.blocksRaycasts = visible;
+            }
+
+            float target = visible ? 1f : 0f;
+            if (_hubButtonsFade != null)
+            {
+                StopCoroutine(_hubButtonsFade);
+                _hubButtonsFade = null;
+            }
+
+            if (hubButtonsFadeSeconds <= 0f || !isActiveAndEnabled)
+            {
+                SetHubAlpha(target);
+                return;
+            }
+            _hubButtonsFade = StartCoroutine(FadeHubButtons(target));
+        }
+
+        private void SetHubAlpha(float alpha)
+        {
+            foreach (var group in _hubGroups)
+                if (group) group.alpha = alpha;
+        }
+
+        // Unscaled: the menu sits at timeScale 0 on every non-HOME screen and under most modals.
+        // Every group fades from the ROW's current alpha, so a companion added mid-fade lands
+        // with the row rather than a beat behind it.
+        private IEnumerator FadeHubButtons(float target)
+        {
+            float from = _hubGroups[0] ? _hubGroups[0].alpha : 1f - target;
+            float elapsed = 0f;
+            while (elapsed < hubButtonsFadeSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetHubAlpha(Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / hubButtonsFadeSeconds)));
+                yield return null;
+            }
+            SetHubAlpha(target);
+            _hubButtonsFade = null;
+        }
+
+        #endregion
 
         #region Gamepad focus
 
@@ -459,6 +575,7 @@ namespace CosmicShore.UI
             CacheScreenComponents();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
+            UpdateHubButtonsVisibility();
 
             panelLocation = transform.position;
 
@@ -500,7 +617,8 @@ namespace CosmicShore.UI
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
-                          or ModalWindows.ARCADE)
+                          or ModalWindows.ARCADE
+                          or ModalWindows.ARENA_GAME_CONFIGURE)
                 yield break;
 
             foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))
@@ -845,6 +963,18 @@ namespace CosmicShore.UI
             NavigateTo(GetIndexForScreen(MenuScreens.ARK));
         }
 
+        /// <summary>
+        /// The Arena counterpart of <see cref="FollowHostToArcadeScreen"/>: the host opened an
+        /// ARENA card, so the guest's app shell shows the Arena grid under the launch window the
+        /// same way the arcade screen sits under an arcade card. Host-driven only - nothing on the
+        /// guest's own UI calls it.
+        /// </summary>
+        public void FollowHostToArenaWindow()
+        {
+            if (ModalIsActive(ModalWindows.ARENA)) return;
+            OpenModal(ModalWindows.ARENA);
+        }
+
         bool IsHostOrSolo()
         {
             if (hostConnectionData == null) return true;
@@ -936,6 +1066,7 @@ namespace CosmicShore.UI
             currentScreen = ScreenIndex;
             SetReturnToScreen(screenId);
             UpdateNavBar(currentScreen);
+            UpdateHubButtonsVisibility();
             Refocus();
         }
 
@@ -1169,6 +1300,7 @@ namespace CosmicShore.UI
             // Hide NavBar and Screens via CanvasGroup
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
+            UpdateHubButtonsVisibility();
 
             ApplyFreestyleInputGate(true);
         }
@@ -1240,6 +1372,7 @@ namespace CosmicShore.UI
             // Show NavBar and Screens
             SetNavBarVisible(true);
             SetCanvasGroupVisible(screensCanvasGroup, true);
+            UpdateHubButtonsVisibility();
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))

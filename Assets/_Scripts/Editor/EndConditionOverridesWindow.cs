@@ -94,6 +94,10 @@ namespace CosmicShore.Editor
                 "  • Switchback: gates in the course - both the length a pilot must thread " +
                 "and the number of rings laid, measured against a domain's LEAD RUNNER, default " +
                 EndConditionOverridesSO.DefaultSwitchbackGateTarget + ".\n" +
+                "  • Breakwater: stations in the course - both the length a pilot must thread " +
+                "and the number of breakwaters laid, measured against a domain's LEAD RUNNER. " +
+                "Also sizes the arena, so raising it adds mass as well as distance. Default " +
+                EndConditionOverridesSO.DefaultBreakwaterStationTarget + ".\n" +
                 "  • Hijack: prisms a DOMAIN must STEAL to win (race to N) - ownership flips, " +
                 "not destruction, so the same prism can pay both sides all match. Default " +
                 EndConditionOverridesSO.DefaultHijackStealTarget + ".\n" +
@@ -119,6 +123,7 @@ namespace CosmicShore.Editor
             int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
             int sv  = Mathf.Max(0, EditorGUILayout.IntField("Salvo - Prism Target", _config.salvoPrismTarget));
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
+            int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
             int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
             if (EditorGUI.EndChangeCheck())
@@ -137,6 +142,7 @@ namespace CosmicShore.Editor
                     _config.scarabScrambleGoalTarget = ss;
                     _config.salvoPrismTarget = sv;
                     _config.switchbackGateTarget = sw;
+                    _config.breakwaterStationTarget = bw;
                     _config.hijackStealTarget = hj;
                     _config.tollwayTollTarget = tw;
                 });
@@ -157,6 +163,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
             EditorGUILayout.LabelField("Salvo", sv > 0 ? sv.ToString() : EndConditionOverridesSO.DefaultSalvoPrismTarget + " (default)");
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
+            EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
             EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
             EditorGUI.indentLevel--;
@@ -201,6 +208,7 @@ namespace CosmicShore.Editor
                    "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget) + "\n" +
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
+                   "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
                    "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget);
 

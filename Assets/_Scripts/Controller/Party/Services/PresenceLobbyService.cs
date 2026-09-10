@@ -70,6 +70,7 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
         private const string JOINED_PARTY_KEY         = "joined_party";
         private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
+        private const string PARTY_SESSION_KEY        = "partySession";
 
         /// <summary>
         /// After creating a lobby, wait this long before re-querying to detect
@@ -354,6 +355,9 @@ namespace CosmicShore.Gameplay
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
+                // Seeded empty like every stateful key; the live overlay below fills it in.
+                { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
 
             // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby

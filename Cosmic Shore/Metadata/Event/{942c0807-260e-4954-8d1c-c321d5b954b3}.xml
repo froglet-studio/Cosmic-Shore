@@ -72,6 +72,9 @@
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{486bf883-8f4c-48bf-bb98-6f691e62da85}">
+		<property name="maxVoices">
+			<value>1</value>
+		</property>
 		<property name="maximumDistance">
 			<value>10000</value>
 		</property>
@@ -202,7 +205,7 @@
 	</object>
 	<object class="EventMixerMaster" id="{ce50e650-8936-456c-97e6-6b6e7f328d0d}">
 		<property name="volume">
-			<value>-4.5</value>
+			<value>-9.5</value>
 		</property>
 		<relationship name="effectChain">
 			<destination>{0e902ee6-f4ff-4797-a868-39848d74d4bd}</destination>
@@ -652,7 +655,11 @@
 			<destination>{df6caa3f-8534-421d-b8c1-e6df00cf6c46}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{18322dc0-053f-4349-ae73-06e1102033b8}" />
+	<object class="MixerBusPanner" id="{18322dc0-053f-4349-ae73-06e1102033b8}">
+		<property name="stereoPan">
+			<value>-60</value>
+		</property>
+	</object>
 	<object class="ParameterProperty" id="{1b53c073-89d8-4226-a294-50c5d42e2905}">
 		<relationship name="parameter">
 			<destination>{87838513-ca79-45c9-84d0-9cfae4f95d95}</destination>
@@ -664,7 +671,11 @@
 			<destination>{d978e383-f3ed-4009-85ac-496ec3acdc62}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{abc69158-40f6-48df-91b2-14b8ab8a254a}" />
+	<object class="MixerBusPanner" id="{abc69158-40f6-48df-91b2-14b8ab8a254a}">
+		<property name="stereoPan">
+			<value>66</value>
+		</property>
+	</object>
 	<object class="ParameterProperty" id="{b1d99195-fa09-4dec-858e-321ee75782d3}">
 		<relationship name="parameter">
 			<destination>{3ffb76d9-ec48-4754-906f-f34bcb18be3d}</destination>

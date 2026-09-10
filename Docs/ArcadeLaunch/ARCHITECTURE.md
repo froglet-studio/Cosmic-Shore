@@ -6,7 +6,8 @@ hull's controls, the roster, and Start.
 
 The two-screen flow it replaces — configure, then pick a vessel — existed because a card could
 be flown in several hulls. **Every arcade mode locks to one now**, so the second screen had
-nothing left to ask and the first had no reason to be a separate step.
+nothing left to ask and the first had no reason to be a separate step. (The ARENA's cards do
+not lock, and their panel asks the one question the second screen used to — see §1.1.)
 
 ---
 
@@ -16,6 +17,7 @@ nothing left to ask and the first had no reason to be a separate step.
 |---|---|---|---|---|
 | `MinigameLaunchPanel` | every card except the meta-mode | the live window | the hull's four abilities | — |
 | `MaelstromLaunchPanel` | `GameModes.Maelstrom` only | a clip | none | the pool list |
+| `ArenaLaunchPanel` | the cards in `ArenaGames` | the live window | none | a vessel carousel + SELECT VESSEL |
 
 **The Maelstrom is not one of the arcade grid's cards.** It draws the OTHER modes, so listing it
 beside them invites "play this one" when it means "play several of these"; `ArcadeExploreView`
@@ -29,13 +31,25 @@ Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
   which is why `ModePreviewLibrarySO` excludes Maelstrom in code. `ModeVideoView` is not the
   return of the deleted video fallback (`Docs/ModePreview/ARCHITECTURE.md`): every *playable*
   mode still previews live, and Maelstrom is the one card structurally unable to.
-- **No controls block.** The hull changes every round — four of the pool's seven modes are
+- **No controls block.** The hull changes every round — fifteen of the pool's sixteen modes are
   vessel-locked — so there is no one set of controls to teach.
 - **A pool list instead**, because the question this card actually raises is "what am I going
   to end up playing?", and the intensity answers it differently.
 
 A card finds its panel by asking (`ArcadeLaunchPanel.Handles`), not by the modal switching on a
 mode enum, so a third kind of card is a new subclass and one entry in the modal's list.
+
+### 1.1 The third panel: the Arena's
+
+`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush) can be flown in
+more than one hull, so the panel carries a vessel carousel and a SELECT VESSEL button, and
+**Start is dead until a hull is confirmed** — the modal's `RefreshStartAvailability` is the one
+place Start's availability is decided, so this gate and the weekly-challenge lock cannot disagree.
+It lives in its own window (`ModalWindows.ARENA_GAME_CONFIGURE`) exactly as the Maelstrom's does,
+must sit FIRST in `launchPanels` because `MinigameLaunchPanel` accepts every non-Maelstrom card,
+and answers `Handles` from the `ArenaGames` roster so moving a card between the rosters moves it
+between windows with no code. Rosters and the per-session confirmation rule:
+`Docs/HomeHub/ARCHITECTURE.md` §3.
 
 ## 2. The panel owns its widgets; the modal owns the decisions
 
@@ -577,7 +591,7 @@ instead of splitting it across two files.
 | Piece | Location | Job |
 |---|---|---|
 | `ArcadeLaunchPanel` | `_Scripts/UI/View/ArcadeLaunch/` | The contract: which controls a panel exposes, what the modal may ask of it |
-| `MinigameLaunchPanel` / `MaelstromLaunchPanel` | same | The two concrete panels |
+| `MinigameLaunchPanel` / `MaelstromLaunchPanel` / `ArenaLaunchPanel` | same | The three concrete panels |
 | `VesselControlsPanel` / `VesselControlRow` | same | The hull's abilities and their controls, derived |
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |

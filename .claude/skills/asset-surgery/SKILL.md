@@ -587,6 +587,45 @@ hand-written Unity-YAML regex is a claim about your regex, not about the file.*
 Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
 value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
 
+### Technique: when a doc states a RELATIONSHIP between assets, check it as set algebra
+
+A prose line like *"`ArcadeGames` holds the master minus the arena cards"* is not commentary —
+it is a **testable invariant over three asset files**, and encoding it turns a vague report
+("two of the new games aren't showing up") into an exact answer in one pass. Parse each list's
+entry guids, then assert the relation:
+
+```python
+master, arena, arcade = entries("OrganicRematchGames"), entries("ArenaGames"), entries("ArcadeGames")
+assert master - arena == arcade, sorted(name(g) for g in (master - arena) ^ arcade)
+```
+
+Two things make this worth reaching for before reading any code. It finds the omission **and**
+its exact membership — the symmetric difference names the cards — and it hands you a gate for
+free, because the same three lines run in a `Tools/Build/` checker afterwards. This session found
+Breakwater and Skein that way in a single comparison, after the modes had shipped complete,
+launchable and drawn by no screen with nothing complaining.
+
+**Then decide report-vs-fail deliberately.** A set relation that a human may legitimately
+violate (withholding a finished mode from a grid while keeping it launchable) must REPORT and
+name the card, not fail the build — a hard gate that is wrong about a legitimate state gets
+disabled, and then it guards nothing. And per §2.5's rule: **negative-control it** — pull one
+entry back out and watch it name that entry — because a set check that happens to be vacuous
+(an empty master, a path typo resolving to no file) passes exactly as quietly as a clean one.
+
+### Trap: an asset list's LENGTH is not what the screen draws
+
+The list is the roster; the VIEW between it and the screen is free to filter and reorder, so
+grid arithmetic read off the asset is wrong by however much the view does. `ArcadeExploreView`
+drops one card (the meta-mode, which has its own window) and sorts the rest ALPHABETICALLY by
+display name, so a 17-card roster draws 16 cards and a card's slot has nothing to do with its
+position in the file — a mode added last can land in row 1 slot 1 (`Breakwater` does). Reading
+the roster and reporting "17 cards, 5 rows" was wrong twice over: wrong count, wrong rows.
+
+Read the populate method, not the asset, for anything positional — and where the layout is
+grown at runtime (a cloned overflow row), get the authored capacity by walking the scene's own
+children rather than assuming the roster fits. Same family as the trap above: **an assertion
+about what an asset produces has to be read from whoever CONSUMES it.**
+
 ### Trap: a multi-document regex silently spans documents and returns a plausible wrong answer
 
 Unity YAML is a stream of `--- !u!<type> &<id>` documents. A regex like
@@ -1483,6 +1522,41 @@ signature changed. Those are only found by compiling the real file, or by Unity.
 So: after any patch that ADDS a member to a large existing class, grep that class for the
 member's own name and confirm exactly one declaration. This session shipped a duplicate field
 that the harness compiled clean and Unity rejected.
+
+### Trap: an UNRESOLVED BASE TYPE makes the compile blind to the whole class body
+
+The filtered-noise compile (§4, and the trap above) is weaker than it looks the moment inheritance
+is involved: **Roslyn abandons class-body binding when the base type is unresolved.** So for
+`class Foo : SomethingInAssembly-CSharp`, an `override` naming a member the base does not declare,
+a missing implementation of an abstract member, or a signature that no longer matches is reported
+as *nothing at all* — the same blind spot CLAUDE.md records for enum members inside serialized
+field defaults. A refactor that reparents a class onto a shared base therefore gets **zero**
+coverage from this harness, however clean the run looks.
+
+When you cannot resolve the base (you usually cannot — it is in the monolith), audit the fit
+TEXTUALLY and make the audit a gate:
+
+- every `abstract` member of the base has a matching `override` in the subclass;
+- every `override` in the subclass names a member the base declares `abstract` or `virtual`;
+- any member the design depends on is present on both sides.
+
+Regex both sides for `\b(public|protected|internal)\s+(abstract|virtual|override)\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]`,
+which catches expression-bodied properties and methods alike, and **negative-control it in both
+directions** (delete an implementation; add an override of a member that does not exist). A session
+that reparented a 1,255-line controller onto a shared base had this as its only out-of-editor
+safety net.
+
+### Trap: a harness that compiles COPIES stops being a gate the moment the tree moves
+
+Distinct from the trap above, and more embarrassing: a `.csproj` that lists files **copied into the
+scratch directory** proves something about the copies. They drift the instant you edit the tree, and
+"I widened the harness" then widens a set of stale files. A session shipped a compile error twice in
+a row this way, the second time immediately after saying the harness had been widened.
+
+Point `<Compile Include>` at the **real paths** — `/repo/Assets/.../Thing.cs` — so the gate cannot
+describe anything but what is about to be committed. Stubs (Unity attributes, `Mathf`, NUnit's
+`Assert`) stay local; the code under test never does. The same applies to a test runner: run the
+SHIPPED test file, not a copy of it, or `84/84 passing` is a claim about a snapshot.
 
 ### Trap: a stub-reference compile is BLIND to `System`/`UnityEngine` name collisions
 

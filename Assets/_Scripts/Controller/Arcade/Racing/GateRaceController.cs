@@ -77,6 +77,40 @@ namespace CosmicShore.Gameplay
                  "reported course is reproduced.")]
         [SerializeField] protected int courseSeed;
 
+        [Tooltip("How long the server keeps re-trying a course build that could not run yet. " +
+                 "A course built from PURE GEOMETRY (Switchback, Headlong) either works on the " +
+                 "first frame or never, and spends this on nothing; a course built from SCENE " +
+                 "state (Skein reads the cable off the cell config) needs it, because that " +
+                 "state does not exist at OnNetworkSpawn. 0 = the built-in default.")]
+        [SerializeField, Min(0f)] float courseBuildTimeoutSeconds;
+
+        /// <summary>
+        /// Retry window when <see cref="courseBuildTimeoutSeconds"/> is 0.
+        ///
+        /// <para><b>Why a sentinel and not just an initializer.</b> The two cases are not the
+        /// same and it is worth being exact, because getting it backwards costs an afternoon.
+        /// A field ABSENT from an asset's YAML keeps its C# initializer - proven here by
+        /// <c>GunVesselTransformer</c>, whose nine ride-tuning fields appear in no prefab and
+        /// whose play-tested behaviour depends on values like <c>throttleRestPosition = 0.5f</c>.
+        /// A field PRESENT with a stale value overrides the initializer, which is why
+        /// <c>Cell.retireSuctionSeconds</c> carries a 0-sentinel: it is serialized as 0 in twelve
+        /// scenes. (<c>Cell.PhaseTickIntervalSeconds</c> is a <c>const</c> and is not evidence
+        /// either way.)</para>
+        ///
+        /// <para>So the initializer alone would work TODAY - the field is in no scene - and stops
+        /// working the first time anyone opens a gate-race scene and saves it, because Unity then
+        /// writes <c>courseBuildTimeoutSeconds: 0</c> and that 0 wins forever after. A one-attempt
+        /// window is precisely the bug the retry exists to fix, restored silently by a save.</para>
+        ///
+        /// <para>6 s against a known ~1 s wait (<c>InitDelayMs</c>): generous, because the cost
+        /// of waiting too long is a slightly later countdown and the cost of waiting too little
+        /// is a match with no rings in it.</para>
+        /// </summary>
+        const float DefaultCourseBuildTimeoutSeconds = 6f;
+
+        float CourseBuildTimeout =>
+            courseBuildTimeoutSeconds > 0f ? courseBuildTimeoutSeconds : DefaultCourseBuildTimeoutSeconds;
+
         [Header("AI")]
         [Tooltip("Distance at which an AI stops lining up on its gate's axis and commits to the " +
                  "fly-through point on the far side.")]
@@ -133,15 +167,69 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual int LapsPerRace => 1;
 
+        /// <summary>
+        /// Rings at the FRONT of the course that are threaded ONCE and never come round again -
+        /// a lead-in the laps do not include. 0 for a course that is all circuit.
+        ///
+        /// <para><b>Why the platform carries this rather than one mode.</b> A closed circuit
+        /// cannot start fairly on its own: pilots spawn on an <c>EquatorialRing</c> and a fair
+        /// first gate sits on that ring's POLE, but a closed loop's tangent at an axial point is
+        /// PERPENDICULAR to the approach - measured over 400 seeds, presentation at such a gate
+        /// ran 12.8-90.0 deg with up to 73.5 deg of spread ACROSS PADS. Inside a bounded shell
+        /// that is unsatisfiable rather than untuned, so the answer is a start gate OFF the
+        /// circuit, and "off the circuit" is exactly a ring the laps skip. Breakwater needs it
+        /// today; any lapped course that wants a fair start needs it tomorrow.</para>
+        ///
+        /// <para>At 0 every expression below collapses to what it was, algebraically - which is
+        /// why Switchback and Headlong are untouched by this.</para>
+        /// </summary>
+        protected virtual int LeadInGates => 0;
+
         /// <summary>Gate-threadings that finish the race - the target the monitor ends on.</summary>
-        protected int RaceLength => _rings.Count * Mathf.Max(1, LapsPerRace);
+        protected int RaceLength => RaceLengthFor(_rings.Count, LeadInGates, LapsPerRace);
 
         /// <summary>
         /// Which RING a pilot on <paramref name="threaded"/> gates must fly next. The identity
-        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is.
+        /// for an open chain; on a circuit it wraps, which is the whole of what a lap is; with a
+        /// lead-in it wraps only over the lapped tail, so the start gate is never re-offered.
         /// </summary>
         protected int RingIndexFor(int threaded) =>
-            _rings.Count == 0 ? -1 : (LapsPerRace > 1 ? threaded % _rings.Count : threaded);
+            RingIndexFor(threaded, _rings.Count, LeadInGates, LapsPerRace);
+
+        // ── The fold, as pure arithmetic ──────────────────────────────────
+        //
+        // STATIC and public so it can be proven rather than reasoned about: GateRaceFoldTests
+        // asserts that at leadIn 0 these reproduce the pre-lead-in formulas exactly, over the
+        // whole parameter space, which is what makes adding a lead-in safe for the two modes that
+        // do not use one. Generalising a shared base by argument is how a third mode breaks the
+        // first two.
+
+        /// <summary>Threadings that finish a race of <paramref name="ringCount"/> rings, of which
+        /// the first <paramref name="leadIn"/> are flown once and the rest <paramref name="laps"/>
+        /// times.</summary>
+        public static int RaceLengthFor(int ringCount, int leadIn, int laps)
+        {
+            int lead = Mathf.Clamp(leadIn, 0, Mathf.Max(0, ringCount));
+            return lead + Mathf.Max(0, ringCount - lead) * Mathf.Max(1, laps);
+        }
+
+        /// <summary>The ring a pilot on <paramref name="threaded"/> threadings must fly next.</summary>
+        public static int RingIndexFor(int threaded, int ringCount, int leadIn, int laps)
+        {
+            if (ringCount <= 0) return -1;
+
+            int lead = Mathf.Clamp(leadIn, 0, ringCount);
+            if (threaded < lead) return threaded;
+
+            int lapped = ringCount - lead;
+            if (lapped <= 0) return ringCount - 1;          // every ring is lead-in: hold the last
+
+            // The open chain is the identity, exactly as before - a race of N gates ends at N, so
+            // `threaded` never reaches the wrap.
+            if (lead == 0 && Mathf.Max(1, laps) <= 1) return threaded;
+
+            return lead + (((threaded - lead) % lapped) + lapped) % lapped;
+        }
 
         /// <summary>
         /// The mode's course, in CELL-LOCAL coordinates, or null if it cannot be built.
@@ -149,6 +237,39 @@ namespace CosmicShore.Gameplay
         /// treat it as the RACE length and lay <c>gateCount / LapsPerRace</c> rings.
         /// </summary>
         protected abstract List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer);
+
+        /// <summary>
+        /// Why the last <see cref="BuildCourse"/> returned null, in one sentence, for the ONE
+        /// error the platform prints if the retry window closes.
+        ///
+        /// <para>A subclass must set this rather than logging its own: <c>BuildCourse</c> is
+        /// retried every frame until it works, so a <c>LogError</c> inside it is a per-frame
+        /// path and would bury the console under hundreds of copies of a message that was only
+        /// ever true about one frame.</para>
+        /// </summary>
+        protected string CourseFailureDetail { get; set; }
+
+        /// <summary>
+        /// A mode-specific AI aim point, consulted BEFORE the gate logic. Return false (the
+        /// default) to fly at the next gate the ordinary way.
+        ///
+        /// <para>Exists because a gate race does not have to be flown in FREE FLIGHT. Skein's
+        /// vessel ATTACHES to a rail, and while attached the aim point is the rail rather than
+        /// the ring: aiming at a ring while riding leaves the range roughly constant as the
+        /// cable corkscrews, and <c>OrbitDetector</c> trips on swept angle without progress -
+        /// at which point <c>LookingAtCrystal</c> goes false, <c>ram</c> disengages, and the
+        /// pilot drops from 150 to 30 u/s mid-grind. A lead point down the pilot's own rail
+        /// makes the range fall every frame AND holds the bearing near the tangent, which is
+        /// both halves of that problem.</para>
+        ///
+        /// <para>Steering only, and only while the override answers - an unattached pilot falls
+        /// straight through to the gate aiming, including the crystal detour.</para>
+        /// </summary>
+        protected virtual bool TryOverrideAim(IPlayer pilot, out Vector3 target)
+        {
+            target = default;
+            return false;
+        }
 
         /// <summary>The cell shell the course is laid inside, resolved from the live cell.</summary>
         protected void ResolveShell(out float inner, out float outer)
@@ -167,6 +288,12 @@ namespace CosmicShore.Gameplay
         readonly List<IPlayer> _stalePilots = new();
 
         bool _courseBuilt;
+
+        // Course-build retry, server only. The seed is captured ONCE so a course is never a
+        // function of how many frames the scene took to become answerable.
+        int _pendingCourseSeed;
+        bool _awaitingCourse;
+        float _courseRetryDeadline;
         bool _finalResultsSent;
         bool _arenaBuildAnnounced;
         bool _warnedCourseMissing;
@@ -207,12 +334,15 @@ namespace CosmicShore.Gameplay
             _arenaBuildAnnounced = true;
             PrismTrailBuilder.BeginArenaBuild();
 
-            if (IsServer) GenerateAndBroadcastCourse();
+            _awaitingCourse = false;
+
+            if (IsServer) BeginCourseGeneration();
             else RequestCourse_ServerRpc();
         }
 
         public override void OnNetworkDespawn()
         {
+            _awaitingCourse = false;
             ReleaseArenaBuildAnnouncement();
             ClearCourse();
             base.OnNetworkDespawn();
@@ -232,29 +362,74 @@ namespace CosmicShore.Gameplay
 
         // ── Course ────────────────────────────────────────────────────────
 
-        void GenerateAndBroadcastCourse()
+        /// <summary>
+        /// Start building the course, and keep trying until it works or the window closes.
+        ///
+        /// <para><b>Why a window and not one attempt.</b> A gate race whose course is PURE
+        /// GEOMETRY (Switchback's walk, Headlong's relaxation) is answerable on the frame this
+        /// runs and a retry costs it nothing. A gate race whose course is a property of the
+        /// SCENE is not: Skein's rings sit on the cable authored on the cell config, and
+        /// <c>Cell</c> does not latch its config until <c>Initialize</c> runs on
+        /// <c>OnInitializeGame</c>, a full second after <c>OnNetworkSpawn</c>. With a single
+        /// attempt that is not a slow build, it is a build that never happens again - no rings,
+        /// no scoring, no turn end, and one error on the host console. Skein shipped exactly
+        /// that.</para>
+        ///
+        /// <para>The seed is drawn ONCE, here, so retrying cannot change which course this match
+        /// gets: a course that depended on how many frames the cell took to answer would differ
+        /// between two runs of the same build for no reason a player could see.</para>
+        /// </summary>
+        void BeginCourseGeneration()
+        {
+            _pendingCourseSeed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            _courseRetryDeadline = Time.time + CourseBuildTimeout;
+            _awaitingCourse = true;
+            TickCourseGeneration();
+        }
+
+        /// <summary>One attempt, plus the decision to keep waiting or to give up loudly.</summary>
+        void TickCourseGeneration()
+        {
+            if (!_awaitingCourse) return;
+
+            if (TryGenerateAndBroadcastCourse())
+            {
+                _awaitingCourse = false;
+                return;
+            }
+
+            if (Time.time < _courseRetryDeadline) return;
+
+            _awaitingCourse = false;
+
+            // Nothing this mode can do but say so - loudly, and with the numbers that have to
+            // change. Returning silently used to hang the match outright: no rings, no
+            // scoring, no turn end, and one error on the host console only.
+            ResolveShell(out float inner, out float outer);
+            CSDebug.LogError(
+                $"[{ModeName}] Course generation FAILED for {AuthoredGateTarget()} gates in " +
+                $"shell {inner:F0}..{outer:F0} after {CourseBuildTimeout:F1}s of retries. " +
+                (string.IsNullOrEmpty(CourseFailureDetail)
+                    ? "Widen the shell or shorten the course."
+                    : CourseFailureDetail));
+            ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>The attempt itself. False means "not this frame" - the caller decides
+        /// whether that is a wait or a failure.</summary>
+        bool TryGenerateAndBroadcastCourse()
         {
             // ONE authority for the race length: the same overrides key the turn monitor reads
             // for the target. Read here rather than waiting for the monitor to publish it, so the
             // course cannot be built before the number that describes it exists - and cannot
             // disagree with it either.
             int gateCount = AuthoredGateTarget();
-            int seed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
+            int seed = _pendingCourseSeed;
 
             ResolveShell(out float inner, out float outer);
             List<RaceGate> course = BuildCourse(seed, gateCount, inner, outer);
 
-            if (course == null || course.Count == 0)
-            {
-                // Nothing this mode can do but say so - loudly, and with the numbers that have to
-                // change. Returning silently used to hang the match outright: no rings, no
-                // scoring, no turn end, and one error on the host console only.
-                CSDebug.LogError(
-                    $"[{ModeName}] Course generation FAILED for {gateCount} gates in shell " +
-                    $"{inner:F0}..{outer:F0}. Widen the shell or shorten the course.");
-                ReleaseArenaBuildAnnouncement();
-                return;
-            }
+            if (course == null || course.Count == 0) return false;
 
             // The generators work about the ORIGIN; the spawn ring, the membrane and the nucleus
             // are all measured from the CELL. They coincide in the shipped scenes and would stop
@@ -273,6 +448,7 @@ namespace CosmicShore.Gameplay
 
             ApplyCourse(course);
             BroadcastCourse(course, default);
+            return true;
         }
 
         /// <summary>
@@ -364,12 +540,63 @@ namespace CosmicShore.Gameplay
                 var go = new GameObject($"Gate_{i + 1:00}");
                 go.transform.SetParent(root, false);
                 var ring = go.AddComponent<RaceGateRing>();
-                ring.Build(i, course[i], theme, gateBloomSeconds);
+                ring.Build(i, course[i], theme, gateBloomSeconds, FindCoincidentRing(course, i));
                 _rings.Add(ring);
+            }
+
+            // Anything the MODE hangs off the course, while the panel still covers the screen.
+            // Before the release, deliberately: a mode that streams prisms opens its own
+            // arena-build bracket inside this call, so releasing first would leave a gap in which
+            // nothing is pending and the gate would slip the screen open onto a bare arena.
+            try
+            {
+                OnCourseRaised();
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[{ModeName}] OnCourseRaised threw - the course is up but the " +
+                                 $"mode's own geometry is missing. {e}");
             }
 
             // The geometry exists: release the connecting panel.
             ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>
+        /// Called once per peer, after the rings stand and before the connecting panel is
+        /// released. A mode with structure of its own (Breakwater's stations) builds it here.
+        /// Contained, because every step between OnNetworkSpawn and here runs inside the
+        /// arena-ready bracket: a throw that escaped would leave the bracket open, which is a
+        /// covered screen and no other symptom until the builder's 180-second stall cap.
+        /// </summary>
+        protected virtual void OnCourseRaised() { }
+
+        /// <summary>
+        /// An EARLIER gate standing in exactly this place, or null.
+        ///
+        /// <para>An open chain may legitimately visit one point twice: Skein's course opens and
+        /// closes on the same spine collar, so its first and last gates are one hoop. Drawn as
+        /// two rings that is a duplicate object, and the consequence is not cosmetic - the
+        /// highlight becomes invisible, because lighting one lime leaves its neutral twin drawn
+        /// in the same place and the renderer picks between them. <see cref="RaceGateRing"/>
+        /// draws one and forwards the other.</para>
+        ///
+        /// <para>A LAPPED course (Headlong) never lands here: it stores one ring per index and
+        /// <see cref="RingIndexFor"/> wraps the count, so its repeats are laps rather than
+        /// duplicate gates. The tolerance is a unit rather than an epsilon because the two
+        /// positions come from the SAME expression when they coincide at all - anything within
+        /// a unit of another gate is one gate, and two distinct gates a unit apart would be a
+        /// course bug in their own right.</para>
+        /// </summary>
+        RaceGateRing FindCoincidentRing(IReadOnlyList<RaceGate> course, int index)
+        {
+            for (int j = 0; j < index && j < _rings.Count; j++)
+            {
+                if ((course[j].Position - course[index].Position).sqrMagnitude > 1f) continue;
+                if (Mathf.Abs(course[j].Radius - course[index].Radius) > 1f) continue;
+                if (_rings[j]) return _rings[j];
+            }
+            return null;
         }
 
         void ClearCourse()
@@ -445,6 +672,11 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // Ahead of every guard below: the course is built while the turn has NOT started
+            // (that is what the arena-build announcement is holding the connecting panel for),
+            // so a retry gated on IsTurnRunning would never run.
+            if (_awaitingCourse) TickCourseGeneration();
+
             if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
 
@@ -606,6 +838,11 @@ namespace CosmicShore.Gameplay
                     var selfTf = captured.Vessel?.Transform;
                     if (selfTf == null) return centre;
 
+                    // A mode whose vessel is ATTACHED to geometry aims at the geometry, not the
+                    // ring. Asked first, every frame, so the answer can change the instant the
+                    // pilot latches on or launches off.
+                    if (TryOverrideAim(captured, out Vector3 overridden)) return overridden;
+
                     int index = captured.RoundStats?.SwitchesThreaded ?? 0;
                     if (index < 0 || index >= RaceLength) return centre;   // finished: loiter
 
@@ -690,7 +927,7 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        Vector3 ResolveCellCentre()
+        protected Vector3 ResolveCellCentre()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
             return cell ? cell.transform.position : Vector3.zero;

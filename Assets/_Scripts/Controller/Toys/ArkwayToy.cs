@@ -148,6 +148,8 @@ namespace CosmicShore.Gameplay
                 Accent = Definition ? Definition.AccentColor : Color.white,
                 IsCurrent = running,
                 RequiresFreestyle = true,
+                // A run is STARTED, not switched to: the window closes and the player is flying.
+                CommitVerb = running ? "End" : "Start",
                 Apply = ActivateFromShell,
             });
         }

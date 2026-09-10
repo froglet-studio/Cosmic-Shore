@@ -183,6 +183,7 @@ namespace CosmicShore.UI
             EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            EnsureSpectatorBadge();
             PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
@@ -411,6 +412,11 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Headlong");
                 case GameModes.Tollway:
                     return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
+                case GameModes.Breakwater:
+                    // Same provider again: Breakwater is a GateRaceController like the other two,
+                    // and its stations are identical to each other AND to every domain, so the
+                    // arrow is the only thing that says which one is yours next.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breakwater");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile
@@ -418,6 +424,14 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 case GameModes.Hijack:
                     return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Skein:
+                    // Mandatory rather than a nicety, for Switchback's reason: every ring on the
+                    // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
+                    // is. The arrow is per-viewer by construction, which is what a per-pilot fact
+                    // needs - and repainting the next ring in the pilot's domain colour would
+                    // spend the switch vocabulary's RESERVED colour on a ring that hands nobody a
+                    // domain.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Skein");
                 default:
                     return null;
             }
@@ -882,6 +896,19 @@ namespace CosmicShore.UI
         /// The COUNT does not come through here - it arrives on every monitor tick through
         /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
         /// </summary>
+        /// <summary>
+        /// The eye under the goal stack that appears while somebody is spectating this pilot.
+        /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
+        /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
+        /// missing from whichever one the next scene copies (Docs/GAME_MODE_TOPBAR.md).
+        /// </summary>
+        void EnsureSpectatorBadge()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+            SpectatorWatchBadge.Ensure(stack.transform, gameData);
+        }
+
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;

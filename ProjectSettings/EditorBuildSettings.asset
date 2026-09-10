@@ -72,6 +72,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity
     guid: 313d5cf05253dc4d163a58dc415a07da
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameBreakwater.unity
+    guid: ae4c026c9c87a05da4c66cae57c935d5
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity
     guid: 4e5acf8c3e564e257521bbe4b7d2fb67
   - enabled: 1
@@ -86,6 +89,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
     guid: b333e163445729830970f182e1e64fc0
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameSkein.unity
+    guid: 7a176232b6f8f7a3277106d997031bdd
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}

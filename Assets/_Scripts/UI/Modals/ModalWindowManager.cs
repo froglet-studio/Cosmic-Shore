@@ -42,6 +42,16 @@ namespace CosmicShore.UI
         /// </summary>
         public event System.Action OnModalClosed;
 
+        /// <summary>
+        /// Raised whenever this modal transitions from closed to open - AFTER the stack push
+        /// and the "Window In" animation has started, so a listener runs against a window that
+        /// is already on its way up. The hook the card grids play their staggered reveal on:
+        /// these windows never deactivate (they hide by CanvasGroup alpha), so OnEnable is a
+        /// scene-load event here, never an open. Not raised for a re-open of an already-open
+        /// modal.
+        /// </summary>
+        public event System.Action OnModalOpened;
+
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
@@ -231,6 +241,7 @@ namespace CosmicShore.UI
 
                 PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
+                OnModalOpened?.Invoke();
             }
         }
 

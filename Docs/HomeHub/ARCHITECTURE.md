@@ -7,7 +7,7 @@ more than one kind of game mode in the project and only one of them is an arcade
 |---|---|---|---|
 | **Mission** | `ModalWindows.MISSION` | `Unavailable` | nothing yet — the entry exists, the modal does not |
 | **Toy Box** | `ModalWindows.TOYBOX` | `Available` | the freestyle toybox, flat |
-| **Arena** | `ModalWindows.ARENA` | `Locked` | a full arcade-shaped card grid, behind one flag |
+| **Arena** | `ModalWindows.ARENA` | `Available` | the arcade's card grid over the Arena roster, launching through its own window (§3) |
 | **Arcade** | `ModalWindows.ARCADE` | `Available` | unchanged |
 
 ---
@@ -36,9 +36,10 @@ Unavailable  → not interactable, reads as not-built
 
 An entry that is simply **not drawn** tells the player the game has three things in it, and the
 day it ships they have to re-learn the screen. Both unfinished states stay on screen; they differ
-in what they promise. `Locked` says *this exists and you cannot open it yet* — which is true of
-Arena, whose modal behind the lock is real and complete. `Unavailable` says *this is not built*,
-which is true of Mission, and it does not respond at all.
+in what they promise. `Locked` says *this exists and you cannot open it yet* — which was true of
+Arena until its launch window shipped (§3); nothing is Locked today, and the state stays because
+the next unfinished entry will need it. `Unavailable` says *this is not built*, which is true of
+Mission, and it does not respond at all.
 
 `MenuHubButton.SetAvailability` is the runtime seam a progression unlock plugs into later, so
 opening Arena needs no new plumbing here.
@@ -115,7 +116,7 @@ Two things this pass had to fix before the lock could be true:
 There is **no second card-grid implementation**. `ArcadeExploreView` gained one field:
 
 ```csharp
-[SerializeField] SO_GameList rosterOverride;   // empty = the injected arcade roster
+[SerializeField] SO_GameList rosterOverride;   // empty = the injected master roster
 SO_GameList Roster => rosterOverride ? rosterOverride : GameList;
 ```
 
@@ -124,8 +125,59 @@ the cards were built from.
 
 A parallel Arena screen would have had to re-derive progression locks, favourites, party picks,
 the daily-challenge card and the whole launch modal — and would have drifted from all five. The
-Arena modal is a **prefab duplicate** of the arcade one with its explore view pointed at an Arena
+Arena screen modal is a duplicate of the arcade one with its explore view pointed at the Arena
 `SO_GameList`; the code is shared entirely.
+
+### 3.1 Three rosters, one master
+
+| Asset (`_SO_Assets/Games/GameLists/`) | Read by | Holds |
+|---|---|---|
+| `OrganicRematchGames` | the INJECTED `SO_GameList` — `ArcadeConfigSyncManager.FindGameByMode`, `QuickPlayButton`, the AI vessel pick, leaderboards, loadouts | **every** card, arcade and arena alike |
+| `ArcadeGames` | the Arcade grid's `rosterOverride` | the master minus the arena cards |
+| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush |
+
+The master list is deliberately still the union: a guest resolves the card the host opened **by
+mode** through the injected list, so a card removed from it would open on the host and never on
+a client. "Removing a mode from the arcade" therefore means removing it from `ArcadeGames`, not
+from the master. Both grids now name their roster explicitly; an empty `rosterOverride` still
+falls back to the master, which is only right for a grid that wants everything.
+
+**That contract is now REPORTED, because breaking it is silent in both directions.** A new mode's
+card has to be added to the master (the AI vessel pick and the client-side mode lookup resolve
+through it) *and* to one of the two grids, and the second half is the half that gets forgotten:
+the mode is finished, launchable, in the build settings, drawn by no screen, and nothing complains.
+**Breakwater (50) and Skein (51) shipped in exactly that state** and were only found by comparing
+the lists by hand. `Tools/Build/check_gamelist_scenes.py` now prints every master card that reaches
+NEITHER grid. It **reports rather than fails**, deliberately — withholding a finished mode from the
+grid while keeping it launchable is a legitimate state (a mode still being tuned), so a hard gate
+would be wrong about that case; what it cannot be wrong about is naming the card. As of 2026-09-10
+the arcade roster is **17 cards** = the master's 19 minus the 2 arena cards, and the Arcade grid
+draws **16** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window).
+
+### 3.2 The Arena launch window: the same authority, one more question
+
+An arcade card locks to one hull, so its launch panel has nothing to ask. An arena card can be
+flown in several, so **the pilot picks a hull first, and Start stays dead until they have**.
+
+The window (`ArenaGameConfigureModal`, `ModalWindows.ARENA_GAME_CONFIGURE`) is built the way the
+Maelstrom's is (`Docs/ArcadeLaunch/ARCHITECTURE.md` §1): a separate WINDOW, not a separate
+authority. It carries an `ArenaLaunchPanel` — a `MinigameLaunchPanel` plus a vessel carousel
+(one `IconActive`, prev / next) and a SELECT VESSEL button — whose `HostModal` is that window, and
+it is the first entry in the one `ArcadeGameConfigureModal`'s `launchPanels` (first match wins,
+and the arcade panel accepts every non-Maelstrom card). `ArenaLaunchPanel.Handles` answers for
+the cards in `ArenaGames`, so a card moved between the rosters changes windows with no code.
+
+The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (the card's
+own unlocked `Vessels`), writes the pick through the existing `SetSelectedShipInternal` (so the
+local player's `NetDefaultVesselType` carries it), and gates Start through
+`RefreshStartAvailability` — the ONE place Start's availability is decided, shared with the
+weekly-challenge lock so the two can never disagree. The confirmation is **per session**: armed
+on every card open, on the host and on every guest (each pilot picks their own hull), and cleared
+on close — go back and come in again to pick again. `OnStartGameClicked` refuses an unconfirmed
+press itself, because a disabled button is never the whole gate.
+
+Two things the window does NOT draw: the objective box and the controls block. The panel's
+`objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
 
 ## 4. The Toy Box drives the LIVE toys
 
@@ -155,7 +207,7 @@ The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape
 | Window | Modal type | What it is |
 |---|---|---|
 | `ToyboxModal` on `ToyboxScreenModal` | `TOYBOX` (13) | The grid. One card per live toy, straight off `ToyShellRegistry`. |
-| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, its **variants**, and two verbs — **Navigate** and **Switch**. |
+| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, its **variants**, and two verbs — **Navigate** and a commit button the toy captions (**Switch** / **Spawn** / **Start**, §4.1.3). |
 
 **The detail window has two verbs, and the second one came back on purpose.** The first cut let
 the menu drill into a toy's own options in place; the second removed that entirely, leaving
@@ -375,6 +427,173 @@ the indicator hides itself whenever its target is on screen. It earns its place 
 that, and it **takes itself down** on arrival (inside 3.5 ring radii), on leaving freestyle, or after
 90 s. An arrow left up once the player has moved on is noise, not guidance.
 
+### 4.1.3 The commit button says what the press DOES, and the toy names it
+
+The second verb shipped captioned **SWITCH** for every toy, and on most of them that was a lie:
+starting the Wanderway does not switch you to anything, and releasing a shark into the cell is
+not a switch either. The caption now comes off the option (`ToyShellOption.CommitVerb`, default
+"Switch"), read from the selected row or, before a pick, from the first committable one:
+
+| Toy | Verb | Why |
+|---|---|---|
+| Cell Selector | **SWITCH** | you move to another world |
+| Lifeform Matrix (an element row) | **SPAWN** | a population is released into the cell and lives there |
+| Connect the Dots | **START** (a live canvas: PAUSE / RESUME) | the window closes and the player is flying its first gate |
+| Wanderway / Arkway | **START** (running: COME HOME / END) | the same — a run, not a place |
+| Domain Changer | *none* | the rows apply on the press; a button that could never light is not drawn |
+
+**The toy names the verb, the menu does not**, for the reason `AppliesOnSelect` and
+`ToyDefinitionSO.Category` are declared by the toy: what a press does is a property of the option,
+and a caption table in the UI layer would be a second opinion about it.
+
+**A layer with exactly one committable row is selected on arrival.** The Wanderway and the Arkway
+offer one thing each; asking the player to pick the only row there is before START lights up is a
+tax with nothing behind it. A layer with two or more leaves stays unselected — the choice is the
+player's.
+
+### 4.1.4 Every variant has a picture, and a Spawn is WATCHED
+
+`ToyShellOption.BuildPreview` (§4.1.1) used to be filled in by two toys. It is now filled in by
+every toy whose rows are things rather than states:
+
+- **Connect the Dots** builds each painting in miniature — the same `MiniaturePaintingBuilder`
+  the gallery station and the emblem use, at the station's own radius, so the picture in the
+  window IS the station the player would fly to.
+- **Lifeform Matrix** builds the species' own display model for a species row, and for an element
+  row that model with the element's crystal seated at its authored heart size — exactly what the
+  variant station shows and what Spawn will release.
+- The cell selector and the vessel changer are unchanged (their scale model and live hull).
+
+Both drop the turntable the station builders attach: the preview camera already orbits, and the
+two composed into a tumble.
+
+**A Spawn is shown happening, not reported.** `ToyShellOption.WatchAfterApply` returns what the
+press MADE (the first creature of the wave, the first seed of the planting) and `WatchRadius` how
+far back to stand — stated by the option, because the creature blooms in from zero and its own
+bounds say nothing on the frame it appears. `ToyPreviewCamera.Watch` turns the window onto that
+object where it landed in the cell, and goes back to the toy when the target dies or the player
+moves on. It is optional in the way `BuildPreview` is: a domain change or a cell swap makes
+nothing to watch and answers null.
+
+**The Lifeform Matrix offers Fauna and Flora here, not Vessels.** The world bench still opens its
+hangar; the flat surface is a *lifeform* release bench — one picture, one Spawn — and a wingman is
+neither a lifeform nor something the spawn picture can show landing. The hangar is reached through
+Navigate.
+
+### 4.1.5 Back steps back ONE layer; only the top layer's Back closes the window
+
+The X button and gamepad B both used to close the window outright from three layers down, so a
+player who had opened Fauna → Tadpole and wanted the other species was thrown back to the
+catalogue. Both now pop a layer first (`ToyConfigureModal.OnBackPressed`; the B press is taken in
+an `Update` override ahead of the base's close) and close only from the toy's own top layer. One
+rule for both controls, so they cannot disagree.
+
+### 4.1.6 The picture costs what its FAR PLANE says
+
+The preview stuttered, and the reason was not the render rate: the shot reached **forty**
+toy-distances out, so every render culled and drew the whole cell — the lattice forest, the trail,
+every creature — to show a ring 130 units away. `ToyPreviewCamera` now reaches a few toy-distances
+past the subject (`farReachFactor`, 5) with the skybox filling the rest; post-processing, shadows,
+MSAA and HDR are off on that camera (none is legible at 512 px); the orbit advances by the time
+that actually passed rather than a fixed step per render (a slow frame costs a bigger step, not a
+stall); and the render rate is 30 rather than 20 because each render is now small enough to
+afford. General rule, the connecting panel's again: **a preview camera's cost is decided by what it
+is allowed to SEE, not by how often it looks.**
+
+## 4.1.7 The type scale, the cards and the plates (second pass)
+
+§5.4.1's bands were the right SHAPE and twice the right SIZE: a toy's name at 42–58 and its
+paragraph at 22–44 read as a poster on a window whose whole left column is three labels. Every
+band is halved (`28–36` / `16–22` / `22–28`; the variant name `16–22`, its detail `12–14`) and
+stays a band. The toy grid's cells were `260×96` while the card template inside them was authored
+at `275×203` with a `313×208` plate hanging off its top-left corner, so every card overran its
+cell and the grid read as a strip of small overlapping tiles: the cell is `400×250`, the plates
+stretch to it, the portrait fills the upper two thirds and the tagline + category line the card
+was already written to show (`ToyboxCard.taglineText` / `sectionText`, unbound until now) are
+created and bound.
+
+**The plates are the arcade's two card sprites, re-authored in place at 4× with a 9-slice border**
+(`Tools/Build/author_toy_card_sprites.py`, `--check`) — the hub button's fix (§7) plus the one
+thing a card needs that a button did not. Both shipped as 228×170 PNGs drawn Simple into a 275×203
+card and a 275×100 row, so the chamfers were upscaled on every display and squashed to 3:1 on the
+row: the "bent, pixelated corners". A 45° chamfer lives inside a corner tile, so unlike the
+lockup's trapezoid it 9-slices; with the sprite's pixels-per-unit raised to 400 a Sliced draw at
+multiplier 1 is the design scale at ANY rect. The Toy Box's cards draw them Sliced and stretched;
+the arcade grid still draws the rim Simple (its per-game art sits under it at the sprite's own
+aspect) and is merely four times sharper.
+
+**The layout lands on the branch through `Tools/Build/author_toybox_layout.py`**, which writes the
+scene from outside the editor, and the editor tool writes the same numbers (`HomeHubWiringWindow.ToyLayout`)
+so a re-run of WIRE IT cannot regress it; `wire_home_hub_scene.py --check` audits the bands. Three
+copies of one set of constants is the cost of a layout that both a session without an editor and a
+designer with one can author; they are named the same in all three files.
+
+## 4.1.8 Third pass: the chamfer was a CANVAS bug, the plate vanished under its tint, and five smaller things
+
+Playtest of §4.1.7 came back with the toy cards' corners "too bent" while the arcade's — drawn
+from the SAME sprite — looked right. **The chamfer had not changed; the canvas had.** UGUI divides a
+sprite's pixels-per-unit by the canvas's `referencePixelsPerUnit` before slicing, and Menu_Main's
+canvas is **240**, not the 100 the sprite's PPU 400 was authored against — so every 9-slice border
+drew 2.4× wide, the 24-unit chamfer read at 57, and the arcade escaped only because it draws the
+rim Simple. The fix is `pixelsPerUnitMultiplier = referencePixelsPerUnit / 100` on every sliced
+plate, READ OFF THE CANVAS by both authoring paths (`author_toybox_layout.py` parses the scene's one
+`m_ReferencePixelsPerUnit`, `ToyLayout.SliceMultiplier` asks the card's parent `Canvas`) rather than
+written down, so a canvas retune cannot silently re-bend the cards. The chamfer is also halved to
+12 design units and the rim stroke thickened 1.4 → 2.2, both in `author_toy_card_sprites.py`.
+General rule, restated from §7 with a new mechanism: **a sprite's PPU is only half of what decides
+how big its 9-slice draws — the other half is the canvas it lands on.**
+
+**The variant rows had "no background" because the tint MULTIPLIED a dark plate.** The plate is a
+navy slab, and `accent × 0.45` on navy is black. `ToyVariantCard.Tint` now lerps FROM white TOWARD
+the accent, so at 0 the plate is exactly the sprite the designer drew and at 1 it is the accent —
+the card is never darker than its art; the plate itself was lifted two shades as well.
+
+**The selected row breathes in the CTA colour.** Selection used to be a shade of accent, which on a
+column of one accent said nothing. It is now `SO_ColorSet.GetCtaSignalColor()` — the lime the
+palette reserves for "act on me" (`Docs/PALETTE.md` §2.5), handed to each card by the window off
+the live theme — on the rim and on the lockup's bloom sprite behind the card, and the bloom
+BREATHES (DOTween yoyo, 1.6 s, never below 45% of lit) for as long as the row stays selected. The
+first letter of a row's name was being cut off by the card root's inherited `Mask` (it clips the
+children to the rim sprite's alpha — the chamfer); it is switched off on both templates, and the
+name sits BOTTOM-LEFT with its detail above it, both inset past the chamfer.
+
+**Both grids start UPPER-LEFT with 20 extra units of left inset.** A `GridLayoutGroup` at
+`UpperCenter` centres a lone row — the Wanderway's one "Wander", the Arkway's one "Set sail" — in
+the middle of an empty strip, which read as a misplaced card rather than a list of one.
+
+**The grid card is title + art.** The tagline and category lines from §4.1.7 stay authored and
+bound and are switched OFF (`CARD_LABELS_ACTIVE`): the arcade's cards carry a title and art and
+nothing else, and the sentence lives on the detail window, so a grid that carried it twice read as
+busier than the arcade for no information.
+
+**A row has a PLACE, and picking it turns the picture onto that place.** `ToyShellOption.WorldAnchor`
+(+ `WorldAnchorRadius`) is the world-side twin of `WatchAfterApply`: where the option LIVES rather
+than what it MADE. `SwapToySetCoordinator` answers with the slot currently wearing that option, so
+picking Ruby on the domain changer shows the Ruby switch you would have flown through — the toy
+itself is a set of three, and "the preview recolours some toy" was the picture staying on whichever
+slot the window had been framing. Resolved at press time rather than captured, because a flip-set
+re-homes its slots the moment the current option changes (the slot you picked becomes the domain
+you left, exactly as it does in the world). The current option has no slot and answers null.
+
+**A Spawn is spent, and the picture says so.** After `WatchAfterApply` turns the window onto the
+creature, the row is DESELECTED: Spawn goes dark until the player picks a card again, which is also
+what brings the picture back from the release to the preview. `AutoSelectLoneRow` declines while
+the window is watching, or a one-row layer would re-arm the button it had just spent.
+
+**The lifeform preview rendered as a white silhouette because the window switched
+post-processing OFF.** §4.1.6 turned off every finish as a cost measure, and one of them is not a
+finish: every lifeform and prism material is authored HDR-emissive against the gameplay volume's
+tonemapper, so without it a shark is a blown-out white shape with no colour in it.
+`ToyPreviewCamera` now adopts the gameplay camera's `allowHDR`, `renderPostProcessing` and
+`volumeLayerMask` (the shape `ConnectingArenaPreview.AdoptUrpSettings` already uses); shadows and
+AA stay off, which is where the cost was.
+
+**The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
+rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
+still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
+assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > Interface > Codex
+bake; nothing changes on screen until it is run.
+
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 
 `ToyboxModal` holds a layer stack (grid → a toy's options → a nested layer), and that stack has to
@@ -396,6 +615,56 @@ cancelled there: a handoff closes this window as its first act, and `SetActive(f
 route in this project (`ModalWindowIn` carries an externally-deactivated recovery path for it), so
 cancelling on disable could kill the deferred toy action on exactly that route. It is cancelled on
 destroy, and superseded when a second handoff starts.
+
+## 4.3 Cards REVEAL on open, and the hub buttons stand down while any modal is up
+
+The sibling of §4.2, from the other end: a window OPENS without being enabled either, so anything
+that should happen "when the grid appears" cannot ride `OnEnable` and cannot ride repopulation
+(the arcade grid is populated once at `Start` and reused). `ModalWindowManager` therefore raises
+**`OnModalOpened`** after `isOn = true` in `ModalWindowIn`, and both card grids subscribe to it —
+`ArcadeExploreView` (arcade AND arena, one view) through its host modal, `ToyboxModal` through
+every `ModalWindowManager` on its own GameObject, since it carries two. `CardGridReveal.Play`
+then blooms the cards one by one: scale from 0.6 with a `CanvasGroup` fade, stagger capped so the
+whole row lands inside ~0.55 s however many cards there are, OutBack, on unscaled time. It is
+**scale and alpha only** — every grid here is laid out by a layout group, and a position tween
+fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass records). The
+reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the feel is one asset rather than
+a per-view constant.
+
+**The grid owns its ROWS, not just its cards.** `ArcadeExploreView.NormalizeGridRows` runs at the
+end of every populate and settles two things the fill loop leaves open. A row is **shown iff it
+holds a visible card** — the fill loop switches every card off and the filled ones back on, but a
+card inside an inactive ROW is not `activeInHierarchy` whatever its own flag says, so a row left
+disabled in the scene silently deletes four modes with no error and nothing to distinguish it from
+"not shipped yet" (the Arena work disabled all three arcade rows in Menu_Main and the whole grid
+came up empty). And every row takes the **first row's height**, because the grid stacks rows with a
+NEGATIVE spacing and does not control child height: the gap between two rows is that row's own
+height plus the spacing, Menu_Main authors 384.74 / 365.31 / 456.00 around identical 202.72-tall
+cards, and a row this view CLONES inherits the last one — 71 units of unexplained air above the
+overflow row. General rule: **with a layout group that does not control child size, a non-uniform
+child is a non-uniform gap, and a negative spacing makes it look deliberate.**
+
+**It cannot leave a card invisible, and that is a structural choice, not tuning.** The first cut
+tweened each card's own `CanvasGroup` with DOTween and the arcade grid came up EMPTY — every card
+sat at the alpha 0 the reveal had written and nothing ever brought it back, which on screen reads
+as "none of the arcade games are showing" rather than as a broken animation. A per-card tween can
+be killed, paused, or never ticked by something the grid cannot see, and the resting state then
+depends on the tween surviving. The cascade is therefore ONE coroutine on the grid's own host
+(`ArcadeExploreView` / `ToyboxModal`), and its exit — reached on completion, and by
+`CardGridReveal.Snap` on any interruption (a re-open, the host disabling or being destroyed, a
+second `Play`) — writes every card back to alpha 1 / scale 1. General rule: **when an animation's
+start state is "invisible", the rest state must be reached by the routine's EXIT, never by the
+animation's success.**
+
+The four home-hub buttons (`MenuHubButton`s under one container) are a separate rule with the
+same trigger: **visible iff no modal is open, freestyle is off and HOME is the screen**.
+`ScreenSwitcher.UpdateHubButtonsVisibility` fades the container's `CanvasGroup` (added if the
+container authors none, so nothing in the scene has to be wired) and is called from the four
+places that change any of those three facts — `CommitModalStackState`, the end of `NavigateTo`,
+and the freestyle enter/exit handlers — because the switcher already owns the modal stack, the
+screen index and the freestyle flag, and a button that watched any one of them alone would be
+wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
+can neither be clicked through a modal nor reached by gamepad navigation.
 
 ## 5. Scene wiring checklist
 
@@ -487,8 +756,8 @@ everybody else — with nothing in the scene diff to say why.
 `wire_home_hub_scene.py --check` fails on it by name.
 
 **Arena modal**
-- [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
-- [ ] Point its `ArcadeExploreView.rosterOverride` at the Arena `SO_GameList`
+- [x] `ArenaScreenModal` (`ModalType` `ARENA`) with its `ArcadeExploreView.rosterOverride` on `ArenaGames`
+- [x] `ArenaGameConfigureModal` (`ModalType` `ARENA_GAME_CONFIGURE`) carrying the `ArenaLaunchPanel`, registered in `Modals` and first in the arcade modal's `launchPanels` (§3.2)
 - [ ] Its `MenuAvailabilityView` starts `Locked` (the `MenuHubButton` reads it)
 
 ## 5.2 The party roster and friends column live on every hub window

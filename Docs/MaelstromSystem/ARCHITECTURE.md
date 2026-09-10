@@ -1,7 +1,8 @@
 # Maelstrom System — Architecture
 
 Canonical reference for **Maelstrom Mode** — the session-level meta (P3 / R2) that strings the
-three feature-complete domain minigames into one tournament with a per-player leaderboard.
+competitive domain minigames into one tournament with a per-DOMAIN leaderboard. The pool is the
+sixteen modes that satisfy §1's admission criteria, laddered by pick-up difficulty (§1.1).
 
 > **See also:** `MAELSTROM_UX_HANDOFF.md` (same folder) — session handoff for the between-game splash,
 > readable dwell, the Shuffle→Maelstrom display rename, and the summary `(You)` owner tag, with sequence
@@ -31,11 +32,12 @@ three feature-complete domain minigames into one tournament with a per-player le
 
 ## 1. What it is
 
-One session plays a **randomized lineup** drawn from the competitive domain games — **Skim Race
-(SkimRace 33), Joust (34), Crystal Capture (35), Rampage (2), Peel the Cage (PeelTheCage 39), Scarab
-Scramble (43), The Bends (42)**. Each game the host draws a random pool mode (no
-immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
-so a higher intensity widens the variety (`7 modes × X` "experiences", L1=7 … L4=28).
+One session plays a **randomized lineup** drawn from the competitive domain games — **sixteen** of
+them, every arcade mode that satisfies the three admission criteria below. Each game the host draws a
+random pool mode (no immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen
+intensity ceiling), so a higher intensity widens the draw **twice over**: it raises each game's own
+intensity and it unlocks more modes (§1.1). Drawable modes × intensities: L1 = 6×1 = 6 experiences,
+L2 = 10×2 = 20, L3 = 13×3 = 39, L4 = 16×4 = **64**.
 
 **The pool is authored, not coded** — it is `MaelstromData.asset`'s `GameQueue`, and every consumer
 (`LoadRandomGame`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
@@ -48,18 +50,79 @@ length-agnostic, so adding a mode is one asset edit. Three things a candidate mu
 3. **Player/domain range must contain the Maelstrom card's** (2–4 players, 2+ domains). The drawn
    mode's own card range is *not* re-checked at draw time — a mode capping at 3 players would break
    a 4-player lobby silently.
+4. **Its scene must be able to hand back.** `Scoreboard.continueButton` is a per-scene
+   `[SerializeField]`, and `if (continueButton)` is the only thing between the host and the
+   Continue that calls `MaelstromController.AdvanceToNextGame()` — so a pool mode whose scene does
+   not resolve that reference **stalls the tournament on that round**, with the scoreboard up and
+   no way forward. It is satisfied structurally today rather than per scene: all 16 pool scenes
+   instance `_Prefabs/CORE/GameCanvas.prefab`, which wires it, and none overrides it to null (the
+   `GameCanvas-SkimRace` fork that used to break this class of inheritance is retired —
+   `Docs/GAMECANVAS.md §9`). Verified for all 16 on 2026-09-10. **Check it for the next mode
+   anyway**, because the thing that guarantees it is a prefab reference a scene is free to
+   override, and an override to `{fileID: 0}` is exactly the silent-null shape
+   `Docs/GAMECANVAS.md` warns about.
 
-**Vessel-locked modes need no extra wiring.** Four of the seven are single-hull (Rampage and The
-Bends are Dolphin, Peel the Cage is Rhino, Scarab Scramble is Scarab). `GameDataSO.SyncFromArcadeGame`
+**Vessel-locked modes need no extra wiring.** Fifteen of the sixteen are single-hull (all but Scurry,
+which offers Sparrow/Manta/Squirrel) (see the §1.1
+table). `GameDataSO.SyncFromArcadeGame`
 publishes the drawn card's `Vessels` list into `AllowedVesselClasses` and calls
 `ClampSelectedVesselToGame`, so the round forces its own hull and the lobby's vessel pick applies
 only to rounds that permit it. This is why the Maelstrom card's own `Vessels` list is a *lobby*
 choice, not a session-wide lock.
 
-**Known wrinkle — same-hull adjacency.** `PickRandomModeIndex` avoids repeating the previous
-*index*, not the previous *vessel* or *arena*. Rampage and The Bends share both (Dolphin, the cactus
-forest), so they can be drawn back-to-back and will read as one mode played twice. Fix, if it
-bothers a playtest: widen the avoid-set to the previous mode's first `Vessels` entry. After each
+**Known wrinkle — same-hull adjacency, and the sixteen-mode pool sharpened it.**
+`PickRandomModeIndex` avoids repeating the previous *index*, not the previous *vessel* or *arena*.
+It was already possible for Rampage and The Bends to come up back-to-back — they share both the
+Dolphin and the cactus forest, so the pair reads as one mode played twice — and the wider pool makes
+same-hull adjacency much likelier rather than rarer, because the added modes cluster on hulls:
+**Sparrow ×5** (Wildlife Liberation, Salvo, Dog Fight, Breakwater, and Scurry by its first `Vessels`
+entry), **Dolphin ×3** (Rampage, The Bends, Switchback), **Squirrel ×2**, **Rhino ×2**, **Scarab ×2**,
+**Urchin ×2**. Measured chance that a draw repeats the previous round's hull, keying on each card's
+first `Vessels` entry: **L1 26.7%** (Sparrow is 3 of 6), L2 20.0%, L3 16.7%, **L4 14.2%** — so it is
+worst at the *most accessible* setting, which is also where a new player is least equipped to tell
+two Sparrow modes apart. Two of those pairs also share an ARENA outright — Rampage/The
+Bends (the cactus forest) and Dog Fight/Salvo (the Boneyard, reused verbatim, not forked) — so those
+draws read as the same *place* as well as the same ship. The documented fix is unchanged and still
+playtest-gated: widen the avoid-set to the previous mode's first `Vessels` entry. If it is taken,
+it needs a guard for the case where every drawable mode shares one hull, or the draw starves.
+
+### 1.1 The intensity ladder — which modes a run can draw
+
+`MaelstromDataSO.IntensityTiers` is **cumulative**: a run at intensity N draws from every rung up to
+and including N, so a mode is authored once, at the rung it first appears on (a tier lists what it
+ADDS). The rungs are ordered by **how quickly a new player can pick the mode up** — intensity is
+therefore both "harder games" and "more games", and an intensity-1 Maelstrom is a legible party
+lineup rather than a random sample of the whole roster.
+
+| Rung | Adds | Hull | Why here |
+|---|---|---|---|
+| **1** | Skim Race | Squirrel | Fly through the crystals in order. |
+| | Joust | Squirrel | Ram the other pilot. |
+| | Scurry | Sparrow / Manta / Squirrel | Collect crystals. |
+| | Wildlife Liberation | Sparrow | Shoot the animals. One verb, a target-rich arena, nothing to route. |
+| | Salvo | Sparrow | Shoot the wreckage. The quarry is static and the guns are free; the reload economy is optional depth. |
+| | Switchback | Dolphin | Follow the arrow through the rings — Skim Race's shape with rings for crystals. |
+| **2** | Rampage | Dolphin | Skim → catch a crystal → fire the cone: a three-step chain. |
+| | Peel the Cage | Rhino | Break inward through the shells. |
+| | Dog Fight | Sparrow | Shoot the animals, except now they shoot back and evade. |
+| | Headlong | Rhino | A lapped circuit — you must brake for corners *and* know you are running laps. |
+| **3** | Scarab Scramble | Scarab | Forge a ball, then get it through a hoop. |
+| | Breakwater | Sparrow | Each gate is a plugged door: fire, saw or thread it, then cross. Two verbs per station, ×2 laps. |
+| | Hijack | Urchin | Grind the rails to STEAL mass — needs the ride mechanic and the domain-thirds speed cliff. |
+| **4** | The Bends | Dolphin | Rampage's chain aimed at a *moving pilot*. The most indirect kill in the game. |
+| | Skein | Urchin | Ride a knotted cable and change strands at aimed breaks — the hardest traversal on the platform. |
+| | Tollway | Scarab | Place rings on living flora hearts and get paid when ANY ball threads one: indirect, economic, two-layer. |
+
+**Not admitted — Astro League (37) and Brood Rush (38).** Both are domain-scored, both have their
+scenes in Build Settings, and both would otherwise be strong pool modes — but both pin
+`MaxDomainsAllowed = 2` because the mode has exactly two goals/claims (a *rule*, not the host's
+preference — see `GameDataSO.MaxDomainsForGame`), and the Maelstrom card allows **3**. Criterion 3
+above is that the candidate's range must *contain* the Maelstrom card's, and the drawn mode's range
+is **not** re-checked at draw time, so a 3-domain Maelstrom that drew either one would hand the mode
+a team shape it cannot express — and, worse, `NormalizeUnassignedHumans` would move the Gold pilot
+off Gold for that round, so the standings would carry a domain that stopped being played for. To
+admit them, the Maelstrom card would have to be capped at 2 domains (which narrows every other
+round), or the draw would need a per-mode domain re-check — a real feature, not an asset edit. After each
 game the active **domains** are ranked **by team total** (the mode rule's summed metric — see §3)
 and earn **placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`,
 configurable — the **last**-placed domain always earns the table's last entry, 0, so a 2-domain
