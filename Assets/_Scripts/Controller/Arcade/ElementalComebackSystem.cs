@@ -95,9 +95,9 @@ namespace CosmicShore.Gameplay
             PrismsStolen = 9,
 
             /// <summary>
-            /// Per-domain summed hostile VOLUME destroyed. AVAILABLE, currently unused - its one
-            /// consumer was Drumfire, removed 2026-09; kept as the comeback pair for
-            /// <c>ScoringMetric.VolumeDestroyed</c>, which is likewise kept and likewise unused.
+            /// Per-domain summed hostile VOLUME destroyed. Bloomrush's source (its first consumer
+            /// was Drumfire, removed 2026-09); the comeback pair for
+            /// <c>ScoringMetric.VolumeDestroyed</c>.
             /// It has to be its own entry rather than borrowing PrismsDestroyed, because a
             /// deficit measured in a different quantity than the one the mode scores makes the
             /// comeback rate uncalibratable - volume deficits run six figures where prism counts
@@ -167,6 +167,11 @@ namespace CosmicShore.Gameplay
                 case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
                     return ScoreDifferenceSource.PrismsDestroyed;
+                case GameModes.Bloomrush: // Score lands only at game end - VOLUME is the live stat,
+                                          // and the deficit is read in the quantity the mode scores
+                                          // (a count deficit against a volume score is uncalibratable;
+                                          // the card's rate is derived in volume units, ~3.6e-4).
+                    return ScoreDifferenceSource.VolumeDestroyed;
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
@@ -179,6 +184,7 @@ namespace CosmicShore.Gameplay
                                            // so it accumulates on the same stat and folds by the
                                            // same lead runner. No new source - a second one
                                            // reading the same field could only ever disagree.
+                case GameModes.Redline:    // a lapped circuit: the same stat, the same fold
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;

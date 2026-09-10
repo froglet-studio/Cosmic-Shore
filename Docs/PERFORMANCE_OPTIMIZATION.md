@@ -1569,9 +1569,11 @@ ranking suspects.
   LIFECYCLE event (not a gameplay one); a static collection or latch written
   during play needs one always; instance `event` fields on ScriptableObject
   assets are the same hazard (SO assets persist exactly like statics — the
-  Soap families are patched, but e.g. `SkimmerOverchargeCollectPrismEffectSO`
-  declares four such events; sweep those before wiring asymmetric
-  subscribers).
+  Soap families are patched, but a non-Soap effect SO declaring its own `event`
+  fields is the hazard — the example this was written against,
+  `SkimmerOverchargeCollectPrismEffectSO`, has since been deleted with the
+  Manta's overcharge kit, so sweep for the SHAPE rather than that name before
+  wiring asymmetric subscribers).
 
 **Third round (2026-08-21) — the hang itself, diagnosed from five crash
 reports.** The user-visible freeze ("Run managed callbacks", editor killed from

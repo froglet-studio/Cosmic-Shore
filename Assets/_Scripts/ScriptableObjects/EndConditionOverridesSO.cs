@@ -103,6 +103,12 @@ namespace CosmicShore.ScriptableObjects
         /// to size the circuit, so the two cannot drift.</summary>
         public const int DefaultHeadlongGateTarget = 24;
 
+        /// <summary>Redline RACE length used when <see cref="redlineGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
+        /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
+        /// <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
+        public const int DefaultRedlineGateTarget = 24;
+
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -194,6 +200,11 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int headlongGateTarget = 24;
 
+        [Tooltip("Redline: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int redlineGateTarget = 24;
+
         [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
@@ -221,6 +232,7 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
+        [Min(0)] public int redlineGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
 
@@ -379,6 +391,15 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
 
         /// <summary>
+        /// Redline race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRedlineGateTarget"/>. Read by
+        /// <c>RedlineController.AuthoredGateTarget</c>, which the turn monitor asks in turn - so
+        /// the finish line and the course cannot drift apart.
+        /// </summary>
+        public int GetRedlineGateTarget() =>
+            redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget;
+
+        /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
         /// steal count, so teammates pool.
@@ -418,6 +439,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
+                GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
@@ -445,6 +467,7 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
+            redlineGateTarget == redlineGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild;
 
@@ -468,6 +491,7 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
+            redlineGateTarget = redlineGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
         }
@@ -492,6 +516,7 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
+            redlineGateTargetBuild = redlineGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
         }

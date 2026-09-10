@@ -432,6 +432,16 @@ namespace CosmicShore.UI
                     // spend the switch vocabulary's RESERVED colour on a ring that hands nobody a
                     // domain.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Skein");
+                case GameModes.Redline:
+                    // Same provider as Headlong: a lapped circuit of identical neutral rings,
+                    // and "your next gate" is the only thing that tells two pilots on the same
+                    // ring at the same moment apart.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Redline");
+                case GameModes.Bloomrush:
+                    // Rampage's provider again, and again on purpose: the nearest managed omni
+                    // crystal is the Kabloom trigger — the "cash in now?" half of the mode's
+                    // one decision, and exactly what the arrow should point at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Bloomrush");
                 default:
                     return null;
             }
