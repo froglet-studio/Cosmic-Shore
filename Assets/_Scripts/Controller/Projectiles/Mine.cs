@@ -5,6 +5,7 @@ using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
