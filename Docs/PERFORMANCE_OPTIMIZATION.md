@@ -29,10 +29,11 @@ retired architecture; do not resurrect a per-frame pass to "optimize" anything.
 > and platform sessions that landed on other branches. Read §0 for what is
 > true now; read the rest for what each session bought.
 
-**Nothing has been measured since 2026-07-15**, and that session's own first
-TODO — the Burst-ON verification capture — was never taken. So **every number
-below §1 predates enabling Burst** and none of them has been re-confirmed at
-the current population. Treat the whole log as history until Capture A lands.
+**Capture A has now been taken (2026-09-10) — see §0.8. It is CPU-bound, the
+typical frame is inside the 60 FPS budget, and the problem is a periodic SPIKE,
+not throughput.** Everything below §1 still predates enabling Burst and has not
+been re-confirmed at the current population; treat the rest of the log as
+history and §0.8 as the only measured statement about the boot world today.
 
 **Tree:** this doc describes `78a95259f` (`origin/Ys-merge-2026-09-07`) — the
 merge of 563 upstream commits into the party/presence line. `Ys-bleeding-edge`
@@ -96,6 +97,115 @@ Ordered by value for cost. Full analysis in §4.
 GPU-bound at 8 minutes, all of Tier 1 is the wrong lever and the answer is
 overdraw/shader work — which §0.6 suspected (capture #4: 2.16M verts,
 transparent-prism overdraw) and never confirmed. One HUD row settles it.
+
+---
+
+## 0.8 CAPTURE A + A2 — the boot world, MEASURED (2026-09-10)
+
+Two spike frames captured off a 10-minute Menu_Main sit (Lattice boot world), in
+the editor with the standalone profiler. **This is the first measurement of this
+cell at any density, and it changes the shape of the problem.**
+
+### The verdict: CPU-bound, and it is a SPIKE problem, not a throughput problem
+
+The Highlights panel reads **CPU 14.919 ms / GPU 11.379 ms** against a 60 FPS
+target, annotated *"You are within your target frame time."* So:
+
+- **CPU-bound** — the §4 CPU backlog is aimed at the right half. GPU has ~3.5 ms
+  of headroom.
+- **The typical frame is fine.** What hurts is a periodic spike, which is what
+  the user reported ("happens in short intervals") and what both captures caught.
+
+Optimising steady-state cost is therefore the *wrong* target here. Find what
+bursts.
+
+### What bursts: a flora BIRTH
+
+Capture A2 (frame 3613) expanded `UpdateScene` and named it outright:
+
+| Row | Calls | Time | GC |
+|---|---|---|---|
+| PlayerLoop | 3 | 13.93 ms | 27.6 KB |
+| └ UpdateScene | 1 | 10.30 ms | 27.6 KB |
+| &nbsp;&nbsp;└ **Update.ScriptRunDelayedDynamicFrameRate** (coroutines) | 1 | **2.83 ms** | **18.2 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ **`AssembledFlora.GrowCoroutine()`** | **10** | **1.78 ms** | **17.0 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ **`Instantiate`** | **4** | **1.22 ms** | **11.2 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ `GC.Alloc` | 88 | — | 5.5 KB |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ `Prism.CreateBlockCoroutine()` | 16 | 0.75 ms | 0 B |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ `AssembledFlora.ShieldRegenCoroutine()` | 2 | 0.19 ms | 1.0 KB |
+| &nbsp;&nbsp;└ Update.ScriptRunBehaviourUpdate | 1 | 2.12 ms | 7.5 KB |
+
+**Four `Instantiate` calls cost 1.22 ms and 11.2 KB in one frame — 7% of the
+frame from four object creations.**
+
+### Root cause: growth was budgeted, BIRTH never was
+
+`AssembledFlora.cs:405` already carries the comment describing this exact spike
+and the fix that was applied to it:
+
+> *"Decision pass only: pick branches, claim sites, enqueue. The heavyweight
+> Instantiate work (prism + spindle prefab per child — the multi-ms
+> AssembledFlora.GrowCoroutine burst in captures) drains at maxSpawnsPerFrame
+> in Update."*
+
+That fix is real and it works — the growth path enqueues into `pendingSpawns`
+and drains under a budget. **Reproduction was never routed through it.** Both
+birth entry points still call `Instantiate` synchronously inside the coroutine
+tick:
+
+- `Flora.TryReproduce()` → `SpawnOffspring()` → `CellLifeSpawnerBase.SpawnFlora`
+  (per-plant quota path), and
+- `Flora.TrySpawnOneOffspring()` (the lattice colony's one-birth-per-cycle path,
+  `Docs/ECOSYSTEM.md` §32.7), called from `AssembledFlora.TickOctagonPopulation`
+  / `TickTilePopulation` / `TickStarPopulation` —
+
+and all of those run at the **top of `Flora.Grow()`**, which is called from
+`Flora.GrowCoroutine`. One birth is a chain of instantiates — the plant prefab,
+its heart crystal (`LifeFormCrystal`, two `Object.Instantiate` sites), its first
+spindle (`SpindleTracker.Instantiate`) — which is why the profiler shows four
+with four `Instantiate.Awake` calls.
+
+**Why it reads as a periodic spike:** the Lattice cell runs **12 colonies**, each
+birthing one daughter per fauna-wave period — **5 s in the boot world** — so a
+birth lands roughly every 0.4 s, and each one is ~1.2 ms in a single frame.
+
+### Second finding: 1,080 infinite coroutines, allocating
+
+`Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
+— **one live coroutine per plant, allocating a fresh `WaitForSeconds` every
+tick**. At 1,080 plants that is the bulk of the 5.5 KB `GC.Alloc` (88 calls) and
+a standing contributor to the 18.2 KB the coroutine group allocates per frame.
+The `WaitForSeconds` is trivially cacheable per plant.
+
+### A correction to the previous reading (Capture A, first screenshot)
+
+Capture A's tree showed `UpdateScene` 13.66 ms with `Update.ScriptRunBehaviourUpdate`
+3.62 ms expanded beneath it, and this doc inferred *"~10 ms is not scripts"*.
+**That was wrong** — `Update.ScriptRunDelayedDynamicFrameRate` was simply
+collapsed. In A2 coroutines are 2.83 ms and behaviours 2.12 ms, so scripts are
+roughly half of `UpdateScene`, not a third of it. *An inference from a partly
+expanded profiler tree is a guess about the rows you did not open.*
+
+### Two rows that are NOT the problem (asked about, measured, demoted)
+
+- **`AssembledFlora.Update()` × 1080** — the Lattice's documented 1,080 plants at
+  cap. The body early-outs on line 1; **0.28 µs/call**, essentially pure dispatch.
+- **`JustRotate.Update()` × 540** — exactly half of 1,080 because only
+  `CrystalCharge` and `CrystalTime` carry the component (`CrystalMass` and
+  `CrystalSpace` do not — an authoring accident, not a design). 0.58 ms.
+
+Together **0.88 ms of a 34.92 ms frame — 2.5%.** Real, worth fixing eventually,
+and not the spike. They move to §4 Tier 2. The one non-obvious cost there is that
+`JustRotate` shares its GameObject with an enabled trigger `SphereCollider`, so
+540 collider transforms are dirtied per frame for a rotation a sphere is
+invariant to; that lands in `UpdateScene`, not in the row it is billed to.
+
+### Editor tax in the numbers
+
+`EditorOnly [CheckAllowDestructionRecursive]` and
+`TextureStreamingManager.RemoveRenderer` both appear in the A2 trace. These are
+editor-only costs — **re-take against a development build before treating the
+absolute milliseconds as ship numbers**; the ratios and the burst shape hold.
 
 ---
 
@@ -1244,7 +1354,43 @@ and does not depend on which controller a scene carries:
 > them without checking it against this list first. Every `file:line` below was
 > re-verified on the merged tree on 2026-09-09.
 
+### Tier 0 — MEASURED, and it is the spike (2026-09-10, §0.8)
+
+Capture A/A2 says the boot world is **CPU-bound with a healthy typical frame and
+a periodic ~1.2 ms burst**. Everything in Tier 1 below is steady-state work and
+was ranked before any of this was measured — **do Tier 0 first.**
+
+**0a. A flora BIRTH instantiates synchronously inside `Flora.GrowCoroutine`.**
+1.22 ms and 11.2 KB across 4 `Instantiate` calls in one frame, roughly every
+0.4 s (12 Lattice colonies × one daughter per 5 s fauna-wave period). The GROWTH
+path was already fixed this way — `AssembledFlora.Grow()` is a decision pass that
+enqueues into `pendingSpawns`, drained under `maxSpawnsPerFrame` in `Update`
+(`AssembledFlora.cs:405`, and the comment there names this exact burst). The BIRTH
+path never joined it: `Flora.TryReproduce()` and `Flora.TrySpawnOneOffspring()`
+both call `SpawnOffspring()` → `CellLifeSpawnerBase.SpawnFlora` inline, and both
+run at the top of `Grow()`.
+**Fix:** route a birth through a deferred queue like growth already is — but a
+**cell-wide** one with a global budget, not a per-plant one, because a birth is a
+POPULATION event (`Docs/ECOSYSTEM.md` §32.7) and because `maxSpawnsPerFrame` is
+already per-plant (Tier 2 #7 — N plants × budget lands in one frame).
+`PrismTrailBuilder.LayBudgetedAsync` is the in-repo global-ms-budget pattern.
+**This is an ecology change: route it through the `/ecology` skill.** It is
+pacing, not capping — production is deferred by a frame or two and nothing is
+culled, so `§0`'s conserved-mass law is untouched.
+
+**0b. 1,080 infinite coroutines, each allocating per tick.**
+`Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
+— one live coroutine per plant, minting a `WaitForSeconds` every tick. Cache it
+per plant (`growPeriod` is stable between re-tunes). Cheap, contained, and it is
+a real share of the 18.2 KB/frame the coroutine group allocates.
+
+---
+
 ### Tier 1 — structural, capture-gated
+
+> **Ranked before Capture A existed.** Item 3's premise is now partly measured
+> (§0.8); the rest is still unconfirmed at 63k prisms. Re-read §0.8 before
+> starting any of it.
 
 **1. Four O(total prisms) main-thread sync scans, not one.**
 `PrismSpatialIndex.cs` ends four separate paths in
@@ -1318,7 +1464,9 @@ All re-verified on the merged tree 2026-09-09.
 | `CurrentScore.cs:20` | Per frame: a sorted-list copy + a closure + two `FirstOrDefault` predicates + `ToString("F0")`. |
 | `GunTransformer.cs:28` | `GetComponentsInChildren<Transform>()` inside `Update`. |
 | `TurnMonitorController.cs:73` | `.Any(` boxes the `List<T>` struct enumerator — one alloc per frame, every match. |
-| `AssembledFlora.cs:248` | `maxSpawnsPerFrame` is **per-plant**, not a shared pool → N growing plants do N × 2 `Instantiate` in one frame. `PrismTrailBuilder.cs:188` is the correct global-ms-budget pattern to copy. |
+| `AssembledFlora.cs:248` | **CONFIRMED by Capture A2 — see Tier 0a, which supersedes this row.** `maxSpawnsPerFrame` is **per-plant**, not a shared pool → N growing plants do N × 2 `Instantiate` in one frame. `PrismTrailBuilder.cs:188` is the correct global-ms-budget pattern to copy. |
+| `JustRotate.cs` on `CrystalCharge` / `CrystalTime` | 540 `Update` calls (0.58 ms) in the boot world — half of the 1,080 hearts, because only those two of the four elemental crystal prefabs carry the component. It shares its GameObject with an enabled trigger `SphereCollider`, so 540 collider transforms are dirtied per frame **for a rotation a sphere is invariant to**; that cost lands in `UpdateScene`, not in the row it is billed to. Fix is a shader-clock rotation on the model child — planned, blast radius measured (5 shaders, 3 shared with domain/shielded crystals and flora spindles), must be opt-in per material. |
+| `AssembledFlora.Update()` × 1080 | 0.30 ms — the body early-outs on line 1, so this is **0.28 µs/call of pure Unity dispatch**. Only worth removing as part of a central tick; note `enabled = false` is NOT available (`AssembledFlora : Flora : LifeForm`, and `LifeForm.OnEnable/OnDisable` own a SOAP subscription). |
 | `Microscene.cs:60` | `TransportBudgetMsPerFrame = 3f` is per call, `MaxConcurrentArrivals = 3` → up to 9 ms/frame. |
 | `EchoSightActionExecutor.cs` | Method-group → `Func<>` conversion allocates a delegate per frame per engaged Dolphin. |
 
@@ -1950,6 +2098,7 @@ not compiler, at the time of the merge).
 | 2026-09-09 (re-baseline against the merge) | Re-based the whole doc on `78a95259f` (`origin/Ys-merge-2026-09-07`) — 563 upstream commits merged into the party/presence line, bringing **197 new `.cs` files** no perf survey had read. **§0** is a new handoff (the old one is retitled §0.6; its "TODO NEXT SESSION" is marked superseded rather than deleted, since item 1 — the Burst-ON capture — was never taken and is why every number below §1 still predates Burst). **§3 rewritten**: the old list named three classes deleted in the D2 pass, so anyone following it profiled rows that cannot appear; the real inventory is **48 static markers across 18 files** plus the dynamic `<Type>.AcceptImpactee` family, now listed per file with a note that a single-line `grep` finds 4 because declarations are target-typed. Added the zero-marker blind-spot list and recorded that every benchmark tool self-installs (so a capture is scene-independent). **§4 re-prioritized**: Tier 1 corrected from one `_highWaterMark` sync scan to **four** (`PrismSpatialIndex.cs:1934/2086/2171/2238`) with no shielded early-out anywhere; two new Tier 1 items from the merged code (`AstroLeagueBall.ProcessPrismInteractions` — up to 8 `QuerySphere` per ball per tick plus `List.Contains` in the inner loop, zero markers; `HijackController.ChooseRail` phase-locked across every AI by `nextRetarget = 0f`); `ConnectingPanelController`'s per-frame TMP churn added to Tier 2; `ScarabHullBuilder` **removed — fixed upstream**. **§7 new**: cross-doc TODO/test reconciliation, and the finding that `PRISM_ANIMATION.md` §5 is nearly closed (C6 remainder + D3, converging with C11/C13b playtests on one Prompt 11 sitting). Two companion docs added: `PERFORMANCE_CAPTURE_RECIPES.md`, `MEMORY_AUDIT.md`. Also fixed, as its own commit: two duplicate-GUID scene copies the merge restore left behind. Docs-only otherwise — no `/verify-unity` run, and none required. |
 
 ---
+| 2026-09-10 (Capture A + A2) | **First measurement of the Lattice boot world, ever.** Verdict: **CPU-bound** (CPU 14.919 ms / GPU 11.379 ms, inside the 60 FPS target) and the problem is a **periodic spike, not throughput**. Named the spike: a flora BIRTH instantiates synchronously inside `Flora.GrowCoroutine` — 4 `Instantiate` = 1.22 ms + 11.2 KB in one frame, roughly every 0.4 s (12 Lattice colonies x one daughter per 5 s fauna-wave period). The GROWTH path was already budgeted (`AssembledFlora.cs:405`); `TryReproduce` / `TrySpawnOneOffspring` never joined it. Also found 1,080 infinite `GrowCoroutine`s each minting a `WaitForSeconds` per tick. Added §0.8 and §4 Tier 0; confirmed Tier 2's `AssembledFlora.cs:248` per-plant-budget finding by measurement. **Corrected a wrong inference from Capture A**: 'about 10 ms of UpdateScene is not scripts' was an artefact of `ScriptRunDelayedDynamicFrameRate` being collapsed in the tree — coroutines are 2.83 ms and behaviours 2.12 ms, so scripts are ~half of UpdateScene. Demoted `JustRotate` (540 calls) and `AssembledFlora.Update` (1080 calls) to Tier 2: together 0.88 ms of a 34.92 ms frame. Caveat: captures are editor-side (`EditorOnly [CheckAllowDestructionRecursive]`, `TextureStreamingManager.RemoveRenderer` both present) — re-take against a dev build before quoting absolute ms. |
 
 ## 7. TODO & test reconciliation (2026-09-09)
 

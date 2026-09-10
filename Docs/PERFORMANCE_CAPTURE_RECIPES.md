@@ -89,6 +89,49 @@ main-thread hierarchy at all).
 
 ---
 
+## Capture A2 — expand the tree *(this is where the answer was)*
+
+**Captures A and A2 were taken 2026-09-10. Results: `PERFORMANCE_OPTIMIZATION.md`
+§0.8.** Keep this section as the method, because Capture A on its own produced a
+**wrong** conclusion and A2 is what corrected it.
+
+**What went wrong the first time.** Capture A's Hierarchy showed `UpdateScene`
+13.66 ms with `Update.ScriptRunBehaviourUpdate` (3.62 ms) expanded under it, and
+the obvious reading — *"~10 ms of UpdateScene is not scripts"* — was wrong.
+`Update.ScriptRunDelayedDynamicFrameRate` was sitting right there, collapsed.
+In A2 it is **2.83 ms and 18.2 KB**, and it contained the entire finding.
+
+> **An inference from a partly expanded profiler tree is a guess about the rows
+> you did not open.** Expand every child of `UpdateScene` before concluding
+> anything about where a frame went.
+
+**Method:**
+
+1. **Read the Highlights panel first** — it prints CPU and GPU milliseconds side
+   by side and states whether you are inside the target frame time. That is the
+   `Bound` verdict, and it is one glance. (The Hierarchy's own GPU column shows
+   `--ms` in the editor; do not read Bound from it.)
+2. **Decide which problem you have.** A healthy typical frame plus a periodic
+   spike is a *burst* problem, and optimising steady-state cost will not touch
+   it. Capture the SPIKE frame, not an average one — click a tall bar in the
+   frame chart.
+3. **Fully expand `UpdateScene`.** Both script roots matter and they are
+   siblings: `ScriptRunBehaviourUpdate` (`Update()`) and
+   **`ScriptRunDelayedDynamicFrameRate` → `CoroutinesDelayedCalls`**
+   (every coroutine in the game). In this project the ecology runs on
+   coroutines, so the second one is usually the interesting half.
+4. **Sort by GC Alloc as a second pass.** Allocation points at bursts that time
+   alone can hide, and it attributes them: `Instantiate` shows its own KB.
+5. **Follow the deepest named row to code.** A2's chain was
+   `CoroutinesDelayedCalls → AssembledFlora.GrowCoroutine() → Instantiate →
+   Instantiate.Produce/Awake/Copy`, which names the file and the call site
+   without any guessing.
+6. **Discount the editor.** `EditorOnly [...]` and
+   `TextureStreamingManager.RemoveRenderer` rows are editor-only tax. Ratios and
+   burst shape carry to a player build; absolute milliseconds do not.
+
+---
+
 ## Capture B — BenchmarkStressTest *(the regression baseline)*
 
 **Launch:** Settings ▸ Run Benchmark. `BenchmarkSceneLauncher.LaunchBenchmark`
