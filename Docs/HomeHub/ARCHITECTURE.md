@@ -142,6 +142,18 @@ a client. "Removing a mode from the arcade" therefore means removing it from `Ar
 from the master. Both grids now name their roster explicitly; an empty `rosterOverride` still
 falls back to the master, which is only right for a grid that wants everything.
 
+**That contract is now REPORTED, because breaking it is silent in both directions.** A new mode's
+card has to be added to the master (the AI vessel pick and the client-side mode lookup resolve
+through it) *and* to one of the two grids, and the second half is the half that gets forgotten:
+the mode is finished, launchable, in the build settings, drawn by no screen, and nothing complains.
+**Breakwater (50) and Skein (51) shipped in exactly that state** and were only found by comparing
+the lists by hand. `Tools/Build/check_gamelist_scenes.py` now prints every master card that reaches
+NEITHER grid. It **reports rather than fails**, deliberately — withholding a finished mode from the
+grid while keeping it launchable is a legitimate state (a mode still being tuned), so a hard gate
+would be wrong about that case; what it cannot be wrong about is naming the card. As of 2026-09-10
+the arcade roster is **17 cards** = the master's 19 minus the 2 arena cards, and the Arcade grid
+draws **16** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window).
+
 ### 3.2 The Arena launch window: the same authority, one more question
 
 An arcade card locks to one hull, so its launch panel has nothing to ask. An arena card can be
