@@ -101,7 +101,7 @@ namespace CosmicShore.Core
 
                 var data = JsonConvert.DeserializeObject<T>(json);
                 if (data != null)
-                    CSDebug.Log($"[LocalCloudDataCache] Restored '{key}' from local snapshot.");
+                    if (CSDebug.IsVerbose(CSLogChannel.CloudData)) CSDebug.LogVerbose(CSLogChannel.CloudData, $"[LocalCloudDataCache] Restored '{key}' from local snapshot.");
                 return data;
             }
             catch (Exception e)

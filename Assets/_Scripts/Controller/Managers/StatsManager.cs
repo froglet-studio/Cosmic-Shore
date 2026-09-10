@@ -341,7 +341,7 @@ namespace CosmicShore.Gameplay
             }
 
             roundStats.JoustCollisions++;
-            CSDebug.Log($"[StatsManager] JoustCollision recorded for '{joustPlayerName}': {roundStats.JoustCollisions}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[StatsManager] JoustCollision recorded for '{joustPlayerName}': {roundStats.JoustCollisions}");
         }
 
         public void PrismCreated(PrismStats prismStats)

@@ -53,11 +53,7 @@ namespace CosmicShore.Gameplay
         public void BeginCharge(ChargeBoostActionSO so, IVesselStatus status)
         {
             if (Time.unscaledTime < _cooldownUntilUtc)
-            {
-                if (so.Verbose)
-                    CSDebug.Log($"[ChargeBoostAction] On cooldown {(_cooldownUntilUtc - Time.unscaledTime):F2}s");
                 return;
-            }
 
             End(); // stop any running task
             if (!_resources) return;

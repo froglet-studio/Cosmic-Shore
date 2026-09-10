@@ -141,7 +141,7 @@ namespace CosmicShore.Core
             }
 
             PendingProductId = productId;
-            CSDebug.Log($"[IAPManager] Opening web checkout for '{productId}': {url}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Opening web checkout for '{productId}': {url}");
             Application.OpenURL(url);
             OnCheckoutOpened?.Invoke(productId);
         }
@@ -157,7 +157,7 @@ namespace CosmicShore.Core
             PendingProductId = null;
 
             if (success)
-                CSDebug.Log($"[IAPManager] Purchase confirmed for '{productId}'.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[IAPManager] Purchase confirmed for '{productId}'.");
             else
                 CSDebug.LogWarning($"[IAPManager] Purchase NOT confirmed for '{productId}'.");
 

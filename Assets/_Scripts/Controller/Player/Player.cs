@@ -526,7 +526,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}");
             base.OnNetworkSpawn();
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
@@ -568,7 +568,7 @@ namespace CosmicShore.Gameplay
                 // anyway the payload was lost on the wire, and this machine is about to be
                 // spawned a vessel into a match it only meant to watch - say so, loudly.
                 if (SpectatorSession.IsLocalSpectator)
-                    Debug.LogError("[Player] A SPECTATOR was handed a Player object - the spectator " +
+                    CSDebug.LogError("[Player] A SPECTATOR was handed a Player object - the spectator " +
                                    "approval payload did not reach the host (SpectatorSession). This " +
                                    "client will be spawned as a pilot. See Docs/PartySystem/SPECTATOR.md.");
 
@@ -622,7 +622,7 @@ namespace CosmicShore.Gameplay
                 gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}");
 
             InputController.Initialize();
         }
@@ -679,7 +679,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PrepareForNewScene()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}");
             // Clear stale references from previous scene.
             // Vessels have destroyWithScene=true and are already destroyed.
             Vessel = null;
@@ -948,11 +948,11 @@ namespace CosmicShore.Gameplay
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
         {
-            CSDebug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' - prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[PLAYER] OnNetVesselIdChanged '{Name}' - prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}");
             VesselNetId = newValue;
             if (newValue == 0)
             {
-                CSDebug.Log($"<color=#FF00FF>[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})");
                 Vessel = null;
                 IsActive = false;
             }

@@ -79,7 +79,7 @@ namespace CosmicShore.Core
         {
             if (error == null)
             {
-                CSDebug.Log("Anonymous login success.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Anonymous login success.");
                 emailLoginResultMessage.text = "Anonymous login success.";
                 return;
             }
@@ -87,22 +87,20 @@ namespace CosmicShore.Core
             switch (error.Error)
             {
                 case PlayFabErrorCode.ConnectionError:
-                    CSDebug.Log("Connection issues.");
+                    CSDebug.LogWarning("Connection issues.");
                     emailLoginResultMessage.text = "Connection issues.";
                     break;
                 case PlayFabErrorCode.InvalidAccount:
-                    CSDebug.Log("Invalid Account.");
+                    CSDebug.LogWarning("Invalid Account.");
                     emailLoginResultMessage.text = "Invalid Account.";
                     break;
                 case PlayFabErrorCode.AccountDeleted:
-                    CSDebug.Log("Account deleted.");
+                    CSDebug.LogWarning("Account deleted.");
                     emailLoginResultMessage.text = "Account deleted.";
                     break;
                 default:
-                    CSDebug.Log("Unknown nightmare.");
-                    CSDebug.Log(error.ErrorMessage);
-                    CSDebug.Log(error.ErrorDetails);
-                    CSDebug.Log(error.Error.ToString());
+                    CSDebug.LogWarning("Unknown login error.");
+                    CSDebug.LogWarning(error.ErrorMessage);
                     emailLoginResultMessage.text = "Unknown nightmare.";
                     break;
             }
@@ -116,7 +114,7 @@ namespace CosmicShore.Core
         {
             if (error == null)
             {
-                CSDebug.Log("Register Success.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Register Success.");
                 registerEmailResultMessage.text = "Register Success.";
                 return;
             }
@@ -124,22 +122,20 @@ namespace CosmicShore.Core
             switch (error.Error)
             {
                 case PlayFabErrorCode.DuplicateEmail:
-                    CSDebug.Log("Duplicated Email.");
+                    CSDebug.LogWarning("Duplicated Email.");
                     registerEmailResultMessage.text = "Duplicated Email.";
                     break;
                 case PlayFabErrorCode.EmailAddressNotAvailable:
-                    CSDebug.Log("Email Address is already in use.");
+                    CSDebug.LogWarning("Email Address is already in use.");
                     registerEmailResultMessage.text = "Email Address is already in use.";
                     break;
                 case PlayFabErrorCode.ConnectionError:
-                    CSDebug.Log("Not connected to Internet.");
+                    CSDebug.LogWarning("Not connected to Internet.");
                     registerEmailResultMessage.text = "Not connected to Internet.";
                     break;
                 default:
-                    CSDebug.Log("Unknown nightmare.");
-                    CSDebug.Log(error.ErrorMessage);
-                    CSDebug.Log(error.ErrorDetails);
-                    CSDebug.Log(error.Error.ToString());
+                    CSDebug.LogWarning("Unknown register error.");
+                    CSDebug.LogWarning(error.ErrorMessage);
                     registerEmailResultMessage.text = "Unknown nightmare.";
                     break;
             }
@@ -153,7 +149,7 @@ namespace CosmicShore.Core
         {
             if (error == null)
             {
-                CSDebug.Log("Login Success.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Login Success.");
                 emailLoginResultMessage.text = "Login Success.";
                 return;
             }
@@ -161,26 +157,24 @@ namespace CosmicShore.Core
             switch (error.Error)
             {
                 case PlayFabErrorCode.InvalidEmailAddress:
-                    CSDebug.Log("Invalid email address.");
+                    CSDebug.LogWarning("Invalid email address.");
                     emailLoginResultMessage.text = "Invalid email address.";
                     break;
                 case PlayFabErrorCode.InvalidAccount:
-                    CSDebug.Log("Invalid Account.");
+                    CSDebug.LogWarning("Invalid Account.");
                     emailLoginResultMessage.text = "Invalid Account.";
                     break;
                 case PlayFabErrorCode.InvalidPassword:
-                    CSDebug.Log("Invalid Password.");
+                    CSDebug.LogWarning("Invalid Password.");
                     emailLoginResultMessage.text = "Invalid Password.";
                     break;
                 case PlayFabErrorCode.ConnectionError:
-                    CSDebug.Log("Not connected to Internet.");
+                    CSDebug.LogWarning("Not connected to Internet.");
                     emailLoginResultMessage.text = "Not connected to Internet.";
                     break;
                 default:
-                    CSDebug.Log("Unknown nightmare.");
-                    CSDebug.Log(error.ErrorMessage);
-                    CSDebug.Log(error.ErrorDetails);
-                    CSDebug.Log(error.Error.ToString());
+                    CSDebug.LogWarning("Unknown login error.");
+                    CSDebug.LogWarning(error.ErrorMessage);
                     emailLoginResultMessage.text = "Unknown nightmare.";
                     break;
             }
@@ -231,7 +225,7 @@ namespace CosmicShore.Core
             var noun_index = random.Next(nouns.Count);
             var displayName = $"{adjectives[adj_index]} {nouns[noun_index]}";
             
-            CSDebug.Log($"AuthenticationView - Generated display name: {displayName}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] AuthenticationView - Generated display name: {displayName}");
             
             return displayName;
         }
@@ -257,7 +251,6 @@ namespace CosmicShore.Core
 
             BusyIndicator.SetActive(true);
 
-            CSDebug.Log($"Current player display name: {displayNameInputField.text}");
         }
 
         public void GenerateRandomNameButton_OnClicked()
@@ -285,7 +278,7 @@ namespace CosmicShore.Core
             if (result == null)
                 return;
             
-            CSDebug.Log("Successfully Set Player Display Name.");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Successfully Set Player Display Name.");
 
             displayNameResultMessage.text = "Success";
             displayNameResultMessage.gameObject.SetActive(true);

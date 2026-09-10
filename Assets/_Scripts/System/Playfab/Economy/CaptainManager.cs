@@ -121,12 +121,11 @@ namespace CosmicShore.Core
             if (invokeCallback)
                 OnLoadCaptainData?.Invoke();
 
-            CSDebug.Log($"LoadCaptainData - {captain.Name}, Level:{captain.Level}, XP:{captain.XP}, Unlocked:{captain.Unlocked}, Encountered:{captain.Encountered}");
         }
 
         public void IssueXP(string captainName, int amount)
         {
-            CSDebug.Log($"CaptainManager.IssueXP {captainName}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CaptainManager.IssueXP {captainName}, {amount}");
             IssueXP(GetCaptainByName(captainName), amount);
         }
 
@@ -136,7 +135,7 @@ namespace CosmicShore.Core
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
             // Save to Playfab
-            CSDebug.Log($"CaptainManager.IssueXP {captain.Name}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CaptainManager.IssueXP {captain.Name}, {amount}");
             XpHandler.IssueXP(captain, amount);
         }
 

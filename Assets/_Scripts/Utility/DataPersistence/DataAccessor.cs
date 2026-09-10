@@ -76,10 +76,6 @@ namespace CosmicShore.Utility
                     dataStream.Read(data, 0, (int)dataStream.Length);
 
                     string json = Encoding.ASCII.GetString(data);
-                    // Truncate the diagnostic dump - large saves (e.g. painting drawing state,
-                    // hundreds of KB) would otherwise stall the load frame just printing to console.
-                    CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Bytes:{data.Length}, Data:" +
-                                (json.Length > 2048 ? json.Substring(0, 2048) + "…[truncated]" : json));
 
                     Data = (T)JsonConvert.DeserializeObject(json, typeof(T));
 

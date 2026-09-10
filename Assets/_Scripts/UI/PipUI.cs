@@ -90,7 +90,6 @@ namespace CosmicShore.UI
 
         public void ToggleSizeAndPosition()
         {
-            CSDebug.Log("pip button pressed");
             isSmall = !isSmall;
 
             // negative x is to get the mirror image without loosing the raycast target. the y values are whack and we don't know why.

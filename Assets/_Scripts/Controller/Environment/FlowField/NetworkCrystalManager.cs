@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
                 n_Slots[i] = CrystalSlotData.Empty;
-            CSDebug.Log("[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
         }
 
         // ---------------- Server Turn Start ----------------

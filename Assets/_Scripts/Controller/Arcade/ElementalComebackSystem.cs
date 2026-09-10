@@ -138,7 +138,7 @@ namespace CosmicShore.Gameplay
             system.useGolfRules = useGolfRules;
             system.Bind(gameData);
 
-            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
                         $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
             return system;
         }
@@ -261,7 +261,7 @@ namespace CosmicShore.Gameplay
             _subscribed = true;
 
             if (debugLogging)
-                CSDebug.Log("[ElementalComebackSystem] Subscribed to game events.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Subscribed to game events.");
         }
 
         void Unsubscribe()
@@ -291,8 +291,8 @@ namespace CosmicShore.Gameplay
 
         void OnTurnStarted()
         {
-            if (debugLogging)
-                CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+            if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] OnTurnStarted fired. " +
                           $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
                           $"Source={differenceSource}");
@@ -318,8 +318,8 @@ namespace CosmicShore.Gameplay
 
                 ApplyInitialValues(rs, config);
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -328,7 +328,7 @@ namespace CosmicShore.Gameplay
         void OnTurnEnded()
         {
             if (debugLogging && _isActive)
-                CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Turn ended. Deactivating.");
             Deactivate();
         }
 
@@ -412,10 +412,10 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] {player.Name}: " +
                               $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
-                              $"bonus={bonusLevels:F1} → " +
+                              $"bonus={bonusLevels:F1} -> " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }

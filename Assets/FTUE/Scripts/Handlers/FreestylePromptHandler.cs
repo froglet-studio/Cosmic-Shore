@@ -14,7 +14,6 @@ namespace CosmicShore.Core
 
         public IEnumerator ExecuteStep(TutorialStep step, IFlowController controller)
         {
-            Debug.Log("Playing this step");
 
             //yield return new WaitForSeconds(1f);
 

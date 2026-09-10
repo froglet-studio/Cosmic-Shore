@@ -69,8 +69,7 @@ namespace CosmicShore.Core
 
             CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.DailyRewardAmount);
 
-            CSDebug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            CSDebug.Log($"Cloud script - Result: {result.FunctionResult}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler - Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
         }
 
         /// <summary>
@@ -103,7 +102,7 @@ namespace CosmicShore.Core
             // TODO: P1 need to do this in the on success callback - extend the backend to return the reward value granted
             CatalogManager.Instance.RewardClaimed(Element.Omni, rewardValue);
 
-            CSDebug.Log($"ClaimDailyChallengeReward(int tier, int rewardValue) - tier:{tier}, value:{rewardValue}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler.ClaimDailyChallengeReward - tier:{tier}, value:{rewardValue}");
             CloudScriptRunner.Execute(functionProperties);
         }
 
@@ -114,15 +113,13 @@ namespace CosmicShore.Core
         /// <param name="result">Function execution result</param>
         void OnClaimDailyChallengeRewardSuccess(ExecuteFunctionResult result)
         {
-            CSDebug.Log("DailyRewardHandler - OnClaimDailyChallengeRewardSuccess");
             if (result.FunctionResultTooLarge ?? false)
             {
                 CSDebug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
                 return;
             }
             
-            CSDebug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            CSDebug.Log($"Cloud script - Result: {result.FunctionResult}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler - Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
         }
 
         /// <summary>

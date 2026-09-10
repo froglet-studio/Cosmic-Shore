@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
                 _netStealTarget.Value = target;
                 gameData.PrismTargetCount = target;
 
-                CSDebug.Log($"[HijackStealMonitor] Server set steal target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[HijackStealMonitor] Server set steal target: {target}");
             }
             else if (_netStealTarget.Value > 0)
             {

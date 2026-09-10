@@ -140,7 +140,7 @@ namespace CosmicShore.UI
             if (gameController == null)
             {
                 // Not an error: menu / tool scenes legitimately host GameCanvas with no controller.
-                CSDebug.Log("[Scoreboard] No MiniGameControllerBase in this scene - Play Again is unavailable.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[Scoreboard] No MiniGameControllerBase in this scene - Play Again is unavailable");
             }
         }
 
@@ -533,7 +533,7 @@ namespace CosmicShore.UI
             try
             {
                 int newBalance = service.AddCrystals(amount, source);
-                CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}) - new balance={newBalance}");
             }
             catch (System.Exception e)
             {

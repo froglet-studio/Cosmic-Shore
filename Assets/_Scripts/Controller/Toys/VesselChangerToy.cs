@@ -209,7 +209,7 @@ namespace CosmicShore.Gameplay
             var init = Context?.VesselInitializer;
             if (!init || init.IsSwapping)
             {
-                CSDebug.Log("[VesselChanger] A swap is already in flight - ignoring this pass.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[VesselChanger] A swap is already in flight - ignoring this pass.");
                 return;
             }
 
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay
 
             init.RequestSwap(target);
             RestoreControlAfterSwap(this.GetCancellationTokenOnDestroy()).Forget();
-            CSDebug.Log($"[VesselChanger] → {target}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[VesselChanger] -> {target}.");
         }
 
         // ── App-shell face ───────────────────────────────────────────────────

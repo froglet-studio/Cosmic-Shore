@@ -37,6 +37,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
 using UnityEngine;
@@ -118,12 +119,12 @@ namespace CosmicShore.Gameplay
                 string value = prop?.Value ?? string.Empty;
                 if (value != localPlayerId)
                 {
-                    if (!string.IsNullOrEmpty(value))
-                        Debug.Log($"[AcceptanceSignalService] Player {p.Id} accepted_invite='{value}' - not us ('{localPlayerId}'), skipping.");
+                    if (!string.IsNullOrEmpty(value) && CSDebug.IsVerbose(CSLogChannel.Party))
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] Player {p.Id} accepted_invite='{value}' - not us ('{localPlayerId}'), skipping.");
                     continue;
                 }
 
-                Debug.Log($"[AcceptanceSignalService] Acceptance signal from {p.Id}.");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] Acceptance signal from {p.Id}.");
                 (accepters ??= new List<string>()).Add(p.Id);
             }
             return accepters ?? (IReadOnlyList<string>)Array.Empty<string>();
@@ -168,7 +169,7 @@ namespace CosmicShore.Gameplay
             // guest is trying to join.
             if (invites.UpdatePayloadsWithRealSessionId(realSessionId) == 0)
             {
-                Debug.Log("[AcceptanceSignalService] Every outgoing invite already carries a real session id - nothing to republish.");
+                CSDebug.LogVerbose(CSLogChannel.Party, "[AcceptanceSignalService] Every outgoing invite already carries a real session id - nothing to republish.");
                 return;
             }
 
@@ -178,13 +179,13 @@ namespace CosmicShore.Gameplay
             try { await lobbyService.RefreshAsync(); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[AcceptanceSignalService] Pre-save refresh failed (non-fatal) ({e.GetType().Name}): {e}");
+                CSDebug.LogWarning($"[AcceptanceSignalService] Pre-save refresh failed (non-fatal) ({e.GetType().Name}): {e}");
             }
 
             var lobby = lobbyService.ActiveLobby;
             if (lobby == null)
             {
-                Debug.LogWarning("[AcceptanceSignalService] RepublishWithRealId: lobby became null after refresh - skipping save.");
+                CSDebug.LogWarning("[AcceptanceSignalService] RepublishWithRealId: lobby became null after refresh - skipping save.");
                 return;
             }
 
@@ -193,7 +194,7 @@ namespace CosmicShore.Gameplay
                 new PlayerProperty(composite, VisibilityPropertyOptions.Public));
 
             await writer.SaveWithRetryAsync(lobby);
-            Debug.Log($"[AcceptanceSignalService] Republished {invites.OutgoingCount} invite(s) with real session id {realSessionId}.");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] Republished {invites.OutgoingCount} invite(s) with real session id {realSessionId}.");
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -226,7 +227,7 @@ namespace CosmicShore.Gameplay
                 {
                     lobby.CurrentPlayer.SetProperty(ACCEPTED_INVITE_KEY,
                         new PlayerProperty(hostPlayerId, VisibilityPropertyOptions.Public));
-                    Debug.Log($"[AcceptanceSignalService] Published acceptance signal to host {hostPlayerId}.");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] Published acceptance signal to host {hostPlayerId}.");
                 },
                 "PublishAcceptanceSignal");
         }
@@ -275,7 +276,7 @@ namespace CosmicShore.Gameplay
                 var lobby = lobbyService.ActiveLobby;
                 if (lobby == null)
                 {
-                    Debug.LogWarning("[AcceptanceSignalService] WaitForRealSessionId: lobby reset - retrying next poll.");
+                    CSDebug.LogWarning("[AcceptanceSignalService] WaitForRealSessionId: lobby reset - retrying next poll.");
                     continue;
                 }
 
@@ -287,14 +288,14 @@ namespace CosmicShore.Gameplay
 
                     if (!p.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var prop))
                     {
-                        if (pollCount % 5 == 1)
-                            Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: host found but no {INVITE_PAYLOADS_KEY} yet.");
+                        if (pollCount % 5 == 1 && CSDebug.IsVerbose(CSLogChannel.Party))
+                            CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: host found but no {INVITE_PAYLOADS_KEY} yet.");
                         break;
                     }
                     if (string.IsNullOrEmpty(prop?.Value))
                     {
-                        if (pollCount % 5 == 1)
-                            Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: {INVITE_PAYLOADS_KEY} is empty.");
+                        if (pollCount % 5 == 1 && CSDebug.IsVerbose(CSLogChannel.Party))
+                            CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: {INVITE_PAYLOADS_KEY} is empty.");
                         break;
                     }
 
@@ -311,19 +312,19 @@ namespace CosmicShore.Gameplay
                         var sid = parsed.Value.invite.PartySessionId;
                         if (!string.IsNullOrEmpty(sid) && sid != InviteService.PENDING_SESSION_ID)
                         {
-                            Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId resolved after {pollCount} polls: {sid}");
+                            CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId resolved after {pollCount} polls: {sid}");
                             return sid;
                         }
-                        if (pollCount % 5 == 1)
-                            Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: session id still PENDING.");
+                        if (pollCount % 5 == 1 && CSDebug.IsVerbose(CSLogChannel.Party))
+                            CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: session id still PENDING.");
                     }
-                    if (!foundForUs && pollCount % 5 == 1)
-                        Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: payload present but no line targeting us.");
+                    if (!foundForUs && pollCount % 5 == 1 && CSDebug.IsVerbose(CSLogChannel.Party))
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: payload present but no line targeting us.");
                     break;
                 }
 
-                if (!hostFound && pollCount % 5 == 1)
-                    Debug.Log($"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in lobby ({lobby.Players.Count} players).");
+                if (!hostFound && pollCount % 5 == 1 && CSDebug.IsVerbose(CSLogChannel.Party))
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[AcceptanceSignalService] WaitForRealSessionId poll#{pollCount}: host {hostPlayerId} not in lobby ({lobby.Players.Count} players).");
             }
 
             throw new TimeoutException(
