@@ -230,7 +230,6 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRedline.asset",
   MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
-  CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: {COMEBACK_RATE}
