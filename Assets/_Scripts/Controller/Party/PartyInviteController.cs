@@ -258,6 +258,155 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ─────────────────────────────────────────────────────────────────────
+        // Public API: Direct join / Spectate (no invite)
+        // ─────────────────────────────────────────────────────────────────────
+
+        [Header("Spectate")]
+        [Tooltip("Max seconds, after the Netcode client connects, to wait for the watched match's " +
+                 "scene to sync and its first vessel to bind before the spectator bounces back to " +
+                 "its own solo menu. Covers the host-driven scene load plus the roster pull.")]
+        [SerializeField] private float spectateReadyTimeoutSeconds = 45f;
+
+        /// <summary>
+        /// The online row's JOIN button: join <paramref name="target"/>'s party directly, with no
+        /// invite. The same shutdown → join → connect → client-ready → bounce sequence as
+        /// <see cref="AcceptInviteAsync"/> (kept as a sibling rather than a refactor of that
+        /// hardened path), differing only in the session join it performs
+        /// (<see cref="HostConnectionService.JoinPartyDirectAsync"/>).
+        /// </summary>
+        public UniTask JoinPartyAsync(PartyPlayerData target) =>
+            RunClientJoinAsync(
+                $"direct-join → {target.DisplayName}",
+                expectLocalVessel: true,
+                joinSession: () => HostConnectionService.Instance.JoinPartyDirectAsync(target),
+                afterConnected: null);
+
+        /// <summary>
+        /// The online row's SPECTATE button: connect to the match <paramref name="target"/> is
+        /// playing as a viewer. Arms the spectator approval payload BEFORE the join so the host
+        /// mints no Player object for us (<see cref="SpectatorSession"/>), joins the session with
+        /// the spectator property (<see cref="HostConnectionService.JoinAsSpectatorAsync"/>), and
+        /// then hands over to <see cref="SpectatorController"/>, which owns the camera, the overlay
+        /// and the exit. The success gate is "watching a vessel", never OnClientReady - a
+        /// spectator has no local vessel, so that event never fires for it.
+        /// </summary>
+        public UniTask SpectateAsync(PartyPlayerData target) =>
+            RunClientJoinAsync(
+                $"spectate → {target.DisplayName}",
+                expectLocalVessel: false,
+                joinSession: () =>
+                {
+                    SpectatorSession.BeginLocal(target);
+                    return HostConnectionService.Instance.JoinAsSpectatorAsync(target.PartySessionId);
+                },
+                afterConnected: ct =>
+                {
+                    var controller = SpectatorController.Begin(target, gameData, _sceneTransitionManager, _sceneNames);
+                    return controller.WaitUntilWatchingAsync(spectateReadyTimeoutSeconds, ct);
+                });
+
+        /// <summary>
+        /// Shared body of the two no-invite joins. Mirrors <see cref="AcceptInviteAsync"/> step
+        /// for step; the two flags say what a SUCCESSFUL join looks like (a local vessel, or a
+        /// spectator watching one). Every failure lands in the same bounce.
+        /// </summary>
+        private async UniTask RunClientJoinAsync(
+            string label,
+            bool expectLocalVessel,
+            Func<UniTask> joinSession,
+            Func<CancellationToken, UniTask<bool>> afterConnected)
+        {
+            if (_transitioning)
+            {
+                Debug.LogWarning($"[PartyInviteController] Already transitioning - ignoring {label}.");
+                return;
+            }
+
+            _transitioning = true;
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = new CancellationTokenSource();
+            var ct = _cts.Token;
+
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+            // Only a join that ENDS in a local vessel may arm the OnClientReady fade: for a
+            // spectator that event never comes, and SpectatorController fades the veil itself
+            // once it is watching something.
+            if (expectLocalVessel)
+                _sceneLoader?.ArmSplashFadeOnNextClientReady();
+            PauseSystem.TogglePauseGame(false);
+
+            try
+            {
+                Debug.Log($"[PartyInviteController] Starting {label}...");
+
+                await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct).AsMainThread();
+                _networkTransition.ClearStaleReferences();
+
+                if (HostConnectionService.Instance == null)
+                {
+                    Debug.LogError("[PartyInviteController] HostConnectionService not available.");
+                    await BounceToSoloMenuAsync("Couldn't join - returned to your menu.");
+                    return;
+                }
+
+                await joinSession().AsMainThread();
+                Debug.Log($"[PartyInviteController] {label}: joined session via UGS.");
+
+                bool connected = await _networkTransition
+                    .WaitForClientConnectionAsync(connectionTimeoutSeconds, ct).AsMainThread();
+                if (!connected)
+                {
+                    Debug.LogError($"[PartyInviteController] {label}: Netcode client never connected - bouncing to solo menu.");
+                    await BounceToSoloMenuAsync("Couldn't join - returned to your menu.");
+                    return;
+                }
+
+                bool ready = expectLocalVessel
+                    ? await WaitForClientReadyAsync(joinReadyTimeoutSeconds, ct)
+                    : afterConnected == null || await afterConnected(ct);
+                if (!ready)
+                {
+                    Debug.LogError($"[PartyInviteController] {label}: never became ready within budget - bouncing to solo menu.");
+                    await BounceToSoloMenuAsync("Couldn't join - returned to your menu.");
+                    return;
+                }
+
+                if (expectLocalVessel)
+                {
+                    try
+                    {
+                        connectionData.OnPartyJoinCompleted.Raise();
+                        HostConnectionService.Instance?.ForceRefreshNow();
+                    }
+                    catch (Exception postEx)
+                    {
+                        Debug.LogWarning(
+                            $"[PartyInviteController] Post-join signal failed " +
+                            $"({postEx.GetType().Name}): {postEx.Message} - join already succeeded, continuing.");
+                    }
+                }
+
+                Debug.Log($"[PartyInviteController] {label} completed successfully.");
+            }
+            catch (OperationCanceledException)
+            {
+                Debug.Log($"[PartyInviteController] {label} cancelled.");
+            }
+            catch (Exception e)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update);
+                Debug.LogError($"[PartyInviteController] {label} failed ({e.GetType().Name}): {e}");
+                CosmicShore.Utility.CSDebug.Log($"[PartyInviteController] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                await RecoverFromFailedTransitionAsync();
+            }
+            finally
+            {
+                _transitioning = false;
+            }
+        }
+
         /// <summary>
         /// Decline the pending invite. Dismisses the popup and clears the invite.
         /// </summary>
@@ -294,6 +443,10 @@ namespace CosmicShore.Gameplay
             try
             {
                 Debug.Log("[PartyInviteController] Starting leave-lobby flow...");
+
+                // A spectator leaves through this very path (its overlay's close button, the
+                // watched match ending). Disarm before the solo session below starts a host.
+                SpectatorSession.EndLocal();
 
                 // Mirror cold-boot exactly: tear down vessel/Player/SOAP refs →
                 // leave UGS session → shut down NM → load Menu_Main locally (NM is
@@ -470,6 +623,10 @@ namespace CosmicShore.Gameplay
             // PlayerLoop.Update to guarantee main thread before touching anything.
             await UniTask.Yield(PlayerLoopTiming.Update);
             Debug.Log("[PartyInviteController] Attempting recovery - recreating solo Relay session...");
+
+            // A spectate that failed or lost its host must not leave the approval payload armed:
+            // the solo session recreated below would otherwise present it to ITSELF on start.
+            SpectatorSession.EndLocal();
 
             try
             {

@@ -604,6 +604,56 @@ route in this project (`ModalWindowIn` carries an externally-deactivated recover
 cancelling on disable could kill the deferred toy action on exactly that route. It is cancelled on
 destroy, and superseded when a second handoff starts.
 
+## 4.3 Cards REVEAL on open, and the hub buttons stand down while any modal is up
+
+The sibling of §4.2, from the other end: a window OPENS without being enabled either, so anything
+that should happen "when the grid appears" cannot ride `OnEnable` and cannot ride repopulation
+(the arcade grid is populated once at `Start` and reused). `ModalWindowManager` therefore raises
+**`OnModalOpened`** after `isOn = true` in `ModalWindowIn`, and both card grids subscribe to it —
+`ArcadeExploreView` (arcade AND arena, one view) through its host modal, `ToyboxModal` through
+every `ModalWindowManager` on its own GameObject, since it carries two. `CardGridReveal.Play`
+then blooms the cards one by one: scale from 0.6 with a `CanvasGroup` fade, stagger capped so the
+whole row lands inside ~0.55 s however many cards there are, OutBack, on unscaled time. It is
+**scale and alpha only** — every grid here is laid out by a layout group, and a position tween
+fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass records). The
+reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the feel is one asset rather than
+a per-view constant.
+
+**The grid owns its ROWS, not just its cards.** `ArcadeExploreView.NormalizeGridRows` runs at the
+end of every populate and settles two things the fill loop leaves open. A row is **shown iff it
+holds a visible card** — the fill loop switches every card off and the filled ones back on, but a
+card inside an inactive ROW is not `activeInHierarchy` whatever its own flag says, so a row left
+disabled in the scene silently deletes four modes with no error and nothing to distinguish it from
+"not shipped yet" (the Arena work disabled all three arcade rows in Menu_Main and the whole grid
+came up empty). And every row takes the **first row's height**, because the grid stacks rows with a
+NEGATIVE spacing and does not control child height: the gap between two rows is that row's own
+height plus the spacing, Menu_Main authors 384.74 / 365.31 / 456.00 around identical 202.72-tall
+cards, and a row this view CLONES inherits the last one — 71 units of unexplained air above the
+overflow row. General rule: **with a layout group that does not control child size, a non-uniform
+child is a non-uniform gap, and a negative spacing makes it look deliberate.**
+
+**It cannot leave a card invisible, and that is a structural choice, not tuning.** The first cut
+tweened each card's own `CanvasGroup` with DOTween and the arcade grid came up EMPTY — every card
+sat at the alpha 0 the reveal had written and nothing ever brought it back, which on screen reads
+as "none of the arcade games are showing" rather than as a broken animation. A per-card tween can
+be killed, paused, or never ticked by something the grid cannot see, and the resting state then
+depends on the tween surviving. The cascade is therefore ONE coroutine on the grid's own host
+(`ArcadeExploreView` / `ToyboxModal`), and its exit — reached on completion, and by
+`CardGridReveal.Snap` on any interruption (a re-open, the host disabling or being destroyed, a
+second `Play`) — writes every card back to alpha 1 / scale 1. General rule: **when an animation's
+start state is "invisible", the rest state must be reached by the routine's EXIT, never by the
+animation's success.**
+
+The four home-hub buttons (`MenuHubButton`s under one container) are a separate rule with the
+same trigger: **visible iff no modal is open, freestyle is off and HOME is the screen**.
+`ScreenSwitcher.UpdateHubButtonsVisibility` fades the container's `CanvasGroup` (added if the
+container authors none, so nothing in the scene has to be wired) and is called from the four
+places that change any of those three facts — `CommitModalStackState`, the end of `NavigateTo`,
+and the freestyle enter/exit handlers — because the switcher already owns the modal stack, the
+screen index and the freestyle flag, and a button that watched any one of them alone would be
+wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
+can neither be clicked through a modal nor reached by gamepad navigation.
+
 ## 5. Scene wiring checklist
 
 The UI itself is hand-designed. What the code needs:
