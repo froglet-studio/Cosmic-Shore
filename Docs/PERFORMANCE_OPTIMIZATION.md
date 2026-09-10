@@ -169,6 +169,12 @@ with four `Instantiate.Awake` calls.
 birthing one daughter per fauna-wave period — **5 s in the boot world** — so a
 birth lands roughly every 0.4 s, and each one is ~1.2 ms in a single frame.
 
+> **One birth, not four.** `CellLifeSpawnerBase.SpawnFlora` does exactly one
+> `Instantiate`; the rest of the chain is the child's own `Initialize` creating
+> its heart crystal and first spindle. The single `Activate`/`Deactivate` pair in
+> the trace is the tell. This matters because it rules out the obvious fix —
+> see the correction in §4 Tier 0a before designing anything.
+
 ### Second finding: 1,080 infinite coroutines, allocating
 
 `Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
@@ -1369,14 +1375,41 @@ enqueues into `pendingSpawns`, drained under `maxSpawnsPerFrame` in `Update`
 path never joined it: `Flora.TryReproduce()` and `Flora.TrySpawnOneOffspring()`
 both call `SpawnOffspring()` → `CellLifeSpawnerBase.SpawnFlora` inline, and both
 run at the top of `Grow()`.
-**Fix:** route a birth through a deferred queue like growth already is — but a
-**cell-wide** one with a global budget, not a per-plant one, because a birth is a
-POPULATION event (`Docs/ECOSYSTEM.md` §32.7) and because `maxSpawnsPerFrame` is
-already per-plant (Tier 2 #7 — N plants × budget lands in one frame).
-`PrismTrailBuilder.LayBudgetedAsync` is the in-repo global-ms-budget pattern.
-**This is an ecology change: route it through the `/ecology` skill.** It is
-pacing, not capping — production is deferred by a frame or two and nothing is
-culled, so `§0`'s conserved-mass law is untouched.
+**⚠ CORRECTED 2026-09-10, before implementing.** The first version of this entry
+proposed a cell-wide per-frame **birth budget**, on the assumption that the four
+`Instantiate` calls were four coinciding births. **They are not.** Reading the
+spawn path: `CellLifeSpawnerBase.SpawnFlora` does exactly ONE `Instantiate`, and
+the child's own `Initialize` then instantiates its heart crystal
+(`LifeFormCrystal`, `Object.Instantiate`) and its first spindle
+(`SpindleTracker.Instantiate`). The single `GameObject.Activate` /
+`GameObject.Deactivate` pair in the trace confirms one staged object, not four.
+So **4 `Instantiate` ≈ ONE birth ≈ 1.22 ms**, and *a budget that spreads births
+across frames cannot reduce the cost of a single birth.* Seeded prisms are not in
+this count — they are pooled (`Prism.CreateBlockCoroutine`, 16 calls, **0 B**).
+
+**What a budget is still worth, stated honestly:** the 12 colonies run
+independent staggered clocks (`PopulationCycleStagger`), which spreads them but
+does not make coincidence impossible. A cell-wide 1-birth-per-frame gate bounds
+the *worst* case (two colonies landing together) and is cheap and safe — it
+declines *before* `TryResolveOffspringPlacement`, so it cannot strand a
+`PrismSpatialIndex` reservation, and the code already documents the correct
+response to a declined birth ("a plant blocked by the cap … stays ARMED").
+It is production gating, which `§0` permits; nothing is culled. But it is a
+**bound, not the fix.**
+
+**The actual single-birth cost needs a number before anyone designs for it.**
+Every prefab involved is tiny — `GyroidFlora` 6 GameObjects, `SchwarzPFlora` and
+`QuasicrystalFlora` 2 each, the crystals 2–5 — so **0.3 ms per `Instantiate` is
+implausible for a player build**, and the same trace carries
+`EditorOnly [CheckAllowDestructionRecursive]` and
+`TextureStreamingManager.RemoveRenderer`. **Re-take this frame in a development
+build first.** If the cost survives, the candidates in order are: pool the heart
+crystal (4 prefabs, one per lifeform birth *and* per death drop — the project
+already pools prisms and projectiles), then `InstantiateAsync` (already the
+established pattern here for pool refills, commit `75828ff0`). Do not pool or
+async-ify anything on the strength of an editor measurement.
+
+**Either way this is an ecology change: route it through the `/ecology` skill.**
 
 **0b. 1,080 infinite coroutines, each allocating per tick.**
 `Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
