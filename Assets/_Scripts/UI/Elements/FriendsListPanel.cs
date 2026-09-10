@@ -336,7 +336,10 @@ namespace CosmicShore.UI
                 matchName,
                 onInvite: localPartyFull ? null : OnInviteClicked,
                 onCancel: OnCancelInviteClicked,
-                onKick: canKick ? OnKickMemberClicked : null);
+                onKick: canKick ? OnKickMemberClicked : null,
+                joinMode: ResolveJoinMode(player, status),
+                onJoin: OnJoinClicked,
+                onSpectate: OnSpectateClicked);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -387,6 +390,50 @@ namespace CosmicShore.UI
                 return OnlineInfoEntry.Status.InLobby;
 
             return OnlineInfoEntry.Status.Online;
+        }
+
+        /// <summary>
+        /// What the row's JOIN / SPECTATE button does for this player. The verb follows the
+        /// status the row already resolved; whether it is LIVE follows whether the player
+        /// advertises a session at all (<see cref="PartyPlayerData.HasJoinableSession"/> - a
+        /// peer on an older build, or one spectating somebody else, publishes none) and, for a
+        /// join, whether their party has a seat left.
+        /// </summary>
+        internal static OnlineInfoEntry.JoinMode ResolveJoinMode(PartyPlayerData player, OnlineInfoEntry.Status status)
+        {
+            switch (status)
+            {
+                // Already with them - there is nothing to join and nothing to watch from outside.
+                case OnlineInfoEntry.Status.InYourParty:
+                    return OnlineInfoEntry.JoinMode.Hidden;
+                // A pilot mid-match can be WATCHED, never joined as a player: the button becomes
+                // the eye, and it is the only live control on the row.
+                case OnlineInfoEntry.Status.InMatch:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.Spectate
+                        : OnlineInfoEntry.JoinMode.SpectateDisabled;
+                case OnlineInfoEntry.Status.LobbyFull:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.JoinDisabled
+                        : OnlineInfoEntry.JoinMode.Hidden;
+                default:
+                    return player.HasJoinableSession
+                        ? OnlineInfoEntry.JoinMode.Join
+                        : OnlineInfoEntry.JoinMode.Hidden;
+            }
+        }
+
+        bool TryGetOnlinePlayer(string playerId, out PartyPlayerData player)
+        {
+            player = default;
+            if (connectionData?.OnlinePlayers == null) return false;
+            foreach (var p in connectionData.OnlinePlayers)
+            {
+                if (p.PlayerId != playerId) continue;
+                player = p;
+                return true;
+            }
+            return false;
         }
 
         bool IsInSameParty(string remotePlayerId)
@@ -658,6 +705,71 @@ namespace CosmicShore.UI
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to kick member: {e.Message}");
                 // Re-render so the optimistically-hidden ✕ recovers if the kick didn't take.
+                PopulateOnlineSection();
+            }
+        }
+
+        // The JOIN button: move this machine into that player's party with no invite. The
+        // controller covers the screen and runs the same shutdown → join → connect → ready →
+        // bounce sequence an accepted invite does; on success this whole panel is gone with
+        // the old solo session, so there is nothing to restore here but the failure case.
+        async void OnJoinClicked(string playerId)
+        {
+            if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
+            {
+                ToastNotificationAPI.Show("That party can't be joined right now.");
+                PopulateOnlineSection();
+                return;
+            }
+
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                ToastNotificationAPI.Show("Party controller not available.");
+                PopulateOnlineSection();
+                return;
+            }
+
+            try
+            {
+                await controller.JoinPartyAsync(player);
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Join party failed: {e.Message}");
+                ToastNotificationAPI.Show("Failed to join party.");
+                PopulateOnlineSection();
+            }
+        }
+
+        // The SPECTATE (eye) button: watch that player's match. Same transition as a join, but
+        // this machine connects as a viewer (no Player, no vessel) and SpectatorController
+        // takes over from there until the viewer leaves or the match ends.
+        async void OnSpectateClicked(string playerId)
+        {
+            if (!TryGetOnlinePlayer(playerId, out var player) || !player.HasJoinableSession)
+            {
+                ToastNotificationAPI.Show("That match can't be spectated right now.");
+                PopulateOnlineSection();
+                return;
+            }
+
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                ToastNotificationAPI.Show("Party controller not available.");
+                PopulateOnlineSection();
+                return;
+            }
+
+            try
+            {
+                await controller.SpectateAsync(player);
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Spectate failed: {e.Message}");
+                ToastNotificationAPI.Show("Failed to spectate.");
                 PopulateOnlineSection();
             }
         }

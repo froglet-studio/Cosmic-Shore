@@ -15,6 +15,14 @@ namespace CosmicShore.UI
     /// (click = kick them). Sending an invite tints the row yellowish and pulses until
     /// the target accepts/declines/times out. Invite, cancel and kick all pass through
     /// a shared cooldown so the buttons can't be spam-clicked.
+    ///
+    /// <para>A third button, JOIN / SPECTATE, is ONE control with two verbs decided by the
+    /// row's status (<see cref="JoinMode"/>): JOIN their party directly with no invite (blue;
+    /// disabled while their party is full), or - when they are in a match - SPECTATE it
+    /// (yellow eye), which is then the row's only live control. Both need the player to
+    /// advertise a party session (<c>PartyPlayerData.PartySessionId</c>); without one the button
+    /// is drawn inert rather than hidden, so "you cannot" reads differently from "there is no
+    /// such thing". See Docs/PartySystem/SPECTATOR.md.</para>
     /// </summary>
     public class OnlineInfoEntry : MonoBehaviour
     {
@@ -34,6 +42,25 @@ namespace CosmicShore.UI
                  "retracts it) OR when this player is in your party and you're the host (click " +
                  "kicks them). Leave unassigned to disable the affordance.")]
         [SerializeField] private Button cancelButton;
+
+        [Header("Join / Spectate Button")]
+        [Tooltip("ONE button, two verbs. JOIN (blue): join this player's party directly, no invite " +
+                 "- shown whenever they advertise a party session and are not already in yours, " +
+                 "DISABLED while their party is full. SPECTATE (yellow eye): when they are in a " +
+                 "match it is the ONLY control left on the row and watches their game. Leave " +
+                 "unassigned to disable both affordances.")]
+        [SerializeField] private Button joinButton;
+        [Tooltip("The join button's icon Image - swapped between joinSprite and spectateSprite " +
+                 "and tinted joinTint / spectateTint. Defaults to the button's own Image.")]
+        [SerializeField] private Image joinButtonIcon;
+        [SerializeField] private Sprite joinSprite;
+        [SerializeField] private Sprite spectateSprite;
+        [Tooltip("Icon tint in JOIN mode (blue).")]
+        [SerializeField] private Color joinTint = new(0.4f, 0.885f, 1f, 1f);
+        [Tooltip("Icon tint in SPECTATE mode (yellow).")]
+        [SerializeField] private Color spectateTint = new(1f, 0.85f, 0.25f, 1f);
+        [Tooltip("Icon alpha while the button is shown but cannot be pressed (party full, no session).")]
+        [SerializeField, Range(0f, 1f)] private float joinDisabledAlpha = 0.35f;
 
         [Header("Status Colors (applied to Label Text)")]
         [SerializeField] private Color onlineColor = Color.white;
@@ -75,12 +102,30 @@ namespace CosmicShore.UI
 
         public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
 
+        /// <summary>What the row's join/spectate button is doing for this player.</summary>
+        public enum JoinMode
+        {
+            /// <summary>No button - already in your party, or nothing to join.</summary>
+            Hidden,
+            /// <summary>JOIN their party directly.</summary>
+            Join,
+            /// <summary>JOIN drawn but inert - their party is full.</summary>
+            JoinDisabled,
+            /// <summary>SPECTATE their match (the only control on the row).</summary>
+            Spectate,
+            /// <summary>SPECTATE drawn but inert - in a match that advertises no session.</summary>
+            SpectateDisabled,
+        }
+
         string _playerId;
         Action<string> _onInvite;
         Action<string> _onCancel;
         Action<string> _onKick;
+        Action<string> _onJoin;
+        Action<string> _onSpectate;
         bool _invitable;
         bool _kickable;
+        JoinMode _joinMode = JoinMode.Hidden;
         Status _lastStatus;
         int _lastPartyMemberCount;
         int _lastPartyMaxSlots;
@@ -105,6 +150,9 @@ namespace CosmicShore.UI
         /// <param name="onInvite">Invite callback; null (or a non-invitable status) hides the Invite button.</param>
         /// <param name="onCancel">Cancel-invite callback, fired by the ✕ while an invite is pending.</param>
         /// <param name="onKick">Kick callback; pass non-null only for a kickable party member (host view) - its presence shows the ✕ in kick mode.</param>
+        /// <param name="joinMode">What the join/spectate button does for this row (see <see cref="JoinMode"/>).</param>
+        /// <param name="onJoin">Direct-join callback for <see cref="JoinMode.Join"/>.</param>
+        /// <param name="onSpectate">Spectate callback for <see cref="JoinMode.Spectate"/>.</param>
         public void Populate(
             string playerId,
             string displayName,
@@ -115,12 +163,17 @@ namespace CosmicShore.UI
             string matchName,
             Action<string> onInvite,
             Action<string> onCancel = null,
-            Action<string> onKick = null)
+            Action<string> onKick = null,
+            JoinMode joinMode = JoinMode.Hidden,
+            Action<string> onJoin = null,
+            Action<string> onSpectate = null)
         {
             _playerId = playerId;
             _onInvite = onInvite;
             _onCancel = onCancel;
             _onKick = onKick;
+            _onJoin = onJoin;
+            _onSpectate = onSpectate;
 
             if (usernameText)
                 usernameText.text = displayName ?? "Unknown";
@@ -163,11 +216,43 @@ namespace CosmicShore.UI
                 cancelButton.gameObject.SetActive(_kickable);
             }
 
+            // Join / Spectate - one button, two verbs (see JoinMode). In a MATCH it is the only
+            // control left on the row: a pilot mid-game can be watched but not invited or kicked.
+            ApplyJoinMode(joinMode);
+
             // Reset visual pending state when re-populating (unless
             // FriendsListPanel explicitly re-applies it via SetInvitePending).
             StopPulse();
             _isPending = false;
-            ApplyRowTint(_invitable ? defaultTint : disabledTint);
+            ApplyRowTint(RowIsLive ? defaultTint : disabledTint);
+        }
+
+        /// <summary>The row reads as live when ANY of its controls can be pressed.</summary>
+        bool RowIsLive =>
+            _invitable || _joinMode == JoinMode.Join || _joinMode == JoinMode.Spectate;
+
+        void ApplyJoinMode(JoinMode mode)
+        {
+            _joinMode = mode;
+            if (!joinButton) return;
+
+            bool shown = mode != JoinMode.Hidden;
+            bool live  = mode == JoinMode.Join || mode == JoinMode.Spectate;
+            bool spectate = mode == JoinMode.Spectate || mode == JoinMode.SpectateDisabled;
+
+            joinButton.onClick.RemoveAllListeners();
+            if (live) joinButton.onClick.AddListener(HandleJoinClicked);
+            joinButton.interactable = live;
+            joinButton.gameObject.SetActive(shown);
+
+            var icon = joinButtonIcon ? joinButtonIcon : joinButton.GetComponent<Image>();
+            if (!icon) return;
+
+            var sprite = spectate ? spectateSprite : joinSprite;
+            if (sprite) icon.sprite = sprite;
+            var tint = spectate ? spectateTint : joinTint;
+            if (!live) tint.a *= joinDisabledAlpha;
+            icon.color = tint;
         }
 
         public void SetStatus(Status status, int partyMemberCount = 0, int partyMaxSlots = 0, string matchName = null)
@@ -234,6 +319,9 @@ namespace CosmicShore.UI
         {
             if (inviteButton) inviteButton.gameObject.SetActive(false);
             if (cancelButton) cancelButton.gameObject.SetActive(true);
+            // Two ways to end up in the same party is one too many: while our invite is out,
+            // the direct join stands down (the ✕ retracts the invite if they change their mind).
+            if (joinButton) joinButton.gameObject.SetActive(false);
 
             _isPending = true;
 
@@ -263,7 +351,8 @@ namespace CosmicShore.UI
                 inviteButton.interactable = _invitable;
                 inviteButton.gameObject.SetActive(_invitable);
             }
-            ApplyRowTint(_invitable ? defaultTint : disabledTint);
+            ApplyJoinMode(_joinMode);
+            ApplyRowTint(RowIsLive ? defaultTint : disabledTint);
 
             // Restore the proper status label.
             ApplyStatusLabel(_lastStatus, _lastPartyMemberCount, _lastPartyMaxSlots, _lastMatchName);
@@ -339,6 +428,26 @@ namespace CosmicShore.UI
             StartCoroutine(PunchScale(transform));
             SetInvitePending();
             _onInvite?.Invoke(_playerId);
+        }
+
+        void HandleJoinClicked()
+        {
+            if (!TryBeginAction()) return;
+            StartCoroutine(PunchScale(transform));
+
+            switch (_joinMode)
+            {
+                case JoinMode.Join:
+                    // Joining moves THIS machine into their session; the whole panel goes with
+                    // it, so there is nothing to keep pressable here.
+                    if (joinButton) joinButton.interactable = false;
+                    _onJoin?.Invoke(_playerId);
+                    break;
+                case JoinMode.Spectate:
+                    if (joinButton) joinButton.interactable = false;
+                    _onSpectate?.Invoke(_playerId);
+                    break;
+            }
         }
 
         void HandleCancelClicked()

@@ -107,10 +107,14 @@ namespace CosmicShore.Gameplay
         {
             if (_connectionData.PartyMembers == null) return System.Array.Empty<string>();
 
-            // Build a fast-lookup set of current session player IDs.
+            // Build a fast-lookup set of current session player IDs. A SPECTATOR is in the
+            // session (it needs the Relay seat to watch) but is never a party member: it is
+            // left out of this set too, so a member who turns spectator is REMOVED below
+            // exactly as if they had left.
             var sessionPlayerIds = new HashSet<string>();
             foreach (var p in session.Players)
-                sessionPlayerIds.Add(p.Id);
+                if (!PartySessionService.IsSpectator(p))
+                    sessionPlayerIds.Add(p.Id);
 
             // Add players that are in the session but not yet in the SOAP list;
             // refresh identity (displayName/avatarId) on members already present.
@@ -118,6 +122,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in session.Players)
             {
                 if (string.IsNullOrEmpty(p.Id) || p.Id == localPlayerId) continue;
+                if (PartySessionService.IsSpectator(p)) continue;
 
                 var memberData = ReadMemberData(p);
 

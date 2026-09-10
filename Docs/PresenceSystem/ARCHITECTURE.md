@@ -54,8 +54,9 @@ not as session properties. This is intentional:
 | `invite_payloads` | Sender | Recipients (refresh-loop scan) | Composite: one line per outgoing invite, `targetId\|senderId\|sessionId\|senderName\|senderAvatarId`. `sessionId` is the sender's CURRENT party session — a party MEMBER's invite carries the actual host's session (invite chain, `../PartySystem/INVITE_ENHANCEMENTS.md` Task 4) |
 | `accepted_invite` | Recipient | Sender (refresh-loop scan) | "I'm coming to join your session" handshake signal |
 | `joined_party` | Recipient | Everyone (host admit-scan) | "I'm now in this party session" — cross-checked against the session's authoritative player list (B8) |
+| `partySession` | Self | Everyone | The local player's LIVE party session id, so a friend can **Join** it or **Spectate** the match running in it with no invite. Deliberately EMPTY while spectating, offline, or with no live session — nobody can chain-join through a spectator (`../PartySystem/SPECTATOR.md` §1) |
 
-All 8 keys are seeded on every lobby (re)join by
+All 9 keys are seeded on every lobby (re)join by
 `PresenceLobbyService.BuildLocalPlayerProperties` so no key is ever
 absent on first refresh (absent looks identical to empty in UGS).
 

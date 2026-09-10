@@ -80,6 +80,21 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
         private const string ACCEPTED_INVITE_KEY = "accepted_invite";
 
+        /// <summary>
+        /// Session player-property key a SPECTATOR sets to "1" on join. Read by
+        /// <see cref="IsSpectator"/> on every peer so the party roster, the host's admit
+        /// scan and the party-size publish all leave spectators out. Absent or empty on
+        /// every ordinary member.
+        /// </summary>
+        public const string SPECTATOR_KEY = "spectator";
+
+        /// <summary>True when the session player joined as a spectator (see <see cref="SPECTATOR_KEY"/>).</summary>
+        public static bool IsSpectator(IReadOnlyPlayer p) =>
+            p != null &&
+            p.Properties != null &&
+            p.Properties.TryGetValue(SPECTATOR_KEY, out var prop) &&
+            prop.Value == "1";
+
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies + state
         // ─────────────────────────────────────────────────────────────────────
@@ -221,9 +236,12 @@ namespace CosmicShore.Gameplay
         /// The UGS Relay session id published by the host after they call
         /// <see cref="CreateAsync"/>.
         /// </param>
-        public async UniTask JoinByIdAsync(string sessionId)
+        public UniTask JoinByIdAsync(string sessionId) => JoinByIdAsync(sessionId, asSpectator: false);
+
+        /// <inheritdoc/>
+        public async UniTask JoinByIdAsync(string sessionId, bool asSpectator)
         {
-            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
+            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties(asSpectator) };
 
             // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
             // lobby-events 23006). Two clients accepting the same host's invite near-
@@ -346,7 +364,7 @@ namespace CosmicShore.Gameplay
         /// create/join.  Reflects the current player identity snapshot from
         /// <c>_connectionData</c>.
         /// </summary>
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
+        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties(bool asSpectator = false)
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
             // Displayed party size, not transport capacity - see PresenceLobbyService.
@@ -354,6 +372,9 @@ namespace CosmicShore.Gameplay
 
             return new Dictionary<string, PlayerProperty>
             {
+                // Written on EVERY join (empty for a member) so a stale "1" can never survive a
+                // re-join of the same identity as a member.
+                { SPECTATOR_KEY,       new PlayerProperty(asSpectator ? "1" : string.Empty, VisibilityPropertyOptions.Public) },
                 { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
                 { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },

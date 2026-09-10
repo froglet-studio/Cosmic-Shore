@@ -67,6 +67,7 @@ namespace CosmicShore.Gameplay
                 networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
                 networkManager.OnTransportFailure         -= OnTransportFailure;
+                networkManager.OnServerStarted            -= SpectatorSession.ServerClear;
                 UnhookJoinTrace(networkManager);
             }
         }
@@ -210,6 +211,7 @@ namespace CosmicShore.Gameplay
                     networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                     networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
                     networkManager.OnTransportFailure         -= OnTransportFailure;
+                    networkManager.OnServerStarted            -= SpectatorSession.ServerClear;
                     UnhookJoinTrace(networkManager);
                 }
 
@@ -217,6 +219,10 @@ namespace CosmicShore.Gameplay
                 nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
                 nm.OnClientDisconnectCallback += OnClientDisconnect;
                 nm.OnTransportFailure         += OnTransportFailure;
+                // Client ids restart from 1 on every server start, so the spectator registry
+                // must not carry a previous session's ids into the next one.
+                nm.OnServerStarted            -= SpectatorSession.ServerClear;
+                nm.OnServerStarted            += SpectatorSession.ServerClear;
                 HookJoinTrace(nm);
                 // Already listening when wired (the offline host, an editor re-entry): the
                 // start callback has fired, so hook the live scene manager by hand.
@@ -453,8 +459,20 @@ namespace CosmicShore.Gameplay
         private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
                                                   NetworkManager.ConnectionApprovalResponse response)
         {
+            // A SPECTATOR announces itself in the approval payload and gets NO Player object -
+            // see SpectatorSession. The host's own local connection is never a spectator, whatever
+            // its payload says: a stale token could only have been armed by a spectate this machine
+            // has since abandoned.
+            bool isLocalHost = request.ClientNetworkId == NetworkManager.ServerClientId;
+            bool spectator   = !isLocalHost && SpectatorSession.IsSpectatorPayload(request.Payload);
+            if (spectator)
+            {
+                SpectatorSession.ServerRegister(request.ClientNetworkId);
+                CSDebug.Log($"[MultiplayerSetup] Approved client {request.ClientNetworkId} as a SPECTATOR (no player object).");
+            }
+
             response.Approved           = true;
-            response.CreatePlayerObject = true;
+            response.CreatePlayerObject = !spectator;
             response.Position           = Vector3.zero;
             response.Rotation           = Quaternion.identity;
             response.PlayerPrefabHash   = null;
@@ -469,6 +487,7 @@ namespace CosmicShore.Gameplay
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    SpectatorSession.ServerUnregister(clientId);
                     // Netcode backstop for hard drops (client crash) that may beat the
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
                     // available here (no UGS PlayerId), so this reconciles the roster;
