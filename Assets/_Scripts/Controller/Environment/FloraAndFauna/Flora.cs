@@ -602,6 +602,40 @@ namespace CosmicShore.Gameplay
             isGrowing = false;
         }
 
+        // Cached yield instructions for GrowCoroutine. This coroutine is `while (true)` and
+        // there is ONE PER PLANT - 1,080 of them in the Lattice boot world - so a
+        // `new WaitForSeconds(...)` per tick is 1,080 allocations per grow cycle for two values
+        // that almost never change. Measured: the coroutine group allocates 18.2 KB/frame in a
+        // boot-world spike frame (Docs/PERFORMANCE_OPTIMIZATION.md §0.8).
+        //
+        // Re-minted when the authored period changes rather than cached once, because
+        // `growPeriod` is protected and variant tuning writes it after construction; a
+        // cache-once would pin the prefab's value and silently ignore the species' own.
+        WaitForSeconds _growWait;
+        float _growWaitFor = float.NaN;
+        WaitForSeconds _stunWait;
+        float _stunWaitFor = float.NaN;
+
+        WaitForSeconds GrowWait()
+        {
+            if (_growWait == null || growPeriod != _growWaitFor)
+            {
+                _growWaitFor = growPeriod;
+                _growWait = new WaitForSeconds(growPeriod);
+            }
+            return _growWait;
+        }
+
+        WaitForSeconds StunWait()
+        {
+            if (_stunWait == null || stunDuration != _stunWaitFor)
+            {
+                _stunWaitFor = stunDuration;
+                _stunWait = new WaitForSeconds(stunDuration);
+            }
+            return _stunWait;
+        }
+
         IEnumerator GrowCoroutine()
         {
             while (true)
@@ -619,12 +653,12 @@ namespace CosmicShore.Gameplay
                     // two int reads per tick and nothing else.
                     TryReproduce();
 
-                    yield return new WaitForSeconds(growPeriod);
+                    yield return GrowWait();
                 }
                 else
                 {
                     isGrowing = true;
-                    yield return new WaitForSeconds(stunDuration);
+                    yield return StunWait();
                 }
             }
         }

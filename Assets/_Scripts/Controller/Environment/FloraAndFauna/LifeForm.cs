@@ -441,22 +441,44 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
 
+        // Scratch + cached yield for ShieldRegenCoroutine. This runs forever on every SHIELDED
+        // lifeform, and Charge floors every Charge plant at a 1 s period (Flora.ChargeShieldPeriod),
+        // so the old body allocated a fresh List per cycle AND a WaitForSeconds PER PRISM - on a
+        // plant with dozens of prisms, dozens of allocations a second, times the population.
+        // Measured contribution in a boot-world spike frame: Docs/PERFORMANCE_OPTIMIZATION.md §0.8.
+        //
+        // The snapshot itself is load-bearing and is KEPT: the tracker mutates while this
+        // coroutine yields between prisms (grazing, growth), so iterating it directly would
+        // throw. Reusing one list preserves the snapshot and drops the garbage.
+        readonly List<HealthPrism> _shieldRegenScratch = new();
+        WaitForSeconds _shieldWait;
+        float _shieldWaitFor = float.NaN;
+
         IEnumerator ShieldRegenCoroutine()
         {
             while (shieldPeriod > 0)
             {
-                var blocks = healthTracker.All.ToList();
-                if (blocks.Count > 0)
+                if (_shieldWait == null || shieldPeriod != _shieldWaitFor)
                 {
-                    foreach (var block in blocks)
+                    _shieldWaitFor = shieldPeriod;
+                    _shieldWait = new WaitForSeconds(shieldPeriod);
+                }
+
+                _shieldRegenScratch.Clear();
+                _shieldRegenScratch.AddRange(healthTracker.All);
+
+                if (_shieldRegenScratch.Count > 0)
+                {
+                    for (int i = 0; i < _shieldRegenScratch.Count; i++)
                     {
+                        var block = _shieldRegenScratch[i];
                         if (block) block.ActivateShield();
-                        yield return new WaitForSeconds(shieldPeriod);
+                        yield return _shieldWait;
                     }
                 }
                 else
                 {
-                    yield return new WaitForSeconds(shieldPeriod);
+                    yield return _shieldWait;
                 }
             }
         }
