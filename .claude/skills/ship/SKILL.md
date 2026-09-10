@@ -303,6 +303,17 @@ Walk every changed file against these gates:
   schema change has to land, and it does not fail at the time of the change** — it fails months
   later, on somebody else's branch, the next time anyone runs it.
 
+- **Registration can land in TWO lists, and a generator knows one.** The ship rule above
+  ("a generator that owns an asset's content is a second place every schema change has to
+  land") has a sharper variant when the schema change is a SPLIT. This project's arcade
+  rosters split into a master (what the injected `SO_GameList` resolves) and per-grid override
+  lists; every `Tools/Build/author_*_assets.py` predates the split and registers the master
+  alone. Four modes shipped launchable-but-invisible before anyone noticed, and the fix in the
+  ASSET does not fix the GENERATOR — re-run it and the card falls off the grid again. When a
+  branch discovers a registration gap, ask how many lists the thing has to be in, then grep the
+  generators for how many they write; the answer is usually "one" and it does not fail until
+  somebody regenerates, on another branch, months later.
+
 - **A LONG branch invalidates its own earlier rounds, and the doc from round 2 is the last place
   anyone looks.** The rule "a threshold that is a function of X must be re-derived when X moves"
   is normally about two branches or two authors; on a multi-round branch it is about YOU. Round 3
