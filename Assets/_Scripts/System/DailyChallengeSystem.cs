@@ -205,7 +205,7 @@ namespace CosmicShore.Core
             var remainingAttempts = CatalogManager.Instance.GetDailyChallengeTicketBalance();//PlayerPrefs.GetInt(TicketBalancePrefKey);
             if (remainingAttempts > 0)
             {
-                CSDebug.Log($"DailyChallenge - Remaining Attempts:{remainingAttempts - 1}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[DailyChallenge] Remaining Attempts:{remainingAttempts - 1}");
                 CatalogManager.Instance.UseDailyChallengeTicket();
                 Arcade.Instance.LaunchTrainingGame(dailyChallenge.GameMode, DailyGame._SO_Vessel.Class, ShipResources, dailyChallenge.Intensity, 1, true);
             }
@@ -233,7 +233,7 @@ namespace CosmicShore.Core
 
         public bool ClaimReward(int tier)
         {
-            CSDebug.Log($"ClaimRewardTierOne - dailyGame:{DailyGame}, tier:{tier}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[DailyChallenge] ClaimReward - dailyGame:{DailyGame}, tier:{tier}");
             switch (tier)
             {
                 case 1:

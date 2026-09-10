@@ -21,25 +21,25 @@ namespace CosmicShore.Data
         Joust = 10,
         JoustIdleHint = 11,
 
-        // Race modes (Skim Race / HexRace)
+        // Race modes (Skim Race / SkimRace)
         Overtake = 20,
         NewRaceLeader = 21,
 
         // Any party game with the comeback system (shown only where authored)
         ComebackActivated = 30,
 
-        // Brood Rush (NucleusRush)
+        // Brood Rush (BroodRush)
         BroodWaveScored = 40,
 
-        // Ribcage ("Peel the Cage")
+        // PeelTheCage ("Peel the Cage")
         // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
-        // Values 50/51 were RibcageBroodReleased/RibcagePackReleased when the mode ran a fauna
+        // Values 50/51 were PeelTheCageBroodReleased/PeelTheCagePackReleased when the mode ran a fauna
         // ladder; the fauna were removed from the level and the same two rungs now mark pure
         // race progress. Renamed rather than retired because no GameToastConfigSO authors them
         // yet, so nothing serialized points at the old names.
-        RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
-        RibcageHalfPeeled = 51,      // leader is halfway
-        RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
+        PeelTheCageQuarterPeeled = 50,   // leader is a quarter of the way to the target
+        PeelTheCageHalfPeeled = 51,      // leader is halfway
+        PeelTheCageLeaderChanged = 52,   // the lead changes hands after a milestone
 
         // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
         WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
@@ -69,5 +69,27 @@ namespace CosmicShore.Data
         // domain (AstroLeagueBall.OnCellOverload). Court-wide and player-agnostic - it is
         // broadcast to every peer, so it names nobody and wears no domain colour.
         ScarabScrambleBallCap = 69,
+
+        // Tollway. Toll/chain: {0} = the pilot who PLANTED the ring, {1} = their domain's tolls,
+        // {2} = target ({3} = how many rings this one ball has paid, on the chain). Match
+        // point / lead: {0} = leading domain, {1} = its tolls, {2} = target. The ring hint takes
+        // no args.
+        TollwayToll = 70,          // a ball threaded somebody's ring and paid its planter
+        TollwayChain = 71,         // ONE ball paid 2+ tolls inside the chain window
+        TollwayMatchPoint = 72,    // the leading domain is one toll from winning
+        TollwayLeadChanged = 73,   // the lead changes hands
+        TollwayRingHint = 74,      // idle hint: plant a ring - ANY ball through it pays you
+        TollwayNoAnchor = 75,      // the press was refused: no free plant heart on this line
+
+        // Per-player STAT toasts, produced by StatToastDriver from the replicated RoundStats on
+        // every peer (nothing crosses the wire). {0} = player name, {1} = the player's new
+        // total, {2} = this step's increase, {3} = the mode's objective target (0 when the
+        // mode has none). A config entry's everyN says how often the total has to cross a
+        // multiple before the toast fires (Skim Race announces every crystal, Scurry every 10).
+        CrystalCollected = 80,          // CrystalsCollected rose
+        RocketHit = 81,                 // MissileHitsLanded rose - a skyburst reached a pilot (Dog Fight)
+        BendLanded = 82,                // DebuffHitsLanded rose - a blast debuffed a pilot (The Bends)
+        PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
+        LifeformKilled = 84,            // LifeformsKilled rose
     }
 }

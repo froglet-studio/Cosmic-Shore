@@ -378,7 +378,7 @@ count + ≤4 variants), Menu freestyle only, torn down with the matrix.
 | 11 | Fauna **consume → −prisms** | aggression behavior → impact | reduces opposing prisms | same | ✅ this is the prey side of loop #2 |
 
 **Root causes of what you saw:**
-- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit). **Correction:** NOT all scenes run `RandomLifeSpawner` — the WildlifeBlitz scenes (`MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`) and `MinigameTournamentMultuplayer` select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions: 1`). Menu, Skim Race, and the rest use `Random` (0).
+- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit). **Correction:** NOT all scenes run `RandomLifeSpawner` — the WildlifeBlitz scenes (`MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`) and `MinigameMaelstromMultuplayer` select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions: 1`). Menu, Skim Race, and the rest use `Random` (0).
 - *No fauna in menu* → fauna were gated on scored team volume (~0 in Menu_Main). Retrofit moved them to a phase gate; the redesign moves them to **timer only**.
 - *No Jade fauna when Jade controls* → row 8: the controlling/local color is **excluded by construction**.
 
@@ -647,7 +647,7 @@ fauna's per-tick `OverlapSphere` is a top frame cost). Levers: per-species
 `MaxLivePopulation` (the taming dial, §6.2) + reproduction knobs (§6.1),
 `FrenzyEnter` (gyroid size, perf-capped), `starvationSeconds` / `consumeRadius`.
 
-**B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
+**B. Skim Race** (`MinigameSkimRace`, dedicated `Skim Race Cell Config → Skim Race
 Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
 **No flora**; only the herbivore forager swarm (tadpole `PopulationSize` 12 +
 brittlestar), **Random** spawner (`cellTypeChoiceOptions = 0`) so spawning is
@@ -839,7 +839,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 2. ✅ Spawn rewrite in `RandomLifeSpawner`: timer-only, fixed period, fixed
    population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
    period. (`IntensityWiseLifeSpawner` left as-is — it is STILL USED by the
-   WildlifeBlitz + Tournament scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
+   WildlifeBlitz + Maelstrom scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
 3. ✅ §6 bound = option C: opposing-mass prey signal (now `OpposingVolume`) + `FaunaFoodFloor`
    production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
    `FaunaConfigurationSO` / `Fauna`.
@@ -863,7 +863,7 @@ facing hold, so the two would double-drive consumption if both ran. Resolution:
 | Prism count, phase, gates, aggression, controlling domain, live-fauna registry (`LiveFauna`/`GetLiveFaunaCount`/`GetLiveHerbivoreCount`) | `Assets/_Scripts/Controller/Environment/Cell.cs` |
 | Phase thresholds + hysteresis | `Assets/_Scripts/.../CellPhaseRules.cs`, `CellPhase` enum, Blob Cell Config asset |
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
-| Regulated spawner — USED by WildlifeBlitz + Tournament (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
+| Regulated spawner — USED by WildlifeBlitz + Maelstrom (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
 | Spawn helpers (`SpawnFaunaWithDomain`, `PickRandomDomain`) | `Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
 | Fauna base: domain, goal, diet, starvation, `Predated`, lineage + reproduction (`AssignLineage`/`NotifyFed`→`TryReproduce`) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
 | Reproduction + seeding gating (pure, tested) | `Assets/_Scripts/Utility/DataContainers/FaunaReproductionRules.cs` |
@@ -891,13 +891,13 @@ work is saved and Phase 2 can be picked up.
    - *Menu_Main:* dense flora, flora visibly resume growing in pulses, fauna spawn
      in the controlling color (Jade appears when Jade leads), hunt, and thin out as
      prey runs low; spawn ring sweeps; **no numeric readout**.
-   - *One gameplay scene* (e.g. `MinigameWildlifeBlitz` / `MinigameHexRace`): confirm
+   - *One gameplay scene* (e.g. `MinigameWildlifeBlitz` / `MinigameSkimRace`): confirm
      the prey-linked fauna + flora regrowth pulse don't break gameplay — fauna
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
    target device, lower `Blob Cell Config` `FrenzyEnter` (one asset).
 3. **`IntensityWiseLifeSpawner` is LIVE, not dead** (earlier notes were wrong).
-   The WildlifeBlitz + Tournament scenes select it (`cellTypeChoiceOptions: 1`);
+   The WildlifeBlitz + Maelstrom scenes select it (`cellTypeChoiceOptions: 1`);
    Menu/Skim Race/etc. use `Random`. **Do NOT delete it.** It has diverged from
    `RandomLifeSpawner` (no prey-linked `FaunaFoodFloor` gate, spawns 1/tick not a
    population), so if those scenes ever wire fauna into their `SupportedFaunas`
@@ -1175,7 +1175,7 @@ opposing-domain diet) — the split activates only where a `NucleusPrefab` exist
   eat), legacy opposing-domain volume otherwise.
 - **Fauna spawn cadence: 30s platform-wide.** `SpawnProfileSO.BaseFaunaSpawnTime`
   default and every authored profile now tick at 30s — the ecosystem heartbeat that
-  Brood Rush scores on (`Assets/_Scripts/Controller/Arcade/NUCLEUSRUSH.md`).
+  Brood Rush scores on (`Assets/_Scripts/Controller/Arcade/BROODRUSH.md`).
 - **The wave event.** `RandomLifeSpawner` raises
   `CellRuntimeDataSO.OnFaunaWaveSpawned` (SOAP, `FaunaWaveData{cellId, domain,
   spawnedCount, nucleusControlled}`) once per species loop per tick. Wave-scored
@@ -1628,7 +1628,7 @@ into Calm — an emergent "aging" of the biome with no clock anywhere.
 the first user: a Blob-family cell (same membrane/nucleus/cytoplasm/modifiers/spawn
 profile) whose `EnvironmentPrefab` is `SpawnableYggdra` — the world-tree distilled from
 the ~69k-prism Atlantis garden (which itself stays Scurry-intensity-4 exclusive; see
-`CRYSTAL_CAPTURE.md`) at roughly half the weight for the freestyle rotation. Registered
+`SCURRY.md`) at roughly half the weight for the freestyle rotation. Registered
 in Menu_Main's freestyle Cell `CellConfigs` list (choice mode Random) alongside the rest
 of the freestyle seven below. Danger thorn prisms ride along — the autopilot vessel can
 clip one occasionally; that is the environment being real, not a bug.
@@ -2334,9 +2334,9 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 
 ---
 
-## 22. Ribcage — a mode redefining "control", and the shielded-steering finish (August 2026)
+## 22. PeelTheCage — a mode redefining "control", and the shielded-steering finish (August 2026)
 
-> **STATUS (2026-08, later the same month): Ribcage no longer has fauna.** The brood was removed
+> **STATUS (2026-08, later the same month): PeelTheCage no longer has fauna.** The brood was removed
 > from the level on request, and with it the controller's ladder. Everything §22.1–§22.2b describes
 > is therefore a record of a SHIPPED-THEN-RETIRED consumer, not live behaviour — but the **platform
 > capabilities it drove all remain** (`Cell.SetModeControlOverride` / `ModePhaseFloor` /
@@ -2346,8 +2346,8 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 > reusable part, and re-adding a brood to any mode is a data change against these APIs.
 > **§22.3 (shielded mass leaves the targeting grids) is live and cross-mode — it is unaffected.**
 
-Ribcage (`GameModes.Ribcage = 39`, display name "Peel the Cage",
-`_Scripts/Controller/Arcade/RIBCAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
+PeelTheCage (`GameModes.PeelTheCage = 39`, display name "Peel the Cage",
+`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
 shells of prism bone that domains race to smash their way out of — the bone IS the score
 (`ScoringMetric.PrismsDestroyed`, target 2,000), and intensity picks how many shells there are
 (2–5, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
@@ -2360,7 +2360,7 @@ mode that wants it.
 
 ### 22.1 The leader IS the controlling domain
 
-`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. Ribcage's
+`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. PeelTheCage's
 controller sets it to whichever domain leads the destruction race. Everything else is
 existing machinery:
 
@@ -2374,7 +2374,7 @@ existing machinery:
   mass. That is the entire feature. There is no targeting code, no per-player fauna
   steering, no "find the loser" query — the diet rule was always this, and the mode
   merely arranged for the fauna to wear the right colour.
-- Ribcage's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
+- PeelTheCage's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
   a nucleus control zone switches herbivores to the spatial "eat anything outside the
   nucleus" diet, which would point the swarm at every team including the leader's.
 
@@ -2404,7 +2404,7 @@ that is the point of the override being a domain rather than a rule.
 
 `Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a
 phase. The volume ladder still runs every tick; the floor only ever **raises** the
-answer. Ribcage floors the cell at Restless once the LEADING domain reaches 25% of the win
+answer. PeelTheCage floors the cell at Restless once the LEADING domain reaches 25% of the win
 target and Frenzy at 50%, so fauna aggression, steering, danger-immunity and speed all come
 from the existing `CellPhase → CellAggressionLevel` mapping. Keying the rungs to the
 leader's own progress rather than a cross-domain total is what keeps the escalation
@@ -2416,7 +2416,7 @@ clock. Note the direction of travel — destruction *lowers* the cell's volume, 
 ordinary ladder would only ever descend here; the floor is the sole thing that climbs.
 
 `Cell.FaunaReleaseTier` + `FaunaConfigurationSO.ReleaseTier` stage which species may
-seed (Ribcage: the four grazer species from the first tick — penned, not gated — and the
+seed (PeelTheCage: the four grazer species from the first tick — penned, not gated — and the
 predator at 50%). Defaults — config tier 0, cell `int.MaxValue` — leave every shipped
 biome released from the first tick.
 Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
@@ -2451,17 +2451,17 @@ driven by the pen instead of by mode progress, so it adds no new ladder. Detecti
 Burst `PrismSpatialIndex.QuerySphere` on the PHASE tick (0.4 s, shared buffer, shielded
 mass filtered) — never a physics query, and only while a pen exists.
 
-The pen radius deliberately sits INSIDE the structure that visually encloses it (Ribcage:
+The pen radius deliberately sits INSIDE the structure that visually encloses it (PeelTheCage:
 338 vs a 360 shell), so the enclosure's own prisms are outside the pen. That is what stops
 a penned brood from quietly eating its own cage — which matters because a cage may
-legitimately contain unshielded prisms (Ribcage's danger traps) that would otherwise be
+legitimately contain unshielded prisms (PeelTheCage's danger traps) that would otherwise be
 food, and would also read as a permanent "intruder".
 
 Collider budget: unchanged by the containment mechanism itself. Containment adds two
 squared-distance compares on paths that already ran; the intruder probe is one
-existing-index sphere query per 0.4 s. The CELL it is used in is another matter — Ribcage's
+existing-index sphere query per 0.4 s. The CELL it is used in is another matter — PeelTheCage's
 cage is ~10,229 prisms (Rampage's deliberate arena gate) plus ~150 creature bodies, which
-is the branch's headline perf risk and is stated as such in RIBCAGE.md.
+is the branch's headline perf risk and is stated as such in PEEL_THE_CAGE.md.
 
 **The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
 InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of
@@ -2474,7 +2474,7 @@ can never decide whether the gate holds.
 
 ### 22.3 The shielded-steering finish (the generalization §16 left half-done)
 
-**Symptom this would have caused.** Ribcage's arena is a huge shielded structure. Under
+**Symptom this would have caused.** PeelTheCage's arena is a huge shielded structure. Under
 the pre-existing rules the cage sat in the cell's density grids, so every density
 centroid — the goal at aggression Level1 and Level2 — pointed at mass §16.2 had already
 declared inedible. The swarm would have flown to the cage and found nothing to eat.
@@ -2500,7 +2500,7 @@ a future grazer cannot re-acquire either half of the bug.
 
 **Cross-mode effect, and it is the correct one.** Skim Race's super-shielded track and
 Astro League's super-shielded edge lining no longer pull fauna steering. Both need an
-in-editor regression pass (RIBCAGE.md § verification, step 10).
+in-editor regression pass (PEEL_THE_CAGE.md § verification, step 10).
 
 **Collider budget: unchanged, and strictly less work.** No collider, no physics query,
 no index query is added. Shielded prisms are *removed* from the grids, so every density
@@ -2512,7 +2512,7 @@ and ~3.7× *under* Rampage's deliberate 10,000-prism arena gate, in a cell with 
 
 **Known gap, left deliberately.** `Cell.OpposingVolume` still counts shielded mass as
 the fauna prey signal, so a shielded structure satisfies `FaunaFoodFloor` without being
-food. Ribcage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
+food. PeelTheCage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
 the honest fix is to net shielded volume out of that signal. It is the population bound
 for every biome, so it deserves its own change and its own verification rather than
 riding along here.
@@ -2779,7 +2779,7 @@ spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRang
   compilation CI gate). First in-editor pass is §23.6.
 - **Client-local.** Fauna have no NetworkObject (§7 caveat 4), so in multiplayer each
   client fights its own worm until fauna sync lands. A co-op kaiju eventually needs
-  server-authoritative colony state (NucleusRush's SOAP-over-NetworkVariable pattern).
+  server-authoritative colony state (BroodRush's SOAP-over-NetworkVariable pattern).
 - **Segment kills raise no scoring event.** Fauna deaths are invisible to the
   `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring; a boss-hunt mode needs its own
   SOAP channel (model: `CellRuntimeDataSO.OnFaunaWaveSpawned`).
@@ -3953,7 +3953,7 @@ only hostility test was the owner-name/roster comparison and a cactus has no ros
 applies to the world the same rule trails always had — **your own colour is worth nothing** —
 with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
 still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
-a real targeting decision instead of decoration. Ribcage rides the same metric and is
+a real targeting decision instead of decoration. PeelTheCage rides the same metric and is
 unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
 can still reach a 2,000 target out of ~10,620 prisms.
 
@@ -4055,7 +4055,7 @@ Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1
 index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
 whole match. With no error — the clamp is silent and the default is legal.
 
-This was **already live in every IntensityWise scene** (Dog Fight, Ribcage, Wildlife Liberation,
+This was **already live in every IntensityWise scene** (Dog Fight, PeelTheCage, Wildlife Liberation,
 both Wildlife Blitz cells) before Rampage went near it.
 
 Fixed with three pieces that only work together:
@@ -4081,15 +4081,23 @@ intensities over two configs would otherwise serve the same arena for 3 and 4 in
 
 ## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
 
+> ⚠ **The forest half of this section is SUPERSEDED by §43** (Sep 2026). Rampage's ladder now
+> scales the forest again — 5.00 / 3.67 / 2.33 / 1.00× the plant count and 1.60 / 1.40 / 1.20 /
+> 1.00× the leaf — because "bigger and easier to hit at intensity 1" is what the mode wanted and
+> the earlier attempt failed for a reason §43 names: it thinned rather than thickened, which just
+> made a smaller arena. The crystal and wildlife columns below are unchanged and still shipped,
+> and `FaunaPopulationScale` (§29.1) is untouched — read §43 for the current forest numbers.
+
 Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
-the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
-intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+the plants of intensity 4). At this pass it no longer touched the forest at all — **every
+intensity grew intensity 4's arena, prism for prism** — and instead moved two things in opposite
+directions:
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
 | wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
-| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+| forest *(at this pass; see §43)* | 9,830 seeded prisms — identical at every intensity | | | |
 
 The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
 capabilities and one general rule came out of it.
@@ -7351,3 +7359,258 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+---
+
+## 42. A plant's HEART is a place things can be built on (Sep 2026)
+
+**Tollway needed a set of points of interest a player could plant a scoring ring in, and it built
+its own.** `TollwayTollPosts` was a seeded Fibonacci band of emblem markers: replicated from an
+`int`, drawn by the controller, with its own occupancy book, its own 60-line Python re-derivation
+in the generator to keep the two walks honest, and its own test suite. It worked. It was the wrong
+owner, and the second cut deleted the whole thing.
+
+**A flora crystal is the same affordance the ecology already produces everywhere.** It arrives with
+four properties a bespoke socket had to be given by hand:
+
+- it is **placed by the food web**, so the set is ALIVE — a plant can be grazed away and the seeder
+  brings it back, which is a supply of scoring surfaces that ebbs and flows without a single timer;
+- it is **already drawn** and already a thing a pilot flies at;
+- it is **already replicable** — `FloraConfigurationSO.NetworkSynced` (§ the flora network sync)
+  puts the planting DECISION on the wire, which is exactly the set a heart's world position is a
+  function of; and
+- it is a **joustable heart**, so killing an anchor to deny it — and taking an element level for
+  doing so — is counter-play nobody had to design.
+
+General rule: **before a mode builds a set of points of interest, check whether the platform
+already grows one.** It is the same shape as "the Cell owns the environment — minigames don't build
+parallel systems", reached from the other side: not *don't duplicate what the Cell owns*, but
+*look at what the Cell already produces before inventing a peer for it*.
+
+### `FloraHeartRegistry` — the index, and nothing else
+
+One flat list of living plants, registered in `Flora.Initialize` (after `Plant()`, so the first
+read is the planted position) and unregistered in `Flora.Die` and `OnDestroy`. It **leaves on
+death rather than on destruction**, because death RELEASES the heart (`ActivateCrystal`) and a
+crystal anyone can now collect is not a fixture. Entries are `Flora` references and a query reads
+`HeartTransform.position` live — an `AssembledFlora` moves its crystal onto its lattice site after
+seating it, and a plant on a moving container carries its heart with it, so a cached position is
+wrong for two independent reasons.
+
+It **spawns, moves, ages and removes nothing**. The `Cell` already counts live plants per-species
+(`liveFloraCounts`) but holds no positions, and a per-species dictionary cannot answer "the nearest
+heart to this line"; this is the flat list that can. `LifeForm.HeartTransform` is the accessor that
+made it possible and is the public form of an idiom `LifeForm` already used internally.
+
+### The nucleus planting clamp now reads `NucleusIsControlZone`
+
+`Flora.ResolvePlantRadius` clamped its band's inner edge outside the nucleus **unconditionally**,
+and `ClampToPlantingBand` pushed offspring out the same way. In a mode whose nucleus IS the court
+(Astro League, Scarab Scramble, Tollway) that made the entire arena un-plantable — Tollway could
+not seed a plant inside its own court, and any offspring seeded there would have been ejected to
+the wall one birth at a time.
+
+Both stated reasons for the clamp — nucleus mass is the **territorial claim**, and it is **excluded
+from the fauna targeting grids** — *are* the control zone, and a cell that sets
+`Cell.NucleusIsControlZone = false` has already declared it has none ("this nucleus is a wall, not
+a claim": herbivores eat opposing mass anywhere, `DominantDomain` reads the whole cell). The clamp
+now reads that flag. It does not relitigate the invariant; it applies the state the ecology already
+supports.
+
+This is **§25.1's trap from the other side.** There, a mode borrowed the nucleus as play geometry
+and silently inherited its *diet* semantics, so the food web could not remove one prism from the
+whole pitch. Here, a mode that borrowed it as its court could not put a plant inside its own arena.
+Same cause — geometry carrying semantics — opposite symptom. *Whenever a mode repurposes a
+Cell-owned visual, check what SEMANTICS it borrowed with the geometry, in both directions.*
+
+The one reason for the clamp that **survives** is real and accepted: a standard omni crystal
+respawns in the nucleus volume, so a court-mode's plants share space with its crystal respawn. That
+is clutter in a volume the mode has already filled with play, not mass the ecology cannot reach.
+
+**Four callers clear the flag, and only three of them are court modes — name the fourth.** The
+setters are Astro League, Scarab Scramble, Tollway *and the Arkway's traversal cells*
+(`CellConveyor`, which clears it for the whole-cell diet its protect-the-Ark mechanic rides on,
+§41). The Arkway is not a court: its nucleus is still an ordinary core marker, and its traversal
+configs are drawn from `Cell.AvailableConfigs`, which author real flora. So this change lets an
+Arkway cell's plants grow into its nucleus where they were previously clamped out. That follows
+from the rule rather than working around it — with no control zone, herbivores eat opposing mass
+inside the nucleus too, so a plant there is reachable food — and the residual crystal-respawn
+clutter is the same accepted cost. It is called out because *it was not the change's motivating
+case*: the flag is a platform capability, so a clamp keyed on it moves every caller, including
+ones a branch never opened.
+
+### What Tollway seeds, and what it costs
+
+14 **NetworkSynced** flora per intensity (`Tollway Anchor Flora <Species>`, `SpreadElements` over
+that species' four canonical element assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of
+the intensity-1 court the retired posts used — reseeded every 20 s toward a floor and cap of 14.
+
+**Each intensity grows a different KIND of plant**, one per growth family, ordered by standing
+plant volume so the marker grows with the court:
+
+| I | Court | Species | Family | Prisms/plant | Leaf vol | Forest |
+|---|---|---|---|---|---|---|
+| 1 | 480u | Spire | `PhyllotacticFlora` | 40 (cell override) | 14.26 | 560 prisms / 7,986 vol |
+| 2 | 560u | Gyroid | `AssembledFlora` | 30 (own geometry) | 50.27 | 420 / 21,113 |
+| 3 | 640u | Cacti | `BranchingFlora` | 40 (cell override) | 75.00 | 560 / 42,000 |
+| 4 | 720u | Quasicrystal | `AssembledFlora` | 110 (own geometry) | 46.39 | 1,540 / 71,441 |
+
+A **lattice species keeps its own per-plant budget** — a gyroid octagon is 24 prisms around one
+crystal and a quasicrystal heart cell is one vertex's strut tree, so a cell-imposed number does not
+thin the plant, it truncates a shape mid-figure (§32.7/§36's "plant COUNT is the only lever", met
+from the arena side). Only Spire and Cacti take the cell's `MaxTotalSpawnedObjectsOverride`.
+
+- The standing forest is folded into BOTH bands of the cell's volume ladder rather than left for it
+  to discover, and **both ladders are per-intensity** — the four species differ in prism COUNT as
+  well as prism size, so one shared count backstop would be four times too tight at one end.
+  The generator asserts a forest never reaches half its own `RestlessEnterVolume` (worst case:
+  Quasicrystal at 30%), or the ladder would describe the scenery rather than the match.
+- **14 always-on colliders at every intensity** (one heart each) — that is what keeps the collider
+  budget flat while everything else about the field changes; the body prisms are LOD-cullable boxes.
+- A quarter of the anchors roll **Charge** and are therefore shielded (`Flora.ResolveShieldPeriod`),
+  which takes them out of the fauna targeting grids entirely — so the field thins unevenly as the
+  cleanup crew grazes it. Emergent, untested, and the levers if it goes wrong are the reseed
+  cadence, the population or the fauna exclusion fraction. **Never shield the anchors to protect
+  them** (§35: a shield reaches 1.5 × `leafSize`, and it is a different mode).
+- Tollway is the **first shipped user of `FloraNetworkSync`**. The mechanism was complete and
+  unexercised; the Scramble-cloned scene already carried the component.
+
+Full mode record: `_Scripts/Controller/Arcade/TOLLWAY.md` § "Anchors"; the vessel half is
+`R_VesselActions/SCARAB.md` §5.3.
+
+---
+
+## 43. A cell may say how big its prisms are (Sep 2026)
+
+**`SpawnProfileSO.FloraPrismScale`** — the third flora scalar, beside `FloraPopulationScale`
+(how many plants) and `FloraPlantBudgetScale` (how big each plant gets). It says **how big each
+PRISM is**: a multiplier on the leaf a plant would otherwise lay.
+
+Rampage is why it exists. Its intensity ladder wanted a fatter, easier-to-hit forest at
+intensity 1 falling to the shipped arena at intensity 4, and there was no way to author that:
+the five flora configs are **shared across its own four intensities**, so a per-intensity leaf
+size written onto them is one number serving four cells. Same shape as the argument for
+`FaunaPopulationScale` in §29, one level down — that one could not edit the shared Blob species
+without restocking Menu_Main; this one cannot edit a shared species without moving all four
+intensities together.
+
+### 43.1 It is NOT a lifeform level
+
+§40 retired per-individual growth in both its forms — the spawn-time roll and the earned level —
+because *"how big is this thing"* must not be a hidden per-individual **history** the player
+cannot read off the species.
+
+`FloraPrismScale` is a **property of the CELL**, not of the plant. Every plant of a species in a
+given cell is the same size; nothing accumulates, nothing is earned, and two plants of the same
+species and element are never different sizes. It is applied **exactly once**, and it says
+something about *where you are*, which is exactly what a biome is for — the same class of
+statement as "this cell's tadpoles are twice as numerous".
+
+### 43.2 Where it applies, and why the ordering is load-bearing
+
+`Flora.Initialize` → `ApplyCellPrismScale(cell)`, **before `base.Initialize`**.
+
+`LifeForm.Initialize` binds the prefab's own authored prisms through `BindEmbeddedParts` →
+`AddHealthBlock`, and `Flora.AddHealthBlock` stamps `leafSize` onto each one. Apply the scale
+after that call and a plant's **seed prism** keeps the authored size while everything it grows
+afterwards is scaled — a discrepancy visible only on the one prism nobody looks at.
+
+It composes with the variant tuning for free: the spawner calls `ApplyVariantTuning` *before*
+`Initialize`, so the cell's scale multiplies the element's own leaf identity rather than
+replacing it. Resolution lives on the **Cell** (`Cell.ResolveFloraPrismScale`), never on the
+config, per §29's rule — which spawner a biome runs is decided by an unrelated field, and flora
+has four producers.
+
+### 43.3 A LATTICE species is exempt — the reader `PrismSizeFixedByGrowthRule` was kept for
+
+`Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) was deliberately kept in §40 **with
+its reader gone**, as a standing guard: a lattice's bond offsets are a measured table in absolute
+local units, so a scaled leaf lays prisms the table no longer describes, and scaling the lattice
+too drags a whole family of absolute-distance coherence tolerances with it (§34.8).
+
+That guard is now doing its job. The prism scale is the next thing that wanted to resize a leaf,
+and it was gated on the guard **on arrival** rather than rediscovering the hazard. *That is what
+keeping a reader-less guard is for*, and it is the argument against deleting the next one.
+
+### 43.4 It lands on the volume ladder, and the exponent is PER FAMILY
+
+Volume is the spine, so a cell that scales its prisms **must re-derive its own
+`PhaseThresholds`**. The trap is that the exponent is not 3:
+
+| family | what `leafSize` does | volume |
+|---|---|---|
+| `BranchingFlora` | lays it on all three axes (`leafScale = LeafSize`) | **s³** |
+| `PhyllotacticFlora` | reads `LeafSize.x/y` as a **cross-section** only; the long axes span the plant's own `segment` and `reach` | **s²** |
+
+A phyllotactic strut therefore gets **thicker, not longer** — which is the behaviour you want
+from an "easier to hit" dial, and which its own header already stated (*"LENGTHS here are
+structural … does NOT read LeafSize.z"*). Assuming s³ everywhere overstates a 1.6× forest by 1.6×.
+
+Nothing else in a plant scales: branch step, segment length, whorl reach and the growth
+reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all structural, so a plant
+still reaches its authored budget and still occupies its own volume. **Plants read as chunkier,
+not larger.**
+
+### 43.5 Collider budget: this scalar is free, and its sibling is not
+
+**`FloraPrismScale` costs nothing in colliders.** Prism count is untouched — the prisms are
+larger, not more numerous — so the active-collider envelope is identical at every scale. That is a
+property of *this* capability and it is why it is the cheap dial to reach for.
+
+**It is not a property of a cell's intensity ladder.** Rampage's ladder also scales
+`FloraPopulationScale` (5× the plants at intensity 1), and *that* one is priced in colliders on two
+separate lines — LOD-cullable prisms bounded by the cell's own `FrenzyEnter` count backstop, and
+**always-on heart crystals bounded by the plant cap**, one per live plant, which no phase LOD
+culls. `rampage_intensity.py`'s `assert_collider_budget` holds both against cells the game already
+ships (Atlantis' ~69,000 prisms; the Lattice cell's 1,080 plants at cap).
+
+The general rule the pair states: **when a cell scales its flora, ask which of the three scalars
+it is reaching for, because only one of them is free.** Size is free, per-plant budget multiplies
+prisms without multiplying plants, and population multiplies both prisms and always-on crystals.
+
+### 43.6 The Rampage ladder it was built for
+
+Intensity 4 is the shipped, play-tested arena and nothing about it moves; 1 is the same arena
+bigger, denser and easier to hit. Flora **5.00 / 3.67 / 2.33 / 1.00×** (295 / 217 / 137 / 59
+plants, 49,150 / 36,160 / 22,820 / 9,830 prisms), prisms **1.60 / 1.40 / 1.20 / 1.00×**, nucleus
+**500 / 400 / 300 / 200** (prefab scale; world radius 490 / 392 / 294 / 196), and each intensity's
+volume ladder is the play-tested intensity-4 ladder **scaled by its own forest ratio** — so
+intensity 4 reproduces to the digit and every level keeps Frenzy at 4.11× its mature forest and
+Restless at 28.5% of it.
+
+The per-plant **budget** stays 1.00× at every level, deliberately: "more flora" is more PLANTS,
+not bigger ones. Growing the budget would multiply prisms without multiplying the thing the player
+reads — how much forest there is — and it would compound with `FloraPrismScale` on the very same
+prisms. Collider envelope: **50,000 / 37,000 / 23,250 / 10,000** prisms (the count backstop, which
+freezes growth, rather than the plant cap) and **440 / 323 / 205 / 88** always-on heart crystals.
+
+The **nucleus** half follows §13.1: a new core size is a new `CellConfigDataSO` pointing at a
+**resized prefab** — never a scene override, never a `localScale` tweak on a shared prefab, and
+never `Cell.nucleusScaleMultiplier`, which is a scene *component* field and so cannot differ per
+intensity at all. `Nucleus300` and `Nucleus500` were authored beside the existing `HalfNucleus`
+(200) / `Nucleus` (400) / `BigNucleus` (800), named by scale because the older relative names do
+not extend. A bigger nucleus couples to three things and all three follow automatically: the
+crystal respawn volume grows, the flora planting band's inner edge clamps out with it
+(`Flora.ResolvePlantRadius`, so no plant is ever laid inside the nucleus at any intensity), and
+the player spawn ring moves where a scene opts in.
+
+Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four intensities".
+
+### 43.7 Open
+
+- **The phyllotactic leaf volumes are still estimates** (Spire 15.0, Rosette 17.0, Coral 10.6 —
+  those species shape prisms by role, so there is no authored field to read). They now carry a
+  per-intensity s² factor, so an error is amplified 2.56× at Rampage's intensity 1. One
+  `Cell.LiveVolume` measurement per intensity corrects all four ladders through the script's
+  `CALIBRATION` dict.
+- **Not playtested, and intensity 1 is now the heaviest cell in any arcade mode.** Its cactus is
+  8 × 8 × 4.8 against the authored 5 × 5 × 3 *and* there are five times as many plants, so the
+  two densities compound. Confirm it reads as *easy to hit* rather than *fused*, and profile it:
+  the arithmetic clears both shipped reference cells, which is the gate, but it is not a frame
+  time. If prisms fuse, lower `PRISM_SCALES[0]` (never the branch step, which is what makes a
+  plant its own size); if the frame rate is the problem, lower `SCALES[0]`'s population scale,
+  which is the only axis of the ladder that moves colliders at all.
+- **A wider crystal spread at intensity 1** is the one coupling most likely to want tuning: the
+  nucleus is 2.5× wider, so the contested crystals sit in 15.6× the volume. It is offset by that
+  level carrying twice the roster in crystals and by the objective arrow pointing at the nearest
+  one, so the cost is flight time rather than findability.

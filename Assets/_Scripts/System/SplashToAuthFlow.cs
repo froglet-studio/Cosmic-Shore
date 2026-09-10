@@ -97,9 +97,9 @@ namespace CosmicShore.Core
                 // loads Menu_Main via Netcode scene management, which is required for
                 // player spawning (OnNetworkSpawn).
                 if (authData.IsSignedIn)
-                    CSDebug.Log("[SplashToAuthFlow] Already signed in. Routing through auth scene for network setup.");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, "[SplashToAuthFlow] Already signed in. Routing through auth scene for network setup.");
                 else
-                    CSDebug.Log("[SplashToAuthFlow] Not signed in. Going to auth scene.");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, "[SplashToAuthFlow] Not signed in. Going to auth scene.");
 
                 await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
             }

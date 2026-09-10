@@ -15,6 +15,26 @@ namespace CosmicShore.Gameplay
 
         public override bool CheckForEndOfTurn() => elapsedTime >= duration;
 
+        /// <summary>
+        /// Re-authors the countdown and restarts it from zero. The extension point for a mode
+        /// whose match length is authored centrally rather than on the scene component: a
+        /// subclass reads its duration from <c>EndConditionOverridesSO</c>, the one place every
+        /// other mode's end-game count lives, and a per-scene <c>duration</c> would be a second
+        /// authority for the same number. A negative value is ignored so a missing override
+        /// cannot zero the clock and end the turn on its first tick.
+        ///
+        /// <para>No subclass uses it today - the only one that did was Drumfire's monitor,
+        /// removed with that mode in 2026-09. Kept because the SHAPE is the platform's answer
+        /// for a clock-ended mode, and <see cref="PublishesSecondsRemaining"/> below (which the
+        /// goal-stack HUD reads) exists for the same reason.</para>
+        /// </summary>
+        protected void SetDuration(float seconds)
+        {
+            if (seconds <= 0f) return;
+            duration = seconds;
+            elapsedTime = 0f;
+        }
+
         public override void StartMonitor()
         {
             elapsedTime = 0;

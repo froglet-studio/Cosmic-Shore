@@ -149,7 +149,7 @@ namespace CosmicShore.Gameplay
             {
                 int n = placed == null ? 0 : Mathf.Min(placed.Length, MaxAiSlots);
                 if (placed != null && placed.Length > MaxAiSlots)
-                    Debug.LogWarning($"[ArcadeConfigSync] {placed.Length} placed AI exceed the {MaxAiSlots} replicated slots - truncating.");
+                    CSDebug.LogWarning($"[ArcadeConfigSync] {placed.Length} placed AI exceed the {MaxAiSlots} replicated slots - truncating.");
                 AiCount = n;
                 Ai0 = n > 0 ? placed[0] : 0;
                 Ai1 = n > 1 ? placed[1] : 0;
@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
             get
             {
                 var nm = NetworkManager.Singleton;
-                int connected = nm != null && nm.IsListening ? nm.ConnectedClientsIds.Count : 0;
+                int connected = SpectatorSession.CountHumanClients(nm);
                 return Mathf.Max(_committedHumanCount, connected);
             }
         }
@@ -217,12 +217,6 @@ namespace CosmicShore.Gameplay
         /// The host uses this to auto-launch the game.
         /// </summary>
         public event System.Action OnAllPlayersReady;
-
-        /// <summary>
-        /// Raised on clients when the host navigates between modal screens.
-        /// Arg: screen index (0=config, 1=gameDetail, 2=vesselSelection, 3=squadMate)
-        /// </summary>
-        public event System.Action<int> OnScreenChangedOnClient;
 
         /// <summary>
         /// Raised on clients when the host moves the intensity row while the lobby is open.
@@ -533,10 +527,10 @@ namespace CosmicShore.Gameplay
         void RaiseOpened(LobbySnapshot lobby)
         {
             int subscriberCount = OnConfigOpenedOnClient?.GetInvocationList().Length ?? 0;
-            Debug.Log($"[ArcadeConfigSync] Lobby open on client - gameMode={lobby.GameMode}, gen={lobby.Generation}, subscribers={subscriberCount}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ArcadeConfigSync] Lobby open on client - gameMode={lobby.GameMode}, gen={lobby.Generation}, subscribers={subscriberCount}");
 
             if (subscriberCount == 0)
-                Debug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient - modal will not open now. " +
+                CSDebug.LogWarning("[ArcadeConfigSync] No subscribers on OnConfigOpenedOnClient - modal will not open now. " +
                                  "ArcadeGameConfigureModal.OnEnable re-reads CurrentLobby when it subscribes, so it catches up then.");
 
             OnConfigOpenedOnClient?.Invoke(lobby.GameMode, lobby.Intensity, lobby.PlayerCount, lobby.MaxPlayers, lobby.DomainCount);
@@ -554,16 +548,6 @@ namespace CosmicShore.Gameplay
             if (!IsSpawned || IsServer) return;
             var lobby = _lobby.Value;
             if (lobby.IsOpen) RaiseOpened(lobby);
-        }
-
-        /// <summary>
-        /// Called by ArcadeGameConfigureModal on the host when navigating between
-        /// modal screens so clients follow the same screen transitions.
-        /// </summary>
-        public void NotifyScreenChanged(int screenIndex)
-        {
-            if (!IsServer) return;
-            ChangeScreenOnClients_ClientRpc(screenIndex);
         }
 
         /// <summary>
@@ -594,13 +578,6 @@ namespace CosmicShore.Gameplay
             snapshot.SetPlacedAiDomains(placedAiDomains);
             if (snapshot.Equals(_lobby.Value)) return;
             _lobby.Value = snapshot;
-        }
-
-        [ClientRpc]
-        void ChangeScreenOnClients_ClientRpc(int screenIndex)
-        {
-            if (IsServer) return;
-            OnScreenChangedOnClient?.Invoke(screenIndex);
         }
 
         #endregion
@@ -637,14 +614,14 @@ namespace CosmicShore.Gameplay
                 return; // Already confirmed
 
             int expected = ExpectedHumanCount;
-            Debug.Log($"[ArcadeConfigSync] Player {clientId} confirmed ready ({_readyClients.Count}/{expected})");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ArcadeConfigSync] Player {clientId} confirmed ready ({_readyClients.Count}/{expected})");
 
             // Notify all clients of the updated ready count
             SyncReadyCount_ClientRpc(_readyClients.Count, expected);
 
             if (_readyClients.Count >= expected)
             {
-                Debug.Log("[ArcadeConfigSync] All players ready - launching game");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ArcadeConfigSync] All players ready - launching game");
                 AllPlayersReady_ClientRpc();
             }
         }

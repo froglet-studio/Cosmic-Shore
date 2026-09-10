@@ -36,6 +36,27 @@ namespace CosmicShore.Gameplay
     /// both work this way, with the map's generic multiplier pinned to 1 so nothing double-dips).
     /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
     /// merely shedding their shields.
+    ///
+    /// THE PLATE CLAIMS ITS OWN MIRROR IMAGE (SCARAB.md §3.9). Authored on the blast prefab
+    /// (<c>AOECylindricalExplosion.mirrorAboutStartPlane</c>), the volume is reflected through the
+    /// start plane — the plane through the hull whose normal is the dash — so it reaches as far
+    /// BEHIND the pilot as in front, doubling what one punch claims. The velocity is untouched and
+    /// uniform across the whole doubled field, which is the entire point: the back half does not
+    /// throw mass backwards, it drags mass FORWARD through the ship. Mass behind a Scarab is no
+    /// longer safe from its own punch, and a ball behind one can be brought to the front of the
+    /// fight. Nothing here has to know about it — the plate expresses its own volume — and no
+    /// input modifies it, so the punch is ONE shape whichever way the pilot is holding their
+    /// hands. (A held-button modifier over it was built twice and cut both times; SCARAB.md §3.8.)
+    ///
+    /// TWO EARLIER SHAPES ARE RETIRED HERE, and both were the held drift reaching for the punch.
+    /// It once SHEATHED (a juke under a full hold fired no plate at all), which the analog juke
+    /// already does better — a small deflection is a nudge and never fires the plate. It then
+    /// INVERTED (the plate spawned at the far end of the cylinder and swept back to the hull),
+    /// which worked and read well and was still the wrong lever: a pilot cannot hold a steering
+    /// control at its limit for free, so the modifier fought the drift for the same thumb. The
+    /// mirror gets the same reach behind the pilot without ever pointing the punch the other way,
+    /// and it costs no input at all. A PARTIAL juke still fires nothing: the punch belongs to the
+    /// committed dash.
     /// </summary>
     [RequireComponent(typeof(ScarabJukeController))]
     public class ScarabCavitationBlast : MonoBehaviour
@@ -133,7 +154,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float ResolveVesselColliderRadius()
         {
-            var colliders = _vesselImpactor != null ? _vesselImpactor.HullColliders : null;
+            float best = MeasureHullRadius(_vesselImpactor);
+            if (best > 0f) return best;
+
+            if (!_warnedUnmeasurableHull)
+            {
+                _warnedUnmeasurableHull = true;
+                CSDebug.LogError(
+                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
+                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
+                    "collider is the blast's only size input; check the prefab.");
+            }
+            return fallbackVesselRadius;
+        }
+
+        /// <summary>The vessel's circumscribing hull-collider radius in world units, or 0 when
+        /// nothing measurable is wired. Split out of <see cref="ResolveVesselColliderRadius"/> so
+        /// the MEASUREMENT and the fallback-plus-warning are separable; deliberately private —
+        /// it was briefly public for the retired grapple and nothing outside this class needs
+        /// it.</summary>
+        static float MeasureHullRadius(VesselImpactor impactor)
+        {
+            var colliders = impactor != null ? impactor.HullColliders : null;
             float best = 0f;
 
             if (colliders != null)
@@ -169,17 +211,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (best > 0f) return best;
-
-            if (!_warnedUnmeasurableHull)
-            {
-                _warnedUnmeasurableHull = true;
-                CSDebug.LogError(
-                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
-                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
-                    "collider is the blast's only size input; check the prefab.");
-            }
-            return fallbackVesselRadius;
+            return best;
         }
 
         void HandleJukeFired(Vector3 direction)
@@ -187,6 +219,19 @@ namespace CosmicShore.Gameplay
             if (_status == null || blastPrefab == null) return;
             if (!IsBlastReady) return;                       // the DASH already happened — only the punch waits
             if (direction.sqrMagnitude < 1e-4f) return;
+
+            // The fine-control gate, declining WITHOUT spending the cooldown: a nudge is not a
+            // punch. It is the ONLY gate: the drift no longer says anything about the plate at
+            // all, because the analog juke already gives a pilot a way to trim their line beside a
+            // ball without hitting it, and one job needs one mechanism.
+            if (_juke != null && !_juke.LastJukeCommitted)
+            {
+                if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                    CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                        $"[ScarabCavitation] Held back: partial juke " +
+                        $"(strength {_juke.LastJukeStrength01:F2}).");
+                return;
+            }
 
             _lastFireTime = Time.time;
             _wasReady = false;
@@ -214,6 +259,16 @@ namespace CosmicShore.Gameplay
             var rotation = Quaternion.LookRotation(dir, upHint);
 
             float radius = ResolveVesselColliderRadius() * radiusPerVesselRadius;
+
+            // The plate's own reach and whether it mirrors are BOTH properties of the prefab, so
+            // there is nothing to compute here — this reads them only to say what it fired.
+            var cylinder = blastPrefab as AOECylindricalExplosion;
+            float plateLength = cylinder ? radius * cylinder.LengthPerRadius : 0f;
+
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabCavitation] Plate fired radius {radius:F1}, reach {plateLength:F1}" +
+                    $"{(cylinder && cylinder.MirrorsAboutStartPlane ? " (mirrored — same reach behind)" : "")}.");
 
             var blast = Instantiate(blastPrefab, at, rotation);
 

@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
         /// curated fact, not a guess: Nucleus Rush's controller writes GoalsScored onto whichever
         /// player it picks per domain. Anything added here must be verified the same way.
         /// </summary>
-        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.NucleusRush };
+        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.BroodRush };
 
         WeeklyChallengeCatalogSO _catalog;
         EndConditionOverridesSO _endConditions;
@@ -227,9 +227,9 @@ namespace CosmicShore.Editor
 
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(
-                    _catalog.attemptsPerPeriod == 1
+                    _catalog.attemptsPerDay == 1
                         ? "one attempt a day, spent at launch"
-                        : $"{_catalog.attemptsPerPeriod} attempts a day",
+                        : $"{_catalog.attemptsPerDay} attempts a day",
                     EditorStyles.miniLabel);
             }
             EditorGUILayout.EndHorizontal();
@@ -454,11 +454,26 @@ namespace CosmicShore.Editor
 
             // ── Objective (the two numbers that must be read together) ──
             GUILayout.Label("Objective", FrogletEditorPalette.SectionLabel);
-            int target = Mathf.Max(1, EditorGUILayout.IntField(
-                new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
-                entry.Target));
-            float timeLimit = Mathf.Max(0f, EditorGUILayout.FloatField(
-                new GUIContent("Time limit (s)", "0 = no limit."), entry.TimeLimitSeconds));
+            bool useModeTarget = EditorGUILayout.Toggle(
+                new GUIContent("Use the mode's own target",
+                    "The ask is whatever the live match races to (Skim Race: the track's " +
+                    "waypoints x laps at the pinned intensity), read at run time - so it is " +
+                    "exactly how it is in the game itself and can never sit above it. Completion " +
+                    "is also granted when the player's domain wins the race. The objective line " +
+                    "is Verb + Noun verbatim, with no number."),
+                entry.UseModeTarget);
+
+            int target;
+            using (new EditorGUI.DisabledScope(useModeTarget))
+            {
+                target = Mathf.Max(1, EditorGUILayout.IntField(
+                    new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
+                    Mathf.Max(1, entry.Target)));
+            }
+
+            EditorGUILayout.LabelField(" ",
+                "No time limit, and no other end-condition override: the run plays the mode's own.",
+                EditorStyles.miniLabel);
 
             GUILayout.Space(6);
 
@@ -479,7 +494,7 @@ namespace CosmicShore.Editor
                     entry.Intensity = intensity;
                     entry.Domain = domain;
                     entry.Target = target;
-                    entry.TimeLimitSeconds = timeLimit;
+                    entry.UseModeTarget = useModeTarget;
                     entry.Verb = verb;
                     entry.Noun = noun;
                 });
@@ -511,6 +526,14 @@ namespace CosmicShore.Editor
         /// </summary>
         void DrawSizeComparison(WeeklyChallengeCatalogSO.Entry entry)
         {
+            if (entry.UseModeTarget)
+            {
+                EditorGUILayout.LabelField(
+                    "Mode races to", "the objective IS that number, read off the live match",
+                    FrogletEditorPalette.CardBody);
+                return;
+            }
+
             if (_endConditions != null &&
                 _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
             {
@@ -553,7 +576,7 @@ namespace CosmicShore.Editor
                 Mode = src.Mode,
                 Metric = src.Metric,
                 Target = src.Target,
-                TimeLimitSeconds = src.TimeLimitSeconds,
+                UseModeTarget = src.UseModeTarget,
                 Intensity = src.Intensity,
                 Verb = src.Verb,
                 Noun = src.Noun,
@@ -604,7 +627,14 @@ namespace CosmicShore.Editor
             // THE trap, and it survives the move to the mode's own end conditions: the turn ends
             // when the mode's RACE target is met, and that ends the challenge with it. An objective
             // above what a match of this mode can produce is unreachable by construction.
-            if (_endConditions != null &&
+            if (entry.UseModeTarget)
+            {
+                yield return Problem.Warn(
+                    "The target is the mode's own, so a SOLO run completes exactly as the race " +
+                    "ends. A PARTY completes only when its domain wins the race - the race target " +
+                    "is a domain sum, so no teammate reaches it alone.");
+            }
+            else if (_endConditions != null &&
                 _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
             {
                 if (entry.Target > normal)
@@ -628,11 +658,6 @@ namespace CosmicShore.Editor
                 yield return Problem.Error(
                     $"{entry.Domain} is not a colour a player flies (Blue is the \"no team\" " +
                     "sentinel). The run falls back to Jade.");
-
-            if (entry.TimeLimitSeconds > 0f && entry.TimeLimitSeconds < 15f)
-                yield return Problem.Warn(
-                    "Under 15 seconds leaves no room for the countdown and spawn-in — the run is " +
-                    "over before the player has control.");
 
             int duplicates = Pool.Count(e => e != null && e.Enabled && e.Mode == entry.Mode);
             if (entry.Enabled && duplicates > 1)
@@ -697,10 +722,11 @@ namespace CosmicShore.Editor
 
             EditorGUI.BeginChangeCheck();
             int attempts = Mathf.Max(0, EditorGUILayout.IntField(
-                new GUIContent("Attempts per week",
-                    "1 = the design: the challenge is played ONCE. The attempt is spent at " +
-                    "LAUNCH, so quitting mid-run does not buy a retry. 0 = unlimited."),
-                _catalog.attemptsPerPeriod));
+                new GUIContent("Attempts per day",
+                    "1 = the design: the challenge changes weekly, the run is DAILY - one a day " +
+                    "to beat your own time, spent at LAUNCH so quitting mid-run does not buy a " +
+                    "retry. 0 = unlimited."),
+                _catalog.attemptsPerDay));
 
             bool respect = EditorGUILayout.ToggleLeft(
                 new GUIContent("Respect mode progression locks",
@@ -712,14 +738,45 @@ namespace CosmicShore.Editor
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit weekly challenge cycle", () =>
                 {
-                    _catalog.attemptsPerPeriod = attempts;
+                    _catalog.attemptsPerDay = attempts;
                     _catalog.respectModeProgression = respect;
                 });
 
             if (attempts == 0)
                 EditorGUILayout.HelpBox(
-                    "0 attempts per week = unlimited replays. Fine for testing; it is not the " +
+                    "0 attempts per day = unlimited replays. Fine for testing; it is not the " +
                     "shipped design.", MessageType.Warning);
+
+            FrogletEditorPalette.HorizontalRule();
+
+            GUILayout.Label("Leaderboard", FrogletEditorPalette.SectionHeader);
+
+            EditorGUI.BeginChangeCheck();
+            string boardId = EditorGUILayout.TextField(
+                new GUIContent("UGS leaderboard ID",
+                    "The ONE board the weekly challenge ranks on, created by hand in the UGS " +
+                    "dashboard. Empty = ranking off; the panel shows nothing and no time is " +
+                    "submitted. The id is IMMUTABLE in UGS once the board exists."),
+                _catalog.leaderboardId ?? string.Empty).Trim();
+
+            if (EditorGUI.EndChangeCheck())
+                Persist("Edit weekly challenge leaderboard", () => _catalog.leaderboardId = boardId);
+
+            EditorGUILayout.HelpBox(
+                string.IsNullOrEmpty(boardId)
+                    ? "No leaderboard ID: ranking is OFF. Completions are still recorded in Cloud " +
+                      "Save; nothing is submitted and the panel stays empty."
+                    : $"Create '{boardId}' in the UGS dashboard with Sort order ASCENDING (the " +
+                      "score is a time), Update strategy KEEP BEST, and a WEEKLY reset on the UTC " +
+                      "Monday boundary with ARCHIVING ON. None of those three can be enforced " +
+                      "from code; the sort order is checked at runtime because it fails silently.",
+                MessageType.Info);
+
+            EditorGUILayout.Space(6);
+            DrawAttemptReset();
+
+            EditorGUILayout.Space(6);
+            DrawRegionalBoards();
 
             FrogletEditorPalette.HorizontalRule();
 
@@ -765,18 +822,12 @@ namespace CosmicShore.Editor
                         "Replay the challenge while tuning it."),
                     test.ignoreAttemptLimit);
 
-                float scale = Mathf.Max(0.01f, EditorGUILayout.FloatField(
-                    new GUIContent("Time limit scale",
-                        "Multiplies every entry's clock. 0.25 turns 60s into 15s."),
-                    test.timeLimitScale));
-
                 if (EditorGUI.EndChangeCheck())
                     Persist("Edit weekly challenge test settings", () =>
                     {
                         test.forcedPoolIndex = forced;
                         test.periodLengthMinutes = dayMinutes;
                         test.ignoreAttemptLimit = ignoreLimit;
-                        test.timeLimitScale = scale;
                     });
 
                 if (forced >= 0 && forced < Pool.Count)
@@ -861,5 +912,121 @@ namespace CosmicShore.Editor
             AssetDatabase.SaveAssets();
             FrogletToolChangeLedger.Record(ToolName, AssetPath);
         }
+
+        /// <summary>
+        /// The per-region boards. <b>A region is its own board</b> — UGS has no region concept, so
+        /// "regional" cannot be a filter over the world board; see
+        /// <c>CosmicShore.Core.WeeklyChallengeRegion</c> for why filtering client-side produces an
+        /// empty list for most regions.
+        ///
+        /// <para>The key is matched against the DEVICE'S two-letter ISO country (us, gb, sg), so a
+        /// board covering several countries wants one row per country pointing at the same id.
+        /// That is deliberate rather than a coarse continent enum: which countries share a board is
+        /// a business decision, and burying it in code would mean a new region needs a build.</para>
+        /// </summary>
+        void DrawRegionalBoards()
+        {
+            EditorGUILayout.LabelField("Regional boards", EditorStyles.boldLabel);
+
+            EditorGUILayout.HelpBox(
+                "OPTIONAL. Empty is the shipped default: the Regional tab reports that no board is " +
+                "configured rather than showing the world board under a regional heading.\n\n" +
+                "Each id is a SEPARATE leaderboard you create in the dashboard with the SAME " +
+                "settings as the world board (ASCENDING, KEEP BEST, weekly reset + archiving). A " +
+                "completion is submitted to the world board AND to the player's regional board.",
+                MessageType.None);
+
+            var boards = _catalog.regionalLeaderboards;
+            int removeAt = -1;
+
+            for (int i = 0; i < boards.Count; i++)
+            {
+                var board = boards[i];
+                if (board == null) continue;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUI.BeginChangeCheck();
+                    string key = EditorGUILayout.TextField(board.regionKey ?? string.Empty,
+                        GUILayout.Width(70f));
+                    string id = EditorGUILayout.TextField(board.leaderboardId ?? string.Empty);
+
+                    if (EditorGUI.EndChangeCheck())
+                        Persist("Edit regional leaderboard", () =>
+                        {
+                            board.regionKey = key.Trim();
+                            board.leaderboardId = id.Trim();
+                        });
+
+                    if (GUILayout.Button("−", GUILayout.Width(22f))) removeAt = i;
+                }
+            }
+
+            if (removeAt >= 0)
+                Persist("Remove regional leaderboard", () => boards.RemoveAt(removeAt));
+
+            if (GUILayout.Button("Add region", GUILayout.Width(110f)))
+                Persist("Add regional leaderboard",
+                    () => boards.Add(new WeeklyChallengeCatalogSO.RegionalBoard()));
+
+            // Two rows claiming one key is not an error - the first wins - but it IS the shape of a
+            // typo, and a silently-ignored row reads as a board that does not work.
+            for (int i = 0; i < boards.Count; i++)
+            {
+                if (boards[i] == null || string.IsNullOrWhiteSpace(boards[i].regionKey)) continue;
+                for (int j = i + 1; j < boards.Count; j++)
+                {
+                    if (boards[j] == null) continue;
+                    if (!string.Equals(boards[i].regionKey, boards[j].regionKey,
+                            System.StringComparison.OrdinalIgnoreCase)) continue;
+
+                    EditorGUILayout.HelpBox(
+                        $"Region '{boards[i].regionKey}' is listed twice. The FIRST row wins and " +
+                        "the other is ignored.", MessageType.Warning);
+                    return;
+                }
+            }
+        }
+
+
+        /// <summary>
+        /// Re-issue this week's challenge to everybody. The one remedy for "a bug ate their
+        /// attempt": bump the token and every stored record for the current period reads as stale,
+        /// so the next launch resets it - attempt included.
+        ///
+        /// <para>It is deliberately a NUMBER rather than a button. A button would have to reach
+        /// every player's cloud record one at a time, which is a server job nobody has; a number
+        /// travels with the build and each client applies it to itself on the next launch, offline
+        /// included. That is also why it cannot be undone: a player whose record has already been
+        /// reset has nothing left to restore, so LOWERING it re-issues the challenge a second time
+        /// rather than putting anything back.</para>
+        /// </summary>
+        void DrawAttemptReset()
+        {
+            EditorGUILayout.LabelField("Re-issue this week", EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            int token = Mathf.Max(0, EditorGUILayout.IntField(
+                new GUIContent("Reset token",
+                    "Bump by one to give every player their attempt back for the CURRENT period. " +
+                    "Does not change which mode the week draws."),
+                _catalog.attemptResetToken));
+
+            if (EditorGUI.EndChangeCheck() && token != _catalog.attemptResetToken)
+                Persist("Bump weekly challenge reset token",
+                        () => _catalog.attemptResetToken = token);
+
+            EditorGUILayout.HelpBox(
+                _catalog.attemptResetToken == 0
+                    ? "0 = no reset pending. Records are filed under the plain period key."
+                    : $"Records are filed under \"<period>#{_catalog.attemptResetToken}\". Every player " +
+                      "whose record predates this bump gets their attempt back on next launch - and " +
+                      "loses their best value and completion flag for this period, because the " +
+                      "attempt and the result are one record.\n\nThe MODE is unchanged: the draw is " +
+                      "keyed on the period alone, so this re-issues the same challenge rather than " +
+                      "re-rolling it.",
+                _catalog.attemptResetToken == 0 ? MessageType.None : MessageType.Warning);
+        }
+
     }
 }

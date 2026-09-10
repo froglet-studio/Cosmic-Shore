@@ -65,10 +65,6 @@ namespace CosmicShore.Gameplay
                                  "to keep whatever the player is already flying.")]
         MenuServerPlayerVesselInitializer vesselInitializer;
 
-        [SerializeField, Tooltip("HUD shown beside the window once the player takes control " +
-                                 "(objective, progress, timer). Optional.")]
-        ModePreviewHUD hud;
-
         [Header("Placement")]
         [SerializeField, Tooltip("How far from the menu world the satellite arena is parked. Must " +
                                  "stay well beyond every gameplay camera's far clip (8000 in " +
@@ -161,7 +157,9 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            AbortHard(strikeWorld: false);   // never create GameObjects while the scene closes
+            // Never create GameObjects while the scene closes, and never raise into subscribers
+            // that are being destroyed alongside us.
+            AbortHard(strikeWorld: false, notify: false);
         }
 
         void Subscribe()
@@ -529,7 +527,6 @@ namespace CosmicShore.Gameplay
                 }
 
                 StopRunner();
-                if (hud) hud.Hide();
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
@@ -597,7 +594,6 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
-            if (hud) hud.Hide();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
 
@@ -701,9 +697,11 @@ namespace CosmicShore.Gameplay
         /// dies with the scene; only the camera loan, the AI retarget and the runtime SO instance
         /// need explicit hands.</para>
         /// </summary>
-        void AbortHard(bool strikeWorld = true)
+        void AbortHard(bool strikeWorld = true, bool notify = true)
         {
             if (_state == State.Idle) return;
+
+            var mode = ActiveMode;
 
             _cts?.Cancel();
             _cts?.Dispose();
@@ -726,6 +724,14 @@ namespace CosmicShore.Gameplay
             SetLocalTrailPaused(false);
             _state = State.Idle;
             ActiveMode = GameModes.Random;
+
+            // (4) A hard abort ENDS THE PREVIEW, so it has to say so. Stop() raises this and
+            // AbortHard did not, which meant the one route that reaches here on its own - a
+            // LAUNCH - never told the window it had nothing left to draw. The frame then sat on
+            // screen holding the last picture its RenderTexture ever received, over the top of
+            // whatever the player did next. Suppressed on the OnDestroy path for the same reason
+            // the strike is: subscribers are being torn down alongside us.
+            if (notify) OnPreviewEnded?.Invoke(mode, ModePreviewOutcome.Abandoned);
         }
 
         void HandleLaunchRequested() => AbortHard();
@@ -986,10 +992,9 @@ namespace CosmicShore.Gameplay
             _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
 
             // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
-            // countdown) is RETIRED: the launch panel's OBJECTIVE BOX is the one readout now, and
-            // it deliberately shows no target and no clock. The runner still runs - it feeds the
-            // box through OnObjectiveProgress.
-            if (hud) hud.Hide();
+            // countdown) is RETIRED and now DELETED: the launch panel's OBJECTIVE BOX is the one
+            // readout, and it deliberately shows no target and no clock. The runner still runs -
+            // it feeds the box through OnObjectiveProgress.
 
             _lastRunnerProgress = _runner.Progress;
             _runner.OnProgressChanged -= HandleRunnerProgress;   // never double-subscribe

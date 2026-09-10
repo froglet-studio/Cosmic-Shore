@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         [Inject] private GameDataSO gameData;
 
         [Header("Settings")]
-        [SerializeField] private GameModes gameMode = GameModes.MultiplayerJoust;
+        [SerializeField] private GameModes gameMode = GameModes.Joust;
 
         [Inject] UGSStatsManager ugsStatsManager;
 
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
                     vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
             }
 
-            CSDebug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[JoustStats] Reported win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
         }
     }
 }

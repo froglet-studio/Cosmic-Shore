@@ -80,6 +80,21 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
         private const string ACCEPTED_INVITE_KEY = "accepted_invite";
 
+        /// <summary>
+        /// Session player-property key a SPECTATOR sets to "1" on join. Read by
+        /// <see cref="IsSpectator"/> on every peer so the party roster, the host's admit
+        /// scan and the party-size publish all leave spectators out. Absent or empty on
+        /// every ordinary member.
+        /// </summary>
+        public const string SPECTATOR_KEY = "spectator";
+
+        /// <summary>True when the session player joined as a spectator (see <see cref="SPECTATOR_KEY"/>).</summary>
+        public static bool IsSpectator(IReadOnlyPlayer p) =>
+            p != null &&
+            p.Properties != null &&
+            p.Properties.TryGetValue(SPECTATOR_KEY, out var prop) &&
+            prop.Value == "1";
+
         // ─────────────────────────────────────────────────────────────────────
         // Dependencies + state
         // ─────────────────────────────────────────────────────────────────────
@@ -184,24 +199,24 @@ namespace CosmicShore.Gameplay
                     ActiveSession          = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
                     return;
                 }
                 catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
                 {
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Host conflict - retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Host conflict - retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
                 }
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
             }
@@ -221,9 +236,12 @@ namespace CosmicShore.Gameplay
         /// The UGS Relay session id published by the host after they call
         /// <see cref="CreateAsync"/>.
         /// </param>
-        public async UniTask JoinByIdAsync(string sessionId)
+        public UniTask JoinByIdAsync(string sessionId) => JoinByIdAsync(sessionId, asSpectator: false);
+
+        /// <inheritdoc/>
+        public async UniTask JoinByIdAsync(string sessionId, bool asSpectator)
         {
-            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
+            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties(asSpectator) };
 
             // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
             // lobby-events 23006). Two clients accepting the same host's invite near-
@@ -238,20 +256,20 @@ namespace CosmicShore.Gameplay
                 {
                     ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts).AsMainThread();
                     ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
-                    Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Joined party session {ActiveSession.Id}.");
                     return;
                 }
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
             }
@@ -272,12 +290,12 @@ namespace CosmicShore.Gameplay
                     await session.AsHost().DeleteAsync().AsMainThread();
                 else
                     await session.LeaveAsync().AsMainThread();
-                Debug.Log($"[PartySessionService] Left party session {session.Id}.");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Left party session {session.Id}.");
             }
             catch (Exception e)
             {
-                CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Leave error (session already gone?): {e.Message}");
-                CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Leave error (session already gone?): {e.Message}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
 
@@ -306,13 +324,13 @@ namespace CosmicShore.Gameplay
                 session.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
                     new PlayerProperty(avatarId.ToString(), VisibilityPropertyOptions.Public));
                 await session.SaveCurrentPlayerDataAsync().AsMainThread();
-                Debug.Log($"[PartySessionService] Local player properties updated (displayName='{displayName}').");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Local player properties updated (displayName='{displayName}').");
             }
             catch (Exception e)
             {
                 // Non-fatal: peers keep the stale name until the next session
                 // (re)join. Never throw into the profile-change event chain.
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[PartySessionService] UpdateLocalPlayerProperties failed ({e.GetType().Name}): {e.Message}");
             }
         }
@@ -331,7 +349,7 @@ namespace CosmicShore.Gameplay
         public void ClearSession()
         {
             if (ActiveSession == null) return;
-            Debug.Log($"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartySessionService] Clearing session reference {ActiveSession.Id}.");
             ActiveSession.PlayerLeaving -= OnSessionPlayerLeaving;
             ActiveSession         = null;
             CreatedAtUnscaledTime = 0f;
@@ -346,7 +364,7 @@ namespace CosmicShore.Gameplay
         /// create/join.  Reflects the current player identity snapshot from
         /// <c>_connectionData</c>.
         /// </summary>
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
+        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties(bool asSpectator = false)
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
             // Displayed party size, not transport capacity - see PresenceLobbyService.
@@ -354,6 +372,9 @@ namespace CosmicShore.Gameplay
 
             return new Dictionary<string, PlayerProperty>
             {
+                // Written on EVERY join (empty for a member) so a stale "1" can never survive a
+                // re-join of the same identity as a member.
+                { SPECTATOR_KEY,       new PlayerProperty(asSpectator ? "1" : string.Empty, VisibilityPropertyOptions.Public) },
                 { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
                 { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },

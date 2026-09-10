@@ -112,7 +112,7 @@ what the carve-out silently broke — see the traps below.
   `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
   EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
   production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
-  (Rampage, Ribcage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  (Rampage, PeelTheCage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
   PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
   therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
   `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored
@@ -429,6 +429,30 @@ what the carve-out silently broke — see the traps below.
   three of their four elements, so this is the common case rather than the edge. Any tool that
   authors into a `Variant` block must flip `Enabled` with it — and a zero-initialised block is
   safe to enable, because every other field's initializer is a keep-the-prefab sentinel.
+- **Reading that block back: A SENTINEL IS NOT A MEASUREMENT.** The bullet above is about writing
+  into a `Variant`; this is the mirror, and it is the one that fails silently. `LeafSize {0,0,0}`,
+  `MaxTotalSpawnedObjects -1`, `HeartWorldScale 0`, `LatticeScale -1`, `GrowPeriod -1`,
+  `ShieldPeriod -1` all mean *keep what you have* — so an offline pass that averages or sums the
+  authored numbers must resolve each one the way the RUNTIME does (fall through to the prefab)
+  rather than treating it as a value. Shipped once: one of four Cacti elements authored the zero
+  leaf and three omitted the block, so a species price came out `(0+75+75+75)/4 = 56.25` against
+  its true 75, and every number derived from it — plant volume, forest volume, both phase-ladder
+  bands — was quietly 25% light. Note the budget sentinel is `-1`, so a `(\d+)` regex skips it **by
+  accident rather than by rule**; write `(-?\d+)` and branch on the sign, or the day somebody
+  authors `0` you inherit the same bug with no warning.
+- **The three flora growth FAMILIES do not share a shape of authoring, so state the fallback order
+  explicitly.** `PhyllotacticFlora`, `BranchingFlora` and `AssembledFlora` are three different
+  components, and a `BranchingFlora` species authors **no per-element variant geometry at all** —
+  its leaf is the prefab's for every element, where a lattice species has four different ones. Two
+  consequences for any tool or config that spans families: look each fact up with a written
+  fallback chain (element variant → prefab) and assert rather than defaulting when it is found
+  nowhere; and remember **the component fileID in a `FloraPrefab` reference differs by family**
+  (`PhyllotacticFlora` and `BranchingFlora` share `7514956980722975813`, `AssembledFlora` uses
+  `8186157953239024492`) — copy it from that species' shipped element asset, because a wrong one
+  resolves to no component at all and the config grows nothing, silently. And a LATTICE species
+  must keep its own per-plant budget: that budget is GEOMETRY (a gyroid octagon is 24 prisms around
+  one crystal), so a cell-level `MaxTotalSpawnedObjectsOverride` does not thin the plant, it
+  truncates a shape mid-figure.
 - **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
   lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
   pickup trigger radius, vacuum speed, capture flourish); the reward is

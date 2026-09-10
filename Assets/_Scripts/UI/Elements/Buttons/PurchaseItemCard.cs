@@ -74,7 +74,6 @@ namespace CosmicShore.UI
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            CSDebug.Log($"SetVirtualItem - {virtualItem.Name},{virtualItem.Type},{virtualItem.ContentType}");
             this.virtualItem = virtualItem;
             PriceLabel.text = virtualItem.Price[0].Amount.ToString();
             UnavailablePriceLabel.text = virtualItem.Price[0].Amount.ToString();

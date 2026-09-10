@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
         /// bright characters: unmistakably not a skim and not a thud, and long enough to read as
         /// "something just happened" rather than "you hit something".
         ///
-        /// Reserved for RARE, match-changing state changes — currently only Ribcage's fauna
+        /// Reserved for RARE, match-changing state changes — currently only PeelTheCage's fauna
         /// release rungs. It outranks both other feels for its whole duration and is rate-limited
         /// so it can never stack into a drone. Do NOT hang it on anything frequent; the two-feel
         /// policy exists because haptics stop meaning anything once they are common.

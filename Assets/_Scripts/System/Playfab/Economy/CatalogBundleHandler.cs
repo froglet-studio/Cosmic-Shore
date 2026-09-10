@@ -51,10 +51,9 @@ namespace CosmicShore.Core
         /// <param name="response">Search Item Response</param>
         private static void OnGettingBundlesSuccess(SearchItemsResponse response)
         {
-            if (response is null) { CSDebug.Log("CatalogManager.GetBundle() - no response"); return; }
+            if (response is null) { CSDebug.LogWarning("CatalogManager.GetBundle() - no response"); return; }
 
             var items = string.Join(" bundle: ", response.Items.Select(i => i.Id.ToString() + " " + i.Title.Values.FirstOrDefault()));
-            CSDebug.Log($"CatalogManager.GetBundle() - bundle: {items}");
             Bundles ??= new();
 
             foreach (var bundle in response.Items)
@@ -66,8 +65,6 @@ namespace CosmicShore.Core
             Bundles.TryGetValue("Test Bundle", out testBundleId);
 
             // TODO: This one is for testing, can be changed to any bundle id you want later
-            // if (string.IsNullOrEmpty(testBundleId)) {CSDebug.Log($"CatalogManager.GetBundle() - Test Bundle Id is not here");return;}
-            CSDebug.Log($"CatalogManager.GetBundles() - Test Bundle Id: {testBundleId}");
             OnGettingBundleId?.Invoke(testBundleId);
         }
 
@@ -105,7 +102,7 @@ namespace CosmicShore.Core
         {
             if (result is null) return;
 
-            CSDebug.Log($"CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager.PurchaseBundle() - {result.OrderId} remaining balance: {result.VirtualCurrencyBalances}");
             PayBundle(result.OrderId);
 
         }
@@ -139,9 +136,9 @@ namespace CosmicShore.Core
         {
             if (result is null) return;
 
-            CSDebug.Log($"CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager.PayBundle() - {result.OrderId} purchase currency:{result.PurchaseCurrency} status:{result.Status}");
             var balance = string.Join(" ", result.VirtualCurrency.Select(i => i.Key + " " + i.Value));
-            CSDebug.Log($"CatalogManager.BayBundle() - current virtual currency balance: {balance}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager.BayBundle() - current virtual currency balance: {balance}");
         }
 
         #endregion

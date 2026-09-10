@@ -233,12 +233,17 @@ namespace CosmicShore.Gameplay
         /// Blend duration to use for this transition. When a MainMenuCameraController is
         /// wired, its ActiveTransitionDuration (per-mode) wins - so CrystalOrbit reads long
         /// while vessel-follow modes read short. Otherwise falls back to the serialized value.
+        ///
+        /// <para>Public because it is not only a camera number: with
+        /// <see cref="lockInputDuringEnterTransition"/> set, it is also exactly how long the
+        /// vessel COASTS before the pilot gets the stick. Anything that places the vessel for
+        /// the arrival (the Toy Box's Navigate) has to know that, or it aims at where the ship
+        /// starts instead of where it ends up.</para>
         /// </summary>
-        float CurrentTransitionDuration()
-        {
-            if (cameraController) return cameraController.ActiveTransitionDuration;
-            return cameraTransitionDuration;
-        }
+        public float TransitionDuration =>
+            cameraController ? cameraController.ActiveTransitionDuration : cameraTransitionDuration;
+
+        float CurrentTransitionDuration() => TransitionDuration;
 
         #region Multiplayer Helpers
 

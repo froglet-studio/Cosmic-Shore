@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -12,11 +13,15 @@ namespace CosmicShore.Gameplay
     /// Subscribes to VesselStatEventSO assets and caches their latest values
     /// for the end-game scoreboard.
     ///
-    /// Supports two modes:
-    /// 1. Explicit (recommended): Wire stat SOs directly via <see cref="statsToTrack"/>.
-    ///    Subscription happens on OnEnable - no timing dependency on vessel spawn.
-    /// 2. Dynamic fallback: If <see cref="statsToTrack"/> is empty, discovers stats
-    ///    from the local vessel's VesselTelemetry at OnClientReady / OnMiniGameTurnStarted.
+    /// Resolves its stat list in priority order:
+    /// 1. Explicit: stat SOs wired directly via <see cref="statsToTrack"/>. Subscription happens
+    ///    on OnEnable - no timing dependency on vessel spawn.
+    /// 2. Profile: when the explicit list is empty, the per-mode list from
+    ///    <see cref="GameModeStatsProfileSO"/> (<c>Resources/GameModeStatsProfile</c>) keyed by
+    ///    <c>GameDataSO.GameMode</c>. This is where the shared GameCanvas prefab gets its
+    ///    per-mode stats without any scene override (`Docs/GAMECANVAS.md`).
+    /// 3. Dynamic fallback: discovers stats from the local vessel's VesselTelemetry at
+    ///    OnClientReady / OnMiniGameTurnStarted.
     ///
     /// Stats are only cleared on explicit reset - they persist across turn boundaries
     /// until the game ends, so the scoreboard always shows the final values.
@@ -26,8 +31,9 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [Inject] private GameDataSO gameData;
 
-        [Header("Stats (explicit - preferred)")]
-        [Tooltip("Wire the VesselStatEventSO assets here. If populated, overrides dynamic discovery.")]
+        [Header("Stats (explicit override)")]
+        [Tooltip("Leave EMPTY on the shared GameCanvas prefab so Resources/GameModeStatsProfile decides per mode. " +
+                 "If populated, this list wins over the profile and over dynamic discovery.")]
         [SerializeField] private List<VesselStatEventSO> statsToTrack = new();
 
         [Header("Debug")]
@@ -44,6 +50,10 @@ namespace CosmicShore.Gameplay
             if (statsToTrack != null && statsToTrack.Count > 0)
             {
                 SubscribeToStats(statsToTrack);
+            }
+            else
+            {
+                TrySubscribeFromProfile();
             }
 
             if (gameData == null) return;
@@ -77,10 +87,14 @@ namespace CosmicShore.Gameplay
             // Already subscribed via previous call? skip.
             if (_subscriptions.Count > 0) return;
 
+            // The profile is asked again here because [Inject] lands after OnEnable on some
+            // spawn paths, so gameData.GameMode may not have been readable the first time.
+            if (TrySubscribeFromProfile()) return;
+
             var vessel = gameData?.LocalPlayer?.Vessel;
             if (vessel == null)
             {
-                if (verboseLogging) Debug.Log("[StatsProvider] Local vessel not ready yet - will retry.");
+                if (verboseLogging) CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, "[StatsProvider] Local vessel not ready yet - will retry.");
                 return;
             }
 
@@ -95,13 +109,35 @@ namespace CosmicShore.Gameplay
             }
 
             var allStats = telemetry.GetAllStats();
-            if (verboseLogging)
-                Debug.Log($"[StatsProvider] Discovered {telemetry.GetType().Name} with {allStats.Count} stat(s)");
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] Discovered {telemetry.GetType().Name} with {allStats.Count} stat(s)");
 
             if (allStats.Count == 0)
                 CSDebug.LogWarning("[EventDrivenStatsProvider] Telemetry has zero registered stats.");
 
             SubscribeToStats(allStats);
+        }
+
+        /// <summary>
+        /// The per-mode list from <see cref="GameModeStatsProfileSO"/>. Returns false when there is
+        /// no profile, no readable game mode, or an empty list - the caller then falls through to
+        /// telemetry discovery exactly as before the profile existed.
+        /// </summary>
+        private bool TrySubscribeFromProfile()
+        {
+            if (_subscriptions.Count > 0) return true;
+            if (gameData == null) return false;
+
+            var profile = GameModeStatsProfileSO.Load();
+            if (profile == null) return false;
+
+            var stats = profile.StatsFor(gameData.GameMode);
+            if (stats == null || stats.Count == 0) return false;
+
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] Using profile list for {gameData.GameMode}: {stats.Count} stat(s)");
+            SubscribeToStats(stats);
+            return _subscriptions.Count > 0;
         }
 
         private void SubscribeToStats(IEnumerable<VesselStatEventSO> stats)
@@ -118,8 +154,6 @@ namespace CosmicShore.Gameplay
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;
                 _subscriptions.Add((stat, Handler));
-
-                if (verboseLogging) Debug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
             }
         }
 
@@ -155,12 +189,8 @@ namespace CosmicShore.Gameplay
                 });
             }
 
-            if (verboseLogging)
-            {
-                Debug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s)");
-                foreach (var s in result)
-                    Debug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
-            }
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] GetStats returning {result.Count} stat(s)");
 
             return result;
         }

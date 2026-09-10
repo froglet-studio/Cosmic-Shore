@@ -13,14 +13,60 @@ namespace CosmicShore.Core
 {
     public class AuthenticationServiceFacade
     {
+        /// <summary>
+        /// True when Unity Services has finished initializing. UnityServices.State THROWS when
+        /// read off the Unity thread, so the read is guarded rather than assumed - "not on the
+        /// main thread" is answered as "not initialized", which routes the caller into the
+        /// initialize path instead of past it.
+        /// </summary>
+        static bool ServicesInitialized
+        {
+            get
+            {
+                try
+                {
+                    return UnityServices.State == ServicesInitializationState.Initialized;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>
+        /// The SDK singleton, or null when Unity Services has not finished initializing.
+        ///
+        /// AuthenticationService.Instance THROWS ServicesInitializationException before
+        /// initialization - it never returns null - so every `Instance != null` test in this
+        /// file was dead code that threw instead of taking its own guarded branch. That matters
+        /// on more than a cold boot: [RuntimeInitializeOnLoadMethod] ResetStaticsOnLoad() nulls
+        /// the SDK singleton on EVERY entry into play mode, including under this project's
+        /// disabled domain reload, so the second Play of an editor session starts here.
+        /// Verified against com.unity.services.authentication 3.6.1.
+        /// </summary>
+        static bool TryGetAuthService(out IAuthenticationService service)
+        {
+            try
+            {
+                service = AuthenticationService.Instance;
+            }
+            catch (Exception)
+            {
+                service = null;
+            }
+
+            return service != null;
+        }
+
         public bool IsSignedIn =>
-            AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn;
+            TryGetAuthService(out var svc) && svc.IsSignedIn;
 
         public string PlayerId =>
-            IsSignedIn ? AuthenticationService.Instance.PlayerId : string.Empty;
+            TryGetAuthService(out var svc) && svc.IsSignedIn ? svc.PlayerId : string.Empty;
 
         public bool SessionTokenExists =>
-            AuthenticationService.Instance != null && AuthenticationService.Instance.SessionTokenExists;
+            TryGetAuthService(out var svc) && svc.SessionTokenExists;
 
         readonly AuthenticationDataVariable _authenticationDataVariable;
         readonly bool _allowLog;
@@ -32,10 +78,37 @@ namespace CosmicShore.Core
         bool _successNotified;
         Task _initTask;
 
+        /// <summary>
+        /// The one in-flight anonymous sign-in, shared by every caller - the sign-in twin of
+        /// <see cref="_initTask"/>.
+        /// </summary>
+        Task _signInTask;
+
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
             _allowLog = allowLog;
+
+            // State / IsSignedIn / PlayerId are plain auto-properties on a class held by a
+            // ScriptableObject, so Unity does not serialize them and SOAP never resets them.
+            // With Enter Play Mode Options disabling domain reload (this project does), that
+            // object survives play-mode exit and the NEXT session starts holding the LAST
+            // session's SignedIn - which made EnsureInitializedAsync short-circuit and
+            // UnityServices.InitializeAsync never run. This facade is the single writer, so
+            // it resets at construction. CLAUDE.md, SOAP anti-patterns.
+            ResetRuntimeState();
+        }
+
+        /// <summary>Clears the runtime mirror without raising anything.</summary>
+        void ResetRuntimeState()
+        {
+            var data = _authenticationDataVariable != null ? _authenticationDataVariable.Value : null;
+            if (data == null)
+                return;
+
+            data.State = AuthenticationData.AuthState.NotInitialized;
+            data.IsSignedIn = false;
+            data.PlayerId = string.Empty;
         }
 
         /// <summary>
@@ -66,9 +139,23 @@ namespace CosmicShore.Core
         /// </summary>
         public Task EnsureInitializedAsync()
         {
-            if (authenticationData.State == AuthenticationData.AuthState.Ready ||
-                authenticationData.State == AuthenticationData.AuthState.SignedIn)
+            // Asked of the SDK, never of our own mirror. The mirror is a REPORT of this state
+            // and can disagree with it - it survives a play-mode exit under fast enter-play-mode,
+            // and a raise that threw can leave it stale mid-session - and when it does, this
+            // guard skips the one call that makes AuthenticationService.Instance exist. Reconcile
+            // with independently readable state rather than trusting the mirror (the same rule
+            // AnalyticsServiceFacade records for its _signedIn latch).
+            if (ServicesInitialized)
+            {
+                // Short-circuiting must not skip the event wiring: SignedIn / SignInFailed /
+                // Expired are how a sign-in that completes OUTSIDE our own await is heard at all.
+                WireAuthEventsOnce();
+
+                if (authenticationData.State == AuthenticationData.AuthState.NotInitialized)
+                    authenticationData.State = AuthenticationData.AuthState.Ready;
+
                 return Task.CompletedTask;
+            }
 
             if (_initTask != null && !_initTask.IsCompleted)
                 return _initTask;
@@ -82,7 +169,13 @@ namespace CosmicShore.Core
             authenticationData.State = AuthenticationData.AuthState.Initializing;
             Log("Initializing Unity Services...");
 
-            await UnityServices.InitializeAsync();
+            // Marshalled back to the MAIN THREAD: everything after this line writes the SOAP
+            // mirror and (downstream of sign-in) raises OnSignedIn, whose listeners instantiate
+            // NetworkManager, load cloud data and touch ScriptableObjects. SOAP raises inline,
+            // so an off-thread continuation surfaces as EnsureRunningOnMainThread inside a
+            // listener - swallowed by the async-void catch, leaving sign-in silently unfinished.
+            // Docs/THREADING.md.
+            await UnityServices.InitializeAsync().AsMainThread();
             SwitchMppmProfileIfNeeded();
             WireAuthEventsOnce();
 
@@ -93,85 +186,145 @@ namespace CosmicShore.Core
         /// <summary>
         /// Signs in anonymously if not already signed in.
         /// Uses cached session token when available for silent re-authentication.
+        ///
+        /// <para>
+        /// Concurrent callers COALESCE onto one attempt, exactly as
+        /// <see cref="EnsureInitializedAsync"/> coalesces initialization - and for a reason that
+        /// really happens: <see cref="StartAuthentication"/> is fired by AppManager and never
+        /// awaited, while the Authentication scene loads on its own splash timer and asks again
+        /// a moment later. Those are two independent clocks, so on a slow UGS round trip the
+        /// scene wins. The SDK refuses a second concurrent sign-in
+        /// (<c>ClientInvalidUserState</c> - "already signing in"), the caller reads that refusal
+        /// as "there is no session", and the boot walks into its not-signed-in branch while the
+        /// FIRST attempt is a heartbeat from succeeding. Joining the in-flight attempt is what
+        /// makes the answer true.
+        /// </para>
         /// </summary>
         public async Task EnsureSignedInAnonymouslyAsync()
         {
             await EnsureInitializedAsync();
 
-            if (AuthenticationService.Instance == null)
+            if (!TryGetAuthService(out var svc))
             {
-                OnSignInFailed("AuthenticationService.Instance is null after initialization.");
+                OnSignInFailed("AuthenticationService is unavailable after initialization.");
                 return;
             }
 
-            if (AuthenticationService.Instance.IsSignedIn)
+            if (svc.IsSignedIn)
             {
-                Log($"Already signed in. PlayerId={AuthenticationService.Instance.PlayerId}");
+                Log($"Already signed in. PlayerId={svc.PlayerId}");
+                OnSignInSuccess();
+                return;
+            }
+
+            await SharedSignInAsync();
+        }
+
+        /// <summary>
+        /// Returns the anonymous sign-in already in flight, or starts one. Every caller that
+        /// joins observes the same outcome and the same single OnSignedIn / OnSignInFailed raise.
+        /// </summary>
+        Task SharedSignInAsync()
+        {
+            if (_signInTask is { IsCompleted: false })
+                return _signInTask;
+
+            _signInTask = SignInAnonymouslyCore();
+            return _signInTask;
+        }
+
+        /// <summary>
+        /// The actual sign-in. Deliberately never throws - every exit routes through
+        /// <see cref="OnSignInSuccess"/> or <see cref="OnSignInFailed"/> - so a caller that
+        /// merely JOINED it does not have to own a failure it did not start.
+        /// </summary>
+        async Task SignInAnonymouslyCore()
+        {
+            if (!TryGetAuthService(out var svc))
+            {
+                OnSignInFailed("AuthenticationService is unavailable after initialization.");
+                return;
+            }
+
+            if (svc.IsSignedIn)
+            {
                 OnSignInSuccess();
                 return;
             }
 
             authenticationData.State = AuthenticationData.AuthState.SigningIn;
-            Log($"Signing in anonymously... (SessionTokenExists={SessionTokenExists})");
+            Log($"Signing in anonymously... (SessionTokenExists={svc.SessionTokenExists})");
 
             try
             {
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                OnSignInSuccess();
+                await svc.SignInAnonymouslyAsync().AsMainThread();
             }
             catch (Exception e)
             {
                 OnSignInFailed(e);
+                return;
             }
+
+            // Deliberately OUTSIDE the try. OnSignInSuccess raises OnSignedIn inline, so a
+            // throwing LISTENER used to be caught here and reported as a sign-in failure -
+            // flipping the state to Failed on a session that had in fact signed in, and taking
+            // the rest of the listener chain down with it.
+            OnSignInSuccess();
         }
 
         /// <summary>
         /// Attempts to restore a cached session without showing UI.
         /// Returns true if the user is now signed in.
+        ///
+        /// <para>
+        /// The session token decides only whether to START a sign-in - never whether to WAIT for
+        /// one. An attempt fired by <see cref="StartAuthentication"/> may still be in flight, and
+        /// this method used to issue a competing <c>SignInAnonymouslyAsync</c> against it: the
+        /// SDK refused the second call, the catch below stamped
+        /// <see cref="AuthenticationData.AuthState.Failed"/> over a sign-in that was in fact
+        /// succeeding, and the caller was told there is no session. Join the attempt instead and
+        /// report what is actually true once it lands.
+        /// </para>
         /// </summary>
         public async Task<bool> TrySignInCachedAsync()
         {
             await EnsureInitializedAsync();
 
-            if (AuthenticationService.Instance == null)
+            if (!TryGetAuthService(out var svc))
                 return false;
 
-            if (AuthenticationService.Instance.IsSignedIn)
+            if (svc.IsSignedIn)
             {
                 OnSignInSuccess();
                 return true;
             }
 
-            if (!AuthenticationService.Instance.SessionTokenExists)
+            bool signInInFlight = _signInTask is { IsCompleted: false };
+            if (!signInInFlight && !svc.SessionTokenExists)
                 return false;
 
-            try
-            {
-                authenticationData.State = AuthenticationData.AuthState.SigningIn;
-                Log("Attempting cached session sign-in...");
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                OnSignInSuccess();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                authenticationData.State = AuthenticationData.AuthState.Failed;
-                Log($"Cached sign-in failed: {ex.Message}");
-                return false;
-            }
+            Log(signInInFlight
+                ? "A sign-in is already in flight - joining it instead of starting a second one."
+                : "Attempting cached session sign-in...");
+
+            // SharedSignInAsync owns the state writes and the success/failure raise, and never
+            // throws - so there is no second AuthState.Failed to stamp here.
+            await SharedSignInAsync();
+
+            return TryGetAuthService(out var afterSignIn) && afterSignIn.IsSignedIn;
         }
 
         public void SignOut(bool clearSessionToken = false)
         {
-            if (AuthenticationService.Instance == null)
+            if (!TryGetAuthService(out var svc))
                 return;
 
             try
             {
-                AuthenticationService.Instance.SignOut();
+                svc.SignOut();
 
                 if (clearSessionToken)
-                    AuthenticationService.Instance.ClearSessionToken();
+                    svc.ClearSessionToken();
 
                 OnSignedOut("Manual SignOut invoked.");
             }
@@ -190,6 +343,7 @@ namespace CosmicShore.Core
         {
             _startupAttempted = false;
             _initTask = null;
+            _signInTask = null;
         }
 
         /// <summary>
@@ -211,12 +365,12 @@ namespace CosmicShore.Core
             ResetStartupState();
             _successNotified = false;
 
-            // State is deliberately NOT reset. Sending it back to NotInitialized would force
-            // EnsureInitializedAsync to re-run UnityServices.InitializeAsync on a services
-            // layer that is already up - pointless work on the reconnect path, and it defeats
-            // the IsSignedIn fast path the auth scene relies on to re-announce a still-live
-            // session. Clearing the success latch is the whole job: it is what lets the next
-            // sign-in (or the fast path over an existing one) raise OnSignedIn again.
+            // State is deliberately NOT reset - it would defeat the IsSignedIn fast path the
+            // auth scene relies on to re-announce a still-live session. (Re-initialization is
+            // no longer a risk either way: EnsureInitializedAsync asks UnityServices.State
+            // rather than this mirror.) Clearing the success latch is the whole job: it is
+            // what lets the next sign-in - or the fast path over an existing one - raise
+            // OnSignedIn again.
             Log("Reset for reconnect - OnSignedIn will re-raise on the next sign-in.");
         }
 
@@ -251,7 +405,10 @@ namespace CosmicShore.Core
                 ? $"mppm-{string.Join("-", tags)}"
                 : "mppm-clone";
 
-            AuthenticationService.Instance.SwitchProfile(profileName);
+            if (!TryGetAuthService(out var svc))
+                return;
+
+            svc.SwitchProfile(profileName);
             Log($"MPPM: Switched to auth profile '{profileName}'.");
 #endif
         }
@@ -265,18 +422,40 @@ namespace CosmicShore.Core
             if (_eventsWired)
                 return;
 
-            if (AuthenticationService.Instance == null)
+            if (!TryGetAuthService(out var svc))
                 return;
 
             _eventsWired = true;
 
-            AuthenticationService.Instance.SignedIn += () => OnSignInSuccess();
+            // Every one of these handlers writes the SOAP mirror and raises a SOAP event, which
+            // runs its listeners INLINE. The SDK raises them on whatever thread finished the
+            // request, so they are marshalled first. Docs/THREADING.md.
+            svc.SignedIn += () => OnMainThread(OnSignInSuccess);
 
-            AuthenticationService.Instance.SignInFailed += (RequestFailedException ex) => OnSignInFailed(ex);
+            svc.SignInFailed += (RequestFailedException ex) => OnMainThread(() => OnSignInFailed(ex));
 
-            AuthenticationService.Instance.SignedOut += () => OnSignedOut("Auth event: SignedOut");
+            svc.SignedOut += () => OnMainThread(() => OnSignedOut("Auth event: SignedOut"));
 
-            AuthenticationService.Instance.Expired += () => OnSignedOut("Auth event: Session Expired");
+            svc.Expired += () => OnMainThread(() => OnSignedOut("Auth event: Session Expired"));
+        }
+
+        /// <summary>
+        /// Runs <paramref name="action"/> on the main thread - immediately when already there,
+        /// so the common case keeps its synchronous ordering.
+        /// </summary>
+        static async void OnMainThread(Action action)
+        {
+            try
+            {
+                if (!MainThreadDispatcher.IsOnMainThread)
+                    await MainThreadDispatcher.SwitchToMainThreadAsync();
+
+                action();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogError($"[UGS Auth] Auth event handler threw: {e}");
+            }
         }
 
         // ──────────────────────────────────────────────
@@ -285,9 +464,9 @@ namespace CosmicShore.Core
 
         void OnSignInSuccess()
         {
-            if (AuthenticationService.Instance == null)
+            if (!TryGetAuthService(out var svc))
             {
-                OnSignInFailed("OnSignInSuccess called but AuthenticationService.Instance is null.");
+                OnSignInFailed("OnSignInSuccess called but AuthenticationService is unavailable.");
                 return;
             }
 
@@ -299,9 +478,9 @@ namespace CosmicShore.Core
 
             authenticationData.State = AuthenticationData.AuthState.SignedIn;
             authenticationData.IsSignedIn = true;
-            authenticationData.PlayerId = AuthenticationService.Instance.PlayerId;
+            authenticationData.PlayerId = svc.PlayerId;
 
-            Log($"Sign-in complete. PlayerId={AuthenticationService.Instance.PlayerId}");
+            Log($"Sign-in complete. PlayerId={svc.PlayerId}");
             authenticationData.OnSignedIn?.Raise();
         }
 
@@ -311,7 +490,7 @@ namespace CosmicShore.Core
             authenticationData.IsSignedIn = false;
             authenticationData.PlayerId = string.Empty;
 
-            Log($"Sign-in failed: {e}");
+            LogFailure($"Sign-in failed: {e}");
             authenticationData.OnSignInFailed?.Raise();
         }
 
@@ -321,7 +500,7 @@ namespace CosmicShore.Core
             authenticationData.IsSignedIn = false;
             authenticationData.PlayerId = string.Empty;
 
-            Log($"Sign-in failed: {reason}");
+            LogFailure($"Sign-in failed: {reason}");
             authenticationData.OnSignInFailed?.Raise();
         }
 
@@ -340,7 +519,15 @@ namespace CosmicShore.Core
         void Log(string msg)
         {
             if (_allowLog)
-                CSDebug.Log($"[UGS Auth] {msg}");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[UGS Auth] {msg}");
         }
+
+        /// <summary>
+        /// A sign-in failure is NEVER gated on the verbose flag. Everything downstream of
+        /// OnSignedIn - cloud data, the presence lobby, the Relay session, analytics - simply
+        /// waits when sign-in does not complete, so the only symptom is a boot that sits there.
+        /// The one component that knows why has to say so unprompted.
+        /// </summary>
+        static void LogFailure(string msg) => CSDebug.LogWarning($"[UGS Auth] {msg}");
     }
 }

@@ -27,7 +27,7 @@ namespace CosmicShore.UI
         [Inject] protected Container _diContainer;
 
         [Header("Objective Indicator")]
-        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
+        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (SkimRace, Joust). Disable to wire your own indicator manually in the scene.")]
         [SerializeField] protected bool autoCreateObjectiveIndicator = true;
         ObjectiveIndicator _autoCreatedIndicator;
         // Mode the auto-created indicator's provider was resolved for; a client can reach
@@ -85,8 +85,33 @@ namespace CosmicShore.UI
 
         private void Awake()
         {
+            HideRetiredPipPanel();
+
             if (enablePreGameCinematic && preGameCinematic == null)
                 EnsurePreGameCinematic();
+        }
+
+        /// <summary>
+        /// The picture-in-picture rear view is RETIRED in favour of the full-screen look-back
+        /// camera (<c>VesselRearView</c>, Docs/REAR_VIEW.md), so the panel must never appear.
+        ///
+        /// <para><b>Retiring it in code rather than only in the prefab is the load-bearing
+        /// half.</b> <c>Pip.prefab</c>'s own root ships INACTIVE, but both
+        /// <c>CORE/GameCanvas.prefab</c> and <c>Panels/MiniGameHUD.prefab</c> carry an
+        /// <c>m_IsActive: 1</c> override on their nested instance — so the panel is on by
+        /// default and was only ever switched off by a vessel announcing it was not the local
+        /// pilot's. Simply removing the grant would therefore have left a dead panel showing a
+        /// stale render texture in every mode. The overrides are corrected too, but fifteen
+        /// scenes carry structural FORKS of that canvas (Docs/GAMECANVAS.md §9) and a fork's own
+        /// copy is out of the prefab's reach; this stand-down is what covers them.</para>
+        /// </summary>
+        void HideRetiredPipPanel()
+        {
+            // Resolve the view here too: it is auto-wired only in OnValidate (editor-only), so a
+            // scene fork that lost the serialized reference would otherwise stand nothing down.
+            if (view == null) view = GetComponent<MiniGameHUDView>();
+            if (view != null && view.Pip != null)
+                view.Pip.SetActive(false);
         }
 
         /// <summary>
@@ -158,6 +183,7 @@ namespace CosmicShore.UI
             EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            EnsureSpectatorBadge();
             PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
@@ -175,7 +201,7 @@ namespace CosmicShore.UI
         ///
         /// <see cref="MiniGameControllerBase.OnReadyClicked"/> is public on the BASE class, so the
         /// per-scene UnityEvent hookups that name a concrete controller type
-        /// (<c>HexRaceController</c>, <c>MultiplayerJoustController</c>, ...) never needed to be
+        /// (<c>SkimRaceController</c>, <c>JoustController</c>, ...) never needed to be
         /// per-scene at all - and each one was an override parked in the scene, masking the shared
         /// prefab. Resolving it here means a NEW game-mode scene can drop GameCanvas.prefab in and
         /// the Ready button works with zero inspector wiring.
@@ -362,9 +388,9 @@ namespace CosmicShore.UI
         {
             switch (mode)
             {
-                case GameModes.HexRace:
-                    return CreateProviderComponent<HexRaceObjectiveProvider>("ObjectiveProvider_HexRace");
-                case GameModes.MultiplayerJoust:
+                case GameModes.SkimRace:
+                    return CreateProviderComponent<SkimRaceObjectiveProvider>("ObjectiveProvider_SkimRace");
+                case GameModes.Joust:
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
@@ -374,11 +400,38 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.Switchback:
+                    // The arrow is a gate race's ONLY answer to "which of these identical rings
+                    // is mine next" - the gates are deliberately all neutral, so nothing in the
+                    // shared world says whose turn a ring is.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Headlong:
+                    // Same provider: it asks whichever GateRaceController is in the scene, and on
+                    // a lapped circuit "your next gate" is the only thing that distinguishes two
+                    // pilots on the same ring at the same moment.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Headlong");
+                case GameModes.Tollway:
+                    return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
+                case GameModes.Breakwater:
+                    // Same provider again: Breakwater is a GateRaceController like the other two,
+                    // and its stations are identical to each other AND to every domain, so the
+                    // arrow is the only thing that says which one is yours next.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breakwater");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile
                     // economy (the wingman reload), so it is the one thing worth pointing at.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
+                case GameModes.Hijack:
+                    return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
+                case GameModes.Skein:
+                    // Mandatory rather than a nicety, for Switchback's reason: every ring on the
+                    // cable is neutral Blue, so nothing in the SHARED world says whose turn a ring
+                    // is. The arrow is per-viewer by construction, which is what a per-pilot fact
+                    // needs - and repainting the next ring in the pilot's domain colour would
+                    // spend the switch vocabulary's RESERVED colour on a ring that hands nobody a
+                    // domain.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Skein");
                 default:
                     return null;
             }
@@ -784,11 +837,16 @@ namespace CosmicShore.UI
                 _localPlayerCard.UpdateScore(score);
         }
 
-        public void OnPipInitialized(PipData data)
-        {
-            view.Pip.SetActive(data.IsActive);
-            view.Pip.GetComponent<PipUI>().SetMirrored(data.IsMirrored);
-        }
+        /// <summary>
+        /// Still wired to the <c>PipData</c> SOAP channel by the HUD prefab, and deliberately
+        /// deaf to what it is told: the panel is retired (see <see cref="HideRetiredPipPanel"/>),
+        /// so an <c>IsActive: true</c> arriving from anywhere — a resurrected <c>Pip</c> grant, a
+        /// stray raise — must not be able to put it back on screen. Kept rather than unwired
+        /// because the listener lives in prefab YAML across every game-mode canvas, and a
+        /// method that quietly does the right thing beats fifteen scenes' worth of dangling
+        /// UnityEvent targets.
+        /// </summary>
+        public void OnPipInitialized(PipData data) => HideRetiredPipPanel();
 
         private void CleanupUI()
         {
@@ -838,6 +896,19 @@ namespace CosmicShore.UI
         /// The COUNT does not come through here - it arrives on every monitor tick through
         /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
         /// </summary>
+        /// <summary>
+        /// The eye under the goal stack that appears while somebody is spectating this pilot.
+        /// Ensured in code rather than authored: the goal stack lives in two forked GameCanvas
+        /// prefabs across a dozen scenes, so an authored badge would be a hand-edit in both and
+        /// missing from whichever one the next scene copies (Docs/GAME_MODE_TOPBAR.md).
+        /// </summary>
+        void EnsureSpectatorBadge()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+            SpectatorWatchBadge.Ensure(stack.transform, gameData);
+        }
+
         protected void RefreshGoalStack()
         {
             var stack = view != null ? view.GoalStack : null;

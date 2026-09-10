@@ -42,6 +42,21 @@ namespace CosmicShore.Gameplay
         float CurrentSpeed { get; }
 
         /// <summary>
+        /// This lifeform has already died and is playing out its death - it is a corpse, not a
+        /// creature. TRUE from the moment the death is decided, which is well BEFORE the heart
+        /// stops being embedded: a progressive wither re-homes the heart onto the cell while
+        /// deliberately leaving it embedded and uncollectable for the whole animation
+        /// (<see cref="Crystal.DetachHeartToCell"/>, Docs/ECOSYSTEM.md §26). So
+        /// <c>IsEmbedded</c> answers "is this a heart rather than a pickup", NOT "is its owner
+        /// alive", and anything that wants the second question has to ask THIS one.
+        ///
+        /// <para>Both concrete lifeforms already gated on this fact privately -
+        /// <c>LifeForm.Jousted</c> on <c>dying</c>, <c>Fauna.Nourish</c> on
+        /// <c>_diedThisLife</c> - so this only publishes what the contract already assumed.</para>
+        /// </summary>
+        bool IsDying { get; }
+
+        /// <summary>
         /// A vessel jousted this lifeform's embedded crystal (its heart) while moving faster than
         /// it - the creature withers and dies through its normal death path (crystal drop, mass
         /// conserved, continuity honored). Returns true only if it actually died to this joust.

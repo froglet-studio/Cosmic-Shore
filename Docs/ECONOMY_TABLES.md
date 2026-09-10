@@ -88,10 +88,10 @@ earned before that point bank toward the first purchase rather than being wasted
 
 | Gate | Unlocked by | Notes |
 |---|---|---|
-| First game mode | Free at first boot | Tournament is always unlocked |
+| First game mode | Free at first boot | Maelstrom is always unlocked |
 | Game modes 2+ | Quest chain | Claim the previous quest |
 | Vessel Hangar | Quest chain (~3 games) | No vessel can be bought before this |
-| Intensity 3 and 4 | Playing the mode | Tournament ships at full intensity |
+| Intensity 3 and 4 | Playing the mode | Maelstrom ships at full intensity |
 | Vessels | 4,000 crystals each | After the Hangar unlocks |
 | Episodes | 1 episode token each | Requires a storefront — not wired |
 

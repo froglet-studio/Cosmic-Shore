@@ -23,7 +23,7 @@ namespace CosmicShore.Data
         /// <summary>
         /// Mode-formatted PRIMARY display string - what the scoreboard card's main score
         /// shows and what the end-game cinematic reveals (winner: "01:24:30"; loser:
-        /// "3 Crystals Left" / "3 Jousts Left"; CrystalCapture: "12 Crystals"). Computed
+        /// "3 Crystals Left" / "3 Jousts Left"; Scurry: "12 Crystals"). Computed
         /// once by the producing mode so the scoreboard and the reveal can never disagree
         /// (this is what dissolves BUGS.md B2).
         /// </summary>

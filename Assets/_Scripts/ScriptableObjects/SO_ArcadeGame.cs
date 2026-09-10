@@ -35,7 +35,6 @@ namespace CosmicShore.ScriptableObjects
                  "live (Docs/ModePreview/ARCHITECTURE.md) and must never fall back to a video.")]
         public VideoClip PreviewVideo;
 
-        public CallToActionTargetType CallToActionTargetType;
         public UserActionType ViewUserAction;
         public UserActionType PlayUserAction;
 

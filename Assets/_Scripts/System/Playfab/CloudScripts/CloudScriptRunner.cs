@@ -60,8 +60,7 @@ namespace CosmicShore.Core
                 return;
             }
 
-            CSDebug.Log($"CloudScriptRunner - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
-            CSDebug.Log($"CloudScriptRunner - Result: {result.FunctionResult}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CloudScriptRunner - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
         }
     }
 }

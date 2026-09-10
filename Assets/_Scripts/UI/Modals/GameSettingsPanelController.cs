@@ -447,16 +447,16 @@ namespace CosmicShore.UI
 
         public void AutoDetect()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Auto-Detect is available only in the main menu."); return; }
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Auto-Detect is available only in the main menu"); return; }
             S?.ApplyAutoDetect();
             RefreshValues();
             FlagRestartNeeded();
-            CSDebug.Log($"[Settings] Auto-Detect applied - Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[Settings] Auto-Detect applied - quality preset index={QualityIndex}, AA index={AntiAliasingIndex}");
         }
 
         public void RunBenchmark()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Benchmark is available only in the main menu."); return; }
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Benchmark is available only in the main menu"); return; }
             benchmarkLauncher?.LaunchBenchmark();
         }
 

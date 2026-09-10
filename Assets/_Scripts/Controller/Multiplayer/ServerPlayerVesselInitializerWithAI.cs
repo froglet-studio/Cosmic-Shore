@@ -39,22 +39,22 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
-        // Tournament standings are keyed by player name, but AI Player NetworkObjects are
+        // Maelstrom standings are keyed by player name, but AI Player NetworkObjects are
         // destroyed and re-spawned every minigame scene - so the AI roster must stay stable
-        // across the lineup. The names are seeded once (first game) into TournamentDataSO and
+        // across the lineup. The names are seeded once (first game) into MaelstromDataSO and
         // reused for every subsequent game.
-        [Inject] TournamentDataSO tournamentData;
+        [Inject] MaelstromDataSO tournamentData;
 
         protected override void OnNetworkSpawn()
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling");
                 enabled = false;
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
@@ -136,13 +136,13 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()");
                     SpawnAIs(totalCounts, humanCounts);
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}");
                 }
                 catch (System.Exception e)
                 {
-                    CSDebug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
+                    CSDebug.LogError($"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}");
                     CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
                 }
             }
@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
                     aiMarked++;
                 }
             }
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -167,16 +167,16 @@ namespace CosmicShore.Gameplay
         {
             if (!aiPlayerPrefab)
             {
-                CSDebug.LogError("<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!</color>");
+                CSDebug.LogError("[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!");
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}");
             if (aiCount <= 0)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)");
                 return;
             }
 
@@ -185,14 +185,14 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Tournament: seed the AI roster once (first game) and reuse it for every later
+            // Maelstrom: seed the AI roster once (first game) and reuse it for every later
             // game, so name-keyed bot standings attribute correctly across the lineup. The
             // names match profile names, so downstream avatar resolution still works.
-            bool tournament = gameData.IsTournamentMode && tournamentData != null;
-            if (tournament && tournamentData.TournamentAINames.Count == 0 && profiles != null)
+            bool tournament = gameData.IsMaelstromMode && tournamentData != null;
+            if (tournament && tournamentData.MaelstromAINames.Count == 0 && profiles != null)
             {
                 for (int p = 0; p < profiles.Count; p++)
-                    tournamentData.TournamentAINames.Add(profiles[p].Name);
+                    tournamentData.MaelstromAINames.Add(profiles[p].Name);
             }
 
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
@@ -238,8 +238,8 @@ namespace CosmicShore.Gameplay
                 // game authors no Vessels list.
                 aiVesselType = gameData.ClampVesselToGame(aiVesselType);
 
-                var aiName = tournament && i < tournamentData.TournamentAINames.Count
-                    ? tournamentData.TournamentAINames[i]
+                var aiName = tournament && i < tournamentData.MaelstromAINames.Count
+                    ? tournamentData.MaelstromAINames[i]
                     : profiles != null && i < profiles.Count
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
@@ -346,7 +346,7 @@ namespace CosmicShore.Gameplay
                 humans.Add(player);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans");
             return humans;
         }
 
@@ -387,10 +387,10 @@ namespace CosmicShore.Gameplay
                 humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
                 reassigned++;
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}");
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}");
         }
 
         VesselClassType PickAIVesselType()
@@ -459,7 +459,7 @@ namespace CosmicShore.Gameplay
             // Fight then layers a stand-off distance on top via its own external target
             // provider, because a gun duel is not a ramming contest.
             bool shouldSeekPlayers =
-                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.Joust ||
                 gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);

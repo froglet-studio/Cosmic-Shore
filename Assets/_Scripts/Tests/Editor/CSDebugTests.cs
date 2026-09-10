@@ -238,6 +238,40 @@ namespace CosmicShore.Tests
                 "Channel values must be non-overlapping bit flags.");
         }
 
+        // Every channel must be a single distinct bit: two members sharing a value would make
+        // one toolbox toggle silently drive both, and a member that is not a power of two
+        // would light several toggles at once.
+        [Test]
+        public void CSLogChannel_EveryMemberIsAUniqueSingleBit()
+        {
+            var seen = new System.Collections.Generic.HashSet<int>();
+            foreach (CSLogChannel channel in System.Enum.GetValues(typeof(CSLogChannel)))
+            {
+                if (channel == CSLogChannel.None || channel == CSLogChannel.All) continue;
+                int bits = (int)channel;
+                Assert.IsTrue(bits != 0 && (bits & (bits - 1)) == 0,
+                    $"{channel} must be exactly one bit (was {bits}).");
+                Assert.IsTrue(seen.Add(bits), $"{channel} shares its bit with another channel.");
+            }
+        }
+
+        // The Logging toolbox reflects the enum and shows the label; a member without one
+        // renders as its bare identifier, which is the un-authored state this test catches.
+        [Test]
+        public void CSLogChannel_EveryMemberCarriesALabel()
+        {
+            foreach (var field in typeof(CSLogChannel).GetFields(
+                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                var flag = (CSLogChannel)field.GetValue(null);
+                if (flag == CSLogChannel.None || flag == CSLogChannel.All) continue;
+                var attr = System.Attribute.GetCustomAttribute(field, typeof(CSLogChannelLabelAttribute))
+                    as CSLogChannelLabelAttribute;
+                Assert.IsNotNull(attr, $"{field.Name} has no [CSLogChannelLabel].");
+                Assert.IsFalse(string.IsNullOrWhiteSpace(attr.Label), $"{field.Name} has an empty label.");
+            }
+        }
+
         #endregion
     }
 }

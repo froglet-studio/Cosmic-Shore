@@ -1,0 +1,237 @@
+#!/usr/bin/env python3
+"""
+Catch the ONE error class an out-of-editor syntax check is structurally blind to:
+a type used without a `using` for the namespace that declares it.
+
+    python3 Tools/Build/check_using_directives.py                # files changed vs the base ref
+    python3 Tools/Build/check_using_directives.py <path ...>     # specific files or folders
+    python3 Tools/Build/check_using_directives.py --all          # whole project (see the LIMIT)
+    python3 Tools/Build/check_using_directives.py --self-test
+
+WHY THIS EXISTS. CLAUDE.md already records that a `dotnet build` over changed C# with no Unity
+assemblies is a SYNTAX gate and nothing more, because Roslyn abandons class-body binding when the
+base type is unresolved. Compiling one file against hand-written stubs has the mirror problem: it
+proves that file and says nothing about its five siblings. Both let
+`error CS0246: The type or namespace name 'GameDataSO' could not be found` reach the editor.
+
+This resolves declarations from the REPO rather than from a compiler: it indexes every
+`namespace X { ... class/struct/interface/enum Y }` in Assets/_Scripts, then for each file asks
+whether every type it mentions is reachable from that file's own namespace plus its usings.
+
+WHAT IT DELIBERATELY DOES NOT DO. It reports only types whose declaring namespace is UNAMBIGUOUS
+within Assets/_Scripts and entirely absent from the file's reach - never a guess. A name declared
+in two first-party namespaces, and a name reachable through any using, are silent.
+
+THE LIMIT, STATED PLAINLY, because a gate that overstates its reach is worse than none:
+it indexes FIRST-PARTY declarations only, so it cannot see that `Key`, `Direction`, `Frame` or
+`Stats` also exist in UnityEngine, Unity.InputSystem or NUnit. A first-party type sharing a name
+with one of those looks unambiguous to this script and gets reported. Measured on the shipped
+tree: 143 such reports across 1,849 files, every one a false positive.
+
+That is why the DEFAULT is the files changed against the base ref rather than the whole project.
+On a handful of new files the signal is exact and the output is short enough to read; run --all
+only when you are prepared to triage. Do NOT wire --all into CI as a blocking gate without an
+allowlist for the shadowed names.
+"""
+import os
+import re
+import sys
+
+ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SCRIPTS = os.path.join(ROOT, "Assets", "_Scripts")
+
+DECL = re.compile(
+    r"^\s*(?:\[[^\]]*\]\s*)*(?:public|internal|protected|private|sealed|abstract|static|partial|readonly|\s)*"
+    r"\b(?:class|struct|interface|enum|record)\s+([A-Z]\w*)", re.M)
+NS = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
+USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
+ALIAS = re.compile(r"^\s*using\s+\w+\s*=", re.M)
+# A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
+# member access or an already-qualified name).
+MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
+
+COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
+STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
+
+
+def strip(src: str) -> str:
+    return STRING.sub('""', COMMENT.sub(" ", src))
+
+
+def index_declarations():
+    """type name -> set of namespaces declaring it."""
+    out = {}
+    for root, _, files in os.walk(SCRIPTS):
+        for f in files:
+            if not f.endswith(".cs"):
+                continue
+            p = os.path.join(root, f)
+            try:
+                src = strip(open(p, encoding="utf-8", errors="ignore").read())
+            except OSError:
+                continue
+            m = NS.search(src)
+            ns = m.group(1) if m else ""
+            # A FILE-SCOPED namespace (`namespace X;`) opens no brace, so its types sit at
+            # depth 0. The project has none today; without this the day one lands its whole
+            # file drops out of the index silently, which is the failure mode this checker is
+            # least able to notice about itself.
+            braced = bool(m) and src[m.end():m.end() + 40].lstrip().startswith("{")
+            for name in top_level_declarations(src, braced):
+                out.setdefault(name, set()).add(ns)
+    return out
+
+
+def top_level_declarations(src, in_namespace):
+    """
+    Type names a `using <namespace>;` can actually REACH - i.e. types at the namespace's own
+    brace depth, never types nested inside another type.
+
+    A nested type is not addressable by importing its namespace at all (it is
+    `Outer.Inner`, and a private one is not addressable from outside `Outer` at any price), so
+    indexing one makes the checker demand a using that cannot help. It cost a real false
+    positive: a private `struct Pose` inside a test class made every first-party file that
+    mentions UnityEngine's Pose look like it was missing `using CosmicShore.Tests;`.
+
+    Depth is counted over the COMMENT- AND STRING-STRIPPED source, so a brace in either cannot
+    move it.
+    """
+    names, depth, i, n = [], 0, 0, len(src)
+    want = 1 if in_namespace else 0
+    marks = {m.start(): m.group(1) for m in DECL.finditer(src)}
+    while i < n:
+        if i in marks and depth == want:
+            names.append(marks[i])
+        c = src[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        i += 1
+    return names
+
+
+def reachable(ns: str, usings: set) -> set:
+    """A file can see its own namespace, every ancestor of it, and everything it uses."""
+    r = set(usings)
+    parts = ns.split(".") if ns else []
+    for i in range(len(parts), 0, -1):
+        r.add(".".join(parts[:i]))
+    r.add("")
+    return r
+
+
+def check_file(path, decls):
+    src_raw = open(path, encoding="utf-8", errors="ignore").read()
+    if ALIAS.search(src_raw):
+        return []                      # a using-alias file: out of scope, stay silent
+    src = strip(src_raw)
+    m = NS.search(src)
+    ns = m.group(1) if m else ""
+    reach = reachable(ns, set(USING.findall(src)))
+
+    # Types this file declares itself are always in scope.
+    own = set(DECL.findall(src))
+
+    bad = []
+    for name in sorted(set(MENTION.findall(src))):
+        if name in own:
+            continue
+        where = decls.get(name)
+        if not where or len(where) != 1:
+            continue                   # unknown or ambiguous: never guess
+        declared = next(iter(where))
+        if declared in reach:
+            continue
+        bad.append((name, declared))
+    return bad
+
+
+def self_test():
+    """A gate nobody has watched FAIL is a gate nobody should trust."""
+    import tempfile
+    decls = {"WidgetSO": {"CosmicShore.Utility"}, "Thing": {"CosmicShore.Data"}}
+    cases = [
+        ("using CosmicShore.Data;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 1,
+         "missing using is reported"),
+        ("using CosmicShore.Data;\nusing CosmicShore.Utility;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 0,
+         "present using is silent"),
+        ("namespace CosmicShore.Utility { class A { WidgetSO w; } }", 0,
+         "own namespace is silent"),
+        ('namespace CosmicShore.Gameplay { class A { string s = "WidgetSO"; } }', 0,
+         "a name inside a STRING is not a reference"),
+        ("namespace CosmicShore.Gameplay { class A { /* WidgetSO */ int x; } }", 0,
+         "a name inside a COMMENT is not a reference"),
+        ("namespace CosmicShore.Gameplay { class A { int x = Foo.WidgetSO; } }", 0,
+         "a qualified member access is not a bare reference"),
+    ]
+    ok = True
+    for src, want, label in cases:
+        with tempfile.NamedTemporaryFile("w", suffix=".cs", delete=False) as f:
+            f.write(src); p = f.name
+        got = len(check_file(p, decls))
+        os.unlink(p)
+        status = "ok " if got == want else "FAIL"
+        if got != want: ok = False
+        print(f"  [{status}] {label}  (expected {want}, got {got})")
+    return 0 if ok else 1
+
+
+def changed_files():
+    """Files changed against the base ref - the default scope, where the signal is exact."""
+    import subprocess
+    for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
+        try:
+            out = subprocess.run(["git", "diff", "--name-only", f"{base}...HEAD"],
+                                 cwd=ROOT, capture_output=True, text=True, timeout=30)
+            names = [n for n in out.stdout.split("\n") if n.endswith(".cs")]
+            if out.returncode == 0 and names:
+                return names
+        except Exception:
+            pass
+    # Fall back to the working tree's own uncommitted changes.
+    try:
+        import subprocess
+        out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
+                             capture_output=True, text=True, timeout=30)
+        return [l[3:].strip() for l in out.stdout.split("\n") if l[3:].strip().endswith(".cs")]
+    except Exception:
+        return []
+
+
+def main():
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    if "--self-test" in sys.argv:
+        return self_test()
+
+    decls = index_declarations()
+    if not args:
+        args = [SCRIPTS] if "--all" in sys.argv else changed_files()
+        if not args:
+            print("using-directive check: no changed .cs files to check")
+            return 0
+    targets = []
+    for a in args:
+        full = a if os.path.isabs(a) else os.path.join(ROOT, a)
+        if not os.path.exists(full):
+            continue
+        if os.path.isfile(full):
+            targets.append(full)
+        else:
+            for root, _, files in os.walk(full):
+                targets += [os.path.join(root, f) for f in files if f.endswith(".cs")]
+
+    problems = 0
+    for p in sorted(targets):
+        for name, declared in check_file(p, decls):
+            print(f"{os.path.relpath(p, ROOT)}: '{name}' is declared in '{declared}' "
+                  f"- add `using {declared};`")
+            problems += 1
+
+    print(f"using-directive check: {'OK' if not problems else str(problems) + ' PROBLEM(S)'} "
+          f"({len(targets)} files, {len(decls)} types indexed)")
+    return 1 if problems else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -913,7 +913,7 @@ namespace CosmicShore.Core
         void Log(string message)
         {
             if (_allowLog)
-                CSDebug.Log($"[Analytics] {message}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Analytics] {message}");
         }
     }
 }

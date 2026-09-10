@@ -75,6 +75,16 @@ namespace CosmicShore.Core
         CancellationTokenSource _cts;
         bool _navigated;
 
+        /// <summary>
+        /// True once the flow has deliberately stopped on a surface the player must act on
+        /// (the guest-login panel, or username entry). It is what tells a legitimate "waiting
+        /// for a human" apart from a stall, and it is cleared the moment they act - or the
+        /// moment a sign-in lands underneath them.
+        /// </summary>
+        bool _awaitingPlayerInput;
+
+        bool _signedInSubscribed;
+
         AuthenticationData AuthData => _authDataVariable?.Value;
 
         // ──────────────────────────────────────────────
@@ -94,6 +104,8 @@ namespace CosmicShore.Core
 
         void OnDisable()
         {
+            UnsubscribeSignedIn();
+
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
@@ -108,6 +120,11 @@ namespace CosmicShore.Core
         void Start()
         {
             ClearStatusMessages();
+
+            // Subscribed here rather than in OnEnable: [Inject] fields are populated after
+            // Awake and before Start, so _authDataVariable is still null in OnEnable.
+            SubscribeSignedIn();
+
             RunAuthFlowAsync(_cts.Token).Forget();
         }
 
@@ -122,6 +139,15 @@ namespace CosmicShore.Core
 
             try
             {
+                // The first-run privacy flow (age gate + consent) is a persistent overlay that
+                // Bootstrap creates and does NOT block on, so on a fresh install it is still on
+                // screen when this scene starts. Every clock below — cached sign-in, profile
+                // load, the safety timeout — used to start ticking behind its scrim, and by
+                // the time the player had typed a birth year the boot had already timed out
+                // past the username panel and force-navigated to the menu. Wait for the
+                // player first: nothing here is worth doing while they cannot see it.
+                await WaitForPrivacyFlowAsync(ct);
+
                 // Race the entire auth flow against a hard safety timeout.
                 // WhenAny returns the 0-based index of the first task to complete.
                 int winnerIndex = await UniTask.WhenAny(
@@ -135,6 +161,16 @@ namespace CosmicShore.Core
                     await ShowOfflineNoticeAsync(ct);
                     NavigateToMainMenu();
                 }
+                else if (winnerIndex == 0 && !_navigated && !_awaitingPlayerInput)
+                {
+                    // The core flow finishing is what retires the safety timeout above, so a
+                    // finish that neither navigated nor left the player something to act on
+                    // retires the only thing that was going to rescue the boot. Nothing here
+                    // is expected to hit this today - it exists so that the next branch added
+                    // to the flow cannot strand the boot silently.
+                    CSDebug.LogWarning("[AuthScene] Auth flow finished without navigating and with no surface for the player. Force-navigating to main menu.");
+                    NavigateToMainMenu();
+                }
             }
             catch (OperationCanceledException) { /* scene destroyed - expected */ }
             catch (Exception ex)
@@ -145,13 +181,47 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>
+        /// Holds the boot while <see cref="PrivacyConsentOverlay"/> owns the screen. No timeout of
+        /// its own, deliberately: the player is on a surface they have to act on, which is the
+        /// one state the safety timeout must not rescue (a force-navigate mid-question is the
+        /// bug). Resolves when the overlay finishes OR is destroyed, so a flow torn down by any
+        /// other path can never strand the boot here.
+        /// </summary>
+        async UniTask WaitForPrivacyFlowAsync(CancellationToken ct)
+        {
+            var overlay = PrivacyConsentOverlay.Current;
+            if (overlay == null) return;
+
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Privacy flow (age gate / consent) is on screen - holding sign-in until the player answers.");
+            ShowLoading("Waiting for you…");
+
+            var done = new UniTaskCompletionSource();
+            void Complete() => done.TrySetResult();
+            overlay.OnPrivacyFlowCompleted += Complete;
+            try
+            {
+                // Destroy() without Finish() would never raise the event; poll the instance
+                // as the backstop so the wait cannot outlive the overlay.
+                while (!done.Task.Status.IsCompleted() && PrivacyConsentOverlay.Current == overlay)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            finally
+            {
+                if (overlay != null) overlay.OnPrivacyFlowCompleted -= Complete;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Privacy flow resolved - resuming sign-in.");
+            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
+        }
+
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
         {
             // 1. Already signed in (from Bootstrap, or still signed in across a RECONNECT -
             //    coming back online never signs out).
             if (IsAlreadySignedIn())
             {
-                CSDebug.Log("[AuthScene] Already signed in. Auto-skipping sign-in.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Already signed in. Auto-skipping sign-in.");
 
                 // Re-announce it. This branch used to jump straight to the post-auth flow
                 // without touching the facade, so OnSignedIn was never raised - and that event
@@ -194,7 +264,7 @@ namespace CosmicShore.Core
                 bool cached = await TrySignInCachedWithTimeoutAsync(ct);
                 if (cached)
                 {
-                    CSDebug.Log("[AuthScene] Cached session valid. Auto-skipping.");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Cached session valid. Auto-skipping.");
                     await HandlePostAuthFlowAsync(ct);
                     return;
                 }
@@ -242,7 +312,7 @@ namespace CosmicShore.Core
             }
             catch (OperationCanceledException)
             {
-                CSDebug.Log("[AuthScene] Cached auth timed out.");
+                CSDebug.LogWarning("[AuthScene] Cached auth timed out.");
                 return false;
             }
             catch (Exception ex)
@@ -285,6 +355,7 @@ namespace CosmicShore.Core
 
         async UniTaskVoid OnGuestLoginAsync(CancellationToken ct)
         {
+            _awaitingPlayerInput = false;   // they acted - this is no longer a parked boot
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
             ShowLoading("Signing in…");
@@ -385,6 +456,7 @@ namespace CosmicShore.Core
         {
             if (_usernameSubmitInFlight) return;
             _usernameSubmitInFlight = true;
+            _awaitingPlayerInput = false;   // they acted - this is no longer a parked boot
 
             // Cleared on every path that leaves the player able to try again. NOT cleared once
             // navigation starts - there is no going back to this screen.
@@ -458,6 +530,8 @@ namespace CosmicShore.Core
             if (authPanel) authPanel.SetActive(true);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
             HideLoading();
+            EnsureGuestLoginVisible();
+            ParkForPlayerInput("guest sign-in");
         }
 
         void ShowUsernameSetup()
@@ -465,6 +539,104 @@ namespace CosmicShore.Core
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
             HideLoading();
+            ParkForPlayerInput("username entry");
+        }
+
+        /// <summary>
+        /// The auth panel's ONLY control. It ships inactive in <c>Authentication.unity</c> and
+        /// nothing ever activated it, so showing the panel drew a bare background with no button
+        /// and (after <see cref="HideLoading"/>) no text - a dead end the player reads as a hung
+        /// loading screen. Asserting it here as well as in the scene keeps the guarantee next to
+        /// the code path that depends on it.
+        /// </summary>
+        void EnsureGuestLoginVisible()
+        {
+            if (!guestLoginButton)
+            {
+                CSDebug.LogWarning("[AuthScene] Auth panel shown with no guest login button wired - " +
+                                   "the player has no way forward from this screen.");
+                return;
+            }
+
+            if (!guestLoginButton.gameObject.activeSelf)
+            {
+                CSDebug.LogWarning("[AuthScene] Guest login button was inactive - activating it so the auth panel is usable.");
+                guestLoginButton.gameObject.SetActive(true);
+            }
+
+            guestLoginButton.interactable = true;
+        }
+
+        /// <summary>
+        /// Records - and just as importantly ANNOUNCES - that the boot has deliberately stopped
+        /// and is waiting for a human. A terminal state that logs nothing is indistinguishable
+        /// from a hang: this one produced a completely silent console while the whole online
+        /// stack came up healthily behind a screen the player could not act on.
+        /// </summary>
+        void ParkForPlayerInput(string what)
+        {
+            _awaitingPlayerInput = true;
+            CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Waiting for the player: {what}. " +
+                        "The boot stops here until they act, or until a sign-in lands.");
+        }
+
+        /// <summary>
+        /// The boot's self-healing net, and the reason it is needed: the splash timer that loads
+        /// this scene and the UGS sign-in round trip are independent clocks, so the scene can
+        /// legitimately conclude "not signed in", park on the auth panel, and have the sign-in
+        /// land a heartbeat later. Everything downstream of that raise - the presence lobby, the
+        /// Relay session, the host - then comes up behind a screen that is never going to move.
+        /// Resume instead.
+        /// </summary>
+        void SubscribeSignedIn()
+        {
+            if (_signedInSubscribed) return;
+
+            var signedIn = AuthData?.OnSignedIn;
+            if (signedIn == null) return;
+
+            signedIn.OnRaised += HandleSignedInWhileWaiting;
+            _signedInSubscribed = true;
+        }
+
+        void UnsubscribeSignedIn()
+        {
+            if (!_signedInSubscribed) return;
+
+            var signedIn = AuthData?.OnSignedIn;
+            if (signedIn != null)
+                signedIn.OnRaised -= HandleSignedInWhileWaiting;
+
+            _signedInSubscribed = false;
+        }
+
+        void HandleSignedInWhileWaiting()
+        {
+            if (_navigated || !_awaitingPlayerInput) return;
+
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Sign-in landed while the boot was waiting for the player - resuming.");
+            _awaitingPlayerInput = false;
+            ResumeAfterLateSignInAsync(_cts?.Token ?? CancellationToken.None).Forget();
+        }
+
+        async UniTaskVoid ResumeAfterLateSignInAsync(CancellationToken ct)
+        {
+            try
+            {
+                // OnSignedIn is also raised from the SDK's own SignedIn event, whose continuation
+                // is not guaranteed to be Unity's thread - and SOAP raises listeners INLINE, so
+                // everything below would be running wherever that raise came from. A no-op when
+                // we are already on the main thread (Docs/THREADING.md).
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
+
+                await HandlePostAuthFlowAsync(ct);
+            }
+            catch (OperationCanceledException) { /* scene destroyed - expected */ }
+            catch (Exception ex)
+            {
+                CSDebug.LogWarning($"[AuthScene] Resume after a late sign-in failed: {ex.Message}. Navigating to main menu.");
+                NavigateToMainMenu();
+            }
         }
 
         void ShowLoading(string text = "Loading…")
@@ -518,9 +690,10 @@ namespace CosmicShore.Core
         {
             if (_navigated) return;
             _navigated = true;
+            _awaitingPlayerInput = false;
 
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
-            CSDebug.Log("[AuthScene] Navigating to Main Menu...");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Navigating to Main Menu...");
             LoadMainMenuNetworkedAsync(_cts?.Token ?? CancellationToken.None).Forget();
         }
 
@@ -554,7 +727,7 @@ namespace CosmicShore.Core
                                 && !(_offlineMode?.IsOfflineSession ?? false);
 
             if (offlinePreferred)
-                CSDebug.Log("[AuthScene] Offline preferred by the player - going straight to the local host.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Offline preferred by the player - going straight to the local host.");
 
             for (int attempt = 1; attempt <= maxAttempts && !networkReady && attemptRelay; attempt++)
             {
@@ -570,7 +743,7 @@ namespace CosmicShore.Core
                     // raise may originate from a UGS Task completion on the ThreadPool.
                     await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
                     networkReady = true;
-                    CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
+                    CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
@@ -652,7 +825,7 @@ namespace CosmicShore.Core
                     try
                     {
                         await WaitForRelayReadyAsync(ct).AsMainThread();
-                        CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+                        CSDebug.LogVerbose(CSLogChannel.Boot, "[AuthScene] Relay session confirmed live after manual retry.");
 
                         // Clear the latched Retry surface. Without this the panel
                         // stays in Retry mode after the session recovers (whether
@@ -673,7 +846,7 @@ namespace CosmicShore.Core
             // to OnClientReady so the overlay fades once the vessel spawns.
             _sceneTransitionManager?.SetFadeImmediate(1f);
 
-            CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+            CSDebug.LogVerbose(CSLogChannel.Boot, $"[AuthScene] Loading {menuScene} via network scene management...");
             NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
 

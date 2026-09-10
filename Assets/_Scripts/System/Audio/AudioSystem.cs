@@ -308,7 +308,7 @@ namespace CosmicShore.Core
         EventReference joustBuffTimeEvent;
 
         [Header("Track Impact Event (FMOD) - wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the SkimRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
         EventReference trackImpactEvent;
 
         [Header("Flora Event (FMOD) - wire in the inspector")]
@@ -605,7 +605,7 @@ namespace CosmicShore.Core
             activeAudioSource.clip = audioClip;
             activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
-            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.LogVerbose(CSLogChannel.Audio, $"[Audio] Music clip playing - {activeAudioSource.clip.name}");
         }
 
         public void PlayNextMusicClip(AudioClip audioClip)
@@ -614,7 +614,7 @@ namespace CosmicShore.Core
             activeAudioSource.clip = audioClip;
             activeAudioSource.volume = MusicVolume;
             activeAudioSource.Play();
-            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.LogVerbose(CSLogChannel.Audio, $"[Audio] Music clip playing - {activeAudioSource.clip.name}");
         }
 
         public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
@@ -639,7 +639,7 @@ namespace CosmicShore.Core
             activeAudioSource.Stop();
             activeAudioSource.clip = newAudioClip; // Change AudioClip
             activeAudioSource.Play();
-            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+            CSDebug.LogVerbose(CSLogChannel.Audio, $"[Audio] Music clip playing - {activeAudioSource.clip.name}");
 
             for (float t = 0; t < transitionTime; t += Time.deltaTime)
             {
@@ -661,7 +661,7 @@ namespace CosmicShore.Core
             //Set the new audio source
             newAudioSource.clip = newAudioClip;
             newAudioSource.Play();
-            CSDebug.Log($"Playing New Music Clip: {newAudioSource.clip.name}");
+            CSDebug.LogVerbose(CSLogChannel.Audio, $"[Audio] Music clip playing - {newAudioSource.clip.name}");
 
             //crossfade music
             StartCoroutine(UpdateMusicWithCrossFade(activeAudioSource, newAudioSource, transitionTime));

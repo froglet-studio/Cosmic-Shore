@@ -72,9 +72,9 @@ namespace CosmicShore.Gameplay
                 var rule = gameData.ScoringRule;
                 if (rule != null)
                 {
-                    n_DomainSum0.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[0]);
-                    n_DomainSum1.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[1]);
-                    n_DomainSum2.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[2]);
+                    n_DomainSum0.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[0]);
+                    n_DomainSum1.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[1]);
+                    n_DomainSum2.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[2]);
                 }
                 yield return wait;
             }
@@ -85,14 +85,14 @@ namespace CosmicShore.Gameplay
             if (!IsServer)
                 return;
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}");
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -109,22 +109,22 @@ namespace CosmicShore.Gameplay
         {
             readyClientCount++;
 
-            // Use connected clients count (humans only - excludes AI)
-            int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+            // Connected clients minus SPECTATORS: humans who own a Ready button (AI never
+            // connect, viewers never press).
+            int humanCount = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
-            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}");
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);
 
             if (readyClientCount < humanCount)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})");
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...");
             readyClientCount = 0;
             OnReadyClicked_ClientRpc();
         }

@@ -70,6 +70,7 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY      = "invite_payloads";
         private const string JOINED_PARTY_KEY         = "joined_party";
         private const string ACCEPTED_INVITE_KEY      = "accepted_invite";
+        private const string PARTY_SESSION_KEY        = "partySession";
 
         /// <summary>
         /// After creating a lobby, wait this long before re-querying to detect
@@ -145,7 +146,7 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby != null) return;
 
-            Debug.Log("[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby...");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby");
             try
             {
                 _activeLobby = await TryQueryAndJoinAsync(maxPlayers);
@@ -166,13 +167,13 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PresenceLobbyService] Join failed ({e.Message}) - creating new lobby as fallback.");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.LogWarning($"[PresenceLobbyService] Join failed ({e.Message}) - creating new lobby as fallback.");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 if (_activeLobby == null)
                     await CreateAsync(maxPlayers);
             }
 
-            Debug.Log($"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
         }
 
         /// <inheritdoc/>
@@ -195,12 +196,12 @@ namespace CosmicShore.Gameplay
                 catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                    CSDebug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
                     return;
                 }
             }
@@ -232,13 +233,13 @@ namespace CosmicShore.Gameplay
 
                 await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
                 _activeLobby = joined;
-                Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
             }
             catch (Exception e)
             {
                 // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
-                Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+                CSDebug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
             }
         }
 
@@ -252,7 +253,7 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby == null || _leaving) return;
             _leaving = true;
-            Debug.Log($"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
             try
             {
                 if (_activeLobby.IsHost)
@@ -262,8 +263,8 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] Leave error (session may already be gone) ({e.GetType().Name}): {e}");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Leave error (session may already be gone) ({e.GetType().Name}): {e}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
             finally
             {
@@ -304,8 +305,6 @@ namespace CosmicShore.Gameplay
                         lobby.CurrentPlayer.SetProperty(kv.Key, kv.Value);
                 },
                 operationName);
-
-            Debug.Log($"[PresenceLobbyService] SavePropertiesAsync({operationName}) - {properties.Count} props written.");
         }
 
         /// <inheritdoc/>
@@ -317,7 +316,7 @@ namespace CosmicShore.Gameplay
         /// </remarks>
         public void ForceReset()
         {
-            Debug.Log("[PresenceLobbyService] ForceReset - clearing active lobby reference for reconnect.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PresenceLobbyService] ForceReset - clearing active lobby reference for reconnect.");
             _activeLobby = null;
         }
 
@@ -354,6 +353,9 @@ namespace CosmicShore.Gameplay
                 { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
+                // The joinable/spectatable session id (HostConnectionService.PARTY_SESSION_KEY).
+                // Seeded empty like every stateful key; the live overlay below fills it in.
+                { PARTY_SESSION_KEY,   new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
 
             // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby
@@ -405,7 +407,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -428,12 +430,12 @@ namespace CosmicShore.Gameplay
                     var joined = await _multiplayerService.JoinSessionByIdAsync(
                         session.Id,
                         new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() }).AsMainThread();
-                    Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
                     return joined;
                 }
                 catch (Exception e)
                 {
-                    Debug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
+                    CSDebug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
                     if (IsRateLimitException(e))
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                 }
@@ -448,7 +450,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async UniTask CreateAsync(int maxPlayers)
         {
-            Debug.Log($"[PresenceLobbyService] Creating new presence lobby (maxPlayers={maxPlayers})...");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Creating new presence lobby (maxPlayers={maxPlayers})");
             try
             {
                 var opts = new SessionOptions
@@ -474,21 +476,21 @@ namespace CosmicShore.Gameplay
                     try
                     {
                         _activeLobby = await _multiplayerService.CreateSessionAsync(opts).AsMainThread();
-                        Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
                         return;
                     }
                     catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
                     {
                         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                        CSDebug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                         await UniTask.Delay(delay);
                     }
                 }
             }
             catch (Exception e)
             {
-                Debug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e.Message}");
-                CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CSDebug.LogError($"[PresenceLobbyService] Could not create presence lobby: {e.Message}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
 
@@ -500,7 +502,7 @@ namespace CosmicShore.Gameplay
         private async UniTask DeleteOwnLobbyQuietlyAsync()
         {
             if (_activeLobby == null) return;
-            Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly - releasing race-lost lobby {_activeLobby.Id}.");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PresenceLobbyService] DeleteOwnLobbyQuietly - releasing race-lost lobby {_activeLobby.Id}.");
             try
             {
                 if (_activeLobby.IsHost)
@@ -510,7 +512,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PresenceLobbyService] DeleteOwnLobby error: {e.Message}");
+                CSDebug.LogWarning($"[PresenceLobbyService] DeleteOwnLobby error: {e.Message}");
             }
             finally
             {

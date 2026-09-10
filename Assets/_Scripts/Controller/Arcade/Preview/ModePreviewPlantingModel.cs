@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
     /// A scale model of a cell whose world is <b>GROWN</b> rather than laid.
     ///
     /// <para>Only three of the arcade's preview cells author an <c>EnvironmentPrefab</c> — the
-    /// Boneyard, the Ribcage and the Wildlife cages. The other fourteen have no generator at all:
+    /// Boneyard, the PeelTheCage and the Wildlife cages. The other fourteen have no generator at all:
     /// their arenas are planted by the spawn profile once a match starts, so at the moment a card
     /// is opened there is literally nothing built to sample. That is why those cards showed an
     /// empty frame, and it is data rather than a defect.</para>

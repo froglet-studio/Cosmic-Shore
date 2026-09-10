@@ -4,7 +4,7 @@
 The arena is a THREE-LAYER JAIL: three concentric cages at a fixed 1050 / 600 / 200, with a
 very wide empty room between each pair. The wildlife is NOT locked one tier per room - every
 species roams the whole arena on ONE shared band (see ROAM_INNER/ROAM_OUTER). Unlike
-Ribcage, intensity never changes the SHELL COUNT (each shell is a room a hunter breaks into) -
+PeelTheCage, intensity never changes the SHELL COUNT (each shell is a room a hunter breaks into) -
 it changes how tightly each cage is woven and, from intensity 3, its SHAPE: the cages become
 BOXES (square rail grids with corner posts, "the boxing ring") - one at intensity 3, all three
 at intensity 4. The WILDLIFE ROSTER is identical at every intensity, so this table carries the

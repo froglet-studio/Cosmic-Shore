@@ -6,7 +6,8 @@ hull's controls, the roster, and Start.
 
 The two-screen flow it replaces — configure, then pick a vessel — existed because a card could
 be flown in several hulls. **Every arcade mode locks to one now**, so the second screen had
-nothing left to ask and the first had no reason to be a separate step.
+nothing left to ask and the first had no reason to be a separate step. (The ARENA's cards do
+not lock, and their panel asks the one question the second screen used to — see §1.1.)
 
 ---
 
@@ -15,7 +16,8 @@ nothing left to ask and the first had no reason to be a separate step.
 | Panel | Draws | Preview | Controls block | In its place |
 |---|---|---|---|---|
 | `MinigameLaunchPanel` | every card except the meta-mode | the live window | the hull's four abilities | — |
-| `MaelstromLaunchPanel` | `GameModes.Tournament` only | a clip | none | the pool list |
+| `MaelstromLaunchPanel` | `GameModes.Maelstrom` only | a clip | none | the pool list |
+| `ArenaLaunchPanel` | the cards in `ArenaGames` | the live window | none | a vessel carousel + SELECT VESSEL |
 
 **The Maelstrom is not one of the arcade grid's cards.** It draws the OTHER modes, so listing it
 beside them invites "play this one" when it means "play several of these"; `ArcadeExploreView`
@@ -26,16 +28,28 @@ roster the tournament pool and the client-side mode lookup read.
 Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
 
 - **A clip, not the live window.** A mode with no arena of its own has nothing to stand up,
-  which is why `ModePreviewLibrarySO` excludes Tournament in code. `ModeVideoView` is not the
+  which is why `ModePreviewLibrarySO` excludes Maelstrom in code. `ModeVideoView` is not the
   return of the deleted video fallback (`Docs/ModePreview/ARCHITECTURE.md`): every *playable*
   mode still previews live, and Maelstrom is the one card structurally unable to.
-- **No controls block.** The hull changes every round — four of the pool's seven modes are
+- **No controls block.** The hull changes every round — fifteen of the pool's sixteen modes are
   vessel-locked — so there is no one set of controls to teach.
 - **A pool list instead**, because the question this card actually raises is "what am I going
   to end up playing?", and the intensity answers it differently.
 
 A card finds its panel by asking (`ArcadeLaunchPanel.Handles`), not by the modal switching on a
 mode enum, so a third kind of card is a new subclass and one entry in the modal's list.
+
+### 1.1 The third panel: the Arena's
+
+`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush) can be flown in
+more than one hull, so the panel carries a vessel carousel and a SELECT VESSEL button, and
+**Start is dead until a hull is confirmed** — the modal's `RefreshStartAvailability` is the one
+place Start's availability is decided, so this gate and the weekly-challenge lock cannot disagree.
+It lives in its own window (`ModalWindows.ARENA_GAME_CONFIGURE`) exactly as the Maelstrom's does,
+must sit FIRST in `launchPanels` because `MinigameLaunchPanel` accepts every non-Maelstrom card,
+and answers `Handles` from the `ArenaGames` roster so moving a card between the rosters moves it
+between windows with no code. Rosters and the per-session confirmation rule:
+`Docs/HomeHub/ARCHITECTURE.md` §3.
 
 ## 2. The panel owns its widgets; the modal owns the decisions
 
@@ -47,15 +61,21 @@ commit, ready-up and launch stay in exactly one place no matter which panel is o
 never launches anything.** The moment a panel starts making those calls there are two
 authorities on the same state, which is the failure the single-writer rule exists to prevent.
 
-Wiring **any** panel switches the modal to the one-panel layout wholesale. There is deliberately
-no half-way state where some controls come from a panel and some from the legacy Screen 1 /
-Screen 2 fields: two sources for one control is how a stale widget ends up driving live config.
+A panel is now **required**, not a layout choice: the legacy Screen 1 / Screen 2 fields are gone
+from the modal entirely (see §7). A card opened with no panel that accepts it logs which card, and
+draws nothing — rather than falling back to a half-way state, which is how a stale widget ends up
+driving live config.
+
+`UsesLaunchPanels` survives that removal for a different job: the scene holds a **second copy** of
+`ArcadeGameConfigureModal`, on the Maelstrom's own window, carrying the component purely as its
+`ModalWindowManager` and wiring no panels. Both copies subscribe to the sync manager's broadcasts,
+so the flag is what stops the panel-less one "opening" on every client and drawing an empty frame
+over the real one.
 
 ### 2.1 Every control resolves through ONE accessor — and a per-control fallback is the bug
 
 `ActiveIntensityButtons`, `ActiveDomainTiles`, `ActiveStartButton`, `ActiveWaitingLabel` and
-`ActivePreviewWindow` each answer from the **active panel** on the one-panel layout and from
-the **legacy serialized field** otherwise — never a mix.
+`ActivePreviewWindow` each answer from the **active panel**, or from nothing — never a mix.
 
 Falling back per-control would look harmless and be wrong twice over: the Maelstrom panel
 *deliberately* has no preview window, so a fallback would arm a live satellite arena into a
@@ -489,7 +509,7 @@ answer. It is read-only on scenes and idempotent.
 
 | Mode | Arenas | Note |
 |---|---|---|
-| Ribcage | 5 | the cage's rind count IS the intensity |
+| PeelTheCage | 5 | the cage's rind count IS the intensity |
 | Dog Fight, Salvo's twin arena | 4 | the shared Boneyard configs |
 | The Bends | 4 | Rampage's arena, referenced not forked |
 | Wildlife Liberation | 4 | |
@@ -498,7 +518,7 @@ answer. It is read-only on scenes and idempotent.
 
 ## 7. The Maelstrom's intensity ladder
 
-`TournamentDataSO.IntensityTiers` is a **cumulative** ladder over `GameQueue`: a run at
+`MaelstromDataSO.IntensityTiers` is a **cumulative** ladder over `GameQueue`: a run at
 intensity N draws from every tier up to and including N, so raising the lobby's intensity
 widens the draw as well as raising each game's own intensity ceiling.
 
@@ -513,8 +533,8 @@ at that intensity.
 | 3 | Scarab Scramble | 6 |
 | 4 | The Bends | 7 |
 
-> **Skim Race *is* HexRace.** `ArcadeGameHexRace.asset` carries `DisplayName: "Skim Race"` —
-> they are one mode, not two. Anything that reads like a pool of "Joust, HexRace and Skim Race"
+> **Skim Race *is* SkimRace.** `ArcadeGameSkimRace.asset` carries `DisplayName: "Skim Race"` —
+> they are one mode, not two. Anything that reads like a pool of "Joust, SkimRace and Skim Race"
 > is naming the same card twice.
 
 **An empty ladder keeps the legacy pool** — every queued mode drawable at every intensity — so
@@ -523,12 +543,12 @@ an un-authored asset is never left unable to draw, which would be a mode that ca
 panel's list all still read it, and the list draws locked modes *greyed rather than hidden*,
 because a list that only grows tells the player nothing about what they are missing.
 
-`TournamentController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
+`MaelstromController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
 `CurrentGameIndex` (a `GameQueue` index) **into** that list first — at low intensity the two
 index spaces are not the same, and treating them as one would avoid the wrong mode.
 
 Adding a mode to the roster is unchanged and still governed by
-`Docs/TournamentSystem/ARCHITECTURE.md`: domain-scored, scene in Build Settings, player/domain
+`Docs/MaelstromSystem/ARCHITECTURE.md`: domain-scored, scene in Build Settings, player/domain
 range containing the Maelstrom card's. Dog Fight and Salvo are **not** in `GameQueue` yet — the
 ladder cannot admit a mode the roster does not hold.
 
@@ -571,7 +591,7 @@ instead of splitting it across two files.
 | Piece | Location | Job |
 |---|---|---|
 | `ArcadeLaunchPanel` | `_Scripts/UI/View/ArcadeLaunch/` | The contract: which controls a panel exposes, what the modal may ask of it |
-| `MinigameLaunchPanel` / `MaelstromLaunchPanel` | same | The two concrete panels |
+| `MinigameLaunchPanel` / `MaelstromLaunchPanel` / `ArenaLaunchPanel` | same | The three concrete panels |
 | `VesselControlsPanel` / `VesselControlRow` | same | The hull's abilities and their controls, derived |
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
@@ -579,7 +599,7 @@ instead of splitting it across two files.
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |
 | `ArcadeGameConfigureModal` | `_Scripts/UI/Modals/` | Still the one authority on config, commit, ready-up and launch |
-| `TournamentDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Tournament/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
+| `MaelstromDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Maelstrom/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
 | `ModePreviewDefinitionSO.PreviewCellsByIntensity` | `_Scripts/ScriptableObjects/` | Per-intensity arenas + `ResolveCell` |
 | `author_preview_intensities.py` | `Tools/Build/` | Copies those lists from each mode's own scene (`--check`) |
 | ~~`ArcadeLaunchPanelWirer`~~ | *retired* | **Gone — scaffolding, its job done.** It built `AbilityControlRow.prefab` and `MaelstromPoolRow.prefab`, added and wired every panel component, and registered the Maelstrom window; that output is on the branch and the prefabs are now hand-maintained. Recover it from git history if the panels ever need rebuilding from nothing. |
@@ -615,3 +635,40 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.
+
+
+---
+
+## 10. What the two-screen path left behind, and its removal
+
+The configure-then-pick-a-vessel pair of screens had been inert in the scene for a while — its
+Screen-2 references nulled, its roots hidden — while the code still carried both paths. It is now
+gone from the code too:
+
+| Removed | Why it was dead |
+|---|---|
+| `configurationDetailView` / `gameDetailView` + `SetScreenActive` and the four `Show…Screen` methods | nothing navigates between screens any more |
+| the ship summary view (`shipNameText`, `shipPlaceholderIcon`, the two icons, …) | Screen 2 drew it |
+| `previousShipButton` / `nextShipButton` + `OnNextShipClicked` / `OnPreviousShipClicked` | every arcade mode locks to one hull, which is what collapsed the flow |
+| `confirmConfigurationButton` / `backFromGameSelectButton` + `OnConfirmConfiguration` and the three back handlers | the commit moved to card-open (§3) |
+| the legacy `intensityButtons`, `domainInfoItems`, `startGameButton`, `waitingForOthersLabel`, `previewWindow` | the panel carries all five |
+| `dpadRowHighlights` + the highlight machinery | the list was empty in every scene instance; the Confirm row it also served is gone |
+| `shipClassTypeVariable` | the SAME asset `GameDataSO.VesselClassSelectedIndex` points at — the modal wrote one variable twice |
+| `ArcadeConfigSyncManager.NotifyScreenChanged` / `OnScreenChangedOnClient` / its ClientRpc | its only caller was that navigation |
+
+**Two things that look legacy and are not.** The player-count and domain-count steppers live under
+the old `ConfigurationDetailView`, but the scene's `MinigameLaunchPanel` was added onto
+`ConfigurationContent` — that root's parent, still active — so the steppers are on screen and
+driving live config. And `selectedGameName` / `selectedGameDescription` /
+`selectedGameFavoriteIcon` are still written on every card open; the panel draws its own copies,
+but these are not provably off-screen, so they stayed.
+
+**The dead YAML went with the code.** A `UnityEvent` persistent call to a deleted method logs an
+error on every press, and a prefab-instance modification naming a deleted field is never pruned by
+Unity — so both were stripped from `ArcadeGameConfigureModal.prefab` and `Menu_Main.unity`. The
+buttons those calls sat on still exist and are now inert; delete them in the editor when the
+layout is redesigned.
+
+**Left alone as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The channel is
+raised and nothing subscribes to it, in code or in any scene — a removal candidate, but a SOAP
+integration point rather than part of the two-screen path.

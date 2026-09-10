@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
     /// player's own; it is despawned with every other AI on the way out of the menu
     /// (SceneLoader.ClearPlayerVesselReferences).
     /// </summary>
-    public sealed class LifeformMatrixToy : Toy
+    public sealed class LifeformMatrixToy : Toy, IToyShellSurface
     {
         /// <summary>The three things this toy can release. Order is the kingdom row, left to right.</summary>
         enum Kingdom { Fauna = 0, Flora = 1, Vessels = 2 }
@@ -72,8 +72,6 @@ namespace CosmicShore.Gameplay
         protected override void OnInitialized()
         {
             AttachEmblem(new EmblemSource(this), 8f);
-            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        "(the four element crystals, orbited by its three kingdoms).");
         }
 
         /// <summary>
@@ -184,6 +182,161 @@ namespace CosmicShore.Gameplay
         // before laying out is also what keeps a row dense - a skipped entry must not leave a hole
         // the player flies through and nothing happens.
 
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _def;
+
+        /// <summary>
+        /// The bench's three KINGDOMS, each expanding the way a pass unfolds the next row - the
+        /// tree is not flattened, because the player already knows it as a tree (kingdom, then
+        /// species or hull, then element).
+        ///
+        /// <para>Releasing works from the menu exactly as it works in flight: a lifeform is spawned
+        /// into the containing cell as an ordinary citizen, and a companion hull goes through the
+        /// same server chain. So none of these options asks for freestyle.</para>
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            // Fauna and Flora ONLY. The world bench also opens a hangar (an AI wingman in your
+            // own domain), and it is deliberately not offered here: the Toy Box's detail window
+            // is a LIFEFORM release bench - one picture, one Spawn button - and a hull is
+            // neither a lifeform nor something the spawn picture can show landing. The hangar
+            // stays a fly-to station, reached through Navigate.
+            into.Add(new ToyShellOption
+            {
+                Label = "Fauna",
+                Detail = "release a creature into this cell",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                Expand = BuildShellFaunaSpecies,
+            });
+
+            into.Add(new ToyShellOption
+            {
+                Label = "Flora",
+                Detail = "plant a lifeform in this cell",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                Expand = BuildShellFloraSpecies,
+            });
+        }
+
+        // The last lifeform a shell press released, so the window can turn its picture onto it.
+        Transform _lastShellRelease;
+
+        List<ToyShellOption> BuildShellFaunaSpecies()
+        {
+            var options = new List<ToyShellOption>();
+            foreach (var entry in ValidFauna())
+            {
+                var captured = entry;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.Name,
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Expand = () => BuildShellVariants(captured.ElementConfigs, null),
+                    BuildPreview = parent => BuildShellSpeciesPreview(captured.ElementConfigs, null, null, parent),
+                });
+            }
+            return options;
+        }
+
+        List<ToyShellOption> BuildShellFloraSpecies()
+        {
+            var options = new List<ToyShellOption>();
+            foreach (var entry in ValidFlora())
+            {
+                var captured = entry;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.Name,
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Expand = () => BuildShellVariants(null, captured.ElementConfigs),
+                    BuildPreview = parent => BuildShellSpeciesPreview(null, captured.ElementConfigs, null, parent),
+                });
+            }
+            return options;
+        }
+
+        /// <summary>
+        /// A species' element row - one option per element the species actually expresses, which
+        /// is the whole matrix (a lifeform is its species and its element and nothing else).
+        /// </summary>
+        List<ToyShellOption> BuildShellVariants(FaunaConfigurationSO[] faunaConfigs,
+            FloraConfigurationSO[] floraConfigs)
+        {
+            var options = new List<ToyShellOption>();
+
+            foreach (var element in Elements)
+            {
+                var faunaCfg = FindByElement(faunaConfigs, element);
+                var floraCfg = FindByElement(floraConfigs, element);
+                if (!faunaCfg && !floraCfg) continue; // species doesn't express this element yet
+
+                var capturedFauna = faunaCfg;
+                var capturedFlora = floraCfg;
+
+                var capturedElement = element;
+                System.Action release;
+                if (capturedFauna) release = () => _lastShellRelease = SpawnFaunaVariant(capturedFauna, ShellReleasePoint);
+                else               release = () => _lastShellRelease = SpawnFloraVariant(capturedFlora, ShellReleasePoint);
+
+                options.Add(new ToyShellOption
+                {
+                    Label = element.ToString(),
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    // A lifeform is SPAWNED: it is released into the cell and lives there on its
+                    // own terms, so "Switch" would name a thing this press does not do.
+                    CommitVerb = "Spawn",
+                    Apply = release,
+                    BuildPreview = parent => BuildShellSpeciesPreview(
+                        capturedFauna ? new[] { capturedFauna } : null,
+                        capturedFlora ? new[] { capturedFlora } : null,
+                        capturedElement, parent),
+                    // The picture turns onto what was released, so the player sees the creature
+                    // bloom in where it landed rather than being told it did. Fauna disperse as a
+                    // wave around their anchor and flora root around the station, so the watch
+                    // radius is the dispersal, not one body.
+                    WatchAfterApply = () => _lastShellRelease,
+                    WatchRadius = _def ? _def.StationRadius * 3f : 0f,
+                });
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        /// A species (or one element of it) for the window's picture: the same display model the
+        /// species station shows, with that element's crystal seated at its heart size when an
+        /// element is named - so the flat preview shows exactly what the station shows, and what
+        /// Spawn will release. No turntable: the preview camera already orbits and the two would
+        /// compose into a tumble (the station builders add one; it is removed here).
+        /// </summary>
+        GameObject BuildShellSpeciesPreview(FaunaConfigurationSO[] fauna, FloraConfigurationSO[] flora,
+            Element? element, Transform parent)
+        {
+            if (!_def || !parent) return null;
+            if (!AddSpeciesModel(fauna, flora, _def.StationRadius, out var model) || !model) return null;
+
+            model.transform.SetParent(parent, false);
+            if (model.TryGetComponent(out ToyIdleSpin spin)) Destroy(spin);
+
+            if (element.HasValue)
+            {
+                var faunaCfg = FindByElement(fauna, element.Value);
+                var floraCfg = FindByElement(flora, element.Value);
+                AddElementCrystalVisual(model.transform, element.Value, HeartVisualScale(faunaCfg, floraCfg));
+            }
+            return model;
+        }
+
+        /// <summary>
+        /// Where a shell release lands: the first matrix layer's origin - the same outward radial
+        /// a station would have sat on, so a creature released from the menu arrives where one
+        /// released from the bench arrives, rather than inside the toy.
+        /// </summary>
+        Vector3 ShellReleasePoint => LayerOrigin(1);
+
         List<LifeformMatrixToyDefinitionSO.FaunaSpecies> ValidFauna()
         {
             var valid = new List<LifeformMatrixToyDefinitionSO.FaunaSpecies>();
@@ -276,8 +429,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Domains IconDomain => ToyVesselRoster.PlayerDomain(Context);
 
-        void OnDestroy() // teardown with the toybox
+        protected override void OnDestroy() // teardown with the toybox
         {
+            base.OnDestroy();
+
             if (_variantGrid) Destroy(_variantGrid);
             if (_branchGrid) Destroy(_branchGrid);
             if (_kingdomGrid) Destroy(_kingdomGrid);
@@ -583,7 +738,7 @@ namespace CosmicShore.Gameplay
 
         // ── Pass 4: release ──────────────────────────────────────────────────
 
-        void SpawnFaunaVariant(FaunaConfigurationSO config, Vector3 position)
+        Transform SpawnFaunaVariant(FaunaConfigurationSO config, Vector3 position)
         {
             // Outward-layered stations can sit beyond the membrane - resolve the cell from the
             // TOY's position (always inside) and spawn the creature at the station.
@@ -591,7 +746,7 @@ namespace CosmicShore.Gameplay
             if (!cell)
             {
                 CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn fauna.");
-                return;
+                return null;
             }
 
             // Runtime clone so the authored asset is never mutated; the clone IS the lineage
@@ -617,6 +772,7 @@ namespace CosmicShore.Gameplay
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
             int count = Mathf.Max(1, clone.PopulationSize);
             int spawned = 0;
+            Transform first = null;
             for (int i = 0; i < count; i++)
             {
                 Vector3 pos = anchor + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
@@ -624,19 +780,23 @@ namespace CosmicShore.Gameplay
                     cell, clone.FaunaPrefab, anchor, domain, pos);
                 if (!fauna) continue;
                 fauna.AssignLineage(cell, clone);
+                if (!first) first = fauna.transform;
                 spawned++;
             }
-            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
-                        $"on the cell's densest mass at {anchor} (station was at {position})");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
+                    $"on the cell's densest mass at {anchor} (station was at {position})");
+            return first;
         }
 
-        void SpawnFloraVariant(FloraConfigurationSO config, Vector3 position)
+        Transform SpawnFloraVariant(FloraConfigurationSO config, Vector3 position)
         {
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
                 CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn flora.");
-                return;
+                return null;
             }
 
             var clone = Instantiate(config);
@@ -648,11 +808,14 @@ namespace CosmicShore.Gameplay
             // grow right where they flew - Plant() would otherwise disperse it across the cell.
             int count = Mathf.Max(1, clone.InitialSpawnCount);
             int spawned = 0;
+            Transform first = null;
             for (int i = 0; i < count; i++)
             {
                 Vector3 pos = position + Random.insideUnitSphere * (_def.StationRadius * 3f);
-                if (CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, pos))
-                    spawned++;
+                var flora = CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, pos);
+                if (!flora) continue;
+                if (!first) first = flora.transform;
+                spawned++;
             }
 
             // Frenzy gate honesty: flora growth freezes cell-wide above Frenzy (the ecology's
@@ -661,7 +824,10 @@ namespace CosmicShore.Gameplay
             string growth = cell.FloraGrowingEnabled
                 ? "growing (from seed prisms - watch them build)"
                 : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
-            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+            return first;
         }
 
         /// <summary>
@@ -695,7 +861,7 @@ namespace CosmicShore.Gameplay
             // (it logs that end itself). Claiming completion here would be a lie on every
             // machine that is not the host.
             init.RequestSpawnAiCompanion(vessel, domain, pose);
-            CSDebug.Log($"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────

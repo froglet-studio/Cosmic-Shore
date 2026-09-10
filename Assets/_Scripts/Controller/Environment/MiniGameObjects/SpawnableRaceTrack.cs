@@ -168,9 +168,11 @@ namespace CosmicShore.Gameplay
 
             trails.Add(trail);
 
-            CSDebug.Log($"[RaceTrack] Generated track with seed {actualSeed}, " +
-                      $"approximate length: {EstimateTrackLength(positions):F0} units, " +
-                      $"target lap time: {targetLapTime}s at {expectedShipSpeed} units/s");
+            if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[RaceTrack] Generated track with seed {actualSeed}, " +
+                    $"approximate length: {EstimateTrackLength(positions):F0} units, " +
+                    $"target lap time: {targetLapTime}s at {expectedShipSpeed} units/s");
 
             return container;
         }

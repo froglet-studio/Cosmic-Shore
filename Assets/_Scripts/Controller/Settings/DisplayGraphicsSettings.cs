@@ -261,7 +261,7 @@ namespace CosmicShore.Core
             GraphicsSettingsApplier.ApplyAll(_data);
             Save();
             OnAnySettingChanged?.Invoke(_data);
-            CSDebug.Log($"[Settings] Auto-detect → {_data.QualityPreset} (capability score {SettingsAutoDetector.CapabilityScore()}/7).");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Settings] Auto-detect -> {_data.QualityPreset} (capability score {SettingsAutoDetector.CapabilityScore()}/7).");
         }
 
         /// <summary>Adopt a whole snapshot (e.g. the preset the benchmark sweep settled on).</summary>

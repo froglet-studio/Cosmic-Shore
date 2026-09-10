@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
                 _netPointTarget.Value = target;
                 gameData.CombatPointTargetCount = target;
 
-                CSDebug.Log($"[{LogTag}] Server set point target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[{LogTag}] Server set point target: {target}");
             }
             else if (_netPointTarget.Value > 0)
             {

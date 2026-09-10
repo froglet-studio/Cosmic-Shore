@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -51,13 +52,11 @@ namespace CosmicShore.Core
         private void SubscribeToEvents()
         {
             FTUEEventManager.InitializeFTUE += StartFTUE;
-            FTUEEventManager.OnCTAClicked += OnCTAClicked;
         }
 
         private void UnsubscribeToEvents()
         {
             FTUEEventManager.InitializeFTUE -= StartFTUE;
-            FTUEEventManager.OnCTAClicked -= OnCTAClicked;
         }
 
         public void StartFTUE()
@@ -88,7 +87,7 @@ namespace CosmicShore.Core
 
             var handler = _handlers.FirstOrDefault(h => h.HandlesType == step.stepType);
 
-            Debug.Log($"Current Step -- step{step.stepType}");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[FTUE] Step {_currentIndex} - {step.stepType}");
             yield return handler.ExecuteStep(step, this);
         }
 
@@ -105,7 +104,7 @@ namespace CosmicShore.Core
             // If we just finished LockModesExceptFreestyle, play the outro and bail out
             if (finishedStep.stepType == TutorialStepType.LockModesExceptFreestyle)
             {
-                StartCoroutine(GetComponent<FTUEIntroAnimator>().PlayOutro(() => Debug.Log("Step Completed")));
+                StartCoroutine(GetComponent<FTUEIntroAnimator>().PlayOutro(() => CSDebug.LogVerbose(CSLogChannel.FTUE, "[FTUE] Outro complete")));
                 return;
             }
 
@@ -113,7 +112,7 @@ namespace CosmicShore.Core
             while (_currentIndex < steps.Count
     && string.IsNullOrWhiteSpace(steps[_currentIndex].tutorialText))
             {
-                Debug.Log($"[FTUE] Skipping empty step {_currentIndex} ({steps[_currentIndex].stepType})");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[FTUE] Skipping empty step {_currentIndex} ({steps[_currentIndex].stepType})");
                 _currentIndex++;
             }
 
@@ -154,11 +153,10 @@ namespace CosmicShore.Core
 
         private IEnumerator FinishFlow()
         {
-            yield return GetComponent<FTUEIntroAnimator>().PlayOutro(() => Debug.Log("Step Completed"));
+            yield return GetComponent<FTUEIntroAnimator>().PlayOutro(() => CSDebug.LogVerbose(CSLogChannel.FTUE, "[FTUE] Outro complete"));
             //var outro = _handlers.OfType<IOutroHandler>().FirstOrDefault();
             //if (outro != null)
             //{
-            //    Debug.Log("Outro Playing");
             //    yield return outro.PlayOutro();
             //}
 
@@ -167,12 +165,7 @@ namespace CosmicShore.Core
             ftueProgress.nextIndex = 0;
 
 
-            Debug.Log("[FTUE] Completed.");
-        }
-
-        private void OnCTAClicked(CallToActionTargetType type)
-        {
-            JumpToStep(TutorialStepType.FreestylePrompt);
+            CSDebug.LogVerbose(CSLogChannel.FTUE, "[FTUE] Completed.");
         }
 
         internal void StartPhase3()

@@ -70,7 +70,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[SceneLoader] gameData was not injected - check AppManager DI registration.");
+                CSDebug.LogError("[SceneLoader] gameData was not injected - check AppManager DI registration.");
                 return;
             }
 
@@ -185,10 +185,10 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
-                      $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
+                      $"AIBackfill={gameData.RequestedAIBackfillCount}");
 
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
@@ -205,9 +205,9 @@ namespace CosmicShore.Core
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
-                          $"Server will replicate scene via Netcode.</color>");
+                          $"Server will replicate scene via Netcode.");
                 LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
                 return;
             }
@@ -216,12 +216,12 @@ namespace CosmicShore.Core
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            // Tournament (Maelstrom): hold the loading splash long enough to read the between-game running
+            // Maelstrom (Maelstrom): hold the loading splash long enough to read the between-game running
             // standings before the next game loads. Zero outside that window - normal launches, the first
             // game, and the load into the final results summary are not delayed. Host-only: clients returned
             // at the defer guard above and follow the host's held scene load, so their splash holds too.
-            float minSplashDwell = TournamentController.Instance != null
-                ? TournamentController.Instance.MinLoadSplashDwellSeconds
+            float minSplashDwell = MaelstromController.Instance != null
+                ? MaelstromController.Instance.MinLoadSplashDwellSeconds
                 : 0f;
 
             LoadSceneAsync(gameData.SceneName, minSplashDwell).Forget();
@@ -229,7 +229,7 @@ namespace CosmicShore.Core
 
         void FadeFromSplashOnReady()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
             FadeFromSplashWhenSettled().Forget();
         }
@@ -282,7 +282,7 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             // Show the loading splash immediately so the transition is covered ASAP - e.g. the
-            // Tournament summary's Main Menu button, which otherwise left the summary on-screen during
+            // Maelstrom summary's Main Menu button, which otherwise left the summary on-screen during
             // the async load (OnSceneLoaded only re-arms this once Menu_Main has finished loading). The
             // idempotent helper arms the fade-back on the next OnClientReady (the menu autopilot vessel).
             // Done before the client-defer guard so clients fade too.
@@ -295,8 +295,8 @@ namespace CosmicShore.Core
             // Clients rely on the server's Netcode scene management for transitions.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] ReturnToMainMenu deferring to server - " +
-                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] ReturnToMainMenu deferring to server - " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
                 return;
             }
 
@@ -325,7 +325,7 @@ namespace CosmicShore.Core
 
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}");
             gameData.InvokeSceneTransition(false);
 
             var nm = NetworkManager.Singleton;
@@ -368,14 +368,14 @@ namespace CosmicShore.Core
             {
                 // Defensive fallback: no active server (should not happen under the
                 // always-hosted model). Load locally so a scene transition never hangs.
-                Debug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
+                CSDebug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
         }
 
         void ClearPlayerVesselReferences()
         {
-            Debug.Log($"<color=#00FFFF>[DESPAWN] ClearPlayerVesselReferences - Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[DESPAWN] ClearPlayerVesselReferences - Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}");
 
             foreach (var player in gameData.Players)
             {
@@ -424,8 +424,8 @@ namespace CosmicShore.Core
             var nm = NetworkManager.Singleton;
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] HandleActiveSessionEnd deferring to server - " +
-                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] HandleActiveSessionEnd deferring to server - " +
+                          $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
                 return;
             }
 

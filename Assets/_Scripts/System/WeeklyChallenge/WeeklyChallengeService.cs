@@ -1,10 +1,10 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -12,6 +12,12 @@ namespace CosmicShore.Core
     /// <summary>
     /// The weekly challenge: ONE curated objective per UTC week, the same one for every player,
     /// with the player's progress against it synced to UGS Cloud Save.
+    ///
+    /// <para><b>The challenge is weekly; the attempt is daily.</b> The mode, the objective and the
+    /// leaderboard roll over on the UTC Monday, and every UTC day inside that week hands each
+    /// player one fresh run at it - so the week is a series of chances to beat your own time, and
+    /// the board ranks the best of them. The day boundary is read the way the week's is: a key
+    /// comparison, never a timer.</para>
     ///
     /// <para><b>The definition is derived, the progress is stored.</b> ThisWeek's challenge is a pure
     /// function of the UTC date over <see cref="WeeklyChallengeCatalogSO"/>, so it resolves on a
@@ -40,28 +46,28 @@ namespace CosmicShore.Core
         public static WeeklyChallengeService Instance { get; private set; }
 
         /// <summary>
-        /// Attempts the player gets this week, from the catalog (default 1 - the challenge is played
-        /// ONCE). 0 = unlimited. Falls back to the catalog default when no catalog is loaded.
+        /// Attempts the player gets each UTC day, from the catalog (default 1 - one run a day).
+        /// 0 = unlimited. Falls back to the catalog default when no catalog is loaded.
         /// </summary>
-        public int AttemptsPerPeriod
+        public int AttemptsPerDay
         {
             get
             {
                 var catalog = WeeklyChallengeCatalogSO.Instance;
                 return catalog != null
-                    ? catalog.EffectiveAttemptsPerPeriod
-                    : WeeklyChallengeCatalogSO.DefaultAttemptsPerPeriod;
+                    ? catalog.EffectiveAttemptsPerDay
+                    : WeeklyChallengeCatalogSO.DefaultAttemptsPerDay;
             }
         }
 
-        /// <summary>Attempts left this week. <see cref="int.MaxValue"/> when unlimited.</summary>
+        /// <summary>Attempts left TODAY. <see cref="int.MaxValue"/> when unlimited.</summary>
         public int AttemptsRemaining
         {
             get
             {
-                int perPeriod = AttemptsPerPeriod;
-                if (perPeriod <= 0) return int.MaxValue;
-                return Mathf.Max(0, perPeriod - AttemptsThisWeek);
+                int perDay = AttemptsPerDay;
+                if (perDay <= 0) return int.MaxValue;
+                return Mathf.Max(0, perDay - AttemptsToday);
             }
         }
 
@@ -79,11 +85,32 @@ namespace CosmicShore.Core
         /// <summary>Best value of this week's metric the player has reached.</summary>
         public int BestValueThisWeek => _data?.BestValue ?? 0;
 
+        /// <summary>Fastest completion this week in milliseconds, 0 when never completed.</summary>
+        public long BestTimeThisWeekMs => _data?.BestTimeMs ?? 0;
+
         /// <summary>
-        /// Attempts the player has STARTED this week. Spent at launch rather than at the end, so
-        /// quitting mid-run does not buy a retry - "played only once" has to mean once.
+        /// Attempts the player has STARTED today. Spent at launch rather than at the end, so
+        /// quitting mid-run does not buy a retry - "one a day" has to mean one.
         /// </summary>
-        public int AttemptsThisWeek => _data?.Attempts ?? 0;
+        public int AttemptsToday => _data?.AttemptsOn(CurrentDayKey()) ?? 0;
+
+        /// <summary>
+        /// Time until today's attempt refreshes (the next UTC midnight), or until the week rolls
+        /// over if that comes first - the card counts down to this while today's run is spent.
+        /// </summary>
+        public TimeSpan TimeUntilNextAttempt
+        {
+            get
+            {
+                var now = DateTime.UtcNow;
+                var catalog = WeeklyChallengeCatalogSO.Instance;
+                var dayEnd = catalog != null ? catalog.DayEndUtc(now) : now.Date.AddDays(1);
+                var span = dayEnd - now;
+                var week = TimeUntilNextChallenge;
+                if (week < span) span = week;
+                return span > TimeSpan.Zero ? span : TimeSpan.Zero;
+            }
+        }
 
         /// <summary>
         /// Time until the current challenge is replaced (the next UTC Monday). This is what the card
@@ -116,6 +143,7 @@ namespace CosmicShore.Core
         WeeklyChallengeCloudData _data;
         WeeklyChallengeRepository _repo;
         string _resolvedPeriodKey = "";
+        string _resolvedDayKey = "";
         float _dateCheckAccumulator;
 
         GameDataSO _gameData;
@@ -179,6 +207,15 @@ namespace CosmicShore.Core
                 if (CurrentPeriodKey() != _resolvedPeriodKey)
                     RefreshChallengeForPeriod();
 
+                // The daily attempt refreshes by KEY, read wherever it is needed - nothing is
+                // scheduled - but the card is drawn from events, so the day flip announces itself.
+                string day = CurrentDayKey();
+                if (day != _resolvedDayKey)
+                {
+                    _resolvedDayKey = day;
+                    OnChallengeChanged?.Invoke();
+                }
+
                 if (!IsCloudReady)
                     TryBindCloud();
             }
@@ -216,7 +253,7 @@ namespace CosmicShore.Core
 
             ThisWeek = catalog.ForDate(DateTime.UtcNow, isModeAvailable);
 
-            _resolvedPeriodKey = catalog.PeriodKeyFor(DateTime.UtcNow);
+            _resolvedPeriodKey = catalog.RecordKeyFor(DateTime.UtcNow);
 
             ReconcileCloudWithPeriod();
             OnChallengeChanged?.Invoke();
@@ -231,8 +268,17 @@ namespace CosmicShore.Core
         {
             var catalog = WeeklyChallengeCatalogSO.Instance;
             return catalog != null
-                ? catalog.PeriodKeyFor(DateTime.UtcNow)
+                ? catalog.RecordKeyFor(DateTime.UtcNow)
                 : WeeklyChallengeCatalogSO.WeekKeyFor(DateTime.UtcNow);
+        }
+
+        /// <summary>The key of the attempt DAY we are in - the UTC date, or a shrunken test day.</summary>
+        string CurrentDayKey()
+        {
+            var catalog = WeeklyChallengeCatalogSO.Instance;
+            return catalog != null
+                ? catalog.DayKeyFor(DateTime.UtcNow)
+                : DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
         }
 
         // ── Cloud ──────────────────────────────────────────────────────────────
@@ -293,11 +339,12 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// True when the player may start an attempt right now - this week's challenge resolved and
-        /// they have an attempt left.
+        /// they have an attempt left TODAY. A completed challenge still answers true on a fresh
+        /// day: the board ranks the fastest time, and every day of the week is a chance to beat it.
         ///
         /// <para>Running out does NOT lock the mode out: the card stops offering it as the day's
         /// objective and counts down to the next one, while the MODE stays on the arcade grid like
-        /// any other. Only the weekly objective is spent.</para>
+        /// any other. Only today's run is spent.</para>
         /// </summary>
         public bool CanAttempt => ThisWeek.IsValid && AttemptsRemaining > 0;
 
@@ -325,7 +372,7 @@ namespace CosmicShore.Core
             // ordinary match of that mode played for a personal objective on top - it is not a
             // shortened variant, and nothing here writes a race target.
 
-            // Spend the attempt NOW, and flush it. "Played only once" has to survive an alt-F4
+            // Spend the attempt NOW, and flush it. "One run a day" has to survive an alt-F4
             // halfway through a bad run, so the attempt is consumed at launch rather than
             // credited at the end - the one ordering that cannot be save-scummed.
             SpendAttempt();
@@ -340,7 +387,7 @@ namespace CosmicShore.Core
         {
             if (_data == null || _data.ChallengeWeek != _attemptChallenge.PeriodKey) return;
 
-            _data.Attempts++;
+            _data.SpendAttempt(CurrentDayKey());
             _repo?.MarkDirty();
 
             // Straight to the cloud rather than waiting on the debounce: the very next thing this
@@ -387,6 +434,42 @@ namespace CosmicShore.Core
             _attemptBest = 0;
         }
 
+        /// <summary>
+        /// The number this attempt is measured against. An authored target is the catalog's; a
+        /// mode-target challenge reads the MATCH's own end condition through the scoring rule
+        /// (<c>ScoringRuleSO.TargetFor</c>) - for Skim Race that is the crystal count the turn
+        /// monitor publishes, so it is exactly what the game itself races to. Re-read every tick
+        /// rather than cached at launch, because the monitor publishes it AFTER the scene loads
+        /// and a client receives it as a NetworkVariable; before it lands the rule's fallback is
+        /// never SMALLER than the real number, so nothing can complete early.
+        /// </summary>
+        int ResolveAttemptTarget()
+        {
+            if (!_attemptChallenge.UsesModeTarget) return _attemptChallenge.TargetValue;
+
+            var rule = _gameData != null ? _gameData.ScoringRule : null;
+            return rule != null ? Mathf.Max(0, rule.TargetFor(_gameData)) : 0;
+        }
+
+        /// <summary>
+        /// Whether an attempt at <paramref name="achieved"/> is COMPLETE. Personal count at the
+        /// target, or - for a mode-target challenge - the match's own verdict: the player's domain
+        /// reached the mode's objective. The second clause is what lets a party finish together
+        /// (a race ends on the domain SUM, so two teammates each hold half the target).
+        /// </summary>
+        bool IsAttemptComplete(int achieved)
+        {
+            int target = ResolveAttemptTarget();
+            if (target > 0 && achieved >= target) return true;
+            if (!_attemptChallenge.UsesModeTarget) return false;
+
+            var rule = _gameData != null ? _gameData.ScoringRule : null;
+            var local = _gameData != null ? _gameData.LocalPlayer : null;
+            if (rule == null || local == null) return false;
+
+            return rule.IsObjectiveReached(_gameData, out var winner) && winner == local.Domain;
+        }
+
         void TickAttempt()
         {
             _attemptElapsed += Time.deltaTime;
@@ -394,35 +477,21 @@ namespace CosmicShore.Core
             int achieved = ReadLocalMetric(_attemptChallenge.Metric);
             if (achieved > _attemptBest) _attemptBest = achieved;
 
-            float remaining = _attemptChallenge.TimeLimitSeconds > 0f
-                ? Mathf.Max(0f, _attemptChallenge.TimeLimitSeconds - _attemptElapsed)
-                : float.PositiveInfinity;
+            OnAttemptProgress?.Invoke(_attemptBest, ResolveAttemptTarget(), float.PositiveInfinity);
 
-            OnAttemptProgress?.Invoke(_attemptBest, _attemptChallenge.TargetValue, remaining);
+            if (!IsAttemptComplete(_attemptBest)) return;
 
-            bool met = _attemptBest >= _attemptChallenge.TargetValue;
-            bool expired = _attemptChallenge.TimeLimitSeconds > 0f && remaining <= 0f;
-
-            if (!met && !expired) return;
-
-            // Either way the attempt is over - record it, then end the turn through the mode's
-            // OWN end channel (the one TurnMonitorController raises) rather than tearing the
-            // scene down ourselves, so the scoreboard, stats and replay flow are untouched.
-            FinishAttempt(_attemptBest);
-            RequestTurnEnd();
-        }
-
-        void RequestTurnEnd()
-        {
-            if (_gameData == null) return;
-
-            // Only the launch authority may end a turn - a client raising it would end the turn
-            // on its machine alone and desync the match. Solo and offline players ARE the server
-            // under the eager-Relay design, so they fall straight through.
-            var nm = NetworkManager.Singleton;
-            if (nm != null && nm.IsListening && !nm.IsServer) return;
-
-            _gameData.InvokeGameTurnConditionsMet();
+            // Target reached: stamp the completion and its TIME, which is the leaderboard score.
+            //
+            // <b>The turn is NOT ended, and there is no time limit that could end it either.</b> A
+            // weekly challenge is an ordinary match of its mode played for a personal objective ON
+            // TOP - it does not shorten, extend or otherwise alter the run. This used to end the
+            // turn the moment the objective was met OR a per-entry countdown expired, which made a
+            // weekly run a different, shorter match than the mode it claimed to be - and, worse,
+            // meant a player who ran out of that clock had their attempt spent and NOTHING
+            // submitted. FinishAttempt clears _attemptRunning, so this stops ticking and the rest
+            // of the match costs nothing.
+            FinishAttempt(_attemptBest, completed: true);
         }
 
         void HandleTurnEnded()
@@ -430,15 +499,21 @@ namespace CosmicShore.Core
             // The mode reached its own end condition first (target hit, race over). Record what
             // the player actually achieved.
             if (_attemptRunning)
-                FinishAttempt(Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric)));
+                FinishAttemptAtEnd();
         }
 
         void HandleGameEnded()
         {
             if (_attemptRunning || (_attemptArmed && !_attemptFinished))
-                FinishAttempt(Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric)));
+                FinishAttemptAtEnd();
 
             ClearAttempt();
+        }
+
+        void FinishAttemptAtEnd()
+        {
+            int achieved = Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric));
+            FinishAttempt(achieved, IsAttemptComplete(achieved));
         }
 
         void HandleSessionEnded()
@@ -448,11 +523,13 @@ namespace CosmicShore.Core
             ClearAttempt();
         }
 
-        void FinishAttempt(int achieved)
+        void FinishAttempt(int achieved, bool completed)
         {
             if (_attemptFinished) return;
             _attemptFinished = true;
             _attemptRunning = false;
+
+            int target = ResolveAttemptTarget();
 
             if (_data != null && _attemptChallenge.IsValid)
             {
@@ -462,20 +539,46 @@ namespace CosmicShore.Core
                 if (_data.ChallengeWeek == _attemptChallenge.PeriodKey &&
                     _data.TargetValue == _attemptChallenge.TargetValue)
                 {
-                    if (_data.RecordResult(achieved, _attemptChallenge.TargetValue, DateTime.UtcNow))
+                    if (_data.RecordResult(achieved, completed, DateTime.UtcNow))
                         _repo?.MarkDirty();
 
                     // The ranking is "who finished it fastest", so a COMPLETION submits its time
                     // and anything else submits nothing - a run that never reached the target has
                     // no time, not a slow one. Submitted here rather than at the scoreboard so
                     // there is exactly one site that can produce an entry.
-                    if (achieved >= _attemptChallenge.TargetValue)
-                        SubmitLeaderboardTime(_attemptElapsed);
+                    // Submitted only when the attempt actually RAN. `_attemptElapsed` starts at 0
+                    // and only accumulates once the turn has started, so an attempt that reached
+                    // its target without ever ticking - a game that ended before
+                    // OnMiniGameTurnStarted, or a mode that never raises it - would submit a time
+                    // of ZERO, which on an ascending board is first place forever.
+                    //
+                    // And submitted only when it BEATS the week's best. With one run a day a
+                    // player completes several times a week; the board keeps their best, and a
+                    // slower Tuesday has nothing to add to a faster Monday. Guarding here also
+                    // makes the dashboard's "keep best" setting one this code no longer relies on.
+                    if (completed && _attemptElapsed > 0f)
+                    {
+                        long ms = (long)Math.Round(_attemptElapsed * 1000f);
+                        if (_data.RecordCompletionTime(ms))
+                        {
+                            _repo?.MarkDirty();
+                            SubmitLeaderboardTime(_attemptElapsed);
+                        }
+                        else
+                            CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                                $"[WeeklyChallenge] Completed in {_attemptElapsed:0.00}s, slower than " +
+                                $"this week's best ({_data.BestTimeMs / 1000.0:0.00}s) - nothing to submit.");
+                    }
+                    else if (completed)
+                        CSDebug.LogWarning(
+                            "[WeeklyChallenge] Objective met but the attempt never ticked, so there " +
+                            "is no time to rank. The completion is recorded; nothing is submitted. " +
+                            "This means OnMiniGameTurnStarted never fired for this run.");
 
                     CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
-                        $"[WeeklyChallenge] Attempt finished - achieved {achieved}/" +
-                        $"{_attemptChallenge.TargetValue}, best {_data.BestValue}, " +
-                        $"completed={_data.Completed}");
+                        $"[WeeklyChallenge] Attempt finished - achieved {achieved}/{target}" +
+                        $"{(_attemptChallenge.UsesModeTarget ? " (mode's own)" : "")}, " +
+                        $"best {_data.BestValue}, completed={_data.Completed}");
                 }
             }
 
@@ -506,7 +609,36 @@ namespace CosmicShore.Core
                 () => WeeklyChallengeCatalogSO.Instance != null
                     ? WeeklyChallengeCatalogSO.Instance.leaderboardId
                     : null,
-                () => _gameData != null && _gameData.IsOfflineSession);
+                () => _gameData != null && _gameData.IsOfflineSession,
+                region => WeeklyChallengeCatalogSO.Instance != null
+                    ? WeeklyChallengeCatalogSO.Instance.RegionalLeaderboardId(region)
+                    : null,
+                () => FriendIdSource?.Invoke(),
+                ResolveLocalAvatarId);
+
+        /// <summary>
+        /// Where the Friends scope gets its player ids. <b>Published, not looked up</b> — this
+        /// service is a hidden runtime-created object with no inspector and no Reflex injection,
+        /// so it cannot reach the DI-registered <c>FriendsDataSO</c> itself; the view that CAN
+        /// (any scene object under a ContainerScope) hands the source in.
+        ///
+        /// <para>Returning <b>null</b> and returning an EMPTY list are different answers and the
+        /// difference is load-bearing: null means "we cannot ask", which greys the tab out, while
+        /// empty means "asked, and nobody you know has a time", which is a legitimately empty
+        /// board. Collapsing them tells a player with no friends that the feature is broken.</para>
+        /// </summary>
+        public static Func<IReadOnlyList<string>> FriendIdSource { get; set; }
+
+        /// <summary>
+        /// The local profile's icon id, stamped into a submitted score so a leaderboard row can
+        /// show a face. Read off <see cref="GameDataSO.LocalPlayerAvatarId"/> — the mirror
+        /// <c>PlayerDataService</c> already publishes — rather than the profile service, which
+        /// this object also cannot reach. <see cref="WeeklyChallengeRanking.NoAvatar"/> before the
+        /// profile has loaded, which is the same state as every score submitted before avatars
+        /// were carried and is drawn correctly by the view.
+        /// </summary>
+        int ResolveLocalAvatarId() =>
+            _gameData != null ? _gameData.LocalPlayerAvatarId : WeeklyChallengeRanking.NoAvatar;
 
         void SubmitLeaderboardTime(float seconds)
         {

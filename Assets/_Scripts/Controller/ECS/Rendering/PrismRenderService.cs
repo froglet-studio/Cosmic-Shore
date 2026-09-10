@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -132,7 +133,7 @@ namespace CosmicShore.ECS
                 if (enabled && !_loggedActive)
                 {
                     _loggedActive = true;
-                    Debug.Log("[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
                               "If colors look uniform/mixed or explosions are frozen, the prism ShaderGraphs need " +
                               "'Hybrid Per Instance' on their animated properties — see Docs/PRISM_ECS_MIGRATION.md §7.");
                 }
@@ -174,6 +175,12 @@ namespace CosmicShore.ECS
                 if (!_configAssetFound) return "OFF (no PrismRenderConfig asset in Resources)";
                 return "OFF (config: Use Instanced Rendering unchecked)";
             }
+
+            // The device gate comes first: on a GPU whose compute kernels cannot load,
+            // CosmicShoreEntitiesBootstrap creates the world EMPTY on purpose, so the
+            // "missing system" line below would be true but would name the wrong cause.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+                return $"OFF (Entities Graphics unsupported on this device: {EntitiesGraphicsSupportProbe.Reason})";
 
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
@@ -232,6 +239,21 @@ namespace CosmicShore.ECS
                 _epoch++;
             }
 
+            // Same gate the ICustomBootstrap applies: never construct EntitiesGraphicsSystem
+            // on a device whose compute kernels will not load. Its OnCreate throws, Entities
+            // keeps the half-built system, and the first frame to touch it crashes the process
+            // (Docs/PRISM_ECS_MIGRATION.md §8). The legacy MeshRenderer path is the answer.
+            if (!EntitiesGraphicsSupportProbe.IsSupported)
+            {
+                if (!_loggedWorldBootstrap)
+                {
+                    _loggedWorldBootstrap = true;
+                    CSDebug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
+                                     EntitiesGraphicsSupportProbe.Reason + "); staying on the legacy MeshRenderer path.");
+                }
+                return false;
+            }
+
             var world = World.DefaultGameObjectInjectionWorld;
             if (world == null || !world.IsCreated)
             {
@@ -248,7 +270,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                        CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] No default ECS world found - bootstrapped one on demand for instanced prism rendering.");
                     }
                 }
                 catch (System.Exception e)
@@ -256,7 +278,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                        CSDebug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
                     }
                     return false;
                 }

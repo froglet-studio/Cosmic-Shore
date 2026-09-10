@@ -17,6 +17,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
 | B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Fixed & verified | 🟢 |
+| B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 
 ---
 
@@ -799,7 +800,7 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 - **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
   shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
   vessel spawns, can invite again). No hang.
-- **Game mode:** host + client in HexRace / Joust / etc.; host quits mid-game →
+- **Game mode:** host + client in SkimRace / Joust / etc.; host quits mid-game →
   client bounces to solo Menu_Main with the notice + working solo host.
 - **3-4 VP:** host drops → every client bounces to its own solo menu.
 - **Regression:** host's graceful "Main Menu" return still brings the whole party
@@ -1076,6 +1077,82 @@ guest in the party, watch for `[NetworkSceneObjectGuard]` warnings — one per p
 and harmless the first time each species spawns; a `stripped N stray NetworkObject(s)` line
 from the sweep means something other than fauna is instantiating a networked prefab and should
 be tracked down with the audit.
+
+---
+
+## B17 — Boot stalls on a blank screen: the sign-in loses the race to the splash timer 🟢 (root-caused + fixed 2026-09-08)
+
+**Symptom.** "Sometimes on bleeding edge the game does not load and gets stuck at the loading
+screen." No error, no exception, no bounce. The console shows the whole online stack coming up
+perfectly — QoS, `[PartySessionService] Created party session …`, `[PartyStateMachine]
+HostingParty → InParty`, `[SoapPartyEventBus] RaiseHostConnectionEstablished`,
+`[HostConnectionService] Solo party session ready … InParty, vessel will spawn` — and then
+**absolute silence** until the tester stops play mode ~38 s later. Menu_Main is never loaded:
+there is no `[NetTrace] SceneEvent` and no `[AuthScene] Loading Menu_Main …`.
+
+**The tell is what is MISSING, not what is there.** Every failure path in
+`AuthenticationSceneController` logs — including its 10 s `safetyTimeout`, which exists exactly
+to force-navigate out of a hang. So a run with *zero* `[AuthScene]` lines and no safety-timeout
+warning is not a hang at all: it is the flow having **completed**, into a state that logs
+nothing.
+
+**Root cause — three defects in a row, each harmless alone.**
+
+1. **The race.** `AppManager.RunBootstrapAsync` loads the Authentication scene after
+   `MinimumSplashDuration` and does **not** wait for authentication.
+   `AuthenticationServiceFacade.StartAuthentication` is fired from `AppManager.Start` and never
+   awaited. Those are two independent clocks, so on a slow UGS round trip the scene load wins
+   and `AuthenticationSceneController.Start` runs while `SignInAnonymouslyAsync` is still in
+   flight. `IsAlreadySignedIn()` is therefore false, and the happy path is skipped.
+
+2. **The second sign-in.** `TrySignInCachedAsync` then issued a *competing*
+   `SignInAnonymouslyAsync` against the one already running. The SDK refuses it
+   (`ClientInvalidUserState` — "already signing in"); the catch stamped `AuthState.Failed` over a
+   sign-in that was in fact succeeding and returned `false`. (A machine with no cached session
+   token reached the same `false` even faster, with no log at all.) The scene concluded "no
+   session" for an account that was a heartbeat from being signed in.
+
+3. **The dead end.** `RunAuthFlowCoreAsync` fell to its last branch — `HideLoading();
+   ShowAuthPanel();` — and **returned**. That return is what retires the safety timeout:
+   `UniTask.WhenAny(core, Delay(safetyTimeout))` completes on index 0 and the watchdog is
+   dropped. Nothing was ever going to navigate again. And the panel it parked on was
+   unusable: `AuthPanel` has exactly two children, `LoginStatusText` (blanked by
+   `ClearStatusMessages` / `HideLoading`) and **`GuestLoginButton`, authored `m_IsActive: 0` in
+   `Authentication.unity` with no code anywhere activating it**. So the player was left looking
+   at a bare `Background` — indistinguishable from a stuck loading screen, with nothing to press.
+
+Seconds later the original sign-in completed and raised `OnSignedIn`, so the presence lobby, the
+party session and the Relay host all came up **behind a screen that was never going to move**.
+That is the log above, in full.
+
+**Fix.**
+- `AuthenticationServiceFacade` now **coalesces concurrent sign-ins** onto one attempt
+  (`_signInTask` / `SharedSignInAsync` / `SignInAnonymouslyCore`), the sign-in twin of the
+  `_initTask` coalescing that was already there for initialization. `TrySignInCachedAsync`
+  JOINS an in-flight attempt instead of racing it and reports what is true once it lands; the
+  session token now decides only whether to *start* a sign-in, never whether to *wait* for one.
+  The spurious `AuthState.Failed` write is gone with the competing call.
+- `AuthenticationSceneController` gained a **resume net**: it subscribes to
+  `AuthenticationData.OnSignedIn` and, if a sign-in lands while the boot is parked, resumes
+  `HandlePostAuthFlowAsync` instead of leaving the player behind the rest of the app. (Marshalled
+  through `MainThreadDispatcher` — the SDK's own `SignedIn` event can raise off-thread and SOAP
+  raises listeners inline.)
+- A parked boot now **announces itself** (`ParkForPlayerInput`), and the watchdog force-navigates
+  if the flow ever finishes without navigating *and* without leaving the player a surface.
+- `EnsureGuestLoginVisible` activates the guest-login button when the panel is shown and warns if
+  it was inactive or unwired; `Authentication.unity` now authors it active.
+
+**The general lesson.** *A terminal state that logs nothing is indistinguishable from a hang* —
+this one cost a whole investigation because the hardest fact to establish was an ABSENCE. And its
+sibling: *finishing is not the same as succeeding* — a watchdog armed on "did the work finish?"
+is retired by the very branch it exists to rescue. Arm it on "did we get where we were going?".
+
+**Retest.** (1) Boot repeatedly on a slow/throttled connection — the first frame after the splash
+should reach Menu_Main every time, never a blank screen. (2) Force the parked path (offline at
+boot, or a build with no cached session token): the guest-login button must be visible and
+pressable, and `[AuthScene] Waiting for the player: …` must appear in the console. (3) With the
+panel parked, restore the network — the boot should resume on its own and log
+`[AuthScene] Sign-in landed while the boot was waiting for the player - resuming.`
 
 ---
 
