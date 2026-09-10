@@ -31,7 +31,7 @@ Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
   which is why `ModePreviewLibrarySO` excludes Maelstrom in code. `ModeVideoView` is not the
   return of the deleted video fallback (`Docs/ModePreview/ARCHITECTURE.md`): every *playable*
   mode still previews live, and Maelstrom is the one card structurally unable to.
-- **No controls block.** The hull changes every round — four of the pool's seven modes are
+- **No controls block.** The hull changes every round — fifteen of the pool's sixteen modes are
   vessel-locked — so there is no one set of controls to teach.
 - **A pool list instead**, because the question this card actually raises is "what am I going
   to end up playing?", and the intensity answers it differently.

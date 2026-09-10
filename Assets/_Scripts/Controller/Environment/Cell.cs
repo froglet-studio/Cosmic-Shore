@@ -115,6 +115,68 @@ namespace CosmicShore.Gameplay
         public float NucleusVisualWorldRadius { get; private set; }
 
         /// <summary>
+        /// The config this cell HAS, or — before it has latched one — the config it WILL choose,
+        /// when that is knowable without rolling dice. Null when it is not.
+        ///
+        /// <para>This is to <see cref="Config"/> what <see cref="ExpectedNucleusWorldRadius"/> is
+        /// to <see cref="NucleusWorldRadius"/>, and it exists for the same reason: <c>Config</c>
+        /// is not "this cell's configuration", it is "the configuration this cell has LATCHED",
+        /// and it latches inside <c>AssignConfig</c>, which runs from <c>Initialize</c> on
+        /// <c>OnInitializeGame</c> behind <c>InitDelayMs</c> (1000 ms). Every mode controller's
+        /// <c>OnNetworkSpawn</c> beats that by a full second, so a controller reading
+        /// <c>Config</c> to decide anything about its arena reads null and — if it only reads
+        /// once — reads null forever. Skein shipped exactly that: no rings, in any match.</para>
+        ///
+        /// <para><b>It answers, or it says it cannot — it never guesses.</b> A
+        /// <c>Random</c> cell returns null rather than rolling, because an unlatched roll is a
+        /// DIFFERENT roll from the one <c>AssignConfig</c> will make and answering would be worse
+        /// than declining. A client that cannot yet know its intensity
+        /// (<see cref="IntensityChoiceReady"/>) likewise returns null; that is not a limitation
+        /// for the callers here, because every one of them is server-side and the client
+        /// RECEIVES what the server derived rather than deriving it too.</para>
+        ///
+        /// <para>Deliberately SILENT: it is a prediction, not a decision, so it leaves the
+        /// misauthored-config-list warnings to <c>AssignConfig</c>, which is asked once. This is
+        /// read per plant and per crystal through <see cref="ExpectedNucleusWorldRadius"/>.</para>
+        /// </summary>
+        public CellConfigDataSO ExpectedConfig
+        {
+            get
+            {
+                var latched = cellConfigData;
+                if (latched) return latched;
+
+                if (CellConfigs == null || CellConfigs.Count == 0) return null;
+                if (!IntensityChoiceReady) return null;
+
+                switch (cellTypeChoiceOptions)
+                {
+                    // An unrolled Random cell has no knowable answer - see above.
+                    case CellTypeChoiceOptions.Random:
+                        return CellConfigs.Count == 1 ? CellConfigs[0] : null;
+
+                    case CellTypeChoiceOptions.IntensityWise:
+                    {
+                        if (gameData == null) return null;
+                        int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
+                        return CellConfigs[Mathf.Clamp(intensity - 1, 0, CellConfigs.Count - 1)];
+                    }
+
+                    case CellTypeChoiceOptions.EnvironmentFree:
+                    {
+                        for (int i = 0; i < CellConfigs.Count; i++)
+                            if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
+                                return CellConfigs[i];
+                        return CellConfigs[0];
+                    }
+
+                    default:
+                        return CellConfigs[0];
+                }
+            }
+        }
+
+        /// <summary>
         /// The world radius the nucleus HAS, or WILL have once <see cref="SpawnVisuals"/> runs —
         /// measured off the config's <c>NucleusPrefab</c> asset without instantiating anything.
         ///
@@ -137,6 +199,14 @@ namespace CosmicShore.Gameplay
                 if (_nucleusControlRadiusSqr > 0f) return Mathf.Sqrt(_nucleusControlRadiusSqr);
 
                 // Before AssignConfig, only a single-config cell has a knowable answer.
+                //
+                // NOT ExpectedConfig, deliberately - see its remarks. ExpectedConfig CAN answer
+                // for a multi-config IntensityWise cell, and routing this through it would move
+                // the spawn ring outward in the twelve shipped modes whose cells are
+                // IntensityWise and whose scenes set arrangeSpawnPointsAroundCell. That is
+                // arguably the fix this property was written for, and it is a play-tested
+                // change to modes this branch was not asked to touch: the summary above states
+                // the 0 as the contract, and callers are written against it.
                 var cfg = cellConfigData;
                 if (cfg == null && CellConfigs != null && CellConfigs.Count == 1) cfg = CellConfigs[0];
                 if (cfg == null || cfg.NucleusPrefab == null) return 0f;

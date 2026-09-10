@@ -18,8 +18,8 @@ namespace CosmicShore.Gameplay
         {
             readyClientCount++;
 
-            // Use connected clients count (humans only - excludes AI)
-            int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+            // Connected clients minus SPECTATORS (humans who own a Ready button).
+            int humanCount = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
             if (readyClientCount < humanCount)
                 return;
 

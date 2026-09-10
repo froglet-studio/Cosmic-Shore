@@ -92,6 +92,11 @@ namespace CosmicShore.ScriptableObjects
         /// stations already laid.</summary>
         public const int DefaultBreakwaterLaps = 2;
 
+        /// <summary>Skein course length used when <see cref="skeinRingTarget"/> is 0. Read by
+        /// BOTH SkeinRingTurnMonitor (the target) and SkeinController (how many rings to lay), so
+        /// the course and the number counting it cannot drift.</summary>
+        public const int DefaultSkeinRingTarget = 24;
+
         /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
         /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
         /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
@@ -180,6 +185,10 @@ namespace CosmicShore.ScriptableObjects
                  "crossings. Compared against a domain's LEAD RUNNER, not a sum. 0 = default (2).")]
         [Min(0)] public int breakwaterLaps = 2;
 
+        [Tooltip("Skein: rings in the cable course, which is both how many a pilot must thread " +
+                 "to finish and how many the generator lays. 0 = use the default (24).")]
+        [Min(0)] public int skeinRingTarget = 24;
+
         [Tooltip("Headlong: gate threadings that win the race - LAPS x RINGS, not rings. The " +
                  "controller lays target/laps rings, so this one number is both the finish line " +
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
@@ -210,6 +219,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int breakwaterStationTargetBuild = 15;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
+        [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
@@ -331,6 +341,11 @@ namespace CosmicShore.ScriptableObjects
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
 
+        /// <summary>Skein course length ("thread all N rings"). Read twice on purpose - by
+        /// SkeinRingTurnMonitor for the target and by SkeinController for how many to lay.</summary>
+        public int GetSkeinRingTarget() =>
+            skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget;
+
         /// <summary>
         /// How many Breakwater stations are LAID: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultBreakwaterStationTarget"/>. Read by <c>BreakwaterController</c> to
@@ -401,6 +416,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
+                GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
@@ -427,6 +443,7 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget == switchbackGateTargetBuild &&
             breakwaterStationTarget == breakwaterStationTargetBuild &&
             breakwaterLaps == breakwaterLapsBuild &&
+            skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild;
@@ -449,6 +466,7 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget = switchbackGateTargetBuild;
             breakwaterStationTarget = breakwaterStationTargetBuild;
             breakwaterLaps = breakwaterLapsBuild;
+            skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
@@ -472,6 +490,7 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTargetBuild = switchbackGateTarget;
             breakwaterStationTargetBuild = breakwaterStationTarget;
             breakwaterLapsBuild = breakwaterLaps;
+            skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
