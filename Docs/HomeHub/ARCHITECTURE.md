@@ -142,6 +142,8 @@ a client. "Removing a mode from the arcade" therefore means removing it from `Ar
 from the master. Both grids now name their roster explicitly; an empty `rosterOverride` still
 falls back to the master, which is only right for a grid that wants everything.
 
+**A new mode must be registered in BOTH `OrganicRematchGames` and `ArcadeGames`.** Every mode generator written before the split registered the master alone, and four modes merged after it (Breakwater, Skein, Bloomrush, Redline) were therefore launchable but absent from the arcade grid — reported as "Redline did not show up in arcade". `author_redline_assets.py` and `author_bloomrush_assets.py` now write both; `check_gamelist_scenes.py` proves launchability, not membership, so a master-only card passes it.
+
 ### 3.2 The Arena launch window: the same authority, one more question
 
 An arcade card locks to one hull, so its launch panel has nothing to ask. An arena card can be

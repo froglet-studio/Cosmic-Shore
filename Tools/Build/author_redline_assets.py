@@ -303,15 +303,21 @@ emit("Assets/_Scenes/Multiplayer Scenes/MinigameRedline.unity.meta",
      scene_meta(G_ASSET["MinigameRedline.unity"]))
 
 
-# ── 5. Register the card in the party-games list ─────────────────────────────
-LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
-games = read(LIST_PATH)
+# ── 5. Register the card in BOTH rosters ────────────────────────────────────
+# Docs/HomeHub/ARCHITECTURE.md §3.1: OrganicRematchGames is the MASTER (the injected list a
+# guest resolves the host's card through), and ArcadeGames is the Arcade grid's
+# rosterOverride — "the master minus the arena cards". A card registered in the master alone
+# launches for a guest and is invisible in the arcade, which is exactly how Redline shipped
+# the first time (and how Breakwater / Skein / Bloomrush arrived from their own branches).
 entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameRedline']}, type: 2}}\n"
-if entry not in games:
-    assert games.endswith("\n")
-    games = games + entry
-assert games.count(entry) == 1, "the Redline card is listed more than once in OrganicRematchGames"
-emit(LIST_PATH, games)
+for LIST_PATH in ("Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
+                  "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"):
+    games = read(LIST_PATH)
+    if entry not in games:
+        assert games.endswith("\n")
+        games = games + entry
+    assert games.count(entry) == 1, f"the Redline card is listed more than once in {LIST_PATH}"
+    emit(LIST_PATH, games)
 
 
 # ── 6. Always-unlocked so the card is clickable on a fresh account ──────────

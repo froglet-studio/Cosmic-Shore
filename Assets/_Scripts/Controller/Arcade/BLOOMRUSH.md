@@ -87,7 +87,7 @@ happening. The full account is in `MANTA_STING_KABLOOM.md` §6a; what matters he
 | Metric | `ScoringMetric.VolumeDestroyed = 11` → `ScoringMetrics.Read` |
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity` (+ Build Settings) |
 | Card | `Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset` (Manta-locked, 2–4 players) |
-| Live roster | `GameLists/OrganicRematchGames.asset` (the modern-mode list — Salvo's shape) |
+| Live roster | `GameLists/`OrganicRematchGames` (the master) and `ArcadeGames` (the Arcade grid's roster — a master-only card is launchable but invisible in the arcade, `Docs/HomeHub/ARCHITECTURE.md` §3.1) (the modern-mode list — Salvo's shape) |
 | Progression | `ProgressionConfig.asset` (`- 52`) |
 | Rule | `Scoring Rules/BloomrushScoringRule.asset` (`BloomrushScoringRuleSO`) |
 | HUD objective | `MiniGameHUD` case → `RampageObjectiveProvider` ("ObjectiveProvider_Bloomrush") |

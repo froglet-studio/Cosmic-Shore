@@ -258,12 +258,18 @@ def main() -> int:
     }
 
     # Registrations (append-if-absent, SET semantics on re-run).
-    gamelist = os.path.join(ROOT, "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset")
-    gl = open(gamelist).read()
+    # Both rosters (Docs/HomeHub/ARCHITECTURE.md §3.1): OrganicRematchGames is the MASTER
+    # the injected list resolves a guest's card through; ArcadeGames is the Arcade grid's
+    # rosterOverride, "the master minus the arena cards". Master-only = launchable but not
+    # visible in the arcade.
     entry = "  - {fileID: 11400000, guid: %s, type: 2}\n" % CARD_GUID
-    if entry not in gl:
-        assert gl.endswith("type: 2}\n"), "game list tail moved"
-        writes["Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"] = gl + entry
+    for rel in ("Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset",
+                "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"):
+        gl = open(os.path.join(ROOT, rel)).read()
+        if entry not in gl:
+            assert gl.endswith("type: 2}\n"), "game list tail moved: " + rel
+            writes[rel] = gl + entry
+        assert (gl + entry).count(entry) <= 2 and gl.count(entry) <= 1, "card listed twice in " + rel
 
     # Toast library: without this row the mode's situations resolve to nothing and the
     # cash-out announces itself nowhere.
