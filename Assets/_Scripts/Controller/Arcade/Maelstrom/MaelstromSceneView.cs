@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
 
             if (titleText) titleText.text = summaryMode ? $"{ModeName().ToUpperInvariant()} RESULTS" : ModeName().ToUpperInvariant();
-            if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
+            if (gameModesText) gameModesText.text = $"GAME POOL : {GameModesPool()}";
             if (roundCounterText) roundCounterText.text = summaryMode ? $"{gamesPlayed} ROUNDS PLAYED" : $"ROUND {gamesPlayed + 1}";
             if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.EffectiveWinTarget} points wins";
             RenderLeadingDomain();
@@ -476,12 +476,28 @@ namespace CosmicShore.Gameplay
 
         string ModeName() => tournamentData != null ? tournamentData.ModeName : "Maelstrom";
 
+        /// <summary>
+        /// The pool line: how many modes THIS run can draw, out of the whole roster, and the
+        /// intensity ceiling that decides it.
+        ///
+        /// <para>It counts rather than enumerating for two reasons. The banner is ONE 465x36 line
+        /// (autosizing floored at font 24, overflow mode Overflow), which holds roughly one short
+        /// sentence - it could not hold seven mode names and certainly cannot hold sixteen, so an
+        /// enumeration spills outside its rect. And an enumeration of the QUEUE was also wrong once
+        /// the intensity ladder existed: it named every mode on the roster, including the ones the
+        /// chosen intensity cannot draw, so an intensity-1 lobby advertised modes that could never
+        /// come up. The launch panel's <c>MaelstromPoolListView</c> is where the roster is listed
+        /// properly - it instantiates a row per mode and marks each one's unlock intensity.</para>
+        /// </summary>
         string GameModesPool()
         {
             if (tournamentData == null || tournamentData.GameQueue == null) return string.Empty;
-            return string.Join(" - ", tournamentData.GameQueue
-                .Where(g => g != null && !string.IsNullOrEmpty(g.DisplayName))
-                .Select(g => g.DisplayName.ToUpperInvariant()));
+
+            int total = tournamentData.GameQueue.Count(g => g != null);
+            int ceiling = Mathf.Clamp(tournamentData.IntensityCeiling <= 0 ? 1 : tournamentData.IntensityCeiling, 1, 4);
+            int drawable = tournamentData.GamesForIntensity(ceiling).Count;
+
+            return $"{drawable} OF {total} MODES (INTENSITY {ceiling})";
         }
 
         Domains WinningDomain()
