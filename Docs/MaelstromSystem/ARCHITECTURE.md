@@ -50,6 +50,17 @@ length-agnostic, so adding a mode is one asset edit. Three things a candidate mu
 3. **Player/domain range must contain the Maelstrom card's** (2–4 players, 2+ domains). The drawn
    mode's own card range is *not* re-checked at draw time — a mode capping at 3 players would break
    a 4-player lobby silently.
+4. **Its scene must be able to hand back.** `Scoreboard.continueButton` is a per-scene
+   `[SerializeField]`, and `if (continueButton)` is the only thing between the host and the
+   Continue that calls `MaelstromController.AdvanceToNextGame()` — so a pool mode whose scene does
+   not resolve that reference **stalls the tournament on that round**, with the scoreboard up and
+   no way forward. It is satisfied structurally today rather than per scene: all 16 pool scenes
+   instance `_Prefabs/CORE/GameCanvas.prefab`, which wires it, and none overrides it to null (the
+   `GameCanvas-SkimRace` fork that used to break this class of inheritance is retired —
+   `Docs/GAMECANVAS.md §9`). Verified for all 16 on 2026-09-10. **Check it for the next mode
+   anyway**, because the thing that guarantees it is a prefab reference a scene is free to
+   override, and an override to `{fileID: 0}` is exactly the silent-null shape
+   `Docs/GAMECANVAS.md` warns about.
 
 **Vessel-locked modes need no extra wiring.** Fifteen of the sixteen are single-hull (all but Scurry,
 which offers Sparrow/Manta/Squirrel) (see the §1.1
