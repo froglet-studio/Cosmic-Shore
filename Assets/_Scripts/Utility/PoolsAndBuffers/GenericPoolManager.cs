@@ -190,7 +190,7 @@ namespace CosmicShore.Utility
                 }
             }
             
-            CSDebug.Log($"[PoolManager] Cleaned up {processed} items gracefully.");
+            CSDebug.LogVerbose(CSLogChannel.PrismRuntime, $"[PoolManager] Cleaned up {processed} items gracefully.");
         }
 
         /// <summary>
@@ -215,7 +215,7 @@ namespace CosmicShore.Utility
             }
 
             if (count > 0)
-                CSDebug.Log($"[PoolManager] Scene-transition cleanup: released {count} items synchronously.");
+                CSDebug.LogVerbose(CSLogChannel.PrismRuntime, $"[PoolManager] Scene-transition cleanup: released {count} items synchronously.");
         }
 
         public void Clear() => pool.Clear();

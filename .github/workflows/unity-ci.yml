@@ -199,6 +199,15 @@ jobs:
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
 
+      # Info-level logging must go through CSDebug (a raw Debug.Log bypasses the runtime log
+      # level and the release strip) and never carry rich text; the 2026-09 sweep took the
+      # console from 999+ lines at boot to near-silent and this is what keeps it there.
+      - name: Check console logging
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_console_logging.py --self-test
+          python3 Tools/Build/check_console_logging.py
+
       - name: Check prism shader wiring
         run: |
           set -euo pipefail

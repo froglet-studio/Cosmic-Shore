@@ -81,8 +81,7 @@ namespace CosmicShore.Core
                     if (result == null) return;
                 
                     // Log group creation success.
-                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group: {result.GroupName} creation success.");
-                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - Group id: {result.Group.Id}.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(GroupController)} - {nameof(CreateGroup)} - Group: {result.GroupName} creation success.");
                 
                     // Create a group list cache in memory
                     groups ??= new Dictionary<string, GroupModel>();
@@ -121,7 +120,7 @@ namespace CosmicShore.Core
                     if (result == null) return;
                 
                     // Log deleting group success
-                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group deleted.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(GroupController)} - {nameof(CreateGroup)} - group deleted.");
                 
                     // Remove the deleted group from local memory
                     // Returns false if id is not in the dictionary, no exception throws
@@ -147,9 +146,8 @@ namespace CosmicShore.Core
                 {
                     if (result == null) return;
 
-                    CSDebug.Log($"{nameof(GroupController)} - {nameof(CreateGroup)} - group found.");
-                    CSDebug.Log(
-                        $"{nameof(GroupController)} - {nameof(CreateGroup)} - Group name: {result.GroupName} Group id: {result.Group.Id}.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab,
+                        $"[PlayFab] {nameof(GroupController)} - {nameof(CreateGroup)} - Group name: {result.GroupName} Group id: {result.Group.Id}.");
                     var group = new GroupModel()
                     {
                         GroupName = result.GroupName,

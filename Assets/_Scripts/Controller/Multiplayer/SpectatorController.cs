@@ -173,7 +173,7 @@ namespace CosmicShore.Gameplay
                     if (p != null && p.Vessel != null) withVessel++;
 
             var nm = Unity.Netcode.NetworkManager.Singleton;
-            Debug.LogWarning(
+            CSDebug.LogWarning(
                 $"[SpectatorController] Still nothing to watch after " +
                 $"{Time.unscaledTime - _startedAt:0.0}s. scene='{SceneManager.GetActiveScene().name}' " +
                 $"connected={(nm != null && nm.IsConnectedClient)} " +
@@ -584,7 +584,7 @@ namespace CosmicShore.Gameplay
         {
             if (_leaving) return;
             _leaving = true;
-            CSDebug.Log($"[SpectatorController] Leaving spectator mode - {reason}.");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SpectatorController] Leaving spectator mode - {reason}.");
 
             Detach();
 

@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                CSDebug.Log("A DualShock controller is connected.");
+                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] DualShock controller connected");
             }
             else if (Gamepad.current is XInputController)
             {
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
                         activationButtonImage.gameObject.SetActive(false);
                         break;
                 }
-                CSDebug.Log("An Xbox controller is connected.");
+                CSDebug.LogVerbose(CSLogChannel.Input, "[ControllerButtonPress] Xbox controller connected");
             }
             else
             {

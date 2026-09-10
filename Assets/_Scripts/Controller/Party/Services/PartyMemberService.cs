@@ -99,7 +99,7 @@ namespace CosmicShore.Gameplay
             if (!string.IsNullOrEmpty(_connectionData.LocalPlayerData.PlayerId))
                 _connectionData.PartyMembers?.Add(_connectionData.LocalPlayerData);
 
-            Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Seeded PartyMembers with local player.");
         }
 
         /// <inheritdoc/>
@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
                     _connectionData.PartyMembers.Add(memberData);
                     _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
-                    Debug.Log($"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
                 }
                 else
                 {
@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
                         // HostConnectionService.RefreshOnlinePlayersDiff.
                         _connectionData.PartyMembers.RemoveAt(existingIdx);
                         _connectionData.PartyMembers.Insert(existingIdx, memberData);
-                        Debug.Log($"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
                     }
                 }
             }
@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
                 {
                     _connectionData.PartyMembers.RemoveAt(i);
                     _eventBus.RaisePartyMemberLeft(member);
-                    Debug.Log($"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member left: {member.DisplayName} ({member.PlayerId})");
                 }
             }
 
@@ -179,7 +179,7 @@ namespace CosmicShore.Gameplay
         public void ClearSilent()
         {
             _connectionData.PartyMembers?.Clear();
-            Debug.Log("[PartyMemberService] Party members cleared (silent).");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared (silent).");
         }
 
         /// <inheritdoc/>
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
                 _eventBus.RaisePartyMemberLeft(member);
             }
 
-            Debug.Log("[PartyMemberService] Party members cleared with Left events.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared with Left events.");
         }
 
         /// <inheritdoc/>

@@ -34,7 +34,7 @@ namespace CosmicShore.Core
             if (result == null) return;
 
             ServerTime = result.Time;
-            CSDebug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] PlayFabUtility - Server time: {result.Time}");
         }
         
         #region Situation Handling

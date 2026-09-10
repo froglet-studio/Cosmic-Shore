@@ -4241,7 +4241,21 @@ Do not guess at performance problems. Profile first.
 - Introduce new packages or dependencies without flagging it first
 - Restructure folder organization or namespaces without explicit instruction
 - Use `Debug.Log` as a fix — it's a diagnostic tool, not a solution
-- **Leave a finished system's bring-up telemetry on `CSDebug.Log` (or, worse, raw `Debug.Log`).** The dense per-step trace you need while building a system is console spam the day it works, and every such trace outlives the cycle that wrote it — the `[FLOW-n]` spawn trace and the `[GyroidColony]` census each shipped ~60 and 1-per-5s log lines forever. Put it on a **`CSLogChannel`** (`CSDebug.LogVerbose(channel, …)`, `CSDebug.IsVerbose(channel)`), which defaults to OFF and is toggled per-channel in **FrogletTools > Toolbox > Logging** — the trace stays in the tree as knowledge without shouting. Guard with `IsVerbose` first anywhere the interpolated message itself is expensive (a `[Conditional]` method's arguments are still evaluated in the Editor). Warnings and errors never move to a channel; a real fault must always be loud. And **nothing per-frame or per-contact gets a log at all** — not even a channelled one: the offenders that surfaced here were a per-skim resource log and a per-frame camera-zoom readout, both simply deleted
+- **Leave a finished system's bring-up telemetry on `CSDebug.Log` (or, worse, raw `Debug.Log`).** The dense per-step trace you need while building a system is console spam the day it works, and every such trace outlives the cycle that wrote it — the `[FLOW-n]` spawn trace and the `[GyroidColony]` census each shipped ~60 and 1-per-5s log lines forever. Put it on a **`CSLogChannel`** (`CSDebug.LogVerbose(channel, …)`, `CSDebug.IsVerbose(channel)`), which defaults to OFF and is toggled per-channel in **FrogletTools > Toolbox > Logging** — the trace stays in the tree as knowledge without shouting. Guard with `IsVerbose` first anywhere the interpolated message itself is expensive (a `[Conditional]` method's arguments are still evaluated in the Editor). Warnings and errors never move to a channel; a real fault must always be loud. And **nothing per-frame or per-contact gets a log at all** — not even a channelled one: the offenders that surfaced here were a per-skim resource log and a per-frame camera-zoom readout, both simply deleted. **The 2026-09 console sweep made this the RULE for every subsystem, not just the two that
+  prompted it**: the console sat at 999+ before a match started because ~780 info sites were
+  unconditional — the party layer re-logging its 3 s presence refresh, the boot chain narrating
+  ~40 steps, the lattice colonies logging per PLANT, every vessel spawn printing its audio bring-up,
+  and every menu screen logging one line per CARD it populated. Every subsystem now has a channel
+  (`Boot`, `Party`, `CloudData`, `Audio`, `Ecology`, `ArcadeMatch`, `MenuUI`, `Input`,
+  `VesselTelemetry`, `PrismRuntime`, `LegacyPlayFab`, `FTUE`, plus the per-feature ones), the
+  Logging toolbox REFLECTS the enum (its hand-kept row table had already drifted nine channels
+  behind), and each member carries a `[CSLogChannelLabel]` that `CSDebugTests` asserts. The
+  decision per site is mechanical — a method-entry trace, a per-item population line, a data dump
+  or a placeholder is DELETED; a state transition or a session/target/course fact goes to
+  `LogVerbose`; a real fault stays a warning or error; and `<color=…>` / emoji never appear in a
+  log. `python3 Tools/Build/check_console_logging.py` (`--self-test`) is the gate: it fails on a
+  raw `Debug.Log` in runtime code and on rich text inside any `CSDebug` call, with the tool,
+  benchmark and stress-test scripts whose output IS their deliverable allow-listed by path.
 - Write a tooling, diagnostics, benchmark, or debug-overlay script that uses `#if UNITY_EDITOR` / `#if DEVELOPMENT_BUILD` without reading `Docs/CONDITIONAL_COMPILATION.md` and running `python3 Tools/Build/check_conditional_compilation.py` first. "It compiles in the Editor" proves nothing here — the Editor always defines `UNITY_EDITOR`, so this whole bug class is invisible until the Release build fails
 - Leave TODO comments as a substitute for completing the work
 - Generate code that compiles but ignores the established architecture patterns above

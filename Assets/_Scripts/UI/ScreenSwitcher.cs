@@ -563,14 +563,14 @@ namespace CosmicShore.UI
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas == null)
             {
-                Debug.LogError("[ScreenSwitcher] No parent Canvas found! Screen sliding will not work.");
+                CSDebug.LogError("[ScreenSwitcher] No parent Canvas found - screen sliding will not work.");
                 return;
             }
             _rootCanvas = parentCanvas.rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
 
-            Debug.Log($"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
             LayoutScreensToViewport();
@@ -987,7 +987,7 @@ namespace CosmicShore.UI
             // Block screen navigation while in freestyle mode (live state, not just the flag)
             if (InFreestyle)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
                 return;
             }
 
@@ -1002,17 +1002,17 @@ namespace CosmicShore.UI
 
             if (IsIndexDisabled(ScreenIndex))
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
             }
 
             if (ScreenIndex == currentScreen)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
                 return;
             }
 
-            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -1117,25 +1117,21 @@ namespace CosmicShore.UI
 
         public void OnClickStoreNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickStoreNav");
             NavigateTo(MenuScreens.STORE);
         }
 
         public void OnClickPortNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickPortNav");
             NavigateTo(MenuScreens.PORT);
         }
 
         public void OnClickHomeNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHomeNav");
             NavigateTo(MenuScreens.HOME);
         }
 
         public void OnClickHangarNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHangarNav");
             NavigateTo(MenuScreens.HANGAR);
         }
 

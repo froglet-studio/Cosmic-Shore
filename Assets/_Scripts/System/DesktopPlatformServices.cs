@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -39,7 +40,7 @@ namespace CosmicShore.Core
         /// </summary>
         public static void Quit()
         {
-            Debug.Log("[Platform] Quit requested.");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[Platform] Quit requested.");
 
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
@@ -117,7 +118,7 @@ namespace CosmicShore.Core
                 File.Copy(sourcePath, destination, overwrite: true);
 
                 Application.OpenURL("file://" + ShareFolder.Replace('\\', '/'));
-                Debug.Log($"[Platform] Saved to {destination}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[Platform] Saved to {destination}");
                 return destination;
             }
             catch (Exception ex)

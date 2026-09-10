@@ -382,7 +382,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
+                CSDebug.LogError("[GameDataSO] SyncFromArcadeGame - game is null.");
                 return;
             }
 
@@ -475,8 +475,8 @@ namespace CosmicShore.Utility
             var clamped = ClampVesselToGame(current);
             if (clamped == current) return;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                      $"clamping selected vessel to {clamped}.</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.");
             selectedVesselClass.Value = clamped;
             if (VesselClassSelectedIndex != null)
                 VesselClassSelectedIndex.Value = (int)clamped;
@@ -496,7 +496,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}");
         }
 
 

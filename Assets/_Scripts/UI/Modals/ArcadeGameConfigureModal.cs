@@ -240,7 +240,6 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
-                Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
 
                 // The lobby is replicated state, so a modal that subscribes AFTER the host's open
                 // landed (re-enabled mid-lobby) asks for it back rather than waiting for the next
@@ -251,7 +250,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                Debug.LogWarning($"[ArcadeConfigModal] OnEnable - arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
+                CSDebug.LogWarning($"[ArcadeConfigModal] OnEnable - arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
             }
         }
 
@@ -464,7 +463,7 @@ namespace CosmicShore.UI
 
             if (!card)
             {
-                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
+                CSDebug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
                                "MaelstromData on the modal, or keep the card in SO_GameList.");
                 return;
             }
@@ -1492,7 +1491,7 @@ namespace CosmicShore.UI
                 var player = ResolveLocalOwnedPlayer();
                 if (player != null) player.RequestSetDomain_ServerRpc(domain);
                 else
-                    Debug.LogError($"[ArcadeConfigModal] Weekly challenge domain '{domain}' DROPPED " +
+                    CSDebug.LogError($"[ArcadeConfigModal] Weekly challenge domain '{domain}' DROPPED " +
                                    "- no owned local Player resolved. The run would be flown on " +
                                    "whatever domain the player already had.");
             }
@@ -1523,7 +1522,7 @@ namespace CosmicShore.UI
             var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
             if (playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner)
             {
-                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale - " +
+                CSDebug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale - " +
                                  "resolved local Player via NetworkManager.LocalClient instead.");
                 return resolved;
             }
@@ -1554,7 +1553,7 @@ namespace CosmicShore.UI
             var player = ResolveLocalOwnedPlayer();
             if (player == null)
             {
-                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED - no owned local " +
+                CSDebug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED - no owned local " +
                                "Player resolved (pair-init incomplete after scene return?). " +
                                "Pick not sent to server; tile selection unchanged.");
                 return;
@@ -1590,7 +1589,7 @@ namespace CosmicShore.UI
 
             if (chipPrefab == null)
             {
-                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal - cannot spawn chips.");
+                CSDebug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal - cannot spawn chips.");
                 return;
             }
 
@@ -1626,7 +1625,7 @@ namespace CosmicShore.UI
             var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Jade);
             if (startTile == null || startTile.AvatarStripTransform == null)
             {
-                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} - chip not spawned.");
+                CSDebug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} - chip not spawned.");
                 return;
             }
 
@@ -2035,7 +2034,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             // Show "Waiting for others..." and hide the Start button
@@ -2106,7 +2105,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] All players ready!");
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
@@ -2130,7 +2129,7 @@ namespace CosmicShore.UI
             // scene load to the server's Netcode scene replication. Without
             // this, clients sit on the menu/modal with no transition visual
             // until the network scene load arrives.
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})");
             gameData.InvokeGameLaunch();
 
             // Clear runtime state so it can't resurface after returning to menu
@@ -2227,7 +2226,7 @@ namespace CosmicShore.UI
             var window = ResolveLeaderboardModal();
             if (!window)
             {
-                Debug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
+                CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
                                  "scene - wire one on this modal, or run FrogletTools > Interface " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
@@ -2266,7 +2265,7 @@ namespace CosmicShore.UI
         {
             if (!gameData || config?.SelectedGame == null)
             {
-                Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - gameData or config.SelectedGame is NULL!</color>");
+                CSDebug.LogError("[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - gameData or config.SelectedGame is null.");
                 return;
             }
 
@@ -2286,11 +2285,11 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
-                      $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
+                      $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}");
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
             // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
@@ -2353,7 +2352,7 @@ namespace CosmicShore.UI
             var localPlayer = ResolveLocalOwnedPlayer();
             if (localPlayer == null)
             {
-                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
+                CSDebug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
                                "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
                 return;
             }
@@ -2381,7 +2380,7 @@ namespace CosmicShore.UI
             // the legacy client screens died with the one-panel layout.
             if (!UsesLaunchPanels) return;
 
-            Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
@@ -2395,7 +2394,7 @@ namespace CosmicShore.UI
             SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
             if (game == null)
             {
-                Debug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}. " +
+                CSDebug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}. " +
                                  $"gameList injected={arcadeConfigSyncManager != null}");
                 return;
             }
@@ -2439,7 +2438,6 @@ namespace CosmicShore.UI
             // gate OpenFor applies on the host.
             if (!_activePanel || !_activePanel.HostModal)
             {
-                Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
                 ModalWindowIn();
             }
 
