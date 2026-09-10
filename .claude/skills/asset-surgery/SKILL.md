@@ -587,6 +587,45 @@ hand-written Unity-YAML regex is a claim about your regex, not about the file.*
 Same family as the `m_Name`-override trap below and the "field initializer is not the shipped
 value" rule: **an assertion about what an asset contains has to be read from whoever USES it.**
 
+### Technique: when a doc states a RELATIONSHIP between assets, check it as set algebra
+
+A prose line like *"`ArcadeGames` holds the master minus the arena cards"* is not commentary —
+it is a **testable invariant over three asset files**, and encoding it turns a vague report
+("two of the new games aren't showing up") into an exact answer in one pass. Parse each list's
+entry guids, then assert the relation:
+
+```python
+master, arena, arcade = entries("OrganicRematchGames"), entries("ArenaGames"), entries("ArcadeGames")
+assert master - arena == arcade, sorted(name(g) for g in (master - arena) ^ arcade)
+```
+
+Two things make this worth reaching for before reading any code. It finds the omission **and**
+its exact membership — the symmetric difference names the cards — and it hands you a gate for
+free, because the same three lines run in a `Tools/Build/` checker afterwards. This session found
+Breakwater and Skein that way in a single comparison, after the modes had shipped complete,
+launchable and drawn by no screen with nothing complaining.
+
+**Then decide report-vs-fail deliberately.** A set relation that a human may legitimately
+violate (withholding a finished mode from a grid while keeping it launchable) must REPORT and
+name the card, not fail the build — a hard gate that is wrong about a legitimate state gets
+disabled, and then it guards nothing. And per §2.5's rule: **negative-control it** — pull one
+entry back out and watch it name that entry — because a set check that happens to be vacuous
+(an empty master, a path typo resolving to no file) passes exactly as quietly as a clean one.
+
+### Trap: an asset list's LENGTH is not what the screen draws
+
+The list is the roster; the VIEW between it and the screen is free to filter and reorder, so
+grid arithmetic read off the asset is wrong by however much the view does. `ArcadeExploreView`
+drops one card (the meta-mode, which has its own window) and sorts the rest ALPHABETICALLY by
+display name, so a 17-card roster draws 16 cards and a card's slot has nothing to do with its
+position in the file — a mode added last can land in row 1 slot 1 (`Breakwater` does). Reading
+the roster and reporting "17 cards, 5 rows" was wrong twice over: wrong count, wrong rows.
+
+Read the populate method, not the asset, for anything positional — and where the layout is
+grown at runtime (a cloned overflow row), get the authored capacity by walking the scene's own
+children rather than assuming the roster fits. Same family as the trap above: **an assertion
+about what an asset produces has to be read from whoever CONSUMES it.**
+
 ### Trap: a multi-document regex silently spans documents and returns a plausible wrong answer
 
 Unity YAML is a stream of `--- !u!<type> &<id>` documents. A regex like
