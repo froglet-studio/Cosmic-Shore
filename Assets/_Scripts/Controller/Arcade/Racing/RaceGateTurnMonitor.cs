@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
                 _netGateTarget.Value = target;
                 gameData.SwitchTargetCount = target;
 
-                CSDebug.Log($"[RaceGateMonitor] Server set gate target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[RaceGateMonitor] Server set gate target: {target}");
             }
             else if (_netGateTarget.Value > 0)
             {

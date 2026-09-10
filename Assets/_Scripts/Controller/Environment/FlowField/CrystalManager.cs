@@ -237,10 +237,7 @@ namespace CosmicShore.Gameplay
         {
             if (cellData.TryGetCrystalById(crystalId, out Crystal existing))
             {
-                DebugExtensions.LogErrorColored(
-                    $"Crystal with id {crystalId} already exists, skipping spawn.",
-                    Color.magenta
-                );
+                CSDebug.LogError($"[CrystalManager] Crystal with id {crystalId} already exists, skipping spawn.");
                 return existing;
             }
 

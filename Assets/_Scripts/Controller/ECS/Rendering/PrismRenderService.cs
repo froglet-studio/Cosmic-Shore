@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Rendering;
 using Unity.Transforms;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -132,7 +133,7 @@ namespace CosmicShore.ECS
                 if (enabled && !_loggedActive)
                 {
                     _loggedActive = true;
-                    Debug.Log("[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
                               "If colors look uniform/mixed or explosions are frozen, the prism ShaderGraphs need " +
                               "'Hybrid Per Instance' on their animated properties — see Docs/PRISM_ECS_MIGRATION.md §7.");
                 }
@@ -247,7 +248,7 @@ namespace CosmicShore.ECS
                 if (!_loggedWorldBootstrap)
                 {
                     _loggedWorldBootstrap = true;
-                    Debug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
+                    CSDebug.LogWarning("[PrismRenderService] Entities Graphics is unsupported on this device (" +
                                      EntitiesGraphicsSupportProbe.Reason + "); staying on the legacy MeshRenderer path.");
                 }
                 return false;
@@ -269,7 +270,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                        CSDebug.LogVerbose(CSLogChannel.PrismRuntime, "[PrismRenderService] No default ECS world found - bootstrapped one on demand for instanced prism rendering.");
                     }
                 }
                 catch (System.Exception e)
@@ -277,7 +278,7 @@ namespace CosmicShore.ECS
                     if (!_loggedWorldBootstrap)
                     {
                         _loggedWorldBootstrap = true;
-                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                        CSDebug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
                     }
                     return false;
                 }

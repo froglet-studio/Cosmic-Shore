@@ -81,11 +81,6 @@ namespace CosmicShore.UI
             var model = SelectedModel as SO_Captain;
             captain = _captainManager.GetCaptainByName(model.Name);
 
-            CSDebug.Log($"Populating Captain Details List: {captain.Name}");
-            CSDebug.Log($"Populating Captain Details List: {captain.Description}");
-            CSDebug.Log($"Populating Captain Details List: {captain.Icon}");
-            CSDebug.Log($"Populating Captain Details List: {captain.Image}");
-
             EncounterButton.gameObject.SetActive(false);
             xpRequirementSatisfied = false;
             crystalRequirementSatisfied = false;
@@ -188,11 +183,8 @@ namespace CosmicShore.UI
 
         public void PurchaseUpgrade()
         {
-            CSDebug.Log("PurchaseUpgrade");
             if (crystalRequirementSatisfied && xpRequirementSatisfied)
             {
-                CSDebug.Log("PurchaseUpgrade - Requirements satisfied");
-
                 CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);
                 ConfirmationModal.ModalWindowOut();
             }
@@ -220,8 +212,6 @@ namespace CosmicShore.UI
         /// <param name="index">Index of the displayed Captain list</param>
         public void SelectCaptain(int index)
         {
-            CSDebug.Log($"SelectCaptain: {index}");
-
             try
             {
                 for (var i = 0; i < 4; i++)

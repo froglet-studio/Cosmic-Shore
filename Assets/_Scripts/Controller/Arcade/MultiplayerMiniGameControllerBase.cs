@@ -139,14 +139,14 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay - waiting {InitDelayMs}ms, IsServer={IsServer}");
                 using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                            $"InitDelayMs gate before InitializeGame ({InitDelayMs}ms)", isWait: true))
                 {
                     await UniTask.Delay(InitDelayMs, DelayType.UnscaledDeltaTime);
                 }
 
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7] [MultiplayerMiniGameBase] Calling gameData.InitializeGame(). Players.Count={gameData.Players.Count}");
                 using (LoadInsights.Measure(LoadInsightCategory.GameFlow,
                            "InitializeGame raise (inline listeners: cell, spawn adapters, HUD…)"))
                 {
@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
 
                 if (!IsServer)
                 {
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Not server, skipping session start + round setup");
                     return;
                 }
 
@@ -171,15 +171,15 @@ namespace CosmicShore.Gameplay
                 // Without this, the loading screen overlay persists because no
                 // scene-placed MultiplayerSetup fires InvokeSessionStarted().
                 // Safe: ApplicationStateMachine validates transitions and no-ops on invalid ones.
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Server: InvokeSessionStarted (AppState → InGame)");
                 gameData.InvokeSessionStarted();
 
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] Server: SetupNewRound()");
                 SetupNewRound();
             }
             catch (OperationCanceledException)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFA500>[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7] [MultiplayerMiniGameBase] InitializeAfterDelay CANCELLED");
                 // Task was cancelled, ignore
             }
         }
@@ -461,7 +461,7 @@ namespace CosmicShore.Gameplay
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer && nm.SceneManager != null)
                 {
-                    Debug.Log($"[MultiplayerController] Scene reload replay - loading {gameData.SceneName}");
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[MultiplayerController] Scene reload replay - loading {gameData.SceneName}");
                     nm.SceneManager.LoadScene(gameData.SceneName, LoadSceneMode.Single);
                 }
             }
@@ -521,7 +521,7 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void ResetForReplay_ClientRpc()
         {
-            CSDebug.Log("[MultiplayerController] Resetting Environment...");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[MultiplayerController] Resetting environment for replay");
             _isResetting = false;
 
             gameData.ResetStatsDataForReplay();

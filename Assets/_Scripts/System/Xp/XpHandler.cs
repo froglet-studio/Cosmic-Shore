@@ -84,7 +84,7 @@ namespace CosmicShore.Core
 
         public static void IssueXP(Captain captain, int amount)
         {
-            CSDebug.Log($"XPHandler.IssueXP {captain.Name}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[XpHandler] IssueXP - captain={captain.Name}, {amount}");
 
             if (!ClassXpData.ContainsKey(captain.Vessel.Class))
                 ClassXpData.Add(captain.Vessel.Class, new XpData (0, 0, 0, 0));
@@ -104,7 +104,6 @@ namespace CosmicShore.Core
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            CSDebug.Log($"IssueXP Success - {JsonConvert.SerializeObject(ClassXpData)}");
         }
 
         public static void EncounterCaptain(Captain captain)
@@ -128,7 +127,6 @@ namespace CosmicShore.Core
 
             PlayerDataController.Instance.UpdatePlayerData(dataContent, OnCaptainDataLoaded);
 
-            CSDebug.Log($"Encounter Captain Success - {JsonConvert.SerializeObject(EncounteredCaptainsData)}");
         }
 
 
@@ -156,10 +154,7 @@ namespace CosmicShore.Core
             ClassXpData = ConvertResultToCaptainXpData(result);
             EncounteredCaptainsData = ConvertResultToEncounteredCaptainData(result);
 
-            foreach (var key in ClassXpData.Keys)
-                CSDebug.Log($"OnLoadCaptainXpData - ClassXpData.ShipClassXpData.Keys: {key}");
             
-            CSDebug.Log($"OnLoadCaptainXpData - Custom Data: {result.CustomData}");
 
             OnCaptainDataLoaded?.Invoke();
         }

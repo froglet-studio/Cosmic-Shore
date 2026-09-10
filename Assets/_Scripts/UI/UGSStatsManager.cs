@@ -68,7 +68,7 @@ namespace CosmicShore.Core
                 _hangar = _ugsDataService.HangarRepo.Data;
 
             _isReady = true;
-            CSDebug.Log("[UGSStats] Initialized from UGSDataService repositories.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSStats] Initialized from UGSDataService repositories.");
         }
 
         #region Scoring direction
@@ -178,13 +178,13 @@ namespace CosmicShore.Core
         {
             if (!_isReady || telemetry == null || string.IsNullOrWhiteSpace(vesselTypeName))
             {
-                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped - " +
+                CSDebug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped - " +
                     $"ready={_isReady}, telemetry={(telemetry != null ? telemetry.GetType().Name : "NULL")}, " +
                     $"vessel='{vesselTypeName}'");
                 return;
             }
 
-            Debug.Log($"[UGSStats] ReportVesselTelemetry - {telemetry.GetType().Name} for '{vesselTypeName}', " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSStats] ReportVesselTelemetry - {telemetry.GetType().Name} for '{vesselTypeName}', " +
                 $"drift={telemetry.MaxDriftTime:F2}s, boost={telemetry.MaxBoostTime:F2}s, " +
                 $"prismsDmg={telemetry.PrismsDamaged}");
 
@@ -208,21 +208,21 @@ namespace CosmicShore.Core
             switch (telemetry)
             {
                 case SparrowVesselTelemetry sparrow:
-                    Debug.Log($"[UGSStats] Sparrow stats - prismBlocks={sparrow.PrismBlocksShot}, " +
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSStats] Sparrow stats - prismBlocks={sparrow.PrismBlocksShot}, " +
                         $"skyburst={sparrow.SkyburstMissilesShot}, dangerBlocks={sparrow.DangerBlocksSpawned}");
                     record.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
                     record.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
                     record.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
                     break;
                 case SquirrelVesselTelemetry squirrel:
-                    Debug.Log($"[UGSStats] Squirrel stats - jousts={squirrel.JoustsWon}, " +
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSStats] Squirrel stats - jousts={squirrel.JoustsWon}, " +
                         $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     record.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     record.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);
                     record.RaiseCounterToBest("BestCleanStreak", squirrel.MaxCleanStreak);
                     break;
                 default:
-                    Debug.LogWarning($"[UGSStats] No vessel-specific handler for {telemetry.GetType().Name}");
+                    CSDebug.LogWarning($"[UGSStats] No vessel-specific handler for {telemetry.GetType().Name}");
                     break;
             }
 

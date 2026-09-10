@@ -170,7 +170,7 @@ namespace CosmicShore.Core
             if (IsInitialized) return;
 
             _offlineInitialized = true;
-            CSDebug.Log("[UGSDataService] Offline init - loading repositories from local snapshots...");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Offline init - loading repositories from local snapshots...");
             await InitializeAsync(ct);
         }
 
@@ -184,7 +184,7 @@ namespace CosmicShore.Core
         async Task ReloadFromCloudAfterLateSignInAsync(CancellationToken ct = default)
         {
             _offlineInitialized = false;
-            CSDebug.Log("[UGSDataService] Late sign-in after offline init - reconciling clean repositories from cloud...");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Late sign-in after offline init - reconciling clean repositories from cloud...");
 
             var loads = new List<Task>();
             foreach (var repo in _allRepos)
@@ -201,7 +201,7 @@ namespace CosmicShore.Core
         {
             if (IsInitialized) return;
 
-            CSDebug.Log("[UGSDataService] Loading all repositories from cloud...");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Loading all repositories from cloud...");
 
             // Marshalled back to the MAIN THREAD. Without it this continuation runs on the
             // ThreadPool, SyncHangarToVessels() below touches SO_Vessel assets there, and
@@ -227,7 +227,7 @@ namespace CosmicShore.Core
             IsInitialized = true;
             OnInitialized?.Invoke();
 
-            CSDebug.Log("[UGSDataService] All repositories loaded successfully.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All repositories loaded successfully.");
         }
 
         public async Task FlushAllAsync(CancellationToken ct = default)
@@ -247,7 +247,7 @@ namespace CosmicShore.Core
         {
             try
             {
-                CSDebug.Log("[UGSDataService] Resetting all player data...");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] Resetting all player data...");
 
                 await Task.WhenAll(
                     _profile.ResetAsync(ct),
@@ -262,7 +262,7 @@ namespace CosmicShore.Core
                     _loadout.ResetAsync(ct)
                 ).AsMainThread();
 
-                CSDebug.Log("[UGSDataService] All player data reset successfully.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[UGSDataService] All player data reset successfully.");
                 return true;
             }
             catch (Exception e)
@@ -341,7 +341,7 @@ namespace CosmicShore.Core
             if (changed)
                 _hangar.MarkDirty();
 
-            CSDebug.Log($"[UGSDataService] Synced hangar for {vesselList.VesselList.Count} vessels - " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSDataService] Synced hangar for {vesselList.VesselList.Count} vessels - " +
                         $"{hangar.UnlockedVesselCount()} unlocked, selected '{hangar.SelectedVessel}'.");
         }
 

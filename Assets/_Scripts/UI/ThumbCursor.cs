@@ -39,7 +39,6 @@ namespace CosmicShore.UI
 
         private void OnToggleJoystickVisuals(bool status)
         {
-            CSDebug.Log($"GameSettings.OnChangeJoystickVisualsStatus - status: {status}");
             imageEnabled = status;
         }
 

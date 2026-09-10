@@ -386,7 +386,7 @@ namespace CosmicShore.Gameplay
             // menu's HUMAN vessel, where StartPlayer deliberately does not touch autopilot.
             aiPlayer.StartPlayer();
 
-            CSDebug.Log($"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
                         $"({vesselClass}, {domain}) at {pose.position}.");
 
             // Let the vessel NetworkObject replicate before telling clients to bind the pair.

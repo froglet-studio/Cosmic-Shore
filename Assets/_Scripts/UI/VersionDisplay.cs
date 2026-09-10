@@ -10,7 +10,6 @@ namespace CosmicShore.UI
         [SerializeField] string prefix;
         void Start()
         {
-            //CSDebug.Log("Application Version : " + Application.version);
             tmpText.text = prefix + " " + Application.version;
         }
     }

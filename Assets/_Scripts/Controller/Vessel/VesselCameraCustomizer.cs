@@ -89,7 +89,6 @@ namespace CosmicShore.Gameplay
                 _cameraCtrl is CustomCameraController cccOrtho)
             {
                 cccOrtho.SetOrthographic(true, settings.orthographicSize);
-                CSDebug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
             }
         }
         

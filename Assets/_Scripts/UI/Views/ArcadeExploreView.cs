@@ -243,8 +243,6 @@ namespace CosmicShore.UI
             {
                 var game = sortedGames[i];
 
-                CSDebug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
-
                 var gameCard = GameCards[i];
                 gameCard.GameMode = game.Mode;
                 gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
@@ -570,7 +568,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ReportCardPressability()
         {
-            if (GameCards == null) return;
+            if (GameCards == null || !CSDebug.IsVerbose(CSLogChannel.MenuUI)) return;
 
             GameCard last = null;
             int lastIndex = -1;
@@ -639,9 +637,9 @@ namespace CosmicShore.UI
             for (int i = 0; i < GameCards.Count; i++)
                 if (GameCards[i] != null && GameCards[i].gameObject.activeInHierarchy) active++;
 
-            CSDebug.LogFormat(
-                "{0} - {1} active cards, {2} locked; last is {3} at slot {4}: {5}; a press at its centre lands on {6}.",
-                nameof(ArcadeExploreView), active, _lockedSlots.Count, last.GameMode, lastIndex, button, hit);
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, string.Format(
+                "[{0}] {1} active cards, {2} locked; last is {3} at slot {4}: {5}; a press at its centre lands on {6}",
+                nameof(ArcadeExploreView), active, _lockedSlots.Count, last.GameMode, lastIndex, button, hit));
         }
 
         /// <summary>
@@ -702,10 +700,10 @@ namespace CosmicShore.UI
             // card; this is the other half - whether the click ever ARRIVES. Without it a dead card
             // and a card whose modal declines to open are the same observation (nothing happens),
             // and they have nothing in common: one is the grid's problem, the other the modal's.
-            CSDebug.LogFormat("{0} - card pressed: {1}. Handing it to the configure modal ({2}).",
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, string.Format("[{0}] Card pressed - {1}; configure modal {2}",
                 nameof(ArcadeExploreView),
                 selectedGame ? selectedGame.DisplayName : "<null card>",
-                ArcadeGameConfigureModal ? "wired" : "NOT WIRED - nothing can open");
+                ArcadeGameConfigureModal ? "wired" : "NOT WIRED - nothing can open"));
 
             // Stating a fault and then dereferencing through it is worse than not stating it: the
             // NullReferenceException on the next line is what the reader sees, and it names the
@@ -785,8 +783,6 @@ namespace CosmicShore.UI
 
         public void SelectShip(SO_Vessel selectedShip)
         {
-            CSDebug.Log($"SelectShip: {selectedShip.Name}");
-
             selectedVesselClassType.Value = selectedShip.Class;
             // TODO - Remove statics from MiniGame, use SOAP Data Container
             // notify the mini game engine that this is the vessel to play

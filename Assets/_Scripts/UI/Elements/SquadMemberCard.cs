@@ -39,7 +39,6 @@ namespace CosmicShore.UI
         /// <param name="captain"></param>
         public void SetCaptain(SO_Captain captain)
         {
-            CSDebug.Log($"SetCaptain:{(captain != null ? captain.Name : "<none>")}");
             Captain = captain;
         }
 

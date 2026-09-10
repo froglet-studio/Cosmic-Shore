@@ -72,12 +72,6 @@ namespace CosmicShore.UI
 
         void OnFetchLeaderboard(List<LeaderboardManager.LeaderboardEntry> results)
         {
-            CSDebug.Log("OnFetchLeaderboard");
-            foreach (var result in results)
-            {
-                CSDebug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
-            }
-
             LeaderboardEntriesV2 = results;
             PopulateGameHighScores();
         }
@@ -104,8 +98,6 @@ namespace CosmicShore.UI
 
         public void SelectGame(int index)
         {
-            CSDebug.Log($"SelectGame: {index}");
-
             // Deselect them all
             for (var i = 0; i < _displayCount; i++)
                 GameSelectionContainer.GetChild(i).gameObject.GetComponent<Image>().sprite = LeaderboardEligibleGames[i].IconInactive;
@@ -128,8 +120,6 @@ namespace CosmicShore.UI
             {
                 var selectionIndex = i;
                 var game = LeaderboardEligibleGames[i];
-                CSDebug.Log($"Populating Game Select List: {game.DisplayName}");
-
                 try
                 {
                     var gameSelection = GameSelectionContainer.GetChild(i).gameObject;
@@ -174,8 +164,6 @@ namespace CosmicShore.UI
 
         void PopulateGameHighScores()
         {
-            CSDebug.Log($"PopulateGameHighScores: {SelectedGame.DisplayName}");
-
             // High Scores Container null check
             if (HighScoresContainer == null)
             {

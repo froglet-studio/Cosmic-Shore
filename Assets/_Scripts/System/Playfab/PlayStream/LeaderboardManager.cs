@@ -78,7 +78,7 @@ namespace CosmicShore.Core
         /// </summary>
         void ComeOnline()
         {
-            CSDebug.Log("LeaderboardManager - ComeOnline");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] LeaderboardManager - ComeOnline");
             _online = true;
             ReportAndFlushOfflineStatistics();
         }
@@ -89,7 +89,7 @@ namespace CosmicShore.Core
         /// </summary>
         void GoOffline()
         {
-            CSDebug.Log("LeaderboardManager - GoOffline");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] LeaderboardManager - GoOffline");
             _online = false;
         }
 
@@ -107,12 +107,11 @@ namespace CosmicShore.Core
         {
             yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
             
-            CSDebug.Log("LeaderboardManager - ReportAndFlushOfflineStatistics");
             var offlineStatistics = DataAccessor.Load<List<StatisticUpdate>>(OfflineStatsFileName);
 
             if (offlineStatistics.Count > 0)
             {
-                CSDebug.Log($"LeaderboardManager - StatCount:{offlineStatistics.Count}");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager - Offline StatCount:{offlineStatistics.Count}");
                 UpdatePlayerStatistic(offlineStatistics);
                 DataAccessor.Flush(OfflineStatsFileName);
             }
@@ -141,7 +140,7 @@ namespace CosmicShore.Core
             if (golfScoring)
                 score *= -1;
 
-            CSDebug.Log($"UpdateGameplayStats - gameMode:{gameMode}, shipType:{vesselType}, intensity:{intensity}, Score:{score}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager.UpdateGameplayStats - gameMode:{gameMode}, shipType:{vesselType}, intensity:{intensity}, Score:{score}");
             List<StatisticUpdate> stats = new()
             {
                 new StatisticUpdate()
@@ -174,7 +173,7 @@ namespace CosmicShore.Core
             if (golfScoring)
                 score *= -1;
 
-            CSDebug.Log($"ReportDailyChallengeStatistic - Score:{score}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager.ReportDailyChallengeStatistic - Score:{score}");
             List<StatisticUpdate> stats = new()
             {
                 new StatisticUpdate()
@@ -196,7 +195,6 @@ namespace CosmicShore.Core
         {
             var statKey = gameMode.ToString().ToUpper() + "_" + vesselType.ToString().ToUpper();
 
-            CSDebug.Log("GetGameplayStatKey: " +  statKey);
 
             return statKey;
         }
@@ -218,7 +216,7 @@ namespace CosmicShore.Core
         {
             if (_online)
             {
-                CSDebug.Log($"LeaderboardManager.UpdatePlayerStatistic - online");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager.UpdatePlayerStatistic - online");
                 customTags.Add("BuildNumber", Application.buildGUID);
 
                 var request = new UpdatePlayerStatisticsRequest();
@@ -230,17 +228,17 @@ namespace CosmicShore.Core
                     request,
                     response =>
                     {
-                        CSDebug.Log("UpdatePlayerStatistic success: " + response.ToString());
+                        CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] LeaderboardManager.UpdatePlayerStatistic - success.");
                     },
                     error =>
                     {
-                        CSDebug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport());
+                        CSDebug.LogWarning("[PlayFab] LeaderboardManager.UpdatePlayerStatistic - failure: " + error.GenerateErrorReport());
                     }
                 );
             }
             else
             {
-                CSDebug.Log($"LeaderboardManager.UpdatePlayerStatistic - offline");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager.UpdatePlayerStatistic - offline");
                 // TODO: custom tags lost?
                 var offlineStatistics = DataAccessor.Load<List<StatisticUpdate>>(OfflineStatsFileName);
                 offlineStatistics.AddRange(stats);
@@ -298,9 +296,9 @@ namespace CosmicShore.Core
 
                         DataAccessor.Save(GetLeaderboardFileName(leaderboardName), entries);
 
-                        CSDebug.Log("UpdatePlayerStatistic success: " + response);
+                        CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] LeaderboardManager.UpdatePlayerStatistic - success.");
                     },
-                    error => CSDebug.Log("UpdatePlayerStatistic failure: " + error.GenerateErrorReport()));
+                    error => CSDebug.LogWarning("[PlayFab] LeaderboardManager.UpdatePlayerStatistic - failure: " + error.GenerateErrorReport()));
             }
             else
             {
@@ -340,7 +338,7 @@ namespace CosmicShore.Core
             PlayFabClientAPI.GetLeaderboard(
                 request,
                 result => HandleLeaderboardData(result, callback),
-                error => CSDebug.Log(error.GenerateErrorReport())
+                error => CSDebug.LogWarning("[PlayFab] LeaderboardManager.GetLeaderboard - failure: " + error.GenerateErrorReport())
                 );
         }
 
@@ -355,17 +353,15 @@ namespace CosmicShore.Core
                 return;
         
             // The result doesn't return with leaderboard name, BLOCKBANDIT_ANY is a placeholder
-            CSDebug.Log($"Leaderboard Manger - BLOCKBANDIT_ANY");
             // Store relevant data in leaderboard entry struct
             var leaderboardEntry = new List<LeaderboardEntry>();
             foreach (var entry in result.Leaderboard)
             {
-                CSDebug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY display name: {entry.DisplayName} Score: {entry.StatValue.ToString()} position: {entry.Position.ToString()}");
                 leaderboardEntry.Add(new LeaderboardEntry(entry.DisplayName, entry.PlayFabId, entry.StatValue, entry.Position, entry.Profile.AvatarUrl));
             }
             // Let callback handle leaderboard data
             callback(leaderboardEntry);
-            CSDebug.Log($"Leaderboard Manager - BLOCKBANDIT_ANY board version: {result.Version.ToString()}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] LeaderboardManager - BLOCKBANDIT_ANY board version: {result.Version.ToString()}");
         }
 
         #endregion
@@ -392,7 +388,7 @@ namespace CosmicShore.Core
                 (error) =>
                 {
                     // TODO: add error handler
-                    CSDebug.Log(error.GenerateErrorReport());
+                    CSDebug.LogWarning("[PlayFab] LeaderboardManager - failure: " + error.GenerateErrorReport());
                 }
             );
         }

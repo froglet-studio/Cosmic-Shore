@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using FMOD.Studio;
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -81,7 +82,7 @@ namespace CosmicShore.Gameplay.Audio
 
             if (ambientEvent.IsNull)
             {
-                Debug.LogError($"[FloraAmbientAudioController] '{name}' has no Ambient Event assigned.", this);
+                CSDebug.LogError($"[FloraAmbientAudioController] '{name}' has no Ambient Event assigned.", this);
                 return;
             }
 
@@ -96,7 +97,7 @@ namespace CosmicShore.Gameplay.Audio
             _instanceStarted = startResult == FMOD.RESULT.OK;
             if (!_instanceStarted)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[FloraAmbientAudioController] '{name}' start() returned {startResult} on '{ambientEvent}'.",
                     this);
                 _instance.release();
@@ -104,8 +105,8 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            if (debugLog)
-                Debug.Log($"[FloraAmbientAudioController] '{name}' ambient START.", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[FloraAmbientAudioController] '{name}' ambient START.", this);
         }
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)

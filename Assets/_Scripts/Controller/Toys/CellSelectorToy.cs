@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
             {
                 // Mid-swap the cell has no settled identity, so a matrix built now would
                 // mislabel which world is current (and which pass is the reset).
-                CSDebug.Log("[CellSelector] A cell swap is in flight - try again once it settles.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[CellSelector] A cell swap is in flight - try again once it settles.");
                 return false;
             }
 
@@ -259,8 +259,10 @@ namespace CosmicShore.Gameplay
             _streamCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             StreamMiniatures(pending, _streamCts.Token).Forget();
 
-            CSDebug.Log($"[CellSelector] {_offered.Count} cells offered " +
-                        $"(current: {DisplayNameOf(_offeringCell.Config)}); {pending.Count} scale models building.");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[CellSelector] {_offered.Count} cells offered " +
+                    $"(current: {DisplayNameOf(_offeringCell.Config)}); {pending.Count} scale models building.");
         }
 
         protected override void OnMatrixClosed() => CancelStream();
@@ -295,17 +297,18 @@ namespace CosmicShore.Gameplay
             if (!cell || !config) return;
             if (cell.IsSwappingConfig)
             {
-                CSDebug.Log("[CellSelector] A cell swap is already in flight - ignoring this pass.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[CellSelector] A cell swap is already in flight - ignoring this pass.");
                 return;
             }
 
             // The matrix closes first: the world it describes is about to stop being true.
             CloseMatrix();
 
-            if (cell.RequestCellSwap(config, _def.ClearLooseTrailMass))
-                CSDebug.Log($"[CellSelector] → {DisplayNameOf(config)} " +
-                            $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}, " +
-                            $"clear loose trail mass: {_def.ClearLooseTrailMass}).");
+            if (cell.RequestCellSwap(config, _def.ClearLooseTrailMass) && CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[CellSelector] -> {DisplayNameOf(config)} " +
+                    $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}, " +
+                    $"clear loose trail mass: {_def.ClearLooseTrailMass}).");
         }
 
         // ── App-shell face ───────────────────────────────────────────────────

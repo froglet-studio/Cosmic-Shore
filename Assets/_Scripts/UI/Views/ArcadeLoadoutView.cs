@@ -70,8 +70,6 @@ namespace CosmicShore.UI
 
             var loadout = CardList[index].GetLoadout();
 
-            CSDebug.Log($"LoadoutMenu - SelectLoadout - loadout:{loadout}");
-
             // Default load out for building a new one
             if (!loadout.Initialized)
                 loadout = new Loadout() { Intensity = 1, PlayerCount = 1, GameMode = GameModes.BlockBandit, VesselType = VesselClassType.Manta };
@@ -103,8 +101,6 @@ namespace CosmicShore.UI
             selectedShipIndex = availableShips.IndexOf(AllShips.VesselList.Where(x => x.Class == activeVesselType).FirstOrDefault());
             UpdateShipClass();
 
-            CSDebug.Log($"LoadoutMenu - SelectLoadout - selectedGameIndex:{selectedGameIndex}, selectedShipIndex:{selectedShipIndex}");
-
             LoadoutSystem.SetActiveLoadoutIndex(index);
         }
 
@@ -131,16 +127,12 @@ namespace CosmicShore.UI
 
         void UpdateShipClass()
         {
-            CSDebug.Log("SelectedShipIndex is " + selectedShipIndex);
-
             if (selectedShipIndex < 0) selectedShipIndex = availableShips.Count() - 1;
             if (selectedShipIndex >= availableShips.Count()) selectedShipIndex = 0;
 
             activeVesselType = availableShips[selectedShipIndex].Class;
             ShipTitle.text = availableShips[selectedShipIndex].Name;
             ShipClassImage.sprite = availableShips[selectedShipIndex].CardSilohoutteInactive;
-
-            CSDebug.Log("Active Vessel Type is " + activeVesselType);
         }
 
         // Sets MiniGames
@@ -182,15 +174,11 @@ namespace CosmicShore.UI
             }
 
             UpdatePlayerCountColors();
-
-            CSDebug.Log("LoadoutMenu - OnClickChangeGameMode - Active Game Mode is " + activeGameMode);
         }
 
         // Sets Intensity
         public void OnClickedChangeActiveIntensity(int newIntensity)
         {
-            CSDebug.Log("LoadoutMenu - OnClickedChangeActiveIntensity - Intensity changed to " + newIntensity);
-
             activeIntensity = newIntensity;
 
             for (var i = 0; i < 4; i++)
@@ -213,8 +201,6 @@ namespace CosmicShore.UI
         // Sets Player Count
         public void OnClickChangeActivePlayerCount(int newPlayerCount)
         {
-            CSDebug.Log("LoadoutMenu - OnClickChangeActivePlayerCount - PlayerCount changed to " + newPlayerCount);
-
             activePlayerCount = newPlayerCount;
 
             UpdatePlayerCountColors();

@@ -443,8 +443,9 @@ namespace CosmicShore.Gameplay
                     course[i] = new RaceGate(course[i].Position + centre, course[i].Axis,
                                              course[i].Radius);
 
-            CSDebug.Log($"[{ModeName}] Course seed {seed}: {course.Count} rings, " +
-                        $"{LapsPerRace} lap(s), intensity {Intensity}.");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[{ModeName}] Course seed {seed}: {course.Count} rings, " +
+                $"{LapsPerRace} lap(s), intensity {Intensity}.");
 
             ApplyCourse(course);
             BroadcastCourse(course, default);

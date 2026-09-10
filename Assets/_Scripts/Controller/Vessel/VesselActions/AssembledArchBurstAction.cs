@@ -2,7 +2,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
-using CosmicShore.Utility;
 using System.Collections;
 using System.Linq;
 
@@ -151,7 +150,6 @@ namespace CosmicShore.Gameplay
             _container.localScale = Vector3.one;      
             if (structureParent) _container.SetParent(structureParent, true);
 
-            int total = 0;
             for (int layer = 0; layer < Mathf.Max(1, layers); layer++)
             {
                 float offset = (layer - (layers - 1) * 0.5f) * layerSpacing;
@@ -162,11 +160,8 @@ namespace CosmicShore.Gameplay
                     Vector3 b = points[e.b] + normals[e.b] * offset;
 
                     SpawnRod(a, b, origin, up);
-                    total++;
                 }
             }
-
-            CSDebug.Log($"[SpawnLatticeShieldAction] Spawned {total} rods. hit={hitFound} seed={s} type={lattice}");
         }
 
         public override void StopAction()
@@ -175,7 +170,6 @@ namespace CosmicShore.Gameplay
             {
                 // Destroy(_container.gameObject);
                 // _container = null;
-                // CSDebug.Log("[SpawnLatticeShieldAction] Cleared lattice.");
             }
         }
 

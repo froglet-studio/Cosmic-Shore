@@ -149,7 +149,6 @@ namespace CosmicShore.Gameplay
 
         protected virtual void ResetEnvironmentForReplay()
         {
-            CSDebug.Log("[MiniGameControllerBase] ResetEnvironmentForReplay - Override in subclass");
         }
     }
 }
