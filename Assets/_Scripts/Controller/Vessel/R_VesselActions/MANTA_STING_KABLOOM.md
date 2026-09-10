@@ -49,6 +49,23 @@ skimmer touches pays `chargePerSkim` into the bay, per-prism cooldown `perPrismC
 (`chargeRateAtFullCharge` 2× at Charge 10, `minChargeRateMultiplier` floor). A full unit of
 charge = one armed bomb, up to capacity.
 
+**The skimmer draws nothing.** `Skimmer.prefab` (nested by eight vessels) carries a
+`ForcefieldCrackleOverlay` whose shader composes `Alpha = fresnel + impact contributions`, and
+`ForcefieldCrackleController` pushes an AMBIENT `fresnelRimIntensity` of **0.08** every frame
+regardless of impacts — so the overlay is a permanently visible bubble on any vessel carrying
+it. On the Manta that bubble is 20-40 units across and drove **nothing**: the crackle is a
+skimmer PRISM effect and `MantaStingSkimmerImpactorDataContainer` never listed it (only the
+Dolphin's and the Squirrel's containers do), so the rim was the whole of what it drew. The
+Manta's nested skimmer instance now overrides `fresnelRimIntensity` to **0**, which zeroes
+`Alpha` outright at `_ImpactCount <= 0`.
+
+Chosen over disabling the overlay's `MeshRenderer` for one reason: it is non-destructive. Wire
+the crackle effect into the Manta's container tomorrow and impact crackles draw normally; a
+disabled renderer would have swallowed them silently, which is the shape of bug the vessel
+skill's rule 22 is about. **Open, not fixed here:** Urchin, Grizzly, Falcon, Shrike and Termite
+nest the same skimmer with no crackle effect wired either, so all five are still drawing an
+ambient rim nothing drives.
+
 **Planting (graze/joust).** Two paths, one gate set:
 - **Vessels**: `MantaStingPlantBombVesselEffectSO` in the same container's
   `vesselSkimmerEffectsSO` — a rival vessel inside the skimmer sphere gets

@@ -37,7 +37,7 @@ holds 247 u; the course is cut for the resting vessel, so an element level buys 
 | 1 | **0** of 8 | 362 u — 100% of top | 220 | flat out end to end; learn the gates |
 | 2 | **1** of 8 | 153 u — 53% | 176 | one corner to get right |
 | 3 | **2** of 8 | 121 u — 40%, then 57% | 144 | a lap with a rhythm |
-| 4 | **3** of 8 | 99 u — **31%**, then 56%, then a **knife-edge** at 98% | 116 | two hairpins and a sweeper you hold flat out only by being exact |
+| 4 | **3** of 8 | 99 u — **31%**, then 56%, then a **knife-edge** at 98% | 88 | two hairpins and a sweeper you hold flat out only by being exact, through the ladder's tightest mouth |
 
 Lift for a corner and you pay ~2 s to wind the Soar back up — against a lap of ~5 k units a
 pilot who held it covers in seven seconds. **The gap between a clean lap and a scruffy one is
@@ -102,10 +102,18 @@ tuning pass found are worth carrying:
   between 230 and 250 u — on the full-boost radius, not inside it. Rather than force a number
   the geometry will not give, `Level_four_has_a_knife_edge_third_corner` asserts what it does
   give: a corner within 3% of the full-boost radius, holdable flat out only by a pilot who is
-  exact, on a mouth of 58 u.
+  exact, on a mouth of 44 u.
 
-Mouths are a step wider than Headlong's at every level (110/88/72/58 vs 96/72/58/46): a Manta
-at 720 crosses one in a sixth of a second with a quarter of the Rhino's lateral authority.
+Mouths are a step wider than Headlong's at levels 1-3 (110/88/72 vs 96/72/58): a Manta at 720
+crosses one in a sixth of a second with a quarter of the Rhino's lateral authority. **Level 4
+is deliberately not** — at **44** it is tighter than Headlong's hardest mouth (46) and the
+ladder's biggest single step (72 -> 44, against 110 -> 88 -> 72). It was 58 and read as
+generous in play: level 4 already carries the knife-edge corner, and a mouth a Manta can miss
+is what stops flat-out being the default answer to every gate. The floor a mouth actually has
+is far below it — Switchback's level 4 is 4.29 (a Dolphin hull x 1.5) and Breakwater's
+tightest port is 42 — so this is a demanding gate, not a trick one. Shrinking it only relaxes
+`IsLegal`'s mouth-separation term (`RingRadius x 2`), so the solver is strictly freer; all 14
+`RedlineCourseTests` still pass over the same 400-seed sweep, the corner ladder included.
 Presentation caps (50/72/76/80) each sit just over the level's measured worst half-turn
 (44/67/72/71) — a gate faces its corner's bisector, so a cap under the half-turn zeroes the
 jitter budget exactly where the gates most need to face you.
@@ -153,7 +161,7 @@ sized to the 237 u circle rather than inherited from Switchback's Dolphin.
 | rings per lap | `RedlineCourse.ForIntensity` → `GateCount` | **8** |
 | circuit base radius | same | **820** (~5 k per lap) |
 | corner profile (turn angles) | same, per intensity | see §1 — with `AngularSpread`, **this is the design** |
-| absolute safety floor / mouth / present cap | same, per intensity | 178–90 u; 110–58; 50–80 |
+| absolute safety floor / mouth / present cap | same, per intensity | 178–90 u; 110–88–72–**44**; 50–80 |
 | AI commit / lead / through | scene → `GateRaceController` | 420 / 480 / 320 |
 | detection clamp | scene → `maxPlausibleSpeed` | **1400** (a Time-10 Manta's 30 fps step is 31 u; the inherited 400 rejected it within a unit) |
 | autopilot boost band | `Manta.prefab` → `MantaAnalogTurnBoostExecutor.aiBoostStickBand` | 0.35 |

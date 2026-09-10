@@ -4205,6 +4205,11 @@ PrefabInstance:
       propertyPath: 'trailBlockImpactEffects.Array.data[1]'
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
+        type: 3}
+      propertyPath: fresnelRimIntensity
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 7603142481619829103, guid: 6540c78597c2dcc468123b270169fc44, type: 3}
     - {fileID: 546241298706549007, guid: 6540c78597c2dcc468123b270169fc44, type: 3}

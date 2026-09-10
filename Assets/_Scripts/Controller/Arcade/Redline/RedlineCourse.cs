@@ -188,8 +188,16 @@ namespace CosmicShore.Gameplay
                 LateralPerturbation = new[] { 160f, 200f, 240f, 280f }[i - 1],
                 // A Manta at 720 u/s crosses a mouth in a sixth of a second; its lateral
                 // authority (174 deg/s at that speed) is a quarter of the Rhino's at 1210, so
-                // the mouths sit a step wider than Headlong's at every level.
-                RingRadius = new[] { 110f, 88f, 72f, 58f }[i - 1],
+                // levels 1-3 sit a step wider than Headlong's (96 / 72 / 58).
+                //
+                // Level 4 does NOT: at 44 it is tighter than Headlong's hardest mouth (46) and
+                // the ladder's biggest single step (72 -> 44 against 110 -> 88 -> 72). That is
+                // the point of the rung - it is the level that already carries the knife-edge
+                // corner, and a mouth a Manta can miss is the only thing that makes flat-out a
+                // decision rather than a default. It stays well clear of the floor a mouth
+                // actually has: Switchback's level 4 is 4.29 (a Dolphin hull x 1.5) and
+                // Breakwater's tightest port is 42, so 44 is a demanding gate, not a trick one.
+                RingRadius = new[] { 110f, 88f, 72f, 44f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
                 // Must COVER half the level's hardest turn (a gate faces its corner's bisector,
                 // so the jitter budget is `cap - halfTurn` and clamps to zero past it). The
