@@ -70,6 +70,17 @@ namespace CosmicShore.UI
         // it if the scene's instance is replaced between enable and disable.
         ArcadeConfigSyncManager _pickSource;
 
+        [Header("Card Reveal")]
+        [Tooltip("Timing for the staggered card pop-in played when this grid's window opens " +
+                 "(the card-entrance block). Leave empty for the fleet defaults in CardGridReveal.")]
+        [SerializeField] HUDAnimationSettingsSO cardRevealSettings;
+
+        // The window this grid lives in. Its OnModalOpened is the reveal trigger: the window
+        // hides by CanvasGroup alpha, so OnEnable here fires at scene load, never on open.
+        ModalWindowManager _hostModal;
+        readonly List<GameObject> _revealCards = new();
+        Coroutine _reveal;
+
         void OnEnable()
         {
             if (GameModeProgressionService.Instance != null)
@@ -85,6 +96,10 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            // A reveal cut short by the grid going away must not strand a card at alpha 0.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
+
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
 
@@ -99,6 +114,34 @@ namespace CosmicShore.UI
         {
             LoadoutSystem.Init();
             PopulateGameSelectionList();
+
+            _hostModal = GetComponentInParent<ModalWindowManager>(true);
+            if (_hostModal) _hostModal.OnModalOpened += PlayCardReveal;
+        }
+
+        void OnDestroy()
+        {
+            if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
+        }
+
+        /// <summary>
+        /// The staggered pop-in of every visible card, in grid order, each time this grid's
+        /// window opens. Deliberately NOT played from PopulateGameSelectionList: that also runs
+        /// on a favourite toggle or a progression change while the window is up, and a settled
+        /// card must not flicker (Docs/HomeHub/ARCHITECTURE.md §4.1).
+        /// </summary>
+        void PlayCardReveal()
+        {
+            // The previous run's cards are snapped to rest by Play BEFORE the list is rebuilt,
+            // so a card that left the grid since cannot be stranded mid-pop.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _revealCards.Clear();
+            if (GameCards != null)
+                foreach (var card in GameCards)
+                    if (card) _revealCards.Add(card.gameObject);
+            _reveal = CardGridReveal.Play(this, _revealCards, cardRevealSettings, null);
         }
 
         public void PopulateGameSelectionList()
@@ -222,6 +265,7 @@ namespace CosmicShore.UI
                 gameCard.gameObject.SetActive(true);
             }
 
+            NormalizeGridRows();
             RefreshPartyPicks();
 
             // Last, and unconditionally: CalculateRelativeRectTransformBounds skips INACTIVE
@@ -232,6 +276,57 @@ namespace CosmicShore.UI
             ReportUnreachableCards(sortedGames.Count);
 
             ArcadeDPadNav.RefreshSelection();
+        }
+
+        /// <summary>
+        /// Bring the grid's ROWS into line with the cards that were just filled: a row is shown
+        /// iff it holds a visible card, and every row is the height of the first.
+        ///
+        /// <para><b>A row's active state is this view's to own, exactly as a card's is.</b> The
+        /// fill loop above switches every card off and the filled ones back on, but a card inside
+        /// an INACTIVE row is not <c>activeInHierarchy</c> whatever its own flag says - so a row
+        /// left disabled in the scene silently deletes four modes from the arcade with no error,
+        /// no gap and nothing to distinguish it from "not shipped yet". That is not hypothetical:
+        /// the Arena work disabled all three arcade rows in Menu_Main and the whole grid came up
+        /// empty. Owning the card's flag and not the row's is owning half a rule.</para>
+        ///
+        /// <para><b>And an empty row must go away</b>, or it holds open a row's worth of layout
+        /// for nothing.</para>
+        ///
+        /// <para><b>Uniform heights are what make the pitch uniform.</b> The grid stacks rows
+        /// with a NEGATIVE spacing (-142.08 in Menu_Main) and does not control child height, so
+        /// the gap between two rows is that row's own height plus the spacing. Menu_Main's three
+        /// rows are authored 384.74 / 365.31 / 456.00 tall around identical 202.72-tall cards,
+        /// which is 242.7 / 223.2 / 313.9 of pitch - and a row this view CLONES inherits the last
+        /// one, so the overflow row arrives with 71 units of unexplained air above it. Every row
+        /// takes the FIRST row's height, so one pitch holds across the whole grid however many
+        /// rows exist. General rule: <b>with a layout group that does not control child size, a
+        /// non-uniform child is a non-uniform gap - and a negative spacing makes it look
+        /// deliberate.</b></para>
+        /// </summary>
+        void NormalizeGridRows()
+        {
+            if (GameSelectionGrid == null || GameSelectionGrid.childCount == 0) return;
+
+            float height = GameSelectionGrid.GetChild(0) is RectTransform first
+                ? first.rect.height
+                : 0f;
+
+            for (int i = 0; i < GameSelectionGrid.childCount; i++)
+            {
+                var row = GameSelectionGrid.GetChild(i);
+
+                bool holdsCard = false;
+                for (int j = 0; j < row.childCount && !holdsCard; j++)
+                    holdsCard = row.GetChild(j).gameObject.activeSelf;
+
+                if (row.gameObject.activeSelf != holdsCard)
+                    row.gameObject.SetActive(holdsCard);
+
+                if (i > 0 && height > 0f && row is RectTransform rect &&
+                    !Mathf.Approximately(rect.rect.height, height))
+                    rect.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, height);
+            }
         }
 
         /// <summary>
@@ -270,6 +365,11 @@ namespace CosmicShore.UI
             {
                 var row = Instantiate(template, GameSelectionGrid);
                 row.name = $"{template.name} ({GameSelectionGrid.childCount})";
+                // A clone inherits the template's active state, and a template left disabled in
+                // the scene would hand back a row whose cards can never be seen. NormalizeGridRows
+                // settles this again from content, but a row created inactive would not even be
+                // measured by the content fit in between.
+                row.gameObject.SetActive(true);
 
                 // THE ROW MUST BE INJECTED, and this is the line the whole feature turned on.
                 //

@@ -84,6 +84,17 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY     = "invite_payloads";
         private const string JOINED_PARTY_KEY        = "joined_party";
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
+        /// <summary>
+        /// The local player's CURRENT Relay party session id, published by EVERY member - host
+        /// and guest alike - so any online row can be JOINED directly or SPECTATED without an
+        /// invite. <c>joined_party</c> cannot serve this (guests only, and its meaning is the
+        /// host's admit-scan claim, B8); <c>invite_payloads</c> carries the id only in lines
+        /// aimed at one target. The party session IS the game session (MultiplayerSetup reuses
+        /// it at launch), so one key covers both verbs. Empty while spectating (a spectator
+        /// advertises no session, so nobody can chain-spectate through one) and offline.
+        /// See Docs/PartySystem/SPECTATOR.md.
+        /// </summary>
+        private const string PARTY_SESSION_KEY       = "partySession";
         private const string PENDING_SESSION_ID      = "PENDING";
 
         // The HOST's clock starts at SEND, while the recipient's starts when their lobby poll
@@ -207,6 +218,7 @@ namespace CosmicShore.Gameplay
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
+        private string _publishedPartySessionId = "<UNSET>";
         // Identity (displayName/avatarId) rides the same change-gated per-tick
         // publish so a rename is GUARANTEED to reach the lobby even when the
         // event-driven RepublishLocalIdentityAsync no-ops (lobby ref null during
@@ -382,6 +394,10 @@ namespace CosmicShore.Gameplay
             string matchName = ResolveCurrentMatchName();
             if (!string.IsNullOrEmpty(matchName))
                 live[MATCH_NAME_KEY] = matchName;
+
+            string partySessionId = ResolvePublishedPartySessionId();
+            if (!string.IsNullOrEmpty(partySessionId))
+                live[PARTY_SESSION_KEY] = partySessionId;
 
             return live;
         }
@@ -582,6 +598,16 @@ namespace CosmicShore.Gameplay
                 DebugExtensions.LogErrorColored(
                     "[INVITE-SEND] ABORT - presence lobby is null", Color.red);
                 throw new InvalidOperationException("Presence lobby unavailable.");
+            }
+
+            // A spectator has no party of its own to invite anyone into - its ActiveSession is
+            // the match it is watching, and stamping THAT id on an invite would pull the
+            // acceptor into a stranger's game as a player.
+            if (connectionData.IsSpectating)
+            {
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-SEND] ABORT - local player is spectating; invites are unavailable", Color.red);
+                throw new InvalidOperationException("Cannot invite while spectating.");
             }
 
             // Capacity guard: a full party can't take another member - refuse
@@ -824,6 +850,124 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// DIRECT party join - no invite. The row's Join button: leave our own eager solo
+        /// session, join <paramref name="target"/>'s advertised party session (the id every
+        /// member publishes under <see cref="PARTY_SESSION_KEY"/>), seed the roster and
+        /// advertise <c>joined_party</c> so the host's admit-scan sees us. It is
+        /// <see cref="AcceptInviteAsync"/> without the two things an invite adds: the
+        /// <c>accepted_invite</c> handshake (the session id is already real - eager creation -
+        /// so there is nothing to wait for) and the <c>PartyFormedByInvite</c> analytics flag
+        /// (this party formed ORGANICALLY, which is precisely the cohort that flag separates).
+        /// Throws on failure so <see cref="PartyInviteController"/> fails fast and bounces.
+        /// </summary>
+        public async UniTask JoinPartyDirectAsync(PartyPlayerData target)
+        {
+            string sessionId = target.PartySessionId;
+            if (string.IsNullOrEmpty(sessionId))
+                throw new InvalidOperationException($"'{target.DisplayName}' advertises no joinable party session.");
+            if (_gameData != null && _gameData.IsOfflineSession)
+                throw new InvalidOperationException("Offline session - joining a party is unavailable.");
+
+            // Any invite popup we were looking at is moot: we are leaving for a different party.
+            _lastInviteResolved = true;
+            _eventBus.RaiseInviteResolved();
+            connectionData.PartyFormedByInvite = false;
+
+            try
+            {
+                SyncLocalIdentity();
+                _stateMachine.TryTransition(PartyState.JoiningParty);
+
+                // Same ordering as AcceptInviteAsync, for the same reason: release our own host
+                // binding through the SDK BEFORE the client-start inside JoinByIdAsync.
+                await _partySessionService.LeaveAsync();
+                NetworkSceneObjectGuard.Sweep("before direct party join (client start)");
+                await _partySessionService.JoinByIdAsync(sessionId);
+
+                connectionData.IsPartyHost  = false;
+                connectionData.IsSpectating = false;
+
+                // Seed the roster with the pilot we clicked; SyncFromSession fills in the rest
+                // of that party (and corrects identity) on the next refresh tick.
+                _memberService.SeedLocalPlayer(clearFirst: true);
+                var targetData = new PartyPlayerData(target.PlayerId, target.DisplayName, target.AvatarId);
+                connectionData.PartyMembers?.Add(targetData);
+                _eventBus.RaisePartyMemberJoined(targetData);
+
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
+                Debug.Log($"[HostConnectionService] Joined party {_partySessionService.ActiveSession?.Id} directly (via {target.DisplayName}).");
+                _stateMachine.TryTransition(PartyState.InParty);
+                _scheduler.Boost();
+
+                PublishJoinedPartyAsync(sessionId).Forget();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError(
+                    $"[HostConnectionService] JoinPartyDirect error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+                CSDebug.Log($"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Join <paramref name="sessionId"/> as a SPECTATOR: a Netcode client that carries the
+        /// <c>spectator</c> session property (so no peer's roster sync counts it as a member)
+        /// and the spectator approval payload (so the host mints it no Player object and no
+        /// vessel - see <see cref="SpectatorSession"/>). Publishes NO <c>joined_party</c> claim
+        /// and, through <see cref="ResolvePublishedPartySessionId"/>, advertises NO session of
+        /// its own. The party layer treats the watched match as a plain live session
+        /// (<see cref="PartyState.InParty"/>) with <see cref="HostConnectionDataSO.IsSpectating"/>
+        /// set; leaving it goes through the ordinary client-leave path.
+        /// </summary>
+        public async UniTask JoinAsSpectatorAsync(string sessionId)
+        {
+            if (string.IsNullOrEmpty(sessionId))
+                throw new InvalidOperationException("No session id to spectate.");
+            if (_gameData != null && _gameData.IsOfflineSession)
+                throw new InvalidOperationException("Offline session - spectating is unavailable.");
+
+            _lastInviteResolved = true;
+            _eventBus.RaiseInviteResolved();
+            connectionData.PartyFormedByInvite = false;
+
+            try
+            {
+                SyncLocalIdentity();
+                _stateMachine.TryTransition(PartyState.JoiningParty);
+
+                await _partySessionService.LeaveAsync();
+                NetworkSceneObjectGuard.Sweep("before spectator session join (client start)");
+                await _partySessionService.JoinByIdAsync(sessionId, asSpectator: true);
+
+                connectionData.IsPartyHost  = false;
+                connectionData.IsSpectating = true;
+                // Our party is just us; the match's pilots are what we WATCH, not who we are with.
+                _memberService.SeedLocalPlayer(clearFirst: true);
+
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
+                Debug.Log($"[HostConnectionService] Spectating session {_partySessionService.ActiveSession?.Id}.");
+                _stateMachine.TryTransition(PartyState.InParty);
+                _scheduler.Boost();
+                // Deliberately no PublishJoinedPartyAsync: a viewer is not a member.
+            }
+            catch (Exception e)
+            {
+                connectionData.IsSpectating = false;
+                Debug.LogError(
+                    $"[HostConnectionService] JoinAsSpectator error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+                CSDebug.Log($"[HostConnectionService] NetDiag: class={NetworkDiagnostics.ClassifyException(e)} | {NetworkDiagnostics.GetSnapshot()}");
+                throw;
+            }
+        }
+
         public UniTask DeclineInviteAsync()
         {
             // Sender's slot is freed by their own timeout - UGS doesn't expose
@@ -1047,6 +1191,8 @@ namespace CosmicShore.Gameplay
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
                 connectionData.IsPartyHost = true;
+                // Hosting a session of one's own is, by definition, not spectating anybody's.
+                connectionData.IsSpectating = false;
                 _memberService.SeedLocalPlayer(clearFirst: true);
 
                 // Give the new session breathing room before RefreshAsync touches it.
@@ -1173,6 +1319,9 @@ namespace CosmicShore.Gameplay
 
         public async UniTask LeavePartySessionAsync()
         {
+            // Whatever the session was to us - our own party, somebody else's, or a match we were
+            // only watching - leaving it ends the spectating relationship with it.
+            connectionData.IsSpectating = false;
             try
             {
                 if (_partySessionService.ActiveSession != null)
@@ -1299,7 +1448,10 @@ namespace CosmicShore.Gameplay
                 if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
                     ScanPresenceForJoinedPartyMembers();
 
-                if (_partySessionService.ActiveSession != null)
+                // A SPECTATOR sits in somebody else's session to watch it - the pilots in that
+                // session are not its party, so the member sync stands down (it would otherwise
+                // fill PartyMembers with the whole match and publish "IN PARTY 4/4" for a viewer).
+                if (_partySessionService.ActiveSession != null && !connectionData.IsSpectating)
                     await RefreshPartyMembersAsync();
 
                 await PublishPartyStateIfChangedAsync();
@@ -1548,7 +1700,8 @@ namespace CosmicShore.Gameplay
                         existing.AvatarId          != playerData.AvatarId          ||
                         existing.PartyMemberCount  != playerData.PartyMemberCount  ||
                         existing.PartyMaxSlots     != playerData.PartyMaxSlots     ||
-                        existing.MatchName         != playerData.MatchName;
+                        existing.MatchName         != playerData.MatchName         ||
+                        existing.PartySessionId    != playerData.PartySessionId;
 
                     if (changed)
                     {
@@ -1608,8 +1761,11 @@ namespace CosmicShore.Gameplay
                 partyMax = parsedPm;
             if (p.Properties.TryGetValue(MATCH_NAME_KEY, out var mn))
                 matchName = mn.Value ?? string.Empty;
+            string partySessionId = string.Empty;
+            if (p.Properties.TryGetValue(PARTY_SESSION_KEY, out var ps))
+                partySessionId = ps.Value ?? string.Empty;
 
-            return new PartyPlayerData(p.Id, displayName, avatarId, partyCount, partyMax, matchName);
+            return new PartyPlayerData(p.Id, displayName, avatarId, partyCount, partyMax, matchName, partySessionId);
         }
 
         private void ScanPresenceForJoinedPartyMembers()
@@ -2025,11 +2181,13 @@ namespace CosmicShore.Gameplay
             string currentMatch  = ResolveCurrentMatchName();
             string currentName   = connectionData.LocalDisplayName ?? "Pilot";
             int    currentAvatar = connectionData.LocalAvatarId;
+            string currentSession = ResolvePublishedPartySessionId();
 
-            if (currentCount  == _publishedPartyCount &&
-                currentMatch  == _publishedMatchName &&
-                currentName   == _publishedDisplayName &&
-                currentAvatar == _publishedAvatarId) return;
+            if (currentCount   == _publishedPartyCount &&
+                currentMatch   == _publishedMatchName &&
+                currentName    == _publishedDisplayName &&
+                currentAvatar  == _publishedAvatarId &&
+                currentSession == _publishedPartySessionId) return;
 
             try
             {
@@ -2047,12 +2205,16 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(currentName, VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
                     new PlayerProperty(currentAvatar.ToString(), VisibilityPropertyOptions.Public));
+                // The joinable/spectatable session id - see PARTY_SESSION_KEY.
+                lobby.CurrentPlayer.SetProperty(PARTY_SESSION_KEY,
+                    new PlayerProperty(currentSession ?? string.Empty, VisibilityPropertyOptions.Public));
 
                 await _propertyWriter.SaveWithRetryAsync(lobby);
-                _publishedPartyCount  = currentCount;
-                _publishedMatchName   = currentMatch;
-                _publishedDisplayName = currentName;
-                _publishedAvatarId    = currentAvatar;
+                _publishedPartyCount     = currentCount;
+                _publishedMatchName      = currentMatch;
+                _publishedDisplayName    = currentName;
+                _publishedAvatarId       = currentAvatar;
+                _publishedPartySessionId = currentSession;
             }
             catch (Exception e)
             {
@@ -2066,6 +2228,19 @@ namespace CosmicShore.Gameplay
             if (IsOnMenuScene()) return string.Empty;
             if (!_gameData.IsMultiplayerMode) return string.Empty;
             return _gameData.GameMode.ToString();
+        }
+
+        /// <summary>
+        /// The session id this player ADVERTISES for a direct join / spectate (see
+        /// <see cref="PARTY_SESSION_KEY"/>). Empty while spectating, offline, or with no live
+        /// session - an empty value is what disables the row's Join/Spectate button on every
+        /// other machine, so this is the one place that decision is made.
+        /// </summary>
+        private string ResolvePublishedPartySessionId()
+        {
+            if (connectionData == null || connectionData.IsSpectating) return string.Empty;
+            if (_gameData != null && _gameData.IsOfflineSession) return string.Empty;
+            return _partySessionService?.ActiveSession?.Id ?? string.Empty;
         }
 
         // ╔═══════════════════════════════════════════════════════════════════╗

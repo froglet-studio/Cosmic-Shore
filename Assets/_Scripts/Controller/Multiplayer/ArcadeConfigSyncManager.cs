@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
             get
             {
                 var nm = NetworkManager.Singleton;
-                int connected = nm != null && nm.IsListening ? nm.ConnectedClientsIds.Count : 0;
+                int connected = SpectatorSession.CountHumanClients(nm);
                 return Mathf.Max(_committedHumanCount, connected);
             }
         }

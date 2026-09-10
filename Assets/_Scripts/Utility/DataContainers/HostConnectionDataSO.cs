@@ -155,6 +155,18 @@ namespace CosmicShore.Utility
         /// </summary>
         [HideInInspector] public bool PartyFormedByInvite;
 
+        /// <summary>
+        /// True while the local player is connected to another player's session as a
+        /// SPECTATOR: a Netcode client with no Player object and no vessel, watching only.
+        /// Set by <c>HostConnectionService.JoinAsSpectatorAsync</c>, cleared by every path that
+        /// leaves that session or creates the player's own (<c>LeavePartySessionAsync</c>,
+        /// <c>EnsurePartySessionAsync</c>, <see cref="ResetRuntimeData"/>). While it is set the
+        /// party-member sync is suspended (the match's pilots are not this player's party), no
+        /// <c>joined_party</c> claim is published, and the presence row advertises NO session so
+        /// nobody can chain-spectate through a spectator. See Docs/PartySystem/SPECTATOR.md.
+        /// </summary>
+        [HideInInspector] public bool IsSpectating;
+
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -206,6 +218,7 @@ namespace CosmicShore.Utility
             IsPresenceLobbyHost = false;
             IsPartyHost = false;
             PartyFormedByInvite = false;
+            IsSpectating = false;
 
             OnlinePlayers?.Clear();
             PartyMembers?.Clear();
