@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
         public float BaseRadius;          // radius of the circuit's underlying circle
         public float LateralPerturbation; // ...and out of its plane
         public float CornerRadiusFactor;  // hard SAFETY floor: no corner tighter than this x FOR
+        public float CornerFloorRadius;   // ...or, when > 0, this ABSOLUTE floor instead (a course
+                                          // cut for another vessel - Redline's Manta - states its
+                                          // floor in its own units rather than in Rhino radii)
         public float[] CornerProfile;     // the TURN ANGLES this lap is built to, in degrees
         public float RadialSwing;         // how far a vertex may be driven in/out to cut a corner
         public float AngularSpread;       // how uneven the gate spacing may become
@@ -229,6 +232,13 @@ namespace CosmicShore.Gameplay
     /// Builds a Headlong circuit: a CLOSED loop of gates a Rhino races laps of, cut so that its
     /// corners sit at a chosen multiple of the vessel's flat-out turn radius.
     ///
+    /// <para><b>Shared by Redline</b> (the Manta's circuit race) since 2026-09: the solver is a
+    /// pure function of its settings, and a second copy of it would have been the semantic
+    /// duplicate the ship protocol scans for. What is Rhino-specific lives in
+    /// <see cref="HeadlongCircuitSettings.ForIntensity"/> and the flat-out constants; a
+    /// course cut for another vessel supplies its own settings (<c>RedlineCourse</c>) and
+    /// states its safety floor through <see cref="HeadlongCircuitSettings.CornerFloorRadius"/>.</para>
+    ///
     /// <para><b>Why a closed loop rather than Switchback's open chain.</b> The whole point of the
     /// Rhino is that its turn radius CONVERGES with speed (RHINO_RAMP_BOOST.md), so the
     /// interesting question is not "can you reach the next gate" but "can you keep the throttle
@@ -302,7 +312,13 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n; i++) sharp[i] = 0.5f;
             SolveProfile(sharp, targets, s, n);
 
-            float floor = s.CornerRadiusFactor * HeadlongCircuitSettings.FlatOutRadius;
+            // The safety floor: the Rhino's, as a fraction of its flat-out radius, unless the
+            // settings state one outright. HeadlongCircuitSettings.ForIntensity leaves
+            // CornerFloorRadius at 0, so Headlong is bit-for-bit what it was; RedlineCourse
+            // states the Manta's floor in the Manta's own units.
+            float floor = s.CornerFloorRadius > 0f
+                ? s.CornerFloorRadius
+                : s.CornerRadiusFactor * HeadlongCircuitSettings.FlatOutRadius;
             float scale = 1f;
             List<Vector3> pts = null;
 

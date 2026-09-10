@@ -94,7 +94,13 @@ place that has to stay a single equality test.
 ## 4. The circuit generator
 
 `HeadlongCircuit` (+ `HeadlongCircuitSettings`), pure and deterministic — see
-`RaceCourseGeometry` for the shared RNG and geometry.
+`RaceCourseGeometry` for the shared RNG and geometry. **Shared with Redline since 2026-09**: the
+Manta's circuit supplies its own settings (`RedlineCourse.ForIntensity`) to this solver, and the
+one change made for it is `HeadlongCircuitSettings.CornerFloorRadius` — an ABSOLUTE safety floor
+that a course cut for another vessel states in its own units; `ForIntensity` here leaves it 0,
+so this mode's circuits are bit-for-bit what they were. Redline's tuning pass also found that the
+solver's REACH (`AngularSpread`) rather than its profile is what moves a level's corner demand —
+see `REDLINE.md` §4 before re-cutting either ladder.
 
 **It builds TO a corner profile.** Each intensity authors one target **turn angle** per gate; the
 generator deals them around the lap, then solves a per-vertex "sharpness" by bisection (three

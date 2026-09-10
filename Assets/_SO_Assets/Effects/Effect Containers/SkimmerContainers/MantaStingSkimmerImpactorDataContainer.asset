@@ -10,10 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 68b3e74284f14e32a6e21b5fb8c3e8ad, type: 3}
-  m_Name: MantaOverchargeSkimmerImpactorDataContainer
-  m_EditorClassIdentifier: 
-  vesselSkimmerEffectsSO: []
+  m_Name: MantaStingSkimmerImpactorDataContainer
+  m_EditorClassIdentifier:
+  vesselSkimmerEffectsSO:
+  - {fileID: 11400000, guid: 6a4f1d429ee794992202b429eee27c6c, type: 2}
   skimmerPrismEffectsSO:
-  - {fileID: 11400000, guid: 76b23cef24f3ca94eb118cb6e9041221, type: 2}
+  - {fileID: 11400000, guid: a6b1605f1253980faed3882e8c25dbe2, type: 2}
   - {fileID: 11400000, guid: dcce08b9351b97c4eb275508001a5b8e, type: 2}
   skimmerCrystalEffectsSO: []

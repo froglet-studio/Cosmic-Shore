@@ -150,9 +150,14 @@ the mode is finished, launchable, in the build settings, drawn by no screen, and
 the lists by hand. `Tools/Build/check_gamelist_scenes.py` now prints every master card that reaches
 NEITHER grid. It **reports rather than fails**, deliberately — withholding a finished mode from the
 grid while keeping it launchable is a legitimate state (a mode still being tuned), so a hard gate
-would be wrong about that case; what it cannot be wrong about is naming the card. As of 2026-09-10
-the arcade roster is **17 cards** = the master's 19 minus the 2 arena cards, and the Arcade grid
-draws **16** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window).
+would be wrong about that case; what it cannot be wrong about is naming the card. As of this branch
+the arcade roster is **19 cards** = the master's 21 minus the 2 arena cards, and the Arcade grid
+draws **18** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window) —
+17/16 before Bloomrush and Redline landed. Note that at 18 drawn cards the authored 12 slots need
+**two** cloned rows, where 16 needed one; both are injected, so the dead-button trap does not apply,
+but the scroll-extent fit is now carrying a case it has not carried before.
+
+**A mode GENERATOR is a second place that registration has to land.** Every `Tools/Build/author_*_assets.py` predates the split and registers the master alone, so a regenerated mode is master-only again and the report above fires on the next run rather than the change. `author_redline_assets.py` and `author_bloomrush_assets.py` now write both rosters; the rest still do not, and each one is a card that will fall off the grid the next time anybody runs it. Same shape as the ship protocol's standing note that *a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change*.
 
 ### 3.2 The Arena launch window: the same authority, one more question
 

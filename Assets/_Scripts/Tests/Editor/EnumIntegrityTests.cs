@@ -140,7 +140,7 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 49 = IDs 0..51 with 7, 31 and 47 deliberately skipped (retired Freestyle /
+            // 51 = IDs 0..53 with 7, 31 and 47 deliberately skipped (retired Freestyle /
             // never assigned / retired Drumfire — see GameModes.cs). Deliberately a hard-coded
             // number rather than one derived from the enum: the whole point is that ADDING a
             // mode fails here, so a human confirms the addition was intended and that its ID
@@ -154,7 +154,7 @@ namespace CosmicShore.Tests
             // parallel-branch collision DRUMFIRE.md records, and the reason
             // check_switch_label_collisions.py has to be re-run after every merge.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(49, values.Length,
+            Assert.AreEqual(51, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -190,6 +190,8 @@ namespace CosmicShore.Tests
         [TestCase(GameModes.Tollway, 48)]
         [TestCase(GameModes.Headlong, 49)]
         [TestCase(GameModes.Breakwater, 50)]
+        [TestCase(GameModes.Bloomrush, 52)]
+        [TestCase(GameModes.Redline, 53)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,

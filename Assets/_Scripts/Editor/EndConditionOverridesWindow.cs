@@ -103,7 +103,11 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultHijackStealTarget + ".\n" +
                 "  • Tollway: TOLLS a DOMAIN needs to win (race to N) - a toll is any ball " +
                 "threading a ring one of your pilots planted, whoever's ball it was, default " +
-                EndConditionOverridesSO.DefaultTollwayTollTarget + ".",
+                EndConditionOverridesSO.DefaultTollwayTollTarget + ".\n" +
+                "  • Redline: gate THREADINGS (laps x rings) a DOMAIN's lead runner needs to " +
+                "finish the Manta circuit; the controller lays target/laps rings, so this is " +
+                "also the size of the circuit. Default " +
+                EndConditionOverridesSO.DefaultRedlineGateTarget + ".",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -126,6 +130,7 @@ namespace CosmicShore.Editor
             int bw  = Mathf.Max(0, EditorGUILayout.IntField("Breakwater - Station Target", _config.breakwaterStationTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
             int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
+            int rl  = Mathf.Max(0, EditorGUILayout.IntField("Redline - Gate Target (laps x rings)", _config.redlineGateTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -145,6 +150,7 @@ namespace CosmicShore.Editor
                     _config.breakwaterStationTarget = bw;
                     _config.hijackStealTarget = hj;
                     _config.tollwayTollTarget = tw;
+                    _config.redlineGateTarget = rl;
                 });
 
             EditorGUILayout.Space();
@@ -166,6 +172,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Breakwater", bw > 0 ? bw.ToString() : EndConditionOverridesSO.DefaultBreakwaterStationTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
             EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
+            EditorGUILayout.LabelField("Redline", rl > 0 ? rl.ToString() : EndConditionOverridesSO.DefaultRedlineGateTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -210,7 +217,8 @@ namespace CosmicShore.Editor
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Breakwater: " + Fmt(_config.breakwaterStationTargetBuild, "default " + EndConditionOverridesSO.DefaultBreakwaterStationTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
-                   "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget);
+                   "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget) + "\n" +
+                   "Redline: " + Fmt(_config.redlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRedlineGateTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

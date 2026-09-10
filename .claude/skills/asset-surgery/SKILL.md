@@ -532,6 +532,42 @@ the file ARE its last output, so gather each instance's children and ask whether
 Two decisive populations, no judgement. Generalises to any pair of components you cannot tell apart
 from their fields: find the observable the component IMPOSES on something else, and count it.
 
+### Technique: change ONE consumer of a SHARED prefab by overriding a field the source never serializes
+
+A component's serialized block in a prefab holds only the fields somebody has *touched* —
+everything else falls back to its C# field initializer. So `Skimmer.prefab`'s
+`ForcefieldCrackleController` serializes exactly one line (`overlayRenderer`) while eleven
+tuning fields, including the one that was drawing a permanently visible bubble on eight
+vessels, exist only as initializers.
+
+You can still override such a field on ONE nesting instance. Unity resolves a
+`m_Modifications` entry by SerializedProperty path against the instantiated object, not against
+the source's serialized text, so an entry naming a path the source omits applies normally:
+
+```
+    - target: {fileID: <componentFileIDInTheSourcePrefab>, guid: <sourcePrefabGuid>,
+        type: 3}
+      propertyPath: fresnelRimIntensity
+      value: 0
+      objectReference: {fileID: 0}
+```
+
+Append it inside that instance's `m_Modifications` (assert the list's last entry ends
+`objectReference: {fileID: 0}` before appending, and that your `propertyPath` appears exactly
+once in the file afterwards).
+
+**Prefer this to disabling the renderer/component, and the reason generalises.** Both make the
+thing invisible today; the override is the one that survives the feature being wired up later.
+A disabled renderer silently swallows the effect the day someone adds the driver — which is the
+vessel skill's rule 22 (a shared impact effect is per-vessel wiring) reached from the other
+side. Disable only when the object must also stop *existing* for something (a collider, a
+raycast target).
+
+Two checks that make it safe: prove what the component actually outputs when nothing drives it
+(read the shader — `Alpha = fresnel` at `_ImpactCount <= 0` is a very different claim from "it
+looks off"), and re-run the file's dangling-fileID set against `git show HEAD:<file>` — an
+appended modification must leave it byte-identical.
+
 ### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
 
 Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,

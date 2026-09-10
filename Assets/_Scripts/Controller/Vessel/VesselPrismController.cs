@@ -49,6 +49,20 @@ namespace CosmicShore.Gameplay
                  "never SuperShield - fauna keep their devastate sink).")]
         [SerializeField] bool massUpgradeShieldsTrail = false;
 
+        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yastri): prisms laid while " +
+                 "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
+                 "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
+                 "above half intensity. Off on every vessel whose Mass 5 means something else.")]
+        [SerializeField] bool turnUpgradeShieldsTrail = false;
+
+        [Tooltip("How much fatter the OUTER lane's prisms get at full turn intensity (X " +
+                 "multiplier; 1 disables the flare). Visual flare only — it exaggerates the " +
+                 "bank without changing what the trail is worth.")]
+        [SerializeField, Min(1f)] float turnFlareMaxScale = 2f;
+
+        float _turnFlare01;
+        int _turnFlareLaneSign;
+
         [Header("Gap Settings")]
         public float offset;
         public float Gap;
@@ -205,6 +219,25 @@ namespace CosmicShore.Gameplay
             wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
         }
 
+        /// <summary>
+        /// Turn-trail state (the Manta's Yastri): while a hard turn is held, the OUTER lane's
+        /// prisms flare fatter with turn intensity — the bank is legible from across the cell
+        /// — and, on a vessel that authors <see cref="turnUpgradeShieldsTrail"/>, prisms laid
+        /// during the turn arrive SHIELDED once the Mass level-5 upgrade is live (regular
+        /// shield only, per-spawn snapshot — the Heavy Trail rule with the drift swapped for
+        /// the turn). Drive it every frame from whatever owns the turn
+        /// (<c>YawsteryActionExecutor</c> on touch, <c>MantaAnalogTurnBoostExecutor</c> on
+        /// gamepad/keyboard); 0 clears it.
+        /// </summary>
+        /// <param name="amount01">Turn intensity, 0..1.</param>
+        /// <param name="turnSign">+1 turning right, -1 turning left — the OUTER lane is the
+        /// opposite wing.</param>
+        public void SetTurnTrail(float amount01, int turnSign)
+        {
+            _turnFlare01 = Mathf.Clamp01(amount01);
+            _turnFlareLaneSign = -turnSign;
+        }
+
 
         /// <summary>Main spawn loop using UniTask.</summary>
         async UniTaskVoid SpawnLoopAsync(CancellationToken ct)
@@ -326,6 +359,14 @@ namespace CosmicShore.Gameplay
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
 
+            // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
+            // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
+            // the flared rail still nests against the gap edge rather than drifting outboard.
+            if (_turnFlare01 > 0.01f && halfGap != 0f
+                && (int)Mathf.Sign(halfGap) == _turnFlareLaneSign
+                && turnFlareMaxScale > 1f)
+                scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * offset
@@ -391,8 +432,13 @@ namespace CosmicShore.Gameplay
             // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
             // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
             // Straight-line trail stays unshielded - the armor is the drift line's reward.
+            // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
+            // TURN (the Manta's Yastri, above half intensity) — turning becomes fortifying.
             if (shielded || (massUpgradeShieldsTrail
                              && vesselStatus is { IsDrifting: true }
+                             && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
+                         || (turnUpgradeShieldsTrail
+                             && _turnFlare01 >= 0.5f
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 
