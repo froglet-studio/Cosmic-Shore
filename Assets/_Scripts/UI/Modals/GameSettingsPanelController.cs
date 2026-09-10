@@ -370,6 +370,7 @@ namespace CosmicShore.UI
             dd.AddOptions(new List<string>(options));
             dd.onValueChanged.RemoveListener(onChange);
             dd.onValueChanged.AddListener(onChange);
+            SettingsRowDropdownHitArea.Attach(dd);
         }
 
         /// <summary>
@@ -522,6 +523,7 @@ namespace CosmicShore.UI
             resolutionDropdown.AddOptions(labels);
             resolutionDropdown.onValueChanged.RemoveListener(SetResolutionIndex);
             resolutionDropdown.onValueChanged.AddListener(SetResolutionIndex);
+            SettingsRowDropdownHitArea.Attach(resolutionDropdown);
         }
 
         int CurrentResolutionIndex()
