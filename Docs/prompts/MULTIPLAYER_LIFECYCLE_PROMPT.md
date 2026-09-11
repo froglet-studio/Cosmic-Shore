@@ -1,10 +1,26 @@
-# Prompt — fix the open multiplayer join failures
+# Prompt — close the multiplayer session lifecycle
 
 Paste everything below into a fresh session.
 
 ---
 
-The invite program's entire distribution mechanic is **friend invites** — one to three per tester,
+This is the **session lifecycle** — connect, play, drop, recover, return — as distinct from the
+social friction a player feels around it, which is R13's *quality of life* pass. The two are
+siblings and both are tracked: QoL is about whether the experience is pleasant, this is about
+whether it holds together at all.
+
+The lifecycle arc, and where each leg stands today:
+
+| Leg | State |
+|---|---|
+| **Connect** — eager per-user Relay at `Menu_Main`, invite, join | 🔴 **two open red join failures** (below) |
+| **Play** — party survives into a match, presence reads correctly | 🟢 mostly; B15 (nobody shown "in game") fixed 1 Sep, live retest pending |
+| **Drop** — disconnect handling, bounce-to-solo | 🟢 B10 fixed and engine-verified |
+| **Recover** — host leaves, client bounces, session rebuilds | 🟢 B14/B16 fixed and live-verified 2 Sep |
+| **Return** — rejoin a match in progress, host migration | ⛔ **deliberately cut** — see below |
+
+The connect leg is the one carrying live defects, and it is the leg the milestone leans on hardest:
+the invite program's entire distribution mechanic is **friend invites** — one to three per tester,
 compounding, which is the loop the whole Deadlock-shaped milestone is built on. Definition of Done
 #2 is *"Playtest build approved; Wave 0 and Wave 1 granted; friend invites enabled at one to three
 per tester."*
