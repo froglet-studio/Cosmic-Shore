@@ -101,10 +101,17 @@ namespace CosmicShore.UI
                 }
             }
 
-            var go = new GameObject(GlowObjectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            var go = new GameObject(GlowObjectName,
+                typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(LayoutElement));
             var rect = (RectTransform)go.transform;
             rect.SetParent(parent, false);
             rect.SetSiblingIndex(avatarRect.GetSiblingIndex());
+
+            // No slot in the shipped scene puts a layout group on the avatar's parent - but
+            // that is a fact about how the scene is filed today, not a property of the code,
+            // and this halo has to track the avatar's rect exactly. Opting out of layout makes
+            // it true structurally, so a future scene edit cannot quietly displace the glow.
+            go.GetComponent<LayoutElement>().ignoreLayout = true;
 
             var image = go.GetComponent<Image>();
             image.sprite        = HaloSprite();
@@ -216,11 +223,14 @@ namespace CosmicShore.UI
         {
             if (_avatarRect == null || _rect == null) return;
 
-            _rect.anchorMin       = _avatarRect.anchorMin;
-            _rect.anchorMax       = _avatarRect.anchorMax;
-            _rect.pivot           = _avatarRect.pivot;
-            _rect.anchoredPosition = _avatarRect.anchoredPosition;
-            _rect.sizeDelta       = _avatarRect.sizeDelta;
+            // Written only on CHANGE. A RectTransform setter marks the canvas dirty, so
+            // re-assigning the same five values every frame would queue a layout rebuild for
+            // every slot on every frame the panel is open, for no visible difference.
+            if (_rect.anchorMin        != _avatarRect.anchorMin)        _rect.anchorMin        = _avatarRect.anchorMin;
+            if (_rect.anchorMax        != _avatarRect.anchorMax)        _rect.anchorMax        = _avatarRect.anchorMax;
+            if (_rect.pivot            != _avatarRect.pivot)            _rect.pivot            = _avatarRect.pivot;
+            if (_rect.anchoredPosition != _avatarRect.anchoredPosition) _rect.anchoredPosition = _avatarRect.anchoredPosition;
+            if (_rect.sizeDelta        != _avatarRect.sizeDelta)        _rect.sizeDelta        = _avatarRect.sizeDelta;
         }
 
         // ─────────────────────────────────────────────────────────────────────

@@ -82,6 +82,14 @@ namespace CosmicShore.UI
         ulong _seatedFingerprint;
         bool  _hasSeated;
 
+        // How often the network facts are re-read. NOT a frame-rate concession in general -
+        // it is specifically because IPlayer.UgsPlayerId is `NetUgsPlayerId.Value.ToString()`,
+        // and FixedString64Bytes.ToString() ALLOCATES: re-reading four pilots every frame is
+        // ~240 throwaway strings a second for a panel that is just sitting open. At 5 Hz the
+        // worst-case lag is a fifth of a second on a tint that eases in over longer than that.
+        const float NET_FACTS_REFRESH_SECONDS = 0.2f;
+        float _nextNetFactsRefresh;
+
         struct NetFacts
         {
             public ulong   ClientId;
@@ -172,25 +180,28 @@ namespace CosmicShore.UI
         /// <para><b>Domain is pushed live.</b> A pilot re-picks their domain from the same
         /// modal this panel sits in and there is no SOAP channel for "somebody's domain
         /// changed" - the platform rule is to read the live <c>Player.Domain</c> mirror each
-        /// time rather than snapshot one. Four dictionary lookups a frame.</para>
+        /// time rather than snapshot one. The push is four dictionary lookups a frame; the
+        /// underlying READ is throttled (see <see cref="NET_FACTS_REFRESH_SECONDS"/>).</para>
         ///
         /// <para><b>Seating heals itself.</b> A member's seat is decided by their replicated
         /// owner client id, which only exists once their <c>Player</c> object network-spawns -
         /// several hundred milliseconds after the party event that put them in the list, and on
         /// no channel this panel could usefully subscribe to. So the network facts are re-read
-        /// each tick and the roster is re-sorted only when their fingerprint moves; on every
-        /// other frame this costs one dictionary rebuild and four lookups.</para>
+        /// on a slow tick and the roster is re-sorted only when their fingerprint moves.</para>
         /// </summary>
         void Update()
         {
             if (slots == null || slots.Length == 0 || !connectionData) return;
 
-            RebuildNetFacts();
-
-            if (!_hasSeated || _netFingerprint != _seatedFingerprint)
+            if (Time.unscaledTime >= _nextNetFactsRefresh)
             {
-                PopulateSlots();   // re-seats, redraws, and pushes the glows itself
-                return;
+                RebuildNetFacts();
+
+                if (!_hasSeated || _netFingerprint != _seatedFingerprint)
+                {
+                    PopulateSlots();   // re-seats, redraws, and pushes the glows itself
+                    return;
+                }
             }
 
             PushDomainGlows();
@@ -525,6 +536,7 @@ namespace CosmicShore.UI
         void RebuildNetFacts()
         {
             _netFacts.Clear();
+            _nextNetFactsRefresh = Time.unscaledTime + NET_FACTS_REFRESH_SECONDS;
 
             ulong fingerprint = ResolveHostClientId();
 

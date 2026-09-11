@@ -2730,7 +2730,16 @@ for party members; Invite/cancel/kick share an anti-spam cooldown),
 `RequestInfoEntry` (Accept/Decline — friend-request + party-invite),
 and `PartyInviteNotificationPanel` (the
 bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
-3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
+3s auto-hide, latest-wins).
+
+**The party panel's SEATING is synced, not local** — `PartyRoster` puts the host in the
+first slot and the clients behind it in join order, the same on every device, by ordering on
+Netcode's replicated `OwnerClientId` rather than on `HostConnectionDataSO.PartyMembers`,
+which seeds whichever machine is reading it at index 0 and therefore cannot be drawn in
+order. The local player is consequently **not** pinned to slot 0, and each occupied slot
+wears its pilot's LIVE domain as a generated animated halo (`PartySlotDomainGlow`, ensured
+by `FriendInfoSlot` itself so no scene wiring can omit it).
+Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
 
 #### SO Assets
 
@@ -3971,7 +3980,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button + a **Join / Spectate** button resolved by `FriendsListPanel.ResolveJoinMode`; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup); `SpectatorOverlay` (`_Scripts/UI/`, the spectator's own canvas — switch player, switch camera, leave; `Docs/PartySystem/SPECTATOR.md`) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
+| Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot) + `PartyRoster` (the SYNCED seating: host first, then clients in join order, ordered off Netcode's replicated `OwnerClientId` rather than off the per-device `PartyMembers` list — `Docs/PartySystem/UI.md` § "Seating") + `PartySlotDomainGlow` (the generated animated halo behind each slot's avatar, in that pilot's live domain), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button + a **Join / Spectate** button resolved by `FriendsListPanel.ResolveJoinMode`; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup); `SpectatorOverlay` (`_Scripts/UI/`, the spectator's own canvas — switch player, switch camera, leave; `Docs/PartySystem/SPECTATOR.md`) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio (FMOD) | `AudioSystem` (DI singleton; inspector-wired `EventReference` per `MenuAudioCategory` / `GameplaySFXCategory`, SFX-bus volume, per-category throttle), `FMODOneShotVolumeHelper` (slider-respecting one-shots — use instead of `RuntimeManager.PlayOneShot`), continuous emitters `ShipAudioController` / `DriftAudioController` / `ProximityBoostAudioController` / `FloraAmbientAudioController`, `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP). **Every sound is an exposed `EventReference` field — never a temp/borrowed event; every ship ability gets its own field.** See "Audio (FMOD)" under Architecture Patterns | `_Scripts/System/Audio/`, `_Scripts/Controller/FX/`, `_Scripts/Controller/Vessel/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
