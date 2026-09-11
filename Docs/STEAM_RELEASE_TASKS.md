@@ -4,6 +4,13 @@ Every open item between `bleeding-edge` and the invite-only Steam Playtest, deri
 **`Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.pdf`** (10 Sep 2026) measured against the
 Revision 2 checkpoint of 31 July.
 
+> **Revision 2 is not in this repository** — it exists but was never committed, so its item
+> definitions (`A4`, `B2`, `C8`, `D2`, …) cited throughout this board cannot be looked up here.
+> The series, the gap, and the one known error in Rev 2's text are recorded in
+> **[`Docs/STEAM_CHECKPOINT_SERIES.md`](STEAM_CHECKPOINT_SERIES.md)**. Revision 1 is still in the
+> repo and still describes a **paid Early Access** launch — it now carries a supersession notice,
+> but do not plan from it.
+
 **Owner of this file:** whoever is running the milestone. Hand-edit freely — unlike
 `Docs/QA/QA_BACKLOG.md` this is not tool-generated.
 
@@ -23,6 +30,8 @@ when planning a week:
 
 `BLOCKS` names what cannot proceed until the item lands.
 
+A ✅ on an ID means that item has landed. The row stays on the board rather than being deleted, so what was done — and what it deliberately did *not* cover — stays readable.
+
 > **Deliberately excluded:** the quest and progression system (audit §02, action 01).
 > Design is still working the chain and it is tracked separately. Everything below is
 > independent of it — see *[The one dependency to watch](#the-one-dependency-to-watch)*.
@@ -34,7 +43,7 @@ when planning a week:
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
 | **R1** | **Prove a Windows IL2CPP player reaches the main menu.** `QA-BUILD-WINDOWS-PLAYER` is a stated P0 in the QA backlog and has never been run. Every defect in that chain — the `IL1005` linker failure, the `PauseMenu.Prewarm` crash — was invisible in the Editor. Build with `Tools/Build/build_windows.sh`, launch, sign in, reach `Menu_Main`, open and close the pause menu, read `Player.log` end to end. | Human | R2, R3, B7, every D item, DoD #3 | — |
-| **R2** | **Regenerate the QA backlog.** `Docs/QA/QA_BACKLOG.md` was generated 13 Aug against PRs #583–#710; the repo is at #855. Roughly 145 PRs and nine game modes are absent from the list QA works from. Run the `/qa-backlog` skill. | Session | R3, D5 | run `/qa-backlog` |
+| **R2** | **Regenerate the QA backlog.** `Docs/QA/QA_BACKLOG.md` was generated 13 Aug against PRs #583–#710; the repo is at #855. Roughly 145 PRs and nine game modes are absent from the list QA works from. Run the `/qa-backlog` skill. ⚠ **Scope is larger than the PR count suggests (found by R8):** `Docs/UNITY_VERIFICATION_CHECKLIST.md` holds **46 open items** (45 🔴 + 1 🟡), every dated one *later* than this backlog's 13 Aug scan, so none has ever been absorbed. The skill already sweeps that file by name — this run is what migrates them. | Session | R3, D5 | run `/qa-backlog` |
 | **R3** | **Start the daily all-modes pass (C8).** Nineteen modes now, not seven. D5's bug bash needs a seed corpus and none exists — one submitted verdict in the backlog's entire history. Start before the bash, not at it. | Human | D5, D6 | — |
 | **R16** | **Close the multiplayer session lifecycle.** Connect → play → drop → recover → return. Drop and recover are green and engine-verified; **connect is not** — the party-join path carries two open red bugs, both second-player failures: Party B5 (the second joiner fails to join) and Presence B4 (second invite not delivered), plus Party B2 (`ObjectDisposedException`) open and B11's fix reverted. A cohort that compounds through invites cannot compound through a broken join. Return (rejoin-in-progress, host migration) stays deliberately cut. **Sibling of R13** — that one is whether the experience is pleasant, this is whether it holds together. | Session + editor | DoD #2, DoD #3, H10 | [`MULTIPLAYER_LIFECYCLE_PROMPT.md`](prompts/MULTIPLAYER_LIFECYCLE_PROMPT.md) |
 
@@ -44,10 +53,11 @@ when planning a week:
 
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
-| **R5** | **Close the PC platform defaults (B2).** `defaultScreenWidth/Height` is 1024 × 768, `resizableWindow` is 0, and the Standalone bundle id is still `com.Froglet-Games.Tail-Glider`. Mobile-era defaults never re-pointed at PC. | Session | R1 quality | [`PC_PLATFORM_DEFAULTS_PROMPT.md`](prompts/PC_PLATFORM_DEFAULTS_PROMPT.md) |
+| **R4** ✅ | **De-scoped the commerce surfaces (C4).** Landed 11 Sep 2026. Every surface that would take money now carries a deliberate coming-soon state from ONE authority, `Resources/CommerceAvailability` — the existing `MenuAvailability` / `MenuAvailabilityView` pattern extended, not a second locked look (asserted by `CommerceDeScopeTests`). Both paths to `PurchaseConfirmationModal` are gated, and `IAPManager.OpenCheckout` declines at the choke point its two entry points share. The config **fails closed** — its code defaults are the de-scoped state, so a missing asset cannot re-open a money surface. The UGS crystal loop (earning, vessel unlocks) is untouched. Full record: [`MENU_PROGRESSION_AND_IAP.md` §6](MENU_PROGRESSION_AND_IAP.md). **Code + assets only — nothing was opened in Unity**, so the asset import, the one new scene component and the on-screen dimming are unverified; that pass is R1/R3. ⚠ **Three findings the audit did not have:** the live path this closed was **PROFILE → `UnlockVesselButton` → episode panel → Support Us → `Application.OpenURL`**, reachable from a cold boot — and that button, despite its name, never unlocked a vessel; **`MenuScreens.STORE` has no entry in `ScreenSwitcher.screens` at all**, so the store is the `ArkScreen` (already locked) and `NavigateTo(STORE)` was silently landing the player on the Hangar; and the Hangar's **captain upgrade** is PlayFab-catalog commerce, not the live crystal loop, so it was already refusing with a bare sting and no reason. | Session + editor | — | [`DESCOPE_COMMERCE_SURFACES_PROMPT.md`](prompts/DESCOPE_COMMERCE_SURFACES_PROMPT.md) |
+| **R5** ✅ | **Closed the PC platform defaults (B2).** Landed 11 Sep 2026: `defaultScreenWidth/Height` 1024 × 768 → 1920 × 1080, `resizableWindow` 0 → 1, Standalone bundle id → `com.FrogletGames.CosmicShore`. **Code half only** — the manual PC sanity pass (pads, alt-tab, focus, quit path, no mobile-only prompts) is R1/R3 and is what proves this landed. ⚠ **B2's other half has a wrong premise: its audio step says "Wwise audio init", and the middleware is FMOD** — 17 first-party files use `FMODUnity`, **zero** reference `AkSoundEngine`/`AkAudioListener`, and `Assets/Wwise/` is inert. A pass written against Wwise tests nothing. What the audio step should actually check is in [`Docs/AudioSystem/FMOD_AUDIT.md` §0](AudioSystem/FMOD_AUDIT.md); **it is R1/R3 that must run it**, per this row's own note. (Found by R8.) | Session | R1 quality | [`PC_PLATFORM_DEFAULTS_PROMPT.md`](prompts/PC_PLATFORM_DEFAULTS_PROMPT.md) |
 | **R6** | **Playtest child app: runbook + dual-appID upload (A4, A5, A6, B4).** The Steam runbook is written for Revision 1 — a paid release on one app with `beta`/`default` branches. `Tools/Steam/upload.sh` takes one `STEAM_APPID`/`STEAM_DEPOTID` pair. Revision 2 needs the base app *and* the Playtest depot. | Session | A4, A5, E7 | [`STEAM_PLAYTEST_DUAL_APP_PROMPT.md`](prompts/STEAM_PLAYTEST_DUAL_APP_PROMPT.md) |
 | **R7** | **Publish a load-time target, then measure (D2, 8.0 person-days).** The target is D2's actual deliverable and does not exist. The matrix is now **19 modes × 4 intensities = 76 combinations**, not the ~28 the estimate assumed. Authoring the target and the harness is session work; running it is not. | Session + editor | DoD #5 | [`LOAD_TIME_TARGET_PROMPT.md`](prompts/LOAD_TIME_TARGET_PROMPT.md) |
-| **R8** | **Correct the drifted documentation.** Five documents read as authoritative and are wrong, including the in-repo checkpoint still being Revision 1. Cheap to fix, expensive to leave. | Session | nothing, but misleads every other item | [`DOC_DRIFT_SWEEP_PROMPT.md`](prompts/DOC_DRIFT_SWEEP_PROMPT.md) |
+| **R8** ✅ | **Corrected the drifted documentation.** Landed 11 Sep 2026. Rev 1 carries a supersession sheet (insertion-only); the **Rev 2 gap is recorded, not papered over** ([`STEAM_CHECKPOINT_SERIES.md`](STEAM_CHECKPOINT_SERIES.md) — it has *never* been committed); UI redesign T1 + T3 moved to DONE via the tracker skill and **T2 re-checked and deliberately left TODO**; the perf doc carries a dated staleness note; the Wwise→FMOD correction is recorded at R5 and in the FMOD audit. **Two findings the audit's drift table did not have:** T2 has *not* shipped (SplashScreen and Loadout Container are still un-migrated), and `UNITY_VERIFICATION_CHECKLIST.md` claimed two open items while carrying **46** — all of them predating the QA backlog's scan, so **R2 is now load-bearing for more than it looked**. | Session | — | [`DOC_DRIFT_SWEEP_PROMPT.md`](prompts/DOC_DRIFT_SWEEP_PROMPT.md) |
 | **R13** | **Multiplayer quality of life.** The growth model is players inviting friends, and **a player currently cannot send a friend request at all** — the facade methods are referenced by nothing and both UI surfaces that called them were retired. Alongside it: an invite popup that auto-hides in **3 s**, is latest-wins and has no inbox; **no recently-played-with**, so the social graph cannot grow from play; a join-failure toast documented as best-effort and *"may be suppressed during the scene reload"*; and ready lights that are a count, so nobody can see who is holding up a launch. | Session + editor | the invite loop itself | [`MULTIPLAYER_QOL_PROMPT.md`](prompts/MULTIPLAYER_QOL_PROMPT.md) |
 | **R14** | **Index the launch blockers and register the third-party licences.** Several of the largest folders in `Assets/` are commercial Asset Store products — NiceVibrations (47 MB), Shift Sci-Fi UI, Effects Library, PrimitivePlus, and a 19 MB folder named `Unity Assests` with 199 files and no licence file. The repository proves presence; only purchase records prove we may distribute. Produces an index and a register, deletes nothing. | Session → human | legal exposure at ship | [`LAUNCH_BLOCKER_INVENTORY_PROMPT.md`](prompts/LAUNCH_BLOCKER_INVENTORY_PROMPT.md) |
 
@@ -127,12 +137,3 @@ Mapped to the checkpoint's eight exit criteria, so the board can be read backwar
 | 6 | Crash + funnel telemetry in dashboards, cohorted by wave | R9 |
 | 7 | Zero public review surface | structural — Playtest configuration, already true |
 | 8 | Paid-EA gate published, exit checklist signed | H12, R9 |
-
----
-
-## Done
-
-| ID | Item | Landed | Verification |
-|---|---|---|---|
-| **R4** | **De-scope sweep (C4).** Every commerce surface now carries a deliberate coming-soon state from ONE authority, `Resources/CommerceAvailability` — the existing `MenuAvailability` / `MenuAvailabilityView` pattern extended, not a second locked look. Both paths to `PurchaseConfirmationModal` are gated, and `IAPManager.OpenCheckout` declines at the choke point its two entry points share. The live cold-boot path it closed was **PROFILE → `UnlockVesselButton` → episode panel → Support Us → `Application.OpenURL`**. The UGS crystal loop (earning, vessel unlocks) is untouched. Record: [`MENU_PROGRESSION_AND_IAP.md` §6](MENU_PROGRESSION_AND_IAP.md). | 2026-09-11 | Code + asset + one scene component verified out of editor (Roslyn bind of the new API and every new call site; `CommerceDeScopeTests` simulated green; five `Tools/Build` gates clean). **Not opened in Unity** — the asset import, the new scene component and the on-screen dimming are unverified. |
-
