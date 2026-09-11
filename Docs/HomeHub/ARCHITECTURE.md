@@ -719,6 +719,27 @@ screen index and the freestyle flag, and a button that watched any one of them a
 wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
 can neither be clicked through a modal nor reached by gamepad navigation.
 
+**That "freestyle is off" read is only as good as WHEN the flag is cleared, and it shipped wrong
+once.** `ScreenSwitcher.HandleExitFreestyle` runs on `OnMenuStateTransitionStart`, and the live
+state it consults (`InFreestyle` = the switcher's own flag OR `MenuCrystalClickHandler
+.IsInFreestyle`) used to say YES on the way out, because the handler cleared `_isInFreestyle` only
+after the camera blend's `await` — after it had already raised both of its exit events. So exiting
+freestyle resolved `visible = false`, left the hub row faded out and non-interactable, and
+scheduled nothing to recompute it: the app's primary navigation was gone until the player opened a
+modal or paged screens, and **the hub buttons are what open the modals**. The same staleness made
+`Refocus()` (which early-returns on `InFreestyle`) never restore the pad's selection, and made the
+gamepad gate flap — `HandleExitFreestyle` handed the pad back and `Update`'s self-heal took it away
+again for the whole blend. `TransitionToMenu` now clears the flag at the TOP, right after input is
+paused and autopilot resumes: freestyle is over there, and what follows is a camera blend, not
+flight. It mirrors the enter path (§4.1 — the flag is set before that side's start event, which is
+the property `ToyConfigureModal` relies on) and matches what `ToyboxController` already believed,
+since it has always treated `OnMenuStateTransitionStart` as the end of freestyle. The hub row and
+`Refocus()` also joined the input gate's self-heal in `ScreenSwitcher.Update`, so a missed
+transition event can no longer strand the row — a fifth call site, and the only one that is a
+backstop rather than a fact changing. General rule: **a flag cleared after an `await` is stale for
+every subscriber of the event raised before it** — if subscribers read the flag back, clear it
+before the raise, on both edges.
+
 ## 5. Scene wiring checklist
 
 The UI itself is hand-designed. What the code needs:

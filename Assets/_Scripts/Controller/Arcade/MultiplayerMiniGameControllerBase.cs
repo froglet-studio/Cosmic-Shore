@@ -393,20 +393,40 @@ namespace CosmicShore.Gameplay
         // ---------------- Rematch vote ----------------
 
         /// <summary>
-        /// Which clients have asked for a rematch on the current scoreboard.
+        /// How many players have asked for a rematch on the current scoreboard.
         ///
         /// <para>
         /// Play Again is host-authoritative - one player's replay forces everyone into it - so a
         /// client's press cannot BE the restart. But hiding the button left a client with no way to
         /// say "again", which is the most common thing anybody wants to say at a scoreboard, and it
-        /// put the host in the position of guessing. So a client's press is a VOTE: it is recorded
-        /// here, announced to everyone as a toast, and the host decides.
+        /// put the host in the position of guessing. So a client's press is a VOTE: it is recorded,
+        /// announced to everyone as a toast, and the host decides.
         /// </para>
+        ///
+        /// <para>The record used to be a server-side <c>HashSet</c> of client ids here, with only
+        /// the COUNT broadcast. That answered "how many" and never "who", so the host got a number
+        /// on a button and a toast that had already scrolled away - and the set was a second place
+        /// a disconnect had to be pruned from. The vote now lives on the VOTER
+        /// (<see cref="Player.NetRematchVote"/>): the identity is replicated state every peer can
+        /// read and draw a face from, the count is a derivation that cannot drift from it, and a
+        /// leaver drops out for free when their Player despawns and leaves the roster.</para>
         /// </summary>
-        readonly HashSet<ulong> _rematchVoters = new();
-
-        /// <summary>How many players have asked for a rematch.</summary>
-        public int RematchVoteCount => _rematchVoters.Count;
+        public int RematchVoteCount
+        {
+            get
+            {
+                int votes = 0;
+                var players = gameData != null ? gameData.Players : null;
+                if (players == null) return 0;
+                for (int i = 0; i < players.Count; i++)
+                {
+                    var p = players[i];
+                    if (p == null || p.IsInitializedAsAI) continue;
+                    if (p.HasVotedRematch) votes++;
+                }
+                return votes;
+            }
+        }
 
         /// <summary>Raised on every peer when the tally changes, so the host's button can react.</summary>
         public event System.Action<int, int> OnRematchVotesChanged;
@@ -416,14 +436,44 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
 
-            // Keyed on the sender, so a player leaning on the button votes once.
-            if (!_rematchVoters.Add(rpcParams.Receive.SenderClientId)) return;
+            // Keyed on the RPC's OWN sender id, never on anything the client sent, so a client can
+            // only ever vote for itself - the same rule the stat-report round trips follow.
+            var voter = FindVoter(rpcParams.Receive.SenderClientId);
+            if (voter == null)
+            {
+                CSDebug.LogWarning($"[MultiplayerController] Rematch vote from client {rpcParams.Receive.SenderClientId} has no Player - ignored.");
+                return;
+            }
 
+            // A player leaning on the button votes once: the flag IS the dedupe.
+            if (voter.HasVotedRematch) return;
+            voter.SetRematchVoteServer(true);
+
+            int humans = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
+            AnnounceRematchVote_ClientRpc(playerName, domain, RematchVoteCount, humans);
+        }
+
+        /// <summary>
+        /// The Player behind a connection. Resolved through the connection's own
+        /// <c>PlayerObject</c> first because that is exact: AI share the HOST's OwnerClientId, so
+        /// a roster scan on owner id alone can hand back a bot for the host's own vote.
+        /// </summary>
+        Player FindVoter(ulong clientId)
+        {
             var nm = NetworkManager.Singleton;
-            _rematchVoters.RemoveWhere(id => !IsClientConnected(nm, id));
+            if (nm != null && nm.ConnectedClients.TryGetValue(clientId, out var client))
+            {
+                var playerObj = client.PlayerObject;
+                if (playerObj != null && playerObj.TryGetComponent<Player>(out var owned) && owned.IsSpawned)
+                    return owned;
+            }
 
-            int humans = SpectatorSession.CountHumanClients(nm);
-            AnnounceRematchVote_ClientRpc(playerName, domain, _rematchVoters.Count, humans);
+            var players = gameData != null ? gameData.Players : null;
+            if (players == null) return null;
+            for (int i = 0; i < players.Count; i++)
+                if (players[i] is Player p && p.IsSpawned && !p.IsInitializedAsAI && p.OwnerClientId == clientId)
+                    return p;
+            return null;
         }
 
         [ClientRpc]
@@ -434,10 +484,21 @@ namespace CosmicShore.Gameplay
             OnRematchVotesChanged?.Invoke(votes, humans);
         }
 
-        /// <summary>Clears the tally - a new game is not carrying the last one's votes.</summary>
+        /// <summary>
+        /// Clears the tally - a new game is not carrying the last one's votes. Server-side the
+        /// flags themselves are cleared (they are replicated state, so a stale one would put a
+        /// face on the next scoreboard); every peer drops its local view through the event.
+        /// </summary>
         protected void ResetRematchVotes()
         {
-            _rematchVoters.Clear();
+            if (IsServer)
+            {
+                var players = gameData != null ? gameData.Players : null;
+                if (players != null)
+                    for (int i = 0; i < players.Count; i++)
+                        if (players[i] is Player p) p.SetRematchVoteServer(false);
+            }
+
             OnRematchVotesChanged?.Invoke(0, 0);
         }
 
@@ -583,6 +644,11 @@ namespace CosmicShore.Gameplay
         {
             if (_isResetting) return;
             _isResetting = true;
+
+            // The votes asked for THIS replay and it is now happening. Cleared here rather than in
+            // either branch below because only one of them reloads the scene (which would clear
+            // them via PrepareForNewScene) - the in-place path keeps the same Player objects.
+            ResetRematchVotes();
 
             if (UseSceneReloadForReplay && IsServer)
                 ExecuteSceneReloadReplay().Forget();

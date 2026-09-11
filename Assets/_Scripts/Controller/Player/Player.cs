@@ -57,6 +57,23 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<int> NetSpectatorCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         /// <summary>
+        /// True once this player has asked for a REMATCH on the current scoreboard.
+        ///
+        /// <para>Play Again is host-authoritative - only the host's press restarts the party - so a
+        /// client's press is a vote, and a vote nobody can see is a vote nobody acted on. The tally
+        /// used to travel as a transient <c>ClientRpc</c> count, which says how many but never WHO,
+        /// and is gone the moment it lands. This is the same shape as <see cref="NetArenaReady"/>:
+        /// server-write, everyone-read STATE, so any peer joining the answer late still reads it,
+        /// and the scoreboard can put a FACE against every vote.</para>
+        ///
+        /// <para>Written only by <c>MultiplayerMiniGameControllerBase</c>'s rematch ServerRpc, which
+        /// keys on the RPC's own sender id - so a client can only ever vote for itself. Cleared per
+        /// scene in <see cref="PrepareForNewScene"/> and on every replay: a new match must not open
+        /// carrying the last one's votes.</para>
+        /// </summary>
+        public NetworkVariable<bool> NetRematchVote = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>
         /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
         /// and analytics. Replicated so any peer can build the match roster (player_ids on
         /// game_started) from settled network state rather than from a local party roster,
@@ -168,6 +185,20 @@ namespace CosmicShore.Gameplay
             if (!IsServer || !IsSpawned) return;
             count = count < 0 ? 0 : count;
             if (NetSpectatorCount.Value != count) NetSpectatorCount.Value = count;
+        }
+
+        /// <inheritdoc />
+        public bool HasVotedRematch => IsSpawned && NetRematchVote.Value;
+
+        /// <summary>
+        /// Server-only write of <see cref="NetRematchVote"/>. No-op off the server - a client
+        /// asks through the controller's rematch ServerRpc, which is where the sender's identity
+        /// is established.
+        /// </summary>
+        public void SetRematchVoteServer(bool voted)
+        {
+            if (!IsServer || !IsSpawned) return;
+            if (NetRematchVote.Value != voted) NetRematchVote.Value = voted;
         }
 
         public void ReportArenaReady()
@@ -736,6 +767,9 @@ namespace CosmicShore.Gameplay
                 // Nobody is watching the match that has not started yet. The watch book is
                 // re-applied by the new scene's initializer as each viewer re-reports.
                 NetSpectatorCount.Value = 0;
+                // Last match's rematch votes are not this match's. A stale true would show a
+                // face on the next scoreboard for a press nobody made.
+                NetRematchVote.Value = false;
             }
 
             // Force-sync local properties from NetworkVariables.
