@@ -474,7 +474,10 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 
 **Key features**:
 - Own ready-sync pattern (not via `MultiplayerDomainGamesController`)
-- Server-side `readyClientCount` for synchronization
+- Server-side ready gate for synchronization — a SET of which clients have pressed
+  (`MultiplayerMiniGameControllerBase.MarkClientReady` / `EvaluateReadyGate`), re-decided on
+  every press AND every disconnect. It was a bare count evaluated only on a press, which
+  stranded the whole party when somebody left mid-wait (`Docs/PartySystem/BUGS.md` B20).
 - Round setup broadcast via ClientRpc
 
 ---

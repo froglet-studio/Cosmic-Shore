@@ -116,7 +116,7 @@ Scene Load Complete
 │   ├─ [Replay reload] Subscribe to OnClientReady → FadeFromBlackOnReplay
 │   ├─ [Server] gameData.InvokeSessionStarted()  — AppState → InGame
 │   └─ [Server] SetupNewRound()
-│       ├─ readyClientCount = 0
+│       ├─ ResetReadyGate()
 │       ├─ RaiseToggleReadyButtonEvent(true)  — show Ready button
 │       └─ base.SetupNewRound()  → timer/round bookkeeping
 │
@@ -198,12 +198,12 @@ Player sees "Ready" button
 ├─ Player clicks Ready
 │   └─ OnReadyClicked_() → RaiseToggleReadyButtonEvent(false)  — hide button
 │       └─ OnReadyClicked_ServerRpc(playerName)
-│           ├─ readyClientCount++
+│           ├─ MarkClientReady(senderClientId)   ← a SET of who, not a count
 │           ├─ NotifyPlayerReady_ClientRpc(playerName)  → game feed: "Player Ready"
-│           └─ if readyClientCount == SelectedPlayerCount:
-│               ├─ readyClientCount = 0
-│               └─ OnReadyClicked_ClientRpc()
-│                   └─ StartCountdownTimer()  — 3-second countdown
+│           └─ EvaluateReadyGate(...)  [also runs on every client DISCONNECT]
+│               └─ if readyClients.Count >= humanCount:
+│                   └─ OnAllPlayersReady() → OnReadyClicked_ClientRpc()
+│                       └─ StartCountdownTimer()  — 3-second countdown
 │
 └─ Countdown ends
     └─ OnCountdownTimerEnded()  [Server only]

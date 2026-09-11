@@ -85,7 +85,7 @@ Scene Load Complete
 │   ├─ gameData.InitializeGame()  → raises OnInitializeGame
 │   ├─ [Server] gameData.InvokeSessionStarted()  — AppState → InGame
 │   └─ [Server] SetupNewRound()
-│       ├─ readyClientCount = 0
+│       ├─ ResetReadyGate()
 │       ├─ RaiseToggleReadyButtonEvent(true)  — show Ready button
 │       └─ base.SetupNewRound()  → timer/round bookkeeping
 │
@@ -104,12 +104,12 @@ Player sees "Ready" button
 ├─ Player clicks Ready
 │   └─ OnReadyClicked_() → RaiseToggleReadyButtonEvent(false)
 │       └─ OnReadyClicked_ServerRpc(playerName)
-│           ├─ readyClientCount++
+│           ├─ MarkClientReady(senderClientId)   ← a SET of who, not a count
 │           ├─ NotifyPlayerReady_ClientRpc(playerName)  → game feed: "Player Ready"
-│           └─ if readyClientCount == humanCount:
-│               ├─ readyClientCount = 0
-│               └─ OnReadyClicked_ClientRpc()
-│                   └─ StartCountdownTimer()
+│           └─ EvaluateReadyGate(...)  [also runs on every client DISCONNECT]
+│               └─ if readyClients.Count >= humanCount:
+│                   └─ OnAllPlayersReady() → OnReadyClicked_ClientRpc()
+│                       └─ StartCountdownTimer()
 │
 └─ Countdown ends
     └─ OnCountdownTimerEnded()  [Server only]

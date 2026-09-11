@@ -328,7 +328,24 @@ namespace CosmicShore.Gameplay
             // asking a question whose answer has been erased. AI players share the HOST's owner id,
             // so only real remote humans are recorded, or one AI would shadow another.
             if (ConvertDepartedPlayersToAI && !player.NetIsAI.Value && ownerClientId != NetworkManager.ServerClientId)
+            {
                 _humanPlayersByOwner[ownerClientId] = player;
+
+                // A PLAYER OUTLIVES ITS CONNECTION - but only where somebody will adopt it.
+                // RoundStats (the score) lives on this object, and Netcode destroys a client's
+                // player object when that client disconnects, so without this a departing pilot
+                // takes their score out of their domain's total.
+                //
+                // Set HERE rather than in Player.OnNetworkSpawn, because the flag and the adoption
+                // are one decision and Player cannot see it: the MENU spawner overrides
+                // ConvertDepartedPlayersToAI to false, so a Player flagged unconditionally would
+                // survive a menu departure with nothing to convert it and no vessel (that one is
+                // flagged under the same gate) - a server-owned orphan in gameData.Players,
+                // accumulating one per guest who ever left the party. Whoever owns the survival
+                // must own the adoption.
+                if (player.NetworkObject != null)
+                    player.NetworkObject.DontDestroyWithOwner = true;
+            }
 
             if (!IsReadyToSpawn(player))
             {

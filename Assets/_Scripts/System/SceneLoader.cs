@@ -119,7 +119,15 @@ namespace CosmicShore.Core
 
             // A scene arrived, so any client scene-follow watchdog in flight has nothing left to
             // rescue. Bumping the generation retires it without needing a handle on it.
-            _sceneFollowGeneration++;
+            //
+            // SINGLE loads only. An ADDITIVE load is not the transition anybody is waiting for
+            // (ServerAdditiveSceneLoader does them), and retiring the watchdog on one would
+            // disarm it silently - the generation check runs BEFORE the "did my scene arrive
+            // after all" check, so an additive load would make the watchdog return without ever
+            // testing the scene it was armed for. A fail-OPEN, and the kind that looks fine
+            // because nothing happens.
+            if (mode == LoadSceneMode.Single)
+                _sceneFollowGeneration++;
 
             if (!gameData) return;
             gameData.InvokeSceneTransition(true);
