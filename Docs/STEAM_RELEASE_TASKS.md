@@ -23,6 +23,10 @@ when planning a week:
 
 `BLOCKS` names what cannot proceed until the item lands.
 
+**✅ marks a landed item.** It stays on the board rather than being deleted, so the gate can still
+be read backwards from it — and if the item only closed the *repository* half of its problem, the
+row says what is left and who it belongs to.
+
 > **Deliberately excluded:** the quest and progression system (audit §02, action 01).
 > Design is still working the chain and it is tracked separately. Everything below is
 > independent of it — see *[The one dependency to watch](#the-one-dependency-to-watch)*.
@@ -58,7 +62,7 @@ when planning a week:
 
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
-| **R9** | **Wave cohorting in instrumentation (C7).** The paid-EA gate is defined to read retention and stability *cohorted by invite wave*, and no cohort dimension exists in the analytics code. Note the constraint: it belongs on the person record via `Identify`, **not** stamped on every event — UGS schema rows are permanent and capped at 1,500. | Session | the paid-EA gate, DoD #6 | [`ANALYTICS_WAVE_COHORT_PROMPT.md`](prompts/ANALYTICS_WAVE_COHORT_PROMPT.md) |
+| **R9** ✅ | **Wave cohorting in instrumentation (C7) — DONE in the client.** Every session now sends `invite_wave` (the UTC-Monday week key of the player's cloud-backed first-seen) and `first_seen_utc_ms` as **person properties** via `Identify`, so the raw timestamp travels too and an analyst can re-bucket without a client change. **Zero new UGS event-schema rows**, as the constraint required. `invite_wave` is a *proxy* for a Steam grant batch, not the batch — there is no Steam SDK to read one — so a tester who requested in week 1 and installed in week 3 is in wave 3 (`DATA_ARCHITECTURE.md` §7.3.3). **Still outstanding, and off-machine:** the PostHog retention, funnel and crash-free insights broken down by `invite_wave` do not exist yet. DoD #6 has a data source; it does not yet have a chart. | Session ✅ → off-machine (dashboards) | the paid-EA gate, DoD #6 | [`ANALYTICS_WAVE_COHORT_PROMPT.md`](prompts/ANALYTICS_WAVE_COHORT_PROMPT.md) |
 | **R10** | **Author the Rhino's elemental ability map.** 1 of 4 slots designed, 0 of 4 level-5 upgrades authored — and the Rhino is the locked hull for **Astro League, Peel the Cage and Headlong**. Three shipped modes rest on a hull the fleet contract calls unfinished. Needs a design decision first; the prompt prepares the proposal against the shipped vessel, it does not invent the mapping. | Session → design | perceived polish of 3 modes | [`RHINO_ABILITY_MAP_PROMPT.md`](prompts/RHINO_ABILITY_MAP_PROMPT.md) |
 | **R11** | **Author `UrchinHUDVariant.prefab`.** The Urchin's ability map is complete at 4/4 with all four upgrades, and it has no HUD prefab at all — `UrchinVesselHUDController` and its view are unreferenced code. It locks two modes (Hijack, Skein). | Session + editor | Hijack / Skein polish | [`URCHIN_HUD_PROMPT.md`](prompts/URCHIN_HUD_PROMPT.md) |
 | **R12** | **Manta and Serpent ability maps.** Manta 3/4 named, 0/4 upgrades; Serpent 1/4 named, 0/4 upgrades. Neither locks a mode, so both sit behind the Rhino. | Session → design | — | reuse R10's prompt, retargeted |
@@ -125,6 +129,6 @@ Mapped to the checkpoint's eight exit criteria, so the board can be read backwar
 | 3 | Fresh install → completed 4-player Tournament, zero P0/P1 | R1, R2, R3, R16, H11, H12 |
 | 4 | Fresh account completes the quest chain, unlocks persist | *(quest work — excluded from this board)* |
 | 5 | Cold boot to playable meets the load-time target, all modes | R7, H8 |
-| 6 | Crash + funnel telemetry in dashboards, cohorted by wave | R9 |
+| 6 | Crash + funnel telemetry in dashboards, cohorted by wave | ~~R9~~ ✅ client emits `invite_wave`; **dashboards still to build in PostHog** |
 | 7 | Zero public review surface | structural — Playtest configuration, already true |
-| 8 | Paid-EA gate published, exit checklist signed | H12, R9 |
+| 8 | Paid-EA gate published, exit checklist signed | H12, ~~R9~~ ✅ (the gate can now be *measured*; publishing it is still H12) |

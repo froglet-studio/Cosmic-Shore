@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -278,7 +279,7 @@ namespace CosmicShore.Core
             var catalog = WeeklyChallengeCatalogSO.Instance;
             return catalog != null
                 ? catalog.DayKeyFor(DateTime.UtcNow)
-                : DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+                : DateTime.UtcNow.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
         }
 
         // ── Cloud ──────────────────────────────────────────────────────────────

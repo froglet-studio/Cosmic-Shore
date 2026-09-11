@@ -642,12 +642,124 @@ and erasure a single-object operation instead of a scan.
 #### 7.3.2 Person properties (`$set` on identify)
 
 From `PLAYER_PROFILE`: `display_name` (P2), `avatar_id`, `crystal_balance`, `xp`, `first_seen_utc_ms`,
-`session_count`, `games_completed`, `total_flight_time_seconds`.
+**`invite_wave`** (§7.3.3), `session_count`, `games_completed`, `total_flight_time_seconds`.
 From `HANGAR_DATA`: `preferred_vessel`, `selected_vessel`, `unlocked_vessel_count`.
 From `GAME_MODE_PROGRESSION`: `unlocked_mode_count`.
 
 Refreshed on profile change and at session end. The §2.1 grouping is what makes this mapping
 mechanical rather than a hand-maintained list that drifts.
+
+> **"Refreshed on profile change" was aspirational until the wave landed.** The facade subscribed to
+> nothing of the sort — it identified at collection start, pause and quit only. That is a race the
+> wave loses: `StartCollectionIfReady` fires off `OnSignedIn`, the same event the Cloud Save load
+> hangs off, and `PlayerDataService` builds a **local-default** profile in `Awake`, so the first
+> identify of a session routinely runs against a profile whose `FirstSeenUtcMs` is still 0. The
+> facade now wires `PlayerDataService.OnProfileChanged → IdentifyPlayer` (deferred and
+> duplicate-guarded, the same shape as `TryWireUiActions`, because the facade is a lazy DI singleton
+> that can be constructed before that service exists).
+>
+> Two rules came out of it, and they generalise past this property:
+>
+> - **An unknown value is omitted, never written.** PostHog person properties are last-write-wins, so
+>   `$set`-ting `first_seen_utc_ms = 0` / `invite_wave = ""` from a not-yet-loaded profile would
+>   *destroy* a good cohort. An omitted key changes nothing on the person; a written empty one is a
+>   deletion wearing an update's clothes.
+> - **The gap was worst for exactly what the gate measures.** Without the profile-change refresh, a
+>   session that ends in a **crash** never reaches pause or quit — so the crashiest players were the
+>   ones most likely to carry no wave at all, and the stability half of the gate reads a *ratio*.
+>   Under-attributing crashers doesn't add noise, it biases the number in the flattering direction.
+
+#### 7.3.3 `invite_wave` — the cohort dimension the paid-EA gate reads
+
+The paid-EA gate is defined on **cohorted** numbers — D1 ≥ 35% and D7 ≥ 15% across two consecutive
+waves, crash-free sessions ≥ 99.5% on a rolling window — so every funnel and retention chart splits
+by wave. This is the field they split on.
+
+**Definition.** `invite_wave` is the `"yyyy-MM-dd"` key of the **UTC week (its Monday)** that the
+player's `first_seen_utc_ms` falls in. Derived at identify time by
+`AnalyticsServiceFacade.InviteWaveFor`; empty when first-seen is unknown.
+
+**It is a PROXY for a grant batch, not the grant batch.** Read this before reading the gate.
+Steam hands the client no wave number: grants are issued in Steamworks, there is no client API for
+"which batch was I in", and there is no Steam SDK in this build at all — the checkpoint's Engineering
+Positions pin it at *"Steam SDK: none at launch"*. So the wave has to be derived, and the honest
+consequence is:
+
+> A tester who **requested** access in week 1 but **installed** in week 3 is counted in **wave 3**.
+
+The proxy holds only while grants go out in weekly batches, which is how they are planned. It breaks
+in exactly two ways, both worth watching for in the data: a wave sent mid-week straddles two keys,
+and a slow-to-install cohort smears forward into later waves. Because `first_seen_utc_ms` is sent
+alongside the derived key, **an analyst can re-bucket to any wave definition later without a client
+change** — that is the whole reason the raw timestamp travels too.
+
+| Option considered | Why not |
+|---|---|
+| **First-seen week** ✅ | Chosen. Needs nothing from Steam, and waves are granted weekly. |
+| Manual cohort tag (build-time or config per wave) | Wrong the moment a tester installs late — which is most of them. It records when we *sent* a build, not when a person started playing. |
+| Real Steam grant data | Explicitly cut from this window; no SDK integration exists to read it. |
+
+**Where it lives, and why not on events.** It is a **person property**, set through `Identify`,
+never an event parameter. PostHog cohorts and retention are person-based, so a person property is
+directly filterable on every insight at no per-event cost. Stamping it on each event would repeat the
+mistake §7.1 exists to avoid: one permanent UGS Event Manager schema row **per event**, against a
+1,500-per-environment cap from which rows can never be deleted, for a value that never changes for a
+given player. Sinks with no person concept (UGS) ignore `Identify` and are unaffected — **this
+change adds zero UGS schema rows.**
+
+**Durability — and the one place this is weaker than it looks.** `first_seen_utc_ms` is stamped
+**once ever** in `PlayerDataService.StampSessionLifecycle` (`if (lifecycle.FirstSeenUtcMs == 0)`) and
+lives in the cloud-backed profile, so it is never rewritten and follows the account rather than the
+device. Within an account's life that is exactly right: a second launch cannot move a player's wave,
+and nothing local can either.
+
+But the account itself is only as durable as the identity under it, and **today that identity is UGS
+*anonymous* auth** — a cached session token, with platform sign-in linking still unimplemented
+(`AuthenticationServiceFacade.SignInWithSteamAsync` is a stub; `event-taxonomy.md` flags the same
+limitation against `player_id`). So:
+
+> **A player who reinstalls and loses that token becomes a new person** — new `distinct_id`, new
+> profile, new first-seen — and therefore lands in a **later wave**. That inflates the newer wave's
+> D1 denominator with someone who is not new, and quietly drops a retained player out of their
+> original cohort.
+
+This is a limitation of the identity layer, not of the cohort, and the cohort is built the only way
+that can benefit when it is fixed: the moment platform sign-in linking lands, first-seen roams with
+the account and the wave becomes durable with **no change to this code**. Storing first-seen
+device-locally would have had the same reinstall flaw *and* no path out of it.
+
+Two practical consequences while it stands: treat a sudden influx into a late wave with suspicion
+(it may be churned reinstalls, not new grants), and prefer **D7 read within a wave** over
+cross-wave totals, since the leak is directional — always from earlier waves into later ones.
+
+**One definition of a week.** The boundary is `WeeklyChallengeCatalogSO.WeekStartUtc` — the project's
+existing ISO-8601 UTC-Monday rule — reused rather than reimplemented, because two answers to "which
+week is it" is a reporting bug nobody finds. Two traps that come with it:
+
+- `DayOfWeek` numbers **Sunday as 0**, so the naive subtraction puts a Sunday installer in the
+  *following* week — a seventh of players, one wave late, invisibly. Handled in `WeekStartUtc`.
+- Use `WeekKeyFor` (the real week), **never** the catalog's instance `PeriodKeyFor`, whose test mode
+  shrinks a "week" to minutes. A shrunken test period must never reach a cohort a release gate is
+  read off.
+
+**Empty is not a cohort.** `first_seen_utc_ms = 0` means *never stamped*, and
+`FromUnixTimeMilliseconds(0)` would bucket that player into the week of **1969-12-29** — a cohort
+that looks real and is not. `InviteWaveFor` returns empty, and the identify omits the key entirely.
+In PostHog, filter these out rather than treating them as a wave.
+
+**Erasure.** Nothing here changes §8.6. Deletion is **person**-scoped — `RequestDataDeletion` flags
+the person, and an operator or server-side automation deletes that person and every property on it,
+`invite_wave` and `first_seen_utc_ms` included. Adding person properties does not add erasure
+surface; adding *event* properties would have.
+
+**Consent.** Unchanged and not widened. The gate (`ConsentGranted` + `AgeEligible`) is upstream of
+`IAnalyticsSink` in the facade, and `IdentifyPlayer` early-returns on `!_collecting`. **A player who
+declines consent produces no events and no identify call**, so they carry no wave.
+
+**Still to do outside the client.** The field is now emitted; the **dashboards are not built**.
+Someone has to create the PostHog retention and funnel insights broken down by `invite_wave`, and
+the stability view over crash-free sessions. DoD #6 has a data source as of this change — it does
+not yet have a chart.
 
 ### 7.4 Backend configuration
 
