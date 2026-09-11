@@ -844,7 +844,12 @@ namespace CosmicShore.UI
             controller.RequestRematch_ServerRpc(playerName, (int)domain);
 
             _rematchVoteCast = true;
-            if (playAgainLabel) playAgainLabel.text = "REMATCH ✓";
+            // ASCII only, and not for prettiness: the label's font (ChakraPetch-Regular SDF) carries
+            // 97 glyphs - printable ASCII, NBSP and an ellipsis - with NO fallback asset on the font,
+            // none in TMP Settings, and m_missingGlyphCharacter 0. The "REMATCH ✓" this used to say
+            // would have drawn a blank where the tick is. It never showed because the label was
+            // unwired; wiring it is what would have surfaced it.
+            if (playAgainLabel) playAgainLabel.text = "REMATCH SENT";
         }
 
         bool _rematchVoteCast;
@@ -864,7 +869,7 @@ namespace CosmicShore.UI
 
             playAgainLabel.text = isHost
                 ? $"PLAY AGAIN ({votes}/{Mathf.Max(votes, humans)})"
-                : (_rematchVoteCast ? "REMATCH ✓" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
+                : (_rematchVoteCast ? "REMATCH SENT" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
         }
 
         public void OnLeaveLobbyButtonPressed()
