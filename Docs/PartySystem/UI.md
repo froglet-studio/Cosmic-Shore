@@ -80,6 +80,12 @@ time. A pilot whose domain cannot be resolved gets **no** halo rather than a def
 one: an unresolved pilot painted Jade is confident misinformation, where an absent halo reads
 as "not known yet".
 
+The halo is deliberately the same visual as the load screen's pilot chips
+(`ConnectingPlayerRoster`) and the scoreboard's rematch faces (`RematchVoteRoster`) — same
+breath rate, alpha range and size, adopted from them rather than re-invented. There are
+consequently **three** implementations of one halo; folding them into one component is
+TODO-12.
+
 ## Invite UX flow (UI-level)
 
 The service/SOAP-level happy path is in `ARCHITECTURE.md` § "SOAP event flow —

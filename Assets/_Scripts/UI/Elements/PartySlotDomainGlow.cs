@@ -19,6 +19,12 @@ namespace CosmicShore.UI
     /// white texture, tinted at runtime - so one 128px texture serves every domain and every
     /// slot, and re-colouring is a vertex tint rather than an asset swap.</para>
     ///
+    /// <para><b>It speaks the house dialect.</b> The breath rate, alpha range and halo size are
+    /// taken from <c>ConnectingPlayerRoster</c> and <c>RematchVoteRoster</c>, which already draw
+    /// a breathing domain halo behind a player avatar - a player meets all three surfaces within
+    /// minutes, so this is one visual with three call sites rather than three visuals. Folding
+    /// them into one component is <c>Docs/PartySystem/TODOS.md</c> § TODO-12.</para>
+    ///
     /// <para><b>Nothing pops.</b> Show, hide and a mid-party domain change are all eased
     /// (continuity of existence applies to UI too), with the ONE exception of the first colour
     /// a slot is given - lerping that from an unset black would read as a slot briefly on the
@@ -34,21 +40,24 @@ namespace CosmicShore.UI
         /// <summary>Name of the generated child, also how <see cref="EnsureFor"/> re-finds it.</summary>
         public const string GlowObjectName = "DomainGlow";
 
-        [Header("Pulse")]
-        [Tooltip("Full pulse cycles per second.")]
-        [SerializeField] float pulseCyclesPerSecond = 0.55f;
+        // These four numbers are NOT invented here. `ConnectingPlayerRoster` and
+        // `RematchVoteRoster` already draw a breathing domain halo behind a player avatar, and
+        // a player meets all three of these surfaces minutes apart - so this adopts their
+        // shipped, eyeballed values rather than opening a third dialect of one visual. Breathe
+        // the ALPHA and hold the scale, exactly as they do. See the follow-up in
+        // Docs/PartySystem/TODOS.md § TODO-12 about folding the three into one component.
+        [Header("Domain halo")]
+        [Tooltip("Halo breath, in cycles per second. Slow - a domain is a state, not an alarm.")]
+        [SerializeField, Min(0f)] float glowPulseHz = 0.7f;
 
-        [Tooltip("Halo alpha at the bottom of the pulse.")]
-        [SerializeField, Range(0f, 1f)] float minAlpha = 0.35f;
+        [Tooltip("Halo alpha at the bottom of the breath.")]
+        [SerializeField, Range(0f, 1f)] float haloMinAlpha = 0.45f;
 
-        [Tooltip("Halo alpha at the top of the pulse.")]
-        [SerializeField, Range(0f, 1f)] float maxAlpha = 0.85f;
+        [Tooltip("Halo alpha at the top of the breath.")]
+        [SerializeField, Range(0f, 1f)] float haloMaxAlpha = 0.9f;
 
-        [Tooltip("Halo size (as a multiple of the avatar rect) at the bottom of the pulse.")]
-        [SerializeField] float minScale = 1.45f;
-
-        [Tooltip("Halo size (as a multiple of the avatar rect) at the top of the pulse.")]
-        [SerializeField] float maxScale = 1.72f;
+        [Tooltip("Halo size, as a multiple of the avatar rect. Constant - the breath is alpha.")]
+        [SerializeField, Min(1f)] float haloScale = 1.22f;
 
         [Header("Transitions")]
         [Tooltip("How fast the halo eases to a new domain colour, and fades in/out. " +
@@ -200,16 +209,18 @@ namespace CosmicShore.UI
                 return;
             }
 
-            _phase += dt * Mathf.Max(0f, pulseCyclesPerSecond);
+            _phase += dt * Mathf.Max(0f, glowPulseHz);
             if (_phase >= 1f) _phase -= Mathf.Floor(_phase);
 
-            float phase = 0.5f + 0.5f * Mathf.Sin(_phase * 2f * Mathf.PI);
+            float breath01 = 0.5f + 0.5f * Mathf.Sin(_phase * 2f * Mathf.PI);
 
-            float alpha = Mathf.Lerp(minAlpha, maxAlpha, phase) * _visibility;
+            float alpha = Mathf.Lerp(haloMinAlpha, haloMaxAlpha, breath01) * _visibility;
             _image.color = new Color(_currentColour.r, _currentColour.g, _currentColour.b, alpha);
 
-            float scale = Mathf.Lerp(minScale, maxScale, phase);
-            _rect.localScale = new Vector3(scale, scale, 1f);
+            // Written only on change, for the same reason the rect copy below is: a constant
+            // scale re-assigned every frame is a canvas rebuild per slot per frame for nothing.
+            var scale = new Vector3(haloScale, haloScale, 1f);
+            if (_rect.localScale != scale) _rect.localScale = scale;
         }
 
         /// <summary>
