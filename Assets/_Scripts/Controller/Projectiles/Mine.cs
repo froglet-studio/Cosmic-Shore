@@ -4,8 +4,8 @@ using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
-using CosmicShore.Utility;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -92,7 +92,6 @@ namespace CosmicShore.Gameplay
 
         private void DestroyMine()
         {
-            CSDebug.Log("Mine Exploding");
             Destroy(gameObject);
         }
     }

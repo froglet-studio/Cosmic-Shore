@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using CosmicShore.Data;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -239,9 +240,19 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>The "yyyy-MM-dd" key of the WEEK a UTC instant belongs to (its Monday). The one
-        /// period formatter — every record, draw and countdown keys off this.</summary>
+        /// period formatter — every record, draw and countdown keys off this.
+        ///
+        /// <para><b>InvariantCulture is load-bearing, not decoration.</b> A bare
+        /// <c>ToString("yyyy-MM-dd")</c> formats through <c>CurrentCulture</c>, whose CALENDAR is
+        /// not always Gregorian — and Unity takes CurrentCulture from the device locale. Measured:
+        /// the same instant keyed as <c>2026-09-07</c> on an en-US device, <c>1448-03-25</c> on
+        /// ar-SA (UmAlQura), <c>2569-09-07</c> on th-TH (ThaiBuddhist) and <c>1405-06-16</c> on
+        /// fa-IR (Persian). Those players would draw a different challenge from their neighbours,
+        /// write progress under a key nothing else reads, and never roll over in step — the exact
+        /// class of failure the UTC-Monday rule exists to prevent, arriving through the formatter
+        /// instead of through the boundary.</para></summary>
         public static string WeekKeyFor(DateTime utc) =>
-            WeekStartUtc(utc).ToString("yyyy-MM-dd");
+            WeekStartUtc(utc).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
         /// <summary>
         /// The UTC Monday midnight after <paramref name="utc"/> — when the current challenge is
@@ -294,7 +305,9 @@ namespace CosmicShore.ScriptableObjects
         public string DayKeyFor(DateTime utc)
         {
             if (!TestActive || test.periodLengthMinutes <= 0f)
-                return utc.ToUniversalTime().Date.ToString("yyyy-MM-dd");
+                // InvariantCulture for the same reason as WeekKeyFor: a non-Gregorian
+                // CurrentCulture calendar would key the day in another era entirely.
+                return utc.ToUniversalTime().Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
 
             float dayMinutes = test.periodLengthMinutes / 7f;
             return "T" + PeriodIndex(utc, test.periodLengthMinutes) + "/" + PeriodIndex(utc, dayMinutes);

@@ -250,7 +250,7 @@ namespace CosmicShore.Core
             {
                 if (_localModifiedUtcTicks > cloud.ModifiedUtcTicks)
                 {
-                    CSDebug.Log("[GameSetting] Local settings are newer than the cloud snapshot - pushing local to cloud.");
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameSetting] Local settings are newer than the cloud snapshot - pushing local to cloud.");
                     SyncToCloud();
                 }
                 return;
@@ -291,7 +291,7 @@ namespace CosmicShore.Core
             OnChangeSFXLevel?.Invoke(sfxLevel);
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
 
-            CSDebug.Log("[GameSetting] Applied cloud settings.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameSetting] Applied cloud settings.");
         }
 
         /// <summary>

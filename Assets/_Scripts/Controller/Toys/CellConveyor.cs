@@ -270,8 +270,10 @@ namespace CosmicShore.Gameplay
                 Centre = centre,
             });
 
-            CSDebug.Log($"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
-                        $"(stride {cell.SatellitePrismStride}, populations ×{cell.RuntimePopulationScale:0.##}).");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
+                    $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
             return true;
         }
 

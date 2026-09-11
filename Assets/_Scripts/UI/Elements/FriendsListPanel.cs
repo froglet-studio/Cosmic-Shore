@@ -117,17 +117,17 @@ namespace CosmicShore.UI
         void ValidateSceneWiring()
         {
             if (onlineContent == null)
-                Debug.LogError($"[FriendsListPanel] onlineContent is null on '{name}'. " +
+                CSDebug.LogError($"[FriendsListPanel] onlineContent is null on '{name}'. " +
                                "Online rows will NOT render. Wire the Content RectTransform " +
                                "of the Online ScrollRect in the inspector.", this);
             if (requestsContent == null)
-                Debug.LogError($"[FriendsListPanel] requestsContent is null on '{name}'. " +
+                CSDebug.LogError($"[FriendsListPanel] requestsContent is null on '{name}'. " +
                                "Request rows will NOT render. Wire the Content RectTransform " +
                                "of the Requests ScrollRect in the inspector.", this);
             if (onlineInfoPrefab == null)
-                Debug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
+                CSDebug.LogError($"[FriendsListPanel] onlineInfoPrefab is null on '{name}'.", this);
             if (requestInfoPrefab == null)
-                Debug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
+                CSDebug.LogError($"[FriendsListPanel] requestInfoPrefab is null on '{name}'.", this);
         }
 
         /// <summary>
@@ -659,7 +659,7 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.SendInviteAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Invite sent to {playerId}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Invite sent to {playerId}");
                 // Row stays pending. Cleared when target accepts/declines/times out.
             }
             catch (System.Exception e)
@@ -681,7 +681,7 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.CancelInviteAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Invite to {playerId} cancelled");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Invite to {playerId} cancelled");
             }
             catch (System.Exception e)
             {
@@ -699,7 +699,7 @@ namespace CosmicShore.UI
             try
             {
                 await HostConnectionService.Instance.KickPartyMemberAsync(playerId);
-                CSDebug.Log($"[FriendsListPanel] Kicked {playerId} from party");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[FriendsListPanel] Kicked {playerId} from party");
             }
             catch (System.Exception e)
             {

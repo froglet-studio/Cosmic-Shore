@@ -95,9 +95,9 @@ namespace CosmicShore.Gameplay
             PrismsStolen = 9,
 
             /// <summary>
-            /// Per-domain summed hostile VOLUME destroyed. AVAILABLE, currently unused - its one
-            /// consumer was Drumfire, removed 2026-09; kept as the comeback pair for
-            /// <c>ScoringMetric.VolumeDestroyed</c>, which is likewise kept and likewise unused.
+            /// Per-domain summed hostile VOLUME destroyed. Bloomrush's source (its first consumer
+            /// was Drumfire, removed 2026-09); the comeback pair for
+            /// <c>ScoringMetric.VolumeDestroyed</c>.
             /// It has to be its own entry rather than borrowing PrismsDestroyed, because a
             /// deficit measured in a different quantity than the one the mode scores makes the
             /// comeback rate uncalibratable - volume deficits run six figures where prism counts
@@ -138,7 +138,7 @@ namespace CosmicShore.Gameplay
             system.useGolfRules = useGolfRules;
             system.Bind(gameData);
 
-            CSDebug.Log($"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Auto-created for {gameData?.GameMode} " +
                         $"(source={system.differenceSource}, rate={gameData?.ComebackRatePerScoreDeficit ?? 0f}).");
             return system;
         }
@@ -167,6 +167,11 @@ namespace CosmicShore.Gameplay
                 case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
                     return ScoreDifferenceSource.PrismsDestroyed;
+                case GameModes.Bloomrush: // Score lands only at game end - VOLUME is the live stat,
+                                          // and the deficit is read in the quantity the mode scores
+                                          // (a count deficit against a volume score is uncalibratable;
+                                          // the card's rate is derived in volume units, ~3.6e-4).
+                    return ScoreDifferenceSource.VolumeDestroyed;
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
@@ -179,6 +184,7 @@ namespace CosmicShore.Gameplay
                                            // so it accumulates on the same stat and folds by the
                                            // same lead runner. No new source - a second one
                                            // reading the same field could only ever disagree.
+                case GameModes.Redline:    // a lapped circuit: the same stat, the same fold
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;
@@ -255,7 +261,7 @@ namespace CosmicShore.Gameplay
             _subscribed = true;
 
             if (debugLogging)
-                CSDebug.Log("[ElementalComebackSystem] Subscribed to game events.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Subscribed to game events.");
         }
 
         void Unsubscribe()
@@ -285,8 +291,8 @@ namespace CosmicShore.Gameplay
 
         void OnTurnStarted()
         {
-            if (debugLogging)
-                CSDebug.Log($"[ElementalComebackSystem] OnTurnStarted fired. " +
+            if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] OnTurnStarted fired. " +
                           $"Rate={gameData.ComebackRatePerScoreDeficit}, " +
                           $"Players={gameData.Players?.Count ?? 0}, " +
                           $"Source={differenceSource}");
@@ -312,8 +318,8 @@ namespace CosmicShore.Gameplay
 
                 ApplyInitialValues(rs, config);
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -322,7 +328,7 @@ namespace CosmicShore.Gameplay
         void OnTurnEnded()
         {
             if (debugLogging && _isActive)
-                CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ElementalComebackSystem] Turn ended. Deactivating.");
             Deactivate();
         }
 
@@ -406,10 +412,10 @@ namespace CosmicShore.Gameplay
                     }
                 }
 
-                if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] {player.Name}: " +
+                if (debugLogging && CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                    CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[ElementalComebackSystem] {player.Name}: " +
                               $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1}, " +
-                              $"bonus={bonusLevels:F1} → " +
+                              $"bonus={bonusLevels:F1} -> " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }

@@ -141,8 +141,11 @@ namespace CosmicShore.UI
         [Header("Disabled Screens")]
         [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.\n" +
                  "Their nav-bar links are marked MenuAvailability.Locked at Start, so they READ as locked " +
-                 "rather than looking enabled and doing nothing. This list stays the single source of truth - " +
-                 "adding a screen here is all it takes.")]
+                 "rather than looking enabled and doing nothing. This list is the single source of truth for " +
+                 "PERMANENTLY closed screens - adding a screen here is all it takes.\n" +
+                 "It is not the only source: a COMMERCE screen (the Store) is closed by " +
+                 "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
+                 "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
 
         [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
@@ -563,14 +566,14 @@ namespace CosmicShore.UI
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas == null)
             {
-                Debug.LogError("[ScreenSwitcher] No parent Canvas found! Screen sliding will not work.");
+                CSDebug.LogError("[ScreenSwitcher] No parent Canvas found - screen sliding will not work.");
                 return;
             }
             _rootCanvas = parentCanvas.rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
 
-            Debug.Log($"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
             LayoutScreensToViewport();
@@ -840,9 +843,25 @@ namespace CosmicShore.UI
             return (int)screen;
         }
 
+        /// <summary>
+        /// The commerce surface a screen IS, or null when it is not one — the Store screen today.
+        /// The mapping lives here rather than in <see cref="SO_CommerceAvailability"/> so that asset
+        /// stays a statement about commerce and never becomes a second screen table.
+        /// </summary>
+        private static CommerceSurface? CommerceSurfaceFor(MenuScreens screen)
+            => screen == MenuScreens.STORE ? CommerceSurface.StoreScreen : null;
+
         private bool IsScreenDisabled(MenuScreens screen)
         {
-            return disabledScreens != null && disabledScreens.Contains(screen);
+            if (disabledScreens != null && disabledScreens.Contains(screen)) return true;
+
+            // A de-scoped commerce screen is skipped for the same reason an authored one is:
+            // nothing behind it works (Docs/STEAM_RELEASE_TASKS.md R4). It is read from the config
+            // rather than authored into disabledScreens so the paid-EA conversion stays ONE asset
+            // edit, and so the two facts - "is it navigable" and "what does its link say" - can
+            // never be flipped separately and leave a screen navigable but refusing.
+            var surface = CommerceSurfaceFor(screen);
+            return surface.HasValue && !SO_CommerceAvailability.Instance.IsAvailable(surface.Value);
         }
 
         private bool IsIndexDisabled(int index)
@@ -861,6 +880,11 @@ namespace CosmicShore.UI
         /// added to it tomorrow is marked with no scene edit, and a screen removed from it goes back
         /// to normal without one either - two authored copies of the same fact would drift.</para>
         ///
+        /// <para>A COMMERCE screen is the same mechanism with a different authority: its state comes
+        /// from <see cref="SO_CommerceAvailability"/>, because that de-scope flips as a build posture
+        /// rather than as a permanent design decision, and it reads Unavailable rather than Locked.
+        /// The look is still this one component's in both cases.</para>
+        ///
         /// <para>Only the disabled links get a view. An Available entry has nothing to present, and
         /// the component would cost every other link a colour capture for nothing.</para>
         /// </summary>
@@ -873,6 +897,27 @@ namespace CosmicShore.UI
 
                 var link = ResolveNavLinkObject(i);
                 if (!link) continue;
+
+                // A de-scoped commerce screen carries the COMMERCE posture's own state and
+                // wording: the Store reads Unavailable ("this is not built", because nothing in it
+                // is purchasable this window), where an authored disabled screen reads Locked
+                // ("not yet"). Anything the config calls Available has only reached this loop
+                // because it is authored in disabledScreens, so it falls through to Locked below -
+                // a nav entry that is skipped AND reads as open is the exact defect this method
+                // exists to prevent.
+                //
+                // Unreachable TODAY: MenuScreens.STORE has no entry in `screens` at all, so no index
+                // resolves to it and the store has no nav link to mark (Docs/MENU_PROGRESSION_AND_IAP.md
+                // section 1). Kept because the IsScreenDisabled half of the same pair is NOT dead - it
+                // is what makes NavigateTo(STORE) refuse instead of falling through to index 0 and
+                // landing the player on the Hangar - and the day STORE gains a screen entry its link
+                // has to read correctly without anyone remembering this.
+                var surface = CommerceSurfaceFor(GetScreenIdForIndex(i));
+                if (surface.HasValue && !SO_CommerceAvailability.Instance.IsAvailable(surface.Value))
+                {
+                    SO_CommerceAvailability.Mark(link, surface.Value);
+                    continue;
+                }
 
                 var view = MenuAvailabilityView.Ensure(link);
                 if (!view) continue;
@@ -987,7 +1032,7 @@ namespace CosmicShore.UI
             // Block screen navigation while in freestyle mode (live state, not just the flag)
             if (InFreestyle)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
                 return;
             }
 
@@ -1002,17 +1047,17 @@ namespace CosmicShore.UI
 
             if (IsIndexDisabled(ScreenIndex))
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
             }
 
             if (ScreenIndex == currentScreen)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
                 return;
             }
 
-            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -1117,25 +1162,21 @@ namespace CosmicShore.UI
 
         public void OnClickStoreNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickStoreNav");
             NavigateTo(MenuScreens.STORE);
         }
 
         public void OnClickPortNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickPortNav");
             NavigateTo(MenuScreens.PORT);
         }
 
         public void OnClickHomeNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHomeNav");
             NavigateTo(MenuScreens.HOME);
         }
 
         public void OnClickHangarNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHangarNav");
             NavigateTo(MenuScreens.HANGAR);
         }
 

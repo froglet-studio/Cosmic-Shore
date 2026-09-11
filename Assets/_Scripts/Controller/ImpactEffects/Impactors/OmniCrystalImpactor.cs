@@ -161,21 +161,21 @@ namespace CosmicShore.Gameplay
                 }
             );
 
-            if (shipStatus.VesselType != VesselClassType.Manta)
+            // Every vessel plays the spent-crystal payoff. (A legacy guard used to skip it for
+            // the Manta — a vestige of the pre-bomb flower design that muted the exact beat
+            // KABLOOM is built on; retired with the Manta spec re-cut.)
+            var explode = new Crystal.ExplodeParams
             {
-                var explode = new Crystal.ExplodeParams
-                {
-                    Course = shipStatus.Course,
-                    Speed = shipStatus.Speed,
-                    PlayerName = shipStatus.PlayerName,
-                };
-                // Manager-less local mint (conveyor toy): explode locally so the spent-crystal
-                // VFX still plays (continuity of existence) instead of the crystal popping out.
-                if (Crystal.CrystalManager != null)
-                    Crystal.NotifyManagerToExplodeCrystal(explode);
-                else
-                    Crystal.Explode(explode);
-            }
+                Course = shipStatus.Course,
+                Speed = shipStatus.Speed,
+                PlayerName = shipStatus.PlayerName,
+            };
+            // Manager-less local mint (conveyor toy): explode locally so the spent-crystal
+            // VFX still plays (continuity of existence) instead of the crystal popping out.
+            if (Crystal.CrystalManager != null)
+                Crystal.NotifyManagerToExplodeCrystal(explode);
+            else
+                Crystal.Explode(explode);
         }
         
         /// <summary>

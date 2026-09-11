@@ -135,8 +135,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
 
     private void OnTurnEndOfMiniGame()
     {
-        // Optional debug:
-        // CSDebug.Log("[FullAutoActionExecutor] Turn end received. Stopping full-auto.");
         End();
     }
     #endregion

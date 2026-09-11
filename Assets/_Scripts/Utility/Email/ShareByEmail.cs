@@ -66,8 +66,6 @@ namespace CosmicShore.Utility
 
         void HelpEmailCallback(NativeShare.ShareResult result, string shareTarget)
         {
-            CSDebug.Log("Send Email - Result: " + result.ToString());
-            CSDebug.Log("Send Email - shareTarget: " + shareTarget);
 
             // TODO Give the player a thumbs up if the result was successful
         }

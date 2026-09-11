@@ -72,8 +72,6 @@ namespace CosmicShore.Gameplay
         protected override void OnInitialized()
         {
             AttachEmblem(new EmblemSource(this), 8f);
-            CSDebug.Log($"[LifeformMatrix] Toy placed at {transform.position} " +
-                        "(the four element crystals, orbited by its three kingdoms).");
         }
 
         /// <summary>
@@ -785,8 +783,10 @@ namespace CosmicShore.Gameplay
                 if (!first) first = fauna.transform;
                 spawned++;
             }
-            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
-                        $"on the cell's densest mass at {anchor} (station was at {position})");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
+                    $"on the cell's densest mass at {anchor} (station was at {position})");
             return first;
         }
 
@@ -824,7 +824,9 @@ namespace CosmicShore.Gameplay
             string growth = cell.FloraGrowingEnabled
                 ? "growing (from seed prisms - watch them build)"
                 : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
-            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
             return first;
         }
 
@@ -859,7 +861,7 @@ namespace CosmicShore.Gameplay
             // (it logs that end itself). Claiming completion here would be a lie on every
             // machine that is not the host.
             init.RequestSpawnAiCompanion(vessel, domain, pose);
-            CSDebug.Log($"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────

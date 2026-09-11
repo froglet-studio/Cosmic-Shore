@@ -113,12 +113,10 @@ namespace CosmicShore.Gameplay
                 await lobby.RefreshAsync().AsMainThread();
                 setProperty();
                 await SaveWithRetryAsync(lobby);
-
-                Debug.Log($"[LobbyPropertyWriter] {operationName} completed.");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[LobbyPropertyWriter] {operationName} error ({e.GetType().Name}): {e}");
+                CSDebug.LogWarning($"[LobbyPropertyWriter] {operationName} error ({e.GetType().Name}): {e}");
             }
             finally
             {
@@ -171,7 +169,7 @@ namespace CosmicShore.Gameplay
                     // signal - final state is correct if any retry succeeds, and
                     // a sustained failure propagates to the outer caller via the
                     // `when` filter expiring at attempt == maxRetries.
-                    CSDebug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Party,
                         $"[LobbyPropertyWriter] Save failed ({e.GetType().Name}: {e.Message}) - retry {attempt + 1}/{maxRetries} in {baseDelayMs}ms");
                     await UniTask.Delay(baseDelayMs);
                     try { await lobby.RefreshAsync().AsMainThread(); } catch { /* best-effort */ }
