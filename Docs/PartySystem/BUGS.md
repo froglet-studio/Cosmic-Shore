@@ -11,17 +11,57 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 | ID | Title | Confidence | Status |
 |----|-------|-----------|--------|
-| B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | ~95% | 🔴 |
+| B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | Root-caused & fixed | 🟢 |
 | B3 | TC4 bounce leaves 2 vessels + dead controls | Fixed-by-construction | 🟢 |
-| B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
+| B5 | TC2/TC4 second joiner fails to join | Every named cause fixed; repro is stale | 🟡 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
+| B8 | Host-side phantom-rejoin loop after a client leaves (stale `joined_party`) | Fixed & MPPM-verified | 🟢 |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
 | B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Fixed & verified | 🟢 |
+| B11 | Idle Relay allocation goes stale; every later join bounces at step 3 | Superseded by B16; recycle reverted | 🟢 |
+| B12 | A host can never re-invite a guest who once accepted or declined | Fixed & live-verified | 🟢 |
+| B13 | Open-lobby ClientRpc dropped on a syncing / late-joining client | Fixed & live-verified | 🟢 |
+| B14 | A host whose NetworkManager was restarted in-process cannot get a new guest through synchronization | Root cause = B16; fixed & live-verified | 🟢 |
+| B15 | Nobody is ever shown "in game"; friends list only moves on return to menu | Fixed; live retest pending | 🟢 |
+| B16 | Un-spawned fauna NetworkObjects break synchronization for every guest | Root cause; fixed & live-verified | 🟢 |
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
+
+*(The table used to list only seven of these. B8 and B11–B16 had entries below
+but no index row, so the index read as "seven bugs, two of them red" while the
+file held sixteen — which is how B2 and B11 stayed red in the index long after
+the code moved. Keep the row and the entry in step.)*
 
 ---
 
-## B2 — `ObjectDisposedException`: "The semaphore has been disposed" 🔴
+## B2 — `ObjectDisposedException`: "The semaphore has been disposed" 🟢 (fixed 2026-08-20; closed on a source audit 2026-09-11)
+
+**Closed.** The first of the entry's three candidate approaches was taken and is in
+the shipped code: `HostConnectionService.OnDestroy` no longer disposes either
+semaphore. The block says so where it used to dispose them
+(`HostConnectionService.cs`, immediately after the `_lobbyService.LeaveAsync()`
+await), and it cites the same evidence this entry does — the crash-detector journal
+of 2026-08-20.
+
+The reasoning that made it safe is the one this entry flagged for confirmation, now
+confirmed by audit: `SemaphoreSlim.Dispose()` is only *required* when
+`AvailableWaitHandle` has been read, because that is what allocates the OS handle.
+The string `AvailableWaitHandle` appears nowhere in `Assets/_Scripts` except in that
+explanatory comment, and no `.Dispose()` call on `LobbyMutex` or
+`SessionCreationMutex` survives anywhere in the tree. Both semaphores are async
+mutexes over main-thread continuations only, so letting the GC collect them leaks
+nothing.
+
+Note what that fix does and does not cover. It removes the DISPOSAL, so the race
+itself — an in-flight `SaveWithRetryAsync` completing after `OnDestroy` and hitting
+`_lobbyMutex.Release()` — is now harmless rather than prevented: the late `Release`
+runs against a live semaphore on an object that is going away. That is the correct
+trade for teardown. **A future `ObjectDisposedException` on this path is therefore a
+DIFFERENT bug** (a `CancellationTokenSource` most likely — `PartyInviteController`
+disposes four) and should be filed as one rather than reopening this.
+
+*Historical record of the original diagnosis follows.*
+
+### Original entry
 
 **Symptom.** `HostConnectionService.RefreshAsync()` at `:1052` →
 `SemaphoreSlim.Release()` → "The semaphore has been disposed." Triggered
@@ -354,7 +394,56 @@ ordering) is the sole root cause** — fixed below.
 
 ---
 
-## B5 — TC2/TC4: the second joiner fails to join 🔴
+## B5 — TC2/TC4: the second joiner fails to join 🟡 (every named cause is fixed; the repro is stale — needs a retest, not more code)
+
+**Status after a source audit, 2026-09-11.** This entry is still open on the
+strength of a repro from before the fixes that were written to close it. Nothing
+below is new code; it is a statement of what the audit could and could not
+establish, so the retest starts from the right place.
+
+**Every cause this entry names is closed in source.** Traced individually:
+
+| Named cause | Where it stands |
+|---|---|
+| Premature `OnClientReady` with no local vessel, which also cancelled `RosterPullRetryLoop` | Fixed. `ClientPlayerVesselInitializer.ProcessPendingPairs` returns without completing the batch while `gameData.LocalPlayer?.Vessel == null`, keeping the flag armed and the retry loop alive. The comment names this bug. |
+| `AcceptanceSignalService.ScanForSignals` returning the FIRST accepter only, so with two invites out the first accepter masked the second's signal | Fixed. It returns every accepter, and the host's scan handles them as a set. |
+| A re-invite to a guest who once accepted or declined, swallowed forever | Fixed — B12, live-verified 2026-09-02. |
+| A joiner whose owner-written name / vessel type land late, stranded by the spawn latch | Fixed. `ServerPlayerVesselInitializer` re-arms up to `MaxSpawnReArms` (6). |
+| Host-side synchronization never completing for a guest | Fixed — B16, the root cause, live-verified 2026-09-02. |
+
+**Two more that this entry never named, both also closed.** The `WaitForClientReadyAsync`
+subscribe race (`OnClientReady` firing between the accept and the subscribe) is
+closed by the `gameData.LocalPlayer?.Vessel` re-check on *both* sides of the
+subscribe. And `RosterPullRetryLoop`'s budget was raised to 40 × 1500 ms = 60 s
+specifically because it used to expire while the watchdog that bounces the player
+was still counting — the two clocks do not start together, so the loop has to
+outlive the whole connect + ready budget.
+
+**Nothing second-joiner-specific remains on the join path.** Connection approval is
+unconditional (`MultiplayerSetup.OnConnectionApprovalCallback` sets
+`Approved = true` with no capacity or count test); `_processedPlayers` is keyed on
+`NetworkObjectId`, so two joiners cannot collide; `HandleRosterRequest` is an
+idempotent ensure-then-send per requester; and `_inviteService` is keyed by target.
+The one single-slot piece of state in the area, `_lastFiredInvite`, is on the
+RECIPIENT and holds one inviter — which is one per joiner, not one per party.
+
+**So the honest reading is that this record is stale, not that the bug is fixed.**
+The last observation predates all of the above *and* the MPPM tag prerequisite —
+and untagged clones share one UGS `PlayerId`, which corrupts concurrent joins on
+its own and is a sufficient cause of exactly this symptom (see the caveat at the
+end of this entry, and Session 3 in `MPPM_SESSION_LOG.md`). An audit cannot
+distinguish "fixed" from "still broken for a reason nobody has named yet", so this
+stays 🟡 rather than 🟢.
+
+**What the retest has to do** (it is H10's, and it needs MPPM or several machines):
+three UNIQUELY TAGGED players, VP1 invites VP2 and VP3, accept in BOTH orders. On
+the joiner, the `[FLOW-6]` `OnClientReady` raise must FOLLOW the local
+`InitializePair` log, never precede it. A failure now is a NEW root cause and wants
+a fresh entry with both `Player.log`s — do not re-walk the table above.
+
+*Original diagnosis and the fix history follow.*
+
+### Original entry
 
 **Symptom.** VP1 invites VP2 and VP3. VP3 accepts first → joins ok. VP2
 accepts second (invite **was** received — confirmed) → **join fails**
@@ -832,7 +921,45 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 
 ---
 
-## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 ⚪ (fix REVERTED 2026-09-01 — see B14)
+## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (CLOSED 2026-09-11 — the symptom was B16; the recycle stays reverted)
+
+**Ruling (2026-09-11).** Closed as superseded. It was left ⚪ with a reverted fix,
+which is the one state a bug must not be parked in: the next person reads "the fix
+was reverted" and re-lands it.
+
+**Why closed.** Every symptom in this entry is B16's, and B16 was root-caused and
+LIVE-verified on the reporter's two machines with this exact sequence — party up,
+play, return, leave, re-invite — on 2026-09-02. The chain: an in-place NetworkManager
+restart loads `Menu_Main` locally, so the lava lamp's fauna are already swimming when
+the host starts; Netcode adopts them as in-scene placed objects; two instances of one
+prefab share a `GlobalObjectIdHash`, so `PopulateScenePlacedObjects` throws; the scene
+manager is left half-built and no guest can ever synchronize. The guest's 30 s
+watchdog then bounces them at step 3, which is what this entry recorded. "Restart the
+game" worked because a cold boot starts the NM before `Menu_Main` exists — not because
+it minted a fresh Relay allocation.
+
+**The stale-allocation theory itself is not supported.** B11's own retest note
+already says so: with `runInBackground` on, UTP keeps a bound host's Relay allocation
+alive with its own pings, and the `player timed out due to inactivity` lines in the
+host log are as likely the OLD transport's allocation after a restart as a live one
+going stale. No independent evidence for idle-allocation death was ever produced.
+
+**The recycle stays reverted, and re-landing it is the specific mistake to avoid.**
+It made things worse for a reason that is now fully understood: recreating the session
+runs `EnsurePartySessionAsync`, which restarts the NetworkManager — i.e. it
+manufactured B16's trigger every four minutes. This bug's fix and this bug's cause
+were the same action.
+
+**What would reopen it.** A guest bouncing at step 3 against a host that has NOT
+restarted its NetworkManager in-process since boot (no party leave, no host-loss
+bounce), with the host's log showing `Relay allocation is invalid` and NO
+`PopulateScenePlacedObjects` exception. That is a different bug and wants a new entry;
+the fix would be to keep the allocation alive (a transport-level keepalive), never to
+recycle the session.
+
+*Original record follows — the symptom description is still the best one we have.*
+
+### Original entry
 
 **Symptom.** Host has been sitting in Menu_Main for a few minutes. Guest accepts an
 invite, sees the splash for ~30s, is bounced ("Couldn't join - returned to your menu").
@@ -1158,8 +1285,21 @@ panel parked, restore the network — the boot should resume on its own and log
 
 ## How we work bugs
 
-Method: see `../README.md` § "How we work bugs". Party-side priority
-order: **B2 → B5 → B7** (B3, B8, B9, B10 fixed; B3 is fixed-by-construction
-pending its dedicated TC4 bounce repro; B10 needs the host-loss MPPM sweep).
+Method: see `../README.md` § "How we work bugs". Party-side priority order as of
+2026-09-11: **B5 RETEST → B7**. Everything above B5 is closed; B7 stays deferred as
+verified-mostly-benign.
+
+**The one thing to get right here is that B5's next step is a TEST, not a code
+change.** Its every named cause traces closed in source (see the table in its entry),
+and its last observation predates all of them *and* the MPPM unique-tag prerequisite.
+Reading the code again will re-derive that table; only a tagged three-player MPPM run
+can tell "fixed" from "broken for a reason nobody has named". Same for Presence B4,
+which now carries a fix nobody has executed.
+
+Three bugs are 🟢 but carry an unrun retest in their entry — B3 (its dedicated TC4
+bounce repro), B10 (the host-loss MPPM sweep) and B15 (the in-game presence retest).
+They are fixed on evidence; the retests are confirmation, and they belong to the same
+MPPM pass.
+
 The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.

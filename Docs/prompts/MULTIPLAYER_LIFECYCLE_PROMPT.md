@@ -13,7 +13,7 @@ The lifecycle arc, and where each leg stands today:
 
 | Leg | State |
 |---|---|
-| **Connect** — eager per-user Relay at `Menu_Main`, invite, join | 🔴 **two open red join failures** (below) |
+| **Connect** — eager per-user Relay at `Menu_Main`, invite, join | 🟡 **worked 2026-09-11 — see the banner below** |
 | **Play** — party survives into a match, presence reads correctly | 🟢 mostly; B15 (nobody shown "in game") fixed 1 Sep, live retest pending |
 | **Drop** — disconnect handling, bounce-to-solo | 🟢 B10 fixed and engine-verified |
 | **Recover** — host leaves, client bounces, session rebuilds | 🟢 B14/B16 fixed and live-verified 2 Sep |
@@ -25,7 +25,19 @@ compounding, which is the loop the whole Deadlock-shaped milestone is built on. 
 #2 is *"Playtest build approved; Wave 0 and Wave 1 granted; friend invites enabled at one to three
 per tester."*
 
-The party-join path currently carries **two open red bugs, both of them join failures**, plus a
+> **⚠ This prompt was run on 2026-09-11 and its premise has moved. Read
+> `Docs/PartySystem/MPPM_SESSION_LOG.md` Session 4 before re-running it.**
+> Of the four items it names: **B2 is closed** (it had been fixed since 2026-08-20;
+> the tracker was stale) and **B11 is closed** as superseded by B16, with the reverted
+> recycle explicitly barred. **Presence B4** has a cause found and fixed — the periodic
+> converge released a lobby it HOSTS by deleting it, evicting every other occupant. And
+> **Party B5**'s every named cause traces closed in source; its repro predates all of
+> them and the MPPM unique-tag prerequisite, so the record was stale rather than the bug
+> fixed. Both remain 🟡 because **nothing was run in an editor**. What is left is the
+> two RETESTS, with uniquely tagged VPs — that is **H10**, not this prompt. Re-running
+> the analysis will re-derive what Session 4 already wrote down.
+
+The party-join path carried **two open red bugs, both of them join failures**, plus a
 reverted fix and two partially-silenced defects. A cohort that grows by inviting friends cannot
 grow through a broken join.
 

@@ -645,4 +645,80 @@ captured in the session notes.
 
 ---
 
+## Session 4 — 2026-09-11 (SOURCE AUDIT — no MPPM, no editor)
+
+**Setup.** None. This session ran in a remote container with no Unity, no MPPM and
+no live UGS, so **nothing here was executed**. It is a source audit of the two red
+join bugs, recorded in this log because its conclusions change where the next real
+session should start.
+
+**Why an audit was worth doing first.** Both red bugs were last OBSERVED on
+2026-07-16 or earlier. Between then and now, five separate fixes landed that each
+independently produce their exact symptom: the MPPM unique-tag prerequisite (untagged
+clones share one UGS `PlayerId`), B12 (a re-invite to a guest who once accepted or
+declined was swallowed forever), `ScanForSignals` returning every accepter instead of
+the first, the premature-`OnClientReady` fix in `ProcessPendingPairs`, and B16 (the
+root cause of every synchronization failure, live-verified 2026-09-02). Re-running a
+four-instance repro against a two-month-old record risks reproducing something else
+and filing it under an old name.
+
+### Findings
+
+1. **Party B2 is fixed, and has been since 2026-08-20.** `HostConnectionService.OnDestroy`
+   no longer disposes either `SemaphoreSlim`; `AvailableWaitHandle` is never read
+   anywhere in `Assets/_Scripts`, so there is no handle to leak. Closed 🟢. A future
+   `ObjectDisposedException` here is a different object (most likely a
+   `CancellationTokenSource`) and wants its own entry.
+
+2. **Party B11 closed as superseded.** Every symptom is B16's, and the reverted
+   recycle manufactured B16's trigger every four minutes — the fix and the cause were
+   the same action. It was parked ⚪ with a reverted fix, which is the one state that
+   invites somebody to re-land it. `BUGS.md` B11 now states what evidence would
+   reopen it (a step-3 bounce against a host that has NOT restarted its NM in-process,
+   with no `PopulateScenePlacedObjects` exception).
+
+3. **Party B5: every named cause is closed in source; the record is stale.** Traced
+   one by one — see the table now in `BUGS.md` B5. Two further hazards it never named
+   are also closed: the `WaitForClientReadyAsync` subscribe race (re-checked on both
+   sides of the subscribe) and `RosterPullRetryLoop`'s budget, now 60 s so it outlives
+   the watchdog that bounces the player. Nothing second-joiner-specific survives on
+   the join path: approval is unconditional, `_processedPlayers` is keyed by
+   `NetworkObjectId`, `HandleRosterRequest` is idempotent per requester, and the only
+   single-slot state in the area (`_lastFiredInvite`) is one-per-inviter on the
+   recipient. Moved to 🟡 — an audit cannot tell "fixed" from "broken for an unnamed
+   reason", so it needs the retest, not more code.
+
+4. **Presence B4: a real cause found and FIXED — the converge was evicting people.**
+   `ConvergeToCanonicalAsync` released its non-canonical lobby through
+   `DeleteOwnLobbyQuietlyAsync`, which deletes when we are host. Written for the
+   simultaneous-create race (empty, seconds old), reused by the 4-second periodic
+   converge on a lobby that may hold anybody — so a migrating host destroyed the lobby
+   its occupants were in, freezing their online list and marching them toward the
+   false `ForceReset` this system calls its main historical failure surface. Both
+   halves of B4's symptom are one fact (the third player is in a different lobby), and
+   this is a mechanism that both creates and prolongs exactly that. Fixed by deferring
+   the migration while the hosted lobby still has other players in it. Commit
+   `0c1f747b`. Left 🟡: proved from source, never run.
+
+### What this session did NOT do
+
+- Did not run S-series or P-series. Both suites need MPPM; this is **H10's** work and
+  it now inherits a materially different starting state (see `Docs/STEAM_RELEASE_TASKS.md`
+  R16).
+- Did not build host migration or rejoin-in-progress — still deliberately cut.
+- Did not touch the locked design: no lazy Relay, no new threading primitive, no
+  change to the eager per-user session model.
+- Did not open the editor. The converge fix is verified only by a Roslyn syntax parse
+  (with a negative control on the edited line) and the six out-of-editor gates.
+
+### For the next real session
+
+Run the two retests as written in `BUGS.md` B5 and `PresenceSystem/BUGS.md` B4, with
+**uniquely tagged** VPs (`TESTS.md` § "MPPM prerequisites") — the historical repros
+for both bugs predate that requirement and a shared `PlayerId` reproduces both
+symptoms on its own. If either still fails, it is a NEW root cause: capture both
+`Player.log`s and open a fresh entry rather than re-walking the closed tables.
+
+---
+
 <!-- Append future sessions below this divider as ## Session 4 — date, etc. -->
