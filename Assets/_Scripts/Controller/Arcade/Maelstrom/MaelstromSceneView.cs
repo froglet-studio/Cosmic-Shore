@@ -190,6 +190,47 @@ namespace CosmicShore.Gameplay
                 readyButtonLabel.text = summaryMode
                     ? "NEXT"
                     : (lobbyNetwork != null && lobbyNetwork.LocalReady ? "READY ✓" : "START");
+
+            // MAIN MENU is available in the HUB between games, not only on the final summary.
+            // Without it the hub offered exactly one button - READY - so a player who wanted to
+            // stop between rounds had nowhere to press: the per-game scoreboard had no client
+            // buttons either, and the pause menu hid its Main Menu, so the only screen in an
+            // entire tournament that let anyone out was the summary at the very end. A tournament
+            // you cannot leave until it finishes is not one anybody should have to finish.
+            //
+            // OnMainMenuPressed already does the right thing on both sides: the host takes the
+            // whole party back, a client leaves the party and returns alone. Play Again stays
+            // summary-only - mid-run there is nothing to replay yet.
+            if (mainMenuButton) mainMenuButton.gameObject.SetActive(true);
+            if (playAgainButton && !summaryMode) playAgainButton.gameObject.SetActive(false);
+
+            WarnIfHubExitIsUnreachable();
+        }
+
+        bool _warnedHubExitUnreachable;
+
+        /// <summary>
+        /// Activating a button inside a DEACTIVATED parent shows nothing, and shows nothing
+        /// SILENTLY - the call succeeds, the flag reads true, and the player still has no way out
+        /// of the hub. Main Menu was authored for the summary screen, so if the prefab parents it
+        /// under <c>summaryRoot</c> (which <see cref="ShowActive"/> deactivates) the hub exit is
+        /// inert and no amount of code here can reach it: it needs the button re-parented under
+        /// <c>activeRoot</c>, or a second instance there.
+        ///
+        /// Reported rather than worked around, because the fix is a prefab edit and a silent
+        /// no-op is exactly the failure this whole pass exists to stop shipping.
+        /// </summary>
+        void WarnIfHubExitIsUnreachable()
+        {
+            if (_warnedHubExitUnreachable || !mainMenuButton) return;
+            if (mainMenuButton.gameObject.activeInHierarchy) return;
+
+            _warnedHubExitUnreachable = true;
+            CSDebug.LogError(
+                "[MaelstromSceneView] The hub's MAIN MENU button is active but not visible - it is " +
+                "parented under an inactive root (almost certainly summaryRoot). Until it is " +
+                "re-parented under activeRoot in the prefab, a player has NO way to leave a " +
+                "tournament between rounds.");
         }
 
         void RenderLeadingDomain()

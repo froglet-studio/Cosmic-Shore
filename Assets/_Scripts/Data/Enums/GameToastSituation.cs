@@ -99,5 +99,12 @@ namespace CosmicShore.Data
         // Idle hint: the loop is buttonless, so a new pilot has nothing to press and needs
         // telling what flying into things does.
         BloomrushStingHint = 91,
+
+        // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
+        // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
+        // humans are in the match.
+        RematchRequested = 100,     // a client pressed Play Again - a VOTE the host can act on
+        // A pilot left mid-match and the AI took their ship. {0} = the departed player's name.
+        PilotHandedToAI = 101,
     }
 }

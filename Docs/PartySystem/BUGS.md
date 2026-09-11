@@ -11,17 +11,61 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 
 | ID | Title | Confidence | Status |
 |----|-------|-----------|--------|
-| B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | ~95% | 🔴 |
+| B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | Root-caused & fixed | 🟢 |
 | B3 | TC4 bounce leaves 2 vessels + dead controls | Fixed-by-construction | 🟢 |
-| B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
+| B5 | TC2/TC4 second joiner fails to join | Every named cause fixed; repro is stale | 🟡 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
+| B8 | Host-side phantom-rejoin loop after a client leaves (stale `joined_party`) | Fixed & MPPM-verified | 🟢 |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
 | B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Fixed & verified | 🟢 |
+| B11 | Idle Relay allocation goes stale; every later join bounces at step 3 | Superseded by B16; recycle reverted | 🟢 |
+| B12 | A host can never re-invite a guest who once accepted or declined | Fixed & live-verified | 🟢 |
+| B13 | Open-lobby ClientRpc dropped on a syncing / late-joining client | Fixed & live-verified | 🟢 |
+| B14 | A host whose NetworkManager was restarted in-process cannot get a new guest through synchronization | Root cause = B16; fixed & live-verified | 🟢 |
+| B15 | Nobody is ever shown "in game"; friends list only moves on return to menu | Fixed; live retest pending | 🟢 |
+| B16 | Un-spawned fauna NetworkObjects break synchronization for every guest | Root cause; fixed & live-verified | 🟢 |
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
+| B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
+| B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
+| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed | 🟡 |
+| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
+
+*(The table used to list only seven of these. B8 and B11–B16 had entries below
+but no index row, so the index read as "seven bugs, two of them red" while the
+file held sixteen — which is how B2 and B11 stayed red in the index long after
+the code moved. Keep the row and the entry in step.)*
 
 ---
 
-## B2 — `ObjectDisposedException`: "The semaphore has been disposed" 🔴
+## B2 — `ObjectDisposedException`: "The semaphore has been disposed" 🟢 (fixed 2026-08-20; closed on a source audit 2026-09-11)
+
+**Closed.** The first of the entry's three candidate approaches was taken and is in
+the shipped code: `HostConnectionService.OnDestroy` no longer disposes either
+semaphore. The block says so where it used to dispose them
+(`HostConnectionService.cs`, immediately after the `_lobbyService.LeaveAsync()`
+await), and it cites the same evidence this entry does — the crash-detector journal
+of 2026-08-20.
+
+The reasoning that made it safe is the one this entry flagged for confirmation, now
+confirmed by audit: `SemaphoreSlim.Dispose()` is only *required* when
+`AvailableWaitHandle` has been read, because that is what allocates the OS handle.
+The string `AvailableWaitHandle` appears nowhere in `Assets/_Scripts` except in that
+explanatory comment, and no `.Dispose()` call on `LobbyMutex` or
+`SessionCreationMutex` survives anywhere in the tree. Both semaphores are async
+mutexes over main-thread continuations only, so letting the GC collect them leaks
+nothing.
+
+Note what that fix does and does not cover. It removes the DISPOSAL, so the race
+itself — an in-flight `SaveWithRetryAsync` completing after `OnDestroy` and hitting
+`_lobbyMutex.Release()` — is now harmless rather than prevented: the late `Release`
+runs against a live semaphore on an object that is going away. That is the correct
+trade for teardown. **A future `ObjectDisposedException` on this path is therefore a
+DIFFERENT bug** (a `CancellationTokenSource` most likely — `PartyInviteController`
+disposes four) and should be filed as one rather than reopening this.
+
+*Historical record of the original diagnosis follows.*
+
+### Original entry
 
 **Symptom.** `HostConnectionService.RefreshAsync()` at `:1052` →
 `SemaphoreSlim.Release()` → "The semaphore has been disposed." Triggered
@@ -354,7 +398,56 @@ ordering) is the sole root cause** — fixed below.
 
 ---
 
-## B5 — TC2/TC4: the second joiner fails to join 🔴
+## B5 — TC2/TC4: the second joiner fails to join 🟡 (every named cause is fixed; the repro is stale — needs a retest, not more code)
+
+**Status after a source audit, 2026-09-11.** This entry is still open on the
+strength of a repro from before the fixes that were written to close it. Nothing
+below is new code; it is a statement of what the audit could and could not
+establish, so the retest starts from the right place.
+
+**Every cause this entry names is closed in source.** Traced individually:
+
+| Named cause | Where it stands |
+|---|---|
+| Premature `OnClientReady` with no local vessel, which also cancelled `RosterPullRetryLoop` | Fixed. `ClientPlayerVesselInitializer.ProcessPendingPairs` returns without completing the batch while `gameData.LocalPlayer?.Vessel == null`, keeping the flag armed and the retry loop alive. The comment names this bug. |
+| `AcceptanceSignalService.ScanForSignals` returning the FIRST accepter only, so with two invites out the first accepter masked the second's signal | Fixed. It returns every accepter, and the host's scan handles them as a set. |
+| A re-invite to a guest who once accepted or declined, swallowed forever | Fixed — B12, live-verified 2026-09-02. |
+| A joiner whose owner-written name / vessel type land late, stranded by the spawn latch | Fixed. `ServerPlayerVesselInitializer` re-arms up to `MaxSpawnReArms` (6). |
+| Host-side synchronization never completing for a guest | Fixed — B16, the root cause, live-verified 2026-09-02. |
+
+**Two more that this entry never named, both also closed.** The `WaitForClientReadyAsync`
+subscribe race (`OnClientReady` firing between the accept and the subscribe) is
+closed by the `gameData.LocalPlayer?.Vessel` re-check on *both* sides of the
+subscribe. And `RosterPullRetryLoop`'s budget was raised to 40 × 1500 ms = 60 s
+specifically because it used to expire while the watchdog that bounces the player
+was still counting — the two clocks do not start together, so the loop has to
+outlive the whole connect + ready budget.
+
+**Nothing second-joiner-specific remains on the join path.** Connection approval is
+unconditional (`MultiplayerSetup.OnConnectionApprovalCallback` sets
+`Approved = true` with no capacity or count test); `_processedPlayers` is keyed on
+`NetworkObjectId`, so two joiners cannot collide; `HandleRosterRequest` is an
+idempotent ensure-then-send per requester; and `_inviteService` is keyed by target.
+The one single-slot piece of state in the area, `_lastFiredInvite`, is on the
+RECIPIENT and holds one inviter — which is one per joiner, not one per party.
+
+**So the honest reading is that this record is stale, not that the bug is fixed.**
+The last observation predates all of the above *and* the MPPM tag prerequisite —
+and untagged clones share one UGS `PlayerId`, which corrupts concurrent joins on
+its own and is a sufficient cause of exactly this symptom (see the caveat at the
+end of this entry, and Session 3 in `MPPM_SESSION_LOG.md`). An audit cannot
+distinguish "fixed" from "still broken for a reason nobody has named yet", so this
+stays 🟡 rather than 🟢.
+
+**What the retest has to do** (it is H10's, and it needs MPPM or several machines):
+three UNIQUELY TAGGED players, VP1 invites VP2 and VP3, accept in BOTH orders. On
+the joiner, the `[FLOW-6]` `OnClientReady` raise must FOLLOW the local
+`InitializePair` log, never precede it. A failure now is a NEW root cause and wants
+a fresh entry with both `Player.log`s — do not re-walk the table above.
+
+*Original diagnosis and the fix history follow.*
+
+### Original entry
 
 **Symptom.** VP1 invites VP2 and VP3. VP3 accepts first → joins ok. VP2
 accepts second (invite **was** received — confirmed) → **join fails**
@@ -832,7 +925,45 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 
 ---
 
-## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 ⚪ (fix REVERTED 2026-09-01 — see B14)
+## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (CLOSED 2026-09-11 — the symptom was B16; the recycle stays reverted)
+
+**Ruling (2026-09-11).** Closed as superseded. It was left ⚪ with a reverted fix,
+which is the one state a bug must not be parked in: the next person reads "the fix
+was reverted" and re-lands it.
+
+**Why closed.** Every symptom in this entry is B16's, and B16 was root-caused and
+LIVE-verified on the reporter's two machines with this exact sequence — party up,
+play, return, leave, re-invite — on 2026-09-02. The chain: an in-place NetworkManager
+restart loads `Menu_Main` locally, so the lava lamp's fauna are already swimming when
+the host starts; Netcode adopts them as in-scene placed objects; two instances of one
+prefab share a `GlobalObjectIdHash`, so `PopulateScenePlacedObjects` throws; the scene
+manager is left half-built and no guest can ever synchronize. The guest's 30 s
+watchdog then bounces them at step 3, which is what this entry recorded. "Restart the
+game" worked because a cold boot starts the NM before `Menu_Main` exists — not because
+it minted a fresh Relay allocation.
+
+**The stale-allocation theory itself is not supported.** B11's own retest note
+already says so: with `runInBackground` on, UTP keeps a bound host's Relay allocation
+alive with its own pings, and the `player timed out due to inactivity` lines in the
+host log are as likely the OLD transport's allocation after a restart as a live one
+going stale. No independent evidence for idle-allocation death was ever produced.
+
+**The recycle stays reverted, and re-landing it is the specific mistake to avoid.**
+It made things worse for a reason that is now fully understood: recreating the session
+runs `EnsurePartySessionAsync`, which restarts the NetworkManager — i.e. it
+manufactured B16's trigger every four minutes. This bug's fix and this bug's cause
+were the same action.
+
+**What would reopen it.** A guest bouncing at step 3 against a host that has NOT
+restarted its NetworkManager in-process since boot (no party leave, no host-loss
+bounce), with the host's log showing `Relay allocation is invalid` and NO
+`PopulateScenePlacedObjects` exception. That is a different bug and wants a new entry;
+the fix would be to keep the allocation alive (a transport-level keepalive), never to
+recycle the session.
+
+*Original record follows — the symptom description is still the best one we have.*
+
+### Original entry
 
 **Symptom.** Host has been sitting in Menu_Main for a few minutes. Guest accepts an
 invite, sees the splash for ~30s, is bounced ("Couldn't join - returned to your menu").
@@ -1156,10 +1287,225 @@ panel parked, restore the network — the boot should resume on its own and log
 
 ---
 
+## B18 — A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom (owner report, live play, 2026-09-11).** "Once you get off the happy path the game is
+bugged, and the experience is not good for clients… leaving is a challenge. Not in Maelstrom, not in
+the whole game." Reported against 4 players all in the US, so it is not latency.
+
+**Root cause — the exit was hidden, not broken.** Every screen a client can be on during a party
+match gated its way out behind `IsServer`:
+
+| Where a client is | Exit before this fix |
+|---|---|
+| Mid-match, pause menu | ❌ `PauseMenu.ConfigureHostOnlyButtons` set `mainMenuButton` inactive for any non-host |
+| Per-game Scoreboard, normal mode | ✅ `leaveLobbyButton` |
+| Per-game Scoreboard, **Maelstrom** | ❌ the Maelstrom branch set **all four** buttons inactive for a client |
+| Maelstrom hub between games | ❌ only READY is shown (`ShowActive` never activates the end buttons) |
+| Maelstrom final summary | ✅ the one screen that was right |
+
+So in a normal game a client could not leave until the match ended; **in a Maelstrom a client could
+not leave until the entire race-to-N ended.** The only exit was killing the application — which is
+exactly what "leaving is a challenge" describes, and why it was reported as worst in Maelstrom.
+
+**Why hiding it looked right.** Raising the Main Menu event on a client genuinely does not work:
+`SceneLoader.ReturnToMainMenu` defers scene loads to the server, so a client that raised it would
+fade to black and wait on the host forever (that is B19). Faced with a button that hangs, hiding it
+is a reasonable local call. The mistake was stopping there rather than asking what a client's press
+*should* mean.
+
+**The answer was already in the tree, applied once.** `MaelstromSceneView.OnMainMenuPressed` has the
+correct shape and its comment names this exact trap: a client LEAVES THE PARTY instead —
+`PartyInviteController.LeavePartyAndReturnToMenuAsync` disconnects, loads Menu_Main locally and
+restarts a solo Relay. That is the same proven path as the Scoreboard's Leave Lobby. It was
+implemented on the summary screen and nowhere else.
+
+**Fix.** Propagate it. `PauseMenu` shows Main Menu to everyone and routes a client's press to the
+leave-party path (host's press is unchanged); `Scoreboard`'s Maelstrom branch shows `leaveLobbyButton`
+to clients. Replay stays host-only — the host's Play Again forces everyone to replay, so offering it
+to a client would be misleading, which is the distinction the original gate was reaching for.
+
+**General rule.** *When one screen solves a cross-cutting problem correctly, the fix is not done
+until every screen with that problem uses it.* The client's ability to leave depended on which screen
+they happened to be looking at, and nothing in the code said it was supposed to be uniform.
+
+**Known gap (not a blocker).** `PauseMenu.mainMenuButtonLabel` is optional and unwired in the shipped
+prefabs, so a client's button still reads "MAIN MENU" rather than "LEAVE PARTY". It works either way
+and the player does land in their main menu; wiring the label is a prefab edit for the editor pass.
+
+**Retest.** Host + at least one client. (1) Client opens the pause menu mid-match → Main Menu is
+present → press → client lands in its own menu, host's match continues. (2) Same in a Maelstrom game,
+and from the per-game scoreboard. (3) Host is unaffected on both: its Main Menu still takes the whole
+party back. (4) Watch the host for clean roster removal (`ReconcilePartyMembersNow`).
+
+---
+
+## B19 — Nothing watches a client's scene transition, so a lost one is a permanent black screen 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom.** The client half of the same report: transitions that sometimes never complete, leaving
+the player on an opaque screen with no error and no way out. Amplified by Maelstrom, because a
+tournament is a chain of host-driven scene loads and every link is another chance to hang.
+
+**Root cause.** Every path where a client follows the host into a scene covers the screen and then
+waits with **no timeout**:
+
+- `SceneLoader.LaunchGame` / `ReturnToMainMenu` / `HandleActiveSessionEnd` each call
+  `SetFadeImmediate(1f)` (or arrive already covered) and then `return` at the defer-to-server guard.
+- `MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc` blacks out every client's screen
+  ahead of the host's teardown.
+
+The veil then lifts only when the new scene loads. If the host's scene event never reaches this
+client, nothing ever lifts it.
+
+**This was already known in one direction.** `MultiplayerSetup.OnClientDisconnect` deliberately
+routes host-loss *around* `SceneLoader.HandleActiveSessionEnd` because — in its own comment — "the
+defer-to-server guard hangs the client when the server is gone". That covers a host that is
+definitively gone. It does nothing for a host that is alive and simply never got us into the scene,
+because there is no event to react to: **the absence of an event is the failure**, so the only
+possible detector is a timeout.
+
+**Fix.** A client scene-follow watchdog in `SceneLoader`, generation-counted so a transition that
+lands (or one a newer transition supersedes) retires its own watchdog, and disarmed by the scene
+actually loading. On expiry it takes the same self-rescue as host loss
+(`PartyInviteController.HandleHostLossAsync`): back to the player's own working menu, with the toast
+raised after recovery so it lands on the fresh menu's live `ToastService`.
+
+**Why the timeout is 90s and not 10.** A false positive costs a player their party and leaves them
+somewhere they can rejoin from. The black screen it replaces costs them the application. Those are
+not close, so the bound is set to be certain the transition is never coming rather than to react
+quickly.
+
+**The load-bearing detail — the call site that matters is NOT in `SceneLoader`.** Its three defer
+guards are reached through SOAP events, and **a SOAP raise is local; it does not cross the wire.** On
+separate machines a client never runs `LaunchGame` or `ReturnToMainMenu` at all — those guards exist
+for MPPM virtual players, which share one `GameDataSO` in one process. What blacks out a *shipped*
+client's screen is the `ShowReturnToMenuVeil_ClientRpc`, so the watchdog arms there too. Arming only
+the `SceneLoader` guards would have looked correct in the editor and protected nobody in the build.
+
+**General rule.** *A guard whose trigger is a local event only fires for peers that share the
+process.* When a fix has to hold on real hardware, find the path that runs on real hardware — which
+for anything cross-machine means an RPC, not a SOAP raise.
+
+**Retest.** Host + client, in a game scene. (1) Host presses Main Menu → client follows normally, no
+watchdog line. (2) Force the failure (suspend the host process, or pull its network, after the veil
+lands) → the client should bounce to its own menu with a toast instead of holding black. (3) Confirm
+no spurious bounce on a slow but legitimate load of the heaviest arena.
+
+
+---
+
+## B20 — A player leaving mid-wait strands the whole party at the ready screen, forever 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom.** Everyone sits at a ready screen that never advances. No error, no timeout,
+no way forward. Two separate gates, same shape — the MATCH gate (per turn/round) and the
+LAUNCH LOBBY gate (before the scene loads).
+
+**Root cause.** Both gates were evaluated **only inside the press RPC**, comparing a
+running tally against a human count read live at that instant. So when a player left,
+dropped or crashed while the others were waiting on them, the comparison that would now
+pass was never run again:
+
+> Three humans. A presses (1/3). B presses (2/3). C leaves. The head count is now 2 and the
+> tally is 2 — the gate is satisfied — and nothing evaluates it. A and B wait forever.
+
+Nobody can press again either: neither gate is a toggle, so a player who already pressed
+early-returns. In the lobby the host has to close the card and start over; in a match
+(before B18) there was no way out at all.
+
+**A count is a snapshot of an answer; the ROSTER is the question, and it keeps changing.**
+
+**Second defect, match gate only.** It kept a bare `int`, so a double-press — a rebound
+tap, or a Ready button not yet hidden on a laggy client — satisfied the gate on behalf of
+somebody who had not pressed, and the match started without them. Keying on the sender
+makes a press idempotent.
+
+**Fix.** A set of WHO, re-evaluated on every Ready press **and** every client disconnect,
+with departed clients pruned rather than trusted (a stale id would let the gate pass on
+behalf of somebody who is gone). `humanCount <= 0` holds rather than launching for nobody.
+
+**Written twice, so fixed once.** The match gate existed in two copies —
+`MultiplayerDomainGamesController` and `CoOpWildlifeBlitzMiniGame` — with *both* defects in
+each. It now lives on `MultiplayerMiniGameControllerBase` (`MarkClientReady` /
+`EvaluateReadyGate` / `OnAllPlayersReady` / `ResetReadyGate`), so a third mode cannot write
+a third copy. **Two copies of a rule is how the second one gets forgotten.**
+
+**The lobby's own reasoning, and why it was overridden.** Its disconnect handler removed the
+client and re-announced the count but deliberately did NOT re-decide — *"a launch is
+something a PRESS causes, never a departure."* That is a fair instinct and it left the gate
+satisfied-but-unchecked. Launching there is not a surprise: every remaining player has
+explicitly pressed Ready, and the departure does not CAUSE the launch, it removes the last
+thing blocking one the others already asked for. Reversible in one place if playtest
+disagrees (`EvaluateLobbyReadyGate`).
+
+**Retest.** 3 humans in a match and in a launch lobby. Two press Ready, third leaves →
+the turn/launch should proceed within a tick. Also: press Ready twice quickly → the match
+must NOT start until everyone has pressed.
+
+---
+
+## B21 — A pilot who leaves mid-match takes their ship AND their score out of the arena 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom (owner report).** *"Once one client leaves mid game the vessel should be replaced
+by an AI and the score of the client should still count… The vessel should not just
+disappear."*
+
+**Root cause.** Netcode destroys a client's owned objects when that client disconnects, and
+BOTH the vessel and the `Player` are owned by that client. `Player` is where `RoundStats`
+lives — the score. So a departure removed a ship from the arena mid-flight with no
+explanation, and silently subtracted that player's contribution from their domain's total:
+every surviving player was finishing a different match than the one they started.
+
+**Fix — the AI takes the ship.** Both objects are flagged `DontDestroyWithOwner` **at
+spawn**, so Netcode keeps them and reassigns ownership to the server itself; the disconnect
+handler then only has to switch the pilot on. That split is deliberate: the callback runs
+inside Netcode's own cleanup, so a handler that tried to rescue objects there would be
+racing it. By the time we run they are already safe, and switching on a pilot is safe
+whenever it happens.
+
+The result is exactly an AI backfill bot reached from the other direction — a server-owned
+`Player` marked `NetIsAI`, flying a server-owned vessel under `AIPilot`, configured to the
+same standard as a backfill bot (mode-aware seeking, skill from intensity). `RoundStats` is
+untouched, so the score earned still counts, and so does anything the AI earns after.
+
+**Announced on every peer** (`GameToastSituation.PilotHandedToAI`). A ship flying under new
+management is *less* confusing than one that vanishes — but only if everyone is told,
+otherwise a pilot who suddenly flies differently reads as a cheat.
+
+**Identifying who left needs its own map.** `_humanPlayersByOwner`, recorded at spawn:
+Netcode may already have reassigned ownership by the time the callback runs, so asking "who
+owned this?" then is asking a question whose answer has been erased. AI players share the
+HOST's owner id, so only remote humans are recorded.
+
+**The menu opts out** (`ConvertDepartedPlayersToAI => false`): an abandoned lava-lamp vessel
+has no match to finish and would just accumulate autopilot ships.
+
+**Retest.** Host + 2 clients in a scored match. One client leaves mid-match (Leave, and
+separately a hard kill). Expect: the ship keeps flying under AI, a toast names the departed
+pilot, the scoreboard still shows their score, and their domain's total still includes it.
+Watch that the host's roster does not double-count them.
+
+
+---
+
 ## How we work bugs
 
-Method: see `../README.md` § "How we work bugs". Party-side priority
-order: **B2 → B5 → B7** (B3, B8, B9, B10 fixed; B3 is fixed-by-construction
-pending its dedicated TC4 bounce repro; B10 needs the host-loss MPPM sweep).
+Method: see `../README.md` § "How we work bugs". Party-side priority order as of
+2026-09-11: **B5 RETEST → B7**. Everything above B5 is closed; B7 stays deferred as
+verified-mostly-benign.
+
+**The one thing to get right here is that B5's next step is a TEST, not a code
+change.** Its every named cause traces closed in source (see the table in its entry),
+and its last observation predates all of them *and* the MPPM unique-tag prerequisite.
+Reading the code again will re-derive that table; only a tagged three-player MPPM run
+can tell "fixed" from "broken for a reason nobody has named". Same for Presence B4,
+which now carries a fix nobody has executed.
+
+Three bugs are 🟢 but carry an unrun retest in their entry — B3 (its dedicated TC4
+bounce repro), B10 (the host-loss MPPM sweep) and B15 (the in-game presence retest).
+They are fixed on evidence; the retests are confirmation, and they belong to the same
+MPPM pass.
+
 The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.
+
+---

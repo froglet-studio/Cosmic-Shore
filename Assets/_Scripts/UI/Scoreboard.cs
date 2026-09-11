@@ -71,6 +71,11 @@ namespace CosmicShore.UI
         [Tooltip("Play Again button - host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
 
+        [Tooltip("Optional label on Play Again. When set it reads REMATCH? for a client (whose press " +
+                 "is a vote) and PLAY AGAIN for the host (whose press actually restarts), plus the " +
+                 "live tally once anyone votes. Leave unassigned if the prefab has no label.")]
+        [SerializeField] private TMPro.TMP_Text playAgainLabel;
+
         [Header("Host / Client Buttons")]
         [Tooltip("Main Menu button - host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
         [SerializeField] private GameObject mainMenuButton;
@@ -146,6 +151,9 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            if (gameController is MultiplayerMiniGameControllerBase mp)
+                mp.OnRematchVotesChanged += HandleRematchVotesChanged;
+
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
 
@@ -160,6 +168,9 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            if (gameController is MultiplayerMiniGameControllerBase mp)
+                mp.OnRematchVotesChanged -= HandleRematchVotesChanged;
+
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
 
@@ -216,28 +227,43 @@ namespace CosmicShore.UI
         /// </summary>
         void ConfigureLobbyButtons()
         {
+            _rematchVoteCast = false;
+
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
-            // Maelstrom mode: the host gets Continue on EVERY game (including the last) and
-            // clients see no buttons. Continue on the last game takes the party to the Maelstrom
-            // results screen, which is where Play Again / Main Menu live now - so they are never
-            // shown on the per-game scoreboard here.
+            // Maelstrom mode: the host gets Continue on EVERY game (including the last). Continue on
+            // the last game takes the party to the Maelstrom results screen, which is where Play
+            // Again / Main Menu live now - so those two are never shown on the per-game scoreboard.
+            //
+            // A client keeps LEAVE, and that is the point. This branch used to hide all four, so a
+            // client had no button at all here - and the pause menu hid its Main Menu too, and the
+            // Maelstrom hub between games offers only READY. The only screen in the whole tournament
+            // that ever let a client out was the FINAL summary. So a client who wanted to stop was
+            // held until the host finished the entire race-to-N, or killed the application. A
+            // tournament nobody can leave is not a tournament anybody should have to finish.
             if (gameData != null && gameData.IsMaelstromMode)
             {
                 bool isHost = !isClient;
                 if (continueButton)   continueButton.SetActive(isHost);
                 if (playAgainButton)  playAgainButton.SetActive(false);
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
-                if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
-                return;
+                if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
+                return;   // no rematch vote mid-tournament: the next game is the lineup's, not a replay
             }
 
             // Normal (non-tournament) game: host gets Main Menu + Play Again, clients get Leave.
             if (continueButton)   continueButton.SetActive(false);
             if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
-            if (playAgainButton)  playAgainButton.SetActive(!isClient);
+
+            // Play Again is shown to EVERYONE. For the host it restarts the match; for a client it
+            // is a REMATCH VOTE - the press is recorded, everyone sees the tally, and the host
+            // decides. Hiding it was defensible (a client's press cannot force a replay on the
+            // party) and left a client unable to say the most common thing anybody wants to say at
+            // a scoreboard, with the host guessing whether anyone wanted another round.
+            if (playAgainButton)  playAgainButton.SetActive(true);
+            if (playAgainLabel)   playAgainLabel.text = isClient ? "REMATCH?" : "PLAY AGAIN";
         }
 
         void HideScoreboard()
@@ -663,12 +689,13 @@ namespace CosmicShore.UI
             if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
-            // Defense in depth: non-host clients don't see the button
-            // (ConfigureLobbyButtons gates it), but guard the call path too.
+            // A CLIENT's press is a rematch VOTE, not a restart - only the host can force the party
+            // into another round. The button used to be hidden from clients entirely and this guard
+            // was its backstop; now the guard is the fork.
             var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsServer)
+            if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                CSDebug.LogWarning("[Scoreboard] Play Again ignored - only the host can restart the game.");
+                CastRematchVote();
                 return;
             }
 
@@ -726,6 +753,48 @@ namespace CosmicShore.UI
         /// session and returns to Menu_Main. Host/single-player users see the regular
         /// Main Menu button instead (which is wired to the SOAP main-menu event).
         /// </summary>
+        /// <summary>
+        /// Sends this client's rematch vote and locks the button so it reads as cast. The tally
+        /// comes back to every peer through <c>OnRematchVotesChanged</c>, so the host sees it too.
+        /// </summary>
+        void CastRematchVote()
+        {
+            ResolveGameController();
+            var controller = gameController as MultiplayerMiniGameControllerBase;
+            if (controller == null || !controller.IsSpawned)
+            {
+                CSDebug.LogWarning("[Scoreboard] Rematch vote ignored - no spawned multiplayer controller.");
+                return;
+            }
+
+            string playerName = gameData?.LocalPlayer?.Name ?? string.Empty;
+            var domain = gameData?.LocalPlayer?.Domain ?? Domains.Blue;
+            controller.RequestRematch_ServerRpc(playerName, (int)domain);
+
+            _rematchVoteCast = true;
+            if (playAgainLabel) playAgainLabel.text = "REMATCH ✓";
+        }
+
+        bool _rematchVoteCast;
+
+        /// <summary>
+        /// Live tally on the button. The HOST is the audience that matters - it is the only peer
+        /// whose press does anything - so it sees "PLAY AGAIN (2/3)" and can decide. A client that
+        /// has already voted keeps its confirmation rather than being overwritten by the count.
+        /// </summary>
+        void HandleRematchVotesChanged(int votes, int humans)
+        {
+            if (!playAgainLabel) return;
+            if (votes <= 0) return;
+
+            var nm = NetworkManager.Singleton;
+            bool isHost = nm == null || nm.IsServer;
+
+            playAgainLabel.text = isHost
+                ? $"PLAY AGAIN ({votes}/{Mathf.Max(votes, humans)})"
+                : (_rematchVoteCast ? "REMATCH ✓" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
+        }
+
         public void OnLeaveLobbyButtonPressed()
         {
             if (leaveLobbyButton) leaveLobbyButton.SetActive(false);

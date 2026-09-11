@@ -369,10 +369,42 @@ namespace CosmicShore.Gameplay
                         _gamePicks.RemoveAt(i);
             }
 
-            // A member who leaves mid-lobby is neither ready nor expected any more. Only the
-            // count is re-announced - a launch is something a PRESS causes, never a departure.
+            // A member who leaves mid-lobby is neither ready nor expected any more.
             if (_isCommitted && (_readyClients.Remove(clientId) || _lobby.Value.IsOpen))
+            {
                 SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
+
+                // ...and the gate is then RE-DECIDED. This used to only re-announce the count, on
+                // the reasoning that "a launch is something a PRESS causes, never a departure" -
+                // which is a fair instinct and left a hang: three in the lobby, two press Ready,
+                // the third leaves, and the gate is now satisfied (2/2) with nothing left to
+                // evaluate it. Nobody can press again either - ConfirmReady is not a toggle, so a
+                // player who already pressed early-returns - so the lobby sits at 2/2 forever and
+                // the host has to close the card and start over.
+                //
+                // Launching here is not a surprise: every remaining player has explicitly pressed
+                // Ready, and the only reason it had not started is a player who is now gone. The
+                // departure does not CAUSE the launch; it removes the last thing blocking one the
+                // others already asked for.
+                if (_readyClients.Count > 0)
+                    EvaluateLobbyReadyGate($"client {clientId} left");
+            }
+        }
+
+        /// <summary>
+        /// Launches if every expected human has confirmed. Called on a Ready press and on a
+        /// departure - see <see cref="HandleClientDisconnected"/> for why the second caller exists.
+        /// </summary>
+        void EvaluateLobbyReadyGate(string because)
+        {
+            if (!IsServer || !_isCommitted) return;
+
+            int expected = ExpectedHumanCount;
+            if (expected <= 0 || _readyClients.Count < expected) return;
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[ArcadeConfigSync] All players ready ({because}) - launching game");
+            AllPlayersReady_ClientRpc();
         }
 
         /// <summary>
@@ -619,11 +651,7 @@ namespace CosmicShore.Gameplay
             // Notify all clients of the updated ready count
             SyncReadyCount_ClientRpc(_readyClients.Count, expected);
 
-            if (_readyClients.Count >= expected)
-            {
-                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ArcadeConfigSync] All players ready - launching game");
-                AllPlayersReady_ClientRpc();
-            }
+            EvaluateLobbyReadyGate($"client {clientId} pressed Ready");
         }
 
         [ClientRpc]
