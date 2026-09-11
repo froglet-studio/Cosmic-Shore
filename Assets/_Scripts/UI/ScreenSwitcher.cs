@@ -1034,6 +1034,13 @@ namespace CosmicShore.UI
         public bool IsInFreestyle => InFreestyle;
 
         /// <summary>
+        /// True while a freestyle blend is still running. <see cref="IsInFreestyle"/> goes false at
+        /// the START of an exit, so a poller that only asks that one can act half way through the
+        /// camera ease and the UI fade - which reads as a window appearing over a moving shot.
+        /// </summary>
+        public bool IsFreestyleSettling => crystalClickHandler && crystalClickHandler.IsTransitioning;
+
+        /// <summary>
         /// Bring the local player out of freestyle because the HOST is pulling them somewhere -
         /// then run <paramref name="onExited"/>.
         ///

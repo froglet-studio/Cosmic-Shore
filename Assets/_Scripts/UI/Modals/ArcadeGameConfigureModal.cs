@@ -2634,7 +2634,7 @@ namespace CosmicShore.UI
             // of freestyle (see the exit in HandleConfigOpenedOnClient) - this is the catch-up
             // path, and catching up must never take the ship off somebody who is using it. They
             // get the card the moment they land, because nothing here has been recorded as drawn.
-            if (Switcher && Switcher.IsInFreestyle) return;
+            if (Switcher && (Switcher.IsInFreestyle || Switcher.IsFreestyleSettling)) return;
 
             if (!arcadeConfigSyncManager.IsSpawned || !ArcadeConfigSyncManager.IsPartyClient)
             {

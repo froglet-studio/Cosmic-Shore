@@ -97,7 +97,9 @@ Two consequences worth knowing:
   `CommitConfiguration(playSound: false)` is the auto path.
 - **The party sees the card the host opens.** On the old flow the host browsed privately. This
   is inherent to there being no private step, and it is bounded: `ArcadeConfigSyncManager`'s
-  own `_isCommitted` guard means one commit per open, and closing the modal re-arms it.
+  own `_isCommitted` guard means one commit per CARD (§3.1.1 — it used to be one per *session*,
+  which a close route that skipped `NotifyConfigClosed` left latched forever), and every close
+  route re-arms it, because the modal notifies on its own `OnModalClosed`.
 
 `OnStartGameClicked` is a latch (`_localPlayerReady`): the panel subscribes it, a prefab may
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a

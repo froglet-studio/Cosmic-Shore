@@ -72,6 +72,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
 
+        /// <summary>
+        /// True while a menu&lt;-&gt;freestyle blend is still running. Not the same question as
+        /// <see cref="IsInFreestyle"/>, which flips at the START of a transition (deliberately -
+        /// see the comment in TransitionToMenu), so anything that needs "the appshell has actually
+        /// settled" has to ask this instead of inferring it from the flag.
+        /// </summary>
+        public bool IsTransitioning => _isTransitioning;
+
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
