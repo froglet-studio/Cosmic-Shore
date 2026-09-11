@@ -44,7 +44,6 @@ when planning a week:
 
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
-| **R4** | **Finish the de-scope sweep (C4, 3.0 person-days).** `StoreScreen`, `EpisodeScreen`, `PurchaseCard` and `PurchaseConfirmationModal` are live surfaces with no coming-soon treatment. The `MenuAvailability` / `MenuAvailabilityView` pattern already exists and is written to be the one place this lives — extend it rather than growing a locked look per screen. | Session + editor | DoD #1 | [`DESCOPE_COMMERCE_SURFACES_PROMPT.md`](prompts/DESCOPE_COMMERCE_SURFACES_PROMPT.md) |
 | **R5** | **Close the PC platform defaults (B2).** `defaultScreenWidth/Height` is 1024 × 768, `resizableWindow` is 0, and the Standalone bundle id is still `com.Froglet-Games.Tail-Glider`. Mobile-era defaults never re-pointed at PC. | Session | R1 quality | [`PC_PLATFORM_DEFAULTS_PROMPT.md`](prompts/PC_PLATFORM_DEFAULTS_PROMPT.md) |
 | **R6** | **Playtest child app: runbook + dual-appID upload (A4, A5, A6, B4).** The Steam runbook is written for Revision 1 — a paid release on one app with `beta`/`default` branches. `Tools/Steam/upload.sh` takes one `STEAM_APPID`/`STEAM_DEPOTID` pair. Revision 2 needs the base app *and* the Playtest depot. | Session | A4, A5, E7 | [`STEAM_PLAYTEST_DUAL_APP_PROMPT.md`](prompts/STEAM_PLAYTEST_DUAL_APP_PROMPT.md) |
 | **R7** | **Publish a load-time target, then measure (D2, 8.0 person-days).** The target is D2's actual deliverable and does not exist. The matrix is now **19 modes × 4 intensities = 76 combinations**, not the ~28 the estimate assumed. Authoring the target and the harness is session work; running it is not. | Session + editor | DoD #5 | [`LOAD_TIME_TARGET_PROMPT.md`](prompts/LOAD_TIME_TARGET_PROMPT.md) |
@@ -128,3 +127,12 @@ Mapped to the checkpoint's eight exit criteria, so the board can be read backwar
 | 6 | Crash + funnel telemetry in dashboards, cohorted by wave | R9 |
 | 7 | Zero public review surface | structural — Playtest configuration, already true |
 | 8 | Paid-EA gate published, exit checklist signed | H12, R9 |
+
+---
+
+## Done
+
+| ID | Item | Landed | Verification |
+|---|---|---|---|
+| **R4** | **De-scope sweep (C4).** Every commerce surface now carries a deliberate coming-soon state from ONE authority, `Resources/CommerceAvailability` — the existing `MenuAvailability` / `MenuAvailabilityView` pattern extended, not a second locked look. Both paths to `PurchaseConfirmationModal` are gated, and `IAPManager.OpenCheckout` declines at the choke point its two entry points share. The live cold-boot path it closed was **PROFILE → `UnlockVesselButton` → episode panel → Support Us → `Application.OpenURL`**. The UGS crystal loop (earning, vessel unlocks) is untouched. Record: [`MENU_PROGRESSION_AND_IAP.md` §6](MENU_PROGRESSION_AND_IAP.md). | 2026-09-11 | Code + asset + one scene component verified out of editor (Roslyn bind of the new API and every new call site; `CommerceDeScopeTests` simulated green; five `Tools/Build` gates clean). **Not opened in Unity** — the asset import, the new scene component and the on-screen dimming are unverified. |
+

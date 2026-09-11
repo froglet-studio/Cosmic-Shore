@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2e8786d6618c449a9b4bba2317303c8d, type: 3}
+  m_Name: CommerceAvailability
+  m_EditorClassIdentifier: 
+  storeScreen: 2
+  storeScreenMessage: 
+  episodes: 1
+  episodesMessage: Episodes arrive with the full release.
+  catalogPurchase: 1
+  catalogPurchaseMessage: Purchases open with the full release.
+  allowRealMoneyCheckout: 0
