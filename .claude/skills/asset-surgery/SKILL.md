@@ -1282,6 +1282,13 @@ def extract(sig_regex):                      # find the signature, then brace-ma
     sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
 ```
 
+**Brace-matching alone MIS-EXTRACTS an expression-bodied member, and the error it produces names
+the wrong thing.** `public bool HasVotedRematch => IsSpawned && NetRematchVote.Value;` has no
+braces, so the walker runs straight past it and swallows the NEXT member — which the list then
+extracts a second time, giving `CS0111: already defines a member`. That reads exactly like the
+duplicate-member defect §5 warns about, in code that has no duplicate at all, and the instinct is
+to go looking in the real file. Terminate on the first `;` when a `=>` appears before any `{`.
+
 **The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
 A signature list silently stops covering a method the moment you rename or delete one — and the
 harness then compiles clean, reports `errors: 0`, and is proving nothing. This is gate erosion by
