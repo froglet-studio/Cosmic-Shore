@@ -73,6 +73,14 @@ namespace CosmicShore.Gameplay
         /// <summary>Announce that this machine's arena build is complete. Owner-side; idempotent.</summary>
         void ReportArenaReady();
         /// <summary>
+        /// True once this player has asked for a rematch on the current scoreboard. Replicated
+        /// state, not an event, so the scoreboard can draw a face per vote on every peer - the
+        /// host's above all, since only the host's press actually restarts the match. Always
+        /// false for a player that is not network-spawned (the legacy single-player path): there
+        /// is nobody to ask.
+        /// </summary>
+        bool HasVotedRematch { get; }
+        /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>
         ulong PlayerNetId { get; }
