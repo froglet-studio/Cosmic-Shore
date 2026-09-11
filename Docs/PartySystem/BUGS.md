@@ -25,6 +25,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B15 | Nobody is ever shown "in game"; friends list only moves on return to menu | Fixed; live retest pending | 🟢 |
 | B16 | Un-spawned fauna NetworkObjects break synchronization for every guest | Root cause; fixed & live-verified | 🟢 |
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
+| B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
+| B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1283,6 +1285,113 @@ panel parked, restore the network — the boot should resume on its own and log
 
 ---
 
+## B18 — A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom (owner report, live play, 2026-09-11).** "Once you get off the happy path the game is
+bugged, and the experience is not good for clients… leaving is a challenge. Not in Maelstrom, not in
+the whole game." Reported against 4 players all in the US, so it is not latency.
+
+**Root cause — the exit was hidden, not broken.** Every screen a client can be on during a party
+match gated its way out behind `IsServer`:
+
+| Where a client is | Exit before this fix |
+|---|---|
+| Mid-match, pause menu | ❌ `PauseMenu.ConfigureHostOnlyButtons` set `mainMenuButton` inactive for any non-host |
+| Per-game Scoreboard, normal mode | ✅ `leaveLobbyButton` |
+| Per-game Scoreboard, **Maelstrom** | ❌ the Maelstrom branch set **all four** buttons inactive for a client |
+| Maelstrom hub between games | ❌ only READY is shown (`ShowActive` never activates the end buttons) |
+| Maelstrom final summary | ✅ the one screen that was right |
+
+So in a normal game a client could not leave until the match ended; **in a Maelstrom a client could
+not leave until the entire race-to-N ended.** The only exit was killing the application — which is
+exactly what "leaving is a challenge" describes, and why it was reported as worst in Maelstrom.
+
+**Why hiding it looked right.** Raising the Main Menu event on a client genuinely does not work:
+`SceneLoader.ReturnToMainMenu` defers scene loads to the server, so a client that raised it would
+fade to black and wait on the host forever (that is B19). Faced with a button that hangs, hiding it
+is a reasonable local call. The mistake was stopping there rather than asking what a client's press
+*should* mean.
+
+**The answer was already in the tree, applied once.** `MaelstromSceneView.OnMainMenuPressed` has the
+correct shape and its comment names this exact trap: a client LEAVES THE PARTY instead —
+`PartyInviteController.LeavePartyAndReturnToMenuAsync` disconnects, loads Menu_Main locally and
+restarts a solo Relay. That is the same proven path as the Scoreboard's Leave Lobby. It was
+implemented on the summary screen and nowhere else.
+
+**Fix.** Propagate it. `PauseMenu` shows Main Menu to everyone and routes a client's press to the
+leave-party path (host's press is unchanged); `Scoreboard`'s Maelstrom branch shows `leaveLobbyButton`
+to clients. Replay stays host-only — the host's Play Again forces everyone to replay, so offering it
+to a client would be misleading, which is the distinction the original gate was reaching for.
+
+**General rule.** *When one screen solves a cross-cutting problem correctly, the fix is not done
+until every screen with that problem uses it.* The client's ability to leave depended on which screen
+they happened to be looking at, and nothing in the code said it was supposed to be uniform.
+
+**Known gap (not a blocker).** `PauseMenu.mainMenuButtonLabel` is optional and unwired in the shipped
+prefabs, so a client's button still reads "MAIN MENU" rather than "LEAVE PARTY". It works either way
+and the player does land in their main menu; wiring the label is a prefab edit for the editor pass.
+
+**Retest.** Host + at least one client. (1) Client opens the pause menu mid-match → Main Menu is
+present → press → client lands in its own menu, host's match continues. (2) Same in a Maelstrom game,
+and from the per-game scoreboard. (3) Host is unaffected on both: its Main Menu still takes the whole
+party back. (4) Watch the host for clean roster removal (`ReconcilePartyMembersNow`).
+
+---
+
+## B19 — Nothing watches a client's scene transition, so a lost one is a permanent black screen 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom.** The client half of the same report: transitions that sometimes never complete, leaving
+the player on an opaque screen with no error and no way out. Amplified by Maelstrom, because a
+tournament is a chain of host-driven scene loads and every link is another chance to hang.
+
+**Root cause.** Every path where a client follows the host into a scene covers the screen and then
+waits with **no timeout**:
+
+- `SceneLoader.LaunchGame` / `ReturnToMainMenu` / `HandleActiveSessionEnd` each call
+  `SetFadeImmediate(1f)` (or arrive already covered) and then `return` at the defer-to-server guard.
+- `MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc` blacks out every client's screen
+  ahead of the host's teardown.
+
+The veil then lifts only when the new scene loads. If the host's scene event never reaches this
+client, nothing ever lifts it.
+
+**This was already known in one direction.** `MultiplayerSetup.OnClientDisconnect` deliberately
+routes host-loss *around* `SceneLoader.HandleActiveSessionEnd` because — in its own comment — "the
+defer-to-server guard hangs the client when the server is gone". That covers a host that is
+definitively gone. It does nothing for a host that is alive and simply never got us into the scene,
+because there is no event to react to: **the absence of an event is the failure**, so the only
+possible detector is a timeout.
+
+**Fix.** A client scene-follow watchdog in `SceneLoader`, generation-counted so a transition that
+lands (or one a newer transition supersedes) retires its own watchdog, and disarmed by the scene
+actually loading. On expiry it takes the same self-rescue as host loss
+(`PartyInviteController.HandleHostLossAsync`): back to the player's own working menu, with the toast
+raised after recovery so it lands on the fresh menu's live `ToastService`.
+
+**Why the timeout is 90s and not 10.** A false positive costs a player their party and leaves them
+somewhere they can rejoin from. The black screen it replaces costs them the application. Those are
+not close, so the bound is set to be certain the transition is never coming rather than to react
+quickly.
+
+**The load-bearing detail — the call site that matters is NOT in `SceneLoader`.** Its three defer
+guards are reached through SOAP events, and **a SOAP raise is local; it does not cross the wire.** On
+separate machines a client never runs `LaunchGame` or `ReturnToMainMenu` at all — those guards exist
+for MPPM virtual players, which share one `GameDataSO` in one process. What blacks out a *shipped*
+client's screen is the `ShowReturnToMenuVeil_ClientRpc`, so the watchdog arms there too. Arming only
+the `SceneLoader` guards would have looked correct in the editor and protected nobody in the build.
+
+**General rule.** *A guard whose trigger is a local event only fires for peers that share the
+process.* When a fix has to hold on real hardware, find the path that runs on real hardware — which
+for anything cross-machine means an RPC, not a SOAP raise.
+
+**Retest.** Host + client, in a game scene. (1) Host presses Main Menu → client follows normally, no
+watchdog line. (2) Force the failure (suspend the host process, or pull its network, after the veil
+lands) → the client should bounce to its own menu with a toast instead of holding black. (3) Confirm
+no spurious bounce on a slow but legitimate load of the heaviest arena.
+
+
+---
+
 ## How we work bugs
 
 Method: see `../README.md` § "How we work bugs". Party-side priority order as of
@@ -1303,3 +1412,5 @@ MPPM pass.
 
 The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.
+
+---

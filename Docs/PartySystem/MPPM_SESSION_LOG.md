@@ -721,4 +721,76 @@ symptoms on its own. If either still fails, it is a NEW root cause: capture both
 
 ---
 
+## Session 5 — 2026-09-11 (CLIENT-EXPERIENCE SCAN — no MPPM, no editor)
+
+**Trigger.** Owner report from live play, same day: *"the multiplayer experience is not good at
+all… even 4 players from US have the problem. Once you get off the happy path the game is bugged,
+and the experience is not good for clients. Not in Maelstrom, not in the whole game. Connecting is
+a challenge, leaving is a challenge."* Explicitly not a latency problem.
+
+**That report outranks this tracker,** which had drop/recover marked green and engine-verified. The
+bugs it names are real and were simply not in the file, because every entry here came from MPPM join
+testing and nobody had audited what a client can DO once it is in.
+
+**Method.** Source scan of every client-side transition and every screen a client can be on. Again
+**nothing was run** — no Unity in this environment.
+
+### Findings — both now fixed, both need a playtest
+
+1. **B18 — a client could not leave.** Every exit was gated on `IsServer`. Pause menu: Main Menu
+   hidden. Maelstrom scoreboard: all four buttons hidden. Maelstrom hub: only READY. So a client was
+   held for the whole match, and in a Maelstrom for the whole race-to-N, with alt-F4 as the only
+   exit. The correct behaviour already existed in exactly one place —
+   `MaelstromSceneView.OnMainMenuPressed`, whose comment names the trap — and had not been
+   propagated. Now it is.
+
+2. **B19 — nothing watched a client's scene transition.** Every defer-to-server path covers the
+   screen and returns with no timeout, so a scene event that never arrives is a permanent black
+   screen. Already known in one direction (`MultiplayerSetup` routes host-loss around
+   `SceneLoader` because "the defer-to-server guard hangs the client when the server is gone") but
+   only for a host that is definitively GONE. A watchdog now bounces the client to its own menu.
+
+### The finding that generalises past both
+
+**A SOAP raise is local; it does not cross the wire.** `SceneLoader`'s three defer guards are
+reached through SOAP events, so on separate machines a client never runs them at all — they fire for
+MPPM virtual players, which share one `GameDataSO` in one process. What blacks out a *shipped*
+client's screen is `ShowReturnToMenuVeil_ClientRpc`. The watchdog arms there too.
+
+Two consequences worth carrying:
+
+- **A fix armed only at a SOAP call site is an editor-only fix.** It would have demoed correctly in
+  MPPM and protected nobody in a build.
+- **MPPM and real hardware are not the same topology**, so an MPPM-only test plan is structurally
+  blind to this whole class. Some of "it works in the editor but not for real players" is this.
+
+### What this did NOT do
+
+- No playtest, no editor pass. Both fixes are verified only by Roslyn syntax parse (with negative
+  controls) and the six out-of-editor gates.
+- Did not touch the locked design, the join handshake, or anything B5/B4 depend on.
+- Did not add a status surface to the join splash. A client sees an opaque screen for up to ~60s
+  during a join with no explanation, which is a real part of "connecting is a challenge" — but
+  `BootStatusBroadcaster` deliberately suppresses status during expected transitions to avoid a
+  misleading "tap retry", so changing it is a design call plus prefab wiring. Recorded for **R13**
+  (multiplayer QoL), not taken here.
+- Did not prune a departed player's `RoundStats` mid-match. `PruneDestroyedRosterEntries` runs only
+  from `AddPlayer`, so a player who leaves leaves a frozen row behind until someone joins. Checked
+  and deliberately left: it cannot hang an end condition (domain sums still reach their target), and
+  removing a `RoundStats` mid-match has real risk with no proven benefit.
+
+### Self-check on the change
+
+Mid-match client leave was previously unreachable, so this makes a new path live. The host side was
+verified to handle it: `OnClientDisconnect` → `ServerUnregister` + `ReconcilePartyMembersNow`, and
+`Player.OnNetworkDespawn` removes the player from the roster. It is the same path a client CRASH has
+always taken; the change makes it deliberate rather than only accidental.
+
+### For the next real session
+
+Playtest B18 and B19 with a host and at least one client — a human pass, not MPPM, since B19's real
+call site is the one MPPM cannot exercise faithfully. Steps are in each entry.
+
+---
+
 <!-- Append future sessions below this divider as ## Session 4 — date, etc. -->
