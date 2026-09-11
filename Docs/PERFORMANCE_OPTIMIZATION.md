@@ -7,6 +7,42 @@ root-cause analysis and designed fixes. All file/line references below were
 verified against the code on 2026-07-08 (branch `claude/cosmic-shore-perf-opt-g8j6n0`,
 post PR #573 merge).
 
+> ### ⚠ Staleness note — added 2026-09-11 (doc-drift sweep, board item **R8**)
+>
+> **What is stale is the verification sweep, not the whole document.** Be precise about which,
+> because this doc is both actively appended *and* carrying two-month-old file/line claims, and the
+> two are easy to conflate.
+>
+> | | Last done | Status |
+> |---|---|---|
+> | **Global file/line verification** (the sweep the line above refers to) | **2026-07-08** | **Not re-run.** Every `file.cs:NNN` and every "X is at Y" claim in §1 and §4 dates from that sweep. |
+> | §0 session handoff | 2026-07-15 | Stale as a *handoff* — several later sessions have run. |
+> | §1 "Current state" measurements | 2026-07-08 | Stale. Re-measure before quoting any number from it. |
+> | §4 backlog | 2026-07-08, + Task 10 added 2026-08-20 | Mixed. Priorities are pre-sweep; Task 10 is recent. |
+> | §0.2–§0.5, §6 changelog | through **2026-09-02** | Current. The FMOD and editor-reload rounds are recent and were verified when written. |
+>
+> **Do not treat a §4 line number as an address.** Confirm it before acting on it; this is the
+> single most likely thing to have moved.
+>
+> **What changed underneath it since 2026-07-08** — enough to move addresses across the prism,
+> ecology and arcade code:
+>
+> - **The CPU prism animation managers were deleted** in the D2 pass (2026-08-02). This is already
+>   flagged in the paragraph below, and it is the largest single invalidator: task entries below
+>   that name `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager` or
+>   `PrismEffectsManager`'s animation passes describe a **retired architecture**.
+> - **At least nine game modes** entered `GameModes.cs` after the sweep — measured from git:
+>   Salvo (08-17), Bloomrush (08-26), Tollway / Switchback / Hijack (09-05), Headlong / Breakwater /
+>   Skein / Redline (09-09). The Revision 3 readiness audit puts the total closer to fifteen; this
+>   repository is a shallow clone, so nine is a verified floor rather than the count.
+> - Shield morphs moved to the GPU, the last CPU prism ticker was deleted, and prism death VFX
+>   became batched pure-entity work — all after the sweep.
+>
+> **This note deliberately does not re-verify anything.** Re-running the sweep is a perf session's
+> job, not a documentation sweep's, and a half-done re-verification would be worse than a dated
+> one. The load-time section is tracked separately as board item **R7**; §4 remains the input to
+> **D1** and **D3**.
+
 **How to use this doc:** before touching anything performance-related, read
 §2 (conventions) and §3 (instrumentation). Pick work from §4 top-down — tasks
 are ordered by value-for-cost. After every fix, run the §5 verification

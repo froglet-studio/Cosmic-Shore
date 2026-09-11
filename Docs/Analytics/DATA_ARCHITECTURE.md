@@ -682,8 +682,10 @@ player's `first_seen_utc_ms` falls in. Derived at identify time by
 **It is a PROXY for a grant batch, not the grant batch.** Read this before reading the gate.
 Steam hands the client no wave number: grants are issued in Steamworks, there is no client API for
 "which batch was I in", and there is no Steam SDK in this build at all — the checkpoint's Engineering
-Positions pin it at *"Steam SDK: none at launch"*. So the wave has to be derived, and the honest
-consequence is:
+Positions pin it at *"Steam SDK: none at launch"*, and `viability-report.md` independently verified
+the absence against the tree (no Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package;
+the only "Steam" hits in `Assets/` are inside the inert PlayFab SDK). So the wave has to be derived,
+and the honest consequence is:
 
 > A tester who **requested** access in week 1 but **installed** in week 3 is counted in **wave 3**.
 
