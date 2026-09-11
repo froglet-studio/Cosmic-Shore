@@ -23,6 +23,8 @@ when planning a week:
 
 `BLOCKS` names what cannot proceed until the item lands.
 
+A ✅ on an ID means that item has landed. The row stays on the board rather than being deleted, so what was done — and what it deliberately did *not* cover — stays readable.
+
 > **Deliberately excluded:** the quest and progression system (audit §02, action 01).
 > Design is still working the chain and it is tracked separately. Everything below is
 > independent of it — see *[The one dependency to watch](#the-one-dependency-to-watch)*.
@@ -45,7 +47,7 @@ when planning a week:
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
 | **R4** | **Finish the de-scope sweep (C4, 3.0 person-days).** `StoreScreen`, `EpisodeScreen`, `PurchaseCard` and `PurchaseConfirmationModal` are live surfaces with no coming-soon treatment. The `MenuAvailability` / `MenuAvailabilityView` pattern already exists and is written to be the one place this lives — extend it rather than growing a locked look per screen. | Session + editor | DoD #1 | [`DESCOPE_COMMERCE_SURFACES_PROMPT.md`](prompts/DESCOPE_COMMERCE_SURFACES_PROMPT.md) |
-| **R5** | **Close the PC platform defaults (B2).** `defaultScreenWidth/Height` is 1024 × 768, `resizableWindow` is 0, and the Standalone bundle id is still `com.Froglet-Games.Tail-Glider`. Mobile-era defaults never re-pointed at PC. | Session | R1 quality | [`PC_PLATFORM_DEFAULTS_PROMPT.md`](prompts/PC_PLATFORM_DEFAULTS_PROMPT.md) |
+| **R5** ✅ | **Closed the PC platform defaults (B2).** Landed 11 Sep 2026: `defaultScreenWidth/Height` 1024 × 768 → 1920 × 1080, `resizableWindow` 0 → 1, Standalone bundle id → `com.FrogletGames.CosmicShore`. **Code half only** — the manual PC sanity pass (pads, alt-tab, focus, quit path, no mobile-only prompts) is R1/R3 and is what proves this landed. | Session | R1 quality | [`PC_PLATFORM_DEFAULTS_PROMPT.md`](prompts/PC_PLATFORM_DEFAULTS_PROMPT.md) |
 | **R6** | **Playtest child app: runbook + dual-appID upload (A4, A5, A6, B4).** The Steam runbook is written for Revision 1 — a paid release on one app with `beta`/`default` branches. `Tools/Steam/upload.sh` takes one `STEAM_APPID`/`STEAM_DEPOTID` pair. Revision 2 needs the base app *and* the Playtest depot. | Session | A4, A5, E7 | [`STEAM_PLAYTEST_DUAL_APP_PROMPT.md`](prompts/STEAM_PLAYTEST_DUAL_APP_PROMPT.md) |
 | **R7** | **Publish a load-time target, then measure (D2, 8.0 person-days).** The target is D2's actual deliverable and does not exist. The matrix is now **19 modes × 4 intensities = 76 combinations**, not the ~28 the estimate assumed. Authoring the target and the harness is session work; running it is not. | Session + editor | DoD #5 | [`LOAD_TIME_TARGET_PROMPT.md`](prompts/LOAD_TIME_TARGET_PROMPT.md) |
 | **R8** | **Correct the drifted documentation.** Five documents read as authoritative and are wrong, including the in-repo checkpoint still being Revision 1. Cheap to fix, expensive to leave. | Session | nothing, but misleads every other item | [`DOC_DRIFT_SWEEP_PROMPT.md`](prompts/DOC_DRIFT_SWEEP_PROMPT.md) |
