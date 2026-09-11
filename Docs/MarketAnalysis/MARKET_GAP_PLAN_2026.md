@@ -85,25 +85,29 @@ Ranked by what each costs us if it is still true on launch day.
 
 ---
 
-## 4. The tagline
+## 4. Positioning and copy
 
-**Keep "a casual game for hardcore gamers" as the internal design compass and the investor line. Do not print it on the store page.** It describes exactly the shape that works in this segment (low friction to start, a high ceiling to chase) and it is the shape Trackmania sells. On a capsule it reads as a paradox, and paradox taglines under-perform a concrete promise. Every 2024 to 2026 breakout one-liner in the research names a genre noun plus one twist and never an audience; a self-applied "casual" reads as shallow to the Steam buyer; capsule guidance is zero to three words.
+> **Superseded 2026-09-11.** All player-facing copy now lives in **`Docs/WORLD_AND_COPY.md`**,
+> which replaces this section. The world is a sea; the product is four places in it (the Shore,
+> the Arcade, the Arena, Voyages); the tagline is *Leave a wake.* Read that file before writing
+> any store, trailer or menu text. The rest of this plan, its evidence, horizons, gates and
+> initiatives, stands unchanged.
 
-Write the thesis down as a decision rule the team can apply, or it drifts back onto the capsule the first time someone needs copy: **"Does this make a five-minute run more measurable, or a first five minutes more readable?"** If neither, it is not on the plan.
+Three findings from this section survive the move and are carried into the new file:
 
-**Player-facing hook.** *Restart until it's perfect. Then bring your friends to the reef.*
+**Keep "a casual game for hardcore gamers" as the internal thesis, never on a capsule.** A
+self-applied "casual" reads as shallow to a Steam buyer, and a paradox tagline needs trust a cold
+scroll has not given you. It is a decision rule, applied as a question: does this make a
+five-minute run more measurable, or a first five minutes more readable?
 
-**Steam short description, Coming Soon version (October 15), only what is true today:**
+**"Platform" is the investor word.** True of the architecture, wrong on a store page, where it
+misparses as platformer and promises exactly the breadth that is the diagnosed risk.
 
-> Cosmic Shore is a one-more-run arcade space racer. Drift a ship that lays trails of light around hand-built circuits, race the clock, and chase your own best. Then form a party of up to four and take on party modes in a living reef where the wildlife eats whatever you leave behind. Fully playable solo against bots.
-
-**Launch version (add only when each ships, before the demo goes live):** "chase author medals and climb the weekly boards" replaces "chase your own best" once medals and boards exist. The ghost is not mentioned anywhere until it ships in Horizon 2.
-
-**Two claims are removed because the build cannot prove them.** "The track is the trail you just laid" is false of Skim Race: its track is four hand-authored waypoint circuits laid by `SpawnableWaypointTrack` before the race starts, and the player collects crystals along it. Trail-as-track is real (the Urchin's rail grind, the Squirrel's tube ride) and belongs in B-roll and a later mode, not in the description of the front door. "No queue ever" markets a defect as a feature: public matchmaking is unreachable by construction (every party session is `IsPrivate = true` and the query path sits behind an early return). The EA Q&A states plainly: friends-only parties up to four with AI backfill, no public matchmaking, no voice, no host migration, Windows only, English only.
-
-**Hold one hull number everywhere.** "Four fully realised hulls, four more in Early Access." Four hulls have complete elemental maps (Squirrel, Sparrow, Dolphin, Scarab); the Rhino gets its map in Horizon 3; Manta and Urchin stay visible with honestly LOCKED ability cards; the Serpent is hidden until its map exists.
-
----
+**Two claims were cut because the build cannot prove them.** "The track is the trail you just
+laid" is false of Skim Race, whose track is four hand-authored waypoint circuits laid before the
+race starts, and no vessel prefab carries a trail-riding component today. "No queue ever" markets
+a defect as a feature, since public matchmaking is unreachable by construction. Both stay cut, and
+the new file's fiction rules exist to stop them coming back.
 
 ## 5. The plan in three horizons
 
