@@ -76,6 +76,12 @@ namespace CosmicShore.UI
                  "live tally once anyone votes. Leave unassigned if the prefab has no label.")]
         [SerializeField] private TMPro.TMP_Text playAgainLabel;
 
+        [Tooltip("Optional. The row of faces under Play Again showing WHO has asked for a rematch. " +
+                 "Left empty, one is ensured on the Play Again button itself and adopts a " +
+                 "descendant named \"PlayerAvatars\" as its container - so a prefab carrying only " +
+                 "the art lights up with no wiring.")]
+        [SerializeField] private RematchVoteRoster rematchVoteRoster;
+
         [Header("Host / Client Buttons")]
         [Tooltip("Main Menu button - host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
         [SerializeField] private GameObject mainMenuButton;
@@ -151,8 +157,7 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            if (gameController is MultiplayerMiniGameControllerBase mp)
-                mp.OnRematchVotesChanged += HandleRematchVotesChanged;
+            SubscribeRematchVotes();
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised += ShowScoreboard;
@@ -168,8 +173,7 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            if (gameController is MultiplayerMiniGameControllerBase mp)
-                mp.OnRematchVotesChanged -= HandleRematchVotesChanged;
+            UnsubscribeRematchVotes();
 
             if (gameData?.OnShowGameEndScreen != null)
                 gameData.OnShowGameEndScreen.OnRaised -= ShowScoreboard;
@@ -178,6 +182,31 @@ namespace CosmicShore.UI
             if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
 
             if (onClickToMainMenu != null) onClickToMainMenu.OnRaised -= HideHostNavButtons;
+        }
+
+        /// <summary>
+        /// Tracks the controller this board is subscribed to, so a late
+        /// <see cref="ResolveGameController"/> can subscribe without risking a double-subscribe
+        /// (OnEnable can run before the scene's controller exists, and did: the tally label was
+        /// then dead for the whole match with nothing to say so).
+        /// </summary>
+        MultiplayerMiniGameControllerBase _rematchSource;
+
+        void SubscribeRematchVotes()
+        {
+            if (!(gameController is MultiplayerMiniGameControllerBase mp)) return;
+            if (ReferenceEquals(_rematchSource, mp)) return;
+
+            UnsubscribeRematchVotes();
+            mp.OnRematchVotesChanged += HandleRematchVotesChanged;
+            _rematchSource = mp;
+        }
+
+        void UnsubscribeRematchVotes()
+        {
+            if (_rematchSource == null) return;
+            _rematchSource.OnRematchVotesChanged -= HandleRematchVotesChanged;
+            _rematchSource = null;
         }
 
         #endregion
@@ -229,6 +258,11 @@ namespace CosmicShore.UI
         {
             _rematchVoteCast = false;
 
+            // The controller may only have appeared after OnEnable ran (ResolveGameController is
+            // allowed to find it lazily), so re-attempt the tally subscription here - this is the
+            // one method that runs on every scoreboard, on every peer.
+            SubscribeRematchVotes();
+
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
@@ -249,6 +283,7 @@ namespace CosmicShore.UI
                 if (playAgainButton)  playAgainButton.SetActive(false);
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
                 if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
+                StopRematchVoteRoster();
                 return;   // no rematch vote mid-tournament: the next game is the lineup's, not a replay
             }
 
@@ -264,11 +299,45 @@ namespace CosmicShore.UI
             // a scoreboard, with the host guessing whether anyone wanted another round.
             if (playAgainButton)  playAgainButton.SetActive(true);
             if (playAgainLabel)   playAgainLabel.text = isClient ? "REMATCH?" : "PLAY AGAIN";
+
+            StartRematchVoteRoster();
+        }
+
+        /// <summary>
+        /// Show a face per rematch vote under the Play Again button. The row is ENSURED rather than
+        /// required: a scoreboard that carries the art alone gets the component, and one that
+        /// carries neither simply shows no row. Nothing here is per-scene wiring.
+        /// </summary>
+        void StartRematchVoteRoster()
+        {
+            EnsureRematchVoteRoster();
+            if (!rematchVoteRoster) return;
+
+            rematchVoteRoster.AdoptSources(gameData, profileIconList);
+            rematchVoteRoster.Begin();
+        }
+
+        void StopRematchVoteRoster()
+        {
+            if (rematchVoteRoster) rematchVoteRoster.End();
+        }
+
+        void EnsureRematchVoteRoster()
+        {
+            if (rematchVoteRoster || !playAgainButton) return;
+
+            // The button is the host - the row belongs to it, and hanging the component there is
+            // what lets the roster find the authored "PlayerAvatars" strip beneath it by name.
+            if (!playAgainButton.TryGetComponent(out rematchVoteRoster))
+                rematchVoteRoster = playAgainButton.GetComponentInChildren<RematchVoteRoster>(true);
+            if (!rematchVoteRoster)
+                rematchVoteRoster = playAgainButton.AddComponent<RematchVoteRoster>();
         }
 
         void HideScoreboard()
         {
             _entranceSeq?.Kill();
+            StopRematchVoteRoster();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if (endGameObject) endGameObject.SetActive(false);
             ClearPlayerCards();
@@ -743,6 +812,9 @@ namespace CosmicShore.UI
         /// </summary>
         void HideHostNavButtons()
         {
+            // The vote row lives INSIDE the Play Again button, so it goes down with it - left
+            // running it would keep polling and rebuilding chips under a hidden parent.
+            StopRematchVoteRoster();
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
             if (continueButton)  continueButton.SetActive(false);
@@ -772,7 +844,12 @@ namespace CosmicShore.UI
             controller.RequestRematch_ServerRpc(playerName, (int)domain);
 
             _rematchVoteCast = true;
-            if (playAgainLabel) playAgainLabel.text = "REMATCH ✓";
+            // ASCII only, and not for prettiness: the label's font (ChakraPetch-Regular SDF) carries
+            // 97 glyphs - printable ASCII, NBSP and an ellipsis - with NO fallback asset on the font,
+            // none in TMP Settings, and m_missingGlyphCharacter 0. The "REMATCH ✓" this used to say
+            // would have drawn a blank where the tick is. It never showed because the label was
+            // unwired; wiring it is what would have surfaced it.
+            if (playAgainLabel) playAgainLabel.text = "REMATCH SENT";
         }
 
         bool _rematchVoteCast;
@@ -792,7 +869,7 @@ namespace CosmicShore.UI
 
             playAgainLabel.text = isHost
                 ? $"PLAY AGAIN ({votes}/{Mathf.Max(votes, humans)})"
-                : (_rematchVoteCast ? "REMATCH ✓" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
+                : (_rematchVoteCast ? "REMATCH SENT" : $"REMATCH? ({votes}/{Mathf.Max(votes, humans)})");
         }
 
         public void OnLeaveLobbyButtonPressed()

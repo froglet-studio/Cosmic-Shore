@@ -193,6 +193,14 @@ run the `/reorient` skill first and act on its verdict before shipping.
   was written. Where the reference has to survive, **anchor on the symbol and demote the
   number to a hint** ("`RetireWorldIntoSuctionRoot` (`:2058`) — re-grep before trusting
   the number"), because the next drift is not preventable, only survivable.
+- **A clean `git status` is not evidence an asset does not exist — fetch the base first.** When a
+  human says "it's in the prefab" and your tree does not have it, the likeliest explanation is not
+  that they forgot to save: it is that they committed it to the base branch AFTER your branch was
+  cut. A clean working tree says nothing about that, and reporting "it isn't on disk, save your
+  prefab" is both wrong and the kind of wrong that makes a human re-do work they already did.
+  `git fetch origin <base>` and grep the base's version of the file BEFORE telling anyone an asset
+  is missing.
+
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -219,6 +227,17 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **A GUARDED call site reads exactly like a working feature when the reference is null.** The
+  producer rule above is about a doc asserting a consequence; this is its sharper form, where the
+  CODE asserts it and is correct. `if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);` is
+  what a careful author writes — and it is also what makes a `{fileID: 0}` in the prefab silent, in
+  every mode, forever. Two shipped that way on one component, and one of them had already been
+  recorded in a bug table as the ✅ case whose shape was then propagated to three other screens. So
+  when a claim turns on a serialized reference, grep the PREFAB/SCENE for the field
+  (`^  <fieldName>: ` inside that component's `!u!114` block, never file-wide) and read the id —
+  the call site cannot tell you, because a null-guard and a working feature are the same source.
+  A field that is `{fileID: 0}` on every instance is a feature that has never run.
+
 - **A number read off a ScriptableObject's FIELD INITIALIZER is not the number the game runs
   on.** The SO declares `public float dynamicMaxDistance = 40f;` and the ASSETS say 250. Reading
   the class is fast, feels authoritative, and is the wrong source — the assets are the game. One

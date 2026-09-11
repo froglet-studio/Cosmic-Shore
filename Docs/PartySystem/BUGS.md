@@ -1299,7 +1299,7 @@ match gated its way out behind `IsServer`:
 | Where a client is | Exit before this fix |
 |---|---|
 | Mid-match, pause menu | ❌ `PauseMenu.ConfigureHostOnlyButtons` set `mainMenuButton` inactive for any non-host |
-| Per-game Scoreboard, normal mode | ✅ `leaveLobbyButton` |
+| Per-game Scoreboard, normal mode | ❌ — see **B22**. `leaveLobbyButton` was `{fileID: 0}` in the prefab, so the branch that fixed B18 propagated an exit that was itself a no-op here |
 | Per-game Scoreboard, **Maelstrom** | ❌ the Maelstrom branch set **all four** buttons inactive for a client |
 | Maelstrom hub between games | ❌ only READY is shown (`ShowActive` never activates the end buttons) |
 | Maelstrom final summary | ✅ the one screen that was right |
@@ -1509,3 +1509,45 @@ The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.
 
 ---
+
+---
+
+## B22 — The Scoreboard's client exit and its rematch caption were never wired, so B18's propagated fix was a no-op on the one screen it claimed already worked 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom (owner report).** *"In a multiplayer game the client can press play again and the host
+would not know, and the game is not started until the host presses the button."* Reported as a
+missing signal; it was three separate gaps stacked.
+
+**Root cause.** Two serialized fields on `Scoreboard` were `{fileID: 0}` in
+`_Prefabs/CORE/GameCanvas.prefab`:
+
+| Field | What was dead |
+|---|---|
+| `leaveLobbyButton` | `ConfigureLobbyButtons` calls `leaveLobbyButton.SetActive(isClient)` behind an `if (leaveLobbyButton)` guard, so a null field makes the whole branch a silent no-op. A client had NO exit on the per-game scoreboard, in any mode. |
+| `playAgainLabel` | The rematch caption and the live tally (`REMATCH?`, `PLAY AGAIN (2/3)`) had never drawn on any peer. |
+
+**Why it survived B18.** B18's table recorded the normal-mode Scoreboard as ✅ — the one screen
+that already had a working exit — and the fix propagated that shape to the pause menu and the
+Maelstrom branch. The claim was read off the CODE, which is correct and complete; the exit did not
+exist because the PREFAB never pointed at a button. This is `/ship` §2's producer rule reached from
+the other side: *a guarded call site reads exactly like a working feature when the reference is
+null, because the guard is what a careful author writes.* Grep the prefab for the field, not just
+the call site.
+
+**Fix.** `LeaveLobbyButton` is a clone of the Continue button inserted as its next sibling in the
+`Buttons` row (`HorizontalLayoutGroup`), which is the one slot where the two can share: Continue is
+host-only Maelstrom and Leave is client-only, so no peer ever needs both. Text `CONTINUE` → `LEAVE
+LOBBY`, `onClick` → `Scoreboard.OnLeaveLobbyButtonPressed`, ships INACTIVE so `ConfigureLobbyButtons`
+decides. `playAgainLabel` points at the `PlayAgain` TMP.
+
+**A defect the wiring exposed.** `"REMATCH ✓"` cannot render: the label's font
+(`ChakraPetch-Regular SDF`) carries 97 glyphs — printable ASCII plus NBSP and an ellipsis — with no
+fallback asset on the font, none in TMP Settings, and `m_missingGlyphCharacter: 0`. U+2713 would
+have drawn a blank, and LiberationSans (the fallback if one were ever configured) does not carry it
+either. It reads `REMATCH SENT`. The tally stays because it was measured against that font's own
+metrics: the widest string the label can produce, `PLAY AGAIN (4/4)`, is 301.9 of the button's 326.4
+units, and the label has wrapping ENABLED — a wrapped caption in an 86.4-tall button reads as two
+captions.
+
+**Open.** `PauseMenu.mainMenuButtonLabel` is still unwired (a client's exit there reads MAIN MENU
+rather than LEAVE PARTY — it works, it just misnames itself). Untested in the editor.

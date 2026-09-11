@@ -836,7 +836,7 @@ enum is half the work; the other half is in an asset, and skipping it fails sile
 | What | Why | Consequence if skipped |
 |---|---|---|
 | Wire `PauseMenu.mainMenuButtonLabel` | Prefab field | A client's exit reads "MAIN MENU" instead of "LEAVE PARTY". Works. |
-| Wire `Scoreboard.playAgainLabel` | Prefab field | No "REMATCH?" caption or live tally on the button. The vote and its toast still work. |
+| ~~Wire `Scoreboard.playAgainLabel`~~ | Prefab field | **DONE in Session 7** — wired out-of-editor by prefab YAML surgery. It was also hiding a defect: `"REMATCH ✓"` cannot render in that font. |
 | Check the Maelstrom hub's `mainMenuButton` parent | It was authored for the summary screen; if it sits under `summaryRoot` it is inert in the hub | `MaelstromSceneView` LOGS AN ERROR naming the fix at runtime, so this cannot ship silently. |
 
 ### Still not done
@@ -849,3 +849,57 @@ enum is half the work; the other half is in an asset, and skipping it fails sile
 ---
 
 <!-- Append future sessions below this divider as ## Session 4 — date, etc. -->
+
+---
+
+## Session 7 — 2026-09-11 (WHO VOTED FOR A REMATCH — no MPPM, no editor)
+
+**Trigger.** Owner: *"in a multiplayer game the client can press play again and the host would not
+know, and the game is not started until the host presses the button."* Then: *"wire the
+playAgainLabel and leave lobby button in the place of the continue button."*
+
+Still **nothing was run** — no Unity here. Every asset edit was out-of-editor YAML surgery,
+validate-before-write.
+
+### Shipped
+
+1. **The rematch vote moved onto the VOTER.** Session 6 recorded the tally as a server-side
+   `HashSet<ulong>` and broadcast only the COUNT — which answers "how many" and never "who", and
+   arrives as a transient RPC that is gone the moment it lands. `Player.NetRematchVote` is now a
+   server-write, everyone-read `NetworkVariable` (the fifth sibling of the owner-detects /
+   server-records family, after `NetArenaReady` and the three report RPCs), so the identity of
+   every vote is replicated STATE any peer can read at any time. The HashSet is retired:
+   `RematchVoteCount` derives from the flags and cannot drift from them, and a leaver drops out for
+   free when their `Player` despawns out of the roster.
+
+2. **`RematchVoteRoster`** draws a face per voter under the Play Again button, modelled on
+   `ConnectingPlayerRoster`. Adopts a descendant named `PlayerAvatars` as its strip and that
+   strip's first child as the chip TEMPLATE, so a prefab carrying only the art lights up with no
+   wiring; ENSURED from `Scoreboard`, never required.
+
+3. **B22** — `leaveLobbyButton` and `playAgainLabel` were both `{fileID: 0}`, so Session 6's
+   propagated client exit was a no-op on the one screen B18's table recorded as already working.
+   Both wired; `LeaveLobbyButton` cloned from Continue into Continue's own slot.
+
+### The findings worth carrying
+
+- **A guarded call site reads exactly like a working feature when the reference is null** — the
+  `if (leaveLobbyButton)` guard is what a careful author writes, and it is also what makes a
+  missing prefab reference silent. Grep the PREFAB for the field, not just the call site.
+- **An authored strip is not a safe default** — `PlayerAvatars` ships INACTIVE with a sprite-less,
+  raycast-target `Image` (the component Unity attaches to a layout object). Switching it on as
+  authored would paint a white slab across the button and eat the press.
+- **Borrowing a template's sprite as a halo only works if the template is a FRAME.** The
+  connecting-panel roster does exactly that; here the template's sprite is a profile icon, so the
+  halo is generated instead.
+- **Wiring a display can expose the strings it was hiding** — `"REMATCH ✓"` had been in the code
+  since Session 6 and could never have rendered.
+- **The "editor work this branch CANNOT do" table is a punt to re-examine, not a standing fact.**
+  Both of Session 6's prefab-field rows were doable out-of-editor; one is closed here.
+
+### Still not done
+
+- No playtest. Nothing on this branch has been opened in Unity.
+- `PauseMenu.mainMenuButtonLabel` (Session 6's other prefab-field row) is still unwired.
+- The host's tally reads `(n/humans)` where `humans` INCLUDES the host, who cannot vote — so it can
+  never reach `(n/n)`. Pre-existing; the face row is now the primary read.

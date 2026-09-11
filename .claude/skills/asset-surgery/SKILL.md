@@ -506,6 +506,53 @@ consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were fre
 vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
 A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
 
+### Technique: measure TEXT FIT and GLYPH COVERAGE from the TMP font asset — no editor
+
+Two questions come up the moment you wire or author a `TMP_Text`, and both are answerable offline
+because a `TMP_FontAsset` serializes everything you need:
+
+- **Will this string fit?** `m_PointSize` is the atlas size the metrics were baked at, the glyph
+  table carries `m_HorizontalAdvance` per `m_Index`, and the character table maps
+  `m_Unicode → m_GlyphIndex`. Advance-sum × `fontSize / m_PointSize` is the rendered width in the
+  same units as the label's `RectTransform`. Compare against the rect the label actually gets — a
+  stretch-anchored TMP takes its PARENT's `m_SizeDelta`, which is usually the button, not the text
+  object's own zeroes.
+- **Do these characters EXIST?** The same `m_Unicode` list IS the font's coverage. `ChakraPetch-Regular
+  SDF` in this repo carries **97** — printable ASCII plus NBSP and U+2026 — so a `✓`, an arrow, a
+  bullet or a box-drawing character renders as nothing. Check the fallbacks too before concluding
+  a missing glyph is fatal: `m_FallbackFontAssetTable` on the font, `m_fallbackFontAssets` in
+  `TMP Settings.asset`, and `m_missingGlyphCharacter` (0 = draw nothing). In this repo all three are
+  empty/zero, and the default `LiberationSans SDF` (250 chars) does not carry U+2713 either.
+
+Two rules fall out. **Wiring a label is what EXPOSES the strings it was hiding** — an unwired
+`TMP_Text` reference means every `.text =` in the class has been a no-op, so the day you wire it you
+are shipping code paths nobody has ever seen render; read every assignment for glyphs the font lacks
+before you call the wiring done. And **check wrapping before deciding an overflow is cosmetic**:
+`m_TextWrappingMode: 1` with `m_overflowMode: 0` turns a too-long caption into a second LINE, which in
+a single-line button reads as two captions rather than as clipped text.
+
+### Trap: an authored LAYOUT container is not safe to switch on as authored
+
+A container an artist made through **UI ▸ ...** carries the `Image` Unity attaches with it: no
+sprite, full white, `m_RaycastTarget: 1`. That is invisible while the object ships `m_IsActive: 0`,
+and the moment your code activates it the object paints a solid rectangle the size of its rect AND
+starts eating raycasts — which, for a strip that lives INSIDE a button, means it swallows the very
+press the strip exists to encourage. Neutralise before showing: disable a graphic with no sprite (it
+is Unity's default component, not somebody's art), leave one WITH a sprite drawing, and clear
+`raycastTarget` either way. The authored `m_IsActive: 0` is usually correct and worth preserving as
+the empty state — show the container only while it has children to show.
+
+### Trap: an idiom copied from a sibling component inherits that sibling's authored data
+
+Cloning a working component's approach is the right instinct and it silently imports the
+assumptions it makes about ITS OWN prefab. `ConnectingPlayerRoster` borrows its chip template's
+sprite as the halo shape — correct there, because that template is a frame — and the same two lines
+in a new roster whose template is a PROFILE ICON draw a tinted, scaled-up copy of a stranger's face
+behind every avatar. Likewise its "fall back to `transform` as the container" is safe on a panel and
+catastrophic on a BUTTON, whose first child is the button's own label: the fallback makes that label
+the chip template, hides it, and clones it once per row entry. When you copy an idiom, list what it
+reads out of the prefab and re-check each one against the prefab YOU are pointing it at.
+
 ### Technique: harvest a BUILT-IN component's guid from shipped prefabs — and disambiguate by MEASURING
 
 Unity's own UI components (`Image`, `TextMeshProUGUI`, `VerticalLayoutGroup`, `LayoutElement`,
@@ -1234,6 +1281,13 @@ def extract(sig_regex):                      # find the signature, then brace-ma
                 if started and depth == 0: return "\n".join(out)
     sys.exit("not found: " + sig_regex)      # HARD FAIL — see below
 ```
+
+**Brace-matching alone MIS-EXTRACTS an expression-bodied member, and the error it produces names
+the wrong thing.** `public bool HasVotedRematch => IsSpawned && NetRematchVote.Value;` has no
+braces, so the walker runs straight past it and swallows the NEXT member — which the list then
+extracts a second time, giving `CS0111: already defines a member`. That reads exactly like the
+duplicate-member defect §5 warns about, in code that has no duplicate at all, and the instinct is
+to go looking in the real file. Terminate on the first `;` when a `=>` appears before any `{`.
 
 **The extractor must HARD-FAIL on a signature it cannot find, and that line is the whole gate.**
 A signature list silently stops covering a method the moment you rename or delete one — and the
