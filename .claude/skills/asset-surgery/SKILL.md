@@ -1531,6 +1531,47 @@ tiny stubs (`DescribeBuildValues` compiled and RAN in about thirty lines of stub
 its output proved both modes landed on their own lines). And a whole-file `#if` still makes the
 compile see nothing, per the trap below.
 
+### Technique: write the DECISION as a Unity-free pure static, then actually RUN it
+
+The syntax-only compile above is the fallback for a file you cannot stub. The better move,
+when you are writing the file rather than merging it, is to make the interesting part
+stubbable *by construction* — because then you get a real compile AND a real test run, and
+the difference between "it parses" and "it is correct" is the whole point.
+
+The shape: take the one decision the feature turns on (an ordering, a fold, a threshold, an
+address calculation), put it in a `static` class with **no Unity, no UGS, no Netcode types**,
+and have the caller pass in whatever it needs from those worlds as a delegate or a plain
+value. A party-seating rule that needs each member's replicated Netcode `OwnerClientId`
+takes a `Func<string, ulong>`; the MonoBehaviour supplies the real lookup and the test
+supplies a dictionary. Nothing about the logic knows Netcode exists.
+
+What that buys, measured on one session: the helper plus its twelve NUnit tests compiled and
+**ran** out of editor against a **four-line** `UnityEngine` stub (just `SerializeFieldAttribute`,
+for the one serialized struct it referenced) — and the single most valuable assertion in the
+suite was one no single-machine play test could ever make: *three devices, three different
+input orders, one identical output*. A per-device seating bug is invisible from one device by
+definition.
+
+```xml
+<!-- the whole harness: src/ holds the shipped .cs files, copied not rewritten -->
+<PropertyGroup><TargetFramework>net8.0</TargetFramework><LangVersion>9</LangVersion>
+  <DefineConstants>$(DefineConstants);UNITY_EDITOR</DefineConstants>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+<ItemGroup><Compile Include="src/**/*.cs" />
+  <PackageReference Include="NUnit" Version="3.14.0" />
+  <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" /></ItemGroup>
+```
+
+`LangVersion 9` matches Unity 6. Copy the shipped files in rather than rewriting them (per the
+"compiling a COPY" trap below, re-copy on every edit — or the harness stops being a gate).
+
+**The payoff is not only the tests.** A real compile of the pure helper is the only thing in
+this repo that resolves types across the SOAP/Unity boundary without the editor, and it caught
+a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
+implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
+does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+
 ### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
 
 The absent `Library/PackageCache` is usually discussed as a guid problem (see §5's differential
