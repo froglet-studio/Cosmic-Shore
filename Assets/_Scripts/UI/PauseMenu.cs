@@ -32,8 +32,14 @@ namespace CosmicShore.UI
         [Tooltip("Replay button - hidden for non-host clients in multiplayer. Leave unassigned if the prefab has no replay button.")]
         [SerializeField] GameObject replayButton;
 
-        [Tooltip("Main Menu button - hidden for non-host clients in multiplayer (the host's return takes the whole party back). Leave unassigned if the prefab has no main menu button.")]
+        [Tooltip("Main Menu button - shown to EVERYONE. For the host it returns the whole party to the " +
+                 "menu; for a client it leaves the party and returns that player alone. Leave unassigned " +
+                 "if the prefab has no main menu button.")]
         [SerializeField] GameObject mainMenuButton;
+
+        [Tooltip("Optional label on the Main Menu button. When set, it reads LEAVE PARTY for a client " +
+                 "and MAIN MENU for the host, so the button never misdescribes what the press does.")]
+        [SerializeField] TMPro.TMP_Text mainMenuButtonLabel;
 
         [Tooltip("Game controller for the active scene. Required for the Replay button to work. Wire the scene's MiniGameControllerBase subclass.")]
         [SerializeField] MiniGameControllerBase gameController;
@@ -278,13 +284,34 @@ namespace CosmicShore.UI
         public void OnClickMainMenu()
         {
             var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsServer)
+            if (nm == null || nm.IsServer)
             {
-                CSDebug.LogWarning("[PauseMenu] Main Menu ignored - only the host can return the party to the menu.");
+                // Host (or no network at all): return the whole party to the menu. SceneLoader
+                // drives a Netcode scene load so everybody lands in Menu_Main together.
+                _onClickToMainMenu.Raise();
                 return;
             }
 
-            _onClickToMainMenu.Raise();
+            // CLIENT. This used to be unreachable: ConfigureHostOnlyButtons HID the button, so a
+            // client in a match had no way out of it at all - the only exit from a game was for the
+            // host to end it, or to kill the application. That is most of "leaving is a challenge",
+            // and it is worst in Maelstrom, where the per-game Scoreboard hides every button too, so
+            // a client was held for the whole tournament.
+            //
+            // Raising _onClickToMainMenu here would NOT have worked either, which is why hiding it
+            // looked reasonable: SceneLoader.ReturnToMainMenu defers scene loads to the server, so a
+            // client that raised it would fade to black and wait on the host forever. The answer is
+            // the one MaelstromSceneView.OnMainMenuPressed already uses on its summary screen -
+            // LEAVE THE PARTY: disconnect, load Menu_Main locally, restart a solo Relay session.
+            // Same proven path as the Scoreboard's Leave Lobby.
+            if (PartyInviteController.Instance == null)
+            {
+                CSDebug.LogError("[PauseMenu] PartyInviteController not available - cannot leave the party.");
+                return;
+            }
+
+            Hide();
+            PartyInviteController.Instance.LeavePartyAndReturnToMenuAsync().Forget();
         }
 
         public void Show()
@@ -296,17 +323,25 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Host-only gating for the replay and main menu buttons. Mirrors the
-        /// Scoreboard's ConfigureLobbyButtons logic so non-host clients can't
-        /// trigger a restart or a host-authoritative return to menu.
+        /// Replay stays host-only - the host's Play Again forces everyone to replay, so offering it
+        /// to a client would be misleading. The MAIN MENU button is shown to everyone: it is the
+        /// only exit a client has from a live match, and hiding it is what left a client with no way
+        /// out of a game short of killing the application (see <see cref="OnClickMainMenu"/>).
+        ///
+        /// The press means different things on each side - the host takes the party back, a client
+        /// leaves alone - so the label follows, when the prefab wires one. Without a label the
+        /// button still works; it just reads "MAIN MENU" for a client, which is where they end up
+        /// anyway.
         /// </summary>
         void ConfigureHostOnlyButtons()
         {
             var nm = NetworkManager.Singleton;
-            bool isClient = nm == null || !nm.IsServer;
+            bool isClient = nm != null && nm.IsListening && !nm.IsServer;
 
             if (replayButton)   replayButton.SetActive(!isClient);
-            if (mainMenuButton) mainMenuButton.SetActive(!isClient);
+            if (mainMenuButton) mainMenuButton.SetActive(true);
+            if (mainMenuButtonLabel)
+                mainMenuButtonLabel.text = isClient ? "LEAVE PARTY" : "MAIN MENU";
         }
 
         public void Hide()

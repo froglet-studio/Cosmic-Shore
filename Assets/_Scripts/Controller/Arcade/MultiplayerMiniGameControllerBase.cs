@@ -15,6 +15,7 @@ namespace CosmicShore.Gameplay
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
         [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private CosmicShore.Core.SceneLoader _sceneLoader;
         [Inject] private HostConnectionDataSO _hostConnectionData;
 
         protected virtual int InitDelayMs => 1000;
@@ -502,6 +503,21 @@ namespace CosmicShore.Gameplay
         void ShowReturnToMenuVeil_ClientRpc()
         {
             _sceneTransitionManager?.SetFadeImmediate(1f);
+
+            // This RPC is where a REAL client's screen goes black, and until now nothing watched
+            // what happened next: the veil goes fully opaque here and only lifts when Menu_Main
+            // finishes loading. If the host's networked scene load never completes for this client,
+            // the veil stays up with no timeout, no error and no way out but killing the game.
+            //
+            // SceneLoader's own defer guards cannot cover this. They are reached through SOAP
+            // events, and a SOAP raise is local - so on separate machines a client never runs
+            // ReturnToMainMenu at all; those guards only fire for MPPM virtual players sharing one
+            // GameDataSO in one process. This is the call site that protects a shipped build.
+            //
+            // The host is excluded because it DRIVES the load - it cannot be waiting on itself, and
+            // bouncing it would tear down the party it is trying to move.
+            if (!IsServer)
+                _sceneLoader?.ArmClientMenuReturnWatchdog("Return to menu (host-driven)");
         }
 
         private void FadeFromBlackOnReplay()

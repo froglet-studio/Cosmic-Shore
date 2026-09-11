@@ -219,17 +219,23 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
-            // Maelstrom mode: the host gets Continue on EVERY game (including the last) and
-            // clients see no buttons. Continue on the last game takes the party to the Maelstrom
-            // results screen, which is where Play Again / Main Menu live now - so they are never
-            // shown on the per-game scoreboard here.
+            // Maelstrom mode: the host gets Continue on EVERY game (including the last). Continue on
+            // the last game takes the party to the Maelstrom results screen, which is where Play
+            // Again / Main Menu live now - so those two are never shown on the per-game scoreboard.
+            //
+            // A client keeps LEAVE, and that is the point. This branch used to hide all four, so a
+            // client had no button at all here - and the pause menu hid its Main Menu too, and the
+            // Maelstrom hub between games offers only READY. The only screen in the whole tournament
+            // that ever let a client out was the FINAL summary. So a client who wanted to stop was
+            // held until the host finished the entire race-to-N, or killed the application. A
+            // tournament nobody can leave is not a tournament anybody should have to finish.
             if (gameData != null && gameData.IsMaelstromMode)
             {
                 bool isHost = !isClient;
                 if (continueButton)   continueButton.SetActive(isHost);
                 if (playAgainButton)  playAgainButton.SetActive(false);
                 if (mainMenuButton)   mainMenuButton.SetActive(false);
-                if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
+                if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
                 return;
             }
 

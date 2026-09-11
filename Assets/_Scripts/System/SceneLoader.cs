@@ -40,8 +40,22 @@ namespace CosmicShore.Core
             "are not delayed.")]
         float menuReturnSettleSeconds = 1.5f;
 
+        [SerializeField, Tooltip("How long a CLIENT waits for the host's networked scene load to " +
+            "arrive before giving up and bouncing to its own solo menu. The screen is already " +
+            "opaque by the time the wait starts, so without this the client sits on a black splash " +
+            "forever. Generous on purpose: a legitimate transition lands in seconds to tens of " +
+            "seconds (host-side scene load + Netcode synchronize), so this only ever fires on a " +
+            "transition that is never coming. Disarmed the moment the scene actually loads.")]
+        float clientSceneFollowTimeoutSeconds = 90f;
+
         // Load Time Insights span: LoadScene call → OnSceneLoaded (server / local path).
         int _sceneLoadSpan = -1;
+
+        // Generation counter for the client scene-follow watchdog. Bumped on every arm and on every
+        // completed scene load, so a watchdog whose transition DID arrive - or that a newer
+        // transition superseded - retires without doing anything. Comparing a captured generation is
+        // what makes the timeout safe to arm from three call sites that can interleave.
+        int _sceneFollowGeneration;
 
         // Name of the scene whose load most recently completed. Lets OnSceneLoaded tell a
         // game→menu RETURN (hold the veil while cleanup settles) apart from first boot /
@@ -102,6 +116,10 @@ namespace CosmicShore.Core
         {
             LoadInsights.End(_sceneLoadSpan);
             _sceneLoadSpan = -1;
+
+            // A scene arrived, so any client scene-follow watchdog in flight has nothing left to
+            // rescue. Bumping the generation retires it without needing a handle on it.
+            _sceneFollowGeneration++;
 
             if (!gameData) return;
             gameData.InvokeSceneTransition(true);
@@ -209,6 +227,7 @@ namespace CosmicShore.Core
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
                           $"Server will replicate scene via Netcode.");
                 LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
+                ArmClientSceneFollowWatchdog(gameData.SceneName, "Game launch");
                 return;
             }
 
@@ -297,6 +316,7 @@ namespace CosmicShore.Core
             {
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] ReturnToMainMenu deferring to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
+                ArmClientSceneFollowWatchdog(menuScene, "Return to menu");
                 return;
             }
 
@@ -321,6 +341,107 @@ namespace CosmicShore.Core
             var controller = FindAnyObjectByType<MultiplayerMiniGameControllerBase>(FindObjectsInactive.Include);
             if (controller != null)
                 controller.BroadcastReturnToMenuVeil();
+        }
+
+        /// <summary>
+        /// Arms the CLIENT scene-follow watchdog. Every one of this class's three "defer to the
+        /// server" guards covers the screen and then returns, leaving the client waiting on a
+        /// networked scene load it does not drive. Nothing was watching that wait: if the host's
+        /// scene event never arrived - it was dropped, this client was mid-synchronize, the host
+        /// stalled - the client sat on an OPAQUE SPLASH with no timeout, no error and no way out
+        /// except killing the application. That is most of what "the game is bugged off the happy
+        /// path" looks like from a client, and Maelstrom multiplies it, because a tournament is a
+        /// chain of these transitions and each one is a fresh chance to hang.
+        ///
+        /// <para>
+        /// This was already a known hazard, fixed in exactly one direction:
+        /// <c>MultiplayerSetup.OnClientDisconnect</c> routes host-loss around
+        /// <see cref="HandleActiveSessionEnd"/> precisely because "the defer-to-server guard hangs
+        /// the client when the server is gone". That covers the case where the host is DEFINITIVELY
+        /// gone. It does nothing for a host that is alive and simply never got us into the scene -
+        /// which needs a timeout, because there is no event to react to. The whole failure is the
+        /// absence of one.
+        /// </para>
+        ///
+        /// <para>
+        /// On expiry it takes the same self-rescue as host loss
+        /// (<see cref="Gameplay.PartyInviteController.HandleHostLossAsync"/>): tear down, reload
+        /// Menu_Main locally, restart our own solo Relay, and surface a toast. A false positive
+        /// therefore costs a player their party and leaves them in a working menu they can rejoin
+        /// from; the black screen it replaces costs them the application. Those are not close, which
+        /// is why the timeout is generous rather than tight.
+        /// </para>
+        ///
+        /// <para>
+        /// PUBLIC because the call site that matters on real hardware is not in this class. The
+        /// three defer guards here are reached through SOAP events, and a SOAP raise is LOCAL - it
+        /// does not cross the wire - so on separate machines a client never runs
+        /// <see cref="LaunchGame"/> or <see cref="ReturnToMainMenu"/> at all; those guards fire for
+        /// MPPM virtual players, which share one GameDataSO in one process. What actually blacks out
+        /// a real client's screen is
+        /// <c>MultiplayerMiniGameControllerBase.ShowReturnToMenuVeil_ClientRpc</c>, and that is
+        /// where the unwatched wait really lives. It arms this too. Miss that and the watchdog looks
+        /// right in the editor and protects nobody in the build.
+        /// </para>
+        /// </summary>
+        public void ArmClientSceneFollowWatchdog(string expectedScene, string what)
+        {
+            int generation = ++_sceneFollowGeneration;
+            WatchClientSceneFollowAsync(generation, expectedScene, what).Forget();
+        }
+
+        /// <summary>
+        /// <see cref="ArmClientSceneFollowWatchdog"/> for the host-driven return to the menu, with
+        /// the menu scene resolved here rather than spelled out at the call site - the caller is a
+        /// ClientRpc in the arcade controller, which has no <c>SceneNameListSO</c> of its own and
+        /// should not have to carry a second copy of the menu's name to get one.
+        /// </summary>
+        public void ArmClientMenuReturnWatchdog(string what) =>
+            ArmClientSceneFollowWatchdog(
+                _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main", what);
+
+        async UniTaskVoid WatchClientSceneFollowAsync(int generation, string expectedScene, string what)
+        {
+            // Unscaled: the pause menu's Main Menu button leaves timeScale at 0 on the way in, and a
+            // watchdog that stops counting while the screen is black is not a watchdog.
+            await UniTask.Delay(
+                TimeSpan.FromSeconds(clientSceneFollowTimeoutSeconds),
+                DelayType.UnscaledDeltaTime);
+
+            // Superseded: the scene landed (OnSceneLoaded bumps the generation), or a newer
+            // transition armed its own watchdog. Either way this one has nothing to do.
+            if (generation != _sceneFollowGeneration) return;
+
+            // The transition arrived after all and we simply have not seen OnSceneLoaded for it -
+            // believe the loaded scene over our own bookkeeping before bouncing anybody.
+            if (!string.IsNullOrEmpty(expectedScene) &&
+                SceneManager.GetActiveScene().name == expectedScene)
+                return;
+
+            var nm = NetworkManager.Singleton;
+
+            // No longer a client waiting on a server: we were disconnected (host loss already has
+            // its own recovery in flight and must not be raced), or we became the server ourselves.
+            if (nm == null || !nm.IsListening || nm.IsServer || !nm.IsConnectedClient) return;
+
+            CSDebug.LogError(
+                $"[SceneLoader] {what}: the host's scene load never reached this client after " +
+                $"{clientSceneFollowTimeoutSeconds:0}s (expected '{expectedScene}', still in " +
+                $"'{SceneManager.GetActiveScene().name}'). Bouncing to the solo menu rather than " +
+                "holding an opaque splash indefinitely.");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[SceneLoader] NetDiag: {NetworkDiagnostics.GetSnapshot()}");
+
+            var pic = Gameplay.PartyInviteController.Instance;
+            if (pic == null)
+            {
+                CSDebug.LogError(
+                    "[SceneLoader] PartyInviteController unavailable - cannot self-rescue. The " +
+                    "client stays on the splash; this is the state the watchdog exists to prevent.");
+                return;
+            }
+
+            pic.HandleHostLossAsync("Couldn't follow the party - returned to your menu.").Forget();
         }
 
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
@@ -426,6 +547,9 @@ namespace CosmicShore.Core
             {
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[SceneLoader] HandleActiveSessionEnd deferring to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.");
+                ArmClientSceneFollowWatchdog(
+                    _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main",
+                    "Session end");
                 return;
             }
 
