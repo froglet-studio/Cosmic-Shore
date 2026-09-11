@@ -10,6 +10,48 @@ Every finding below is tagged with which of those it feeds.
 
 ---
 
+## 0. The middleware is FMOD — correcting the Steam checkpoint's item B2
+
+*Added 2026-09-11 by the documentation-drift sweep (`Docs/STEAM_RELEASE_TASKS.md`, item **R8**).
+It is recorded here because this is the file an audio question gets answered from.*
+
+**Steam checkpoint Revision 2, item `B2` (the PC platform sanity pass), lists "Wwise audio init".
+That is wrong. The project's audio middleware is FMOD, and a sanity pass written against Wwise
+would test nothing at all.**
+
+Measured 2026-09-11:
+
+| | Count | Detail |
+|---|---|---|
+| First-party files referencing `FMODUnity` | **17** | Across `System/Audio`, `Controller/FX`, `Controller/Vessel/Audio`, the Manta/Urchin executors, `Fauna`, and the editor diagnostics window |
+| First-party files referencing `AkSoundEngine` / `AkAudioListener` / `AkGameObj` | **0** | Nothing outside `Assets/Wwise/` itself references it, anywhere in `Assets` |
+
+`Assets/Wwise/` survives from an earlier middleware evaluation and is **inert**. Do not author new
+audio against it, and do not delete it as part of an audio task — it is a repository-hygiene
+question (board item **R14**/**R15**), not an audio one.
+
+**What B2's audio step should actually check** on a Windows player — all of it FMOD, all of it
+exercised by the findings below:
+
+1. **The FMOD Studio system initialises and the banks load.** `FmodSafe.TryCreateInstance` reports
+   once and then goes silent by design, so a missing bank is a *quiet* failure in the player — check
+   for the single report, not for a stream of errors.
+2. **Live Update is OFF in the shipped build.** §1 and the 2026-08-21 rounds in
+   `Docs/PERFORMANCE_OPTIMIZATION.md` pin a wedged Live Update socket as the cause of the editor's
+   play-exit hang; it must not ship enabled.
+3. **The three audio sliders persist across a restart.** This is §1.0 — the dominant defect in this
+   whole audit, and the one most likely to regress, because the failure mode is that *binding* the
+   control overwrites the saved value.
+4. **Volume actually responds**, i.e. the VCA/per-instance path resolves. `AudioSystem.driveFmodVcas`
+   is opt-in and the FMOD project's VCAs control no bus today, so volume is applied per instance.
+
+**Why the correction lives here and not in the checkpoint.** Revision 2 is a PDF that has **never
+been committed to this repository** — see `Docs/STEAM_CHECKPOINT_SERIES.md` — so its item text
+cannot be edited. The correction is therefore carried in the two places the work is executed from:
+this section, and item **R5** on `Docs/STEAM_RELEASE_TASKS.md`.
+
+---
+
 ## 1. Findings (root causes, in the order they were confirmed)
 
 ### 1.0 THE DOMINANT CAUSE: the audio sliders are FIELD-OF-VIEW sliders, and binding one SAVES full volume (sliders)
