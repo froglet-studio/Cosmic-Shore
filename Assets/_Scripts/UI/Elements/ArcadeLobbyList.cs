@@ -588,7 +588,9 @@ namespace CosmicShore.UI
         static ulong ResolveHostClientId()
         {
             var nm = NetworkManager.Singleton;
-            return nm != null && nm.IsListening ? nm.ServerClientId : PartyRoster.UnknownClientId;
+            // NetworkManager.ServerClientId is STATIC - reaching it through the instance is CS0176,
+            // which is what the other seven sites in this repo already avoid by type-qualifying it.
+            return nm != null && nm.IsListening ? NetworkManager.ServerClientId : PartyRoster.UnknownClientId;
         }
 
         /// <summary>

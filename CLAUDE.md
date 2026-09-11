@@ -2992,7 +2992,7 @@ ArcadeGameConfigureModal.HandlePlayerCountSelected(playerCount)
        ▼
 ArcadeGameConfigureModal.OnStartGameClicked()
        │ SyncAllGameDataForLaunch():
-       │   humanCount = Max(1, hostConnectionData.PartyMembers.Count)
+       │   humanCount = CurrentPartyHumanCount
        │   gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount)
        ▼
 GameDataSO.ConfigurePlayerCounts(totalDesired, humanCount)
@@ -3058,6 +3058,19 @@ A legacy `playerCountButtons` list (4 fixed buttons for counts 1-4) coexists as 
 | UGS Presence Lobby | 100 | Player discovery (no Relay) |
 
 These are independent — a party of 2 humans can launch a 12-player game with 10 AI.
+
+**`CurrentPartyHumanCount` is answered ONE way, and on a guest that way is the HOST's answer.**
+The host reads `SpectatorSession.CountHumanClients` (Netcode's connected clients less the
+spectators, who have no Player object and must not eat an AI seat) and publishes it into the
+replicated `ArcadeConfigSyncManager.LobbySnapshot.HumanCount`; a guest reads that back. It used to
+derive its own from `HostConnectionDataSO.PartyMembers` — the presence-lobby list, polled every 3s
+and very often 1 on a guest — and since the roster draws `seats - humans = AI`, a guest that
+believed it was alone in a four-seat match drew **three AI avatars nobody placed and nobody
+spawns** (the real backfill is `RequestedAIBackfillCount`, computed host-side). The presence list
+survives only as the pre-lobby fallback, where nothing authoritative exists yet. General rule:
+**when two peers must agree on a number, one of them owns it and the other reads it** — a second
+derivation is a second answer, and the disagreement surfaces as UI nobody can trace back to a
+count. Record: `Docs/ArcadeLaunch/ARCHITECTURE.md §3.1.2`, `Docs/PartySystem/BUGS.md` B23.
 
 #### Key Files — Player Count
 

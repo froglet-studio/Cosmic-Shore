@@ -29,6 +29,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
 | B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed | 🟡 |
 | B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
+| B22 | The Scoreboard's client exit and rematch caption were never wired (`{fileID: 0}`), so B18's propagated fix was a no-op here | Root-caused & fixed | 🟡 |
+| B23 | The arcade card lobby does not follow the host: a flying guest is never pulled in, a guest who missed it once never gets it, a host who changes card cannot move the party, and guests draw phantom AI | Root-caused & fixed | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1551,3 +1553,57 @@ captions.
 
 **Open.** `PauseMenu.mainMenuButtonLabel` is still unwired (a client's exit there reads MAIN MENU
 rather than LEAVE PARTY — it works, it just misnames itself). Untested in the editor.
+
+## B23 — The arcade card lobby does not follow the host 🟡 (root-caused & fixed 2026-09-11; needs a three-machine playtest)
+
+**Symptom (owner report).** Four, reported together as *"the worst feature in the party
+experience"*:
+
+| # | Reported | Root cause |
+|---|---|---|
+| 1 | A guest in FREESTYLE stays flying when the host opens a card | `HandleEnterFreestyle` closes every modal, fades the screens `CanvasGroup` and engages the input gate, so `NavigateTo` refuses (`FollowHostToArcadeScreen` is a no-op) and `ModalWindowIn` refuses to open. The open ran to completion and drew nothing. |
+| 2 | A guest who missed the card *"can never see the card again"* | Every path that turns the replicated lobby into a modal is an EDGE. With the host sitting in the card no further change was coming; `OnEnable`'s replay never re-ran (`ModalWindowOut` fades a CanvasGroup, it never deactivates); and tapping the card registers a game PICK. |
+| 3 | The host backs out, picks another card, guests do not move | Only the host's ✕ called `NotifyConfigClosed`. Gamepad B, `ScreenSwitcher.CloseAllModals` (raised on freestyle **entry**) and `ForceCloseImmediate` all ended at `ModalWindowOut`, leaving `_isCommitted` latched with `IsOpen` true — so the next card returned on `CommitConfiguration`'s first line and nothing replicated. |
+| 4 | Extra AI avatars pre-fill the lobby, client-side only, never in the game | The roster draws `seats − humans = AI`, and the two peers answered *humans* differently: the host from Netcode's connected clients, a guest from `HostConnectionDataSO.PartyMembers` (presence poll, 3s, usually 1 on a guest). |
+
+**The shape.** B13 made the lobby replicated STATE, which fixed every peer that was not
+*listening*. All four of these are peers that could not *act on it* — so state was necessary and
+not sufficient. **A value being replicated does not make it delivered.**
+
+**Fix.**
+
+- **(1)** `ScreenSwitcher.RequestExitFreestyle(onExited)` toggles the guest out and runs the caller
+  on `OnMenuStateTransitionEnd` — never the start event, which fires another `CloseAllModals` that
+  would close whatever was opened. `HandleConfigOpenedOnClient` defers through it.
+- **(2)** `ArcadeGameConfigureModal.ReconcileClientLobby`, once a second: which lobby GENERATION
+  has this guest actually DRAWN, against the one the host is broadcasting? A mismatch opens the
+  card. Same shape as `ScreenSwitcher`'s self-healing input gate. It declines while the guest is
+  flying or mid-blend (catching up must never take the ship off someone using it), and a guest can
+  no longer dismiss the host's lobby (`AllowGamepadBClose` false in client mode), so it is never
+  fighting a deliberate choice.
+- **(3)** Two independent ends. The modal notifies on its OWN `OnModalClosed` — the lesson
+  `HandleSelfClosed` already carried for the preview teardown, *one subscription instead of one
+  rule per caller* — with the launch naming itself (`_launching`) rather than being inferred. And
+  the sync guard is keyed on the CARD, so a different one can never be swallowed whatever a future
+  close route forgets.
+- **(4)** `LobbySnapshot.HumanCount` carries the host's count, republished on join/leave; the
+  guest reads it back. The host's own read moves to `SpectatorSession.CountHumanClients`, so a
+  spectator stops silently eating an AI seat.
+
+**Verification.** Roslyn syntax-parse clean; all five `Tools/Build` gates clean.
+`ArcadeLobbySnapshotTests` (new, unrun) holds every `LobbySnapshot` field inside `Equals` by
+reflection — a field missing there never dirties the NetworkVariable, and the omission only shows
+on a second machine. **Nothing has been through the Editor.** Needs three machines: host opens a
+card with one guest flying and one guest cold-joining, host backs out and picks another.
+**MPPM is not that test** — virtual players share one process and one `GameDataSO`, so this
+branch's failure mode (a peer that cannot act on replicated state) is exactly the class MPPM
+flatters.
+
+**Open / accepted.**
+- A guest cannot dismiss the host's lobby, by design. A legitimate "leave this lobby" has to be a
+  real request to the host, not a window close, or it is symptom 2 again.
+- If `MenuCrystalClickHandler.ToggleTransition` no-ops (already transitioning), the deferred open
+  waits for whenever the guest next leaves freestyle. The reconcile is the backstop.
+- `RepublishHumanCount` reads the connected clients inside `OnClientDisconnectCallback` and so
+  inherits whatever that callback's ordering guarantees are — the same dependency
+  `ExpectedHumanCount` already had. A transient over-count costs one AI chip for a tick.

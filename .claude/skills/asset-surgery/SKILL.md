@@ -1608,6 +1608,27 @@ a signature that would have been an editor-only error: **`Obvious.Soap`'s `Scrip
 implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
 does not accept one. Any helper taking a SOAP list must take `IList<T>`.
 
+### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
+
+The absent `Library/PackageCache` is usually discussed as a guid problem (see §5's differential
+`m_Script` check). It has a second consequence that bites when you are writing a TEST: the
+package's *source* is not on disk either, so you cannot answer "is this constructor public?",
+"does this overload exist?", "is this method an extension?" for anything in `Unity.Netcode`,
+`TMPro`, `Unity.Collections` or any other package — and a test that guesses wrong is a compile
+error in `Assembly-CSharp-Editor`, which takes the whole edit-mode suite down for everyone.
+
+The tempting case is a DTO round-trip. §4's reflection gate is the right shape when the type
+round-trips through your OWN converters (`FromExplodeParams`/`ToExplodeParams`), and it is
+unreachable when the only path is `INetworkSerializable.NetworkSerialize`, because driving that
+needs a `BufferSerializer<T>` whose constructor accessibility you cannot check from here.
+
+So: **write the half you can see, and say in the test's own doc comment which half you could
+not.** For a hand-written `NetworkSerialize`, the reachable half is `Equals` — assert by
+reflection that every field participates in it, which is worth more anyway: a field missing from
+`Equals` means the `NetworkVariable` never dirties, so the serializer never gets the chance to be
+wrong. Do NOT substitute a `Assert.AreEqual(12, fields.Length)` "did anyone add a field?" guard;
+the next person fixes it by bumping the number.
+
 ### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
 
 Running the shipped file against transcribed stubs means every compile error has two possible
