@@ -1912,6 +1912,11 @@ Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationStat
 - **Do not** use `FindObjectOfType` or service locators to get shared data — wire a `ScriptableVariable` in the inspector
 - **Do not** create C# events or `Action` delegates on MonoBehaviours for things that multiple unrelated systems need to observe — use `ScriptableEvent`
 - **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
+- **Do not** type a parameter that receives a SOAP list as `IReadOnlyList<T>` — `Obvious.Soap`'s
+  `ScriptableList<T>` implements `IList<T>` and **not** `IReadOnlyList<T>`, so the read-only type
+  does not accept one. Take `IList<T>` and simply never write to it. This is an editor-only
+  compile error: the base type lives in the monolith, so an out-of-editor syntax check cannot see
+  it (see "a check that cannot resolve a type cannot see errors ABOUT that type")
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
 - **Do not** let a `ScriptableVariable` holding RUNTIME state start a session with whatever the last one left in it.** A SOAP variable is a ScriptableObject **asset**, so in the Editor its value survives play-mode exit — "it starts empty" is only true on a fresh install. Its **single writer must reset it at construction**. Shipped instance: every quit ends in `ApplicationState.ShuttingDown` (a terminal state), so the next play session began there and `ApplicationStateMachine` refused *every* transition for the whole run — `Invalid transition: ShuttingDown → MainMenu` at boot, on every session, for as long as the machine had existed.

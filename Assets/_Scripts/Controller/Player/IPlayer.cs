@@ -19,6 +19,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The player's UGS authentication PlayerId, replicated to every peer. Empty for AI.
         /// This is the real identity - <see cref="PlayerUUID"/> is the display name.
+        ///
+        /// <para><b>It ALLOCATES on every read.</b> The implementation is
+        /// <c>NetUgsPlayerId.Value.ToString()</c> and <c>FixedString64Bytes.ToString()</c> mints a
+        /// managed string each time, so reading it per player per frame is throwaway garbage at
+        /// frame rate. Read it on a tick, or cache it - never in a per-frame loop over the
+        /// roster.</para>
         /// </summary>
         string UgsPlayerId { get; }
         IVessel Vessel { get; }
