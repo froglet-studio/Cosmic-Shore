@@ -1,4 +1,4 @@
-# Prompt — close the multiplayer lifecycle for an invite cohort
+# Prompt — fix the open multiplayer join failures
 
 Paste everything below into a fresh session.
 
