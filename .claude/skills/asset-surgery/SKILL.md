@@ -816,6 +816,42 @@ rather than desugared. A 2026-08 Urchin session type-checked two new ability fil
 ~200 lines of stubs and shipped them clean; the errors it *did* surface were both stub gaps
 (`Object.name`, `Behaviour.isActiveAndEnabled`), which is what a working harness looks like.
 
+**When the declaration is not on disk AT ALL, the rule bends and the CLAIM shrinks.** "Grep it,
+don't remember it" assumes the type is in the tree; a third-party SDK usually is not — a remote
+container has no `Library/PackageCache`, so `Unity.Services.Leaderboards`, FMOD, Netcode and
+friends exist only as a line in `Packages/manifest.json`. **Transcribe from the vendor's own
+API reference for THAT EXACT VERSION** (read the version out of the manifest first, then fetch
+`docs.unity3d.com/Packages/<pkg>@<major.minor>/api/...` — the per-version page, never a search
+result or a memory of a different major), and check the members you actually touch: a property's
+nullability changes the call (`GetScoresOptions.Offset` is `int?`, inherited from
+`PaginationOptions`, so an `int` only compiles via implicit conversion), and a collection's
+concrete type decides whether `.Count` exists (`LeaderboardScoresPage.Results` is
+`List<LeaderboardEntry>`).
+
+Two rules keep such a harness honest. **Say in the stub file which stubs came from the tree and
+which from docs**, one comment line — a reader must not mistake it for a transcription of source.
+And **state the claim correctly in the report: a docs-transcribed harness proves YOUR C#, not the
+SDK contract.** It catches your typos, wrong arity, bad control flow and dead branches; it cannot
+catch "that method does not exist", because you wrote the stub that says it does. So it is worth
+running (a 2026-09 session type-checked a rewritten UGS leaderboard service clean this way) and
+it is worth labelling — the one thing it can never do is verify the assumption it is built on.
+
+**A file with NO third-party dependency at all gets the strongest form and costs nothing: compile
+it for real, then RUN it.** Pure logic — a parser, a formatter, a filter, a math helper — usually
+lives in `_Scripts/Data` or `_Scripts/Utility` and imports only `System`, so it needs zero stubs,
+and a ~60-line `Driver.cs` with a `Main` that asserts against real inputs is executable proof
+rather than a type check (emit `-target:exe -main:Driver` and drop the `runtimeconfig.json` beside
+it, per the recipe above). Reach for this FIRST and split the work toward it: the same session put
+its hand-rolled metadata parser and its list filter in the dependency-free struct and left only
+wiring in the SDK-facing service, which turned the interesting half of the branch into 47 executed
+assertions with negative controls.
+
+**Trap: `csc | grep` reports GREP's exit status, not the compiler's.** A shell pipeline exits with
+its LAST command, and `grep -v` returns 1 when it filters everything out — so a perfectly clean
+compile piped through a banner filter prints `exit=1` and reads as a failure. Redirect to a file
+and check `$?`, or read `${PIPESTATUS[0]}`. Never let a filter stand between you and a verdict you
+are about to report.
+
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
 install (~1 min) against a desugaring pass that has to be redone per file and can itself
