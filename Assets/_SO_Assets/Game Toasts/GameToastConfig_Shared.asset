@@ -41,3 +41,21 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
+  - situation: 100
+    messageTemplate: '<b>{0}</b> wants a rematch  ({1}/{2})'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 101
+    messageTemplate: '<b>{0}</b> left - AI has the ship'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 0.7
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

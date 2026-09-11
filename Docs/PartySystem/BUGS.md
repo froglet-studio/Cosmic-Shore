@@ -27,6 +27,8 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 | B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
+| B20 | A player leaving mid-wait strands the whole party at the ready screen, forever (match AND lobby gate) | Root-caused & fixed | 🟡 |
+| B21 | A pilot who leaves mid-match takes their ship AND their score out of the arena | Root-caused & fixed | 🟡 |
 
 *(The table used to list only seven of these. B8 and B11–B16 had entries below
 but no index row, so the index read as "seven bugs, two of them red" while the
@@ -1388,6 +1390,99 @@ for anything cross-machine means an RPC, not a SOAP raise.
 watchdog line. (2) Force the failure (suspend the host process, or pull its network, after the veil
 lands) → the client should bounce to its own menu with a toast instead of holding black. (3) Confirm
 no spurious bounce on a slow but legitimate load of the heaviest arena.
+
+
+---
+
+## B20 — A player leaving mid-wait strands the whole party at the ready screen, forever 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom.** Everyone sits at a ready screen that never advances. No error, no timeout,
+no way forward. Two separate gates, same shape — the MATCH gate (per turn/round) and the
+LAUNCH LOBBY gate (before the scene loads).
+
+**Root cause.** Both gates were evaluated **only inside the press RPC**, comparing a
+running tally against a human count read live at that instant. So when a player left,
+dropped or crashed while the others were waiting on them, the comparison that would now
+pass was never run again:
+
+> Three humans. A presses (1/3). B presses (2/3). C leaves. The head count is now 2 and the
+> tally is 2 — the gate is satisfied — and nothing evaluates it. A and B wait forever.
+
+Nobody can press again either: neither gate is a toggle, so a player who already pressed
+early-returns. In the lobby the host has to close the card and start over; in a match
+(before B18) there was no way out at all.
+
+**A count is a snapshot of an answer; the ROSTER is the question, and it keeps changing.**
+
+**Second defect, match gate only.** It kept a bare `int`, so a double-press — a rebound
+tap, or a Ready button not yet hidden on a laggy client — satisfied the gate on behalf of
+somebody who had not pressed, and the match started without them. Keying on the sender
+makes a press idempotent.
+
+**Fix.** A set of WHO, re-evaluated on every Ready press **and** every client disconnect,
+with departed clients pruned rather than trusted (a stale id would let the gate pass on
+behalf of somebody who is gone). `humanCount <= 0` holds rather than launching for nobody.
+
+**Written twice, so fixed once.** The match gate existed in two copies —
+`MultiplayerDomainGamesController` and `CoOpWildlifeBlitzMiniGame` — with *both* defects in
+each. It now lives on `MultiplayerMiniGameControllerBase` (`MarkClientReady` /
+`EvaluateReadyGate` / `OnAllPlayersReady` / `ResetReadyGate`), so a third mode cannot write
+a third copy. **Two copies of a rule is how the second one gets forgotten.**
+
+**The lobby's own reasoning, and why it was overridden.** Its disconnect handler removed the
+client and re-announced the count but deliberately did NOT re-decide — *"a launch is
+something a PRESS causes, never a departure."* That is a fair instinct and it left the gate
+satisfied-but-unchecked. Launching there is not a surprise: every remaining player has
+explicitly pressed Ready, and the departure does not CAUSE the launch, it removes the last
+thing blocking one the others already asked for. Reversible in one place if playtest
+disagrees (`EvaluateLobbyReadyGate`).
+
+**Retest.** 3 humans in a match and in a launch lobby. Two press Ready, third leaves →
+the turn/launch should proceed within a tick. Also: press Ready twice quickly → the match
+must NOT start until everyone has pressed.
+
+---
+
+## B21 — A pilot who leaves mid-match takes their ship AND their score out of the arena 🟡 (root-caused & fixed 2026-09-11; needs a playtest)
+
+**Symptom (owner report).** *"Once one client leaves mid game the vessel should be replaced
+by an AI and the score of the client should still count… The vessel should not just
+disappear."*
+
+**Root cause.** Netcode destroys a client's owned objects when that client disconnects, and
+BOTH the vessel and the `Player` are owned by that client. `Player` is where `RoundStats`
+lives — the score. So a departure removed a ship from the arena mid-flight with no
+explanation, and silently subtracted that player's contribution from their domain's total:
+every surviving player was finishing a different match than the one they started.
+
+**Fix — the AI takes the ship.** Both objects are flagged `DontDestroyWithOwner` **at
+spawn**, so Netcode keeps them and reassigns ownership to the server itself; the disconnect
+handler then only has to switch the pilot on. That split is deliberate: the callback runs
+inside Netcode's own cleanup, so a handler that tried to rescue objects there would be
+racing it. By the time we run they are already safe, and switching on a pilot is safe
+whenever it happens.
+
+The result is exactly an AI backfill bot reached from the other direction — a server-owned
+`Player` marked `NetIsAI`, flying a server-owned vessel under `AIPilot`, configured to the
+same standard as a backfill bot (mode-aware seeking, skill from intensity). `RoundStats` is
+untouched, so the score earned still counts, and so does anything the AI earns after.
+
+**Announced on every peer** (`GameToastSituation.PilotHandedToAI`). A ship flying under new
+management is *less* confusing than one that vanishes — but only if everyone is told,
+otherwise a pilot who suddenly flies differently reads as a cheat.
+
+**Identifying who left needs its own map.** `_humanPlayersByOwner`, recorded at spawn:
+Netcode may already have reassigned ownership by the time the callback runs, so asking "who
+owned this?" then is asking a question whose answer has been erased. AI players share the
+HOST's owner id, so only remote humans are recorded.
+
+**The menu opts out** (`ConvertDepartedPlayersToAI => false`): an abandoned lava-lamp vessel
+has no match to finish and would just accumulate autopilot ships.
+
+**Retest.** Host + 2 clients in a scored match. One client leaves mid-match (Leave, and
+separately a hard kill). Expect: the ship keeps flying under AI, a toast names the departed
+pilot, the scoreboard still shows their score, and their domain's total still includes it.
+Watch that the host's roster does not double-count them.
 
 
 ---

@@ -793,4 +793,59 @@ call site is the one MPPM cannot exercise faithfully. Steps are in each entry.
 
 ---
 
+## Session 6 — 2026-09-11 (CLIENT AGENCY + DEPARTURE HANDLING — no MPPM, no editor)
+
+**Trigger.** Owner, continuing the same live-play report: *"at the end of each game the
+client cannot go to main menu, the button is closed… they can vote for rematch… once one
+client leaves mid game the vessel should be replaced by an AI and the score of the client
+should still count… the vessel should not just disappear."*
+
+Still **nothing was run** — no Unity here.
+
+### Shipped
+
+1. **B20 — two ready-gate hangs.** Both the MATCH gate and the LAUNCH LOBBY gate were
+   evaluated only inside the press RPC, so a player leaving mid-wait left the gate
+   satisfied-but-unchecked and the whole party stuck forever, with nobody able to press
+   again. Now a set of WHO, re-evaluated on every press *and* every disconnect. The match
+   gate had been written TWICE with both defects in each copy, so it moved to the base
+   class.
+
+2. **B21 — a departed pilot's ship is taken over by the AI, and the score survives.** Both
+   the vessel and the `Player` (which carries `RoundStats`) were owned by the departing
+   client and destroyed with it. Both are now `DontDestroyWithOwner` at spawn — survival is
+   arranged BEFORE the disconnect so it never races Netcode's cleanup — and the disconnect
+   handler only switches the AI pilot on. Announced on every peer.
+
+3. **Rematch vote.** A client's Play Again is now a vote: recorded server-side keyed on the
+   sender, toasted to everyone, and shown as a live tally on the HOST's button (the only
+   peer whose press does anything).
+
+4. **Maelstrom hub gets MAIN MENU.** Between rounds the hub offered only READY.
+
+### The finding worth carrying
+
+**An unauthored toast situation renders NOTHING, silently** (`GameToastController.Show`
+early-returns when the library cannot resolve the mode+situation). So both new announcements
+would have been dead on arrival with perfectly correct code behind them. Entries were
+authored into `GameToastConfig_Shared.asset` in the same pass. *Adding a situation to the
+enum is half the work; the other half is in an asset, and skipping it fails silently.*
+
+### Editor work this branch CANNOT do (all optional — nothing is broken without it)
+
+| What | Why | Consequence if skipped |
+|---|---|---|
+| Wire `PauseMenu.mainMenuButtonLabel` | Prefab field | A client's exit reads "MAIN MENU" instead of "LEAVE PARTY". Works. |
+| Wire `Scoreboard.playAgainLabel` | Prefab field | No "REMATCH?" caption or live tally on the button. The vote and its toast still work. |
+| Check the Maelstrom hub's `mainMenuButton` parent | It was authored for the summary screen; if it sits under `summaryRoot` it is inert in the hub | `MaelstromSceneView` LOGS AN ERROR naming the fix at runtime, so this cannot ship silently. |
+
+### Still not done
+
+- No playtest. Item 2 touches the spawn/despawn path and wants a two-machine pass.
+- The "warn players before they leave a game" design the owner mentioned is deliberately
+  not started — it is a design conversation, and everything above makes leaving *possible*,
+  which has to come first.
+
+---
+
 <!-- Append future sessions below this divider as ## Session 4 — date, etc. -->
