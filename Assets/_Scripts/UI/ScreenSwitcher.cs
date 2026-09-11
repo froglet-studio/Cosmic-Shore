@@ -638,7 +638,15 @@ namespace CosmicShore.UI
             // and (re)apply the EventSystem gating whenever it flips.
             bool inFreestyle = InFreestyle;
             if (inFreestyle != _appliedFreestyleGate)
+            {
                 ApplyFreestyleInputGate(inFreestyle);
+
+                // The hub row and the pad's selection are computed from the SAME live state, so
+                // they get the same self-heal: a hub row stranded at alpha 0 and non-interactable
+                // is the app's primary navigation gone, with no way back except paging screens.
+                UpdateHubButtonsVisibility();
+                Refocus();
+            }
 
             // Same self-healing contract for the modal gate: a modal that went away without
             // ModalWindowOut would otherwise hold every screen non-interactable forever.

@@ -208,6 +208,18 @@ namespace CosmicShore.Gameplay
             // blend. Banking it now also means the vessel it is attributed to is still current.
             FlightClock.OnFreestyleExited();
 
+            // Freestyle is OVER as of the two lines above - what remains is a camera blend, not
+            // flight. Clearing here mirrors the enter path (which sets the flag before raising
+            // its own start event) and is what makes this flag safe to read from the event below:
+            // every subscriber that asks "are we still flying?" while handling
+            // OnMenuStateTransitionStart used to be told YES, because the clear sat after the
+            // await. ScreenSwitcher.HandleExitFreestyle is the one that paid for it - it
+            // recomputes the home hub's visibility from that answer, found freestyle still
+            // "live", and left the hub row faded out and non-interactable with nothing
+            // scheduled to recompute it. ToyboxController already treated
+            // OnMenuStateTransitionStart as the end of freestyle; this brings the flag into line.
+            _isInFreestyle = false;
+
             // Raise SOAP event early so the camera blend starts immediately.
             // The camera controller freezes the CM PlayerCam framing in the vessel's local
             // frame and eases back to the menu framing - runs in parallel with the UI fade.
@@ -223,7 +235,6 @@ namespace CosmicShore.Gameplay
                               ignoreTimeScale: true, cancellationToken: ct));
 
             freestyleEvents.OnMenuStateTransitionEnd.Raise();
-            _isInFreestyle = false;
             _isTransitioning = false;
         }
 
