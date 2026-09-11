@@ -61,9 +61,11 @@ namespace CosmicShore.UI
         [SerializeField] Image templateAvatarImage;
 
         [Header("Domain halo")]
-        [Tooltip("Sprite for the ring behind the avatar. Left empty the template's own sprite is " +
-                 "borrowed, so the halo is the chip's SHAPE — a rectangular halo behind a round " +
-                 "avatar reads as a broken sprite rather than as a glow.")]
+        [Tooltip("Sprite for the glow behind the avatar. Left empty, a soft disc is generated - " +
+                 "NOT borrowed from the template the way the connecting-panel roster borrows its " +
+                 "chip's sprite. That trick works there because that template is a frame; here the " +
+                 "authored template's sprite is a PROFILE ICON, so borrowing it would draw a tinted " +
+                 "copy of somebody's face behind every avatar.")]
         [SerializeField] Sprite haloSprite;
 
         [SerializeField, Min(1f)] float haloScale = 1.22f;
@@ -97,7 +99,6 @@ namespace CosmicShore.UI
         RectTransform _container;
         RectTransform _template;
         bool _containerAuthored;
-        Sprite _templateSprite;
         string _avatarPath;
         bool _running;
 
@@ -131,6 +132,7 @@ namespace CosmicShore.UI
             for (int i = 0; i < _chips.Count; i++)
                 if (_chips[i]?.Root) Destroy(_chips[i].Root.gameObject);
             _chips.Clear();
+            ShowContainer(false);
         }
 
         void Awake()
@@ -242,6 +244,8 @@ namespace CosmicShore.UI
                 if (_chips[i].Root) _chips[i].Root.gameObject.SetActive(true);
                 TickChip(_chips[i], 0f, 1f);
             }
+
+            ShowContainer(_chips.Count > 0);
         }
 
         /// <summary>
@@ -283,6 +287,41 @@ namespace CosmicShore.UI
             // template - hiding the word PLAY AGAIN and cloning it once per vote.
             _containerAuthored = _container;
             if (!_container) _container = BuildContainer();
+
+            NeutraliseContainerGraphic();
+        }
+
+        /// <summary>
+        /// Make the strip safe to switch on.
+        ///
+        /// <para>The authored <c>PlayerAvatars</c> is a LAYOUT object that Unity gave an
+        /// <c>Image</c> when it was created: no sprite, full white, and a raycast target. A
+        /// sprite-less Image draws a solid RECTANGLE, so switching the strip on as authored paints
+        /// a white slab across the Play Again button - and being a raycast target it would then eat
+        /// the very press this row exists to encourage.</para>
+        ///
+        /// <para>So: a graphic with no sprite is switched OFF (it is Unity's default component, not
+        /// somebody's art), one WITH a sprite is left drawing, and either way it stops taking
+        /// raycasts. The same is done to the chips, in <see cref="BuildChip"/>.</para>
+        /// </summary>
+        void NeutraliseContainerGraphic()
+        {
+            if (!_container) return;
+            if (!_container.TryGetComponent<Image>(out var img)) return;
+
+            img.raycastTarget = false;
+            if (!img.sprite) img.enabled = false;
+        }
+
+        /// <summary>
+        /// The strip is shown only while somebody is asking. It is authored INACTIVE, which is the
+        /// right default - an empty row under the button is a gap, not a statement - so this is
+        /// what turns it on for the first vote and off again when the board comes down.
+        /// </summary>
+        void ShowContainer(bool show)
+        {
+            if (_container && _container.gameObject.activeSelf != show)
+                _container.gameObject.SetActive(show);
         }
 
         /// <summary>
@@ -323,11 +362,8 @@ namespace CosmicShore.UI
 
             if (!_template) return;
 
-            // Remember what the authored chip LOOKS like before it is hidden: its own sprite is the
-            // halo's shape, and the wired avatar is recorded as a PATH because the reference points
-            // at the template and every chip is a clone with its own copy of it.
-            var own = _template.GetComponent<Image>();
-            _templateSprite = own ? own.sprite : null;
+            // The wired avatar is recorded as a PATH because the reference points at the template
+            // and every chip is a clone with its own copy of it.
             _avatarPath = RelativePath(_template, templateAvatarImage);
 
             // Hidden, not destroyed: it is the source the chips are cut from, and a layout group
@@ -414,12 +450,56 @@ namespace CosmicShore.UI
 
             var img = go.GetComponent<Image>();
             img.raycastTarget = false;
-            img.sprite = haloSprite ? haloSprite : _templateSprite;
-            // No sprite means a solid rectangle, which behind a round avatar is a white box rather
-            // than a halo. Better no halo than a box.
+            img.sprite = haloSprite ? haloSprite : GeneratedHalo();
+            // No sprite means a solid rectangle, which behind an avatar is a white box rather than
+            // a glow. Better no halo than a box.
             img.enabled = img.sprite;
             img.color = new Color(1f, 1f, 1f, 0f);
             return img;
+        }
+
+        static Sprite _generatedHalo;
+
+        /// <summary>
+        /// A soft white disc to tint per domain, built once and shared by every chip in the app.
+        ///
+        /// <para>Generated rather than authored for the same reason the domain chip builds its own
+        /// ✕: the feature has to work before any art lands. It is deliberately NOT the template's
+        /// own sprite - the authored template carries a profile icon, and a face tinted Ruby and
+        /// scaled up behind another face is not a glow.</para>
+        /// </summary>
+        static Sprite GeneratedHalo()
+        {
+            if (_generatedHalo) return _generatedHalo;
+
+            const int size = 64;
+            var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+            {
+                name = "RematchHalo (generated)",
+                hideFlags = HideFlags.HideAndDontSave,
+                wrapMode = TextureWrapMode.Clamp,
+                filterMode = FilterMode.Bilinear,
+            };
+
+            var px = new Color32[size * size];
+            float centre = (size - 1) * 0.5f;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float dx = x - centre, dy = y - centre;
+                    float d = Mathf.Sqrt(dx * dx + dy * dy) / centre;   // 0 at the middle, 1 at the edge
+                    float a = 1f - Mathf.SmoothStep(0.5f, 1f, d);        // solid core, feathered rim
+                    px[y * size + x] = new Color32(255, 255, 255, (byte)Mathf.RoundToInt(Mathf.Clamp01(a) * 255f));
+                }
+            }
+            tex.SetPixels32(px);
+            tex.Apply(false, false);
+
+            _generatedHalo = Sprite.Create(tex, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+            _generatedHalo.name = "RematchHalo (generated)";
+            _generatedHalo.hideFlags = HideFlags.HideAndDontSave;
+            return _generatedHalo;
         }
 
         static void Stretch(RectTransform rt, float inset)
