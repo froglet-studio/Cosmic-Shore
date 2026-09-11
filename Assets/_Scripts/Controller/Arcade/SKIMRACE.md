@@ -319,7 +319,7 @@ The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed ci
 
 SkimRace uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). The in-place `OnResetForReplayCustom()` method was removed — flora, fauna, and environment spawners don't fully reset in-place, so a clean scene reload is required.
 
-Play Again is **host-only** (the old client rematch-request flow was removed with the per-mode scoreboard subclasses): `Scoreboard.ConfigureLobbyButtons` hides Play Again + Main Menu for non-host clients, and both `Scoreboard.OnPlayAgainButtonPressed` and `MultiplayerMiniGameControllerBase.RequestReplay` guard the call path. The host's replay carries every client along via the Netcode scene load.
+Play Again **restarts** for the host only — but since 2026-09-11 it is SHOWN to everyone, and a client's press is a **rematch VOTE** (`Scoreboard.CastRematchVote` → `MultiplayerMiniGameControllerBase.RequestRematch_ServerRpc`), toasted to every peer and tallied live on the host's own button. `RequestReplay` still guards the restart path, so a client can ask and only the host can act. Main Menu is now shown to clients too, where it LEAVES THE PARTY rather than returning it (`Docs/PartySystem/BUGS.md` B18). Note this is not a reversal of the earlier removal: that flow went as collateral of the per-mode-scoreboard deletion, not as a design call. The host's replay carries every client along via the Netcode scene load.
 
 **Replay flow** (triggered by Scoreboard "Play Again" button):
 
