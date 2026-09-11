@@ -52,6 +52,8 @@ Measured 2026-09-11:
 A PC sanity pass written against Wwise would test nothing. Because Revision 2 is a PDF that is not
 in the repository, the correction is carried where the work is actually executed from:
 `Docs/STEAM_RELEASE_TASKS.md` (item **R5**, the B2 item) and `Docs/AudioSystem/FMOD_AUDIT.md` §0.
+Note R5's **code** half closed on 11 Sep 2026; B2's audio step is part of the **manual** PC sanity
+pass, which the board routes to **R1/R3**. That is who has to know the middleware is FMOD.
 
 ---
 

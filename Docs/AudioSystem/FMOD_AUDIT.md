@@ -48,7 +48,9 @@ exercised by the findings below:
 **Why the correction lives here and not in the checkpoint.** Revision 2 is a PDF that has **never
 been committed to this repository** — see `Docs/STEAM_CHECKPOINT_SERIES.md` — so its item text
 cannot be edited. The correction is therefore carried in the two places the work is executed from:
-this section, and item **R5** on `Docs/STEAM_RELEASE_TASKS.md`.
+this section, and item **R5** on `Docs/STEAM_RELEASE_TASKS.md`. R5's *code* half (window size,
+resizability, bundle id) closed on 11 Sep 2026; the audio step above belongs to B2's **manual**
+half, which the board runs as **R1/R3** — so that is the pass these four checks belong to.
 
 ---
 
