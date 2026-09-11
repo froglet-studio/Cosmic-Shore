@@ -60,6 +60,32 @@ The trap the implementation guards, and the reason it is tested: **`DayOfWeek` n
 so the naive `date.AddDays(-(int)date.DayOfWeek)` puts Sunday at the *start* of the following week.
 `((int)DayOfWeek + 6) % 7` shifts Sunday to the end where ISO wants it.
 
+**There is a SECOND trap of the same class, and it lives in the FORMATTER rather than the boundary
+— it shipped, and it was found from outside this system** (the analytics wave cohort, which reuses
+this week key, `Docs/Analytics/DATA_ARCHITECTURE.md §7.3.3`). `WeekStartUtc` fixes *which instant* a
+week begins at; `ToString("yyyy-MM-dd")` then threw that away again, because a bare format string
+renders through **`CurrentCulture`, whose CALENDAR is not always Gregorian** — and Unity takes
+`CurrentCulture` from the device locale. Measured on the shipped expression, one instant:
+
+| Device locale | Calendar | Key produced |
+|---|---|---|
+| en-US / he-IL / ja-JP | Gregorian | `2026-09-07` ✅ |
+| ar-SA | UmAlQura | `1448-03-25` |
+| th-TH | ThaiBuddhist | `2569-09-07` |
+| fa-IR | Persian | `1405-06-16` |
+
+Those players drew a **different challenge** from everyone around them, wrote progress and attempts
+under a key nothing else reads, and never rolled over in step — precisely the failure the UTC-Monday
+rule exists to prevent, arriving through the formatter instead of through the boundary. All three
+period formatters (`WeekKeyFor`, `DayKeyFor`, and the service's fallback) now pass
+`CultureInfo.InvariantCulture`, and `WeeklyChallengeTests.PeriodKeysAreTheSameInEveryLocale` pins it
+across locales, failing if no alternate locale was available to test rather than passing vacuously.
+
+The general rule worth carrying past this system: **a date rendered without an explicit culture is a
+date in whatever calendar the device chose.** Any key, id or filename built from a `DateTime` — not
+just a displayed one — needs `InvariantCulture`, and the defect is invisible on every development
+machine in a Gregorian locale.
+
 ### The run uses the MODE'S OWN end conditions
 
 > **A per-entry TIME LIMIT survived that retirement and was the same mistake in a smaller costume.**

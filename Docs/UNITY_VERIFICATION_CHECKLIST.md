@@ -3,9 +3,36 @@
 > **Superseded for new work — see `Docs/QA/`.** The untested-development backlog is now
 > generated and maintained by the `/qa-backlog` skill in `Docs/QA/QA_BACKLOG.md`, with a
 > submission/result loop (`Docs/QA/README.md`) that archives passes and turns failures
-> into dev tasks. The two entries below are kept until they are run; new unverified work
-> does **not** get a section here — record it in the PR body's *Verification status*
-> section and the scan will pick it up.
+> into dev tasks. New unverified work does **not** get a section here — record it in the
+> PR body's *Verification status* section and the scan will pick it up.
+
+> ### ⚠ The supersession is not finished — corrected 2026-09-11 (doc-drift sweep, item **R8**)
+>
+> **This banner used to say "the two entries below are kept until they are run." That was wrong,
+> and by a wide margin.** Counted from the section headers on 2026-09-11:
+>
+> | Marker | Sections |
+> |---|---|
+> | 🔴 unverified | **45** |
+> | 🟡 partially confirmed | **1** |
+> | 🟢 verified in editor | **1** |
+> | **total** | **47** |
+>
+> So **46 sections are still open**, not two. Dated ones run **2026-08-15 → 2026-08-27**; eighteen
+> carry no date in their header at all.
+>
+> **None of them is in the QA backlog yet.** `Docs/QA/QA_BACKLOG.md` was generated **2026-08-13**,
+> which is *earlier than every dated item above* — so the backlog could not have absorbed them even
+> in principle, and this file is currently the only record that they exist. Treating it as a spent
+> pointer would silently drop 46 items of editor-side risk.
+>
+> **What closes this properly:** running the `/qa-backlog` skill — tracked as board item **R2** on
+> `Docs/STEAM_RELEASE_TASKS.md`. That skill already sweeps this file by name as an in-repo source
+> (`.claude/skills/qa-backlog/SKILL.md`, "Also sweep in-repo records"), so the items migrate as part
+> of a normal run. **Do not hand-migrate them into `QA_BACKLOG.md`** — that file is tool-owned and a
+> hand-edit would be overwritten by the next scan.
+>
+> Until R2 runs, **this file is live, not superseded.** Work the open items below.
 
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
