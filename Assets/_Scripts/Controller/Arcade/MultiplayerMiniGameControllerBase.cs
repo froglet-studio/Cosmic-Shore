@@ -420,7 +420,7 @@ namespace CosmicShore.Gameplay
             if (!_rematchVoters.Add(rpcParams.Receive.SenderClientId)) return;
 
             var nm = NetworkManager.Singleton;
-            _rematchVoters.RemoveWhere(id => nm == null || !nm.ConnectedClientsIds.Contains(id));
+            _rematchVoters.RemoveWhere(id => !IsClientConnected(nm, id));
 
             int humans = SpectatorSession.CountHumanClients(nm);
             AnnounceRematchVote_ClientRpc(playerName, domain, _rematchVoters.Count, humans);
@@ -499,7 +499,7 @@ namespace CosmicShore.Gameplay
 
             // Departed clients are pruned rather than trusted: the set is keyed on client id and a
             // stale entry would let the gate pass on behalf of somebody who is gone.
-            _readyClients.RemoveWhere(id => !nm.ConnectedClientsIds.Contains(id));
+            _readyClients.RemoveWhere(id => !IsClientConnected(nm, id));
 
             // Connected clients minus SPECTATORS: humans who own a Ready button (AI never connect,
             // viewers never press).
@@ -522,6 +522,29 @@ namespace CosmicShore.Gameplay
 
         /// <summary>What a mode does once every human has pressed Ready. Server-side.</summary>
         protected virtual void OnAllPlayersReady() { }
+
+        /// <summary>
+        /// Is <paramref name="clientId"/> still in the server's connected roster? False for a null
+        /// NetworkManager, so a caller need not null-check first.
+        /// </summary>
+        /// <remarks>
+        /// Deliberately an indexed scan rather than <c>nm.ConnectedClientsIds.Contains(id)</c>.
+        /// <c>ConnectedClientsIds</c> is an <see cref="IReadOnlyList{T}"/>, whose <c>Contains</c>
+        /// lives in <c>System.Linq</c> - which this file does not import. Without it the compiler
+        /// binds to <c>MemoryExtensions.Contains(ReadOnlySpan&lt;char&gt;, ...)</c> and fails with a
+        /// missing <c>comparisonType</c> argument: an error that names a SPAN API for a LIST call
+        /// and points at neither the collection nor the absent using. Indexing needs no using,
+        /// allocates no enumerator, and matches <see cref="SpectatorSession.CountHumanClients"/>,
+        /// which walks the same roster the same way.
+        /// </remarks>
+        static bool IsClientConnected(NetworkManager nm, ulong clientId)
+        {
+            if (nm == null) return false;
+            var ids = nm.ConnectedClientsIds;
+            for (int i = 0; i < ids.Count; i++)
+                if (ids[i] == clientId) return true;
+            return false;
+        }
 
         void HandleClientDisconnectedForReadyGate(ulong clientId)
         {
