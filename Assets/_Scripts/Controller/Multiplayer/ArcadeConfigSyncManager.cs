@@ -109,6 +109,15 @@ namespace CosmicShore.Gameplay
             public int  PlayerCount;
             public int  MaxPlayers;
             public int  DomainCount;
+            /// <summary>
+            /// How many HUMANS the host counts in the party. Replicated because the two peers
+            /// answer it from different sources otherwise - the host off Netcode's connected
+            /// clients (ground truth) and a guest off <c>HostConnectionDataSO.PartyMembers</c>,
+            /// a presence-lobby list polled every 3s that a guest frequently sees as 1. The
+            /// roster derives its AI seat count as <c>PlayerCount - humans</c>, so a guest that
+            /// under-counts humans draws phantom AI avatars nobody ever spawns.
+            /// </summary>
+            public int  HumanCount;
             public int  AiCount;
             public int  Ai0, Ai1, Ai2, Ai3;
 
@@ -121,6 +130,7 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref PlayerCount);
                 serializer.SerializeValue(ref MaxPlayers);
                 serializer.SerializeValue(ref DomainCount);
+                serializer.SerializeValue(ref HumanCount);
                 serializer.SerializeValue(ref AiCount);
                 serializer.SerializeValue(ref Ai0);
                 serializer.SerializeValue(ref Ai1);
@@ -131,7 +141,7 @@ namespace CosmicShore.Gameplay
             public bool Equals(LobbySnapshot o) =>
                 Generation == o.Generation && IsOpen == o.IsOpen && GameMode == o.GameMode &&
                 Intensity == o.Intensity && PlayerCount == o.PlayerCount && MaxPlayers == o.MaxPlayers &&
-                DomainCount == o.DomainCount && SameAi(o);
+                DomainCount == o.DomainCount && HumanCount == o.HumanCount && SameAi(o);
 
             public bool SameAi(LobbySnapshot o) =>
                 AiCount == o.AiCount && Ai0 == o.Ai0 && Ai1 == o.Ai1 && Ai2 == o.Ai2 && Ai3 == o.Ai3;
@@ -372,6 +382,7 @@ namespace CosmicShore.Gameplay
             // A member who leaves mid-lobby is neither ready nor expected any more.
             if (_isCommitted && (_readyClients.Remove(clientId) || _lobby.Value.IsOpen))
             {
+                RepublishHumanCount();
                 SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
 
                 // ...and the gate is then RE-DECIDED. This used to only re-announce the count, on
@@ -415,7 +426,24 @@ namespace CosmicShore.Gameplay
         void HandleClientConnected(ulong clientId)
         {
             if (!IsServer || !_isCommitted) return;
+            RepublishHumanCount();
             SyncReadyCount_ClientRpc(_readyClients.Count, ExpectedHumanCount);
+        }
+
+        /// <summary>
+        /// Re-state the party's human head-count into the open lobby. Called whenever a member
+        /// joins or leaves, so a guest's roster stops drawing an AI seat for a human who has
+        /// arrived (and starts drawing one for a human who has gone).
+        /// </summary>
+        void RepublishHumanCount()
+        {
+            if (!IsServer) return;
+            var snapshot = _lobby.Value;
+            if (!snapshot.IsOpen) return;
+            int humans = Mathf.Max(1, SpectatorSession.CountHumanClients(NetworkManager.Singleton));
+            if (snapshot.HumanCount == humans) return;
+            snapshot.HumanCount = humans;
+            _lobby.Value = snapshot;
         }
 
         void HandleGamePicksChanged(NetworkListEvent<ArcadeGamePick> _)
@@ -467,7 +495,16 @@ namespace CosmicShore.Gameplay
                                         int maxPlayers, int humanCount, int domainCount)
         {
             if (!IsServer) return;
-            if (_isCommitted) return;
+
+            // The guard suppresses a REPEAT of the card that is already open, never a DIFFERENT
+            // one. It used to be a bare bool, and every close route that did not run the modal's
+            // own OnCloseModal - gamepad B, ScreenSwitcher.CloseAllModals on freestyle entry,
+            // ForceCloseImmediate - left it latched true with the lobby still marked open. The
+            // host then picked another card, this method returned on its first line, and every
+            // guest sat looking at the previous card with nothing able to move them off it. The
+            // modal now notifies on its OWN close event so that leak is closed at the source;
+            // keying the guard on the card as well means a missed close can never re-open it.
+            if (_isCommitted && _lobby.Value.IsOpen && _lobby.Value.GameMode == gameMode) return;
             _isCommitted = true;
 
             _readyClients.Clear();
@@ -501,6 +538,7 @@ namespace CosmicShore.Gameplay
                 PlayerCount = playerCount,
                 MaxPlayers  = maxPlayers,
                 DomainCount = domainCount,
+                HumanCount  = Mathf.Max(1, SpectatorSession.CountHumanClients(NetworkManager.Singleton)),
             };
         }
 
@@ -552,7 +590,11 @@ namespace CosmicShore.Gameplay
             if (previous.Intensity != next.Intensity)
                 OnIntensityChangedOnClient?.Invoke(next.Intensity);
 
-            if (previous.PlayerCount != next.PlayerCount || previous.DomainCount != next.DomainCount || !previous.SameAi(next))
+            // HumanCount is not carried by the event - a client reads it off CurrentLobby - but a
+            // change to it still reshapes the roster (seats minus humans is the AI count), so it
+            // has to be one of the things that asks for a redraw.
+            if (previous.PlayerCount != next.PlayerCount || previous.DomainCount != next.DomainCount ||
+                previous.HumanCount != next.HumanCount || !previous.SameAi(next))
                 OnRosterChangedOnClient?.Invoke(next.PlayerCount, next.DomainCount, next.PlacedAiDomains());
         }
 

@@ -22,6 +22,14 @@ namespace CosmicShore.UI
         [Tooltip("When true, pressing gamepad B (East) will close this modal.")]
         [SerializeField] private bool closeOnGamepadB = true;
 
+        /// <summary>
+        /// Whether gamepad B may close this window RIGHT NOW. The serialized flag is a property of
+        /// the window; this is a property of its current state, which some windows genuinely have
+        /// (the arcade card is a lobby the HOST owns while a guest is in it, so a guest pressing B
+        /// would dismiss something they cannot ask for again).
+        /// </summary>
+        protected virtual bool AllowGamepadBClose => closeOnGamepadB;
+
         [Header("Input Blocking")]
         [Tooltip("When true, a full-screen transparent raycast blocker is spawned behind the " +
                  "window content so UI beneath the modal (screen buttons, nav bar) cannot be " +
@@ -151,7 +159,7 @@ namespace CosmicShore.UI
 
         protected virtual void Update()
         {
-            if (!isOn || !closeOnGamepadB) return;
+            if (!isOn || !AllowGamepadBClose) return;
 
             // While a mode-preview window holds input focus, the pad belongs to the VESSEL -
             // every face button is a flight control, so B closing the modal here would yank the

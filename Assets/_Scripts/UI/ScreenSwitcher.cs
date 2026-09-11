@@ -552,6 +552,8 @@ namespace CosmicShore.UI
         private void UnsubscribeFreestyleEvents()
         {
             if (!freestyleEvents) return;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleExitCompleted;
+            _pendingFreestyleExit = null;
             freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
             freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
             freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
@@ -1026,6 +1028,57 @@ namespace CosmicShore.UI
         {
             if (ModalIsActive(ModalWindows.ARENA)) return;
             OpenModal(ModalWindows.ARENA);
+        }
+
+        /// <summary>LIVE freestyle state, for anything the host is driving the local player into.</summary>
+        public bool IsInFreestyle => InFreestyle;
+
+        /// <summary>
+        /// Bring the local player out of freestyle because the HOST is pulling them somewhere -
+        /// then run <paramref name="onExited"/>.
+        ///
+        /// <para>Freestyle is not merely a screen the appshell is not on: <see cref="NavigateTo"/>
+        /// refuses outright, the screens CanvasGroup is faded out and non-raycastable,
+        /// <c>ModalWindowIn</c> refuses to open at all while the input gate is engaged, and
+        /// <see cref="HandleEnterFreestyle"/> has already closed every modal. So a host who opened
+        /// an arcade card reached a flying guest with an event that could not draw anything, and
+        /// the guest kept flying while the rest of the party sat in a lobby.</para>
+        ///
+        /// <para>The callback runs on <c>OnMenuStateTransitionEnd</c>, never on the start event and
+        /// never on the live flag: <see cref="HandleExitFreestyle"/> answers the START of the
+        /// transition with another <c>CloseAllModals</c>, so anything opened before the end is
+        /// closed again on the way out. Returns false and does nothing when there is no freestyle
+        /// to leave (the caller should just proceed), or when a transition is already running.</para>
+        /// </summary>
+        public bool RequestExitFreestyle(System.Action onExited)
+        {
+            if (!InFreestyle) return false;
+            if (!crystalClickHandler || !freestyleEvents) return false;
+
+            // One pending follow at a time - a host flicking between cards must not stack
+            // callbacks that each re-open a lobby that has already moved on.
+            if (_pendingFreestyleExit != null)
+            {
+                _pendingFreestyleExit = onExited;
+                return true;
+            }
+
+            _pendingFreestyleExit = onExited;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleExitCompleted;
+            crystalClickHandler.ToggleTransition();
+            return true;
+        }
+
+        System.Action _pendingFreestyleExit;
+
+        void HandleFreestyleExitCompleted()
+        {
+            if (freestyleEvents)
+                freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleExitCompleted;
+
+            var pending = _pendingFreestyleExit;
+            _pendingFreestyleExit = null;
+            pending?.Invoke();
         }
 
         bool IsHostOrSolo()
