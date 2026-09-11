@@ -36,6 +36,7 @@ when planning a week:
 | **R1** | **Prove a Windows IL2CPP player reaches the main menu.** `QA-BUILD-WINDOWS-PLAYER` is a stated P0 in the QA backlog and has never been run. Every defect in that chain — the `IL1005` linker failure, the `PauseMenu.Prewarm` crash — was invisible in the Editor. Build with `Tools/Build/build_windows.sh`, launch, sign in, reach `Menu_Main`, open and close the pause menu, read `Player.log` end to end. | Human | R2, R3, B7, every D item, DoD #3 | — |
 | **R2** | **Regenerate the QA backlog.** `Docs/QA/QA_BACKLOG.md` was generated 13 Aug against PRs #583–#710; the repo is at #855. Roughly 145 PRs and nine game modes are absent from the list QA works from. Run the `/qa-backlog` skill. | Session | R3, D5 | run `/qa-backlog` |
 | **R3** | **Start the daily all-modes pass (C8).** Nineteen modes now, not seven. D5's bug bash needs a seed corpus and none exists — one submitted verdict in the backlog's entire history. Start before the bash, not at it. | Human | D5, D6 | — |
+| **R13** | **Close the multiplayer lifecycle.** The invite program grows by friend invites, and the party-join path carries **two open red bugs, both second-player join failures** — Party B5 (the second joiner fails to join) and Presence B4 (second invite not delivered). Plus Party B2 (`ObjectDisposedException`) open and B11's fix reverted. A cohort that compounds through invites cannot compound through a broken join. | Session + editor | DoD #2, H10 | [`MULTIPLAYER_LIFECYCLE_PROMPT.md`](prompts/MULTIPLAYER_LIFECYCLE_PROMPT.md) |
 
 ---
 
@@ -48,6 +49,7 @@ when planning a week:
 | **R6** | **Playtest child app: runbook + dual-appID upload (A4, A5, A6, B4).** The Steam runbook is written for Revision 1 — a paid release on one app with `beta`/`default` branches. `Tools/Steam/upload.sh` takes one `STEAM_APPID`/`STEAM_DEPOTID` pair. Revision 2 needs the base app *and* the Playtest depot. | Session | A4, A5, E7 | [`STEAM_PLAYTEST_DUAL_APP_PROMPT.md`](prompts/STEAM_PLAYTEST_DUAL_APP_PROMPT.md) |
 | **R7** | **Publish a load-time target, then measure (D2, 8.0 person-days).** The target is D2's actual deliverable and does not exist. The matrix is now **19 modes × 4 intensities = 76 combinations**, not the ~28 the estimate assumed. Authoring the target and the harness is session work; running it is not. | Session + editor | DoD #5 | [`LOAD_TIME_TARGET_PROMPT.md`](prompts/LOAD_TIME_TARGET_PROMPT.md) |
 | **R8** | **Correct the drifted documentation.** Five documents read as authoritative and are wrong, including the in-repo checkpoint still being Revision 1. Cheap to fix, expensive to leave. | Session | nothing, but misleads every other item | [`DOC_DRIFT_SWEEP_PROMPT.md`](prompts/DOC_DRIFT_SWEEP_PROMPT.md) |
+| **R14** | **Index the launch blockers and register the third-party licences.** Several of the largest folders in `Assets/` are commercial Asset Store products — NiceVibrations (47 MB), Shift Sci-Fi UI, Effects Library, PrimitivePlus, and a 19 MB folder named `Unity Assests` with 199 files and no licence file. The repository proves presence; only purchase records prove we may distribute. Produces an index and a register, deletes nothing. | Session → human | legal exposure at ship | [`LAUNCH_BLOCKER_INVENTORY_PROMPT.md`](prompts/LAUNCH_BLOCKER_INVENTORY_PROMPT.md) |
 
 ---
 
@@ -59,6 +61,7 @@ when planning a week:
 | **R10** | **Author the Rhino's elemental ability map.** 1 of 4 slots designed, 0 of 4 level-5 upgrades authored — and the Rhino is the locked hull for **Astro League, Peel the Cage and Headlong**. Three shipped modes rest on a hull the fleet contract calls unfinished. Needs a design decision first; the prompt prepares the proposal against the shipped vessel, it does not invent the mapping. | Session → design | perceived polish of 3 modes | [`RHINO_ABILITY_MAP_PROMPT.md`](prompts/RHINO_ABILITY_MAP_PROMPT.md) |
 | **R11** | **Author `UrchinHUDVariant.prefab`.** The Urchin's ability map is complete at 4/4 with all four upgrades, and it has no HUD prefab at all — `UrchinVesselHUDController` and its view are unreferenced code. It locks two modes (Hijack, Skein). | Session + editor | Hijack / Skein polish | [`URCHIN_HUD_PROMPT.md`](prompts/URCHIN_HUD_PROMPT.md) |
 | **R12** | **Manta and Serpent ability maps.** Manta 3/4 named, 0/4 upgrades; Serpent 1/4 named, 0/4 upgrades. Neither locks a mode, so both sit behind the Rhino. | Session → design | — | reuse R10's prompt, retargeted |
+| **R15** | **Clean the GitHub repository.** `.git` is **1.4 GB** against a 2.0 GB tree, because the FMOD Studio project is committed whole — cache, unsaved working state and ~180 MB of WAVs duplicated with `Assets/_Audio/Music` — while LFS covers only `*.so` and `*.bundle`. Also: no PR template, no `CODEOWNERS`, and PR #855 worth of branches never triaged. Stops the growth now; puts the history rewrite to a human as a decision rather than doing it. | Session → human | contributor and CI cost, daily | [`GITHUB_HYGIENE_PROMPT.md`](prompts/GITHUB_HYGIENE_PROMPT.md) |
 
 ---
 
@@ -117,8 +120,8 @@ Mapped to the checkpoint's eight exit criteria, so the board can be read backwar
 | # | Criterion | Turned on by |
 |---|---|---|
 | 1 | Steam page live with Playtest signup, review passed | H1, H3, H5, R6, H13 |
-| 2 | Playtest build approved, Waves 0–1 granted, invites on | R1, R6, H5, H17 |
-| 3 | Fresh install → completed 4-player Tournament, zero P0/P1 | R1, R2, R3, H11, H12 |
+| 2 | Playtest build approved, Waves 0–1 granted, invites on | R1, R6, **R13**, H5, H17 |
+| 3 | Fresh install → completed 4-player Tournament, zero P0/P1 | R1, R2, R3, R13, H11, H12 |
 | 4 | Fresh account completes the quest chain, unlocks persist | *(quest work — excluded from this board)* |
 | 5 | Cold boot to playable meets the load-time target, all modes | R7, H8 |
 | 6 | Crash + funnel telemetry in dashboards, cohorted by wave | R9 |
