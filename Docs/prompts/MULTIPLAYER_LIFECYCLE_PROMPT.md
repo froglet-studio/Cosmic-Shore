@@ -130,4 +130,4 @@ than starting a multi-week task inside a bug fix.
 4. No new lazy-Relay, no host migration, no new threading primitive.
 5. `Docs/PartySystem/BUGS.md` and `Docs/PresenceSystem/BUGS.md` reflect reality, and the session log
    records what was tried.
-6. `Docs/STEAM_RELEASE_TASKS.md` R13 is ticked and H10 notes the state it inherits.
+6. `Docs/STEAM_RELEASE_TASKS.md` R16 is ticked and H10 notes the state it inherits.

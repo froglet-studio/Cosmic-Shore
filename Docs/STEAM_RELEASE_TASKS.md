@@ -4,6 +4,16 @@ Every open item between `bleeding-edge` and the invite-only Steam Playtest, deri
 **`Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.pdf`** (10 Sep 2026) measured against the
 Revision 2 checkpoint of 31 July.
 
+> **Re-run 12 Sep 2026 — `Docs/STEAM_CHECKPOINT_REV4_READINESS_AUDIT.pdf`.** Every Rev 3
+> measurement was taken again against `bleeding-edge` rather than read off this board's ticks.
+> R4, R5, R8, R9 and R16 are **confirmed landed**; R9 in particular honoured its one hard
+> constraint (`invite_wave` on the person record, `BuildSinkEnvelope` clean). Definition of Done
+> moved **1/8 → 2/8**. The blocking finding did **not** move — the progression service is still
+> instantiated by nothing. Scope grew again to **21 modes** (Bloomrush 52, Redline 53), and the
+> unverified pile grew with it: QA still holds **one** verdict from 14 Aug while
+> `UNITY_VERIFICATION_CHECKLIST.md` now carries **57 open items**. All five closed items were
+> "Session" lane; the three most blocking (R1, R2, R3) are the ones a session cannot do.
+
 > **Revision 2 is not in this repository** — it exists but was never committed, so its item
 > definitions (`A4`, `B2`, `C8`, `D2`, …) cited throughout this board cannot be looked up here.
 > The series, the gap, and the one known error in Rev 2's text are recorded in
