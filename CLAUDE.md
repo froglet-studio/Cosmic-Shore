@@ -2502,6 +2502,18 @@ PlayerSpawner / VesselSpawner (single-player, non-networked path)
 | `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
 | `NetIsAI` | Everyone | Server | AI flag |
 | `NetAvatarId` | Everyone | Owner | Profile avatar ID |
+| `NetArenaReady` | Everyone | Server | True once THIS player's machine has finished building the arena. Reported by the owner (`ReportArenaReady`), reset per scene, true by construction for an AI. The connecting panel's roster reads it |
+| `NetSpectatorCount` | Everyone | Server | How many spectators are watching this pilot. Written only from `SpectatorSession`'s watch book; reset per scene |
+| `NetUgsPlayerId` | Everyone | Owner | The owner's UGS auth PlayerId — the real identity behind `NetName`. Empty for AI |
+| `NetRematchVote` | Everyone | Server | True once this player has asked for a REMATCH on the current scoreboard. Written only by the controller's rematch ServerRpc (keyed on the RPC's own sender, so a client can only vote for itself); reset per scene and on every replay. The scoreboard draws a FACE per vote from it — a tally that travels as a transient count says how many and never WHO |
+
+**Every server-write row above is a fact only ONE machine can know, reported by the machine that
+knows it.** `NetArenaReady`, `NetRematchVote` and the six stat-report RPCs on `Player`
+(`ReportFaunaKill`, `ReportCombatHit`, `ReportPrismStolen`, `ReportEnvironmentPrismDestroyed`,
+`ReportSwitchThreaded`, `ReportFusesBeaten` — all `_ServerRpc`) are one family: the owner detects,
+the server records, everyone reads. Reach for it whenever a peer
+knows something the server cannot see — and prefer replicated STATE over an announcement whenever a
+peer that looks LATER still needs the answer.
 
 **`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used by the single-player minigame scenes) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 

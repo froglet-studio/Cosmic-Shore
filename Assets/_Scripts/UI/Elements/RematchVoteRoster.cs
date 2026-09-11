@@ -102,9 +102,6 @@ namespace CosmicShore.UI
         string _avatarPath;
         bool _running;
 
-        /// <summary>How many players are currently asking for a rematch.</summary>
-        public int VoteCount => _voters.Count;
-
         /// <summary>
         /// Hand the roster its sources when it was ENSURED at runtime rather than authored. An
         /// authored reference always wins — this only fills what is empty.
