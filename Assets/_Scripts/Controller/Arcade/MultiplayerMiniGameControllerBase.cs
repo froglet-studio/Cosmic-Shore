@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.UI;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -40,6 +42,12 @@ namespace CosmicShore.Gameplay
             {
                 gameData.OnMiniGameTurnEnd.OnRaised += HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised += SubscribeToSessionEvents;
+
+                // The ready gate is re-decided when the ROSTER changes, not only when somebody
+                // presses - otherwise a player leaving mid-wait strands everyone else at the ready
+                // screen permanently. See EvaluateReadyGate.
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForReadyGate;
 
                 StampMatchEnvelope();
 
@@ -97,7 +105,12 @@ namespace CosmicShore.Gameplay
             {
                 gameData.OnMiniGameTurnEnd.OnRaised -= HandleTurnEnd;
                 gameData.OnSessionStarted.OnRaised -= SubscribeToSessionEvents;
+
+                if (NetworkManager.Singleton != null)
+                    NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnectedForReadyGate;
             }
+            ResetReadyGate();
+            ResetRematchVotes();
             
             UnsubscribeFromSessionEvents();
             
@@ -375,6 +388,149 @@ namespace CosmicShore.Gameplay
         void ShowReadyButton_ClientRpc()
         {
             RaiseToggleReadyButtonEvent(true);
+        }
+
+        // ---------------- Rematch vote ----------------
+
+        /// <summary>
+        /// Which clients have asked for a rematch on the current scoreboard.
+        ///
+        /// <para>
+        /// Play Again is host-authoritative - one player's replay forces everyone into it - so a
+        /// client's press cannot BE the restart. But hiding the button left a client with no way to
+        /// say "again", which is the most common thing anybody wants to say at a scoreboard, and it
+        /// put the host in the position of guessing. So a client's press is a VOTE: it is recorded
+        /// here, announced to everyone as a toast, and the host decides.
+        /// </para>
+        /// </summary>
+        readonly HashSet<ulong> _rematchVoters = new();
+
+        /// <summary>How many players have asked for a rematch.</summary>
+        public int RematchVoteCount => _rematchVoters.Count;
+
+        /// <summary>Raised on every peer when the tally changes, so the host's button can react.</summary>
+        public event System.Action<int, int> OnRematchVotesChanged;
+
+        [ServerRpc(RequireOwnership = false)]
+        internal void RequestRematch_ServerRpc(string playerName, int domain, ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+
+            // Keyed on the sender, so a player leaning on the button votes once.
+            if (!_rematchVoters.Add(rpcParams.Receive.SenderClientId)) return;
+
+            var nm = NetworkManager.Singleton;
+            _rematchVoters.RemoveWhere(id => nm == null || !nm.ConnectedClientsIds.Contains(id));
+
+            int humans = SpectatorSession.CountHumanClients(nm);
+            AnnounceRematchVote_ClientRpc(playerName, domain, _rematchVoters.Count, humans);
+        }
+
+        [ClientRpc]
+        void AnnounceRematchVote_ClientRpc(string playerName, int domain, int votes, int humans)
+        {
+            GameToastAPI.Post(GameToastSituation.RematchRequested, (Domains)domain,
+                playerName, votes.ToString(), humans.ToString());
+            OnRematchVotesChanged?.Invoke(votes, humans);
+        }
+
+        /// <summary>Clears the tally - a new game is not carrying the last one's votes.</summary>
+        protected void ResetRematchVotes()
+        {
+            _rematchVoters.Clear();
+            OnRematchVotesChanged?.Invoke(0, 0);
+        }
+
+        // ---------------- Ready gate (shared) ----------------
+
+        /// <summary>
+        /// WHICH clients have pressed Ready this turn, server-side.
+        ///
+        /// <para>
+        /// This lives on the BASE because it was written twice - once in
+        /// <c>MultiplayerDomainGamesController</c>, once in <c>CoOpWildlifeBlitzMiniGame</c> - and
+        /// both copies carried the same two defects. Two copies of a rule is how the second one
+        /// gets forgotten, and a third mode would have written a third.
+        /// </para>
+        ///
+        /// <para>
+        /// Defect 1: both kept a bare COUNT, so a double-press (a rebound tap, or a Ready button
+        /// not yet hidden on a laggy client) satisfied the gate on behalf of somebody who had not
+        /// pressed, and the match started without them. Keying on the sender makes a press
+        /// idempotent.
+        /// </para>
+        ///
+        /// <para>
+        /// Defect 2, the expensive one: the gate was only ever evaluated INSIDE the press RPC,
+        /// against a human count read live at that instant. So when a player left, dropped or
+        /// crashed while the others were waiting on them, the comparison that would now pass was
+        /// never run again. Three humans, two pressed, the third leaves - and the remaining two sit
+        /// at the ready screen FOREVER: the match cannot start, nothing logs, nothing times out.
+        /// A count is a snapshot of an answer; the ROSTER is the question, and it keeps changing -
+        /// so the gate is re-decided whenever the roster does.
+        /// </para>
+        /// </summary>
+        readonly HashSet<ulong> _readyClients = new();
+
+        /// <summary>Records a Ready press. Idempotent per client.</summary>
+        protected void MarkClientReady(ulong clientId)
+        {
+            if (!IsServer) return;
+            _readyClients.Add(clientId);
+        }
+
+        /// <summary>Clears the gate - a new turn/round starts with nobody ready.</summary>
+        protected void ResetReadyGate()
+        {
+            _readyClients.Clear();
+        }
+
+        /// <summary>
+        /// Re-decides whether the turn can start, from the CURRENT roster. Called on every Ready
+        /// press AND on every client disconnect. Calls <see cref="OnAllPlayersReady"/> exactly once
+        /// per satisfied gate, then clears it.
+        /// </summary>
+        protected void EvaluateReadyGate(string because)
+        {
+            if (!IsServer) return;
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+
+            // Departed clients are pruned rather than trusted: the set is keyed on client id and a
+            // stale entry would let the gate pass on behalf of somebody who is gone.
+            _readyClients.RemoveWhere(id => !nm.ConnectedClientsIds.Contains(id));
+
+            // Connected clients minus SPECTATORS: humans who own a Ready button (AI never connect,
+            // viewers never press).
+            int humanCount = SpectatorSession.CountHumanClients(nm);
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[FLOW-9] [{GetType().Name}] Ready gate ({because}): {_readyClients.Count}/{humanCount}");
+
+            // humanCount can legitimately reach 0 - the last human left and only AI remain. Starting
+            // a countdown for nobody is worse than holding, and this host is on its way out anyway.
+            if (humanCount <= 0) return;
+
+            if (_readyClients.Count < humanCount) return;
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[FLOW-9] [{GetType().Name}] All players ready - starting countdown.");
+            _readyClients.Clear();
+            OnAllPlayersReady();
+        }
+
+        /// <summary>What a mode does once every human has pressed Ready. Server-side.</summary>
+        protected virtual void OnAllPlayersReady() { }
+
+        void HandleClientDisconnectedForReadyGate(ulong clientId)
+        {
+            if (!IsServer) return;
+
+            // Netcode fires this BEFORE the id leaves ConnectedClientsIds on some paths, so drop it
+            // here as well as in the prune - the gate must never count a departed player's vote.
+            _readyClients.Remove(clientId);
+            EvaluateReadyGate($"client {clientId} disconnected");
         }
 
         // ---------------- Reset / Replay Logic ----------------

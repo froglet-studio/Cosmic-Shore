@@ -529,6 +529,19 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}");
             base.OnNetworkSpawn();
 
+            // A PLAYER OUTLIVES ITS CONNECTION. Netcode destroys a client's player object when that
+            // client disconnects - and RoundStats, which IS this player's score, lives on it. So a
+            // pilot who left, dropped or crashed mid-match took their score out of their domain's
+            // total with them, and the match silently became a different match for everyone still
+            // in it.
+            //
+            // Flagged on the SERVER only (it is the authority on object lifetime) and set here
+            // rather than on the prefab so it cannot be lost to a prefab edit. The object stays
+            // spawned, ownership reverts to the server, and ServerPlayerVesselInitializer hands the
+            // vessel to the AI - see HandleClientDisconnectedForAITakeover.
+            if (IsServer && NetworkObject != null)
+                NetworkObject.DontDestroyWithOwner = true;
+
             // Add to game data early so ServerPlayerVesselInitializer can find us.
             gameData.Players.Add(this);
 

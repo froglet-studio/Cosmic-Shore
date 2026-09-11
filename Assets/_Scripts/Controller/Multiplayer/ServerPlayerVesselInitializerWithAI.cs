@@ -447,6 +447,17 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// An adopted pilot is configured exactly like a backfill bot - same mode-aware seeking,
+        /// same skill-from-intensity - so a ship that changes hands mid-match flies to the same
+        /// standard as the AI that was already in it, rather than sitting on prefab defaults.
+        /// </summary>
+        protected override void ConfigureDepartedPilotAI(IVessel vessel)
+        {
+            if (vessel is not VesselController vc) return;
+            ConfigureAIPilot(vc.NetworkObject);
+        }
+
         void ConfigureAIPilot(NetworkObject aiVesselNO)
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
