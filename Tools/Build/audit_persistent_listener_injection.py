@@ -507,7 +507,10 @@ def main():
               "not guessed from the stale serialized type name)" % len(unresolved))
     if dead:
         print("(%d persistent call(s) name a method their resolved script does not declare -- "
-              "dead wirings, e.g. %s)" % (len(dead), sorted(dead)[0][0] + "." + sorted(dead)[0][1]))
+              "dead wirings, e.g. %s." % (len(dead), sorted(dead)[0][0] + "." + sorted(dead)[0][1]))
+        print(" NOTE: an INHERITED method lands here too -- this greps the resolved script file, not"
+              " its base -- so a `ModalWindowOut` on a ModalWindowManager subclass is listed and"
+              " works fine at runtime. Docs/UI_ARCHITECTURE_AUDIT.md records that distinction.)")
     if guessed:
         print("(%d class name(s) matched neither the filename nor the serialized type and were "
               "GUESSED alphabetically, e.g. %s -- treat as unresolved, not as fact)"
