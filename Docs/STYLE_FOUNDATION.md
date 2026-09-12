@@ -202,6 +202,20 @@ Nothing reads them today — the readout they were drawn for was removed and the
 `Docs/GAME_MODE_TOPBAR.md` §2. They apply §1.2 directly: the three crystal metrics share one gem
 silhouette and are told apart by FILL, not by hue.
 
+**UI chrome glyphs (art present, WIRED).** Five line-weight monochrome glyphs in
+`_Graphics/UI/Chrome/`, drawn by `Tools/Build/author_ui_chrome_icons.py`, which imports the
+objective set's drawing engine rather than copying it so the two cannot drift on stroke weight,
+supersampling, margin or encoding. `chrome_close` (the X Button — worn by both the Menu_Main cancel
+and the Arcade Screen close, per this list naming ONE X Button), `chrome_reroll`, `chrome_confirm`,
+`chrome_arrow_down`, and `chrome_vessel_placeholder` (the Termite's class icon: a slivered slot,
+because that vessel is planned and its real art is a design task). They replaced sprites that were
+being drawn out of a plugin's demo folder — `Docs/THIRD_PARTY_DECISIONS.md` row 5.
+
+`chrome_reroll` is the worked example of §5 in an icon: a circular refresh arrow is the obvious
+glyph and is banned, so the same statement is made out of right angles — two hooks chasing each
+other round a broken rectangle. It reads as a cycle just as fast and matches the orthogonal
+language of everything around it.
+
 **Missing, needed:** connection lost, error, warning, success, mute, host badge, kick, ready/waiting, favourite star.
 
 ---

@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
 using DG.Tweening;
+using FMODUnity;
 using System;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,9 +15,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] Sprite  countdown2;
         [SerializeField] Sprite  countdown1;
         [SerializeField] Sprite  countdown0;
-        [SerializeField] AudioClip countdownBeep;
         [SerializeField] float     countdownDuration  = 1f;
         [SerializeField] float     countdownGrowScale = 1.5f;
+
+        [Header("Audio")]
+        [SerializeField, Tooltip("FMOD event played on each countdown beat. Leave empty for silence.")]
+        EventReference countdownBeepEvent;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -62,7 +66,8 @@ namespace CosmicShore.Gameplay
                     countdownDisplay.color = idx >= urgentStart
                         ? urgentColor
                         : Color.white;
-                    AudioSystem.Instance.PlaySFXClip(countdownBeep);
+                    if (!countdownBeepEvent.IsNull)
+                        AudioSystem.Instance.PlaySFXEvent(countdownBeepEvent);
                 });
 
                 // Fade in from transparent

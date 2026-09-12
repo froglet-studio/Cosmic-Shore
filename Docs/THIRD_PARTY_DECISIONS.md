@@ -20,7 +20,7 @@ which prompt executes it.
 | **2** | FMOD licence tier | **Buy if the thresholds say so** | §2 below — money, not code |
 | **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
 | **4** | NiceVibrations plugin | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
-| **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
+| **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) |
 | **7** | "Effects Library" provenance | **Owner will look into it** | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **8** | Wwise | **Owner will see to it** | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
@@ -64,8 +64,8 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 | **FMOD** | ships | the whole audio layer | **KEEP** — credit line + tier |
 | **Obvious SOAP** | ships | **128** files | **KEEP** — receipt only |
 | **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | ~~**1** file, **5** API symbols~~ → **0** | ✅ **REPLACED** (row 4). Folder still ships for rows 4b/5 |
-| ├ demo sprites | ship | 6 usages in 5 shipped locations | **REPLACE** (row 5) |
-| └ `HapticSamples/*.wav` | ship | 4 clips on legacy `AudioClip` fields | **REPLACE with FMOD events** (row 5) |
+| ├ demo sprites | ship | ~~6 usages in 5 shipped locations~~ → **0** | ✅ **REPLACED** (row 5) — `_Graphics/UI/Chrome/` |
+| └ `HapticSamples/*.wav` | ship | ~~4 clips on legacy `AudioClip` fields~~ → **0** | ✅ **REPLACED** (row 5) — FMOD `EventReference`s, shipped empty |
 | **Shift Sci-Fi UI** | ships (+ `Resources/`) | **0** code files; 3 textures + 1 prefab | **REPLACE** (row 6) |
 | **PrimitivePlus** | ships (+ 47-mesh `Resources/`) | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | **REPLACE** (row 6) |
 | **DOTween** | ships | **44** files | **KEEP** — vendor the licence |
@@ -145,6 +145,36 @@ project has already decided what that action is: CLAUDE.md's audio convention sa
 licence workaround — it is finishing a migration the project already committed to.
 
 **Cost: 4 sprite swaps + 4 FMOD events. Art lead time on the sprites; no engineering risk.**
+
+**Landed 12 Sep 2026.** Both halves done, and the sprite count came out at **five glyphs for six
+references** rather than four for six: `CancelButton` (Menu_Main) and `Close Button` (Arcade Screen)
+wore two DIFFERENT vendor glyphs while meaning the same thing, and the Style Foundation's icon list
+names one *"X Button"*, so they now share `chrome_close`. That is the swap's one intentional look
+change; everything else keeps its predecessor's read (a down triangle stays a down triangle). The
+Termite pair collapses to one placeholder for the same reason — both slots were already standing in
+for art that does not exist, and selection is signalled by the border, not by the glyph.
+
+Three method notes worth carrying to rows 6-8, which are the same shape of job:
+
+* **The replacements live under a first-party PATH.** Editing the vendor PNG in place and keeping
+  its guid is a one-line change that works — and hides itself: the asset path still says
+  `NiceVibrations/Demo/…`, so the next audit re-reports it and the next `git clean` or plugin
+  re-import silently restores demo art.
+* **A sub-sprite reference is `{fileID, guid}` and the fileID is load-bearing.** The four shipped
+  `RegularPresetsIcons.png` usages point at four DIFFERENT sub-sprites of one sheet, so a guid-only
+  swap would have silently re-pointed all four at whatever sub-sprite happened to carry that
+  fileID. Both fields were rewritten together (and `type: 2` → `type: 3` for the standalone
+  `.asset` sprite, which is a different importer).
+* **The proof is a whole-TREE sweep, not a check of the eight named assets.** All **411** guids
+  owned under `Demo/` and `HapticSamples/` were counted against every shipped scene, prefab and
+  asset: zero holders outside `MIgration_Prefabs (DELETE LATER)`, which was left untouched on
+  purpose (`LAUNCH_BLOCKER_INDEX.md` §B3). Checking only the eight would have proved the eight.
+  It is a tool, not a shell one-liner — **`Tools/Build/check_vendor_tree_references.py`**, a
+  READER, which asserts guid OWNERSHIP per `.meta` before counting holders (a `.meta` can remap
+  into another asset, so a `grep -rl | head -1` returns plausible false positives) and carries a
+  `--self-test` negative control, because a gate nobody has watched fail is a gate nobody should
+  trust. **Rows 6-8 and the final `Assets/NiceVibrations/` deletion each need this same evidence:
+  add the tree to its `ROSTER` and run it.**
 
 ### Row 6 — Shift + PrimitivePlus
 
