@@ -44,6 +44,10 @@ namespace CosmicShore.Gameplay
         // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
 
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
+
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             if (impactor == null || impactor.Vessel == null) return;

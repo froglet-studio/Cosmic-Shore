@@ -27,16 +27,16 @@ namespace CosmicShore.Editor
 
         int _lastStamp = -1;
         List<BugLedgerIssue> _sorted = new();
-        int _open, _validating, _ignored;
+        int _open, _validating, _ignored, _pending;
 
         /// <summary>True when the ledger changed since the last draw — the host should Repaint.</summary>
         public bool NeedsRepaint => _lastStamp != BugLedger.ChangeStamp;
 
-        public void Draw(Action<Action> defer)
+        public void Draw(Action<Action> defer, Action openStageTab)
         {
             SyncFromLedger();
 
-            DrawStatusRow(defer);
+            DrawStatusRow(defer, openStageTab);
             DrawCaptureLine(defer);
             FrogletEditorPalette.HorizontalRule();
 
@@ -61,6 +61,7 @@ namespace CosmicShore.Editor
             _sorted = BugLedger.Snapshot();
             _sorted.Sort(CompareIssues);
             BugLedger.CountsByState(out _open, out _validating, out _ignored);
+            _pending = BugLedger.ComputePendingChanges().Count;
         }
 
         static int CompareIssues(BugLedgerIssue a, BugLedgerIssue b)
@@ -80,7 +81,7 @@ namespace CosmicShore.Editor
 
         // ── Status row ───────────────────────────────────────────────────────────
 
-        void DrawStatusRow(Action<Action> defer)
+        void DrawStatusRow(Action<Action> defer, Action openStageTab)
         {
             GUILayout.Space(4f);
             using (new EditorGUILayout.HorizontalScope())
@@ -91,6 +92,16 @@ namespace CosmicShore.Editor
                 Pill($"{_validating} VALIDATING", _validating > 0 ? FrogletEditorPalette.Warn : FrogletEditorPalette.Muted, 104f);
                 GUILayout.Space(4f);
                 Pill($"{_ignored} IGNORED", FrogletEditorPalette.Muted, 86f);
+                if (_pending > 0)
+                {
+                    GUILayout.Space(4f);
+                    var pendRect = GUILayoutUtility.GetRect(112f, 18f, GUILayout.Width(112f));
+                    FrogletEditorPalette.StatusPill(pendRect, $"{_pending} UNPUBLISHED", FrogletEditorPalette.Info);
+                    if (GUI.Button(pendRect, new GUIContent("",
+                            "Local changes version control has not seen — stage and push them from the Stage & Push tab."),
+                            GUIStyle.none))
+                        openStageTab();
+                }
 
                 GUILayout.FlexibleSpace();
 
@@ -368,7 +379,7 @@ namespace CosmicShore.Editor
                         }
                         GUILayout.Space(4f);
                         if (FrogletEditorPalette.ColorButton("Show File", FrogletEditorPalette.Info, 76f, 20f,
-                                "Reveal this issue's JSON in the file browser — commit it to share the bug.", outline: true))
+                                "Reveal this issue's local JSON in the file browser. Sharing goes through the Stage & Push tab.", outline: true))
                         {
                             var id = issue.Id;
                             defer(() => EditorUtility.RevealInFinder(BugLedger.IssuePath(id)));
@@ -413,11 +424,6 @@ namespace CosmicShore.Editor
                 new GUIContent("Auto-issue cap",
                     "A runaway error generator must not mint files; past the cap new signatures are dropped with one warning."),
                 settings.MaxAutoIssues, 10, 1000);
-            bool keepArchive = EditorGUILayout.ToggleLeft(
-                new GUIContent("  Archive resolved issues",
-                    "On resolution, stamp the issue into BugLedger/resolved/ (pruned to a cap) instead of discarding it. " +
-                    "Git history keeps everything either way."),
-                settings.KeepResolvedArchive);
 
             if (EditorGUI.EndChangeCheck())
             {
@@ -425,7 +431,6 @@ namespace CosmicShore.Editor
                 settings.MinValidationPlaySeconds = minPlay;
                 settings.MinEditorSessionMinutes = minEditor;
                 settings.MaxAutoIssues = maxAuto;
-                settings.KeepResolvedArchive = keepArchive;
                 settings.SaveNow();
                 BugLedger.ApplySettings(settings);
 
@@ -439,9 +444,11 @@ namespace CosmicShore.Editor
                 GUILayout.Label(
                     "How validation works: mark an issue Fixed and it turns VALIDATING. Each qualifying session where its " +
                     "error stays silent (a play run for play-mode bugs, a full editor session for edit-mode ones) counts one " +
-                    "clean session; at its quota the issue closes — archived to BugLedger/resolved/, removed from the live " +
-                    "ledger. Tool-filed findings validate differently: a full clean re-run of the tool that filed them closes " +
-                    "them. If an error recurs, its issue reopens as a regression. Full doc: Docs/DIAGNOSTICS.md.",
+                    "clean session; at its quota the issue closes — archived to BugLedger/local/resolved/, removed from the " +
+                    "live ledger. Tool-filed findings validate differently: a full clean re-run of the tool that filed them " +
+                    "closes them. If an error recurs, its issue reopens as a regression. Everything here is machine-local " +
+                    "until you publish it — version control only ever sees what you stage and push from the Stage & Push " +
+                    "tab. Full doc: Docs/DIAGNOSTICS.md.",
                     FrogletEditorPalette.Subtitle);
                 GUILayout.Space(8f);
             }

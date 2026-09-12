@@ -104,6 +104,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -241,6 +242,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -430,6 +432,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -826,7 +829,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -7.600006, y: 6.5}
+  m_AnchoredPosition: {x: -7.5999756, y: 6.5}
   m_SizeDelta: {x: 136, y: 36}
   m_Pivot: {x: 1, y: 0}
 --- !u!222 &1418311070324876409
@@ -1045,6 +1048,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1182,6 +1186,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1254,7 +1259,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 18.999966, y: -19.900146}
+  m_AnchoredPosition: {x: 18.999939, y: -19.900146}
   m_SizeDelta: {x: 32, y: 32}
   m_Pivot: {x: 0, y: 1}
 --- !u!222 &3920394689353791733
@@ -1335,7 +1340,7 @@ MonoBehaviour:
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
   m_Interactable: 1
-  m_TargetGraphic: {fileID: 0}
+  m_TargetGraphic: {fileID: 4792230803441262691}
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
@@ -1699,6 +1704,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2049,6 +2055,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2468,6 +2475,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2705,6 +2713,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -3173,7 +3182,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1239807982, guid: 76d9a525ed265fc478883fa791ef5f7e, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -1.0852013
+      value: -1.0852127
       objectReference: {fileID: 0}
     - target: {fileID: 1239807982, guid: 76d9a525ed265fc478883fa791ef5f7e, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -3839,12 +3848,12 @@ PrefabInstance:
     - target: {fileID: 2843857252666764685, guid: fdb08022e48d2734da27536bfb303498,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -14.4
+      value: -14.400024
       objectReference: {fileID: 0}
     - target: {fileID: 2843857252666764685, guid: fdb08022e48d2734da27536bfb303498,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 51.3
+      value: 51.300003
       objectReference: {fileID: 0}
     - target: {fileID: 2843857252666764685, guid: fdb08022e48d2734da27536bfb303498,
         type: 3}

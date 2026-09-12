@@ -27,6 +27,7 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
+    HeartWorldScale: 2.935
     LeafSize: {x: 15, y: 3, z: 3}
     GrowPeriod: -1
     LatticeScale: -1
@@ -40,5 +41,3 @@ MonoBehaviour:
     MaxSpawnsPerFrame: -1
     PlantRadiusCellFraction: 0.7
     PlantRadiusCellFractionMin: 0.45
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15

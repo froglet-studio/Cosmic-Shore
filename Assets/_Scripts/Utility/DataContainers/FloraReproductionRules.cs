@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Utility
@@ -80,5 +81,59 @@ namespace CosmicShore.Utility
         /// toy-cloned config is never silently muted.
         /// </summary>
         public static bool HasPopulationModel(int seedFloor) => seedFloor > 0;
+
+        // ── THE TIME LAW: tempo is Time's identity, and reproduction is a tempo ────────
+        //
+        // Every element already expresses itself in the food web through the SHAPE of its
+        // mass - Charge armours its leaves (Flora.ResolveShieldPeriod), Mass and Space
+        // author very different prism budgets. Time's identity is the CLOCK, and the only
+        // clock a plant owns is how fast it turns growth into population. So a Time plant
+        // breeds a little faster than the fleet and the other three a little slower.
+        //
+        // It is expressed as a RATE, not as a quota or a period, because the two flora
+        // reproduction paths measure the same thing in opposite units - the per-plant path
+        // spends a GROWTH QUOTA (prisms per child) and the lattice colonies spend a CYCLE
+        // PERIOD (seconds per child). Both are "per child", so both are divided by the rate
+        // and one constant governs both. Rate up = quota down = period down.
+
+        /// <summary>Reproduction rate multiplier for a TIME plant, relative to the fleet.</summary>
+        public const float TimeReproductionRate = 1.25f;
+
+        /// <summary>Reproduction rate multiplier for every other element, relative to the fleet.</summary>
+        public const float OtherReproductionRate = 0.8f;
+
+        /// <summary>
+        /// This element's reproduction rate multiplier. <see cref="Element.None"/> is left at
+        /// the fleet rate (1) deliberately: it is not one of the four, it means "no crystal
+        /// resolved yet", and a species that reaches reproduction without an element should
+        /// keep behaving exactly as it did rather than silently inheriting the penalty.
+        /// </summary>
+        public static float ReproductionRateFor(Element element) => element switch
+        {
+            Element.Time => TimeReproductionRate,
+            Element.Charge or Element.Mass or Element.Space => OtherReproductionRate,
+            _ => 1f,
+        };
+
+        /// <summary>
+        /// Applies a reproduction rate to a "cost per child" quantity - a growth QUOTA in
+        /// prisms or a colony CYCLE PERIOD in seconds. Faster (rate &gt; 1) means a smaller
+        /// cost, so the rate divides.
+        ///
+        /// <para>0 is preserved exactly, because on the quota path 0 is not a number, it is
+        /// the species saying "I do not reproduce" (<c>FloraConfigurationSO.GrowthPerOffspring</c>) -
+        /// no element may scale a species into breeding.</para>
+        /// </summary>
+        public static float ScaleCostPerChild(float authoredCost, float rate)
+            => authoredCost <= 0f || rate <= 0f ? authoredCost : authoredCost / rate;
+
+        /// <summary>
+        /// Integer form of <see cref="ScaleCostPerChild"/> for the growth quota, floored at 1
+        /// so a scaled-down quota can never reach 0 and read as "does not reproduce".
+        /// </summary>
+        public static int ScaleGrowthQuota(int authoredQuota, float rate)
+            => authoredQuota <= 0
+                ? authoredQuota
+                : Mathf.Max(1, Mathf.FloorToInt(authoredQuota / rate + 0.5f));
     }
 }

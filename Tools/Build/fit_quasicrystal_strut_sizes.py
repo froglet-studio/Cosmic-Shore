@@ -43,12 +43,23 @@ THE HEART SEAT
 --------------
 A strut with a HEART at one end holds back by QuasicrystalAssembler's
 heartSeatInset so the plant's crystal sits clear inside its twelve-ray star.
-The heart's crystal rides the platform's one level curve (world scale 3.5 at
-level 1 to 4.25 at level 5, apparent radius <= ~0.6 x scale - the Schwarz P
-flat-point seat shipped 4.2u across for the same crystals), so the seat must
-clear ~2.55u at level 5. This script measures the ACTUAL clear radius at every
-heart of the patch - including non-incident struts passing nearby - and gates
-on it.
+The heart's SIZE is authored per ELEMENT, on that element's variant tuning
+block (FloraVariantTuning.HeartWorldScale) - lifeform LEVELS are retired, so a
+heart no longer grows over a plant's life and there is no level curve for it to
+ride (Docs/ECOSYSTEM.md 40.2). The four quasicrystal variants author 1.843
+(Charge) / 2.935 (Mass) / 2.669 (Space) / 2.454 (Time) world scale, apparent
+radius <= ~0.6 x scale - the Schwarz P flat-point seat shipped 4.2u across for
+the same crystals.
+
+CRYSTAL_NEED stays at 2.55u, which is the OLD level-5 figure and is now a
+deliberately conservative gate: it clears a 4.25-scale heart, while the largest
+this species actually authors is 2.935 (~1.76u apparent). Left where it is on
+purpose - the fitted struts already pass it, so tightening it to the real band
+would buy nothing and would have to be re-derived on every heart retune. Raise
+it only if a variant is ever authored above 4.25 (the hard ceiling is
+ElementalCrystalSetSO.MaxSafeHeartWorldScale, 4.8). This script measures the
+ACTUAL clear radius at every heart of the patch - including non-incident struts
+passing nearby - and gates on it.
 """
 from __future__ import annotations
 
@@ -70,7 +81,10 @@ FLORA_PREFAB = ROOT / "Assets/_Prefabs/FloraAndFauna/QuasicrystalFlora.prefab"
 
 EDGE = 24.0          # QuasicrystalBlock Variant's authored edgeLength (read back below)
 HEART_SEAT = 2.6     # QuasicrystalAssembler.heartSeatInset - read back off the prefab below
-CRYSTAL_NEED = 2.55  # level-5 heart apparent radius (4.25 world x ~0.6)
+# Conservative seat gate: apparent radius of a 4.25-world-scale heart (x ~0.6). The heart
+# is authored per ELEMENT now (max 2.935 on this species), so this clears the real band with
+# room to spare - see THE HEART SEAT above before changing it.
+CRYSTAL_NEED = 2.55
 SHIELD_SCALE = 3.0   # OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on box HALF-extents
 CLEARANCE = 1.10     # ship at touch / 1.10, the fit_shield_clearance convention
 
@@ -360,7 +374,7 @@ def measure_heart_seat(lat, seat_classes, frames, plain_len, half_y, half_z,
         worst = min(worst, dist)
     f.check(worst >= CRYSTAL_NEED,
             f"{label}: every heart's crystal seat is clear",
-            f"min clear radius {worst:.2f}u >= level-5 need {CRYSTAL_NEED}u "
+            f"min clear radius {worst:.2f}u >= authored-heart need {CRYSTAL_NEED}u "
             f"(seat inset {HEART_SEAT}u, {len(seat_classes)} seat classes, "
             f"{n_hearts} hearts in patch)")
 

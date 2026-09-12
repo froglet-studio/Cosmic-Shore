@@ -6,21 +6,21 @@
 
 ## The problem it solves
 
-Everything the Urchin is good at runs on someone's prismscape. It grinds a ribbon at 150 u/s,
+Everything the Urchin is good at runs on someone's prismscape. It grinds a ribbon at 300 u/s,
 recharges its ammo by riding, grows its own trail and steals everyone else's — and away from a
-trail it is an ordinary ship with a shotgun, flying at a 50 u/s cruise with nothing to latch onto.
+trail it is an ordinary ship with a shotgun, flying at a 65 u/s cruise with nothing to latch onto.
 Big cells have long empty stretches. So the vessel can now **bring its own rail**: press the left
 trigger and a straight, single-lane stretch of trail forms out in front of the nose.
 
 It is not a wall, a weapon or a trap. It is **one lane of ordinary conserved trail mass in the
 pilot's own domain**, so every system in the game already knows what to do with it:
 
-- the ride reads it as **friendly terrain** (150 u/s) and **grows** it as it passes
+- the ride reads it as **friendly terrain** (300 u/s) and **grows** it as it passes
   (`GunVesselTransformer.ApplyPrismscapePayoff` → `Prism.Grow`),
 - at **Mass 5** ("Reinforced Wake") the prisms you ride over come up **shielded** — so a lap of
   your own ramp armours it, at the cost of double ride-ammo on the next lap and of dropping those
   prisms out of the cell's fauna targeting grids (shielded mass is never prey),
-- an opposing Urchin rides it as hostile terrain at 10 u/s and **steals** it under itself
+- an opposing Urchin rides it as hostile terrain at 20 u/s and **steals** it under itself
   (`Prism.Steal`, same method, else branch),
 - **fauna graze it like any other trail** — not by assertion: `BoostRingBuilder.LayOne` calls
   `Prism.Initialize`, which registers with `PrismSpatialIndex`, whose `BindCell` calls
@@ -57,8 +57,9 @@ joust ring and the Squirrel's tube. Using it buys two properties the ability liv
 both of them are the *opposite* of what an ordinary trail lay does:
 
 1. **A full-size collider from frame 0.** Track prisms come from the dedicated `PrismType.Boost`
-   pool (waitTime 0, fast bloom) and are put under `Prism.HoldColliderAtFullSize`. The ordinary
-   wake's `waitTillOutsideSkimmer` delay exists precisely to let a vessel get **clear** of the mass
+   pool (waitTime 0, fast bloom). Under the clock law the transform is final at stamp, so the
+   authored collider is already full-size while the visual blooms. The ordinary wake's
+   `waitTillOutsideSkimmer` delay exists precisely to let a vessel get **clear** of the mass
    it lays; a launch ramp you cannot hit at grind speed is not a ramp.
 2. **Trail membership stamped AFTER `Initialize`.** Pool reuse clears membership
    (`Prism.ResetState`), so a stamp made before `Initialize` is silently wiped and the prisms read
@@ -115,7 +116,7 @@ on this vessel already makes, and it closes when a replicated element-LEVEL surf
 | `trackLength` | `UrchinTrackAction.asset` | **100** u — the requested length. Scaled by SPACE. |
 | `prismSpacing` | `UrchinTrackAction.asset` | **8** u between prism centres. The vessel's own wake lays at its wavelength (10) and the ride bridges gaps happily, so this is a look-and-catchability dial: tighter is easier to fly into and costs more prisms. |
 | `prismScale` | `UrchinTrackAction.asset` | **(3, 3, 6)** — a little heavier than one of the vessel's own wake ribbons (2 × 2.5 × 4), because this is a rail you *meant* to place and it has to be catchable at grind speed. **Z is the length ALONG the track** and must stay the long axis: the whole 1D ride rests on trail prisms being authored with z parallel to the ribbon. |
-| `forwardOffset` / `leadSeconds` | `UrchinTrackAction.asset` | **40** u / **0.35** s. At the 50 u/s cruise the lead is 17.5 u, so the floor is what binds; a 150 u/s launch places it 52 u out. |
+| `forwardOffset` / `leadSeconds` | `UrchinTrackAction.asset` | **40** u / **0.35** s. At the 65 u/s cruise the lead is 22.8 u, so the floor is what binds; a 360 u/s launch places it 126 u out. |
 | `spawnPerFrame` | `UrchinTrackAction.asset` | **8** prisms/frame → a 13-prism track lays in 2 frames. |
 | `cooldown` | `UrchinTrackAction.asset` | **20** s, flat. Matched to `SquirrelTubeAction.cooldown`. |
 | `lengthMultiplierAtFullSpace` / `minLengthMultiplier` | `UrchinTrackAction.asset` | **2.0** / **0.4** — 200 u at Space 10, 40 u at the deficit floor. |
@@ -131,7 +132,7 @@ frame 0 — no `MeshCollider`, so collider-LOD can reclaim them by phase like an
 One deploy per Urchin per 20 s, so a four-Urchin lobby adds at most ~2.6 prisms/second of standing
 mass, against a cell whose live population is in the thousands. It is the cheapest structure-placing
 ability in the fleet (the Squirrel's tube lays 8 prisms per ring on a ring count the intensity
-picks; the Ribcage lays 10,000+).
+picks; the PeelTheCage lays 10,000+).
 
 **Volume, for the cell's phase ladder**: a track prism is 3 × 3 × 6 = **54** volume (3.4× the
 nominal 16), so a deploy adds **~702** to the host cell's `LiveVolume` and a Space-5 deploy ~1,400.
@@ -139,11 +140,8 @@ A cell's `FrenzyEnterVolume` is in the tens of thousands, so this cannot move th
 — but it is real mass and it counts, so a mode that expects many Urchins should be measured rather
 than assumed.
 
-**Per-prism CPU**: `HoldColliderAtFullSize` runs one short-lived coroutine per prism *for the bloom
-only* — it compensates the collider against the animated transform scale and exits the frame the
-prism reaches its target. That is the shared cost of every boost-ring prism in the game, not
-something this ability adds; the prisms are ordinary clock-animated mass once the bloom lands, and
-a later `Grow()` from a ride is unaffected (the coroutine has already exited).
+**Per-prism CPU**: zero beyond the ordinary clock-stamped bloom — transform and collider are final
+at stamp; the GPU owns the visual. A later `Grow()` from a ride is unaffected.
 
 The prisms are **conserved**: nothing removes them on a clock. `Cleanup` returns them to the pool at
 a turn boundary — the same active, explicit event class as a scene load — and a live match removes
@@ -165,7 +163,7 @@ Nothing below can be checked without play mode.
    in `ActionExecutorRegistry._executors`.
 2. **Fly an Urchin in open space and pull the LEFT trigger.** A straight line of prisms in your own
    domain colour blooms in ~40 u ahead of the nose, running ~100 u further out.
-3. **Fly into it.** The vessel latches on and grinds it at friendly speed (150). The ammo meter
+3. **Fly into it.** The vessel latches on and grinds it at friendly speed (300). The ammo meter
    climbs while you ride.
 4. **Ride to the far end.** You launch off it, keeping the grind's speed, which bleeds back to
    cruise over ~8 s (see `URCHIN_TRAIL_RIDER.md` § "Running out of rail").

@@ -14,10 +14,15 @@ namespace CosmicShore.Gameplay
     /// explain itself, which is the direction the whole toybox is heading.
     ///
     /// Skinned meshes are shown static in their authored (bind) pose - fine for a recognisable
-    /// silhouette. Everything is painted with one opaque, self-lit preview material, because the
-    /// real gameplay materials are transparent runtime-theme shaders that render dim or invisible
-    /// at rest. The result is centred on its own origin and scaled so its largest dimension is
+    /// silhouette. The result is centred on its own origin and scaled so its largest dimension is
     /// ~<c>targetRadius * 2</c>.
+    ///
+    /// By default everything is painted with one opaque, self-lit preview material, because the
+    /// real gameplay materials are dark unlit theme shaders that read as a black blob at glyph
+    /// size. That is still right for a GLYPH. It stopped being the only option for a PREVIEW once
+    /// the vessel vision band shipped: pass a <see cref="MaterialResolver"/> and the model keeps
+    /// the source's own materials, so a station shows the actual ship and the band supplies the
+    /// at-a-glance domain read that the flat fill used to.
     /// </summary>
     public static class ToyModelBuilder
     {
@@ -27,6 +32,17 @@ namespace CosmicShore.Gameplay
         /// visible.
         /// </summary>
         public delegate bool RendererFilter(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer);
+
+        /// <summary>
+        /// Per-renderer material choice: return the materials the harvested copy should draw with,
+        /// given the ones the source renderer actually wears. Null (or a null return) falls back to
+        /// the flat preview material.
+        ///
+        /// This is what lets a model be built from the REAL thing rather than as a silhouette of
+        /// it. The array is padded or truncated to the mesh's submesh count by the builder, so a
+        /// resolver only has to answer the question, not do the bookkeeping.
+        /// </summary>
+        public delegate Material[] MaterialResolver(Transform node, Renderer source, Material[] authored);
 
         /// <summary>
         /// Harvest <paramref name="prefabRoot"/>'s meshes into a display-only model tinted
@@ -46,13 +62,32 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial,
             out GameObject model, RendererFilter filter = null)
+            => TryBuild(prefabRoot, targetRadius, sharedMaterial, out model, filter, null);
+
+        /// <summary>
+        /// As above, with a <see cref="MaterialResolver"/> that can keep the SOURCE's own materials
+        /// instead of flattening everything to the preview colour. That is the difference between a
+        /// silhouette of the thing and the thing itself — worth having once something else (the
+        /// vessel vision band) is supplying the at-a-glance read that the flat fill used to.
+        /// </summary>
+        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial,
+            out GameObject model, RendererFilter filter, MaterialResolver materials)
         {
             model = null;
             if (!prefabRoot) return false;
 
             var root = new GameObject("ToyModel");
-            var previewMat = sharedMaterial ? sharedMaterial : BuildPreviewMaterial(Color.white);
             bool any = false;
+
+            // Built LAZILY, and that matters: a model whose resolver supplies every material never
+            // needs one, and the eager version allocated a white Material per model that nothing
+            // ever freed. Still eager in effect for the flat path, where the first mesh asks for it.
+            Material lazyPreview = sharedMaterial;
+            Material Preview()
+            {
+                if (!lazyPreview) lazyPreview = BuildPreviewMaterial(Color.white);
+                return lazyPreview;
+            }
 
             foreach (var mf in prefabRoot.GetComponentsInChildren<MeshFilter>(true))
             {
@@ -60,7 +95,8 @@ namespace CosmicShore.Gameplay
                 var mr = mf.GetComponent<MeshRenderer>();
                 if (!mr) continue; // a MeshFilter with no renderer isn't visible geometry
                 if (!Accept(prefabRoot, mf.transform, mf.sharedMesh, mr, filter)) continue;
-                AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, previewMat);
+                AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, Preview,
+                        Resolve(materials, mf.transform, mr));
                 any = true;
             }
 
@@ -68,7 +104,8 @@ namespace CosmicShore.Gameplay
             {
                 if (!smr || !smr.sharedMesh) continue;
                 if (!Accept(prefabRoot, smr.transform, smr.sharedMesh, smr, filter)) continue;
-                AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, previewMat);
+                AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, Preview,
+                        Resolve(materials, smr.transform, smr));
                 any = true;
             }
 
@@ -82,6 +119,9 @@ namespace CosmicShore.Gameplay
             model = root;
             return true;
         }
+
+        static Material[] Resolve(MaterialResolver resolver, Transform node, Renderer source)
+            => resolver?.Invoke(node, source, source ? source.sharedMaterials : null);
 
         static bool Accept(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer, RendererFilter filter)
         {
@@ -122,7 +162,8 @@ namespace CosmicShore.Gameplay
             return mat;
         }
 
-        static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh, Material previewMat)
+        static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh,
+            System.Func<Material> preview, Material[] resolved)
         {
             var go = new GameObject(src ? src.name : "Mesh");
             go.transform.SetParent(parent, false);
@@ -136,10 +177,19 @@ namespace CosmicShore.Gameplay
             mf.sharedMesh = mesh;
             var mr = go.AddComponent<MeshRenderer>();
 
-            // One preview material per submesh so multi-submesh models render fully (and solidly).
+            // One material per submesh so multi-submesh models render fully (and solidly). A
+            // resolver's answer is padded/truncated to the submesh count here rather than at the
+            // call site: a renderer's material array and its mesh's submesh count are allowed to
+            // disagree, and an unfilled slot renders as Unity's magenta error material.
             int sub = Mathf.Max(1, mesh.subMeshCount);
             var mats = new Material[sub];
-            for (int i = 0; i < sub; i++) mats[i] = previewMat;
+            for (int i = 0; i < sub; i++)
+            {
+                Material chosen = resolved != null && resolved.Length > 0
+                    ? resolved[Mathf.Min(i, resolved.Length - 1)]
+                    : null;
+                mats[i] = chosen ? chosen : preview();
+            }
             mr.sharedMaterials = mats;
 
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

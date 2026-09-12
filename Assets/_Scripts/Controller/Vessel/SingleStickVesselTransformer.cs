@@ -39,8 +39,13 @@ namespace CosmicShore.Gameplay
         // and it shares the yaw axis of the stick. Tripling it would roll the vessel three times
         // as far off level for the same stick push. Expect the stopped turn to read as flatter
         // than a flying one — that is the trade, and RollScaler is the knob if it wants a nudge.
+        //
+        // BankIntoTurnSuppressed hands the roll axis to an ability for its duration (the Sparrow's
+        // strafing roll). It has to be honoured HERE as well as on the base method: this override
+        // is the only Roll the Sparrow or the Serpent ever executes.
         protected override void Roll()
         {
+            if (BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                                 -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime, //use roll scaler to adjust the banking into turns
                                 transform.forward) * accumulatedRotation;

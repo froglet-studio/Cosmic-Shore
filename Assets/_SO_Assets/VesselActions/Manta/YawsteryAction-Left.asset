@@ -20,6 +20,7 @@ MonoBehaviour:
   speedExp: 0.25
   lockToAngle: 0
   maxTurnDegrees: 45
+  driveTrailFlare: 1
   animatorParamFloat: 
   animatorParamTriggerStart: 
   animatorParamTriggerEnd: 

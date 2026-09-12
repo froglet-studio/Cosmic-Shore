@@ -184,7 +184,6 @@ namespace CosmicShore.UI
             var nounIndex = random.Next(nouns.Count);
             var displayName = $"{adjectives[adjIndex]} {nouns[nounIndex]}";
 
-            CSDebug.Log($"AuthenticationView - Generated display name: {displayName}");
             return displayName;
         }
 
@@ -265,7 +264,7 @@ namespace CosmicShore.UI
                 CacheDisplayNameLocally(result.SanitizedName);
                 UpdatePlayerDisplayNameView(null);
 
-                CSDebug.Log($"Current player display name: {result.SanitizedName}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileModal] Display name set - {result.SanitizedName}");
             }
             finally
             {
@@ -336,8 +335,6 @@ namespace CosmicShore.UI
         /// </summary>
         void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
         {
-            CSDebug.Log("Successfully Set Player Display Name (local or PlayFab).");
-
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);
 

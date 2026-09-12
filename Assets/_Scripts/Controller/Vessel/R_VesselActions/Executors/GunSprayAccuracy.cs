@@ -5,7 +5,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The per-vessel accuracy state of a held trigger: how long the gun has been spraying,
-    /// how wide its cone has opened, and the haptic ramp that tells the pilot about it.
+    /// how wide its cone has opened along the profile's four-stage curve (grace → ramp →
+    /// plateau → blow-out), and the haptic ramp that tells the pilot about it.
     ///
     /// It is a <see cref="ShipActionExecutorBase"/> because that is where per-vessel action
     /// state belongs — the action SOs are shared across every vessel of the class and must stay
@@ -45,7 +46,15 @@ namespace CosmicShore.Gameplay
         /// <summary>The cone's current half-angle in degrees. 0 = perfectly accurate.</summary>
         public float HalfAngleDegrees { get; private set; }
 
-        /// <summary>How far the cone has opened toward its cap, 0..1. Drives the haptic ramp.</summary>
+        /// <summary>
+        /// How far the cone has opened toward its SUSTAINABLE cap, 0..1 — deliberately not
+        /// toward the blow-out cap. It drives the haptic ramp, and both of that ramp's channels
+        /// are already at their ceiling when the plateau is reached (strength 1.0, the shortest
+        /// pulse interval NiceVibrations can hold), so there is no headroom left to spend on the
+        /// blow-out and measuring against the far cap would only make the first six seconds —
+        /// the part a pilot actually flies in — read weaker. Pinned at 1 for the whole blow-out,
+        /// which is itself the signal: the buzz stops climbing because the gun already has.
+        /// </summary>
         public float Saturation01 { get; private set; }
 
         public override void Initialize(IVesselStatus vesselStatus)
@@ -103,10 +112,7 @@ namespace CosmicShore.Gameplay
             if (!_holding || _profile == null) return;
 
             HalfAngleDegrees = GunSpreadMath.HalfAngleDegrees(
-                Time.time - _holdStartTime,
-                _profile.OnsetSeconds,
-                _profile.GrowthDegreesPerSecond,
-                _profile.MaxHalfAngleDegrees);
+                Time.time - _holdStartTime, _profile.Stages);
 
             Saturation01 = _profile.MaxHalfAngleDegrees > 0f
                 ? Mathf.Clamp01(HalfAngleDegrees / _profile.MaxHalfAngleDegrees)

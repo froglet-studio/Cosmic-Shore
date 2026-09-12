@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyLevelSize(this, owner.Level);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Active-crystal registry ──────────────────────────────────────────
-        // Lets systems (e.g. HexRaceObjectiveProvider) enumerate live crystals without a
+        // Lets systems (e.g. SkimRaceObjectiveProvider) enumerate live crystals without a
         // per-call FindObjectsByType scene scan. Maintained via OnEnable/OnDisable so it
         // works for both pooled (SetActive) and Instantiate/Destroy lifecycles.
         static readonly List<Crystal> s_active = new();
@@ -117,6 +117,15 @@ namespace CosmicShore.Gameplay
             // Pair every PrismTimerManager.ScheduleAction with a cancel (see the tint transition
             // block below) - the manager does not deduplicate per owner.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
+
+            // LEAVE THE CELL'S LISTS. DestroyCrystal() used to be the only thing that did this, so
+            // a crystal destroyed ANY OTHER WAY - its root torn down, a scene closed, a preview
+            // arena struck - stayed in CellItems and Crystals forever. Those live on a
+            // ScriptableObject ASSET, which outlives every scene, so the dangling entry is
+            // permanent for the session and surfaces later as a MissingReferenceException in
+            // whoever iterates next (AIPilot.UpdateCellContent, the boid controller, the
+            // SnowChanger). Removing here covers every route by construction.
+            if (cellData) cellData.TryRemoveItem(this);
         }
 
         protected virtual void OnEnable()
@@ -476,6 +485,19 @@ namespace CosmicShore.Gameplay
             public Vector3 Course;
             public float Speed;
             public FixedString64Bytes PlayerName;
+            /// <summary>
+            /// Retire this crystal WITHOUT the husk spray, because a collector is carrying its body
+            /// somewhere itself (a vessel's bespoke omni-crystal retirement — the Scarab's crystal
+            /// closing onto the ball it just forged). Two retirements drawing the same body would
+            /// overlap.
+            ///
+            /// It rides HERE, on the payload the manager already broadcasts, rather than as a local
+            /// flag or a second RPC: the husk is spawned on every peer, so the suppression has to
+            /// reach every peer, and this is the message that already does. Everything else about
+            /// the retirement is unchanged — the pickup sound still plays and the impact latch
+            /// still closes, because those are not the husk.
+            /// </summary>
+            public bool SuppressHusk;
         }
 
         public void NotifyManagerToExplodeCrystal(ExplodeParams explodeParams) =>
@@ -509,8 +531,40 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The pose this crystal had BEFORE it was moved this frame — or its live pose if it has
+        /// not been moved this frame.
+        ///
+        /// A collect is serviced by TWO trigger callbacks in the same physics step (the crystal's
+        /// own impactor and the collector's), and Unity does not define which fires first. The
+        /// crystal's ends in <see cref="Respawn"/>, which on a host writes the slot list and
+        /// re-poses the crystal SYNCHRONOUSLY — so in one of the two orders anything that reads
+        /// <c>transform.position</c> for "where the crystal was collected" reads its NEXT HOME
+        /// instead, and every retirement animation starts in the wrong place, wearing the
+        /// respawn's identity rotation.
+        ///
+        /// Rather than order the two callbacks — which cannot be done from here, and would only
+        /// hold until the next collider is added to either object — this reports the pose the
+        /// crystal HAD, and is exact by construction: the only way the pose can be "new" at read
+        /// time is that <see cref="MoveToNewPos"/> ran this very frame, which is the move being
+        /// serviced.
+        /// </summary>
+        public Pose CollectPose => _movedFrame == Time.frameCount
+            ? _poseBeforeMove
+            : new Pose(transform.position, transform.rotation);
+
+        /// <summary>World scale to match <see cref="CollectPose"/>. A respawn moves a crystal, it
+        /// does not resize it, so this is simply the live scale — carried alongside the pose so a
+        /// consumer never has to touch the transform at all.</summary>
+        public Vector3 CollectScale => transform.lossyScale;
+
+        Pose _poseBeforeMove;
+        int _movedFrame = -1;
+
         public void MoveToNewPos(Vector3 newPos)
         {
+            _poseBeforeMove = new Pose(transform.position, transform.rotation);
+            _movedFrame = Time.frameCount;
             transform.SetPositionAndRotation(newPos, Quaternion.identity);
         }
 
@@ -567,29 +621,34 @@ namespace CosmicShore.Gameplay
 
             if (huskScale == default) huskScale = transform.lossyScale;
             var playerName = explodeParams.PlayerName.ToString();
-            foreach (var modelData in crystalModels)
+            // A collector that draws its own retirement has claimed this body; the sound and the
+            // latch above still belong to the pickup, only the husk is somebody else's job now.
+            if (!explodeParams.SuppressHusk)
             {
-                var model = modelData.model;
-
-                // Pooled husk checkout — no Instantiate or material clone in the
-                // pickup frame. Impact animates its shader state per-renderer via
-                // MaterialPropertyBlock over the shared exploding material.
-                var impact = SpentCrystalPoolManager.GetPooledOrInstantiate(
-                    SpentCrystalPrefab, transform.position, transform.rotation);
-                if (!impact) continue;
-
-                impact.transform.localScale = huskScale;
-
-                if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
+                foreach (var modelData in crystalModels)
                 {
-                    var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
-                    var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
-                    if (spentAnimator && thisAnimator)
-                        spentAnimator.timer = thisAnimator.timer;
-                }
+                    var model = modelData.model;
 
-                impact.HandleImpact(
-                    explodeParams.Course * explodeParams.Speed, modelData.explodingMaterial, playerName);
+                    // Pooled husk checkout — no Instantiate or material clone in the
+                    // pickup frame. Impact animates its shader state per-renderer via
+                    // MaterialPropertyBlock over the shared exploding material.
+                    var impact = SpentCrystalPoolManager.GetPooledOrInstantiate(
+                        SpentCrystalPrefab, transform.position, transform.rotation);
+                    if (!impact) continue;
+
+                    impact.transform.localScale = huskScale;
+
+                    if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
+                    {
+                        var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
+                        var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
+                        if (spentAnimator && thisAnimator)
+                            spentAnimator.timer = thisAnimator.timer;
+                    }
+
+                    impact.HandleImpact(
+                        explodeParams.Course * explodeParams.Speed, modelData.explodingMaterial, playerName);
+                }
             }
 
             PlayExplosionAudio();

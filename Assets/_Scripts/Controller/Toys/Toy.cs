@@ -1,4 +1,5 @@
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -76,7 +77,26 @@ namespace CosmicShore.Gameplay
             }
 
             OnInitialized();
+
+            // A toy that can also be played from the app shell announces itself here - the one
+            // method every toy passes through, so there is nothing per-toy to remember. Station
+            // toys (a gallery's PaintingToy, a flip-set's SwapToy) do not implement the interface
+            // and so never register: the shell lists TOYS, not their unfolded choices.
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Register(shellSurface);
+
             BloomIn(bloomDuration, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>
+        /// Virtual so every subclass EXTENDS teardown rather than hiding it - Unity invokes only
+        /// the most-derived <c>OnDestroy</c>, and a hiding declaration would leave this toy in the
+        /// app shell's registry as a destroyed reference. Overrides must call base.
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Unregister(shellSurface);
         }
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
@@ -91,27 +111,83 @@ namespace CosmicShore.Gameplay
         //
         // It is drawn by the BASE, not by each toy's builder, so a toy authored tomorrow wears one
         // without anybody remembering to add it - the same reason the bloom-in and the exit gate
-        // live here. There are exactly two opt-outs, both explicit, both called before Initialize:
-        // a smaller radius (a matrix whose station triggers overlap their neighbours', where
-        // interpenetrating rings would read as noise) and 0, which waives the ring entirely (the
-        // domain changer, whose cones already carry the "fly through me" read).
+        // live here. There is exactly ONE opt-out left, explicit and called before Initialize: a
+        // smaller radius (a matrix whose station triggers overlap their neighbours', where
+        // interpenetrating rings would read as noise). The waiver at radius 0 is gone with the
+        // domain changer's cones - every toy is a switch now, and what it DOES is said by the
+        // ring's SIGNAL rather than by a bespoke body.
 
         float _switchRingRadius = -1f;      // < 0 = derive from the trigger collider
-        Color? _switchRingTint;
-        Material _switchRingMaterial;
+        ToySwitchSignal _switchSignal = ToySwitchSignal.Neutral;
+        Domains _switchDomain = Domains.Blue;
+
+        /// <summary>This toy's switch ring, once <see cref="Initialize"/> has drawn it.</summary>
+        protected GameObject SwitchRing { get; private set; }
 
         /// <summary>
-        /// Resize, re-tint or waive this toy's switch ring. Call BEFORE <see cref="Initialize"/>.
-        /// <paramref name="radius"/> is in the toy root's own space (toy roots are unscaled, so
-        /// that is world units) and 0 draws no ring; <paramref name="tint"/> defaults to the
-        /// definition's accent; <paramref name="prismMaterial"/> paints the ring in a domain's
-        /// prism material instead of a flat tint.
+        /// Resize this toy's switch ring, leaving what it MEANS alone. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="radius"/> is in the toy root's own space
+        /// (toy roots are unscaled, so that is world units); 0 draws no ring.
+        ///
+        /// <para>Deliberately its own overload rather than optional arguments on the one below:
+        /// a defaulted signal parameter means every radius-only call silently re-paints the toy
+        /// Neutral, which on a domain switch is the reservation quietly failing open.</para>
         /// </summary>
-        public void ConfigureSwitchRing(float radius, Color? tint = null, Material prismMaterial = null)
+        public void ConfigureSwitchRing(float radius) => _switchRingRadius = radius;
+
+        /// <summary>
+        /// Resize this toy's switch ring AND say what its shader should mean. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="signal"/> picks the prism material - a
+        /// <see cref="ToySwitchSignal.Neutral"/> switch is painted Blue whatever
+        /// <paramref name="domain"/> says, so the domain colours stay reserved.
+        /// </summary>
+        public void ConfigureSwitchRing(float radius, ToySwitchSignal signal, Domains domain)
         {
             _switchRingRadius = radius;
-            _switchRingTint = tint;
-            _switchRingMaterial = prismMaterial;
+            _switchSignal = signal;
+            _switchDomain = domain;
+        }
+
+        /// <summary>
+        /// Repaint the live ring for a new signal - a Domain Changer slot flips to the domain you
+        /// just left, and the ring is what says which one that is. Safe before
+        /// <see cref="Initialize"/> too: it records the signal for the ring still to be built.
+        /// </summary>
+        public void SetSwitchSignal(ToySwitchSignal signal, Domains domain)
+        {
+            _switchSignal = signal;
+            _switchDomain = domain;
+            if (SwitchRing)
+                ToyFactory.RepaintSwitchRing(SwitchRing, ToyFactory.Theme(Context), signal, domain);
+        }
+
+        /// <summary>
+        /// This toy's switch-ring radius in <b>world</b> units - the ring the player flies
+        /// through, and therefore the honest measure of "how big is this toy" for anything framing
+        /// it or approaching it (the Toy Box's live preview, the vessel drop-off in front of it).
+        ///
+        /// <para>Derived from the same two sources <see cref="BuildSwitchRing"/> uses, in the same
+        /// order, so a camera can never frame by a number that disagrees with the ring the player
+        /// sees. The units differ on purpose: <c>_switchRingRadius</c> is a LOCAL radius (the ring
+        /// is a child of the collider's transform) and is scaled up here, while
+        /// <see cref="ComputeTriggerWorldRadius"/> has already returned a world one.</para>
+        ///
+        /// <para>Falls back to the root's own scale when the toy has no collider yet, which is the
+        /// state during <see cref="Initialize"/> and for a toy whose builder places its trigger
+        /// itself.</para>
+        /// </summary>
+        public float SwitchRingRadius
+        {
+            get
+            {
+                if (_switchRingRadius < 0f)
+                    return Mathf.Max(0.01f, _triggerWorldRadius);
+
+                var t = TryGetComponent(out Collider col) ? col.transform : transform;
+                var s = t.lossyScale;
+                float k = Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
+                return Mathf.Max(0.01f, _switchRingRadius * Mathf.Max(0.0001f, k));
+            }
         }
 
         void BuildSwitchRing(Collider col)
@@ -123,8 +199,8 @@ namespace CosmicShore.Gameplay
                 ? _switchRingRadius
                 : col is SphereCollider sphere ? sphere.radius : _triggerWorldRadius;
 
-            Color tint = _switchRingTint ?? (Definition ? Definition.AccentColor : Color.white);
-            ToyFactory.AddSwitchRing(transform, radius, tint, _switchRingMaterial);
+            SwitchRing = ToyFactory.AddSwitchRing(transform, radius, ToyFactory.Theme(Context),
+                                                  _switchSignal, _switchDomain);
         }
 
         /// <summary>This toy's emblem, or null when it has none (see <see cref="AttachEmblem"/>).</summary>
@@ -273,6 +349,20 @@ namespace CosmicShore.Gameplay
             if (!iv.IsLocalUser) return false;
             vessel = iv;
             return true;
+        }
+
+        /// <summary>
+        /// The local player's vessel, or null when there isn't one to act on (no player yet,
+        /// destroyed mid-swap). The app-shell face of a toy whose effect needs a vessel resolves
+        /// it through here rather than re-deriving the chain - it is the same walk the exit gate
+        /// makes, with the same destroyed-object guard.
+        /// </summary>
+        protected IVesselStatus ResolveLocalVessel()
+        {
+            var status = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus;
+            if (status == null) return null;
+            if (status is Object uo && !uo) return null;   // destroyed mid-swap
+            return status;
         }
 
         /// <summary>Called once per local-vessel pass while in freestyle. Implement the toy's effect.</summary>

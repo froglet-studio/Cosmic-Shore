@@ -1,16 +1,17 @@
 using CosmicShore.Utility;
-using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Pool manager for PrismImplosion VFX.
+    /// Pool manager for PrismImplosion. Prefab is the batched suction CONFIG
+    /// source AND the live Grow pool (Sparrow ReverseSuction). Death implosions
+    /// never Get() this pool (D4). Prewarm is sized for Grow bursts, not swarm-eat.
     /// </summary>
     public class PrismImplosionPoolManager : GenericPoolManager<PrismImplosion>
     {
-        private const int MinPrewarm = 64;
+        private const int MinPrewarm = 12;
 
         protected override void Awake()
         {

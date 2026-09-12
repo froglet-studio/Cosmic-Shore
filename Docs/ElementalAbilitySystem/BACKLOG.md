@@ -99,7 +99,9 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 ### Blocked on design (cannot be wired until someone authors the map)
 
-1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+1. **Author the open `ElementalAbilityMapSO` slots** for Rhino and Serpent (Manta shipped
+   2026-08-26 via the spec remake — see FLEET_MAPS.md §2 Manta and `MANTA_STING_KABLOOM.md`;
+   Dolphin shipped earlier). Each
    still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
    Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
    mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
@@ -110,9 +112,10 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
    vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
    They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
    ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
-3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+3. **Re-survey Dolphin at the vessel level.** The Rhino's icons were missed because the
    first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
-   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+   same may be true of Dolphin (1 icon found) until checked the same way. (Manta is resolved:
+   the 2026-08-26 remake authored its four-icon row into Manta.prefab at the wirer bands.)
 
 ### Independent of the maps
 
@@ -284,3 +287,71 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     effect from `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (the platform's 10× danger
     bonus): different resource (energy vs boost), different gate (per-asset element vs
     hardcoded Charge). The two are easy to confuse from an ability map's prose alone.
+
+27. **The Rhino's `GrowTrailAction` has never run — its grow loop is unreachable.**
+    `GrowTrailActionExecutor.Begin` sets `_growing = true` and then calls `End()`, which sets
+    it back to `false`, so `LoopAsync`'s `while (_growing)` never executes a single step and it
+    falls straight through to a shrink loop that has nothing to shrink. The ordering is simply
+    inverted; `_growing = true` belongs *after* the `End()` that cancels the previous run.
+    It is bound both to the Rhino's own `_inputEventShipActions[InputEvent 0]` and to its
+    `AIPilot.abilities`, so it is dead for the human pilot and the AI alike.
+
+    **Consequence, and why it surfaced:** without the grow, the Rhino only ever lays its
+    RESTING trail — `BaseScale (3, 3, 0.5)` with an authored `Gap: 2` gives two rails of
+    `3×1/2 − 1 = 0.5` width, i.e. **0.5 × 3 × 0.5 = 0.75 volume per prism**, laid every 5
+    world units (`initialWavelength == minWavelength == 5`, so the spacing is speed-invariant)
+    20 units behind the hull. That is 4× smaller than the next-smallest trail in the fleet
+    (Squirrel 3.09, Serpent 3.00, Manta 5.00, Dolphin 12.00) and at any distance it reads as
+    *no trail at all* — which is how it was found, via an AI Rhino released by the freestyle
+    Lifeform Matrix's hangar.
+
+    **Do not fix the ordering on its own — it would make the Rhino worse.** `Step` clamps
+    `XScaler`/`YScaler`/`ZScaler` against `maxSize` but never clamps `Gap`, and
+    `AnyAboveMin`'s gap branch (`if (so.WGap > 0f)`) is unreachable for the asset's authored
+    `GapWeight: -1`, so a live grow loop would open the hole without bound and never restore
+    it — rails inverting to zero width and flying out sideways. The spawner now refuses to lay
+    a degenerate rail (`VesselPrismController.ClampHalfGap`, shipped on the toy branch, no-op
+    against every authored config), but that is a floor, not the fix.
+
+    **The design fork to settle first:** the executor's own restore branch was written for a
+    POSITIVE `GapWeight` — growth pulls the hole closed, the shrink puts it back — which yields
+    a solid blade (`XScaler`/`YScaler` at `MaxSize 4` → `6 × 12 × 0.5` ≈ **36 volume**, a 48×
+    jump). The asset authors `-1`, which inverts it into the runaway-open case. Whichever
+    reading is intended, the volume change lands directly on **PeelTheCage** and **Astro League**
+    (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
+    slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
+    That is why this is its own branch and not a toy fix.
+
+---
+
+## ✅ CLOSED (claude/scarab-vessel-polish-k9mds6) — Scarab juke root-roll bank cancellation (opened by `claude/sparrow-spin-cooldown-p8agtv`)
+
+`ScarabJukeController` is the structural twin of `BarrelRollController` — same perimeter trigger
+(`stick.magnitude >= perimeterThreshold`), same `rollSign = stick.x >= 0 ? +1 : -1`, same visual
+360° smoothstep, same `rootRollDegrees` (15) applied through `VesselTransformer.ApplyRotation`
+about `transform.forward` — and it therefore carries the same defect the Sparrow branch fixed:
+
+- **The bank cancels it.** `ScarabVesselTransformer.Roll()` is `-EasedLeftJoystickPosition.x × (…)`
+  about the same axis, so the two rotations add and the trigger (a full stick deflection) is
+  precisely when the bank is at maximum, pointing the other way. The camera reads the ROOT's up,
+  so the pilot's horizon tilts against the juke rather than with it.
+- **The roll is linear, the animation is smoothstep.** `rollSign * rootRollDegrees *
+  (Time.deltaTime / jukeDurationSeconds)` drifts across the dash at a constant rate instead of
+  easing with it, and summing `dt / duration` overshoots on the frame that ends the loop.
+
+**The mechanism is already landed.** `VesselTransformer.BankIntoTurnSuppressed` is honoured in
+`ScarabVesselTransformer.Roll()` as of that branch, so the fix is: set it around the juke routine
+(clearing it in the tail AND in `OnDisable`), and advance the root roll by the delta of the
+animation's own smoothstep. `BarrelRollController.RollRoutine` is the reference implementation.
+
+**Deliberately NOT done on the Sparrow branch.** The Scarab is a different vessel with its own
+play-tested feel, and removing its bank mid-juke is a change nobody has judged on screen. It wants
+its own branch and its own playtest — a Scarab pilot should confirm the juke reads better, not
+merely differently. Verify in **Scarab Scramble**: juke left and right, confirm the horizon tilts
+the same way the model spins and that the dash still turns at full rate.
+
+**CLOSED by the scarab-polish branch, exactly per the prescription above**: the owner path sets
+`BankIntoTurnSuppressed` for the dash (cleared in the routine's tail AND `OnDisable`; the
+replica's cosmetic roll passes a null transformer and never touches it), and the root bank
+advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
+owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.

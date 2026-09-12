@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// the middle room, the biggest and toughest in the core). Break in and shoot; the first
     /// PLAYER to the kill target wins.
     ///
-    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="RibcageController"/>
+    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="PeelTheCageController"/>
     /// (1 round / 1 turn, HasEndGame=false, server winner detection in OnTurnEndedCustom,
     /// snapshot SyncFinalScores_ClientRpc), with three deliberate differences:
     ///
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     ///   2. THE SCORE COMES FROM THE ECOLOGY. The stat is
     ///      <see cref="IRoundStats.LifeformsKilled"/>, fed by the platform kill path
     ///      (<c>Fauna.OnBodyPrismExploded</c> → sealed <c>Die</c> → <c>CellRuntimeDataSO.OnFaunaKilled</c>
-    ///      → <c>StatsManager</c>), so like Rampage and Ribcage there is no per-event listener
+    ///      → <c>StatsManager</c>), so like Rampage and PeelTheCage there is no per-event listener
     ///      here at all. Only PLAYER-attributed kills count - the swarm starving or a shark
     ///      eating a tadpole credits nobody.
     ///   3. AI HUNTERS WORK THE ROOMS. <see cref="ArmHunters"/> walks each AI Sparrow through the
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
     ///      INSIDE a room and not on a wall.
     ///
     /// SPARROW-ONLY is enforced entirely by platform machinery and deliberately not re-implemented
-    /// here - three independent layers, because in Ribcage one was not enough and a client walked
+    /// here - three independent layers, because in PeelTheCage one was not enough and a client walked
     /// in flying a Dolphin:
     ///   (a) <c>GameDataSO.SyncFromArcadeGame</c> clamps the launching machine's selection;
     ///   (b) <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> re-clamps SERVER-SIDE at
@@ -118,7 +118,7 @@ namespace CosmicShore.Gameplay
             _milestone = MilestoneNone;
             _leader = Domains.Blue;
 
-            // Belt-and-braces against the Ribcage regression where players started a match on a
+            // Belt-and-braces against the PeelTheCage regression where players started a match on a
             // non-zero score. The authoritative reset is
             // ServerPlayerVesselInitializer.PrepareForNewScene (unconditional, once per player,
             // on the processing path) - this is a second, cheap sweep at the one moment every
@@ -270,19 +270,22 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Drives every AI Sparrow as a hunter that works the ROOMS.
         ///
-        /// The waypoint rule here is the exact inverse of Ribcage's, and for the same underlying
+        /// The waypoint rule here is the exact inverse of PeelTheCage's, and for the same underlying
         /// reason. <c>AIPilot</c> has no arrive-and-stop behaviour - it steers at its target
         /// forever and flies through on arrival - so a target's placement decides where the AI
-        /// LIVES. Ribcage wants its AI outside the bone (damage happens on the transit), so its
-        /// stations sit beyond the shell. Here the prey is INSIDE the rooms, so a station on a
-        /// wall would make the AI orbit the wall and never hunt: every waypoint is placed at the
-        /// MIDDLE of a room's radial band, where the creatures actually are.
+        /// LIVES. PeelTheCage wants its AI outside the bone (damage happens on the transit), so its
+        /// stations sit beyond the shell. Here the prey is spread through the arena's whole
+        /// volume, so a station on a wall would make the AI orbit the wall and never hunt: every
+        /// waypoint is placed at the MIDDLE of a room's radial band, in open water between the
+        /// cages where an AI can actually fly.
         ///
         /// Each AI works one room for <see cref="AiWaypointsPerRoom"/> waypoints and then steps
-        /// inward, cycling outer → middle → core → OPEN WATER → outer (four rooms, including the
-        /// stocked water outside the cages), so a full lobby is spread through the whole arena
-        /// rather than queueing in one swarm. Waypoints walk a golden-angle spiral, so
-        /// successive ones are ~137° apart and it keeps finding fresh, un-hunted wildlife.
+        /// inward, cycling outer → middle → core → OPEN WATER → outer, so a full lobby sweeps the
+        /// arena at every radius rather than queueing in one place. The rooms are the cage's
+        /// architecture, not a fauna pen - since every species now roams the whole arena
+        /// (<c>SpawnableWildlifeCage.RoamInner</c>) the cycle is simply the cheapest way to cover
+        /// every radius. Waypoints walk a golden-angle spiral, so successive ones are ~137° apart
+        /// and it keeps finding fresh, un-hunted wildlife.
         ///
         /// Every other waypoint is a HUNT on <see cref="Cell.GetExplosionTarget"/> - the densest
         /// mass hostile to the AI's domain. In an arena whose mass is mostly creature bodies that
@@ -334,7 +337,7 @@ namespace CosmicShore.Gameplay
                     // Patrol beat: the middle of the current room's band, on a golden-angle
                     // spiral. INSIDE the room by construction - see the summary.
                     int room = (startRoom + waypoint / AiWaypointsPerRoom) % SpawnableWildlifeCage.RoomCount;
-                    float mid = 0.5f * (SpawnableWildlifeCage.BandInner(room) + SpawnableWildlifeCage.BandOuter(room));
+                    float mid = 0.5f * (SpawnableWildlifeCage.RoomInner(room) + SpawnableWildlifeCage.RoomOuter(room));
 
                     float a = phase + waypoint * 2.39996323f;
                     float y = 1f - 2f * ((waypoint * 0.37f) % 1f);
@@ -364,7 +367,7 @@ namespace CosmicShore.Gameplay
             if (winningDomain == Domains.Blue) return;
 
             // The winner is the DOMAIN; this only picks whose name the banner carries - the
-            // biggest contributor on the winning team, same as Ribcage.
+            // biggest contributor on the winning team, same as PeelTheCage.
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s != null && s.Domain == winningDomain)
                 .OrderByDescending(s => s.LifeformsKilled)

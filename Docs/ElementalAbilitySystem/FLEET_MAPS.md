@@ -1,11 +1,12 @@
 # Fleet Elemental Ability Maps — status + level-5 upgrade proposals
 
 **Status of this doc:** the quantitative layer and the flower display are LIVE fleet-wide
-(see §1). Four vessels have an **APPROVED + SHIPPED** map with all four level-5 upgrades
-implemented — **Sparrow, Dolphin, Squirrel, Urchin**; their rows below are the record, not a
-proposal, and are not to be re-litigated from the superseded tables kept beside them. The level-5
-upgrades for **Manta, Rhino and Serpent** are still **PROPOSALS for Garrett to mark up** — none
-are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+(see §1). Five vessels have an **APPROVED + SHIPPED** map with all four level-5 upgrades
+implemented — **Sparrow, Dolphin, Squirrel, Urchin, Manta** (the Manta via the 2026-08 spec
+remake; its superseded "Reaper Ray" table is kept below as history); their rows below are the
+record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
+them. The level-5 upgrades for **Rhino and Serpent** are still **PROPOSALS for Garrett to mark
+up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -35,7 +36,7 @@ fundamentals).
 | Vessel | Live quantitative entries (map value) |
 |---|---|
 | Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
-| Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
+| Manta | **All four LIVE (approved + shipped 2026-08-26 spec remake, see §2 Manta)**: Charge→bomb-bay capacity + skim-charge rate (authored on `MantaStingConfig.asset`; map pinned 1) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`; the Yastri turn rate is deliberately unscaled, `turnRateElement: None`; map pinned 1) · Space→bomb bloom scale (authored `blastScaleAtFullSpace` 1.6 on `MantaStingConfig.asset`; map pinned 1) · Time→max soaring speed (map 1.3 IS the authoring home, read by `VesselTransformer.CurrentBoostAmount`) |
 | Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
@@ -79,7 +80,7 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
+| Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms, and the warhead spares your own domain's wildlife and pilots (one friendly-fire decision for the whole detonation) |
 | Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
 | Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
@@ -90,7 +91,12 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
   the legacy `OverheatingAction`, and `VesselStatus.IsOverheating` are all deleted; input 7 binds
   straight to the shared `BoostAction.asset`. The boost is now unlimited in duration.
 - **The strafing roll dropped to BASE kit** (was the TIME-5 upgrade). `BarrelRollController` lost
-  its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press.
+  its `IsUpgradeActive(Element.Time)` gate. Still one roll per boost press — and since the boost is
+  indefinite, that press only arms the roll for a **0.3 s window** (`rollArmWindowSeconds`), so a
+  stick that reaches full deflection later in a long hold no longer spins the vessel. The roll also
+  owns the **roll axis** for its duration (`VesselTransformer.BankIntoTurnSuppressed`) so its
+  authored `rootRollDegrees` bank is the tilt the pilot actually sees — un-suppressed it landed
+  under ~20-25° of opposing bank-into-turn and read backwards.
 - **The roll also works in the stationary stance** (2026-08, a later branch). It lost its
   `IsTranslationRestricted` gate too: stopped, the boost gives no speed but the roll still arms on
   the press and still strafes — the stopped Sparrow's dodge. The displacement survives the
@@ -111,6 +117,27 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 - **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
   `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
   proposed "Venom Wake" below is exactly that machinery reused.
+
+
+**CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
+
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (**0.01**
+  per prism, so **50 prisms per rocket** and 100 for a full rack — halved from 0.02 later in the
+  same pass) through `VesselRearmOnPrismDestruction` on the vessel root, which
+  listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
+  destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
+  effects at all.
+- **The omni crystal changed jobs**: it now grants **8 s of elemental-debuff immunity**
+  (`VesselTimedElementalWard`, the event-driven sibling of `VesselElementalImmunity`). Checked
+  against the mono-vessel-mode rule — none of Dog Fight, Salvo or Wildlife Liberation scores on an
+  event a debuff ward can deny, so a warded Sparrow is still fully scoreable.
+- **The missile carries a PROXIMITY FUZE** at 20× its own live hit radius (76 u at resting MASS),
+  tripping only on an opposing VESSEL or a living FAUNA's heart — never a prism, never flora, never
+  its own domain — and a **WARHEAD** blast at 25× the same base (95 u) that debuffs pilots and
+  jousts creatures while touching no mass. The arming delay is emergent: the fuze is a multiple of
+  the round's CURRENT size and the missile leaves the bay at a twentieth of its grown one.
+  Mechanics, geometry table and the balance consequences for Dog Fight and Salvo:
+  `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
 
 **MASS row, clarified 2026-08 — the element map is unchanged, the stance beneath it is not:**
 
@@ -135,16 +162,37 @@ the colliding. MASS itself is untouched: quantitative stretch on the prism's lon
 birth rather than a morph on arrival. Budget note: the cadence fix roughly doubles anchored mass to
 ~60 prisms/s while held. Detail: `R_VesselActions/SPARROW_TURRET_STANCE.md`.
 
-### Manta — "Reaper Ray" (skim + harvest)
+### Manta — Sting / Kabloom (the bomb ray) — APPROVED + SHIPPED (2026-08-26)
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+The spec remake replaced the "Reaper Ray" overcharge kit outright (the proposal table below is
+kept as history — superseded, do not re-litigate). The shipped map is
+`Assets/Resources/ElementalAbilityMaps/Manta.asset`; mechanics detail lives beside the code in
+`_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`, and the mode built on it in
+`_Scripts/Controller/Arcade/BLOOMRUSH.md`.
+
+| Element | Ability | Quantitative (authoring home) | L5 upgrade (shipped) |
+|---|---|---|---|
+| Charge | Sting (passive) | bomb-bay capacity 3→5 at Charge 15 + skim-charge rate (`MantaStingConfig.asset`; map pinned 1) | **Contagion** — anything caught in a bloom is itself bombed, free |
+| Mass | Yastri (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
+| Space | Kabloom (passive) | every bloom's scale (`blastScaleAtFullSpace` 1.6; map pinned 1) | **No Friendly Fire** — blooms spare allies and allied prisms |
+| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | *(open)* — **Wake Highway** (boost rings laid while soaring, allies ride them at L5) shipped and was CUT 2026-09 on design direction; proposal below, un-approved |
+
+Sting and Kabloom are PASSIVE (Input 0 by design, not unset): planting is grazing, detonation is
+a crystal pickup.
+
+Open Time L5 — candidates, none approved: **Slipstream** (Soar's wake is a drag-free corridor
+allies gain speed inside for a few seconds — the highway idea without a laid ring), **Afterglow**
+(a Kabloom cashed while soaring pays a short Soar top-speed surge), or reinstating Wake Highway
+once the ring reads as a Manta artefact rather than a track feature. Superseded history:
+
+| Element | Quantitative (old kit) | Old proposed L5 (never implemented) |
 |---|---|---|
-| Charge | overcharge detonation blast | **Domain-Safe Detonation** — the overcharge blast spares own-domain prisms (direct reuse of the Sparrow CHARGE-5 shape) |
-| Mass | harvest capacity | **Deep Harvest** — overcharge collection also pops+collects *shielded* prisms (today the shield blocks collection) |
-| Space | Yawstery turn rate | **Wide Wake** — near-field skimmer size class up while overcharged (reach/presence) |
-| Time | *(open)* → propose: overcharge decay rate | **Held Charge** — overcharge no longer bleeds between skims (still spent on detonation) |
+| Charge | overcharge detonation blast | Domain-Safe Detonation |
+| Mass | harvest capacity | Deep Harvest |
+| Space | Yawstery turn rate | Wide Wake |
+| Time | *(open)* | Held Charge |
 
-### Dolphin — "Darts" (charge and release) — APPROVED + SHIPPED
+### Dolphin — "DolphinDarts" (charge and release) — APPROVED + SHIPPED
 
 The proposal table below was superseded by Garrett's design; the shipped map is
 `Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not
@@ -256,7 +304,7 @@ The original proposal table below was superseded by Garrett's markup; the shippe
 |---|---|---|
 | Charge | skim energy per prism-skimmer collision (map 2.0, `SkimmerBoostPrismEffectSO`) | **Live Wire** — danger prisms grant the 10× energy bonus (the bonus was always-on before; it is now EARNED — below Charge 5 danger prisms pay base energy) |
 | Mass | trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5, cube-root per axis) | **Heavy Trail** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting` gate on `VesselPrismController`) |
-| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record). BASE joust (ungated): jousting any lifeform's embedded crystal while moving FASTER than it withers opposing-domain lifeforms (`ILifeFormEntity.Jousted`; rooted flora sit at speed 0 so they're trivially joustable) | **Shepherd** — jousting an OWN-domain lifeform's crystal levels it up (`ILifeFormEntity.LevelUp`, the lifeform elemental contract — see `Docs/ECOSYSTEM.md §3`) |
+| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record). BASE joust (ungated): jousting any lifeform's embedded crystal while moving FASTER than it withers opposing-domain lifeforms (`ILifeFormEntity.Jousted`; rooted flora sit at speed 0 so they're trivially joustable) | **Shepherd** — jousting an OWN-domain lifeform's crystal NOURISHES it (`ILifeFormEntity.Nourish`): a creature's starvation clock resets and its birth counter advances, a plant's growth quota moves toward its next seeding. It pays out as a POPULATION — more of the thing you protected — through every gate an ordinary feed passes, rather than as a bigger individual (it levelled the lifeform up until `Docs/ECOSYSTEM.md §40` retired lifeform levels; see §40.4) |
 | Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
 
 Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).
@@ -347,7 +395,7 @@ the map's own `MultiplierAtFullLevel` is the carrier.
 | Charge | cavitation-blast **cooldown** (`ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at L10 — the authored-cooldown idiom) | **Cavitation Shear** — the blast destroys SHIELDED prisms outright instead of only shedding shields (`AOEExplosion.InitializeStruct.DevastatingOverride`, per-use snapshot) |
 | Mass | switch structure size — ring aperture + interior fill span (`switchScale` ElementalFloat 1→2.5) | **Armored Switch** — the switch is built from SHIELDED prisms, snapshotted at placement, so an opposing ball caroms off and sheds one shield per prism |
 | Space | forged **ball size**, ×1 → **×4 at L10** (`MultiplierAtFullLevel: 4` on the map itself; stamped once at forge time) | *(open — the notes name no Space upgrade; do not invent one)* |
-| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
+| Time | top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1→1.5 — the existing dormant `VesselTransformer` field, enabled). **Shipped band 216 → 324** (`ScarabVesselTransformer.baseTopSpeed` 216, raised 20% from 180 on 2026-09-09); note that base is authored in the C# INITIALIZER, because the prefab's transformer block predates the field and carries no override for it — `SCARAB.md §13` | **Snap Dash** — double-tap the THROTTLE (RT) for a burst gap closer (detected off the RT `RightStickAction` edges, no new input plumbing) |
 
 **The right-stick dash is base kit and has no cooldown** — it is not a map row. Only the
 cavitation blast riding it is paced, which is the Charge row. Snap Dash is the *throttle's*
@@ -367,7 +415,8 @@ the record; do not re-litigate from a superseded pass.**
 - Domain-sparing: explosion/collection layer only — never `Prism.Damage`, never danger effects.
 - Fill in each map's `UpgradeLabel`/`UpgradeDescription` when a row is approved; the HUD reads
   the map.
-- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4) and Urchin (3/4 —
-  Trail Rider is deliberately 0 because it is **passive**, not because it is unset). Manta, Rhino
+- The `Input` fields are filled on Sparrow (4/4), Dolphin (3/4), Squirrel (2/4), Urchin (3/4 —
+  Trail Rider is deliberately 0 because it is **passive**, not because it is unset) and Manta
+  (2/4 — Sting and Kabloom are deliberately 0: passive). Rhino
   and Serpent are 0 across the board — fill during HUD icon work. A genuine 0 and a passive
   ability are indistinguishable in the asset, so say which it is in the row.

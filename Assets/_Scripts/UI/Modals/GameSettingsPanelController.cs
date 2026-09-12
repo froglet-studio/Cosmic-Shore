@@ -109,7 +109,7 @@ namespace CosmicShore.UI
         static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
-        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "Uncapped" };
+        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
         static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra" };
         static readonly string[] AntiAliasingOpts = { "Off", "FXAA", "SMAA", "MSAA 2x", "MSAA 4x", "MSAA 8x", "TAA" };
         static readonly string[] TextureOpts = { "Full", "Half", "Quarter", "Eighth" };
@@ -117,7 +117,7 @@ namespace CosmicShore.UI
         static readonly string[] AdaptiveOpts = { "Off", "Balanced", "Aggressive" };
         static readonly string[] PhysicsOpts = { "Low", "High" };
 
-        static readonly int[] FrameCaps = { 30, 60, 120, 144, -1 };
+        static readonly int[] FrameCaps = { 30, 60, 120, 144, 240, -1 };
         static readonly float[] SubtitleScales = { 0.85f, 1.0f, 1.25f };
         readonly List<Resolution> _resolutions = new();
 
@@ -192,10 +192,57 @@ namespace CosmicShore.UI
             SetInteractable(deleteDataButton, menu);
             SetInteractable(quitGameButton, menu);
 
+            UnlockLiveSafeControls();
+
             if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
         }
 
+        /// <summary>
+        /// Asserts the OTHER side of <see cref="ApplyContextLock"/>: every control that is editable
+        /// everywhere is positively re-enabled each time the panel refreshes.
+        ///
+        /// Without this the lock is one-directional - it only ever writes <c>false</c>, to the
+        /// menu-only controls - so a live-safe control that arrives disabled for ANY other reason
+        /// (authored that way, a prefab-instance override, a future caller) stays disabled for the
+        /// life of the session, and the panel has no way back. That reads to a player as "this
+        /// setting is locked in-game", which is exactly what the context lock is NOT supposed to say
+        /// about the frame cap, VSync, FOV, audio or controls.
+        /// </summary>
+        void UnlockLiveSafeControls()
+        {
+            // DISPLAY - live everywhere (the frame cap in particular: a player capping FPS mid-match
+            // is a normal thing to want, and it costs nothing to apply).
+            SetInteractable(displayModeDropdown, true);
+            SetInteractable(resolutionDropdown, true);
+            SetInteractable(frameCapDropdown, true);
+            SetOnOffInteractable(vsync, true);
+            SetInteractable(fovSlider, true);
+
+            // GENERAL - accessibility + consent.
+            SetInteractable(colorblindDropdown, true);
+            SetInteractable(subtitleScaleDropdown, true);
+            SetOnOffInteractable(subtitles, true);
+            SetOnOffInteractable(analyticsConsent, true);
+
+            // OTHER - controls + audio.
+            SetOnOffInteractable(invertY, true);
+            SetOnOffInteractable(invertThrottle, true);
+            SetOnOffInteractable(music, true);
+            SetInteractable(musicSlider, true);
+            SetOnOffInteractable(sfx, true);
+            SetInteractable(sfxSlider, true);
+            SetOnOffInteractable(haptics, true);
+            SetInteractable(hapticsSlider, true);
+        }
+
         static void SetInteractable(Selectable s, bool on) { if (s != null) s.interactable = on; }
+
+        static void SetOnOffInteractable(OnOffControl c, bool on)
+        {
+            if (c == null) return;
+            SetInteractable(c.onButton, on);
+            SetInteractable(c.offButton, on);
+        }
 
         /// <summary>Shows the "some changes apply after a restart" notice for renderer-level changes.</summary>
         void FlagRestartNeeded()
@@ -224,7 +271,7 @@ namespace CosmicShore.UI
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
-            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView);
+            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
 
             // PERFORMANCE
             BindDropdown(qualityDropdown, QualityOpts, SetQualityPresetIndex);
@@ -240,11 +287,11 @@ namespace CosmicShore.UI
             BindOnOff(invertY, SetInvertY, () => InvertYOn);
             BindOnOff(invertThrottle, SetInvertThrottle, () => InvertThrottleOn);
             BindOnOff(music, SetMusic, () => MusicOn);
-            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel);
+            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel, MusicLevel);
             BindOnOff(sfx, SetSFX, () => SFXOn);
-            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel);
+            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel, SFXLevel);
             BindOnOff(haptics, SetHaptics, () => HapticsOn);
-            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel);
+            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel, HapticsLevel);
 
             RefreshValues();
         }
@@ -323,14 +370,21 @@ namespace CosmicShore.UI
             dd.AddOptions(new List<string>(options));
             dd.onValueChanged.RemoveListener(onChange);
             dd.onValueChanged.AddListener(onChange);
+            SettingsRowDropdownHitArea.Attach(dd);
         }
 
-        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange)
+        /// <summary>
+        /// Binds a slider to its setter, seating it on <paramref name="value"/> (the saved setting).
+        /// The range goes on through <see cref="SliderRange"/> rather than by direct assignment,
+        /// because assigning a narrower window CLAMPS whatever the prefab authored and broadcasts
+        /// the clamped result to the slider's PERSISTENT inspector listeners - which, on the audio
+        /// rows, are the listeners that persist the setting. Binding the panel therefore used to
+        /// overwrite the player's saved level before it was ever displayed.
+        /// </summary>
+        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange, float value)
         {
             if (s == null) return;
-            s.minValue = min;
-            s.maxValue = max;
-            s.wholeNumbers = wholeNumbers;
+            SliderRange.ApplyWithoutNotify(s, min, max, wholeNumbers, value);
             s.onValueChanged.RemoveListener(onChange);
             s.onValueChanged.AddListener(onChange);
         }
@@ -393,16 +447,16 @@ namespace CosmicShore.UI
 
         public void AutoDetect()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Auto-Detect is available only in the main menu."); return; }
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Auto-Detect is available only in the main menu"); return; }
             S?.ApplyAutoDetect();
             RefreshValues();
             FlagRestartNeeded();
-            CSDebug.Log($"[Settings] Auto-Detect applied - Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[Settings] Auto-Detect applied - quality preset index={QualityIndex}, AA index={AntiAliasingIndex}");
         }
 
         public void RunBenchmark()
         {
-            if (!InMainMenu) { CSDebug.Log("[Settings] Benchmark is available only in the main menu."); return; }
+            if (!InMainMenu) { CSDebug.LogVerbose(CSLogChannel.MenuUI, "[Settings] Benchmark is available only in the main menu"); return; }
             benchmarkLauncher?.LaunchBenchmark();
         }
 
@@ -432,7 +486,7 @@ namespace CosmicShore.UI
         public int ResolutionIndex => CurrentResolutionIndex();
         public int FrameCapIndex => FrameCapToIndex(S != null ? S.Current.TargetFrameRate : 60);
         public bool VSyncOn => S != null && S.Current.VSync != VSyncSetting.Off;
-        public float FieldOfView => S != null ? S.Current.FieldOfView : 60f;
+        public float FieldOfView => S != null ? S.Current.FieldOfView : GraphicsSettingsData.DefaultFieldOfView;
         public int QualityIndex => S != null ? (int)S.Current.QualityPreset : 0;
         public int AntiAliasingIndex => S != null ? (int)S.Current.AntiAliasing : 0;
         public int TextureQualityIndex => S != null ? S.Current.TextureQuality : 0;
@@ -469,6 +523,7 @@ namespace CosmicShore.UI
             resolutionDropdown.AddOptions(labels);
             resolutionDropdown.onValueChanged.RemoveListener(SetResolutionIndex);
             resolutionDropdown.onValueChanged.AddListener(SetResolutionIndex);
+            SettingsRowDropdownHitArea.Attach(resolutionDropdown);
         }
 
         int CurrentResolutionIndex()

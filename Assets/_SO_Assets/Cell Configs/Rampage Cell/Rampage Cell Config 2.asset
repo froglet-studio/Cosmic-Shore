@@ -13,20 +13,27 @@ MonoBehaviour:
   m_Name: Rampage Cell Config 2
   m_EditorClassIdentifier:
   CellName: Rampage
-  Description: Demolition arena cell, intensity 2 of 4 - a stirring arena: 59 seeded plants totalling
-    ~9830 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
-    outside the nucleus out to the membrane, across all three domains at levels 1-5. The
-    FOREST IS THE SAME AT EVERY INTENSITY (this is the shipped, play-tested arena);
-    intensity carries 2x the authored wildlife and - authored in the scene, not here - one
-    crystal per player. The nucleus stays clear; it is the crystals' contested ground.
-    PhaseThresholds ride the forest's real volume (~1,615,853 at full growth) - regenerate
-    with Tools/Build/rampage_intensity.py rather than hand-editing.
+  Description: Demolition arena cell, intensity 2 of 4 - a stirring arena: 217 seeded plants totalling
+    ~36160 prisms of cacti, spires, pines, rosettes and coral, filling the volume from just
+    outside the nucleus out to the membrane, across all three domains, each plant one of the
+    four elemental variations. Intensity 4 is the shipped, play-tested arena EXACTLY; 1 is
+    that same arena made bigger, denser and easier to hit: 3.67x the plant count, prisms at
+    1.4x the authored leaf (bigger is an easier target for the cone and an easier surface to
+    skim), a nucleus at prefab scale 400 (~392u radius), 2x the authored wildlife, and -
+    authored in the scene, not here - one crystal per player. The nucleus stays clear (the
+    planting band is clamped outside it) and is the crystals' contested ground. The mature
+    forest is ~3,808,056 volume, and this cell's VOLUME thresholds are the play-tested
+    intensity-4 ladder scaled by that - so Frenzy sits the same 4.11x above the forest at
+    every level. Collider envelope: up to 37,000 prisms (LOD-cullable, and the count
+    backstop freezes growth there) plus 323 always-on heart-crystal colliders at the plant
+    cap. Pending an in-editor re-measure; regenerate with Tools/Build/rampage_intensity.py
+    rather than hand-editing.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
   MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5,
     type: 3}
-  NucleusPrefab: {fileID: 7555898194514117247, guid: 1d3d15a174cc41388679c1487f53bced,
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a,
     type: 3}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20,
     type: 3}
@@ -35,9 +42,9 @@ MonoBehaviour:
   PhaseThresholds:
     RestlessEnter: 700
     RestlessExit: 500
-    FrenzyEnter: 10000
-    FrenzyExit: 8000
-    RestlessEnterVolume: 113000
-    RestlessExitVolume: 81000
-    FrenzyEnterVolume: 1630000
-    FrenzyExitVolume: 1260000
+    FrenzyEnter: 37000
+    FrenzyExit: 29600
+    RestlessEnterVolume: 1086000
+    RestlessExitVolume: 779000
+    FrenzyEnterVolume: 15670000
+    FrenzyExitVolume: 12110000

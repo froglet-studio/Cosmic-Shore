@@ -18,9 +18,9 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 1
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: 2000
+  m_CustomRenderQueue: 2450
   stringTagMap:
-    RenderType: Opaque
+    RenderType: TransparentCutout
   disabledShaderPasses:
   - SHADOWCASTER
   - MOTIONVECTORS
@@ -89,22 +89,31 @@ Material:
     - _Add_sin: 0
     - _Alpha: 1
     - _AlphaClip: 1
-    - _AlphaToMask: 0
+    - _AlphaToMask: 1
     - _Blend: 0
     - _BumpScale: 1
     - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
+    - _ColorDuration: 0
+    - _ColorStartTime: 0
     - _Cull: 0
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
     - _DetailNormalMapScale: 1
     - _Distance: 100000
     - _DstBlend: 0
+    - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
+    - _FlightDuration: 0
+    - _FlightStartTime: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _GrowRate: 0
+    - _GrowStartTime: 0
+    - _JiggleDuration: 0
+    - _JiggleStartTime: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
@@ -112,11 +121,16 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
+    - _ShieldMorphDirection: 0
+    - _ShieldMorphDuration: 0
+    - _ShieldMorphOffset: 0
+    - _ShieldMorphStartTime: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SqrDistance: 100000
     - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
     - _Surface: 0
     - _WorkflowMode: 1
     - _ZTest: 4
@@ -143,8 +157,14 @@ Material:
     - _Color: {r: 0, g: 0.7754338, b: 0.54808146, a: 1}
     - _DarkColor: {r: 0.03529412, g: 0.20196079, b: 0.36862746, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FlightVelocity: {r: 0, g: 0, b: 0, a: 0}
+    - _GrowStartFrac: {r: 1, g: 1, b: 1, a: 0}
+    - _JiggleParams: {r: 0, g: 0, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.7, g: 0.7, b: 0.7, a: 0}
+    - _StartBrightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartDarkColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartSpread: {r: 0, g: 0, b: 0, a: 0}
     - _add_vector: {r: 0, g: 0, b: 9, a: 0}
     - _spread: {r: 1, g: 1, b: 1, a: 0}
     - _tangent: {r: 1.51, g: -2.92, b: 1.83, a: 0}

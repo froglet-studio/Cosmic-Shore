@@ -50,6 +50,15 @@ namespace CosmicShore.Utility
         /// <c>Tools/Shaders/wire_prism_occlusion_corridor.py</c> maintains. Every shader a
         /// LIVE prism can render with must be on this list. Shared with the editor validator
         /// so the runtime check and the asset gate can never disagree.
+        ///
+        /// Deliberate exclusion: SuctionGraph. It is live (batched implosion debris draws
+        /// ImplodingPrismMaterial, read off PrismImplosion.prefab in
+        /// <c>PrismDebris.ConfigureImplosion</c>) but it renders a prism DURING consumption —
+        /// a sub-second implode of mass being removed — never standing mass that can occlude.
+        /// Named here the same way KnownLegacyPrismPrefabs is named in the validator, so the
+        /// exclusion cannot look like an omission. Do not add SuctionGraph to this list
+        /// without wiring PrismOcclusionFade into it — <see cref="IsCorridorCapable"/> would
+        /// then fail every suction material at runtime.
         /// </summary>
         public static readonly string[] WiredPrismShaderNames =
         {
@@ -58,6 +67,15 @@ namespace CosmicShore.Utility
         };
 
         static readonly HashSet<int> _checked = new();
+
+        // Warn-once means once per PLAY SESSION — see PrismClockDiagnostics.ResetWarnings.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetWarnings()
+        {
+            _checked.Clear();
+            _warnedRadiusVessels.Clear();
+            _warnedUnmeasurableVessel = false;
+        }
 
         static readonly int SurfaceId = Shader.PropertyToID("_Surface");
         static readonly int AlphaClipId = Shader.PropertyToID("_AlphaClip");

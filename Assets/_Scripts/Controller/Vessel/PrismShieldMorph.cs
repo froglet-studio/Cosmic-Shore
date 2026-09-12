@@ -98,18 +98,57 @@ namespace CosmicShore.Gameplay
             ClearRig(renderer);
         }
 
-        /// <summary>
-        /// Queues the disengage overlay: the shards of the shield just dropped, flying
-        /// out along their own face normals. Fire-and-forget — <see cref="PrismShieldShatter"/>
-        /// owns the entities and retires them on a flat time sweep.
-        /// </summary>
-        public static void RequestShatter(GameObject host, MeshRenderer renderer, Mesh sharedShieldMesh,
-            float duration, float maxOffset)
-        {
-            if (duration <= 0f || sharedShieldMesh == null || renderer == null) return;
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
 
-            bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, renderer.sharedMaterial,
-                host.layer, host.transform.localToWorldMatrix, duration, maxOffset);
+        /// <summary>
+        /// Queues the disengage overlay: the shield's faces, shed as ORDINARY PRISM
+        /// EXPLOSION DEBRIS (Docs/PRISM_ANIMATION.md §4.8.1) — the same entities, stamps,
+        /// per-face rotation, erosion and fade a dying prism's pieces get, on the shield's
+        /// own mesh. Fire-and-forget — <see cref="PrismShieldShatter"/> owns the entities
+        /// and retires them on a flat time sweep.
+        /// </summary>
+        /// <param name="breakVelocity">
+        /// RAW impact vector of whatever broke the shield (Prism.Damage's vector, the
+        /// Rhino sword's contact velocity). Clamped by the debris pipeline's own band,
+        /// exactly as a prism death clamps it; zero (a shield timer expiring, an arena
+        /// teardown, a herbivore stripping armour) degrades to the same up·minSpeed puff
+        /// an impactless prism death gets.
+        /// </param>
+        /// <param name="debrisSpeedLimit">
+        /// Per-impact ceiling for TRUE-velocity impacts, forwarded like
+        /// <see cref="Prism.Damage"/>'s own; 0 keeps the authored band.
+        /// </param>
+        public static void RequestShatter(GameObject host, MeshRenderer renderer, Mesh sharedShieldMesh,
+            Vector3 breakVelocity = default, float debrisSpeedLimit = 0f,
+            Color? shedBright = null, Color? shedDark = null)
+        {
+            if (sharedShieldMesh == null || renderer == null) return;
+
+            // The shards wear the tier the SHIELD was showing, carried the same way death
+            // debris carries a dying prism's tier colors: per-entity overrides on the shared
+            // debris material. PrismStateManager passes the pair from the SO_ColorSet tier
+            // lookup (the renderer cannot answer it there — the state change has already
+            // bound the incoming tier's material by the time the shield disengages); with
+            // no pair supplied (the standalone rig, the ContextMenu toggles, where nothing
+            // repaints) the renderer's own material is the correct read.
+            Color bright, dark;
+            if (shedBright.HasValue && shedDark.HasValue)
+            {
+                bright = shedBright.Value;
+                dark = shedDark.Value;
+            }
+            else
+            {
+                var material = renderer.sharedMaterial;
+                bright = material != null && material.HasProperty(BrightColorId)
+                    ? material.GetColor(BrightColorId) : Color.white;
+                dark = material != null && material.HasProperty(DarkColorId)
+                    ? material.GetColor(DarkColorId) : Color.white;
+            }
+
+            bool queued = PrismShieldShatter.TryRequest(sharedShieldMesh, host.layer,
+                host.transform, bright, dark, breakVelocity, debrisSpeedLimit);
 
             // Strict mode is silent about nothing: the shards ride the instanced path, so
             // if there is none the disengage simply has no overlay and that must be said
@@ -117,7 +156,7 @@ namespace CosmicShore.Gameplay
             // birth-engaged shield dropped later), so the engage warning may never fire.
             if (!queued)
                 PrismClockDiagnostics.WarnNoRenderEntity("shieldShatter", host,
-                    $"batched shield-shatter debris was refused [service: {PrismRenderService.StatusLine()}]");
+                    $"shield debris was refused [service: {PrismRenderService.StatusLine()}]");
         }
 
         // -- standalone rig only (see Stamp) ----------------------------------

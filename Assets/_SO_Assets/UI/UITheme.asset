@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3250989320564b76bce1152afe911af7, type: 3}
+  m_Name: UITheme
+  m_EditorClassIdentifier: 
+  textLight: {r: 0.9019608, g: 0.9137255, b: 1, a: 1}
+  textInactive: {r: 0.14509805, g: 0.14901961, b: 0.1764706, a: 1}
+  inactiveLight: {r: 0.36078432, g: 0.37254903, b: 0.4392157, a: 1}
+  surfaceBlack: {r: 0, g: 0.003921569, b: 0.039215688, a: 1}
+  surfaceVeryDark: {r: 0, g: 0.015686275, b: 0.12156863, a: 1}
+  surfaceDark: {r: 0.13333334, g: 0.14901961, b: 0.27058825, a: 1}
+  surfaceLight: {r: 0.2627451, g: 0.29803923, b: 0.5372549, a: 1}
+  neutralLightest: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
+  cta: {r: 0.6, g: 1, b: 0.5019608, a: 1}
+  danger: {r: 1, g: 0.29411766, b: 0.22745098, a: 1}
+  spacing:
+  - 4
+  - 8
+  - 12
+  - 16
+  - 24
+  - 32
+  - 48
+  - 64
+  - 96
+  sliverLarge: 14
+  sliverSmall: 10
+  hairline: 1
+  stroke: 2
+  durMicro: 0.12
+  durStd: 0.2
+  durPanel: 0.32
+  durCeremony: 0.5
+  staggerStep: 0.04
+  staggerCap: 8

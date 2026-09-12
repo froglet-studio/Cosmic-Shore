@@ -16,6 +16,21 @@ namespace CosmicShore.Core
     {
         public static PlayFabAccount PlayFabAccount { get; private set; } = new();
         public static PlayerSession PlayerSession { get; private set; } = new();
+
+        // Field initializers run once per domain load — with domain reload disabled a session-1
+        // auth context would read as live in session 2. (Legacy PlayFab is dormant; this keeps
+        // the identity honest if it is ever re-enabled.)
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            PlayFabAccount = new();
+            PlayerSession = new();
+            Adjectives = null;
+            Nouns = null;
+            OnLoginSuccess = null;
+            OnLoginError = null;
+            OnRegisterSuccess = null;
+        }
         
         public static event Action OnLoginSuccess;
  
@@ -51,7 +66,6 @@ namespace CosmicShore.Core
         {
             if (Adjectives != null && Nouns != null)
             {
-                CSDebug.Log("AuthenticationManager - Names are already retrieved.");
                 return;
             }
             
@@ -67,9 +81,7 @@ namespace CosmicShore.Core
                         Adjectives = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameAdjectives"]));
                         Nouns = new(JsonConvert.DeserializeObject<string[]>(result.Data["DefaultDisplayNameNouns"]));
                         
-                        CSDebug.Log("AuthenticationManager - Default name list loaded.");
-                        CSDebug.Log($"AuthenticationManager - Default adjectives: {Adjectives}");
-                        CSDebug.Log($"AuthenticationManager - Default nouns: {Nouns}");
+                        CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] AuthenticationManager - Default name list loaded.");
                     }
                             
                 }, 
@@ -160,10 +172,7 @@ namespace CosmicShore.Core
             PlayFabAccount.AuthContext = loginResult.AuthenticationContext;
             //PlayerProfile.IsNewlyCreated = loginResult.NewlyCreated;
 
-            CSDebug.Log($"AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
-            CSDebug.Log($"AuthenticationManager - Play Fab Id: {PlayFabAccount.ID}");
-            CSDebug.Log($"AuthenticationManager - Entity Type: {PlayFabAccount.AuthContext.EntityType}");
-            CSDebug.Log($"AuthenticationManager - Entity Id: {PlayFabAccount.AuthContext.EntityId}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] AuthenticationManager - Logged in - Newly Created: {loginResult.NewlyCreated.ToString()}");
 
             OnLoginSuccess?.Invoke();
             LoginEventBus.Publish(LoginType.Success);
@@ -205,7 +214,7 @@ namespace CosmicShore.Core
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                CSDebug.Log("Android Device Unlinked.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Android Device Unlinked.");
             }, (error) =>
             {
                 CSDebug.LogError(error.GenerateErrorReport());
@@ -221,7 +230,7 @@ namespace CosmicShore.Core
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                CSDebug.Log("IOS Device Unlinked.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] IOS Device Unlinked.");
             }, (error) =>
             {
                 CSDebug.LogError(error.GenerateErrorReport());
@@ -238,7 +247,7 @@ namespace CosmicShore.Core
             {
                 if(PlayerSession.IsRemembered)
                     PlayerSession.ForgetMe();
-                CSDebug.Log("Custom Device Unlinked.");
+                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Custom Device Unlinked.");
             }, (error) =>
             {
                 CSDebug.LogError(error.GenerateErrorReport());
@@ -268,7 +277,7 @@ namespace CosmicShore.Core
                 {
                     PlayFabAccount.AuthContext = result.AuthenticationContext;
                     password?.Dispose();
-                    CSDebug.Log("Logged in with email.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Logged in with email.");
                     PlayFabClientAPI.GetAccountInfo(
                         new GetAccountInfoRequest()
                         {
@@ -277,13 +286,11 @@ namespace CosmicShore.Core
                         },
                         (result) =>
                         {
-                            CSDebug.Log($"PlayFab ID: {result.AccountInfo.PlayFabId}");
-                            CSDebug.Log($"Player email retrieved: {result.AccountInfo.PrivateInfo.Email}");
                         }, null);
                 },
                 (error) =>
                 {
-                    CSDebug.Log(error.GenerateErrorReport());
+                    CSDebug.LogWarning(error.GenerateErrorReport());
                     resultCallback?.Invoke(error);
                 }
                 );
@@ -326,12 +333,11 @@ namespace CosmicShore.Core
                             null, null
                             );
                     }
-                    CSDebug.Log("Register with email succeeded.");
-                    CSDebug.Log($"Player username {result.Username}");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] Register with email succeeded.");
                     OnRegisterSuccess?.Invoke();
                 }, (error) =>
                 {
-                    CSDebug.Log(error.GenerateErrorReport());
+                    CSDebug.LogWarning(error.GenerateErrorReport());
                     resultCallback?.Invoke(error);
                 }
             );

@@ -19,10 +19,18 @@ MonoBehaviour:
   nucleusRushWaveTarget: 3
   rampagePrismTarget: 2000
   ribcagePrismTarget: 2000
-  wildlifeKillTarget: 250
+  wildlifeKillTarget: 30
   dogFightPointTarget: 90
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
+  tollwayTollTarget: 4
+  salvoPrismTarget: 700
+  switchbackGateTarget: 20
+  breakwaterStationTarget: 15
+  breakwaterLaps: 2
+  headlongGateTarget: 24
+  redlineGateTarget: 24
+  hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -30,8 +38,16 @@ MonoBehaviour:
   nucleusRushWaveTargetBuild: 3
   rampagePrismTargetBuild: 2000
   ribcagePrismTargetBuild: 2000
-  wildlifeKillTargetBuild: 250
+  wildlifeKillTargetBuild: 30
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
+  tollwayTollTargetBuild: 4
+  salvoPrismTargetBuild: 700
+  switchbackGateTargetBuild: 20
+  breakwaterStationTargetBuild: 15
+  breakwaterLapsBuild: 2
+  headlongGateTargetBuild: 24
+  redlineGateTargetBuild: 24
+  hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

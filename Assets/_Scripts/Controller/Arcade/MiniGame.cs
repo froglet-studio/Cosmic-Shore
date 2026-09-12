@@ -48,6 +48,24 @@ namespace CosmicShore.Gameplay
         static VesselClassType _playerVesselType = VesselClassType.Dolphin;
         static bool playerShipTypeInitialized;
 
+        // These are written by the menu launch path (Arcade.cs); a direct Play into a gameplay
+        // scene must see the declared defaults, not last session's launch config.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            NumberOfPlayers = 1;
+            IntensityLevel = 1;
+            IsDailyChallenge = false;
+            IsMission = false;
+            IsTraining = false;
+            _playerVesselType = VesselClassType.Dolphin;
+            playerShipTypeInitialized = false;
+            ResourceCollection = new(0f, 0f, 0f, 0f);
+            TimedCallbacks.Clear();
+            OnMiniGameStart = null;
+            OnMiniGameEnd = null;
+        }
+
         public static VesselClassType PlayerVesselType
         {
             get => _playerVesselType;
@@ -153,7 +171,6 @@ namespace CosmicShore.Gameplay
 
         protected virtual void StartNewGame()
         {
-            //CSDebug.Log($"Playing as {PlayerCaptain.Name} - \"{PlayerCaptain.Description}\"");
             PauseSystem.TogglePauseGame(false);
 
             RemainingPlayers = new();
@@ -211,7 +228,6 @@ namespace CosmicShore.Gameplay
         void StartGame()
         {
             gameRunning = true;
-            CSDebug.Log($"MiniGame.StartGame, ... {Time.time}");
             // EndGameScreen.SetActive(false);
             RoundsPlayedThisGame = 0;
             OnMiniGameStart?.Invoke(gameMode, PlayerVesselType, NumberOfPlayers, IntensityLevel);
@@ -220,7 +236,6 @@ namespace CosmicShore.Gameplay
 
         void StartRound()
         {
-            CSDebug.Log($"MiniGame.StartRound - Round {RoundsPlayedThisGame + 1} Start, ... {Time.time}");
             TurnsTakenThisRound = 0;
             SetupTurn();
         }
@@ -232,8 +247,6 @@ namespace CosmicShore.Gameplay
 
             // ScoreTracker.StartTracking(Players[activePlayerId].PlayerName, Players[activePlayerId].Team);
 
-            CSDebug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
-            
             ActivePlayer.InputController.InputStatus.Paused = false;
         }
 
@@ -254,7 +267,6 @@ namespace CosmicShore.Gameplay
             TurnsTakenThisRound++;
 
             // ScoreTracker.EndTurn();
-            CSDebug.Log($"MiniGame.EndTurn - Turns Taken: {TurnsTakenThisRound}, ... {Time.time}");
 
             if (TurnsTakenThisRound >= RemainingPlayers.Count)
                 EndRound();
@@ -268,8 +280,6 @@ namespace CosmicShore.Gameplay
 
             ResolveEliminations();
 
-            CSDebug.Log($"MiniGame.EndRound - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
-
             if (RoundsPlayedThisGame >= NumberOfRounds || RemainingPlayers.Count <= 0)
                 EndGame();
             else
@@ -278,14 +288,6 @@ namespace CosmicShore.Gameplay
 
         void EndGame()
         {
-            CSDebug.Log($"MiniGame.EndGame - Rounds Played: {RoundsPlayedThisGame}, ... {Time.time}");
-            // CSDebug.Log($"MiniGame.EndGame - Winner: {ScoreTracker.GetWinnerScoreData().Name} ");
-
-            
-            // TODO - In MiniGameBase, use MiniGameData to get scores
-            /*foreach (var player in Players)
-                CSDebug.Log($"MiniGame.EndGame - Player Score: {ScoreTracker.GetScore(player.Name)} ");*/
-
             if (IsDailyChallenge)
             {
                 // LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
@@ -305,7 +307,6 @@ namespace CosmicShore.Gameplay
                 // TODO - Get Captains from Data Containers, not Hanger
                 // if (Hangar.Instance.HostileAI1Captain != null && !CaptainManager.Instance.IsCaptainEncountered(Hangar.Instance.HostileAI1Captain.Name))
                 /*{
-                    CSDebug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI1Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI1Captain.Name);
                     
                     
@@ -315,7 +316,6 @@ namespace CosmicShore.Gameplay
                 // TODO - Get Captains from Data Containers, not Hanger
 
                 /*{
-                    CSDebug.Log($"Encountering Captain!!! - {Hangar.Instance.HostileAI2Captain}");
                     CaptainManager.Instance.EncounterCaptain(Hangar.Instance.HostileAI2Captain.Name);
                 }*/
             }
@@ -409,7 +409,6 @@ namespace CosmicShore.Gameplay
 
             foreach (var player in Players)
             {
-                CSDebug.Log($"PlayerUUID: {player.PlayerUUID}");
                 player.ToggleGameObject(player.PlayerUUID == LocalPlayer.PlayerUUID);
             }
         }*/

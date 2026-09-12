@@ -206,6 +206,18 @@ juice through `ElementBars` when a vessel wants it.
   `mass_hull` binds, `massive_jaw` doesn't; two-element names are ambiguous → ignored;
   FBX deformer prefixes fine; the shape's last-frame weight is its extreme). Discovery is
   `VesselAnimation.CollectElementShapes` at Initialize. No per-prefab flags exist.
+- **A GENERATED hull morphs procedurally, and it must say so.** The Scarab has no morphable FBX —
+  its morphs are the four element extremes of its own pure hull function, baked to deltas and
+  blended at the shared config's feel (SCARAB.md §3.0.2). Such a vessel implements
+  **`IProceduralElementMorphSource`** (`ProceduralMorphElements` + `HiddenLegacyModelRoot`), which
+  is what keeps the audit honest twice over: procedural coverage counts as real, and element
+  blend shapes under the declared hidden legacy root are marked INERT instead of counted — a
+  shape on a renderers-off placeholder greens the audit while the hull morphs by nothing. If you
+  build a second procedural hull, keep the split: the builder owns geometry (topology-asserted
+  extreme bakes, bounds pinned to the weight-lattice union, `DontRecalculateBounds` writes), the
+  animation owns time (config SO feel, instant seed, kill-and-retween, LateUpdate push after the
+  base's shape-key write) — and the morph writes localPosition/mesh while puppetry writes
+  localRotation, so no channel gains a second writer.
 - Morphs express only the **[0,10] band** (deficit holds level-0, overcharge holds level-10 —
   hull and flowers always agree); DOTween glides from
   `Assets/Resources/VesselElementalMorphConfig.asset`, never snaps.
@@ -220,13 +232,29 @@ juice through `ElementBars` when a vessel wants it.
   than NRE). Rigged art must use `CaptureRestRotations`/`RotatePartFromRest`/rest-aware
   `ResetAnimation` — driving bones toward absolute rotations assumes identity rest and flattens
   a rig (two shipped Dolphin bugs came from this root).
+- **A LABELLED shape is not a SHAPE — measure its MAGNITUDE before trusting a rig.** Of the
+  three unwired `*_shapekey_with_animations` rigs, only the **Dolphin's carries a real morph**
+  (mass moves 10,909 verts, time 9,272). The **Rhino's and Urchin's four element shapes each
+  move ONE vertex by ZERO** — name-only placeholders. Swapping either rig in turns the morph
+  audit GREEN while the hull morphs by nothing, which is worse than the current honest zero.
+  Read the FBX `Geometry` sub-records of subtype `Shape` and sum the deltas. Evidence + the
+  per-file table: `Docs/VESSEL_CONSTRUCTION.md` §4.
 - **Rig swaps** (Dolphin/Urchin/Rhino placeholders → their `*_shapekey_with_animations` rigs)
-  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap` (report-only)
-  and follow its printed procedure — migrate gameplay objects to mapped bones, retire legacy
-  MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the animation's part
-  fields** so they re-resolve to bones, re-run the morph audit.
+  are a hands-on editor pass: run `FrogletTools > Vessels > Plan Vessel Rig Swap`
+  (report-only) and follow its printed procedure — migrate gameplay objects to mapped bones,
+  retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
+  animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
+  + the salvage-before-delete gate: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md`.
+- **A rig swap moves every measured mount on the vessel.** The Rhino rig is provably the
+  shipped hull merged with its wings and offset **+1.5545 in z** (every lathe ring matches at
+  identical radius and vertex count), so FX mounts, colliders and any hand-placed transform
+  must be RE-MEASURED against the rig, never translated by hand. Its wings also stop being
+  separate GameObjects, so anything parented to them re-parents to bones.
 - Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
+  But it reports shapes it DISCOVERS by name, i.e. presence, not magnitude, so an empty
+  labelled shape passes it. Treat a green audit as necessary, not sufficient, until it
+  measures deltas.
   Edit-mode tests: `VesselElementalMorphTests`, `VesselRigPartResolutionTests`.
 
 ## 8. The HUD controller/view pair
@@ -343,6 +371,28 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   authored effects (Sparrow lost all elemental-crystal feedback this way); an effect asset that
   exists but sits in no container executes never (several orphans exist); fork shared effect SOs
   before changing per-vessel behavior.
+
+### 9.x A shared component's AMBIENT default is a per-vessel visual nobody authored
+
+`Skimmer.prefab` is nested by eight vessels and carries a `ForcefieldCrackleOverlay` whose
+shader composes `Alpha = fresnel + impact contributions`. `ForcefieldCrackleController` pushes
+`fresnelRimIntensity = 0.08` **every frame regardless of impacts**, so every one of those eight
+draws a permanently visible bubble the size of its skimmer sphere — 20-40 units on the Manta.
+
+The part worth carrying is *why nobody caught it*: the crackle is a skimmer PRISM effect, and
+only the Dolphin's and Squirrel's `SkimmerImpactorDataContainerSO`s list it. On the other six,
+the overlay's driver never runs and the ambient rim is the whole of what it draws — an effect
+that is simultaneously "not wired" and "always on screen". Rule 22 says a shared impact effect
+is per-vessel wiring; this is its inverse: **a shared component's non-zero default needs no
+wiring at all, so the vessels that never opted in are exactly the ones showing it raw.**
+
+So when a vessel "shows something it shouldn't": ask which shared prefab it nests, read that
+component's field INITIALIZERS (not its serialized block — see the asset-surgery technique on
+overriding a field the source never serializes), and check whether this vessel's container
+actually lists the effect that drives it. Fix by overriding the value on that vessel's nested
+instance, never by disabling the renderer.
+
+Still open at time of writing: Urchin, Grizzly, Falcon, Shrike and Termite.
 
 ## 10. Docs & paper trail
 

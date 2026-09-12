@@ -14,6 +14,10 @@ namespace CosmicShore.Core
     
     public class LoginEventBus: IDisposable
     {
+        // Subscribe adds entries that nothing ever disposes — clear them per play session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => Events.Clear();
+
         private static readonly IDictionary<LoginType, UnityEvent> Events =
             new Dictionary<LoginType, UnityEvent>();
 
@@ -50,7 +54,6 @@ namespace CosmicShore.Core
         public void Dispose()
         {
             Events.Clear();
-            CSDebug.Log("LoginEventBus - Events cleared.");
         }
     }
 }

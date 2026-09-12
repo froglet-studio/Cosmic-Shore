@@ -38,12 +38,19 @@ namespace CosmicShore.Editor
                                                "with one marker — an error storm must not fill the disk.")]
         int maxJournalMB = 4;
 
+        [SerializeField, Range(0, 600), Tooltip("Seconds the main thread must be unresponsive before the watchdog " +
+                                                "thread writes a live minidump (HangDump-*.dmp next to the journal, " +
+                                                "Windows only, once per session). The dump's main-thread stack names " +
+                                                "the deadlock a Task-Manager kill would otherwise destroy. 0 = off.")]
+        int hangDumpSeconds = 45;
+
         public bool Enabled { get => detectorEnabled; set => detectorEnabled = value; }
         public int HeartbeatSeconds { get => heartbeatSeconds; set => heartbeatSeconds = Mathf.Clamp(value, 1, 30); }
         public bool CaptureWarnings { get => captureWarnings; set => captureWarnings = value; }
         public int StackTraceLines { get => stackTraceLines; set => stackTraceLines = Mathf.Clamp(value, 0, 30); }
         public int MaxReportsKept { get => maxReportsKept; set => maxReportsKept = Mathf.Clamp(value, 1, 50); }
         public int MaxJournalMB { get => maxJournalMB; set => maxJournalMB = Mathf.Clamp(value, 1, 32); }
+        public int HangDumpSeconds { get => hangDumpSeconds; set => hangDumpSeconds = Mathf.Clamp(value, 0, 600); }
 
         public void SaveNow() => Save(true);
     }

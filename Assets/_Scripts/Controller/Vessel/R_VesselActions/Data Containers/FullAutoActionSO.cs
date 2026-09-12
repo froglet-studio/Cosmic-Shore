@@ -76,31 +76,22 @@ namespace CosmicShore.Gameplay
         /// shared with the Turret Stance through the same asset so the two fire modes cannot
         /// drift apart.
         ///
+        /// The curve itself is <see cref="ElementalScaling.RoundGrowthFactorForLevel"/> — ONE
+        /// home, shared with every other round that grows in flight (the skyburst missile,
+        /// which points at it with its own authored pair rather than copying this one).
         /// Linear in LEVEL (not in the map's multiplier curve) so the authored endpoints ARE
         /// the shipped feel: 3× at resting Mass, 6× at Mass 10, extrapolated over the element
         /// system's full [-5, 15] band → 1.5× starved, 7.5× at full overcharge.
         ///
         /// Note this is quantitative MASS scaling on top of the map's own Mass multiplier
         /// (which stretches a turret prism's long axis). They are the same idea — Mass is the
-        /// size of what you fire — expressed on the two things the Sparrow fires, which is why
-        /// it does not read as double-dipping. Keep it that way: do not add a THIRD Mass
-        /// parameter without revisiting the one-parameter-per-element convention.
+        /// size of what you fire — expressed on each thing the Sparrow fires, which is why
+        /// it does not read as double-dipping. Keep it that way: growing a NEW round in flight
+        /// reuses this one parameter; do not add a THIRD Mass parameter without revisiting the
+        /// one-parameter-per-element convention.
         /// </summary>
         public float ResolveGrowthFactor(IVesselStatus status)
-        {
-            var resources = status?.ResourceSystem;
-            int level = resources ? resources.GetLevel(Element.Mass) : 0;
-            return GrowthFactorForLevel(level, growthFactorAtRestingMass, growthFactorAtFullMass);
-        }
-
-        /// <summary>
-        /// The growth curve itself, pulled out as a pure function so it is edit-mode testable
-        /// (<c>SparrowRoundGrowthTests</c>). Linear in <paramref name="massLevel"/> with the
-        /// authored pair anchored at levels 0 and 10, extrapolated — NOT clamped — across the
-        /// element system's full [-5, 15] band.
-        /// </summary>
-        public static float GrowthFactorForLevel(int massLevel, float atRestingMass, float atFullMass)
-            => Mathf.Max(0.01f, Mathf.LerpUnclamped(atRestingMass, atFullMass, massLevel / 10f));
+            => ElementalScaling.RoundGrowthFactor(status, growthFactorAtRestingMass, growthFactorAtFullMass);
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
         {

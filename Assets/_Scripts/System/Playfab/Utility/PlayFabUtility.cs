@@ -13,6 +13,10 @@ namespace CosmicShore.Core
 
         public static Action<PlayFabError> GettingPlayFabErrors;
 
+        // Bare delegate field — publicly assignable, never cleared by any subscriber.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => GettingPlayFabErrors = null;
+
         public static DateTime ServerTime;
         /// <summary>
         /// Get current time from the server
@@ -30,7 +34,7 @@ namespace CosmicShore.Core
             if (result == null) return;
 
             ServerTime = result.Time;
-            CSDebug.Log($"Catalog manager - OnGettingCurrentTime() - The time is: {result.Time}");
+            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] PlayFabUtility - Server time: {result.Time}");
         }
         
         #region Situation Handling

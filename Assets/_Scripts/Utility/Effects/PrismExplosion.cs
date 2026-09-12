@@ -208,6 +208,11 @@ namespace CosmicShore.Utility
         // with idempotent checks, so a swap moving an already-visited entry into the
         // current slot is harmless.
         internal static readonly List<PrismExplosion> EnabledInstances = new();
+
+        // OnEnable/OnDisable keep this balanced across a clean play exit; the reset covers the
+        // unclean one so Count (which feeds PressuredDuration + GameLoadSampler) starts true.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => EnabledInstances.Clear();
         int _enabledIndex = -1;
 
         private void OnEnable()

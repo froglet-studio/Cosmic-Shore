@@ -107,11 +107,9 @@ namespace CosmicShore.UI
 
             // Get all purchaseable captains
             var captains = CatalogManager.StoreShelve.captains.Values.ToList();
-            CSDebug.Log($"PopulateCaptainPurchaseCards, unfiltered: {captains.Count}");
 
             // Filter out owned captains
             captains = captains.Where(x => !CatalogManager.Inventory.captains.Contains(x)).ToList();
-            CSDebug.Log($"PopulateCaptainPurchaseCards, excluding purchased: {captains.Count}");
 
             // Filter out unencountered captains
             captains = captains
@@ -168,11 +166,9 @@ namespace CosmicShore.UI
 
             // Get all purchaseable games
             var games = CatalogManager.StoreShelve.games.Values.ToList();
-            CSDebug.Log($"PopulategamePurchaseCards, unfiltered: {games.Count}");
 
             // Filter out owned games
             games = games.Where(x => !CatalogManager.Inventory.games.Contains(x)).ToList();
-            CSDebug.Log($"PopulateGamePurchaseCards, excluding purchased: {games.Count}");
 
             // if no games, hide games section
             if (games.Count == 0)
@@ -223,7 +219,6 @@ namespace CosmicShore.UI
             // abort the coroutine.
             int.TryParse(CrystalBalance.text, out var crystalBalance);
             var newCrystalBalance = CatalogManager.Instance.GetCrystalBalance();
-            CSDebug.Log($"UpdateBalanceCoroutine - initial Balance: {crystalBalance}, new Balance: {newCrystalBalance}");
             var delta = crystalBalance- newCrystalBalance;
             var duration = 1f;
             var elapsedTime = 0f;

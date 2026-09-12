@@ -18,6 +18,24 @@ namespace CosmicShore.Tests
 
         static float Angle(float held) => GunSpreadMath.HalfAngleDegrees(held, Onset, Growth, Max);
 
+        // The four-stage curve, in the shipped SHAPE but deliberately not the shipped NUMBERS —
+        // these tests prove the curve, and the asset owns the tuning. Every join lands on a whole
+        // second here so a failure reads as a stage boundary rather than as arithmetic.
+        const float Plateau = 2f;              // seconds held at the sustainable cap
+        const float BlowoutGrowth = 8f;        // deg/s on the second ramp (faster than the first)
+        const float BlowoutMax = Max * 5f;     // the final cap — 5x the sustainable one
+
+        static GunSpreadStages Staged => new GunSpreadStages(
+            Onset, Growth, Max, Plateau, BlowoutGrowth, BlowoutMax);
+
+        static GunSpreadStages SingleRamp => new GunSpreadStages(Onset, Growth, Max);
+
+        static float Staged_Angle(float held) => GunSpreadMath.HalfAngleDegrees(held, Staged);
+
+        static float RampEnds => Onset + Max / Growth;                  // first ramp complete
+        static float PlateauEnds => RampEnds + Plateau;                 // blow-out begins
+        static float BlowoutEnds => PlateauEnds + (BlowoutMax - Max) / BlowoutGrowth;
+
         // ------------------------------------------------------------------ the ramp
 
         [Test]
@@ -57,6 +75,123 @@ namespace CosmicShore.Tests
         public void HalfAngle_TreatsNegativeOnsetAsZero()
         {
             Assert.AreEqual(Growth, GunSpreadMath.HalfAngleDegrees(1f, -5f, Growth, Max), 1e-4f);
+        }
+
+        // ------------------------------------------------------- the plateau and the blow-out
+
+        [Test]
+        public void Staged_ReproducesTheSingleRamp_ThroughOnsetAndFirstRamp()
+        {
+            // Stages 1 and 2 are the curve that shipped before the blow-out existed. Nothing a
+            // pilot does inside the first two stages may change because of a stage they have not
+            // reached yet.
+            foreach (var t in new[] { 0f, Onset * 0.5f, Onset, Onset + 0.25f, Onset + 0.5f, RampEnds })
+                Assert.AreEqual(Angle(t), Staged_Angle(t), 1e-4f, $"held {t}s");
+        }
+
+        [Test]
+        public void Staged_HoldsAtTheSustainableCap_ForTheWholePlateau()
+        {
+            // The band a pilot can actually fight in: as inaccurate as the gun gets while still
+            // being a gun.
+            Assert.AreEqual(Max, Staged_Angle(RampEnds), 1e-4f);
+            Assert.AreEqual(Max, Staged_Angle(RampEnds + Plateau * 0.5f), 1e-4f);
+            Assert.AreEqual(Max, Staged_Angle(PlateauEnds), 1e-4f);
+        }
+
+        [Test]
+        public void Staged_BlowsOut_AtTheSecondRate_AfterThePlateau()
+        {
+            Assert.AreEqual(Max + BlowoutGrowth * 0.25f, Staged_Angle(PlateauEnds + 0.25f), 1e-4f);
+            Assert.AreEqual(Max + BlowoutGrowth * 0.50f, Staged_Angle(PlateauEnds + 0.50f), 1e-4f);
+        }
+
+        [Test]
+        public void Staged_SaturatesAtTheBlowoutCap_AndNeverExceedsIt()
+        {
+            Assert.AreEqual(BlowoutMax, Staged_Angle(BlowoutEnds), 1e-4f);
+            Assert.AreEqual(BlowoutMax, Staged_Angle(BlowoutEnds + 5f), 1e-4f);
+            Assert.AreEqual(BlowoutMax, Staged_Angle(BlowoutEnds + 3600f), 1e-4f);
+        }
+
+        [Test]
+        public void Staged_IsContinuousAtEveryJoin()
+        {
+            // A step at a join would read as the gun flinching. Sample either side of all three.
+            const float eps = 1e-3f;
+            foreach (var join in new[] { Onset, RampEnds, PlateauEnds, BlowoutEnds })
+                Assert.AreEqual(Staged_Angle(join - eps), Staged_Angle(join + eps), 0.05f,
+                    $"discontinuity at the {join}s join");
+        }
+
+        [Test]
+        public void Staged_IsMonotonicNonDecreasing()
+        {
+            // Accuracy may only ever get worse while the trigger is down; it comes back on
+            // RELEASE, which is GunSprayAccuracy's job, not the curve's.
+            float previous = -1f;
+            for (float t = 0f; t <= BlowoutEnds + 2f; t += 0.01f)
+            {
+                float angle = Staged_Angle(t);
+                Assert.GreaterOrEqual(angle, previous - 1e-4f, $"cone narrowed at {t}s");
+                previous = angle;
+            }
+        }
+
+        [Test]
+        public void Staged_WithoutASecondRamp_IsExactlyTheSingleRampCurve()
+        {
+            // The sanctioned opt-out, and the guarantee that every gun which authors no blow-out
+            // behaves exactly as it did before the blow-out existed. Both halves must be absent
+            // independently: a rate with no headroom, and headroom with no rate.
+            var noRate = new GunSpreadStages(Onset, Growth, Max, Plateau, 0f, BlowoutMax);
+            var noHeadroom = new GunSpreadStages(Onset, Growth, Max, Plateau, BlowoutGrowth, Max);
+
+            for (float t = 0f; t <= 30f; t += 0.05f)
+            {
+                Assert.AreEqual(Angle(t), GunSpreadMath.HalfAngleDegrees(t, SingleRamp), 1e-5f, $"held {t}s");
+                Assert.AreEqual(Angle(t), GunSpreadMath.HalfAngleDegrees(t, noRate), 1e-5f, $"held {t}s");
+                Assert.AreEqual(Angle(t), GunSpreadMath.HalfAngleDegrees(t, noHeadroom), 1e-5f, $"held {t}s");
+            }
+
+            Assert.IsFalse(noRate.BlowsOut);
+            Assert.IsFalse(noHeadroom.BlowsOut);
+            Assert.IsTrue(Staged.BlowsOut);
+        }
+
+        [Test]
+        public void Staged_WithNoPlateau_JoinsTheTwoRampsDirectly()
+        {
+            var kinked = new GunSpreadStages(Onset, Growth, Max, 0f, BlowoutGrowth, BlowoutMax);
+            Assert.AreEqual(Max, GunSpreadMath.HalfAngleDegrees(RampEnds, kinked), 1e-4f);
+            Assert.AreEqual(Max + BlowoutGrowth * 0.5f,
+                            GunSpreadMath.HalfAngleDegrees(RampEnds + 0.5f, kinked), 1e-4f);
+        }
+
+        [Test]
+        public void Staged_TreatsAZeroCapAsNoSpreadAtAll_BlowoutIncluded()
+        {
+            // A zero sustainable cap opts the whole gun out; an authored blow-out must not
+            // resurrect a cone the profile switched off.
+            var optedOut = new GunSpreadStages(Onset, Growth, 0f, Plateau, BlowoutGrowth, BlowoutMax);
+            Assert.AreEqual(0f, GunSpreadMath.HalfAngleDegrees(1f, optedOut));
+            Assert.AreEqual(0f, GunSpreadMath.HalfAngleDegrees(1000f, optedOut));
+        }
+
+        [Test]
+        public void Staged_TreatsANegativePlateauAsZero()
+        {
+            var negative = new GunSpreadStages(Onset, Growth, Max, -5f, BlowoutGrowth, BlowoutMax);
+            Assert.AreEqual(Max + BlowoutGrowth * 0.5f,
+                            GunSpreadMath.HalfAngleDegrees(RampEnds + 0.5f, negative), 1e-4f);
+        }
+
+        [Test]
+        public void SecondsToFullSpread_IsWhereTheCurveActuallyReachesItsCap()
+        {
+            Assert.AreEqual(BlowoutEnds, Staged.SecondsToFullSpread, 1e-4f);
+            Assert.AreEqual(RampEnds, SingleRamp.SecondsToFullSpread, 1e-4f);
+            Assert.AreEqual(0f, new GunSpreadStages(Onset, Growth, 0f).SecondsToFullSpread, 1e-4f);
         }
 
         // ------------------------------------------------------------------ the cone

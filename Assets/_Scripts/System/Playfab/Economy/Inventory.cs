@@ -36,7 +36,6 @@ namespace CosmicShore.Core
 
         public void LoadFromDisk()
         {
-            CSDebug.Log("Inventory.LoadFromDisk");
             var tempInventory = DataAccessor.Load<Inventory>("inventory.data");
 
             crystals = tempInventory.crystals;

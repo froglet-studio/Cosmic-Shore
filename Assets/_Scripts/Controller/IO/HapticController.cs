@@ -93,6 +93,21 @@ namespace CosmicShore.Gameplay
         static float s_alertBusyUntil = -999f;     // skim AND punish are suppressed until here
         static float s_lastSprayTime = -999f;
 
+        // These are compared against Time.unscaledTime, which restarts at 0 every play session —
+        // with domain reload disabled a leftover busy-until stamp from a long session would
+        // silently mute haptics for that many seconds of the next one.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            s_lastSkimTime = -999f;
+            s_skimBusyUntil = -999f;
+            s_lastPunishTime = -999f;
+            s_punishBusyUntil = -999f;
+            s_lastAlertTime = -999f;
+            s_alertBusyUntil = -999f;
+            s_lastSprayTime = -999f;
+        }
+
         /// <summary>
         /// The reward pulse. <paramref name="strength01"/> (0..1) is how close the prism passed to
         /// the skimmer centre — a dead-centre skim hits hardest. Rate-limited into a pulse train and
@@ -144,7 +159,7 @@ namespace CosmicShore.Gameplay
         /// bright characters: unmistakably not a skim and not a thud, and long enough to read as
         /// "something just happened" rather than "you hit something".
         ///
-        /// Reserved for RARE, match-changing state changes — currently only Ribcage's fauna
+        /// Reserved for RARE, match-changing state changes — currently only PeelTheCage's fauna
         /// release rungs. It outranks both other feels for its whole duration and is rate-limited
         /// so it can never stack into a drone. Do NOT hang it on anything frequent; the two-feel
         /// policy exists because haptics stop meaning anything once they are common.

@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_WildlifeLiberation
+  m_EditorClassIdentifier: 
+  Mode: 40
+  Notes: Spawns outside the 1050u outer cage, where the real mode spawns players.
+    LifeformsKilled is credited locally through CellRuntimeDataSO.OnFaunaKilled,
+    so it counts in a solo preview.
+  PreviewCell: {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 2a3473b06ae520a967e964789f574d2a, type: 2}
+  - {fileID: 11400000, guid: e8501f315bd5e4617ef6c948e107488e, type: 2}
+  - {fileID: 11400000, guid: e6ae32678416e7c6390d5b0078ba2893, type: 2}
+  - {fileID: 11400000, guid: e7542f2a8779d1328f8d3d88545eae03, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  PreviewFauna: {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
+  PreviewFaunaCount: 4
+  Vessel: -1
+  ObjectiveText: Clear the swarm
+  ObjectiveMetric: 7
+  ObjectiveTarget: 5
+  DurationSeconds: 90
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 1150
+  SpawnFormation: 1
+  SpawnPoints: []

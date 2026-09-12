@@ -20,10 +20,12 @@ Requests). They share the same component family:
 
 | Component | Purpose |
 |---|---|
-| `ArcadeLobbyList` | The party panel: 4 slots (slot 0 = local player, slots 1-3 = remote `PartyMembers`), a Leave button, and a live "N Players Online" counter. An empty slot's "+" opens `FriendsListPanel`. |
-| `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. |
+| `ArcadeLobbyList` | The party panel: 4 slots in the **synced seating** (host first, then clients in join order — see "Seating" below; NOT local-player-first), a Leave button, and a live "N Players Online" counter. An empty slot's "+" opens `FriendsListPanel`. |
+| `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. Also **ensures its own `PartySlotDomainGlow`** at `Awake` (see "Seating"). |
+| `PartyRoster` | Pure static. THE party seating order, and the only place it is decided. No Unity, UGS or Netcode types — the caller supplies the client-id lookup, which is what makes it edit-mode testable (`PartyRosterTests`). |
+| `PartySlotDomainGlow` | The animated halo behind a slot's avatar, tinted with that pilot's live domain. Generated (GameObject, sprite and rect) rather than authored, so it needs no scene wiring and no party surface can ship without it. |
 | `FriendsListPanel` | Combined social panel — **no tabs; both sections render at once**: **Online** (every presence-lobby player) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists. |
-| `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
+| `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. A third button, **Join** (`joinButton` + `joinButtonIcon`), is one control with two faces resolved by `FriendsListPanel.ResolveJoinMode`: a blue doorway icon that walks you into that player's party with no invite (drawn disabled when the party is full), or — while the player is IN A MATCH — an amber eye icon that is the row's ONLY enabled button and **spectates** the match (`SPECTATOR.md`). On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
 
@@ -37,6 +39,52 @@ the local player's own slot via `HostConnectionService.RefreshLocalPartyMemberEn
 End-to-end pipeline + latency:
 `../PresenceSystem/ARCHITECTURE.md` § "Identity propagation"; manual test:
 `../PresenceSystem/TESTS.md` **P7**.
+
+
+## Seating, and why it is not the `PartyMembers` list order
+
+`HostConnectionDataSO.PartyMembers` is a **per-device** list and cannot be drawn in
+order. `PartyMemberService.SeedLocalPlayer` puts the local player at index 0 on *every*
+machine and `SyncFromSession` appends the rest in whatever order `ISession.Players`
+enumerates — so the host saw itself first, each client saw itself first, and no two peers
+agreed on the rest. Four players in one party read four different seatings.
+
+`PartyRoster.Build` orders the party off something **already replicated**: Netcode's
+`OwnerClientId`. The server assigns it in CONNECTION order and the host is always
+`NetworkManager.ServerClientId`, so ascending order *is* "host first, then clients in join
+order", identically on every peer — with nothing new on the wire and no new UGS property
+for peers to converge on. The bridge from a UGS party member to their `Player` object is
+`Player.NetUgsPlayerId`.
+
+Three properties of that choice are worth keeping:
+
+- **It degrades in-order.** A member whose `Player` has not network-spawned yet has no
+  client id, so they sort LAST behind everyone who has one, tie-breaking on the ordinal
+  player id — still the same answer on every device. `ArcadeLobbyList` re-seats itself when
+  the id resolves (it fingerprints the `(ugs id, client id)` set rather than subscribing
+  every step of the spawn chain).
+- **The local player is not pinned to slot 0.** Anything that assumed it was is wrong:
+  `HandleProfileChanged` used to repaint `slots[0]` on a resolved cloud profile, which is
+  the host's seat on a client.
+- **The seat count and the capacity differ on purpose.** The panel draws 4
+  (`PartyDisplaySlots`) while `MaxPartySlots` carries one spare seat of anti-flicker
+  headroom, so a transient fifth member can exist. If that would push the LOCAL player off
+  the end they are moved into the last drawn slot instead — a panel that stops showing you
+  your own party is a worse lie than a momentarily imperfect order.
+
+**The domain glow rides the same lookup.** `PartySlotDomainGlow` paints each occupied slot
+with `SO_ColorSet.GetDomainSignalColor` for that pilot's **live** `Player.Domain`, pushed on
+a slow tick rather than snapshotted at population time — a pilot re-picks their domain from
+the same modal the panel lives in, and the platform rule is to read the live mirror each
+time. A pilot whose domain cannot be resolved gets **no** halo rather than a default-coloured
+one: an unresolved pilot painted Jade is confident misinformation, where an absent halo reads
+as "not known yet".
+
+The halo is deliberately the same visual as the load screen's pilot chips
+(`ConnectingPlayerRoster`) and the scoreboard's rematch faces (`RematchVoteRoster`) — same
+breath rate, alpha range and size, adopted from them rather than re-invented. There are
+consequently **three** implementations of one halo; folding them into one component is
+TODO-12.
 
 ## Invite UX flow (UI-level)
 
@@ -93,6 +141,11 @@ Two separate systems — don't conflate them:
 button when the player can be invited, plus a ✕ to cancel a pending outgoing invite
 or (host only) kick an in-party member. The party panel's `FriendInfoSlot` carries
 the same host-only kick ✕ per occupied member slot.
+
+**Direct join and spectate** need no invite at all: the online row's Join button reads
+the `partySession` presence property the other player publishes and joins that session
+outright (`PartyInviteController.JoinPartyAsync`), or, when they are in a match, joins it
+as a spectator with no Player object (`SpectateAsync`). Record: `SPECTATOR.md`.
 
 **Friend requests have no UI entry point today.** The by-name `AddFriendPanel` and
 the confirmed-friend row `FriendInfoEntry` were both retired — `FriendsListPanel`

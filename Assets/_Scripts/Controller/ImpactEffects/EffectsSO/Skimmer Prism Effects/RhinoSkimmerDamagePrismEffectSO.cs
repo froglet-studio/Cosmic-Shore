@@ -139,7 +139,14 @@ namespace CosmicShore.Gameplay
         // proportional branch reproduces its two lines here rather than forking the helper).
         void PopSuperShield(IVesselStatus status, Prism prism, Vector3 contactVelocity)
         {
-            prism.DeactivateShields(); // synchronously clears IsSuperShielded; plays shatter + SFX
+            // Synchronously clears IsSuperShielded; sheds the stellation as explosion debris
+            // + SFX. Each branch hands the shed the SAME vector and ceiling it hands the
+            // devastating Damage below, so the shield's pieces and the prism's pieces fly on
+            // identical terms — one effect, two meshes (Docs/PRISM_ANIMATION.md §4.8.1).
+            if (proportionalDebris)
+                prism.DeactivateShields(contactVelocity * restitution, debrisSpeedLimit);
+            else
+                prism.DeactivateShields(contactVelocity * inertia);
 
             if (proportionalDebris)
             {
@@ -199,7 +206,7 @@ namespace CosmicShore.Gameplay
         /// Prism.Damage/Consume early-return on and the shell tier gates contact ownership with
         /// (PrismShellContactManager.ShellOwnsContact). NOT PrismStateManager.CurrentState:
         /// SegmentSpawner's track super-shielding deliberately sets the flag while leaving the
-        /// legacy state machine at Normal (so state-keying missed every Skim-Race/HexRace track
+        /// legacy state machine at Normal (so state-keying missed every Skim-Race/SkimRace track
         /// prism — no pop, no bounce, no denied feedback), and Prism.ResetState clears the flag
         /// on pool reuse without resetting CurrentState (so state-keying bounced ordinary reborn
         /// mass, violating the ungated-cutting contract, and over-banked its kills).</summary>

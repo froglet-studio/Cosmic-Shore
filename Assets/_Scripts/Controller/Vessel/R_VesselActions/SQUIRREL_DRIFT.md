@@ -143,7 +143,7 @@ peak `1.25 × 60 = 75.0`, verified.
   the Scarab's first-pass transformer did. `SyncExternalWrites` detects a Course written by anyone
   else and re-aims the velocity vector onto it, symmetrically with how `speed` writes are already
   detected. **AIPilot needed no change**, and `SetCourseVelocity(dir)` is the explicit door for
-  anything that would rather call than assign. The Squirrel's AI drifts in HexRace, so this was a
+  anything that would rather call than assign. The Squirrel's AI drifts in SkimRace, so this was a
   blocker, not a nicety.
 - **The damage channels stay live.** `throttleMultiplier` (impact slows) and `velocityShift`
   (knockback / AOE) are applied in the vector path exactly as in the scalar one, and
@@ -202,7 +202,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 
 ## 8. In-editor verification
 
-1. **Drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a hard drift so
+1. **Drift recovery (the point).** SkimRace or freestyle. Get to speed, hold LT into a hard drift so
    the course visibly separates from the nose, then **aim the nose out of the slide and squeeze the
    throttle**. The vessel must pull ONTO the nose direction. Before this change it accelerated
    further along the slide.
@@ -216,7 +216,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    shipped once:** enter a drift at BOOST speed. Speed must decay smoothly toward the cruise
    target — it must NOT snap down on the first drift frame, and the scissor throttle must not
    read as a speed dial while drifting.
-5. **AI drift.** HexRace, watch an AI approach a crystal. At drift entry its trail must continue
+5. **AI drift.** SkimRace, watch an AI approach a crystal. At drift entry its trail must continue
    toward the crystal while the hull swings off-axis. If the trail follows the nose instead, the
    Course re-aim in `SyncExternalWrites` regressed.
 6. **Danger prism while drifting.** Clip a danger prism mid-drift — the slow must land.

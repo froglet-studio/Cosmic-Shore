@@ -114,7 +114,7 @@ namespace CosmicShore.Core
             IsInitialized = true;
             OnProgressionChanged?.Invoke(ProgressionData);
 
-            CSDebug.Log($"[GameModeProgressionService] Initialized from UGSDataService. " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Initialized from UGSDataService. " +
                        $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
                        $"Completed: {ProgressionData.CompletedQuests.Count}");
         }
@@ -126,7 +126,7 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Always-unlocked modes (e.g. Tournament, a session-level meta outside the chain).
+            // Always-unlocked modes (e.g. Maelstrom, a session-level meta outside the chain).
             if (Config.IsAlwaysUnlocked(mode))
                 return true;
 
@@ -234,7 +234,7 @@ namespace CosmicShore.Core
                 ProgressionData.MarkUnlocked(nextModeName);
                 ProgressionData.EnsureIntensityInitialized(nextModeName, Config.defaultMaxIntensity);
                 _analytics?.RecordModeUnlocked(nextQuest.GameMode);
-                CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
 
             OnProgressionChanged?.Invoke(ProgressionData);
@@ -263,7 +263,7 @@ namespace CosmicShore.Core
             {
                 ProgressionData.MarkQuestCompleted(modeName);
                 quest.IsCompleted = true;
-                CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}! stat={value} target={quest.TargetValue}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest completed for {mode} stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
                 OnProgressionChanged?.Invoke(ProgressionData);
                 SaveImmediateAsync();
@@ -348,7 +348,7 @@ namespace CosmicShore.Core
             OnIntensityUnlocked?.Invoke(mode, maxIntensity);
             OnProgressionChanged?.Invoke(ProgressionData);
             ScheduleDebouncedSave();
-            CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
         }
 
         // ── Intensity Progression Public API ─────────────────────────────────
@@ -359,7 +359,7 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
-            // Full-intensity modes (e.g. Tournament) aren't gated behind progression - the full
+            // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
             if (Config.HasFullIntensity(mode)) return Config.maxIntensity;
 
@@ -432,7 +432,7 @@ namespace CosmicShore.Core
             EnsureFirstModeUnlocked();
             OnProgressionChanged?.Invoke(ProgressionData);
             SaveImmediateAsync();
-            CSDebug.Log("[GameModeProgressionService] All quest progress reset.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameModeProgressionService] All quest progress reset.");
         }
 
         /// <summary>
@@ -467,7 +467,7 @@ namespace CosmicShore.Core
 
             OnProgressionChanged?.Invoke(ProgressionData);
             SaveImmediateAsync();
-            CSDebug.Log($"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
         }
 
         // ── Internal ────────────────────────────────────────────────────────────
@@ -484,13 +484,13 @@ namespace CosmicShore.Core
             var quest = GetQuestForMode(mode);
             if (quest == null || quest.IsPlaceholder)
             {
-                CSDebug.Log($"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] No quest found for mode {mode}, skipping.");
                 return;
             }
 
             if (ProgressionData.IsQuestCompleted(mode.ToString()))
             {
-                CSDebug.Log($"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest for {mode} already completed, skipping.");
                 return;
             }
 
@@ -505,7 +505,7 @@ namespace CosmicShore.Core
 
             // Legacy stat-based quest evaluation
             float legacyStatValue = ExtractStatForQuest(quest);
-            CSDebug.Log($"[GameModeProgressionService] HandleGameEnd - mode:{mode}, targetType:{quest.TargetType}, " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] HandleGameEnd - mode:{mode}, targetType:{quest.TargetType}, " +
                        $"targetValue:{quest.TargetValue}, extractedStat:{legacyStatValue}");
 
             if (legacyStatValue > 0f)
@@ -530,7 +530,7 @@ namespace CosmicShore.Core
             int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.defaultMaxIntensity);
             bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
-            CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
                        $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
                        $"statBased:{useStatBased}, statValue:{statValue}");
 
@@ -544,7 +544,7 @@ namespace CosmicShore.Core
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Intensity 3 unlocked for {mode}");
                     OnIntensityUnlocked?.Invoke(mode, 3);
                     _analytics?.RecordIntensityUnlocked(mode, 3);
                     OnProgressionChanged?.Invoke(ProgressionData);
@@ -563,7 +563,7 @@ namespace CosmicShore.Core
                 if (shouldUnlock)
                 {
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
-                    CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
+                    CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Intensity 4 unlocked for {mode} Quest complete.");
                     OnIntensityUnlocked?.Invoke(mode, 4);
                     _analytics?.RecordIntensityUnlocked(mode, 4);
 
@@ -771,7 +771,7 @@ namespace CosmicShore.Core
             try
             {
                 await repo.SaveAsync();
-                CSDebug.Log("[GameModeProgressionService] Saved progression data immediately.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, "[GameModeProgressionService] Saved progression data immediately.");
             }
             catch (Exception e)
             {

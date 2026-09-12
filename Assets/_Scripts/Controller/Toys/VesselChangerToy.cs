@@ -23,16 +23,8 @@ namespace CosmicShore.Gameplay
     /// freestyle control once the swap completes (mirroring
     /// <c>MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync</c>).
     /// </summary>
-    public sealed class VesselChangerToy : MatrixToy
+    public sealed class VesselChangerToy : MatrixToy, IToyShellSurface
     {
-        /// <summary>Curated default so the matrix isn't all 11 ships. Override per-asset.</summary>
-        static readonly VesselClassType[] DefaultCollection =
-        {
-            VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
-            VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
-            VesselClassType.Urchin, VesselClassType.Scarab,
-        };
-
         const int RestoreDelayMs = 600;
 
         VesselChangerToyDefinitionSO _def;
@@ -40,6 +32,12 @@ namespace CosmicShore.Gameplay
         // The ships the open matrix is showing, index-aligned with _stationBodies.
         readonly List<VesselClassType> _offered = new();
         readonly List<Transform> _stationBodies = new();
+        readonly List<VesselClassType> _emblemScratch = new();
+
+        // Its own list, never _offered or _emblemScratch: the shell can be asked at any moment,
+        // including while the matrix is open (whose list is index-aligned with live stations) or
+        // between two emblem slot builds.
+        readonly List<VesselClassType> _shellScratch = new();
 
         Domains _lastDomain;
         bool _hasDomain;
@@ -71,12 +69,10 @@ namespace CosmicShore.Gameplay
                 heavy = false;
                 if (!_toy.TryGetEmblemVessel(slot, out var vessel)) return false;
 
-                var container = _toy.Context?.VesselPrefabContainer;
-                if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
-
                 // Built UNPARENTED first: the model builder fits by world bounds and assumes an
                 // origin-anchored, unrotated, unit-scale root.
-                if (!VesselModelBuilder.TryBuild(prefab, radius, shared, out var model)) return false;
+                if (!ToyVesselRoster.TryBuildHull(_toy.Context, vessel, radius, shared, out var model))
+                    return false;
                 model.transform.SetParent(holder, false);
                 return true;
             }
@@ -106,9 +102,6 @@ namespace CosmicShore.Gameplay
         bool TryGetEmblemVessel(int slot, out VesselClassType vessel)
         {
             vessel = VesselClassType.Any;
-            var collection = _def && _def.VesselCollection is { Length: > 0 }
-                ? _def.VesselCollection
-                : DefaultCollection;
 
             bool hasCurrent = TryGetCurrentVessel(out var current);
             if (slot == 0)
@@ -118,16 +111,15 @@ namespace CosmicShore.Gameplay
                 return true;
             }
 
-            int wanted = slot - 1, seen = 0;
-            foreach (var candidate in collection)
-            {
-                if (candidate == VesselClassType.Any || candidate == VesselClassType.Random) continue;
-                if (hasCurrent && candidate == current) continue;
-                if (seen++ != wanted) continue;
-                vessel = candidate;
-                return true;
-            }
-            return false;
+            // Into a scratch list, not _offered: that one only exists while the matrix is open,
+            // and the emblem is built (and rebuilt on a domain change) whether it is or not.
+            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _emblemScratch,
+                hasCurrent ? current : null);
+
+            int wanted = slot - 1;
+            if (wanted < 0 || wanted >= _emblemScratch.Count) return false;
+            vessel = _emblemScratch[wanted];
+            return true;
         }
 
         // ── Layout ───────────────────────────────────────────────────────────
@@ -152,20 +144,12 @@ namespace CosmicShore.Gameplay
 
         bool ResolveOffer()
         {
-            _offered.Clear();
             _stationBodies.Clear();
 
-            var collection = _def && _def.VesselCollection is { Length: > 0 }
-                ? _def.VesselCollection
-                : DefaultCollection;
-
-            TryGetCurrentVessel(out var current);
-            foreach (var vessel in collection)
-            {
-                if (vessel == VesselClassType.Any || vessel == VesselClassType.Random) continue;
-                if (vessel == current) continue;   // you are already flying it
-                if (!_offered.Contains(vessel)) _offered.Add(vessel);
-            }
+            // You are already flying one of them, so that hull is not on offer here.
+            bool hasCurrent = TryGetCurrentVessel(out var current);
+            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _offered,
+                hasCurrent ? current : null);
 
             if (_offered.Count != 0) return true;
             CSDebug.LogWarning("[VesselChanger] No other vessels to offer.");
@@ -193,13 +177,18 @@ namespace CosmicShore.Gameplay
             body.SetParent(station.transform, false);
 
             Color previewColor = PreviewColor();
-            var container = Context?.VesselPrefabContainer;
-            if (container && container.TryGetShipPrefab(vessel, out Transform prefab)
-                && VesselModelBuilder.TryBuild(prefab, radius, previewColor, out var model))
+
+            // The ACTUAL ship, wearing its own materials, marked by the vessel vision band. The
+            // matrix blooms 360 units out (StationSpacing 60 x MatrixDistanceFactor 6), which is
+            // just past the band's nearFullStart - so a station arrives already at full mark, reads
+            // as a domain-coloured cel silhouette for the whole approach while you are choosing,
+            // and resolves into the real hull over the last stretch as you commit to it. That is
+            // what retired the flat silhouette fill: something else supplies the at-a-glance read
+            // now, so the station can show the thing itself.
+            if (ToyVesselRoster.TryBuildLiveHull(Context, vessel, radius, out var model))
             {
                 model.transform.SetParent(body, false);
-                // Only real models are recolour targets: each owns a preview material built for
-                // it, so tinting its renderers is local. The fallback sphere wears ToyFactory's
+                // Only real models are re-tint targets. The fallback sphere wears ToyFactory's
                 // SHARED accent material - re-tinting that would repaint every toy using it.
                 _stationBodies.Add(body);
             }
@@ -220,7 +209,7 @@ namespace CosmicShore.Gameplay
             var init = Context?.VesselInitializer;
             if (!init || init.IsSwapping)
             {
-                CSDebug.Log("[VesselChanger] A swap is already in flight - ignoring this pass.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[VesselChanger] A swap is already in flight - ignoring this pass.");
                 return;
             }
 
@@ -230,7 +219,56 @@ namespace CosmicShore.Gameplay
 
             init.RequestSwap(target);
             RestoreControlAfterSwap(this.GetCancellationTokenOnDestroy()).Forget();
-            CSDebug.Log($"[VesselChanger] → {target}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[VesselChanger] -> {target}.");
+        }
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        // A swap in flight has no settled answer to "what are you flying", so the card greys out
+        // rather than offering a hull against a hull that no longer exists.
+        bool IToyShellSurface.ShellAvailable
+        {
+            get
+            {
+                var init = Context?.VesselInitializer;
+                return init != null && !init.IsSwapping;
+            }
+        }
+
+        /// <summary>
+        /// The whole collection, the hull you fly flagged as current - not the matrix's
+        /// "everything except what you fly". The matrix says that by having no station for your
+        /// own ship; a flat list has to name it, and dropping the row would leave the player
+        /// unable to see which hull they are on.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            bool hasCurrent = TryGetCurrentVessel(out var current);
+            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _shellScratch, exclude: null);
+
+            Color accent = PreviewColor();
+
+            foreach (var vessel in _shellScratch)
+            {
+                var captured = vessel;
+                bool isCurrent = hasCurrent && vessel == current;
+
+                // No Apply on the hull you are already flying: that row is there to be READ.
+                System.Action apply = null;
+                if (!isCurrent) apply = () => SelectVessel(captured);
+
+                into.Add(new ToyShellOption
+                {
+                    Label = vessel.ToString(),
+                    Detail = isCurrent ? "flying" : "",
+                    Accent = accent,
+                    IsCurrent = isCurrent,
+                    Apply = apply,
+                    BuildPreview = parent => BuildShellPreview(captured, parent),
+                });
+            }
         }
 
         // ── Domain recolour ──────────────────────────────────────────────────
@@ -253,36 +291,33 @@ namespace CosmicShore.Gameplay
 
             Color color = PreviewColor();
             foreach (var body in _stationBodies)
-                Recolor(body, color);
+                ToyVesselRoster.ApplyDomain(Context, body, color);
         }
 
         /// <summary>
         /// Colour the mini ships read as - the local player's domain colour (so they preview "you,
         /// different hull"), falling back to the toy's accent when the theme/player isn't available.
         /// </summary>
-        Color PreviewColor()
-        {
-            var gd = Context?.GameData;
-            var tm = gd ? gd.ThemeManagerData : null;
-            if (tm && gd.LocalPlayer != null)
-                return tm.GetDomainUIColor(gd.LocalPlayer.Domain);
-            return Definition.AccentColor;
-        }
+        Color PreviewColor() => ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
 
-        // Re-tint in place (no rebuild) so the recolour is instant and pop-free. Each mini model /
-        // fallback sphere owns its own preview material, so tinting its renderers only affects that
-        // station; mirrors the property writes in ToyModelBuilder.BuildPreviewMaterial.
-        static void Recolor(Transform body, Color color)
+        /// <summary>
+        /// The hull for the app shell's preview window - the same LIVE model the station shows, in
+        /// the ship's own materials, so a name in a list becomes a ship.
+        ///
+        /// <para>It is marked for the vessel vision band exactly as the station is, and that costs
+        /// nothing here: the preview camera sits about three radii off the model, which is far
+        /// inside the band's near cutoff, so the mark resolves to zero and what renders is the
+        /// hull itself. Which is the right answer for a picture whose whole job is "what does this
+        /// ship look like".</para>
+        /// </summary>
+        GameObject BuildShellPreview(VesselClassType vessel, Transform parent)
         {
-            if (!body) return;
-            foreach (var r in body.GetComponentsInChildren<Renderer>(true))
-            {
-                var m = r.sharedMaterial;
-                if (!m) continue;
-                m.color = color;
-                if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
-                if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", color * 0.6f);
-            }
+            if (!parent) return null;
+            if (!ToyVesselRoster.TryBuildLiveHull(Context, vessel, StationRadius, out var model))
+                return null;
+
+            model.transform.SetParent(parent, false);
+            return model;
         }
 
         async UniTaskVoid RestoreControlAfterSwap(CancellationToken ct)

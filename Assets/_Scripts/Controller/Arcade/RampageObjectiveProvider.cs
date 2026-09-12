@@ -36,10 +36,10 @@ namespace CosmicShore.Gameplay
     /// it respawns inside the nucleus forever and is replicated to every peer. Hearts and seeded
     /// crystals are plain <c>Instantiate</c>s and carry no manager, so one test separates them
     /// all. <see cref="Crystal.CanBeCollected"/> is then applied so that if a future variant ever
-    /// spawns per-domain managed crystals (as HexRace does), the arrow still only names one this
+    /// spawns per-domain managed crystals (as SkimRace does), the arrow still only names one this
     /// pilot may actually take.</para>
     ///
-    /// Deliberately NOT <see cref="HexRaceObjectiveProvider"/>, which filters to the local
+    /// Deliberately NOT <see cref="SkimRaceObjectiveProvider"/>, which filters to the local
     /// player's own DOMAIN: Rampage's crystal is neutral (<c>spawnCrystalWithPlayerDomain: 0</c> ⇒
     /// <c>Domains.Blue</c>) so a strict domain-equality test would reject the only objective in
     /// the match and the arrow would never appear at all.

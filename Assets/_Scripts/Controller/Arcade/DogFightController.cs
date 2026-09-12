@@ -16,17 +16,17 @@ namespace CosmicShore.Gameplay
     /// Boneyard; a bullet hit banks 1 point, a missile hit (direct strike or caught in the
     /// blast) banks 50, and the first DOMAIN to the point target wins.
     ///
-    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="RibcageController"/>
+    /// Structurally a sibling of <see cref="RampageController"/> / <see cref="PeelTheCageController"/>
     /// (1 round / 1 turn, HasEndGame=false, server winner detection in OnTurnEndedCustom,
     /// snapshot SyncFinalScores_ClientRpc), with three deliberate differences:
     ///
     ///   1. THE SCORE COMES FROM GUNNERY. The metric is <see cref="IRoundStats.CombatPoints"/>,
     ///      fed by the platform combat-hit path (the two combat-hit impact effects →
     ///      <c>GameDataSO.OnCombatHitLanded</c> → <c>StatsManager.CombatHitLanded</c> →
-    ///      <c>CombatHitScoring.Credit</c>), so like Rampage and Ribcage there is no per-event
+    ///      <c>CombatHitScoring.Credit</c>), so like Rampage and PeelTheCage there is no per-event
     ///      listener here at all. The only thing that scores is landing a shot on an OPPOSING
     ///      pilot: not prisms, not crystals, not wildlife.
-    ///   2. THE ARENA IS COVER, NOT THE OBJECTIVE. Ribcage's bone IS the score and Wildlife
+    ///   2. THE ARENA IS COVER, NOT THE OBJECTIVE. PeelTheCage's bone IS the score and Wildlife
     ///      Liberation's cages ARE the walls; the Boneyard is neither. Shooting it is worth
     ///      nothing - it exists to break sightlines, so the fight is a series of close
     ///      encounters rather than one long open-space joust.
@@ -151,7 +151,7 @@ namespace CosmicShore.Gameplay
             // is consulted wherever a shot is simulated - not only on the server.
             VesselCombatHitLatch.Clear();
 
-            // Belt-and-braces against the Ribcage regression where players started a match on a
+            // Belt-and-braces against the PeelTheCage regression where players started a match on a
             // non-zero score. The authoritative reset is
             // ServerPlayerVesselInitializer.PrepareForNewScene (unconditional, once per player,
             // on the processing path) - this is a second, cheap sweep at the one moment every

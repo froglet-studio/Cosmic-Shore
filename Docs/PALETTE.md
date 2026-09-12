@@ -63,8 +63,9 @@ debris and read as a plain prism dying. Shielded and super-shielded mass had the
 defect (visible whenever a devastating hit explodes shielded mass rather than shedding
 its shield). The dying prism's tier now travels on the event
 (`PrismEventData.Kind`, stamped in `Prism.Explode` / `Prism.Implode` from
-`PrismKinds.Of` **before** the destruction pass), and both routes — the batched
-pure-entity debris and the pooled fallback — tint from it.
+`PrismKinds.Of` **before** the destruction pass), and the batched pure-entity
+debris path tints from it. Grow (Sparrow ReverseSuction) still uses pooled
+`PrismImplosion.ConfigureForTeam` and is not a death tint.
 
 This costs nothing at runtime: debris colour is already a **per-entity** override
 (`PrismBrightColorOverride` / `PrismDarkColorOverride`) inside the one
@@ -238,6 +239,34 @@ than as "mis-tinted".
 Two consumers today, and they are the intended shape for future ones: the Dolphin's Mass slot, and
 the Charge-5 pilot highlight (which needs it *saturated* for the same reason — a marked vessel has to
 separate by HUE from the lit prisms around it, and brightness alone cannot do that).
+
+### 2.5 The same trap on the CTA pair — `GetCtaSignalColor` (2026-09-05)
+
+§2.2's "dull is the body, bright is only the rim" is a statement about a **crystal**, and it is
+what makes `DarkCTA` the right read *on a crystal*. It is the wrong read on anything that does not
+compose the pair. A **prism** does not: it takes one colour. So a prism painted from `DarkCTA`
+alone renders the shipped `OriginalColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
+not as the free-pickup lime a player has learned — the same shape of mistake as §2.4's, reached
+from the other pair.
+
+`SO_ColorSet.GetCtaSignalColor()` is the sibling of `GetDomainSignalColor` and is normalised
+identically (brightest channel driven to 1):
+
+| source | value | summed distance to the fixed no-theme fallback (0.55, 0.95, 0.15) |
+|---|---|---|
+| `DarkCTA` raw | (0.28125, 0.5, 0.078125) | **0.79** |
+| `GetCtaSignalColor()` | (0.5625, 1.0, 0.1562) | **0.069** |
+
+The second row is the argument: a hardcoded fallback that is 0.79 from the themed value it stands
+in for is not a fallback, it is a second colour. It also clears the switch reservation's 0.5 gate
+against every domain UI colour in the live palette (nearest is Gold at 0.94).
+
+**It returns alpha 0 rather than black when the palette authors no CTA.** `CosmicWaveColorSetSO`
+and `PastelColorSetSO` both author the pair (0,0,0,0), so a raw read paints the surface black on
+either — and per §2.4's rule, an accessor that can return black can make an element vanish, which
+reads as *not implemented* rather than as mis-tinted. The caller falls back instead
+(`ToyFactory.CtaLime`). One consumer today: the Switchback gate ring's `Next` switch signal
+(`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
 
 ## 3. The colour-space rule (this is the trap)
 
@@ -454,6 +483,46 @@ shielded rim (again matching Jade exactly), and drops the peak from 1.50 to 1.00
 with Jade's 1.14. Plain Gold prisms are correspondingly less blazing at the rim — the
 intended change, since that heat was the defect.
 
+### 4.3 Two saturated OPPOSITE hues cannot be blended — they have to be separated (2026-08-24)
+
+Found on the Sparrow's projectile charge shell (`R_VesselActions/SPARROW_SPRAY_ACCURACY.md`
+§ Round 4), but it is a composition law, not a projectile fact.
+
+The shell wanted **neutral blue** arcs with a **danger red** hot core, composed the obvious
+way: `lerp(blue, red, arcHeat²)`. It rendered magenta. **Any lerp between two saturated hues
+on opposite sides of the wheel spends most of its range in a third hue that belongs to
+neither** — and on an ADDITIVE surface it also *sums* with whatever is already behind it, so
+the third hue appears even where the lerp did not put it.
+
+The fix is a **threshold, not a different pair of colours**: `smoothstep(t, 1, heat)` confines
+the second colour to the hot core, so the arc reads blue with a red filament in it. Measured
+by hue-bucketing every lit fragment of the shipped shader after tonemapping:
+
+| `_CoreThreshold` | blue | magenta | red |
+|---|---|---|---|
+| 0 (a plain `heat²` lerp) | 54.5% | **12.6%** | 32.9% |
+| 0.75 (shipped) | 77.7% | **7.4%** | 14.9% |
+
+> If a two-colour effect is reading as one muddy colour, reach for a separation dial before
+> you reach for new colours. Changing the pair cannot fix a blend that is *supposed* to
+> traverse the space between them.
+
+**Two corollaries about how you judge this.**
+
+**§4.1's rule reaches past prism tiers, and ACES is what enforces it.** The same shell's model
+wanted a "desaturated whitish blue". Every candidate authored *as* a pale blue — including
+this file's own `BlueColors.SpikeLightColor` — rendered at screen saturation **0.03–0.06**,
+i.e. white, because ACES compresses highlights and a bright colour desaturates on the way to
+the screen. The shipped value was chosen by computing post-tonemap sRGB and hunting for the
+0.20–0.30 band. §4.1 says measure screen saturation for the shielded tier; it is true of
+**anything** whose linear value is bright, and the inspector swatch will not tell you.
+
+**Judge a candidate at the size it will be judged, and count the pixels.** A 300 px contact
+sheet of that shell read as uniformly magenta; the hue census over the same shader said 7%,
+and a single large panel proved the census right — at thumbnail scale a blue arc and its red
+filament simply average together. A census of the rendered population is evidence; a
+downsampled thumbnail is not.
+
 ## 5. Re-deriving after a change
 
 The contract is reproducible from the asset alone; no play mode needed:
@@ -492,13 +561,13 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    - **Any cell with lifeforms** (Menu_Main freestyle) — every flora/fauna **health
      prism** is shielded (`LifeForm.ActivateShield`, `HealthBlockTracker`), so the
      ecosystem is the densest sample of this tier in the game.
-   - **The `SegmentSpawner` track** (HexRace / Skim Race) ships prisms with
+   - **The `SegmentSpawner` track** (SkimRace / Skim Race) ships prisms with
      `IsShielded`, so the whole course is this tier.
    - **Astro League** (`AstroLeagueBall` shields prisms it touches), AOE block
      creation, and the skimmer overcharge effect.
 2b. Get **danger** prisms on screen (§4 "The danger tier borrows the shielded base").
    Verified producers, easiest first:
-   - **Ribcage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
+   - **PeelTheCage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
      and the mode ships the same prism in all three domains.
    - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
      capital segments carry danger prisms (`WormSegmentFauna`).

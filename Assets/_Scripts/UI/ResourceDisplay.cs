@@ -119,7 +119,7 @@ namespace CosmicShore.UI
                 fuelLevelText.text = (normalizedLevel * 100f).ToString("F0");
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] Legacy: idx={idx}, normalized={normalizedLevel}");
         }
 
         private void UpdateSliderDisplay(float normalizedLevel, bool shouldChangeColor)
@@ -147,7 +147,7 @@ namespace CosmicShore.UI
             }
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] SegmentedSlider: fill={normalizedLevel}");
         }
 
         private void UpdateSpriteSwapDisplay(float normalizedLevel)
@@ -158,7 +158,7 @@ namespace CosmicShore.UI
             spriteSwapImage.sprite = spriteSwapSprites[Mathf.Clamp(idx, 0, maxIndex)];
 
             if (verboseLogging)
-                CSDebug.Log($"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ResourceDisplay] SpriteSwap: idx={idx}, normalized={normalizedLevel}");
         }
 
         #endregion

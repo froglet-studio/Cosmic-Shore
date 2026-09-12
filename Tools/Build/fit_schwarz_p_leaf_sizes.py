@@ -519,10 +519,15 @@ def main():
               f"span {span:4.2f} spacings   coverage {cov:5.1%}   {state}")
 
     # The LEVEL trap this used to demonstrate here - LeafScalePerLevel scaling the leaf but
-    # not the lattice, so a levelled plant interpenetrates itself - is now handled in CODE by
-    # Flora.PrismSizeFixedByGrowthRule (true on AssembledFlora), which suppresses the leaf half
-    # of the level curve for every lattice species. It is no longer this fitter's business, and
-    # pinning the field from here would fight the config the rest of the fleet uses.
+    # not the lattice, so a levelled plant interpenetrates itself - cannot arise at all any
+    # more: lifeform LEVELS are retired outright, so a leaf is its authored size for the whole
+    # of a plant's life and the fit below is the ONLY size that ever renders
+    # (Docs/ECOSYSTEM.md 40.2). Flora.PrismSizeFixedByGrowthRule is kept as a standing guard
+    # against the rule coming back on a growth path; it is not this fitter's business either
+    # way. What varies per plant now is its ELEMENT - which is what the four fitted leaves
+    # below are - and the size of the heart that element drops
+    # (FloraVariantTuning.HeartWorldScale, authored by Tools/Build/author_lifeform_heart_sizes.py
+    # and deliberately NOT touched from here: two fitters must never own one asset field).
 
     if args.render:
         sheets = [(f"{n}  {l[0]:g}x{l[1]:g}x{l[2]:g}",
@@ -543,7 +548,7 @@ def main():
         # (Mass) and carries its own budget/planting decisions, so only its LeafSize row
         # moves. The Blob cell config is NOT written: it has no Variant of its own (it
         # delegates to the element palette above), and the level fields this fitter used to
-        # pin there are now handled in code by Flora.PrismSizeFixedByGrowthRule.
+        # pin there no longer exist - lifeform levels are retired (Docs/ECOSYSTEM.md 40.2).
         hesperides = (ROOT / "Assets/_SO_Assets/Cell Configs/Hesperides Cell"
                              "/Hesperides SchwarzP Topiary Config Data.asset")
         set_leaf_size_only(hesperides, chunky)

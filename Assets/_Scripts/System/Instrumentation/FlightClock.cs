@@ -78,7 +78,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Increments once per genuinely completed game. Consumers that must act exactly once
-        /// per game latch this: some modes raise OnMiniGameEnd more than once (HexRace sets
+        /// per game latch this: some modes raise OnMiniGameEnd more than once (SkimRace sets
         /// HasEndGame=false specifically to avoid a duplicate), and a repeated raise must not
         /// double-count lifetime totals.
         /// </summary>

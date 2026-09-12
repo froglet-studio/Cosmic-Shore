@@ -144,6 +144,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Drop a creature from the roster WITHOUT destroying it - the removal half of
+        /// <see cref="RemoveFauna"/> for a creature whose destruction belongs to somebody else.
+        /// A replicated fauna is destroyed by its NetworkObject despawn on the server, and by
+        /// nobody at all on a client; a manager that also called Destroy would be a second
+        /// owner of one object's lifetime.
+        /// </summary>
+        public void Deregister(LightFauna fauna)
+        {
+            if (!activeFauna.Contains(fauna)) return;
+            activeFauna.Remove(fauna);
+
+            if (managerData && activeFauna.Count < ComputeBatchSize() / 2)
+                SpawnGroup();
+        }
+
         public void RemoveFauna(LightFauna fauna)
         {
             if (activeFauna.Contains(fauna))

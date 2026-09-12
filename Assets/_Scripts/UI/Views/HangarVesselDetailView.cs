@@ -241,7 +241,7 @@ namespace CosmicShore.UI
             if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
                 _analytics?.RecordVesselUnlocked(_currentShip.Name, cost, VesselUnlockSystem.GetCurrencyBalance());
-                CSDebug.Log($"Purchased vessel: {_currentShip.Name}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[HangarVesselDetailView] Purchased vessel - {_currentShip.Name}");
                 CloseUnlockPanel();
                 RefreshLockState();
             }

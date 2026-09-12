@@ -97,6 +97,7 @@
 #define PRISM_OCCLUSION_KERNEL_SHARD 3     // screen-space cells — reads as TRIANGULAR flecking
 #define PRISM_OCCLUSION_KERNEL_SHATTER 4   // screen-space cells — reads as a CRACKED LATTICE
 #define PRISM_OCCLUSION_KERNEL_SHATTER3D 5 // WORLD-space cells — a VOLUMETRIC cracked lattice
+#define PRISM_OCCLUSION_KERNEL_SHARD3D 6   // WORLD-space cells — distance-to-owner fill (Prompt 16)
 
 #define PRISM_OCCLUSION_KERNEL PRISM_OCCLUSION_KERNEL_SHATTER
 
@@ -113,10 +114,10 @@
 //   1 = DESIGN MODE. Dials are live; the Lab drives them while the game runs.
 //   0 = SHIPPED. This file compiles EXACTLY as it would have without any of this: the
 //       macros below expand to the constants themselves, the #if picks one kernel, and
-//       the other four plus the branch and the uniforms are not in the shader at all.
+//       the other six unused kernels plus the branch and the uniforms are not in the shader at all.
 //
 // It is not free, which is why it is a gate rather than a permanent feature: design mode
-// compiles all five kernels into every prism shader and allocates registers for the
+// compiles every carried kernel into every prism shader and allocates registers for the
 // largest, which costs occupancy on tile-based GPUs — on the one draw class this game has
 // most of. The Lab's **Bake to Source** button writes the chosen values into the constants
 // and flips this to 0, so the cost lasts exactly as long as the design session.
@@ -414,7 +415,7 @@ float2 PrismOcclusionHash2(float2 cell)
     return frac((p3.xx + p3.yz) * p3.zy);
 }
 
-// 3D-input variants of the same float-only Hoskins family, for the volumetric kernel
+// 3D-input variants of the same float-only Hoskins family, for the volumetric kernels
 // and the object-space erosion. Same rationale as Hash2: no integer ops, so identical
 // behaviour on GLES/mobile targets.
 float3 PrismOcclusionHash3(float3 p3)
@@ -747,11 +748,12 @@ float PrismOcclusionShatter(float2 pixel, float viewDepth, float time)
 // surface-glancing geometry. Passing the number is necessary, not sufficient — the
 // tessellation candidate's lesson, paid a second time.
 //
-// Kept carried because the anchoring insight is real and still wanted (see below) if
-// the glancing-plane failure is ever solved — e.g. filling polyhedra by distance to
-// the owner site (a 3D SHARD: level sets are closed surfaces, never near-parallel to
-// a face over a whole plate) instead of by parallel planar cuts. Do not re-ship this
-// kernel as-is.
+// Kept carried because the anchoring insight is real and still wanted. The
+// glancing-plane failure is solved by kernel 6 (SHARD3D): filling polyhedra by
+// Euclidean distance to the owner site — level sets are spheres, closed surfaces
+// that cannot lie flat against a face over a whole plate — instead of by parallel
+// planar cuts. Do not re-ship THIS kernel as-is. SHARD3D is the Lab candidate;
+// it is not the shipped kernel until it earns its look on real mass at speed.
 //
 // The original design rationale, kept for that successor: the same proposition as
 // SHATTER — Voronoi cells filled between parallel straight cuts so the negative
@@ -823,9 +825,19 @@ float PrismOcclusionShatter3DWall()
     return PRISM_OCCLUSION_DIAL(_PrismOcclusionDitherC.w, PRISM_OCCLUSION_SHATTER3D_WALL);
 }
 
+// Shared by SHATTER3D and SHARD3D: nearest power-of-two world cell size to the
+// ideal angular size, rung boundary jittered per 8-world-unit chunk so adjacent
+// fragments at the same depth do not all flip rungs together.
+float PrismOcclusionOctaveCellWorld(float3 positionWS, float angularScale, float targetPx)
+{
+    float targetWorld = max(targetPx * angularScale, 1e-5);
+    float jitter = PrismOcclusionHash1(floor(positionWS * 0.125)) - 0.5;
+    float rung = floor(log2(targetWorld) + 0.5 + 0.35 * jitter);
+    return exp2(rung);
+}
+
 // The 2×2×2 octant search: base = floor(q - 0.5) makes base + {0,1}³ exactly the
-// eight cells whose centres are nearest q. Shared by the erosion below (which runs
-// it with a frozen orbit).
+// eight cells whose centres are nearest q. Shared by SHATTER3D and SHARD3D.
 void PrismOcclusionOwner3D(float3 q, float phase, out float3 owner, out float bestSq)
 {
     float3 base = floor(q - 0.5);
@@ -860,14 +872,7 @@ void PrismOcclusionOwner3D(float3 q, float phase, out float3 owner, out float be
 float PrismOcclusionShatter3D(float3 positionWS, float angularScale, float time)
 {
     float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
-
-    // The octave ladder: nearest power-of-two world cell size to the ideal angular
-    // size, with the rounding boundary jittered per fixed 8-world-unit chunk.
-    float targetWorld = max(PrismOcclusionShatter3DCell() * angularScale, 1e-5);
-    float jitter = PrismOcclusionHash1(floor(positionWS * 0.125)) - 0.5;
-    float rung = floor(log2(targetWorld) + 0.5 + 0.35 * jitter);
-    float cellWorld = exp2(rung);
-
+    float cellWorld = PrismOcclusionOctaveCellWorld(positionWS, angularScale, PrismOcclusionShatter3DCell());
     float3 q = positionWS / cellWorld;
     float3 owner;
     float bestSq;
@@ -890,6 +895,61 @@ float PrismOcclusionShatter3D(float3 positionWS, float angularScale, float time)
 }
 
 // -----------------------------------------------------------------------------
+// Kernel G — WORLD-SPACE SHARD3D (Prompt 16, 2026-08-25).
+// Lab candidate. NOT the shipped kernel. Coverage proven offline; look on real
+// mass at speed is the remaining gate. Do not Bake as CURRENT until that look
+// is earned — SHATTER3D passed every fidelity number and was REJECTED ON LOOK
+// the day it shipped.
+//
+// THE FAILURE THIS REPLACES. SHATTER3D fills Voronoi polyhedra with planar
+// cuts (`dot(q - owner, dir)`). A plane is constant along every direction
+// perpendicular to `dir`, so a crack plane lying near-parallel to a viewed
+// face paints a face-sized plate at one threshold — a flash, not a dither.
+// Uniform sweep, in-situ bin, and the Lab's flat z=0 preview are all
+// structurally blind to that (none samples the field off surface-glancing
+// geometry).
+//
+// THE SHAPE. Same world frame, same octave ladder, same 2×2×2 owner search,
+// same morph (sites orbit inside their cells). The fill is Euclidean
+// distance-to-owner (3D Worley F1). Level sets of distance-from-a-point are
+// SPHERES — closed surfaces — so they cannot lie flat against a plane over a
+// whole plate: distance from a point to points on a plane varies across that
+// plane unless the plane is a single point, which it is not. A polyhedral
+// gauge (cube / tetrahedron / octahedron) COULD plate-flash if a facet were
+// parallel to the viewed face; Euclidean is the geometrically safe metric,
+// especially for axis-aligned environment plates.
+//
+// WHAT IT KEEPS from SHATTER3D (the anchoring insight that stayed right):
+// true parallax between stacked layers, no strobe at speed (optical flow IS
+// the scene's), screen-pixel fidelity via the octave ladder. A fix that
+// MOVES THE PATTERN GLOBALLY cannot win against speed — this one does not
+// move it; it belongs to the world.
+//
+// WALL is meaningless for a distance fill (there is no band). The Lab hides
+// it. CELL is shared with SHATTER3D (`PRISM_OCCLUSION_SHATTER3D_CELL`) so
+// both volumetric kernels A/B at the same angular size.
+//
+// CDF. 3D F1 is not uniform; the 2D CELL_CDF pair (0.011 / 0.873) is a 2D
+// Worley/SHARD fit and must not be reused. Fitted by
+// Tools/Shaders/verify_prism_shard3d.py against a clang build of THIS file
+// (LO=0.155 HI=0.915, compiled |coverage−alpha|=0.00783 on n=8000).
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_SHARD3D_CDF_LO = 0.155;  // verify_prism_shard3d.py --bake
+static const float PRISM_OCCLUSION_SHARD3D_CDF_HI = 0.915;
+
+float PrismOcclusionShard3D(float3 positionWS, float angularScale, float time)
+{
+    float phase = time * PrismOcclusionMorphRate() * 6.28318530718;
+    float cellWorld = PrismOcclusionOctaveCellWorld(positionWS, angularScale, PrismOcclusionShatter3DCell());
+    float3 q = positionWS / cellWorld;
+    float3 owner;
+    float bestSq;
+    PrismOcclusionOwner3D(q, phase, owner, bestSq);
+    return PrismOcclusionSafeThreshold(smoothstep(
+        PRISM_OCCLUSION_SHARD3D_CDF_LO, PRISM_OCCLUSION_SHARD3D_CDF_HI, sqrt(bestSq)));
+}
+
+// -----------------------------------------------------------------------------
 // THE DISPATCH — the single point at which a kernel is chosen.
 //
 // It takes EVERY parameterisation because the kernels do not share one: the screen-
@@ -901,7 +961,7 @@ float PrismOcclusionShatter3D(float3 positionWS, float angularScale, float time)
 // shader. The preview is therefore not a reimplementation of the look: it is literally
 // this function, so a preview cannot drift from what the game draws (it passes
 // positionWS = (pixel, 0) and angularScale = 1, so preview pixels ARE world units and
-// the volumetric kernel shows its z = 0 slice at 1:1).
+// both volumetric kernels (SHATTER3D and SHARD3D) show their z = 0 slice at 1:1).
 //
 // PolarValid says whether (radialRatio, angleTurns) describe a real corridor frame. Since
 // the dither became THE prism transparency mechanism (fade-outs, cloak, authored sub-1
@@ -919,13 +979,14 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 {
 #if PRISM_OCCLUSION_LIVE_TUNING
     // The branch is on a GLOBAL, so it is uniform across the entire frame — fully
-    // coherent, never divergent. The cost of design mode is the five unused kernels
+    // coherent, never divergent. The cost of design mode is the six unused kernels
     // sitting in the shader, not this compare.
     int kernel = PRISM_OCCLUSION_TUNING_ON
         ? (int)(_PrismOcclusionDitherA.x - 1.0)
         : PRISM_OCCLUSION_KERNEL;
 
     if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER3D) return PrismOcclusionShatter3D(positionWS, angularScale, time);
+    if (kernel == PRISM_OCCLUSION_KERNEL_SHARD3D)   return PrismOcclusionShard3D(positionWS, angularScale, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SHARD)     return PrismOcclusionShard(pixel, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_SHATTER)   return PrismOcclusionShatter(pixel, viewDepth, time);
     if (kernel == PRISM_OCCLUSION_KERNEL_WORLEY)    return PrismOcclusionWorley(pixel, time);
@@ -935,6 +996,8 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
     return PrismOcclusionMotley(pixel);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER3D
     return PrismOcclusionShatter3D(positionWS, angularScale, time);
+#elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD3D
+    return PrismOcclusionShard3D(positionWS, angularScale, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHARD
     return PrismOcclusionShard(pixel, time);
 #elif PRISM_OCCLUSION_KERNEL == PRISM_OCCLUSION_KERNEL_SHATTER
@@ -951,7 +1014,7 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 
 // Does the selected kernel need the corridor's polar frame? Only the spiral does, and
 // working it out costs an atan2 — so in shipped mode this folds to a compile-time
-// constant and the atan2 disappears entirely for the other four. (There is no NEEDS_PIXEL
+// constant and the atan2 disappears entirely for the other six. (There is no NEEDS_PIXEL
 // counterpart any more: every kernel selection needs the pixel now, because even a spiral
 // build dithers out-of-corridor fades through IGN, which reads pixels.)
 #if PRISM_OCCLUSION_LIVE_TUNING
@@ -1221,7 +1284,8 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     // orthographic one — where a constant depth simply disables the term, correctly.
     float viewDepth = abs(positionCS.w);
 
-    // The volumetric kernel's frame: world units per screen pixel at the fragment's
+    // Both volumetric kernels' frame (SHATTER3D and SHARD3D): world units per screen
+    // pixel at the fragment's
     // RADIAL distance (radial, not view-depth, so the mapping is invariant under
     // camera roll/turn — turning the camera cannot re-scale the lattice). The focal
     // length in pixels comes off the live projection matrix, so FOV changes (the speed

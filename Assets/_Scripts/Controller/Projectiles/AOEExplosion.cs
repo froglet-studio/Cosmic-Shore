@@ -24,6 +24,37 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
 
+        [Tooltip("OFF: this blast never touches prism MASS - it neither destroys nor shields a " +
+                 "single prism, and its trigger should additionally author the TrailBlocks layer " +
+                 "into Exclude Layers so the Physics fallback cannot reach one either. For a " +
+                 "blast whose whole payload is aimed at LIVING things (the Sparrow's missile " +
+                 "warhead: debuff the pilots, kill the creatures, leave the arena to the other " +
+                 "explosion in the same detonation).\n\n" +
+                 "Note it is NOT the same as clearing Destructive: a non-destructive blast still " +
+                 "reaches every prism it engulfs and ARMOURS it (ExecuteCommonPrismCommands' " +
+                 "accept branch calls ActivateShield), which on a 95-unit sphere would " +
+                 "temporarily shield half an arena.")]
+        [SerializeField] protected bool affectsPrisms = true;
+
+        [Tooltip("On (default): this blast plays the shared GameplaySFXCategory.Explosion " +
+                 "one-shot when it detonates. Off: it is SILENT.\n\n" +
+                 "Turn it off for a blast that goes off at the same point and instant as another " +
+                 "one. A single skyburst already spawns two authored blasts (the cone and the " +
+                 "sphere), so its warhead would be a THIRD identical one-shot on the same frame " +
+                 "at the same position - which sums to roughly +5 dB over one and phases against " +
+                 "itself, rather than reading as a bigger explosion. If a blast should have a " +
+                 "voice of its OWN, the house rule is its own inspector-exposed EventReference " +
+                 "on the thing that makes the noise, shipped EMPTY - never a second consumer of " +
+                 "a shared category because it is close enough (CLAUDE.md, Audio).")]
+        [SerializeField] protected bool playsDetonationSfx = true;
+
+        /// <summary>
+        /// Whether this blast's prism pass runs at all. Read by
+        /// <see cref="ExplosionImpactor.BeginBatchProcessing"/> — ONE gate, so every explosion
+        /// SHAPE honours it even though each owns its own ExplodeAsync.
+        /// </summary>
+        public bool AffectsPrisms => affectsPrisms;
+
         [Header("Impact")]
         [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
         [SerializeField] protected float Inertia = 1f;
@@ -243,7 +274,8 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
+            if (playsDetonationSfx)
+                AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 

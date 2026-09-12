@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.CrashReportHandler;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -39,6 +40,9 @@ namespace CosmicShore.Core
             {
                 CrashReportHandler.enableCaptureExceptions = false;
                 IsCapturing = false;
+                // Re-stamp metadata each play session — the once-latch otherwise survives a
+                // domain-reload-free play exit and StampMetadataOnce never re-runs.
+                _metadataStamped = false;
             }
             catch (Exception ex)
             {
@@ -59,7 +63,7 @@ namespace CosmicShore.Core
 
                 if (granted) StampMetadataOnce();
 
-                Debug.Log($"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
             }
             catch (Exception ex)
             {

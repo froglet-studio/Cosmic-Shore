@@ -37,6 +37,10 @@ namespace CosmicShore.Gameplay
         // Per-vessel anti-spam: last time a danger prism debuff was applied to a vessel.
         private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
 
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
+
         public override void Execute(VesselImpactor vesselImpactor, PrismImpactor prismImpactee)
         {
             if (!vesselImpactor || !prismImpactee || vesselImpactor.Vessel == null)

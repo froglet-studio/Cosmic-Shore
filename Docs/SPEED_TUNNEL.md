@@ -104,9 +104,10 @@ per `VesselTransformer.ComputeThrottleTarget`; that is why the Rhino's ×6 gives
 
 **FrogletTools > Vessels > Validate Speed Tunnel Law** prints the **cruise** column live and is
 the gate for it. Its `top(rest)` column is NOT this table's top: the tool reads only the prefab's
-resting `VesselStatus.boostMultiplier`, while three vessels get their real top from elsewhere —
+resting `VesselStatus.boostMultiplier`, while four vessels get their real top from elsewhere —
 the Rhino's ×6 from `RhinoRampBoostAction.asset`, the Squirrel's ×5 from the skim-boost clamp, the
-Serpent's from its consume-boost — none of which a prefab sweep can resolve. Teaching the tool to
+Serpent's from its consume-boost, and the Scarab's from a C# field initializer its prefab does not
+serialize at all (`SCARAB.md` §13) — none of which a prefab sweep can resolve. Teaching the tool to
 chase them is a much larger change for a column that is explicitly a report, not a check, so the
 boosted numbers below are maintained by hand.
 
@@ -120,7 +121,8 @@ boosted numbers below are maintained by hand.
 | Falcon / Shrike | 60 | 0.00 | 210 | 0.67 | |
 | Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
 | Grizzly | 50 | 0.00 | 200 | 0.62 | |
-| Sparrow | 35 | 0.00 | 110 | 0.19 | |
+| Sparrow | 35 | 0.00 | 135 → 198 | 0.31 → 0.61 | boost ×5 (2026-09-03; the fleet default is ×4), Time elemental up to ×1.5 on top |
+| Scarab | — | — | 216 → 324 | 0.70 → 1.00 | no cruise: `ScarabVesselTransformer` replaces the throttle TARGET with an integrator, so the prefab's `DefaultThrottleScaler` 25 is inert and the only ceiling is `baseTopSpeed` × the Time `ThrottleScalerMultiplier` (1 → 1.5). Saturates the tunnel at 280, i.e. from Time ~6 up |
 | Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed`, so the Termite structurally cannot tunnel. The validator prints "—" for it rather than its inert throttle fields. |
 
 **Read the Manta row before tuning.** It is not a bug and the fix is not a Manta-specific

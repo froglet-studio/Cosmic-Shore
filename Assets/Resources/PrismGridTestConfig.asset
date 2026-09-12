@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5cd132ed964743619915a3b1038018e2, type: 3}
+  m_Name: PrismGridTestConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismGridTestConfigSO
+  defaultCounts: {x: 47, y: 47, z: 47}
+  defaultGaps: {x: 30, y: 30, z: 30}
+  maxTotalPrisms: 150000
+  prismsPerFrame: 200
+  prismPrefab: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc,
+    type: 3}
+  gridDomain: 1
+  prismScale: {x: 0, y: 0, z: 0}
+  clearSeconds: 0.35
+  explosionPrefab: {fileID: 3479271500403630839, guid: 4a855af160021d241b8c1ac70cf2d792,
+    type: 3}
+  maxScale: 800
+  fitBlastToLattice: 1
+  explosionSpeed: 0
+  explosionDomain: 2
+  overrideMaterial: {fileID: 0}
+  liftSafetyThrottles: 1
+  nearDistance: 50
+  farDistanceMultiplier: 1.5
+  defaultZoom: 0.6

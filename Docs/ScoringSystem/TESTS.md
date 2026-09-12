@@ -19,7 +19,7 @@ centerline `scoreDisplay` rolls/punches to the new value via
 `localRoundStats.OnScoreChanged` — no frame-delay polling, no jump.
 
 ### T2 — Domain panel aggregates teammates (domain layout)
-Mode with domain-panel wiring (HexRace/Joust/CrystalCapture), 2 players on the
+Mode with domain-panel wiring (SkimRace/Joust/Scurry), 2 players on the
 same domain (use AI backfill). One teammate scores. **Expect:** that domain's
 `DomainScorePanel` sum increases by the teammate's contribution
 (`SumStatByDomain`), with roll+punch+flash; the local centerline score is
@@ -48,7 +48,7 @@ next turn.
 
 ### T11 — Client domain boxes map correctly (B8 / B10)
 VP1 host + VP2 client on **separate** domains, in a domain-wired mode
-(HexRace / Joust / CrystalCapture). **Expect on VP2 (client):** its own domain box
+(SkimRace / Joust / Scurry). **Expect on VP2 (client):** its own domain box
 on the LEFT (ally), opposing box(es) on the RIGHT, correct domain colors — matching
 VP1's mapping; no frozen / empty / mis-colored boxes. **Each player's profile icon
 sits in its OWN domain box** (B10 — the client's own icon must NOT land in the host's
@@ -67,17 +67,17 @@ VP1 host + ≥1 client, party in Menu_Main. Regression for the stale-RoundStats-
 subscriber leak: `RoundStats` persists on the Player NetworkObject across scene
 transitions, so any handler left attached by the previous game kills or corrupts
 the next game's end flow.
-1. Launch HexRace, play to the objective. **Expect:** the end flow fires on
+1. Launch SkimRace, play to the objective. **Expect:** the end flow fires on
    every machine (turn end → scoreboard). Host taps **Main Menu**;
    everyone returns together (S9).
-2. Relaunch HexRace, play to the objective again. **Expect:** the end flow fires
+2. Relaunch SkimRace, play to the objective again. **Expect:** the end flow fires
    again on every machine — no silent never-ending race.
 3. **Poison-path variant:** repeat, but exit the FIRST race mid-turn via
    pause-menu **Main Menu** (the turn-end cleanup never runs on this path).
    The second race must still end cleanly.
 4. Repeat the full cycle 2–3× per `../PartySystem/TESTS.md` S9.
 Console: the `[FLOW-10]` pair (`TurnMonitorController` end-condition raise +
-`HexRaceController` objective-reached) appears at every game end; no
+`SkimRaceController` objective-reached) appears at every game end; no
 `MissingReferenceException` from stat-event handlers in either game.
 
 ## Surface B — Final scoreboard
@@ -85,14 +85,14 @@ Console: the `[FLOW-10]` pair (`TurnMonitorController` end-condition raise +
 ### T6 — Banner + ranking per mode
 Finish each mode and verify against `ARCHITECTURE.md` §5:
 - Banner shows `"{WINNER DOMAIN} VICTORY"` in the domain color.
-- **HexRace/Joust** (golf ↑): fastest time on top; losers below ordered by
+- **SkimRace/Joust** (golf ↑): fastest time on top; losers below ordered by
   crystals/jousts left; same-time teammates broken by the documented tiebreak.
 - **Crystal Capture / Cellular Duel** (points ↓): highest score on top.
 - Winner's card shows the `+N` crystal reward.
 
 ### T7 — Score formatting per mode
-Verify each card's formatted score matches §5: HexRace/Joust winners
-`MM:SS:CS`, losers `"{N} Crystals/Joust(s) Left"`; CrystalCapture `"{N}
+Verify each card's formatted score matches §5: SkimRace/Joust winners
+`MM:SS:CS`, losers `"{N} Crystals/Joust(s) Left"`; Scurry `"{N}
 Crystals"`; Cellular Duel `"{N}"`. Cross-check the Joust "jousts left" number
 against the end-game reveal (**BUGS.md B2** — they should match once fixed).
 
@@ -100,12 +100,12 @@ against the end-game reveal (**BUGS.md B2** — they should match once fixed).
 Two VPs in one game. On end: **host (VP1)** sees Main Menu + Play Again;
 **client (VP2)** sees neither (BUGS.md B14 — the three domain scenes wire
 `playAgainButton`/`mainMenuButton`; no Leave Lobby button exists in the
-GameCanvas-HexRace prefab yet, so `leaveLobbyButton` stays null and clients
+GameCanvas-SkimRace prefab yet, so `leaveLobbyButton` stays null and clients
 simply follow the host's navigation). Host Play Again restarts everyone; host
 Main Menu returns everyone to Menu_Main via the Netcode scene load.
 
 ### T13 — Play Again performs a full scene-reload replay (BUGS.md B13)
-Per mode (HexRace / Joust / Crystal Capture), solo with AI backfill. Finish a
+Per mode (SkimRace / Joust / Crystal Capture), solo with AI backfill. Finish a
 game, click Play Again on the scoreboard. **Expect:** fade to black → network
 scene reload → fade in on vessel spawn → Ready button → countdown → a FRESH
 match: objective counter back at the full target (e.g. Joust shows 3 jousts

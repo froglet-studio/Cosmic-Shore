@@ -75,7 +75,7 @@ namespace CosmicShore.UI
 
             TryAssignContainer(mgr);
 
-            CSDebug.Log("[ToastNotificationAPI] Auto-created ToastNotificationManager.");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, "[ToastNotificationAPI] Auto-created ToastNotificationManager");
         }
 
         private static void TryAssignContainer(ToastNotificationManager mgr)

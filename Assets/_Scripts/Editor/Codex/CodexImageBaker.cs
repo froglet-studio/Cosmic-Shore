@@ -1,0 +1,819 @@
+using System.Collections.Generic;
+using System.IO;
+using CosmicShore.Data;
+using CosmicShore.Editor.Froglet;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using UnityEditor;
+using UnityEngine;
+using Object = UnityEngine.Object;
+
+namespace CosmicShore.Editor.Codex
+{
+    /// <summary>
+    /// Renders a codex entry's hero image to a transparent PNG under
+    /// <see cref="OutputFolder"/> and imports it as a Sprite.
+    ///
+    /// <para><b>Alpha is recovered by rendering twice</b> — once on black, once on white — and
+    /// solving <c>a = 1 - (white - black)</c> per pixel. That is deliberate rather than clever:
+    /// whether a render target ends up carrying usable alpha depends on the pipeline, the URP
+    /// asset's settings and the shaders involved, so a bake that trusts the alpha channel works on
+    /// one project configuration and silently produces black boxes on another. Two opaque renders
+    /// and one subtraction cannot be wrong, and 27 entries × 2 renders is not a cost worth
+    /// optimising.</para>
+    ///
+    /// <para><b>Meshes are harvested off the prefab ASSET, never instantiated.</b> Instantiating a
+    /// crystal or a creature runs its Awake — registries, network objects, spawn coroutines — in
+    /// the editor, outside a game. Harvesting is the same approach <c>ToyModelBuilder</c> takes for
+    /// the toybox's stations, and for the same reason.</para>
+    ///
+    /// <para>Gameplay prism and crystal shaders read global uniforms that only exist inside a
+    /// running frame, so some of them render as a black blob or as nothing at all. The baker does
+    /// not pretend otherwise: it measures coverage afterwards and, when a render comes back
+    /// essentially empty, retries it as a shaded flat silhouette and says so.</para>
+    /// </summary>
+    public static class CodexImageBaker
+    {
+        public const string OutputFolder = "Assets/_Graphics/Codex";
+
+        // Three subjects, and the third is unlike the other two: an ethirion and a lifeform are
+        // AUTHORED objects this photographs, while a TOOL has no prefab at all and is DRAWN from
+        // the same shape vocabulary the toy is built from at runtime. See BuildToolPortrait.
+
+        /// <summary>Below this fraction of visible pixels a render is treated as failed.</summary>
+        const float MinimumCoverage = 0.004f;
+
+        const float FieldOfView = 28f;
+
+        public struct BakeResult
+        {
+            public bool Success;
+            public string AssetPath;
+            public Sprite Sprite;
+
+            /// <summary>True when the authored materials produced nothing and flat was used.</summary>
+            public bool FellBackToFlat;
+            public string Error;
+        }
+
+        /// <summary>
+        /// Whether this entry can be illustrated at all. Asked here rather than at each call site
+        /// because "a prefab, OR a tool definition to draw from" is one rule and a second copy of
+        /// it is how a kingdom ends up with a Bake button that does nothing.
+        /// </summary>
+        public static bool CanBake(CodexEntry entry) =>
+            entry != null &&
+            (entry.SourcePrefab || (entry.Kingdom == CodexKingdom.Tool && entry.SourceConfig));
+
+        /// <summary>
+        /// Whether this VARIANT has art of its own worth baking. Most do not, and that is by
+        /// design rather than a gap — see <see cref="CodexVariantSubject"/>.
+        /// </summary>
+        public static bool CanBake(CodexEntry entry, CodexVariant variant) =>
+            CodexVariantSubject.CanDraw(entry, variant);
+
+        /// <summary>
+        /// Bake <paramref name="entry"/>'s image and assign it. Returns the outcome; the caller
+        /// records the written path on the tool ledger and saves.
+        /// </summary>
+        public static BakeResult Bake(CodexEntry entry, int size)
+        {
+            if (entry == null) return new BakeResult { Error = "No entry." };
+            if (!CanBake(entry))
+                return new BakeResult { Error = $"'{entry.DisplayName}' has no source asset to render." };
+
+            return BakeSubject(entry, null, size);
+        }
+
+        /// <summary>
+        /// Bake one VARIANT's icon and assign it to <see cref="CodexVariant.Image"/>. It runs the
+        /// same pipeline as an entry — same alpha recovery, same lights, same corner-solved
+        /// framing, same coverage fallback — so an icon and the portrait above it can never end up
+        /// lit or framed differently, which is the one thing that would make a grid of them look
+        /// assembled from two sources.
+        /// </summary>
+        public static BakeResult Bake(CodexEntry entry, CodexVariant variant, int size)
+        {
+            if (!CanBake(entry, variant))
+                return new BakeResult
+                {
+                    Error = $"'{entry?.DisplayName}' variant '{variant?.Label}' has nothing of " +
+                            "its own to draw.",
+                };
+
+            return BakeSubject(entry, variant, size);
+        }
+
+        /// <summary>
+        /// The one bake. <paramref name="variant"/> null bakes the entry's portrait; non-null
+        /// bakes that variant's icon. Written once rather than twice because every line of it —
+        /// the empty-render fallback, the "wrote it but could not load it back" case — is a
+        /// behaviour that must not differ between the two.
+        /// </summary>
+        static BakeResult BakeSubject(CodexEntry entry, CodexVariant variant, int size)
+        {
+            var result = new BakeResult();
+            var label = variant == null
+                ? entry.DisplayName
+                : $"{entry.DisplayName} · {variant.Label}";
+
+            var texture = Render(entry, variant, size, entry.FlatSilhouette, out var coverage,
+                out var error);
+
+            // A shader that needs a running frame renders nothing. Say so and fall back, rather
+            // than writing an empty PNG that looks like a missing asset.
+            if (texture != null && coverage < MinimumCoverage && !entry.FlatSilhouette)
+            {
+                Object.DestroyImmediate(texture);
+                texture = Render(entry, variant, size, true, out coverage, out error);
+                result.FellBackToFlat = texture != null && coverage >= MinimumCoverage;
+            }
+
+            if (texture == null)
+            {
+                result.Error = error ?? $"'{label}' produced no renderable geometry.";
+                return result;
+            }
+            if (coverage < MinimumCoverage)
+            {
+                Object.DestroyImmediate(texture);
+                result.Error = $"'{label}' rendered empty even as a flat silhouette.";
+                return result;
+            }
+
+            result.AssetPath = Write(entry, variant, texture);
+            Object.DestroyImmediate(texture);
+
+            result.Sprite = AssetDatabase.LoadAssetAtPath<Sprite>(result.AssetPath);
+            result.Success = result.Sprite;
+
+            if (!result.Success)
+                result.Error = $"Wrote {result.AssetPath} but could not load it back as a Sprite.";
+            else if (variant == null) entry.Image = result.Sprite;
+            else variant.Image = result.Sprite;
+
+            return result;
+        }
+
+        // ── Render ───────────────────────────────────────────────────────────────
+
+        static Texture2D Render(CodexEntry entry, CodexVariant variant, int size, bool flat,
+            out float coverage, out string error)
+        {
+            coverage = 0f;
+            error = null;
+
+            GameObject model;
+            Bounds bounds;
+            List<Object> temporaries;
+
+            if (variant != null)
+            {
+                temporaries = new List<Object>();
+                model = CodexVariantSubject.Build(entry, variant, flat, temporaries, out bounds);
+            }
+            else if (entry.Kingdom == CodexKingdom.Tool)
+            {
+                model = BuildToolPortrait(entry, flat, out bounds, out temporaries);
+            }
+            else
+            {
+                model = BuildSubject(entry.SourcePrefab, flat, out bounds, out temporaries);
+            }
+
+            if (!model)
+            {
+                // Everything created before the failure still has to go, or a subject that gets
+                // halfway leaks its meshes and materials on every attempt.
+                if (temporaries != null)
+                    foreach (var temporary in temporaries)
+                        if (temporary) Object.DestroyImmediate(temporary);
+
+                error = variant == null
+                    ? $"'{entry.DisplayName}': nothing to photograph."
+                    : $"'{entry.DisplayName} · {variant.Label}': nothing to photograph.";
+                return null;
+            }
+
+            var preview = new PreviewRenderUtility();
+            try
+            {
+                preview.camera.cameraType = CameraType.Preview;
+                preview.camera.clearFlags = CameraClearFlags.SolidColor;
+                preview.camera.fieldOfView = FieldOfView;
+                preview.camera.orthographic = false;
+
+                preview.lights[0].intensity = 1.15f;
+                preview.lights[0].transform.rotation = Quaternion.Euler(38f, 140f, 0f);
+                preview.lights[0].color = Color.white;
+                preview.lights[1].intensity = 0.55f;
+                preview.lights[1].transform.rotation = Quaternion.Euler(-18f, -55f, 0f);
+                preview.lights[1].color = new Color(0.78f, 0.84f, 1f);
+                preview.ambientColor = new Color(0.32f, 0.33f, 0.38f, 1f);
+
+                preview.AddSingleGO(model);
+                FrameCamera(preview.camera, bounds, entry);
+
+                var onBlack = Capture(preview, size, Color.black);
+                var onWhite = Capture(preview, size, Color.white);
+                if (onBlack == null || onWhite == null)
+                {
+                    if (onBlack) Object.DestroyImmediate(onBlack);
+                    if (onWhite) Object.DestroyImmediate(onWhite);
+                    error = $"'{entry.DisplayName}': the preview renderer returned no image.";
+                    return null;
+                }
+
+                var composed = RecoverAlpha(onBlack, onWhite, out coverage);
+                Object.DestroyImmediate(onBlack);
+                Object.DestroyImmediate(onWhite);
+                return composed;
+            }
+            finally
+            {
+                // Destroy explicitly rather than leaving it to Cleanup: the harvested objects carry
+                // HideFlags.DontSave, which is exactly the flag that makes an object SURVIVE the
+                // preview scene being torn down. Leaving it implicit leaks one hierarchy per bake.
+                if (model) Object.DestroyImmediate(model);
+                foreach (var temporary in temporaries)
+                    if (temporary) Object.DestroyImmediate(temporary);
+                preview.Cleanup();
+            }
+        }
+
+        static Texture2D Capture(PreviewRenderUtility preview, int size, Color background)
+        {
+            preview.camera.backgroundColor = background;
+
+            preview.BeginPreview(new Rect(0f, 0f, size, size), GUIStyle.none);
+            preview.Render(true, false); // positional: this overload's 2nd parameter has been
+                                            // spelled both updateFOV and updatefov across versions
+            var rendered = preview.EndPreview() as RenderTexture;
+            if (rendered == null) return null;
+
+            // Read the RT's own dimensions: BeginPreview scales by the editor's pixel density, so
+            // the target is not necessarily the size that was asked for.
+            var previous = RenderTexture.active;
+            RenderTexture.active = rendered;
+            var texture = new Texture2D(rendered.width, rendered.height, TextureFormat.RGBA32, false);
+            texture.ReadPixels(new Rect(0f, 0f, rendered.width, rendered.height), 0, 0);
+            texture.Apply();
+            RenderTexture.active = previous;
+            return texture;
+        }
+
+        /// <summary>
+        /// Solve straight-alpha colour from the two backgrounds. Compositing gives
+        /// <c>rendered = colour·a + background·(1-a)</c>, so the difference between the white and
+        /// black renders is exactly the background's contribution, <c>1-a</c>.
+        /// </summary>
+        static Texture2D RecoverAlpha(Texture2D onBlack, Texture2D onWhite, out float coverage)
+        {
+            var black = onBlack.GetPixels();
+            var white = onWhite.GetPixels();
+            var output = new Color[black.Length];
+
+            int visible = 0;
+            for (int i = 0; i < black.Length; i++)
+            {
+                var b = black[i];
+                var w = white[i];
+
+                float background = ((w.r - b.r) + (w.g - b.g) + (w.b - b.b)) / 3f;
+                float alpha = Mathf.Clamp01(1f - background);
+
+                if (alpha <= 0.004f)
+                {
+                    output[i] = Color.clear;
+                    continue;
+                }
+
+                visible++;
+                output[i] = new Color(
+                    Mathf.Clamp01(b.r / alpha),
+                    Mathf.Clamp01(b.g / alpha),
+                    Mathf.Clamp01(b.b / alpha),
+                    alpha);
+            }
+
+            coverage = black.Length == 0 ? 0f : visible / (float)black.Length;
+
+            var result = new Texture2D(onBlack.width, onBlack.height, TextureFormat.RGBA32, false);
+            result.SetPixels(output);
+            result.Apply();
+            return result;
+        }
+
+        /// <summary>
+        /// Frame the subject so it FILLS the square bake, then back off by the entry's padding.
+        ///
+        /// <para>Solved from the bounds' eight corners rather than from
+        /// <c>extents.magnitude</c>. That half-diagonal is the radius of the sphere the box fits
+        /// inside, which for anything that is not a sphere is far larger than the box — it left
+        /// every icon sitting small in a wide margin, worst for the long thin subjects (a plant, a
+        /// worm) this codex is mostly made of.</para>
+        /// </summary>
+        static void FrameCamera(Camera camera, Bounds bounds, CodexEntry entry)
+        {
+            var rotation = Quaternion.Euler(entry.PreviewPitch, entry.PreviewYaw, 0f);
+            var toCamera = Quaternion.Inverse(rotation);
+
+            // The bake target is square by construction, and this runs before BeginPreview sets
+            // the camera's aspect, so the horizontal half-angle equals the vertical one.
+            float tangent = Mathf.Tan(Mathf.Deg2Rad * FieldOfView * 0.5f);
+            float radius = Mathf.Max(0.001f, bounds.extents.magnitude);
+            float needed = 0.001f;
+
+            for (int corner = 0; corner < 8; corner++)
+            {
+                var offset = new Vector3(
+                    (corner & 1) == 0 ? -bounds.extents.x : bounds.extents.x,
+                    (corner & 2) == 0 ? -bounds.extents.y : bounds.extents.y,
+                    (corner & 4) == 0 ? -bounds.extents.z : bounds.extents.z);
+
+                // Camera-space offset from the point the camera aims at. A corner is inside the
+                // frustum when |x| and |y| are within (distance + z) * tangent, so each corner
+                // sets its own minimum distance.
+                var local = toCamera * offset;
+                needed = Mathf.Max(needed, Mathf.Abs(local.y) / tangent - local.z);
+                needed = Mathf.Max(needed, Mathf.Abs(local.x) / tangent - local.z);
+            }
+
+            float distance = needed * Mathf.Max(1f, entry.PreviewPadding);
+
+            camera.transform.rotation = rotation;
+            camera.transform.position = bounds.center - rotation * Vector3.forward * distance;
+            camera.nearClipPlane = Mathf.Max(0.01f, distance - radius * 2f);
+            camera.farClipPlane = distance + radius * 4f;
+        }
+
+        // ── Model harvest ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The thing to photograph, normalised so its largest dimension is 2 units.
+        ///
+        /// <para><b>A flora is asked to draw itself.</b> Every flora prefab in the project carries
+        /// exactly ONE prism — the seed — because a plant is not a model, it is a growth rule, so
+        /// harvesting its meshes photographs a single box. <see cref="Flora.TryPreviewGrowth"/>
+        /// runs that rule in the abstract (no prism, no spindle, no GameObject, no cell) and
+        /// reports where prisms would land; the poses become one mesh through
+        /// <see cref="CellMiniatureBuilder"/>. This is the same answer the lava lamp's Lifeform
+        /// bench already reached — see <c>FloraIconBuilder</c> — reached here through the same
+        /// two calls rather than a second copy of it.</para>
+        ///
+        /// <para>Fauna are harvested normally: unlike flora they ARE authored in place (a shark's
+        /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
+        /// the creature.</para>
+        /// </summary>
+        /// <summary>
+        /// A TOOL is drawn, not photographed. It has no prefab — a toy is built at runtime from
+        /// its definition — so <see cref="ToolPortraitBuilder"/> renders it in the vocabulary the
+        /// toy itself is made of: its emblem's core and satellites inside its switch ring, in its
+        /// own authored accent.
+        ///
+        /// <para>The satellite count is the number of choices the entry says the tool offers, which
+        /// is the harvested variant count. The portrait therefore keeps saying something true as
+        /// toys gain and lose content, without the builder knowing what any of them do.</para>
+        /// </summary>
+        static GameObject BuildToolPortrait(CodexEntry entry, bool flat, out Bounds bounds,
+            out List<Object> temporaries)
+        {
+            temporaries = new List<Object>();
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            // The same violet CodexWindow.AccentFor gives the Tools kingdom, so a toy that
+            // authored no accent still draws in the colour its own list row is striped with.
+            // Every shipped toy authors one, so this is the unauthored case rather than the norm.
+            var accent = entry.ResolveAccent(FrogletEditorPalette.Violet);
+            var root = ToolPortraitBuilder.Build(accent, entry.Variants.Count, flat, temporaries);
+            if (!root) return null;
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
+            out List<Object> temporaries)
+        {
+            temporaries = new List<Object>();
+
+            if (prefab.TryGetComponent(out Flora flora))
+            {
+                var grown = BuildGrownFlora(flora, flat, temporaries, out bounds);
+                if (grown) return grown;
+                // No preview for this species: fall through to the mesh path, then to flat —
+                // never to an invented shape.
+            }
+
+            var harvested = HarvestModel(prefab, flat, temporaries, out bounds);
+            if (harvested) return harvested;
+
+            // Nothing to photograph. One shape reaches here: a COLONY, whose root is a brain with
+            // no body at all - the geometry belongs to its member prefabs.
+            return BuildColonyChain(prefab, flat, temporaries, out bounds);
+        }
+
+        /// <summary>
+        /// A colony's body is its MEMBERS. The worm colony's root prefab carries no mesh and no
+        /// nested instance — it grows a head, body segments and a tail at runtime — so harvesting
+        /// it photographs nothing. This lays a short chain of those member prefabs at the colony's
+        /// own authored spacing and taper.
+        ///
+        /// <para>Found by serialized-property NAME (<c>headPrefab</c> / <c>bodyPrefab</c> /
+        /// <c>tailPrefab</c>) rather than by referencing the species' type, for the same reason
+        /// the harvester probes by name: an editor illustration should degrade to "no icon" when a
+        /// field is renamed, not become a compile error in a tool.</para>
+        /// </summary>
+        static GameObject BuildColonyChain(GameObject prefab, bool flat, List<Object> temporaries,
+            out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            GameObject head = null, body = null, tail = null;
+            SerializedObject config = null;
+
+            foreach (var component in prefab.GetComponents<Component>())
+            {
+                if (!component) continue;
+                var so = new SerializedObject(component);
+                head = PrefabProperty(so, "headPrefab");
+                body = PrefabProperty(so, "bodyPrefab");
+                tail = PrefabProperty(so, "tailPrefab");
+                if (!head && !body && !tail) continue;
+
+                var cfg = so.FindProperty("config")?.objectReferenceValue;
+                if (cfg) config = new SerializedObject(cfg);
+                break;
+            }
+
+            if (!head && !body && !tail) return null;
+
+            float spacing = ConfigFloat(config, "SegmentSpacing", 8.4f);
+            float headGap = ConfigFloat(config, "HeadGapMultiplier", 2.56f);
+            float tailGap = ConfigFloat(config, "TailGapMultiplier", 1.79f);
+            float taper = ConfigFloat(config, "TaperPerSegment", 0.9f);
+            int segments = Mathf.Clamp(ConfigInt(config, "SpawnSegmentCount", 8), 3, 12);
+
+            var root = new GameObject("CodexColonyModel") { hideFlags = HideFlags.HideAndDontSave };
+            Material shared = flat ? BuildFlatMaterial() : null;
+            if (shared) temporaries.Add(shared);
+
+            float z = 0f;
+            bool any = false;
+
+            any |= AppendMember(root.transform, head, ref z, spacing * headGap, 1f, temporaries, ref shared);
+            for (int i = 0; i < segments - 2; i++)
+                any |= AppendMember(root.transform, body, ref z, spacing, Mathf.Pow(taper, i + 1),
+                    temporaries, ref shared);
+            any |= AppendMember(root.transform, tail, ref z, spacing * tailGap,
+                Mathf.Pow(taper, segments - 1), temporaries, ref shared);
+
+            if (!any)
+            {
+                Object.DestroyImmediate(root);
+                return null;
+            }
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        /// <summary>Lay one member behind the last, and step the cursor. False when it has no mesh.</summary>
+        static bool AppendMember(Transform parent, GameObject member, ref float z, float step,
+            float scale, List<Object> temporaries, ref Material shared)
+        {
+            if (!member) return false;
+
+            var holder = new GameObject(member.name) { hideFlags = HideFlags.HideAndDontSave };
+            holder.transform.SetParent(parent, false);
+            holder.transform.localPosition = new Vector3(0f, 0f, z);
+            holder.transform.localScale = Vector3.one * Mathf.Max(0.05f, scale);
+
+            bool any = false;
+            foreach (var filter in member.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh) continue;
+                var renderer = filter.GetComponent<MeshRenderer>();
+                if (!renderer || !renderer.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, member.transform,
+                        NonBodyNameHints)) continue;
+                AddMesh(holder.transform, member.transform, filter.transform, filter.sharedMesh,
+                        renderer.sharedMaterials, ref shared, temporaries);
+                any = true;
+            }
+
+            if (!any)
+            {
+                Object.DestroyImmediate(holder);
+                return false;
+            }
+
+            z -= step;
+            return true;
+        }
+
+        static GameObject PrefabProperty(SerializedObject so, string field)
+        {
+            var value = so.FindProperty(field)?.objectReferenceValue;
+            return value switch
+            {
+                GameObject go => go,
+                Component component => component.gameObject,
+                _ => null,
+            };
+        }
+
+        static float ConfigFloat(SerializedObject config, string field, float fallback)
+        {
+            var prop = config?.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Float
+                ? prop.floatValue : fallback;
+        }
+
+        static int ConfigInt(SerializedObject config, string field, int fallback)
+        {
+            var prop = config?.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Integer
+                ? prop.intValue : fallback;
+        }
+
+        /// <summary>Prisms simulated per flora icon. The silhouette is what reads at icon size,
+        /// but a 512px hero can carry more structure than the bench's 220-prism station.</summary>
+        const int FloraPreviewPrismBudget = 700;
+
+        /// <summary>Fixed, so re-baking a species produces the same plant every time.</summary>
+        const int FloraPreviewSeed = 12345;
+
+        /// <summary>
+        /// The domain a previewed plant's prisms are tagged with. It decides the mesh's submesh
+        /// split, NOT the colour: a codex plant is painted neutral, because in this project colour
+        /// means DOMAIN — who owns it — and an encyclopedia page is nobody's. The lava lamp paints
+        /// its bench icons in the player's domain for the opposite reason: there, you are about to
+        /// release one.
+        /// </summary>
+        const Domains FloraPreviewDomain = Domains.Jade;
+
+        static GameObject BuildGrownFlora(Flora prefab, bool flat, List<Object> temporaries,
+            out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            var poses = new List<SpawnPoint>(FloraPreviewPrismBudget);
+            if (!prefab.TryPreviewGrowth(FloraPreviewPrismBudget, FloraPreviewSeed, poses) ||
+                poses.Count == 0)
+                return null;
+
+            var lays = new List<PrismLay>(poses.Count);
+            foreach (var pose in poses) lays.Add(new PrismLay(pose, FloraPreviewDomain));
+
+            // Coverage 1: a flora IS its branching, and the signature filter that helps a
+            // 34k-prism world read at thumbnail size would eat the thin structure that makes a
+            // plant legible.
+            var miniature = CellMiniatureBuilder.BuildFromLays(lays, 1f, FloraPreviewPrismBudget,
+                1f, $"CodexFlora_{prefab.name}");
+            if (!miniature.IsValid) return null;
+
+            var root = new GameObject("CodexFloraModel") { hideFlags = HideFlags.HideAndDontSave };
+            root.AddComponent<MeshFilter>().sharedMesh = miniature.Mesh;
+            temporaries.Add(miniature.Mesh);   // BuildFromLays hands ownership to the caller
+
+            // Neutral and LIT. The real prism material is a gameplay graph that reads per-frame
+            // globals and renders black here, so it cannot be used; a flat unlit fill would throw
+            // away the branching that makes a plant legible; and a domain colour would say the
+            // page belongs to a team.
+            var material = BuildFlatMaterial();
+            temporaries.Add(material);
+
+            var materials = new Material[Mathf.Max(1, miniature.SubmeshDomains.Length)];
+            for (int i = 0; i < materials.Length; i++) materials[i] = material;
+
+            var renderer = root.AddComponent<MeshRenderer>();
+            renderer.sharedMaterials = materials;
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        /// <summary>
+        /// Renderers whose branch is not the body — the same hints the lava lamp's species
+        /// stations filter on, so a codex icon and a bench station frame the same thing.
+        /// </summary>
+        static readonly string[] NonBodyNameHints = { "trail", "vfx", "pip", "explosion", "particle" };
+
+        /// <summary>
+        /// Copy the prefab's meshes into a plain GameObject hierarchy, normalised so its largest
+        /// dimension is 2 units. Reads the prefab ASSET — nothing is instantiated, so no gameplay
+        /// component ever wakes up.
+        /// </summary>
+        internal static GameObject HarvestModel(GameObject prefab, bool flat,
+            List<Object> temporaries, out Bounds bounds)
+        {
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            var root = new GameObject("CodexPreviewModel") { hideFlags = HideFlags.HideAndDontSave };
+            var flatMaterial = flat ? BuildFlatMaterial() : null;
+            if (flatMaterial) temporaries.Add(flatMaterial);
+            bool any = false;
+
+            foreach (var filter in prefab.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh) continue;
+                var renderer = filter.GetComponent<MeshRenderer>();
+                if (!renderer || !renderer.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, prefab.transform,
+                        NonBodyNameHints)) continue;
+                AddMesh(root.transform, prefab.transform, filter.transform, filter.sharedMesh,
+                        renderer.sharedMaterials, ref flatMaterial, temporaries);
+                any = true;
+            }
+
+            foreach (var skinned in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (!skinned || !skinned.sharedMesh || !skinned.enabled) continue;
+                if (ToyModelBuilder.AnyAncestorNameContains(skinned.transform, prefab.transform,
+                        NonBodyNameHints)) continue;
+                AddMesh(root.transform, prefab.transform, skinned.transform, skinned.sharedMesh,
+                        skinned.sharedMaterials, ref flatMaterial, temporaries);
+                any = true;
+            }
+
+            if (!any)
+            {
+                Object.DestroyImmediate(root);
+                foreach (var temporary in temporaries) if (temporary) Object.DestroyImmediate(temporary);
+                temporaries.Clear();
+                return null;
+            }
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
+        static void AddMesh(Transform parent, Transform prefabRoot, Transform node, Mesh mesh,
+            Material[] authored, ref Material flatMaterial, List<Object> temporaries)
+        {
+            var child = new GameObject(node.name) { hideFlags = HideFlags.HideAndDontSave };
+            child.transform.SetParent(parent, false);
+
+            // The node's pose relative to the prefab root - the pose it would render in.
+            var local = prefabRoot.worldToLocalMatrix * node.localToWorldMatrix;
+            Vector3 right = local.GetColumn(0), up = local.GetColumn(1), forward = local.GetColumn(2);
+
+            child.transform.localPosition = local.GetColumn(3);
+            // A zero-scaled axis makes LookRotation undefined; keep identity rather than warn.
+            child.transform.localRotation = forward.sqrMagnitude > 1e-8f && up.sqrMagnitude > 1e-8f
+                ? Quaternion.LookRotation(forward, up)
+                : Quaternion.identity;
+            child.transform.localScale = new Vector3(right.magnitude, up.magnitude, forward.magnitude);
+
+            child.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = child.AddComponent<MeshRenderer>();
+
+            var materials = new Material[Mathf.Max(1, mesh.subMeshCount)];
+            for (int i = 0; i < materials.Length; i++)
+            {
+                var authoredSlot = authored != null && i < authored.Length ? authored[i] : null;
+                if (!flatMaterial && authoredSlot) { materials[i] = authoredSlot; continue; }
+
+                // Either a flat bake, or an authored slot that is empty. Mint the shared fallback
+                // once and hand it to every slot that needs it.
+                if (!flatMaterial)
+                {
+                    flatMaterial = BuildFlatMaterial();
+                    temporaries.Add(flatMaterial);
+                }
+                materials[i] = flatMaterial;
+            }
+            renderer.sharedMaterials = materials;
+        }
+
+        /// <summary>
+        /// Scale and centre a subject so its largest dimension is 2 units. Internal so
+        /// <see cref="CodexVariantSubject"/> normalises the geometry it builds itself the same
+        /// way - and, more importantly, so nothing normalises the same subject TWICE: this writes
+        /// localScale absolutely rather than multiplying it, so a second pass computes a scale of
+        /// 1 and silently undoes the first.
+        /// </summary>
+        internal static void Normalize(Transform root, out Bounds bounds)
+        {
+            var renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+            bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+
+            float largest = Mathf.Max(bounds.size.x, Mathf.Max(bounds.size.y, bounds.size.z));
+            if (largest > 0.0001f)
+            {
+                float scale = 2f / largest;
+                root.localScale = Vector3.one * scale;
+                root.position = -bounds.center * scale;
+            }
+
+            renderers = root.GetComponentsInChildren<MeshRenderer>(true);
+            bounds = renderers[0].bounds;
+            for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+        }
+
+        /// <summary>
+        /// A shaded neutral material — the fill a silhouette bake uses. Deliberately LIT rather
+        /// than flat-unlit: a codex icon has to read as a shape, and an unlit fill of one colour
+        /// throws away every bit of form the model has. Internal so
+        /// <see cref="ToolPortraitBuilder"/> and <see cref="CodexVariantSubject"/> draw in the
+        /// same grey rather than carrying their own copies of it.
+        /// </summary>
+        internal static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
+
+        /// <summary>
+        /// One tinted preview material, built through one shader-resolution chain. Shared with
+        /// <see cref="ToolPortraitBuilder"/>: two bakers resolving their own shader is two ways for
+        /// a project without URP-Lit to render differently.
+        /// </summary>
+        internal static Material BuildTintedMaterial(Color tint)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                         Shader.Find("Standard") ??
+                         Shader.Find("Universal Render Pipeline/Unlit");
+
+            var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", tint);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", tint);
+            if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", 0.28f);
+            if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", 0f);
+            return material;
+        }
+
+        // ── Write ────────────────────────────────────────────────────────────────
+
+        static string Write(CodexEntry entry, CodexVariant variant, Texture2D texture)
+        {
+            EnsureFolder(OutputFolder);
+
+            var path = $"{OutputFolder}/{FileNameFor(entry, variant)}.png";
+            File.WriteAllBytes(path, texture.EncodeToPNG());
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+
+            if (AssetImporter.GetAtPath(path) is TextureImporter importer)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.alphaIsTransparency = true;
+                importer.alphaSource = TextureImporterAlphaSource.FromInput;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.filterMode = FilterMode.Bilinear;
+                importer.maxTextureSize = 512;
+                importer.textureCompression = TextureImporterCompression.Compressed;
+                importer.SaveAndReimport();
+            }
+
+            return path;
+        }
+
+        /// <summary>
+        /// The file an entry's portrait is written to, or - with a variant - that variant's icon.
+        /// A variant hangs off its entry's name (<c>tool_painting__rose</c>) so the folder sorts
+        /// a page and its icons together, and so re-keying an entry orphans one family of files
+        /// rather than scattering them.
+        /// </summary>
+        public static string FileNameFor(CodexEntry entry, CodexVariant variant = null)
+        {
+            var stem = string.IsNullOrWhiteSpace(entry.Id)
+                ? CodexHarvester.Slug(entry.DisplayName)
+                : entry.Id.Replace('.', '_');
+
+            return variant == null ? stem : $"{stem}__{CodexHarvester.Slug(variant.Label)}";
+        }
+
+        static void EnsureFolder(string folder)
+        {
+            if (AssetDatabase.IsValidFolder(folder)) return;
+
+            var parts = folder.Split('/');
+            var accumulated = parts[0];
+            for (int i = 1; i < parts.Length; i++)
+            {
+                var next = $"{accumulated}/{parts[i]}";
+                if (!AssetDatabase.IsValidFolder(next)) AssetDatabase.CreateFolder(accumulated, parts[i]);
+                accumulated = next;
+            }
+        }
+
+        /// <summary>
+        /// Every path this baker would write for the supplied entries - portraits AND the variant
+        /// icons under them, since both are output this tool is answerable for.
+        /// </summary>
+        public static List<string> PathsFor(IEnumerable<CodexEntry> entries)
+        {
+            var paths = new List<string>();
+            foreach (var entry in entries)
+            {
+                if (entry == null) continue;
+                paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
+
+                foreach (var variant in entry.Variants)
+                    if (CanBake(entry, variant))
+                        paths.Add($"{OutputFolder}/{FileNameFor(entry, variant)}.png");
+            }
+            return paths;
+        }
+    }
+}

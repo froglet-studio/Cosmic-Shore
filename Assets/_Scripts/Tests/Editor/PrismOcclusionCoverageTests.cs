@@ -5,6 +5,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
@@ -27,32 +28,33 @@ namespace CosmicShore.Tests
     /// </summary>
     public class PrismOcclusionCoverageTests
     {
-        static readonly string[] WiredGraphPaths =
+        // Same lists the validator prints — duplicating them here is how a Specs
+        // edit and a test list silently drift, which is the class of miss this
+        // gate exists to close.
+        static readonly string[] WiredGraphPaths = PrismOcclusionWiringValidator.GraphPaths;
+        const string HlslPath = PrismOcclusionWiringValidator.CorridorHlslPath;
+        const string FunctionName = PrismOcclusionWiringValidator.CorridorFunctionName;
+        static readonly string[] GlobalProps = PrismOcclusionWiringValidator.CorridorGlobalProps;
+        static readonly HashSet<string> KnownLegacyPrismPrefabs =
+            new HashSet<string>(PrismOcclusionWiringValidator.KnownLegacyPrismPrefabs);
+
+        [Test]
+        public void SuctionGraph_IsANamedCorridorExclusion_NotASilentOmission()
         {
-            "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
-            "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
-        };
-
-        const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl";
-        const string FunctionName = "PrismOcclusionFade";
-
-        static readonly string[] GlobalProps = { "_PrismOcclusionTarget", "_PrismOcclusionParams" };
-
-        // Deliberate exclusions — legacy prism prefabs on pre-corridor shaders, every one
-        // of them DEAD: GreenDartBlock/TriangleBlock are the SpreadFresnel/TriangleFresnel
-        // family that PRISM_ANIMATION.md §3.7 I says not to extend (referenced only by the
-        // Recording Studio scenes), and TrailRing/TrailPentagon are referenced by nothing at
-        // all. Named one by one rather than pattern-skipped so the list stays small and
-        // visible: if any of these is ever revived as live gameplay mass, delete its entry
-        // and rebase it onto a wired prism graph — do NOT grow this list to make a new
-        // violation pass.
-        static readonly HashSet<string> KnownLegacyPrismPrefabs = new HashSet<string>
-        {
-            "Assets/_Prefabs/Trails/GreenDartBlock.prefab",
-            "Assets/_Prefabs/Trails/TriangleBlock.prefab",
-            "Assets/_Prefabs/Trails/TrailRing.prefab",
-            "Assets/_Prefabs/Trails/TrailPentagon.prefab",
-        };
+            // Live consumption VFX (batched implosion debris draws ImplodingPrismMaterial
+            // on SuctionGraph — PrismDebris.ConfigureImplosion reads sharedMaterial off
+            // PrismImplosion.prefab). Unlike KnownLegacyPrismPrefabs (DEAD), this graph
+            // is LIVE. Named so the exclusion cannot look like an omission. Do not add
+            // it to WiredPrismShaderNames without wiring PrismOcclusionFade — that would
+            // fail IsCorridorCapable on every suction material at runtime.
+            Assert.IsFalse(PrismOcclusionDiagnostics.WiredPrismShaderNames.Contains("SuctionGraph"),
+                "SuctionGraph is consumption VFX, not standing mass — wiring it into " +
+                "WiredPrismShaderNames without wiring PrismOcclusionFade would fail " +
+                "IsCorridorCapable on every suction material.");
+            CollectionAssert.Contains(PrismOcclusionWiringValidator.KnownCorridorExcludedGraphs, "SuctionGraph");
+            Assert.IsFalse(PrismOcclusionWiringValidator.GraphPaths.Any(p => p.Contains("SuctionGraph")),
+                "GraphPaths must not include SuctionGraph — the corridor is not wired into it.");
+        }
 
         [Test]
         public void CorridorHlsl_ExistsAndDeclaresTheFadeFunction()

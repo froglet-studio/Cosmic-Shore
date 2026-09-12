@@ -19,4 +19,3 @@ MonoBehaviour:
   nucleusEntryLimit: 3
   detonationRadiusScale: 2
   detonateAllLiveBalls: 1
-  cytoplasmOuterFraction: 0.95

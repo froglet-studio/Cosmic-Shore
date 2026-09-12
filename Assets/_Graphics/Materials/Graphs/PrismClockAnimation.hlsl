@@ -119,15 +119,19 @@ void PrismExplosionClock_float(float Clock, float StartTime, float Speed, float 
 }
 
 // -----------------------------------------------------------------------------
-// Suction / implosion / reverse-grow progress (SuctionGraph).
+// Suction / implosion / reverse-grow progress.
+// SuctionGraph: SequentialFaceConverger consumes State (per-face consumption).
+// Live prisms (BlockGraph / ExplodingBlockGraph): PrismSuctionConverge consumes
+// State (whole-prism lerp toward _Location — Docs/PRISM_ANIMATION.md §5 C9).
 // Replaces PrismEffectsManager.ProcessImplosions' per-frame _State feed:
 //   Direction >= 0: implode, progress 0 -> 1
 //   Direction <  0: grow (reverse suction), progress 1 -> 0
 // GrowDelay holds the start (the 0.25s StartGrow delay, now baked into the
-// stamp). Duration <= 0 -> legacy fallback (CPU-fed _State). _Location remains
-// a separate property: stamped once (snapshot), or — ONLY under the documented
-// moving-target exception (Docs/PRISM_ANIMATION.md §1) — refreshed as live
-// gameplay data.
+// stamp). Duration <= 0 -> LegacyState. SuctionGraph wires a CPU-fed _State
+// there; live graphs leave LegacyState unconnected (default 0) so unstamped
+// prisms stay at rest. _Location remains a separate property: stamped once
+// (snapshot), or — ONLY under the documented moving-target exception
+// (Docs/PRISM_ANIMATION.md §1) — refreshed as live gameplay data.
 // -----------------------------------------------------------------------------
 void PrismSuctionClock_float(float Clock, float StartTime, float Duration, float Direction,
     float GrowDelay, float LegacyState,
@@ -141,6 +145,58 @@ void PrismSuctionClock_float(float Clock, float StartTime, float Duration, float
     float t = max(Clock - StartTime - GrowDelay, 0.0);
     float p = saturate(t / Duration);
     State = Direction < 0.0 ? 1.0 - p : p;
+}
+
+// Spindle evaporate / condense (Docs/PRISM_ANIMATION.md §5 C11).
+// SpindleGraph / AnimatedSpindleGraph consume State as _DeathAnimation:
+//   Direction >= 0: evaporate, progress 0 -> 1 (visible -> gone)
+//   Direction <  0: condense,  progress 1 -> 0 (gone -> visible)
+// Duration <= 0 -> LegacyState. Both graphs leave LegacyState unconnected
+// (default 0) so an unstamped spindle stays fully visible. Per-spindle
+// StartTime offsets carry the ecology-LOCKED wither order (extremity-first
+// starvation / heart-outward joust) — never a per-frame cascade.
+void PrismDeathClock_float(float Clock, float StartTime, float Duration, float Direction,
+    float LegacyState, out float State)
+{
+    if (Duration <= 0.0)
+    {
+        State = LegacyState;
+        return;
+    }
+    float t = max(Clock - StartTime, 0.0);
+    float p = saturate(t / Duration);
+    State = Direction < 0.0 ? 1.0 - p : p;
+}
+
+// Whole-prism lerp toward a WORLD-space convergence point (BlockGraph +
+// ExplodingBlockGraph vertex stage). Docs/PRISM_ANIMATION.md §5 C9 — Cell.RequestCellSwap
+// retiring-world suction. SuctionGraph keeps SequentialFaceConverger (per-face
+// consumption); this is the live-prism sibling: the WHOLE prism travels toward
+// _Location, driven by PrismSuctionClock's State.
+//
+// World->object conversion is a raw unnormalized inverse-model multiply of the
+// POINT (w=1), same doctrine as PrismFlightClock / PrismExplosionClock. Shader
+// Graph's Direction-mode Transform node emits TransformWorldToObjectDir, which
+// NORMALIZES — a point at the cell centre would collapse to a unit vector and
+// the prism would fly the wrong way. Never put a Transform node in this chain.
+//
+// Live graphs leave LegacyState unconnected (slot default 0). Duration 0
+// therefore returns State 0, so unstamped prisms stay at rest. Do NOT add a
+// CPU-fed _State / PrismImplosionStateOverride to the live Prism entity set —
+// that is the Implosion/SuctionGraph fallback, not a live-prism path.
+void PrismSuctionConverge_float(
+    float State, float3 WorldLocation, float3 Position,
+    out float3 OutPosition)
+{
+    float3 objectLocation;
+#if defined(SHADERGRAPH_PREVIEW)
+    objectLocation = WorldLocation;
+#else
+    objectLocation = mul(GetWorldToObjectMatrix(), float4(WorldLocation, 1.0)).xyz;
+    if (!(dot(objectLocation, objectLocation) < 1e12))
+        objectLocation = Position;
+#endif
+    OutPosition = lerp(Position, objectLocation, saturate(State));
 }
 
 // -----------------------------------------------------------------------------

@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base for spawnable shapes that trigger shape drawing mode on vessel collision.
+/// Abstract base for spawnable shapes that raise ShapeSignEvents on vessel collision.
 /// Extends SpawnableBase to generate prism trails in recognizable 2D shapes,
 /// then attaches a SphereCollider trigger + ShapeCollisionTrigger to the container.
 ///
@@ -19,7 +19,7 @@ using UnityEngine;
 public abstract class SpawnableShapeBase : SpawnableBase
 {
     [Header("Shape Identity")]
-    [Tooltip("The ShapeDefinition SO that gets passed to ShapeDrawingManager when this shape is hit.")]
+    [Tooltip("The ShapeDefinition SO raised on ShapeSignEvents when this shape is hit.")]
     [SerializeField] protected ShapeDefinition shapeDefinition;
 
     [Header("Shape Collision")]

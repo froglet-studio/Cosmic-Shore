@@ -45,6 +45,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static readonly List<string> s_statSectionOrder = new();
         static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
         static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+
+        // Command handlers are closures over play-mode components; an owner that misses
+        // UnregisterCommand in OnDestroy would otherwise ghost into the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetRegistries()
+        {
+            s_statSectionOrder.Clear();
+            s_customStats.Clear();
+            s_commands.Clear();
+        }
 #endif
 
         /// <summary>Adds or updates one row under a titled section of the diagnostics overlay.</summary>

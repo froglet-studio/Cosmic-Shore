@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RaiseHostConnectionEstablished()
         {
-            Debug.Log("[SoapPartyEventBus] RaiseHostConnectionEstablished");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[SoapPartyEventBus] RaiseHostConnectionEstablished");
             _data.OnHostConnectionEstablished?.Raise();
         }
 
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RaiseHostConnectionLost()
         {
-            Debug.Log("[SoapPartyEventBus] RaiseHostConnectionLost");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[SoapPartyEventBus] RaiseHostConnectionLost");
             _data.OnHostConnectionLost?.Raise();
         }
 
@@ -108,7 +108,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public void RaiseInviteSent(PartyPlayerData invitedPlayer)
         {
-            Debug.Log($"[SoapPartyEventBus] RaiseInviteSent → {invitedPlayer.DisplayName} ({invitedPlayer.PlayerId})");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[SoapPartyEventBus] RaiseInviteSent - {invitedPlayer.DisplayName} ({invitedPlayer.PlayerId})");
             _data.OnInviteSent?.Raise(invitedPlayer);
         }
 
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public void RaiseInviteReceived(PartyInviteData invite)
         {
-            Debug.Log($"[SoapPartyEventBus] RaiseInviteReceived from {invite.HostDisplayName} ({invite.HostPlayerId})");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[SoapPartyEventBus] RaiseInviteReceived from {invite.HostDisplayName} ({invite.HostPlayerId})");
             _data.OnInviteReceived?.Raise(invite);
         }
 
@@ -134,7 +134,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RaiseInviteResolved()
         {
-            Debug.Log("[SoapPartyEventBus] RaiseInviteResolved");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[SoapPartyEventBus] RaiseInviteResolved");
             _data.OnInviteResolved?.Raise();
         }
 
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public void RaisePartyMemberJoined(PartyPlayerData member)
         {
-            Debug.Log($"[SoapPartyEventBus] RaisePartyMemberJoined → {member.DisplayName} ({member.PlayerId})");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[SoapPartyEventBus] RaisePartyMemberJoined - {member.DisplayName} ({member.PlayerId})");
             _data.OnPartyMemberJoined?.Raise(member);
         }
 
@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public void RaisePartyMemberLeft(PartyPlayerData member)
         {
-            Debug.Log($"[SoapPartyEventBus] RaisePartyMemberLeft → {member.DisplayName} ({member.PlayerId})");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[SoapPartyEventBus] RaisePartyMemberLeft - {member.DisplayName} ({member.PlayerId})");
             _data.OnPartyMemberLeft?.Raise(member);
         }
 
@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
         /// <param name="member">Identity of the kicked player.</param>
         public void RaisePartyMemberKicked(PartyPlayerData member)
         {
-            Debug.Log($"[SoapPartyEventBus] RaisePartyMemberKicked → {member.DisplayName} ({member.PlayerId})");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[SoapPartyEventBus] RaisePartyMemberKicked - {member.DisplayName} ({member.PlayerId})");
             _data.OnPartyMemberKicked?.Raise(member);
         }
 
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void RaisePartyJoinCompleted()
         {
-            Debug.Log("[SoapPartyEventBus] RaisePartyJoinCompleted");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[SoapPartyEventBus] RaisePartyJoinCompleted");
             _data.OnPartyJoinCompleted?.Raise();
         }
     }

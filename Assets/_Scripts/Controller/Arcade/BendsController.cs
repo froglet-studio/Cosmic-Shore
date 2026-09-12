@@ -56,8 +56,9 @@ namespace CosmicShore.Gameplay
     /// AI in the arena (the lesson Rampage recorded after removing exactly such a provider). What
     /// this controller does install is the narrower
     /// <see cref="AIPilot.SetDriftLookTargetProvider"/>: the AI still flies at crystals, and when
-    /// it drifts to aim, it aims at the nearest opposing PILOT instead of the densest cluster of
-    /// hostile mass. One hook, one behaviour, no steering touched.</para>
+    /// it drifts to aim, it aims at an opposing PILOT instead of the densest cluster of hostile
+    /// mass - human rivals preferred, led by the blast wavefront's real travel time (see
+    /// ArmAimHooks). One hook, one behaviour, no steering touched.</para>
     ///
     /// DOLPHIN-ONLY is enforced entirely by the platform machinery, deliberately not
     /// re-implemented here - three independent layers, all reading the single <c>Vessels</c> list
@@ -102,10 +103,29 @@ namespace CosmicShore.Gameplay
                  "on a slow cadence. Steering is untouched: the AI still seeks crystals.")]
         [SerializeField, Min(0.25f)] float aiAimRetargetSeconds = 1.25f;
 
-        [Tooltip("How far ahead of its rival the AI aims, as a multiple of that rival's own " +
-                 "per-second travel. The blast is a cone with real length, so leading a moving " +
-                 "target is what makes an AI's shot connect rather than trail.")]
+        [Tooltip("EXTRA seconds of lead on top of the blast wavefront's own travel time - the " +
+                 "padding that covers the beat between the aim being read and the crystal " +
+                 "actually being collected. The wavefront time itself is derived per frame from " +
+                 "the rival's distance (see WavefrontLeadTime); this used to be the WHOLE lead, " +
+                 "which undershot a moving rival by up to five to one at range.")]
         [SerializeField, Min(0f)] float aiAimLeadSeconds = 0.35f;
+
+        [Tooltip("Mirror of AOEConicExplosion.prefab's authored axial reach (height: 2400). " +
+                 "The wavefront lead inverts the cone's growth against this and the duration " +
+                 "below - retune all three together with the prefab, exactly like Max Range.")]
+        [SerializeField, Min(1f)] float aiAimBlastReach = 2400f;
+
+        [Tooltip("Mirror of AOEConicExplosion.prefab's authored ExplosionDuration (2.7 s). The " +
+                 "cone grows sin-eased, so the wavefront leaves the muzzle at ~1400 u/s and " +
+                 "slows toward the tip - a rival at distance d is hit asin(d/reach)-shaped " +
+                 "seconds into the blast, not d divided by an average speed.")]
+        [SerializeField, Min(0.1f)] float aiAimBlastDuration = 2.7f;
+
+        [Tooltip("How strongly the AI prefers aiming at HUMAN pilots over AI rivals: an AI " +
+                 "rival must be this many times closer than a human to steal the aim. 1 = no " +
+                 "preference (pure nearest). The range gate still runs on TRUE distance, so " +
+                 "the preference can never make an AI aim at a pilot its blast cannot reach.")]
+        [SerializeField, Min(1f)] float aiAimHumanFocus = 3f;
 
         [Tooltip("Beyond this distance the AI does not bother aiming at a rival - the blast " +
                  "cannot reach, and pointing the nose at an unreachable pilot just stops it " +
@@ -297,12 +317,21 @@ namespace CosmicShore.Gameplay
         /// hostile mass (<c>Cell.GetExplosionTarget</c>, the default, which is right in Rampage
         /// because there the forest IS the score).
         ///
-        /// <b>Lead, and a range gate.</b> The aim point runs
-        /// <see cref="aiAimLeadSeconds"/> ahead along the rival's own course, because the blast has
-        /// real length and a cone put where someone WAS is a miss. Past
-        /// <see cref="aiAimMaxRange"/> the provider returns null and the platform default resumes,
-        /// which matters more than it looks: aiming at an unreachable pilot would stop the AI
-        /// clearing forest, and clearing forest is how it banks the energy for the next shot.
+        /// <b>Intercept lead, and a range gate.</b> The aim point runs ahead along the rival's own
+        /// course by the time the blast WAVEFRONT actually takes to get there
+        /// (<see cref="WavefrontLeadTime"/> - the inverse of the cone's sin-eased growth, plus
+        /// <see cref="aiAimLeadSeconds"/> of padding), refined with a second intercept pass. A
+        /// blast put where someone WAS is a miss, and the cone takes up to
+        /// <see cref="aiAimBlastDuration"/> seconds to cross the arena - the old flat lead
+        /// undershot a moving rival by up to five to one at range, which is most of why the AI
+        /// read as harmless. Past <see cref="aiAimMaxRange"/> the provider returns null and the
+        /// platform default resumes, which matters more than it looks: aiming at an unreachable
+        /// pilot would stop the AI clearing forest, and clearing forest is how it banks the
+        /// energy for the next shot.
+        ///
+        /// <b>Humans first.</b> <see cref="FindNearestOpponent"/> prefers HUMAN rivals by
+        /// <see cref="aiAimHumanFocus"/>, so in a backfilled lobby the AI hunts the player
+        /// instead of trading cones with the other bots.
         ///
         /// Server-only, and steering-free: nothing here touches throttle, abilities, or
         /// <c>SetExternalTargetProvider</c>, so it cannot leak into another mode.
@@ -339,10 +368,18 @@ namespace CosmicShore.Gameplay
                         return null;                    // out of reach - go back to grazing
 
                     var rivalStatus = rival.Vessel?.VesselStatus;
-                    Vector3 lead = rivalStatus != null
-                        ? rivalStatus.Course * (rivalStatus.Speed * aiAimLeadSeconds)
+                    Vector3 rivalVelocity = rivalStatus != null
+                        ? rivalStatus.Course * rivalStatus.Speed
                         : Vector3.zero;
-                    return rivalPos + lead;
+
+                    // Two-pass intercept: predict where the rival will be when the wavefront
+                    // arrives, then refine the arrival time against the predicted point. One
+                    // refinement is enough - the provider is sampled every frame, so residual
+                    // error lives for a frame at most.
+                    float leadTime = WavefrontLeadTime(Vector3.Distance(rivalPos, selfPos));
+                    Vector3 predicted = rivalPos + rivalVelocity * leadTime;
+                    leadTime = WavefrontLeadTime(Vector3.Distance(predicted, selfPos));
+                    return rivalPos + rivalVelocity * leadTime;
                 });
             }
         }
@@ -365,11 +402,34 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>The nearest player on a different domain with a live vessel.</summary>
+        /// <summary>
+        /// How long the blast wavefront takes to reach a rival at <paramref name="distance"/>,
+        /// plus the authored extra padding. The cone's axial growth is
+        /// <c>reach * sin(t / duration * PI/2)</c> (<see cref="AOEConicExplosion"/>), so the
+        /// arrival time is the INVERSE of that ease: <c>(2 * duration / PI) * asin(d / reach)</c>.
+        /// Inverting the real curve matters at both ends - the front leaves the muzzle at
+        /// ~1400 u/s and slows toward the tip, so a straight distance-over-average-speed lead
+        /// over-leads up close and under-leads at range. Beyond the reach the time clamps to the
+        /// full duration, which the range gate makes unreachable anyway.
+        /// </summary>
+        float WavefrontLeadTime(float distance)
+        {
+            float f = Mathf.Clamp01(distance / aiAimBlastReach);
+            return (2f * aiAimBlastDuration / Mathf.PI) * Mathf.Asin(f) + aiAimLeadSeconds;
+        }
+
+        /// <summary>
+        /// The best opposing pilot to aim at: nearest, with HUMAN rivals preferred - a human
+        /// reads as <see cref="aiAimHumanFocus"/> times closer than it is, so the AI hunts
+        /// people and only settles for another AI when no human is anywhere near the fight.
+        /// The provider's range gate still tests TRUE distance, so the preference can never
+        /// point the nose at a pilot the blast cannot reach.
+        /// </summary>
         IPlayer FindNearestOpponent(IPlayer self, Vector3 from)
         {
             IPlayer best = null;
-            float bestSqr = float.MaxValue;
+            float bestScore = float.MaxValue;
+            float humanFocusSqr = aiAimHumanFocus * aiAimHumanFocus;
 
             var players = gameData.Players;
             for (int i = 0; i < players.Count; i++)
@@ -377,9 +437,10 @@ namespace CosmicShore.Gameplay
                 var candidate = players[i];
                 if (!IsLiveOpponent(candidate, self)) continue;
 
-                float sqr = (candidate.Vessel.Transform.position - from).sqrMagnitude;
-                if (sqr >= bestSqr) continue;
-                bestSqr = sqr;
+                float score = (candidate.Vessel.Transform.position - from).sqrMagnitude;
+                if (!candidate.IsInitializedAsAI) score /= humanFocusSqr;
+                if (score >= bestScore) continue;
+                bestScore = score;
                 best = candidate;
             }
             return best;

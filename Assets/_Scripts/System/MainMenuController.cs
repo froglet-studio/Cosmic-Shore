@@ -270,7 +270,7 @@ namespace CosmicShore.Core
 
             var previous = _state;
             _state = newState;
-            CSDebug.Log($"[MainMenuController] {previous} → {newState}");
+            CSDebug.LogVerbose(CSLogChannel.Boot, $"[MainMenuController] {previous} -> {newState}");
             OnStateChanged?.Invoke(newState);
             return true;
         }

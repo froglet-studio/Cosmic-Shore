@@ -52,6 +52,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static int VolleysPerFrame = 6;
 
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            VolleysPerFrame = 6;
+            ResetDiagnostics();
+        }
+
         /// <summary>Total volleys dropped by the ceiling since load — a diagnostics read.</summary>
         public static int DroppedVolleys { get; private set; }
 

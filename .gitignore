@@ -78,7 +78,9 @@ crashlytics-build.properties
 /Assets/Graphics/Materials/Shaders/DitheringVolumeDisplayShader.shader.meta
 /ProjectSettings/BurstAotSettings_StandaloneLinux64.json
 /.utmp/
-/.editorconfig
+# NOTE: /.editorconfig was ignored here until 2026-08-21. It was removed deliberately -
+# a gitignored .editorconfig enforces nothing for anyone else, which defeats its purpose.
+# See Docs/ASSEMBLY_SPLIT.md - 'Not enforced automatically'.
 Assets/Unity Assests/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Electronic Highway Sign SDF.asset
 
 # FMOD runtime/editor logs (regenerated per session, per OS)
@@ -96,3 +98,15 @@ BenchmarkResults/
 # Python bytecode from Tools/CI scripts
 __pycache__/
 *.pyc
+
+# Unity's "Recovering Scene Backups" prompt (shown after an abnormal editor exit)
+# offers to copy scene backups here — never commit them.
+Assets/_Recovery/
+Assets/_Recovery.meta
+
+# OS / crash / editor scratch (added by ship pass)
+.DS_Store
+**/.DS_Store
+mono_crash.*
+unity-editmode-*.log
+Tools/tmp_*.cs

@@ -13,4 +13,14 @@ MonoBehaviour:
   m_Name: GameToastConfig_Scurry
   m_EditorClassIdentifier: 
   gameMode: 35
-  toasts: []
+  toasts:
+  - situation: 80
+    messageTemplate: '<b>{0}</b> has collected {1} crystals'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 10
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

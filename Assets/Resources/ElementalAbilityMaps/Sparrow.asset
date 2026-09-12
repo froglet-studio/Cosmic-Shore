@@ -65,9 +65,13 @@ MonoBehaviour:
       the substance of what you fire, SPACE owns its reach.
   - Element: 1
     AbilityLabel: Skyburst Rockets
-    AbilityDescription: Crystal-stocked rockets that detonate on impact. Charge
-      widens the blast radius (authored on the skyburst effect assets); at level
-      5 the explosions spare your own domain.
+    AbilityDescription: Rockets stocked by DESTROYING MASS - every hostile prism
+      you break puts a little back in the rack, so the arena is the ammunition.
+      They carry a proximity fuze and go off near an enemy or a creature rather
+      than only on contact, throwing two blasts - the old one that tears prisms
+      apart and lays new ones, and a wider warhead that debuffs pilots and kills
+      wildlife. Charge widens the prism blast (authored on the skyburst effect
+      assets); at level 5 both explosions spare your own domain.
     Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
@@ -76,4 +80,6 @@ MonoBehaviour:
     LatchPolicy: 0
     UpgradeLabel: Domain-Safe Skybursts
     UpgradeDescription: Skyburst explosions no longer destroy your own domain's
-      prisms.
+      prisms - and the warhead no longer kills your own domain's wildlife or
+      debuffs your own pilots, since both halves of the detonation read one
+      friendly-fire decision.

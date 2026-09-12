@@ -39,6 +39,15 @@ namespace CosmicShore.Gameplay
         [Header("Ammo")]
         [SerializeField] private int defaultAmmoIndex = 2;
 
+        [Tooltip("The weapon asset this executor fires. Optional, and it changes nothing about " +
+                 "firing — a shot always uses the SO it was handed. It exists because the HUD " +
+                 "has to describe the tank BEFORE the first shot (and again after a turn-end " +
+                 "clear), when there is no live SO to read: without it the shot COST would have " +
+                 "to be authored a second time on the HUD, where it could drift from the number " +
+                 "the gun actually spends. Same reasoning as VesselRearmOnPrismDestruction " +
+                 "reading its ammo index off the weapon asset rather than re-authoring it.")]
+        [SerializeField] private FireGunActionSO defaultAction;
+
         // The Sparrow's rig exposes one bone per missile bay; the projectile spawns at the
         // live bone pose so it emerges exactly where the bay animation ejects the missile.
         // Resolved BY NAME (the art-swap-resilient pattern VesselAnimation.ResolvePart uses)
@@ -94,11 +103,24 @@ namespace CosmicShore.Gameplay
             CancelPendingLaunches();
         }
 
+        /// <summary>The weapon this executor is currently describing: the SO of the shot in
+        /// flight when there is one, else the authored asset, else nothing.</summary>
+        FireGunActionSO ActiveAction => _soRef ? _soRef : defaultAction;
+
+        int ActiveAmmoIndex
+        {
+            get
+            {
+                var action = ActiveAction;
+                return action ? action.AmmoIndex : defaultAmmoIndex;
+            }
+        }
+
         public float Ammo01
         {
             get
             {
-                var index = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
+                var index = ActiveAmmoIndex;
 
                 if (index < 0 || index >= _resources.Resources.Count)
                     return 0f;
@@ -109,6 +131,64 @@ namespace CosmicShore.Gameplay
 
                 return Mathf.Clamp01(res.CurrentAmount / res.MaxAmount);
             }
+        }
+
+        /// <summary>
+        /// One shot's cost as a fraction of the FULL tank — 0.5 for the skyburst, whose bay
+        /// holds two. 0 when there is no weapon to ask, or when a shot is free.
+        /// </summary>
+        public float ShotCost01
+        {
+            get
+            {
+                var action = ActiveAction;
+                if (!action) return 0f;
+
+                var index = ActiveAmmoIndex;
+                if (index < 0 || index >= _resources.Resources.Count) return 0f;
+
+                var res = _resources.Resources[index];
+                if (res == null || res.MaxAmount <= 0f) return 0f;
+
+                return Mathf.Clamp01(action.AmmoCost / res.MaxAmount);
+            }
+        }
+
+        /// <summary>
+        /// How far the tank has come toward the NEXT shot, 0..1 — the quantity a charge gauge
+        /// shows, as distinct from <see cref="Ammo01"/>, which is how much the tank HOLDS.
+        ///
+        /// <para>They are different questions because a tank holds several shots: the Sparrow's
+        /// missile bay is 0..1 with a rocket costing 0.5, so a half-full tank is ONE ROCKET
+        /// READY and ZERO progress toward the second. The icon ladder already says how many you
+        /// hold; this says how close the next one is, and it resets each time one is earned —
+        /// which is exactly the ask ("it should fill … until a missile is created, then it
+        /// resets as the energy for the second missile is acquired").</para>
+        ///
+        /// <para>A FULL tank reads FULL rather than empty. <c>frac</c> of a full rack is 0, and
+        /// a gauge that empties the moment the rack fills says the opposite of the truth; there
+        /// is simply nothing further to earn, which is what a full bar means.</para>
+        ///
+        /// <para>A weapon that spends the whole tank per shot (cost >= 1) degenerates correctly:
+        /// the gauge is then just the tank.</para>
+        /// </summary>
+        public float ChargeToNextShot01 => ChargeToNextShot(Ammo01, ShotCost01);
+
+        /// <summary>
+        /// The arithmetic of <see cref="ChargeToNextShot01"/>, as a pure function so it can be
+        /// tested without a vessel, a resource system or a live weapon.
+        /// </summary>
+        /// <param name="ammo01">How full the tank is, 0..1.</param>
+        /// <param name="cost01">One shot's cost as a fraction of the full tank; 0 = unknown or
+        /// free, in which case the gauge degenerates to the tank itself.</param>
+        public static float ChargeToNextShot(float ammo01, float cost01)
+        {
+            ammo01 = Mathf.Clamp01(ammo01);
+            if (ammo01 >= 1f) return 1f;
+            if (cost01 <= 0f) return ammo01;
+
+            float shots = ammo01 / cost01;
+            return Mathf.Clamp01(shots - Mathf.Floor(shots));
         }
 
         public override void Initialize(IVesselStatus shipStatus)
@@ -131,8 +211,7 @@ namespace CosmicShore.Gameplay
 
         void HandleResourceChanged(int index, float current, float max)
         {
-            var ammoIndex = _soRef ? _soRef.AmmoIndex : defaultAmmoIndex;
-            if (index != ammoIndex)
+            if (index != ActiveAmmoIndex)
                 return;
 
             OnAmmoChanged?.Invoke(Ammo01);
@@ -201,6 +280,12 @@ namespace CosmicShore.Gameplay
             // shooter's own domain. Per-shot snapshot at the moment the missile leaves.
             var spareOwnDomain = status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
 
+            // MASS → in-flight growth, exactly as the full-auto bullets do it: the missile
+            // leaves the bay at the size of the one the bay animation just ejected and swells
+            // as it travels. Live level, read at the moment the missile actually leaves (the
+            // vessel keeps playing through the launch delay), never at press.
+            var growth = so.ResolveGrowthFactor(status);
+
             gun.FireGun(
                 _worldMuzzleAnchor,
                 so.Speed,
@@ -212,7 +297,8 @@ namespace CosmicShore.Gameplay
                 FiringPatterns.Default,
                 so.Energy,
                 detachAfterSpawn: _detachFromContainer,
-                spareOwnDomain: spareOwnDomain
+                spareOwnDomain: spareOwnDomain,
+                flightGrowthFactor: growth
             );
         }
 

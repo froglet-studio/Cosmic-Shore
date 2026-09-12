@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     /// external changes (a panel, a menu reset) reconcile the same way a toy activation does.
     /// </summary>
     /// <typeparam name="T">The option type - <c>Domains</c>.</typeparam>
-    public abstract class SwapToySetCoordinator<T> : MonoBehaviour
+    public abstract class SwapToySetCoordinator<T> : MonoBehaviour, IToyShellSurface
     {
         protected ToyContext Context { get; private set; }
         protected ToyDefinitionSO Definition { get; private set; }
@@ -30,12 +30,20 @@ namespace CosmicShore.Gameplay
         float anglePerToyDeg = 14f;
 
         /// <summary>
-        /// Whether this set's toys wear the shared SWITCH ring. True for a set of anonymous
-        /// stations; false for one whose bodies already carry the "fly through me" read on their
-        /// own - the domain changer's cones, whose apex points the way you go through, and which
-        /// are rebuilt on every flip.
+        /// Chord between adjacent slots on the placement circle - this set's equivalent of a
+        /// matrix's <c>stationSpacing</c>, and the thing its rings must not overrun.
         /// </summary>
-        protected virtual bool SlotsWearSwitchRing => true;
+        protected float SlotSpacing => 2f * _radius * Mathf.Sin(anglePerToyDeg * Mathf.Deg2Rad * 0.5f);
+
+        /// <summary>
+        /// This set's switch-ring radius: the slot's trigger, clamped against
+        /// <see cref="SlotSpacing"/> exactly as a matrix station's is
+        /// (<see cref="ToyFactory.StationRingRadius"/>). The slots sit 14 degrees apart, which is
+        /// a wide berth on the menu membrane (~984u) and a tight one on the toybox's no-membrane
+        /// fallback circle (300u) - without the clamp, adjacent rings interpenetrate there and
+        /// read as chain-link rather than as two switches.
+        /// </summary>
+        protected float SlotRingRadius => ToyFactory.StationRingRadius(TriggerRadius, SlotSpacing);
 
         static readonly EqualityComparer<T> Eq = EqualityComparer<T>.Default;
 
@@ -76,6 +84,70 @@ namespace CosmicShore.Gameplay
                 if (IsValid(o) && !_universe.Contains(o)) _universe.Add(o);
 
             _initialized = true;
+
+            // The SET is the toy the app shell lists, not its individual slots: the slots hold no
+            // option state (SwapToy is deliberately stateless) and the set is what knows the whole
+            // universe, including the option you are currently on.
+            ToyShellRegistry.Register(this);
+        }
+
+        protected virtual void OnDestroy() => ToyShellRegistry.Unregister(this);
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _initialized;
+
+        /// <summary>
+        /// The WHOLE universe, current option included and flagged - not the set's own
+        /// "everything except where you are now". The world set says that by having no station for
+        /// the colour you wear; a flat list has to say it in words, and hiding the row would leave
+        /// the player unable to see what they are on.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            bool hasCurrent = TryGetCurrent(out var current) && IsValid(current);
+
+            foreach (var option in _universe)
+            {
+                if (!IsValid(option)) continue;
+
+                var captured = option;
+                bool isCurrent = hasCurrent && Eq.Equals(option, current);
+
+                // No Apply on the current row: it is there to be READ, not pressed.
+                System.Action apply = null;
+                if (!isCurrent) apply = () => Apply(captured);
+
+                into.Add(new ToyShellOption
+                {
+                    Label = LabelFor(option),
+                    Detail = isCurrent ? "current" : "",
+                    Accent = ColorFor(option),
+                    IsCurrent = isCurrent,
+                    // The row IS the act. A flip-set has no commit step in the world either - you
+                    // fly through the toy and you ARE that option - so a select-then-Switch step
+                    // in the flat surface would be one this shape has never had, for an apply that
+                    // is instant and undone by picking another row.
+                    AppliesOnSelect = true,
+                    Apply = apply,
+                    // The row's place in the world is its SLOT - the switch wearing that option.
+                    // Resolved when asked, since the slots re-home on every flip; the current
+                    // option has no slot (the set shows everything except where you are) and
+                    // answers null, which leaves the picture on the toy.
+                    WorldAnchor = () => SlotTransformFor(captured),
+                    WorldAnchorRadius = SlotRingRadius * 2.5f,
+                });
+            }
+        }
+
+        /// <summary>The live slot currently showing <paramref name="option"/>, or null.</summary>
+        Transform SlotTransformFor(T option)
+        {
+            foreach (var s in _slots)
+                if (s.Toy && Eq.Equals(s.Option, option)) return s.Toy.transform;
+            return null;
         }
 
         void Update()
@@ -162,10 +234,16 @@ namespace CosmicShore.Gameplay
             var bodyHolder = new GameObject("Body").transform;
             bodyHolder.SetParent(root.transform, false);
 
-            var label = ToyFactory.AddLabel(root.transform, LabelFor(option), Color.white, BodyRadius * 1.9f);
+            // Hung clear ABOVE the switch ring, like every other ringed station: the old
+            // 1.9 x BodyRadius height was authored when these slots had no ring, and at the
+            // toybox's shipped radii (body 22, trigger 42) it sits inside the rim.
+            var label = ToyFactory.AddRingedLabel(root.transform, LabelFor(option), Color.white,
+                                                  SlotRingRadius, BodyRadius);
 
             var toy = root.AddComponent<SwapToy>();
-            if (!SlotsWearSwitchRing) toy.ConfigureSwitchRing(0f);
+            // Radius first, then ConfigureVisual, which is where a set says what its switches
+            // MEAN - the two are separate calls precisely so this order cannot clobber that.
+            toy.ConfigureSwitchRing(SlotRingRadius);
             var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Label = label, Option = option };
 
             ConfigureVisual(slot);
@@ -233,5 +311,12 @@ namespace CosmicShore.Gameplay
         protected abstract void Apply(T target);
         protected abstract void ConfigureVisual(Slot slot);
         protected virtual string LabelFor(T option) => option.ToString();
+
+        /// <summary>
+        /// The colour this option wears. Overridden where the option HAS a colour of its own (a
+        /// domain); the toy's accent otherwise. Read by the app-shell face so a flat card carries
+        /// the same colour the ring does.
+        /// </summary>
+        protected virtual Color ColorFor(T option) => Definition ? Definition.AccentColor : Color.white;
     }
 }

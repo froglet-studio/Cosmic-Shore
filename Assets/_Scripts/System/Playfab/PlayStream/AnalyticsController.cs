@@ -13,6 +13,15 @@ namespace CosmicShore.Core
         private static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
+
+        // See AuthenticationManager.ResetStatics.
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _playFabDataInstanceAPI = null;
+            _playFabClientInstanceAPI = null;
+            _playFabEventsInstanceAPI = null;
+        }
         
 
         private void Start()
@@ -71,7 +80,6 @@ namespace CosmicShore.Core
                 
                     foreach (var pair in result.Data)
                     {
-                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserData)} - key: {pair.Key} value: {pair.Value.Value}");
                     }
                 }, PlayFabUtility.HandleErrorReport);
         }
@@ -95,7 +103,7 @@ namespace CosmicShore.Core
                         return;
                     }
 
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(AnalyticsController)} - {nameof(SetUserData)} success.");
                 }, PlayFabUtility.HandleErrorReport);
         }
 
@@ -112,7 +120,7 @@ namespace CosmicShore.Core
                 }, (result) =>
                 {
                     if (result == null) return;
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(AnalyticsController)} - {nameof(DeleteUserDataByKeys)} data successfully deleted by keys.");
                 }, PlayFabUtility.HandleErrorReport);
         }
         #endregion
@@ -138,10 +146,9 @@ namespace CosmicShore.Core
                         return;
                     }
 
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - success.");
                     foreach (var data in result.Data)
                     {
-                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetUserReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
                 }, PlayFabUtility.HandleErrorReport
             );
@@ -161,10 +168,9 @@ namespace CosmicShore.Core
                 }, (result) =>
                 {
                     if (result == null) return;
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - success.");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - success.");
                     foreach (var data in result.Data)
                     {
-                        CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(GetPublisherReadOnlyData)} - key: {data.Key} value: {data.Value.Value}");
                     }
                 },PlayFabUtility.HandleErrorReport);
         }
@@ -190,8 +196,7 @@ namespace CosmicShore.Core
                 }, (result) =>
                 {
                     if (result == null) return;
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
-                    CSDebug.Log($"{nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} - event id: {result.EventId}");
+                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] {nameof(AnalyticsController)} - {nameof(SendPlayerEvent)} success.");
                 }, PlayFabUtility.HandleErrorReport);
         }
 

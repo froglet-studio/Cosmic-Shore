@@ -49,6 +49,20 @@ namespace CosmicShore.Gameplay
                  "never SuperShield - fauna keep their devastate sink).")]
         [SerializeField] bool massUpgradeShieldsTrail = false;
 
+        [Tooltip("MASS level-5 'Shielded Turn Trails' (the Manta's Yastri): prisms laid while " +
+                 "a hard TURN is held arrive shielded once the Mass upgrade is live (regular " +
+                 "shield, never SuperShield). The turn window is whatever drives SetTurnTrail " +
+                 "above half intensity. Off on every vessel whose Mass 5 means something else.")]
+        [SerializeField] bool turnUpgradeShieldsTrail = false;
+
+        [Tooltip("How much fatter the OUTER lane's prisms get at full turn intensity (X " +
+                 "multiplier; 1 disables the flare). Visual flare only — it exaggerates the " +
+                 "bank without changing what the trail is worth.")]
+        [SerializeField, Min(1f)] float turnFlareMaxScale = 2f;
+
+        float _turnFlare01;
+        int _turnFlareLaneSign;
+
         [Header("Gap Settings")]
         public float offset;
         public float Gap;
@@ -205,6 +219,25 @@ namespace CosmicShore.Gameplay
             wavelength = Mathf.Max(minWavelength, initialWavelength * Mathf.Abs(amount));
         }
 
+        /// <summary>
+        /// Turn-trail state (the Manta's Yastri): while a hard turn is held, the OUTER lane's
+        /// prisms flare fatter with turn intensity — the bank is legible from across the cell
+        /// — and, on a vessel that authors <see cref="turnUpgradeShieldsTrail"/>, prisms laid
+        /// during the turn arrive SHIELDED once the Mass level-5 upgrade is live (regular
+        /// shield only, per-spawn snapshot — the Heavy Trail rule with the drift swapped for
+        /// the turn). Drive it every frame from whatever owns the turn
+        /// (<c>YawsteryActionExecutor</c> on touch, <c>MantaAnalogTurnBoostExecutor</c> on
+        /// gamepad/keyboard); 0 clears it.
+        /// </summary>
+        /// <param name="amount01">Turn intensity, 0..1.</param>
+        /// <param name="turnSign">+1 turning right, -1 turning left — the OUTER lane is the
+        /// opposite wing.</param>
+        public void SetTurnTrail(float amount01, int turnSign)
+        {
+            _turnFlare01 = Mathf.Clamp01(amount01);
+            _turnFlareLaneSign = -turnSign;
+        }
+
 
         /// <summary>Main spawn loop using UniTask.</summary>
         async UniTaskVoid SpawnLoopAsync(CancellationToken ct)
@@ -249,6 +282,57 @@ namespace CosmicShore.Gameplay
             XScaler = to;
         }
 
+        /// <summary>
+        /// Widest each rail may be squeezed to, as a fraction of the slab's half-width. See
+        /// <see cref="ClampHalfGap"/>.
+        /// </summary>
+        const float RailFloorFraction = 0.95f;
+
+        bool _gapOverrunReported;
+
+        /// <summary>
+        /// Bound the two-rail lay's HOLE against the slab it is cutting into.
+        ///
+        /// A two-rail lay is a slab of total width <c>BaseScale.x * XScaler</c> with a hole of
+        /// width <see cref="Gap"/> taken out of its middle: each rail runs from <c>|halfGap|</c>
+        /// out to the slab's half-width, so its width is
+        /// <c>BaseScale.x * XScaler / 2 - |halfGap|</c> and the slab's OUTER edge stays put
+        /// however far the hole opens.
+        ///
+        /// Nothing else bounds the two against each other - <see cref="Gap"/> and
+        /// <see cref="XScaler"/> are driven independently (<c>GrowTrailActionExecutor</c> moves
+        /// both, on separate weights, with no clamp on the gap) - and a hole wider than its slab
+        /// gives a ZERO OR NEGATIVE rail. That does not fail loudly:
+        /// <c>PrismScaleAnimator.SetTargetScale</c> silently clamps the axis up to its 0.5 floor
+        /// while <c>xShift</c> still throws the rail <c>|halfGap|</c> out to the side, so the
+        /// vessel flies on with a pair of slivers somewhere off its flank and reads as having no
+        /// trail at all - the "a silent clamp is indistinguishable from a config that never
+        /// applied" trap, one layer down.
+        ///
+        /// So it is bounded here, at the one place that knows both numbers, leaving each rail
+        /// <see cref="RailFloorFraction"/> of the slab's half-width. Checked against every shipped
+        /// two-rail vessel AT REST - Rhino 1.00/1.425, Squirrel 9.25/9.50, Manta 9.00/9.50,
+        /// Dolphin 0.50/1.425, Serpent 0.50/1.425 - and against their <c>maxBlockScale</c>
+        /// ceilings, which only widen the slab and so only loosen the bound: no authored
+        /// configuration is touched, and this can only ever bite on runaway growth.
+        /// </summary>
+        float ClampHalfGap(float halfGap)
+        {
+            float limit = BaseScale.x * XScaler * 0.5f * RailFloorFraction;
+            if (Mathf.Abs(halfGap) <= limit) return halfGap;
+
+            if (!_gapOverrunReported)
+            {
+                _gapOverrunReported = true;
+                CSDebug.LogWarning(
+                    $"[PrismSpawner] {name}: trail Gap {Gap:0.##} is wider than the slab it cuts " +
+                    $"(BaseScale.x {BaseScale.x:0.##} x XScaler {XScaler:0.##}). Rails would be laid " +
+                    "with zero or negative width, off to the vessel's flank. Clamping - but whatever " +
+                    "drives Gap is the thing to fix. Reported once per vessel.");
+            }
+            return Mathf.Clamp(halfGap, -limit, limit);
+        }
+
         /// <summary>Creates a block at offset using PrismFactory via event channel.</summary>
         void CreateBlock(float halfGap, Trail trail)
         {
@@ -257,6 +341,8 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("[PrismSpawner] Prism spawn event channel is not assigned.");
                 return;
             }
+
+            halfGap = ClampHalfGap(halfGap);
 
             // --- Compute scale from BaseScale ---
             Vector3 scale = ApplyBoostScale(new Vector3(
@@ -272,6 +358,14 @@ namespace CosmicShore.Gameplay
             float volumeMult = trailVolume.EvaluateLive(vesselStatus);
             if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
                 scale *= Mathf.Pow(volumeMult, 1f / 3f);
+
+            // Yastri flare: the OUTER lane fattens with turn intensity, so a hard bank throws
+            // visibly flared prisms off the outer wing. Applied BEFORE xShift is derived so
+            // the flared rail still nests against the gap edge rather than drifting outboard.
+            if (_turnFlare01 > 0.01f && halfGap != 0f
+                && (int)Mathf.Sign(halfGap) == _turnFlareLaneSign
+                && turnFlareMaxScale > 1f)
+                scale.x *= Mathf.Lerp(1f, turnFlareMaxScale, _turnFlare01);
 
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
@@ -338,8 +432,13 @@ namespace CosmicShore.Gameplay
             // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
             // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
             // Straight-line trail stays unshielded - the armor is the drift line's reward.
+            // 'Shielded Turn Trails' is the same rule with the drift swapped for a held hard
+            // TURN (the Manta's Yastri, above half intensity) — turning becomes fortifying.
             if (shielded || (massUpgradeShieldsTrail
                              && vesselStatus is { IsDrifting: true }
+                             && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true)
+                         || (turnUpgradeShieldsTrail
+                             && _turnFlare01 >= 0.5f
                              && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 

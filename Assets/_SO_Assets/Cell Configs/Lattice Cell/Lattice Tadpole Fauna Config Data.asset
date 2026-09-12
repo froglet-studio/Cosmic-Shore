@@ -17,17 +17,14 @@ MonoBehaviour:
   PopulationSize: 4
   SpawnProbability: 1
   FeedsPerOffspring: 20
-  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 8
   CenterFocusBias: 0.35
   Element: 2
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
     Enabled: 1
+    HeartWorldScale: 1.563
     BaseBodyScale: 0.4
     BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
     StarvationSeconds: 90

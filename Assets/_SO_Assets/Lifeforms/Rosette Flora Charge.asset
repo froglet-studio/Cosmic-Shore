@@ -21,12 +21,11 @@ MonoBehaviour:
   Element: 1
   Variant:
     Enabled: 1
+    HeartWorldScale: 2.254
     LeafSize: {x: 4.76, y: 4.76, z: 1}
     GrowPeriod: 1.6
     ShieldPeriod: 1.0
     MaxTotalSpawnedObjects: 76
     PlantRadiusCellFraction: 0.6
-  InitialLevel: 1
-  LeafScalePerLevel: 1.15
   SpreadElements: 0
   ElementPalette: []

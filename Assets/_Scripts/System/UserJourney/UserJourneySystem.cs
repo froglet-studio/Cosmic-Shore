@@ -18,7 +18,6 @@ namespace CosmicShore.Core
 
             foreach (var quest in quests)
             {
-                CSDebug.Log($"quest.OnQuestCompleted.length: {quest.GetInvocationCount()}");
                 quest.OnQuestCompleted += CompleteQuest;
             }
         }

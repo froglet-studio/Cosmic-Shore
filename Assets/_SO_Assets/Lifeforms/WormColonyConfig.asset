@@ -40,10 +40,8 @@ MonoBehaviour:
   MouthRadius: 28
   FaunaBiteRange: 34
   MaxBitesPerTick: 6
-  FeedsPerSegment: 24
   SegmentBloomSeconds: 2
-  EndRegrowSeconds: 18
-  RegrownEndElement: 2
+  FallbackProductionPeriodSeconds: 30
   StarvationShedIntervalSeconds: 12
   AggroRadius: 220
   StrikeRange: 90

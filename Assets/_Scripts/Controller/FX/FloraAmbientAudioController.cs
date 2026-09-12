@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using FMOD.Studio;
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -81,29 +82,22 @@ namespace CosmicShore.Gameplay.Audio
 
             if (ambientEvent.IsNull)
             {
-                Debug.LogError($"[FloraAmbientAudioController] '{name}' has no Ambient Event assigned.", this);
+                CSDebug.LogError($"[FloraAmbientAudioController] '{name}' has no Ambient Event assigned.", this);
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(ambientEvent);
-            if (!_instance.isValid())
-            {
-                Debug.LogError(
-                    $"[FloraAmbientAudioController] Failed to create FMOD instance for '{ambientEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
+            if (!FmodSafe.TryCreateInstance(ambientEvent, out _instance, this))
                 return;
-            }
 
             // Spatialise: follow this flora through the world.
-            RuntimeManager.AttachInstanceToGameObject(_instance, gameObject);
+            FmodSafe.Attach(_instance, gameObject);
             ApplySFXVolume();
 
             var startResult = _instance.start();
             _instanceStarted = startResult == FMOD.RESULT.OK;
             if (!_instanceStarted)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[FloraAmbientAudioController] '{name}' start() returned {startResult} on '{ambientEvent}'.",
                     this);
                 _instance.release();
@@ -111,19 +105,13 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            if (debugLog)
-                Debug.Log($"[FloraAmbientAudioController] '{name}' ambient START.", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[FloraAmbientAudioController] '{name}' ambient START.", this);
         }
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                    _instance.stop(stopMode);
-                _instance.release();
-                _instance.clearHandle();
-            }
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, stopMode);
             _instanceStarted = false;
         }
 
@@ -136,17 +124,8 @@ namespace CosmicShore.Gameplay.Audio
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

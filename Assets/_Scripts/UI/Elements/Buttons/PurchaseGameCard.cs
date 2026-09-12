@@ -12,9 +12,7 @@ namespace CosmicShore.UI
 
         public override void SetVirtualItem(VirtualItem virtualItem)
         {
-            CSDebug.Log($"SetVirtualItem - Name:{virtualItem.Name}");
             // game = Arcade.Instance.GetArcadeGameSOByName(virtualItem.Name);
-            CSDebug.Log($"SetVirtualItem - game:{game}");
             ItemImage.sprite = game.CardBackground;
             ItemNameLabel.text = game.DisplayName;
             ItemDescriptionLabel.text = game.Description;

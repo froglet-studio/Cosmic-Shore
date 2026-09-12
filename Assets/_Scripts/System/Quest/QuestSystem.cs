@@ -28,7 +28,7 @@ namespace CosmicShore.Core
 
         public void CompleteQuest(Quest quest)
         {
-            CSDebug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[QuestSystem] Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
             // TODO: Look for PlayerDataController
@@ -61,23 +61,16 @@ namespace CosmicShore.Core
                 ActiveQuests[quest.CompletionAction.Label].Add(quest);
             else
                 ActiveQuests.Add(quest.CompletionAction.Label, new List<Quest>() { quest });
-
-            CallToActionSystem.Instance.AddCallToAction(quest.CallToAction);
         }
 
         /// <summary>
-        /// 1) Notify all CallToAction targets listening for this action to dismiss their indicators & remove from ActiveTargets list.
-        /// 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
-        /// 3) Remove from ActiveCallsToAction
+        /// Advances every active quest whose completion action matches, and retires the ones
+        /// that complete. (This summary previously described the call-to-action dismissal
+        /// steps, copied from a system this no longer talks to - retired 2026-09-08, F7.)
         /// </summary>
         /// <param name="action"></param>
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)
         {
-            CSDebug.Log($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
-            CSDebug.Log($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
-            foreach (var quest in ActiveQuests)
-                CSDebug.Log($"ActiveQuests.Key: {quest.Key}");
-
             if (ActiveQuests.Count <= 0) return;
             if (!ActiveQuests.ContainsKey(action.Label)) return;
 
@@ -91,8 +84,6 @@ namespace CosmicShore.Core
 
                     if (TestQuest.CompletionAction.Value <= action.Value)
                         CompleteQuest(TestQuest);
-                    else
-                        CSDebug.Log($"Score not high enough: {action.Value}");
 
                 }
                 else
