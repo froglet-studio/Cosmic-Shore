@@ -1,5 +1,26 @@
 # Prompt — stop shipping three folders that only exist for demos and editor tools
 
+> ## ✅ EXECUTED 12 Sep 2026 — do not re-run
+>
+> Branch `claude/eloquent-fermi-2gkh1a`. §A1 removed, §A2 moved under `Editor/`, §A3's asmdef
+> made editor-only. **The art half of §A3 is still open** and belongs to
+> [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md),
+> not here.
+>
+> **Two things in the instructions below were wrong** — corrected in
+> [`../LAUNCH_BLOCKER_INDEX.md`](../LAUNCH_BLOCKER_INDEX.md) §A1–§A3, which is now the record:
+>
+> 1. **"`git mv` those two assets" is FOUR assets.** Both fonts are `m_AtlasPopulationMode: 1`
+>    (dynamic) with empty glyph tables, so each needs its **source TTF**, and both TTFs were
+>    inside the folder being deleted. Following this as written would have left `Manta.prefab`
+>    and the quest UI rendering **no glyphs**, with both font references resolving perfectly.
+> 2. **QuickScene Pro does not use `Resources.Load`.** Its only script has zero occurrences of
+>    it, and draws no icon — so the acceptance criterion *"the tool still opens and draws its
+>    icons"* describes behaviour it has never had. The move is safe for a different reason:
+>    nothing loads them.
+>
+> Kept here as the record of what was asked. Paste it nowhere.
+
 Paste everything below into a fresh session.
 
 ---

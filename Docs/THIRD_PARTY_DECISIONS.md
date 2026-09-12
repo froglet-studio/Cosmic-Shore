@@ -75,7 +75,7 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 | **QuickScene Pro** | editor code, but `Resources/` (1.8 MB) ships | editor tool | **KEEP, move the `Resources/`** — index §A2 |
 | **EDM4U** | editor-only ✅ | — | **KEEP** — Apache 2.0, licence present |
 | **Microsoft.Unity.Analyzers** | compile-time | — | **KEEP** |
-| **TextMesh Pro** | ships (both `Resources/`) | fleet-wide | **KEEP**, prune Examples & Extras — index §A1 |
+| **TextMesh Pro** | ships (ONE `Resources/`) | fleet-wide | **KEEP**. Examples & Extras ✅ **pruned 12 Sep 2026** — index §A1 |
 | **Parse** | ships if referenced | **0** references, **0** code | **DELETE** (row 8 prompt) |
 | **Wwise** | ships nothing (0 assets) | **0** | **DELETE** (row 8 prompt) |
 | **SerializeInterface** | ships (no asmdef) | **7** files | **REWRITE first-party** (row 8 prompt) |

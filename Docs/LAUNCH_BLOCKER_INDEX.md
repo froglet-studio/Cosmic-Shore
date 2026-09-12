@@ -22,11 +22,15 @@ with **what references it (measured)**, **what breaks if it goes**, and a **verd
 > * `TMP Settings.asset` — the asset that gates *all* text — resolves every reference it holds
 >   (default font `LiberationSans SDF`, `EmojiOne`, the style sheet, both line-breaking tables),
 >   and it lives in `TextMesh Pro/Resources/`, which this branch does not touch (§C1).
-> * **All 10** TMP font assets referenced by any enabled build scene, `_Prefabs` or `_SO_Assets`
->   resolve to a file on disk — including the two relocated ones, whose referrers
->   (`Manta.prefab`, `QuestItemPrefab.prefab`) still carry their guids.
-> * **Both dynamic fonts resolve their source TTF**, and they are the only two dynamic fonts in
->   the project; the other 14 are `STATIC` with baked glyphs and no source-font reference at all.
+> * **All 13** TMP font assets referenced by any enabled build scene, `_Prefabs`, `_SO_Assets`,
+>   `Resources` or `FTUE` resolve to a file on disk — including the two relocated ones, whose
+>   referrers (`Manta.prefab`, `QuestItemPrefab.prefab`) still carry their guids. The
+>   most-referenced font in the game is `ALDRICH-REGULAR SDF` (64 referrers), which lives in the
+>   untouched `TextMesh Pro/Resources/`.
+> * **Every dynamic font in the project resolves its source TTF** — all 3 of them, which is the
+>   two relocated here plus `LiberationSans SDF - Fallback` (untouched, and the font TMP falls
+>   back to for a missing glyph). The other 18 of 21 are `STATIC` with baked glyphs and no
+>   source-font reference at all.
 > * Zero new dangling guid references project-wide (see each section's proof).
 > * All five out-of-editor gates green: conditional-compilation, enum-member, switch-label,
 >   self-referential-local. `check_using_directives` reports 18 problems, **identical at the
@@ -132,6 +136,15 @@ Both blind spots were checked explicitly for every candidate below.
 
 ## A — ships today, should not
 
+> **Tooling added for these rows.** `Tools/Build/measure_dangling_guid_references.py` answers the
+> one question every removal in this document needs answered — *did taking this out leave a
+> reference pointing at nothing?* — and there was no committed tool for it. It is a **READER**
+> (prints; writes only a snapshot JSON you name), it carries a negative control
+> (`--self-test` injects a dangling reference and requires the diff to report NOT CLEAN), and it
+> is kept rather than retired because **§A4, §A5, §E1 and §E2 are all still-pending removals that
+> need exactly this proof**. Usage is in its docstring; §A1's proof block below is a worked
+> example.
+
 ### A1 · `Assets/Unity Assests/TextMesh Pro/Examples & Extras` — ✅ **REMOVED 12 Sep 2026**
 
 TMP's demo content, on the wrong side of two rules at once: `Examples & Extras/Resources/` is a
@@ -165,11 +178,13 @@ build their atlas at runtime from `m_SourceFontFile`. Moving only the two `.asse
 deleting the folder would have left a shipped vessel prefab and the quest UI rendering **no glyphs
 at all**, with both font references still resolving perfectly.
 
-**And these two are the ONLY dynamic fonts in the project.** Measured over all 16 TMP font assets
-on disk: 14 are `STATIC` with baked glyphs and no source-font reference of any kind; the 2 dynamic
-ones are exactly the 2 this row flagged. So the only fonts in the game that cannot render without
-a TTF were the only two whose TTF this plan would have deleted — a coincidence worth naming,
-because it is what made the trap invisible.
+**And these were the only dynamic fonts in the folder being deleted.** Measured over all 21 TMP
+font assets on disk (whole-file scan — a first pass that read only each asset's leading 4 KB
+missed 5 of them and undercounted): **18 are `STATIC`** with baked glyphs and no source-font
+reference of any kind, and **3 are DYNAMIC** — these two, plus `LiberationSans SDF - Fallback`,
+which lives in `TextMesh Pro/Resources/` and was never at risk. So every font in the game that
+cannot render without a TTF that this plan would have touched, it would have broken; the third
+one it never reached. All 3 resolve their TTF today.
 
 > **General rule this row now carries: a reference check tells you who points AT an asset, never
 > what that asset needs to FUNCTION.** A guid sweep proved the two fonts were needed and said
@@ -199,19 +214,36 @@ shadowing.
 
 #### Guid-count proof
 
+Reproduce with **`Tools/Build/measure_dangling_guid_references.py`** (added by this branch, a
+READER — see §A's tooling note below), snapshotting the merge base and this branch:
+
 ```
-guids owned on disk               7526 -> 7382   (144 assets removed)
-distinct unowned guids referenced  444 ->  419
-reference edges to unowned guids  2127 -> 1972
+guids owned on disk        7526 -> 7382     (144 assets removed)
+distinct unowned guids      444 ->  419
+reference edges            2129 -> 1974
+
+NEW unowned guids introduced ............ 0
+NEW (guid -> referrer) edges ............ 0
+edges removed ........................... 155
+  of which the referrer was NOT under 'Examples & Extras': 0
+
+VERDICT: clean - nothing outside the change lost a reference
 ```
 
-A falling count is not the proof — a new dangle can hide behind a larger number of removals — so
-the two sets were **differenced**: **0 new unowned guids**, 157 edges removed, and **0 of those
-157 had a referrer outside `Examples & Extras`**. (The 2 apparently-new edges are the relocated
-fonts naming `71c1514a…` = `TMP_FontAsset`'s own script guid at their new path; the same 2 appear
-among the 157 removed, at the old path. That guid is shared by 25 font assets including the keeper
-`LiberationSans SDF` and resolves from the builtin `com.unity.ugui` 2.0.0 that bundles TMP in
-Unity 6 — which is why 444 is large and why only the **delta** is the signal.)
+The last line is the one that carries the proof: **every one of the 155 lost edges had its referrer
+inside the folder being deleted**, so nothing outside it lost a reference. A falling total would
+not have shown that on its own — a new dangle can hide behind a larger number of removals, which
+is why the tool differences the SETS rather than comparing counts.
+
+Two properties of that measurement are worth knowing before quoting it. **The absolute count is
+not a defect count**: 444 is dominated by package guids that have no `.meta` in a clone
+(`Library/PackageCache` is not checked in) — `TMP_FontAsset` is `71c1514a…`, shared by 21 font
+assets including the keeper `LiberationSans SDF`, resolving from the builtin `com.unity.ugui`
+2.0.0 that bundles TMP in Unity 6. Only the **delta** is the signal. And **an edge is keyed by the
+referrer's own guid, never its path**, so a MOVE contributes no edge change at all — which is why
+`NEW edges` is 0 here despite five assets changing path. A first, path-keyed cut of the tool
+reported 24 phantom "lost" references for three QuickScene Pro demo scenes that had simply moved
+one folder deeper.
 
 #### Licence side effect, in the good direction
 
@@ -229,7 +261,7 @@ QuickScene Pro is an **editor tool** and its code was already correctly under `E
 
 **Done in `815c5890`** — `Resources/` → `Editor/Resources/` and `Demo/` → `Editor/Demo/`. Nothing
 deleted. Result: `YethGameDev` reached **1.7 MB → 0.0 MB** with the asset count unchanged, so the
-whole 4.2 MB vendored tool now reaches a player build **not at all**. The 3 assets that stopped
+whole 4.4 MB vendored tool now reaches a player build **not at all**. The 3 assets that stopped
 being reachable are exactly the 3 that were `Resources/` roots. Licence is MIT with the notice
 present, so this was shipped bloat and never an entitlement problem.
 
