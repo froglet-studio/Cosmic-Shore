@@ -342,9 +342,14 @@ Walk every changed file against these gates:
   prose went on describing a vessel the branch no longer shipped, with the margin actually
   **negative** (measured: the mode's signature manoeuvre landing 5 times in 6). So at §2, list
   every constant the branch DERIVED from another, and re-derive each against the values the
-  branch is shipping NOW. Then close it the way it should have been closed: put the derivation in
-  the offline model so it recomputes, and add a mirror gate that re-reads the source values out
-  of the shipped assets — a transcription is only true on the day it is made.
+  branch is shipping NOW. **A MEASUREMENT quoted into a doc is a derived value too**, and
+  the commonest stale one: a count taken at commit 2 describes the tree at commit 2, not the tree
+  you are shipping. One branch's write-up said "shared by 25 font assets" — true when measured,
+  **21** by ship time, because a later commit in the same branch deleted four of them. Re-run
+  every number a doc states, at ship time, against the tree as it now stands. Then close it the
+  way it should have been closed: put the derivation in the offline model so it recomputes, and
+  add a mirror gate that re-reads the source values out of the shipped assets — a transcription
+  is only true on the day it is made.
 
 - **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
   The absence-claim rule below covers comments that rot. This is the variant that was never true

@@ -844,6 +844,85 @@ The same shape appears anywhere a computed needle can come back empty — a `sed
 key lookup, a `jq` path that misses. **A search whose needle is empty is not a search that found
 everything; it is a search that was never asked a question.**
 
+### Trap: a reference check says who points AT an asset, never what the asset needs to FUNCTION
+
+This is the one that breaks shipped content while every measurement says the removal is safe.
+
+A guid sweep over `Assets/Unity Assests/TextMesh Pro/Examples & Extras` correctly found exactly
+two assets first-party content referenced — two TMP font assets, one on `Manta.prefab`, one on a
+quest UI prefab — and the removal plan written from it said "move those two font assets, then
+delete the rest". Both fonts are `m_AtlasPopulationMode: 1` (**dynamic**) with `m_GlyphTable: []`
+and `m_CharacterTable: []`: they carry no baked glyphs and build their atlas at runtime from
+`m_SourceFontFile`, and **both source TTFs were inside the folder being deleted**. Executing the
+plan as written would have left a shipped vessel prefab and the quest UI rendering **no glyphs at
+all**, with both font references still resolving perfectly and nothing dangling.
+
+The sweep was not wrong. It answered the question it was asked — *who needs this?* — and the
+question that decides a removal is *and what does THAT need?* The failure shape is specific and
+recurring: an asset that is a **recipe rather than a payload** (a dynamic font, a material with a
+texture, a prefab variant, an animator with clips, a mesh with an `externalObjects` remap) carries
+its dependency as an ordinary reference that no inbound check looks at.
+
+So for every asset you plan to SALVAGE out of a folder you are deleting, dump its **outgoing**
+guids and resolve each to an owner:
+
+```sh
+grep -o 'guid: [0-9a-f]\{32\}' "$asset" | cut -d' ' -f2 | sort -u | while read g; do
+  printf '  %s -> %s\n' "$g" "$(grep -rl "^guid: $g\$" Assets --include='*.meta' | head -1)"
+done
+```
+
+Anything resolving INSIDE the doomed folder has to come with it. And read the asset's own mode
+flags before deciding a dependency is editor-only — a *static* TMP font genuinely does not need
+its TTF at runtime, which is exactly why the dynamic case is easy to wave away.
+
+### Trap: a measurement that scans a bounded PREFIX of a file has measured the prefix
+
+Classifying assets by "does this file contain guid X" is cheap and correct until you cap the read
+for speed. `open(a,'rb').read(4000)` looking for `TMP_FontAsset`'s script guid missed **5 of 21**
+font assets, because in a TMP font asset `m_Script` sits around line 121 — past 4 KB once the
+embedded material sub-asset is above it. The undercount then propagated into three separate claims
+in three artifacts (a census of 16/14/2 that was really 21/18/3, and a referenced-by-shipped-content
+count of 10 that was really 13 — the missing ones including the project's single most-referenced
+font at 64 referrers).
+
+All three were **self-consistent with each other**, because they shared one upstream measurement.
+Self-consistency across artifacts is not corroboration when they have a common source — the same
+rule `/ship` §2 states for a value read off a field initializer, reached from the measurement side.
+Read whole files unless you can prove the marker is in the prefix, and when a claim is load-bearing,
+re-derive it from a second, differently-shaped query.
+
+### Technique: prove a removal dangled nothing — key edges by the referrer's GUID, not its path
+
+`Tools/Build/measure_dangling_guid_references.py` is the committed reader for this (READER; it
+writes only a snapshot JSON you name, and `--self-test` is negative-controlled). Snapshot the merge
+base, make the change, snapshot again, `--diff` them with `--removed-under <the path you removed>`.
+
+Three properties are what make the answer trustworthy, and each was a wrong first cut:
+
+1. **The absolute count is not a defect count.** Package code has no `.meta` in a clone
+   (`Library/PackageCache` is not checked in), so every `m_Script` into a package reads as unowned
+   — ~440 distinct guids on this project before any change. Only the DELTA is the signal.
+2. **A falling count is not a proof.** A new dangle hides behind a larger number of removals.
+   Difference the SETS both ways, and split every lost edge by whether its referrer was inside the
+   path you removed. The proof is two zeros: no new unowned guids, and no lost edge whose referrer
+   was outside the change.
+3. **A MOVED referrer is not a lost reference.** Key an edge by the referrer's own guid, never its
+   path, or a `git mv` reports as one loss plus one gain. A path-keyed first cut produced 24
+   phantom "lost" references for three demo scenes that had moved one folder deeper — on a branch
+   that both moves and removes, that is the difference between a gate and noise.
+
+### Trap: "reachable MB" and "folder MB" are different numbers and both are in scope
+
+`measure_build_reachability.py` reports how many bytes a folder's assets are *reached by a build*;
+`du -sh` reports what is on disk. They diverge by whatever is unreferenced, which for a vendored
+package is most of it — and the reachability number is the smaller, more impressive one, so it is
+the one that gets quoted by mistake. Two claims in one session said "12 MB" and "4.2 MB" for
+folders that measure 12 MB (coincidence) and **4.4 MB** on disk.
+
+State which you mean every time: *"reaches a build"* vs *"on disk"*. A removal's headline is
+usually the first and its licence/repo-hygiene argument is the second.
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
