@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
 
             NormalizeWeights();
 
-            Debug.Log($"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
 
             int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
@@ -248,7 +248,7 @@ namespace CosmicShore.Gameplay
                     prism.prismProperties.IsSuperShielded = true;
                 shielded++;
             }
-            Debug.Log($"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[SegmentSpawner] Super-shielded {shielded} track prisms (instant={superShieldEngageInstant}).");
         }
 
         /// <summary>

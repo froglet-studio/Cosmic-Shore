@@ -131,7 +131,7 @@ namespace CosmicShore.Core
         
         public static void SetActiveLoadoutIndex(int index) 
         {
-            CSDebug.Log("Loadout Index changed to " + index);
+            CSDebug.LogVerbose(CSLogChannel.CloudData, "[Loadout] Active loadout index changed to " + index);
 
             index = Mathf.Clamp(index, 0, loadouts.Count-1);
             ActiveLoadoutIndex = index;

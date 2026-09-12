@@ -194,7 +194,7 @@ namespace CosmicShore.Gameplay
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
 
-                CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
+                CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
             }
         }
 
@@ -349,14 +349,14 @@ namespace CosmicShore.Gameplay
 
         private void OnToggleInvertY(bool status)
         {
-            CSDebug.Log($"[InputController] OnToggleInvertY called with status: {status}");
+            CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Invert Y -> {status}");
             InputStatus.InvertYEnabled = status;
             currentStrategy?.SetInvertY(status);
         }
 
         private void OnToggleInvertThrottle(bool status)
         {
-            CSDebug.Log($"[InputController] OnToggleInvertThrottle called with status: {status}");
+            CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Invert throttle -> {status}");
             InputStatus.InvertThrottleEnabled = status;
             currentStrategy?.SetInvertThrottle(status);
         }

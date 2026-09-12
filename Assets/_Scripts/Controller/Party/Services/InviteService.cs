@@ -35,6 +35,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -142,14 +143,14 @@ namespace CosmicShore.Gameplay
                 };
             }
 
-            Debug.Log($"[InviteService] AddOrRefresh → target={targetPlayerId}, sessionId={sessionId}, total={OutgoingCount}");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] AddOrRefresh - target={targetPlayerId}, sessionId={sessionId}, total={OutgoingCount}");
         }
 
         /// <inheritdoc/>
         public void Remove(string targetPlayerId)
         {
             if (_entries.Remove(targetPlayerId))
-                Debug.Log($"[InviteService] Remove → {targetPlayerId}, remaining={OutgoingCount}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] Remove - {targetPlayerId}, remaining={OutgoingCount}");
         }
 
         /// <inheritdoc/>
@@ -158,7 +159,7 @@ namespace CosmicShore.Gameplay
             if (_entries.TryGetValue(targetPlayerId, out var entry))
             {
                 entry.ExpiresAt = newExpiresAtUnscaledTime;
-                Debug.Log($"[InviteService] RefreshTimeout → {targetPlayerId}");
+                CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] RefreshTimeout - {targetPlayerId}");
             }
         }
 
@@ -178,7 +179,7 @@ namespace CosmicShore.Gameplay
                 entry.SessionId = realSessionId;
                 patched++;
             }
-            Debug.Log($"[InviteService] UpdatePayloadsWithRealSessionId → patched {patched}/{OutgoingCount} entries with {realSessionId}");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] UpdatePayloadsWithRealSessionId - patched {patched}/{OutgoingCount} entries with {realSessionId}");
             return patched;
         }
 
@@ -218,7 +219,7 @@ namespace CosmicShore.Gameplay
             foreach (var id in removed)
                 _entries.Remove(id);
 
-            Debug.Log($"[InviteService] RemoveExpired → {removed.Count} expired, {OutgoingCount} remaining");
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[InviteService] RemoveExpired - {removed.Count} expired, {OutgoingCount} remaining");
             return removed;
         }
 

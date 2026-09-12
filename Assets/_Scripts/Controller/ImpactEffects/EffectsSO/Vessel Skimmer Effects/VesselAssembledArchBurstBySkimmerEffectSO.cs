@@ -131,7 +131,6 @@ namespace CosmicShore.Gameplay
             container.SetParent(null, true); // explicit: no parent
 
             // Instantiate rods per layer
-            int total = 0;
             int layerCount = Mathf.Max(1, layers);
 
             for (int layer = 0; layer < layerCount; layer++)
@@ -143,12 +142,8 @@ namespace CosmicShore.Gameplay
                     Vector3 a = points[e.a] + normals[e.a] * offset;
                     Vector3 b = points[e.b] + normals[e.b] * offset;
                     SpawnRod(a, b, up, container);
-                    total++;
                 }
             }
-
-            if (verbose)
-                CSDebug.Log($"[AssembledArchBurstEffectSO] Spawned {total} rods in front of IMPACTEE. hit={hitFound} seed={s} type={lattice}", container);
         }
 
         // ---- Helpers (pure/static) ----

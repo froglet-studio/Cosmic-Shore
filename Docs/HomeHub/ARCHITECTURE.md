@@ -37,9 +37,9 @@ Unavailable  → not interactable, reads as not-built
 An entry that is simply **not drawn** tells the player the game has three things in it, and the
 day it ships they have to re-learn the screen. Both unfinished states stay on screen; they differ
 in what they promise. `Locked` says *this exists and you cannot open it yet* — which was true of
-Arena until its launch window shipped (§3); nothing is Locked today, and the state stays because
-the next unfinished entry will need it. `Unavailable` says *this is not built*, which is true of
-Mission, and it does not respond at all.
+Arena until its launch window shipped (§3), and is true today of the **commerce** surfaces, which
+are the pattern's second set of consumers (§2.4). `Unavailable` says *this is not built*, which is
+true of Mission, and it does not respond at all.
 
 `MenuHubButton.SetAvailability` is the runtime seam a progression unlock plugs into later, so
 opening Arena needs no new plumbing here.
@@ -56,6 +56,8 @@ live on the hub button any more:
 | `MenuHubButton` | hub entries | which modal Available opens |
 | `ScreenSwitcher` | nav-bar links | which screens are closed (`disabledScreens`), and what Available navigates to |
 | `NavLink` | in-screen tab rows | which view Available selects |
+| `SO_CommerceAvailability` | `Resources/CommerceAvailability` | which state each **commerce** surface is in, for the invite build's de-scope (§2.4) |
+| `CommerceAffordance` | any commerce control | which surface that control belongs to — never what state it is in |
 
 **The shared piece is the state and its presentation, never the target.** The three hosts aim at
 three different types — `ScreenSwitcher.ModalWindows`, `MenuScreens`, a `View` — and cannot be
@@ -93,6 +95,52 @@ Driven at runtime, not authored on the links, for the reason the list exists at 
 copies of the same fact drift. A screen added to `disabledScreens` tomorrow is marked with no scene
 edit; a screen removed from it goes back to normal without one either. Only the disabled links get
 a view: an Available entry has nothing to present.
+
+### 2.4 Commerce: a second authority, because a de-scope is a POSTURE rather than a design decision
+
+The invite build sells nothing — all IAP and web checkout is cut behind the paid-EA gate, and the
+checkout flow still carries an unresolved entitlement-verification gap
+(`Docs/MENU_PROGRESSION_AND_IAP.md` §5, §6). Every surface that would take money therefore carries
+one of these states, authored in **one** place: `Resources/CommerceAvailability`
+(`SO_CommerceAvailability`). Full record: `Docs/MENU_PROGRESSION_AND_IAP.md` §6.
+
+`disabledScreens` is deliberately *not* that place, even though a de-scoped store screen is a closed
+screen. The two lists answer different questions and move on different clocks:
+
+| | `disabledScreens` | `SO_CommerceAvailability` |
+|---|---|---|
+| Says | this screen is **permanently** closed (ARK, PORT) | this surface is closed **for this build** |
+| Reads as | `Locked` | whatever the surface's own row says |
+| Flips when | design opens the screen | the paid-EA conversion — **one asset edit** |
+| Lives in | the scene | `Resources/` |
+
+So `ScreenSwitcher.IsScreenDisabled` consults both, and `MarkDisabledNavLinks` takes a commerce
+screen's state and wording from the config rather than stamping `Locked`. A screen must be authored
+in exactly one of them; a commerce screen the config calls `Available` while it sits in
+`disabledScreens` falls back to `Locked`, because a nav entry that is skipped **and** reads as open
+is the defect the whole mechanism exists to prevent.
+
+**The config says WHICH state; it never says what the state looks like.** It has no colour, no
+alpha, no overlay and no sting of its own — `SO_CommerceAvailability.Mark` and `TryPress` both hand
+off to `MenuAvailabilityView`, so the de-scope cannot become a second locked look. That is asserted
+rather than trusted: `CommerceDeScopeTests.ThereIsExactlyOneLockedLook` fails if either commerce
+file grows presentation.
+
+Two rules come out of building it, and both generalise past commerce.
+
+**A config whose job is to CLOSE something must fail closed.** Every other config in the project
+falls back to the behaviour that shipped before it existed. This one inverts that: its code defaults
+are the de-scoped state, so a missing or unloadable asset closes the money surfaces instead of
+re-opening them. A surface that comes back because an asset failed to load is the one failure nobody
+notices until a player hits it.
+
+**A screen cannot mark the button that OPENS it.** A screen can only mark controls it holds a
+reference to, and only once its own `Start` has run — and the affordance that most needs marking is
+the one outside it that runs first. `EpisodeScreen` is the worked example: it sits *on* the panel it
+toggles, that panel ships inactive, so its `Start` cannot run until the panel opens, which is
+exactly what the de-scope prevents. Hence `CommerceAffordance`, a marker the control carries itself
+and applies from its own `OnEnable`. It holds only *which surface* — putting the state on it would
+recreate the drift the single config exists to remove.
 
 The link for a screen index is resolved the same two ways `UpdateNavBar` highlights one — the
 explicit `NavActiveImages` list first (each entry's **parent** is its button), then the legacy
@@ -150,9 +198,14 @@ the mode is finished, launchable, in the build settings, drawn by no screen, and
 the lists by hand. `Tools/Build/check_gamelist_scenes.py` now prints every master card that reaches
 NEITHER grid. It **reports rather than fails**, deliberately — withholding a finished mode from the
 grid while keeping it launchable is a legitimate state (a mode still being tuned), so a hard gate
-would be wrong about that case; what it cannot be wrong about is naming the card. As of 2026-09-10
-the arcade roster is **17 cards** = the master's 19 minus the 2 arena cards, and the Arcade grid
-draws **16** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window).
+would be wrong about that case; what it cannot be wrong about is naming the card. As of this branch
+the arcade roster is **19 cards** = the master's 21 minus the 2 arena cards, and the Arcade grid
+draws **18** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window) —
+17/16 before Bloomrush and Redline landed. Note that at 18 drawn cards the authored 12 slots need
+**two** cloned rows, where 16 needed one; both are injected, so the dead-button trap does not apply,
+but the scroll-extent fit is now carrying a case it has not carried before.
+
+**A mode GENERATOR is a second place that registration has to land.** Every `Tools/Build/author_*_assets.py` predates the split and registers the master alone, so a regenerated mode is master-only again and the report above fires on the next run rather than the change. `author_redline_assets.py` and `author_bloomrush_assets.py` now write both rosters; the rest still do not, and each one is a card that will fall off the grid the next time anybody runs it. Same shape as the ship protocol's standing note that *a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change*.
 
 ### 3.2 The Arena launch window: the same authority, one more question
 
@@ -665,6 +718,27 @@ and the freestyle enter/exit handlers — because the switcher already owns the 
 screen index and the freestyle flag, and a button that watched any one of them alone would be
 wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
 can neither be clicked through a modal nor reached by gamepad navigation.
+
+**That "freestyle is off" read is only as good as WHEN the flag is cleared, and it shipped wrong
+once.** `ScreenSwitcher.HandleExitFreestyle` runs on `OnMenuStateTransitionStart`, and the live
+state it consults (`InFreestyle` = the switcher's own flag OR `MenuCrystalClickHandler
+.IsInFreestyle`) used to say YES on the way out, because the handler cleared `_isInFreestyle` only
+after the camera blend's `await` — after it had already raised both of its exit events. So exiting
+freestyle resolved `visible = false`, left the hub row faded out and non-interactable, and
+scheduled nothing to recompute it: the app's primary navigation was gone until the player opened a
+modal or paged screens, and **the hub buttons are what open the modals**. The same staleness made
+`Refocus()` (which early-returns on `InFreestyle`) never restore the pad's selection, and made the
+gamepad gate flap — `HandleExitFreestyle` handed the pad back and `Update`'s self-heal took it away
+again for the whole blend. `TransitionToMenu` now clears the flag at the TOP, right after input is
+paused and autopilot resumes: freestyle is over there, and what follows is a camera blend, not
+flight. It mirrors the enter path (§4.1 — the flag is set before that side's start event, which is
+the property `ToyConfigureModal` relies on) and matches what `ToyboxController` already believed,
+since it has always treated `OnMenuStateTransitionStart` as the end of freestyle. The hub row and
+`Refocus()` also joined the input gate's self-heal in `ScreenSwitcher.Update`, so a missed
+transition event can no longer strand the row — a fifth call site, and the only one that is a
+backstop rather than a fact changing. General rule: **a flag cleared after an `await` is stale for
+every subscriber of the event raised before it** — if subscribers read the flag back, clear it
+before the raise, on both edges.
 
 ## 5. Scene wiring checklist
 

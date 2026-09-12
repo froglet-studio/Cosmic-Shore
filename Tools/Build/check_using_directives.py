@@ -52,10 +52,16 @@ MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
 
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
+# `#region <free text>` is PROSE, not code -- C# lets the label be anything to end of line and
+# does not require quotes, so an ordinary section heading like `#region Player Profile` reads as
+# a bare type reference and reports a missing `using` for a file that compiles perfectly.
+# `#error` / `#warning` take free text the same way. (`#if`/`#pragma` take real identifiers and
+# are deliberately left alone.)
+DIRECTIVE_TEXT = re.compile(r"^[ \t]*#[ \t]*(?:region|endregion|error|warning)\b.*?$", re.M)
 
 
 def strip(src: str) -> str:
-    return STRING.sub('""', COMMENT.sub(" ", src))
+    return STRING.sub('""', COMMENT.sub(" ", DIRECTIVE_TEXT.sub(" ", src)))
 
 
 def index_declarations():
@@ -164,6 +170,10 @@ def self_test():
          "a name inside a COMMENT is not a reference"),
         ("namespace CosmicShore.Gameplay { class A { int x = Foo.WidgetSO; } }", 0,
          "a qualified member access is not a bare reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { int x; }\n#endregion\n}", 0,
+         "a name in a #region LABEL is not a reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { WidgetSO w; }\n#endregion\n}", 1,
+         "...but a real reference in the same file is still caught"),
     ]
     ok = True
     for src, want, label in cases:
@@ -177,26 +187,59 @@ def self_test():
     return 0 if ok else 1
 
 
-def changed_files():
-    """Files changed against the base ref - the default scope, where the signal is exact."""
+def _git(args):
+    """Run a git command, returning (returncode, stdout). Never raises."""
     import subprocess
-    for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
-        try:
-            out = subprocess.run(["git", "diff", "--name-only", f"{base}...HEAD"],
-                                 cwd=ROOT, capture_output=True, text=True, timeout=30)
-            names = [n for n in out.stdout.split("\n") if n.endswith(".cs")]
-            if out.returncode == 0 and names:
-                return names
-        except Exception:
-            pass
-    # Fall back to the working tree's own uncommitted changes.
     try:
-        import subprocess
-        out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
-                             capture_output=True, text=True, timeout=30)
-        return [l[3:].strip() for l in out.stdout.split("\n") if l[3:].strip().endswith(".cs")]
+        out = subprocess.run(["git"] + args, cwd=ROOT, capture_output=True,
+                             text=True, timeout=30)
+        return out.returncode, out.stdout
     except Exception:
+        return 1, ""
+
+
+def working_tree_files():
+    """Uncommitted .cs files - a pre-commit run is mostly ABOUT these."""
+    rc, out = _git(["status", "--porcelain"])
+    if rc != 0:
         return []
+    names = []
+    for line in out.split("\n"):
+        # Porcelain is `XY PATH`; a rename is `R  OLD -> NEW` and only NEW exists to check.
+        path = line[3:].strip()
+        if " -> " in path:
+            path = path.split(" -> ", 1)[1].strip()
+        if path.endswith(".cs"):
+            names.append(path)
+    return names
+
+
+def changed_files():
+    """
+    Files changed against the base ref - the default scope, where the signal is exact.
+
+    Returns (scope_label, names). The FIRST base that RESOLVES wins, even when its diff is
+    EMPTY: an empty diff is a real answer ("this branch has no committed changes yet"), not a
+    reason to try the next base. Falling through on empty is how a STALE local `bleeding-edge`
+    - 661 commits behind origin on the day this was found - silently became the base and widened
+    this check from one file to 411, reporting 15 pre-existing findings that belonged to nobody's
+    change. The header above says never to wire the project-wide scope in as a blocking gate;
+    that promise is only kept if the scope cannot widen itself by accident. Uncommitted work is
+    always unioned in, and the chosen scope is always printed.
+    """
+    for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
+        if _git(["rev-parse", "--verify", "--quiet", base])[0] != 0:
+            continue
+        rc, out = _git(["diff", "--name-only", f"{base}...HEAD"])
+        if rc != 0:
+            continue
+        names = [n for n in out.split("\n") if n.endswith(".cs")]
+        extra = [n for n in working_tree_files() if n not in names]
+        label = f"{base}...HEAD"
+        if extra:
+            label += " + uncommitted"
+        return label, names + extra
+    return "uncommitted only", working_tree_files()
 
 
 def main():
@@ -204,11 +247,16 @@ def main():
     if "--self-test" in sys.argv:
         return self_test()
 
+    args_were_explicit = bool(args)
+    scope = "explicit paths"
     decls = index_declarations()
     if not args:
-        args = [SCRIPTS] if "--all" in sys.argv else changed_files()
+        if "--all" in sys.argv:
+            args, scope = [SCRIPTS], "--all (WHOLE PROJECT - expect false positives)"
+        else:
+            scope, args = changed_files()
         if not args:
-            print("using-directive check: no changed .cs files to check")
+            print(f"using-directive check: no changed .cs files to check (scope: {scope})")
             return 0
     targets = []
     for a in args:
@@ -228,8 +276,9 @@ def main():
                   f"- add `using {declared};`")
             problems += 1
 
+    scope_note = f", scope: {scope}" if not args_were_explicit else ""
     print(f"using-directive check: {'OK' if not problems else str(problems) + ' PROBLEM(S)'} "
-          f"({len(targets)} files, {len(decls)} types indexed)")
+          f"({len(targets)} files, {len(decls)} types indexed{scope_note})")
     return 1 if problems else 0
 
 

@@ -1,9 +1,9 @@
 using CosmicShore.Gameplay;
 using System.Collections;
 using System.Collections.Generic;
-using CosmicShore.Utility;
 using UnityEngine;
 using System.Linq;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class WallAssembler : Assembler
@@ -312,7 +312,6 @@ namespace CosmicShore.Gameplay
                     yield return new WaitForSeconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
-                        //CSDebug.Log("Bonded Top and Bottom");
                         StopAllCoroutines();
                         Prism.Grow();
                         if (TopMate.Mate.MateList.Count < 2)
@@ -441,7 +440,6 @@ namespace CosmicShore.Gameplay
                     if (siteType == SiteType.Top &&
                         (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
-                        //CSDebug.Log("ReFound MateRight");
                         mateComponent.Prism.ActivateShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
@@ -449,7 +447,6 @@ namespace CosmicShore.Gameplay
                     if (siteType == SiteType.Bottom &&
                         (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
-                        //CSDebug.Log("ReFound MateLeft");
                         mateComponent.Prism.MakeDangerous();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
@@ -462,7 +459,6 @@ namespace CosmicShore.Gameplay
                         float distance = (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //CSDebug.Log("Found MateRight");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Right;
@@ -473,7 +469,6 @@ namespace CosmicShore.Gameplay
                         float distance = (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //CSDebug.Log("Found MateLeft");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Left;
@@ -586,8 +581,6 @@ namespace CosmicShore.Gameplay
             BottomMate = default;
             RightMate = null;
             LeftMate  = null;
-        
-            CSDebug.Log("WallAssembler stopped bonding");
         }
 
         public void StopAssembly()
@@ -608,7 +601,6 @@ namespace CosmicShore.Gameplay
             LeftMate.StopAssembly();
             RightMate.StopAssembly();
             isStopped = true;
-            CSDebug.Log("Assembly Stopped");
         }
     }
 }

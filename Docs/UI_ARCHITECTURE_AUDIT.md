@@ -125,6 +125,12 @@ change table: §2.10.3. Applied by `Tools/Build/retire_profile_modal.py` (`--che
 **Acceptance re-run:** `audit_persistent_listener_injection.py` dead-wiring list is **13 → 11**;
 both `ProfileModal.ModalWindowOut` rows (`Menu_Main.unity` and `Profile.prefab`) are gone.
 
+> **Those numbers are pre-12-Sep-2026 and are not comparable to a run today.** The auditor's parser
+> assumed Unity's serialised field order and was reading **279 of 992** persistent calls; fixing it
+> took the dead-wiring list to **26** and the injection-surface baseline from 28 to 56 pairs. The
+> *delta* recorded above (the two `ProfileModal.ModalWindowOut` rows going away) still holds — it is
+> the absolute counts that moved, because the tool can now see its whole input.
+
 **One correction to this item's own wording.** It said the `ProfileModal.ModalWindowOut` entries
 "have `m_Target: {fileID: 0}`". They did not — those two rows targeted a real `ProfileModal`
 component and worked at runtime. The auditor lists them because it greps the *resolved script file*
@@ -469,7 +475,7 @@ component and others get a new parent instead:
 | Android max aspect | **2.1 (~18.9:9)** | Below modern 20:9 / 21:9 phones — devices wider than this letterbox or crop per OEM behavior |
 | Android min SDK | 28 (Android 9) | |
 | iOS target | 15.0, Universal (iPhone + iPad) | Bundle id is still the legacy `com.FrogletGames.Tail-Glider` |
-| Desktop default window | **1024×768 (4:3)**, not resizable, borderless fullscreen default | The 4:3 default matches no canvas reference resolution — likely stale rather than intentional |
+| Desktop default window | **1920×1080**, resizable, borderless fullscreen default | **Fixed 2026-09-11 (board item R5).** Was 1024×768 (4:3) and non-resizable — stale, as this audit suspected: the 4:3 default matched no canvas reference resolution. With `defaultIsNativeResolution: 1` these are the *windowed* size, not the initial fullscreen one. |
 | Color space | Linear | Matters for authoring UI colors (see `Docs/PALETTE.md`) |
 | Target frame rate | 60 (from `BootstrapConfigSO`), VSync 0 | |
 | Build profiles | Only one exists: `CS Linux build profile.asset` | Android/iOS/Windows configured via ProjectSettings directly |
@@ -1562,7 +1568,7 @@ Behavior (`Assets/_Scripts/UI/PauseMenu.cs`):
 - Contents: **Resume**, **Main Menu**, and the **Settings modal** opens as part of showing the pause menu. Volume/invert toggles live in the nested options/settings panel.
 - **Single-player: pausing really pauses** — `Time.timeScale = 0` via `PauseSystem` + local input paused.
 - **Multiplayer: pausing does NOT pause the game.** A separate pair of handlers only pauses the local player's input and shows the panel — the world keeps simulating (freezing `timeScale` would freeze the rendering of everyone else's vessels). The guard is "more than one connected client". ⚠ **Which path runs is decided by which handler the prefab's button was wired to, not by code** — a real rewiring hazard for any prefab rebuild.
-- **Host-only gating:** Replay and Main Menu are hidden for non-host clients (the host's return takes the whole party back); Main Menu re-checks server-ness at the call site.
+- **Host-only gating (REPLAY only, since 2026-09-11):** Replay is hidden for non-host clients. **Main Menu is shown to everyone** — the host's press returns the whole party, a client's LEAVES the party (`Docs/PartySystem/BUGS.md` B18; hiding it left a client with no exit from a live match at all). Play Again is shown to everyone too, as a rematch vote for clients. Main Menu re-checks server-ness at the call site.
 - Wraps a `ModalWindowManager`, so **gamepad B dismisses it** — and the dismiss routes through the same resume path as the Resume button (otherwise the vessel would stay frozen).
 - `Prewarm()` activates the panel invisibly for two frames at scene start to pay layout/TMP costs. Its long doc comment records that a mis-typed serialized reference on this prefab **took the Windows IL2CPP build down twice** — the `pauseMenuPanel` field must stay a GameObject reference, not a CanvasGroup. Handle with care in any rebuild.
 

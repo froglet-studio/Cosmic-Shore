@@ -94,7 +94,7 @@ namespace CosmicShore.Gameplay
             var vessel = gameData?.LocalPlayer?.Vessel;
             if (vessel == null)
             {
-                if (verboseLogging) Debug.Log("[StatsProvider] Local vessel not ready yet - will retry.");
+                if (verboseLogging) CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, "[StatsProvider] Local vessel not ready yet - will retry.");
                 return;
             }
 
@@ -109,8 +109,8 @@ namespace CosmicShore.Gameplay
             }
 
             var allStats = telemetry.GetAllStats();
-            if (verboseLogging)
-                Debug.Log($"[StatsProvider] Discovered {telemetry.GetType().Name} with {allStats.Count} stat(s)");
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] Discovered {telemetry.GetType().Name} with {allStats.Count} stat(s)");
 
             if (allStats.Count == 0)
                 CSDebug.LogWarning("[EventDrivenStatsProvider] Telemetry has zero registered stats.");
@@ -134,8 +134,8 @@ namespace CosmicShore.Gameplay
             var stats = profile.StatsFor(gameData.GameMode);
             if (stats == null || stats.Count == 0) return false;
 
-            if (verboseLogging)
-                Debug.Log($"[StatsProvider] Using profile list for {gameData.GameMode}: {stats.Count} stat(s)");
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] Using profile list for {gameData.GameMode}: {stats.Count} stat(s)");
             SubscribeToStats(stats);
             return _subscriptions.Count > 0;
         }
@@ -154,8 +154,6 @@ namespace CosmicShore.Gameplay
                 void Handler(float value) => _latestValues[stat] = value;
                 stat.OnRaised += Handler;
                 _subscriptions.Add((stat, Handler));
-
-                if (verboseLogging) Debug.Log($"[StatsProvider] Subscribed to: '{stat.Label}'");
             }
         }
 
@@ -191,12 +189,8 @@ namespace CosmicShore.Gameplay
                 });
             }
 
-            if (verboseLogging)
-            {
-                Debug.Log($"[StatsProvider] GetStats returning {result.Count} stat(s)");
-                foreach (var s in result)
-                    Debug.Log($"[StatsProvider]   → {s.Label}: {s.Value}");
-            }
+            if (verboseLogging && CSDebug.IsVerbose(CSLogChannel.VesselTelemetry))
+                CSDebug.LogVerbose(CSLogChannel.VesselTelemetry, $"[StatsProvider] GetStats returning {result.Count} stat(s)");
 
             return result;
         }

@@ -49,6 +49,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
         event Action<IRoundStats> OnSwitchesThreadedChanged;
+        event Action<IRoundStats> OnFusesBeatenChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -154,6 +155,14 @@ namespace CosmicShore.Data
         /// because every pilot flies the SAME course.
         /// </summary>
         int SwitchesThreaded { get; set; }
+        /// <summary>
+        /// Manta bombs this player detonated WITH A CRYSTAL before their fuses ran out —
+        /// "fuses beaten", Bloomrush's tiebreaker. Timed-out bombs never count: the whole
+        /// stat exists to reward reaching a crystal in time. Credited on the planter's
+        /// simulation machine (bombs are local objects) through
+        /// <c>StatsManager.FusesBeaten</c> / <c>Player.ReportFusesBeaten_ServerRpc</c>.
+        /// </summary>
+        int FusesBeaten { get; set; }
 
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
@@ -206,6 +215,7 @@ namespace CosmicShore.Data
             DebuffHitsLanded = 0;
             CombatPoints = 0;
             SwitchesThreaded = 0;
+            FusesBeaten = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

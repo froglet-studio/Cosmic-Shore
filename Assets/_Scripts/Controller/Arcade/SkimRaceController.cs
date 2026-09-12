@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [SkimRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7HR] [SkimRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}");
             base.OnNetworkSpawn();
             gameData.ScoringRule = rule;
             numberOfRounds = 1;
@@ -75,13 +75,13 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7HR] [SkimRaceController] Server: SpawnTrackEarly() starting...</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7HR] [SkimRaceController] Server: SpawnTrackEarly() starting...");
                 // Server generates the seed after a short delay for intensity sync
                 SpawnTrackEarly().Forget();
             }
             else if (_netTrackSeed.Value != 0)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [SkimRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7HR] [SkimRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally");
                 // Client joined after the server already set the seed - spawn immediately
                 SpawnTrackLocally(_netTrackSeed.Value);
             }
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
                 // Seed not yet available - start polling fallback.
                 // Covers the race condition where OnValueChanged doesn't fire for
                 // initial sync and the ClientRpc was sent before this client spawned.
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7HR] [SkimRaceController] Client: seed not yet available, starting poll fallback</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-7HR] [SkimRaceController] Client: seed not yet available, starting poll fallback");
                 StartSeedPoll();
             }
         }
@@ -154,7 +154,7 @@ namespace CosmicShore.Gameplay
 
                     if (_netTrackSeed.Value != 0)
                     {
-                        CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [SkimRaceController] Client poll: seed arrived ({_netTrackSeed.Value}), spawning track</color>");
+                        CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7HR] [SkimRaceController] Client poll: seed arrived ({_netTrackSeed.Value}), spawning track");
                         SpawnTrackLocally(_netTrackSeed.Value);
                         return;
                     }
@@ -212,10 +212,10 @@ namespace CosmicShore.Gameplay
         {
             if (_trackSpawned || !segmentSpawner)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [SkimRaceController] SpawnTrackLocally SKIPPED - _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7HR] [SkimRaceController] SpawnTrackLocally SKIPPED - _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}");
                 return;
             }
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [SkimRaceController] SpawnTrackLocally - seed={trackSeed}, Intensity={Intensity}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-7HR] [SkimRaceController] SpawnTrackLocally - seed={trackSeed}, Intensity={Intensity}");
             segmentSpawner.Seed = trackSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
@@ -256,7 +256,7 @@ namespace CosmicShore.Gameplay
             if (!rule.IsObjectiveReached(gameData, out var winningDomain))
                 return;
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-10] [SkimRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-10] [SkimRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.");
             _raceEnded = true;
 
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;

@@ -11,7 +11,6 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerDomainGamesController : MultiplayerMiniGameControllerBase
     {
-        private int readyClientCount;
 
         // ── Server-authoritative per-domain score sync (in-game HUD) ─────────────
         // Clients re-summing their own per-player RoundStats can freeze for a client's OWN player
@@ -40,7 +39,9 @@ namespace CosmicShore.Gameplay
             PublishDomainSum(2, n_DomainSum2.Value);
 
             if (IsServer)
+            {
                 _domainSumSyncRoutine = StartCoroutine(SyncDomainSumsRoutine());
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -50,6 +51,7 @@ namespace CosmicShore.Gameplay
                 StopCoroutine(_domainSumSyncRoutine);
                 _domainSumSyncRoutine = null;
             }
+
             base.OnNetworkDespawn();
         }
 
@@ -85,14 +87,14 @@ namespace CosmicShore.Gameplay
             if (!IsServer)
                 return;
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}");
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
@@ -105,30 +107,18 @@ namespace CosmicShore.Gameplay
         }
 
         [ServerRpc(RequireOwnership = false)]
-        void OnReadyClicked_ServerRpc(string playerName)
+        void OnReadyClicked_ServerRpc(string playerName, ServerRpcParams rpcParams = default)
         {
-            readyClientCount++;
-
-            // Connected clients minus SPECTATORS: humans who own a Ready button (AI never
-            // connect, viewers never press).
-            int humanCount = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
-
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
-            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
+            MarkClientReady(rpcParams.Receive.SenderClientId);
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);
 
-            if (readyClientCount < humanCount)
-            {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
-                return;
-            }
-
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
-            readyClientCount = 0;
-            OnReadyClicked_ClientRpc();
+            EvaluateReadyGate($"{playerName} pressed Ready");
         }
+
+        /// <summary>Every human has pressed Ready - start the shared countdown.</summary>
+        protected override void OnAllPlayersReady() => OnReadyClicked_ClientRpc();
 
         [ClientRpc]
         void NotifyPlayerReady_ClientRpc(string playerName)
@@ -156,7 +146,7 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer)
             {
-                readyClientCount = 0;
+                ResetReadyGate();
             }
 
             // First round: MiniGameHUD shows ReadyButton after cinematic.

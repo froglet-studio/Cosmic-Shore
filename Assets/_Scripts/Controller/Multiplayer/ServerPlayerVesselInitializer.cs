@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
@@ -130,6 +131,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         readonly Dictionary<ulong, int> _spawnReArms = new();
 
+        /// <summary>
+        /// Remote HUMAN players by the owner client id they spawned under, so a disconnect can
+        /// still identify whose ship to hand to the AI after Netcode has reassigned ownership.
+        /// See <see cref="HandleClientDisconnectedForAITakeover"/>.
+        /// </summary>
+        readonly Dictionary<ulong, Player> _humanPlayersByOwner = new();
+
         /// <summary>Re-arm budget per player. Each round costs the ~2.2s readiness wait below,
         /// so this covers roughly 13 further seconds of replication delay before giving up.</summary>
         const int MaxSpawnReArms = 6;
@@ -158,12 +166,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5] [ServerVesselInit] OnNetworkSpawn - NOT server, disabling");
                 enabled = false;
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] OnNetworkSpawn - IsServer=true, subscribing to OnPlayerNetworkSpawnedUlong. gameData.Players.Count={gameData.Players.Count}");
 
             // The computed ring needs the cell's nucleus, which the Cell spawns in Initialize -
             // deferred to the first vessel spawn (EnsureSpawnPosesReady) so it can't read a
@@ -173,6 +181,9 @@ namespace CosmicShore.Gameplay
 
             _cts = new CancellationTokenSource();
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerNetworkSpawned;
+
+            if (ConvertDepartedPlayersToAI && NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnectedForAITakeover;
 
             // Client-pull: answer roster requests from freshly-joined clients.
             clientPlayerVesselInitializer.OnRosterRequested = HandleRosterRequest;
@@ -219,11 +230,14 @@ namespace CosmicShore.Gameplay
         protected virtual void OnNetworkDespawn()
         {
             gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
+            if (NetworkManager.Singleton != null)
+                NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnectedForAITakeover;
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
             _preparedForScene.Clear();
             _spawnReArms.Clear();
+            _humanPlayersByOwner.Clear();
             _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
@@ -250,7 +264,7 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid HandlePlayerNetworkSpawnedAsync(ulong ownerClientId, CancellationToken ct)
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] HandlePlayerNetworkSpawnedAsync - ownerClientId={ownerClientId}, waiting {preSpawnDelayMs}ms for NetworkVariables");
             // Wait for NetworkVariables set in Player.OnNetworkSpawn to sync
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"preSpawnDelayMs before vessel spawn ({preSpawnDelayMs}ms)", isWait: true))
@@ -272,14 +286,14 @@ namespace CosmicShore.Gameplay
                 // always meant - an owner whose player really did go missing.
                 if (_claimedForeignOwners.Contains(ownerClientId))
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
-                        $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
-                        "resolved to an already-claimed server-owned player - nothing to do.</color>");
+                        $"[FLOW-5] [ServerVesselInit] Spawn event for {ownerClientId} " +
+                        "resolved to an already-claimed server-owned player - nothing to do.");
                 else
-                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL</color>");
+                    CSDebug.LogWarning($"[FLOW-5] [ServerVesselInit] FindUnprocessedPlayerByOwnerClientId({ownerClientId}) returned NULL");
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] Found player: Name={player.NetName.Value}, VesselType={player.NetDefaultVesselType.Value}, NetworkObjectId={player.NetworkObjectId}");
 
             // Re-initialize the PERSISTENT Player for this scene - exactly once, for every player,
             // whichever way it was found. RoundStats lives on the Player NetworkObject and survives
@@ -304,8 +318,33 @@ namespace CosmicShore.Gameplay
 
             if (!_processedPlayers.Add(player.NetworkObjectId))
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] Player {player.NetworkObjectId} already processed, skipping");
                 return;
+            }
+
+            // Remember who was flying what, so a disconnect can still find them. Netcode reassigns
+            // ownership to the server as part of its own cleanup, so by the time our disconnect
+            // handler runs the owner id may already be gone - and asking "who owned this?" then is
+            // asking a question whose answer has been erased. AI players share the HOST's owner id,
+            // so only real remote humans are recorded, or one AI would shadow another.
+            if (ConvertDepartedPlayersToAI && !player.NetIsAI.Value && ownerClientId != NetworkManager.ServerClientId)
+            {
+                _humanPlayersByOwner[ownerClientId] = player;
+
+                // A PLAYER OUTLIVES ITS CONNECTION - but only where somebody will adopt it.
+                // RoundStats (the score) lives on this object, and Netcode destroys a client's
+                // player object when that client disconnects, so without this a departing pilot
+                // takes their score out of their domain's total.
+                //
+                // Set HERE rather than in Player.OnNetworkSpawn, because the flag and the adoption
+                // are one decision and Player cannot see it: the MENU spawner overrides
+                // ConvertDepartedPlayersToAI to false, so a Player flagged unconditionally would
+                // survive a menu departure with nothing to convert it and no vessel (that one is
+                // flagged under the same gate) - a server-owned orphan in gameData.Players,
+                // accumulating one per guest who ever left the party. Whoever owns the survival
+                // must own the adoption.
+                if (player.NetworkObject != null)
+                    player.NetworkObject.DontDestroyWithOwner = true;
             }
 
             if (!IsReadyToSpawn(player))
@@ -363,16 +402,16 @@ namespace CosmicShore.Gameplay
                     }
                     else
                     {
-                        Debug.LogError($"[FLOW-5] [ServerVesselInit] Player {ownerClientId} never became " +
+                        CSDebug.LogError($"[FLOW-5] [ServerVesselInit] Player {ownerClientId} never became " +
                                        $"spawn-ready after {MaxSpawnReArms} re-arms - giving up. That client " +
                                        "will bounce: its owner-written NetName / vessel type never replicated.");
                     }
-                    Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms - VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
+                    CSDebug.LogWarning($"[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms - VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.");
                     return;
                 }
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})");
             // Readiness reached: this player owes no more re-arms.
             _spawnReArms.Remove(player.NetworkObjectId);
             await OnPlayerReadyToSpawnAsync(player, ct);
@@ -444,7 +483,7 @@ namespace CosmicShore.Gameplay
             gameData.SetSpawnPoses(
                 CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
-            CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
                         $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
         }
@@ -485,7 +524,7 @@ namespace CosmicShore.Gameplay
 
             _cellSpawnRingBuilt = true;
             gameData.SetSpawnPoses(poses);
-            CSDebug.Log($"[ServerPlayerVesselInitializer] Start line from " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[ServerPlayerVesselInitializer] Start line from " +
                         $"{provider.GetType().Name}: {poses.Length} pilots.");
             return true;
         }
@@ -499,10 +538,10 @@ namespace CosmicShore.Gameplay
         {
             EnsureSpawnPosesReady();
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] OnPlayerReadyToSpawnAsync - SpawnVesselAndInitialize for {player.NetName.Value}");
             SpawnVesselAndInitialize(player.OwnerClientId, player);
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] Vessel spawned. Waiting {postSpawnDelayMs}ms for replication...");
             // Wait for the vessel NetworkObject to fully replicate before telling clients
             using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
                        $"postSpawnDelayMs before NotifyClients ({postSpawnDelayMs}ms)", isWait: true))
@@ -510,7 +549,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Delay(postSpawnDelayMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5] [ServerVesselInit] NotifyClients for {player.NetName.Value}");
             NotifyClients(player);
         }
 
@@ -685,6 +724,106 @@ namespace CosmicShore.Gameplay
         /// Spawns a vessel of the given type, assigns ownership to <paramref name="clientId"/>,
         /// and updates the player's <see cref="Player.NetVesselId"/>.
         /// </summary>
+        /// <summary>
+        /// Whether a player who leaves mid-match is handed to the AI instead of vanishing.
+        /// True for game scenes; the MENU overrides it to false, because an abandoned menu vessel
+        /// has no match to finish and would just accumulate autopilot ships in the lava lamp.
+        /// </summary>
+        protected virtual bool ConvertDepartedPlayersToAI => true;
+
+        /// <summary>
+        /// A pilot left, dropped or crashed mid-match: the AI takes their ship.
+        ///
+        /// <para>
+        /// Before this, the ship simply disappeared - Netcode destroys a departing client's owned
+        /// objects, and both the vessel AND the Player (which carries <c>RoundStats</c>) are owned
+        /// by that client. So the arena lost a ship mid-flight with no explanation, the departed
+        /// player's contribution stopped counting toward their domain, and every surviving
+        /// teammate was quietly playing a different match than the one they started.
+        /// </para>
+        ///
+        /// <para>
+        /// Survival is NOT arranged here. Both objects are flagged <c>DontDestroyWithOwner</c> at
+        /// spawn, so Netcode keeps them and reassigns ownership to the server on its own. That
+        /// ordering matters: this callback runs somewhere inside Netcode's own disconnect cleanup,
+        /// and a handler that tried to rescue objects mid-teardown would be racing it. By the time
+        /// we get here the objects are already safe and server-owned, and all that is left is to
+        /// switch the pilot on - which is safe whenever it happens.
+        /// </para>
+        ///
+        /// <para>
+        /// The result is exactly an AI backfill bot, reached from the other direction: a
+        /// server-owned Player marked <c>NetIsAI</c>, flying a server-owned vessel under
+        /// <see cref="AIPilot"/>. Its <c>RoundStats</c> is untouched, so the score it earned - and
+        /// anything the AI earns after - still counts for its domain.
+        /// </para>
+        /// </summary>
+        void HandleClientDisconnectedForAITakeover(ulong clientId)
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer) return;
+            if (clientId == nm.LocalClientId) return;   // the host itself is leaving; nothing to adopt
+
+            if (!_humanPlayersByOwner.TryGetValue(clientId, out var player)) return;
+            _humanPlayersByOwner.Remove(clientId);
+            if (player == null || !player.IsSpawned) return;
+
+            ConvertPlayerToAI(player, clientId);
+        }
+
+        void ConvertPlayerToAI(Player player, ulong departedClientId)
+        {
+            if (player.NetIsAI.Value) return;   // already an AI - nothing to adopt
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                $"[ServerVesselInit] Client {departedClientId} left mid-match - handing " +
+                $"'{player.NetName.Value}' to the AI so the ship stays in the arena and the score keeps counting.");
+
+            // Ownership: Netcode reassigns to the server under DontDestroyWithOwner, but say it
+            // explicitly rather than depending on that - an object still owned by a client that no
+            // longer exists is authored by nobody.
+            if (player.NetworkObject.OwnerClientId != NetworkManager.ServerClientId)
+                player.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
+
+            player.NetIsAI.Value = true;
+
+            var vessel = player.Vessel;
+            if (vessel == null)
+            {
+                CSDebug.LogWarning(
+                    $"[ServerVesselInit] '{player.NetName.Value}' left with no vessel to hand over - " +
+                    "score is preserved, but there is no ship to fly.");
+                return;
+            }
+
+            if (vessel is VesselController vc && vc.IsSpawned &&
+                vc.NetworkObject.OwnerClientId != NetworkManager.ServerClientId)
+                vc.NetworkObject.ChangeOwnership(NetworkManager.ServerClientId);
+
+            ConfigureDepartedPilotAI(vessel);
+            vessel.ToggleAIPilot(true);
+
+            // Say it out loud. A ship that keeps flying under new management is LESS confusing than
+            // one that vanishes, but only if everyone is told - otherwise a pilot who suddenly flies
+            // differently reads as a cheat or a bug. Fired on the server; the toast feed is
+            // per-peer, so this announces on the host and the ClientRpc below covers the rest.
+            AnnouncePilotHandedToAI(player.NetName.Value.ToString(), player.Domain);
+        }
+
+        void AnnouncePilotHandedToAI(string playerName, Domains domain)
+        {
+            GameToastAPI.Post(GameToastSituation.PilotHandedToAI, domain, playerName);
+            if (clientPlayerVesselInitializer != null && clientPlayerVesselInitializer.IsSpawned)
+                clientPlayerVesselInitializer.AnnouncePilotHandedToAI_ClientRpc(playerName, (int)domain);
+        }
+
+        /// <summary>
+        /// Hook for the AI-capable subclass to configure the adopted pilot the same way it
+        /// configures a backfill bot (mode-aware seeking, skill from intensity). The base spawner
+        /// has no AI profile list, so it leaves the pilot on its prefab defaults.
+        /// </summary>
+        protected virtual void ConfigureDepartedPilotAI(IVessel vessel) { }
+
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
@@ -707,6 +846,18 @@ namespace CosmicShore.Gameplay
             {
                 var networkVessel = Instantiate(shipNetworkObject);
                 GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
+
+                // A vessel OUTLIVES the pilot who owned it. Netcode destroys a client's owned
+                // objects when that client disconnects, so a player who left, dropped or crashed
+                // mid-match had their ship blink out of the arena - and their score with it, since
+                // RoundStats rides the Player object that goes the same way. Flagged BEFORE the
+                // spawn, so survival never depends on our disconnect handler winning a race with
+                // Netcode's own cleanup: the objects simply stay, ownership reverts to the server,
+                // and ConvertDepartedPlayerToAI (whenever it runs) only has to switch the pilot on.
+                // See HandleClientDisconnectedForAITakeover.
+                if (ConvertDepartedPlayersToAI)
+                    networkVessel.DontDestroyWithOwner = true;
+
                 networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
                 networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
                 LoadInsights.Count("Vessels spawned during load");

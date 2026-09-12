@@ -2425,8 +2425,10 @@ namespace CosmicShore.Gameplay
         IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
         {
             _swapping = true;
-            CSDebug.Log($"[Cell {ID}] Cell swap → {config.CellName} " +
-                        $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}).");
+            if (CSDebug.IsVerbose(CSLogChannel.Ecology))
+                CSDebug.LogVerbose(CSLogChannel.Ecology,
+                    $"[Cell {ID}] Cell swap -> {config.CellName} " +
+                    $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}).");
 
             // A boot-time deferred build that has not fired yet would otherwise land AFTER
             // the swap and stack a second environment on the new world.
@@ -2539,7 +2541,7 @@ namespace CosmicShore.Gameplay
             SetVesselTrailsDetached(pauseSpawners: false);
 
             _swapping = false;
-            CSDebug.Log($"[Cell {ID}] Cell swap complete → {config.CellName}.");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Cell swap complete -> {config.CellName}.");
         }
 
         /// <summary>
@@ -2841,7 +2843,7 @@ namespace CosmicShore.Gameplay
             // with a prism stride and a RuntimePopulationScale (see both properties).
             if (IsSatellite && !SatelliteEcologyEnabled)
             {
-                CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
+                CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
                 return;
             }
 
@@ -2852,7 +2854,7 @@ namespace CosmicShore.Gameplay
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
             LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
-            CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}");
         }
 
         void StopSpawner()
@@ -2860,7 +2862,7 @@ namespace CosmicShore.Gameplay
             if (activeSpawner == null) return;
             activeSpawner.Stop(this);
             activeSpawner = null;
-            CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, $"[Cell {ID}] Spawner stopped");
         }
 
         /// <summary>

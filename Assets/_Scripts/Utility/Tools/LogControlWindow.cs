@@ -6,6 +6,7 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -342,7 +343,6 @@ namespace CosmicShore.Utility
             DrawSceneButton("Main Menu",              "Assets/_Scenes/Menu_Main.unity");
             DrawSceneButton("Photo Booth",            "Assets/_Scenes/Tools/PhotoBooth.unity");
             DrawSceneButton("Recording Studio (WIP)", "Assets/_Scenes/Tools/Recording Studio.unity");
-            DrawSceneButton("PlayFab Sandbox",        "Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity");
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -452,19 +452,25 @@ namespace CosmicShore.Utility
             DrawStackTraceRow("Exception", LogType.Exception);
         }
 
-        // Channels are listed here rather than reflected off the enum so each one carries a
-        // human label; adding a CSLogChannel member without a row here simply leaves it
-        // un-toggleable from the toolbox (and CSLogChannel's own doc comment says not to add
-        // one until real call sites use it).
-        static readonly (CSLogChannel Flag, string Label)[] ChannelRows =
+        // Channels are reflected off CSLogChannel so a member is toggleable the moment it is
+        // declared; the human label rides on the member as [CSLogChannelLabel]. A member with no
+        // label falls back to its name, which is the signal to author one.
+        static readonly (CSLogChannel Flag, string Label)[] ChannelRows = BuildChannelRows();
+
+        static (CSLogChannel Flag, string Label)[] BuildChannelRows()
         {
-            (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
-            (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
-            (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
-            (CSLogChannel.MouseFlight,  "[MouseFlight] one-thumb mouse controls engaged"),
-            (CSLogChannel.PrismscapeRide, "[GunVesselTransformer] ride dimension (grind vs roll)"),
-            (CSLogChannel.SkeinCable,   "[Skein] cable build (seed, rails, prisms, rings)"),
-        };
+            var rows = new List<(CSLogChannel, string)>();
+            foreach (var field in typeof(CSLogChannel).GetFields(
+                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                var flag = (CSLogChannel)field.GetValue(null);
+                if (flag == CSLogChannel.None || flag == CSLogChannel.All) continue;
+                var attr = (CSLogChannelLabelAttribute)Attribute.GetCustomAttribute(
+                    field, typeof(CSLogChannelLabelAttribute));
+                rows.Add((flag, attr?.Label ?? field.Name));
+            }
+            return rows.ToArray();
+        }
 
         void DrawStackTraceRow(string label, LogType type)
         {

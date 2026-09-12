@@ -639,7 +639,7 @@ namespace CosmicShore.Core
         void Log(string message)
         {
             if (_bootstrapConfig == null || _bootstrapConfig.VerboseLogging)
-                Debug.Log($"[AppManager] {message}");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[AppManager] {message}");
         }
 
         #endregion
@@ -680,7 +680,7 @@ namespace CosmicShore.Core
             if (FindObjectOfType<AppManager>() != null) return;
 #endif
 
-            Debug.Log("[AppManager] No AppManager found in Bootstrap scene. Auto-creating flow objects.");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[AppManager] No AppManager found in Bootstrap scene. Auto-creating flow objects.");
 
             var go = new GameObject("[BootstrapFlow]");
 

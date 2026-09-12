@@ -24,6 +24,34 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 fast path that can silently drop a tool's output is the exact failure this protocol
 exists to prevent.
 
+## 0.05 There is no compiler and no CI here — do not spend the branch's time on them
+
+**This environment has no Unity Editor, no `unity` CLI, no `dotnet`, and no CI to watch.**
+That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep`,
+`/ship-tools`) and it is not a degraded state to work around:
+
+- **Do not run `/verify-unity`, and do not try to stand a compiler up.** Installing an SDK
+  to Roslyn-parse the diff buys a SYNTAX check and nothing more — every `MonoBehaviour` and
+  `ScriptableObject` base type lives in the `Assembly-CSharp` monolith, so class bodies never
+  bind and the whole class of errors that actually bites (a member that does not exist, a
+  drifted override signature, an argument mismatch, overload resolution) is invisible to it.
+  A gate that cannot resolve a type cannot see errors ABOUT that type.
+- **Do not treat any build gate as a ship requirement.** `check_conditional_compilation.py`,
+  `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py`, a generator's `--check`, "CI is green" — none of them gate a
+  GO here. Run one only when it is the cheapest way to answer a question you actually have
+  about your own change; never as a checklist item, never as evidence, and never as a reason
+  to sit on finished work.
+- **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
+  human wants CI watched, they will ask.
+- **Say so plainly instead.** The verification line in the PR body and the ship report reads
+  "not compiled — no editor or compiler in this environment", followed by what a human must
+  do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+
+**§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
+WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
+runs in full, in every mode.
+
 ## 0.1 Reorient first (when in doubt)
 
 If the session has run long, or bleeding-edge may have moved since the branch was cut,
@@ -171,6 +199,22 @@ run the `/reorient` skill first and act on its verdict before shipping.
   to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
   rather than eyeballing the result.
 
+- **A verdict that is CONDITIONAL on another row does not conflict when that row changes.** Two
+  branches working the same status table (a launch-blocker index, a decision register, a
+  migration tracker) conflict only on the rows they both edited — and the rows most likely to be
+  wrong afterwards are the ones NEITHER touched. One row read `keep` *because* a neighbouring row
+  was staying; the neighbour was removed on the other branch; git merged both sides cleanly and
+  left the dependent verdict standing with its premise deleted. Same shape for a per-folder census
+  or a total: a count of "14 third-party folders" is derived from rows both branches were editing
+  and belongs to neither hunk. After merging a table, re-read the rows you did NOT touch and ask
+  which of them were true only because of a row that moved.
+
+- **A doc that describes its own neighbouring content is making a claim you must check.** A
+  blockquote saying "the two rows below are gone from the table" is prose, not an edit — it reads
+  as done, it survives review, and the rows are still there. Anything of the form *"the table
+  below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
+  `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -193,6 +237,14 @@ run the `/reorient` skill first and act on its verdict before shipping.
   was written. Where the reference has to survive, **anchor on the symbol and demote the
   number to a hint** ("`RetireWorldIntoSuctionRoot` (`:2058`) — re-grep before trusting
   the number"), because the next drift is not preventable, only survivable.
+- **A clean `git status` is not evidence an asset does not exist — fetch the base first.** When a
+  human says "it's in the prefab" and your tree does not have it, the likeliest explanation is not
+  that they forgot to save: it is that they committed it to the base branch AFTER your branch was
+  cut. A clean working tree says nothing about that, and reporting "it isn't on disk, save your
+  prefab" is both wrong and the kind of wrong that makes a human re-do work they already did.
+  `git fetch origin <base>` and grep the base's version of the file BEFORE telling anyone an asset
+  is missing.
+
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -219,6 +271,17 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **A GUARDED call site reads exactly like a working feature when the reference is null.** The
+  producer rule above is about a doc asserting a consequence; this is its sharper form, where the
+  CODE asserts it and is correct. `if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);` is
+  what a careful author writes — and it is also what makes a `{fileID: 0}` in the prefab silent, in
+  every mode, forever. Two shipped that way on one component, and one of them had already been
+  recorded in a bug table as the ✅ case whose shape was then propagated to three other screens. So
+  when a claim turns on a serialized reference, grep the PREFAB/SCENE for the field
+  (`^  <fieldName>: ` inside that component's `!u!114` block, never file-wide) and read the id —
+  the call site cannot tell you, because a null-guard and a working feature are the same source.
+  A field that is `{fileID: 0}` on every instance is a feature that has never run.
+
 - **A number read off a ScriptableObject's FIELD INITIALIZER is not the number the game runs
   on.** The SO declares `public float dynamicMaxDistance = 40f;` and the ASSETS say 250. Reading
   the class is fast, feels authoritative, and is the wrong source — the assets are the game. One
@@ -295,13 +358,29 @@ Walk every changed file against these gates:
   does it diff against DISK, or only validate its own recipe in memory? Those are very different
   promises and the flag name does not distinguish them.
   **Sweep the whole family, not just yours** — it is one line and it turns "mine is green" into a
-  tally: `for f in Tools/Build/author_*_assets.py; do printf '%-46s ' "$(basename $f)"; timeout 120
-  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. Measured 2026-09: **7 of 11 are
-  RED**, in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  tally: `for f in Tools/Build/author_*.py; do printf '%-46s ' "$(basename $f)"; timeout 120
+  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. **Glob `author_*.py`, not
+  `author_*_assets.py`** — the narrow form was what this rule originally said and it sees **15 of
+  the 36** generators, missing every one whose output is not a mode's asset set (sprite and mesh
+  authors, population and layout authors). A branch whose own generators fall outside the glob gets
+  a clean-looking sweep that never ran on its work. Measured 12 Sep 2026: **7 of 15 RED under the
+  narrow glob, 10 of 36 under the wide one** (the family was 11 when this was written -- re-measure,
+  never quote), in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
   platform change deleted while the generator that authors it was left untouched. That second
   class is the one to carry: **a generator that owns an asset's content is a second place every
   schema change has to land, and it does not fail at the time of the change** — it fails months
   later, on somebody else's branch, the next time anyone runs it.
+
+- **Registration can land in TWO lists, and a generator knows one.** The ship rule above
+  ("a generator that owns an asset's content is a second place every schema change has to
+  land") has a sharper variant when the schema change is a SPLIT. This project's arcade
+  rosters split into a master (what the injected `SO_GameList` resolves) and per-grid override
+  lists; every `Tools/Build/author_*_assets.py` predates the split and registers the master
+  alone. Four modes shipped launchable-but-invisible before anyone noticed, and the fix in the
+  ASSET does not fix the GENERATOR — re-run it and the card falls off the grid again. When a
+  branch discovers a registration gap, ask how many lists the thing has to be in, then grep the
+  generators for how many they write; the answer is usually "one" and it does not fail until
+  somebody regenerates, on another branch, months later.
 
 - **A LONG branch invalidates its own earlier rounds, and the doc from round 2 is the last place
   anyone looks.** The rule "a threshold that is a function of X must be re-derived when X moves"
@@ -312,9 +391,14 @@ Walk every changed file against these gates:
   prose went on describing a vessel the branch no longer shipped, with the margin actually
   **negative** (measured: the mode's signature manoeuvre landing 5 times in 6). So at §2, list
   every constant the branch DERIVED from another, and re-derive each against the values the
-  branch is shipping NOW. Then close it the way it should have been closed: put the derivation in
-  the offline model so it recomputes, and add a mirror gate that re-reads the source values out
-  of the shipped assets — a transcription is only true on the day it is made.
+  branch is shipping NOW. **A MEASUREMENT quoted into a doc is a derived value too**, and
+  the commonest stale one: a count taken at commit 2 describes the tree at commit 2, not the tree
+  you are shipping. One branch's write-up said "shared by 25 font assets" — true when measured,
+  **21** by ship time, because a later commit in the same branch deleted four of them. Re-run
+  every number a doc states, at ship time, against the tree as it now stands. Then close it the
+  way it should have been closed: put the derivation in the offline model so it recomputes, and
+  add a mirror gate that re-reads the source values out of the shipped assets — a transcription
+  is only true on the day it is made.
 
 - **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
   The absence-claim rule below covers comments that rot. This is the variant that was never true
@@ -396,6 +480,23 @@ and a green PR, so it runs even in `/ship-quick`.
 git diff --name-only <merge-base>..HEAD -- '*.cs' | xargs -r grep -l 'MenuItem("FrogletTools/'
 ```
 
+**That command finds Unity editor tools and NOTHING ELSE — a WRITER here is not always C#.**
+This project's `Tools/Build/*.py` generators author `.asset`/`.unity`/`.prefab` content
+directly (`author_*_assets.py` is a whole family of them), so a branch adding one has exactly
+the same half-landed-output exposure with no `[MenuItem]` anywhere to find. Sweep the other
+languages too:
+
+```sh
+git diff --name-only <merge-base>..HEAD -- '*.py' '*.sh'
+```
+
+and classify each hit by the same evidence test, widened to that language's write calls:
+`open(..., 'w')`, `Path.write_*`, `shutil.*`, `os.remove/rename/makedirs`, `subprocess` that
+shells out to a writer. A tool whose only output is `print` / `sys.stderr.write` is a READER —
+say so explicitly, because "the branch adds a tool and no assets" is the exact shape of the
+failure this gate exists to catch, and the only thing that distinguishes it from a clean
+READER branch is having run the check.
+
 For each hit, read it and decide from the CODE, not the name:
 
 | Kind | Evidence in the source | What the branch must contain |
@@ -449,8 +550,9 @@ current — update them if not:
 
 - The system's `Docs/<System>/` or co-located `.md` reference (ARCHITECTURE, mechanics log).
 - `CLAUDE.md` if the branch changed a pattern, invariant, or key-files table it states.
-- In-editor verification steps for anything that needs a human at the editor (you cannot
-  run Unity - the human is the gate; hand them the exact steps and knobs).
+- In-editor verification steps for anything that needs a human at the editor. You cannot
+  run Unity and cannot compile (§0.05), so the human is the ONLY gate: hand them the exact
+  steps and knobs, and never imply a check you did not perform.
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
 
 - **A class RENAME is invisible to every gate this project has, so the docs that name it go
@@ -499,11 +601,11 @@ Say **NO** — and list the concrete iterations needed — when any of these hol
   otherwise-good work makes a half-landed migration shippable.
 - The branch mixes an unfinished experiment with finished work (split it instead).
 - A change is known-broken or known-untested in a way that would block another dev
-  building on it (compile risk on hand-authored assets counts).
+  building on it (a hand-authored asset you could not import counts — say which).
 - Docs for a touched LOCKED system (ecology, party, threading, scoring) lag the code.
 
-**A RED gate is not automatically yours — A/B it before you attribute it, and report it
-either way.** A gate that passed on your branch can be red after you merge the base, and the
+**If you did run a gate (see §0.05 — you are not required to), a RED result is not
+automatically yours — A/B it before you attribute it, and report it either way.** A gate that passed on your branch can be red after you merge the base, and the
 cause is as likely to be the base's new content as your resolution. Prove it in a detached
 worktree of the base alone (`git worktree add --detach <tmp> origin/<base>`, run the same
 gate there, `git worktree remove --force`): a gate that fails identically on a clean base
@@ -527,8 +629,8 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   reader vs writer, which commit carries its output, which tools were retired and which
   were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
   gate applies.
-- Base is `bleeding-edge` unless told otherwise. After creating, subscribe to PR
-  activity and keep watch (CI, reviews) until merged or told to stop.
+- Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
+  CI (§0.05); subscribe only if the human asks you to follow the review.
 
 ## 6. Report
 

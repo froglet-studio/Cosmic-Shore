@@ -147,7 +147,7 @@ namespace CosmicShore.Core
                       + MigrateKeys(data.IntensityPlayCounts, composite: true);
 
             if (moved > 0)
-                CSDebug.Log($"[GameModeRename] Migrated {moved} progression entries onto the new mode names.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeRename] Migrated {moved} progression entries onto the new mode names.");
         }
 
         public static void Migrate(ModeStatsCloudData data)
@@ -156,7 +156,7 @@ namespace CosmicShore.Core
 
             int moved = MigrateKeys(data.Modes, composite: true);
             if (moved > 0)
-                CSDebug.Log($"[GameModeRename] Migrated {moved} mode-stat records onto the new mode names.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeRename] Migrated {moved} mode-stat records onto the new mode names.");
         }
     }
 }

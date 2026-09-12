@@ -4,6 +4,7 @@ using TMPro;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.UI
 {

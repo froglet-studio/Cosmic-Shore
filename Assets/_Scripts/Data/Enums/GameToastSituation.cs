@@ -91,5 +91,20 @@ namespace CosmicShore.Data
         BendLanded = 82,                // DebuffHitsLanded rose - a blast debuffed a pilot (The Bends)
         PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
         LifeformKilled = 84,            // LifeformsKilled rose
+
+        // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
+        // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed. 90/91
+        // rather than 70/71: Tollway took those on bleeding-edge while this was in flight.
+        BloomrushKabloom = 90,
+        // Idle hint: the loop is buttonless, so a new pilot has nothing to press and needs
+        // telling what flying into things does.
+        BloomrushStingHint = 91,
+
+        // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
+        // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
+        // humans are in the match.
+        RematchRequested = 100,     // a client pressed Play Again - a VOTE the host can act on
+        // A pilot left mid-match and the AI took their ship. {0} = the departed player's name.
+        PilotHandedToAI = 101,
     }
 }

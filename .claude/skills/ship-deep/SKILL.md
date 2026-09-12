@@ -8,6 +8,12 @@ description: The thorough lane of the ship protocol - for a large branch, a LOCK
 **Read `.claude/skills/ship/SKILL.md` first and run all of it.** This file adds passes;
 it replaces nothing. Run them after §2 and before the §4 go/no-go.
 
+**§0.05 applies here in full, and depth does not buy an exception: there is no compiler and
+no CI in this environment.** Every pass below is a READING and GREP discipline — none of it
+needs `/verify-unity`, a `Tools/Build/check_*.py` run, or a green build, and "deep" must not
+be read as licence to go install one. Depth here means more eyes on the diff, not a
+manufactured compile. D5's matrix carries "not compiled" as a first-class row value.
+
 The premise: on a branch this size, "I read it and it looked right" has a known failure
 rate, and every check below exists because a specific class of defect survived exactly
 that reading. Each pass produces EVIDENCE — a command and its output — not an impression.
@@ -69,12 +75,42 @@ member at different offsets auto-merge into a `CS0102` that only Unity will find
 - Shader/graph edits: the property you rely on is actually referenced in the graph text
   (`Material.HasProperty` cannot see an unexposed property — `/asset-surgery` §5).
 
+### D4.1 An enum member is half a feature; the other half is in an asset, and it fails silently
+
+Any `enum` + config-asset pair (a toast situation, an objective icon, a scoring metric, a
+log channel) has a resolver that **early-returns when the asset has no row for your new
+member** — `GameToastController.Show` does exactly this. So the code path runs, the call
+succeeds, and nothing appears. Two announcements shipped this way in one session behind
+perfectly correct C#.
+
+When the branch adds an enum member that anything renders, author its asset row in the
+same pass, then grep the resolver for the early-return and confirm your member cannot
+take it. And check the row's key set **both directions** against the C# class (D4) — the
+existing rows are not a safe template, because a field added to the class after they were
+serialized is absent from all of them.
+
 ## D5. Verification matrix, written down
 
 A table, not a paragraph: one row per changed system, columns = *verified how* (edit-mode
-test / offline sim / compile / in-editor play by the human / not verified). "Compiles by
-inspection" is a legitimate row value; leaving a row blank is not. This table becomes the
+test / offline sim / read-and-grep / in-editor play by the human / not verified). **There is
+no compiler here (§0.05), so no row may say "compiles" — "compiles by inspection" and "not
+compiled, human must build" are the legitimate values.** Leaving a row blank is not. This table becomes the
 PR's verification section verbatim, and it is where an honest NO usually announces itself.
+
+**Name the TOPOLOGY the verification runs on, not just the method — MPPM is not two
+machines.** MPPM virtual players share one process and, crucially, **one `GameDataSO`**, so
+a SOAP raise reaches all of them. **A SOAP raise is LOCAL; it does not cross the wire.**
+Anything that travels between real machines is an RPC or a `NetworkVariable`, so a code path
+reached through a SOAP event **runs on every MPPM peer and on NO remote client**. One session
+found `SceneLoader`'s three "defer to the server" guards are in exactly that class: they exist
+for MPPM, and what blacks out a shipped client's screen is a ClientRpc somewhere else
+entirely. A fix armed only at the SOAP site would have demoed perfectly in the editor and
+protected nobody in a build.
+
+Two consequences for this table: a row verified "in MPPM" has **not** been verified for the
+separate-machine case, and should say so; and when a branch fixes a client-side path, find
+where that path is entered on real hardware before deciding where the fix goes. The tell is
+a handler whose trigger is a local event doing work that only a remote peer needs.
 
 ## D6. Doc-drift sweep
 

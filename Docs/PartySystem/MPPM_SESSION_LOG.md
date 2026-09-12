@@ -645,4 +645,261 @@ captured in the session notes.
 
 ---
 
+## Session 4 — 2026-09-11 (SOURCE AUDIT — no MPPM, no editor)
+
+**Setup.** None. This session ran in a remote container with no Unity, no MPPM and
+no live UGS, so **nothing here was executed**. It is a source audit of the two red
+join bugs, recorded in this log because its conclusions change where the next real
+session should start.
+
+**Why an audit was worth doing first.** Both red bugs were last OBSERVED on
+2026-07-16 or earlier. Between then and now, five separate fixes landed that each
+independently produce their exact symptom: the MPPM unique-tag prerequisite (untagged
+clones share one UGS `PlayerId`), B12 (a re-invite to a guest who once accepted or
+declined was swallowed forever), `ScanForSignals` returning every accepter instead of
+the first, the premature-`OnClientReady` fix in `ProcessPendingPairs`, and B16 (the
+root cause of every synchronization failure, live-verified 2026-09-02). Re-running a
+four-instance repro against a two-month-old record risks reproducing something else
+and filing it under an old name.
+
+### Findings
+
+1. **Party B2 is fixed, and has been since 2026-08-20.** `HostConnectionService.OnDestroy`
+   no longer disposes either `SemaphoreSlim`; `AvailableWaitHandle` is never read
+   anywhere in `Assets/_Scripts`, so there is no handle to leak. Closed 🟢. A future
+   `ObjectDisposedException` here is a different object (most likely a
+   `CancellationTokenSource`) and wants its own entry.
+
+2. **Party B11 closed as superseded.** Every symptom is B16's, and the reverted
+   recycle manufactured B16's trigger every four minutes — the fix and the cause were
+   the same action. It was parked ⚪ with a reverted fix, which is the one state that
+   invites somebody to re-land it. `BUGS.md` B11 now states what evidence would
+   reopen it (a step-3 bounce against a host that has NOT restarted its NM in-process,
+   with no `PopulateScenePlacedObjects` exception).
+
+3. **Party B5: every named cause is closed in source; the record is stale.** Traced
+   one by one — see the table now in `BUGS.md` B5. Two further hazards it never named
+   are also closed: the `WaitForClientReadyAsync` subscribe race (re-checked on both
+   sides of the subscribe) and `RosterPullRetryLoop`'s budget, now 60 s so it outlives
+   the watchdog that bounces the player. Nothing second-joiner-specific survives on
+   the join path: approval is unconditional, `_processedPlayers` is keyed by
+   `NetworkObjectId`, `HandleRosterRequest` is idempotent per requester, and the only
+   single-slot state in the area (`_lastFiredInvite`) is one-per-inviter on the
+   recipient. Moved to 🟡 — an audit cannot tell "fixed" from "broken for an unnamed
+   reason", so it needs the retest, not more code.
+
+4. **Presence B4: a real cause found and FIXED — the converge was evicting people.**
+   `ConvergeToCanonicalAsync` released its non-canonical lobby through
+   `DeleteOwnLobbyQuietlyAsync`, which deletes when we are host. Written for the
+   simultaneous-create race (empty, seconds old), reused by the 4-second periodic
+   converge on a lobby that may hold anybody — so a migrating host destroyed the lobby
+   its occupants were in, freezing their online list and marching them toward the
+   false `ForceReset` this system calls its main historical failure surface. Both
+   halves of B4's symptom are one fact (the third player is in a different lobby), and
+   this is a mechanism that both creates and prolongs exactly that. Fixed by deferring
+   the migration while the hosted lobby still has other players in it. Commit
+   `0c1f747b`. Left 🟡: proved from source, never run.
+
+### What this session did NOT do
+
+- Did not run S-series or P-series. Both suites need MPPM; this is **H10's** work and
+  it now inherits a materially different starting state (see `Docs/STEAM_RELEASE_TASKS.md`
+  R16).
+- Did not build host migration or rejoin-in-progress — still deliberately cut.
+- Did not touch the locked design: no lazy Relay, no new threading primitive, no
+  change to the eager per-user session model.
+- Did not open the editor. The converge fix is verified only by a Roslyn syntax parse
+  (with a negative control on the edited line) and the six out-of-editor gates.
+
+### For the next real session
+
+Run the two retests as written in `BUGS.md` B5 and `PresenceSystem/BUGS.md` B4, with
+**uniquely tagged** VPs (`TESTS.md` § "MPPM prerequisites") — the historical repros
+for both bugs predate that requirement and a shared `PlayerId` reproduces both
+symptoms on its own. If either still fails, it is a NEW root cause: capture both
+`Player.log`s and open a fresh entry rather than re-walking the closed tables.
+
+---
+
+## Session 5 — 2026-09-11 (CLIENT-EXPERIENCE SCAN — no MPPM, no editor)
+
+**Trigger.** Owner report from live play, same day: *"the multiplayer experience is not good at
+all… even 4 players from US have the problem. Once you get off the happy path the game is bugged,
+and the experience is not good for clients. Not in Maelstrom, not in the whole game. Connecting is
+a challenge, leaving is a challenge."* Explicitly not a latency problem.
+
+**That report outranks this tracker,** which had drop/recover marked green and engine-verified. The
+bugs it names are real and were simply not in the file, because every entry here came from MPPM join
+testing and nobody had audited what a client can DO once it is in.
+
+**Method.** Source scan of every client-side transition and every screen a client can be on. Again
+**nothing was run** — no Unity in this environment.
+
+### Findings — both now fixed, both need a playtest
+
+1. **B18 — a client could not leave.** Every exit was gated on `IsServer`. Pause menu: Main Menu
+   hidden. Maelstrom scoreboard: all four buttons hidden. Maelstrom hub: only READY. So a client was
+   held for the whole match, and in a Maelstrom for the whole race-to-N, with alt-F4 as the only
+   exit. The correct behaviour already existed in exactly one place —
+   `MaelstromSceneView.OnMainMenuPressed`, whose comment names the trap — and had not been
+   propagated. Now it is.
+
+2. **B19 — nothing watched a client's scene transition.** Every defer-to-server path covers the
+   screen and returns with no timeout, so a scene event that never arrives is a permanent black
+   screen. Already known in one direction (`MultiplayerSetup` routes host-loss around
+   `SceneLoader` because "the defer-to-server guard hangs the client when the server is gone") but
+   only for a host that is definitively GONE. A watchdog now bounces the client to its own menu.
+
+### The finding that generalises past both
+
+**A SOAP raise is local; it does not cross the wire.** `SceneLoader`'s three defer guards are
+reached through SOAP events, so on separate machines a client never runs them at all — they fire for
+MPPM virtual players, which share one `GameDataSO` in one process. What blacks out a *shipped*
+client's screen is `ShowReturnToMenuVeil_ClientRpc`. The watchdog arms there too.
+
+Two consequences worth carrying:
+
+- **A fix armed only at a SOAP call site is an editor-only fix.** It would have demoed correctly in
+  MPPM and protected nobody in a build.
+- **MPPM and real hardware are not the same topology**, so an MPPM-only test plan is structurally
+  blind to this whole class. Some of "it works in the editor but not for real players" is this.
+
+### What this did NOT do
+
+- No playtest, no editor pass. Both fixes are verified only by Roslyn syntax parse (with negative
+  controls) and the six out-of-editor gates.
+- Did not touch the locked design, the join handshake, or anything B5/B4 depend on.
+- Did not add a status surface to the join splash. A client sees an opaque screen for up to ~60s
+  during a join with no explanation, which is a real part of "connecting is a challenge" — but
+  `BootStatusBroadcaster` deliberately suppresses status during expected transitions to avoid a
+  misleading "tap retry", so changing it is a design call plus prefab wiring. Recorded for **R13**
+  (multiplayer QoL), not taken here.
+- Did not prune a departed player's `RoundStats` mid-match. `PruneDestroyedRosterEntries` runs only
+  from `AddPlayer`, so a player who leaves leaves a frozen row behind until someone joins. Checked
+  and deliberately left: it cannot hang an end condition (domain sums still reach their target), and
+  removing a `RoundStats` mid-match has real risk with no proven benefit.
+
+### Self-check on the change
+
+Mid-match client leave was previously unreachable, so this makes a new path live. The host side was
+verified to handle it: `OnClientDisconnect` → `ServerUnregister` + `ReconcilePartyMembersNow`, and
+`Player.OnNetworkDespawn` removes the player from the roster. It is the same path a client CRASH has
+always taken; the change makes it deliberate rather than only accidental.
+
+### For the next real session
+
+Playtest B18 and B19 with a host and at least one client — a human pass, not MPPM, since B19's real
+call site is the one MPPM cannot exercise faithfully. Steps are in each entry.
+
+---
+
+## Session 6 — 2026-09-11 (CLIENT AGENCY + DEPARTURE HANDLING — no MPPM, no editor)
+
+**Trigger.** Owner, continuing the same live-play report: *"at the end of each game the
+client cannot go to main menu, the button is closed… they can vote for rematch… once one
+client leaves mid game the vessel should be replaced by an AI and the score of the client
+should still count… the vessel should not just disappear."*
+
+Still **nothing was run** — no Unity here.
+
+### Shipped
+
+1. **B20 — two ready-gate hangs.** Both the MATCH gate and the LAUNCH LOBBY gate were
+   evaluated only inside the press RPC, so a player leaving mid-wait left the gate
+   satisfied-but-unchecked and the whole party stuck forever, with nobody able to press
+   again. Now a set of WHO, re-evaluated on every press *and* every disconnect. The match
+   gate had been written TWICE with both defects in each copy, so it moved to the base
+   class.
+
+2. **B21 — a departed pilot's ship is taken over by the AI, and the score survives.** Both
+   the vessel and the `Player` (which carries `RoundStats`) were owned by the departing
+   client and destroyed with it. Both are now `DontDestroyWithOwner` at spawn — survival is
+   arranged BEFORE the disconnect so it never races Netcode's cleanup — and the disconnect
+   handler only switches the AI pilot on. Announced on every peer.
+
+3. **Rematch vote.** A client's Play Again is now a vote: recorded server-side keyed on the
+   sender, toasted to everyone, and shown as a live tally on the HOST's button (the only
+   peer whose press does anything).
+
+4. **Maelstrom hub gets MAIN MENU.** Between rounds the hub offered only READY.
+
+### The finding worth carrying
+
+**An unauthored toast situation renders NOTHING, silently** (`GameToastController.Show`
+early-returns when the library cannot resolve the mode+situation). So both new announcements
+would have been dead on arrival with perfectly correct code behind them. Entries were
+authored into `GameToastConfig_Shared.asset` in the same pass. *Adding a situation to the
+enum is half the work; the other half is in an asset, and skipping it fails silently.*
+
+### Editor work this branch CANNOT do (all optional — nothing is broken without it)
+
+| What | Why | Consequence if skipped |
+|---|---|---|
+| Wire `PauseMenu.mainMenuButtonLabel` | Prefab field | A client's exit reads "MAIN MENU" instead of "LEAVE PARTY". Works. |
+| ~~Wire `Scoreboard.playAgainLabel`~~ | Prefab field | **DONE in Session 7** — wired out-of-editor by prefab YAML surgery. It was also hiding a defect: `"REMATCH ✓"` cannot render in that font. |
+| Check the Maelstrom hub's `mainMenuButton` parent | It was authored for the summary screen; if it sits under `summaryRoot` it is inert in the hub | `MaelstromSceneView` LOGS AN ERROR naming the fix at runtime, so this cannot ship silently. |
+
+### Still not done
+
+- No playtest. Item 2 touches the spawn/despawn path and wants a two-machine pass.
+- The "warn players before they leave a game" design the owner mentioned is deliberately
+  not started — it is a design conversation, and everything above makes leaving *possible*,
+  which has to come first.
+
+---
+
 <!-- Append future sessions below this divider as ## Session 4 — date, etc. -->
+
+---
+
+## Session 7 — 2026-09-11 (WHO VOTED FOR A REMATCH — no MPPM, no editor)
+
+**Trigger.** Owner: *"in a multiplayer game the client can press play again and the host would not
+know, and the game is not started until the host presses the button."* Then: *"wire the
+playAgainLabel and leave lobby button in the place of the continue button."*
+
+Still **nothing was run** — no Unity here. Every asset edit was out-of-editor YAML surgery,
+validate-before-write.
+
+### Shipped
+
+1. **The rematch vote moved onto the VOTER.** Session 6 recorded the tally as a server-side
+   `HashSet<ulong>` and broadcast only the COUNT — which answers "how many" and never "who", and
+   arrives as a transient RPC that is gone the moment it lands. `Player.NetRematchVote` is now a
+   server-write, everyone-read `NetworkVariable` (the fifth sibling of the owner-detects /
+   server-records family, after `NetArenaReady` and the three report RPCs), so the identity of
+   every vote is replicated STATE any peer can read at any time. The HashSet is retired:
+   `RematchVoteCount` derives from the flags and cannot drift from them, and a leaver drops out for
+   free when their `Player` despawns out of the roster.
+
+2. **`RematchVoteRoster`** draws a face per voter under the Play Again button, modelled on
+   `ConnectingPlayerRoster`. Adopts a descendant named `PlayerAvatars` as its strip and that
+   strip's first child as the chip TEMPLATE, so a prefab carrying only the art lights up with no
+   wiring; ENSURED from `Scoreboard`, never required.
+
+3. **B22** — `leaveLobbyButton` and `playAgainLabel` were both `{fileID: 0}`, so Session 6's
+   propagated client exit was a no-op on the one screen B18's table recorded as already working.
+   Both wired; `LeaveLobbyButton` cloned from Continue into Continue's own slot.
+
+### The findings worth carrying
+
+- **A guarded call site reads exactly like a working feature when the reference is null** — the
+  `if (leaveLobbyButton)` guard is what a careful author writes, and it is also what makes a
+  missing prefab reference silent. Grep the PREFAB for the field, not just the call site.
+- **An authored strip is not a safe default** — `PlayerAvatars` ships INACTIVE with a sprite-less,
+  raycast-target `Image` (the component Unity attaches to a layout object). Switching it on as
+  authored would paint a white slab across the button and eat the press.
+- **Borrowing a template's sprite as a halo only works if the template is a FRAME.** The
+  connecting-panel roster does exactly that; here the template's sprite is a profile icon, so the
+  halo is generated instead.
+- **Wiring a display can expose the strings it was hiding** — `"REMATCH ✓"` had been in the code
+  since Session 6 and could never have rendered.
+- **The "editor work this branch CANNOT do" table is a punt to re-examine, not a standing fact.**
+  Both of Session 6's prefab-field rows were doable out-of-editor; one is closed here.
+
+### Still not done
+
+- No playtest. Nothing on this branch has been opened in Unity.
+- `PauseMenu.mainMenuButtonLabel` (Session 6's other prefab-field row) is still unwired.
+- The host's tally reads `(n/humans)` where `humans` INCLUDES the host, who cannot vote — so it can
+  never reach `(n/n)`. Pre-existing; the face row is now the primary read.

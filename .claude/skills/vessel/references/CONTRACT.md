@@ -372,6 +372,28 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   exists but sits in no container executes never (several orphans exist); fork shared effect SOs
   before changing per-vessel behavior.
 
+### 9.x A shared component's AMBIENT default is a per-vessel visual nobody authored
+
+`Skimmer.prefab` is nested by eight vessels and carries a `ForcefieldCrackleOverlay` whose
+shader composes `Alpha = fresnel + impact contributions`. `ForcefieldCrackleController` pushes
+`fresnelRimIntensity = 0.08` **every frame regardless of impacts**, so every one of those eight
+draws a permanently visible bubble the size of its skimmer sphere — 20-40 units on the Manta.
+
+The part worth carrying is *why nobody caught it*: the crackle is a skimmer PRISM effect, and
+only the Dolphin's and Squirrel's `SkimmerImpactorDataContainerSO`s list it. On the other six,
+the overlay's driver never runs and the ambient rim is the whole of what it draws — an effect
+that is simultaneously "not wired" and "always on screen". Rule 22 says a shared impact effect
+is per-vessel wiring; this is its inverse: **a shared component's non-zero default needs no
+wiring at all, so the vessels that never opted in are exactly the ones showing it raw.**
+
+So when a vessel "shows something it shouldn't": ask which shared prefab it nests, read that
+component's field INITIALIZERS (not its serialized block — see the asset-surgery technique on
+overriding a field the source never serializes), and check whether this vessel's container
+actually lists the effect that drives it. Fix by overriding the value on that vessel's nested
+instance, never by disabling the renderer.
+
+Still open at time of writing: Urchin, Grizzly, Falcon, Shrike and Termite.
+
 ## 10. Docs & paper trail
 
 - **Canon map**: CLAUDE.md holds the locked fleet contracts;

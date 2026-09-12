@@ -77,8 +77,9 @@ namespace CosmicShore.Gameplay
             Vector3 spawnAt = crystalAt + course * _forwardClearance;
             ScarabBallForge.Request(status, _ballPrefab, spawnAt, course * speed);
 
-            CSDebug.Log($"[ScarabBallForge] {status.PlayerName}'s blast forged a {status.Domain} " +
-                        $"ball at {spawnAt} @ {speed:F0} u/s.");
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabNucleus))
+                CSDebug.LogVerbose(CSLogChannel.ScarabNucleus, $"[ScarabBallForge] {status.PlayerName}'s blast forged a {status.Domain} " +
+                            $"ball at {spawnAt} @ {speed:F0} u/s.");
         }
     }
 }

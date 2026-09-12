@@ -28,10 +28,11 @@ namespace CosmicShore.Core
 
         public void CompleteQuest(Quest quest)
         {
-            CSDebug.Log($"{nameof(QuestSystem)}.{nameof(CompleteQuest)} - Quest Completed - Shards to issue: {quest.ShardValue}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[QuestSystem] Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
-            // TODO: Look for PlayerDataController
+            // TODO: no reward backend. PlayerDataController (PlayFab) was deleted; the live
+            // profile owner is PlayerDataService and CatalogManager no longer grants anything.
             // CatalogManager.Instance.GrantCaptainXP(quest.ShardValue, ShipTypes.Manta, Element.Space);
 
             // Mark Granted
@@ -71,11 +72,6 @@ namespace CosmicShore.Core
         /// <param name="action"></param>
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)
         {
-            CSDebug.Log($"{nameof(UpdateQuestProgressOnUserActionCompleted)}: {action.ActionType}");
-            CSDebug.Log($"ActiveQuests.Count:{ActiveQuests.Count}, ActiveQuests.ContainsKey(action): {ActiveQuests.ContainsKey(action.Label)}");
-            foreach (var quest in ActiveQuests)
-                CSDebug.Log($"ActiveQuests.Key: {quest.Key}");
-
             if (ActiveQuests.Count <= 0) return;
             if (!ActiveQuests.ContainsKey(action.Label)) return;
 
@@ -89,8 +85,6 @@ namespace CosmicShore.Core
 
                     if (TestQuest.CompletionAction.Value <= action.Value)
                         CompleteQuest(TestQuest);
-                    else
-                        CSDebug.Log($"Score not high enough: {action.Value}");
 
                 }
                 else

@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4de6a983ee9f3d43306090bb86b07bf2, type: 3}
+  m_Name: MantaKabloomByCrystalEffect
+  m_EditorClassIdentifier:
+  stingConfig: {fileID: 11400000, guid: 3f390c7d0946502cbeb67eb093072c85, type: 2}
+  selfBlastPrefabs:
+  - {fileID: 3479271500403630839, guid: 457e8bc651da151132eb1c90adb8b3bb, type: 3}
+  - {fileID: 6875622972764638977, guid: f5ecfb9923155a84c860975d559b2714, type: 3}
+  kabloomCooldown: 0.15
