@@ -177,6 +177,55 @@ in the event it was retired, because the instance shipped `m_IsActive: 0` inside
 references, and the live settings panel expresses all seven of its on/off rows as a
 `GameSettingsPanelController.OnOffControl` (an ON button + an OFF button) rather than a switch.
 
+### §2.1.1 · Verification status — ⚠ NOT opened in the Unity editor
+
+**`/verify-unity` did not run.** This work was done in a remote container with no `unity` binary,
+no editor attached, and no `Library/` — so the project has never been imported against these
+changes. Everything below was verified **out of editor**, and the gap is stated rather than papered
+over.
+
+What *was* verified, mechanically:
+
+* **Reference integrity.** All 10 vendor guids resolve to **0 files** across `Assets/`,
+  `ProjectSettings/` and `Packages/`; all 7 replacement guids resolve to exactly the referrer counts
+  the originals had (Cone 3, Sphere 7, Cube 5, CylinderTube 1, outline 2, filled-200 1, filled-300 2).
+* **No dangling YAML.** A *regression* comparison over all 20 re-pointed files: exactly 4 anchors
+  removed, every referrer to each gone, **no new dangling fileID**. (The naive "every local fileID
+  has an anchor" check was tried first and is useless here — it cannot tell a dangling id from a
+  reference into a nested prefab or a built-in, and flagged all 20 files.)
+* **Asset integrity.** Every emitted PNG decodes with correct per-chunk CRCs at 128×128 RGBA8; every
+  emitted mesh's `m_DataSize`, vertex stride (48 B), index-buffer length and 14-channel block are
+  self-consistent; all 7 new guids are unique project-wide (0 duplicate guids anywhere in `Assets/`).
+* **Serialization shape.** The mesh `.asset` is line-for-line identical in structure to the file it
+  replaces, and both `.meta` shapes are byte-identical to Unity's own formatting (see 96a319e6 —
+  the empty-scalar trailing space, which would otherwise have made `--check` report phantom drift
+  after the first import).
+* **Standing gates.** `check_conditional_compilation`, `check_enum_member_references`,
+  `check_switch_label_collisions`, `check_self_referential_locals` all pass.
+  `check_using_directives` reports 18 problems in 12 files — **pre-existing**: they reproduce
+  identically at the commit before this work, and this work changed **zero** first-party `.cs`
+  files (the only `.cs` it touched are the 11 vendor scripts it deleted).
+
+**What still needs a human in the editor**, in rough order of what would hurt most if wrong:
+
+1. **The Dolphin's crystal blast** and **the Sparrow's skyburst** — the cone should read exactly as
+   before: same gape, same reach, same texture flow along it. This is the one place a wrong mesh
+   would change gameplay *feel* without changing the blast VOLUME, since the trigger `BoxCollider`,
+   the Burst sweep job and `ExplosionImpactor` all keep their own numbers.
+2. **`Menu_Main`** — the party panel (`ArcadeLobbyList`) and the friends panel (`FriendListPanel`):
+   the cut-corner plates, at the right corner size. These are the 200-vs-300 PPU pair, so a
+   swapped-over import would show as corners ~1.5× too big on one of them.
+3. **`Authentication`** — the username field's plate.
+4. **The options panel** (`SettingsModal` → `OptionsMenuContent`) — the four tab-button outlines.
+5. **`ModalWindows.prefab`** opens with no missing-script warning and no missing nested prefab.
+6. **The projectile and FX prefabs** — the sphere-bodied rounds and the crackle FX emit as before.
+7. **A console with no import errors**, which is the one check that covers everything above at once.
+
+A re-import will also be the first time Unity assigns the generated sprites their `21300000`
+sub-asset fileID. That is the universal convention for a `spriteMode: 1` texture and is the value
+the vendor references already used, but it is an assumption until an import confirms it — if a
+frame renders as a white box, that is where to look first.
+
 ---
 
 ## §3 · `Packages/` — **104 resolved packages, not 77**
