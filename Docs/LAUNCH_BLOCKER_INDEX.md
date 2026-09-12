@@ -580,7 +580,10 @@ compression (a `.png`'s bytes on disk are not its bytes in the build).
 
 **Re-measured 12 Sep 2026 after §A1–§A3.** The two arrowed rows are the only ones this branch
 moved. Project totals: **2,948 of 7,526 assets reachable → 2,896 of 7,382**; **434.0 MB reached →
-427.2 MB**; `Resources/` roots **165 → 134**. Unreached rose 662.3 → 663.0 MB *because
+427.2 MB**; `Resources/` roots **165 → 134**. (Re-run after merging `bleeding-edge`, which landed
+the credits screen: **2,898 of 7,386** — the credits manifest is itself a `Resources/` root, so it
+and what it reaches are the +2. *A measurement quoted into a doc is a derived value: this branch's
+own numbers moved once between measuring and shipping.*) Unreached rose 662.3 → 663.0 MB *because
 QuickScene Pro moved out of "reached" rather than out of the project* — a move, not a deletion, so
 its bytes changed column. `--self-test` green throughout, including the `TMP Settings.asset`
 Resources-root probe, which is the one that proves the load-by-name blind spot is still closed.
