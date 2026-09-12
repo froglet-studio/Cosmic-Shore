@@ -210,6 +210,16 @@ namespace CosmicShore.Utility
         [System.NonSerialized] public int GamesPlayed;
 
         /// <summary>
+        /// The modes already DRAWN this shuffle — the bag. A shuffle deals every mode in the
+        /// drawable pool once before any mode comes round again (<c>MaelstromController.LoadRandomGame</c>
+        /// draws from the pool MINUS this list, and only refills it when the bag empties), so
+        /// "no game repeats itself" is a property of the draw rather than of a lucky roll.
+        /// Host-only state: the draw is host-only, so nothing replicates it and nothing reads it
+        /// off a client.
+        /// </summary>
+        [System.NonSerialized] public List<SO_ArcadeGame> DrawnGames = new();
+
+        /// <summary>
         /// Per-game intensity ceiling (X) captured from the lobby-chosen intensity at tournament
         /// start; each game draws a random intensity in [1..X]. Persists across <see cref="ResetRuntime"/>
         /// so Play Again keeps the same ceiling (it is re-captured only on a fresh start from the lobby).
@@ -353,6 +363,18 @@ namespace CosmicShore.Utility
             return result;
         }
 
+        /// <summary>True when <paramref name="game"/> has already been dealt out of this shuffle's bag.</summary>
+        public bool HasBeenDrawn(SO_ArcadeGame game) => game != null && DrawnGames.Contains(game);
+
+        /// <summary>Records a drawn mode so the bag cannot deal it again until it is refilled.</summary>
+        public void MarkDrawn(SO_ArcadeGame game)
+        {
+            if (game != null && !DrawnGames.Contains(game)) DrawnGames.Add(game);
+        }
+
+        /// <summary>Refills the bag (every drawable mode is available again).</summary>
+        public void RefillDrawBag() => DrawnGames.Clear();
+
         /// <summary>
         /// The lowest intensity at which <paramref name="game"/> is drawable, or 0 when no tier
         /// lists it (it never enters the pool — the honest answer, and what lets the launch panel
@@ -411,6 +433,7 @@ namespace CosmicShore.Utility
             IsActive = false;
             CurrentGameIndex = 0;
             GamesPlayed = 0;
+            DrawnGames.Clear();
             _resolvedWinTarget = 0;   // re-resolved from the End Game Conditions tool at the next start
             Standings.Clear();
             History.Clear();

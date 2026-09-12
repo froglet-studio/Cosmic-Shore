@@ -21,7 +21,8 @@ namespace CosmicShore.Gameplay
     ///     objects already persist across them. The host drives every scene load; clients follow
     ///     via Netcode. No additive loading, no new NetworkBehaviour.
     ///   • <b>Randomized lineup</b> (the "Shuffle" card): each game the host draws a random pool mode
-    ///     + a random intensity in [1..ceiling] and launches it. Clients learn the mode from the
+    ///     (from a BAG - no mode repeats until the pool is exhausted) + a random intensity in
+    ///     [1..ceiling] and launches it. Clients learn the mode from the
     ///     loaded scene and the intensity from the existing config sync - no shared RNG seed needed.
     ///   • <b>Race to 6</b>: standings are network-free - on <c>OnMiniGameEnd</c> EVERY peer folds the
     ///     already-synced <see cref="GameDataSO.Results"/> into per-domain crystals identically and
@@ -341,7 +342,8 @@ namespace CosmicShore.Gameplay
         /// Draws a random (mode, intensity ∈ [1..ceiling]) "experience" from the pool and launches it.
         /// The host drives the Single load; clients follow it (the mode is the loaded scene, the
         /// intensity rides the existing <c>SyncGameConfigToClients</c> path), so no shared RNG/seed is
-        /// needed. Avoids immediately repeating the previous mode when the pool has more than one.
+        /// needed. The mode is drawn from a BAG: no mode repeats until every drawable mode has been
+        /// played, and a refill still never deals the same mode back-to-back.
         /// </summary>
         void LoadRandomGame()
         {
@@ -355,20 +357,41 @@ namespace CosmicShore.Gameplay
             var drawable = _tournament.GamesForIntensity(ceiling);
             if (drawable.Count == 0) return;
 
+            // A shuffle is a BAG, not a roll: every mode in the drawable pool is dealt once before
+            // ANY mode comes round again. Drawing from the pool minus what has already been dealt
+            // makes "no game repeats itself" a property of the draw rather than of a lucky roll -
+            // where the old immediate-repeat guard left a 16-mode pool free to deal the same mode
+            // on rounds 1, 3 and 5 of a race that is often only four rounds long.
+            var candidates = new List<SO_ArcadeGame>();
+            for (int i = 0; i < drawable.Count; i++)
+                if (!_tournament.HasBeenDrawn(drawable[i])) candidates.Add(drawable[i]);
+
             // CurrentGameIndex holds the last loaded pool mode as a GameQueue index (set on scene
-            // load); avoid repeating it, except for the very first game of the session. It has to
-            // be mapped INTO the drawable list, because that list is a subset at low intensity and
-            // the two index spaces are not the same.
-            int avoid = -1;
+            // load). It is only needed when the bag REFILLS - inside a bag the previous mode has
+            // already been dealt and cannot be a candidate - and it has to be mapped INTO the
+            // candidate list, because that list is a subset and the index spaces are not the same.
+            SO_ArcadeGame previous = null;
             if (_tournament.GamesPlayed > 0 &&
                 _tournament.CurrentGameIndex >= 0 &&
                 _tournament.CurrentGameIndex < _tournament.GameCount)
             {
-                avoid = drawable.IndexOf(_tournament.GameQueue[_tournament.CurrentGameIndex]);
+                previous = _tournament.GameQueue[_tournament.CurrentGameIndex];
             }
 
-            var game = drawable[PickRandomIndex(drawable.Count, avoid)];
+            if (candidates.Count == 0)
+            {
+                // Bag empty: a shuffle longer than the pool has to come round again. Refill and
+                // fall back to the old rule - still never back-to-back across the seam.
+                _tournament.RefillDrawBag();
+                candidates.AddRange(drawable);
+            }
+
+            int avoid = previous != null ? candidates.IndexOf(previous) : -1;
+
+            var game = candidates[PickRandomIndex(candidates.Count, avoid)];
             if (game == null) return;
+
+            _tournament.MarkDrawn(game);
 
             int intensity = Random.Range(1, ceiling + 1);   // inclusive [1..ceiling]
 

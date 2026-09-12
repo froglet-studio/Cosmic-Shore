@@ -34,7 +34,8 @@ sixteen modes that satisfy §1's admission criteria, laddered by pick-up difficu
 
 One session plays a **randomized lineup** drawn from the competitive domain games — **sixteen** of
 them, every arcade mode that satisfies the three admission criteria below. Each game the host draws a
-random pool mode (no immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen
+random pool mode **from a bag** (no mode repeats until every drawable mode has been played — §1.2)
+**and** a random intensity in `[1..X]` (X = the lobby-chosen
 intensity ceiling), so a higher intensity widens the draw **twice over**: it raises each game's own
 intensity and it unlocks more modes (§1.1). Drawable modes × intensities: L1 = 6×1 = 6 experiences,
 L2 = 10×2 = 20, L3 = 13×3 = 39, L4 = 16×4 = **64**.
@@ -71,7 +72,10 @@ only to rounds that permit it. This is why the Maelstrom card's own `Vessels` li
 choice, not a session-wide lock.
 
 **Known wrinkle — same-hull adjacency, and the sixteen-mode pool sharpened it.**
-`PickRandomModeIndex` avoids repeating the previous *index*, not the previous *vessel* or *arena*.
+The draw excludes the previous *modes*, not the previous *vessel* or *arena* — and the bag (§1.2)
+does **not** improve this: over a dealt bag the chance that two adjacent rounds share a hull is
+`Σ n_g(n_g−1) / N(N−1)`, exactly what a uniform no-immediate-repeat roll gives, so the numbers below
+stand unchanged.
 It was already possible for Rampage and The Bends to come up back-to-back — they share both the
 Dolphin and the cactus forest, so the pair reads as one mode played twice — and the wider pool makes
 same-hull adjacency much likelier rather than rarer, because the added modes cluster on hulls:
@@ -85,6 +89,29 @@ Bends (the cactus forest) and Dog Fight/Salvo (the Boneyard, reused verbatim, no
 draws read as the same *place* as well as the same ship. The documented fix is unchanged and still
 playtest-gated: widen the avoid-set to the previous mode's first `Vessels` entry. If it is taken,
 it needs a guard for the case where every drawable mode shares one hull, or the draw starves.
+
+### 1.2 The draw is a BAG, not a roll — no mode repeats inside a shuffle
+
+`MaelstromDataSO.DrawnGames` is the bag: `LoadRandomGame` draws uniformly from the drawable pool
+**minus every mode already dealt this shuffle**, marks the winner, and only refills when the bag
+empties. So a shuffle deals every drawable mode once before any mode comes round again — *no game
+repeats itself in a shuffle*, as a property of the draw rather than of a lucky roll.
+
+It matters most where the race is shortest against the widest pool: a race to 6 on `{2,1,0}` decides
+in as few as three rounds, and the old immediate-repeat guard left a 16-mode pool free to deal the
+same mode on rounds 1, 3 and 5 of a four-round match — the one thing a player reads as *the shuffle
+is broken*.
+
+Three details:
+
+* **A shuffle CAN outlast its pool** (L1 draws from six modes; there is no cap on rounds), so the
+  bag refills rather than starving. Across that seam the old rule still applies — the refilled bag
+  avoids dealing the mode that just emptied it, so nothing is ever back-to-back.
+* **The bag is host-only state**, because the draw is host-only: nothing replicates it and nothing
+  reads it off a client. It is cleared by `ResetRuntime`, so Play Again starts a fresh bag.
+* **Intensity still varies independently.** Two rounds of one mode at different intensities are
+  still two different experiences, but they are not what the bag is preventing — a mode is dealt
+  once per bag whatever intensity it draws.
 
 ### 1.1 The intensity ladder — which modes a run can draw
 
@@ -306,6 +333,7 @@ on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 `SO_ArcadeGame`s), `ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`),
 `WinTarget` (6), `MaxGames` (7), `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime
 (non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode — repeat-avoidance),
+`DrawnGames` (the draw bag, §1.2),
 `GamesPlayed`, `IntensityCeiling` (X, captured at start; **survives `ResetRuntime`** so Play Again
 keeps it), `MaelstromAINames`, `Standings` (a `List<MaelstromDomainStanding>` — **keyed by
 `Domains`**, not player). Key methods: `RecordResults(results)` (per-domain fold + `GamesPlayed++`,

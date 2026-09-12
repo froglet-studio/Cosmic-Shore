@@ -405,5 +405,51 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _data.CrystalsForDomain(null, Domains.Jade), "Null results → 0.");
         }
     }
+
+        // ── The draw bag (no mode repeats inside a shuffle) ───────────────────
+
+        [Test]
+        public void DrawBag_MarksDrawnAndRefills()
+        {
+            var a = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
+            var b = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
+
+            Assert.IsFalse(_data.HasBeenDrawn(a), "A fresh bag has dealt nothing.");
+
+            _data.MarkDrawn(a);
+            _data.MarkDrawn(a);   // idempotent - one deal, not two entries
+            Assert.IsTrue(_data.HasBeenDrawn(a), "A dealt mode is out of the bag.");
+            Assert.IsFalse(_data.HasBeenDrawn(b), "An undealt mode is still drawable.");
+            Assert.AreEqual(1, _data.DrawnGames.Count, "Marking twice must not double-enter.");
+
+            _data.RefillDrawBag();
+            Assert.IsFalse(_data.HasBeenDrawn(a), "A refilled bag makes every mode drawable again.");
+
+            Object.DestroyImmediate(a);
+            Object.DestroyImmediate(b);
+        }
+
+        [Test]
+        public void DrawBag_ResetRuntime_StartsAFreshBag()
+        {
+            // Play Again routes through ResetRuntime - a stale bag there would make the new
+            // shuffle skip modes it has not actually played.
+            var a = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
+            _data.MarkDrawn(a);
+
+            _data.ResetRuntime();
+
+            Assert.IsFalse(_data.HasBeenDrawn(a), "ResetRuntime clears the bag.");
+            Object.DestroyImmediate(a);
+        }
+
+        [Test]
+        public void DrawBag_NullIsNeverDealt()
+        {
+            _data.MarkDrawn(null);
+            Assert.AreEqual(0, _data.DrawnGames.Count, "A null card is not a dealt mode.");
+            Assert.IsFalse(_data.HasBeenDrawn(null), "Null is never 'already drawn'.");
+        }
+    }
 }
 #endif
