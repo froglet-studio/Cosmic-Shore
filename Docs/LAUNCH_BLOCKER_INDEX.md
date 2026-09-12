@@ -37,8 +37,8 @@ entitlement questions.
 | **B5** | 6 orphan arcade cards **still referenced** | small | `keep` until the referrers are cut |
 | **C1** | `Unity Assests/TextMesh Pro/Resources` | 7.7 MB | **`keep` — load-bearing, invisible to refcheck** |
 | **C2** | `Unity Assests/Adaptive Performance` | small | `keep` — wired into `ProjectSettings` |
-| **C3** | `PrimitivePlus` | 1008 KB | `keep` — meshes used by projectiles/AOE |
-| **C4** | `Shift - Complete Sci-Fi UI` | 584 KB | `keep` — textures used by 2 build scenes |
+| ~~**C3**~~ | ~~`PrimitivePlus`~~ | ~~1008 KB~~ | ✅ **REMOVED 12 Sep 2026** — replaced first-party |
+| ~~**C4**~~ | ~~`Shift - Complete Sci-Fi UI`~~ | ~~584 KB~~ | ✅ **REMOVED 12 Sep 2026** — replaced first-party |
 | **C5** | `Effects Library` | 8.2 MB | `keep` — nested in `VesselJet.prefab` |
 | **C6** | `_Scripts/Game` | 288 KB | **`keep` — CLAUDE.md is wrong about this folder** |
 | **C7** | `PlayFabEditorExtensions` | 4.9 MB | `keep` (editor-only, does not ship) |
@@ -54,7 +54,7 @@ entitlement questions.
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **A4, A5** (Wwise, Parse) | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
 | **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) |
-| **C3, C4** (PrimitivePlus, Shift) | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) — **their `keep` verdicts are superseded**: the studio's decision is to replace both |
+| ~~C3, C4~~ (PrimitivePlus, Shift) | ✅ **Done 12 Sep 2026.** [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) executed — both replaced first-party and removed. Record: [`THIRD_PARTY_REGISTER.md` §2.1](THIRD_PARTY_REGISTER.md) |
 | **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **E1, E2** (the 360 MB noise pack, the video folder) | [`UNREFERENCED_ART_SWEEP_PROMPT.md`](prompts/UNREFERENCED_ART_SWEEP_PROMPT.md) |
 
@@ -259,19 +259,29 @@ Only §A1's `Examples & Extras` subtree is a removal candidate, and only after t
 `AdaptivePerformanceGeneralSettings.asset` and the Samsung/Simulator provider settings are
 referenced by **`ProjectSettings/ProjectSettings.asset`** and `EditorBuildSettings.asset`.
 
-### C3 · `Assets/PrimitivePlus` — `keep`
+### C3 · `Assets/PrimitivePlus` — ~~`keep`~~ **REMOVED 12 Sep 2026**
 
-Its `Resources/Meshes/` are used across shipped gameplay: `Sphere.asset` → `Projectile.prefab`,
-`FalconProjectile`, `AxeBubble`, `AOEExplosionRed`; `Cone.asset` → `AOEConicExplosion`,
-`AOEConicSkyBurst`, `LaserGraph.shadergraph`; `Cube.asset` → the FX crackle prefabs;
-`CylinderTube.asset` → `oldWallFlora`. Also `PrimitivePlusMaterial.cs` → 3 projectile prefabs.
-**16 distinct external referrers.** Entitlement question stands (register Q4).
+The `keep` was correct at the time and is superseded by the studio's decision to replace rather than
+chase a receipt. Its `Resources/Meshes/` were used across shipped gameplay: `Sphere.asset` →
+`Projectile.prefab`, `FalconProjectile`, `AxeBubble`, `AOEExplosionRed`; `Cone.asset` →
+`AOEConicExplosion`, `AOEConicSkyBurst`, `LaserGraph.shadergraph`; `Cube.asset` → the FX crackle
+prefabs; `CylinderTube.asset` → `oldWallFlora`. Also `PrimitivePlusMaterial.cs` → 3 projectile
+prefabs. **16 distinct external referrers**, every one of them now pointing at
+`Assets/_Models/Primitives/` (`Tools/Build/author_primitive_meshes.py`), except the component, which
+was deleted as inert. Entitlement question closed by removal.
 
-### C4 · `Assets/Shift - Complete Sci-Fi UI` — `keep`
+**It is also the index's own §E argument in miniature**: the folder-scoped check asked *is this
+referenced?* and got `keep` from **4 assets**, while the thing that actually shipped was the whole
+**47-mesh `Resources/` folder** — Unity packs a `Resources/` folder whole. A reference check answers
+the wrong question here by roughly twelve to one.
 
-Border textures used by **`Menu_Main.unity`** and **`Authentication.unity`** (both build scenes),
-plus `ModalWindows.prefab` and `OptionsMenuContent.prefab`; `Switch.prefab` → `ModalWindows.prefab`.
-Entitlement question stands (register Q3).
+### C4 · `Assets/Shift - Complete Sci-Fi UI` — ~~`keep`~~ **REMOVED 12 Sep 2026**
+
+Same disposition. Border textures were used by **`Menu_Main.unity`** and **`Authentication.unity`**
+(both build scenes), plus `ModalWindows.prefab` and `OptionsMenuContent.prefab`; `Switch.prefab` →
+`ModalWindows.prefab`. All now point at `Assets/_Graphics/UI/Frames/`
+(`Tools/Build/author_ui_frame_sprites.py`); the switch instance was retired (inactive, and its host
+prefab is referenced by nothing). Entitlement question closed by removal.
 
 ### C5 · `Assets/Effects Library` — `keep`
 

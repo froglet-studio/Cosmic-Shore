@@ -21,7 +21,7 @@ which prompt executes it.
 | **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
 | **4** | NiceVibrations plugin | **Replace with a placeholder** | [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
 | **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
-| **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) |
+| **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | ✅ **DONE 12 Sep 2026** — both replaced first-party and removed; see §4 row 6 and `THIRD_PARTY_REGISTER.md` §2.1 |
 | **7** | "Effects Library" provenance | **Owner will look into it** | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **8** | Wwise | **Owner will see to it** | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
 
@@ -39,8 +39,8 @@ engineering work.
 | **FMOD Studio** | Firelight Technologies | ✅ EULA present | **A tier decision, not necessarily a purchase.** Free commercial use is capped at **dev budget < $600k USD** *and* **gross revenue + funding < $200k USD/yr**. Froglet Inc. is a Delaware C-corp shipping paid Steam EA — confirm both, buy the Indie/Basic tier if either is exceeded. | Distributing without a tier that covers us. Independent of this, the **credit line is required on every tier** (§1 row 1). |
 | **Obvious SOAP 2.7.0** | Obvious Games | ❌ **none** | **The receipt.** The README's *"Thanks for purchasing Soap :)"* shows someone bought it; the tree carries no EULA. Owner is adding it. | **Not removable** — 128 first-party files use it; it is the project's primary architecture. This is a receipt problem only. |
 | **NiceVibrations 4.1.1** | Lofelt / More Mountains | ❌ **no product EULA** (the two licence-looking files are a Rust crate list and a CC audio notice) | **Nothing — we are replacing it.** Buy a seat *only* if mobile pattern haptics are wanted back before launch. | Nothing, once row 4 lands. |
-| **Shift — Complete Sci-Fi UI** | Michsky | ❌ none | **A seat (~$20–35) *or* nothing** — we are replacing it. It is 3 border textures and 1 switch prefab, with **zero first-party code coupling**. Cheapest honest outcome: buy the seat if anyone wants the art kept; otherwise replace. | Nothing, once row 6 lands. |
-| **PrimitivePlus** | unknown (ns `PrimitivePlus`) | ❌ none | **A seat *or* nothing** — we are replacing it. 4 meshes and one 36-line component are live. **Vendor is not even identifiable from the tree**, so "buy it" may not be an available action. | Nothing, once row 6 lands. |
+| ~~**Shift — Complete Sci-Fi UI**~~ | Michsky | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed. | — |
+| ~~**PrimitivePlus**~~ | unknown (ns `PrimitivePlus`) | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed, which is just as well: the vendor was never identifiable from the tree. | — |
 | **DOTween (free tier)** | Demigiant | ❌ none | **No purchase.** Demigiant documents the free tier as usable commercially; the licence TEXT is simply not vendored. **Fetch `LICENSE.txt` from the DOTween distribution and commit it beside the DLL.** (DOTween **Pro** is a separate paid product and is *not* what is in the tree.) | A shipped dependency with no licence document, in 44 first-party files. |
 | **NativeShare** | yasirkula | ❌ none | **No purchase** — MIT upstream. **Vendor the MIT notice.** | MIT's notice-preservation term unmet. |
 | **UniTask / Reflex / ParrelSync** | Cysharp / G. Santos / VeriorPies | ❌ not vendored (git packages) | **No purchase** — MIT. Their notices ride the credits screen (row 1). | Same as above, ×3. |
@@ -48,8 +48,9 @@ engineering work.
 | **"Effects Library"** | ❓ unknown | ❌ none | **Identify the vendor.** 8.2 MB; exactly **one** prefab is live. | An unattributable 8.2 MB pack in a shipping build. |
 | **SerializeInterface** | ❓ unknown | ❌ none, no namespace, no header | **No purchase — rewrite it.** 290 lines total (48 runtime / 242 editor), 7 first-party consumers. | An unattributable shipping code drop. |
 
-**Everything above that says "no purchase" resolves to either a text file or a prompt.** The only two
-rows that can cost money are **FMOD's tier** and — optionally, only if the art is wanted — **Shift**.
+**Everything above that says "no purchase" resolves to either a text file or a prompt.** As of
+12 Sep 2026 the only row that can cost money is **FMOD's tier**: Shift was the other one, and it is
+now replaced and removed, so the choice it represented no longer exists.
 
 ---
 
@@ -66,8 +67,8 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 | **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | **1** file, **5** API symbols | **REPLACE** (row 4) |
 | ├ demo sprites | ship | 6 usages in 5 shipped locations | **REPLACE** (row 5) |
 | └ `HapticSamples/*.wav` | ship | 4 clips on legacy `AudioClip` fields | **REPLACE with FMOD events** (row 5) |
-| **Shift Sci-Fi UI** | ships (+ `Resources/`) | **0** code files; 3 textures + 1 prefab | **REPLACE** (row 6) |
-| **PrimitivePlus** | ships (+ 47-mesh `Resources/`) | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | **REPLACE** (row 6) |
+| ~~**Shift Sci-Fi UI**~~ | — | **0** code files; 3 textures + 1 prefab | ✅ **REPLACED + REMOVED** 12 Sep 2026 |
+| ~~**PrimitivePlus**~~ | — | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | ✅ **REPLACED + REMOVED** 12 Sep 2026 |
 | **DOTween** | ships | **44** files | **KEEP** — vendor the licence |
 | **NativeShare** | ships | **4** files | **KEEP** — vendor the licence |
 | **PlayFabSDK** | ships | **20** files (inert backend) | **DEFER** — launch-blocker index §B2 |
@@ -142,11 +143,43 @@ licence workaround — it is finishing a migration the project already committed
 | `Resources/` that ships regardless | `Shift UI Manager.asset` | **47 meshes + 1 material** |
 | Replacement | 3 sprites re-authored (9-sliced frames) + a first-party toggle | 4 meshes baked first-party + a 36-line component rewritten |
 
-Two hazards the prompt has to respect. `Cone.asset` is on **`AOEConicExplosion`** and
+Two hazards the prompt had to respect. `Cone.asset` is on **`AOEConicExplosion`** and
 **`AOEConicSkyBurst`** — the Dolphin's crystal blast and the Sparrow's skyburst, both
 gameplay-critical; and `Switch.prefab` carries **two `m_Script` guids owned by no `.meta` under
 `Assets/`** (almost certainly package scripts — unverifiable here, because `Library/PackageCache/`
-is not committed), so it must be rebuilt rather than edited in place.
+is not committed), so it had to be rebuilt rather than edited in place.
+
+#### ✅ Landed 12 Sep 2026 — and three things worth carrying
+
+Full record, with every measurement: [`THIRD_PARTY_REGISTER.md` §2.1](THIRD_PARTY_REGISTER.md).
+Five commits: author the replacements, re-point, remove each pack (one commit each, each carrying
+its own per-asset guid proof), update the docs.
+
+**(1) The replacement had to be measured while the thing it replaced still existed.** Both authoring
+tools carry a `--verify-vendor` mode that compares against the pack, and those numbers are the only
+evidence that will ever exist — after deletion the mode correctly stands down with "vendor asset is
+gone" rather than aborting. All four meshes and all three frames came back surface-identical /
+0-pixels-off; the Cone, the one that could have changed a blast, matched to a max UV delta of
+**0.000001** and now has *cleaner* bounds than the vendor's (exactly ±0.5 against ±0.5000004).
+
+**(2) Two of the three things the prompt asked us to build turned out not to need building**, and
+saying so was worth more than building them. `PrimitivePlusMaterial` is an editor-authoring helper
+whose only two callers are the vendor's own inspector — at runtime it caches a `MeshRenderer` into a
+private field nobody reads — so a first-party rewrite would have been a no-op compiled into
+`Assembly-CSharp` and carried on three prefabs; the component was deleted instead. The Shift
+**switch** was the same shape of answer for a different reason: its one instance shipped
+`m_IsActive: 0`, inside a prefab (`_Prefabs/UI Elements/ModalWindows.prefab`) that **nothing
+references**, while the live settings panel expresses all seven of its on/off rows as a
+`GameSettingsPanelController.OnOffControl`. There was no toggle to rebuild. *The `ModalWindows` that
+first-party code does name is `ScreenSwitcher.ModalWindows`, an enum — not that prefab.*
+
+**(3) Fit the geometry, do not read it off.** Both replacements were first derived by reading alpha
+ramps and vertex dumps by hand, and both hand-derivations were WRONG in ways that looked right: the
+frame's bottom-right chamfer was 3 px out (a printed row index misread), and the outline band was
+built as a coordinate inset when the art is a true perpendicular offset — 7.4 % too heavy. Solving
+each constant numerically against the asset found both in seconds. The same pass caught a defect in
+the *replacement* nobody would have seen otherwise: the generated cube's ±Z faces were wound
+backwards, which a comparison by triangle winding reported and an eyeball would not have.
 
 ### Row 7 — Effects Library
 

@@ -31,7 +31,7 @@ work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY
 | **4** | **NiceVibrations 4.1.1** | ⚠️ Commercial, **no product EULA** | The two files that look like a licence are not one — see §2. Seat must cover commercial distribution. | 🔄 **Replace** — the whole dependency is **1 file, 5 API symbols**; every clip is already first-party data. `prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md` |
 | **4b** | **NiceVibrations `HapticSamples/*.wav` in shipped UI** | ⚠️ **Non-commercial licence claim** | **New finding, 12 Sep.** Four clips are wired into shipped UI as legacy `AudioClip` fields — `Beep1` (`CountdownTimer.countdownBeep`), `Cash5` (`onTriggerClip`), `Coins2` (`targetReachedClip`), `Keyboard3` (`TypingAudio` on `Profile`/`ModalWindows`/`Menu_Main`). Their notice **opens by declaring the pack "licensed under CCBYNC 3.0"** — *non-commercial* — while its source list is almost all CC0 and **names freesound titles, not shipped filenames**, so no clip maps to a term. | 🔄 **Replace with FMOD events** — which is the migration CLAUDE.md already mandates for new SFX. `prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md` |
 | **5** | **NiceVibrations demo ART is in the shipped menu** | ⚠️ Distribution question | `RegularPresetsIcons.png` → `Menu_Main.unity` (a build scene). Asset Store EULAs treat demo content separately from the plugin. **4 distinct sprites, 6 usages** — two of them (`NVCar`, `NV7Dots`) are the **Termite class icons**, i.e. already placeholders for an unimplemented vessel. | 🔄 **Replace** — same prompt as 4b |
-| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. **Measured: neither has a single first-party code reference** — Shift is 3 textures + 1 prefab, PrimitivePlus is 4 meshes + one 36-line component (with **47** meshes shipping via `Resources/`). | 🔄 **Replace** — `prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md` |
+| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ✅ **RESOLVED — both removed 12 Sep 2026** | Replaced first-party and deleted, in two commits each carrying a per-asset guid-ownership proof (`0` inbound references, `0` ambiguous owners, counted over `Assets/` + `ProjectSettings/` + `Packages/`). Shift's 3 frames → `Assets/_Graphics/UI/Frames/` (`Tools/Build/author_ui_frame_sprites.py`); PrimitivePlus's 4 meshes → `Assets/_Models/Primitives/` (`Tools/Build/author_primitive_meshes.py`). Both replacements were **measured against the packs before deletion** — see §2.1. | ✅ **Done** |
 | **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? **Measured: 8.2 MB of which exactly ONE prefab is live** (`vfx_Projectile_02` → `VesselJet`); the four `FE_*` render-pipeline assets are **not** the live pipeline (0 references). | 🔍 **Owner will identify** — `prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md` |
 | **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. | 🗑 **Owner will confirm, then delete** — with `Parse` (0 refs) and a first-party rewrite of `SerializeInterface`. `prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md` |
 | **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship. **If the Rhino rig work ever wires one, attribution becomes mandatory.** | ⏸ Watch — credits screen covers it if ever wired |
@@ -72,8 +72,8 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | ├ **Microsoft.IdentityModel** (`.JsonWebTokens`, `.Logging`, `.Tokens`) | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | └ **System.IdentityModel.Tokens.Jwt** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | **QuickScene Pro** | yethgamedevv | © 2025 | `YethGameDev` | 4.4 MB / 10 | ✅ `LICENSE.md` — **MIT** (+ Indian jurisdiction clause) | Editor code only, but its **`Resources/` (1.8 MB) ships** |
-| **PrimitivePlus** ⚠️ | *unknown* (ns `PrimitivePlus`) | not stated | `PrimitivePlus` | 1008 KB / 53 | ❌ none | **Ships** — 5 runtime `.cs` + `Resources/` |
-| **Shift — Complete Sci-Fi UI** ⚠️ | **Michsky** (ns `Michsky.UI.Shift`) | not stated | `Shift - Complete Sci-Fi UI` | 584 KB / 15 | ❌ none | **Ships** — 4 runtime `.cs` + `Resources/` |
+| ~~**PrimitivePlus**~~ | *unknown* (ns `PrimitivePlus`) | not stated | ~~`PrimitivePlus`~~ | ~~1008 KB / 53~~ | ❌ none | ✅ **REMOVED 12 Sep 2026** — see §2.1 |
+| ~~**Shift — Complete Sci-Fi UI**~~ | **Michsky** (ns `Michsky.UI.Shift`) | not stated | ~~`Shift - Complete Sci-Fi UI`~~ | ~~584 KB / 15~~ | ❌ none | ✅ **REMOVED 12 Sep 2026** — see §2.1 |
 | **External Dependency Manager (EDM4U)** | **Google** | **1.2.183** | `ExternalDependencyManager` | 816 KB / 9 | ✅ `LICENSE` (**Apache 2.0**) | **Editor-only** ✅ |
 | **Microsoft.Unity.Analyzers** | Microsoft | not stated | `Analyzers` | 256 KB / 2 | ❌ none (`README.md` only) | Roslyn analyzer — compile-time |
 | **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | ~15 MB / ~190 | — (Unity UCL) | **Ships** — both `Resources/` |
@@ -100,6 +100,82 @@ under CCBYNC 3.0"* — **non-commercial** — over a pack whose four clips (`Bee
 almost entirely CC0 with one Attribution item, so the file contradicts its own header; and it names
 **freesound source titles rather than shipped filenames**, so no clip in the tree can be mapped to a
 term. There is no reading under which a paid release is provably clear. Disposition: §0 row 4b.
+
+---
+
+## §2.1 · Removed — Shift Sci-Fi UI and PrimitivePlus (12 Sep 2026)
+
+Both packs are **gone from the tree**. Neither had a licence document, a vendor identifiable from
+the tree, or a recoverable purchase record, and — the part that made replacing cheaper than chasing
+a receipt — both shipped a `Resources/` folder into the player whole, so **47 PrimitivePlus meshes
+shipped for the 4 that were used** and Shift's `Shift UI Manager.asset` shipped for nothing.
+
+**What replaced what, and what it cost.** Neither pack had a single first-party code reference, so
+the whole dependency was art:
+
+| was | is | authored by |
+|---|---|---|
+| `PrimitivePlus/Resources/Meshes/{Cone,Sphere,Cube,CylinderTube}.asset` | `Assets/_Models/Primitives/Primitive{Cone,Sphere,Cube,CylinderTube}.asset` | `Tools/Build/author_primitive_meshes.py` |
+| `Shift …/Cut Frame Big - 6px (200ppu).png` | `Assets/_Graphics/UI/Frames/frame_cut_outline_200.png` | `Tools/Build/author_ui_frame_sprites.py` |
+| `Shift …/Cut Frame Filled Big (200ppu).png` | `…/frame_cut_filled_200.png` | ″ |
+| `Shift …/Cut Frame Filled Big (300ppu).png` | `…/frame_cut_filled_300.png` | ″ |
+| `PrimitivePlusMaterial` on 3 prefabs | *removed* — an editor-authoring helper, inert at runtime | — |
+| `Switch.prefab` instance in `ModalWindows.prefab` | *removed* — inactive, in an unreferenced prefab | — |
+
+**The replacements were MEASURED against the packs before deletion**, which is the only window in
+which that can be done — both tools carry a `--verify-vendor` mode that now stands down with
+"vendor asset is gone" rather than aborting, and a `--self-test` that proved the comparison FAILS on
+a mesh or a frame that really differs.
+
+| replacement | result |
+|---|---|
+| `PrimitiveCone` | surface **IDENTICAL**, max normal delta 0.0159°, **max UV delta 0.000001** |
+| `PrimitiveSphere` | surface **IDENTICAL**, 0.4429°, 0.003906 (= 1/256) |
+| `PrimitiveCube` | surface **IDENTICAL**, 0.0000°, 0.000000 |
+| `PrimitiveCylinderTube` | surface **IDENTICAL**, 0.0175°, UVs not reproduced *(see below)* |
+| `frame_cut_filled_200/300` | coverage **−0.008 %**, **0** of 16384 px off by >0.25, max \|alpha\| 0.022 |
+| `frame_cut_outline_200` | coverage **−0.159 %**, **0** of 16384 px off by >0.25, max \|alpha\| 0.103 |
+
+"Surface IDENTICAL" means the triangle coverage and winding agree exactly, compared per supporting
+plane so a free triangulation choice does not read as a difference while a curved quad's diagonal
+still has to match; vertex clusters agree within 1.2e-06 world units. The two non-zero UV deltas are
+deliberate and neither reaches a shader: the **Sphere**'s vendor UVs sit on a k/256 grid (an export
+quantiser upstream of an otherwise Float32 asset) and the first-party asset emits the analytic
+values those are a rounding of; the **CylinderTube**'s are a modelled non-uniform unwrap that is not
+reproduced, which nothing can see because its one consumer wires a **null material** and also uses
+the mesh as a non-convex `MeshCollider`.
+
+**`Cone.asset` was the gameplay-critical one** — it is the mesh on `AOEConicExplosion` (the
+Dolphin's crystal blast) and `AOEConicSkyBurst` (the Sparrow's skyburst), and its material's shader
+`LaserGraph.shadergraph` carries a `UVNode` feeding two `SampleTexture2DNode`s, so UV0 really does
+reach the screen. Measured before → after:
+
+    bounds   (−0.5000001, −0.5000001, −0.5000004) → (−0.5, −0.5, −0.5)
+             (+0.4999999, +0.5000001, +0.4999997) → (+0.5, +0.5, +0.5)
+    pivot    +1e−07 off the bounds centre          → exactly the bounds centre
+    axis     base centre → apex = +Y (to 6e−07)    → +Y exactly
+    apex (0, +0.5, 0) · base plane y = −0.5 · ring radius 0.5 · 20 segments — unchanged
+
+**Proof of removal**, per asset, by the guid-ownership method (a unique owner asserted per `.meta`,
+never `grep -rl | head -1`), counted over `Assets/` + `ProjectSettings/` + `Packages/`:
+
+    Assets/PrimitivePlus                 53 assets · all UNIQUE · 0 inbound · 0 ambiguous
+    Assets/Shift - Complete Sci-Fi UI    15 assets · all UNIQUE · 0 inbound · 0 ambiguous
+
+A guid sweep has two blind spots (`LAUNCH_BLOCKER_INDEX.md` §"blind spots"): it cannot see
+`Resources.Load` **by name**, and it cannot see a **C# type** reference. Both were closed by hand —
+the project's complete `Resources.Load` literal list is 14 names, none of them either pack's, and no
+first-party `.cs` mentions `PrimitivePlus`, `Michsky`, `SwitchManager`, `UIManagerImage` or
+`UIElementSound`. Nothing outside the packs named them by path, and neither appeared in preloaded
+assets or the always-included shader list.
+
+**One thing did NOT become recoverable.** `Switch.prefab` carried two `m_Script` guids owned by no
+`.meta` under `Assets/` — `fe87c0e1cc204ed48ad3b37840f39efc` and `4e29b1a8efbd4b44bb3f3716e73f07ff`
+— almost certainly package scripts, unverifiable in this clone because `Library/PackageCache/` is
+not committed (§3.2). That is why the toggle was **rebuilt-or-retired rather than edited in place**;
+in the event it was retired, because the instance shipped `m_IsActive: 0` inside a prefab nothing
+references, and the live settings panel expresses all seven of its on/off rows as a
+`GameSettingsPanelController.OnOffControl` (an ON button + an OFF button) rather than a switch.
 
 ---
 
@@ -206,8 +282,8 @@ It is the well-known community `[RequireInterface]` pattern, which exists in sev
 under different licences. It **ships** (no asmdef).
 **Who would know:** whoever added `[RequireInterface]` to the project.
 
-**`Assets/PrimitivePlus/`, `Assets/Shift - Complete Sci-Fi UI/`, `Assets/Unity Assests/`.** No
-vendor, version or import record recoverable. **Git cannot supply it:** this clone is **shallow**
+**`Assets/PrimitivePlus/`, `Assets/Shift - Complete Sci-Fi UI/`** *(both since removed — §2.1)*
+**and `Assets/Unity Assests/`.** No vendor, version or import record recoverable. **Git cannot supply it:** this clone is **shallow**
 (`.git/shallow` present, 741 commits, history begins 2026-08-12), so `git log --diff-filter=A`
 reports the graft-boundary commit for every one of them. A **full clone** would answer *when and by
 whom*; it would still not answer *was it paid for*.
