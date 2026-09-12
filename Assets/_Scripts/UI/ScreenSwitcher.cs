@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -141,6 +143,12 @@ namespace CosmicShore.UI
 
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
+
+        // The scene's Reflex container, for the credits window this component BUILDS. A runtime
+        // `new GameObject` gets no injection, and ModalWindowManager carries an [Inject]
+        // AudioSystem -- CLAUDE.md's rule is to inject at the creating site rather than rely on
+        // the callee's fallback, which exists for the spawn site that forgets.
+        [Inject] private Container _container;
 
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
         [Inject] private HostConnectionDataSO hostConnectionData;
@@ -1264,7 +1272,12 @@ namespace CosmicShore.UI
             // object as null while the C# null-coalescing operator does not, so `??` on a
             // UnityEngine.Object is a trap even where (as here) the finder returns a true null.
             var modal = FindFirstObjectByType<CreditsModal>(FindObjectsInactive.Include);
-            if (modal == null) modal = CreditsModal.Build(_canvasRect);
+            if (modal == null)
+            {
+                modal = CreditsModal.Build(_canvasRect);
+                if (modal != null && _container != null)
+                    GameObjectInjector.InjectRecursive(modal.gameObject, _container);
+            }
 
             if (modal == null)
             {
