@@ -3,7 +3,12 @@
 Everything in `Assets/` that is a candidate for *"should not be in a build outsiders run"*, each
 with **what references it (measured)**, **what breaks if it goes**, and a **verdict**.
 
-**Measured 11 Sep 2026** against `claude/zealous-davinci-vjwev0`. Re-verify before acting.
+**Measured 11 Sep 2026**, extended with a build-reachability sweep **12 Sep 2026**, against
+`claude/zealous-davinci-vjwev0`. Re-verify before acting.
+
+> **§E is the one to read first.** The folder-by-folder pass below sizes the problem at ~17 MB; the
+> reachability sweep sizes it at **662 MB** and finds a **360 MB unreferenced texture pack** nobody
+> had catalogued.
 
 > **Nothing in this document has been deleted, and nothing should be deleted on the strength of
 > this document alone.** Each removal is its own reviewable change with its own reference proof.
@@ -38,6 +43,27 @@ entitlement questions.
 | **C6** | `_Scripts/Game` | 288 KB | **`keep` — CLAUDE.md is wrong about this folder** |
 | **C7** | `PlayFabEditorExtensions` | 4.9 MB | `keep` (editor-only, does not ship) |
 | **D1** | 8 vessel model vestiges | ~large | `salvage-first` — already gated, see §D1 |
+| **E1** | `_Graphics/Texture/Noise Texture Collection (Angelo)` | **360.6 MB** | `needs-a-human` — **zero reachable, no licence, no vendor** |
+| **E2** | `_Graphics/Video` | 165 MB | `salvage-first` — reached only via a **retired** serialized field |
+
+### Which prompt executes which row
+
+| Rows | Prompt |
+|---|---|
+| **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) |
+| **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
+| **A4, A5** (Wwise, Parse) | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
+| **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) |
+| **C3, C4** (PrimitivePlus, Shift) | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) — **their `keep` verdicts are superseded**: the studio's decision is to replace both |
+| **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
+| **E1, E2** (the 360 MB noise pack, the video folder) | [`UNREFERENCED_ART_SWEEP_PROMPT.md`](prompts/UNREFERENCED_ART_SWEEP_PROMPT.md) |
+
+**Rows with no prompt, because they are decisions rather than work:** **B3**
+`MIgration_Prefabs (DELETE LATER)` (owner: whoever owns audit §02 — untouched deliberately), **B4**
+the 14 orphan arcade cards (a product call on whether a card for an unbuilt mode is worth keeping),
+**B5** the 6 that are still referenced (`keep` until their referrers are cut), **C6**
+`_Scripts/Game` (**the CLAUDE.md line that called it vestigial is now corrected**), and **D1** the
+vessel-model vestiges (already gated by `VESSEL_CONSTRUCTION_FOLLOWUP.md`).
 
 ---
 
@@ -304,6 +330,108 @@ reached through `externalObjects` remaps in both placeholder `.meta` files.
 
 **Verdict `salvage-first`**, unchanged — `dolphin_shapekey_with_animations` carries the Dolphin's
 only real hull morph (10,909 verts) and is a salvage candidate, not a deletion candidate.
+
+---
+
+## E — what ACTUALLY ships, measured (12 Sep 2026)
+
+The first pass of this index worked folder by folder. That answers *"is this folder referenced?"*
+and not *"does this reach a build"*, so it sized the problem at **~17 MB**. A transitive
+reachability sweep from the real build roots sizes it at **662 MB**, and finds two items that
+outrank everything in §A–§D.
+
+### The method
+
+Measured by **`Tools/Build/measure_build_reachability.py`** (`--self-test` asserts the model reaches
+four assets that must be reachable; `--list <path>` enumerates what a folder leaves unreached),
+whose roots are Unity's real inclusion rules (register §1):
+
+1. every **enabled** scene in `EditorBuildSettings.asset` — **29 of 31**;
+2. every asset under any folder named `Resources/` **not** under an `Editor/` folder — **165 assets**
+   (this is what makes `Resources.Load` by name a non-issue: the whole folder is a root);
+3. **preloaded assets** in `ProjectSettings.asset` — 2.
+
+Then guid references are followed transitively. Result: **2,948 of 7,526 assets reachable**.
+Over every asset that is **441.4 MB reachable against 925.3 MB not**; excluding the two documented
+false-positive classes below (code, native plugins) it is **434.0 MB against 662.3 MB**. The second
+pair is the honest headline.
+
+**Validated before use.** Six assets that must be reachable all are, including the two the method
+section names as blind spots: `TMP Settings.asset` (reached *as a Resources root*, which is the
+point), `Manta.prefab`, `Sparrow.prefab`, `GameCanvas.prefab`, `VesselGraph.shadergraph`,
+`ControlGlyphSet.asset`.
+
+### Three limits, stated so the number is not over-read
+
+| Limit | Consequence |
+|---|---|
+| **Code ships regardless of references** | A `.cs` with no guid referrer still compiles into `Assembly-CSharp`. `_Scripts`' 1,306 "unreached" files are **not** build weight — they may be dead *code*, which is a different audit. |
+| **Native plugins ship by platform importer settings, not by guid** | `Plugins`' 252 MB "unreached" is FMOD's per-platform binaries. Only the target platform's ship, and no guid reaches any of them. **Not a finding.** |
+| **A RETIRED serialized key still greps as a reference** | The sweep reads YAML text, so a field the script no longer declares still looks like a live edge. Unity drops it at import. This over-reports — see §E2, where it pulled 110 MB of video into "ships" through a field that no longer exists. |
+
+Also unmodelled: **Always Included Shaders** in `GraphicsSettings`, and per-platform texture
+compression (a `.png`'s bytes on disk are not its bytes in the build).
+
+### Reachability by top-level folder
+
+| Folder | Reachable | Not reached | Unreached files |
+|---|---|---|---|
+| `_Graphics` | 139.9 MB | **483.1 MB** | 856 |
+| `_Prefabs` | 7.9 MB | 44.8 MB | 178 |
+| `_Audio` | 208.3 MB | 44.0 MB | 24 |
+| `NiceVibrations` | 0.3 MB | 43.3 MB | 384 |
+| `_Models` | 47.9 MB | 19.6 MB | 63 |
+| `Effects Library` | 1.1 MB | 6.8 MB | 20 |
+| `FTUE` | 0.0 MB | 4.5 MB | 36 |
+| `PlayFabEditorExtensions` | 0.0 MB | 4.4 MB | 70 |
+| `PlayFabSDK` | 0.0 MB | 3.8 MB | 102 |
+| `Unity Assests` | 13.9 MB | 2.9 MB | 108 |
+| `YethGameDev` | 1.7 MB | 2.5 MB | 7 |
+
+`Plugins` and `_Scripts` are omitted per the limits above.
+
+### E1 · `Assets/_Graphics/Texture/Noise Texture Collection (Angelo)` — **360.6 MB, 109 files, ZERO reachable**
+
+**The largest single item in the project, and nothing can reach any of it.** 109 PNGs (4K noise
+tiles: Cells, Vines, Swirls, Waves, Geometric, Boxes), **360.6 MB**, of which **0 files** are
+reached from any build root. It is **26% of `Assets/`** — more than twenty times the entire §A
+section of this index.
+
+It is also a **third-party register gap**: no licence file, no readme, no vendor, and a folder name
+naming a person. The register never caught it because it scoped `_Graphics` out as first-party.
+
+**Verdict `needs-a-human`, then almost certainly `remove`.** Two questions, in order: *who is
+Angelo and what were the terms?* (provenance — the same question §6 of the register asks of
+`Effects Library`), and *is anyone about to use it?* An unreferenced 360 MB texture pack is a
+repository-weight problem rather than a build-size one, but it is the one worth asking about first.
+
+### E2 · `Assets/_Graphics/Video` — 165 MB reached only through a **RETIRED** field
+
+The sweep reported 110.7 MB of video as shipping. **It is not**, and the reason is worth more than
+the number.
+
+40 `SO_ArcadeGame` assets still carry a serialized **`PreviewClip:`** key pointing at a
+`*Preview_Prefab.prefab`. **No script declares that field any more** — `SO_Game.PreviewClip` was
+deleted when the arcade preview became a live satellite arena (`Docs/ModePreview/ARCHITECTURE.md`,
+which states the window *"must never fall back to a video"*). Unity never prunes an unresolvable
+serialized key, so the YAML still names the guid and a text-based sweep still follows it.
+
+What is actually live: **one** card (`ArcadeGameMaelstrom`) wires a non-null `PreviewVideo`, read by
+the single consumer `MaelstromLaunchPanel`. The other 39 `PreviewVideo` fields are null. A separate
+path — `SO_VesselAbility.PreviewClip`, a **`VideoPlayer`** reference read by `HangarAbilitiesView` —
+covers the per-ability videos and is **not** verified here.
+
+**Verdict `salvage-first`.** Establish which clips the Hangar path still needs, keep those and the
+Maelstrom clip, and remove the rest along with the dead `PreviewClip:` keys. General rule:
+**a retired serialized field is invisible to the compiler, invisible to the inspector, and still
+visible to every text-based tool** — including this index's own sweep.
+
+### What the reachability sweep does NOT license
+
+It says an asset is unreachable, not that it is unwanted. The salvage-before-delete gate at the top
+of this document applies to every row above exactly as it does to §A–§D, and `_Graphics`/`_Audio`
+are first-party content where "nobody references it yet" is a normal state for work in progress.
+**Ask before removing first-party art.**
 
 ---
 

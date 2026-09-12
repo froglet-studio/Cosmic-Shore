@@ -742,7 +742,7 @@ Assets/
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
 ```
 
-Note: A vestigial `_Scripts/Game/` directory exists containing only non-code assets (compute shaders, input action mappings, material files, and the `PRISM_PERFORMANCE_AUDIT.md`). All C# code has been reorganized into the directories listed above.
+Note: `_Scripts/Game/` is **not vestigial — do not delete it.** This line previously said it held "only non-code assets" and that all C# had been reorganised out of it; measured, it holds **3 `.cs` files, two of them live** (`Environment/CapsuleMembrane.cs` → `CapsuleMembrane.prefab`, `Environment/CapsuleMembraneAnimationSO.cs` → `CapsuleMembraneAnimation.asset`; `IO/_Input Mapping/InputActionsAsset.cs` is the generated wrapper and has no serialized referrer) **plus two assets wired into shipped vessels** — `Vessel/Animation/JetMaterial.mat` → `Rhino.prefab` and `Vessel/TrailPassives/ScoutTrailPrismConfig.asset` → `Manta.prefab`. It also still holds the compute shaders, input action mappings and `PRISM_PERFORMANCE_AUDIT.md`. *"Vestigial" in a folder description invites exactly the delete a reference check would have prevented* — `Docs/LAUNCH_BLOCKER_INDEX.md` §C6.
 
 ### Assembly Definitions
 

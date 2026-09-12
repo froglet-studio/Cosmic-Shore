@@ -192,6 +192,15 @@ looks like an import prefix rather than a Froglet one. Load-bearing either way
 (`vfx_Projectile_02.prefab` → `VesselJet.prefab`).
 **Who would know:** whoever added the vessel jet FX; the Asset Store account holder.
 
+**`Assets/_Graphics/Texture/Noise Texture Collection (Angelo)/` (360.6 MB, 109 PNGs).** **Added
+12 Sep — the register's first pass did not catch it**, because it scoped `_Graphics` out as
+first-party. No licence, no readme, no vendor; the folder name names a person. 4K noise tiles
+(Cells, Vines, Swirls, Waves, Geometric, Boxes) and **zero of them are reachable from any build
+root** (`Docs/LAUNCH_BLOCKER_INDEX.md` §E1), so nothing ships — this is repository weight and an
+unanswered provenance question, not a build defect. It is **26% of `Assets/`**.
+**Who would know:** whoever commissioned or downloaded it; the art lead. General lesson: *a
+first-party folder name is not evidence that everything inside it is first-party.*
+
 **`Assets/SerializeInterface/` (5 `.cs`).** No namespace, no header comment, no licence, no vendor.
 It is the well-known community `[RequireInterface]` pattern, which exists in several public repos
 under different licences. It **ships** (no asmdef).
