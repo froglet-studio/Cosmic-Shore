@@ -47,7 +47,9 @@ Measured 2026-09-11:
 
 - **17** files under `Assets/_Scripts` reference `FMODUnity`.
 - **0** files anywhere in first-party code reference `AkSoundEngine`, `AkAudioListener` or
-  `AkGameObj`. `Assets/Wwise/` survives from an earlier middleware evaluation and is **inert**.
+  `AkGameObj`. `Assets/Wwise/` survived from an earlier middleware evaluation and was **inert**.
+  *(Update, 12 Sep 2026: that folder has since been **deleted** — `Docs/THIRD_PARTY_REGISTER.md` §0
+  row 8. The measurement above stands as taken; there is now no Wwise in the tree at all.)*
 
 A PC sanity pass written against Wwise would test nothing. Because Revision 2 is a PDF that is not
 in the repository, the correction is carried where the work is actually executed from:

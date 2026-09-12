@@ -2,8 +2,6 @@ using System.Text;
 using CosmicShore.Core;
 using Reflex.Attributes;
 using UnityEngine;
-using Lofelt.NiceVibrations;
-using LofeltHaptics = Lofelt.NiceVibrations.HapticController;
 
 namespace CosmicShore.Gameplay
 {
@@ -40,8 +38,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="PlayConstant"/> entry points (UI, drift, boost, jousts, explosions, overtake,
     /// elemental debuffs …) are no-ops.
     ///
-    /// NiceVibrations keeps only ONE loaded clip — every <c>Load()</c> evicts whatever is playing —
-    /// so a tiny priority/rate-limit gate arbitrates them. Priority, top to bottom:
+    /// The motors carry only ONE pattern at a time — every <see cref="GamepadRumblePlayer.Play"/>
+    /// replaces whatever is playing — so a tiny priority/rate-limit gate arbitrates them. That
+    /// single-pattern property is now a deliberate choice of ours rather than a vendor
+    /// limitation, and the gate below is written against it. Priority, top to bottom:
     /// <b>alert &gt; punish &gt; skim &gt; spray</b>. Punish always interrupts the skim train and
     /// the skim train never interrupts a thud; the spray is a texture, so it yields to all three
     /// and interrupts none of them.
@@ -125,10 +125,7 @@ namespace CosmicShore.Gameplay
             s_skimBusyUntil = now + SkimDurationSec;   // spray must not cut the reward short
 
             EnsureClips();
-            LofeltHaptics.Load(s_skimJson, s_skimRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01); // scales both the iOS clip and gamepad motors
-            LofeltHaptics.Play();
+            PlayPattern(s_skimJson, s_skimRumble, level * Mathf.Clamp01(strength01));
         }
 
         /// <summary>
@@ -146,10 +143,7 @@ namespace CosmicShore.Gameplay
             s_punishBusyUntil = now + PunishDurationSec;
 
             EnsureClips();
-            LofeltHaptics.Load(s_punishJson, s_punishRumble); // evicts any skim clip mid-train
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            PlayPattern(s_punishJson, s_punishRumble, level);
         }
 
         /// <summary>
@@ -174,10 +168,7 @@ namespace CosmicShore.Gameplay
             s_alertBusyUntil = now + AlertDurationSec;
 
             EnsureClips();
-            LofeltHaptics.Load(s_alertJson, s_alertRumble);  // evicts whatever was playing
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = 1f;
-            LofeltHaptics.Play();
+            PlayPattern(s_alertJson, s_alertRumble, level);
         }
 
         /// <summary>
@@ -212,10 +203,7 @@ namespace CosmicShore.Gameplay
             // Deliberately sets NO busy window: the spray never suppresses another feel.
 
             EnsureClips();
-            LofeltHaptics.Load(s_sprayJson, s_sprayRumble);
-            LofeltHaptics.outputLevel = level;
-            LofeltHaptics.clipLevel = Mathf.Clamp01(strength01);
-            LofeltHaptics.Play();
+            PlayPattern(s_sprayJson, s_sprayRumble, level * Mathf.Clamp01(strength01));
         }
 
         // Shared gate on the player's setting. Returns the output level (haptics "volume") to use.
@@ -231,18 +219,18 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------- runtime clip generation
 
-        // Both clips are generated once as .haptic JSON (iOS/Android) + a GamepadRumble (gamepads),
-        // then reloaded per pulse — exactly how NiceVibrations' own HapticPatterns work. The JSON
-        // matches the plugin's nv-*-template.txt schema; decimal points are hard-coded so the strings
-        // are locale-independent.
+        // Each feel is generated once as BOTH a .haptic JSON envelope (the portable, authored
+        // source — see PlayMobilePattern) and a GamepadRumblePattern (what actually plays today),
+        // then replayed per pulse. Decimal points are hard-coded so the strings are
+        // locale-independent.
         static byte[] s_skimJson;
         static byte[] s_punishJson;
         static byte[] s_alertJson;
         static byte[] s_sprayJson;
-        static GamepadRumble s_skimRumble;
-        static GamepadRumble s_punishRumble;
-        static GamepadRumble s_alertRumble;
-        static GamepadRumble s_sprayRumble;
+        static GamepadRumblePattern s_skimRumble;
+        static GamepadRumblePattern s_punishRumble;
+        static GamepadRumblePattern s_alertRumble;
+        static GamepadRumblePattern s_sprayRumble;
         static bool s_clipsBuilt;
 
         static void EnsureClips()
@@ -328,18 +316,41 @@ namespace CosmicShore.Gameplay
             return Encoding.UTF8.GetBytes(json);
         }
 
-        static GamepadRumble Rumble(int[] durationsMs, float[] low, float[] high)
+        static GamepadRumblePattern Rumble(int[] durationsMs, float[] low, float[] high) =>
+            new GamepadRumblePattern(durationsMs, low, high);
+
+        // ---------------------------------------------------------------- playback
+
+        /// <summary>
+        /// Hand one feel to every backend that can express it. <paramref name="gain"/> is the
+        /// player's haptics level already multiplied by this pulse's own strength — one number,
+        /// so a backend cannot apply half of the scaling.
+        /// </summary>
+        static void PlayPattern(byte[] clipJson, in GamepadRumblePattern rumble, float gain)
         {
-            var rumble = new GamepadRumble
-            {
-                durationsMs = durationsMs,
-                lowFrequencyMotorSpeeds = low,
-                highFrequencyMotorSpeeds = high,
-                totalDurationMs = 0
-            };
-            for (int i = 0; i < durationsMs.Length; i++)
-                rumble.totalDurationMs += durationsMs[i];
-            return rumble;
+            GamepadRumblePlayer.Play(rumble, gain);
+            PlayMobilePattern(clipJson, gain);
         }
+
+        /// <summary>
+        /// <b>Mobile device haptics are not implemented, and that is a stated position rather than
+        /// an oversight.</b>
+        ///
+        /// <para>Pattern haptics on a phone — iOS Core Haptics, Android <c>VibrationEffect</c> —
+        /// were the ONE thing the NiceVibrations plugin provided that a gamepad cannot, and the
+        /// launch platform is PC/Steam, where a pad is the only thing in the room with motors. So
+        /// this ships SILENT on a phone rather than reaching for <c>Handheld.Vibrate()</c>: that
+        /// call is a single fixed buzz of a few hundred milliseconds with no amplitude and no
+        /// envelope, so it cannot express any of the four feels, and firing one per skim would
+        /// make a phone strictly worse than silence. A pad connected to a phone still rumbles —
+        /// <see cref="GamepadRumblePlayer"/> is platform-agnostic, where the plugin's gamepad path
+        /// was compiled out on iOS and Android entirely.</para>
+        ///
+        /// <para>The <c>.haptic</c> JSON handed here is retained for exactly this reason: it is
+        /// the only portable record of the four envelopes, it costs four small strings built once,
+        /// and it is what a future backend consumes. Do not delete it to tidy up an unused
+        /// parameter — deleting it is deleting the authored source.</para>
+        /// </summary>
+        static void PlayMobilePattern(byte[] clipJson, float gain) { }
     }
 }
