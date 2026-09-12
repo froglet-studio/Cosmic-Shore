@@ -1,5 +1,12 @@
 # Prompt — build the in-game credits screen (the FMOD credit line, and everything it carries with it)
 
+> **STATUS: EXECUTED 12 Sep 2026.** What was built, and the evidence for each obligation, is in
+> `Docs/THIRD_PARTY_REGISTER.md` §7. Two things this prompt asked for were **not** delivered as
+> written and are recorded there: the screen has **not been opened in the Unity editor** (no compile,
+> no play mode — the gates prove the DATA, not the rendering), and the settings-panel row is
+> **generated as a fallback** rather than authored in `SettingsModal.prefab`, because authoring a
+> prefab needs an editor. Wiring `creditsButton` stands the fallback down. Kept for the record.
+
 Paste everything below into a fresh session.
 
 ---

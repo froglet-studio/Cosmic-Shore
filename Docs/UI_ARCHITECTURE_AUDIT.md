@@ -125,6 +125,12 @@ change table: §2.10.3. Applied by `Tools/Build/retire_profile_modal.py` (`--che
 **Acceptance re-run:** `audit_persistent_listener_injection.py` dead-wiring list is **13 → 11**;
 both `ProfileModal.ModalWindowOut` rows (`Menu_Main.unity` and `Profile.prefab`) are gone.
 
+> **Those numbers are pre-12-Sep-2026 and are not comparable to a run today.** The auditor's parser
+> assumed Unity's serialised field order and was reading **279 of 992** persistent calls; fixing it
+> took the dead-wiring list to **26** and the injection-surface baseline from 28 to 56 pairs. The
+> *delta* recorded above (the two `ProfileModal.ModalWindowOut` rows going away) still holds — it is
+> the absolute counts that moved, because the tool can now see its whole input.
+
 **One correction to this item's own wording.** It said the `ProfileModal.ModalWindowOut` entries
 "have `m_Target: {fileID: 0}`". They did not — those two rows targeted a real `ProfileModal`
 component and worked at runtime. The auditor lists them because it greps the *resolved script file*

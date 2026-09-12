@@ -315,8 +315,8 @@ Walk every changed file against these gates:
   promises and the flag name does not distinguish them.
   **Sweep the whole family, not just yours** — it is one line and it turns "mine is green" into a
   tally: `for f in Tools/Build/author_*_assets.py; do printf '%-46s ' "$(basename $f)"; timeout 120
-  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. Measured 2026-09: **7 of 11 are
-  RED**, in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. Measured 2026-09: **7 of 15 are
+  RED** (the family was 11 when this was written -- re-measure, never quote), in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
   platform change deleted while the generator that authors it was left untouched. That second
   class is the one to carry: **a generator that owns an asset's content is a second place every
   schema change has to land, and it does not fail at the time of the change** — it fails months

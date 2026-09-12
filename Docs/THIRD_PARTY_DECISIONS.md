@@ -16,7 +16,7 @@ which prompt executes it.
 
 | # | Item | Owner's call | Executes as |
 |---|---|---|---|
-| **1** | FMOD in-game credit | **Build it** | [`CREDITS_SCREEN_PROMPT.md`](prompts/CREDITS_SCREEN_PROMPT.md) |
+| **1** | FMOD in-game credit | **Build it** | ✅ **DONE 12 Sep 2026** — [`CREDITS_SCREEN_PROMPT.md`](prompts/CREDITS_SCREEN_PROMPT.md) executed; evidence in register §7. Not yet opened in the editor. |
 | **2** | FMOD licence tier | **Buy if the thresholds say so** | §2 below — money, not code |
 | **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
 | **4** | NiceVibrations plugin | **Replace with a placeholder** | [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
@@ -43,7 +43,7 @@ engineering work.
 | **PrimitivePlus** | unknown (ns `PrimitivePlus`) | ❌ none | **A seat *or* nothing** — we are replacing it. 4 meshes and one 36-line component are live. **Vendor is not even identifiable from the tree**, so "buy it" may not be an available action. | Nothing, once row 6 lands. |
 | **DOTween (free tier)** | Demigiant | ❌ none | **No purchase.** Demigiant documents the free tier as usable commercially; the licence TEXT is simply not vendored. **Fetch `LICENSE.txt` from the DOTween distribution and commit it beside the DLL.** (DOTween **Pro** is a separate paid product and is *not* what is in the tree.) | A shipped dependency with no licence document, in 44 first-party files. |
 | **NativeShare** | yasirkula | ❌ none | **No purchase** — MIT upstream. **Vendor the MIT notice.** | MIT's notice-preservation term unmet. |
-| **UniTask / Reflex / ParrelSync** | Cysharp / G. Santos / VeriorPies | ❌ not vendored (git packages) | **No purchase** — MIT. Their notices ride the credits screen (row 1). | Same as above, ×3. |
+| **UniTask / Reflex / ParrelSync** | Cysharp / G. Santos / **Greg M; Ian and Contributors** | ❌ not vendored (git packages) | **No purchase** — MIT. ✅ Their notices now ride the credits screen (row 1); each `LICENSE` was fetched from the project, and all six MIT bodies are textually identical. | ParrelSync's holders are **not** "VeriorPies" — that is the GitHub org, not the copyright line. |
 | **Wwise** | Audiokinetic | — | **No purchase. Confirm no evaluation licence was ever signed, then delete.** 84 KB, **0 asset files**, 14 orphan `.meta`. | A licensed-audio-middleware question that never needed to exist. |
 | **"Effects Library"** | ❓ unknown | ❌ none | **Identify the vendor.** 8.2 MB; exactly **one** prefab is live. | An unattributable 8.2 MB pack in a shipping build. |
 | **SerializeInterface** | ❓ unknown | ❌ none, no namespace, no header | **No purchase — rewrite it.** 290 lines total (48 runtime / 242 editor), 7 first-party consumers. | An unattributable shipping code drop. |
