@@ -19,7 +19,7 @@ which prompt executes it.
 | **1** | FMOD in-game credit | **Build it** | [`CREDITS_SCREEN_PROMPT.md`](prompts/CREDITS_SCREEN_PROMPT.md) |
 | **2** | FMOD licence tier | **Buy if the thresholds say so** | §2 below — money, not code |
 | **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
-| **4** | NiceVibrations plugin | **Replace with a placeholder** | [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
+| **4** | NiceVibrations plugin | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
 | **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) |
 | **7** | "Effects Library" provenance | **Owner will look into it** | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
@@ -63,7 +63,7 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 |---|---|---|---|
 | **FMOD** | ships | the whole audio layer | **KEEP** — credit line + tier |
 | **Obvious SOAP** | ships | **128** files | **KEEP** — receipt only |
-| **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | **1** file, **5** API symbols | **REPLACE** (row 4) |
+| **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | ~~**1** file, **5** API symbols~~ → **0** | ✅ **REPLACED** (row 4). Folder still ships for rows 4b/5 |
 | ├ demo sprites | ship | 6 usages in 5 shipped locations | **REPLACE** (row 5) |
 | └ `HapticSamples/*.wav` | ship | 4 clips on legacy `AudioClip` fields | **REPLACE with FMOD events** (row 5) |
 | **Shift Sci-Fi UI** | ships (+ `Resources/`) | **0** code files; 3 textures + 1 prefab | **REPLACE** (row 6) |
@@ -105,6 +105,21 @@ that is the whole feature**, at zero feel loss. Mobile pattern haptics (iOS Core
 `VibrationEffect`) are the only thing the plugin was buying, and they are not on the launch path.
 
 **Cost: ~1 file rewritten, 0 assets, 0 art. Saves 47 MB and a missing EULA.**
+
+**Landed 12 Sep 2026** at that estimate, near enough: one file rewritten
+(`HapticController.cs`), two small ones added (`GamepadRumblePattern` — the vendor struct's shape,
+`GamepadRumblePlayer` — the segment stepper), and **zero** assets, art or authored numbers touched.
+`HapticController`'s public surface is byte-for-byte unchanged, so none of the 16 call sites moved.
+Three prose sites that named the vendor while stating a real constraint were re-derived against the new
+player rather than re-worded (`GunSpreadProfile`, `GunSprayAccuracy`, `SPARROW_SPRAY_ACCURACY.md`), and
+the spray's 45 ms cadence floor survives the re-derivation unchanged — see `Docs/HAPTICS.md`
+§ "The cadence floor" for the measured table behind it.
+
+Two things the swap **gained**, neither asked for: a pad connected to a phone now rumbles (the plugin
+compiled its gamepad path out on iOS and Android entirely), and the motors are now explicitly stopped on
+play-mode exit, quit, pause, focus loss and mid-clip unplug. One thing it **dropped**, deliberately and
+on the record: mobile *device* pattern haptics are silent rather than faked with `Handheld.Vibrate()`.
+The `.haptic` JSON is retained as the portable authored source for a future backend.
 
 ### Row 5 — the demo assets
 
