@@ -125,7 +125,7 @@ namespace CosmicShore.Core
 
         public void IssueXP(string captainName, int amount)
         {
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CaptainManager.IssueXP {captainName}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[CaptainManager] IssueXP {captainName}, {amount}");
             IssueXP(GetCaptainByName(captainName), amount);
         }
 
@@ -135,7 +135,7 @@ namespace CosmicShore.Core
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
             // Save to Playfab
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CaptainManager.IssueXP {captain.Name}, {amount}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[CaptainManager] IssueXP {captain.Name}, {amount}");
             XpHandler.IssueXP(captain, amount);
         }
 
