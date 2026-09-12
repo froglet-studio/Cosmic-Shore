@@ -1,142 +1,54 @@
-using System;
-using System.Collections.Generic;
-using CosmicShore.Core;
-using CosmicShore.Utility;
-using PlayFab.CloudScriptModels;
-using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
+
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// TODO: Generalize function execution
+    /// The daily-reward claims, minus PlayFab.
+    ///
+    /// <para>Every method here used to run a PlayFab CloudScript Azure Function through
+    /// <c>CloudScriptRunner</c>, keyed on an <c>EntityKey</c> minted from the PlayFab auth context.
+    /// That context was never populated — <c>AuthenticationManager.Awake()</c> early-returned — so
+    /// the entity was always null and the functions never ran. What the player actually saw came
+    /// from the LOCAL half of each method, which is kept here verbatim.</para>
+    ///
+    /// <para>The class survives PlayFab's removal because <c>DailyRewardCard</c> and
+    /// <c>DailyChallengeSystem</c> call it; see <c>Docs/PLAYFAB_RETIREMENT.md</c> §2a. Whatever
+    /// replaces the server-side claim belongs behind these same two methods.</para>
     /// </summary>
     public class DailyRewardHandler : SingletonPersistent<DailyRewardHandler>
     {
-        private static EntityKey _entity;
-
-        // See AuthenticationManager.ResetStatics — a stale EntityKey was minted from the
-        // previous session's auth context.
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetStatics() => _entity = null;
-        public void Start()
-        {
-            // [PLAYFAB DISABLED] Daily rewards will be rebuilt on UGS. Pending removal.
-        }
-
-        public void OnDisable()
-        {
-            AuthenticationManager.OnLoginSuccess -= InitEntity;
-        }
-
         /// <summary>
-        /// Initialize entity key for cloud script authentication upon login
-        /// </summary>
-        private static void InitEntity()
-        {
-            _entity = new()
-            {
-                Id = AuthenticationManager.PlayFabAccount.AuthContext.EntityId,
-                Type = AuthenticationManager.PlayFabAccount.AuthContext.EntityType
-            };
-        }
-
-        /// <summary>
-        /// Execute SaveRewardClaimTime Azure Function
-        /// Returns UpdateUserInternalDataResult and nextClaimTime if request is successful.
+        /// Credits the daily reward locally. The server round trip that used to gate it
+        /// (the "Claim" Azure Function, which also returned the next claim time) is gone with
+        /// PlayFab, so this is now unconditional — which is what it already was in practice,
+        /// since the function could never execute.
         /// </summary>
         public void Claim()
         {
-            var functionProperties = new FunctionProperties
-            {
-                FunctionName = "Claim",
-                EntityKey = _entity
-            };
-            
-            CloudScriptRunner.Execute(functionProperties, OnClaimDailyRewardSuccess);
-        }
-
-        /// <summary>
-        /// On Saving Daily Reward Claim Time Delegate
-        /// </summary>
-        /// <param name="result">ExecuteFunctionResult</param>
-        private void OnClaimDailyRewardSuccess(ExecuteFunctionResult result)
-        {
-            if (result.FunctionResultTooLarge ?? false)
-            {
-                CSDebug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-
             CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.DailyRewardAmount);
-
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler - Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
         }
 
         /// <summary>
-        /// Runs granting bundle items to player inventory
+        /// Credits a daily-challenge tier reward locally. The local credit was always ahead of the
+        /// server call here anyway — the original carried a "TODO: P1 need to do this in the on
+        /// success callback" against exactly that.
         /// </summary>
-        /// <param name="itemIds"> A list of item ids from PlayFab</param>
-        public void GrantBundle(string[] itemIds)
-        {
-            var functionProperties = new FunctionProperties
-            {
-                FunctionName = "AddItemsToInventory",
-                EntityKey = _entity,
-                FunctionParameter = new Dictionary<string, object> { { "itemIds", itemIds } }
-            };
-            
-            // No action needed for on success callback, leave it null to use the default on success callback
-            CloudScriptRunner.Execute(functionProperties);
-        }
-
         public void ClaimDailyChallengeReward(int tier, int rewardValue)
         {
-            var functionProperties = new FunctionProperties
-            {
-                FunctionName = "ClaimDailyChallengeReward",
-                EntityKey = _entity,
-                FunctionParameter = new Dictionary<string, object> { { "tier", tier }, { "rewardValue", rewardValue } },
-
-            };
-
-            // TODO: P1 need to do this in the on success callback - extend the backend to return the reward value granted
             CatalogManager.Instance.RewardClaimed(Element.Omni, rewardValue);
 
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler.ClaimDailyChallengeReward - tier:{tier}, value:{rewardValue}");
-            CloudScriptRunner.Execute(functionProperties);
+            CSDebug.LogVerbose(CSLogChannel.CloudData,
+                $"[DailyRewardHandler] ClaimDailyChallengeReward - tier:{tier}, value:{rewardValue}");
         }
 
         /// <summary>
-        /// Claim Daily Challenge Reward result returns if the claim is successful and a time available for the next claim
-        /// IsClaimed, nextClaimTime
+        /// Spends one daily-challenge ticket. The balance check used to live in a CloudScript
+        /// function that could not run; the caller performs the local decrement either way.
         /// </summary>
-        /// <param name="result">Function execution result</param>
-        void OnClaimDailyChallengeRewardSuccess(ExecuteFunctionResult result)
+        public void PlayDailyChallenge(System.Action onComplete = null)
         {
-            if (result.FunctionResultTooLarge ?? false)
-            {
-                CSDebug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-            
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] DailyRewardHandler - Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+            onComplete?.Invoke();
         }
-
-        /// <summary>
-        /// Play Daily Challenge checks if the player has enough balance to play
-        /// And subtract balance by 1 if the balance is sufficient
-        /// </summary>
-        public void PlayDailyChallenge(Action<ExecuteFunctionResult> playDailyChallengeSuccess)
-        {
-            var functionProperties = new FunctionProperties
-            {
-                FunctionName = "PlayDailyChallenge",
-                EntityKey = _entity
-            };
-            
-            CloudScriptRunner.Execute(functionProperties, playDailyChallengeSuccess);
-        }
-
-        
     }
 }

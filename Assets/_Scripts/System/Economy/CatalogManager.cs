@@ -1,38 +1,55 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Core;
-using CosmicShore.ScriptableObjects;
-using Newtonsoft.Json;
-using PlayFab;
-using PlayFab.CloudScriptModels;
-using PlayFab.EconomyModels;
-using UnityEngine;
-using CatalogItem = PlayFab.EconomyModels.CatalogItem;
-using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Reflex.Attributes;
+using UnityEngine;
+
 namespace CosmicShore.Core
 {
+    /// <summary>
+    /// The catalog and player inventory, minus PlayFab.
+    ///
+    /// <para><b>What is left is what the player could ever actually see.</b> Every catalog read,
+    /// inventory read, grant and purchase in the original was a PlayFab Economy round trip through
+    /// <c>_playFabEconomyInstanceAPI</c>, built from
+    /// <c>AuthenticationManager.PlayFabAccount.AuthContext</c>. That context was never populated —
+    /// <c>AuthenticationManager.Awake()</c> early-returned — and <c>Start()</c> already carried a
+    /// <c>[PLAYFAB DISABLED]</c> marker with nothing subscribed, so not one of those calls could
+    /// fire. The catalog has therefore always been empty at runtime and every balance zero. The
+    /// LOCAL logic over <see cref="StoreShelve"/> and <see cref="Inventory"/> is kept verbatim, so
+    /// behaviour is unchanged.</para>
+    ///
+    /// <para>The class survives PlayFab's removal because 38 call sites across the Store, the
+    /// Hangar and the purchase modals name it — see <c>Docs/PLAYFAB_RETIREMENT.md</c> §2a. Those
+    /// surfaces are separately de-scoped and fail closed through <c>SO_CommerceAvailability</c>
+    /// (STEAM_RELEASE_TASKS R4); this type does not change that posture either way.</para>
+    ///
+    /// <para><b>Whatever backend replaces this goes behind these same members.</b> The methods that
+    /// needed a server are no-ops that say so rather than deletions, because their signatures are
+    /// the contract the UI is already written against.</para>
+    /// </summary>
     public class CatalogManager : SingletonPersistent<CatalogManager>
     {
         [Inject] CaptainManager _captainManager;
-        [SerializeField]
-        NetworkMonitorDataVariable  _networkMonitorDataVariable;
-        NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable.Value;
-        
-        // PlayFab Economy API instance
-        static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
-        // See AuthenticationManager.ResetStatics — a stale API handle wraps a dead AuthContext,
-        // and CatalogLoaded gates the load path for StoreScreen.
+        [SerializeField] NetworkMonitorDataVariable _networkMonitorDataVariable;
+        NetworkMonitorData _networkMonitorData => _networkMonitorDataVariable != null ? _networkMonitorDataVariable.Value : null;
+
+        // Statics are reset per domain load: with domain reload disabled a session-1 catalog would
+        // otherwise read as live in session 2.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
         {
-            _playFabEconomyInstanceAPI = null;
             StoreShelve = new();
             Inventory = new();
             CatalogLoaded = false;
+            OnLoadCatalogSuccess = null;
+            OnLoadInventory = null;
+            OnInventoryChange = null;
+            OnCurrencyBalanceChange = null;
         }
 
         // Player inventory and items
@@ -44,347 +61,63 @@ namespace CosmicShore.Core
         public static event Action OnLoadInventory;
         public static event Action OnInventoryChange;
         public static event Action OnCurrencyBalanceChange;
-        [SerializeField] List<VirtualItem> startingInventory = new();
 
         public static bool CatalogLoaded { get; private set; }
 
         public const int MaxDailyChallengeTicketBalance = 5;
         public const int DailyRewardAmount = 100;         // TODO: need to pull this from the server during start
 
-        int GrantedCrystalAmount;
-        Element GrantedCrystalElement;
-
         void Start()
         {
-            // [PLAYFAB DISABLED] Economy/catalog will be rebuilt on UGS. Pending removal.
+            // The one subscription that never needed PlayFab: fall back to the on-disk inventory
+            // when the network drops. The original only ever UNsubscribed this (its subscribe sat
+            // in a Start() that had been stubbed out with [PLAYFAB DISABLED]), so it was a
+            // one-sided wiring; it is symmetric now.
+            if (_networkMonitorData?.OnNetworkLost != null)
+                _networkMonitorData.OnNetworkLost.OnRaised += Inventory.LoadFromDisk;
         }
 
         public void OnDestroy()
         {
-            AuthenticationManager.OnLoginSuccess -= InitializePlayFabEconomyAPI;
-            AuthenticationManager.OnLoginSuccess -= LoadAllCatalogItems;
-            OnLoadCatalogSuccess -= LoadPlayerInventory;
-            OnLoadInventory -= GrantStartingInventoryIfInventoryIsEmpty;
-
-            _networkMonitorData.OnNetworkLost.OnRaised -= Inventory.LoadFromDisk;
+            if (_networkMonitorData?.OnNetworkLost != null)
+                _networkMonitorData.OnNetworkLost.OnRaised -= Inventory.LoadFromDisk;
         }
 
-        #region Initialize PlayFab Economy API with Auth Context
+        #region Catalog operations — had a backend, now inert
 
         /// <summary>
-        /// Initialize PlayFab Economy API
-        /// Instantiate PlayFab Economy API with auth context
-        /// </summary>
-        void InitializePlayFabEconomyAPI()
-        {
-            // Null check for PlayFab Economy API instance
-            _playFabEconomyInstanceAPI ??= new (AuthenticationManager.PlayFabAccount.AuthContext);
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] CatalogManager - PlayFab Economy API initialized.");
-        }
-
-        #endregion
-
-        #region Catalog Operations
-
-        /// <summary>
-        /// Load Catalog Items
-        /// Get all catalog items
+        /// Loaded the whole PlayFab catalog, paging 50 at a time. There is no catalog service now,
+        /// so the shelf stays empty and <see cref="CatalogLoaded"/> is raised so anything gating on
+        /// it (StoreScreen's load path) proceeds to its empty state rather than waiting forever.
         /// </summary>
         public void LoadAllCatalogItems()
         {
-            List<CatalogItem> allCatalogItems = new List<CatalogItem>();
-            LoadCatalogItemsRecursive(allCatalogItems);
-        }
-
-        /// <summary>
-        /// Load Catalog Items recursively if there are more than playfab's limit of 50 results
-        /// </summary>
-        void LoadCatalogItemsRecursive(List<CatalogItem> allCatalogItems, string filter = "", Action callback = null, string continuationToken="")
-        {
-            var request = new SearchItemsRequest
-            {
-                Filter = filter,
-                ContinuationToken = continuationToken,
-                Count = 50
-            };
-
-            _playFabEconomyInstanceAPI.SearchItems(request, result =>
-            {
-                // Add the current set of items to the list
-                allCatalogItems.AddRange(result.Items);
-
-                // Check if there's a continuation token
-                if (!string.IsNullOrEmpty(result.ContinuationToken))
-                {
-                    // If there is, make another request to get the next page of results
-                    LoadCatalogItemsRecursive(allCatalogItems, filter, callback, result.ContinuationToken);
-                }
-                else
-                {
-                    // If no more tokens, we've retrieved all items
-                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager - Total catalog items retrieved: {allCatalogItems.Count}");
-                    callback?.Invoke();
-                    OnLoadingCatalogItemsRecursive(allCatalogItems);
-                }
-            },
-            PlayFabUtility.HandleErrorReport);
-        }
-
-        /// <summary>
-        /// Callback invoked when the recursive api calls have finished
-        /// </summary>
-        /// <param name="allCatalogItems">List of all discovered catalog items</param>
-        void OnLoadingCatalogItemsRecursive(List<CatalogItem> allCatalogItems)
-        {
-            if (allCatalogItems == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item.", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
-                return;
-            }
-
-            if (allCatalogItems.Count == 0)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: No store items are available. Please check out PlayFab dashboard to fillout store items", nameof(CatalogManager), nameof(OnLoadingCatalogItemsRecursive));
-                return;
-            }
-
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager - Catalog items loaded - count={allCatalogItems.Count}");
-            if (StoreShelve == null)
-            {
-                StoreShelve = new()
-                {
-                    crystals = new(),
-                    classes = new(),
-                    captains = new(),
-                    captainUpgrades = new(),
-                    games = new(),
-                    tickets = new(),
-                };
-            }
-
-            foreach (var item in allCatalogItems)
-            {
-                var converted = ModelConversionService.ConvertCatalogItemToVirtualItem(item);
-                AddToStoreShelve(item.ContentType, converted);
-            }
-
             CatalogLoaded = true;
             OnLoadCatalogSuccess?.Invoke();
         }
 
-        void AddToStoreShelve(string contentType, VirtualItem item)
-        {
-            StoreShelve.allItems.Add(item.ItemId, item);
-
-            switch (contentType)
-            {
-                case "Crystal":
-                    StoreShelve.crystals.Add(item.ItemId, item);
-                    break;
-                case "Class":
-                    StoreShelve.classes.Add(item.ItemId, item);
-                    break;
-                case "Game":
-                    StoreShelve.games.Add(item.ItemId, item);
-                    break;
-                case "Captain":
-                    StoreShelve.captains.Add(item.ItemId, item);
-                    break;
-                case "CaptainUpgrade":
-                    StoreShelve.captainUpgrades.Add(item.ItemId, item);
-                    break;
-                case "Ticket":
-                    StoreShelve.tickets.Add(item.ItemId, item);
-                    if (item.Name == "Daily Challenge Ticket")
-                        StoreShelve.DailyChallengeTicket = item;
-                    else if (item.Name == "Faction Mission Ticket")
-                        StoreShelve.FactionMissionTicket = item;
-
-                    break;
-                default:
-                    CSDebug.LogWarningFormat($"CatalogManager - AddToStoreSelves: item content type is not part of the store, {item.Name}, {item.ContentType}");
-                    break;
-            }
-        }
-        #endregion
-
-        #region Inventory Operations
-
-        public void GrantElementalCrystals(int amount, Element element)
-        {
-            string crystalItemId = "";
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager.GrantElementalCrystals - amount: {amount}, element:{element}");
-            foreach (var elementalCrystal in StoreShelve.crystals.Values)
-            {
-                if (elementalCrystal.Tags.Contains(element.ToString()))
-                {
-                    crystalItemId = elementalCrystal.ItemId;
-                    break;
-                }
-            }
-
-            if (string.IsNullOrEmpty(crystalItemId))
-            {
-                CSDebug.LogError($"{nameof(CatalogManager)}.{nameof(GrantElementalCrystals)} - Error Granting Crystals. No matching crystal found in catalog - element:{element}");
-                return;
-            }
-
-            GrantedCrystalAmount = amount;
-            GrantedCrystalElement = element;
-
-            var request = new AddInventoryItemsRequest
-            {
-                Amount = amount,
-                Item = new InventoryItemReference() { Id = crystalItemId }
-            };
-
-            _playFabEconomyInstanceAPI.AddInventoryItems(
-                request,
-                OnGrantElementalCrystals,
-                PlayFabUtility.HandleErrorReport
-            );
-        }
-
-        /// <summary>
-        /// On Grant Shards
-        /// </summary>
-        /// <param name="response"></param>
-        void OnGrantElementalCrystals(AddInventoryItemsResponse response)
-        {
-            if (response == null)
-            {
-                CSDebug.LogWarningFormat($"{nameof(CatalogManager)}.{nameof(OnGrantElementalCrystals)}: received a null response.");
-                return;
-            }
-
-            foreach (var elementalCrystal in Inventory.crystals)
-            {
-                if (elementalCrystal.Tags.Contains(GrantedCrystalElement.ToString()))
-                {
-                    elementalCrystal.Amount += GrantedCrystalAmount;
-                    break;
-                }
-            }
-
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] CatalogManager - OnGrantElementalCrystals Success.");
-        }
-
-
-        void GrantStartingInventoryIfInventoryIsEmpty()
-        {
-            if (Inventory.allItems.Count == 0)
-                GrantStartingInventory(startingInventory);
-        }
-
-        /// <summary>
-        /// Grant Starting Inventory
-        /// </summary>
-        /// <param name="startingItems">Starting Items List</param>
-        public void GrantStartingInventory(List<VirtualItem> startingItems)
-        {
-            var request = new AddInventoryItemsRequest();
-            // const int amount = 100;
-            foreach (var virtualItem in startingItems)
-            {
-                request.Item = new() { Id = virtualItem.ItemId };
-                request.Amount = virtualItem.Amount;
-                
-                _playFabEconomyInstanceAPI.AddInventoryItems(
-                    request,
-                    OnGrantStartingInventory,
-                    PlayFabUtility.HandleErrorReport
-                );
-            }
-        }
-
-        /// <summary>
-        /// On Granting Starting Inventory
-        /// </summary>
-        /// <param name="response">Add Inventory Items Response</param>
-        void OnGrantStartingInventory(AddInventoryItemsResponse response)
-        {
-            if (response == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGrantStartingInventory));
-                return;
-            }
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] CatalogManager - On Add Inventory Item Success.");
-
-
-            // TODO: verify ownership of expected items to grant, update player data to have inventory granted flag set
-
-            //OnInventoryChange?.Invoke();
-            LoadPlayerInventory();
-        }
-        
-
-        /// <summary>
-        /// Load All Inventory Items
-        /// Get a list of inventory item ids and request each item's detail via Get Items Request 
-        /// </summary>
+        /// <summary>Read the player's owned items from the PlayFab inventory service. No backend.</summary>
         public void LoadPlayerInventory()
         {
-            var request = new GetInventoryItemsRequest();
-            request.Count = 50; // TODO: need to recursively load all like we don in the catalog
-            //request.CustomTags
-            
-            _playFabEconomyInstanceAPI.GetInventoryItems(
-                request,
-                OnGettingInventoryItems,
-                PlayFabUtility.HandleErrorReport
-            );
-        }
-
-        /// <summary>
-        /// On Loading Player Inventory
-        /// </summary>
-        /// <param name="response">Get Inventory Items Response</param>
-        void OnGettingInventoryItems(GetInventoryItemsResponse response)
-        {
-
-            // If no inventory items no need to process the response.
-            if (response == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: Unable to get catalog item or no inventory items are available.", nameof(CatalogManager), nameof(OnGettingInventoryItems));
-                return;
-            }
-            
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] CatalogManager - Get Inventory Items success.");
-
-            // Clear out previous loaded inventory, make sure no duplicates.
-            ClearLocalInventoryOnLoading();
-
-            // Iterate through the response, convert PlayFab item to virtual item, and add to inventory
-            foreach (var item in response.Items)
-            {
-
-                var virtualItem = ModelConversionService.ConvertInventoryItemToVirtualItem(item);
-
-                if (virtualItem != null)   // Can be null if inventory item no longer exists in the catalog
-                    AddToInventory(virtualItem);
-            }
-
-            foreach (var crystal in Inventory.crystals)
-            {
-            }
-
-            Inventory.SaveToDisk();
             OnLoadInventory?.Invoke();
         }
 
-        void ClearLocalInventoryOnLoading()
-        {
-            if (Inventory == null) return;
-            
-            Inventory.games.Clear();
-            Inventory.captainUpgrades.Clear();
-            Inventory.crystals.Clear();
-            Inventory.shipClasses.Clear();
-            Inventory.captains.Clear();
-            Inventory.tickets.Clear();
-            Inventory.allItems.Clear();
-        }
-        
+        /// <summary>Fetched one catalog item by id. No backend.</summary>
+        public void GetCatalogItem(VirtualItem virtualItem) { }
+
+        #endregion
+
+        #region Inventory operations — local
+
+        /// <summary>Granted crystals server-side. No backend, so nothing is credited.</summary>
+        public void GrantElementalCrystals(int amount, Element element) { }
+
+        /// <summary>Granted the starting bundle server-side. No backend.</summary>
+        public void GrantStartingInventory(List<VirtualItem> startingItems) { }
+
+        /// <summary>Added one owned item server-side. No backend.</summary>
+        public void AddInventoryItem(VirtualItem virtualItem) { }
+
         void AddToInventory(VirtualItem item)
         {
             switch (item.ContentType)
@@ -417,147 +150,33 @@ namespace CosmicShore.Core
             Inventory.allItems.Add(item);
         }
 
-        /// <summary>
-        /// Get Catalog Item
-        /// </summary>
-        /// <param name="virtualItem"></param>
-        public void GetCatalogItem(VirtualItem virtualItem)
-        {
-            var request = new GetItemRequest();
-            
-            _playFabEconomyInstanceAPI.GetItem(
-                request,
-                OnGettingCatalogItem,
-                PlayFabUtility.HandleErrorReport
-            );
-        }
-
-        /// <summary>
-        /// On Loading Player Inventory
-        /// </summary>
-        /// <param name="response">Get Item Response</param>
-        private void OnGettingCatalogItem(GetItemResponse response)
-        {
-            if (response == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: no response on adding inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
-                return;
-            }
-
-            if (response.Item == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: no inventory item.", nameof(CatalogManager), nameof(OnGettingCatalogItem));
-                return;
-            }
-                    
-        }
-
-        /// <summary>
-        /// Add Items to Inventory
-        /// Add shinny new stuff! Any type of item from currency to captain and vessel upgrades
-        /// </summary>
-        public void AddInventoryItem(VirtualItem virtualItem)
-        {
-            var request = new AddInventoryItemsRequest();
-            request.Item = new() { Id = virtualItem.ItemId };
-            
-            _playFabEconomyInstanceAPI.AddInventoryItems(
-                request,
-                OnAddingInventoryItem, 
-                PlayFabUtility.HandleErrorReport);
-        }
-
-        private void OnAddingInventoryItem(AddInventoryItemsResponse response)
-        {
-            if(response == null)
-            {
-                CSDebug.LogWarningFormat("{0} - {1}: no result.", nameof(CatalogManager), nameof(AddInventoryItem));
-                return;
-            }
-
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, "[PlayFab] CatalogManager - Item added to player inventory.");
-            OnInventoryChange?.Invoke();
-        }
-        
         #endregion
 
-        #region In-game Purchases
+        #region Purchases — had a backend, now inert
 
+        /// <summary>
+        /// Spent the player's balance through the PlayFab catalog. No backend, so the purchase
+        /// cannot complete and the failure callback is what runs. That matches the de-scoped
+        /// posture: these surfaces are locked by <c>SO_CommerceAvailability</c> and should not be
+        /// reachable at all.
+        /// </summary>
         public void PurchaseCaptainUpgrade(Captain captain, Action successCallback = null, Action failureCallback = null)
         {
-            // Find the upgrade
-            var elementTag = captain.PrimaryElement.ToString();
-            var shipTypeTag = captain.Vessel.Class.ToString();
-            var upgradeLevelTag = "UpgradeLevel_" + (captain.Level+1);
-
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager.PurchaseCaptainUpgrade - elementTag:{elementTag},shipTypeTag:{shipTypeTag},upgradeLevelTag:{upgradeLevelTag}");
-
-            foreach (var upgrade in StoreShelve.captainUpgrades.Values)
-            {
-
-                if (upgrade.Tags.Contains(elementTag) && upgrade.Tags.Contains(shipTypeTag) && upgrade.Tags.Contains(upgradeLevelTag))
-                {
-
-                    PurchaseItem(upgrade, upgrade.Price[0], 1, successCallback, failureCallback);
-                    break;
-                }
-            }
+            failureCallback?.Invoke();
         }
 
-        /// <summary>
-        /// Purchase Item
-        /// Buy in-game item with virtual currency (Shards, Crystals)
-        /// </summary>
-        public void PurchaseItem(VirtualItem item, ItemPrice price, int maxCount=1, Action successCallback=null, Action failureCallback=null)
+        /// <inheritdoc cref="PurchaseCaptainUpgrade"/>
+        public void PurchaseItem(VirtualItem item, ItemPrice price, int maxCount = 1, Action successCallback = null, Action failureCallback = null)
         {
-            // Prevent over purchasing
-            var ownedItem = Inventory.allItems.Where(x => x.ItemId == item.ItemId).FirstOrDefault();
-            if (ownedItem != null && ownedItem.Amount >= maxCount)
-            {
-                CSDebug.LogWarning($"CatalogManager - Attempt to PurchaseItem when max amount already owned. Item:{item.Name}, Owned:{ownedItem.Amount}.");
-                return;
-            }
-
-            // The currency calculation for currency should be done before passing item and price to purchase inventory item API, otherwise it will get "Invalid Request" error.
-            _playFabEconomyInstanceAPI.PurchaseInventoryItems(
-                new()
-                {
-                    Amount = price.UnitAmount,
-                    Item = new() 
-                    { 
-                        Id = item.ItemId
-                    },
-                    PriceAmounts = new List<PurchasePriceAmount>
-                    {
-                        new() 
-                        { 
-                            ItemId = price.ItemId,
-                            Amount = price.Amount 
-                        }
-                    },
-                },
-                result =>
-                {
-                    UpdateCurrencyBalance(price.ItemId, price.Amount * -1);
-                    if (item.ContentType == "Ticket") item.Amount += 1;
-                    AddToInventory(item);
-                    Inventory.SaveToDisk();
-                    OnInventoryChange?.Invoke();
-                    CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager - Purchase success.");
-                    successCallback?.Invoke();
-                },
-                error =>
-                {
-                    PlayFabUtility.HandleErrorReport(error);
-                    failureCallback?.Invoke();
-                }
-            );
+            failureCallback?.Invoke();
         }
+
         #endregion
+
+        #region Local queries — unchanged
 
         public VirtualItem GetCaptainUpgrade(Captain captain)
         {
-
             return StoreShelve.captainUpgrades.Values.FirstOrDefault(x => x.Tags.Contains(captain.PrimaryElement.ToString()) &&
                                                                           x.Tags.Contains(captain.Vessel.Class.ToString()) &&
                                                                           x.Tags.Contains("UpgradeLevel_" + (captain.Level + 1)));
@@ -576,34 +195,20 @@ namespace CosmicShore.Core
         public void UseDailyChallengeTicket()
         {
             var dcTicket = GetDailyChallengeTicket();
+            if (dcTicket == null)
+                return;
+
             dcTicket.Amount -= 1;
 
-            DailyRewardHandler.Instance.PlayDailyChallenge(OnPlayDailyChallengeSuccess);
-        }
-        
-        /// <summary>
-        /// Play Daily Challenge function execution successful result
-        /// Returns playDailyChallengeResult { bool CanPlay, int remainingBalance}
-        /// </summary>
-        /// <param name="result">Function execution result</param>
-        private void OnPlayDailyChallengeSuccess(ExecuteFunctionResult result)
-        {
-            if (result.FunctionResultTooLarge ?? false)
+            DailyRewardHandler.Instance.PlayDailyChallenge(() =>
             {
-                CSDebug.LogError("Cloud script - This can happen if you exceed the limit that can be returned from an Azure Function, See PlayFab Limits Page for details.");
-                return;
-            }
-            
-            AddToInventory(GetDailyChallengeTicket());
-            Inventory.SaveToDisk();
-            OnInventoryChange?.Invoke();
-            
-            // TODO: Invoke the result if needed for the UI and Daily Reward System
-            
-            CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager - Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
+                AddToInventory(GetDailyChallengeTicket());
+                Inventory.SaveToDisk();
+                OnInventoryChange?.Invoke();
+            });
         }
 
-        public int GetCrystalBalance(Element crystalElementType=Element.Omni)
+        public int GetCrystalBalance(Element crystalElementType = Element.Omni)
         {
             int balance = 0;
             foreach (var crystal in Inventory.crystals)
@@ -617,17 +222,17 @@ namespace CosmicShore.Core
 
             return balance;
         }
-        
+
         public int GetDailyChallengeTicketBalance()
         {
-            var tickets = Inventory.tickets.FirstOrDefault(x => x.Name == Instance.GetDailyChallengeTicket().Name);
+            var ticket = Instance.GetDailyChallengeTicket();
+            if (ticket == null)
+                return 0;
 
-            if (tickets != null)
-                return tickets.Amount;
+            var tickets = Inventory.tickets.FirstOrDefault(x => x.Name == ticket.Name);
 
-            return 0;
+            return tickets?.Amount ?? 0;
         }
-
 
         public void RewardClaimed(Element crystalElementType, int value)
         {
@@ -639,9 +244,8 @@ namespace CosmicShore.Core
                     crystalId = crystal.ItemId;
                     break;
                 }
-                CSDebug.LogVerbose(CSLogChannel.LegacyPlayFab, $"[PlayFab] CatalogManager - RewardClaimed - {crystal.Type}:{crystal.Name}:{value}");
             }
-            
+
             UpdateCurrencyBalance(crystalId, value);
         }
 
@@ -656,5 +260,7 @@ namespace CosmicShore.Core
                 }
             }
         }
+
+        #endregion
     }
 }
