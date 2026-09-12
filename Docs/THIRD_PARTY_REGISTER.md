@@ -11,27 +11,31 @@ question a human has to answer.
 > question below is addressed to **whoever holds the studio's Unity Asset Store and middleware
 > accounts**. Nothing here asserts a licence status that is not backed by a document in the tree.
 
-Companion: **[`LAUNCH_BLOCKER_INDEX.md`](LAUNCH_BLOCKER_INDEX.md)** — what should not ship, with a
-measured reference check per candidate.
+Companions: **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY_DECISIONS.md)** — what the studio has decided
+to do about each item, the money list, and the prompt that executes it.
+**[`LAUNCH_BLOCKER_INDEX.md`](LAUNCH_BLOCKER_INDEX.md)** — what should not ship, with a measured
+reference check per candidate.
 
 ---
 
 ## §0 · The short answer — what a human has to resolve
 
-Ordered by how much trouble it causes, not by size.
+Ordered by how much trouble it causes, not by size. **Owner decisions recorded 12 Sep 2026** — the
+work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY_DECISIONS.md)**.
 
-| # | Item | State | What has to happen |
-|---|---|---|---|
-| **1** | **FMOD in-game credit** | ❌ **Required and absent — verified** | The bundled EULA, Clause 3: *"All Products require an in game credit line which must include the words 'FMOD' and 'Firelight Technologies Pty Ltd.'"* **All tiers, no exemption.** Measured: **zero** occurrences of `Firelight`, `Made with FMOD` or `fmod.com` anywhere outside `Plugins/FMOD` itself, and **the game has no credits screen at all.** Add one before any outside build. |
-| **2** | **FMOD licence tier** | ⚠️ Threshold question | Free commercial use requires **dev budget < $600k USD** *and* **gross revenue/funding < $200k USD/yr**. Froglet Inc. is a C-corp shipping paid Steam EA — a human must confirm which side of both thresholds applies, and buy the tier if not. |
-| **3** | **Obvious SOAP 2.7.0** | ⚠️ **Commercial, no EULA in tree** | Its own README ends *"Thanks for purchasing Soap :)"* — so it was bought, by someone, at some point. **No licence file exists anywhere in `Assets/Plugins/Obvious/`.** It is the project's **primary architecture** (126 first-party `using Obvious…`), so this is not removable — it needs the receipt. |
-| **4** | **NiceVibrations 4.1.1** | ⚠️ Commercial, **no product EULA** | The two files that look like a licence are not one — see §2. Seat must cover commercial distribution. |
-| **5** | **NiceVibrations demo ART is in the shipped menu** | ⚠️ Distribution question | `RegularPresetsIcons.png` → `Menu_Main.unity` (a build scene). Asset Store EULAs treat demo content separately from the plugin. If the answer is no, four sprites need re-authoring — art lead time. |
-| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. |
-| **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? |
-| **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. |
-| **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship. **If the Rhino rig work ever wires one, attribution becomes mandatory.** |
-| **10** | **EmojiOne** | ⚠️ By reference only | TMP's sample emoji sprites; the bundled note defers to EmojiOne's own terms without stating them. Ships if a TMP sprite asset is used. |
+| # | Item | State | What has to happen | Decision |
+|---|---|---|---|---|
+| **1** | **FMOD in-game credit** | ❌ **Required and absent — verified** | The bundled EULA, Clause 3: *"All Products require an in game credit line which must include the words 'FMOD' and 'Firelight Technologies Pty Ltd.'"* **All tiers, no exemption.** Measured: **zero** occurrences of `Firelight`, `Made with FMOD` or `fmod.com` anywhere outside `Plugins/FMOD` itself, and **the game has no credits screen at all.** Add one before any outside build. | ✅ **Build it** — `prompts/CREDITS_SCREEN_PROMPT.md` |
+| **2** | **FMOD licence tier** | ⚠️ Threshold question | Free commercial use requires **dev budget < $600k USD** *and* **gross revenue/funding < $200k USD/yr**. Froglet Inc. is a C-corp shipping paid Steam EA — a human must confirm which side of both thresholds applies, and buy the tier if not. | 💰 **Buy if the thresholds say so** |
+| **3** | **Obvious SOAP 2.7.0** | ⚠️ **Commercial, no EULA in tree** | Its own README ends *"Thanks for purchasing Soap :)"* — so it was bought, by someone, at some point. **No licence file exists anywhere in `Assets/Plugins/Obvious/`.** It is the project's **primary architecture** (128 first-party `using Obvious…`), so this is not removable — it needs the receipt. | ✅ **Owner is adding the licence file** |
+| **4** | **NiceVibrations 4.1.1** | ⚠️ Commercial, **no product EULA** | The two files that look like a licence are not one — see §2. Seat must cover commercial distribution. | 🔄 **Replace** — the whole dependency is **1 file, 5 API symbols**; every clip is already first-party data. `prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md` |
+| **4b** | **NiceVibrations `HapticSamples/*.wav` in shipped UI** | ⚠️ **Non-commercial licence claim** | **New finding, 12 Sep.** Four clips are wired into shipped UI as legacy `AudioClip` fields — `Beep1` (`CountdownTimer.countdownBeep`), `Cash5` (`onTriggerClip`), `Coins2` (`targetReachedClip`), `Keyboard3` (`TypingAudio` on `Profile`/`ModalWindows`/`Menu_Main`). Their notice **opens by declaring the pack "licensed under CCBYNC 3.0"** — *non-commercial* — while its source list is almost all CC0 and **names freesound titles, not shipped filenames**, so no clip maps to a term. | 🔄 **Replace with FMOD events** — which is the migration CLAUDE.md already mandates for new SFX. `prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md` |
+| **5** | **NiceVibrations demo ART is in the shipped menu** | ⚠️ Distribution question | `RegularPresetsIcons.png` → `Menu_Main.unity` (a build scene). Asset Store EULAs treat demo content separately from the plugin. **4 distinct sprites, 6 usages** — two of them (`NVCar`, `NV7Dots`) are the **Termite class icons**, i.e. already placeholders for an unimplemented vessel. | 🔄 **Replace** — same prompt as 4b |
+| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. **Measured: neither has a single first-party code reference** — Shift is 3 textures + 1 prefab, PrimitivePlus is 4 meshes + one 36-line component (with **47** meshes shipping via `Resources/`). | 🔄 **Replace** — `prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md` |
+| **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? **Measured: 8.2 MB of which exactly ONE prefab is live** (`vfx_Projectile_02` → `VesselJet`); the four `FE_*` render-pipeline assets are **not** the live pipeline (0 references). | 🔍 **Owner will identify** — `prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md` |
+| **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. | 🗑 **Owner will confirm, then delete** — with `Parse` (0 refs) and a first-party rewrite of `SerializeInterface`. `prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md` |
+| **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship. **If the Rhino rig work ever wires one, attribution becomes mandatory.** | ⏸ Watch — credits screen covers it if ever wired |
+| **10** | **EmojiOne** | ⚠️ By reference only | TMP's sample emoji sprites; the bundled note defers to EmojiOne's own terms without stating them. Ships if a TMP sprite asset is used. | ⏸ Credits screen |
 
 ---
 
@@ -89,6 +93,13 @@ the product EULA:
 
 The entitlement document for the plugin itself is **absent**. *(The 10 Sep starting inventory
 recorded this component as "licence file present" — measured, it is not.)*
+
+**And `HapticPackCClicense.txt` is itself a problem, not just a non-licence.** It opens *"licensed
+under CCBYNC 3.0"* — **non-commercial** — over a pack whose four clips (`Beep1`, `Cash5`, `Coins2`,
+`Keyboard3`) are wired into **shipped UI** as plain `AudioClip` fields. Its ~100-entry source list is
+almost entirely CC0 with one Attribution item, so the file contradicts its own header; and it names
+**freesound source titles rather than shipped filenames**, so no clip in the tree can be mapped to a
+term. There is no reading under which a paid release is provably clear. Disposition: §0 row 4b.
 
 ---
 
