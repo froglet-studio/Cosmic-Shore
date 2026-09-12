@@ -24,6 +24,34 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 fast path that can silently drop a tool's output is the exact failure this protocol
 exists to prevent.
 
+## 0.05 There is no compiler and no CI here — do not spend the branch's time on them
+
+**This environment has no Unity Editor, no `unity` CLI, no `dotnet`, and no CI to watch.**
+That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep`,
+`/ship-tools`) and it is not a degraded state to work around:
+
+- **Do not run `/verify-unity`, and do not try to stand a compiler up.** Installing an SDK
+  to Roslyn-parse the diff buys a SYNTAX check and nothing more — every `MonoBehaviour` and
+  `ScriptableObject` base type lives in the `Assembly-CSharp` monolith, so class bodies never
+  bind and the whole class of errors that actually bites (a member that does not exist, a
+  drifted override signature, an argument mismatch, overload resolution) is invisible to it.
+  A gate that cannot resolve a type cannot see errors ABOUT that type.
+- **Do not treat any build gate as a ship requirement.** `check_conditional_compilation.py`,
+  `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py`, a generator's `--check`, "CI is green" — none of them gate a
+  GO here. Run one only when it is the cheapest way to answer a question you actually have
+  about your own change; never as a checklist item, never as evidence, and never as a reason
+  to sit on finished work.
+- **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
+  human wants CI watched, they will ask.
+- **Say so plainly instead.** The verification line in the PR body and the ship report reads
+  "not compiled — no editor or compiler in this environment", followed by what a human must
+  do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+
+**§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
+WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
+runs in full, in every mode.
+
 ## 0.1 Reorient first (when in doubt)
 
 If the session has run long, or bleeding-edge may have moved since the branch was cut,
@@ -170,6 +198,22 @@ run the `/reorient` skill first and act on its verdict before shipping.
   left theirs orphaned. After any scripted resolution, diff the file against the side you claimed
   to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
   rather than eyeballing the result.
+
+- **A verdict that is CONDITIONAL on another row does not conflict when that row changes.** Two
+  branches working the same status table (a launch-blocker index, a decision register, a
+  migration tracker) conflict only on the rows they both edited — and the rows most likely to be
+  wrong afterwards are the ones NEITHER touched. One row read `keep` *because* a neighbouring row
+  was staying; the neighbour was removed on the other branch; git merged both sides cleanly and
+  left the dependent verdict standing with its premise deleted. Same shape for a per-folder census
+  or a total: a count of "14 third-party folders" is derived from rows both branches were editing
+  and belongs to neither hunk. After merging a table, re-read the rows you did NOT touch and ask
+  which of them were true only because of a row that moved.
+
+- **A doc that describes its own neighbouring content is making a claim you must check.** A
+  blockquote saying "the two rows below are gone from the table" is prose, not an edit — it reads
+  as done, it survives review, and the rows are still there. Anything of the form *"the table
+  below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
+  `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
 
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
@@ -506,8 +550,9 @@ current — update them if not:
 
 - The system's `Docs/<System>/` or co-located `.md` reference (ARCHITECTURE, mechanics log).
 - `CLAUDE.md` if the branch changed a pattern, invariant, or key-files table it states.
-- In-editor verification steps for anything that needs a human at the editor (you cannot
-  run Unity - the human is the gate; hand them the exact steps and knobs).
+- In-editor verification steps for anything that needs a human at the editor. You cannot
+  run Unity and cannot compile (§0.05), so the human is the ONLY gate: hand them the exact
+  steps and knobs, and never imply a check you did not perform.
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
 
 - **A class RENAME is invisible to every gate this project has, so the docs that name it go
@@ -556,11 +601,11 @@ Say **NO** — and list the concrete iterations needed — when any of these hol
   otherwise-good work makes a half-landed migration shippable.
 - The branch mixes an unfinished experiment with finished work (split it instead).
 - A change is known-broken or known-untested in a way that would block another dev
-  building on it (compile risk on hand-authored assets counts).
+  building on it (a hand-authored asset you could not import counts — say which).
 - Docs for a touched LOCKED system (ecology, party, threading, scoring) lag the code.
 
-**A RED gate is not automatically yours — A/B it before you attribute it, and report it
-either way.** A gate that passed on your branch can be red after you merge the base, and the
+**If you did run a gate (see §0.05 — you are not required to), a RED result is not
+automatically yours — A/B it before you attribute it, and report it either way.** A gate that passed on your branch can be red after you merge the base, and the
 cause is as likely to be the base's new content as your resolution. Prove it in a detached
 worktree of the base alone (`git worktree add --detach <tmp> origin/<base>`, run the same
 gate there, `git worktree remove --force`): a gate that fails identically on a clean base
@@ -584,8 +629,8 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   reader vs writer, which commit carries its output, which tools were retired and which
   were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
   gate applies.
-- Base is `bleeding-edge` unless told otherwise. After creating, subscribe to PR
-  activity and keep watch (CI, reviews) until merged or told to stop.
+- Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
+  CI (§0.05); subscribe only if the human asks you to follow the review.
 
 ## 6. Report
 

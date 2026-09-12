@@ -31,7 +31,8 @@ namespace CosmicShore.Core
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[QuestSystem] Quest Completed - Shards to issue: {quest.ShardValue}");
 
             // Grant Reward
-            // TODO: Look for PlayerDataController
+            // TODO: no reward backend. PlayerDataController (PlayFab) was deleted; the live
+            // profile owner is PlayerDataService and CatalogManager no longer grants anything.
             // CatalogManager.Instance.GrantCaptainXP(quest.ShardValue, ShipTypes.Manta, Element.Space);
 
             // Mark Granted

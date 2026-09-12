@@ -270,14 +270,6 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[Prism] render service, pools, effect census")]
         PrismRuntime = 1 << 25,
         /// <summary>
-        /// <c>[PlayFab]</c> — the inert legacy PlayFab integration (catalog, economy,
-        /// leaderboards, groups, the old authentication view). Nothing in the shipped flow
-        /// calls it, but its trace survives so the code can be read; it never reaches the
-        /// console without this flag.
-        /// </summary>
-        [CSLogChannelLabel("[PlayFab] legacy PlayFab integration (inert)")]
-        LegacyPlayFab = 1 << 26,
-        /// <summary>
         /// <c>[FTUE]</c> — the first-time-user tutorial flow: step advance, skip, outro and
         /// completion.
         /// </summary>

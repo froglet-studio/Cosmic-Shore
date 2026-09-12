@@ -67,8 +67,8 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | **NiceVibrations** ⚠️ | Lofelt / More Mountains | **4.1.1** (Lofelt SDK 1.3.3) | `NiceVibrations` | 47 MB / 395 | ⚠️ **not the product EULA** — see below | **Ships**, but nothing first-party reaches it any more (12 Sep). The **Demo**'s 30 `.cs` were made **editor-only** (index §A3); no first-party CODE calls the plugin (row 4); and no first-party ASSET references it (rows 4b/5) — measured by sweeping all **411** guids owned under `Demo/` and `HapticSamples/` against every shipped scene, prefab and asset. The only holders left are in `_Prefabs/MIgration_Prefabs (DELETE LATER)/`, which ships nothing and is an open decision (`LAUNCH_BLOCKER_INDEX.md` §B3). Still shipping regardless of references: the plugin's own assemblies and `Scripts/Components/Resources`. **The folder is now deletable on its own evidence.** |
 | **DOTween** (free — **not** Pro) | Demigiant / D. Giardini | asm `1.0.0.0`; no product version in tree | `Plugins/Demigiant` | 764 KB / 18 | ❌ none | **Ships** (`DOTween.dll`) |
 | **NativeShare** | yasirkula | not stated | `Plugins/NativeShare` | 148 KB / 10 | ❌ none | **Ships** (`NativeShare.Runtime`) |
-| **PlayFab SDK** | Microsoft | not stated | `PlayFabSDK` | 4.7 MB / 104 | ❌ none | **Ships** — `PlayFab.asmdef` `includePlatforms: []` + `Resources/` |
-| **PlayFab Editor Extensions** | Microsoft | not stated | `PlayFabEditorExtensions` | 4.9 MB / 70 | ❌ none | **Editor-only** ✅ |
+| ~~**PlayFab SDK**~~ | Microsoft | not stated | ~~`PlayFabSDK`~~ | — | — | **REMOVED** — deleted with the backend, `Docs/PLAYFAB_RETIREMENT.md` |
+| ~~**PlayFab Editor Extensions**~~ | Microsoft | not stated | ~~`PlayFabEditorExtensions`~~ | — | — | **REMOVED** — went with the SDK it configures |
 | ├ **Microsoft.Identity.Client (MSAL)** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | ├ **Microsoft.IdentityModel** (`.JsonWebTokens`, `.Logging`, `.Tokens`) | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | └ **System.IdentityModel.Tokens.Jwt** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
@@ -472,5 +472,6 @@ Searched `Assets/`, `ProjectSettings/`, `Tools/` for `*.keystore`, `*.jks`, `*.p
 "SECRET HIDE AWAY" and its SO. `ProjectSettings.asset` carries no Android keystore or alias fields.
 
 This is a filename-and-known-location sweep, **not** a content scan for embedded API keys. Note that
-PlayFab title IDs and UGS project IDs are configuration rather than secrets, and were not audited.
+UGS project IDs are configuration rather than secrets, and were not audited. (PlayFab title IDs
+were in the same category; the SDK that read them is deleted.)
 A content-level secret scan is a separate job and is not claimed here.

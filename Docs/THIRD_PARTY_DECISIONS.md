@@ -104,8 +104,8 @@ the folder — for something that was settled.
 | ~~**PrimitivePlus**~~ | — | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | ✅ **REPLACED + REMOVED** 12 Sep 2026 |
 | **DOTween** | ships | **44** files | **KEEP** — vendor the licence |
 | **NativeShare** | ships | **4** files | **KEEP** — vendor the licence |
-| **PlayFabSDK** | ships | **20** files (inert backend) | **DEFER** — launch-blocker index §B2 |
-| **PlayFabEditorExtensions** | editor-only ✅ | — | **KEEP** — costs the player nothing |
+| ~~**PlayFabSDK**~~ | ~~ships~~ | ~~**20** files (inert backend)~~ | **DONE — deleted.** `Docs/PLAYFAB_RETIREMENT.md` |
+| ~~**PlayFabEditorExtensions**~~ | ~~editor-only~~ | — | **DONE — deleted** with the SDK. The earlier *keep* stood on "costs the player nothing", which was true and is not the only cost: an editor window that configures a deleted backend reads as a live integration. |
 | **QuickScene Pro** | editor code, but `Resources/` (1.8 MB) ships | editor tool | **KEEP, move the `Resources/`** — index §A2 |
 | **EDM4U** | editor-only ✅ | — | **KEEP** — Apache 2.0, licence present |
 | **Microsoft.Unity.Analyzers** | compile-time | — | **KEEP** |
@@ -299,14 +299,14 @@ Sequenced last on purpose: moving a folder rewrites paths in every `.meta`-adjac
 
 Current state, measured:
 
-* **14 third-party folders sit at the `Assets/` root** (17 before row 8 landed), interleaved with the
-  first-party `_`-prefixed ones — `NiceVibrations`, `Effects Library`, `PlayFabSDK`,
-  `PlayFabEditorExtensions`, `YethGameDev`, `PrimitivePlus`, `Samples`,
-  `ExternalDependencyManager`, `Shift - Complete Sci-Fi UI`, `Analyzers`, `Unity Assests` *(sic)*,
-  `Adaptive Performance`, `Resolvers`, `Environment`. ~~`Wwise`~~, ~~`Parse`~~ and
-  ~~`SerializeInterface`~~ were deleted 12 Sep 2026 — so three of the moves this section was
-  sequenced to protect no longer have to happen at all, which is the cheapest way a folder gets
-  tidied.
+* **12 third-party folders sit at the `Assets/` root** (17 before row 8 landed, 14 before the
+  PlayFab retirement), interleaved with the first-party `_`-prefixed ones — `NiceVibrations`,
+  `Effects Library`, `YethGameDev`, `PrimitivePlus`, `Samples`, `ExternalDependencyManager`,
+  `Shift - Complete Sci-Fi UI`, `Analyzers`, `Unity Assests` *(sic)*, `Adaptive Performance`,
+  `Resolvers`, `Environment`. ~~`Wwise`~~, ~~`Parse`~~, ~~`SerializeInterface`~~,
+  ~~`PlayFabSDK`~~ and ~~`PlayFabEditorExtensions`~~ were all deleted 12 Sep 2026 — so five of the
+  moves this section was sequenced to protect no longer have to happen at all, which is the
+  cheapest way a folder gets tidied.
 * **`Assets/Environment/` is empty.**
 * **`Assets/ArcadeDPadNav.cs`** — a first-party script — sits loose at the `Assets/` root.
 * **`Assets/.DS_Store` is tracked in git** (2 `.DS_Store` files are).

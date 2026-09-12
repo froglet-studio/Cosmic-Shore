@@ -16,8 +16,35 @@ namespace CosmicShore.UI
     public class LeaderboardsMenu : MonoBehaviour, IScreen
     {
         [Inject] SO_GameList allGames;
-        
-        List<LeaderboardManager.LeaderboardEntry> LeaderboardEntriesV2;
+        [Inject] AuthenticationDataVariable authenticationDataVariable;
+
+        /// <summary>
+        /// Was <c>LeaderboardManager.LeaderboardEntry</c>. It carries no PlayFab type, so it moved
+        /// here with the PlayFab manager's removal rather than being deleted with it. Nested
+        /// deliberately: the project already has two other top-level types called
+        /// <c>LeaderboardEntry</c>.
+        /// </summary>
+        public struct LeaderboardEntry
+        {
+            public int Position;
+            public int Score;
+            public string DisplayName;
+            public string PlayerId;
+            public string AvatarUrl;
+
+            public LeaderboardEntry(string displayName, string playerId, int score, int position, string avatarUrl)
+            {
+                DisplayName = displayName;
+                PlayerId = playerId;
+                Score = score;
+                Position = position;
+                AvatarUrl = avatarUrl;
+            }
+        }
+
+        // Never null: PopulateGameHighScores enumerates it unconditionally, and before this it was
+        // only ever assigned by a fetch callback that could not fire.
+        List<LeaderboardEntry> LeaderboardEntriesV2 = new();
 
         [SerializeField] Transform GameSelectionContainer;
         [SerializeField] GameObject HighScoresContainer;
@@ -44,14 +71,7 @@ namespace CosmicShore.UI
             _displayCount = Math.Min(gamesCount, containerCount);
             SelectedGame = LeaderboardEligibleGames[0];
 
-            PlayerDataController.OnProfileLoaded += FetchLeaderboard;
-
             ShipClassSelection.onValueChanged.AddListener(SelectShipType);
-        }
-
-        void OnDestroy()
-        {
-            PlayerDataController.OnProfileLoaded -= FetchLeaderboard;
         }
 
         public void OnScreenEnter() => LoadView();
@@ -62,23 +82,23 @@ namespace CosmicShore.UI
             PopulateGameSelectionList();
         }
 
+        /// <summary>
+        /// This screen has no backend. It used to read the PlayFab <c>LeaderboardManager</c>, whose
+        /// prefab is in no scene — so <c>Instance</c> was null and every call from
+        /// <see cref="SelectShipType"/> threw, on every open of the Records screen. The UGS
+        /// replacement (<c>WeeklyChallengeLeaderboardService</c>) is a different board and this
+        /// screen is not on it, so the honest state is an empty list and the screen's own empty
+        /// rendering. Porting it is the follow-up (<c>Docs/PLAYFAB_RETIREMENT.md</c> §4).
+        /// </summary>
         void FetchLeaderboard()
         {
-            LeaderboardManager.Instance.FetchLeaderboard(
-                LeaderboardManager.Instance.GetGameplayStatKey(SelectedGameMode, selectedVesselType),
-                new() { { "Intensity", "1" } },
-                OnFetchLeaderboard);
-        }
-
-        void OnFetchLeaderboard(List<LeaderboardManager.LeaderboardEntry> results)
-        {
-            LeaderboardEntriesV2 = results;
+            LeaderboardEntriesV2.Clear();
             PopulateGameHighScores();
         }
 
         IEnumerator SelectShipTypeCoroutine(int index)
         {
-            yield return new WaitUntil(() => AuthenticationManager.PlayFabAccount != null);
+            yield return new WaitForEndOfFrame();
             SelectShipType(index);
         }
 
@@ -162,6 +182,12 @@ namespace CosmicShore.UI
             StartCoroutine(SelectShipTypeCoroutine(0));
         }
 
+        /// <summary>
+        /// The UGS player id. Was <c>AuthenticationManager.PlayFabAccount.ID</c>, which was always
+        /// empty — so the "this row is you" highlight could never match.
+        /// </summary>
+        string LocalPlayerId => authenticationDataVariable?.Value?.PlayerId ?? string.Empty;
+
         void PopulateGameHighScores()
         {
             // High Scores Container null check
@@ -197,7 +223,7 @@ namespace CosmicShore.UI
                 HighScoresContainer.transform.GetChild(i).gameObject.SetActive(true);
 
                 // Highlight the player's Score
-                if (score.PlayerId == AuthenticationManager.PlayFabAccount.ID)
+                if (!string.IsNullOrEmpty(score.PlayerId) && score.PlayerId == LocalPlayerId)
                 {
                     HighScoresContainer.transform.GetChild(i).GetChild(0).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);
                     HighScoresContainer.transform.GetChild(i).GetChild(1).GetComponent<TMP_Text>().color = new Color(.1f, .7f, .7f);

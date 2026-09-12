@@ -8,6 +8,12 @@ description: The thorough lane of the ship protocol - for a large branch, a LOCK
 **Read `.claude/skills/ship/SKILL.md` first and run all of it.** This file adds passes;
 it replaces nothing. Run them after §2 and before the §4 go/no-go.
 
+**§0.05 applies here in full, and depth does not buy an exception: there is no compiler and
+no CI in this environment.** Every pass below is a READING and GREP discipline — none of it
+needs `/verify-unity`, a `Tools/Build/check_*.py` run, or a green build, and "deep" must not
+be read as licence to go install one. Depth here means more eyes on the diff, not a
+manufactured compile. D5's matrix carries "not compiled" as a first-class row value.
+
 The premise: on a branch this size, "I read it and it looked right" has a known failure
 rate, and every check below exists because a specific class of defect survived exactly
 that reading. Each pass produces EVIDENCE — a command and its output — not an impression.
@@ -86,8 +92,9 @@ serialized is absent from all of them.
 ## D5. Verification matrix, written down
 
 A table, not a paragraph: one row per changed system, columns = *verified how* (edit-mode
-test / offline sim / compile / in-editor play by the human / not verified). "Compiles by
-inspection" is a legitimate row value; leaving a row blank is not. This table becomes the
+test / offline sim / read-and-grep / in-editor play by the human / not verified). **There is
+no compiler here (§0.05), so no row may say "compiles" — "compiles by inspection" and "not
+compiled, human must build" are the legitimate values.** Leaving a row blank is not. This table becomes the
 PR's verification section verbatim, and it is where an honest NO usually announces itself.
 
 **Name the TOPOLOGY the verification runs on, not just the method — MPPM is not two
