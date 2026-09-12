@@ -736,6 +736,61 @@ Note the `^  ` and `re.M` on the inner query too — without them a nested `m_Fa
 modification block matches. **The tell that you have this bug is disagreement between two of your
 own measurements**; when that happens, do not pick the one you like, rebuild the parse.
 
+### Trap: a regex over a YAML LIST assumes field order, and steals the next entry's fields
+
+The document-spanning trap above has a sibling one level down: the same `.*?` crossing an ENTRY
+boundary inside a single list. It is harder to see, because every field you read back is a real
+field from a real entry — just not the one you asked about.
+
+Unity writes a persistent `UnityEvent` call as
+
+```yaml
+      - m_Target: {fileID: 8758355337821682526}
+        m_TargetAssemblyTypeName: CosmicShore.UI.ToyConfigureModal, Assembly-CSharp
+        m_MethodName: ModalWindowOut
+```
+
+— type BEFORE method. A scanner that asked for them in the other order
+
+```python
+r"- m_Target: \{...\}"  r".*?m_MethodName: (\S*)"  r".*?m_TargetAssemblyTypeName: ..."   # WRONG
+```
+
+ran past its own entry into the NEXT one, so every call was labelled with its **successor's** type
+— and because `finditer` resumes after the match, the successor's own `- m_Target` had already been
+consumed, so **alternate entries were never matched at all**. Measured on the shipped tree: 279 of
+992 calls read, 71.4% invisible, and 236 of the 279 mislabelled. It had been like that since the
+tool was written, and its output was cited in three documents.
+
+**Split the list into entries first, then read each entry's OWN slice** — bounded by the next
+entry start or by the key that terminates one, whichever comes first:
+
+```python
+starts = list(re.finditer(r"^[ \t]*- m_Target: \{fileID: (-?\d+)", text, re.M))
+for i, m in enumerate(starts):
+    stop  = starts[i+1].start() if i+1 < len(starts) else len(text)
+    end   = re.compile(r"^\s*m_CallState:", re.M).search(text, m.end(), stop)
+    slice_ = text[m.end(): end.start() if end else stop]
+    method = re.search(r"^\s*m_MethodName: (\S*)$", slice_, re.M)
+```
+
+Do not anchor the split on a specific INDENT: a list inside a nested-prefab override sits a level
+deeper (96 of that project's 992 calls did), and an indent-specific split drops them silently.
+
+**The check that makes this class of bug impossible to sit on: count what you parsed against
+something independent.** `- m_Target: {` and `m_MethodName:` each occur exactly once per call, so
+either number exposes a narrowing parser immediately — and a parser that narrows is invisible to
+every finding written in terms of that parser. Assert the agreement in the tool itself, not in a
+one-off script, and negative-control it by making the parser drop entries on purpose.
+
+**Its downstream partner: a fallback that GUESSES turns a parse bug into a plausible fact.** When
+the stolen type name failed an "is this a type declared in that file?" test, the tool fell back to
+the alphabetically first declaration — so a nested `readonly struct Layer` became the reported class
+name, and two such guesses were written into the tool's own frozen baseline as fact. If a resolver
+must guess, COUNT and REPORT the guesses separately; and prefer a structural answer where one exists
+(Unity refuses to serialise a `MonoBehaviour` whose class name does not match its file, so the
+FILENAME outranks any serialized type name).
+
 ### Trap: a `TrailRenderer` on a POOLED object draws a streak across the arena
 
 Two failures that do not exist on a scene-level object and both look like a rendering bug:

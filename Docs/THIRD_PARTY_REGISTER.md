@@ -258,12 +258,50 @@ reason — there was nowhere to put them.** There is now: an in-game **credits s
 | **Google EDM4U** (Apache 2.0) | NOTICE preservation | editor-only — does not ship, deliberately **not** credited |
 | **CC-BY 4.0 models** (VertaScan) | Attribution if distributed | ⏸ **deliberately absent** — 0 references, so they do not ship, and crediting them would be a *false statement about the build*. `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` carries the trigger: wiring one makes the attribution mandatory. |
 
-### §7.3 What is NOT proved
+### §7.3 In-editor verification — the steps a human must run
 
-* **That the screen renders.** Both gates check the **data**. Nothing here has been opened in the
-  Unity editor — no compile, no play mode — so the modal's layout, the generated row's placement in
-  the settings panel, and the scroll reaching the last line are **unverified**. This is stated
-  rather than assumed, per CLAUDE.md.
+Nothing below has been opened in Unity. These are the checks, in order; each names what a
+failure looks like so it cannot be mistaken for working.
+
+1. **Open `Menu_Main` and press Play.** The credits window is BUILT at
+   `ScreenSwitcher.Start()`, so it should exist in the hierarchy as `CreditsModal (built)`
+   under the root canvas, **invisible** (CanvasGroup alpha 0). *A visible credits window on
+   the menu's first frame means the alpha-0-at-build step did not run.*
+2. **Settings → the General tab.** A `Credits` row should sit one row-height below
+   `Privacy Policy`, same size and style (it is a runtime clone of it). *If it is missing,
+   `EnsureCreditsRow` found no `privacyPolicyButton`; if it is ON TOP of Privacy Policy, the
+   measured offset did not apply.*
+3. **Press it.** The window opens. **Scroll to the very bottom** — the last line must be the
+   EmojiOne notice, reachable. *A list that stops short is the ScrollRect trap (CLAUDE.md, the
+   arcade grid): content past the reachable range is clipped AND eats the press.*
+4. **Confirm the FMOD line is legible on screen**, under `MIDDLEWARE`: *"Made with FMOD Studio
+   by Firelight Technologies Pty Ltd."* This is the one line with legal weight.
+5. **Close with the CLOSE button, then re-open and close with gamepad B.** Both must return to
+   Settings rather than closing both windows. *If B closes both, the modal is not on the
+   switcher's stack — `AttachScreenSwitcher` did not run.*
+6. **Watch the console.** One warning naming `ModalWindowManager … has no AudioSystem` means
+   the injection at the creating site did not run; everything else still works, the open/close
+   sting is silent.
+
+**To retire both fallbacks** (optional, and the better end state): author a CREDITS modal in
+`Menu_Main` with the house chrome and add it to `ScreenSwitcher.Modals`, and wire a real
+`creditsButton` in `SettingsModal.prefab`. Each ensure checks for the authored thing first and
+does nothing when it finds it, so neither needs a code change to stand down.
+
+### §7.4 What is NOT proved
+
+* **That the screen renders.** Both gates check the **data**, so the modal's layout, the generated
+  row's placement in the settings panel, and the scroll reaching the last line are **unverified** —
+  §7.3 is the checklist that closes them. Nothing has been opened in the Unity editor and no play
+  mode has run.
+* **What IS proved about the code:** every new and edited file **type-checks under real Roslyn**
+  (dotnet-sdk 8.0 installed per-user, `-langversion:9.0`, against a stub harness carrying only the
+  API surface these files touch, plus the two edited files' new methods extracted verbatim into a
+  faithful harness). Zero errors; the only warnings are `CS0649` on `[SerializeField]` fields, which
+  every Unity project has. That is a TYPE check, not a behaviour check — it says the calls exist
+  with those signatures, not that the window scrolls. "It compiles by inspection" was the earlier
+  claim and it was weaker than what this environment can actually do
+  (`.claude/skills/asset-surgery` §4).
 * **Entitlement.** The register proves *presence*; §0 rows 2–8 are still the money-side questions,
   and a credits line is not a licence.
 
