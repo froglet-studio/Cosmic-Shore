@@ -49,7 +49,7 @@ Not by folder name. Unity's actual rules, applied in order:
 4. **Any folder named `Resources/`** is packed into the player **whole, referenced or not** — unless it sits under an `Editor/` folder.
 5. Everything else ships only if one of the **29 enabled build scenes** reaches it.
 
-Rule 4 is the one that produces defects nobody notices; it produced two (index §A1, §A2).
+Rule 4 is the one that produces defects nobody notices; it produced two (index §A1, §A2). **Both were fixed on 12 Sep 2026** — §A1's folder removed, §A2's `Resources/` moved under `Editor/` — and rule 2 was fixed with them (§A3's Demo asmdef). A third rule-4 folder survives and is untouched: `NiceVibrations/Scripts/Components/Resources`.
 
 ---
 
@@ -63,7 +63,7 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | ├ **Resonance Audio** | **Google** (bundled inside FMOD) | not stated | `Plugins/FMOD/addons/ResonanceAudio` | — | ❌ **none for the addon** | **Ships** (`FMODUnityResonance` runtime asmdef) |
 | └ **FMOD Haptics addon** | Firelight | not stated | `Plugins/FMOD/addons/Haptics` | — | ❌ none for the addon | **Ships** (`FMODUnityHaptics` runtime asmdef) |
 | **Obvious SOAP** ⚠️ | **Obvious Games** (`com.obvious.soap`) | **2.7.0** | `Plugins/Obvious` | 7.1 MB / 149 | ❌ **none** — README says *"Thanks for purchasing"* | **Ships** (`Obvious.Soap` runtime asmdef) |
-| **NiceVibrations** ⚠️ | Lofelt / More Mountains | **4.1.1** (Lofelt SDK 1.3.3) | `NiceVibrations` | 47 MB / 395 | ⚠️ **not the product EULA** — see below | **Ships**, incl. the **Demo** (30 `.cs`, not editor-only) + `Resources/` |
+| **NiceVibrations** ⚠️ | Lofelt / More Mountains | **4.1.1** (Lofelt SDK 1.3.3) | `NiceVibrations` | 47 MB / 395 | ⚠️ **not the product EULA** — see below | **Ships**. The **Demo**'s 30 `.cs` were made **editor-only 12 Sep 2026** (index §A3); `Scripts/Components/Resources` still ships, and so does the demo **ART** (row 5) |
 | **DOTween** (free — **not** Pro) | Demigiant / D. Giardini | asm `1.0.0.0`; no product version in tree | `Plugins/Demigiant` | 764 KB / 18 | ❌ none | **Ships** (`DOTween.dll`) |
 | **NativeShare** | yasirkula | not stated | `Plugins/NativeShare` | 148 KB / 10 | ❌ none | **Ships** (`NativeShare.Runtime`) |
 | **PlayFab SDK** | Microsoft | not stated | `PlayFabSDK` | 4.7 MB / 104 | ❌ none | **Ships** — `PlayFab.asmdef` `includePlatforms: []` + `Resources/` |
@@ -71,12 +71,12 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | ├ **Microsoft.Identity.Client (MSAL)** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | ├ **Microsoft.IdentityModel** (`.JsonWebTokens`, `.Logging`, `.Tokens`) | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | └ **System.IdentityModel.Tokens.Jwt** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
-| **QuickScene Pro** | yethgamedevv | © 2025 | `YethGameDev` | 4.4 MB / 10 | ✅ `LICENSE.md` — **MIT** (+ Indian jurisdiction clause) | Editor code only, but its **`Resources/` (1.8 MB) ships** |
+| **QuickScene Pro** | yethgamedevv | © 2025 | `YethGameDev` | 4.4 MB / 10 | ✅ `LICENSE.md` — **MIT** (+ Indian jurisdiction clause) | **Editor-only since 12 Sep 2026** — `Resources/` and `Demo/` moved under `Editor/` (index §A2), so none of it now reaches a build |
 | **PrimitivePlus** ⚠️ | *unknown* (ns `PrimitivePlus`) | not stated | `PrimitivePlus` | 1008 KB / 53 | ❌ none | **Ships** — 5 runtime `.cs` + `Resources/` |
 | **Shift — Complete Sci-Fi UI** ⚠️ | **Michsky** (ns `Michsky.UI.Shift`) | not stated | `Shift - Complete Sci-Fi UI` | 584 KB / 15 | ❌ none | **Ships** — 4 runtime `.cs` + `Resources/` |
 | **External Dependency Manager (EDM4U)** | **Google** | **1.2.183** | `ExternalDependencyManager` | 816 KB / 9 | ✅ `LICENSE` (**Apache 2.0**) | **Editor-only** ✅ |
 | **Microsoft.Unity.Analyzers** | Microsoft | not stated | `Analyzers` | 256 KB / 2 | ❌ none (`README.md` only) | Roslyn analyzer — compile-time |
-| **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | ~15 MB / ~190 | — (Unity UCL) | **Ships** — both `Resources/` |
+| **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | **12 MB / 62** | — (Unity UCL) | **Ships** — now ONE `Resources/`; `Examples & Extras` (incl. its second `Resources/` and 34 `.cs`) removed 12 Sep 2026, index §A1 |
 | ├ **EmojiOne** sample sprites | EmojiOne | — | `…/TextMesh Pro/Sprites` | — | ⚠️ `EmojiOne Attribution.txt` — defers to their terms | Ships if used |
 | └ **Roboto** font | Google | — | `…/Examples & Extras/Fonts` | — | ✅ `Roboto-Bold - License.txt` | Ships if used |
 | **Parse** (support DLLs) | Parse / Meta | not stated | `Parse` | 76 KB / 2 | ❌ none | Ships if referenced — **nothing references it** |
@@ -224,9 +224,11 @@ of any kind**, so all of these are outstanding.
 | **FMOD** (EULA cl. 3) | In-game credit containing **"FMOD"** and **"Firelight Technologies Pty Ltd."** — **all tiers** | ❌ **absent — verified project-wide** |
 | **CC-BY 4.0 models** (VertaScan) | Attribution if distributed | ✅ not shipping today (0 refs) |
 | **EmojiOne** | Per EmojiOne's own terms | ⚠️ ships if a TMP sprite asset is used |
-| **Roboto** | Apache 2.0 notice | ⚠️ ships if the font is used |
+| **Roboto** | Apache 2.0 notice | ✅ **TMP's `Roboto-Bold SDF` is gone** (index §A1) — it sat in a `Resources/` folder, so it shipped whether used or not, which this row understated. NiceVibrations' four `RobotoMono-*.ttf` remain in its Demo folder |
+| **Bangers** (SIL OFL) | Reserved-Font-Name notice | ⚠️ **ships** via `QuestItemPrefab`; `Bangers - OFL.txt` was deliberately preserved into `TextMesh Pro/Fonts/` (index §A1) and is not yet surfaced in-product |
+| **Electronic Highway Sign** | unknown — no notice in tree | ⚠️ **ships** via `Manta.prefab`; the TTF carries no licence document anywhere in the repository. Pre-existing; needs a provenance answer |
 | **Google EDM4U** (Apache 2.0) | NOTICE preservation | editor-only — does not ship |
-| **QuickScene Pro** (MIT) | Copyright notice with "substantial portions" | 1.8 MB of it currently ships (index §A2) |
+| **QuickScene Pro** (MIT) | Copyright notice with "substantial portions" | ✅ **no longer ships** — moved under `Editor/` 12 Sep 2026 (index §A2). The MIT notice obligation attaches to *distribution*, so it is discharged by not distributing it |
 | **Every MIT package** (UniTask, Reflex, ParrelSync, Newtonsoft, Cecil, NUnit) | MIT requires the notice to travel with the software | ❌ no aggregated notice exists |
 
 **The cheapest complete fix is one credits screen** listing FMOD's required line plus a third-party

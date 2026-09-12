@@ -6,6 +6,38 @@ with **what references it (measured)**, **what breaks if it goes**, and a **verd
 **Measured 11 Sep 2026**, extended with a build-reachability sweep **12 Sep 2026**, against
 `claude/zealous-davinci-vjwev0`. Re-verify before acting.
 
+> **§A1, §A2 and §A3 were EXECUTED on 12 Sep 2026** (branch `claude/eloquent-fermi-2gkh1a`), so
+> every number below that mentions them is now historical. What actually happened, and what each
+> row got wrong, is in those three sections. Headline: **6.8 MB less reaches a player build**
+> (reached 434.0 MB → **427.2 MB**), **144 assets removed** (7,526 → **7,382**), **31 fewer
+> unconditionally-packed `Resources/` roots** (165 → **134**), and **64 scripts out of
+> `Assembly-CSharp`** (34 TMP examples deleted, 30 NiceVibrations demo scripts made editor-only).
+> The §E folder table and totals are updated for it; nothing else in §B–§E was touched.
+>
+> **Verification status: NOT verified in the Unity editor.** The branch was executed in a headless
+> remote container with no `unity` binary and no Editor running, so `/verify-unity` could not be
+> run and *"Menu_Main, the arcade screen and a gameplay scene all render text correctly"* has **not
+> been observed on screen**. What was proved instead, offline and in full:
+>
+> * `TMP Settings.asset` — the asset that gates *all* text — resolves every reference it holds
+>   (default font `LiberationSans SDF`, `EmojiOne`, the style sheet, both line-breaking tables),
+>   and it lives in `TextMesh Pro/Resources/`, which this branch does not touch (§C1).
+> * **All 10** TMP font assets referenced by any enabled build scene, `_Prefabs` or `_SO_Assets`
+>   resolve to a file on disk — including the two relocated ones, whose referrers
+>   (`Manta.prefab`, `QuestItemPrefab.prefab`) still carry their guids.
+> * **Both dynamic fonts resolve their source TTF**, and they are the only two dynamic fonts in
+>   the project; the other 14 are `STATIC` with baked glyphs and no source-font reference at all.
+> * Zero new dangling guid references project-wide (see each section's proof).
+> * All five out-of-editor gates green: conditional-compilation, enum-member, switch-label,
+>   self-referential-local. `check_using_directives` reports 18 problems, **identical at the
+>   pre-change HEAD `e6481619`** and in files this branch does not touch.
+>
+> **What that leaves genuinely unchecked** is only what a reference graph cannot answer: that the
+> importer re-imports the five relocated assets cleanly with no *missing script* / *missing
+> reference* entries in the console, and that the three named scenes visibly draw their text. Both
+> want one editor pass. Recorded for the `/qa-backlog` scan rather than as a section in
+> `UNITY_VERIFICATION_CHECKLIST.md`, per that file's own banner.
+
 > **§E is the one to read first.** The folder-by-folder pass below sizes the problem at ~17 MB; the
 > reachability sweep sizes it at **662 MB** and finds a **360 MB unreferenced texture pack** nobody
 > had catalogued.
@@ -25,9 +57,9 @@ entitlement questions.
 
 | # | Candidate | Size | Verdict |
 |---|---|---|---|
-| **A1** | `Unity Assests/TextMesh Pro/Examples & Extras` | 7.6 MB | `remove` — **split the folder first** |
-| **A2** | `YethGameDev/QuickScenePro/Resources` | 1.8 MB | `remove` — move under `Editor/` |
-| **A3** | `NiceVibrations/Demo` | 7.4 MB | `salvage-first` — **art is in the shipped menu** |
+| **A1** | `Unity Assests/TextMesh Pro/Examples & Extras` | 7.1 MB | ✅ **DONE** — split, then removed |
+| **A2** | `YethGameDev/QuickScenePro/Resources` | 1.8 MB | ✅ **DONE** — moved under `Editor/` |
+| **A3** | `NiceVibrations/Demo` | 7.4 MB | ◑ **asmdef DONE** — art still in the shipped menu |
 | **A4** | `Wwise` | 84 KB | `remove` — zero files, zero references |
 | **A5** | `Parse` | 76 KB | `remove` — zero references of any kind |
 | **B1** | NiceVibrations demo art used by first-party UI | — | `needs-a-human` — **licence question** |
@@ -50,7 +82,7 @@ entitlement questions.
 
 | Rows | Prompt |
 |---|---|
-| **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) |
+| **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) — **executed 12 Sep 2026**; A3's art half remains open |
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **A4, A5** (Wwise, Parse) | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
 | **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) |
@@ -100,40 +132,135 @@ Both blind spots were checked explicitly for every candidate below.
 
 ## A — ships today, should not
 
-### A1 · `Assets/Unity Assests/TextMesh Pro/Examples & Extras` — 7.6 MB, 148 assets, 34 `.cs`
+### A1 · `Assets/Unity Assests/TextMesh Pro/Examples & Extras` — ✅ **REMOVED 12 Sep 2026**
 
-TMP's demo content. **3.5 MB of it ships unconditionally** because
-`Examples & Extras/Resources/` is a `Resources` folder (rule 4), and the 34 example scripts compile
-into `Assembly-CSharp` because the folder has no `.asmdef`.
+TMP's demo content, on the wrong side of two rules at once: `Examples & Extras/Resources/` is a
+folder named `Resources`, so Unity packed it whole whether anything referenced it or not (rule 4,
+3.5 MB), and the folder had no `.asmdef`, so its 34 example scripts compiled into
+`Assembly-CSharp` and shipped too (rule 3).
 
-**Measured references from first-party content — it is not cleanly removable:**
+**Done in two commits** — `e166b4c9` moved what shipped content needs, `e25547bc` removed the rest
+(131 files, 34 of them `.cs`, 7.1 MB). Net: `Unity Assests` reached **13.9 MB → 8.8 MB**, 144
+assets out of the project, 28 fewer `Resources/` roots. `TextMesh Pro/` now measures **12 MB / 62
+files** and holds ONE `Resources/`; register §2's row is updated to match (its previous
+"~15 MB / ~190" understated the size — 12 MB remain and 7.1 MB were removed).
 
-| Example asset | Referenced by |
-|---|---|
-| `Resources/Fonts & Materials/Electronic Highway Sign SDF.asset` | **`_Prefabs/Spacevessels/Manta.prefab`** |
-| `Resources/Fonts & Materials/Bangers SDF.asset` | `_Prefabs/UI Elements/Main Menu Screens/QuestItemPrefab.prefab` |
+#### What the plan above got wrong: it is FOUR assets, not two
 
-Both verified unique-guid-owner. **Verdict `remove`, but split first:** move those two font assets
-(and anything else a later sweep finds) into the real `TextMesh Pro/Resources/`, repoint nothing —
-the guid travels with the file — then delete the rest of `Examples & Extras`. Deleting it wholesale
-breaks a **shipped vessel prefab**.
+The two font assets really are the only things first-party content references — re-swept, 0 other
+external referrers — but each one **also needs its source TTF at runtime**, and both TTFs lived in
+`Examples & Extras/Fonts/`:
 
-### A2 · `Assets/YethGameDev/QuickScenePro/Resources` — 1.8 MB
+| Moved | To | Why |
+|---|---|---|
+| `Resources/Fonts & Materials/Electronic Highway Sign SDF.asset` | `TextMesh Pro/Resources/Fonts & Materials/` | **`_Prefabs/Spacevessels/Manta.prefab`** |
+| `Resources/Fonts & Materials/Bangers SDF.asset` | `TextMesh Pro/Resources/Fonts & Materials/` | `_Prefabs/UI Elements/Main Menu Screens/QuestItemPrefab.prefab` |
+| `Fonts/Electronic Highway Sign.TTF` | `TextMesh Pro/Fonts/` | **source font — live runtime dependency** |
+| `Fonts/Bangers.ttf` | `TextMesh Pro/Fonts/` | **source font — live runtime dependency** |
+| `Fonts/Bangers - OFL.txt` | `TextMesh Pro/Fonts/` | that font's required SIL OFL notice |
 
-QuickScene Pro is an **editor tool** and its code is correctly under `Editor/`. Its `Resources/`
-folder is **not**, so three editor-tool icons (`QSP_Icon.png`, `icon_additive.png`,
-`icon_single.png`) are packed into every player build.
+Both font assets are `m_AtlasPopulationMode: 1` (**DYNAMIC**) with `m_GlyphTable: []`,
+`m_CharacterTable: []` and `m_ClearDynamicDataOnBuild: 1` — they carry **no baked glyphs** and
+build their atlas at runtime from `m_SourceFontFile`. Moving only the two `.asset` files and
+deleting the folder would have left a shipped vessel prefab and the quest UI rendering **no glyphs
+at all**, with both font references still resolving perfectly.
 
-Referenced only by its own three demo scenes, none of which is in `EditorBuildSettings`.
+**And these two are the ONLY dynamic fonts in the project.** Measured over all 16 TMP font assets
+on disk: 14 are `STATIC` with baked glyphs and no source-font reference of any kind; the 2 dynamic
+ones are exactly the 2 this row flagged. So the only fonts in the game that cannot render without
+a TTF were the only two whose TTF this plan would have deleted — a coincidence worth naming,
+because it is what made the trap invisible.
 
-**Verdict `remove` from the player** — move `Resources/` to `Editor/Resources/` (the tool keeps
-working; `Resources.Load` still resolves for editor code). Licence is MIT so there is no
-entitlement problem, only a shipped-bloat one. `Demo/` (3 scenes) can go with it.
+> **General rule this row now carries: a reference check tells you who points AT an asset, never
+> what that asset needs to FUNCTION.** A guid sweep proved the two fonts were needed and said
+> nothing about the four files needed to honour that. Before removing a folder, ask what the
+> salvaged assets themselves depend on — read the asset, not just the graph around it.
 
-### A3 · `Assets/NiceVibrations/Demo` — 7.4 MB, 30 `.cs`
+#### The path meaning that did not change
 
-`Lofelt.NiceVibrations.Demo.asmdef` has `"includePlatforms": []`, so **30 demo scripts compile into
-the player**. `NiceVibrationsDemo.unity` is not in the build list, so the scene itself does not ship.
+A `Resources.Load` key is the path relative to the `Resources/` folder. Both fonts were at
+`…/Resources/Fonts & Materials/<name>` and land at `…/Resources/Fonts & Materials/<name>`, so the
+key `Fonts & Materials/<name>` is **byte-identical either side** — which is also the path
+`TMP Settings.asset`'s `m_defaultFontAssetPath: Fonts & Materials/` uses to resolve a
+`<font="X">` tag by name. Destination held no file of either name, so no collision and no
+shadowing.
+
+#### Both blind spots of a guid check, closed by hand
+
+* **C# TYPE references.** All 34 class names (`Benchmark01`–`04`, `CameraController`,
+  `ChatController`, `TeleType`, `VertexJitter`, `WarpTextExample`, the `TMP_*` helpers, …) grepped
+  word-boundary against `_Scripts` and `FTUE`: **zero hits**. No first-party prefab or scene
+  carried a demo script's guid either.
+* **LOAD BY NAME.** Every `Resources`-relative key in the folder searched as a literal string
+  across `_Scripts`, `FTUE`, `_Prefabs`, `_Scenes`, `_SO_Assets` and `Assets/Resources`: **zero
+  hits**. The project *does* contain `<font="Anton SDF">` and
+  `<sprite="DropCap Numbers" index=13>` tags — and **all of them were inside this folder's own
+  example scenes**, which went with it.
+
+#### Guid-count proof
+
+```
+guids owned on disk               7526 -> 7382   (144 assets removed)
+distinct unowned guids referenced  444 ->  419
+reference edges to unowned guids  2127 -> 1972
+```
+
+A falling count is not the proof — a new dangle can hide behind a larger number of removals — so
+the two sets were **differenced**: **0 new unowned guids**, 157 edges removed, and **0 of those
+157 had a referrer outside `Examples & Extras`**. (The 2 apparently-new edges are the relocated
+fonts naming `71c1514a…` = `TMP_FontAsset`'s own script guid at their new path; the same 2 appear
+among the 157 removed, at the old path. That guid is shared by 25 font assets including the keeper
+`LiberationSans SDF` and resolves from the builtin `com.unity.ugui` 2.0.0 that bundles TMP in
+Unity 6 — which is why 444 is large and why only the **delta** is the signal.)
+
+#### Licence side effect, in the good direction
+
+`Roboto-Bold SDF.asset` lived in that `Resources/` folder, so **Roboto shipped unconditionally
+whether or not anything used it** — register §7's "ships if the font is used" was too generous for
+that copy. It is gone, along with Anton, Oswald and Unity.ttf. `Bangers` still ships (via
+`QuestItemPrefab`) and its OFL notice was deliberately preserved; `Electronic Highway Sign.TTF`
+ships with **no notice in the tree**, which is pre-existing and register §7's problem.
+
+### A2 · `Assets/YethGameDev/QuickScenePro/Resources` — ✅ **MOVED UNDER `Editor/` 12 Sep 2026**
+
+QuickScene Pro is an **editor tool** and its code was already correctly under `Editor/`. Its
+`Resources/` folder was not, so three editor-tool PNGs (`QSP_Icon.png`, `Icons/icon_additive.png`,
+`Icons/icon_single.png`) were packed into every player build (rule 4).
+
+**Done in `815c5890`** — `Resources/` → `Editor/Resources/` and `Demo/` → `Editor/Demo/`. Nothing
+deleted. Result: `YethGameDev` reached **1.7 MB → 0.0 MB** with the asset count unchanged, so the
+whole 4.2 MB vendored tool now reaches a player build **not at all**. The 3 assets that stopped
+being reachable are exactly the 3 that were `Resources/` roots. Licence is MIT with the notice
+present, so this was shipped bloat and never an entitlement problem.
+
+#### Correction: the stated reason was the wrong reason
+
+This row justified the move with *"the tool keeps working; `Resources.Load` still resolves for
+editor code"*. That mechanism is real but **unused**: `QuickScenePro.cs` is the tool's only script
+and contains **zero** occurrences of `Resources.Load`, `Texture`, or `icon` — it loads no image and
+draws no icon. Its only asset access is `AssetDatabase.FindAssets("t:Scene …")` and
+`GUIDToAssetPath`.
+
+So the move is **safer** than this row claimed, for a different reason: nothing can break because
+nothing loads them. Measured referrers — `QSP_Icon.png` is an `m_Sprite` on a UI Image in the three
+demo scenes; the two `Icons/*.png` are referenced by **nothing anywhere in the project**. The
+executing prompt's acceptance criterion ("the tool still opens and draws its icons") describes
+behaviour the tool has never had.
+
+> **General rule: a vendored tool's `Resources/` folder is not evidence the tool uses
+> `Resources.Load`.** Asset Store tools ship one because it is the conventional place to put
+> icons, not because anything loads from it — so check the call before writing the migration note
+> that depends on it.
+
+**Proof.** All three guids still uniquely owned; `DemoScene_1/2/3.unity` each still carry
+`8efa9943…` because the guid travelled with the `.meta`. Project-wide dangling counts unchanged:
+7382 guids owned, 419 distinct unowned, 1972 edges — identical before and after, because a move
+that carries the `.meta` changes nothing about the graph.
+
+### A3 · `Assets/NiceVibrations/Demo` — 7.4 MB, 30 `.cs` — ◑ **asmdef DONE 12 Sep 2026**
+
+`Lofelt.NiceVibrations.Demo.asmdef` had `"includePlatforms": []`, so **30 demo scripts compiled
+into the player**. `NiceVibrationsDemo.unity` is not in the build list, so the scene itself does not ship.
 
 **But the demo ART is load-bearing in shipped UI** — measured, unique-guid-owner:
 
@@ -144,9 +271,33 @@ the player**. `NiceVibrationsDemo.unity` is not in the build list, so the scene 
 | `DemoAssets/CarDemo/Sprites/NVCar.png` | `_SO_Assets/Classes/SO_Class_Termite.asset` |
 | `_Common/Sprites/NV7Dots.png` | `_SO_Assets/Classes/SO_Class_Termite.asset` |
 
-**Verdict `salvage-first`.** Setting the Demo asmdef to `["Editor"]` is safe and removes 30 scripts
-from the player. Deleting the folder is **not** safe — it would break the main menu. See §B1: the
-right fix is probably to replace this art, and that is a licence decision before it is an art task.
+**Verdict `salvage-first`. The asmdef half is ◑ DONE (`1abf5066`, 12 Sep 2026); the art half is
+still open.**
+
+`Lofelt.NiceVibrations.Demo.asmdef` now reads `"includePlatforms": ["Editor"]` — a one-key change,
+reversible, and the exact shape the same vendor already uses one folder over in
+`Scripts/Editor/Lofelt.NiceVibrations.Editor.asmdef`. 30 demo scripts out of the player; all 30
+remain on disk. The two sibling assemblies are untouched, including the shipping
+`Lofelt.NiceVibrations`, which is the plugin the game actually uses.
+
+Three ways the Demo assembly could have had a consumer, all measured **zero**: no `.asmdef` in
+`Assets` or `Packages` names `Lofelt.NiceVibrations.Demo` or its guid `75b32e98…` in `references`;
+no asset outside the Demo folder carries any of the 30 scripts' guids; no first-party `.cs` names
+that namespace. `NiceVibrationsDemo.unity` is not in `EditorBuildSettings`, so only the code ever
+shipped.
+
+One caveat that came with it: that demo scene now sits **outside** `Editor/` while its components
+compile into an editor-only assembly. Fine as things stand — it binds normally in the editor and
+cannot reach a build — but the scene must not be added to `EditorBuildSettings`, or its scripts go
+missing. The sibling `Lofelt.NiceVibrations.Editor` assembly has always had the same property.
+
+**The art is untouched and re-verified as still load-bearing** (see the table above; all four
+referrers confirmed present as of `1abf5066`). Deleting the folder is **not** safe — it would break
+the main menu. See §B1: the right fix is probably to replace this art, and that is a licence
+decision before it is an art task
+([`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md));
+retiring the plugin is
+[`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md).
 
 ### A4 · `Assets/Wwise` — 84 KB
 
@@ -390,10 +541,17 @@ compression (a `.png`'s bytes on disk are not its bytes in the build).
 | `FTUE` | 0.0 MB | 4.5 MB | 36 |
 | `PlayFabEditorExtensions` | 0.0 MB | 4.4 MB | 70 |
 | `PlayFabSDK` | 0.0 MB | 3.8 MB | 102 |
-| `Unity Assests` | 13.9 MB | 2.9 MB | 108 |
-| `YethGameDev` | 1.7 MB | 2.5 MB | 7 |
+| `Unity Assests` | 13.9 MB → **8.8 MB** | 2.9 MB → **1.8 MB** | 108 → **26** |
+| `YethGameDev` | 1.7 MB → **0.0 MB** | 2.5 MB → **4.2 MB** | 7 → **10** |
 
 `Plugins` and `_Scripts` are omitted per the limits above.
+
+**Re-measured 12 Sep 2026 after §A1–§A3.** The two arrowed rows are the only ones this branch
+moved. Project totals: **2,948 of 7,526 assets reachable → 2,896 of 7,382**; **434.0 MB reached →
+427.2 MB**; `Resources/` roots **165 → 134**. Unreached rose 662.3 → 663.0 MB *because
+QuickScene Pro moved out of "reached" rather than out of the project* — a move, not a deletion, so
+its bytes changed column. `--self-test` green throughout, including the `TMP Settings.asset`
+Resources-root probe, which is the one that proves the load-by-name blind spot is still closed.
 
 ### E1 · `Assets/_Graphics/Texture/Noise Texture Collection (Angelo)` — **360.6 MB, 109 files, ZERO reachable**
 
