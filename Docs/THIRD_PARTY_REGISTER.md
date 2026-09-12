@@ -25,7 +25,7 @@ work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY
 
 | # | Item | State | What has to happen | Decision |
 |---|---|---|---|---|
-| **1** | **FMOD in-game credit** | ❌ **Required and absent — verified** | The bundled EULA, Clause 3: *"All Products require an in game credit line which must include the words 'FMOD' and 'Firelight Technologies Pty Ltd.'"* **All tiers, no exemption.** Measured: **zero** occurrences of `Firelight`, `Made with FMOD` or `fmod.com` anywhere outside `Plugins/FMOD` itself, and **the game has no credits screen at all.** Add one before any outside build. | ✅ **Build it** — `prompts/CREDITS_SCREEN_PROMPT.md` |
+| **1** | **FMOD in-game credit** | ✅ **Built 12 Sep 2026** | Clause 3 of the bundled EULA: *"All Products require an in game credit line which must include the words 'FMOD' and 'Firelight Technologies Pty Ltd.'"* — **all tiers, no exemption.** An in-game credits screen now carries it (`Assets/Resources/CreditsManifest.asset` → `MIDDLEWARE`), reachable from the settings panel, and **two gates keep it there**: `CreditsReleaseGuard` fails any non-development build without it, and `Tools/Build/check_credits_manifest.py --check` answers offline. ⚠️ **Not yet opened in the editor** — the data is proved, the rendering is not. Evidence: §7. | ✅ **Done** — `prompts/CREDITS_SCREEN_PROMPT.md` |
 | **2** | **FMOD licence tier** | ⚠️ Threshold question | Free commercial use requires **dev budget < $600k USD** *and* **gross revenue/funding < $200k USD/yr**. Froglet Inc. is a C-corp shipping paid Steam EA — a human must confirm which side of both thresholds applies, and buy the tier if not. | 💰 **Buy if the thresholds say so** |
 | **3** | **Obvious SOAP 2.7.0** | ⚠️ **Commercial, no EULA in tree** | Its own README ends *"Thanks for purchasing Soap :)"* — so it was bought, by someone, at some point. **No licence file exists anywhere in `Assets/Plugins/Obvious/`.** It is the project's **primary architecture** (128 first-party `using Obvious…`), so this is not removable — it needs the receipt. | ✅ **Owner is adding the licence file** |
 | **4** | **NiceVibrations 4.1.1** | ⚠️ Commercial, **no product EULA** | The two files that look like a licence are not one — see §2. Seat must cover commercial distribution. | 🔄 **Replace** — the whole dependency is **1 file, 5 API symbols**; every clip is already first-party data. `prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md` |
@@ -34,8 +34,8 @@ work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY
 | **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. **Measured: neither has a single first-party code reference** — Shift is 3 textures + 1 prefab, PrimitivePlus is 4 meshes + one 36-line component (with **47** meshes shipping via `Resources/`). | 🔄 **Replace** — `prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md` |
 | **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? **Measured: 8.2 MB of which exactly ONE prefab is live** (`vfx_Projectile_02` → `VesselJet`); the four `FE_*` render-pipeline assets are **not** the live pipeline (0 references). | 🔍 **Owner will identify** — `prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md` |
 | **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. | 🗑 **Owner will confirm, then delete** — with `Parse` (0 refs) and a first-party rewrite of `SerializeInterface`. `prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md` |
-| **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship. **If the Rhino rig work ever wires one, attribution becomes mandatory.** | ⏸ Watch — credits screen covers it if ever wired |
-| **10** | **EmojiOne** | ⚠️ By reference only | TMP's sample emoji sprites; the bundled note defers to EmojiOne's own terms without stating them. Ships if a TMP sprite asset is used. | ⏸ Credits screen |
+| **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship, and they are **deliberately absent from the credits screen**, because crediting an asset the build does not contain is a false statement about the build. | ⏸ Watch — the trigger is recorded in `VESSEL_CONSTRUCTION_FOLLOWUP.md`; wiring one makes the attribution mandatory and the credits screen is where it goes |
+| **10** | **EmojiOne**, **Roboto**, **Liberation Sans** | ✅ **Credited 12 Sep 2026** | All three sit under a `Resources/` folder, so they **ship whether referenced or not** — the register previously said *"ships if used"* for the first two and did not list Liberation Sans (TMP's default font) at all. Each now has its own entry: EmojiOne's own terms, Roboto under Apache 2.0, Liberation Sans under SIL OFL 1.1. | ✅ **Done** — see §7 |
 
 ---
 
@@ -123,14 +123,26 @@ No scoped registries. All three are pulled from GitHub at their default branch o
 
 These are `com.unity.*` by package name and **not Unity's code**. Each ships its own
 `LICENSE.md` / `Third Party Notices.md` inside its package folder — which **cannot be read from this
-repository**, because `Library/PackageCache/` is not committed.
+repository**, because `Library/PackageCache/` is not committed. The "commonly licensed" column below
+is therefore a *guess about the upstream project*, and **the OpenImageIO row proves the guess can be
+wrong in two directions at once**: the notices were fetched from Unity's package registry on
+12 Sep 2026 while authoring the credits screen, and
+
+* the **package's own** licence is the **Unity Companion License / Unity Package Distribution
+  License**, not BSD — `com.unity.bindings.openimageio copyright © 2024 Unity Technologies`;
+* the bundled **oiio 2.4.14.0** is the **Modified BSD** licence of *Larry Gritz et al.*, and the
+  package bundles **five more** projects nothing in this repository named: **OpenEXR 2.1.0**,
+  **libpng 1.6.38**, **libTIFF 4.3.0**, **boost 1.71.0**, **JPEG-9e**.
+
+General rule this leaves: **an SDK can bundle other SDKs, and the wrapper's licence says nothing
+about theirs.** Fetch the package's own `Third Party Notices.md` before writing a licence down.
 
 | Package | Actual upstream project | Commonly licensed *(unverified here)* | Direct? |
 |---|---|---|---|
 | `com.unity.nuget.newtonsoft-json` **3.2.1** | **Newtonsoft.Json** (James Newton-King) | MIT | direct |
 | `com.unity.nuget.mono-cecil` **1.11.6** | **Mono.Cecil** (Jb Evain) | MIT | **transitive** |
 | `com.unity.ext.nunit` **2.0.5** | **NUnit** | MIT | **transitive** |
-| `com.unity.bindings.openimageio` **1.0.2** | **OpenImageIO** | BSD-3-Clause | **transitive** |
+| `com.unity.bindings.openimageio` **1.0.2** | **OpenImageIO** + OpenEXR, libpng, libTIFF, boost, JPEG | ~~BSD-3-Clause~~ → **package: Unity Companion/UPDL; oiio: Modified BSD (Larry Gritz et al.)** — *fetched & verified 12 Sep 2026* | **transitive** |
 | `com.unity.burst` **1.8.29** | Unity (bundles LLVM) | Unity + LLVM notices | **transitive** |
 
 ### §3.3 The remaining ~96 `com.unity.*` packages
@@ -216,24 +228,44 @@ whom*; it would still not answer *was it paid for*.
 
 ## §7 · Attribution obligations, collected
 
-Every in-product attribution this tree can prove is owed. **The game currently has no credits screen
-of any kind**, so all of these are outstanding.
+Every in-product attribution this tree can prove is owed. **They were all outstanding for one
+reason — there was nowhere to put them.** There is now: an in-game **credits screen**, built
+12 Sep 2026.
+
+### §7.1 What was built
+
+| Artefact | Path | What it does |
+|---|---|---|
+| Data | `Assets/Resources/CreditsManifest.asset` (7,055 bytes) | The authored credit text. Under `Resources/`, so the runtime loads it with no per-scene wiring — and so it **ships whether or not anything references it** (§1). |
+| Schema | `Assets/_Scripts/ScriptableObjects/CreditsManifestSO.cs` | Ordered sections → entries (name / role / notice). A notice is **prose, never a typed licence enum** — QuickScene Pro ships *MIT with an added Indian jurisdiction clause*, which no enum can express. |
+| Screen | `Assets/_Scripts/UI/Modals/CreditsModal.cs` | A `ModalWindowManager` whose rows are **generated from the manifest**, so adding the next notice is an asset edit. Its scroll height is **measured** after the rows exist (`VerticalLayoutGroup` + `ContentSizeFitter` + `ForceRebuildLayoutImmediate`), never authored — the ScrollRect trap CLAUDE.md records, where content past the reachable range is clipped *and eats the press*. |
+| Reachability | `ScreenSwitcher.ModalWindows.CREDITS` (= 18) + `ScreenSwitcher.EnsureCreditsModal()` + `GameSettingsPanelController.OpenCredits()` / `EnsureCreditsRow()` | A **Credits** row in the settings panel names the modal TYPE and lets the switcher find it. Both the window and the row are **ensured in code** when unauthored, and both stand down the moment a human authors the real thing. |
+| Build gate | `Assets/_Scripts/Editor/Build/CreditsReleaseGuard.cs` | `IPreprocessBuildWithReport`, `callbackOrder −9999`, modelled on `UnityPipelineReleaseGuard`. Throws `BuildFailedException` on any **non-development** build whose manifest is absent or has lost either required string. Loads through the **runtime `Resources` path**, not an asset path — that is what proves the shipped game can find it. |
+| Offline gate | `Tools/Build/check_credits_manifest.py` | The same question with no editor, for CI. `--self-test` carries **four negative controls** (company name removed, every `FMOD` removed, the trailing period dropped, manifest absent) — *a gate nobody has watched fail is a gate nobody should trust*. |
+
+### §7.2 The obligations, and where each is discharged
 
 | Source | Obligation | Status |
 |---|---|---|
-| **FMOD** (EULA cl. 3) | In-game credit containing **"FMOD"** and **"Firelight Technologies Pty Ltd."** — **all tiers** | ❌ **absent — verified project-wide** |
-| **CC-BY 4.0 models** (VertaScan) | Attribution if distributed | ✅ not shipping today (0 refs) |
-| **EmojiOne** | Per EmojiOne's own terms | ⚠️ ships if a TMP sprite asset is used |
-| **Roboto** | Apache 2.0 notice | ⚠️ ships if the font is used |
-| **Google EDM4U** (Apache 2.0) | NOTICE preservation | editor-only — does not ship |
-| **QuickScene Pro** (MIT) | Copyright notice with "substantial portions" | 1.8 MB of it currently ships (index §A2) |
-| **Every MIT package** (UniTask, Reflex, ParrelSync, Newtonsoft, Cecil, NUnit) | MIT requires the notice to travel with the software | ❌ no aggregated notice exists |
+| **FMOD** (EULA cl. 3) | In-game credit containing **"FMOD"** and **"Firelight Technologies Pty Ltd."** — **all tiers** | ✅ **`MIDDLEWARE` → "Made with FMOD Studio by Firelight Technologies Pty Ltd."** — the conventional form from `www.fmod.com/attribution`, trailing period included. Enforced by both gates. |
+| **UniTask** (Yoshifumi Kawai / Cysharp), **Reflex** (Gustavo Santos), **ParrelSync** (Greg M; Ian and Contributors) | MIT — the notice must travel with the software | ✅ `THIRD-PARTY NOTICES` → *MIT-licensed components*. Each project's real `LICENSE` was **fetched**, not written from memory; all six MIT bodies are **textually identical**, so one verbatim body carries six copyright lines. |
+| **Newtonsoft.Json** (James Newton-King), **Mono.Cecil** (Jb Evain), **NUnit** | MIT, via `com.unity.nuget.*` / `com.unity.ext.nunit` | ✅ same entry |
+| **QuickScene Pro** (yethgamedevv) | MIT **with an added jurisdiction clause** — notice with "substantial portions" | ✅ own entry, verbatim including the added clause |
+| **OpenImageIO** + OpenEXR / libpng / libTIFF / boost / JPEG | Modified BSD (oiio) and the bundled projects' own notices | ✅ own entry. **Correction:** the register previously said BSD-3-Clause for the *package*; see §3.2. |
+| **Liberation Sans** | SIL Open Font License 1.1 | ✅ own entry. **This was missing from this section entirely** — it is TMP's default font asset, under `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/`, i.e. a `Resources/` folder, so it **ships**. |
+| **Roboto** (Google) | Apache 2.0 notice | ✅ own entry. **Correction:** previously *"ships if the font is used"* — `Roboto-Bold SDF.asset` is under a `Resources/` folder, so it ships **whether used or not**. |
+| **EmojiOne** | Per EmojiOne's own terms | ✅ own entry. **Correction:** same as Roboto — `EmojiOne.asset` is under `Resources/`. |
+| **Google EDM4U** (Apache 2.0) | NOTICE preservation | editor-only — does not ship, deliberately **not** credited |
+| **CC-BY 4.0 models** (VertaScan) | Attribution if distributed | ⏸ **deliberately absent** — 0 references, so they do not ship, and crediting them would be a *false statement about the build*. `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` carries the trigger: wiring one makes the attribution mandatory. |
 
-**The cheapest complete fix is one credits screen** listing FMOD's required line plus a third-party
-notices block. That single screen discharges FMOD cl. 3, every MIT notice, EmojiOne, Roboto, and
-CC-BY if a placeholder model is ever wired.
+### §7.3 What is NOT proved
 
----
+* **That the screen renders.** Both gates check the **data**. Nothing here has been opened in the
+  Unity editor — no compile, no play mode — so the modal's layout, the generated row's placement in
+  the settings panel, and the scroll reaching the last line are **unverified**. This is stated
+  rather than assumed, per CLAUDE.md.
+* **Entitlement.** The register proves *presence*; §0 rows 2–8 are still the money-side questions,
+  and a credits line is not a licence.
 
 ## §8 · Credentials
 
