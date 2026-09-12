@@ -25,6 +25,18 @@ the deletion.
 
 **Then delete the folder.** 14 orphan `.meta` files describe nothing; Unity will not miss them.
 
+**Two prose sites survive the deletion and must be swept with it** (re-measured at ship time —
+no `AkSoundEngine`/`AkAudio` reference exists anywhere in `Assets/_Scripts`, so these are the
+whole residue):
+
+| Site | What it says | Do |
+|---|---|---|
+| `GameModePrefabKitSO.cs` — a serialized field's tooltip | `"Wwise audio entry point."` | re-word to FMOD, or delete the row if the entry point went with the folder |
+| `CanvasUpgraderCodeScan.cs` — the comment beside its first-party-roots list | names `Wwise` among the third-party trees it excludes | update the list |
+
+Neither blocks the deletion; both are how a deleted SDK goes on looking present to the next
+person who greps for it.
+
 ## 2. `Assets/Parse/` — 76 KB, 2 DLLs, **0 references**
 
 Parse (Parse Platform / originally Meta) support DLLs. Measured: **zero** inbound asset references and

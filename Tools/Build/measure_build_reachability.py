@@ -26,8 +26,11 @@ THREE LIMITS -- read before quoting a number:
   * A RETIRED SERIALIZED KEY STILL GREPS AS A REFERENCE. This reads YAML text,
     so a field the script no longer declares still looks like a live edge; Unity
     drops it at import. This OVER-reports. (Measured instance: 40 SO_ArcadeGame
-    assets still carry a `PreviewClip:` key no script declares, which pulled
-    110 MB of video into "ships" -- Docs/LAUNCH_BLOCKER_INDEX.md E2.)
+    assets still carry a `PreviewClip:` key that SO_ArcadeGame no longer declares,
+    which pulled 110 MB of video into "ships" -- Docs/LAUNCH_BLOCKER_INDEX.md E2.
+    Note the name is NOT globally dead: SO_VesselAbility declares a live
+    `PreviewClip` and 24 of its assets carry a real one, so grep the OWNING type,
+    never the field name.)
 
   Also unmodelled: Always Included Shaders, and per-platform texture compression
   (a PNG's bytes on disk are not its bytes in the build).

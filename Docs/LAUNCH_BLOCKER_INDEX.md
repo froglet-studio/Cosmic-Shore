@@ -281,7 +281,9 @@ Entitlement question stands (register Q3).
 
 ### C6 · `Assets/_Scripts/Game` — `keep`, **and CLAUDE.md is wrong about it**
 
-CLAUDE.md:745 states the folder holds *"only non-code assets … All C# code has been reorganized"*.
+CLAUDE.md's `Project Structure` note on `_Scripts/Game/` (`:745` — a hint; re-grep before trusting
+the number) stated the folder holds *"only non-code assets … All C# code has been reorganized"*.
+**Corrected on this branch**; the paragraph below is the measurement behind that correction.
 **Measured, it holds 3 `.cs` files and two of them are live:**
 
 | Asset | Referenced by |
@@ -343,8 +345,11 @@ outrank everything in §A–§D.
 ### The method
 
 Measured by **`Tools/Build/measure_build_reachability.py`** (`--self-test` asserts the model reaches
-four assets that must be reachable; `--list <path>` enumerates what a folder leaves unreached),
-whose roots are Unity's real inclusion rules (register §1):
+four assets that must be reachable; `--list <path>` enumerates what a folder leaves unreached).
+**That self-test is negative-controlled**, because a green gate is only evidence if you can name a
+failure it produced: removing the `Resources/` root class (196 roots → 31) makes the `TMP Settings.asset`
+probe fail, which is the one probe that exists to prove the load-by-name blind spot is closed rather
+than dodged. Its roots are Unity's real inclusion rules (register §1):
 
 1. every **enabled** scene in `EditorBuildSettings.asset` — **29 of 31**;
 2. every asset under any folder named `Resources/` **not** under an `Editor/` folder — **165 assets**
@@ -411,7 +416,8 @@ The sweep reported 110.7 MB of video as shipping. **It is not**, and the reason 
 the number.
 
 40 `SO_ArcadeGame` assets still carry a serialized **`PreviewClip:`** key pointing at a
-`*Preview_Prefab.prefab`. **No script declares that field any more** — `SO_Game.PreviewClip` was
+`*Preview_Prefab.prefab`. **`SO_ArcadeGame` no longer declares that field** — it declares
+`PreviewVideo` — and `SO_Game.PreviewClip` was
 deleted when the arcade preview became a live satellite arena (`Docs/ModePreview/ARCHITECTURE.md`,
 which states the window *"must never fall back to a video"*). Unity never prunes an unresolvable
 serialized key, so the YAML still names the guid and a text-based sweep still follows it.
@@ -419,7 +425,10 @@ serialized key, so the YAML still names the guid and a text-based sweep still fo
 What is actually live: **one** card (`ArcadeGameMaelstrom`) wires a non-null `PreviewVideo`, read by
 the single consumer `MaelstromLaunchPanel`. The other 39 `PreviewVideo` fields are null. A separate
 path — `SO_VesselAbility.PreviewClip`, a **`VideoPlayer`** reference read by `HangarAbilitiesView` —
-covers the per-ability videos and is **not** verified here.
+covers the per-ability videos and is **not** verified here: **24 `SO_VesselAbility` assets carry a
+live one** (plus 1 `SO_Mission` asset whose type declares neither, a third dead key). So the field
+NAME is not dead anywhere in the project — only its use on `SO_ArcadeGame` is, which is why the
+check has to be *which type owns the asset*, not *does this identifier exist*.
 
 **Verdict `salvage-first`.** Establish which clips the Hangar path still needs, keep those and the
 Maelstrom clip, and remove the rest along with the dead `PreviewClip:` keys. General rule:

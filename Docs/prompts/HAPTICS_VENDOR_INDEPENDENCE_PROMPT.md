@@ -17,10 +17,14 @@ Read `Docs/HAPTICS.md` first — it is the policy this must not change — then
 
 ## The measurement this rests on
 
-**The entire dependency is one file and five symbols.**
+**The entire COMPILE dependency is one file and five symbols.**
 
 `Assets/_Scripts/Controller/IO/HapticController.cs` (345 lines) is the only first-party file that
-references `Lofelt.NiceVibrations`. From it, it uses:
+carries `using Lofelt.NiceVibrations` — verified at ship time by
+`grep -rn 'using Lofelt' Assets/_Scripts`, which returns that file's two lines and nothing else.
+A plain `grep -rn 'NiceVibrations' Assets/_Scripts` returns **four** files; the other three are
+**prose, not code**, and two of them are residue this deletion has to sweep (see the end of this
+prompt). From the real dependency, it uses:
 
 | Symbol | Used for |
 |---|---|
@@ -92,6 +96,20 @@ So:
   move it, and do not let the new driver make an AI or a remote replica buzz somebody's pad.
 * **This is a platform behaviour, not a vessel feature.** Nothing per-vessel gets a copy of the
   stepper.
+
+## The residue a deletion leaves behind
+
+`Lofelt` disappears when `HapticController.cs` is rewritten. The **name** does not — three
+first-party files mention NiceVibrations in prose, and one of them is load-bearing:
+
+| Site | What it is | Do |
+|---|---|---|
+| `CanvasUpgraderCodeScan.cs` (comment beside its first-party-roots list) | names NiceVibrations as a third-party tree to exclude from the scan | **update it** — the tree is gone, and a stale exclusion list is a claim about the repo that has stopped being true |
+| `GunSpreadProfile.cs`, `GunSprayAccuracy.cs` | tooltip/doc prose explaining the spray haptic's pulse spacing as *"the interval NiceVibrations can hold"* | re-word against whatever replaces it — the CONSTRAINT is real and must survive the vendor's name |
+
+The second row matters more than it reads: the spray texture's cadence was derived from that
+limit, so a rewrite that silently changes how many clips can be queued changes a shipped feel.
+Re-derive it against the new player rather than porting the number.
 
 ## Definition of done
 
