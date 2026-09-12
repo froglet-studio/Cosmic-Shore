@@ -33,12 +33,15 @@ Three corrections, each of which would have caused a defect if taken at face val
    into `PlayerPrefs` — on every session, and `GameplayRewardButton` in Menu_Main can still reach
    `ClaimReward`. The cluster's **PlayFab coupling** is inert; the **cluster** is not.
 
-## 1 · Two live bugs the removal fixes
+## 1 · Two bugs the removal fixes — one reachable today, one latent
 
-Both are caused by live UI waiting on a PlayFab backend that can never answer, and both are
-invisible as code review because the code is correct for a PlayFab that is running.
+Both are UI waiting on a PlayFab backend that can never answer, and both are invisible to code
+review because the code is correct for a PlayFab that is running. They differ in severity and the
+difference is stated rather than flattened: only the second is reachable by a player on this
+branch.
 
-- **`ProfileModal` — the randomize-name button hangs forever.**
+- **`ProfileModal` — the randomize-name button hangs forever** (real in the code; **not reachable on
+  this branch**, see the caveat below).
   `GenerateRandomNameButton_OnClicked` → `AssignRandomNameCoroutine` calls
   `AuthenticationManager.Instance.LoadRandomNameList()` (a `PlayFabClientAPI.GetTitleData` call)
   and then `yield return new WaitUntil(() => AuthenticationManager.Adjectives != null)`.
@@ -46,10 +49,23 @@ invisible as code review because the code is correct for a PlayFab that is runni
   `Adjectives` stays null. The coroutine never resumes, so the busy indicator never clears and the
   name field is never filled. Fixed here by generating the name from a local word list.
 
-- **`LeaderboardsMenu` — "that's me" never highlights.** `PopulateGameHighScores` compares
-  `score.PlayerId == AuthenticationManager.PlayFabAccount.ID`. `PlayFabAccount` is initialised to
-  `new()` so the `WaitUntil(... != null)` above it passes instantly, and `ID` is always empty, so
-  the comparison is always false. Fixed here by comparing against the UGS player id.
+  **Caveat, measured:** an earlier commit on this same branch retired `ProfileModal` — it is
+  unregistered from `ScreenSwitcher.Modals`, `ModalWindows.PROFILE` now opens
+  `PlayerDataSelectModal`, and nothing else opens it — so **on this branch the player cannot reach
+  the button**. The class is still instanced in `Menu_Main.unity` and two prefabs, still compiles
+  into the build, and the hang is still live on `bleeding-edge`, which does not carry that
+  retirement. So the fix is worth having and the severity claim is not: this is a latent hang in
+  shipped code, not a bug a player hits today.
+
+- **`LeaderboardsMenu` — reachable, and it threw on every open.** This one *is* live: the Records
+  screen sits on `PortScreen`, is wired into `ScreenSwitcher`, and `OfflineMenuWirer` explicitly
+  keeps it navigable. `FetchLeaderboard` called `LeaderboardManager.Instance`, whose prefab is in
+  no scene, so `Instance` was null and `SelectShipType` threw a `NullReferenceException` every time
+  the screen opened; `LeaderboardEntriesV2` was never initialised either. On top of that,
+  `PopulateGameHighScores` compared `score.PlayerId == AuthenticationManager.PlayFabAccount.ID`.
+  `PlayFabAccount` is initialised to `new()` so the `WaitUntil(... != null)` above it passed
+  instantly, and `ID` is always empty, so the comparison was always false. All three are fixed
+  here; the screen now renders its empty state instead of throwing.
 
 ## 2 · The decision table
 
