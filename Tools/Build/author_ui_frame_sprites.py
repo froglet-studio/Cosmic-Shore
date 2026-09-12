@@ -127,6 +127,9 @@ def encode_png(rgba):
             + chunk(b"IEND", b""))
 
 
+# NOTE: the trailing spaces on the empty-value lines below are DELIBERATE and load-bearing for
+# `--check`. Unity writes `key: ` (with one space) for an empty scalar, so a file emitted without
+# them is rewritten on the first import and every later `--check` reports drift that nobody caused.
 META = """fileFormatVersion: 2
 guid: {guid}
 TextureImporter:
@@ -213,24 +216,24 @@ TextureImporter:
     serializedVersion: 2
     sprites: []
     outline: []
-    customData:
+    customData: 
     physicsShape: []
     bones: []
     spriteID: {sprite_id}
     internalID: 0
     vertices: []
-    indices:
+    indices: 
     edges: []
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
     nameFileIdTable: {{}}
-  mipmapLimitGroupName:
+  mipmapLimitGroupName: 
   pSDRemoveMatte: 0
-  userData:
-  assetBundleName:
-  assetBundleVariant:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
 """
 
 FOLDER_META = """fileFormatVersion: 2
@@ -238,9 +241,9 @@ guid: {guid}
 folderAsset: yes
 DefaultImporter:
   externalObjects: {{}}
-  userData:
-  assetBundleName:
-  assetBundleVariant:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
 """
 
 # name, inner inset (None = filled), 9-slice border, PPU, the vendor file it replaces
