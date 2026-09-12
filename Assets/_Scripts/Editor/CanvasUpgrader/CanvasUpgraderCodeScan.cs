@@ -19,7 +19,7 @@ namespace CosmicShore.Editor
         /// <summary>Where the markdown report is written.</summary>
         public const string ReportPath = "Assets/CanvasUpgrader/CodeReferences.md";
 
-        // First-party code roots; third-party trees (Plugins, PlayFabSDK, Wwise, NiceVibrations, ...)
+        // First-party code roots; third-party trees (Plugins, PlayFabSDK, NiceVibrations, ...)
         // are excluded by not being listed.
         static readonly string[] ScanRoots = { "Assets/_Scripts", "Assets/FTUE", "Assets/Editor" };
 
