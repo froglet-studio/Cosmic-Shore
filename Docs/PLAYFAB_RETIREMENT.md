@@ -125,3 +125,50 @@ something is inert. They are left as-is — the comments stay true.
 - **The commerce surfaces are unchanged.** R4 left them locked and fail-closed via
   `SO_CommerceAvailability`; this branch does not alter that posture, only the dead backend behind
   it.
+
+## 5 · Measurement
+
+`Tools/Build/measure_build_reachability.py`, before and after. It excludes `Plugins` and
+`_Scripts` from its totals by design (code compiles regardless of references), so the SDK's *code*
+weight is not in these numbers — the 4.7 MB / 4.9 MB on disk is.
+
+| | assets indexed | reachable | unreached MB |
+|---|---|---|---|
+| before | 7,526 | 2,948 | 662.3 |
+| after | 7,281 | 2,944 | 654.1 |
+
+Both PlayFab rows are gone from the per-folder table (they were `PlayFabSDK` 3.8 MB / 102 assets
+and `PlayFabEditorExtensions` 4.4 MB / 70 assets, each 0.0 MB reached). The four reachable assets
+lost are the deleted `CORE` prefabs.
+
+## 6 · Verification status
+
+**Not verified in the Unity editor.** There is no `unity` binary and no open Editor in this
+session, so `/verify-unity` could not run: the project has **not** been compiled by Unity, Menu_Main
+has not been opened, and the profile modal, the Records screen and the Hangar have not been
+exercised. Treat that as the outstanding risk on this branch — on a deletion this size, the error
+class that matters (a member that no longer exists, a signature that drifted) needs a symbol table,
+which is editor-only.
+
+What *was* run, and what each actually proves:
+
+| check | result | what it covers |
+|---|---|---|
+| `check_enum_member_references.py` | OK (177 enums, 1,880 files) | no stale `CSLogChannel.LegacyPlayFab` |
+| `check_switch_label_collisions.py` | OK | no duplicate enum labels |
+| `check_conditional_compilation.py` | OK (1,932 files) | guards still cover self-consistent units |
+| `check_using_directives.py` | 15, down from 18 | three pre-existing findings were in deleted files; **none introduced** |
+| Roslyn parse of `Assets/_Scripts` | **0 syntax errors, 1,880 files** | every file still parses. Syntax only — it resolves no types |
+| deleted-guid sweep | 0 dangling | no scene, prefab or asset references a deleted script |
+| deleted-type sweep | 0 | the 21 types removed are named nowhere in `_Scripts` |
+| deleted-member sweep | 0 | 28 removed members named nowhere |
+| caller/callee cross-check | OK | `CaptainManager`'s five `XpHandler` needs, `CatalogManager`'s `EncounterCaptain(string)`, the new `PlayDailyChallenge(Action)` |
+
+The Roslyn pass is a real gate but a narrow one, and it is narrow for the reason CLAUDE.md already
+records: with every `MonoBehaviour` base type in the `Assembly-CSharp` monolith, an out-of-editor
+compile cannot bind class bodies, so *what it proves shrinks silently as the code gets more
+Unity-shaped*. It is evidence that nothing is malformed, not that everything resolves.
+
+**What a human should check first, in this order:** the project compiles; Menu_Main opens; the
+profile modal's randomize-name button now fills the field instead of spinning forever; the Records
+screen opens without throwing; the Hangar's captain list still populates.
