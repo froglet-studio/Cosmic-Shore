@@ -756,6 +756,94 @@ somebody adds a trail. Exclude it explicitly, the same way such sweeps already e
 shell/overlay child.
 
 
+### Technique: "is this folder referenced?" is not "does this SHIP" — walk reachability from the real build roots
+
+A per-folder reference check answers a much smaller question than the one usually being asked, and
+answers it confidently. Measured on this project: the folder-by-folder pass found ~17 MB of
+deletion candidates; walking guid references **transitively from Unity's real inclusion roots**
+found **662 MB unreached out of 7,526 assets** — roughly forty to one. Reach for the second
+whenever the question is build size, "what can we cut", or "is this pack used".
+
+The roots are Unity's rules, not a convention:
+
+1. every **enabled** scene in `ProjectSettings/EditorBuildSettings.asset`;
+2. every asset under a folder named `Resources/` that is **not** under an `Editor/` folder;
+3. `preloadedAssets` in `ProjectSettings/ProjectSettings.asset`.
+
+Then follow guids transitively out of every parseable asset **and its `.meta`** (an importer's
+`externalObjects` remap is a real edge — it is how `RhinoModel.fbx` has 0 asset references and 2
+inbound remaps). Rooting the whole of `Resources/` is what **closes** the `Resources.Load`-by-name
+blind spot rather than dodging it: a name-loaded asset is a root, so it can never be missed.
+Reference implementation: `Tools/Build/measure_build_reachability.py`.
+
+**Three limits belong to every number it produces** — state them or do not quote the number:
+
+- **Code ships regardless of references.** A `.cs` with no guid referrer still compiles into
+  `Assembly-CSharp`. An unreached script is a dead-code question, not a build-size one.
+- **Native plugins ship by platform importer settings, not by guid.** Nothing references FMOD's
+  per-platform binaries and they ship anyway.
+- **A RETIRED serialized key still greps as a live edge.** Unity never prunes an unresolvable
+  serialized key, so a field the script no longer declares still names a guid in the YAML and a
+  text sweep still follows it — this OVER-reports. Measured: 40 `SO_ArcadeGame` assets carry a
+  `PreviewClip:` the type no longer declares, which pulled 110 MB of video into "ships". It is
+  invisible to the compiler AND to the inspector, so a text sweep is the only thing that sees it
+  at all — which is simultaneously why the sweep is worth running and why its output needs this
+  caveat attached.
+
+The retired-key case generalises past reachability: **when checking whether a serialized field is
+dead, resolve the asset's `m_Script` guid to its OWNING TYPE — never grep the field name.** A name
+grep on `PreviewClip` also returns 24 `SO_VesselAbility` assets where the field is live, so "is
+this identifier used anywhere" answers a question nobody asked.
+
+Two smaller measurement traps from the same pass:
+
+- **`du` deduplicates across arguments within one invocation.** `du -sh Assets/_Graphics
+  Assets/_Audio Assets` reports `Assets` at the size of what the earlier arguments did *not*
+  already cover, which reads as a plausible total. Invoke it once per path.
+- **Cite a gate only after you have watched it fail.** The reachability tool's `--self-test`
+  asserts four assets that must be reachable; it is worth nothing until negative-controlled.
+  Dropping the `Resources/` root class (196 roots → 31) makes exactly the `TMP Settings.asset`
+  probe fail — the one probe that exists to prove the load-by-name blind spot is closed. Build
+  the negative control at the same time as the gate.
+
+### Trap: a FOLDER-SCOPED reference check counts siblings as external referrers
+
+Sweeping "which assets outside this folder point into it" and then reporting the unreferenced
+share as an orphan rate is wrong whenever the folder is internally cohesive: a video folder whose
+clips are each referenced by a `*Preview_Prefab.prefab` **in the same folder** measures as ~99%
+orphaned, because every real referrer was excluded by the scope. The number is not slightly wrong,
+it is inverted — the folder's cohesion is what produces it.
+
+Either include siblings and report the folder as a UNIT (does anything outside reach *any* of it?),
+or use transitive reachability from build roots, which has no scope to get wrong. The tell that you
+are about to make this mistake: your exclusion filter is a path prefix that also matches the thing
+you are measuring.
+
+### Trap: an unquoted path with a space yields an EMPTY guid, and the grep then matches everything
+
+The idiom that reads a guid out of a `.meta` —
+
+```sh
+g=$(grep -m1 '^guid:' $meta | awk '{print $2}')
+grep -rl "$g" Assets --include='*.prefab' | wc -l
+```
+
+— fails catastrophically and silently when `$meta` is unquoted and the path contains a space
+(`Assets/_Models/Vessel Models/…`). `grep` takes the two halves as two filenames, reports
+`No such file or directory` on stderr, `$g` becomes **empty**, and `grep -rl ""` matches **every
+file it is given**. Measured live: a model with 0 asset references reported **1,944**.
+
+It is worse than an error because the output is a plausible number in the right units, arriving
+in the middle of a batch where the stderr line scrolls past. Two habits close it:
+
+- quote every path expansion (`"$meta"`), and
+- **anchor the guid pattern and assert it matched**: `grep -m1 -E '^guid: [0-9a-f]{32}$'`, then
+  refuse to search on an empty capture. An empty needle should abort, never search.
+
+The same shape appears anywhere a computed needle can come back empty — a `sed` capture, a YAML
+key lookup, a `jq` path that misses. **A search whose needle is empty is not a search that found
+everything; it is a search that was never asked a question.**
+
 ## 4. Technique: C# verification — get a real compiler first
 
 **Reach for ROSLYN, not `mcs`.** `mcs` is a C# 7.x compiler and this codebase is
