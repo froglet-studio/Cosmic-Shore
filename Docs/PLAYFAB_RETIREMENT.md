@@ -148,14 +148,27 @@ something is inert. They are left as-is — the comments stay true.
 `_Scripts` from its totals by design (code compiles regardless of references), so the SDK's *code*
 weight is not in these numbers — the 4.7 MB / 4.9 MB on disk is.
 
-| | assets indexed | reachable | unreached MB |
-|---|---|---|---|
-| before | 7,526 | 2,948 | 662.3 |
-| after | 7,281 | 2,944 | 654.1 |
+The numbers below are the **A/B**: `bleeding-edge` and this branch, measured with the same tool on
+the same day, after this branch merged `bleeding-edge` in. That matters — a parallel branch removed
+Wwise, Parse, `SerializeInterface`, the TMP examples and the QuickScenePro `Resources/` folder while
+this one was in flight, so a before-number taken at the merge base would attribute their deletions
+to this branch.
 
-Both PlayFab rows are gone from the per-folder table (they were `PlayFabSDK` 3.8 MB / 102 assets
-and `PlayFabEditorExtensions` 4.4 MB / 70 assets, each 0.0 MB reached). The four reachable assets
-lost are the deleted `CORE` prefabs.
+| | assets indexed | reachable | reached MB | unreached MB | `Resources/` roots |
+|---|---|---|---|---|---|
+| `bleeding-edge` | 7,374 | 2,893 | 426.9 | 663.2 | 135 |
+| this branch | **7,128** | **2,889** | 426.9 | **655.1** | **134** |
+
+So the retirement takes **246 assets and 8.1 MB out of the project** and removes **one
+unconditionally-packed `Resources/` root** — `PlayFabSDK/Shared/Public/Resources/`, which was
+shipping into every player build. Reached MB is unchanged, which is the expected shape: nothing in
+either folder was reachable to begin with (`PlayFabSDK` 3.8 MB / 102 assets and
+`PlayFabEditorExtensions` 4.4 MB / 70, each 0.0 MB reached), so this is repository and
+`Resources/`-pack weight rather than build weight.
+
+**The four reachable assets lost are the deleted `CORE` prefabs** — `AuthenticationManager`,
+`PlayerDataController`, `LeaderboardManager` and `PlayFabUtility`, reachable only from the
+`Authentication` scene instance §2c removed.
 
 ## 6 · Verification status
 

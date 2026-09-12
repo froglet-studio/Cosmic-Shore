@@ -590,10 +590,16 @@ than dodged. Its roots are Unity's real inclusion rules (register §1):
 
 Then guid references are followed transitively. Result: **2,948 of 7,526 assets reachable**.
 
-> **Re-measured after the PlayFab retirement (§B2):** **2,944 of 7,281**, unreached
-> **654.1 MB**. The two PlayFab rows are struck through in the table below (they were 3.8 MB /
-> 102 assets and 4.4 MB / 70, each 0.0 MB reached); the four reachable assets lost are the
-> deleted `CORE` prefabs. Every other number on this page predates that change.
+> **Re-measured after the PlayFab retirement (§B2)**, A/B against `bleeding-edge` with the same
+> tool on the same day so the two numbers are comparable: **2,893 of 7,374 → 2,889 of 7,128**,
+> unreached **663.2 MB → 655.1 MB**, `Resources/` roots **135 → 134**, reached MB unchanged at
+> **426.9**. So: **246 assets and 8.1 MB out of the project, and one fewer unconditionally-packed
+> `Resources/` root** — `PlayFabSDK/Shared/Public/Resources/`, which was shipping. The two PlayFab
+> rows are struck through in the table below. **The four reachable assets lost are the deleted
+> `CORE` prefabs** (`AuthenticationManager`, `PlayerDataController`, `LeaderboardManager`,
+> `PlayFabUtility`), reachable only from the `Authentication` scene instance this branch removed.
+> Every other number in this section predates that change.
+
 Over every asset that is **441.4 MB reachable against 925.3 MB not**; excluding the two documented
 false-positive classes below (code, native plugins) it is **434.0 MB against 662.3 MB**. The second
 pair is the honest headline.

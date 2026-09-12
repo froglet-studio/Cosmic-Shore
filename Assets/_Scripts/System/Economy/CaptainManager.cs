@@ -134,7 +134,8 @@ namespace CosmicShore.Core
             captain.XP += amount;
             captainData.AllCaptains[captain.SO_Captain.Name].XP += amount;
 
-            // Save to Playfab
+            // Persisted by XpHandler below. (Was "save to PlayFab"; that backend is gone —
+            // XpHandler holds the tables in memory and nothing writes them to a server today.)
             CSDebug.LogVerbose(CSLogChannel.CloudData, $"[CaptainManager] IssueXP {captain.Name}, {amount}");
             XpHandler.IssueXP(captain, amount);
         }
