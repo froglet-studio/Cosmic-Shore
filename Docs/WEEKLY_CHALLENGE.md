@@ -471,19 +471,29 @@ and you are not.
 ### ONE leaderboard, reset weekly by UGS — not one per week
 
 The SDK cannot create leaderboards, so a per-week id would need a server job minting them forever.
-The dashboard's own **reset schedule** does it, and its **archive on reset** is what a reward pass
-reads once the week has closed.
+A **recurring reset schedule** does it, and its **archive on reset** is what a reward pass reads
+once the week has closed.
 
-**Three settings live in the UGS dashboard and nothing in this code can enforce them:**
+**Three settings live on the SERVICE and nothing in this code can enforce them:**
 
 | Setting | Value | Why |
 |---|---|---|
 | **Sort order** | **Ascending** | The score is a TIME, so the fastest run is the smallest number. |
 | **Update strategy** | **Keep best** | "Best" is relative to sort order, so ascending keeps the fastest. Almost moot at one attempt a week; under test mode's unlimited attempts it stops a practice run overwriting a good one. |
-| **Reset** | **Weekly, on the same UTC Monday boundary, ARCHIVING ON** | The archive is the only record of who won a week once the board has rolled over. |
+| **Reset** | **RECURRING WEEKLY, ARCHIVING ON, aligned to UTC Monday 00:00** | Without it the board never empties. The archive is the only record of who won a week once the board has rolled over. |
 
-**The sort order is the one that fails silently**, so it is checked at runtime instead: UGS returns
-rows in rank order, so a correct board hands back non-decreasing times.
+**Settable three ways, none of them from the game:** the UGS dashboard (Leaderboards ▸ the board ▸
+Resets), the UGS CLI, or the [Leaderboards Admin API][admin-api]. The **client SDK has no reset or
+delete call at all** — `ILeaderboardsService` is 12 read/write-a-score methods and none of them
+clears a board — so a missing reset can only be fixed on the service side. (An earlier version of
+this section said "the dashboard" and implied that was the only route; it is not, and the CLI/Admin
+route is what a scheduled job would use.)
+
+[admin-api]: https://services.docs.unity.com/leaderboards-admin/v1/
+
+**TWO of the three fail silently, and both are checked at runtime.**
+
+**Sort order.** UGS returns rows in rank order, so a correct board hands back non-decreasing times.
 `WeeklyChallengeLeaderboardService.WarnIfSortedWrong` screams **once per session** if it doesn't —
 because a wrongly-sorted board looks completely normal. The rows are real, the names are real, the
 times are real; they are simply upside down, with the slowest run in the world at rank 1.
@@ -491,6 +501,59 @@ times are real; they are simply upside down, with the slowest run in the world a
 > A code-side workaround — submitting `BIG - time` so a descending board ranks correctly — was
 > **considered and rejected**. It makes every raw score in the dashboard, in every export, and in
 > the archive the reward pass reads a number nobody can interpret, to save one dashboard setting.
+
+**Reset.** A board that never resets looks like a working leaderboard too, and it is the worse of
+the two: the score is a time and the sort is ascending, so **an old fast run outranks every new one
+forever** and the board freezes on the week the reset stopped happening. Reported by
+`WarnIfBoardNotResetting`, once per session, naming the check and all three places it can be set.
+
+### The PERIOD stamp — the safety net under the reset
+
+Every submitted score carries the **period it was run for** in its metadata (`"w"`), and every read
+keeps only the current one. That is what makes last week's entries *go away* on the client the
+moment the week rolls, whether or not the service-side reset fired.
+
+| Piece | Where |
+|---|---|
+| The field, and what an absent one means | `WeeklyChallengeRanking.PeriodKey` / `ReadPeriodKeyFromMetadata` |
+| "Does this row belong to the week being ranked?" | `WeeklyChallengeRanking.IsForPeriod` |
+| Drop other weeks, renumber what's left | `WeeklyChallengeRanking.RetainPeriod` |
+| The key that gets stamped | `WeeklyChallengeService.ResolveLeaderboardPeriodKey` |
+
+Five things about it are decisions rather than details:
+
+- **It is the DRAW key, not `WeeklyChallenge.PeriodKey`.** That field is the *record* key and carries
+  `attemptResetToken` — and bumping the token re-issues the **same** challenge to hand an attempt
+  back (see "Giving an attempt BACK" above). Stamping the record key would make that bump orphan
+  every score already submitted this week: the board would read as empty and the not-resetting error
+  would fire on a board that is perfectly healthy.
+- **A row that does not say which week it is from is treated as NOT this week.** Unknown has to fall
+  on the stale side, because an unstamped entry is exactly what a board that failed to reset is full
+  of — the lenient reading would leave the bug in place. The cost is stated plainly: every entry
+  submitted before the stamp shipped disappears from the panel, which on a board that already needed
+  resetting is the intended outcome.
+- **An unknown CURRENT period keeps everything.** The opposite call, for the opposite reason: with
+  nothing to judge against, emptying the board would be a worse answer than showing it.
+- **Ranks are renumbered only when something was dropped.** A board that reset correctly has nothing
+  to drop and its rows keep the true world ranks UGS gave them. When rows *are* dropped, renumbering
+  is the argument the Friends scope already makes: 1st, 4th, 812th reads as a board with most of its
+  rows missing rather than a ranking of what is left.
+- **The submit's metadata is no longer optional.** It used to be `null` when the player had no
+  avatar; the period made it mandatory, because an unstamped row is one this game then hides from
+  itself. The avatar is still omitted when there is none.
+
+**It is a net, not a fix, and the difference matters.** A read can hide the stale rows; it cannot
+remove them, and the accumulation grows every week. `FetchPageAsync` will page past other periods
+for up to `MaxPagesPerFetch` (5) requests so a board mid-transition still fills — **a healthy board
+pages once, asking for exactly the rows the caller wanted, which is the behaviour it had before the
+filter existed** — and past the budget the panel simply reads short. There is no client-side budget
+that outruns an ever-growing board.
+
+**The KEEP BEST trap, once the reset is missing:** "best" is across the whole board's life, so a
+player whose stale time beats their new one keeps the stale row and gets **no entry for this week at
+all**. That is not a bug in the update strategy — it is the reset's absence surfacing somewhere else,
+and no client-side rule can undo it. It is the second reason the reset is mandatory rather than nice
+to have.
 
 ### The id, and the per-mode boards it replaced
 

@@ -816,6 +816,42 @@ rather than desugared. A 2026-08 Urchin session type-checked two new ability fil
 ~200 lines of stubs and shipped them clean; the errors it *did* surface were both stub gaps
 (`Object.name`, `Behaviour.isActiveAndEnabled`), which is what a working harness looks like.
 
+**When the declaration is not on disk AT ALL, the rule bends and the CLAIM shrinks.** "Grep it,
+don't remember it" assumes the type is in the tree; a third-party SDK usually is not — a remote
+container has no `Library/PackageCache`, so `Unity.Services.Leaderboards`, FMOD, Netcode and
+friends exist only as a line in `Packages/manifest.json`. **Transcribe from the vendor's own
+API reference for THAT EXACT VERSION** (read the version out of the manifest first, then fetch
+`docs.unity3d.com/Packages/<pkg>@<major.minor>/api/...` — the per-version page, never a search
+result or a memory of a different major), and check the members you actually touch: a property's
+nullability changes the call (`GetScoresOptions.Offset` is `int?`, inherited from
+`PaginationOptions`, so an `int` only compiles via implicit conversion), and a collection's
+concrete type decides whether `.Count` exists (`LeaderboardScoresPage.Results` is
+`List<LeaderboardEntry>`).
+
+Two rules keep such a harness honest. **Say in the stub file which stubs came from the tree and
+which from docs**, one comment line — a reader must not mistake it for a transcription of source.
+And **state the claim correctly in the report: a docs-transcribed harness proves YOUR C#, not the
+SDK contract.** It catches your typos, wrong arity, bad control flow and dead branches; it cannot
+catch "that method does not exist", because you wrote the stub that says it does. So it is worth
+running (a 2026-09 session type-checked a rewritten UGS leaderboard service clean this way) and
+it is worth labelling — the one thing it can never do is verify the assumption it is built on.
+
+**A file with NO third-party dependency at all gets the strongest form and costs nothing: compile
+it for real, then RUN it.** Pure logic — a parser, a formatter, a filter, a math helper — usually
+lives in `_Scripts/Data` or `_Scripts/Utility` and imports only `System`, so it needs zero stubs,
+and a ~60-line `Driver.cs` with a `Main` that asserts against real inputs is executable proof
+rather than a type check (emit `-target:exe -main:Driver` and drop the `runtimeconfig.json` beside
+it, per the recipe above). Reach for this FIRST and split the work toward it: the same session put
+its hand-rolled metadata parser and its list filter in the dependency-free struct and left only
+wiring in the SDK-facing service, which turned the interesting half of the branch into 47 executed
+assertions with negative controls.
+
+**Trap: `csc | grep` reports GREP's exit status, not the compiler's.** A shell pipeline exits with
+its LAST command, and `grep -v` returns 1 when it filters everything out — so a perfectly clean
+compile piped through a banner filter prints `exit=1` and reads as a failure. Redirect to a file
+and check `$?`, or read `${PIPESTATUS[0]}`. Never let a filter stand between you and a verdict you
+are about to report.
+
 Roslyn parses the real files, so **the throwaway desugared copy disappears entirely** —
 and with the same `Stubs.cs` harness you still get the full type check. Cost is one
 install (~1 min) against a desugaring pass that has to be redone per file and can itself
@@ -1530,6 +1566,68 @@ ARGUMENT is well-formed C#, so for those extract the one method and compile it f
 tiny stubs (`DescribeBuildValues` compiled and RAN in about thirty lines of stub, and printing
 its output proved both modes landed on their own lines). And a whole-file `#if` still makes the
 compile see nothing, per the trap below.
+
+### Technique: write the DECISION as a Unity-free pure static, then actually RUN it
+
+The syntax-only compile above is the fallback for a file you cannot stub. The better move,
+when you are writing the file rather than merging it, is to make the interesting part
+stubbable *by construction* — because then you get a real compile AND a real test run, and
+the difference between "it parses" and "it is correct" is the whole point.
+
+The shape: take the one decision the feature turns on (an ordering, a fold, a threshold, an
+address calculation), put it in a `static` class with **no Unity, no UGS, no Netcode types**,
+and have the caller pass in whatever it needs from those worlds as a delegate or a plain
+value. A party-seating rule that needs each member's replicated Netcode `OwnerClientId`
+takes a `Func<string, ulong>`; the MonoBehaviour supplies the real lookup and the test
+supplies a dictionary. Nothing about the logic knows Netcode exists.
+
+What that buys, measured on one session: the helper plus its twelve NUnit tests compiled and
+**ran** out of editor against a **four-line** `UnityEngine` stub (just `SerializeFieldAttribute`,
+for the one serialized struct it referenced) — and the single most valuable assertion in the
+suite was one no single-machine play test could ever make: *three devices, three different
+input orders, one identical output*. A per-device seating bug is invisible from one device by
+definition.
+
+```xml
+<!-- the whole harness: src/ holds the shipped .cs files, copied not rewritten -->
+<PropertyGroup><TargetFramework>net8.0</TargetFramework><LangVersion>9</LangVersion>
+  <DefineConstants>$(DefineConstants);UNITY_EDITOR</DefineConstants>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems></PropertyGroup>
+<ItemGroup><Compile Include="src/**/*.cs" />
+  <PackageReference Include="NUnit" Version="3.14.0" />
+  <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
+  <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.9.0" /></ItemGroup>
+```
+
+`LangVersion 9` matches Unity 6. Copy the shipped files in rather than rewriting them (per the
+"compiling a COPY" trap below, re-copy on every edit — or the harness stops being a gate).
+
+**The payoff is not only the tests.** A real compile of the pure helper is the only thing in
+this repo that resolves types across the SOAP/Unity boundary without the editor, and it caught
+a signature that would have been an editor-only error: **`Obvious.Soap`'s `ScriptableList<T>`
+implements `IList<T>` and NOT `IReadOnlyList<T>`**, so the natural read-only parameter type
+does not accept one. Any helper taking a SOAP list must take `IList<T>`.
+
+### Trap: you cannot see a PACKAGE API's SHAPE here, so a test written against one is a guess
+
+The absent `Library/PackageCache` is usually discussed as a guid problem (see §5's differential
+`m_Script` check). It has a second consequence that bites when you are writing a TEST: the
+package's *source* is not on disk either, so you cannot answer "is this constructor public?",
+"does this overload exist?", "is this method an extension?" for anything in `Unity.Netcode`,
+`TMPro`, `Unity.Collections` or any other package — and a test that guesses wrong is a compile
+error in `Assembly-CSharp-Editor`, which takes the whole edit-mode suite down for everyone.
+
+The tempting case is a DTO round-trip. §4's reflection gate is the right shape when the type
+round-trips through your OWN converters (`FromExplodeParams`/`ToExplodeParams`), and it is
+unreachable when the only path is `INetworkSerializable.NetworkSerialize`, because driving that
+needs a `BufferSerializer<T>` whose constructor accessibility you cannot check from here.
+
+So: **write the half you can see, and say in the test's own doc comment which half you could
+not.** For a hand-written `NetworkSerialize`, the reachable half is `Equals` — assert by
+reflection that every field participates in it, which is worth more anyway: a field missing from
+`Equals` means the `NetworkVariable` never dirties, so the serializer never gets the chance to be
+wrong. Do NOT substitute a `Assert.AreEqual(12, fields.Length)` "did anyone add a field?" guard;
+the next person fixes it by bumping the number.
 
 ### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
 
