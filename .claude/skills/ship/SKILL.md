@@ -426,6 +426,23 @@ and a green PR, so it runs even in `/ship-quick`.
 git diff --name-only <merge-base>..HEAD -- '*.cs' | xargs -r grep -l 'MenuItem("FrogletTools/'
 ```
 
+**That command finds Unity editor tools and NOTHING ELSE — a WRITER here is not always C#.**
+This project's `Tools/Build/*.py` generators author `.asset`/`.unity`/`.prefab` content
+directly (`author_*_assets.py` is a whole family of them), so a branch adding one has exactly
+the same half-landed-output exposure with no `[MenuItem]` anywhere to find. Sweep the other
+languages too:
+
+```sh
+git diff --name-only <merge-base>..HEAD -- '*.py' '*.sh'
+```
+
+and classify each hit by the same evidence test, widened to that language's write calls:
+`open(..., 'w')`, `Path.write_*`, `shutil.*`, `os.remove/rename/makedirs`, `subprocess` that
+shells out to a writer. A tool whose only output is `print` / `sys.stderr.write` is a READER —
+say so explicitly, because "the branch adds a tool and no assets" is the exact shape of the
+failure this gate exists to catch, and the only thing that distinguishes it from a clean
+READER branch is having run the check.
+
 For each hit, read it and decide from the CODE, not the name:
 
 | Kind | Evidence in the source | What the branch must contain |
