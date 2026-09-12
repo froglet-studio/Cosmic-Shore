@@ -199,6 +199,22 @@ run the `/reorient` skill first and act on its verdict before shipping.
   to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
   rather than eyeballing the result.
 
+- **A verdict that is CONDITIONAL on another row does not conflict when that row changes.** Two
+  branches working the same status table (a launch-blocker index, a decision register, a
+  migration tracker) conflict only on the rows they both edited — and the rows most likely to be
+  wrong afterwards are the ones NEITHER touched. One row read `keep` *because* a neighbouring row
+  was staying; the neighbour was removed on the other branch; git merged both sides cleanly and
+  left the dependent verdict standing with its premise deleted. Same shape for a per-folder census
+  or a total: a count of "14 third-party folders" is derived from rows both branches were editing
+  and belongs to neither hunk. After merging a table, re-read the rows you did NOT touch and ask
+  which of them were true only because of a row that moved.
+
+- **A doc that describes its own neighbouring content is making a claim you must check.** A
+  blockquote saying "the two rows below are gone from the table" is prose, not an edit — it reads
+  as done, it survives review, and the rows are still there. Anything of the form *"the table
+  below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
+  `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
