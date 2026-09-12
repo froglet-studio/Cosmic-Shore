@@ -490,7 +490,7 @@ was deleted as inert. Entitlement question closed by removal.
 
 **It is also the index's own §E argument in miniature**: the folder-scoped check asked *is this
 referenced?* and got `keep` from **4 assets**, while the thing that actually shipped was the whole
-**47-mesh `Resources/` folder** — Unity packs a `Resources/` folder whole. A reference check answers
+**44-mesh `Resources/` folder** — Unity packs a `Resources/` folder whole. A reference check answers
 the wrong question here by roughly twelve to one.
 
 ### C4 · `Assets/Shift - Complete Sci-Fi UI` — ~~`keep`~~ **REMOVED 12 Sep 2026**

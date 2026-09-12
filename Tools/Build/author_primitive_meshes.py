@@ -5,7 +5,7 @@ Author the four PRIMITIVE MESHES the project actually uses, first-party.
 WHY: the four meshes under `Assets/PrimitivePlus/Resources/Meshes/` that anything in this
 project references - Cone, Sphere, Cube, CylinderTube - arrived in a commercial Asset Store
 pack with no licence document and no recoverable purchase record, and the pack ships its whole
-47-mesh `Resources/` folder into the player whether or not anything references it (Unity packs
+44-mesh `Resources/` folder into the player whether or not anything references it (Unity packs
 every `Resources/` folder whole). Replacing four meshes is cheaper than chasing a receipt for
 forty-seven.
 

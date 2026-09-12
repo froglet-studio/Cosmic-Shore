@@ -218,7 +218,7 @@ Three method notes worth carrying to rows 6-8, which are the same shape of job:
 | First-party **code** references | **0** | **0** |
 | Live assets | 3 border textures, `Switch.prefab` | `PrimitivePlusMaterial.cs`, `Sphere`, `Cone`, `Cube`, `CylinderTube` |
 | Live in | `Menu_Main`, `Authentication`, `ModalWindows`, `OptionsMenuContent` | 16 prefabs + `LaserGraph.shadergraph` |
-| `Resources/` that ships regardless | `Shift UI Manager.asset` | **47 meshes + 1 material** |
+| `Resources/` that ships regardless | `Shift UI Manager.asset` | **44 meshes + 1 material** |
 | Replacement | 3 sprites re-authored (9-sliced frames) + a first-party toggle | 4 meshes baked first-party + a 36-line component rewritten |
 
 Two hazards the prompt had to respect. `Cone.asset` is on **`AOEConicExplosion`** and

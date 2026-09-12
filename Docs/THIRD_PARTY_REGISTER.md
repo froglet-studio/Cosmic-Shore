@@ -118,7 +118,7 @@ borrowed event to keep a noise would have been an invisible TODO.
 
 Both packs are **gone from the tree**. Neither had a licence document, a vendor identifiable from
 the tree, or a recoverable purchase record, and — the part that made replacing cheaper than chasing
-a receipt — both shipped a `Resources/` folder into the player whole, so **47 PrimitivePlus meshes
+a receipt — both shipped a `Resources/` folder into the player whole, so **44 PrimitivePlus meshes
 shipped for the 4 that were used** and Shift's `Shift UI Manager.asset` shipped for nothing.
 
 **What replaced what, and what it cost.** Neither pack had a single first-party code reference, so
@@ -197,9 +197,19 @@ over.
 
 What *was* verified, mechanically:
 
-* **Reference integrity.** All 10 vendor guids resolve to **0 files** across `Assets/`,
-  `ProjectSettings/` and `Packages/`; all 7 replacement guids resolve to exactly the referrer counts
-  the originals had (Cone 3, Sphere 7, Cube 5, CylinderTube 1, outline 2, filled-200 1, filled-300 2).
+* **Reference integrity.** The two packs owned **88** guids between them, of which exactly **9** had
+  a referrer outside their own trees (the 7 re-pointed assets, plus `PrimitivePlusMaterial` and
+  `Switch.prefab`). All 9 now resolve to **0 files** across `Assets/`, `ProjectSettings/` and
+  `Packages/`; all 7 replacement guids resolve to exactly the referrer counts the originals had
+  (Cone 3, Sphere 7, Cube 5, CylinderTube 1, outline 2, filled-200 1, filled-300 2) — re-derived at
+  ship time against the merge base, which also corrected this line's earlier count of 10.
+* **No orphaned reference, in the project's own tool.** `measure_dangling_guid_references.py`
+  (which arrived on `bleeding-edge` while this branch was in flight, written for exactly this class
+  of removal) differenced a snapshot of the merge base against one of this branch:
+  **0 new unowned guids, 0 new edges, and 0 of the 7 removed edges had a referrer outside the two
+  removed trees** — the second line being the one that matters. Its `--removed-under` took a single
+  path, which reported each pack's own internal referrers as losses from the other, so this branch
+  made the flag repeatable; its `--self-test` negative control still fires.
 * **No dangling YAML.** A *regression* comparison over all 20 re-pointed files: exactly 4 anchors
   removed, every referrer to each gone, **no new dangling fileID**. (The naive "every local fileID
   has an anchor" check was tried first and is useless here — it cannot tell a dangling id from a
@@ -213,9 +223,12 @@ What *was* verified, mechanically:
   after the first import).
 * **Standing gates.** `check_conditional_compilation`, `check_enum_member_references`,
   `check_switch_label_collisions`, `check_self_referential_locals` all pass.
-  `check_using_directives` reports 18 problems in 12 files — **pre-existing**: they reproduce
-  identically at the commit before this work, and this work changed **zero** first-party `.cs`
-  files (the only `.cs` it touched are the 11 vendor scripts it deleted).
+  `check_using_directives` reports **OK, 0 files in scope** — which is the honest answer rather
+  than a clean bill of health: it scopes to CHANGED `.cs`, and every `.cs` this work touched is a
+  DELETION (the 11 vendor scripts), so there is nothing left for it to read. This work changed
+  **zero** first-party `.cs` files. (An earlier pass recorded 18 problems in 12 files here; those
+  were the whole-tree pre-existing findings, reproduced identically at the commit before this work,
+  in files it never touched.)
 
 **What still needs a human in the editor**, in rough order of what would hurt most if wrong:
 

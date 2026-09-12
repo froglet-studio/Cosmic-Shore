@@ -15,6 +15,11 @@
 > options panel expresses every on/off row as `GameSettingsPanelController.OnOffControl`, and the
 > one `Switch.prefab` instance was inactive inside a prefab nothing references.
 >
+> **One number in the brief below is wrong and is left as written**: the pack's `Resources/`
+> folder held **44** meshes plus one material, not 47 (measured off the deleted tree at ship
+> time — `git ls-tree` counts 45 `.asset` files, 44 of them `!u!43` Mesh). The argument is
+> unchanged: 44 shipped for the 4 that were used.
+>
 > ⚠️ **Not opened in the Unity editor** — no compile, no import, no play mode. The generators and the
 > guid proofs answer offline; the rendering and the mesh import are unverified. The ranked in-editor
 > test list is `THIRD_PARTY_REGISTER.md` §2.1.1. Kept for the record.
