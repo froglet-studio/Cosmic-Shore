@@ -24,11 +24,15 @@ Measured 2026-09-11:
 | | Count | Detail |
 |---|---|---|
 | First-party files referencing `FMODUnity` | **17** | Across `System/Audio`, `Controller/FX`, `Controller/Vessel/Audio`, the Manta/Urchin executors, `Fauna`, and the editor diagnostics window |
-| First-party files referencing `AkSoundEngine` / `AkAudioListener` / `AkGameObj` | **0** | Nothing outside `Assets/Wwise/` itself references it, anywhere in `Assets` |
+| First-party files referencing `AkSoundEngine` / `AkAudioListener` / `AkGameObj` | **0** | Was 0 even while `Assets/Wwise/` existed; that folder is now gone, so it is 0 by construction |
 
-`Assets/Wwise/` survives from an earlier middleware evaluation and is **inert**. Do not author new
-audio against it, and do not delete it as part of an audio task — it is a repository-hygiene
-question (board item **R14**/**R15**), not an audio one.
+`Assets/Wwise/` was a fossil of an earlier middleware evaluation — 14 orphan `.meta`, **0 asset
+files**, 0 references — and was **deleted 12 Sep 2026** as the repository-hygiene task it always was
+(`Docs/THIRD_PARTY_REGISTER.md` §0 row 8), not as an audio task. Three prose sites that described
+live FMOD objects as Wwise were swept with it, including `BOOTSTRAP_AUDIT.md`'s row for the
+AudioSystem root object. **There is now exactly one audio middleware in the project.** One human item
+is still open and is not an audio question either: whether a Wwise evaluation licence was ever signed
+([`THIRD_PARTY_DECISIONS.md` §2.1](../THIRD_PARTY_DECISIONS.md)).
 
 **What B2's audio step should actually check** on a Windows player — all of it FMOD, all of it
 exercised by the findings below:

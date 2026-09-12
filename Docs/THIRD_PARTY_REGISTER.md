@@ -33,7 +33,7 @@ work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY
 | **5** | **NiceVibrations demo ART is in the shipped menu** | ⚠️ Distribution question | `RegularPresetsIcons.png` → `Menu_Main.unity` (a build scene). Asset Store EULAs treat demo content separately from the plugin. **4 distinct sprites, 6 usages** — two of them (`NVCar`, `NV7Dots`) are the **Termite class icons**, i.e. already placeholders for an unimplemented vessel. | 🔄 **Replace** — same prompt as 4b |
 | **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. **Measured: neither has a single first-party code reference** — Shift is 3 textures + 1 prefab, PrimitivePlus is 4 meshes + one 36-line component (with **47** meshes shipping via `Resources/`). | 🔄 **Replace** — `prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md` |
 | **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? **Measured: 8.2 MB of which exactly ONE prefab is live** (`vfx_Projectile_02` → `VesselJet`); the four `FE_*` render-pipeline assets are **not** the live pipeline (0 references). | 🔍 **Owner will identify** — `prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md` |
-| **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. | 🗑 **Owner will confirm, then delete** — with `Parse` (0 refs) and a first-party rewrite of `SerializeInterface`. `prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md` |
+| **8** | **Wwise**, **Parse**, **SerializeInterface** | ✅ **Done — all three gone from the tree** | **Landed 12 Sep 2026.** `Assets/Wwise/` (0 asset files, 14 orphan `.meta`) and `Assets/Parse/` (2 DLLs, 0 references) **deleted**, each with its own guid-ownership + inbound-holder + type-reference + `Resources.Load`-by-name proof re-measured at deletion time. `SerializeInterface` **rewritten first-party** into `CosmicShore.Utility` / `CosmicShore.Editor`, all seven `[RequireInterface]` lines byte-identical. ⚠️ **One human item is still OPEN and it is NOT a code question:** whether a Wwise **evaluation or project licence** was ever signed during that evaluation — see §2 of [`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY_DECISIONS.md). Deleting the folder does not settle it, and did not wait on it. | 🗑/🔄 **Executed** |
 | **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship. **If the Rhino rig work ever wires one, attribution becomes mandatory.** | ⏸ Watch — credits screen covers it if ever wired |
 | **10** | **EmojiOne** | ⚠️ By reference only | TMP's sample emoji sprites; the bundled note defers to EmojiOne's own terms without stating them. Ships if a TMP sprite asset is used. | ⏸ Credits screen |
 
@@ -79,9 +79,9 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | ~15 MB / ~190 | — (Unity UCL) | **Ships** — both `Resources/` |
 | ├ **EmojiOne** sample sprites | EmojiOne | — | `…/TextMesh Pro/Sprites` | — | ⚠️ `EmojiOne Attribution.txt` — defers to their terms | Ships if used |
 | └ **Roboto** font | Google | — | `…/Examples & Extras/Fonts` | — | ✅ `Roboto-Bold - License.txt` | Ships if used |
-| **Parse** (support DLLs) | Parse / Meta | not stated | `Parse` | 76 KB / 2 | ❌ none | Ships if referenced — **nothing references it** |
-| **Wwise** ⚠️ | Audiokinetic | — | `Wwise` | 84 KB / **0 files** | — | **Ships nothing** (14 `.meta`, 0 assets) |
-| **SerializeInterface** | ❓ **unknown** | — | `SerializeInterface` | 56 KB / 5 | ❌ none, no namespace, no header | **Ships** (no asmdef → `Assembly-CSharp`) |
+| ~~**Parse** (support DLLs)~~ | Parse / Meta, via **Google EDM4U** (`gvh_version-9.4.0`, .NET 3.5 — recovered from the `.meta` labels) | not stated | ~~`Parse`~~ | ~~76 KB / 2~~ | ❌ none | **DELETED 12 Sep 2026.** Was 0 references; both DLLs were additionally importer-disabled (`Any: enabled: 0`, `Editor: enabled: 0`) so they reached no target at all |
+| ~~**Wwise**~~ | Audiokinetic | — | ~~`Wwise`~~ | ~~84 KB / **0 files**~~ | — | **DELETED 12 Sep 2026.** Shipped nothing (14 `.meta`, 0 assets). The per-title licence question is §0 row 8 and is a human item, not a tree item |
+| **SerializeInterface** → **first-party** | ~~unknown~~ → **Froglet** | — | `_Scripts/Utility/RequireInterfaceAttribute.cs` + `_Scripts/Editor/RequireInterfaceDrawer.cs` | 48 + 219 lines | n/a — first-party | **Ships** (the attribute only; the drawer is under `Editor/`). Rewritten 12 Sep 2026; `Assets/SerializeInterface/` deleted |
 | **Shader Graph samples** | Unity | 12.1.6 | `Samples` | 972 KB / 14 | — (Unity UCL) | Ships if referenced |
 | **"Effects Library"** ❓ | **unknown — §5** | — | `Effects Library` | 8.2 MB / 25 | ❌ none | **Ships** — nested in `VesselJet.prefab` |
 | **CC-BY vessel models** | **VertaScan** (Sketchfab) | — | `_Models/Vessel Models/Placeholder` | 11.6 MB / 2 | ✅ `CC_Attribution_…txt` — **CC-BY 4.0** | **Not shipping** (0 refs) — see §0.9 |
@@ -201,10 +201,16 @@ unanswered provenance question, not a build defect. It is **26% of `Assets/`**.
 **Who would know:** whoever commissioned or downloaded it; the art lead. General lesson: *a
 first-party folder name is not evidence that everything inside it is first-party.*
 
-**`Assets/SerializeInterface/` (5 `.cs`).** No namespace, no header comment, no licence, no vendor.
-It is the well-known community `[RequireInterface]` pattern, which exists in several public repos
-under different licences. It **ships** (no asmdef).
-**Who would know:** whoever added `[RequireInterface]` to the project.
+**`Assets/SerializeInterface/` — RESOLVED 12 Sep 2026, by rewrite rather than by answer.** It had
+no namespace, no header comment, no licence and no vendor, and it shipped (no asmdef). Nobody needed
+to remember where it came from: it is the well-known community `[RequireInterface]` pattern, and what
+the project actually depends on is fully specified by its own call sites, so it was **rewritten
+first-party** (`CosmicShore.Utility.RequireInterfaceAttribute` + `CosmicShore.Editor.RequireInterfaceDrawer`)
+and the folder deleted. **Half of it turned out to be dead** — `InterfaceReference<>`, its drawer and
+the `InterfaceArgs` struct had zero consumers — and that half was deliberately not reproduced.
+*General lesson: an unattributable code drop small enough to re-derive from its call sites does not
+need its provenance answered — it needs replacing. Ask the provenance question only where the thing
+is too large to rewrite, as with the three below.*
 
 **`Assets/PrimitivePlus/`, `Assets/Shift - Complete Sci-Fi UI/`, `Assets/Unity Assests/`.** No
 vendor, version or import record recoverable. **Git cannot supply it:** this clone is **shallow**

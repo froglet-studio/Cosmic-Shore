@@ -655,7 +655,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations). Desktop has TWO schemes and which one you get is decided by the VESSEL: `KeyboardInputStrategy` (dual-WASD) for a two-stick hull, and `SingleStickMouseInputStrategy` — the mouse as the single stick — for a **one-thumb** hull (`IsSingleStickControls`: Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike, Scarab), which reads only `EasedLeftJoystickPosition` and so gets nothing from the dual-stick mix. See `_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`
-- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
+- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. **FMOD is the only audio middleware in the project**: the `Assets/Wwise/` fossil of an earlier evaluation (14 orphan `.meta`, 0 asset files, 0 references) was **deleted 12 Sep 2026**, and three prose sites that described live FMOD objects as Wwise went with it (`GameModePrefabKitSO`'s tooltip for `CORE/AudioSystem.prefab`, `CanvasUpgraderCodeScan`'s excluded-trees comment, `BOOTSTRAP_AUDIT.md`'s AudioSystem row). General rule: **a deleted SDK goes on looking present for as long as anything still describes the project in its terms** — so a removal sweeps the prose as well as the guids, and that sweep is the half no reference check can find. `Docs/THIRD_PARTY_REGISTER.md` §0 row 8.
 - **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Peel the Cage's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
@@ -736,11 +736,19 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
 ├── PlayFabSDK/                # Backend SDK (legacy)
-├── NiceVibrations/            # Haptic feedback
-└── SerializeInterface/        # Custom [RequireInterface] attribute support
+└── NiceVibrations/            # Haptic feedback
 ```
+
+Three root folders were deleted on 12 Sep 2026 and should not come back: `Wwise/` (an empty
+middleware fossil), `Parse/` (two importer-disabled DLLs nothing referenced) and
+`SerializeInterface/`. The last was **not** dead — it was an unattributable code drop with no vendor,
+licence or namespace, so it was **rewritten first-party** rather than removed: `[RequireInterface]`
+now lives at `_Scripts/Utility/RequireInterfaceAttribute.cs` (runtime) plus
+`_Scripts/Editor/RequireInterfaceDrawer.cs` (the drawer — under `Editor/`, so it cannot reach a
+player). **The drawer is the load-bearing half**: a `[RequireInterface]` field with no drawer
+degrades *silently* into an object field that accepts anything, which compiles, looks correct in the
+inspector, and throws on the cast at runtime. `Docs/THIRD_PARTY_REGISTER.md` §2, §6.
 
 Note: `_Scripts/Game/` is **not vestigial — do not delete it.** This line previously said it held "only non-code assets" and that all C# had been reorganised out of it; measured, it holds **3 `.cs` files, two of them live** (`Environment/CapsuleMembrane.cs` → `CapsuleMembrane.prefab`, `Environment/CapsuleMembraneAnimationSO.cs` → `CapsuleMembraneAnimation.asset`; `IO/_Input Mapping/InputActionsAsset.cs` is the generated wrapper and has no serialized referrer) **plus two assets wired into shipped vessels** — `Vessel/Animation/JetMaterial.mat` → `Rhino.prefab` and `Vessel/TrailPassives/ScoutTrailPrismConfig.asset` → `Manta.prefab`. It also still holds the compute shaders, input action mappings and `PRISM_PERFORMANCE_AUDIT.md`. *"Vestigial" in a folder description invites exactly the delete a reference check would have prevented* — `Docs/LAUNCH_BLOCKER_INDEX.md` §C6.
 

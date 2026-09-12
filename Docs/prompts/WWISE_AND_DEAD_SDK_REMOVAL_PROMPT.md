@@ -1,5 +1,28 @@
 # Prompt — remove Wwise and Parse, and take `SerializeInterface` first-party
 
+> ## ✅ EXECUTED 12 Sep 2026 — do not run this again
+>
+> `Assets/Wwise/` and `Assets/Parse/` are **deleted**; `[RequireInterface]` is **first-party** at
+> `_Scripts/Utility/RequireInterfaceAttribute.cs` + `_Scripts/Editor/RequireInterfaceDrawer.cs`, and
+> `Assets/SerializeInterface/` is gone. Outcome and proofs:
+> [`THIRD_PARTY_REGISTER.md` §0 row 8 / §2 / §6](../THIRD_PARTY_REGISTER.md),
+> [`THIRD_PARTY_DECISIONS.md` §3 / §4](../THIRD_PARTY_DECISIONS.md),
+> [`LAUNCH_BLOCKER_INDEX.md` §A4 / §A5](../LAUNCH_BLOCKER_INDEX.md).
+>
+> **Two of this prompt's own measurements were wrong**, and the corrections are the part worth
+> reading before writing the next one of these:
+> * **Six live `[RequireInterface]` consumers, not seven** — `AIGunner.cs`'s usage is inside a
+>   `/* */` block. *A grep for an attribute's name counts the commented-out ones too.*
+> * **Half the 290 lines were dead** — `InterfaceReference<>`, its drawer and `InterfaceArgs` had
+>   **zero** consumers, so they were deliberately not reproduced. *When the plan is to rewrite a drop
+>   rather than delete it, measure which half anything actually uses first.*
+>
+> **Still open, and it is not a code question:** whether a Wwise evaluation or project licence was
+> ever signed — [`THIRD_PARTY_DECISIONS.md` §2.1](../THIRD_PARTY_DECISIONS.md).
+>
+> **Not verified in a Unity editor.** The session that executed it had no Unity available; what a
+> human still has to click is listed in the pull request.
+
 Paste everything below into a fresh session.
 
 ---

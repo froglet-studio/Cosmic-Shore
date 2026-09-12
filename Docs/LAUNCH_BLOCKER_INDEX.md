@@ -28,8 +28,8 @@ entitlement questions.
 | **A1** | `Unity Assests/TextMesh Pro/Examples & Extras` | 7.6 MB | `remove` — **split the folder first** |
 | **A2** | `YethGameDev/QuickScenePro/Resources` | 1.8 MB | `remove` — move under `Editor/` |
 | **A3** | `NiceVibrations/Demo` | 7.4 MB | `salvage-first` — **art is in the shipped menu** |
-| **A4** | `Wwise` | 84 KB | `remove` — zero files, zero references |
-| **A5** | `Parse` | 76 KB | `remove` — zero references of any kind |
+| **A4** | ~~`Wwise`~~ | 84 KB | ✅ **REMOVED** 12 Sep 2026 — zero files, zero references |
+| **A5** | ~~`Parse`~~ | 76 KB | ✅ **REMOVED** 12 Sep 2026 — zero references of any kind |
 | **B1** | NiceVibrations demo art used by first-party UI | — | `needs-a-human` — **licence question** |
 | **B2** | `PlayFabSDK` | 4.7 MB | `needs-a-human` — inert but **20 files** compile against it |
 | **B3** | `MIgration_Prefabs (DELETE LATER)` | 3.4 MB | `needs-a-human` — **do not touch** (audit §02) |
@@ -52,7 +52,7 @@ entitlement questions.
 |---|---|
 | **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) |
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
-| **A4, A5** (Wwise, Parse) | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
+| ~~**A4, A5**~~ (Wwise, Parse) | ✅ **Executed** 12 Sep 2026 — [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md). `SerializeInterface` went with them, rewritten first-party |
 | **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) |
 | **C3, C4** (PrimitivePlus, Shift) | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) — **their `keep` verdicts are superseded**: the studio's decision is to replace both |
 | **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
@@ -148,23 +148,47 @@ the player**. `NiceVibrationsDemo.unity` is not in the build list, so the scene 
 from the player. Deleting the folder is **not** safe — it would break the main menu. See §B1: the
 right fix is probably to replace this art, and that is a licence decision before it is an art task.
 
-### A4 · `Assets/Wwise` — 84 KB
+### A4 · `Assets/Wwise` — 84 KB — ✅ **REMOVED 12 Sep 2026**
 
 **Zero non-`.meta` files** (14 `.meta`, 0 assets). **Zero** references — guid or code. No
 `AkSoundEngine` / `AkAudioListener` / `AkBank` / `AkEvent` anywhere in first-party code. Audio is
 FMOD (17 files use `FMODUnity`).
 
-**Verdict `remove`** — it ships nothing today, so this is repository hygiene, not a build defect.
-One caveat is not a code question: confirm no Wwise **per-title licence obligation** was incurred
-when it was evaluated (register question 7).
+Verdict `remove`, **executed**. Both blind spots this document names were re-checked at deletion time
+rather than carried from here: the type-reference sweep was widened to 15 `Ak*` / `AK.` / `WwiseUnity`
+symbols (0 real hits — the two `AK\.` matches were `AI_ORBIT_BREAK.md`), and the folder held no
+`Resources/` directory, so the pack-whole rule could not reach it either.
 
-### A5 · `Assets/Parse` — 76 KB
+**Its prose residue was swept with it**, which is the part a reference check cannot find: three sites
+described live FMOD objects as Wwise — `GameModePrefabKitSO`'s tooltip for `CORE/AudioSystem.prefab`,
+`CanvasUpgraderCodeScan`'s excluded-trees comment, and `BOOTSTRAP_AUDIT.md`'s AudioSystem row.
+`grep -rn -i wwise Assets` is now empty. *A deleted SDK goes on looking present for as long as
+anything still describes the project in its terms.*
+
+One caveat is still not a code question and is still open: confirm no Wwise **per-title licence
+obligation** was incurred when it was evaluated — [`THIRD_PARTY_DECISIONS.md` §2.1](THIRD_PARTY_DECISIONS.md).
+It did not block the deletion, because a folder with 0 asset files held no evidence to preserve.
+
+### A5 · `Assets/Parse` — 76 KB — ✅ **REMOVED 12 Sep 2026**
 
 Two DLLs (`Unity.Tasks.dll`, `Unity.Compat.dll`) from the retired Parse backend. **0 guid
 references and 0 code references** (`using Parse`, `ParseObject`, `ParseClient`, `Unity.Tasks`,
 `Unity.Compat` — all zero hits in first-party code).
 
-**Verdict `remove`.** The cleanest candidate in this document: nothing in the project can see it.
+Verdict `remove`, **executed** — the cleanest candidate in this document: nothing in the project could
+see it. Two things were added to the measurement before deleting, and both generalise to the next DLL
+drop. The type-reference sweep was aimed at the namespaces the binaries **actually export**
+(`strings` → `Parse`, `Unity.Compat`, `Unity.Tasks`, `Unity.Tasks.Internal`) rather than at a guessed
+API surface, which is what showed the four `ParseObject` hits to be PlayFab's own `SimpleJson` parser
+method. And **§E's third stated limit — that a native or managed plugin ships by its IMPORTER settings
+rather than by guid — was answered instead of assumed**: both `.meta` carry `platformData: Any:
+enabled: 0` *and* `Editor: enabled: 0` with `isPreloaded: 0`, so the assemblies reached no player
+target and not even the editor. *When a document names a limit of its own method, the candidate that
+falls under that limit is the one where you go and measure it.*
+
+Their `.meta` labels also recovered the provenance the register had as "not stated": `gvh`,
+`gvh_dotnet-3.5`, `gvh_version-9.4.0`, `gvhp_exportpath-Parse/Plugins/…` — Google's External
+Dependency Manager, so they arrived as a managed .NET 3.5 pair under EDM4U rather than by hand.
 
 ---
 
