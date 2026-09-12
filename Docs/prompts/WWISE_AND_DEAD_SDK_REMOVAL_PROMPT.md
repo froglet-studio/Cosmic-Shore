@@ -20,8 +20,55 @@
 > **Still open, and it is not a code question:** whether a Wwise evaluation or project licence was
 > ever signed — [`THIRD_PARTY_DECISIONS.md` §2.1](../THIRD_PARTY_DECISIONS.md).
 >
-> **Not verified in a Unity editor.** The session that executed it had no Unity available; what a
-> human still has to click is listed in the pull request.
+> **Not verified in a Unity editor.** The session that executed it had no Unity, no reference
+> assemblies and no `unity` binary, so nothing here was compiled and `/verify-unity` could not run.
+> The checklist below is the whole of what a human still has to do; it lives here rather than in a
+> pull request because this file is the execution record and a PR body is not durable. *(The
+> `refactor(utility):` commit message points at "the PR body" for this — it means this list.)*
+>
+> ### What still needs the editor
+>
+> **1 · It compiles.** Open the project and let it finish importing. Two new scripts
+> (`_Scripts/Utility/RequireInterfaceAttribute.cs`, `_Scripts/Editor/RequireInterfaceDrawer.cs`) plus
+> one new test file. The six out-of-editor gates pass, but per CLAUDE.md they are **syntax-level for
+> anything deriving from a Unity type**, so they say nothing about `PropertyAttribute` /
+> `PropertyDrawer` member resolution — that is exactly what this step is for.
+>
+> **2 · Run the edit-mode suite**, at least `RequireInterfaceAttributeTests` (5 tests). It reflects
+> over every `[RequireInterface]` field and asserts the four preconditions the drawer needs, plus
+> that at least six fields still resolve the attribute.
+>
+> **3 · Each of the six live fields still FILTERS.** This is the part no test can reach — the drawer
+> is the load-bearing half, and a field whose drawer is missing looks *perfectly normal* while
+> accepting anything. Per field:
+>
+> | Component | Field | Interface |
+> |---|---|---|
+> | `PlayerSpawner` | `_playerPrefab` | `IPlayer` |
+> | `ImpactCollider` | `impactorObject` | `IImpactor` |
+> | `VesselStatus` | `_shipInstance` | `IVessel` |
+> | `GunTransformer` | `shipInstance` | `IVesselStatus` |
+> | `VesselCollider` | `shipObject` | `IVessel` |
+> | `ObjectiveIndicator` | `provider` | `IObjectiveProvider` |
+>
+> For each, check all four — they fail independently:
+> * **a.** Empty, the right-hand end of the field reads `(IVessel)` etc. *If no hint appears at all,
+>   the drawer is not bound and nothing else below is meaningful.*
+> * **b.** Assign something that DOES implement it → it sticks, and the hint collapses to `*`
+>   (returning on hover).
+> * **c.** Assign something that does NOT → the field is left **empty** and the console carries
+>   exactly **one** `[RequireInterface] '<name>' … does not implement …` warning. *Silently accepting
+>   it is the regression this whole rewrite exists to prevent.*
+> * **d.** Drag a **GameObject** carrying a qualifying component onto it → the field stores the
+>   **component**, not the GameObject.
+>
+> **4 · One existing serialized value survived.** Open a vessel prefab and confirm
+> `VesselStatus._shipInstance` still points where it did. It *should* be untouched — the field's
+> name and type did not change, only an attribute's namespace — so this is cheap insurance against
+> the one way a move like this could silently clear references.
+>
+> **5 · Nothing else regressed from the two deletions.** Both folders were provably unreferenced, so
+> the realistic risk is zero; a boot to the main menu plus one freestyle flight is enough.
 
 Paste everything below into a fresh session.
 
