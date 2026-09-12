@@ -24,11 +24,15 @@ Measured 2026-09-11:
 | | Count | Detail |
 |---|---|---|
 | First-party files referencing `FMODUnity` | **17** | Across `System/Audio`, `Controller/FX`, `Controller/Vessel/Audio`, the Manta/Urchin executors, `Fauna`, and the editor diagnostics window |
-| First-party files referencing `AkSoundEngine` / `AkAudioListener` / `AkGameObj` | **0** | Nothing outside `Assets/Wwise/` itself references it, anywhere in `Assets` |
+| First-party files referencing `AkSoundEngine` / `AkAudioListener` / `AkGameObj` | **0** | Was 0 even while `Assets/Wwise/` existed; that folder is now gone, so it is 0 by construction |
 
-`Assets/Wwise/` survives from an earlier middleware evaluation and is **inert**. Do not author new
-audio against it, and do not delete it as part of an audio task — it is a repository-hygiene
-question (board item **R14**/**R15**), not an audio one.
+`Assets/Wwise/` was a fossil of an earlier middleware evaluation — 14 orphan `.meta`, **0 asset
+files**, 0 references — and was **deleted 12 Sep 2026** as the repository-hygiene task it always was
+(`Docs/THIRD_PARTY_REGISTER.md` §0 row 8), not as an audio task. Three prose sites that described
+live FMOD objects as Wwise were swept with it, including `BOOTSTRAP_AUDIT.md`'s row for the
+AudioSystem root object. **There is now exactly one audio middleware in the project.** One human item
+is still open and is not an audio question either: whether a Wwise evaluation licence was ever signed
+([`THIRD_PARTY_DECISIONS.md` §2.1](../THIRD_PARTY_DECISIONS.md)).
 
 **What B2's audio step should actually check** on a Windows player — all of it FMOD, all of it
 exercised by the findings below:
@@ -266,3 +270,27 @@ to check, in order:
 
 Known migration cost: a legacy install whose level keys were int-typed reads its levels as 1.0 once
 (that is the repair; before this change they read as 0).
+
+## 4. Follow-up unblocked 12 Sep 2026 — the legacy SFX AudioSource path is now dead
+
+`AudioSystem.PlaySFXClip(AudioClip)` has **zero callers**. Its class doc named three
+(`CountdownTimer`, `ProfileModal`, `Crystal`); the first two migrated to FMOD `EventReference`
+fields with the NiceVibrations demo-audio removal (`THIRD_PARTY_DECISIONS.md` row 5) and `Crystal`
+had already gone, so the doc was stale on all three by the end of that branch.
+
+The class doc has always carried the deletion condition — *"The Unity AudioSource path can be
+deleted once all callers have migrated"* — and **that condition is now met for SFX**. What can go:
+`PlaySFXClip`'s two overloads, the shared `sfxSource`, and the `masterMixer` bus they route through
+(FMOD events bypass it entirely).
+
+**It was deliberately not done on that branch.** The same legacy tier still carries the MUSIC
+crossfade (`MusicSource1`/`MusicSource2`), which is live, so "delete the AudioSource path" is not
+one change — it is *delete the SFX half and leave the music half*, which wants its own scoped pass
+and a look at whether the music crossfade should move to FMOD at the same time. Removing it as a
+side effect of migrating two UI sounds would have been a much wider blast radius than that branch
+was reviewed for.
+
+*General shape worth keeping: a migration's last caller leaving is a state change nothing announces.
+The doc that lists the remaining callers is the thing that goes stale, and it goes stale silently —
+so when a branch migrates a caller, grep for the API's remaining ones rather than assuming the list
+is still right.*

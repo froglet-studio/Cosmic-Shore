@@ -122,7 +122,7 @@ namespace CosmicShore.ScriptableObjects
                 ("Assets/_Prefabs/CORE/ThemeManager.prefab", GameModePrefabRole.Essential, false,
                     "Domain colour sets used to theme vessels and UI."),
                 ("Assets/_Prefabs/CORE/AudioSystem.prefab", GameModePrefabRole.Optional, false,
-                    "Wwise audio entry point."),
+                    "FMOD audio entry point."),
             };
     }
 }

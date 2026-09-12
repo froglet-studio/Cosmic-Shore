@@ -2,6 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using FMODUnity;
 using Reflex.Attributes;
 using System;
 using System.Collections;
@@ -35,7 +36,8 @@ namespace CosmicShore.UI
         [SerializeField] Button cancelDisplayNameButton;
         [SerializeField] TMP_Text displayNameResultMessage;
         [SerializeField] string displayNameDefaultText;
-        [SerializeField] AudioClip TypingAudio;
+        [SerializeField, Tooltip("FMOD event ticked once per character while a random display name types itself in. Leave empty for silence.")]
+        EventReference typingAudioEvent;
         [SerializeField] bool FocusDisplayNameInputFieldEnabled;
 
         Color SuccessMessageOriginalColor;
@@ -225,7 +227,8 @@ namespace CosmicShore.UI
                 if (displayNameInputField)
                 {
                     displayNameInputField.text = randomName.Substring(0, i);
-                    audioSystem.PlaySFXClip(TypingAudio);
+                    if (!typingAudioEvent.IsNull)
+                        audioSystem.PlaySFXEvent(typingAudioEvent);
                 }
 
                 yield return new WaitForSeconds(.075f);

@@ -33734,8 +33734,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: -5435255387823749147, guid: fe42c8b526e77e54ab91d0590272d9e8,
-    type: 3}
+  m_Sprite: {fileID: 21300000, guid: 61e79068f1c80011533b39811125f577, type: 3}
   m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -111758,9 +111757,20 @@ MonoBehaviour:
   DoShrinkRoutine: 0
   JitterAmount: 0.1
   TargetAlpha: 0
-  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
-  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
-  audioSource: {fileID: 7311050691502294599}
+  targetReachedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  onTriggerEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -121170,7 +121180,13 @@ MonoBehaviour:
   cancelDisplayNameButton: {fileID: 5236300092151728765}
   displayNameResultMessage: {fileID: 2899345457778535910}
   displayNameDefaultText: 
-  TypingAudio: {fileID: 8300000, guid: 85366fdabea234ddd9999943eebca0ee, type: 3}
+  typingAudioEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   FocusDisplayNameInputFieldEnabled: 0
   ShowEmailLogin: 0
   emailLoginResultMessage: {fileID: 0}
@@ -149356,7 +149372,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 520f61796ba8c53489e8a9404464f152, type: 2}
+  m_Sprite: {fileID: 21300000, guid: 422fd7278d26fedf775be169fb0a4121, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -158749,9 +158765,20 @@ MonoBehaviour:
   DoShrinkRoutine: 0
   JitterAmount: 0.1
   TargetAlpha: 0
-  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
-  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
-  audioSource: {fileID: 3593982596222553418}
+  targetReachedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  onTriggerEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
@@ -183001,9 +183028,20 @@ MonoBehaviour:
   DoShrinkRoutine: 0
   JitterAmount: 0.1
   TargetAlpha: 0
-  targetReachedClip: {fileID: 8300000, guid: 01bedd7179cff4a568f868656b4d977a, type: 3}
-  onTriggerClip: {fileID: 8300000, guid: fca71929805c14177a0aa6a7aa19e417, type: 3}
-  audioSource: {fileID: 3593982596222553418}
+  targetReachedEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  onTriggerEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   AudioVolume: 0.1
   TargetPulseMultiplier: {x: 1.25, y: 1.25}
   PulseDuration: 0.25
