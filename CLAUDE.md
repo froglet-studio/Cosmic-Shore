@@ -660,7 +660,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
-- **Backend**: PlayFab SDK (legacy, inert), Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, Purchasing 4.12.2, Ads 4.12.0)
+- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, Purchasing 4.12.2, Ads 4.12.0). **PlayFab is gone** — SDK, editor extensions and every PlayFab-era class were removed; see `Docs/PLAYFAB_RETIREMENT.md`
 - **Testing**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Target**: Mobile-first with PC/console expansion
 
@@ -691,7 +691,8 @@ Assets/
 │   │   └── Settings/          # Runtime settings
 │   ├── System/                # Application-level systems (~126 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
-│   │   ├── Playfab/           # PlayFab integration (Auth, Economy, Groups, PlayerData, PlayStream)
+│   │   ├── Economy/           # CatalogManager, CaptainManager, Inventory, StoreShelve, VirtualItem, ItemPrice
+│   │   ├── PlayerData/        # PlayerProfile, PlayerSession
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
@@ -728,7 +729,6 @@ Assets/
 │   ├── DialogueSystem/        # Dialogue editor tools, animation, SO assets
 │   ├── Editor/                # Editor tools (CopyTool, shader inspectors, scene utilities)
 │   ├── Tests/                 # Edit-mode unit tests
-│   ├── Integrations/          # PlayFab SDK integration
 │   └── SSUScripts/            # Specialized subsystem scripts
 ├── _SO_Assets/                # ScriptableObject asset instances (48+ subdirectories)
 ├── _Prefabs/                  # CORE, Cameras, Characters, Environment, Pools, Projectile, Spaceships, Trails, UI Elements
@@ -737,7 +737,6 @@ Assets/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
 ├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
-├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
 ```
@@ -755,7 +754,6 @@ assembly at a time — full plan, measurement protocol and phase-2 candidates:
 | Assembly | Scope |
 |---|---|
 | `CosmicShore.Data` | `_Scripts/Data/` — enums, structs, small interfaces. The first extracted leaf: depends on no first-party code |
-| `CosmicShore.PlayFabTests` | PlayFab integration tests |
 
 **The rule that makes extraction safe, and safe in only one direction:** a predefined assembly
 (`Assembly-CSharp`, `Assembly-CSharp-Editor`) **automatically references every auto-referenced
@@ -789,7 +787,6 @@ Every first-party test is under a folder literally named `Editor`, which puts it
 | General edit-mode tests | `_Scripts/Tests/Editor/` |
 | Bootstrap tests | `_Scripts/System/Bootstrap/Tests/Editor/` |
 | Multiplayer tests | `_Scripts/Controller/Multiplayer/Tests/Editor/` |
-| PlayFab tests | `_Scripts/System/Playfab/PlayFabTests/` (has its own `.asmdef`) |
 
 Two properties make this work, and both are load-bearing:
 
@@ -804,8 +801,10 @@ constraint is almost certainly why the three documented assemblies above were ne
 
 **The constraint is a function of where the code under test lives, not a permanent law.** A suite
 whose dependencies are *entirely* inside extracted assemblies (`CosmicShore.Data` today) can have a
-real test asmdef referencing those plus the test-runner assemblies — `CosmicShore.PlayFabTests` is
-already this shape. Take that per-suite as its dependencies come out; never as a project-wide flip.
+real test asmdef referencing those plus the test-runner assemblies. `CosmicShore.PlayFabTests` used
+to be the worked example of that shape; it was deleted with PlayFab, so there is currently no suite
+in the project with its own runtime-facing asmdef. Take that per-suite as dependencies come out;
+never as a project-wide flip.
 
 **A new test file must be created under an `Editor/` folder** unless it meets the bar above. A test
 anywhere else compiles into the player and breaks the Windows build at the linker stage, which the
@@ -816,7 +815,7 @@ flight. Follow the checklist in `Docs/ASSEMBLY_SPLIT.md` § "Adding an asmdef": 
 leaf, check the three things that don't cross a boundary, `autoReferenced: true`, one asmdef per
 commit, and run `validate_project.py` + `check_conditional_compilation.py`.
 
-Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
+Third-party assemblies: `Obvious.Soap`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
 ### Scene Inventory
 
@@ -2015,7 +2014,7 @@ See `Assets/_Scripts/System/Bootstrap/BOOTSTRAP_AUDIT.md` for the bootstrap scen
 
 ### Authentication & Session Flow
 
-Authentication uses **Unity Gaming Services (UGS)** exclusively. Legacy PlayFab auth files exist under `_Scripts/System/Playfab/Authentication/` but are deprecated and inert.
+Authentication uses **Unity Gaming Services (UGS)** exclusively. The legacy PlayFab auth path (`AuthenticationManager`, `AuthenticationView`, `PlayFabAccount`) is **deleted**, not merely inert — `Docs/PLAYFAB_RETIREMENT.md`.
 
 #### Architecture
 
@@ -2235,8 +2234,6 @@ Readers of app state: any system via `[Inject] ApplicationStateDataVariable` or 
 | Friends data SO | `FriendsDataSO.cs` | `_Scripts/Utility/DataContainers/` |
 | Player profile service | `PlayerDataService.cs` | `_Scripts/UI/Views/` |
 | Auth SO asset instance | `AuthenticationData.asset` | `_SO_Assets/Authentication Data/` |
-| Legacy PlayFab auth (deprecated) | `AuthenticationManager.cs` | `_Scripts/System/Playfab/Authentication/` |
-| Legacy PlayFab UI (deprecated) | `AuthenticationView.cs` | `_Scripts/System/Playfab/Authentication/` |
 
 #### Auth Patterns to Follow
 
@@ -3954,7 +3951,7 @@ and `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.2.
 
 All game code lives under `CosmicShore.*` with 8 primary namespaces:
 
-- `CosmicShore.Core` — foundational systems: PlayFab integration, authentication, bootstrap, rewind, FTUE, dialogue runtime
+- `CosmicShore.Core` — foundational systems: authentication, bootstrap, economy/player data, rewind, FTUE, dialogue runtime
 - `CosmicShore.Gameplay` — all gameplay controllers: vessel, input, multiplayer, camera, impact effects, arcade, projectiles, environment, player, AI
 - `CosmicShore.Data` — enums (VesselClassType, Domains, ResourceType, ShipActions, InputEvents, etc.) and data structs
 - `CosmicShore.ScriptableObjects` — SO definitions (SO_Captain, SO_Vessel, SO_Game, etc.) and all custom SOAP types
@@ -4154,7 +4151,6 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 - **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
 - **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
 - **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
-- **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
 
@@ -4199,7 +4195,7 @@ automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore
 - **Discovery is automatic, never registered.** `FrogletToolRegistry` reflects over `[MenuItem]`
   attributes; a tool shows up on the board the moment its path starts with `FrogletTools/` and it
   compiles. There is no manifest to update. That prefix is also the only filter, so third-party
-  package menus (PlayFab, FMOD, Soap, Quick Scene Pro) are never picked up and are left where
+  package menus (FMOD, Soap, Quick Scene Pro) are never picked up and are left where
   their vendors put them.
 - **The board is a card grid**: one collapsible colour-coded section per category, one card per
   tool (title, description, five-dot importance), most important first, flowing into as many
@@ -4323,7 +4319,7 @@ Do not guess at performance problems. Profile first.
   ~40 steps, the lattice colonies logging per PLANT, every vessel spawn printing its audio bring-up,
   and every menu screen logging one line per CARD it populated. Every subsystem now has a channel
   (`Boot`, `Party`, `CloudData`, `Audio`, `Ecology`, `ArcadeMatch`, `MenuUI`, `Input`,
-  `VesselTelemetry`, `PrismRuntime`, `LegacyPlayFab`, `FTUE`, plus the per-feature ones), the
+  `VesselTelemetry`, `PrismRuntime`, `FTUE`, plus the per-feature ones), the
   Logging toolbox REFLECTS the enum (its hand-kept row table had already drifted nine channels
   behind), and each member carries a `[CSLogChannelLabel]` that `CSDebugTests` asserts. The
   decision per site is mechanical — a method-entry trace, a per-item population line, a data dump

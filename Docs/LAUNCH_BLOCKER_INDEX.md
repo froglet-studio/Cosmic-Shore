@@ -368,6 +368,11 @@ than dodged. Its roots are Unity's real inclusion rules (register §1):
 3. **preloaded assets** in `ProjectSettings.asset` — 2.
 
 Then guid references are followed transitively. Result: **2,948 of 7,526 assets reachable**.
+
+> **Re-measured after the PlayFab retirement (§B2):** **2,944 of 7,281**, unreached
+> **654.1 MB**. The two PlayFab rows are gone from the table below (they were 3.8 MB / 102
+> assets and 4.4 MB / 70, each 0.0 MB reached); the four reachable assets lost are the
+> deleted `CORE` prefabs. Every other number on this page predates that change.
 Over every asset that is **441.4 MB reachable against 925.3 MB not**; excluding the two documented
 false-positive classes below (code, native plugins) it is **434.0 MB against 662.3 MB**. The second
 pair is the honest headline.

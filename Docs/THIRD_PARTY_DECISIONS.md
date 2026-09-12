@@ -70,8 +70,8 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 | **PrimitivePlus** | ships (+ 47-mesh `Resources/`) | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | **REPLACE** (row 6) |
 | **DOTween** | ships | **44** files | **KEEP** — vendor the licence |
 | **NativeShare** | ships | **4** files | **KEEP** — vendor the licence |
-| **PlayFabSDK** | ships | **20** files (inert backend) | **DEFER** — launch-blocker index §B2 |
-| **PlayFabEditorExtensions** | editor-only ✅ | — | **KEEP** — costs the player nothing |
+| ~~**PlayFabSDK**~~ | ~~ships~~ | ~~**20** files (inert backend)~~ | **DONE — deleted.** `Docs/PLAYFAB_RETIREMENT.md` |
+| ~~**PlayFabEditorExtensions**~~ | ~~editor-only~~ | — | **DONE — deleted** with the SDK. The earlier *keep* stood on "costs the player nothing", which was true and is not the only cost: an editor window that configures a deleted backend reads as a live integration. |
 | **QuickScene Pro** | editor code, but `Resources/` (1.8 MB) ships | editor tool | **KEEP, move the `Resources/`** — index §A2 |
 | **EDM4U** | editor-only ✅ | — | **KEEP** — Apache 2.0, licence present |
 | **Microsoft.Unity.Analyzers** | compile-time | — | **KEEP** |
