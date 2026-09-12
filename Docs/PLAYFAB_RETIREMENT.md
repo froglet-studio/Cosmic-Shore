@@ -1,0 +1,127 @@
+# PlayFab retirement — the phase-1 call-site table
+
+The measured answer to `Docs/LAUNCH_BLOCKER_INDEX.md` §B2, and the record of what phase 2 did with
+it. §B2 points here rather than carrying the table, because the table is about **code** and the
+index is about **assets**.
+
+> **Verdict: sever, do not amputate.** PlayFab goes — the SDK, the editor extensions, and every
+> PlayFab-era backend class. The live screens that happened to compile against it stay, with their
+> PlayFab data path removed. This follows the retirement prompt's own constraint: *"Do not delete a
+> file because it compiles against PlayFab. The SDK is the dependency; the feature may still be
+> wanted with a different backend."*
+
+## 0 · What the scoping prompt got wrong, measured
+
+Three corrections, each of which would have caused a defect if taken at face value.
+
+1. **"Seventeen are inside `System/Playfab/` and go with the SDK" — no.** The folder holds **26**
+   `.cs` files and only **15** use PlayFab. The other **11 are ordinary first-party code that
+   happens to live there**, and one of them — `CaptainManager` — is **DI-registered in
+   `AppManager` (`RegisterManagerSingleton<CaptainManager>`), instanced in `Bootstrap.unity`, and
+   named by 18 call sites** across the Hangar, the Store and the purchase modals. Deleting the
+   folder wholesale takes out a live manager. *A folder name is not a dependency.*
+
+2. **"Three outliers are the whole job" — no.** Deleting the PlayFab-era classes cascades into
+   **17 first-party files outside the folder**, four of them live Menu_Main screens. The three
+   named outliers are the smallest part of it; `StoreScreen` alone has 15 call sites and
+   `LeaderboardsMenu` 8.
+
+3. **`Docs/WEEKLY_CHALLENGE.md` is wrong about the daily-challenge cluster.** It states
+   *"`DailyChallengeSystem` is in no scene either"*. It is a real `PrefabInstance` in
+   **`Bootstrap.unity`** (prefab guid `987fb44715d58f443bb86d97e9ed91a7`), so it is a
+   `SingletonPersistent` that runs `Start()` — issuing daily tickets and selecting a daily game
+   into `PlayerPrefs` — on every session, and `GameplayRewardButton` in Menu_Main can still reach
+   `ClaimReward`. The cluster's **PlayFab coupling** is inert; the **cluster** is not.
+
+## 1 · Two live bugs the removal fixes
+
+Both are caused by live UI waiting on a PlayFab backend that can never answer, and both are
+invisible as code review because the code is correct for a PlayFab that is running.
+
+- **`ProfileModal` — the randomize-name button hangs forever.**
+  `GenerateRandomNameButton_OnClicked` → `AssignRandomNameCoroutine` calls
+  `AuthenticationManager.Instance.LoadRandomNameList()` (a `PlayFabClientAPI.GetTitleData` call)
+  and then `yield return new WaitUntil(() => AuthenticationManager.Adjectives != null)`.
+  `AuthenticationManager.Awake()` early-returns — PlayFab never logs in, the callback never fires,
+  `Adjectives` stays null. The coroutine never resumes, so the busy indicator never clears and the
+  name field is never filled. Fixed here by generating the name from a local word list.
+
+- **`LeaderboardsMenu` — "that's me" never highlights.** `PopulateGameHighScores` compares
+  `score.PlayerId == AuthenticationManager.PlayFabAccount.ID`. `PlayFabAccount` is initialised to
+  `new()` so the `WaitUntil(... != null)` above it passes instantly, and `ID` is always empty, so
+  the comparison is always false. Fixed here by comparing against the UGS player id.
+
+## 2 · The decision table
+
+`reach` = is it reachable from an enabled build scene (guid walk, transitively through prefabs)?
+`UGS` = the live equivalent, or none.
+
+### 2a · The live consumers — severed, kept
+
+| Call site | reach | UGS equivalent | Decision |
+|---|---|---|---|
+| `UI/Modals/ProfileModal.cs` | **yes** — Menu_Main + 2 prefabs | `PlayerDataService` (profile), `AuthenticationData.PlayerId` | **Sever.** Both `using PlayFab` lines were already vestigial — no PlayFab type is used in the body. Random-name moved to a local list (fixes the hang); "stay logged in" keeps its `PlayerPrefs` behaviour via the rescued `PlayerSession`. |
+| `UI/Screens/LeaderboardsMenu.cs` | **yes** — Menu_Main + Records Screen prefab | UGS Leaderboards exists (`WeeklyChallengeLeaderboardService`) but this screen is not on it | **Sever.** `LeaderboardEntry` becomes a nested struct of the menu (it holds no PlayFab type). Fetch path removed; the screen renders its empty state until someone ports it to UGS. Own-entry highlight moved to the UGS player id. |
+| `System/DailyChallengeSystem.cs` | **yes** — `Bootstrap.unity` | none (weekly challenge is the successor, deliberately separate) | **Sever.** Drops `using PlayFab.ClientModels`, the `SaveToPref(GetUserDataResult)` method and its `PlayerDataController.OnGettingPlayerData` subscription — dead, because that publisher is in no scene. The `PlayerPrefs` ticket/reward logic is untouched. |
+| `System/Xp/XpHandler.cs` | no (static, no instance) | `CaptainProgressCloudData` (UGS CloudSave) — its own docstring says *"Replaces the disabled PlayFab CaptainManager + XpHandler system"* | **Sever.** Drops the three `GetUserDataResult` parsers and the `PlayerDataController` calls. The XP surface `CaptainManager` actually uses (`GetCaptainXP`, `IssueXP`, `EncounterCaptain`, `EncounteredCaptainsData`) is kept. |
+| `System/Playfab/Economy/CatalogManager.cs` | prefab in no scene | none — R4 de-scoped commerce | **Sever + move.** 38 live call sites, so it must keep compiling; 29 PlayFab-API lines removed. Already inert at runtime (`Instance` is null — its prefab is in no scene), so behaviour is unchanged. |
+| `System/Playfab/Economy/DailyRewardHandler.cs` | prefab in no scene | none | **Sever + move.** Kept for `DailyRewardCard` and `DailyChallengeSystem`. |
+| `Controller/Arcade/MiniGame.cs` | no (abstract, no subclass in a scene) | `PlayerDataService` | **Sever.** One live use: `PlayerDataController.PlayerProfile.DisplayName`. |
+
+### 2b · Rescued — first-party code that only *lived* in the PlayFab folder
+
+None of these reference PlayFab. Moved with `git mv` of the file **and** its `.meta`, so every guid
+survives and no scene or prefab reference is disturbed.
+
+| File | live refs | moved to |
+|---|---|---|
+| `Economy/CaptainManager.cs` | **18** (DI singleton, `Bootstrap.unity`) | `System/Economy/` |
+| `Economy/VirtualItem.cs` | 8 files | `System/Economy/` |
+| `Economy/Inventory.cs` | 5 files | `System/Economy/` |
+| `Economy/StoreShelve.cs` | 1 file | `System/Economy/` |
+| `Economy/ItemPrice.cs` | 0 outside, required by the above | `System/Economy/` |
+| `PlayerData/PlayerProfile.cs` | 5 files | `System/PlayerData/` |
+| `PlayerData/PlayerSession.cs` | 1 file (`ProfileModal`) | `System/PlayerData/` |
+
+### 2c · Deleted — PlayFab-era, no live consumer once 2a is severed
+
+| File | why |
+|---|---|
+| `Authentication/AuthenticationManager.cs` | `Awake()` already `base.Awake(); return;`. Its only consumers are severed in 2a. |
+| `Authentication/AuthenticationView.cs`, `PlayFabAccount.cs`, `AuthMethods.cs` | zero references outside the folder. |
+| `PlayerData/PlayerDataController.cs` | prefab in no scene, so `OnGettingPlayerData` / `OnProfileLoaded` never fire. |
+| `PlayStream/LeaderboardManager.cs` | prefab in no scene; `LeaderboardEntry` preserved into `LeaderboardsMenu`. |
+| `PlayStream/AnalyticsController.cs`, `EventsModel.cs`, `PlayerData/PlayerEvent.cs` | PlayStream-era. `Docs/Analytics/DATA_ARCHITECTURE.md` names `AnalyticsServiceFacade` (UGS Analytics) as the single writer; nothing references these. |
+| `Economy/CatalogBundleHandler.cs`, `Utility/ModelConversionService.cs`, `Utility/PlayFabUtility.cs`, `CloudScripts/CloudScriptRunner.cs`, `Groups/GroupController.cs`, `Groups/GroupModel.cs`, `PlayerData/CaptainInstanceData.cs` | zero references outside the folder. |
+| `PlayFabTests/PlayFabCatalogTests.cs` + its `.asmdef` | tests for the deleted SDK. |
+| `Editor/PlayfabProductGenerator.cs` | editor tool that writes PlayFab catalog products. |
+| `Utility/ChoppingBlock/AndroidIAPExample.cs` | PlayFab Economy sample, already on the chopping block. |
+| `System/Architectures/EventBus/TestLoginUI.cs` | exists only to call `AuthenticationManager.AnonymousLogin()`; in no scene. |
+| `_Prefabs/CORE/{AuthenticationManager,PlayerDataController,LeaderboardManager,PlayFabUtility}.prefab` | their scripts are gone. `AuthenticationManager.prefab` was instanced in `Authentication.unity`; that instance is removed with it. |
+
+### 2d · Comment-only — untouched
+
+`System/Quest/QuestSystem.cs`, `UI/Views/ArcadeExploreView.cs`, `UI/ScreenSwitcher.cs`,
+`UI/Modals/AppInitializationModal.cs`, `Utility/CSDebug.cs`,
+`ScriptableObjects/SO_CommerceAvailability.cs` name PlayFab only in comments that explain why
+something is inert. They are left as-is — the comments stay true.
+
+## 3 · The SDK
+
+- **`Assets/PlayFabSDK` (4.7 MB) — deleted.** `PlayFab.asmdef` has `"includePlatforms": []`, so it
+  compiled into the player, and `Shared/Public/Resources/` is a shipping `Resources` folder.
+- **`Assets/PlayFabEditorExtensions` (4.9 MB) — deleted too.** It is editor-only
+  (`includePlatforms: ["Editor"]`) and ships nothing, so this is repository weight, not build
+  weight. It goes because its entire purpose is configuring the SDK that no longer exists; keeping
+  an editor window that edits a deleted backend is how a retired system gets mistaken for a live
+  one.
+
+## 4 · What was NOT done
+
+- **The Records screen is not ported to UGS Leaderboards.** It compiles and renders its empty
+  state. That is the same thing the player saw before this branch (the PlayFab fetch could not
+  return), so nothing regressed — but the screen is now honestly empty rather than accidentally
+  empty, and porting it is a follow-up.
+- **The commerce surfaces are unchanged.** R4 left them locked and fail-closed via
+  `SO_CommerceAvailability`; this branch does not alter that posture, only the dead backend behind
+  it.

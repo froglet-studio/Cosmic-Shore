@@ -31,7 +31,7 @@ entitlement questions.
 | **A4** | `Wwise` | 84 KB | `remove` — zero files, zero references |
 | **A5** | `Parse` | 76 KB | `remove` — zero references of any kind |
 | **B1** | NiceVibrations demo art used by first-party UI | — | `needs-a-human` — **licence question** |
-| **B2** | `PlayFabSDK` | 4.7 MB | `needs-a-human` — inert but **20 files** compile against it |
+| **B2** | `PlayFabSDK` | 4.7 MB | **DONE** — removed; see [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) |
 | **B3** | `MIgration_Prefabs (DELETE LATER)` | 3.4 MB | `needs-a-human` — **do not touch** (audit §02) |
 | **B4** | 14 orphan arcade cards | small | `needs-a-human` — product decision |
 | **B5** | 6 orphan arcade cards **still referenced** | small | `keep` until the referrers are cut |
@@ -53,7 +53,7 @@ entitlement questions.
 | **A1, A2, A3** (shipped `Resources/` folders + the Demo asmdef) | [`SHIPPED_RESOURCES_PRUNE_PROMPT.md`](prompts/SHIPPED_RESOURCES_PRUNE_PROMPT.md) |
 | **A3 art, B1** (NiceVibrations demo sprites + audio) | [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
 | **A4, A5** (Wwise, Parse) | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
-| **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) |
+| **B2** (PlayFabSDK, 20 code call sites) | [`PLAYFAB_RETIREMENT_PROMPT.md`](prompts/PLAYFAB_RETIREMENT_PROMPT.md) — **executed**; the answer is [`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md) |
 | **C3, C4** (PrimitivePlus, Shift) | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) — **their `keep` verdicts are superseded**: the studio's decision is to replace both |
 | **C5** (Effects Library) | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
 | **E1, E2** (the 360 MB noise pack, the video folder) | [`UNREFERENCED_ART_SWEEP_PROMPT.md`](prompts/UNREFERENCED_ART_SWEEP_PROMPT.md) |
@@ -182,19 +182,30 @@ separately from the plugin. **Addressed to the Asset Store account holder.** If 
 the fix is to re-author four sprites, which is an art task with a lead time — hence "raise now"
 rather than "raise at the next checkpoint".
 
-### B2 · `Assets/PlayFabSDK` — 4.7 MB, ships
+### B2 · `Assets/PlayFabSDK` — 4.7 MB, shipped · **RESOLVED, removed**
 
-`PlayFab.asmdef` has `"includePlatforms": []`, and `Shared/Public/Resources/` is a shipping
-`Resources` folder. So a legacy backend SDK is compiled into and packed into the player.
+`PlayFab.asmdef` had `"includePlatforms": []`, and `Shared/Public/Resources/` is a shipping
+`Resources` folder. So a legacy backend SDK was compiled into and packed into the player.
 
-**It measures 0 inbound guid references — and that is the blind spot, not the answer.** 20
-first-party files reference PlayFab **in code**, including `CatalogManager`, `DailyRewardHandler`,
-`GroupController`, `AuthenticationManager`, `DailyChallengeSystem` and `ProfileModal`.
+**It measured 0 inbound guid references — and that was the blind spot, not the answer.** 20
+first-party files referenced PlayFab **in code**.
 
-**Verdict `needs-a-human`.** Removing the SDK is a **code** change (delete or port those 20 call
-sites) and is out of scope for an index. It intersects two live items: **R4** already de-scoped the
-commerce surfaces, and the Hangar captain upgrade is PlayFab-catalog commerce. Worth scoping as its
-own task; it is the largest single piece of dead weight that a build currently carries.
+**Removed.** The SDK, `Assets/PlayFabEditorExtensions`, and every PlayFab-era backend class are
+gone; the live screens that compiled against them were severed from PlayFab and kept. The
+measured call-site table, the three places the scoping prompt was wrong, the two live bugs the
+removal fixed, and what was deliberately left undone are all in
+**[`PLAYFAB_RETIREMENT.md`](PLAYFAB_RETIREMENT.md)**.
+
+Two findings from it are worth carrying past PlayFab:
+
+* **A folder name is not a dependency.** `System/Playfab/` held 26 `.cs` files and only 15 used
+  PlayFab. One of the other 11 — `CaptainManager` — is a DI-registered singleton instanced in
+  `Bootstrap.unity` with 18 call sites. Deleting a folder because of what it is *called* would
+  have taken out a live manager.
+* **A guid walk cannot see a type reference, and a code grep cannot see a dead publisher.** Half
+  the call sites here were live code calling a class whose prefab is in no scene, so the call
+  compiled, ran, and did nothing. Reachability of the *consumer* says nothing about whether the
+  *producer* can ever answer.
 
 ### B3 · `Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)` — 3.4 MB, 9 prefabs
 
