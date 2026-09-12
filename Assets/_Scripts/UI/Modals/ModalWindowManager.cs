@@ -68,6 +68,21 @@ namespace CosmicShore.UI
         protected ScreenSwitcher Switcher => screenSwitcher;
 
         /// <summary>
+        /// Binds the scene's switcher to a modal that was BUILT rather than authored, so it takes
+        /// part in the modal stack (gamepad B, the close sweeps, the return-to-modal preference)
+        /// exactly like a scene-wired one.
+        ///
+        /// <para>Set-if-null on purpose: an authored reference always wins, so this can never
+        /// silently re-point a modal a human wired. The only caller today is
+        /// <see cref="ScreenSwitcher"/> ensuring the credits window exists — see
+        /// <see cref="CreditsModal"/> for why that window is structural rather than authored.</para>
+        /// </summary>
+        public void AttachScreenSwitcher(ScreenSwitcher switcher)
+        {
+            if (screenSwitcher == null) screenSwitcher = switcher;
+        }
+
+        /// <summary>
         /// True while this modal is actually being presented. ScreenSwitcher reads it to
         /// reconcile its modal stack against reality: an entry whose modal reports false
         /// is dropped, so a modal closed outside this API can never strand the stack.
