@@ -116,7 +116,6 @@ GameObject:
   - component: {fileID: 8186157952912147616}
   - component: {fileID: 8186157952912147617}
   - component: {fileID: 8186157952912147618}
-  - component: {fileID: 8186157952912147619}
   m_Layer: 0
   m_Name: CylinderTube
   m_TagString: Untagged
@@ -146,7 +145,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8186157952912147621}
-  m_Mesh: {fileID: 4300000, guid: fc089023da14b4107a1959883e74b3fb, type: 2}
+  m_Mesh: {fileID: 4300000, guid: b34d33502ce8caa5059e344c33f6791f, type: 2}
 --- !u!23 &8186157952912147617
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -213,19 +212,7 @@ MeshCollider:
   serializedVersion: 5
   m_Convex: 0
   m_CookingOptions: 30
-  m_Mesh: {fileID: 4300000, guid: fc089023da14b4107a1959883e74b3fb, type: 2}
---- !u!114 &8186157952912147619
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8186157952912147621}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 89d18bf1872354d8a84e751f5c2cccda, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Mesh: {fileID: 4300000, guid: b34d33502ce8caa5059e344c33f6791f, type: 2}
 --- !u!1 &8186157953239024494
 GameObject:
   m_ObjectHideFlags: 0
