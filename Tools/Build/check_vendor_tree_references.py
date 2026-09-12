@@ -16,7 +16,7 @@ It is a READER: it writes nothing and deletes nothing.
 
 Usage:
     python3 Tools/Build/check_vendor_tree_references.py                 # the shipped roster
-    python3 Tools/Build/check_vendor_tree_references.py --tree Assets/Wwise
+    python3 Tools/Build/check_vendor_tree_references.py --tree Assets/NiceVibrations/Demo
     python3 Tools/Build/check_vendor_tree_references.py --self-test     # negative control
 """
 
