@@ -103,6 +103,23 @@ Note this is **not** covered by either credits gate: `CreditsReleaseGuard` and
 to search for. A CC-BY credit that nobody adds fails silently — which is why the trigger is written
 down here, beside the work that would pull it.
 
+**On this branch the trigger has nothing to fire on — and the measurement behind it corroborates
+why.** Phase 5 retires the whole folder: both `.fbx`s, both `.meta`s, the attribution `.txt`, its
+`.meta`, and the folder's own `.meta` — **7 paths** — so no placeholder asset survives here to be
+wired into anything. That makes upstream's **0 references, measured 12 Sep 2026** the *second*
+independent measurement of the same fact, run by a different pass for a different reason, agreeing
+with the one Phase 1 ran; it is the strongest evidence this particular deletion has. The two
+conclusions also agree in substance rather than merely coexisting: upstream declines to credit an
+asset the build does not contain, and this branch removes the asset, so "not in the credits screen"
+stops being a judgement call and becomes a fact about the tree.
+
+The rule above is kept **verbatim rather than struck**, for two reasons. It is not really about
+these two models — it governs the next CC-BY asset anyone wires in, and that one will not have a
+`CC_Attribution_*.txt` sitting helpfully beside it. And it returns to full force the moment anyone
+restores this folder from git, which — per the correction above — restores the attribution file with
+it. *A conditional rule whose condition a branch removes is moot, not wrong; strike it and you have
+deleted the reasoning along with the trigger.*
+
 ---
 
 ## Phase 2 — the Dolphin rig swap  ✅ SHIPPED · RUN · VERIFIED
