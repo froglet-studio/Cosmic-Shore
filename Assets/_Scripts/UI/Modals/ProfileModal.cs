@@ -285,7 +285,7 @@ namespace CosmicShore.UI
                     displayNameResultMessage.gameObject.SetActive(false);
 
                 CacheDisplayNameLocally(result.SanitizedName);
-                UpdatePlayerDisplayNameView(null);
+                UpdatePlayerDisplayNameView();
 
                 CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileModal] Display name set - {result.SanitizedName}");
             }
@@ -353,10 +353,13 @@ namespace CosmicShore.UI
         private Coroutine _assignRandomNameRunningCoroutine;
 
         /// <summary>
-        /// Called after PlayFab updates OR local-only edit: 
-        /// we just refresh visuals, **no popup animation**.
+        /// Called after a display-name edit lands: we just refresh visuals, **no popup
+        /// animation**. It used to take PlayFab's `UpdateUserTitleDisplayNameResult` because it
+        /// was that call's completion callback; the name is now written through
+        /// <see cref="PlayerDataService"/> and its one caller passed `null`, so the parameter
+        /// went with the SDK.
         /// </summary>
-        void UpdatePlayerDisplayNameView(UpdateUserTitleDisplayNameResult result)
+        void UpdatePlayerDisplayNameView()
         {
             if (BusyIndicator)
                 BusyIndicator.SetActive(false);
