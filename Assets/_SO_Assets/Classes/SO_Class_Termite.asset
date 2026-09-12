@@ -15,8 +15,8 @@ MonoBehaviour:
   Class: 8
   Name: Termite
   Description: Send out drones to shrink mass and produce cool stuff
-  IconActive: {fileID: 21300000, guid: 4ca0dd4a0b132db4c9e5e7f164b7d2c7, type: 3}
-  IconInactive: {fileID: 21300000, guid: 4f5279e4af3c4234b8aa5937637aeabd, type: 3}
+  IconActive: {fileID: 21300000, guid: 8e1cfd40e489c13fb348848a16ea39b5, type: 3}
+  IconInactive: {fileID: 21300000, guid: 8e1cfd40e489c13fb348848a16ea39b5, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
   TrailPreviewImage: {fileID: 21300000, guid: 2e75f6670391025489d30c8361fb8de3, type: 3}
   CardSilohoutteActive: {fileID: 21300000, guid: a89a335fa1c02f745ba93948c9b7ee32,

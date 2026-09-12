@@ -270,3 +270,27 @@ to check, in order:
 
 Known migration cost: a legacy install whose level keys were int-typed reads its levels as 1.0 once
 (that is the repair; before this change they read as 0).
+
+## 4. Follow-up unblocked 12 Sep 2026 — the legacy SFX AudioSource path is now dead
+
+`AudioSystem.PlaySFXClip(AudioClip)` has **zero callers**. Its class doc named three
+(`CountdownTimer`, `ProfileModal`, `Crystal`); the first two migrated to FMOD `EventReference`
+fields with the NiceVibrations demo-audio removal (`THIRD_PARTY_DECISIONS.md` row 5) and `Crystal`
+had already gone, so the doc was stale on all three by the end of that branch.
+
+The class doc has always carried the deletion condition — *"The Unity AudioSource path can be
+deleted once all callers have migrated"* — and **that condition is now met for SFX**. What can go:
+`PlaySFXClip`'s two overloads, the shared `sfxSource`, and the `masterMixer` bus they route through
+(FMOD events bypass it entirely).
+
+**It was deliberately not done on that branch.** The same legacy tier still carries the MUSIC
+crossfade (`MusicSource1`/`MusicSource2`), which is live, so "delete the AudioSource path" is not
+one change — it is *delete the SFX half and leave the music half*, which wants its own scoped pass
+and a look at whether the music crossfade should move to FMOD at the same time. Removing it as a
+side effect of migrating two UI sounds would have been a much wider blast radius than that branch
+was reviewed for.
+
+*General shape worth keeping: a migration's last caller leaving is a state change nothing announces.
+The doc that lists the remaining callers is the thing that goes stale, and it goes stale silently —
+so when a branch migrates a caller, grep for the API's remaining ones rather than assuming the list
+is still right.*

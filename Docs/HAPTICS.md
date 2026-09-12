@@ -29,7 +29,8 @@ cuts cleanly through a held burst.
 | Punish hook | `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/VesselHapticsByPrismEffectSO.cs` |
 | Skimmer sphere radius (for proximity) | `_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs` (`SphereWorldRadius`) |
 | Spray ramp driver (accuracy decay → strength + cadence) | `_Scripts/Controller/Vessel/R_VesselActions/Executors/GunSprayAccuracy.cs` (`DriveHaptics`); tuning on `GunSpreadProfile`, authored on `FullAutoAction.asset`. See `R_VesselActions/SPARROW_SPRAY_ACCURACY.md` |
-| Plugin | `Assets/NiceVibrations/` (Lofelt NiceVibrations) |
+| Gamepad rumble player (what actually vibrates) | `_Scripts/Controller/IO/GamepadRumblePlayer.cs` |
+| The rumble envelope type | `_Scripts/Controller/IO/GamepadRumblePattern.cs` |
 
 The two feels are ordinary **impact-effect SOs** wired into the standard effect containers, same as
 every other `SkimmerPrismEffectSO` / `VesselPrismEffectSO`:
@@ -46,9 +47,11 @@ checked `AutoPilotEnabled`, which leaked remote players' haptics; these effects 
 
 ## The gate (why it exists)
 
-NiceVibrations holds **one loaded clip at a time** — every `HapticController.Load()` evicts whatever is
-playing. So a tiny priority/rate-limit gate in `HapticController` arbitrates the feels with a handful of
-timestamps (no metering, no per-category tables):
+The motors carry **one pattern at a time** — every `GamepadRumblePlayer.Play()` replaces whatever is
+playing. That was originally a property of the plugin; it is now a deliberate choice of ours, and it is
+what makes the priority order expressible at all. So a tiny priority/rate-limit gate in
+`HapticController` arbitrates the feels with a handful of timestamps (no metering, no per-category
+tables):
 
 - **Skim** is rate-limited to a rapid train (`SkimMinIntervalSec` ≥ 30 ms) and is **suppressed while a
   punish is playing** (`s_punishBusyUntil`), so the train can never cut a thud short.
@@ -63,16 +66,77 @@ Priority: **alert > punish > skim > spray**, always.
 
 ## Clip generation
 
-The clips are generated **once at runtime** as `.haptic` JSON (iOS/Android) **and** a `GamepadRumble`
-(gamepads), then reloaded per pulse via `HapticController.Load(byte[] json, GamepadRumble rumble)` — the
-same approach NiceVibrations' own `HapticPatterns` use, so iOS, Android, and gamepads all work with one
-code path. The JSON matches the plugin's `nv-*-template.txt` schema; decimal points are hard-coded so the
-strings are locale-independent. Skim = high frequency + high-frequency motor (bright); punish = zero
-frequency + low-frequency motor (heavy). Proximity strength is applied via `clipLevel` after `Load`,
-which scales both the iOS clip amplitude and the gamepad motor speeds.
+The four feels are generated **once at runtime**, each as BOTH a `.haptic` JSON envelope and a
+`GamepadRumblePattern`, then replayed per pulse through `HapticController.PlayPattern`. Decimal points in
+the JSON are hard-coded so the strings are locale-independent. Skim = high frequency + high-frequency
+motor (bright); punish = zero frequency + low-frequency motor (heavy).
 
-`GameSetting.HapticsEnabled` / `HapticsLevel` are honoured on every play (`HapticsLevel` becomes the
-NiceVibrations `outputLevel`); disabled or zero-level → nothing plays.
+Every number in those envelopes is **first-party data we authored** — which is the whole reason the
+vendor swap below cost one file and no content.
+
+`GameSetting.HapticsEnabled` / `HapticsLevel` are honoured on every play; disabled or zero-level →
+nothing plays. The player's level and the per-pulse strength are multiplied into **one** gain before it
+reaches a backend, so a backend cannot apply half of the scaling.
+
+## What plays them (and what does not)
+
+**Gamepad — the whole feature on the launch platform.** `GamepadRumblePlayer` steps a pattern's segments
+through `UnityEngine.InputSystem`'s `Gamepad.SetMotorSpeeds`, on `Gamepad.current`. It replaced Lofelt
+NiceVibrations, whose entire contribution in code was this player: **one file, five API symbols**
+(`Load`, `outputLevel`, `clipLevel`, `Play`, and the `GamepadRumble` struct). No clip, pattern or number
+came from the plugin, so nothing was re-authored and no feel changed. Details of the replacement decision:
+`Docs/THIRD_PARTY_DECISIONS.md` §4.
+
+Three properties of that player are load-bearing and should not be "simplified" away:
+
+* **One pattern at a time.** A `Play` replaces what is playing. The gate above is written against this.
+* **Position comes from ELAPSED TIME, not one segment per frame.** A frame is the finest resolution
+  available (16.7 ms at 60 fps, 33 ms at 30) and several authored segments are shorter than that, so a
+  slow frame *skips* the segments it slept through instead of stretching them. Measured: a 250 ms hitch
+  mid-alert lands on the segment that owns t=250 ms; the alert ends at 1.067 s at 30 fps against its
+  1.060 s of authored segments.
+* **The motors are written once per SEGMENT, not once per frame** — every `SetMotorSpeeds` is a command
+  to the device.
+
+It also stops the motors on every way the game can go quiet (play-mode exit, scene teardown, quit,
+pause, focus loss, and a pad unplugged mid-pattern). A sound left playing is something you can hear; a
+motor left running is not, so each of those is explicit.
+
+**Mobile — silent, deliberately.** Pattern haptics on a phone (iOS Core Haptics, Android
+`VibrationEffect`) were the one thing the plugin bought that a gamepad cannot do, and the launch platform
+is PC/Steam. Rather than fake it with `Handheld.Vibrate()` — a single fixed buzz with no amplitude and no
+envelope, which cannot express any of the four feels and would be worse than nothing fired once per skim
+— `HapticController.PlayMobilePattern` is an empty, documented seam. The `.haptic` JSON is still built
+and still handed to it: it is the only portable record of the four envelopes and it is what a future
+backend consumes. **Do not delete it to tidy up an unused parameter.** A pad connected to a phone *does*
+rumble, which the plugin's gamepad path did not — it was compiled out on iOS and Android entirely.
+
+## The cadence floor (for anything that repeats a feel)
+
+The spray is the only repeating feel, and its interval is authored on `GunSpreadProfile`
+(`hapticIntervalAtRest` 0.10 s → `hapticIntervalAtMaxSpread` 0.045 s). That floor used to be justified by
+the plugin's one-clip behaviour; re-derived against our own player, over a simulated 1 s hold at 60 fps:
+
+| cadence requested | pulses | device commands | duty | distinct motor levels |
+|---|---|---|---|---|
+| 100 ms (rest) | 10 | 30 | 37% | 20 |
+| **45 ms (max spread — shipped)** | **22** | **55** | **82%** | **44** |
+| 30 ms | 33 | 60 | 100% | 54 |
+| 16 ms (one frame) | 62 | 62 | 100% | **1** |
+| 8 ms | 123 | 123 | 100% | **1** |
+
+**An authored interval is a REQUEST, delivered on the next frame boundary.** At 60 fps a 45 ms request
+is issued every 50 ms — which happens to be exactly the spray clip's own length, so the shipped
+max-spread buzz is back-to-back whole clips with a gap of at most one frame, and **both segments of
+every pulse reach the motors**. That corrects the reasoning this floor used to carry ("pulses closer
+than the clip just cut each other off"): at 60 fps, at the shipped number, nothing is being cut off.
+
+The real floor is a **cliff one frame down**. Between the clip length and a frame, duty is already
+saturated at 100%, so tightening buys no more intensity — only device commands. **At one frame it stops
+working entirely**: every `Play` writes segment 0 and the next `Play` overwrites it before the driver can
+advance, so 62 pulses produce **one** motor level and the texture becomes a flat hum. The shipped 45 ms
+sits 2.7× above that. Keep any future repeating feel at or above its own clip length, and never within
+about two frames of one.
 
 ## Everything else is silent
 
@@ -140,6 +204,9 @@ its call site — it's already silent.
    thud must cut cleanly through the buzz rather than being drowned by it.
 6. **Silence**: confirm UI taps, boost, drift, jousts, and explosions produce **no** haptics.
 7. **Setting**: toggle Haptics off (and slide Haptics level) in Settings — every feel stops / scales.
+7b. **Motors always stop**: while a feel is playing, exit play mode / alt-tab away / return to the main
+   menu — the pad must go quiet immediately and stay quiet. Then unplug the pad mid-alert and re-plug it:
+   it must not come back still buzzing.
 8. **Not for autopilot/remote**: the Menu_Main lava-lamp autopilot and remote players must not buzz —
    including a remote or AI Sparrow holding down its guns.
 
@@ -152,3 +219,15 @@ its call site — it's already silent.
   reading — decide after feeling it.
 - **Config-in-SO**: gate cadence and clip envelopes are hard-coded per the minimal scope; hoist to a
   `HapticConfigSO` if designers want to tune them.
+- **The alert's two representations disagree on length, and always have.** Its gamepad segments sum to
+  **1060 ms** while its `.haptic` envelope and the gate's `AlertDurationSec` both run to **1200 ms**
+  (measured, pre-dates the vendor swap). Harmless in the safe direction — the busy window outlives the
+  rumble by 140 ms, so the alert keeps outranking the other feels until slightly after the pad stops —
+  but if the alert is ever retuned, make the three agree. Deliberately left alone here: changing it
+  changes a shipped feel, which does not belong on a vendor-independence branch.
+- **`PlayAlert` has four call sites, not one.** This document's table and CLAUDE.md both fence the alert
+  to PeelTheCage's milestone rungs; measured, it is also called by `WildlifeLiberationController`,
+  `DogFightController` and `BendsController`. Either the fence moved without the docs, or three modes
+  helped themselves to it. That is a **policy** question — the "Adding / changing a feel" bar above says
+  the set stays legible only while each addition is fenced to one mechanic — so it is recorded here
+  rather than silently resolved in either direction.

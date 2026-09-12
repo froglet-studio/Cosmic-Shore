@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 252d0b5ce20e4fd19d7b4dc0a92b934e, type: 3}
+  m_Name: CreditsManifest
+  m_EditorClassIdentifier: 
+  title: CREDITS
+  sections:
+  - Heading: "COSMIC SHORE"
+    Blurb: "Developed by Froglet Inc., Grand Rapids, Michigan."
+    Entries:
+    - Name: "Froglet Inc."
+      Role: "Development and publishing"
+      Notice: ""
+  - Heading: "MIDDLEWARE"
+    Blurb: ""
+    Entries:
+    - Name: "FMOD"
+      Role: "Made with FMOD Studio by Firelight Technologies Pty Ltd."
+      Notice: "FMOD Studio, copyright © Firelight Technologies Pty Ltd."
+    - Name: "Unity"
+      Role: "Made with Unity. Copyright © Unity Technologies."
+      Notice: ""
+  - Heading: "THIRD-PARTY NOTICES"
+    Blurb: "Cosmic Shore includes the following third-party software. Each notice is reproduced as its project publishes it."
+    Entries:
+    - Name: "MIT-licensed components"
+      Role: "UniTask, Reflex, ParrelSync, Newtonsoft.Json, Mono.Cecil, NUnit"
+      Notice: "Copyright (c) 2019 Yoshifumi Kawai / Cysharp, Inc.  (UniTask)\nCopyright (c) 2021 Gustavo Santos  (Reflex)\nCopyright (c) 2018 Greg M; Copyright (c) 2020 Ian and Contributors  (ParrelSync)\nCopyright (c) 2007 James Newton-King  (Newtonsoft.Json)\nCopyright (c) 2008 - 2015 Jb Evain; Copyright (c) 2008 - 2011 Novell, Inc.  (Mono.Cecil)\nCopyright (c) 2009-2019 Charlie Poole, 2014-2025 Rob Prouse, 2026 Terje Sandstrom and Contributors  (NUnit)\n\nAll of the above are licensed under the MIT License:\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+    - Name: "QuickScene Pro"
+      Role: "yethgamedevv — MIT License with an added Indian jurisdiction clause"
+      Notice: "Copyright (c) 2025 yethgamedevv\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n\nThis License and the interpretation, construction and enforcement thereof shall be governed by and construed in accordance with the laws of India. Any dispute, controversy or claim arising out of or relating to this License shall be subject to the exclusive jurisdiction of the courts of Kolkata, India."
+    - Name: "OpenImageIO"
+      Role: "via com.unity.bindings.openimageio 1.0.2 — Modified BSD License"
+      Notice: "OpenImageIO and all code, documentation, and other materials contained therein are:\nCopyright 2008-2016 Larry Gritz et al. All Rights Reserved.\n\nRedistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:\n * Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.\n * Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.\n * Neither the name of the software's owners nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.\n\nTHIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS \"AS IS\" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.\n(This is the Modified BSD License)\n\nThat package also redistributes OpenEXR 2.1.0, libpng 1.6.38, libTIFF 4.3.0, boost 1.71.0 and JPEG-9e; their notices are reproduced in the package's own Third Party Notices."
+    - Name: "Liberation Sans"
+      Role: "SIL Open Font License 1.1"
+      Notice: "Digitized data copyright (c) 2010 Google Corporation with Reserved Font Arimo, Tinos and Cousine.\nCopyright (c) 2012 Red Hat, Inc. with Reserved Font Name Liberation.\n\nThis Font Software is licensed under the SIL Open Font License, Version 1.1, available with a FAQ at http://scripts.sil.org/OFL"
+    - Name: "Roboto"
+      Role: "Google — Apache License 2.0"
+      Notice: "Roboto is licensed under the Apache License, Version 2.0.\nYou may obtain a copy of the License at https://www.apache.org/licenses/LICENSE-2.0"
+    - Name: "EmojiOne"
+      Role: "Emoji artwork"
+      Notice: "This sample of beautiful emojis are provided by EmojiOne https://www.emojione.com/\n\nPlease visit their website to view the complete set of their emojis and review their licensing terms."

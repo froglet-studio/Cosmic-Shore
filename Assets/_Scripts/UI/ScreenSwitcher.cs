@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -95,6 +97,13 @@ namespace CosmicShore.UI
             // for), the authority is not - it is still driven by the ONE ArcadeGameConfigureModal
             // through an ArenaLaunchPanel whose HostModal is this window.
             ARENA_GAME_CONFIGURE = 17,
+
+            // The credits screen. Its own modal TYPE rather than a panel inside SETTINGS: it is
+            // opened FROM the settings modal, and a modal type is what ScreenSwitcher unwinds by,
+            // so gamepad B out of the credits lands back on Settings instead of closing both.
+            // It also has to stay reachable if a second entry point (a home-hub tile) is ever
+            // added. Shipping without it breaches FMOD's EULA clause 3 - see CreditsModal.
+            CREDITS = 18,
         }
 
         [System.Serializable]
@@ -134,6 +143,12 @@ namespace CosmicShore.UI
 
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
+
+        // The scene's Reflex container, for the credits window this component BUILDS. A runtime
+        // `new GameObject` gets no injection, and ModalWindowManager carries an [Inject]
+        // AudioSystem -- CLAUDE.md's rule is to inject at the creating site rather than rely on
+        // the callee's fallback, which exists for the spawn site that forgets.
+        [Inject] private Container _container;
 
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
         [Inject] private HostConnectionDataSO hostConnectionData;
@@ -578,6 +593,7 @@ namespace CosmicShore.UI
             CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
+            EnsureCreditsModal();
             LayoutScreensToViewport();
             MarkDisabledNavLinks();
             UpdateHubButtonsVisibility();
@@ -1223,6 +1239,59 @@ namespace CosmicShore.UI
         }
 
         private void OpenModalByType(ModalWindows modalType) => OpenModal(modalType);
+
+        /// <summary>
+        /// Guarantees a CREDITS modal is reachable from this scene, building one when none is
+        /// registered.
+        ///
+        /// <para>FMOD's EULA (<c>Assets/Plugins/FMOD/LICENSE.txt</c>, clause 3) requires an in-game
+        /// credit naming <c>FMOD</c> and <c>Firelight Technologies Pty Ltd.</c> on every tier, and
+        /// the same screen carries every other attribution the tree owes
+        /// (<c>Docs/THIRD_PARTY_REGISTER.md</c> §7). <c>CreditsReleaseGuard</c> refuses to
+        /// ship a release build whose manifest has lost that line — but a manifest nobody can read
+        /// discharges nothing, so the WINDOW is ensured here for the same reason the DATA is
+        /// guarded there. A modal that can be deleted out of a scene is not a guarantee.</para>
+        ///
+        /// <para>It stands down completely the moment a human authors one: an authored CREDITS
+        /// modal in <see cref="Modals"/> is found first and nothing is built, so replacing this
+        /// with proper chrome is an ordinary scene edit.</para>
+        /// </summary>
+        private void EnsureCreditsModal()
+        {
+            Modals ??= new List<ModalWindowManager>();
+
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.CREDITS)
+                    return;
+
+            // A CreditsModal may exist in the scene without being registered (authored, but the
+            // Modals list not updated). Adopt it rather than building a second one - two windows
+            // of one type is the state ModalStackEntry carries an instance to survive, but it is
+            // still a bug the player would see as a credits screen behind a credits screen.
+            // Explicit null test, never `??`: Unity's Object overloads `==` to report a destroyed
+            // object as null while the C# null-coalescing operator does not, so `??` on a
+            // UnityEngine.Object is a trap even where (as here) the finder returns a true null.
+            var modal = FindFirstObjectByType<CreditsModal>(FindObjectsInactive.Include);
+            if (modal == null)
+            {
+                modal = CreditsModal.Build(_canvasRect);
+                if (modal != null && _container != null)
+                    GameObjectInjector.InjectRecursive(modal.gameObject, _container);
+            }
+
+            if (modal == null)
+            {
+                CSDebug.LogError(
+                    "[ScreenSwitcher] Could not create the credits window. The game would then " +
+                    "ship with no in-game FMOD credit, which breaches FMOD's EULA clause 3 - see " +
+                    "Docs/THIRD_PARTY_REGISTER.md §7.");
+                return;
+            }
+
+            modal.ModalType = ModalWindows.CREDITS;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
+        }
 
         #endregion
 
