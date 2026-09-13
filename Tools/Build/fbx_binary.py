@@ -26,6 +26,11 @@ _ARRAY_FMT = {"f": "f", "d": "d", "l": "q", "i": "i", "b": "b", "c": "B"}
 _SCALAR_FMT = {"Y": "<h", "C": "<?", "I": "<i", "F": "<f", "D": "<d", "L": "<q"}
 _SCALAR_SIZE = {"Y": 2, "C": 1, "I": 4, "F": 4, "D": 8, "L": 8}
 _NULL_RECORD_LEN = 13   # FBX < 7500
+_NULL_RECORD_LEN_64 = 25  # FBX >= 7500 - the record widens with the offsets
+
+
+def _null_len(version):
+    return _NULL_RECORD_LEN_64 if version >= 7500 else _NULL_RECORD_LEN
 
 
 class Node:
@@ -94,7 +99,8 @@ def _read_nodes(buf, pos, end, version):
             break                      # the NULL record that terminates a list
         name = buf[pos:pos + name_len].decode("utf-8", "replace"); pos += name_len
         props, pos = _read_props(buf, pos, nprops)
-        children = _read_nodes(buf, pos, end_off - _NULL_RECORD_LEN, version) if pos < end_off else []
+        nul = _null_len(version)
+        children = _read_nodes(buf, pos, end_off - nul, version) if pos < end_off else []
         nodes.append(Node(name, props, children, empty_scope=(not children and pos < end_off)))
         pos = end_off
     return nodes
@@ -106,8 +112,10 @@ def read(path):
     if not buf.startswith(HEADER_MAGIC):
         raise ValueError("%s is not a binary FBX" % path)
     (version,) = struct.unpack_from("<I", buf, 23)
-    if version >= 7500:
-        raise ValueError("FBX %d uses 64-bit records; this codec handles 7.4 and below" % version)
+    # 7500+ widens every record offset to 64 bits and the NULL record to 25 bytes.
+    # READING both is a few branches; WRITING 7500 is not implemented, and `write`
+    # refuses rather than emitting a 32-bit file under a 64-bit version stamp -
+    # which would be accepted by nothing and diagnosed by nothing either.
     nodes = _read_nodes(buf, 27, len(buf), version)
     # Everything after the top-level NULL record is the footer, kept verbatim: no
     # reader in this pipeline validates it, and reproducing its scrambled id is
@@ -118,10 +126,11 @@ def read(path):
 
 def _scan_top_level_end(buf, version):
     pos = 27
+    fmt = "<Q" if version >= 7500 else "<I"
     while pos < len(buf):
-        (end_off,) = struct.unpack_from("<I", buf, pos)
+        (end_off,) = struct.unpack_from(fmt, buf, pos)
         if end_off == 0:
-            return pos + _NULL_RECORD_LEN
+            return pos + _null_len(version)
         pos = end_off
     raise ValueError("no top-level NULL record found")
 
@@ -164,6 +173,9 @@ def _write_node(out, node, offset):
 
 
 def write(path, nodes, version, footer):
+    if version >= 7500:
+        raise NotImplementedError(
+            "writing FBX %d (64-bit records) is not implemented; reading is" % version)
     out = bytearray(HEADER_MAGIC + struct.pack("<I", version))
     for node in nodes:
         out += _write_node(out, node, len(out))

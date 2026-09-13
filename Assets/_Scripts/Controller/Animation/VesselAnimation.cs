@@ -128,16 +128,44 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<Transform, Quaternion> _restRotations = new();
 
-        /// <summary>Records each part's authored local rotation as its rest pose. Call from ResolveParts.</summary>
+        // The rest pose in the VESSEL's frame, captured ONCE at the authored pose. Deriving it
+        // live through the part's parent looked equivalent and was not: on art whose parts are
+        // children of an ANIMATED transform (the legacy Dolphin's parts were chassis children),
+        // a live read folds the parent's current puppetry deflection into the anchor, so a turn
+        // composed with the chassis term applies that term TWICE. Captured at rest it is a
+        // constant of the ART - exact on a rig (whose bone parents never animate) and on legacy
+        // art alike, and one quaternion multiply cheaper per part per frame.
+        readonly Dictionary<Transform, Quaternion> _restInVessel = new();
+
+        /// <summary>Records each part's authored local rotation as its rest pose, AND that pose
+        /// expressed in the VESSEL's frame. Call from ResolveParts, at the authored pose, before
+        /// anything animates.</summary>
         protected void CaptureRestRotations(params Transform[] parts)
         {
+            var inverse = Quaternion.Inverse(transform.rotation);
             foreach (var part in parts)
-                if (part) _restRotations[part] = part.localRotation;
+            {
+                if (!part) continue;
+                _restRotations[part] = part.localRotation;
+                _restInVessel[part] = inverse * part.rotation;
+            }
         }
 
         /// <summary>The captured rest pose of a part, or identity when it has none.</summary>
         protected Quaternion RestRotationOf(Transform part) =>
             part && _restRotations.TryGetValue(part, out var rest) ? rest : Quaternion.identity;
+
+        /// <summary>The part's captured rest ORIENTATION in the vessel's frame, or identity.</summary>
+        protected Quaternion RestOrientationInVessel(Transform part) =>
+            part && _restInVessel.TryGetValue(part, out var rest) ? rest : Quaternion.identity;
+
+        /// <summary>The part's captured rest POSITION in the vessel's frame (world units), or zero.
+        /// Captured by <see cref="CaptureRestPositions"/>.</summary>
+        protected bool TryGetRestPositionInVessel(Transform part, out Vector3 restInVessel)
+        {
+            restInVessel = default;
+            return part && _restPositionInVessel.TryGetValue(part, out restInVessel);
+        }
 
         /// <summary>
         /// Rest-relative <see cref="RotatePart"/>: drives the part toward its captured rest pose
@@ -153,6 +181,119 @@ namespace CosmicShore.Gameplay
                                         part.localRotation,
                                         targetRotation,
                                         lerpAmount * Time.deltaTime);
+        }
+
+        /// <summary>
+        /// <see cref="RotatePartFromRest"/> driven by a composed rotation, in an explicit
+        /// REFERENCE FRAME.
+        ///
+        /// <para><b>Why the plain version is not enough on a rig.</b> `Quaternion.Euler(...)`
+        /// assigned to <c>localRotation</c> turns about the PARENT's axes. On part-per-mesh art
+        /// every animated part hangs off the model root, so those are the ship's axes and pitch
+        /// means pitch. A bone's parent is another BONE, pointing wherever the skeleton points -
+        /// so the same call rolls when it meant to pitch. The fix is to conjugate: express the
+        /// rotation in the frame the animation MEANT, then carry it into the part's actual parent
+        /// space.</para>
+        ///
+        /// <para><b>Why the turn is a QUATERNION, not three floats.</b> A rig can break a
+        /// parent/child relationship the old art gave for free - the Dolphin's wings used to be
+        /// children of its chassis and inherited the chassis's turn, and on the rig they are a
+        /// sibling branch. Reproducing that means COMPOSING two rotations, and composing them is
+        /// not adding their Euler angles: at this puppetry's amplitudes (up to 75 degrees) the two
+        /// are visibly different. Take the composition already done.</para>
+        ///
+        /// <para><b>Why the frame is a QUATERNION, not a Transform.</b> A frame that must hold
+        /// still cannot be a Transform parented under the thing that moves. A drift handle hung
+        /// off the vessel is re-oriented by the hull every frame before this reads it, so a frame
+        /// "held" that way accumulates exactly the twist it was introduced to remove - which is
+        /// what a part holding its up vector against the camera looks like. A quaternion captured
+        /// once is still by construction.</para>
+        ///
+        /// <para><b>And the rest anchor is a capture-time CONSTANT, not a live read.</b> The
+        /// part's rest orientation in the vessel's frame is recorded once at the authored pose
+        /// (see <see cref="CaptureRestRotations"/>); resolving it through the live parent chain
+        /// re-imported whatever that chain is currently doing, which on chassis-child art meant
+        /// the chassis term twice. <see cref="MovePartFromRest"/> anchors position the same
+        /// way.</para>
+        ///
+        /// <para>Deliberately a SEPARATE method rather than a change to
+        /// <see cref="RotatePartFromRest"/>: that one is shared with vessels whose animation was
+        /// authored and play-tested against its current behaviour, and silently re-framing them is
+        /// a regression with no evidence behind it.</para>
+        /// </summary>
+        protected void RotatePartFromRestInFrame(Transform part, Quaternion turn, Quaternion frame)
+        {
+            if (!part || !_restInVessel.TryGetValue(part, out var restInVessel)) return;
+
+            // The captured rest pose CARRIED ONTO the reference frame. That is what lets a part
+            // signal something other than where the hull is pointing: hand it the Course-aligned
+            // frame and the part reads as flying straight down Course while the hull aims away
+            // underneath it. Hand it the vessel's own rotation - the ordinary case - and this
+            // reduces exactly to "turn about the ship's axes, from where the part rests".
+            Quaternion targetWorld = frame * turn * restInVessel;
+
+            Quaternion targetLocal = part.parent
+                ? Quaternion.Inverse(part.parent.rotation) * targetWorld
+                : targetWorld;
+
+            part.localRotation = Quaternion.Lerp(part.localRotation, targetLocal,
+                                                 lerpAmount * Time.deltaTime);
+        }
+
+        // ---- rest POSITIONS -------------------------------------------------------------
+        //
+        // The rotation half above was added when the first rig landed; the POSITION half was not,
+        // and that omission is what broke the Dolphin's puppetry on its rig. An absolute
+        // `localPosition` write assumes a part is a direct child of the model root, so its local
+        // position is a place in MODEL space. That holds for part-per-mesh art placed by
+        // translation. On a rig it is false twice over: a bone's local position is relative to its
+        // PARENT BONE, and in Blender's convention it is (0, boneLength, 0) - so writing a bare
+        // (0, .15, -1.7) detaches every bone from its parent and flings it along that parent's own
+        // rotated axes, each of the six a different way.
+        //
+        // A part is therefore anchored to its rest position IN THE VESSEL'S FRAME, captured once
+        // at the authored pose, and the whole anchor is carried by an explicit reference frame -
+        // the exact conjugation the rotation half performs, for the same two reasons:
+        //
+        //   * ordinarily the frame is the vessel's own rotation, and the anchor reduces exactly
+        //     to "the part's authored place on the hull";
+        //   * during a drift the frame is the Course-aligned one, so the parts' POSITIONS hold
+        //     the course cage the way their orientations do. The legacy art did this by
+        //     re-parenting onto a course-aimed DriftHandle at the vessel origin - position and
+        //     orientation together. An intermediate version of this code held only ORIENTATION
+        //     in the course frame while positions rode the aiming hull, and that mixed read is a
+        //     wing translating sideways while claiming to fly straight.
+
+        readonly Dictionary<Transform, Vector3> _restPositionInVessel = new();
+
+        /// <summary>Records each part's rest position in the VESSEL's frame (world units).
+        /// Call from ResolveParts, at the authored pose, before anything animates.</summary>
+        protected void CaptureRestPositions(params Transform[] parts)
+        {
+            var inverse = Quaternion.Inverse(transform.rotation);
+            foreach (var part in parts)
+                if (part) _restPositionInVessel[part] = inverse * (part.position - transform.position);
+        }
+
+        /// <summary>
+        /// Rest-relative move: drives the part toward its rest position displaced by
+        /// <paramref name="offset"/>, BOTH expressed in <paramref name="frame"/> - the vessel's
+        /// rotation ordinarily, the Course-aligned frame during a drift. A zero offset in the
+        /// vessel's own frame holds the part exactly at its authored place on the hull. A part
+        /// with no captured rest is left alone - silently, because it is a part this animation
+        /// simply does not position.
+        /// </summary>
+        protected void MovePartFromRest(Transform part, Vector3 offset, Quaternion frame)
+        {
+            if (!part || !_restPositionInVessel.TryGetValue(part, out var restInVessel)) return;
+
+            Vector3 targetWorld = transform.position + frame * (restInVessel + offset);
+
+            Vector3 targetLocal = part.parent ? part.parent.InverseTransformPoint(targetWorld)
+                                              : targetWorld;
+
+            part.localPosition = Vector3.Lerp(part.localPosition, targetLocal,
+                                              lerpAmount * Time.deltaTime);
         }
 
         // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.

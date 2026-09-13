@@ -245,16 +245,26 @@ juice through `ElementBars` when a vessel wants it.
   retire legacy MeshRenderers, re-fit colliders by eye, re-point ship geometry, **clear the
   animation's part fields** so they re-resolve to bones, re-run the morph audit. Order of work
   + the salvage-before-delete gate: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md`.
-- **A rig swap moves every measured mount on the vessel.** The Rhino rig is provably the
-  shipped hull merged with its wings and offset **+1.5545 in z** (every lathe ring matches at
-  identical radius and vertex count), so FX mounts, colliders and any hand-placed transform
-  must be RE-MEASURED against the rig, never translated by hand. Its wings also stop being
-  separate GameObjects, so anything parented to them re-parents to bones.
+- **A rig swap moves every measured mount on the vessel — UNLESS you fit the instance
+  transform, which is strictly better.** Each of the three rigs is the shipped hull under some
+  transform (Dolphin identity, Rhino `z −1.5545` — every lathe ring matches at identical radius
+  and vertex count — Urchin a uniform `2.105×`). Solve for that transform by nearest-neighbour
+  residual over the two files' world point clouds and place the rig instance AT it, and every
+  collider and FX mount keeps its world position: nothing downstream is re-measured, which is
+  most of the cost of a swap. Re-measure only what the rig genuinely re-poses (the Rhino's
+  wings sit 1.38× wider in its bind pose, and its wings stop being separate GameObjects, so
+  anything parented to them re-parents to bones).
 - Audit: `FrogletTools > Vessels > Audit Vessel Elemental Morphs` (asset-only, exact runtime
   discovery). Mislabeled shapes fail **silently** in game — the audit is the only detector.
-  But it reports shapes it DISCOVERS by name, i.e. presence, not magnitude, so an empty
-  labelled shape passes it. Treat a green audit as necessary, not sufficient, until it
-  measures deltas.
+  **Since 2026-08-26 it measures MAGNITUDE**, so an empty labelled shape no longer passes:
+  `Travel()` reports each shape's farthest vertex travel as a fraction of its mesh's own
+  bounding-box diagonal, and anything under `MinShapeTravelFraction` reads INERT. **The
+  threshold has to be RELATIVE** — a historical `Sparrow Missile.fbx` carried shapes indexing
+  243 and 309 vertices and moving them 4e-6 units, which an absolute epsilon calls live.
+  Measured over every shipped vessel model, real shapes travel 2.46–17.94% of the diagonal and
+  fake ones 0.0000%, so the constant is picked from inside a measured gap rather than guessed.
+  Also run `Audit Vessel Construction` (guid ownership, nested-instance reachability, duplicate
+  coincident hull renderers).
   Edit-mode tests: `VesselElementalMorphTests`, `VesselRigPartResolutionTests`.
 
 ## 8. The HUD controller/view pair
