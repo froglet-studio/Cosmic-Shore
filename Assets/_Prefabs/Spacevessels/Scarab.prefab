@@ -482,7 +482,7 @@ MonoBehaviour:
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
-    initialAmount: 0.34
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -560,7 +560,7 @@ MonoBehaviour:
   legTuck: 30
   legRow: 26
   legTuckAtTopSpeedFraction: 0.8
-  fallbackTopSpeed: 180
+  fallbackTopSpeed: 216
   antennaScaler: 16
   driftSlipFullDegrees: 25
   driftElytraBrake: 24
@@ -701,7 +701,7 @@ MonoBehaviour:
   cavitationBlast: {fileID: 2645891037714460318}
   energyResourceIndex: 0
   switchResourceIndex: 1
-  switchChargesPerFullMeter: 3
+  switchChargesPerFullMeter: 1
 
 --- !u!114 &2035987173373189047
 MonoBehaviour:
@@ -2318,11 +2318,13 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
+  engageThreshold: 0.35
   invertRollDirection: 0
   jukeCooldownSeconds: 0
   jukeDurationSeconds: 0.5
   rootRollDegrees: 15
   jukeSpeed: 80
+  partialLeanDegrees: 60
   rollVisualTarget: {fileID: 6013774229915510332}
 --- !u!114 &2645891037714460318
 MonoBehaviour:

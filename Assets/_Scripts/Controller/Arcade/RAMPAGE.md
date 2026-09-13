@@ -6,8 +6,11 @@ Rampage is the **Dolphin-only demolition race**, and the destructive analog of C
 Capture ("Scurry"): every domain races to be the first to DESTROY **2,000 hostile
 prisms**. A forest of big cacti and other breakable flora fills the cell from just
 outside the nucleus out to the membrane, and the arena's **contested crystals** respawn
-inside the nucleus at the centre of it all — **how many is what intensity means here**,
-falling from twice the roster at intensity 1 to a single one at intensity 4.
+inside the nucleus at the centre of it all. **Intensity means HOW MUCH FOREST, HOW BIG, and
+HOW SCARCE**: at 1 there are **five times as many plants** (295 against 59), their prisms are
+1.6x the authored leaf, the nucleus is 2.5x as wide and there are twice the roster in crystals;
+at 4 everything is back to the shipped, play-tested arena — 59 plants, authored leaves, a single
+contested crystal for the whole lobby.
 
 **The loop is the Dolphin's own economy, made into a sport.** Nothing here is scripted —
 the mode simply arranges the arena so the vessel's existing spine becomes the game:
@@ -64,9 +67,10 @@ economy itself; this file only arranges around it.
   `rule.IsObjectiveReached`
 - **Domains**: free-for-all like Scurry (`MinDomainsAllowed`/`MaxDomainsAllowed`
   defaults 1/3); players 1–4 with AI backfill
-- **Intensity**: **4 levels** — **fewer crystals, more wildlife**, over a forest that is
-  identical at every level. `CellTypeChoiceOptions.IntensityWise` over four cell configs.
-  See "Four intensities" below.
+- **Intensity**: **4 levels** — **less flora, smaller prisms, smaller nucleus, fewer crystals,
+  more wildlife**. Intensity 4 is the shipped, play-tested arena exactly; 1 grows five times its
+  forest. `CellTypeChoiceOptions.IntensityWise` over four cell configs. See "Four intensities"
+  below — and note that flora POPULATION is the one axis of the ladder that costs colliders.
 - **Vessels**: **Dolphin only** — see "Why Dolphin-only" below
 - **Objective arrow**: `RampageObjectiveProvider` — points at the **nearest** contested omni
   crystal and **nothing else, ever**. The filter is the point: `Crystal.Active` also holds every
@@ -180,21 +184,91 @@ is now credited by whichever machine simulates the attacker, and the collecting 
 their own crystal effects so the blast exists on their machine at all. Full record:
 `Docs/ECOSYSTEM.md §27.8`–`§27.9`.
 
-## Four intensities — fewer crystals, more wildlife, one forest
+## Four intensities — bigger and easier at 1, the shipped arena at 4
 
 PeelTheCage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
-forest; **it no longer touches the forest at all.** Every intensity grows intensity 4's arena,
-prism for prism — the one that was play-tested — and intensity instead moves the two things the
-mode's loop is actually made of, in opposite directions:
+forest, then for a while touched it not at all, and now thickens it again — five-fold — alongside
+everything else. It moves **five** things, all in the same direction, around a fixed point:
+**intensity 4 IS the shipped, play-tested arena and nothing about it changes.** Intensity 1 is
+that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
+| **flora** (`FloraPopulationScale`) | **5.00×** | 3.67× | 2.33× | **1.00×** (authored) |
+| …seeded plants | **295** | 217 | 137 | **59** |
+| …seeded prisms | **49,150** | 36,160 | 22,820 | **9,830** |
+| **prism size** (`FloraPrismScale`) | **1.60×** | 1.40× | 1.20× | **1.00×** (authored) |
+| …a cactus leaf | 8 × 8 × 4.8 | 7 × 7 × 4.2 | 6 × 6 × 3.6 | **5 × 5 × 3** |
+| **nucleus** (`NucleusPrefab`) | `Nucleus500` | `Nucleus` | `Nucleus300` | **`HalfNucleus`** |
+| …world radius | 490 u | 392 u | 294 u | **196 u** |
 | **omni crystals** | 2 × players | players | players − 1 (min 1) | **1** |
 | …for a 4-player lobby | 8 | 4 | 3 | **1** |
 | **wildlife** (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
 | …tadpoles / sharks at cap | 6 / 2 | 12 / 4 | 18 / 6 | **24 / 8** |
-| seeded forest | 9,830 prisms | 9,830 | 9,830 | 9,830 |
-| phase ladder | identical at all four (frenzy 1,630,000 / 1,260,000 vol) | | | |
+| forest at full growth | 7,651,558 vol | 3,808,056 | 1,559,724 | **396,178** |
+| `FrenzyEnterVolume` | 31,480,000 | 15,670,000 | 6,420,000 | **1,630,000** |
+| `RestlessEnterVolume` | 2,182,000 | 1,086,000 | 445,000 | **113,000** |
+| `FrenzyEnter` (count) | 50,000 | 37,000 | 23,250 | **10,000** |
+| **always-on crystal colliders** | **440** | 323 | 205 | **88** |
+
+**Why flora COUNT is the headline axis.** Prism size makes a target easier to *hit*; plant count
+makes there be *more of them, everywhere*. At intensity 1 a pilot flying any line through the
+cytoplasm crosses forest continuously rather than hunting for the next stand, which is what makes
+the difference read as "easy" rather than merely "chunky". The per-plant BUDGET stays 1.00× at
+every level: more flora means more **plants**, not bigger ones — growing the budget instead would
+multiply prisms without multiplying the thing the player actually reads, and it would compound
+with `FloraPrismScale` on the very same prisms.
+
+**Why size is a difficulty axis.** The Dolphin's cone destroys whatever it engulfs, so a fatter
+leaf is a bigger thing to engulf — and, because the meter fills by *skimming*, a bigger surface
+to charge off on the way in. It also makes a ram less punishing to aim around. Nothing implements
+"easier"; it falls out of the geometry, exactly as the crystal count falls out of the roster.
+
+**The prism COUNT moves too, and it is the expensive half.** Prism SIZE is free in colliders —
+the same prisms, larger. Prism COUNT is not, and five times the flora is five times the prisms:
+**49,150 at intensity 1 against 9,830 at 4**. That is the one axis of this ladder with a
+collider price, and it is gated rather than asserted-away — see "Collider impact" below.
+
+**The per-family exponent is the part that is easy to get wrong.** `FloraPrismScale` multiplies a
+plant's authored `leafSize`, and the two flora families spend that differently:
+
+| family | species | what scales | volume |
+|---|---|---|---|
+| `BranchingFlora` | Cacti, Pine | all three axes — `leafScale = LeafSize` | **s³** (4.096× at I1) |
+| `PhyllotacticFlora` | Spire, Rosette, Coral | `LeafSize.x/y` only — the CROSS-SECTION; the long axes span the plant's own `segment` and `reach` | **s²** (2.560× at I1) |
+
+So a phyllotactic strut gets **thicker, not longer**. Assuming s³ everywhere would overstate
+intensity 1's forest by 1.6× and push its Frenzy gate up by the same factor. The species table in
+`Tools/Build/rampage_intensity.py` carries a `family` column for exactly this.
+
+**Nothing else in a plant scales.** Branch step (`branchingScaleFactor`), segment length, whorl
+reach and the growth reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all
+structural and untouched — so a plant still reaches its authored budget, still occupies its own
+volume, and reads as *chunkier* rather than *larger*. **That is the thing to check in a playtest:
+chunky, not fused.**
+
+**Why the volume ladder had to move with it.** Volume is the spine, so a 3.86× heavier forest
+against a fixed ladder would sit near its own Frenzy gate and freeze planting mid-match — the
+`Docs/ECOSYSTEM.md §4.6` trap. Each intensity's volume ladder is therefore the **play-tested
+intensity-4 ladder scaled by that intensity's forest ratio**, which buys two things: intensity 4
+comes out to the digit (its ratio is exactly 1, so the approved arena is not re-authored), and
+every level keeps the same relationship between forest and gates — Frenzy at **4.11×** the mature
+forest, Restless at **28.5%** of it. Both are asserted.
+
+**What a bigger nucleus couples to, stated plainly.** The nucleus is not decoration here; three
+systems read it, and all three follow automatically:
+
+- **It is the crystal respawn volume** (`CrystalManager.GetAnchorlessSpawnRadius`), so intensity 1
+  spreads its crystals over **15.6× the volume** intensity 4 does. That is offset by intensity 1
+  carrying *twice as many crystals as players*, and by `RampageObjectiveProvider` pointing at the
+  nearest one — so the wider spread costs **flight time, never findability**. It is still the one
+  coupling most likely to want a playtest.
+- **It clamps the flora planting band from the inside** (`Flora.ResolvePlantRadius` takes
+  `max(authored inner, ExpectedNucleusWorldRadius)`), so no plant is laid inside it at any
+  intensity — which matters because nucleus mass is the territorial claim and is excluded from the
+  fauna targeting grids. The forest still fills **79%** of the cell at I1 against 85% at I4, and
+  no species collapses to a degenerate single shell (asserted against every species' outer band).
+- **It is the player spawn ring's basis** where a scene opts in.
 
 **Why crystals are the difficulty axis.** The crystal is not a pickup in this mode, it is the
 Dolphin's **only** blast trigger (`DOLPHIN_ENERGY_ECONOMY.md` §1) — the meter fills by skimming
@@ -209,18 +283,47 @@ Everything defining the arena's silhouette and rules is still one constant at al
 | held constant at every intensity | value |
 |---|---|
 | `MembranePrefab` | `CapsuleMembrane`, r **1200** |
-| `NucleusPrefab` | `HalfNucleus`, world r **100** — and therefore the crystal respawn volume, the flora band's inner clamp, and the 600 spawn ring |
-| the forest | 59 plants / 9,830 seeded prisms / ~1.62M volume at full growth |
-| `PhaseThresholds` | one ladder, shared |
+| the forest's SPECIES | five, unforked, in the same planting bands |
+| per-plant budget (`FloraPlantBudgetScale`) | **1.00× everywhere** — intensity adds plants, never bigger plants |
 | prism target | 2000 — vary the arena, not the finish line |
 | fauna + flora species assets | unforked (the fauna are the SHARED Blob assets) |
 
-**Collider impact.** The worst case is unchanged: intensity 4's forest was already the shipped
-one, at 2.8× the Blob envelope as documented headroom. Intensities 1–3 rise *to* it rather than
-the top rising past it, and the `FrenzyEnter` 10,000 count backstop is the same at all four.
-The fauna ladder is the cheap dimension — a tadpole is one body prism plus its heart, a shark a
-small spindled body, so 8 → 32 creatures is tens of prisms against 9,830, and creature sensing
-rides the Burst density grid, not physics. At most 8 crystals (one trigger each) at intensity 1.
+**Collider impact — the hard gate, and the ONE axis that pays it.**
+
+Prism SIZE, nucleus size and crystal count are all free in colliders. **Flora population is not**,
+and it is now 5× at intensity 1 — so the budget has to be argued rather than waved through. Two
+lines, because they are culled differently and bounded differently:
+
+| | I1 | I2 | I3 | I4 | held against |
+|---|---|---|---|---|---|
+| **prisms** (LOD-cullable, off at Frenzy) | 50,000 | 37,000 | 23,250 | 10,000 | Atlantis, **69,000** |
+| **heart crystals** (ALWAYS ON, no phase culls them) | 440 | 323 | 205 | 88 | Lattice cell, **1,080** |
+
+- **The prism line is the count BACKSTOP, not the plant cap.** `FrenzyEnter` freezes planting
+  *and* growth, and it is derived from the seeded forest, so it scales with the ladder on its own
+  — intensity 1 tops out at **50,000** prisms rather than the ~73,000 its plant cap would
+  otherwise want. The reference is Scurry's intensity-4 Atlantis (~69,000), the heaviest authored
+  environment the game ships, and Rampage's prisms are the same LOD-cullable boxes.
+- **The crystal line is the cap**, because every live plant carries one heart crystal whose
+  collider no phase LOD culls (`Docs/ECOSYSTEM.md §32.7`). 440 at intensity 1 against the
+  freestyle Lattice cell's 1,080 — "the largest collider budget of any cell", and opt-in there
+  where this is a mode default.
+
+Both are **asserted, not asserted-away**: `rampage_intensity.py`'s `assert_collider_budget`
+fails the build if either leaves those envelopes, and the reference numbers are cells the game
+already ships rather than figures invented for this ladder.
+
+The other dimensions stay cheap. The two nucleus prefabs are single-mesh visuals with no
+collider. The fauna ladder is a rounding error — a tadpole is one body prism plus its heart, a
+shark a small spindled body, so 8 → 32 creatures is tens of prisms against tens of thousands, and
+creature sensing rides the Burst density grid rather than physics. At most 8 arena crystals (one
+trigger each), at intensity 1.
+
+⚠ **Intensity 1 is the heaviest cell in any arcade mode and has not been profiled.** The
+arithmetic clears both shipped reference points, which is the gate; it is not a frame-rate
+measurement. Watch the DiagnosticsHUD's prism count and frame time on the lowest-spec target
+before this ladder is considered settled — and if it needs to come down, `SCALES[0]`'s population
+scale is the dial, because it is the only one that moves colliders at all.
 
 ### How it is authored
 
@@ -230,12 +333,37 @@ Each points at its own `SpawnProfileSO`. The four configs are now identical apar
 `Difficulty`, their description, and which profile they name; the four profiles differ in exactly
 one field:
 
-| profile | `FloraPopulationScale` | `FloraPlantBudgetScale` | `FaunaPopulationScale` |
-|---|---|---|---|
-| 1 | 1.00 | 1.00 | **1.0** |
-| 2 | 1.00 | 1.00 | **2.0** |
-| 3 | 1.00 | 1.00 | **3.0** |
-| 4 | 1.00 | 1.00 | **4.0** |
+| profile | `FloraPopulationScale` | `FloraPlantBudgetScale` | `FloraPrismScale` | `FaunaPopulationScale` |
+|---|---|---|---|---|
+| 1 | **5.00** | 1.00 | **1.60** | **1.0** |
+| 2 | **3.67** | 1.00 | **1.40** | **2.0** |
+| 3 | **2.33** | 1.00 | **1.20** | **3.0** |
+| 4 | **1.00** | 1.00 | **1.00** | **4.0** |
+
+The population ladder is the linear interpolation `1 + 4·(4−i)/3` written out to 2 dp — the
+numbers are literals rather than a computation so the asset states exactly what the game reads.
+`FloraPopulationScale` moves the seed floors **and** `MaxLivePopulation` together, which is why
+it bounds a standing population at all (a floor-only scalar is clamped away above ~1.5×) and why
+the crystal-collider line above is the cap rather than the seed count.
+
+The four cell configs now also differ in `NucleusPrefab` (see the ladder above) and in their
+`PhaseThresholds` **volume** pair. A core size is authored as a config pointing at a **resized
+prefab** — never a scene override, never a `localScale` tweak on a shared prefab, and never
+`Cell.nucleusScaleMultiplier`, which is a scene *component* field and so cannot differ per
+intensity at all (`Docs/ECOSYSTEM.md §13.1`). `Nucleus300` and `Nucleus500` were authored for this
+ladder beside the existing `HalfNucleus` (200) / `Nucleus` (400) / `BigNucleus` (800); they are
+named by their prefab scale, which the older relative names are not.
+
+`FloraPrismScale` is a **platform** capability, the third of the flora scalars, for the same
+reason `FaunaPopulationScale` exists: Rampage's five flora configs are shared across its own four
+intensities, so a per-intensity leaf size authored on them would be one number for four cells.
+It resolves on the `Cell` (`Cell.ResolveFloraPrismScale`) rather than the profile, because which
+spawner a biome runs is decided by an unrelated field and flora has four producers; and it is
+applied once, in `Flora.Initialize`, **before** `base.Initialize` — which binds and stamps the
+prefab's own seed prism, so applying it later would leave that one prism at the authored size.
+A **lattice** species is exempt via `Flora.PrismSizeFixedByGrowthRule`; Rampage has none, but that
+guard is why the next cell to try this cannot break the gyroid. Full record:
+`Docs/ECOSYSTEM.md §43`.
 
 `FaunaPopulationScale` is a **platform** capability, the twin of the flora scalars: it multiplies
 every species' `InitialSpawnCount`, `PopulationSize` **and `MaxLivePopulation`**. Rampage is why
@@ -358,10 +486,19 @@ would have pinned the cell at Frenzy (planting frozen) almost immediately, leavi
 sparse arena that never regrew. Authored explicitly:
 
 ```
+intensity 4 (the shipped, play-tested ladder — the fixed point every other level scales from)
 RestlessEnterVolume   113000   RestlessExitVolume    81000
 FrenzyEnterVolume    1630000   FrenzyExitVolume    1260000
 RestlessEnter 700  RestlessExit 500  FrenzyEnter 10000  FrenzyExit 8000   (count backstop)
 ```
+
+⚠ **Since the prism ladder shipped there are FOUR volume ladders, not one** — a heavier forest
+needs a proportionally higher gate or it freezes its own planting (`Docs/ECOSYSTEM.md §4.6`).
+Each intensity's volume pair is this one **scaled by its forest ratio** (I1 ×3.86, I2 ×2.62,
+I3 ×1.68, I4 ×1.00), so intensity 4 is unchanged and every level keeps Frenzy at 4.11× its own
+mature forest. The **count** pair above is genuinely shared, because the prism count is. See
+"Four intensities" for the table; everything below describes the intensity-4 numbers and applies
+proportionally to the rest.
 
 - **Frenzy volume ≈ the full-grown forest** — estimated at ~1,616,000 as
   `Σ plants × prisms × leaf volume × E[level volume multiplier]`, where that last factor was
@@ -380,7 +517,11 @@ RestlessEnter 700  RestlessExit 500  FrenzyEnter 10000  FrenzyExit 8000   (count
 
 **These volume numbers are an estimate and must be checked in-editor** — phyllotactic
 prisms are shaped per role (stem spans its segment, leaf spans its reach), so their
-volume cannot be read off a single authored field. They are also now an **over-estimate by
+volume cannot be read off a single authored field. ⚠ **The prism ladder amplifies that
+uncertainty**: those three species now carry a per-intensity s² factor, so an error in the
+estimate is 2.56× larger at intensity 1 than at 4. One `Cell.LiveVolume` measurement per
+intensity corrects all four ladders at once through `rampage_intensity.py`'s `CALIBRATION`
+dict — which is the entire reason the model is a script. They are also now an **over-estimate by
 4.08×**, because they were computed with a level multiplier that no longer exists. **FRENZY is
 the threshold that stopped describing anything** — the mature forest measures 396,178 against a
 1,630,000 gate, so flora alone can no longer reach it (only player trail mass on top can).

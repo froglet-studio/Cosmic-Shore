@@ -1163,7 +1163,13 @@ MonoBehaviour:
   displayNameDefaultText: 
   SuccessMessageFadeAfterSeconds: 2
   SuccessMessageFadeDurationSeconds: 3
-  TypingAudio: {fileID: 8300000, guid: 85366fdabea234ddd9999943eebca0ee, type: 3}
+  typingAudioEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   FocusDisplayNameInputFieldEnabled: 0
   ShowEmailLogin: 0
   emailLoginResultMessage: {fileID: 0}

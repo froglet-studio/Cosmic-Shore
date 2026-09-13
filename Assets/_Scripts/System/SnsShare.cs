@@ -64,7 +64,7 @@ namespace CosmicShore.Core
             {
                 new NativeShare().AddFile(filePath)
                     .SetSubject("").SetText("").SetUrl("")
-                    .SetCallback((res, target) => { CSDebug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
+                    .SetCallback((res, target) => { CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[SnsShare] Share result={res} target={target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
                     .Share();
             }
             screenshotButton.gameObject.SetActive(true);

@@ -44,6 +44,42 @@
 > 50,773 volume per spent switch, not the retired 840-volume interior fill, which was only ever a
 > transient blip on top.
 
+> **STATUS UPDATE 4 (2026-09-05): the SWITCH RECHARGES, and a pilot holds at most three
+> standing.** The ability was, in practice, single-use: `Scarab.prefab` authors the "Switch
+> Charges" meter with `resourceGainRate 0` and **one** charge banked, and the only refill wired
+> anywhere in the game (`ScarabSwitchChargeByCrystalEffect`, +0.334) sits on the four **ELEMENTAL**
+> crystal branches — while both Scarab arenas stock **OMNI** crystals, which the skimmer converts
+> into a ball before the hull can ever collect them. So a Scarab placed one switch per life and the
+> whole §5 economy ("crystals make balls, balls through switches make energy") could not close.
+> `PlaceSwitchActionSO.rechargeSecondsPerCharge` (**20 s**) is the fix and the bank now starts
+> **full** (`initialAmount` 0.34 → 1, i.e. 3 charges). Details, and why the cadence is authored on
+> the ACTION rather than on the meter's own gain rate, are in §5.2.
+
+> **STATUS UPDATE 5 (2026-09-05): the switch's "it PAYS" half is wired, and a THIRD mode is
+> built on it.** `ScarabSwitch` now raises **`OnThreaded`** (static, every peer, carrying
+> `PlacerName`/`PlacerDomain`/`RingRadius`) and keeps a **`Live`** roster in the
+> `AstroLeagueBall.Live` shape. Until now a threading raised the dais and told nobody: nothing
+> outside the class could observe the event this whole ability is built around, so §5's second
+> job of a switch — *it pays* — existed only in this document. It now pays twice: the placer gets
+> a switch charge back (`chargeRefundOnThread`, §5.2) and, in the mode below, a point.
+> **`GameModes.Tollway = 48`** (`_Scripts/Controller/Arcade/TOLLWAY.md`) is the Scarab-only ring
+> race that finally makes §5's best idea load-bearing — *any ball threading your ring pays you,
+> friend or enemy* — with the dais as the arena the scoring builds. It answers §15's "what else
+> could a second Scarab mode be" differently from Scramble: there the scoring surfaces are the
+> arena's and permanent, here they are the PLAYERS' and consumed.
+>
+> **Revised the same week:** unconstrained placement made that mode one move long (plant a ring in
+> front of your own ball, nudge it through, repeat), so the ability grew an ANCHOR RULE (§5.3) —
+> **a ring is grafted onto a living plant's heart** (`ScarabSwitchAnchors`), in every arena, plus
+> **`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate`,
+> which Tollway installs to REFUSE a press that found no anchor. It takes away the WHERE and leaves
+> the pilot the facing and the choice of plant. An arena with no flora in reach places free, and
+> nothing installs a resolver in freestyle or Scramble, so placement there is unchanged. The general
+> lesson is recorded in TOLLWAY.md and is worth carrying to any future place-a-structure ability:
+> *if a player picks both where a scoring surface goes and what goes through it, the two collapse
+> into one move — constrain one of them* — with its corollary from the second cut: *before a mode
+> builds a set of points of interest, check whether the platform already grows one.*
+
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
 > mirrored as a proposal row in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2. Every file/line
@@ -111,8 +147,11 @@ mandate for determinism.
 | **A button** | **Switch** | Places a curved directional ring: deflects balls, pays energy when one threads it, then breaks |
 | **Crystal contact at full energy** | **Ball** | The crystal materialises into a ball carrying your velocity — no button, an aimed act |
 
-Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plus drift as base kit
-(the Sparrow's strafing roll is the precedent for an unmapped base verb). Map in §7.
+Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plus drift as base kit (the
+Sparrow's strafing roll is the precedent for an unmapped base verb). Map in §7. There is no fifth
+button: a held modifier over the hull was built twice, on the drift and then on `Button2Action`,
+and cut both times (§3.8, §4.7). The juke's cavitation plate always claims its own mirror image, so a committed dash breaks mass
+behind the pilot as well as ahead and drags it forward through them (§3.9).
 
 ---
 
@@ -512,6 +551,14 @@ Modelled on the Sparrow's `BarrelRollController`
      `Course * Speed`), so it sees the juke's real motion correctly with nothing to fix. This is
      how you hit a ball sideways without turning.
 
+> **SUPERSEDED IN PART (2026-09-04) by §3.7.** The juke below is described as a single binary
+> perimeter dash that always throws the plate. It is now **analog** — deflection between
+> `engageThreshold` and the perimeter is a proportional nudge that neither spins, steals, nor
+> blasts. The drift no longer changes any of it (§3.8); the plate the committed dash throws now
+> claims its own mirror image on every firing (§3.9). Everything else in this
+> section (the kinematics, the owner gate, the replication, the traps) is unchanged and still the
+> record.
+
 **RESOLVED (2026-08-15) — the juke fires a blast: `ScarabCavitationBlast`.** The original brief
 asked for a short-range lateral cone of destruction; the revised notes described a bump. Garrett's
 markup settled it as a **small blast** in the shape the Dolphin's AOE had *before* it was reworked
@@ -656,6 +703,233 @@ layer so every strategy inherits it. The dash itself reuses
 `ModifyVelocity` along `Course` (the same impulse channel as the juke, so the 100-unit clamp and
 the eased envelope are shared and already tested), gated on `IsUpgradeActive(Element.Time)` at
 the moment of the second tap.
+
+### 3.7 The analog juke
+
+**SHIPPED 2026-09-04.** *The stick's magnitude is the dash's magnitude.*
+
+The juke shipped binary — the stick was at the perimeter or nothing happened — and it always threw
+the cavitation plate. Both properties are correct for a dash and wrong for the last metre before a
+ball, which is where this vessel's whole game is played. A pilot lining up on a resting ball had
+exactly one lateral input available and it was a 45-unit wall of destruction.
+
+**The juke is now ANALOG.** `engageThreshold` (0.35) is where a juke fires at all;
+`perimeterThreshold` (1) is where it becomes **COMMITTED**. Between them the stick's radial
+magnitude IS the dash's strength, and it scales the three things that make a dash a dash:
+
+| | partial juke | committed juke |
+|---|---|---|
+| displacement | `jukeSpeed × deflection` | `jukeSpeed` |
+| root bank | `rootRollDegrees × deflection` | `rootRollDegrees` |
+| visual | a LEAN out and back (`partialLeanDegrees × deflection`, one sine lobe) | the 360° spin |
+| hull flourish (`ScarabAnimation`) | scaled by strength | full |
+| juke-steal window (`IsJukeStrikeWindowOpen`) | **never** | yes |
+| cavitation blast | **never** | yes (mirrored about its start plane on every firing — §3.9) |
+
+The partial's LEAN rather than a scaled spin is deliberate: a 90° spin is not a small 360° spin, it
+is a thing that ends pointing the wrong way. A nudge should read as a nudge.
+
+**ONE PUSH IS ONE GESTURE, and that is what makes the blast reliable** (`ScarabJukeGesture`, pure
+and unit-tested). The first cut decided a juke's whole character on the frame the stick first
+crossed `engageThreshold` — which is a question about the pilot's THUMB SPEED, not their intent. A
+stick does not arrive at its destination; a push sweeps through every magnitude on the way. So a
+fast flick crossed engage and the perimeter in the same frame and came out committed, while a
+slower push of exactly the same distance was filed as a nudge — and the roll it started then locked
+out re-entry for `jukeDurationSeconds`, so reaching the limit half a beat later did *nothing*. The
+plate came out for quick hands only, which is exactly how it was reported.
+
+A push is now tracked from the frame it passes `engageThreshold` to the frame it falls back inside
+the release band (half that threshold — hysteresis, so a shaky thumb does not spend a dash per
+wobble). It **BEGINS** immediately at whatever it has reached, because a dodge must never wait on
+input smoothing, and it **COMMITS** whenever it reaches the limit, however long that takes: the
+steal window opens, the displacement is topped up to exactly one full dash (the upgrade adds only
+the remainder), the lean is replaced by the 360° spin, and the plate flies — so
+"any flick that reaches the limit blasts" is true at any push speed. `PerimeterEpsilon` (0.03) is a HARDWARE margin on top, so a worn stick
+that tops out a hair under full still commits; a controller that cannot quite reach 1 must not
+present as a broken ability.
+
+Two consequences worth stating. Holding the stick pinned now dashes **exactly once** — the
+behaviour §14.4 always claimed and never actually had, since the old path re-fired every time the
+roll ended. And one flick is at most one blast, which is what makes the plate's own cooldown the
+only thing pacing it.
+
+**THIS IS ALSO WHY THE BLAST IS NO LONGER SILENCED UNDER A HELD DRIFT.** The first cut had the
+plate SHEATHE itself while the drift was fully held, so a pilot could creep up on a ball without
+punching it across the court. Play-testing retired it: **the analog juke already does that job, and
+does it better.** A small deflection is a nudge that fires no plate at all, available at any moment,
+with no second input to hold — so the sheath was spending a whole modifier on something the stick
+already said, and it cost the pilot their weapon exactly when they were closest to a target.
+
+**And the DRIFT no longer says anything about the plate at all.** For two playtests a buried drift
+INVERTED it (the plate swept backwards) and refused a partial juke on top. Both are retired with the
+held-drift modifier itself: the grab moved onto its own button and was then cut outright (§3.8),
+and the plate claims its own mirror image instead (§3.9). The partial-juke gate above is the blast's **only** remaining hold-back, and
+that is the point — the drift is just the drift, and *"nothing interesting should be happening at
+full drift"* is now a true sentence about this vessel.
+
+**Retired with it: three readings of the trigger that each looked like a level and were not.**
+`VesselTransformer.DriftHold01` — a public 0..1 accessor over `_frameTriggerSum`, the SMOOTHED
+value `ApplyAnalogDrift` runs on — is **deleted** along with its `MaxDriftTriggerSum` constant: it
+was left standing for one pass "for the blend that owns it", which was not true (the blend reads
+the field directly), so what survived was a public surface with no consumer and a standing
+invitation to gate on it again. The trap now lives on `_frameTriggerSum`'s own doc comment, where
+the value actually is. `VesselTransformer.DriftTriggerHeld01`,
+`ScarabJukeController.IsDriftFullyHeld`, its `n_DriftFullyHeld` NetworkVariable, and
+`ScarabPhaseReversal` (with its whole file) are **deleted** — the apparatus existed to make a
+threshold on a steering control behave like a button, the answer turned out to be a button, and the
+mechanic that button served was then cut. The findings are kept in §3.8; the code is not.
+
+---
+
+### 3.8 The PHASE GRAB — RETIRED
+
+**Shipped 2026-09-09 and CUT the same day, by design call: *"this whole ball grab idea can go
+away. it doesn't need the ability at all."*** The Scarab's hull is a wall again — a strike is the
+ordinary elastic bounce, and nothing about the ball changes when a button is held.
+
+The mechanic went through four rounds, and each one produced a general trap worth more than the
+feature did. **The code is deleted; these are what survive.** `ScarabPhaseReversal` and its tests,
+`ScarabPhaseGrabExecutor`, `ScarabPhaseGrabActionSO`, `ScarabPhaseGrabAction.asset`, the
+`InputEvents.Button2Action` binding on `Scarab.prefab`, and every reversal / pass-through /
+blast-drag construct in `AstroLeagueBall` are gone; `AstroLeagueSettingsSO` lost its six phase
+fields. **`R_VesselActionHandler.ReleaseHeldInputs` STAYS** — it is a platform fix that also covers
+the Dolphin's Echo Sight and every future hold (see below).
+
+1. **When successive correct fixes keep buying diminishing amounts of the same complaint, the
+   defect is one layer below the one being fixed.** Rounds 1–2 rode a fully-held LEFT TRIGGER.
+   Each report produced a real fix — the value was smoothed, so read the honest channel; the
+   threshold had no hysteresis, so latch it; the hold never crossed the wire, so replicate it —
+   and each left the same complaint one notch quieter, until the pilot named the actual problem:
+   *"we don't want to couple this grab move with the drift… nothing interesting should be
+   happening at full drift."* A drift is a control the pilot is STEERING with, so a threshold on
+   it inherits every property of a steering input and makes "nothing may happen at full drift"
+   impossible to state.
+2. **A value smoothed for one consumer is not a reading of the thing it was smoothed from.**
+   `VesselTransformer.DriftHold01` named itself like a trigger reading and was `_frameTriggerSum` —
+   eased on any non-analog device, derived there from the drift TIER FLAGS rather than the trigger
+   at all, and written only inside an `Update` that early-returns while the vessel is stationary,
+   so it FREEZES rather than going stale. Its **corollary, learned one pass later:** the accessor
+   was first kept "for the blend that owns it" and the blend never read it — so the retirement left
+   a public 0..1 property with no consumer, which is exactly the shape a future gate reaches for.
+   It is deleted and the trap moved onto `_frameTriggerSum`. *A public surface that must never be
+   read is a trap generator, not a trap record.*
+3. **A threshold on a held ANALOG control needs hysteresis; a threshold on a discrete act does
+   not.** A bare `≥ 0.95` re-evaluated per frame dropped the modifier on every wobble of a trigger
+   pressed to its stop.
+4. **An edge and a level are not interchangeable across a tick.** `LeftTriggerAnalog` is
+   local-only, so the server-side strike path saw 0 on every remote pilot and the modifier worked
+   for the host alone. **A bound `ShipActionSO` needs none of it**: `R_VesselActionHandler` already
+   round-trips every press and release through the server, so an executor runs on EVERY peer
+   including the server and the server reads the flag off its own replica. Check that channel
+   before building a `NetworkVariable`.
+5. **A rule inherited "for free" from a shared path is only free while the new act agrees with
+   what that rule was protecting.** Riding the ordinary strike path gave the reversal the touch
+   ledger, the ownership rules and the cooldown pacing for nothing — and also the
+   approaching-contact gate and the depenetration, both of which were protecting *the ball never
+   travels through a hull*, which is precisely what a grab-and-fling has to do.
+6. **A rule that reads two controls at one instant has quietly specified which hand the player
+   must have.** On a pad the phase button (B) and the juke (the right stick) are the same thumb,
+   so "hold phase and juke" is an input the hardware cannot perform.
+7. **A fall-through is a DECISION, not a neutral outcome.** Below the reversal threshold a phased
+   contact fell through to the ordinary strike, so the hull BATTED the ball — the one thing the
+   held button promised could not happen — and it was guaranteed on a freshly forged ball, which
+   is created at rest by design. It was justified by *"nothing happens is the one outcome a
+   committed input must never produce"*, and both halves of that were wrong.
+8. **A latch added to stop an involution running twice must not run out mid-transit, or it becomes
+   the failure it prevents.** The pass-through cap was measured from the grab, so any overlap
+   longer than it expired while the hull was still inside the ball; the next frame grabbed again,
+   and the two reversals cancelled exactly.
+9. **Once the control is no longer suspect, an intermittent ability is a per-contact PREDICATE
+   that varies while the input does not** — so ask what the predicate reads that the pilot is not
+   looking at. Round 4's two causes were the ball's SPEED and a 0.35 s clock, neither on screen.
+10. **A held ability must be torn down where the vessel goes QUIET, not at the edge that would
+    have ended it.** A release is an input event, so it never arrives for a vessel whose input is
+    paused or that hands over to autopilot — `R_VesselActionHandler.ReleaseHeldInputs` releases
+    what it holds before it unsubscribes. That fix is kept and is fleet-wide.
+11. **A capability an AI acquires by accident is a design decision nobody made.** While the
+    modifier rode the drift, an AI's binary drift made every bot reverse every ball it struck.
+
+The BLAST half of the round-3 pass is **not** retired — the plate still claims its own mirror
+image, always, and that is §3.9.
+
+### 3.9 The plate claims its own MIRROR IMAGE
+
+**SHIPPED 2026-09-09**, replacing the held-drift plate INVERSION of 2026-09-07.
+
+The cavitation plate (§3.7) sweeps a cylinder forward from the hull along the dash. Now it also
+claims **its own reflection through the plane it starts on**: the same cylinder, the same radius,
+the same reach, extending *behind* the pilot as well as ahead of them.
+
+> *"instead of reversing the blast lets leave the blast unaffected by the new button and double the
+> volume of the base blast by having the volume affect the mirror image of its original blast as
+> well. Mirrored about the starting plane of the blast. The volume is mirrored but the velocity
+> through the whole field should be uniform. This means if the ball is on the other side of vessel
+> it will be grabbed by the blast."*
+
+**THE VELOCITY IS UNIFORM ACROSS THE WHOLE FIELD, AND THAT IS THE MECHANIC.** The impulse is
+untouched by the mirror: everything the plate claims still leaves **along the sweep**, on both
+sides. So the forward half throws mass away from the pilot and the back half **drags mass forward
+through them** — a ball behind you is not batted further behind you, it is picked up and brought
+with you. That asymmetry of *effect* out of a symmetry of *volume* is the whole reason this is
+better than a second blast pointing backwards, which would just push everything away in two
+directions and read as an explosion.
+
+It is one serialized bool on the blast prefab, `AOECylindricalExplosion.mirrorAboutStartPlane`,
+default OFF — the class has exactly one consumer today (`AOEScarabCavitation.prefab`) and this is
+the Scarab's plate, not a change to every cylindrical blast that might ever exist.
+
+**THE VOLUME IS WRITTEN DOWN IN FOUR PLACES AND THEY ALL HAD TO MOVE TOGETHER.** This is the trap
+worth carrying, and it is why the change is small and the verification is not:
+
+| where | ordinary | mirrored |
+|---|---|---|
+| the trigger `BoxCollider` (vessel + BALL contacts resolve here) | span `depth`, centred at `depth/2` | span `2·depth`, centred on the **emitter** |
+| the plate's visual cylinder (see the note below on who can see it) | y-scale `depth/2`, at `depth/2` | y-scale `depth` (the mesh's y IS its half-length), at **0** |
+| `AOECylinderSweepQueryJob` (the Burst prism query) | `axial = s`, slab `[sliceMin, sliceMax]` | `axial = |s|`, same slab — so one frame claims **both** signed slabs |
+| `ExplosionImpactor.SweptCylinder.Contains` (the crystal narrowphase) | `0 ≤ s ≤ Depth` | `−Depth ≤ s ≤ Depth` |
+
+Plus the crystal **broadphase** sphere, which had to be re-centred on the emitter with the full
+half-diagonal — get that one wrong and the blast under-reaches behind the pilot, which is precisely
+the half the mirror was added for.
+
+**The Burst tiling survives for free, and that is a property rather than a coincidence.** Reflecting
+a partition of `[0, L]` through 0 partitions `[−L, 0]` the same way, so successive frames' `|axial|`
+bands are still consecutive, their union is still exactly the full reach, and the shared endpoints
+are still deduped by the caller's `alreadyHit` claim. Verified by sampling anyway
+(`Tools/Build/verify_scarab_cavitation_plate.py`), because "inherited" is an argument and that file
+exists to distrust arguments.
+
+**The verifier now pins all four transcriptions to the SOURCE they were copied from.** Everything it
+did before compared four Python transcriptions of the geometry against each other, which is only
+evidence about the C# if the transcriptions are faithful — the very step the file was written to
+distrust. Each mirrored expression is now regex-pinned to the shipped file, and the flag's path
+(prefab → `AOECylindricalExplosion` → `ExplosionImpactor` → the Burst job) is asserted end to end,
+because *a serialized bool that nothing forwards is the exact shape of a feature that is authored,
+documented, and does nothing.* Four defect injections confirm each gate bites.
+
+**The back half brings mass toward the pilot, and there is nothing special about a ball.** An
+earlier pass TAGGED a ball kicked out of the rear half so a held button could let it phase through
+the hull it was being dragged into; that went with the phase grab (§3.8), and a dragged ball now
+simply arrives and bounces like any other. What survives from it is the geometric test that decided
+which half a target was in — one dot product against the blast's own start plane, which doubles as
+the mirror test since an un-mirrored cylinder's volume is `s ∈ [0, depth]` and nothing it claims can
+sit at negative `s`. Reading `MirrorsAboutStartPlane` there instead would have been a second source
+of truth for one fact.
+
+**The crystal broadphase buffer was raised 16 → 64 with a saturation warning.** The mirrored
+sphere is 2.4× the volume and no longer front-loaded, and the type filter that rejects non-omni
+crystals runs AFTER `OverlapSphereNonAlloc` has filled the buffer — so in a flora-dense cell the
+arena's own lifeform hearts (crystals, on the Crystals layer) can crowd out the omni crystal the
+blast was reaching for. Both shipped modes are far under (Scramble tops out at 6 crystals), but the
+Scarab is not mode-fenced. The size is paired with a warn-once at saturation, because a cap that can
+be hit without saying so is exactly the failure this project keeps re-learning.
+
+Code: `AOECylindricalExplosion.mirrorAboutStartPlane` (+ `MirrorsAboutStartPlane`,
+`ShapeTriggerBox`, `ShapePlateVisual`, `MaxScaleVector`), `ExplosionImpactor.SweptCylinder.Mirrored`
++ `ProcessBatchCylinderFrame(…, bool mirrored)` + `BlastImpactVector` + the crystal buffer,
+`PrismSpatialIndex.AOECylinderSweepQueryJob.Mirrored`
++ `ProcessExplosionCylinderFrame(…, bool mirrored, …)`, `ScarabBallForgeByExplosionEffectSO`, and
+`Tools/Build/verify_scarab_cavitation_plate.py`.
 
 ---
 
@@ -1230,6 +1504,41 @@ Tuning is one asset, `Resources/ScarabNucleusFieldConfig` (`ScarabNucleusFieldCo
 `ScarabNucleusField` (the per-cell server book — embedded caps, nucleus entries, the overload).
 Verbose telemetry rides `CSLogChannel.ScarabNucleus`, off by default.
 
+### 4.7 The held-drift GRAPPLE — RETIRED
+
+**Shipped 2026-09-04, removed 2026-09-07.** With the drift fully held, a hull that touched a ball
+stuck to it and swung around it on a parametric orbit; releasing the drift flung the ball along the
+swing. It worked exactly as specified — the carry, the aim, the camera and the netcode all did what
+they were designed to do — and play-testing found it **wasn't fun**, which no amount of tuning was
+going to fix. Its replacement, a held-drift REVERSE modifier, lasted two playtests before the
+control itself was rejected. It was then re-cut as the **phase grab** on its own button, and that
+was cut in turn (§3.8) — three shapes of one idea, all retired. Only the blast half survives, as
+the plate's mirror image (§3.9).
+
+Do not rebuild it from this section. What is worth carrying forward, because none of it was wrong:
+
+- **A vessel's pose can be handed to an ability** — `VesselTransformer.BeginExternalMotion` /
+  `SetExternalMotion` / `EndExternalMotion`, default-off and bit-for-bit inert for anything that did
+  not use it. Deleted with the mechanic (nothing else called it), and the finding inside it is
+  fleet-wide: **the exit velocity must be the driver's OWN last write, replayed** — reconstructing it
+  from `VesselStatus.Course × Speed` bakes in `throttleMultiplier`, so a vessel released while a
+  danger-prism slow was live had the debuff folded into its base speed and multiplied again the next
+  frame. *A value a system PUBLISHES is not the value it INTEGRATES.*
+- **A spinning vessel must not spin the camera** — the anchor hold, which kept the camera's
+  distance, stopped deriving position and roll from the vessel, and looked at the ball instead. Also
+  deleted. Two transferable findings: blend at the **INPUTS** (desired position, look-at, up) so the
+  existing SmoothDamp/Slerp carries the transition rather than a second smoothing model; and *"the
+  camera's x axis lies along the orbit axis"* and *"the camera sits in the plane the hull is swinging
+  in"* are the **same statement**, so aligning an axis is a constraint on where the camera IS, not
+  only on its roll.
+- **An edge and a level are not interchangeable across a tick.** A `NetworkVariable` only carries the
+  value it holds when the tick serialises, so a hold that drops and returns between two ticks is
+  coalesced away and the server never sees it — which stranded a ball as "held" by a hull that had
+  already flown off. *To send a transition shorter than a tick, send something that COUNTS.* That one
+  is general to every owner→server signal in the project.
+
+---
+
 ## 5. The switch
 
 The Scarab's placeable structure is **not** a wall. It is a **curved, directional switch** — a
@@ -1259,7 +1568,9 @@ nothing in this mode changes a pilot's domain, so the two readings never share a
 allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
 
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
-softened: because an enemy ball threading your switch still pays *you*, switches are worth
+softened — and since 2026-09-05 it is finally LOAD-BEARING somewhere: `GameModes.Tollway = 48`
+scores exactly this event (`_Scripts/Controller/Arcade/TOLLWAY.md`), reading the payer off the
+SWITCH rather than the ball: because an enemy ball threading your switch still pays *you*, switches are worth
 placing where the enemy's balls will go, i.e. defensively, in front of your own goal. The
 defensive play and the economic play are the same play. A player who ignores defence starves.
 
@@ -1526,6 +1837,220 @@ peer reads its own interpolated transform.
 
 ---
 
+### 5.2 The cooldown — why the switch was single-use, and what refills it now
+
+**The defect.** `Scarab.prefab` authors two resource meters; the second, "Switch Charges", shipped
+with `resourceGainRate: 0` and `initialAmount: 0.34` — one charge out of the three-charge meter
+`PlaceSwitchActionSO.chargesPerFullMeter` authored *at the time* (a switch cost 1/3 of it; the
+bank is retired and both are **1** today, see "ONE RING AT A TIME" below — this paragraph describes
+the defect as it shipped, not the asset as it stands). The only thing in the
+project that ever put a charge back is `ScarabSwitchChargeByCrystalEffect` (+0.334), and
+`ScarabImpactorDataContainer` wires it into the four **elemental** crystal branches —
+`vesselMassCrystalEffects`, `vesselChargeCrystalEffects`, `vesselSpaceCrystalEffects`,
+`vesselTimeCrystalEffects` — and deliberately **not** into `vesselCrystalEffects`, the OMNI branch,
+which this vessel leaves empty because its skimmer forges omni crystals into balls before the hull
+reaches them (`ScarabBallForgeBySkimmerCrystalEffectSO`, §4.1).
+
+Both Scarab arenas stock omni crystals. Astro League's contested anchor crystal is omni; Scramble
+runs `CrystalCountMode.PlayerCountPlusExtra` on omni crystals *because forging balls is the mode*.
+Elemental crystals appear there only as fauna hearts, once the cleanup crew is released at
+Restless. So the refill path existed, was correctly authored, and was **unreachable in the two
+places the vessel is played** — the switch was a one-shot, and the closed loop §5 describes
+("crystals make balls, balls through switches make energy, energy makes balls") could never turn
+more than once.
+
+*Generalisation worth carrying: an ability refilled by a resource its own mode converts into
+something else has no refill at all. Check what the ARENA actually stocks, not what the container
+is wired to.*
+
+**The fix.** `PlaceSwitchActionSO.rechargeSecondsPerCharge`, applied by
+`PlaceSwitchActionExecutor.Update` as a smooth per-frame trickle. The meter starts full. The
+crystal grant is untouched and still stacks: a Scarab that collects elemental crystals re-arms
+faster than one that does not, which keeps the authored effect meaningful instead of retiring it.
+
+**ONE RING AT A TIME (2026-09-06).** The first cut of the recharge shipped a **three-charge bank
+on a 20 s cadence**, and that made the interesting decision *when to spend the stack*: a pilot who
+banked could answer a rival's ring by planting three of their own, and a ring you can replace every
+twenty seconds is a consumable rather than a commitment. Both halves are now **1** —
+`chargesPerFullMeter 1` (the meter IS the single charge) and `maxLiveSwitches 1` (one ring standing
+in the world) — on a **60 s** recharge. Every press is now a commitment to a *place*, which is the
+decision §5.3's anchor rule exists to create; without the ceiling the anchor rule only constrained
+*where* while the bank still let you cover three wheres at once.
+
+**What keeps the loop turning is the refund, and it does more work now than it did.**
+`chargeRefundOnThread` is 1 and the cost is the whole meter, so a ring somebody threads — anybody,
+which is §5's whole idea — re-arms you **instantly**, and only a ring nobody uses costs you the
+full minute. The recharge is therefore the price of a *bad* placement, not the cadence of a good
+one. The failure case to watch in play is the pilot whose ring nobody threads: they spend a minute
+with no scoring surface at all, and if that reads as being locked out rather than as having made a
+bad call, `rechargeSecondsPerCharge` is the lever (a vessel number, so it moves freestyle, Scramble
+and Tollway together). Tollway re-derived its toll target 8 → 4 in the same pass for exactly this
+reason — a toll is several times the work it was.
+
+**Why the cadence is authored on the ACTION, not on the meter.** `ResourceSystem` already has a
+per-second `resourceGainRate`, and setting it to `1/60` would have been a one-line asset edit. It
+was rejected for three reasons: the meter's gain coroutine ticks at **1 Hz**, so a charge would
+arrive up to a second after it was earned; the number would live on the vessel prefab, a long way
+from the `chargesPerFullMeter` cost it is the counterpart to, where nobody reading the ability will
+find it; and it would make the meter's fill a *second* author of a quantity the action already
+owns — the multiple-writers trap CLAUDE.md records against the Dolphin's boost. `resourceGainRate`
+stays **0** and the action SO is the single author of both the cost and the cadence.
+
+**Why it is not element-scaled.** Mass already owns this ability's one parameter (the ring
+aperture) and Charge already owns a cooldown (the cavitation blast, §3.4). Scaling the recharge on
+either would double-dip that element or put two unrelated meanings on one flower, so the cadence is
+a flat authored number — the same ruling §7 makes for `placementDistance`.
+
+**A pilot holds at most `maxLiveSwitches` (**1** since 2026-09-06) unspent switches.** An unstruck
+switch lives for the whole match by design — nothing expires, nothing is culled — which was harmless
+when a pilot could place one and is not harmless when they can place one every twenty seconds
+forever. At the shipped ceiling of 1 the rule below fires on the pilot's every second placement, so
+it is the common path rather than the edge case it was written as. Freestyle makes
+that literal: there is no match end, so an unbounded placer would silt the lava lamp with rings. So
+placing past the ceiling **retires that pilot's oldest standing ring**
+(`PlaceSwitchActionExecutor.RegisterAndEnforceCeiling` → `ScarabSwitch.Retire`). Three properties
+make that legal rather than a timed cull:
+
+- The removal is caused by **this placement** — a player putting one switch too many into the world
+  — never by a clock. It is the same argument, and the same shape, as the ball's cell overload
+  (`AstroLeagueBall.DetonateAllLooseInCellServer`, §4.6).
+- **Nothing conserved is lost.** A standing switch is a generated ring mesh in the domain prism
+  material (`ToyFactory.AddSwitchRing` → `AddRingBody`), not prisms — the ring has carried no prism
+  mass since the interior fill was retired (STATUS UPDATE 3). The dais is the only prism mass a
+  switch ever creates, and a retired switch pays **no dais**, because nothing threaded it.
+- **Continuity of existence still applies**: the ring shrinks away over `retireSeconds` (0.5 s)
+  rather than blinking out.
+
+**What this does to the volume ladders — nothing, and here is why.** §8's Astro League ladder and
+Scramble's are both derived from **spent** switches (50,773 volume per dais), not placed ones, and
+a switch only pays out when a ball threads its mouth. The recharge raises how many switches can be
+*standing*, which costs no volume at all; it raises the ceiling on daises only to the extent that
+players actually thread more of them. The ladders are therefore left as authored, and the first
+playtest question is whether Restless now arrives sooner than §8 intends.
+
+**Known limitation, pre-existing and not fixed here: a switch can be missing on a third peer.**
+Placement rides the action handler's `SendButtonPressed_ServerRpc` → `ClientRpc`, so `PlaceSwitch`
+— gate, spend and build — runs on **every** peer against that peer's own meter, and the peers only
+agree a switch exists if their meters agree. The recharge is symmetric (every peer accumulates the
+same elapsed seconds) and the spend is symmetric (every peer performs it), so this change makes the
+meters agree *more* than they did. The remaining asymmetry is the crystal grant: an elemental
+crystal resolves server-side and its vessel effects are replayed only onto the **owner**
+(`CrystalManager.ReplayVesselCrystalEffects`), so in a match with three or more machines a third
+peer can be a charge short and refuse a switch the placer built. Gating only the owner would be
+**worse**, not better: the owner sends the RPC and then executes it from the ClientRpc like everyone
+else, so an owner-side refusal arrives too late to recall the switch the other peers have already
+built, turning a missing ring into a ghost one. The real fix is a can-this-action-run veto on
+`ShipActionSO` consulted in `R_VesselActionHandler.OnButtonPressed`, **before** the RPC goes out —
+a small shared-handler addition that would serve every future costed ability, and a deliberate
+follow-up rather than a scope creep on this one.
+
+| knob | asset | shipped | what it does |
+|---|---|---|---|
+| `rechargeSecondsPerCharge` | `PlaceSwitchAction.asset` | **60** | seconds to earn the charge back; 0 restores crystal-only refills |
+| `chargesPerFullMeter` | `PlaceSwitchAction.asset` | **1** | charges the meter holds; cost = the WHOLE meter |
+| `maxLiveSwitches` | `PlaceSwitchAction.asset` | **1** | unspent switches one pilot may have standing |
+| `chargeRefundOnThread` | `PlaceSwitchAction.asset` | **1** | a threaded ring refunds the whole meter, so a used ring is free |
+| `retireSeconds` | `PlaceSwitchAction.asset` | **0.5** | how long a retired ring takes to shrink away |
+| `initialAmount` (Switch Charges) | `Scarab.prefab` | **1** (was 0.34) | the bank starts full |
+| `anchorReach` | `PlaceSwitchAction.asset` | **70** | how far off the flight path a plant's heart may sit and still anchor the ring (§5.3); 0 disables anchoring |
+
+**The recharge is DRAWN on the Mass card.** `ScarabHUDController` pushes
+`VesselHUDView.SetAbilityCooldown(Element.Mass, remaining01)` off the same `OnResourceChanged` event
+it was already subscribed to, so the fleet's clockwise depleting veil sweeps over the switch icon
+while the bank is empty and clears — with the lockup's ready flash — the instant the first charge
+lands. No polling and no second clock: the meter IS the cooldown.
+
+The two readouts on that card answer different questions and it matters which is which. The **pip
+count** says how many rings the pilot HOLDS; the **veil** says whether the button does anything if
+pressed right now, so it is clear whenever ≥1 charge is banked even though the meter is still
+filling toward the next. At the shipped `chargesPerFullMeter 1` those two collapse onto the same
+moment and the veil carries the whole answer — but the split is kept rather than simplified away,
+because the count and the readiness are different questions the day anything reintroduces a bank.
+`ScarabHUDController.switchChargesPerFullMeter` must track the action SO (it is authored on
+`Scarab.prefab`, so the C# default alone is not enough — an instance override beats the class).
+That is the fleet's meaning of a veil and deliberately not "progress toward
+the next charge" — a tank of three cannot say both on one dial (the split CLAUDE.md records for the
+Sparrow's rocket bay), and a veil drawn over a button that works is the one reading a player cannot
+recover from.
+
+⚠ **A field added to an existing `.asset` deserializes as ZERO**, and for the recharge zero means
+*disabled* — which is exactly the state this section exists to end. **`anchorReach` is the second
+field with that hazard and the same answer**: zero disables anchoring, so a Scarab would go back to
+planting rings wherever the nose points and Tollway would refuse every press. All five new fields
+are written into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly;
+`PlaceSwitchActionSO.OnValidate` repairs the two where zero is nonsense (a zero ceiling would refuse
+every placement, a zero retire time would make a ring vanish) but deliberately leaves the recharge
+and the reach alone, because zero is a real authored choice for both and `OnValidate` does not run
+in a build.
+
+### 5.3 A ring is grafted onto a LIVING PLANT'S HEART
+
+**The vessel snaps its switch onto a flora crystal.** `ScarabSwitchAnchors.TryResolve` finds the
+nearest free plant heart within `PlaceSwitchActionSO.anchorReach` (70u) of the SEGMENT from the
+ship to the projected ring centre, and `PlaceSwitchActionExecutor` plants there instead of at the
+projected point. It happens in **every arena a Scarab flies in**, with nothing wired: an arena with
+no flora in reach places free, exactly as before, so freestyle and Scarab Scramble — neither of
+which authors any flora — are byte-for-byte unchanged.
+
+It exists because **placing a ring anywhere is degenerate wherever a ring scores**. With placement
+unconstrained and any ball paying the ring's owner, Tollway was one move — plant a ring in front of
+your own ball, nudge it through, repeat — and a minigame with no shot to get better at is not
+replayable. Anchoring takes away the WHERE and leaves the pilot the facing (still the course they
+flew in on) and the choice of plant.
+
+**Why the anchor is a flora crystal, and why that is a VESSEL rule.** The first shipped version of
+this was a mode-owned socket system — Tollway built, replicated, drew and tested its own seeded
+field of emblems. It worked and it was the wrong owner. A flora crystal is the same affordance the
+ecology already produces everywhere, and it arrives with four properties a bespoke socket had to be
+given by hand: it is **placed by the food web** (so the set is alive — grazeable, and re-seeded);
+it is **already drawn** and already a thing a pilot flies at; it is **already replicable**
+(`FloraConfigurationSO.NetworkSynced`); and it is a **joustable heart**, so killing an anchor to
+deny it — and taking an element level for doing so — is counter-play nobody had to design. The
+general rule: *before a mode builds a set of points of interest, check whether the platform already
+grows one.*
+
+Two properties of the geometry are load-bearing:
+
+- **Gate the PATH, not the projected point.** The centre is `placementDistance` (150u) AHEAD of the
+  nose, so a proximity test on that point is an ANNULUS — admitted 80–220u out, refused at every
+  range inside 80, i.e. point-blank, which is exactly where a pilot following a HUD arrow ends up.
+  That shipped once and read as a dead button. `FloraHeartRegistry.DistanceToSegment` is the fix
+  and `ScarabSwitchAnchorGeometryTests` is the guard.
+- **The anchor set must agree across peers if a mode RELIES on it.** A press re-executes on every
+  peer and nothing about a placed switch is replicated, so snapping to a discrete set is more
+  forgiving than the continuous placement it replaces — but only if the plants agree, and flora
+  are per-peer by default. A mode whose scoring depends on the anchors sets `NetworkSynced` on the
+  species it seeds (Tollway is the first shipped user of `FloraNetworkSync`). Where the snap is
+  only an assist, a disagreement costs nothing.
+
+#### `PlacementResolver` — a mode may still say WHERE
+
+`PlaceSwitchActionExecutor.PlacementResolver` is a static, null-by-default hook a mode installs to
+veto or relocate a placement. It now receives the vessel's own `anchored` answer, so the *finding*
+is the vessel's and only the *refusal* is the mode's — Tollway's whole resolver is
+`if (anchored) return true;` plus a toast. Nothing installs one in freestyle or in Scramble.
+
+Three properties are the contract, and a second mode that installs one inherits all three:
+
+- **It is the sibling of `ScarabBallForge.ForgeGate`**, and makes the same argument: a rule about
+  how a MODE uses an ability belongs to the mode. Put it on the vessel and every other arena
+  inherits it. (The ANCHORING is on the vessel precisely because it is not such a rule — it is how
+  this hull places a structure, in every arena.)
+- **It must be a pure function of replicated state.** It is consulted on every peer, because a
+  press re-executes on every peer through the action handler's ClientRpc — so a resolver that
+  answered differently on two machines would build a switch on one and not the other,
+  *permanently*, since nothing about a placed switch is replicated. Tollway's reads only
+  `anchored`, itself a function of the replicated flora slot list and `ScarabSwitch.Live`;
+  anything that lags (a ball's position, a velocity) has no business in one.
+- **It is consulted BEFORE the charge is spent**, so a refusal costs the pilot nothing but the
+  press — the same shape as the existing no-charge refusal — and its installer must remove it
+  identity-guarded on despawn, because a leaked resolver silently refuses every switch in the
+  next scene.
+
+The centre may MOVE (the anchor snap puts it exactly on the heart, which is also what makes
+occupancy an exact equality test rather than a fuzzy proximity one) but the AXIS never does: which
+way the mouth faces stays the placer's decision, in every mode.
+
 ## 6. The energy economy and balance
 
 ```
@@ -1750,8 +2275,8 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | `_Scripts/Controller/Vessel/ScarabVesselTransformer.cs` | `SingleStickVesselTransformer` subclass: the throttle **integrator** + Time-scaled ceiling + double-tap dash (§3.2, §3.6) |
 | `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled) **gated on `IsLocalPilot`**, displacement + visual roll, `OnJukeFired(direction)`, `NotifyJukeFired_ServerRpc` (strike window) + `BroadcastJukeRoll_ClientRpc` (cosmetic spin on non-owners); vessel shove + ball strike still to come (§3.4) |
 | `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the swept-plate blast centred on the hull along the dash, sized off `VesselImpactor.HullColliders`, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
-| `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4) |
-| `Tools/Build/verify_scarab_cavitation_plate.py` | Re-proves the plate from the SHIPPED prefabs + `ProjectSettings/TimeManager.asset` — the relationship to the hull collider, exact slab tiling, drawn == damaged, the circumscribing trigger, the zero state, the contact window against the real fixed timestep, and `restitution × Inertia == 1`. Run it after touching any of those numbers |
+| `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4), plus `mirrorAboutStartPlane`: the plate claims its own reflection through its start plane with the impulse untouched (§3.9) |
+| `Tools/Build/verify_scarab_cavitation_plate.py` | Re-proves the plate from the SHIPPED prefabs + `ProjectSettings/TimeManager.asset` — the relationship to the hull collider, exact slab tiling (forward AND mirrored), drawn == damaged, the four transcriptions of the volume agreeing *and* being pinned to the source they were copied from, the flag's path prefab → impactor → Burst job, the circumscribing trigger, the zero state, the contact window against the real fixed timestep, and `restitution × Inertia == 1`. Run it after touching any of those numbers |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` + `Impactors/ExplosionImpactor.cs` | Platform additions: `InitializeStruct.DevastatingOverride` + `ApplyDevastatingOverride` + `ExplosionImpactor.SetDevastating`, mirroring the existing `AffectSelfOverride` pair |
 | `_Scripts/.../Data Containers/PlaceSwitchActionSO.cs` + `Executors/PlaceSwitchActionExecutor.cs` | Charge gate, placement, pooled spawn, spend, dais shape (§5) |
@@ -1770,8 +2295,9 @@ vessel container — all vessel-on-vessel interaction is skimmer-mediated, §3.4
 Vessel Skimmers**, whose container-null and pointer-at-disabled-twin failures are silent by
 design) · a crystal prefab variant carrying `BallForgeCrystalImpactor` (§4.1) ·
 `ScarabCameraSettingsSO.asset` · `SO_Class_Scarab.asset` (correct name + location) ·
-`ScarabHUDVariant.prefab` · a switch prefab/definition · **a ball prefab** (§4.5 — the shipped
-ball is a scene object, so this does not exist yet).
+`ScarabHUDVariant.prefab` ·
+a switch prefab/definition · **a ball prefab** (§4.5 — the shipped ball is a scene object, so this
+does not exist yet).
 
 Edits: `VesselClassType.cs` (+`Scarab = 12`) · `EnumIntegrityTests.cs` (count 13→14 +
 `[TestCase]`, **same commit** or the suite fails) · `Vessel Prefab Container.asset` (+prefab —
@@ -1806,23 +2332,47 @@ populated, ≥2 material slots per hull MeshRenderer.
   resource event.
 - **Juke pip**: one binary ring — armed ↔ recharging, fill wipe + spend punch (the Sparrow's
   `rollChargeIndicator` exactly; binary stays visibly binary).
-- **Control hints**: LT → drift and A → switch derive automatically; RT → the Time entry's `Input`
-  places the RT glyph on Throttle even with no `ShipActionSO` bound to the event (the map is the
-  hint system's first lookup, verified). The **juke has no hint address** (§15).
+- **Blast REVERSED tint — RETIRED with the mechanic** (§3.8/§3.9). A third Charge-icon colour used
+  to say "the drift is fully held, so the next juke's plate throws mass back past you". There is no
+  such state now: the plate always claims its mirror image, and the phase grab that briefly replaced
+  the modifier is itself retired — nothing modifies the blast at all, so there is nothing to
+  announce before the pilot commits. `SetBlastReversed`, `blastReversedColor` and
+  `ScarabHUDController.HandleBlastReversedChanged` are deleted. *A readout of an intent is worth
+  more than a flash after the fact — but only while the intent exists.*
+- **Control hints**: LT → drift and A → switch derive automatically; RT → the
+  Time entry's `Input` places the RT glyph on Throttle even with no `ShipActionSO` bound to the
+  event (the map is the hint system's first lookup, verified). The **juke has no hint address**
+  (§15).
 
 ---
 
-## 13. Tuning knobs (first pass — all *(proposal)*)
+## 13. Tuning knobs (shipped values — read the SOURCE column before tuning)
+
+**The transformer rows are authored in the C# INITIALIZER, not on the prefab, and that is not a
+mistake to "fix" by hand.** `Scarab.prefab`'s `ScarabVesselTransformer` block was last written by
+Unity *before* the Scarab-specific fields existed, so it serializes only the inherited
+`VesselTransformer` fields — `accelerationPerSecond`, `coastDragPerSecond`, `baseTopSpeed`,
+`doubleTapWindowSeconds`, `dashSpeed` and `dashDurationSeconds` appear nowhere in the YAML. Unity
+runs field initializers first and then applies whatever keys the YAML carries, so a missing key
+keeps the initializer's value: for these six the C# default IS the shipped number. This is the
+converse of the vessel skill's rule 4 (*per-vessel numbers come from the prefab, never the class
+default*) — the rule is about which source is AUTHORITATIVE, and here the prefab is silent, so
+reading it and concluding "unset" would be as wrong as reading a class default over a real
+override. **Check whether the key is present before you trust either.** The moment anyone opens
+this prefab in the editor and saves, Unity will write all six at their then-current values and
+the prefab becomes authoritative for them; until then, edit the C#.
 
 | Knob | Where | Value |
 |---|---|---|
-| `accelerationPerSecond` / `coastDragPerSecond` | transformer | 70 / 12 |
-| `baseTopSpeed` (Time-scaled ×1→1.5) | transformer | 180 → 270 |
-| `DefaultMinimumSpeed` | prefab | 10 |
+| `accelerationPerSecond` / `coastDragPerSecond` | transformer (C# initializer — see above) | 90 / 120 |
+| `baseTopSpeed` (Time-scaled ×1→1.5) | transformer (C# initializer — see above) | **216 → 324** |
+| `DefaultMinimumSpeed` | prefab | 0 (throttle-off is a real stop) |
 | Pitch/Yaw/Roll · `RotationThrottleScaler` | prefab | 100/100/30 · 0.1 |
 | Drift single / sharp (`Mult`, damping) | drift SOs | 1.4, 0.5 / 1.8, 0.25 |
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
-| `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
+| `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
+| `mirrorAboutStartPlane` (§3.9 — the plate claims its reflection through its start plane; uniform velocity across both halves) | `AOEScarabCavitation.prefab` | on |
+| `doubleTapWindowSeconds` / dash impulse | transformer (C# initializer — see above) | 0.3 / 100 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
 | Live balls per player cap | mode config | 3 |
@@ -1853,6 +2403,31 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
 4. **Juke**: right stick to perimeter → lateral shunt + visual roll; camera does not roll; pip
    spends and re-arms; holding the stick pinned does not re-fire. Juke into an enemy → they are
    shoved; juke into a teammate → nothing. MPPM: remote peer sees it.
+4a. **Analog juke** (§3.7): push the right stick to roughly a THIRD of its travel and HOLD it → a
+   small lateral nudge with a LEAN, no 360° spin, and **no cavitation plate**. Now, without
+   releasing, push the same stick the rest of the way to the limit → it upgrades in place: the spin
+   plays and the plate fires. Do the whole push SLOWLY (about half a second) and confirm the plate
+   still fires — that is the regression this pass exists for. Confirm a partial-only push does not
+   open the steal window (in Scarab Scramble it must NOT convert an enemy's ball), that holding the
+   stick pinned dashes exactly ONCE, and that a resting stick on a worn pad fires nothing.
+4b. **The MIRRORED plate** (§3.9): juke at the perimeter with a wall of prisms **BEHIND** you as
+   well as ahead. Both patches must break, at the same reach, in the same beat — the back half is
+   the whole change. Then watch what the two halves DO with the debris: **the velocity is uniform**,
+   so the forward half throws mass away from you and the back half brings mass *toward and past*
+   you. If both halves throw outward, the impulse is being mirrored along with the volume and the
+   mechanic is gone. The plate's visual cylinder must span both halves (it is the player's only
+   read of the back half), and the reach behind must equal the reach ahead — an under-reaching back
+   half means the trigger box or the broadphase sphere did not move with the query. In Scarab
+   Scramble, juke with a ball a short way behind you: it must be **dragged forward through you**,
+   not batted further back. The drift is irrelevant to all of this now — hold it, don't hold it,
+   the plate is identical.
+4c. **What the mirrored plate does to a BALL and a CRYSTAL** (§3.9), in
+   `MinigameScarabScramble`:
+   • **YOUR OWN DAIS MUST NOT CANCEL YOUR PUNCH.** Pay out a dais (§5.1 — super-shielded sun cores),
+     fly past it, and juke with it BEHIND you. Mass in front must still break. A punch that does
+     nothing means the mirrored blast is still honouring the block-on-super-shield abort.
+   • **A CRYSTAL ASTERN COMES WITH YOU.** With a crystal a short way behind you, juke: the forged
+     ball must fly FORWARD along your dash like everything else the plate claimed.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.
@@ -1955,6 +2530,17 @@ implementation time.
    `PadRightStick` glyph, or accept a hint-less juke icon (the audit will flag it).
 9. **Touch** (§3.1): no `Button1Action` raise site exists on touch — on-screen switch button, or
    gamepad/desktop-only at v1?
+9a. **AI and a held modifier** (§3.8): **CLOSED — the mechanic it described is retired.** Kept for
+   the trap. While the ball reversal rode a held drift, an AI drift was BINARY — the non-gamepad
+   trigger sum reports 1 or 2 for the whole ability, so the drift hold read as FULLY HELD for a
+   bot's entire drift and it reversed every ball it struck and every plate it threw. That shipped
+   ungated on the grounds that a reversal is one instantaneous act with no state, but it was a real
+   behavioural difference nobody had authored. *A capability an AI acquires by accident is a design
+   decision nobody made* — and the general fix, before the feature was cut, was moving the trigger
+   onto an explicit bound input, which an AI presses only if something explicitly makes it. The
+   underlying wish (an analog drift depth on `AIPilot`, which would also make a bot's own drift
+   read better) survives as a nice-to-have with no correctness riding on it.
+
 10. **AI Scarab**: `AIPilot` has no throttle setter and no stick synthesis, so an AI Scarab would
     idle with a dead juke; it *does* have a prefab-authored ability loop that could fire switch
     placement blindly. v1 recommendation: AI keeps flying Rhinos in Astro League (free, via the

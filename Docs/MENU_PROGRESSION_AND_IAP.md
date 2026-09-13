@@ -23,9 +23,16 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }
 | HOME | **Enabled** |
 | HANGAR | **Enabled** |
 | PROFILE | **Enabled** |
-| STORE | Enabled (not in disabled list) |
-| ARK | **Locked** (intentional — stays as-is) |
+| STORE | **Has no entry in `screens` at all** — see the note below |
+| ARK | **Locked** (intentional — stays as-is). **This is the screen that hosts `StoreScreen`** |
 | PORT | **Locked** (intentional — stays as-is) |
+
+> ⚠ **`MenuScreens.STORE` is a dangling enum value.** `ScreenSwitcher.screens` contains
+> `{HANGAR, ARK, HOME, PORT, PROFILE}` and no `STORE` entry, while the store's content
+> (`StoreScreen` + its purchase cards) lives on the **`ArkScreen`** GameObject. So `NavigateTo(STORE)`
+> used to fall through `GetIndexForScreen`'s warning path to index 0 and land the player on the
+> **Hangar** — which is what the two `Go To Store Button`s did. Since the commerce de-scope (§6)
+> `IsScreenDisabled(STORE)` is true, so that press refuses instead of misnavigating.
 
 **Key point:** Hangar, Home, and Profile are *not* code-disabled. There is nothing in code to "turn back on." If a screen appears empty/missing, it is a **scene/prefab wiring** issue (the rich Profile/Episode widgets historically lived in the `MIgration_Prefabs (DELETE LATER)/` prefabs and may not be instantiated in the live `Menu_Main` `ProfileScreen` root). See the wiring checklist in §4.
 
@@ -127,6 +134,11 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
 
 ## 5. Web-checkout IAP (buy episodes as "support")
 
+> ⛔ **DE-SCOPED for the invite build (2026-09-11).** Everything in this section is wired and
+> **switched off** — `IAPManager.OpenCheckout` declines, no screen offers a purchase, and no path
+> reaches `PurchaseConfirmationModal`. Read §6 before changing anything here. The verification gap
+> below is *why* it is off, not merely a scheduling accident.
+
 There is **no in-app store SDK** and (deliberately) no new dependency. Purchases open a hosted checkout page in the **system browser** via `Application.OpenURL`, which works on Steam/PC and mobile.
 
 ### Pieces
@@ -158,3 +170,106 @@ External-browser checkout returns **no receipt inside the client**. `ConfirmPend
 ### Future option: in-app webview
 
 `SO_IAPConfig.openInExternalBrowser` is a flag for a later in-app webview path. Rendering checkout in-process needs a webview plugin (e.g. Vuplex / UniWebView / gree) — none is installed, and adding one is a dependency decision. External browser is the no-dependency default.
+
+---
+
+## 6. The invite-build commerce de-scope (`Docs/STEAM_RELEASE_TASKS.md` R4)
+
+Nothing in the invite build sells anything. The surfaces that would take money are **kept, wired and
+switched off** — not deleted — so the paid-EA conversion is one asset edit. This is checklist item
+**C4**; it is load-bearing because the invite build is the first thing anyone outside the studio
+sees, and a purchase screen that half-works reads as *broken* rather than as *unfinished*.
+
+### 6.1 One authority, and it is not a second locked look
+
+| Piece | Where |
+|---|---|
+| The posture | `Resources/CommerceAvailability` (`SO_CommerceAvailability`) — **the only place to flip** |
+| The look + the refusal | `MenuAvailabilityView`, unchanged (`Docs/HomeHub/ARCHITECTURE.md` §2) |
+| Per-control marker | `CommerceAffordance` — carries *which surface*, never what state |
+| The tests | `CommerceDeScopeTests` |
+
+Shipped posture:
+
+| Surface | State | Why that state |
+|---|---|---|
+| `StoreScreen` | `Unavailable` | Nothing in it is purchasable this window, and `MenuScreens.STORE` is not even a screen (§1) — *this is not built* is literally true |
+| `Episodes` | `Locked` | The episodes exist as content and the entitlement is real; the player cannot buy one **yet** |
+| `CatalogPurchase` | `Locked` | Every path to `PurchaseConfirmationModal` — the Store's cards and the Hangar's captain upgrade |
+| `AllowRealMoneyCheckout` | `false` | The verification gap in §5 is unresolved, so the service declines at `OpenCheckout` |
+
+### 6.2 What actually reached a money surface — the live path
+
+The important finding, because it was reachable from a **cold boot** with no flags:
+
+```
+Menu_Main → nav to PROFILE → press "UnlockVesselButton"
+  → EpisodeScreen.ShowPanel()        (UnityEvent invokes it on the INACTIVE panel, which it activates)
+  → two "Support Us" cards + a Support Us button
+  → IAPManager.InitiateSupportPurchase() → Application.OpenURL(…)
+```
+
+`UnlockVesselButton` (on `ProfileScreen`, active) despite its name does **not** unlock a vessel — its
+only persistent listener is `EpisodeScreen.ShowPanel`. It now carries a `CommerceAffordance`
+(`surface: Episodes`) so it dims from frame 0, and `ShowPanel` / `TogglePanel` refuse with a reason,
+so the panel does not open.
+
+### 6.3 Where each gate sits, and why there are two layers
+
+**Presentation** — so the player can see the entry is deliberate, not dead:
+
+- the `STORE` nav entry, via `ScreenSwitcher.MarkDisabledNavLinks` reading the config;
+- `UnlockVesselButton`, via the scene-authored `CommerceAffordance`;
+- `HangarCaptainsView`'s `UpgradeButton` and `GoToStoreButton`, marked at `Start`;
+- episode cards and the Support Us button, marked when the panel is populated.
+
+**Action** — so an un-gated or re-enabled screen still cannot transact:
+
+- `PurchaseCard.OnClickBuy` and `HangarCaptainsView.OnClickBuy` — the **only** two paths to
+  `PurchaseConfirmationModal`, asserted by `CommerceDeScopeTests.OnlyTheKnownPathsOpenThePurchaseModal`;
+- `HangarCaptainsView.PurchaseUpgrade`, because it is public and a scene could wire a button to it;
+- `IAPManager.OpenCheckout`, the choke point both checkout entry points share.
+
+Same split `OfflineUIGate` records: gate the UI so a player is never offered something that cannot
+work, and never rely on the UI alone to enforce it.
+
+### 6.4 The soft-currency loop is NOT commerce and is untouched
+
+Crystals are earned from match placement (`Scoreboard` → `PlayerDataService.AddCrystals`) and spent
+on vessel unlocks (`VesselUnlockSystem.TryPurchaseVessel` → `TrySpendCrystals`). That is a **UGS**
+loop; it is part of the invite build and it passes through none of the de-scoped surfaces.
+`CommerceDeScopeTests.SoftCurrencyLoopIsUntouched` fails if any of those three files ever starts
+consulting the de-scope.
+
+**The Hangar's *captain upgrade* is a different economy and IS de-scoped.** It is priced in the
+PlayFab catalog (`CatalogManager`), which `AuthenticationManager` — the legacy PlayFab auth — has to
+initialize, and that is inert since the UGS migration. So `GetCaptainUpgrade` returns null, the
+requirement checks never pass, and the upgrade *was already refusing* with a bare denied sting and no
+explanation. That is exactly the "reads as broken" state this item exists to fix, so it now refuses
+with a reason. It is not the crystal loop above, and locking it costs the invite build nothing.
+
+### 6.5 The scene ALSO blocks most of this today — do not mistake that for the gate
+
+Independently of the code gates, `Menu_Main` currently has: `StoreScreen` with `m_Enabled: 0`, its
+content root `ArkScreen/Scroll View` inactive, `ARK` in `disabledScreens`, `HangarCaptainsView` under
+two inactive ancestors, and the `EpisodeScreen` panel inactive. Several gates are therefore
+**unreachable today**. They are kept deliberately: the scene state is not a decision anybody recorded
+and a single re-activation undoes it, whereas the config is.
+
+### 6.6 To convert at paid-EA
+
+Edit `Resources/CommerceAvailability`: set each surface to `Available` and `allowRealMoneyCheckout`
+to true. Nothing else has to change — but **do not set `allowRealMoneyCheckout` until
+`ConfirmPendingPurchase` is backed by server-side order verification** (§5). `CommerceDeScopeTests`
+asserts the de-scoped posture and will fail on the conversion commit; update it then, deliberately.
+
+### 6.7 Known remaining items
+
+- A second `Go To Store Button` exists under `Hangar_Panel/AbilitiesView`, both inactive, so it is
+  unreachable and carries no marker. If that view is ever re-enabled it will be an undimmed button —
+  its press already refuses via `IsScreenDisabled(STORE)`.
+- `IAPManager` is still **started** (an active GameObject in `Bootstrap.unity`, with `config` null so
+  it falls back to `SO_IAPConfig`'s defaults). It is left running on purpose: it stays DI-resolvable
+  and keeps formatting prices, and `OpenCheckout` is where the posture is enforced.
+- The dead copies — `MIgration_Prefabs (DELETE LATER)/{Screens,ModalWindows,IAPManager}.prefab` and
+  `UI Elements/Main Menu Screens/Store Screen.prefab` — are referenced by nothing and were left alone.

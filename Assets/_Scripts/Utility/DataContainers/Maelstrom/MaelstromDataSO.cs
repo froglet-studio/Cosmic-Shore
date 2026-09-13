@@ -132,8 +132,9 @@ namespace CosmicShore.Utility
         [Header("Lineup")]
         [Tooltip("The POOL a round is drawn from - the host picks a random entry per round (no " +
                  "immediate repeat), so serialized order is display order only (the hub's pool " +
-                 "string), never play order. Currently seven: Skim Race, Joust, Crystal Capture, " +
-                 "Rampage, Peel the Cage, Scarab Scramble, The Bends.\n\n" +
+                 "string), never play order. Currently SIXTEEN - every domain-scored arcade mode " +
+                 "that fits the Maelstrom card's player/domain range. Which of them a given run " +
+                 "can draw is IntensityTiers, not this list.\n\n" +
                  "Adding a mode: it must be a domain-scored multiplayer mode whose ScoringRuleSO " +
                  "can ResolvePlacementOrder, its scene must be in Build Settings, and its card's " +
                  "player/domain range must contain the Maelstrom card's (2-4 players, 2+ domains). " +

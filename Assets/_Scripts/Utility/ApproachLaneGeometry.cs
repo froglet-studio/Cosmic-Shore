@@ -8,18 +8,21 @@ namespace CosmicShore.Utility
     /// unit tested in <c>ApproachLaneGeometryTests</c>, and called by
     /// <c>CrystalManager.LaneSlotPosition</c> so the shipped path IS the tested one.
     ///
-    /// <para>Drumfire is the mode it was written for. The Dolphin's only weapon is armed by
-    /// SKIMMING and fired by touching a CRYSTAL, so a line of crystals is a line of triggers - and
-    /// because the line runs PAST the target rather than at it, the target is always off to one
-    /// side and every shot needs a deliberate turn off the flight vector. That is the whole
-    /// fly / aim / shoot / repeat lesson, expressed as geometry rather than as a rule.</para>
+    /// <para><b>No mode uses it today.</b> It was written for Drumfire (removed 2026-09) and is
+    /// kept as a platform capability, because what it encodes is not mode-specific: the Dolphin's
+    /// only weapon is armed by SKIMMING and fired by touching a CRYSTAL, so a line of crystals is
+    /// a line of triggers - and because the line runs PAST a central target rather than at it, the
+    /// target is always off to one side and every shot needs a deliberate turn off the flight
+    /// vector. That is a fly / aim / shoot / repeat loop expressed as geometry rather than as a
+    /// rule, and it is available to the next mode that wants one.</para>
     ///
     /// <para><b>The lane and the spawn ring are ONE arrangement.</b> Lane <c>k</c> is struck
     /// through <c>CellSpawnFormation.Direction(k, lanes, formation)</c> at
     /// <paramref name="ringRadius"/> - the same slot the pilot spawns on - so lane ownership is
     /// emergent and nothing has to be assigned. The caller must therefore author the same radius
-    /// and the same formation the scene's spawner uses; <c>Tools/Build/author_drumfire_assets.py</c>
-    /// asserts both.</para>
+    /// and the same formation the scene's spawner uses - ONE number written in two places, so a
+    /// mode that adopts this should assert the pair in its own asset generator rather than trust a
+    /// comment. (Drumfire's generator did; it went with the mode.)</para>
     /// </summary>
     public static class ApproachLaneGeometry
     {

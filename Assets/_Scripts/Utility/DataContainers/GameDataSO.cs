@@ -363,14 +363,14 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// How many gates the Switchback course has - the number a pilot must thread to finish
-        /// it. Published by <c>SwitchbackGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// it. Published by <c>RaceGateTurnMonitor</c> in StartMonitor (server), synced to
         /// clients via NetworkVariable.OnValueChanged, and read by
-        /// <see cref="CosmicShore.Gameplay.SwitchbackScoringRuleSO"/> for the end condition and
+        /// <see cref="CosmicShore.Gameplay.GateRaceScoringRuleSO"/> for the end condition and
         /// the "remaining" readout.
         ///
         /// Unlike every other target here it is compared against ONE PILOT's count rather than a
         /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
-        /// does (SwitchbackScoringRuleSO.DomainValue folds by max).
+        /// does (GateRaceScoringRuleSO.DomainValue folds by max).
         /// </summary>
         [NonSerialized] public int SwitchTargetCount;
 
@@ -393,7 +393,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
+                CSDebug.LogError("[GameDataSO] SyncFromArcadeGame - game is null.");
                 return;
             }
 
@@ -486,8 +486,8 @@ namespace CosmicShore.Utility
             var clamped = ClampVesselToGame(current);
             if (clamped == current) return;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                      $"clamping selected vessel to {clamped}.</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.");
             selectedVesselClass.Value = clamped;
             if (VesselClassSelectedIndex != null)
                 VesselClassSelectedIndex.Value = (int)clamped;
@@ -507,7 +507,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}");
         }
 
 

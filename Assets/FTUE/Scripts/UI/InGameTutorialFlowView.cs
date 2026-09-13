@@ -4,6 +4,7 @@ using UnityEngine;
 using CosmicShore.Core;
 using UnityEngine.SceneManagement;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -91,7 +92,7 @@ namespace CosmicShore.Core
 
             _ftueProgress.currentPhase = TutorialPhase.Phase3_Other;
             _skipButton.SetActive(true);
-            Debug.Log("[FTUE] Phase2 (timer) complete");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, "[FTUE] Phase2 (timer) complete");
         }
 
         public void ReturnToMainMenu()

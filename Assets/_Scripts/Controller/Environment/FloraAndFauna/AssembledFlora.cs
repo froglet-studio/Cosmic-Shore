@@ -902,9 +902,10 @@ namespace CosmicShore.Gameplay
                 _hasHomeTile = true;
                 PlaceCrystalAtTileCentre();
                 SchwarzPColonyDiagnostics.Founders++;
-                CSDebug.Log($"[SchwarzPColony] FOUNDER {name}: tile {_homeTile} " +
-                            $"level {frame.Level} ({SchwarzPTileData.SiteCount(frame.Level)} sites) " +
-                            $"lattice #{frame.GetHashCode():X}");
+                CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                    $"[SchwarzPColony] FOUNDER {name}: tile {_homeTile} " +
+                    $"level {frame.Level} ({SchwarzPTileData.SiteCount(frame.Level)} sites) " +
+                    $"lattice #{frame.GetHashCode():X}");
                 return;
             }
         }
@@ -998,9 +999,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            CSDebug.Log($"[SchwarzPColony] COMPLETE {name}: tile {_homeTile} " +
-                        $"prisms={healthTracker.Count} - frontier now " +
-                        $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open tiles");
+            CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                $"[SchwarzPColony] COMPLETE {name}: tile {_homeTile} " +
+                $"prisms={healthTracker.Count} - frontier now " +
+                $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open tiles");
         }
 
         /// <summary>
@@ -1051,9 +1053,10 @@ namespace CosmicShore.Gameplay
             if (born)
             {
                 SchwarzPColonyDiagnostics.Births++;
-                CSDebug.Log($"[SchwarzPColony] BIRTH #{SchwarzPColonyDiagnostics.Births} donor {name}: " +
-                            $"daughter on tile {tile} (frontier " +
-                            $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open)");
+                CSDebug.LogVerbose(CSLogChannel.SchwarzPColony,
+                    $"[SchwarzPColony] BIRTH #{SchwarzPColonyDiagnostics.Births} donor {name}: " +
+                    $"daughter on tile {tile} (frontier " +
+                    $"{SchwarzPColonyFrontier.Count(cell, SourceConfig)} open)");
             }
             else
             {

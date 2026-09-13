@@ -11,7 +11,9 @@ scene view, the networked ready-up, and the connecting reveal) and the **UI wiri
 > **Length model (locked for this pass):** race to `WinTarget = 6` per-domain points (`{2,1,0}` per
 > game), hard cap `MaxGames = 7`. Intensity does **not** affect length — it only sets the per-game
 > difficulty draw pool (`N modes × intensity` "experiences", where N is the authored `GameQueue`
-> length — 7 today).
+> length — **7 when this spec was written**; the pool has since grown and `IntensityTiers` now also
+> decides WHICH of it a given intensity may draw, so read
+> `MaelstromSystem/ARCHITECTURE.md` §1.1 for the live model rather than this count).
 
 ---
 

@@ -1,240 +1,226 @@
 #if UNITY_EDITOR
-using NUnit.Framework;
-using UnityEngine;
+using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
+using CosmicShore.UI;
+using NUnit.Framework;
 
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="IPartyRoster"/> as implemented by
-    /// <see cref="HostConnectionDataSO"/> - the LOCAL, authoritative answer to
-    /// "how big is my party" and "is this player in it".
+    /// PartyRoster tests - the party panel's seating.
     ///
-    /// <para>
-    /// WHY THIS MATTERS. A three-player party rendered three different sizes on
-    /// three screens simultaneously (2/4, 1/4, 3/4) because
-    /// <c>FriendsListPanel</c> labelled its own party members from each peer's
-    /// self-published <c>partyCount</c> presence property instead of the shared
-    /// roster. That is a wrong-source-of-truth bug, not a latency bug: with N
-    /// members there are N independently-published scalars and nothing that
-    /// reconciles them, so no poll cadence could ever have fixed it. It broke
-    /// the locked "session is authoritative over presence" invariant and
-    /// <c>PartySystem/ARCHITECTURE.md</c> exit criterion 3.
-    /// </para>
-    ///
-    /// <para>
-    /// These tests pin the properties that make the local answer trustworthy:
-    /// it counts the roster LIST (never a field on its items, which are
-    /// identity-only and carry zeros), it includes the local player, and it
-    /// answers membership by PlayerId regardless of how stale the rest of a
-    /// row's data is.
-    /// </para>
+    /// WHY THIS MATTERS:
+    /// The bug this replaced was invisible on any single machine. Every device seated ITSELF
+    /// first (PartyMemberService.SeedLocalPlayer puts the local player at index 0 everywhere)
+    /// and appended the rest in session-enumeration order, so four players in one party saw
+    /// four different seatings and nobody could say "third from the left" and be understood.
+    /// The fix is only correct if the SAME roster comes out no matter whose machine builds it,
+    /// which is exactly what a single-machine play test cannot show - so it is asserted here.
     /// </summary>
     [TestFixture]
     public class PartyRosterTests
     {
-        HostConnectionDataSO _data;
-        ScriptableListPartyPlayerData _partyMembers;
-        IPartyRoster _roster;
+        const ulong HOST = 0;
 
-        [SetUp]
-        public void SetUp()
+        static PartyPlayerData P(string id, string name = null, int avatar = 0) =>
+            new(id, name ?? id, avatar);
+
+        // Fake network: UGS id -> replicated owner client id. Anything absent is "no Player
+        // object on this machine yet", which is what an in-flight join looks like.
+        static System.Func<string, ulong> Net(params (string id, ulong clientId)[] rows)
         {
-            _data = ScriptableObject.CreateInstance<HostConnectionDataSO>();
-            _partyMembers = ScriptableObject.CreateInstance<ScriptableListPartyPlayerData>();
-            _data.PartyMembers = _partyMembers;
-            _data.LocalPlayerId = "local";
-            _roster = _data;
+            var map = new Dictionary<string, ulong>();
+            foreach (var r in rows) map[r.id] = r.clientId;
+            return id => map.TryGetValue(id, out var c) ? c : PartyRoster.UnknownClientId;
         }
 
-        [TearDown]
-        public void TearDown()
+        static List<string> Order(List<PartyRoster.Seat> seats)
         {
-            Object.DestroyImmediate(_partyMembers);
-            Object.DestroyImmediate(_data);
+            var ids = new List<string>();
+            foreach (var s in seats) ids.Add(s.PlayerId);
+            return ids;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // MemberCount
-        // ─────────────────────────────────────────────────────────────────────
-
-        #region MemberCount
+        #region Host first, clients in join order
 
         [Test]
-        public void MemberCount_UnwiredList_ReturnsZero()
+        public void Host_TakesFirstSeat_EvenWhenLocalPlayerIsAClient()
         {
-            _data.PartyMembers = null;
-            Assert.AreEqual(0, _roster.MemberCount,
-                "An unwired roster must report 0, not throw.");
-        }
+            var result = new List<PartyRoster.Seat>();
 
-        [Test]
-        public void MemberCount_EmptyList_ReturnsZero()
-        {
-            Assert.AreEqual(0, _roster.MemberCount);
-        }
+            // Seen from client "c2": its own PartyMembers list seeds ITSELF first.
+            var members = new List<PartyPlayerData> { P("c2"), P("host"), P("c1") };
 
-        [Test]
-        public void MemberCount_IncludesLocalPlayer()
-        {
-            _partyMembers.Add(new PartyPlayerData("local", "LocalPilot", 1));
+            PartyRoster.Build(members, P("c2"), HOST,
+                Net(("host", 0), ("c1", 1), ("c2", 2)), result);
 
-            Assert.AreEqual(1, _roster.MemberCount,
-                "MemberCount is what an 'IN YOUR PARTY n/4' label renders, so it " +
-                "must include the local player - unlike RemotePartyMemberCount.");
+            Assert.AreEqual(new[] { "host", "c1", "c2" }, Order(result).ToArray());
+            Assert.IsTrue(result[0].IsHost, "First seat must be flagged as the host.");
+            Assert.IsFalse(result[1].IsHost);
+            Assert.IsFalse(result[2].IsHost);
         }
 
         [Test]
-        public void MemberCount_ThreePlayerParty_ReturnsThree()
+        public void Clients_FollowInJoinOrder()
         {
-            _partyMembers.Add(new PartyPlayerData("local", "A", 1));
-            _partyMembers.Add(new PartyPlayerData("b", "B", 2));
-            _partyMembers.Add(new PartyPlayerData("c", "C", 3));
+            var result = new List<PartyRoster.Seat>();
+            var members = new List<PartyPlayerData> { P("host"), P("c3"), P("c1"), P("c2") };
 
-            Assert.AreEqual(3, _roster.MemberCount,
-                "The A/B/C repro: every member of one party must read the same " +
-                "size from their own local roster.");
+            // Netcode assigns owner client ids in CONNECTION order, so ascending id IS join order.
+            PartyRoster.Build(members, P("host"), HOST,
+                Net(("host", 0), ("c1", 1), ("c2", 2), ("c3", 3)), result);
+
+            Assert.AreEqual(new[] { "host", "c1", "c2", "c3" }, Order(result).ToArray());
         }
 
-        /// <summary>
-        /// The trap this whole commit exists to close. Entries in PartyMembers
-        /// come from <c>PartyMemberService.ReadMemberData</c>, which builds them
-        /// from the party SESSION's player list via the identity-only
-        /// constructor - so every one of them reports
-        /// <c>AdvertisedPartyMemberCount == 0</c>. A "fix" that pointed the label
-        /// at a member's own advertised field would render 0/4. MemberCount
-        /// counts the list instead, so it is immune.
-        /// </summary>
         [Test]
-        public void MemberCount_IsIndependentOfAdvertisedFieldsOnItems()
+        public void EveryDevice_BuildsTheSameSeating()
         {
-            _partyMembers.Add(new PartyPlayerData("local", "A", 1));
-            _partyMembers.Add(new PartyPlayerData("b", "B", 2));
+            var net = Net(("host", 0), ("c1", 1), ("c2", 2));
 
-            Assert.AreEqual(0, _partyMembers[0].AdvertisedPartyMemberCount,
-                "Identity-only rows carry zeroed advertised fields by design.");
-            Assert.AreEqual(2, _roster.MemberCount,
-                "MemberCount must count the list, never read a field off its items.");
+            // Each device's own PartyMembers list: local seeded first, remotes in whatever
+            // order that machine's session enumeration happened to produce.
+            var asHost = new List<PartyRoster.Seat>();
+            PartyRoster.Build(new List<PartyPlayerData> { P("host"), P("c2"), P("c1") },
+                P("host"), HOST, net, asHost);
+
+            var asC1 = new List<PartyRoster.Seat>();
+            PartyRoster.Build(new List<PartyPlayerData> { P("c1"), P("host"), P("c2") },
+                P("c1"), HOST, net, asC1);
+
+            var asC2 = new List<PartyRoster.Seat>();
+            PartyRoster.Build(new List<PartyPlayerData> { P("c2"), P("c1"), P("host") },
+                P("c2"), HOST, net, asC2);
+
+            Assert.AreEqual(Order(asHost).ToArray(), Order(asC1).ToArray());
+            Assert.AreEqual(Order(asHost).ToArray(), Order(asC2).ToArray());
         }
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Contains
-        // ─────────────────────────────────────────────────────────────────────
-
-        #region Contains
+        #region Degrading while the spawn chain is in flight
 
         [Test]
-        public void Contains_UnwiredList_ReturnsFalse()
+        public void MembersWithNoClientIdYet_SortLast_AndDeterministically()
         {
-            _data.PartyMembers = null;
-            Assert.IsFalse(_roster.Contains("anyone"));
+            var result = new List<PartyRoster.Seat>();
+            var members = new List<PartyPlayerData> { P("zulu"), P("host"), P("alpha") };
+
+            // "alpha" and "zulu" are in the party but their Player objects have not spawned.
+            PartyRoster.Build(members, P("host"), HOST, Net(("host", 0)), result);
+
+            Assert.AreEqual(new[] { "host", "alpha", "zulu" }, Order(result).ToArray(),
+                "Unresolved members sort behind resolved ones, and tie-break on ordinal id " +
+                "so every device still agrees while the spawn chain is in flight.");
         }
 
         [Test]
-        public void Contains_NullOrEmptyId_ReturnsFalse()
+        public void NoNetworkAtAll_StillProducesADeterministicOrder()
         {
-            _partyMembers.Add(new PartyPlayerData("b", "B", 2));
+            var a = new List<PartyRoster.Seat>();
+            var b = new List<PartyRoster.Seat>();
 
-            Assert.IsFalse(_roster.Contains(null));
-            Assert.IsFalse(_roster.Contains(string.Empty),
-                "An empty id must never match - a row with no id is not a member.");
+            PartyRoster.Build(new List<PartyPlayerData> { P("m"), P("a"), P("z") },
+                P("m"), PartyRoster.UnknownClientId, Net(), a);
+            PartyRoster.Build(new List<PartyPlayerData> { P("z"), P("m"), P("a") },
+                P("a"), PartyRoster.UnknownClientId, Net(), b);
+
+            Assert.AreEqual(new[] { "a", "m", "z" }, Order(a).ToArray());
+            Assert.AreEqual(Order(a).ToArray(), Order(b).ToArray());
         }
 
         [Test]
-        public void Contains_MemberPresent_ReturnsTrue()
+        public void NoHostClientId_MarksNobodyAsHost()
         {
-            _partyMembers.Add(new PartyPlayerData("b", "B", 2));
-            Assert.IsTrue(_roster.Contains("b"));
-        }
+            var result = new List<PartyRoster.Seat>();
+            PartyRoster.Build(new List<PartyPlayerData> { P("a"), P("b") },
+                P("a"), PartyRoster.UnknownClientId, Net(), result);
 
-        [Test]
-        public void Contains_MemberAbsent_ReturnsFalse()
-        {
-            _partyMembers.Add(new PartyPlayerData("b", "B", 2));
-            Assert.IsFalse(_roster.Contains("c"));
-        }
-
-        [Test]
-        public void Contains_LocalPlayer_ReturnsTrue()
-        {
-            _partyMembers.Add(new PartyPlayerData("local", "LocalPilot", 1));
-            Assert.IsTrue(_roster.Contains("local"),
-                "The local player is a member of their own party.");
-        }
-
-        [Test]
-        public void Contains_MatchesByIdRegardlessOfStaleRowData()
-        {
-            _partyMembers.Add(new PartyPlayerData("b", "OldName", 2));
-
-            Assert.IsTrue(_roster.Contains("b"),
-                "Membership is keyed on PlayerId only, so a mid-party rename or a " +
-                "stale avatar can never drop someone out of the roster.");
+            foreach (var seat in result)
+                Assert.IsFalse(seat.IsHost,
+                    "With no live host id, no seat may claim the host badge - a guess would be " +
+                    "wrong on every device that guessed differently.");
         }
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // MaxSlots / HasOpenSlots / IsHost
-        // ─────────────────────────────────────────────────────────────────────
-
-        #region MaxSlots, HasOpenSlots, IsHost
+        #region Local player
 
         [Test]
-        public void MaxSlots_DefaultIsFour()
+        public void LocalPlayer_IsSeated_EvenWhenMissingFromTheMemberList()
         {
-            Assert.AreEqual(4, _roster.MaxSlots);
+            var result = new List<PartyRoster.Seat>();
+
+            // PartyMembers has not caught up with the local seed yet.
+            PartyRoster.Build(new List<PartyPlayerData> { P("host") }, P("me"), HOST,
+                Net(("host", 0), ("me", 1)), result);
+
+            Assert.AreEqual(new[] { "host", "me" }, Order(result).ToArray());
+            Assert.IsTrue(result[1].IsLocal);
+            Assert.IsFalse(result[0].IsLocal);
         }
 
         [Test]
-        public void MaxSlots_MatchesMaxPartySlots()
+        public void LocalIdentity_WinsOverTheCopyInTheMemberList()
         {
-            Assert.AreEqual(_data.MaxPartySlots, _roster.MaxSlots,
-                "The interface must not become a second, drifting copy of the limit.");
+            var result = new List<PartyRoster.Seat>();
+
+            // The list still carries the pre-cloud-profile placeholder; the live local fields
+            // have already resolved. The fresher one must be what is drawn.
+            var members = new List<PartyPlayerData> { P("me", "Pilot0000", 0), P("host") };
+
+            PartyRoster.Build(members, P("me", "Wildcat", 7), HOST,
+                Net(("host", 0), ("me", 1)), result);
+
+            Assert.AreEqual("Wildcat", result[1].Member.DisplayName);
+            Assert.AreEqual(7, result[1].Member.AvatarId);
+        }
+
+        #endregion
+
+        #region Hygiene
+
+        [Test]
+        public void DuplicateRows_AreSeatedOnce()
+        {
+            var result = new List<PartyRoster.Seat>();
+            var members = new List<PartyPlayerData> { P("host"), P("c1"), P("c1") };
+
+            PartyRoster.Build(members, P("host"), HOST, Net(("host", 0), ("c1", 1)), result);
+
+            Assert.AreEqual(2, result.Count);
         }
 
         [Test]
-        public void HasOpenSlots_FullParty_ReturnsFalse()
+        public void EmptyPlayerIds_AreSkipped()
         {
-            for (int i = 0; i < 4; i++)
-                _partyMembers.Add(new PartyPlayerData($"p{i}", $"Pilot{i}", i));
+            var result = new List<PartyRoster.Seat>();
+            var members = new List<PartyPlayerData> { P("host"), new(null, "ghost", 0), new("", "ghost", 0) };
 
-            Assert.IsFalse(_roster.HasOpenSlots);
-            Assert.AreEqual(_roster.MaxSlots, _roster.MemberCount,
-                "A full party reads exactly n/n - the 4/4 an 'IN YOUR PARTY' label shows.");
+            PartyRoster.Build(members, P("host"), HOST, Net(("host", 0)), result);
+
+            Assert.AreEqual(1, result.Count);
+            Assert.AreEqual("host", result[0].PlayerId);
         }
 
         [Test]
-        public void HasOpenSlots_MatchesConcreteProperty()
+        public void Build_ClearsTheResultList()
         {
-            _partyMembers.Add(new PartyPlayerData("local", "A", 1));
-            Assert.AreEqual(_data.HasOpenSlots, _roster.HasOpenSlots);
+            var result = new List<PartyRoster.Seat> { new(P("stale"), false, false) };
+
+            PartyRoster.Build(new List<PartyPlayerData>(), P("me"), HOST, Net(("me", 0)), result);
+
+            Assert.AreEqual(new[] { "me" }, Order(result).ToArray());
         }
 
         [Test]
-        public void IsHost_MirrorsIsPartyHost()
+        public void NullMemberList_StillSeatsTheLocalPlayer()
         {
-            _data.IsPartyHost = false;
-            Assert.IsFalse(_roster.IsHost);
+            var result = new List<PartyRoster.Seat>();
+            PartyRoster.Build(null, P("me"), HOST, Net(("me", 0)), result);
 
-            _data.IsPartyHost = true;
-            Assert.IsTrue(_roster.IsHost,
-                "IsHost gates the kick affordance, so it must track the party-session " +
-                "host flag - not the presence-lobby host flag.");
-        }
-
-        [Test]
-        public void IsHost_IsNotPresenceLobbyHost()
-        {
-            _data.IsPresenceLobbyHost = true;
-            _data.IsPartyHost = false;
-
-            Assert.IsFalse(_roster.IsHost,
-                "Owning the global discovery lobby confers no party authority - " +
-                "conflating the two would hand kick rights to whoever signed in first.");
+            Assert.AreEqual(1, result.Count);
+            Assert.IsTrue(result[0].IsLocal);
         }
 
         #endregion

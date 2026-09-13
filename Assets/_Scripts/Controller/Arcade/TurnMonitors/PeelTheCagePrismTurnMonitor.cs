@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
                 _netPrismTarget.Value = target;
                 gameData.PrismTargetCount = target;
 
-                CSDebug.Log($"[PeelTheCagePrismMonitor] Server set cage target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[PeelTheCagePrismMonitor] Server set cage target: {target}");
             }
             else if (_netPrismTarget.Value > 0)
             {

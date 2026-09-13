@@ -6,7 +6,8 @@ hull's controls, the roster, and Start.
 
 The two-screen flow it replaces — configure, then pick a vessel — existed because a card could
 be flown in several hulls. **Every arcade mode locks to one now**, so the second screen had
-nothing left to ask and the first had no reason to be a separate step.
+nothing left to ask and the first had no reason to be a separate step. (The ARENA's cards do
+not lock, and their panel asks the one question the second screen used to — see §1.1.)
 
 ---
 
@@ -16,6 +17,7 @@ nothing left to ask and the first had no reason to be a separate step.
 |---|---|---|---|---|
 | `MinigameLaunchPanel` | every card except the meta-mode | the live window | the hull's four abilities | — |
 | `MaelstromLaunchPanel` | `GameModes.Maelstrom` only | a clip | none | the pool list |
+| `ArenaLaunchPanel` | the cards in `ArenaGames` | the live window | none | a vessel carousel + SELECT VESSEL |
 
 **The Maelstrom is not one of the arcade grid's cards.** It draws the OTHER modes, so listing it
 beside them invites "play this one" when it means "play several of these"; `ArcadeExploreView`
@@ -29,13 +31,25 @@ Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
   which is why `ModePreviewLibrarySO` excludes Maelstrom in code. `ModeVideoView` is not the
   return of the deleted video fallback (`Docs/ModePreview/ARCHITECTURE.md`): every *playable*
   mode still previews live, and Maelstrom is the one card structurally unable to.
-- **No controls block.** The hull changes every round — four of the pool's seven modes are
+- **No controls block.** The hull changes every round — fifteen of the pool's sixteen modes are
   vessel-locked — so there is no one set of controls to teach.
 - **A pool list instead**, because the question this card actually raises is "what am I going
   to end up playing?", and the intensity answers it differently.
 
 A card finds its panel by asking (`ArcadeLaunchPanel.Handles`), not by the modal switching on a
 mode enum, so a third kind of card is a new subclass and one entry in the modal's list.
+
+### 1.1 The third panel: the Arena's
+
+`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush) can be flown in
+more than one hull, so the panel carries a vessel carousel and a SELECT VESSEL button, and
+**Start is dead until a hull is confirmed** — the modal's `RefreshStartAvailability` is the one
+place Start's availability is decided, so this gate and the weekly-challenge lock cannot disagree.
+It lives in its own window (`ModalWindows.ARENA_GAME_CONFIGURE`) exactly as the Maelstrom's does,
+must sit FIRST in `launchPanels` because `MinigameLaunchPanel` accepts every non-Maelstrom card,
+and answers `Handles` from the `ArenaGames` roster so moving a card between the rosters moves it
+between windows with no code. Rosters and the per-session confirmation rule:
+`Docs/HomeHub/ARCHITECTURE.md` §3.
 
 ## 2. The panel owns its widgets; the modal owns the decisions
 
@@ -83,7 +97,9 @@ Two consequences worth knowing:
   `CommitConfiguration(playSound: false)` is the auto path.
 - **The party sees the card the host opens.** On the old flow the host browsed privately. This
   is inherent to there being no private step, and it is bounded: `ArcadeConfigSyncManager`'s
-  own `_isCommitted` guard means one commit per open, and closing the modal re-arms it.
+  own `_isCommitted` guard means one commit per CARD (§3.1.1 — it used to be one per *session*,
+  which a close route that skipped `NotifyConfigClosed` left latched forever), and every close
+  route re-arms it, because the modal notifies on its own `OnModalClosed`.
 
 `OnStartGameClicked` is a latch (`_localPlayerReady`): the panel subscribes it, a prefab may
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
@@ -122,6 +138,97 @@ re-announces the count and never launches, because a launch is something a press
 General rule: **anything a peer must be able to catch up on is state, not an event.** A
 message is right for "this just happened"; it is wrong for "this is the case now", because
 the peers that most need "now" are the ones that were not listening when it was sent.
+
+### 3.1.1 Replicated state is only half of it — the DELIVERY was still an edge
+
+Making the lobby a `NetworkVariable` fixed the peers that were not *listening*. It did not
+fix the peers that could not *draw*, and every remaining sync complaint about the arcade
+card came from that gap. Three shipped symptoms, one shape.
+
+**A guest in FREESTYLE could not be shown a card at all.** Freestyle is not "the appshell is
+on a different screen": `ScreenSwitcher.HandleEnterFreestyle` closes every modal, fades the
+screens `CanvasGroup` out and hands the pad to the vessel; `NavigateTo` then refuses outright
+(so `FollowHostToArcadeScreen` was a no-op) and `ModalWindowIn` refuses to open at all while
+that input gate is engaged. The host's open arrived, ran to completion, drew nothing, and the
+guest kept flying while the rest of the party sat in a lobby waiting on their Ready. The open
+is a value change, so nothing ever delivered it a second time.
+
+Being pulled into the host's card is the same class of host-driven move
+`FollowHostToArcadeScreen` already exists for, so **leaving freestyle is part of it**:
+`ScreenSwitcher.RequestExitFreestyle` toggles the guest out and runs the caller back on
+`OnMenuStateTransitionEnd`. Never on the start event and never on the live flag — the start
+of the exit runs another `CloseAllModals`, so anything opened before the end is closed again
+on the way out. (Same rule the Toy Box records for entering freestyle, mirrored.) A guest who
+chose to fly *on their own* is left alone: only a host-driven open takes the ship off
+somebody, and the catch-up path below explicitly declines to.
+
+**A guest who missed the open once could never see the card again.** Every path that turns
+the snapshot into a modal is an edge — `OnValueChanged`, the initial read in
+`OnNetworkSpawn`, the replay in `OnEnable` — and each has a real way to be missed: the modal
+was still loading when the value landed, the guest was flying, or the modal's GameObject
+simply never re-enabled (`ModalWindowOut` fades a `CanvasGroup`; it does not deactivate, so
+`OnEnable` runs once per scene). With the host sitting in the card there was no further change
+coming, and tapping the card registers a game PICK rather than opening anything. So the guest
+was stuck, permanently, with a correct value replicated on their own machine.
+
+`ArcadeGameConfigureModal.ReconcileClientLobby` closes it by asking the state-shaped question
+once a second: **which generation has this guest actually DRAWN, against the one the host is
+broadcasting?** A mismatch opens the card. It is the same shape as `ScreenSwitcher`'s
+self-healing input gate — read the live state, never trust that the event fired. Two rules
+keep it from being a nuisance: it declines while the guest is in freestyle (catching up must
+not take the ship off someone using it — they get the card when they land), and a guest can no
+longer dismiss the host's lobby at all (`AllowGamepadBClose` is false in client mode), so the
+reconcile is never fighting a deliberate choice. A local close the host did not order — a
+screen sweep, freestyle entry — forgets the drawn generation on purpose, which is what brings
+the card back. Tapping any card while a lobby is open also re-enters it, since the host has
+already answered the party's request and a pick recorded then sits on a board nobody reads.
+
+**A host who changed their mind could not move the party.** The sync manager's commit guard
+is a bool cleared by `NotifyConfigClosed`, and only the host's ✕ ever called it. Gamepad B,
+`ScreenSwitcher.CloseAllModals` (raised on freestyle ENTRY, so a host who flew left a phantom
+lobby behind) and `ForceCloseImmediate` all ended at `ModalWindowOut`. The guard stayed
+latched with `IsOpen` still true, so the host's next card returned on the first line of
+`CommitConfiguration` — nothing replicated, and every guest stayed pinned to the previous
+card with no way off it.
+
+Fixed at both ends, because either alone would leave the other as a trap:
+
+- **The modal notifies on its OWN close event.** `HandleSelfClosed` is hooked to
+  `OnModalClosed` and now runs `CloseAndNotifyClients`, which is the lesson the same method
+  already carried for the preview teardown — *one subscription instead of one rule per caller
+  is the difference between "every route we thought of" and "every route"*. The launch is the
+  one close that must NOT broadcast a dismissal, and it goes out through the same
+  `ModalWindowOut` as everything else, so it names itself with a `_launching` flag rather than
+  being told apart by inspection.
+- **The guard is keyed on the CARD.** `if (_isCommitted && lobby.IsOpen && lobby.GameMode ==
+  gameMode) return;` still suppresses a repeat of the card that is already open — its actual
+  job — while a *different* card can never be swallowed, whatever a future close route forgets.
+
+General rule: **a value being replicated does not make it delivered.** State fixes "was this
+peer listening"; it does nothing about "could this peer act on it", and the second question
+needs a reconcile that reads the state rather than another edge that announces it.
+
+### 3.1.2 The human head-count is the HOST's, replicated
+
+The roster draws `seats - humans = AI`, and the two peers used to answer *humans* from
+different sources: the host from Netcode's connected clients (ground truth) and a guest from
+`HostConnectionDataSO.PartyMembers`, the presence-lobby list, polled every 3 s and very often
+1 on a guest. A guest that believes it is alone in a four-seat match draws **three AI avatars
+nobody placed and nobody spawns** — the real backfill is `GameDataSO.RequestedAIBackfillCount`,
+computed host-side — which is exactly how it was reported: extra AI, client-side only, never
+in the game.
+
+`LobbySnapshot.HumanCount` carries the host's own count, republished when a member joins or
+leaves mid-lobby, and a guest reads it back instead of deriving one. The host's read moved to
+`SpectatorSession.CountHumanClients` at the same time: a spectator is a Netcode client with no
+Player object, and counting one as a pilot silently removes an AI seat that the spawner then
+fills anyway. `ArcadeLobbySnapshotTests` holds every field of the snapshot inside `Equals` by
+reflection, because a field missing there never dirties the NetworkVariable and the omission
+shows up only on a second machine.
+
+General rule: **when two peers must agree on a number, one of them owns it and the other reads
+it** — a second derivation is a second answer, and the disagreement surfaces as UI nobody can
+trace to a count.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
@@ -577,7 +684,7 @@ instead of splitting it across two files.
 | Piece | Location | Job |
 |---|---|---|
 | `ArcadeLaunchPanel` | `_Scripts/UI/View/ArcadeLaunch/` | The contract: which controls a panel exposes, what the modal may ask of it |
-| `MinigameLaunchPanel` / `MaelstromLaunchPanel` | same | The two concrete panels |
+| `MinigameLaunchPanel` / `MaelstromLaunchPanel` / `ArenaLaunchPanel` | same | The three concrete panels |
 | `VesselControlsPanel` / `VesselControlRow` | same | The hull's abilities and their controls, derived |
 | `ModeControlsLibrarySO` | `_Scripts/UI/View/ArcadeLaunch/` | Per-mode authored rows for the controls block; `Resources/ModeControlsLibrary`, default empty |
 | `LobbySlotRow` / `LobbySlotView` | same | Seats, ready lights, the AI kick, the fill toggle |
@@ -618,6 +725,15 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   swap for a vessel-locked mode — the pre-existing cost recorded in
   `Docs/ModePreview/ARCHITECTURE.md §7`, now paid on intensity changes too for the four modes
   with per-intensity arenas.
+- **The party-sync repairs in §3.1.1–§3.1.2 have not been through a real party.** They are
+  reasoned from the code and the reported symptoms; the reconcile in particular deserves a
+  three-machine pass (host opens a card, one guest flying, one guest cold-joining, host backs out
+  and picks another). The self-heal ticks once a second, so a guest can be up to a second behind
+  the host on a missed edge — deliberate, and invisible next to the modal's own open animation.
+- **A guest cannot dismiss the host's lobby**, by design (§3.1.1): gamepad B is refused in client
+  mode and a local close is undone by the reconcile. If a guest ever needs a legitimate way out —
+  "leave this lobby" as distinct from "close this window" — it has to be a real request to the
+  host, not a window close, or it is the stuck-guest bug again.
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.

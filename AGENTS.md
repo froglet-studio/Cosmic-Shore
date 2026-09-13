@@ -571,7 +571,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
-- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
+- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. **FMOD is the only audio middleware in the project**: the `Assets/Wwise/` fossil of an earlier evaluation (14 orphan `.meta`, 0 asset files, 0 references) was **deleted 12 Sep 2026**, along with three prose sites that described live FMOD objects as Wwise. `Docs/THIRD_PARTY_REGISTER.md` §0 row 8.
 - **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only PeelTheCage's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
@@ -652,11 +652,16 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
 ├── PlayFabSDK/                # Backend SDK (legacy)
-├── NiceVibrations/            # Haptic feedback
-└── SerializeInterface/        # Custom [RequireInterface] attribute support
+└── NiceVibrations/            # Haptic feedback
 ```
+
+`Wwise/`, `Parse/` and `SerializeInterface/` were deleted on 12 Sep 2026 and should not come back.
+`SerializeInterface` was **not** dead — it was an unattributable code drop, so `[RequireInterface]`
+was **rewritten first-party** to `_Scripts/Utility/RequireInterfaceAttribute.cs` plus
+`_Scripts/Editor/RequireInterfaceDrawer.cs`. **The drawer is the load-bearing half**: a marked field
+with no drawer degrades *silently* into an object field that accepts anything.
+`Docs/THIRD_PARTY_REGISTER.md` §2, §6.
 
 Note: A vestigial `_Scripts/Game/` directory exists containing only non-code assets (compute shaders, input action mappings, material files, and the `PRISM_PERFORMANCE_AUDIT.md`). All C# code has been reorganized into the directories listed above.
 

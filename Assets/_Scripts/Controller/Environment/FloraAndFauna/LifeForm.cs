@@ -57,6 +57,14 @@ namespace CosmicShore.Gameplay
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
         /// <summary>
+        /// This lifeform's HEART, as a transform: the crystal while it lives, and the lifeform's
+        /// own root when it carries none (a colony root, a plant whose crystal has not resolved
+        /// yet). Read LIVE and never cached by callers - a lattice plant moves its crystal onto its
+        /// lattice site after seating it, and a creature carries its heart with it.
+        /// </summary>
+        public Transform HeartTransform => crystal ? crystal.transform : transform;
+
+        /// <summary>
         /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
         /// element in the species' variant tuning and sized to suit this body
         /// (Docs/ECOSYSTEM.md §40.2). Non-positive means 'not authored': the set's default is

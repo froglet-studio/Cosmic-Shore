@@ -261,7 +261,7 @@ namespace CosmicShore.Core
         void Log(string msg)
         {
             if (_allowLog)
-                CSDebug.Log($"[AppState] {msg}");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[AppState] {msg}");
         }
 
         void LogWarning(string msg)

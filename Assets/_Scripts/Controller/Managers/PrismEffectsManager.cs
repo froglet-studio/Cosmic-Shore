@@ -133,9 +133,9 @@ namespace CosmicShore.Gameplay
                 // and fauna swarm-eat its trail) from "leak accumulating zombies".
                 // Only log when count is interesting (>0 zombies or >32 healthy)
                 // so the console isn't spammy on quiet scenes.
-                if (zombies > 0 || activeGameObjects > 32)
+                if ((zombies > 0 || activeGameObjects > 32) && CSDebug.IsVerbose(CSLogChannel.PrismRuntime))
                 {
-                    CSDebug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies}");
+                    CSDebug.LogVerbose(CSLogChannel.PrismRuntime, $"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies}");
                 }
             }
 #endif

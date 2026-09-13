@@ -23,7 +23,7 @@ namespace CosmicShore.Core
 
             vessel.Unlock();
             PersistUnlockToCloud(vessel.Name, unlocked: true);
-            CSDebug.Log($"VesselUnlockSystem: Unlocked {vessel.Name}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[VesselUnlock] Unlocked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
         }
@@ -35,7 +35,7 @@ namespace CosmicShore.Core
 
             vessel.Lock();
             PersistUnlockToCloud(vessel.Name, unlocked: false);
-            CSDebug.Log($"VesselUnlockSystem: Locked {vessel.Name}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[VesselUnlock] Locked {vessel.Name}");
             OnUnlockStateChanged?.Invoke();
             return true;
         }

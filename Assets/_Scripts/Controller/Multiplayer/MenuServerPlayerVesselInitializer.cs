@@ -107,6 +107,15 @@ namespace CosmicShore.Gameplay
         /// delta reaches a client after its pair-init instead, Player.OnNetDomainChanged
         /// re-syncs the mirrors and repaints (ShipHelper.SetShipProperties).
         /// </summary>
+
+        /// <summary>
+        /// The MENU does not adopt a departed player's vessel. There is no match to finish, so an
+        /// abandoned menu ship would just accumulate as another autopilot vessel in the lava lamp -
+        /// and a player who leaves the party here is going back to their own menu, where they get a
+        /// fresh vessel anyway.
+        /// </summary>
+        protected override bool ConvertDepartedPlayersToAI => false;
+
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
             if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
@@ -386,7 +395,7 @@ namespace CosmicShore.Gameplay
             // menu's HUMAN vessel, where StartPlayer deliberately does not touch autopilot.
             aiPlayer.StartPlayer();
 
-            CSDebug.Log($"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MenuServerVesselInit] Released AI companion '{aiPlayer.NetName.Value}' " +
                         $"({vesselClass}, {domain}) at {pose.position}.");
 
             // Let the vessel NetworkObject replicate before telling clients to bind the pair.

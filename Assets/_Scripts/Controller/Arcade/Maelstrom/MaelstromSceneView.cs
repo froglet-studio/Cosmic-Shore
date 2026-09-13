@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
 
             if (titleText) titleText.text = summaryMode ? $"{ModeName().ToUpperInvariant()} RESULTS" : ModeName().ToUpperInvariant();
-            if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
+            if (gameModesText) gameModesText.text = $"GAME POOL : {GameModesPool()}";
             if (roundCounterText) roundCounterText.text = summaryMode ? $"{gamesPlayed} ROUNDS PLAYED" : $"ROUND {gamesPlayed + 1}";
             if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.EffectiveWinTarget} points wins";
             RenderLeadingDomain();
@@ -190,6 +190,47 @@ namespace CosmicShore.Gameplay
                 readyButtonLabel.text = summaryMode
                     ? "NEXT"
                     : (lobbyNetwork != null && lobbyNetwork.LocalReady ? "READY ✓" : "START");
+
+            // MAIN MENU is available in the HUB between games, not only on the final summary.
+            // Without it the hub offered exactly one button - READY - so a player who wanted to
+            // stop between rounds had nowhere to press: the per-game scoreboard had no client
+            // buttons either, and the pause menu hid its Main Menu, so the only screen in an
+            // entire tournament that let anyone out was the summary at the very end. A tournament
+            // you cannot leave until it finishes is not one anybody should have to finish.
+            //
+            // OnMainMenuPressed already does the right thing on both sides: the host takes the
+            // whole party back, a client leaves the party and returns alone. Play Again stays
+            // summary-only - mid-run there is nothing to replay yet.
+            if (mainMenuButton) mainMenuButton.gameObject.SetActive(true);
+            if (playAgainButton && !summaryMode) playAgainButton.gameObject.SetActive(false);
+
+            WarnIfHubExitIsUnreachable();
+        }
+
+        bool _warnedHubExitUnreachable;
+
+        /// <summary>
+        /// Activating a button inside a DEACTIVATED parent shows nothing, and shows nothing
+        /// SILENTLY - the call succeeds, the flag reads true, and the player still has no way out
+        /// of the hub. Main Menu was authored for the summary screen, so if the prefab parents it
+        /// under <c>summaryRoot</c> (which <see cref="ShowActive"/> deactivates) the hub exit is
+        /// inert and no amount of code here can reach it: it needs the button re-parented under
+        /// <c>activeRoot</c>, or a second instance there.
+        ///
+        /// Reported rather than worked around, because the fix is a prefab edit and a silent
+        /// no-op is exactly the failure this whole pass exists to stop shipping.
+        /// </summary>
+        void WarnIfHubExitIsUnreachable()
+        {
+            if (_warnedHubExitUnreachable || !mainMenuButton) return;
+            if (mainMenuButton.gameObject.activeInHierarchy) return;
+
+            _warnedHubExitUnreachable = true;
+            CSDebug.LogError(
+                "[MaelstromSceneView] The hub's MAIN MENU button is active but not visible - it is " +
+                "parented under an inactive root (almost certainly summaryRoot). Until it is " +
+                "re-parented under activeRoot in the prefab, a player has NO way to leave a " +
+                "tournament between rounds.");
         }
 
         void RenderLeadingDomain()
@@ -476,12 +517,28 @@ namespace CosmicShore.Gameplay
 
         string ModeName() => tournamentData != null ? tournamentData.ModeName : "Maelstrom";
 
+        /// <summary>
+        /// The pool line: how many modes THIS run can draw, out of the whole roster, and the
+        /// intensity ceiling that decides it.
+        ///
+        /// <para>It counts rather than enumerating for two reasons. The banner is ONE 465x36 line
+        /// (autosizing floored at font 24, overflow mode Overflow), which holds roughly one short
+        /// sentence - it could not hold seven mode names and certainly cannot hold sixteen, so an
+        /// enumeration spills outside its rect. And an enumeration of the QUEUE was also wrong once
+        /// the intensity ladder existed: it named every mode on the roster, including the ones the
+        /// chosen intensity cannot draw, so an intensity-1 lobby advertised modes that could never
+        /// come up. The launch panel's <c>MaelstromPoolListView</c> is where the roster is listed
+        /// properly - it instantiates a row per mode and marks each one's unlock intensity.</para>
+        /// </summary>
         string GameModesPool()
         {
             if (tournamentData == null || tournamentData.GameQueue == null) return string.Empty;
-            return string.Join(" - ", tournamentData.GameQueue
-                .Where(g => g != null && !string.IsNullOrEmpty(g.DisplayName))
-                .Select(g => g.DisplayName.ToUpperInvariant()));
+
+            int total = tournamentData.GameQueue.Count(g => g != null);
+            int ceiling = Mathf.Clamp(tournamentData.IntensityCeiling <= 0 ? 1 : tournamentData.IntensityCeiling, 1, 4);
+            int drawable = tournamentData.GamesForIntensity(ceiling).Count;
+
+            return $"{drawable} OF {total} MODES (INTENSITY {ceiling})";
         }
 
         Domains WinningDomain()

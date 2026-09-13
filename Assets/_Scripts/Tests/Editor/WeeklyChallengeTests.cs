@@ -601,6 +601,55 @@ namespace CosmicShore.Tests
             Assert.AreEqual("--:--.--", WeeklyChallengeRanking.FormatSeconds(double.PositiveInfinity));
         }
 
+        // ── The formatter is as much a boundary as the boundary ────────────────
+
+        /// <summary>
+        /// A period key must name the same week on every device on Earth.
+        ///
+        /// WHY: the UTC-Monday rule fixes WHICH instant a week starts at, and then
+        /// <c>ToString("yyyy-MM-dd")</c> threw that away again - a bare format string renders
+        /// through CurrentCulture, whose CALENDAR is not always Gregorian, and Unity takes
+        /// CurrentCulture from the device locale. Measured before the fix: the same instant keyed
+        /// as 1448-03-25 on ar-SA, 2569-09-07 on th-TH and 1405-06-16 on fa-IR. Those players drew
+        /// a different challenge, wrote progress under a key nothing else reads, and never rolled
+        /// over in step with anyone.
+        /// </summary>
+        [Test]
+        public void PeriodKeysAreTheSameInEveryLocale()
+        {
+            var utc = new DateTime(2026, 9, 9, 12, 0, 0, DateTimeKind.Utc);   // a Wednesday
+            var previous = System.Threading.Thread.CurrentThread.CurrentCulture;
+            int checkedCultures = 0;
+
+            try
+            {
+                foreach (var name in new[] { "ar-SA", "th-TH", "fa-IR", "he-IL", "ja-JP", "en-US" })
+                {
+                    System.Globalization.CultureInfo culture;
+                    try { culture = new System.Globalization.CultureInfo(name); }
+                    catch (System.Globalization.CultureNotFoundException) { continue; }
+
+                    System.Threading.Thread.CurrentThread.CurrentCulture = culture;
+                    checkedCultures++;
+
+                    Assert.AreEqual("2026-09-07", WeeklyChallengeCatalogSO.WeekKeyFor(utc),
+                        $"week key drifted under {name} " +
+                        $"({culture.Calendar.GetType().Name})");
+                    Assert.AreEqual("2026-09-09", _catalog.DayKeyFor(utc),
+                        $"day key drifted under {name} " +
+                        $"({culture.Calendar.GetType().Name})");
+                }
+            }
+            finally
+            {
+                System.Threading.Thread.CurrentThread.CurrentCulture = previous;
+            }
+
+            // A runtime with no ICU data would silently check nothing and pass.
+            Assert.GreaterOrEqual(checkedCultures, 2,
+                "no alternate locales were available, so this asserted nothing");
+        }
+
         [Test]
         public void ShippedCatalog_LeaderboardIdIsAuthoredOrRankingIsOff()
         {

@@ -242,7 +242,7 @@ namespace CosmicShore.Utility
         /// </summary>
         public void ResetRuntimeData()
         {
-            CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[CellRuntimeDataSO] Resetting runtime data");
 
             Cell = null;
 
@@ -252,7 +252,6 @@ namespace CosmicShore.Utility
                 {
                     if (Crystals[i] && Crystals[i].gameObject)
                     {
-                        CSDebug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
                         Object.Destroy(Crystals[i].gameObject);
                     }
                 }
@@ -262,7 +261,7 @@ namespace CosmicShore.Utility
             CellItems?.Clear();
             CellStatsList?.Clear();
 
-            CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[CellRuntimeDataSO] Runtime data reset complete");
         }
     }
 }

@@ -70,6 +70,17 @@ namespace CosmicShore.Data
         // broadcast to every peer, so it names nobody and wears no domain colour.
         ScarabScrambleBallCap = 69,
 
+        // Tollway. Toll/chain: {0} = the pilot who PLANTED the ring, {1} = their domain's tolls,
+        // {2} = target ({3} = how many rings this one ball has paid, on the chain). Match
+        // point / lead: {0} = leading domain, {1} = its tolls, {2} = target. The ring hint takes
+        // no args.
+        TollwayToll = 70,          // a ball threaded somebody's ring and paid its planter
+        TollwayChain = 71,         // ONE ball paid 2+ tolls inside the chain window
+        TollwayMatchPoint = 72,    // the leading domain is one toll from winning
+        TollwayLeadChanged = 73,   // the lead changes hands
+        TollwayRingHint = 74,      // idle hint: plant a ring - ANY ball through it pays you
+        TollwayNoAnchor = 75,      // the press was refused: no free plant heart on this line
+
         // Per-player STAT toasts, produced by StatToastDriver from the replicated RoundStats on
         // every peer (nothing crosses the wire). {0} = player name, {1} = the player's new
         // total, {2} = this step's increase, {3} = the mode's objective target (0 when the
@@ -80,5 +91,20 @@ namespace CosmicShore.Data
         BendLanded = 82,                // DebuffHitsLanded rose - a blast debuffed a pilot (The Bends)
         PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
         LifeformKilled = 84,            // LifeformsKilled rose
+
+        // Bloomrush. The cash-out is the mode's whole payoff, so it is the one thing worth
+        // announcing: {0} = the pilot, {1} = how many bombs the crystal just cashed. 90/91
+        // rather than 70/71: Tollway took those on bleeding-edge while this was in flight.
+        BloomrushKabloom = 90,
+        // Idle hint: the loop is buttonless, so a new pilot has nothing to press and needs
+        // telling what flying into things does.
+        BloomrushStingHint = 91,
+
+        // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
+        // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
+        // humans are in the match.
+        RematchRequested = 100,     // a client pressed Play Again - a VOTE the host can act on
+        // A pilot left mid-match and the AI took their ship. {0} = the departed player's name.
+        PilotHandedToAI = 101,
     }
 }

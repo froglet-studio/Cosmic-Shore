@@ -512,7 +512,7 @@ namespace CosmicShore.UI
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.Economy.CrystalBalance);
-            CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             return CurrentProfile.Economy.CrystalBalance;
         }
 
@@ -531,7 +531,7 @@ namespace CosmicShore.UI
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
             _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.Economy.CrystalBalance);
-            CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             return true;
         }
 
@@ -551,7 +551,7 @@ namespace CosmicShore.UI
             CurrentProfile.Economy.UnlockedRewardIds.Add(rewardId);
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
-            CSDebug.Log($"[PlayerDataService] Reward unlocked: {rewardId}");
+            CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Reward unlocked: {rewardId}");
         }
 
         /// <summary>
@@ -588,7 +588,7 @@ namespace CosmicShore.UI
                 CurrentProfile.Economy.CrystalBalance += pending;
                 ScheduleSave();
                 OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
-                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
             }
 #endif
         }

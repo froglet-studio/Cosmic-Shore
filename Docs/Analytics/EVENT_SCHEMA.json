@@ -36,7 +36,7 @@
     }
   },
   "person_properties": {
-    "$comment": "PostHog only. Set via $identify on collection start and at session end. Mirrors PLAYER_PROFILE / HANGAR_DATA / GAME_MODE_PROGRESSION.",
+    "$comment": "PostHog only. Set via $identify on collection start, on cloud-profile change, and at session end (pause/quit). Mirrors PLAYER_PROFILE / HANGAR_DATA / GAME_MODE_PROGRESSION.",
     "display_name": {
       "type": "string",
       "privacy": "P2",
@@ -64,7 +64,13 @@
     },
     "first_seen_utc_ms": {
       "type": "long",
-      "privacy": "P0"
+      "privacy": "P0",
+      "description": "UTC ms of the player's first session. Stamped once, never rewritten, cloud-backed so it follows the account rather than the device. NOTE: identity is UGS anonymous auth today, so a reinstall that loses the session token creates a NEW person with a NEW first-seen - see DATA_ARCHITECTURE.md 7.3.3. Written ONLY when known - an identify that lands before the cloud profile loads omits it rather than $set-ting 0 over the real value."
+    },
+    "invite_wave": {
+      "type": "string",
+      "privacy": "P0",
+      "description": "Invite-wave cohort: the yyyy-MM-dd key of the UTC week (its Monday) that first_seen_utc_ms falls in. The dimension the paid-EA gate splits retention (D1/D7) and crash-free sessions by. A PROXY for a Steam grant batch, not the batch itself - Steam hands the client no wave number, so a tester who requested access in week 1 and installed in week 3 is in wave 3. Empty when first-seen is unknown; empty is not a cohort. Person property only - never an event parameter, so it costs zero UGS schema rows. See DATA_ARCHITECTURE.md 7.3.3."
     },
     "session_count": {
       "type": "int",

@@ -273,6 +273,7 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades — no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | UGS Friends SDK, every call uses `.AsMainThread()` (12 sites). |
 | `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
+| `Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs` | Same UGS APIs from OUTSIDE the party layer — six sites, marshalled 2026-09-12. `OnTransportFailure` is the one wired at sign-in, so it is live in `Menu_Main`. |
 
 ## `.AsMainThread()` covers the SUCCESS path only (2026-08-27)
 
@@ -340,3 +341,35 @@ authority — reconcile with what is independently readable (the same rule
 that triggered it: keep it out of the operation's `try`. And a failure on a path whose only
 symptom is *waiting* must log unprompted — `AuthenticationServiceFacade.LogFailure` is
 deliberately not gated on the verbose flag.
+
+## `MultiplayerSetup` had no marshal either, and one of its awaits fires in the MENU (2026-09-12)
+
+The same `grep -c AsMainThread` returned **0** for
+`Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs`. Six UGS `Task`s were awaited bare:
+`CreateSessionAsync`, `JoinSessionByIdAsync`, `QuerySessionsAsync`,
+`AuthenticationService.GetPlayerNameAsync`, and `ISession.AsHost().DeleteAsync()` /
+`ISession.LeaveAsync()`.
+
+Five of them are on the game-launch path, where the worst case is bounded by a scene load. The
+sixth is not. **`OnTransportFailure` is registered by `EnsureNetcodeCallbacksWired` at sign-in**,
+so it is live for the whole of `Menu_Main` — and after its two bare awaits it called
+`networkManager.Shutdown()`, reloaded a scene, and raised SOAP through
+`PartyInviteController.HandleHostLossAsync`, all of which are main-thread-only. A transport
+hiccup while partied in the menu therefore had exactly the shape of the "random editor crash"
+this document exists to prevent, on the one screen a developer leaves running for tens of minutes.
+
+It survived the party-layer sweep because it is not in the party layer. `PartySessionService`,
+`PresenceLobbyService` and `LobbyPropertyWriter` were all correct; `MultiplayerSetup` calls the
+**same UGS APIs** from `Controller/Multiplayer/`, and a sweep scoped to a folder cannot see that.
+
+**Rules this leaves behind.** Audit this contract by **API** — grep for `MultiplayerService`,
+`AuthenticationService`, `ISession` and the Netcode surface across `Assets/_Scripts` — never by
+subsystem folder; the contract belongs to the SDK boundary, not to the feature that happens to
+call it. And when ranking which bare await to fix first, ask **which scene its handler is alive
+in**: a callback wired at sign-in outlives every scene transition, so its blast radius is the
+whole session rather than the operation that registered it.
+
+**Known gap, not introduced here.** `.AsMainThread()` still covers the success path only (see the
+2026-08-27 entry above), so a throwing UGS call resumes its `catch` off-thread at every one of
+these sites. It is safe as written — the four catch bodies do only `Debug.Log*` (thread-safe) and
+a `string.Contains` rate-limit test — but it is safe by inspection, not by construction.

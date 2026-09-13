@@ -19,6 +19,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] private int partyMaxSlots;
         [SerializeField] private string matchName;
         [SerializeField] private int presenceState;
+        [SerializeField] private string partySessionId;
 
         public string PlayerId => playerId;
         public string DisplayName => displayName;
@@ -88,25 +89,36 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public const int PRESENCE_PRESENT = 3;
 
+        /// The UGS session id of the Relay party this player is currently in (host or guest),
+        /// published on their presence-lobby row. It is what a direct JOIN and a SPECTATE both
+        /// need - the party session IS the game session (MultiplayerSetup reuses it at launch),
+        /// so one id serves both. Empty when the player has no joinable session: not yet
+        /// created, offline, or themselves a spectator in somebody else's match (a spectator
+        /// deliberately publishes no session so nobody can chain-spectate through them).
+        /// </summary>
+        public string PartySessionId => partySessionId ?? string.Empty;
+
+        /// <summary>True when the player advertises a session another pilot could join.</summary>
+        public bool HasJoinableSession => !string.IsNullOrEmpty(partySessionId);
+
+        /// <summary>True when the player is in a live multiplayer match (a non-empty match name).</summary>
+        public bool IsInMatch => !string.IsNullOrEmpty(matchName);
+
         /// <summary>
-        /// Identity only. The advertised party fields are deliberately
-        /// <b>zero</b>: this overload is for rows built from a source that
-        /// carries no presence properties - notably
-        /// <c>PartyMemberService.ReadMemberData</c>, which reads the party
-        /// SESSION's player list (displayName + avatarId only).
+        /// Identity only. The advertised party fields are deliberately <b>zero</b> and the
+        /// session id empty: this overload is for rows built from a source that carries no
+        /// presence properties - notably <c>PartyMemberService.ReadMemberData</c>, which reads
+        /// the party SESSION's player list (displayName + avatarId only).
         ///
-        /// <para>
-        /// So every entry in <c>HostConnectionDataSO.PartyMembers</c> reports
-        /// <see cref="AdvertisedPartyMemberCount"/> == 0. That is correct and
-        /// harmless - nothing renders a party member's advertised count - but it
-        /// is a live trap for anyone "fixing" a party count by pointing a label
-        /// at <c>PartyMembers</c> entries: the label would read 0/4. Use
-        /// <see cref="CosmicShore.Utility.IPartyRoster.MemberCount"/>, which
-        /// counts the list rather than reading a field off its items.
-        /// </para>
+        /// <para>So every entry in <c>HostConnectionDataSO.PartyMembers</c> reports
+        /// <see cref="AdvertisedPartyMemberCount"/> == 0. That is correct and harmless -
+        /// nothing renders a party member's advertised count - but it is a live trap for anyone
+        /// "fixing" a party count by pointing a label at <c>PartyMembers</c> entries: the label
+        /// would read 0/4. Use <see cref="CosmicShore.Utility.IPartyRoster.MemberCount"/>, which
+        /// counts the list rather than reading a field off its items.</para>
         /// </summary>
         public PartyPlayerData(string playerId, string displayName, int avatarId)
-            : this(playerId, displayName, avatarId, 0, 0, null, PRESENCE_PRESENT) { }
+            : this(playerId, displayName, avatarId, 0, 0, null, PRESENCE_PRESENT, null) { }
 
         public PartyPlayerData(
             string playerId,
@@ -115,8 +127,10 @@ namespace CosmicShore.ScriptableObjects
             int partyMemberCount,
             int partyMaxSlots,
             string matchName)
-            : this(playerId, displayName, avatarId, partyMemberCount, partyMaxSlots, matchName, PRESENCE_PRESENT) { }
+            : this(playerId, displayName, avatarId, partyMemberCount, partyMaxSlots, matchName,
+                   PRESENCE_PRESENT, null) { }
 
+        /// <summary>Presence-carrying overload (the presence-lobby read).</summary>
         public PartyPlayerData(
             string playerId,
             string displayName,
@@ -125,6 +139,30 @@ namespace CosmicShore.ScriptableObjects
             int partyMaxSlots,
             string matchName,
             int presenceState)
+            : this(playerId, displayName, avatarId, partyMemberCount, partyMaxSlots, matchName,
+                   presenceState, null) { }
+
+        /// <summary>Session-carrying overload (the direct-join / spectate read).</summary>
+        public PartyPlayerData(
+            string playerId,
+            string displayName,
+            int avatarId,
+            int partyMemberCount,
+            int partyMaxSlots,
+            string matchName,
+            string partySessionId)
+            : this(playerId, displayName, avatarId, partyMemberCount, partyMaxSlots, matchName,
+                   PRESENCE_PRESENT, partySessionId) { }
+
+        public PartyPlayerData(
+            string playerId,
+            string displayName,
+            int avatarId,
+            int partyMemberCount,
+            int partyMaxSlots,
+            string matchName,
+            int presenceState,
+            string partySessionId)
         {
             this.playerId = playerId;
             this.displayName = displayName;
@@ -133,6 +171,7 @@ namespace CosmicShore.ScriptableObjects
             this.partyMaxSlots = partyMaxSlots;
             this.matchName = matchName;
             this.presenceState = presenceState;
+            this.partySessionId = partySessionId;
         }
 
         /// <summary>
@@ -174,6 +213,7 @@ namespace CosmicShore.ScriptableObjects
             partyMemberCount == other.partyMemberCount &&
             partyMaxSlots    == other.partyMaxSlots    &&
             MatchName        == other.MatchName        &&
-            presenceState    == other.presenceState;
+            presenceState    == other.presenceState    &&
+            PartySessionId   == other.PartySessionId;
     }
 }

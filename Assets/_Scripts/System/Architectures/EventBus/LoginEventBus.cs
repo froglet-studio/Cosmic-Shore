@@ -54,7 +54,6 @@ namespace CosmicShore.Core
         public void Dispose()
         {
             Events.Clear();
-            CSDebug.Log("LoginEventBus - Events cleared.");
         }
     }
 }

@@ -22,6 +22,14 @@ namespace CosmicShore.UI
         [Tooltip("When true, pressing gamepad B (East) will close this modal.")]
         [SerializeField] private bool closeOnGamepadB = true;
 
+        /// <summary>
+        /// Whether gamepad B may close this window RIGHT NOW. The serialized flag is a property of
+        /// the window; this is a property of its current state, which some windows genuinely have
+        /// (the arcade card is a lobby the HOST owns while a guest is in it, so a guest pressing B
+        /// would dismiss something they cannot ask for again).
+        /// </summary>
+        protected virtual bool AllowGamepadBClose => closeOnGamepadB;
+
         [Header("Input Blocking")]
         [Tooltip("When true, a full-screen transparent raycast blocker is spawned behind the " +
                  "window content so UI beneath the modal (screen buttons, nav bar) cannot be " +
@@ -42,12 +50,37 @@ namespace CosmicShore.UI
         /// </summary>
         public event System.Action OnModalClosed;
 
+        /// <summary>
+        /// Raised whenever this modal transitions from closed to open - AFTER the stack push
+        /// and the "Window In" animation has started, so a listener runs against a window that
+        /// is already on its way up. The hook the card grids play their staggered reveal on:
+        /// these windows never deactivate (they hide by CanvasGroup alpha), so OnEnable is a
+        /// scene-load event here, never an open. Not raised for a re-open of an already-open
+        /// modal.
+        /// </summary>
+        public event System.Action OnModalOpened;
+
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
         /// <summary>The scene's screen switcher, for a subclass that must move the app shell
         /// itself (the arcade modal follows the host onto the arcade screen). May be null.</summary>
         protected ScreenSwitcher Switcher => screenSwitcher;
+
+        /// <summary>
+        /// Binds the scene's switcher to a modal that was BUILT rather than authored, so it takes
+        /// part in the modal stack (gamepad B, the close sweeps, the return-to-modal preference)
+        /// exactly like a scene-wired one.
+        ///
+        /// <para>Set-if-null on purpose: an authored reference always wins, so this can never
+        /// silently re-point a modal a human wired. The only caller today is
+        /// <see cref="ScreenSwitcher"/> ensuring the credits window exists — see
+        /// <see cref="CreditsModal"/> for why that window is structural rather than authored.</para>
+        /// </summary>
+        public void AttachScreenSwitcher(ScreenSwitcher switcher)
+        {
+            if (screenSwitcher == null) screenSwitcher = switcher;
+        }
 
         /// <summary>
         /// True while this modal is actually being presented. ScreenSwitcher reads it to
@@ -186,7 +219,7 @@ namespace CosmicShore.UI
 
         protected virtual void Update()
         {
-            if (!isOn || !closeOnGamepadB) return;
+            if (!isOn || !AllowGamepadBClose) return;
 
             // While a mode-preview window holds input focus, the pad belongs to the VESSEL -
             // every face button is a flight control, so B closing the modal here would yank the
@@ -281,6 +314,7 @@ namespace CosmicShore.UI
                 // open, not on every ModalWindowIn call against an already-open
                 // modal.
                 DispatchModalVisibility(true);
+                OnModalOpened?.Invoke();
             }
         }
 

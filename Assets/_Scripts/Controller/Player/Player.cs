@@ -46,6 +46,34 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
+        /// How many SPECTATORS are currently watching this pilot. Server-write, everyone-read,
+        /// so the watched pilot's own HUD can say it and any peer could. Written only by
+        /// <see cref="ClientPlayerVesselInitializer"/>'s server side from
+        /// <see cref="SpectatorSession"/>'s watch book, which is the one place that knows who is
+        /// watching whom - a spectator has no Player object of its own to hang the answer on.
+        /// Reset per scene like <see cref="NetArenaReady"/>: a stale count would claim an
+        /// audience the next match does not have.
+        /// </summary>
+        public NetworkVariable<int> NetSpectatorCount = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>
+        /// True once this player has asked for a REMATCH on the current scoreboard.
+        ///
+        /// <para>Play Again is host-authoritative - only the host's press restarts the party - so a
+        /// client's press is a vote, and a vote nobody can see is a vote nobody acted on. The tally
+        /// used to travel as a transient <c>ClientRpc</c> count, which says how many but never WHO,
+        /// and is gone the moment it lands. This is the same shape as <see cref="NetArenaReady"/>:
+        /// server-write, everyone-read STATE, so any peer joining the answer late still reads it,
+        /// and the scoreboard can put a FACE against every vote.</para>
+        ///
+        /// <para>Written only by <c>MultiplayerMiniGameControllerBase</c>'s rematch ServerRpc, which
+        /// keys on the RPC's own sender id - so a client can only ever vote for itself. Cleared per
+        /// scene in <see cref="PrepareForNewScene"/> and on every replay: a new match must not open
+        /// carrying the last one's votes.</para>
+        /// </summary>
+        public NetworkVariable<bool> NetRematchVote = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>
         /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
         /// and analytics. Replicated so any peer can build the match roster (player_ids on
         /// game_started) from settled network state rather than from a local party roster,
@@ -148,6 +176,31 @@ namespace CosmicShore.Gameplay
         /// <inheritdoc />
         public bool IsArenaReady => !IsSpawned || NetArenaReady.Value;
 
+        /// <summary>Viewers watching this pilot right now; 0 offline or unspawned.</summary>
+        public int SpectatorCount => IsSpawned ? NetSpectatorCount.Value : 0;
+
+        /// <summary>Server-only write of <see cref="NetSpectatorCount"/>. No-op off the server.</summary>
+        public void SetSpectatorCountServer(int count)
+        {
+            if (!IsServer || !IsSpawned) return;
+            count = count < 0 ? 0 : count;
+            if (NetSpectatorCount.Value != count) NetSpectatorCount.Value = count;
+        }
+
+        /// <inheritdoc />
+        public bool HasVotedRematch => IsSpawned && NetRematchVote.Value;
+
+        /// <summary>
+        /// Server-only write of <see cref="NetRematchVote"/>. No-op off the server - a client
+        /// asks through the controller's rematch ServerRpc, which is where the sender's identity
+        /// is established.
+        /// </summary>
+        public void SetRematchVoteServer(bool voted)
+        {
+            if (!IsServer || !IsSpawned) return;
+            if (NetRematchVote.Value != voted) NetRematchVote.Value = voted;
+        }
+
         public void ReportArenaReady()
         {
             if (NetArenaReady.Value) return;
@@ -214,6 +267,27 @@ namespace CosmicShore.Gameplay
 
             CombatHitScoring.Credit(RoundStats, resolved,
                                     gameData != null ? gameData.ScoringRule : null, superseded);
+        }
+
+        /// <summary>
+        /// Owner-side report that THIS player's Kabloom cashed <paramref name="count"/> planted
+        /// Manta bombs before their fuses ran out — "fuses beaten", Bloomrush's tiebreaker.
+        /// Bombs are LOCAL objects on the planter's simulation machine (the projectile model),
+        /// so a client's Kabloom does not exist on the server at all and rides the same
+        /// owner-detects → server-records round trip as <see cref="ReportFaunaKill_ServerRpc"/>.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player the
+        /// RPC arrived on, and the count is clamped rather than trusted — the bay caps at 5
+        /// and Contagion can stack a board somewhat higher, but no honest Kabloom cashes 32.
+        /// </summary>
+        [ServerRpc]
+        public void ReportFusesBeaten_ServerRpc(int count)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            RoundStats.FusesBeaten += Mathf.Clamp(count, 0, 32);
         }
 
         /// <summary>
@@ -490,7 +564,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}");
             base.OnNetworkSpawn();
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
@@ -527,6 +601,15 @@ namespace CosmicShore.Gameplay
             // names separately after spawn. IsLocalUser filters out AI via !IsInitializedAsAI.
             if (IsLocalUser)
             {
+                // A spectator must never own a Player: the host declines to mint one when the
+                // spectator approval payload reaches it (SpectatorSession). If one arrived
+                // anyway the payload was lost on the wire, and this machine is about to be
+                // spawned a vessel into a match it only meant to watch - say so, loudly.
+                if (SpectatorSession.IsLocalSpectator)
+                    CSDebug.LogError("[Player] A SPECTATOR was handed a Player object - the spectator " +
+                                   "approval payload did not reach the host (SpectatorSession). This " +
+                                   "client will be spawned as a pilot. See Docs/PartySystem/SPECTATOR.md.");
+
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {
@@ -577,7 +660,7 @@ namespace CosmicShore.Gameplay
                 gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}");
 
             InputController.Initialize();
         }
@@ -634,7 +717,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PrepareForNewScene()
         {
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}");
             // Clear stale references from previous scene.
             // Vessels have destroyWithScene=true and are already destroyed.
             Vessel = null;
@@ -688,6 +771,12 @@ namespace CosmicShore.Gameplay
                 // machine had laid a prism - the panel's whole job, skipped, with nothing to
                 // show for it. AI carry it true because they have no machine to wait for.
                 NetArenaReady.Value = IsInitializedAsAI;
+                // Nobody is watching the match that has not started yet. The watch book is
+                // re-applied by the new scene's initializer as each viewer re-reports.
+                NetSpectatorCount.Value = 0;
+                // Last match's rematch votes are not this match's. A stale true would show a
+                // face on the next scoreboard for a press nobody made.
+                NetRematchVote.Value = false;
             }
 
             // Force-sync local properties from NetworkVariables.
@@ -907,11 +996,11 @@ namespace CosmicShore.Gameplay
 
         void OnNetVesselIdChanged(ulong previousValue, ulong newValue)
         {
-            CSDebug.Log($"<color=#FF00FF>[PLAYER] OnNetVesselIdChanged '{Name}' - prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[PLAYER] OnNetVesselIdChanged '{Name}' - prev={previousValue}, new={newValue}, IsServer={IsServer}, IsOwner={IsOwner}");
             VesselNetId = newValue;
             if (newValue == 0)
             {
-                CSDebug.Log($"<color=#FF00FF>[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[PLAYER] Clearing Vessel+IsActive on '{Name}' (was VesselId={previousValue})");
                 Vessel = null;
                 IsActive = false;
             }

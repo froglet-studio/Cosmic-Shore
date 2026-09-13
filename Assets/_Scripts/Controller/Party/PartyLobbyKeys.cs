@@ -75,6 +75,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const string PresenceState = "presenceState";
 
+        /// <summary>
+        /// The advertiser's CURRENT Relay party session id, published by EVERY member - host
+        /// and guest alike - so any online row can be JOINED directly or SPECTATED without an
+        /// invite. <see cref="JoinedParty"/> cannot serve this (guests only, and its meaning is
+        /// the host's admit-scan claim, B8); <see cref="InvitePayloads"/> carries the id only in
+        /// lines aimed at one target. The party session IS the game session (MultiplayerSetup
+        /// reuses it at launch), so one key covers both verbs. Empty while spectating (a
+        /// spectator advertises no session, so nobody can chain-spectate through one) and
+        /// offline. See Docs/PartySystem/SPECTATOR.md.
+        /// </summary>
+        public const string PartySession = "partySession";
+
         // ── Invite handshake (presence lobby only) ───────────────────────────
 
         /// <summary>

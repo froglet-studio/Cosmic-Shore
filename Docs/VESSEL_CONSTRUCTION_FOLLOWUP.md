@@ -46,6 +46,27 @@ copy of something here?* The measured starting point:
 
 Do not delete anything in this phase. The deliverable is the inventory.
 
+### Phase 1a — the licence trigger on `_Models/Vessel Models/Placeholder/`
+
+**Wiring a placeholder model into a vessel makes an attribution mandatory.** That folder holds two
+Sketchfab models by **VertaScan** under **CC-BY 4.0**, which requires credit *when the work is
+distributed*. Measured 12 Sep 2026: **0 references**, so they are not in any build, and they are
+deliberately **not** in the credits screen — crediting an asset the build does not contain is a
+false statement about the build (`Docs/THIRD_PARTY_REGISTER.md` §0 row 9, §7.2).
+
+So the rule is conditional, and the condition is exactly the work Phases 2–3 contemplate:
+
+> The moment any of this work wires a `_Models/Vessel Models/Placeholder/` asset into a vessel
+> prefab, a scene or a `Resources/` folder, add a **CC-BY 4.0** entry (author **VertaScan**, the
+> model's title, its Sketchfab URL, and the licence name) to
+> `Assets/Resources/CreditsManifest.asset` in the **same commit**. There is now somewhere to put it,
+> so there is no reason to defer it.
+
+Note this is **not** covered by either credits gate: `CreditsReleaseGuard` and
+`check_credits_manifest.py` check for FMOD's line, which is the one obligation with a fixed string
+to search for. A CC-BY credit that nobody adds fails silently — which is why the trigger is written
+down here, beside the work that would pull it.
+
 ---
 
 ## Phase 2 — the Dolphin rig swap (the one that actually buys a morph)

@@ -222,7 +222,6 @@ namespace CosmicShore.Gameplay
             }
             catch (OperationCanceledException)
             {
-                CSDebug.Log($"[ConsumeBoost] Reload cancelled.");
             }
             catch (Exception e)
             {

@@ -81,9 +81,10 @@ namespace CosmicShore.Gameplay
                  "in BOTH strength and rate - a gun winding up, not a constant hum.")]
         [SerializeField, Min(0.02f)] float hapticIntervalAtRest = 0.10f;
 
-        [Tooltip("Seconds between haptic pulses at full spread. Keep it above ~0.04 s: " +
-                 "NiceVibrations holds one clip at a time, so pulses closer than the clip " +
-                 "length just cut each other off and the feel gets weaker, not stronger.")]
+        [Tooltip("Seconds between haptic pulses at full spread. This is a REQUEST - it is issued " +
+                 "on the next frame, so 0.045 is delivered as 0.050 at 60fps, exactly the spray " +
+                 "clip's length. Do not go lower: duty is already saturated, and at one frame " +
+                 "(~0.017 s) the envelope collapses to a flat hum - measured, see HAPTICS.md.")]
         [SerializeField, Min(0.02f)] float hapticIntervalAtMaxSpread = 0.045f;
 
         public float OnsetSeconds => onsetSeconds;

@@ -173,11 +173,30 @@ namespace CosmicShore.UI
 
         readonly List<SO_Vessel> _availableShips = new();
 
+        // The Arena's vessel picker. An arena card can be flown in several hulls, so its panel
+        // asks the pilot to PICK one and Start stays dead until they have (an arcade card locks to
+        // one hull and never asks). Both are per session: re-armed on every card open, host and
+        // client alike, and cleared on close - which is exactly "go back and come in again to
+        // pick again".
+        int _availableShipIndex = -1;
+        bool _vesselConfirmed;
+
+        bool RequiresVesselConfirmation => _activePanel is ArenaLaunchPanel;
+
         /// <summary>
         /// True when this modal is being shown on a non-host client via RPC.
         /// Host-only controls (intensity, player count, start button) are read-only.
         /// </summary>
         bool IsClientMode => _isClientMode;
+
+        /// <summary>
+        /// A GUEST does not get to dismiss the host's lobby. The card is the host's, the host is
+        /// waiting on this player's Ready, and every route back into it is host-driven - so a B
+        /// press here removes the player from a lobby they cannot re-enter, which is the shape of
+        /// the whole class of bug this file's reconcile exists to end. (Their own X is the same
+        /// question; it is hidden in client mode by ApplyHostOnlyInteractability.)
+        /// </summary>
+        protected override bool AllowGamepadBClose => base.AllowGamepadBClose && !IsClientMode;
 
         #region Unity lifecycle
 
@@ -230,7 +249,6 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
-                Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
 
                 // The lobby is replicated state, so a modal that subscribes AFTER the host's open
                 // landed (re-enabled mid-lobby) asks for it back rather than waiting for the next
@@ -241,7 +259,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                Debug.LogWarning($"[ArcadeConfigModal] OnEnable - arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
+                CSDebug.LogWarning($"[ArcadeConfigModal] OnEnable - arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
             }
         }
 
@@ -279,6 +297,8 @@ namespace CosmicShore.UI
         protected override void Update()
         {
             base.Update();
+
+            ReconcileClientLobby();
 
             var pad = Gamepad.current;
             if (pad == null) return;
@@ -392,6 +412,23 @@ namespace CosmicShore.UI
                 // silence reads as a dead button.
                 AudioSystem.Instance?.PlayMenuAudio(MenuAudioCategory.OptionClick);
 
+                // While the host HAS a card open, a tap is a way back INTO it rather than a
+                // request for a different one: the host has already answered the party's request
+                // (CommitConfiguration clears every standing pick), so a pick recorded now sits on
+                // a board nobody is reading. A guest who dismissed the lobby - or whose own
+                // dismissal is why they cannot see it - otherwise has no control anywhere that
+                // gets them back to the card the rest of the party is waiting in.
+                if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+                {
+                    var lobby = arcadeConfigSyncManager.CurrentLobby;
+                    if (lobby.IsOpen)
+                    {
+                        HandleConfigOpenedOnClient(lobby.GameMode, lobby.Intensity, lobby.PlayerCount,
+                                                   lobby.MaxPlayers, lobby.DomainCount);
+                        return;
+                    }
+                }
+
                 if (arcadeConfigSyncManager && hostConnectionData != null)
                     arcadeConfigSyncManager.RequestGamePick(
                         (int)selectedGame.Mode, hostConnectionData.LocalAvatarId);
@@ -454,7 +491,7 @@ namespace CosmicShore.UI
 
             if (!card)
             {
-                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
+                CSDebug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
                                "MaelstromData on the modal, or keep the card in SO_GameList.");
                 return;
             }
@@ -477,12 +514,14 @@ namespace CosmicShore.UI
 
             // Fresh modal session - re-arm the commit guard so this card's own commit can fire.
             ResetCommitGuard();
+            _launching = false;
 
             config.ResetState();
             config.SelectedGame = selectedGame;
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _vesselConfirmed = false;
 
             // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
             // and Start button the rest of this method is talking about.
@@ -498,6 +537,8 @@ namespace CosmicShore.UI
             ApplyWeeklyChallengePresentation();
             InitializeConfigControls(selectedGame);
             InitializeDefaultShipFromAvailable();
+            RefreshVesselPicker();
+            RefreshStartAvailability();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
@@ -611,6 +652,12 @@ namespace CosmicShore.UI
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
             _activePanel.OnLeaderboardRequested += OpenWeeklyLeaderboard;
 
+            if (_activePanel is ArenaLaunchPanel arena)
+            {
+                arena.OnVesselCycleRequested   += HandleVesselCycleRequested;
+                arena.OnVesselConfirmRequested += HandleVesselConfirmRequested;
+            }
+
             _activePanelWired = true;
         }
 
@@ -641,6 +688,12 @@ namespace CosmicShore.UI
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
             _activePanel.OnLeaderboardRequested -= OpenWeeklyLeaderboard;
+
+            if (_activePanel is ArenaLaunchPanel arena)
+            {
+                arena.OnVesselCycleRequested   -= HandleVesselCycleRequested;
+                arena.OnVesselConfirmRequested -= HandleVesselConfirmRequested;
+            }
 
             _activePanelWired = false;
         }
@@ -903,7 +956,48 @@ namespace CosmicShore.UI
         {
             ShutDownPreview();
             if (_activePanel) _activePanel.Hide();
+
+            // ...and the PARTY has to hear about it too, for exactly the reason the comment on
+            // OnEnable gives about the content: one subscription on the modal's own close event
+            // is the difference between "every route we thought of" and "every route". Only the
+            // host's X went through CloseAndNotifyClients; gamepad B, ScreenSwitcher's
+            // CloseAllModals (raised on freestyle ENTRY, so a host who flew left a phantom lobby
+            // behind) and ForceCloseImmediate all ended at ModalWindowOut. The sync manager then
+            // still believed its lobby was open and its commit guard was still latched, so the
+            // host's NEXT card returned on the first line of CommitConfiguration and every guest
+            // stayed pinned to the previous card with no way off it.
+            //
+            // Re-entrancy is safe: CloseAndNotifyClients is _closing-guarded, and the
+            // ModalWindowOut inside it is a no-op once isOn is already false - which it is by the
+            // time this event is raised, on every route that raises it.
+            if (_launching || _closing) return;
+
+            // The same two-instance gate every other lobby handler carries: the Maelstrom
+            // window's copy of this component authors no panels and never opens a card, so it
+            // must not speak for a lobby the ARCADE copy owns. Its own close reaching
+            // NotifyConfigClosed would end the host's session from a window that was never in it.
+            if (!UsesLaunchPanels) return;
+
+            if (IsClientMode)
+            {
+                // A guest never broadcasts a close - the lobby is not theirs to end. And this
+                // close was not the host's (that route is HandleConfigClosedOnClient, which runs
+                // under _closing), so it is something local taking the window down - freestyle
+                // entry, a screen sweep - and the guest is now out of a lobby the host still has
+                // open. Forgetting which generation was drawn is what lets ReconcileClientLobby
+                // put them back in.
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            CloseAndNotifyClients();
         }
+
+        // True for exactly the span of the launch close. A launch is the one close that must NOT
+        // broadcast "the config was dismissed" - the opposite of what just happened - and it goes
+        // out through the same ModalWindowOut as every other route, so the routes can only be told
+        // apart by the caller saying which one it is.
+        bool _launching;
 
         void ShutDownPreview()
         {
@@ -1039,16 +1133,41 @@ namespace CosmicShore.UI
 
         #region Initialization helpers
 
+        /// <summary>
+        /// How many HUMANS are in this match, answered the SAME way on every peer.
+        ///
+        /// <para>It used to be answered two different ways, and the roster is
+        /// <c>seats - humans = AI</c>, so the two peers drew different rosters: the host read
+        /// Netcode's connected clients (ground truth) while a guest read
+        /// <c>HostConnectionDataSO.PartyMembers</c> - the presence-lobby list, polled every 3s and
+        /// very often 1 on a guest. A guest that thinks it is alone in a four-seat match draws
+        /// three AI avatars, none of which the host ever asked for and none of which spawn: the
+        /// backfill is <c>GameDataSO.RequestedAIBackfillCount</c>, computed host-side. Hence the
+        /// host's count RIDES THE LOBBY (<c>LobbySnapshot.HumanCount</c>) and a client reads it
+        /// back rather than deriving its own.</para>
+        ///
+        /// <para>The host's own read is <c>SpectatorSession.CountHumanClients</c>, not the raw
+        /// connected-client count: a spectator is a Netcode client with no Player object, and
+        /// counting one as a pilot removes an AI seat that the spawner then fills anyway.</para>
+        /// </summary>
         int CurrentPartyHumanCount
         {
             get
             {
-                // Prefer Netcode connected client count - it's the ground truth for
-                // human players and avoids stale PartyMembers (polled every 3s).
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer)
-                    return Mathf.Max(1, nm.ConnectedClientsIds.Count);
+                    return Mathf.Max(1, SpectatorSession.CountHumanClients(nm));
 
+                // Guest: the host's own count, replicated with the open lobby.
+                if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+                {
+                    var lobby = arcadeConfigSyncManager.CurrentLobby;
+                    if (lobby.IsOpen && lobby.HumanCount > 0)
+                        return lobby.HumanCount;
+                }
+
+                // Outside an open lobby there is nothing authoritative to read; the presence
+                // list is the best available and only drives the arcade grid's own defaults.
                 return hostConnectionData != null && hostConnectionData.PartyMembers != null
                     ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
                     : 1;
@@ -1245,7 +1364,82 @@ namespace CosmicShore.UI
             if (!chosen)
                 chosen = _availableShips[0];
 
+            _availableShipIndex = _availableShips.IndexOf(chosen);
             SetSelectedShipInternal(chosen);
+        }
+
+        #endregion
+
+        #region Vessel picker (Arena)
+
+        /// <summary>Redraw the active panel's vessel picker, if it has one.</summary>
+        void RefreshVesselPicker()
+        {
+            if (_activePanel is not ArenaLaunchPanel arena) return;
+
+            var ship = _availableShipIndex >= 0 && _availableShipIndex < _availableShips.Count
+                ? _availableShips[_availableShipIndex]
+                : null;
+            arena.ShowVessel(ship, _availableShips.Count > 1, _vesselConfirmed);
+        }
+
+        void HandleVesselCycleRequested(int direction)
+        {
+            if (_vesselConfirmed || _availableShips.Count == 0) return;
+
+            int count = _availableShips.Count;
+            _availableShipIndex = ((_availableShipIndex + direction) % count + count) % count;
+
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            RefreshVesselPicker();
+        }
+
+        void HandleVesselConfirmRequested()
+        {
+            if (_vesselConfirmed) return;
+            if (_availableShipIndex < 0 || _availableShipIndex >= _availableShips.Count) return;
+
+            _vesselConfirmed = true;
+            if (audioSystem) audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
+
+            // Re-assert the pick: the local player's NetDefaultVesselType is owner-written and
+            // this is the moment the pilot actually committed to it.
+            SetSelectedShipInternal(_availableShips[_availableShipIndex]);
+            RefreshVesselPicker();
+            RefreshStartAvailability();
+        }
+
+        /// <summary>
+        /// The ONE place Start's availability is decided, so the weekly-challenge lock and the
+        /// Arena's vessel gate cannot disagree about it: both conditions are read here, and every
+        /// path that could change either calls this rather than the panel directly.
+        /// </summary>
+        void RefreshStartAvailability()
+        {
+            if (!_activePanel) return;
+
+            if (RequiresVesselConfirmation && !_vesselConfirmed)
+            {
+                _activePanel.SetStartAvailable(false, "SELECT A VESSEL");
+                return;
+            }
+
+            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
+            // dead, but everything else the window shows (the objective, this week's mode, and the
+            // leaderboard the button beside it opens) is still worth reading. Closing the card
+            // outright, which is what it used to do, made the board unreachable between runs.
+            var service = WeeklyChallengeService.Instance;
+            bool canStart = !_weeklyChallengeLocked || service == null || service.CanAttempt;
+
+            // Deliberately NO countdown in the reason. It is written once, when the card opens,
+            // and a modal can sit open for minutes - a ticking value that does not tick is worse
+            // than no value. The card in the grid behind this one already counts down.
+            _activePanel.SetStartAvailable(canStart,
+                canStart ? null
+                : service != null && service.CompletedThisWeek
+                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
+                    : "PLAYED TODAY - COME BACK TOMORROW");
         }
 
         #endregion
@@ -1392,7 +1586,7 @@ namespace CosmicShore.UI
                 var player = ResolveLocalOwnedPlayer();
                 if (player != null) player.RequestSetDomain_ServerRpc(domain);
                 else
-                    Debug.LogError($"[ArcadeConfigModal] Weekly challenge domain '{domain}' DROPPED " +
+                    CSDebug.LogError($"[ArcadeConfigModal] Weekly challenge domain '{domain}' DROPPED " +
                                    "- no owned local Player resolved. The run would be flown on " +
                                    "whatever domain the player already had.");
             }
@@ -1423,7 +1617,7 @@ namespace CosmicShore.UI
             var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
             if (playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner)
             {
-                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale - " +
+                CSDebug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale - " +
                                  "resolved local Player via NetworkManager.LocalClient instead.");
                 return resolved;
             }
@@ -1454,7 +1648,7 @@ namespace CosmicShore.UI
             var player = ResolveLocalOwnedPlayer();
             if (player == null)
             {
-                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED - no owned local " +
+                CSDebug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED - no owned local " +
                                "Player resolved (pair-init incomplete after scene return?). " +
                                "Pick not sent to server; tile selection unchanged.");
                 return;
@@ -1508,7 +1702,7 @@ namespace CosmicShore.UI
 
             if (chipPrefab == null)
             {
-                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal - cannot spawn chips.");
+                CSDebug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal - cannot spawn chips.");
                 return;
             }
 
@@ -1544,7 +1738,7 @@ namespace CosmicShore.UI
             var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Jade);
             if (startTile == null || startTile.AvatarStripTransform == null)
             {
-                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} - chip not spawned.");
+                CSDebug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} - chip not spawned.");
                 return;
             }
 
@@ -1940,6 +2134,7 @@ namespace CosmicShore.UI
 
             _localPlayerReady = false;
             _readyCount = 0;
+            _vesselConfirmed = false;
 
             // A satellite arena is the expensive half of the preview - it must never outlive the
             // window somebody was looking at it through.
@@ -1977,7 +2172,15 @@ namespace CosmicShore.UI
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
+            // Same shape for the Arena's vessel gate: the disabled button is not the whole gate.
+            if (RequiresVesselConfirmation && !_vesselConfirmed)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ArcadeConfigModal] Start refused - no vessel confirmed yet.");
+                return;
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             // Show "Waiting for others..." and hide the Start button
@@ -2048,7 +2251,12 @@ namespace CosmicShore.UI
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] All players ready!");
+
+            // Armed for the WHOLE launch, not just the ModalWindowOut at the end: the scene
+            // transition InvokeGameLaunch starts can take this modal down through a route of its
+            // own, and any close that is not marked as a launch now broadcasts a dismissal.
+            _launching = true;
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
@@ -2072,7 +2280,7 @@ namespace CosmicShore.UI
             // scene load to the server's Netcode scene replication. Without
             // this, clients sit on the menu/modal with no transition visual
             // until the network scene load arrives.
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})");
             gameData.InvokeGameLaunch();
 
             // Clear runtime state so it can't resurface after returning to menu
@@ -2084,8 +2292,10 @@ namespace CosmicShore.UI
             // Close the modal on all instances. The preview window and the panel come down with
             // it through HandleSelfClosed (hooked to OnModalClosed), so this route needs no
             // teardown of its own - deliberately NOT CloseAndNotifyClients(), which would tell the
-            // party the config was DISMISSED, the opposite of what just happened.
+            // party the config was DISMISSED, the opposite of what just happened. HandleSelfClosed
+            // now makes that notify itself on every other route, so this one has to name itself.
             ModalWindowOut();
+            _launching = false;
         }
 
         /// <summary>
@@ -2126,21 +2336,7 @@ namespace CosmicShore.UI
             _activePanel.SetAddAIAvailable(!weekly);
             _activePanel.SetLeaderboardAvailable(weekly);
 
-            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
-            // dead, but everything else the window shows (the objective, this week's mode, and the
-            // leaderboard the button beside it opens) is still worth reading. Closing the card
-            // outright, which is what it used to do, made the board unreachable between runs.
-            var service = WeeklyChallengeService.Instance;
-            bool canStart = !weekly || service == null || service.CanAttempt;
-
-            // Deliberately NO countdown in the reason. It is written once, when the card opens,
-            // and a modal can sit open for minutes - a ticking value that does not tick is worse
-            // than no value. The card in the grid behind this one already counts down.
-            _activePanel.SetStartAvailable(canStart,
-                canStart ? null
-                : service != null && service.CompletedThisWeek
-                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
-                    : "PLAYED TODAY - COME BACK TOMORROW");
+            RefreshStartAvailability();
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
@@ -2183,7 +2379,7 @@ namespace CosmicShore.UI
             var window = ResolveLeaderboardModal();
             if (!window)
             {
-                Debug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
+                CSDebug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
                                  "scene - wire one on this modal, or run FrogletTools > Interface " +
                                  "> Wire Weekly Challenge Leaderboard.");
                 return;
@@ -2222,7 +2418,7 @@ namespace CosmicShore.UI
         {
             if (!gameData || config?.SelectedGame == null)
             {
-                Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - gameData or config.SelectedGame is NULL!</color>");
+                CSDebug.LogError("[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - gameData or config.SelectedGame is null.");
                 return;
             }
 
@@ -2242,13 +2438,11 @@ namespace CosmicShore.UI
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
-            // No IsMultiplayer field in the trace: C5 retired SO_ArcadeGame.IsMultiplayer
-            // because every mode runs the networked single-host model.
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
-                      $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
+                      $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
-                      $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
+                      $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}");
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
             // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
@@ -2311,7 +2505,7 @@ namespace CosmicShore.UI
             var localPlayer = ResolveLocalOwnedPlayer();
             if (localPlayer == null)
             {
-                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
+                CSDebug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
                                "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
                 return;
             }
@@ -2339,10 +2533,45 @@ namespace CosmicShore.UI
             // the legacy client screens died with the one-panel layout.
             if (!UsesLaunchPanels) return;
 
-            Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
+            // A guest who is FLYING cannot be shown anything. Freestyle is not just "the appshell
+            // is on another screen": ScreenSwitcher.HandleEnterFreestyle has closed every modal,
+            // faded the screens CanvasGroup out and handed the pad to the vessel; NavigateTo
+            // refuses outright (so FollowHostToArcadeScreen below is a no-op) and ModalWindowIn
+            // refuses to open at all while that input gate is engaged. So the host's open landed,
+            // drew nothing, and the guest kept flying while the party sat in a lobby - and because
+            // the open is an EDGE, nothing ever delivered it again.
+            //
+            // Being pulled into the host's card is exactly the kind of host-driven move
+            // FollowHostToArcadeScreen already exists for, so leaving freestyle is part of it. The
+            // re-entry is deferred to the END of the exit transition, never the start: the start
+            // event runs another CloseAllModals, which would close whatever we opened.
+            if (Switcher && Switcher.IsInFreestyle)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeConfigModal] Host opened mode={gameModeInt} while this guest is in freestyle - leaving freestyle first.");
+
+                if (Switcher.RequestExitFreestyle(() =>
+                    {
+                        _freestyleExitDeadline = 0f;
+                        HandleConfigOpenedOnClient(gameModeInt, intensity, playerCount, maxPlayers, domainCount);
+                    }))
+                {
+                    // Hold the reconcile off while the blend runs - InFreestyle goes false at the
+                    // START of the exit, so without this it would fire a second, half-transitioned
+                    // open a second later. A DEADLINE rather than a flag: if the callback is ever
+                    // dropped, the reconcile takes over again instead of the guest being stuck,
+                    // which is the exact failure this whole path exists to end.
+                    _freestyleExitDeadline = Time.unscaledTime + FreestyleExitGraceSeconds;
+                    return;
+                }
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
+            _launching = false;
+            _appliedLobbyGeneration = arcadeConfigSyncManager ? arcadeConfigSyncManager.CurrentLobby.Generation : 0;
 
             // Re-arm the commit guard. Clients never commit - CommitConfiguration runs on the
             // host's card open - but a player who was previously the party host might carry a
@@ -2353,12 +2582,13 @@ namespace CosmicShore.UI
             SO_ArcadeGame game = arcadeConfigSyncManager.FindGameByMode(gameModeInt);
             if (game == null)
             {
-                Debug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}. " +
+                CSDebug.LogWarning($"[ArcadeConfigModal] Client could not find game for mode {gameModeInt}. " +
                                  $"gameList injected={arcadeConfigSyncManager != null}");
                 return;
             }
 
             _selectedGame = game;
+            _vesselConfirmed = false;
 
             config.ResetState();
             config.SelectedGame = game;
@@ -2372,20 +2602,32 @@ namespace CosmicShore.UI
             InitializeGameMetaView(game);
             InitializeConfigControls(game);
             InitializeDefaultShipFromAvailable();
+            RefreshVesselPicker();
+            RefreshStartAvailability();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
-            // Move the APP SHELL to the arcade screen first, so the card the host opened is
-            // drawn on the screen it belongs to rather than over whatever the guest was looking
-            // at - and so closing the modal leaves them there instead of somewhere unrelated.
+            // Move the APP SHELL to the screen the card belongs to first, so the card the host
+            // opened is drawn on it rather than over whatever the guest was looking at - and so
+            // closing the modal leaves them there instead of somewhere unrelated. An Arena card
+            // sits over the Arena grid; anything else over the arcade screen.
             // ScreenSwitcher.NavigateTo refuses ARK for a guest on purpose (no browsing the
             // arcade in someone else's party); FollowHostToArcadeScreen is the host-driven
             // entry point past that guard, and nothing on the guest's own UI calls it.
-            if (Switcher) Switcher.FollowHostToArcadeScreen();
+            if (Switcher)
+            {
+                if (_activePanel is ArenaLaunchPanel) Switcher.FollowHostToArenaWindow();
+                else                                  Switcher.FollowHostToArcadeScreen();
+            }
 
-            Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
-            ModalWindowIn();
+            // A panel with a window of its own (Arena, Maelstrom) opened it in SelectLaunchPanel;
+            // this window is only the surface for the panels that are its children - the same
+            // gate OpenFor applies on the host.
+            if (!_activePanel || !_activePanel.HostModal)
+            {
+                ModalWindowIn();
+            }
 
             // The panel SelectLaunchPanel brought up is the whole surface and is already showing -
             // the host has committed PC + DC + intensity, and there is no second screen to move to.
@@ -2399,6 +2641,79 @@ namespace CosmicShore.UI
             RefreshRoster();
         }
 
+        // Which lobby GENERATION this guest has actually drawn. The replicated LobbySnapshot is
+        // state; every path that turns it into a modal is an EDGE (OnValueChanged, the initial
+        // read in OnNetworkSpawn, the replay in OnEnable), and an edge that is missed is missed
+        // forever. Comparing the generation this guest DREW against the one the host is
+        // BROADCASTING is the state-shaped question, and it is the only one that can heal.
+        int _appliedLobbyGeneration;
+        float _nextLobbyReconcileTime;
+
+        // Comfortably longer than any camera blend the exit can pick, and a ceiling rather than a
+        // schedule: it only ever delays the fallback.
+        const float FreestyleExitGraceSeconds = 6f;
+        float _freestyleExitDeadline;
+
+        /// <summary>
+        /// Self-heal: if the host's lobby is open and this guest is not showing it, show it.
+        ///
+        /// <para>Every delivery path for the open is an edge, and each one has a real way to be
+        /// missed - the modal was mid-scene-load when the value landed, the guest was flying so
+        /// the open drew nothing, the modal's GameObject never re-enabled so <c>OnEnable</c>'s
+        /// replay never ran again (<c>ModalWindowOut</c> fades a CanvasGroup; it does not
+        /// deactivate). A guest in that state had no route back in at all: the host was sitting
+        /// in the card, so no further change was coming, and tapping the card registers a game
+        /// PICK rather than opening anything. This is the same shape as ScreenSwitcher's
+        /// self-healing input gate - read the live state, do not trust that the event fired.</para>
+        ///
+        /// <para>It re-opens only for a generation this guest has never drawn, so a guest who
+        /// dismissed the card themselves is not fought with; a host who re-opens (a new
+        /// generation) reaches them either way.</para>
+        /// </summary>
+        void ReconcileClientLobby()
+        {
+            if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;
+
+            // Once a second: this compares two ints, but it also asks Netcode whether this peer is
+            // a client, and there is nothing here worth a per-frame answer.
+            if (Time.unscaledTime < _nextLobbyReconcileTime) return;
+            _nextLobbyReconcileTime = Time.unscaledTime + 1f;
+
+            if (Time.unscaledTime < _freestyleExitDeadline) return;
+
+            // A guest who chose to FLY is left alone. Only a host-driven open pulls a player out
+            // of freestyle (see the exit in HandleConfigOpenedOnClient) - this is the catch-up
+            // path, and catching up must never take the ship off somebody who is using it. They
+            // get the card the moment they land, because nothing here has been recorded as drawn.
+            if (Switcher && (Switcher.IsInFreestyle || Switcher.IsFreestyleSettling)) return;
+
+            if (!arcadeConfigSyncManager.IsSpawned || !ArcadeConfigSyncManager.IsPartyClient)
+            {
+                // Solo, offline, or the host - there is no remote lobby to follow, and a stale
+                // generation must not survive into the next party this machine joins.
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            var lobby = arcadeConfigSyncManager.CurrentLobby;
+
+            if (!lobby.IsOpen)
+            {
+                if (_appliedLobbyGeneration != 0 && IsClientMode) HandleConfigClosedOnClient();
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            if (lobby.Generation == _appliedLobbyGeneration) return;
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeConfigModal] Lobby gen {lobby.Generation} was never drawn on this guest " +
+                $"(showing {_appliedLobbyGeneration}) - opening it now.");
+
+            HandleConfigOpenedOnClient(lobby.GameMode, lobby.Intensity, lobby.PlayerCount,
+                                       lobby.MaxPlayers, lobby.DomainCount);
+        }
+
         /// <summary>
         /// Called on non-host clients when the host closes the modal or starts a game.
         /// </summary>
@@ -2410,8 +2725,18 @@ namespace CosmicShore.UI
             if (!UsesLaunchPanels) return;
 
             _isClientMode = false;
+            _vesselConfirmed = false;
+            _appliedLobbyGeneration = 0;
             DespawnAllChips();
+
+            // A panel in its own window is closed through the panel, exactly as the host's close
+            // does it - ModalWindowOut below only reaches THIS window. Under the same _closing
+            // guard, because that window reports its close back as OnHostModalClosed and a guest
+            // must not answer it with a second close broadcast.
+            _closing = true;
+            if (_activePanel) _activePanel.Hide();
             ModalWindowOut();
+            _closing = false;
         }
 
         /// <summary>

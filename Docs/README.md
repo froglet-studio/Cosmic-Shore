@@ -15,7 +15,8 @@ Docs/
 │   │                            error-handling matrix, exit criteria
 │   ├── REFACTOR.md              active backlog + deferred items
 │   │                            + per-commit revision protocol
-│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9/B10 fixed)
+│   ├── BUGS.md                  open: B5 (needs retest), B7 (deferred);
+│   │                            B2/B3/B8-B17 fixed
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
@@ -38,7 +39,7 @@ Docs/
 │   │                            icons, one deduplicated backlog, 8-commit
 │   │                            landing order, what NOT to do
 │   ├── REFACTOR.md              backlog for PresenceLobbyService
-│   ├── BUGS.md                  open bugs (B1, B4, B6)
+│   ├── BUGS.md                  open: B1, B4, B6 (all 🟡 - see each entry)
 │   ├── TESTS.md                 manual procedures (P1-P6)
 │   └── TODOS.md
 │

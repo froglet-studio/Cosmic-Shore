@@ -69,10 +69,6 @@ namespace CosmicShore.Core
                     Debug.LogWarning($"[{nameof(LockAllExceptTutorialGame)}] no Button found on {card.name}");
                     continue;
                 }
-                else
-                {
-                    Debug.Log("Button found");
-                }
 
                 bool isTutorialGame = card.GameMode == tutorialGameMode;
                 btn.interactable = isTutorialGame;

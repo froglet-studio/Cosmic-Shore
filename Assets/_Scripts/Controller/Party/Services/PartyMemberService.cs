@@ -153,7 +153,7 @@ namespace CosmicShore.Gameplay
                 changed = true;
             }
 
-            Debug.Log("[PartyMemberService] Seeded PartyMembers with local player.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Seeded PartyMembers with local player.");
             if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
@@ -162,10 +162,14 @@ namespace CosmicShore.Gameplay
         {
             if (_connectionData.PartyMembers == null) return System.Array.Empty<string>();
 
-            // Build a fast-lookup set of current session player IDs.
+            // Build a fast-lookup set of current session player IDs. A SPECTATOR is in the
+            // session (it needs the Relay seat to watch) but is never a party member: it is
+            // left out of this set too, so a member who turns spectator is REMOVED below
+            // exactly as if they had left.
             var sessionPlayerIds = new HashSet<string>();
             foreach (var p in session.Players)
-                sessionPlayerIds.Add(p.Id);
+                if (!PartySessionService.IsSpectator(p))
+                    sessionPlayerIds.Add(p.Id);
 
             // Tracks whether this sync moved the roster at all. A steady-state
             // poll tick changes nothing, and raising OnPartyRosterChanged on
@@ -180,6 +184,7 @@ namespace CosmicShore.Gameplay
             foreach (var p in session.Players)
             {
                 if (string.IsNullOrEmpty(p.Id) || p.Id == localPlayerId) continue;
+                if (PartySessionService.IsSpectator(p)) continue;
 
                 var memberData = ReadMemberData(p);
 
@@ -195,7 +200,7 @@ namespace CosmicShore.Gameplay
                     _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
                     rosterChanged = true;
-                    Debug.Log($"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
+                    CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
                 }
                 else
                 {
@@ -215,7 +220,7 @@ namespace CosmicShore.Gameplay
                         // joined/left raise above - but it IS a repaint, which
                         // is exactly what OnPartyRosterChanged signals.
                         rosterChanged = true;
-                        Debug.Log($"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
+                        CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
                     }
                 }
             }
@@ -275,7 +280,7 @@ namespace CosmicShore.Gameplay
         {
             bool changed = _connectionData.PartyMembers is { Count: > 0 };
             _connectionData.PartyMembers?.Clear();
-            Debug.Log("[PartyMemberService] Party members cleared (silent).");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared (silent).");
             if (changed) _eventBus.RequestPartyRosterChanged();
         }
 
@@ -294,7 +299,7 @@ namespace CosmicShore.Gameplay
                 changed = true;
             }
 
-            Debug.Log("[PartyMemberService] Party members cleared with Left events.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[PartyMemberService] Party members cleared with Left events.");
             if (changed) _eventBus.RequestPartyRosterChanged();
         }
 

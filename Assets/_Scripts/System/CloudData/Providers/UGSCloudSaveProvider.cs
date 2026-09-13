@@ -180,7 +180,7 @@ namespace CosmicShore.Core
                     if (alreadyFailing)
                     {
                         _failedKeys.Remove(key);
-                        Debug.Log($"[UGSCloudSaveProvider] Save '{key}' recovered.");
+                        CSDebug.LogVerbose(CSLogChannel.CloudData, $"[UGSCloudSaveProvider] Save '{key}' recovered.");
                     }
                     return true;
                 }

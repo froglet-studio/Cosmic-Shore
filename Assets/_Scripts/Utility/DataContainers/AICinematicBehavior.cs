@@ -60,7 +60,7 @@ namespace CosmicShore.Utility
             enabled = true;
             behaviorStartTime = Time.time;
             
-            CSDebug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[AICinematicBehavior] Starting behavior - {behaviorType}");
             
             // Setup behavior-specific initialization
             switch (behaviorType)
@@ -106,8 +106,11 @@ namespace CosmicShore.Utility
                 return;
 
             isActive = false;
+            // enabled mirrors the active state so a vessel this behavior is not driving pays
+            // no Update dispatch (CLAUDE.md, AI pilot lifecycle). Kept through the merge; the
+            // log below is upstream's console de-noise pass.
             enabled = false;
-            CSDebug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[AICinematicBehavior] Stopped behavior - {currentBehavior}");
         }
 
         private void Update()
@@ -270,7 +273,6 @@ namespace CosmicShore.Utility
         void ExecuteBarrelRoll()
         {
             // Will be implemented in future
-            CSDebug.Log("Barrel roll cinematic - To be implemented");
         }
 
         /// <summary>
@@ -279,7 +281,6 @@ namespace CosmicShore.Utility
         void ExecuteFlyBy()
         {
             // Will be implemented in future
-            CSDebug.Log("Fly-by cinematic - To be implemented");
         }
 
         /// <summary>
@@ -288,7 +289,6 @@ namespace CosmicShore.Utility
         void ExecuteHoverSpin()
         {
             // Will be implemented in future
-            CSDebug.Log("Hover spin cinematic - To be implemented");
         }
 
         #endregion

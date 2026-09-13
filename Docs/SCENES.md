@@ -67,7 +67,12 @@ scene and `ServerPlayerVesselInitializerWithAI` backfills AI.
 | **MinigameSalvo** | `_Scenes/Multiplayer Scenes/` | `Salvo (44)` | `SalvoController` |
 | **MinigameSwitchback** | `_Scenes/Multiplayer Scenes/` | `Switchback (45)` | `SwitchbackController` |
 | **MinigameHijack** | `_Scenes/Multiplayer Scenes/` | `Hijack (46)` | `HijackController` |
-| **MinigameDrumfire** | `_Scenes/Multiplayer Scenes/` | `Drumfire (47)` | `DrumfireController` |
+| **MinigameTollway** | `_Scenes/Multiplayer Scenes/` | `Tollway (48)` | `TollwayController` |
+| **MinigameHeadlong** | `_Scenes/Multiplayer Scenes/` | `Headlong (49)` | `HeadlongController` |
+| **MinigameBreakwater** | `_Scenes/Multiplayer Scenes/` | `Breakwater (50)` | `BreakwaterController` |
+| **MinigameSkein** | `_Scenes/Multiplayer Scenes/` | `Skein (51)` | `SkeinController` |
+| **MinigameBloomrush** | `_Scenes/Multiplayer Scenes/` | `Bloomrush (52)` | `BloomrushController` |
+| **MinigameRedline** | `_Scenes/Multiplayer Scenes/` | `Redline (53)` | `RedlineController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
@@ -294,9 +299,14 @@ was deleted 2026-07-20 — solo play runs the multiplayer spine as a party of on
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
 | 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
-| 46 | `Drumfire` | MP | MinigameDrumfire | `DrumfireController` (Dolphin rhythm range — see `DRUMFIRE.md`) |
+| 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
+| 49 | `Headlong` | MP | MinigameHeadlong | `HeadlongController` (Rhino circuit race — see `HEADLONG.md`) |
+| 50 | `Breakwater` | MP | MinigameBreakwater | `BreakwaterController` (Sparrow station race — see `BREAKWATER.md`) |
+| 51 | `Skein` | MP | MinigameSkein | `SkeinController` (Urchin cable race — see `SKEIN.md`) |
+| 52 | `Bloomrush` | MP | MinigameBloomrush | `BloomrushController` (Manta bomb-tag party game, 120 s timed, volume-destroyed scoring — see `BLOOMRUSH.md`) |
+| 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
 
-Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Solo modes were retired 2026-07-20: every game runs the networked single-host model, and a solo launch is simply a party of one plus AI backfill. The one exception is `Rampage(2)` — its legacy solo ID was deliberately repurposed for the multiplayer destruction race, which has its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
+Note: IDs 7, 31 and 47 are skipped in the enum, and all three are reserved forever because saved selections still carry them. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document); 47 was Drumfire, the Dolphin-only rhythm range removed in 2026-09 because it read as Rampage without offering enough of its own (its lane geometry survives as a platform capability — `ApproachLaneGeometry`, `CrystalManager.CrystalPlacementMode.ApproachLanes`, `ScoringMetric.VolumeDestroyed`). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
 ---
 
@@ -473,7 +483,10 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 
 **Key features**:
 - Own ready-sync pattern (not via `MultiplayerDomainGamesController`)
-- Server-side `readyClientCount` for synchronization
+- Server-side ready gate for synchronization — a SET of which clients have pressed
+  (`MultiplayerMiniGameControllerBase.MarkClientReady` / `EvaluateReadyGate`), re-decided on
+  every press AND every disconnect. It was a bare count evaluated only on a press, which
+  stranded the whole party when somebody left mid-wait (`Docs/PartySystem/BUGS.md` B20).
 - Round setup broadcast via ClientRpc
 
 ---
@@ -561,9 +574,9 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `SwitchbackGateTurnMonitor` | `TurnMonitors/` | A domain's LEAD RUNNER threads every gate of the Switchback course |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
-| `DrumfireTimeTurnMonitor` | `TurnMonitors/` | The Drumfire clock expires (the only mode whose objective is never *reached*) |
+| `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

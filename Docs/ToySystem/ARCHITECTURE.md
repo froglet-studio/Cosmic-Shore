@@ -1387,7 +1387,7 @@ destroyed toy in the registry, so every subclass override calls base.
 | Domain Changer | all three domains, the one you wear flagged `current` | no |
 | Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
 | Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
-| Lifeform Matrix | Fauna / Flora / Vessels → species or hull → element | no |
+| Lifeform Matrix | Fauna / Flora → species → element (the world bench's Vessels hangar is deliberately NOT offered flat — `Docs/HomeHub/ARCHITECTURE.md` §4.1.4); an element row previews the lifeform and the window WATCHES the spawn | no |
 | Connect the Dots | the gallery, with live progress per canvas | **yes** |
 | Wanderway | one switch: wander / come home | **yes** |
 | Arkway | one switch: set sail / end the voyage | **yes** |

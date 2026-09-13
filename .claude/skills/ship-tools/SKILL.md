@@ -22,6 +22,14 @@ Two asymmetries make this specific failure likely rather than rare:
 So the confirmation has to be **asked for**, not inferred, and the commit has to be
 **scoped**, not `git add -A`.
 
+**§0.05 of `/ship` applies here in full: there is no compiler and no CI in this
+environment.** Nothing in this skill needs one — every check below is a git, `.meta` and
+GUID question — so do not run `/verify-unity`, do not stand a compiler up, do not gate the
+commit on any `Tools/Build/check_*.py` or on CI being green, and do not wait on checks after
+the push. The one compile in this document belongs to `FrogletToolShipPanel`, which runs in
+the HUMAN's editor, not here. This gate is why the setting is safe: it is exactly the check
+that does not depend on a build.
+
 ## Modes
 
 | Invocation | Behaviour |
@@ -103,7 +111,6 @@ Never commit tool output blind. It is the one commit nobody reviews, so you revi
 - The changed set is consistent with what the tool's write path can actually touch — read
   the tool and enumerate it. Files it cannot write are somebody else's change riding
   along: **split them out**, do not sweep them in.
-- `python3 Tools/Build/check_conditional_compilation.py` if any script changed.
 
 ## 6. Commit the output as its own commit
 
@@ -179,7 +186,8 @@ sealed class MyWirer : EditorWindow
 ```
 
 - **Validate & Push** — saves assets and open scenes, runs the built-in checks (`.meta`
-  present, no orphan metas, no unsaved scenes, scripts compile) plus the tool's own
+  present, no orphan metas, no unsaved scenes, and — when a human runs it in the editor —
+  scripts compile) plus the tool's own
   `Validate`, then stages **only** this tool's recorded paths, commits and pushes to the
   current branch. Everything else dirty is listed and deliberately left alone.
 - **Retire Tool** — deletes the tool's own scripts and scratch assets and commits the

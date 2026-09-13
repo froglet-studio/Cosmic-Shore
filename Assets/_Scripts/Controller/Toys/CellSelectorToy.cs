@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
             {
                 // Mid-swap the cell has no settled identity, so a matrix built now would
                 // mislabel which world is current (and which pass is the reset).
-                CSDebug.Log("[CellSelector] A cell swap is in flight - try again once it settles.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[CellSelector] A cell swap is in flight - try again once it settles.");
                 return false;
             }
 
@@ -259,8 +259,10 @@ namespace CosmicShore.Gameplay
             _streamCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             StreamMiniatures(pending, _streamCts.Token).Forget();
 
-            CSDebug.Log($"[CellSelector] {_offered.Count} cells offered " +
-                        $"(current: {DisplayNameOf(_offeringCell.Config)}); {pending.Count} scale models building.");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[CellSelector] {_offered.Count} cells offered " +
+                    $"(current: {DisplayNameOf(_offeringCell.Config)}); {pending.Count} scale models building.");
         }
 
         protected override void OnMatrixClosed() => CancelStream();
@@ -295,17 +297,18 @@ namespace CosmicShore.Gameplay
             if (!cell || !config) return;
             if (cell.IsSwappingConfig)
             {
-                CSDebug.Log("[CellSelector] A cell swap is already in flight - ignoring this pass.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, "[CellSelector] A cell swap is already in flight - ignoring this pass.");
                 return;
             }
 
             // The matrix closes first: the world it describes is about to stop being true.
             CloseMatrix();
 
-            if (cell.RequestCellSwap(config, _def.ClearLooseTrailMass))
-                CSDebug.Log($"[CellSelector] → {DisplayNameOf(config)} " +
-                            $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}, " +
-                            $"clear loose trail mass: {_def.ClearLooseTrailMass}).");
+            if (cell.RequestCellSwap(config, _def.ClearLooseTrailMass) && CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[CellSelector] -> {DisplayNameOf(config)} " +
+                    $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}, " +
+                    $"clear loose trail mass: {_def.ClearLooseTrailMass}).");
         }
 
         // ── App-shell face ───────────────────────────────────────────────────
@@ -355,6 +358,7 @@ namespace CosmicShore.Gameplay
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     IsCurrent = isCurrent,
                     Apply = () => SelectCell(capturedCell, capturedConfig),
+                    BuildPreview = parent => BuildShellPreview(capturedConfig, parent),
                 });
             }
         }
@@ -408,6 +412,27 @@ namespace CosmicShore.Gameplay
             else CSDebug.LogWarning($"[CellSelector] {prefab.name} generated no points - " +
                                     $"{DisplayNameOf(config)} shows as an empty slot.");
             return built;
+        }
+
+        /// <summary>
+        /// A scale model of <paramref name="config"/> for the app shell's preview window - the
+        /// same model the matrix station shows, so a world looks the same whichever surface the
+        /// player chose it from.
+        ///
+        /// <para>Two things a STATION does are deliberately left off. There is no idle spin,
+        /// because the preview camera already orbits and the two would compose into a tumble; and
+        /// there is no bloom-in, because that camera renders one frame the instant it is handed a
+        /// model and measures the model to frame it - against a model still scaled to zero it
+        /// would frame nothing, from far too close.</para>
+        /// </summary>
+        GameObject BuildShellPreview(CellConfigDataSO config, Transform parent)
+        {
+            if (!config || !_def || !parent) return null;
+
+            var miniature = ResolveMiniature(config);
+            if (!miniature.IsValid) return null;
+
+            return ToyFactory.AddMiniatureBody(parent, miniature, Context, $"{config.name} Preview");
         }
 
         GameObject AttachMiniature(Transform host, CellMiniatureBuilder.Miniature miniature,

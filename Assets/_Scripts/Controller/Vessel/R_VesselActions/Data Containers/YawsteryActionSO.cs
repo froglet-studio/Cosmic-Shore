@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
 
@@ -28,6 +29,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool lockToAngle = false;
         [SerializeField, Min(1f)] float maxTurnDegrees = 45f;
 
+        [Header("Elemental")]
+        [Tooltip("Element whose map multiplier scales the turn rate. None (the default) = " +
+                 "unscaled. The Manta's spec re-cut deliberately authors None here: Space " +
+                 "moved from Yawstery's turn rate to Kabloom's blast radius, and Yastri's " +
+                 "element (Mass) scales the TRAIL it throws, not the turn itself.")]
+        [SerializeField] Element turnRateElement = Element.None;
+
+        [Header("Trail")]
+        [Tooltip("Drive the vessel's turn-trail state from this turn's intensity — the outer-" +
+                 "lane prism flare, and the Mass-5 Shielded Turn Trails window " +
+                 "(VesselPrismController.SetTurnTrail). The Manta's Yastri assets author ON.")]
+        [SerializeField] bool driveTrailFlare = false;
+
         [Header("Animation (future)")]
         [SerializeField] string animatorParamFloat = "";
         [SerializeField] string animatorParamTriggerStart = "";
@@ -42,6 +56,8 @@ namespace CosmicShore.Gameplay
 
         public bool LockToAngle => lockToAngle;
         public float MaxTurnDegrees => maxTurnDegrees;
+        public Element TurnRateElement => turnRateElement;
+        public bool DriveTrailFlare => driveTrailFlare;
 
         public string AnimFloat => animatorParamFloat;
         public string AnimStart => animatorParamTriggerStart;

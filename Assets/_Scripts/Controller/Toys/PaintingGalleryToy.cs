@@ -226,6 +226,7 @@ namespace CosmicShore.Gameplay
                 int index = i;
                 var live = PaintingToy.LiveRun(painting.PaintingId);
 
+                var captured = painting;
                 into.Add(new ToyShellOption
                 {
                     Label = painting.DisplayName,
@@ -233,9 +234,31 @@ namespace CosmicShore.Gameplay
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     IsCurrent = live,
                     RequiresFreestyle = true,
+                    // A painting is something you START - the window closes and the player is
+                    // flying its first gate, so "Switch" would promise a thing that stays put.
+                    CommitVerb = live && !live.IsCelebrating ? (live.IsBenched ? "Resume" : "Pause") : "Start",
                     Apply = () => BeginFromShell(index),
+                    BuildPreview = parent => BuildShellPreview(captured, parent),
                 });
             }
+        }
+
+        /// <summary>
+        /// The painting in miniature for the window's picture - the SAME builder the gallery
+        /// station and the emblem use, at the station's own radius, so the flat preview and the
+        /// station a player flies to cannot drift apart. Pays the stroke generation the gallery
+        /// would pay on first open; a preview is asked for one painting at a time, never the
+        /// whole late gallery at once.
+        /// </summary>
+        GameObject BuildShellPreview(PaintingDefinitionSO painting, Transform parent)
+        {
+            if (!painting || !parent) return null;
+            var body = new GameObject($"{painting.DisplayName} Preview");
+            body.transform.SetParent(parent, false);
+            if (MiniaturePaintingBuilder.TryBuild(body.transform, painting, StationRadius, Context))
+                return body;
+            Destroy(body);
+            return null;
         }
 
         static string DescribeForShell(PaintingDefinitionSO painting, PaintingRunner live)

@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
             SpawnPreviewCrystals(definition, intensity);
             SpawnPreviewFauna(definition);
 
-            CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[ModePreview] Arena standing for {definition.Mode} " +
                         $"({config.CellName}) at {origin}.");
             return true;
         }

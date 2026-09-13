@@ -42,7 +42,7 @@ namespace CosmicShore.UI
             var hexRace = FindSkimRaceGame();
             if (hexRace == null)
             {
-                Debug.LogError("[QuickPlayButton] Could not find SkimRace game in SO_GameList.");
+                CSDebug.LogError("[QuickPlayButton] Could not find SkimRace game in SO_GameList.");
                 return;
             }
 
@@ -67,7 +67,7 @@ namespace CosmicShore.UI
             // gameData.ActiveSession IS HCS.PartySession (single backing field
             // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
 
-            Debug.Log($"[QuickPlayButton] Launching SkimRace - humans={humanCount}, total={totalPlayers}");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[QuickPlayButton] Launching SkimRace - humans={humanCount}, total={totalPlayers}");
 
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             gameData.InvokeGameLaunch();

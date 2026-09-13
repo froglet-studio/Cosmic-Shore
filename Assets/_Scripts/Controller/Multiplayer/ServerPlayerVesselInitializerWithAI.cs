@@ -49,12 +49,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling");
                 enabled = false;
                 return;
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
@@ -136,13 +136,13 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()");
                     SpawnAIs(totalCounts, humanCounts);
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}");
                 }
                 catch (System.Exception e)
                 {
-                    CSDebug.LogError($"<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}</color>");
+                    CSDebug.LogError($"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs FAILED: {e.Message}\n{e.StackTrace}");
                     CSDebug.LogError($"[ServerPlayerVesselInitializerWithAI] SpawnAIs failed: {e.Message}");
                 }
             }
@@ -157,7 +157,7 @@ namespace CosmicShore.Gameplay
                     aiMarked++;
                 }
             }
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -167,16 +167,16 @@ namespace CosmicShore.Gameplay
         {
             if (!aiPlayerPrefab)
             {
-                CSDebug.LogError("<color=#FF0000>[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!</color>");
+                CSDebug.LogError("[FLOW-5AI] [ServerVesselInitWithAI] aiPlayerPrefab is NOT assigned!");
                 CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] aiPlayerPrefab is not assigned.");
                 return;
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}");
             if (aiCount <= 0)
             {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)");
                 return;
             }
 
@@ -346,7 +346,7 @@ namespace CosmicShore.Gameplay
                 humans.Add(player);
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans");
             return humans;
         }
 
@@ -387,10 +387,10 @@ namespace CosmicShore.Gameplay
                 humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
                 reassigned++;
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}");
             }
 
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}");
         }
 
         VesselClassType PickAIVesselType()
@@ -445,6 +445,17 @@ namespace CosmicShore.Gameplay
                 LoadInsights.Count("Vessels spawned during load");
                 return true;
             }
+        }
+
+        /// <summary>
+        /// An adopted pilot is configured exactly like a backfill bot - same mode-aware seeking,
+        /// same skill-from-intensity - so a ship that changes hands mid-match flies to the same
+        /// standard as the AI that was already in it, rather than sitting on prefab defaults.
+        /// </summary>
+        protected override void ConfigureDepartedPilotAI(IVessel vessel)
+        {
+            if (vessel is not VesselController vc) return;
+            ConfigureAIPilot(vc.NetworkObject);
         }
 
         void ConfigureAIPilot(NetworkObject aiVesselNO)

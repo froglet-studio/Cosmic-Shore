@@ -28,10 +28,11 @@ namespace CosmicShore.Editor.Froglet
     /// <c>Tools/Build/wire_home_hub_scene.py --check</c>, states the same contract from outside the
     /// editor and is what proves the work landed.</para>
     ///
-    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Locked</c> ("this
-    /// exists and you cannot open it yet" — its modal behind the lock is real) and Mission is
-    /// <c>Unavailable</c> ("this is not built"). Both stay DRAWN, because an entry that is simply
-    /// absent tells the player the game has two things in it, and the day it ships they have to
+    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Available</c>
+    /// since its launch window shipped (it was <c>Locked</c> — "this exists and you cannot open it
+    /// yet" — while the modal behind it was only a duplicate of the arcade's); Mission is
+    /// <c>Unavailable</c> ("this is not built") and stays DRAWN, because an entry that is simply
+    /// absent tells the player the game has three things in it, and the day it ships they have to
     /// re-learn the screen (<c>Docs/HomeHub/ARCHITECTURE.md</c> §2).</para>
     /// </summary>
     public class HomeHubWiringWindow : EditorWindow
@@ -69,7 +70,7 @@ namespace CosmicShore.Editor.Froglet
         {
             new() { ButtonName = "ArcadeButton",  Target = ScreenSwitcher.ModalWindows.ARCADE,  Availability = MenuAvailability.Available },
             new() { ButtonName = "ToyboxButton",  Target = ScreenSwitcher.ModalWindows.TOYBOX,  Availability = MenuAvailability.Available },
-            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Locked },
+            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Available },
             new() { ButtonName = "MissionButton", Target = ScreenSwitcher.ModalWindows.MISSION, Availability = MenuAvailability.Unavailable },
         };
 
@@ -82,6 +83,7 @@ namespace CosmicShore.Editor.Froglet
             ("ArenaScreenModal",         ScreenSwitcher.ModalWindows.ARENA),
             ("MissionScreenModal",       ScreenSwitcher.ModalWindows.MISSION),
             ("ToyboxGameConfigureModal", ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE),
+            ("ArenaGameConfigureModal",  ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE),
         };
 
         [MenuItem("FrogletTools/Interface/Home Hub Wiring", false, 20)]
@@ -108,8 +110,8 @@ namespace CosmicShore.Editor.Froglet
             EditorGUILayout.HelpBox(
                 "Duplicating the Arcade's screens copied its WIRING too: every hub button called " +
                 "OnClickArcadeNav and every screen modal declared ModalType ARCADE. This repoints " +
-                "them, registers the new windows with the ScreenSwitcher, and sets Arena to Locked " +
-                "and Mission to Unavailable.", MessageType.Info);
+                "them, registers the new windows with the ScreenSwitcher, and sets Mission to " +
+                "Unavailable (Arena is open: its launch window is real).", MessageType.Info);
 
             EditorGUILayout.Space();
 
@@ -398,6 +400,11 @@ namespace CosmicShore.Editor.Froglet
         const string CardTemplateName = "ToyCardTemplate";
         const string EmptyStateName = "ToyboxEmptyState";
 
+        // The detail window's variant card, once converted. Renamed off the authored
+        // "ToyCardTemplate" so the scene does not carry two objects under that name doing two
+        // different jobs - and both names are accepted on lookup so a re-run is idempotent.
+        const string VariantTemplateName = "ToyVariantTemplate";
+
         // Arcade content the Toy Box's detail window inherited and a toy has no use for. Switched
         // OFF rather than deleted: the authoring is somebody's work, and re-activating a GameObject
         // is a cheaper mistake to undo than re-authoring one.
@@ -485,6 +492,8 @@ namespace CosmicShore.Editor.Froglet
             var grid = FindIn(toybox, "GameGrid");
             var template = EnsureCardTemplate(toybox, FindIn(grid, "GameListRow"), dryRun, ref changed);
             changed += EnsureCardLayout(grid, dryRun);
+            changed += ShapeCardGrid(grid, dryRun);
+            changed += ShapeToyCard(template, FindIn(configure, VariantTemplateName), dryRun);
             if (grid)
                 for (int i = 0; i < grid.transform.childCount; i++)
                     changed += Deactivate(grid.transform.GetChild(i).gameObject, dryRun);
@@ -522,12 +531,12 @@ namespace CosmicShore.Editor.Froglet
                 Undo.DestroyObjectImmediate(stale);
 
             var layout = Undo.AddComponent<GridLayoutGroup>(grid);
-            layout.cellSize = new Vector2(260f, 96f);
-            layout.spacing = new Vector2(12f, 12f);
-            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.cellSize = ToyLayout.ToyCell;
+            layout.spacing = ToyLayout.ToySpacing;
+            layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
             layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
             layout.startAxis = GridLayoutGroup.Axis.Horizontal;
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childAlignment = ToyLayout.GridAlignment;
             layout.constraint = GridLayoutGroup.Constraint.Flexible;
             return 1;
         }
@@ -668,8 +677,34 @@ namespace CosmicShore.Editor.Froglet
             var navigate = FindIn(configure, "Navigate Button")
                            ?? plays.FirstOrDefault(p => p.activeInHierarchy)
                            ?? (plays.Count > 0 ? plays[0] : null);
+
+            // Two components came across with the duplicated launch button and neither belongs on
+            // a toy. They are handled BEFORE Switch is cloned from it, so the clone comes out
+            // clean rather than inheriting the same two problems.
+            //
+            // WeeklyChallengePlayButton is deleted outright: it writes `_button.interactable`
+            // from the weekly-challenge service on enable and on every challenge change, so it
+            // FIGHTS ToyConfigureModal for the same property - and when there is no valid
+            // challenge it simply switches Navigate off, with nothing on screen to say why. That
+            // is the exact criterion this pass already uses for ArcadeExploreView.
+            //
+            // ControllerButtonPress is RETARGETED rather than deleted, because the pad shortcut
+            // it provides is wanted - it is just aimed at the wrong window. Measured on the
+            // authored scene it declared ARCADE_GAME_CONFIGURE, so pressing that pad button
+            // inside the ARCADE's configure modal invoked THIS window's Navigate: a teleport and
+            // a freestyle entry from a modal the player is not even looking at. Its CanvasGroup
+            // guard, which would have caught it, is left unwired, so it is wired here too.
+            changed += RemoveComponent(navigate, "WeeklyChallengePlayButton", dryRun);
+            changed += RetargetControllerHints(configure, dryRun);
+
+            // Resolved BEFORE the sweep below and spared from it. Switch is made by duplicating
+            // the button next to it, so it can easily still be carrying the arcade's own name -
+            // and a sweep that retires "every launch button that is not Navigate" would switch
+            // off the designer's second button the first time this tool ran after they added it.
+            var switchGo = ResolveSwitchButton(configure, navigate, dryRun, ref changed);
+
             foreach (var play in plays)
-                if (play != navigate) changed += Deactivate(play, dryRun);
+                if (play != navigate && play != switchGo) changed += Deactivate(play, dryRun);
 
             if (navigate)
             {
@@ -698,30 +733,86 @@ namespace CosmicShore.Editor.Froglet
             var back = closes.FirstOrDefault(c => c.activeInHierarchy)
                        ?? (closes.Count > 0 ? closes[0] : null);
 
-            // The window shows a PARAGRAPH where the arcade showed a caption, so the label has to
-            // be sized for one and allowed to wrap. Left at the arcade's size it reads as a
-            // footnote beside a picture - which is what the first pass shipped.
+            // ── type ─────────────────────────────────────────────────────────
+            // The window inherited the ARCADE's type scale, where the title labels a card grid and
+            // the description is a caption under a picture. Here those three labels ARE the left
+            // column - there is nothing else in it - so each is re-sized for the job it actually
+            // has rather than the one it was duplicated from.
+            //
+            // Every one is set as a BAND rather than a fixed size. That is not a hedge: a toy's
+            // name runs from "Wanderway" to "Connect the Dots", its description is authored prose
+            // of no fixed length, and a fixed size is a promise the content cannot keep - the long
+            // ones clip, and a clipped label reads as broken rather than as long. A band takes the
+            // ceiling when it fits and steps down when it does not, which is the same answer the
+            // grid card already needed.
+            //
+            // The title is resolved inside GameView specifically. The variants header beside it is
+            // ALSO called "Game Name" - the designer built the column by duplicating the one next
+            // to it - so a search by name alone answers with whichever is earlier in the hierarchy,
+            // and which one that is depends on sibling order rather than on anything meaningful.
+            var title = FindComponentIn<TMP_Text>(FindIn(configure, "GameView"), "Game Name")
+                        ?? FindComponentIn<TMP_Text>(configure, "Game Name");
+            changed += SizeType(title, ToyLayout.TitleMin, ToyLayout.TitleMax, "the toy's name", dryRun);
+
             var body = FindComponentIn<TMP_Text>(configure, "Game Description");
-            if (body && !dryRun && body.fontSize < 26f)
+            changed += SizeType(body, ToyLayout.BodyMin, ToyLayout.BodyMax, "the toy's description", dryRun);
+            if (body && !dryRun && body.alignment != TextAlignmentOptions.TopLeft)
             {
-                _log.Add("Game Description: size the label for body copy.");
+                // A paragraph starts at the top of its box. The arcade's caption was centred in
+                // one, which on a four-line description leaves it floating in the column.
+                _log.Add("Game Description: start the paragraph at the top of its box.");
                 changed++;
-                Undo.RecordObject(body, "toy description size");
-                body.fontSize = 28f;
-                body.textWrappingMode = TextWrappingModes.Normal;
+                Undo.RecordObject(body, "toy description flow");
                 body.alignment = TextAlignmentOptions.TopLeft;
             }
 
+            // ...and the header over the variants list, taken as the "Game Name" that is not the
+            // title. Sized under it, because it labels a section and the toy's name names the page.
+            var variantsHeader = AllIn(configure, "Game Name")
+                .Select(go => go.GetComponent<TMP_Text>())
+                .FirstOrDefault(t => t && t != title);
+            changed += SizeType(variantsHeader, ToyLayout.HeaderMin, ToyLayout.HeaderMax, "the variants header", dryRun);
+
+            // The variants list: the scroll view the designer added inside ConfigurationDetailView,
+            // its Content, and the card it holds. Resolved through the ScrollRect's own `content`
+            // rather than by looking for a child called "Content" - the modal's own root is ALSO
+            // called Content and is found first, which would have bound the whole window as the
+            // card parent.
+            var detail = FindIn(configure, "ConfigurationDetailView");
+            var scroll = detail ? detail.GetComponentInChildren<ScrollRect>(true) : null;
+            var variantContent = scroll && scroll.content ? scroll.content : null;
+            var variantTemplate = EnsureVariantTemplate(configure, detail, variantContent, dryRun, ref changed);
+            changed += ShapeVariantsList(scroll, dryRun);
+
+            if (detail && !scroll)
+                _log.Add("ConfigurationDetailView: no ScrollRect - the variants list has nowhere " +
+                         "to draw. Add the scroll view, then run this again.");
+
             var so = new SerializedObject(modal);
-            changed += SetRef(so, "titleText", FindComponentIn<TMP_Text>(configure, "Game Name"),
-                              "the toy's name", dryRun);
-            changed += SetRef(so, "descriptionText", FindComponentIn<TMP_Text>(configure, "Game Description"),
-                              "the toy's description", dryRun);
-            changed += SetRef(so, "categoryText", FindComponentIn<TMP_Text>(configure, "Header"),
+            // The same two labels the type pass sized, by the same reference - so what the tool
+            // binds and what it sizes can never be two different objects.
+            changed += SetRef(so, "titleText", title, "the toy's name", dryRun);
+            changed += SetRef(so, "descriptionText", body, "the toy's description", dryRun);
+            // The arcade's "Header" was the only candidate, and this window's authoring deleted
+            // it - the category is a nice-to-have (the GRID card already shows it) and the label
+            // is optional at runtime, so the tool offers several names rather than demanding one
+            // back. Add a label under any of them and it binds itself.
+            changed += SetRef(so, "categoryText",
+                              FindComponentIn<TMP_Text>(configure, "Header")
+                              ?? FindComponentIn<TMP_Text>(configure, "Category")
+                              ?? FindComponentIn<TMP_Text>(configure, "Toy Category"),
                               "the fundamental it changes", dryRun);
             changed += SetRef(so, "preview", preview, "the live toy window", dryRun);
             changed += SetRef(so, "navigateButton", navigate ? navigate.GetComponent<Button>() : null,
                               "Navigate", dryRun);
+            changed += SetRef(so, "switchButton", switchGo ? switchGo.GetComponent<Button>() : null,
+                              "Switch", dryRun);
+            changed += SetRef(so, "variantsRoot", scroll ? scroll.gameObject : null,
+                              "the variants scroll view", dryRun);
+            changed += SetRef(so, "variantContent", variantContent, "the variants content", dryRun);
+            changed += SetRef(so, "variantCardPrefab",
+                              variantTemplate ? variantTemplate.GetComponent<ToyVariantCard>() : null,
+                              "the variant card template", dryRun);
             changed += SetRef(so, "backButton", back ? back.GetComponent<Button>() : null,
                               "Back", dryRun);
             changed += SetRef(so, "crystalClickHandler",
@@ -730,6 +821,780 @@ namespace CosmicShore.Editor.Froglet
             changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
             if (!dryRun) so.ApplyModifiedProperties();
             return changed;
+        }
+
+
+        /// <summary>
+        /// The <b>Switch</b> button — the second verb, which commits the selected variant without
+        /// flying anywhere.
+        ///
+        /// <para>It is looked for by NAME first, then by CAPTION, and only then as a second copy of
+        /// the launch button. That order is the point: the designer makes this control by
+        /// duplicating the one beside it, so its name is whatever the duplicate inherited and the
+        /// only thing that reliably says which button is which is the word on it. Guessing at a
+        /// second launch button is the last resort and says so in the log, because the two are
+        /// interchangeable from the outside and picking the wrong one puts Navigate's job on the
+        /// button reading SWITCH.</para>
+        /// </summary>
+        GameObject ResolveSwitchButton(GameObject configure, GameObject navigate, bool dryRun, ref int changed)
+        {
+            GameObject found = null;
+
+            foreach (var name in new[] { "Switch Button", "SwitchButton", "Switch" })
+            {
+                var go = FindIn(configure, name);
+                if (go && go != navigate) { found = go; break; }
+            }
+
+            if (!found)
+                found = AllButtonsIn(configure)
+                    .FirstOrDefault(b => b.gameObject != navigate && CaptionOf(b) == "SWITCH")
+                    ?.gameObject;
+
+            if (!found)
+            {
+                var spares = AllIn(configure, "Navigate Button").Concat(AllIn(configure, "Play Button"))
+                    .Where(go => go != navigate && go.activeInHierarchy).ToList();
+                if (spares.Count == 1)
+                {
+                    found = spares[0];
+                    _log.Add($"Switch: no button named or captioned SWITCH - taking the one spare " +
+                             $"launch button '{found.name}'. Rename it or set its caption if that is wrong.");
+                }
+            }
+
+            // Nothing to find: make one. A window with a variants list and no Switch can select
+            // and never commit, which is the worst of the three states - so rather than reporting
+            // it and stopping, the tool duplicates the button beside it. That is a mechanical
+            // edit with an obvious right answer (same art, same size, same band), and duplicating
+            // the authored control is what keeps the pair looking like one pair. Where it SITS is
+            // a look decision and stays the designer's; the default just has to not overlap.
+            found ??= CreateSwitchButton(navigate, dryRun, ref changed);
+            if (!found) return null;
+
+            if (found.TryGetComponent(out Button button))
+                changed += StripForeignCalls(button, "Switch", dryRun);
+
+            if (!dryRun)
+            {
+                var caption = found.GetComponentInChildren<TMP_Text>(true);
+                if (caption && caption.text != "SWITCH")
+                {
+                    Undo.RecordObject(caption, "switch caption");
+                    caption.text = "SWITCH";
+                }
+            }
+
+            return found;
+        }
+
+
+        /// <summary>
+        /// Duplicate the Navigate button into a Switch button, one width to its LEFT.
+        ///
+        /// <para>Cloned rather than built from nothing for the reason <see cref="EnsureCardTemplate"/>
+        /// is: the authored control already carries this menu's art, size and press behaviour, and
+        /// two buttons that came from one object read as a pair. The clone is taken AFTER the
+        /// inherited arcade components have been dealt with on the original, so it never inherits
+        /// them - and its own <c>ControllerButtonPress</c> is removed even so, because a pad
+        /// binding names one button and two buttons answering to it would fire both.</para>
+        ///
+        /// <para>Placed by ANCHOR rather than by position: the button is anchored to a fraction of
+        /// its parent (0.690..0.998 on the authored scene), so a pixel offset would drift with the
+        /// window's size while shifting the anchors one width left keeps the pair together at every
+        /// resolution.</para>
+        /// </summary>
+        GameObject CreateSwitchButton(GameObject navigate, bool dryRun, ref int changed)
+        {
+            if (!navigate || !navigate.transform.parent)
+            {
+                if (!dryRun)
+                    _log.Add("Switch: no Navigate button to duplicate, so none was created - the " +
+                             "variants list will select but not commit.");
+                return null;
+            }
+
+            _log.Add("Switch: none found - duplicating 'Navigate Button' to make one.");
+            changed++;
+            if (dryRun) return null;
+
+            var clone = Instantiate(navigate, navigate.transform.parent);
+            Undo.RegisterCreatedObjectUndo(clone, "create switch button");
+            clone.name = "Switch Button";
+            clone.transform.SetSiblingIndex(navigate.transform.GetSiblingIndex());
+
+            if (navigate.transform is RectTransform from && clone.transform is RectTransform to)
+            {
+                float width = from.anchorMax.x - from.anchorMin.x;
+                float shift = width + width * 0.08f;
+                to.anchorMin = new Vector2(from.anchorMin.x - shift, from.anchorMin.y);
+                to.anchorMax = new Vector2(from.anchorMax.x - shift, from.anchorMax.y);
+                to.anchoredPosition = from.anchoredPosition;
+                to.sizeDelta = from.sizeDelta;
+                to.pivot = from.pivot;
+            }
+
+            // The pad binding names ONE button. Left on the clone, one press would fire Navigate
+            // and Switch together - a teleport and a world swap from a single button.
+            RemoveComponent(clone, "ControllerButtonPress", false);
+            RemoveComponent(clone, "WeeklyChallengePlayButton", false);
+
+            return clone;
+        }
+
+        /// <summary>
+        /// Point every <c>ControllerButtonPress</c> in this window at THIS window, and give it the
+        /// CanvasGroup guard it needs to stay quiet while the window is closed.
+        ///
+        /// <para>The list is written through <c>intValue</c>, never <c>enumValueIndex</c> — the
+        /// same rule the note at the bottom of this file records, and for the same reason:
+        /// <c>ModalWindows</c> is sparse, so the index and the value are different numbers and the
+        /// tool's own audit would read back the wrong one.</para>
+        /// </summary>
+        int RetargetControllerHints(GameObject configure, bool dryRun)
+        {
+            if (!configure) return 0;
+
+            var group = configure.GetComponent<CanvasGroup>();
+            int changed = 0;
+
+            foreach (var mb in configure.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (!mb || mb.GetType().Name != "ControllerButtonPress") continue;
+
+                var so = new SerializedObject(mb);
+                var list = so.FindProperty("ActiveModalWindows");
+                var canvas = so.FindProperty("canvasGroup");
+                bool dirty = false;
+
+                if (list is { isArray: true } &&
+                    (list.arraySize != 1 ||
+                     list.GetArrayElementAtIndex(0).intValue != (int)ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE))
+                {
+                    _log.Add($"{mb.name}: point ControllerButtonPress at TOYBOX_CONFIGURE " +
+                             $"(it answers to another window's modal today).");
+                    changed++;
+                    dirty = true;
+                    if (!dryRun)
+                    {
+                        list.arraySize = 1;
+                        list.GetArrayElementAtIndex(0).intValue =
+                            (int)ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE;
+                    }
+                }
+
+                if (group && canvas != null && !canvas.objectReferenceValue)
+                {
+                    _log.Add($"{mb.name}: give ControllerButtonPress the window's CanvasGroup, so " +
+                             "it stays quiet while the window is closed.");
+                    changed++;
+                    dirty = true;
+                    if (!dryRun) canvas.objectReferenceValue = group;
+                }
+
+                if (dirty && !dryRun) so.ApplyModifiedProperties();
+            }
+
+            return changed;
+        }
+
+        static List<Button> AllButtonsIn(GameObject root) =>
+            root ? root.GetComponentsInChildren<Button>(true).ToList() : new List<Button>();
+
+        static string CaptionOf(Button button)
+        {
+            var text = button ? button.GetComponentInChildren<TMP_Text>(true) : null;
+            return text ? text.text.Trim().ToUpperInvariant() : "";
+        }
+
+        /// <summary>
+        /// Turn the card the designer put inside the variants scroll view into the window's
+        /// <see cref="ToyVariantCard"/> template, and take it out of the Content so it is never
+        /// drawn as a row itself.
+        ///
+        /// <para>The same move <see cref="EnsureCardTemplate"/> makes for the toy grid, and for the
+        /// same reason: reusing the authored card is what keeps this list looking like the rest of
+        /// the menu without anybody authoring a second one. It is renamed off "ToyCardTemplate"
+        /// because the grid's template already carries that name, and two objects with one name
+        /// doing two jobs is a scene nobody can read.</para>
+        /// </summary>
+        GameObject EnsureVariantTemplate(GameObject configure, GameObject detail, Transform content,
+            bool dryRun, ref int changed)
+        {
+            var existing = FindIn(configure, VariantTemplateName);
+            if (existing)
+            {
+                // Shaped on EVERY pass, not only the conversion. The template survives a re-run,
+                // so a layout fix that only ran at conversion time would never reach a scene the
+                // tool had already touched - which is every scene that matters.
+                changed += ShapeVariantCard(existing, dryRun);
+                return existing;
+            }
+
+            // Whatever is sitting in the scroll's Content, else the authored name anywhere in the
+            // detail column - the designer may have parked it outside the Content already.
+            GameObject source = content && content.childCount > 0 ? content.GetChild(0).gameObject : null;
+            source ??= FindIn(detail, CardTemplateName);
+
+            if (!source)
+            {
+                if (!dryRun)
+                    _log.Add("ConfigurationDetailView: no card to convert into a variant template. " +
+                             "Put one card inside the scroll view's Content and run this again.");
+                return null;
+            }
+
+            _log.Add($"ConfigurationDetailView: convert '{source.name}' into '{VariantTemplateName}'.");
+            changed++;
+            if (dryRun) return null;
+
+            // Anything else parked in the Content is authoring scratch, not a row: the list is
+            // drawn from the pool and a leftover child would sit in it unbound and unpressable.
+            if (content)
+                for (int i = content.childCount - 1; i >= 0; i--)
+                {
+                    var child = content.GetChild(i).gameObject;
+                    if (child != source) Undo.DestroyObjectImmediate(child);
+                }
+
+            Undo.RecordObject(source, "toy variant template");
+            source.name = VariantTemplateName;
+            // Out of the Content: the template is instantiated per variant, never drawn itself.
+            source.transform.SetParent(configure.transform, false);
+
+            int ignored = 0;
+            ignored += RemoveComponent(source, "GameCard", false);
+            ignored += RemoveComponent(source, "ToyboxCard", false);
+
+            if (!source.GetComponent<Button>()) Undo.AddComponent<Button>(source);
+
+            // One method adds the card component, lays it out, gives it its second line and binds
+            // every slot - so the conversion and a later re-run cannot produce two different cards.
+            changed += ShapeVariantCard(source, false);
+
+            source.SetActive(false);
+            return source;
+        }
+
+
+        /// <summary>
+        /// Make the variants list actually SCROLL.
+        ///
+        /// <para>The authored Content sits at a stretch-x, top anchor with a zero size delta, so
+        /// its height is zero no matter how many rows the grid lays into it - and a ScrollRect
+        /// scrolls a content RECT, not the children inside it. With the fitter left Unconstrained
+        /// the list draws every row it is given and can only ever REACH the ones already inside the
+        /// viewport: the rest are clipped by the viewport's Mask, which cuts the drawing off and,
+        /// being a raycast filter, eats the press too. A card below the fold is therefore invisible
+        /// AND dead, which is the exact failure the arcade grid shipped the day it grew to a
+        /// thirteenth mode.</para>
+        ///
+        /// <para>Horizontal scrolling goes off with it. The grid is a fixed three-column count in a
+        /// content that stretches to the viewport's width, so there is never anything to reach
+        /// sideways - leaving it on only lets a drag slide the whole list off its own column.</para>
+        /// </summary>
+        int ShapeVariantsList(ScrollRect scroll, bool dryRun)
+        {
+            if (!scroll || !scroll.content) return 0;
+
+            int changed = 0;
+
+            if (scroll.horizontal)
+            {
+                _log.Add("Scroll View: vertical only (the grid's column count is fixed).");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(scroll, "variants scroll axis");
+                    scroll.horizontal = false;
+                }
+            }
+
+            if (scroll.content.TryGetComponent(out GridLayoutGroup rows)
+                && (rows.cellSize != ToyLayout.VariantCell || rows.spacing != ToyLayout.VariantSpacing
+                    || rows.padding.left != ToyLayout.VariantPadding + ToyLayout.GridExtraLeft
+                    || rows.childAlignment != ToyLayout.GridAlignment))
+            {
+                _log.Add($"Scroll View/Content: rows at {ToyLayout.VariantCell.x:0}x{ToyLayout.VariantCell.y:0}, upper-left.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(rows, "variant rows");
+                    rows.cellSize = ToyLayout.VariantCell;
+                    rows.spacing = ToyLayout.VariantSpacing;
+                    rows.padding = ToyLayout.Padding(ToyLayout.VariantPadding);
+                    rows.childAlignment = ToyLayout.GridAlignment;
+                }
+            }
+
+            var fitter = scroll.content.GetComponent<ContentSizeFitter>();
+            if (!fitter)
+            {
+                _log.Add("Scroll View/Content: add a ContentSizeFitter so the list can scroll.");
+                changed++;
+                if (!dryRun) fitter = Undo.AddComponent<ContentSizeFitter>(scroll.content.gameObject);
+            }
+
+            if (fitter && fitter.verticalFit != ContentSizeFitter.FitMode.PreferredSize)
+            {
+                _log.Add("Scroll View/Content: fit the HEIGHT to the rows - it was unconstrained, " +
+                         "so every row past the viewport was clipped and unpressable.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(fitter, "variants content fit");
+                    fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                }
+            }
+
+            return changed;
+        }
+
+
+        // A 275x100 cell, split so the name gets the upper band and the detail line the lower one.
+        // Fractions rather than pixels: the cell size is the designer's to change, and a layout
+        // authored in pixels stops being a layout the moment they do.
+        // The name BOTTOM-LEFT and the detail above it, both inset past the plate's chamfer.
+        static readonly Vector2 CardTitleAnchorMin = new(0.06f, 0.08f);
+        static readonly Vector2 CardTitleAnchorMax = new(0.74f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMin = new(0.06f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMax = new(0.94f, 0.88f);
+
+        /// <summary>
+        /// The variant card's own layout, type and slot wiring.
+        ///
+        /// <para>Run on every pass. The template is a duplicate of the ARCADE's game card, so its
+        /// title sits in the band that card put a title in - which on a 275x100 cell is an
+        /// eleven-unit strip near the top that a 27pt line overflows downward. It reads as a
+        /// caption that has slid off its own card, and it is most of why the first pass looked
+        /// unfinished.</para>
+        ///
+        /// <para>The second line is CREATED here rather than demanded from the designer, because
+        /// it is the one thing a row says that its name cannot - "current", "flying", a painting's
+        /// progress - and a card that cannot say it is a list of names with no state in it.</para>
+        /// </summary>
+        int ShapeVariantCard(GameObject card, bool dryRun)
+        {
+            if (!card) return 0;
+
+            int changed = 0;
+
+            var component = card.GetComponent<ToyVariantCard>();
+            if (!component)
+            {
+                _log.Add($"{card.name}: add ToyVariantCard.");
+                changed++;
+                if (!dryRun) component = Undo.AddComponent<ToyVariantCard>(card);
+            }
+
+            changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
+
+            var title = FindComponentIn<TMP_Text>(card, "GameTitle");
+            if (title)
+            {
+                changed += SetRect((RectTransform)title.transform,
+                                   CardTitleAnchorMin, CardTitleAnchorMax,
+                                   Vector2.zero, Vector2.zero,
+                                   "the variant name", dryRun);
+
+                // A NAME, not body copy: the floor is high enough that a long one shortens rather
+                // than turning into small print, and the ellipsis takes what is left over.
+                changed += SizeType(title, ToyLayout.VariantNameMin, ToyLayout.VariantNameMax, "the variant name", dryRun);
+                if (!dryRun && (title.overflowMode != TextOverflowModes.Ellipsis
+                                || title.alignment != TextAlignmentOptions.BottomLeft))
+                {
+                    Undo.RecordObject(title, "variant name overflow");
+                    title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.BottomLeft;
+                    title.alignment = TextAlignmentOptions.Left;
+                }
+            }
+
+            var detail = FindComponentIn<TMP_Text>(card, "GameDetail");
+            if (!detail && title)
+            {
+                _log.Add($"{card.name}: add the GameDetail line (\"current\", \"flying\", progress).");
+                changed++;
+                if (!dryRun)
+                {
+                    var go = new GameObject("GameDetail", typeof(RectTransform));
+                    Undo.RegisterCreatedObjectUndo(go, "variant detail line");
+                    go.transform.SetParent(card.transform, false);
+
+                    detail = Undo.AddComponent<TextMeshProUGUI>(go);
+                    // The template's own face, so a card the designer restyled stays restyled.
+                    detail.font = title.font;
+                    detail.color = new Color(1f, 1f, 1f, 0.62f);
+                    detail.alignment = TextAlignmentOptions.TopLeft;
+                    detail.raycastTarget = false;
+                    detail.text = string.Empty;
+                }
+            }
+
+            if (detail)
+            {
+                changed += SetRect((RectTransform)detail.transform,
+                                   CardDetailAnchorMin, CardDetailAnchorMax,
+                                   Vector2.zero, Vector2.zero,
+                                   "the variant detail line", dryRun);
+                changed += SizeType(detail, ToyLayout.VariantDetailMin, ToyLayout.VariantDetailMax, "the variant detail line", dryRun);
+            }
+
+            if (!component || dryRun) return changed;
+
+            var cardSo = new SerializedObject(component);
+            changed += SetRef(cardSo, "background", FindComponentIn<Image>(card, "Background"),
+                              "the fill", false);
+            changed += SetRef(cardSo, "border", FindComponentIn<Image>(card, "Border"),
+                              "the rim", false);
+            changed += SetRef(cardSo, "nameText", title, "the variant name", false);
+            changed += SetRef(cardSo, "detailText", detail, "the detail line", false);
+            cardSo.ApplyModifiedProperties();
+            return changed;
+        }
+
+
+        /// <summary>
+        /// The Toy Box's layout numbers, in ONE place. <c>Tools/Build/author_toybox_layout.py</c>
+        /// writes the same values into the scene from outside the editor (so the layout lands on
+        /// the branch rather than in somebody's working tree) and
+        /// <c>wire_home_hub_scene.py --check</c> audits them; the three must agree, and this is
+        /// the copy the editor reads.
+        ///
+        /// <para>Every type value is a BAND (autosize min..max), halved from the first pass's
+        /// 42-58 / 22-44 / 34-44 / 22-34 / 15-21 - on a window whose whole left column is three
+        /// labels those read as a poster. The toy card is 400x250 because the card the arcade
+        /// authored was 275x203 and the grid was forcing it into 260x96: the plates overran the
+        /// cell and the grid read as a strip of small overlapping tiles.</para>
+        /// </summary>
+        static class ToyLayout
+        {
+            public const float TitleMin = 28f, TitleMax = 36f;
+            public const float BodyMin = 16f, BodyMax = 22f;
+            public const float HeaderMin = 22f, HeaderMax = 28f;
+            public const float VariantNameMin = 16f, VariantNameMax = 22f;
+            public const float VariantDetailMin = 12f, VariantDetailMax = 14f;
+            public const float CardNameMin = 18f, CardNameMax = 26f;
+            public const float CardTaglineMin = 11f, CardTaglineMax = 14f;
+            public const float CardSectionMin = 10f, CardSectionMax = 13f;
+
+            public static readonly Vector2 ToyCell = new(400f, 250f);
+            public static readonly Vector2 ToySpacing = new(20f, 20f);
+            public const int ToyPadding = 16;
+            public static readonly Vector2 VariantCell = new(275f, 88f);
+            public static readonly Vector2 VariantSpacing = new(16f, 14f);
+            public const int VariantPadding = 12;
+
+            // Both grids start UPPER-LEFT: centred, a lone row (the Wanderway's one "Wander") sat
+            // in the middle of an empty strip and read as a misplaced card. The extra left inset
+            // keeps the first column off the window's edge now that nothing centres it.
+            public const TextAnchor GridAlignment = TextAnchor.UpperLeft;
+            public const int GridExtraLeft = 20;
+            public static RectOffset Padding(int all) => new(all + GridExtraLeft, all, all, all);
+
+            // The grid card shows its title and art only; the tagline/category lines stay
+            // authored and bound, switched off.
+            public const bool CardLabelsActive = false;
+
+            /// <summary>
+            /// pixelsPerUnitMultiplier that draws the plates' 9-slice at design scale on the card's
+            /// canvas. The sprites are authored at PPU 400 (design x4) and UGUI divides that by the
+            /// canvas's referencePixelsPerUnit before slicing - Menu_Main's is 240, so a 20-unit
+            /// border came out at 48 and the chamfer read at twice its size. Read off the canvas,
+            /// never written down, for the same reason author_toybox_layout.py reads it off the scene.
+            /// </summary>
+            public static float SliceMultiplier(GameObject card)
+            {
+                var canvas = card ? card.GetComponentInParent<Canvas>(true) : null;
+                return canvas ? canvas.referencePixelsPerUnit / 100f : 1f;
+            }
+
+            // card anchors as FRACTIONS of the cell - the cell is the designer's to change
+            public static readonly Vector2 PortraitMin = new(0.06f, 0.36f), PortraitMax = new(0.94f, 0.95f);
+            public static readonly Vector2 NameMin = new(0.06f, 0.06f), NameMax = new(0.94f, 0.34f);
+            public static readonly Vector2 TaglineMin = new(0.06f, 0.05f), TaglineMax = new(0.68f, 0.19f);
+            public static readonly Vector2 SectionMin = new(0.68f, 0.05f), SectionMax = new(0.94f, 0.19f);
+        }
+
+        /// <summary>
+        /// The toy grid's cell, spacing and padding, on EVERY pass (EnsureCardLayout only runs
+        /// when the grid has no layout yet), plus the fitter and top anchor that let it scroll -
+        /// the same fix the variants list needed (Docs/HomeHub/ARCHITECTURE.md 5.4.3).
+        /// </summary>
+        int ShapeCardGrid(GameObject grid, bool dryRun)
+        {
+            if (!grid) return 0;
+            int changed = 0;
+
+            if (grid.TryGetComponent(out GridLayoutGroup layout)
+                && (layout.cellSize != ToyLayout.ToyCell || layout.spacing != ToyLayout.ToySpacing
+                    || layout.padding.left != ToyLayout.ToyPadding + ToyLayout.GridExtraLeft
+                    || layout.childAlignment != ToyLayout.GridAlignment))
+            {
+                _log.Add($"GameGrid: cells at {ToyLayout.ToyCell.x:0}x{ToyLayout.ToyCell.y:0}.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(layout, "toy grid cells");
+                    layout.cellSize = ToyLayout.ToyCell;
+                    layout.spacing = ToyLayout.ToySpacing;
+                    layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
+                    layout.childAlignment = ToyLayout.GridAlignment;
+                }
+            }
+
+            var rect = (RectTransform)grid.transform;
+            var top = new Vector2(0.5f, 1f);
+            if (rect.anchorMin != new Vector2(0f, 1f) || rect.anchorMax != Vector2.one || rect.pivot != top)
+            {
+                _log.Add("GameGrid: anchor to the top of the viewport so the fitter can grow it.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(rect, "toy grid anchor");
+                    rect.pivot = top;
+                    rect.anchorMin = new Vector2(0f, 1f);
+                    rect.anchorMax = Vector2.one;
+                    rect.anchoredPosition = Vector2.zero;
+                    rect.sizeDelta = Vector2.zero;
+                }
+            }
+
+            if (!grid.TryGetComponent(out ContentSizeFitter fitter))
+            {
+                _log.Add("GameGrid: add a ContentSizeFitter so a third row of toys can scroll.");
+                changed++;
+                if (!dryRun) fitter = Undo.AddComponent<ContentSizeFitter>(grid);
+            }
+            if (fitter && fitter.verticalFit != ContentSizeFitter.FitMode.PreferredSize)
+            {
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(fitter, "toy grid fit");
+                    fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                }
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// A card's two plates - its Background and Border, plus the rim on its own root - drawn
+        /// SLICED and stretched to the card. The sprites carry a 9-slice border since
+        /// <c>author_toy_card_sprites.py</c>; drawn Simple they stretch the chamfer, which on a
+        /// 275x88 row squashes a 228x170 picture to 3:1 and reads as bent corners.
+        /// </summary>
+        int ShapePlates(GameObject card, bool dryRun)
+        {
+            if (!card) return 0;
+            int changed = 0;
+
+            var plates = new List<Image>();
+            if (card.TryGetComponent(out Image root) && root.sprite) plates.Add(root);
+            foreach (var name in new[] { "Background", "Border" })
+            {
+                var img = FindComponentIn<Image>(card, name);
+                if (!img) continue;
+                plates.Add(img);
+                changed += SetRect((RectTransform)img.transform, Vector2.zero, Vector2.one,
+                                   Vector2.zero, Vector2.zero, $"{card.name}/{name} stretched to the card", dryRun);
+            }
+
+            float multiplier = ToyLayout.SliceMultiplier(card);
+            foreach (var img in plates)
+            {
+                if (img.type == Image.Type.Sliced && Mathf.Approximately(img.pixelsPerUnitMultiplier, multiplier))
+                    continue;
+                _log.Add($"{card.name}/{img.name}: draw the plate sliced at x{multiplier:0.##}.");
+                changed++;
+                if (dryRun) continue;
+                Undo.RecordObject(img, "card plate");
+                img.type = Image.Type.Sliced;
+                img.fillCenter = true;
+                img.pixelsPerUnitMultiplier = multiplier;
+            }
+            return changed;
+        }
+
+        /// <summary>
+        /// The card templates inherited a root <see cref="Mask"/> from the arcade card, which
+        /// clips every child to the rim sprite's alpha - i.e. to the chamfer, so the first letter
+        /// of a name lost its corner. Off rather than removed, so the component list is untouched.
+        /// </summary>
+        int DisableRootMask(GameObject card, bool dryRun)
+        {
+            if (!card || !card.TryGetComponent(out Mask mask) || !mask.enabled) return 0;
+            _log.Add($"{card.name}: switch the root Mask off (it clipped the text to the chamfer).");
+            if (!dryRun)
+            {
+                Undo.RecordObject(mask, "card mask");
+                mask.enabled = false;
+            }
+            return 1;
+        }
+
+        /// <summary>
+        /// The toy card's own layout: plates, a portrait filling the upper two thirds, the name
+        /// under it, and the tagline + category line <see cref="ToyboxCard"/> was already written
+        /// to show and had nothing bound to. Run on every pass, like <see cref="ShapeVariantCard"/>,
+        /// and for the same reason.
+        /// </summary>
+        int ShapeToyCard(GameObject card, GameObject variantTemplate, bool dryRun)
+        {
+            if (!card) return 0;
+            int changed = 0;
+
+            changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
+
+            var portrait = FindComponentIn<Image>(card, "VesselIcon");
+            if (portrait)
+            {
+                changed += SetRect((RectTransform)portrait.transform, ToyLayout.PortraitMin, ToyLayout.PortraitMax,
+                                   Vector2.zero, Vector2.zero, "the toy portrait", dryRun);
+                if (!portrait.preserveAspect)
+                {
+                    changed++;
+                    if (!dryRun) { Undo.RecordObject(portrait, "portrait aspect"); portrait.preserveAspect = true; }
+                }
+            }
+
+            var title = FindComponentIn<TMP_Text>(card, "GameTitle");
+            if (title)
+            {
+                changed += SetRect((RectTransform)title.transform, ToyLayout.NameMin, ToyLayout.NameMax,
+                                   Vector2.zero, Vector2.zero, "the toy name", dryRun);
+                changed += SizeType(title, ToyLayout.CardNameMin, ToyLayout.CardNameMax, "the toy card name", dryRun);
+                if (!dryRun && (title.overflowMode != TextOverflowModes.Ellipsis
+                                || title.alignment != TextAlignmentOptions.Left))
+                {
+                    Undo.RecordObject(title, "toy name overflow");
+                    title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.Left;
+                }
+            }
+
+            // The donor for the two new lines: the variant card's own detail line, so the card
+            // carries the project's font and material rather than TMP's defaults.
+            var donor = variantTemplate ? FindComponentIn<TMP_Text>(variantTemplate, "GameDetail") : title;
+            var tagline = EnsureCardLabel(card, "Tagline", donor, ToyLayout.TaglineMin, ToyLayout.TaglineMax,
+                                          ToyLayout.CardTaglineMin, ToyLayout.CardTaglineMax,
+                                          TextAlignmentOptions.TopLeft, 0.72f, dryRun, ref changed);
+            var section = EnsureCardLabel(card, "Section", donor, ToyLayout.SectionMin, ToyLayout.SectionMax,
+                                          ToyLayout.CardSectionMin, ToyLayout.CardSectionMax,
+                                          TextAlignmentOptions.TopRight, 0.6f, dryRun, ref changed);
+
+            // Bound and SWITCHED OFF: on the grid the title is the whole card (the arcade's cards
+            // carry a title and art, nothing else); the sentence lives on the detail window.
+            foreach (var extra in new[] { tagline, section })
+            {
+                if (!extra || extra.gameObject.activeSelf == ToyLayout.CardLabelsActive) continue;
+                _log.Add($"{card.name}/{extra.name}: {(ToyLayout.CardLabelsActive ? "shown" : "hidden")} on the grid card.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(extra.gameObject, "toy card label");
+                    extra.gameObject.SetActive(ToyLayout.CardLabelsActive);
+                }
+            }
+
+            if (dryRun || !card.TryGetComponent(out ToyboxCard toyCard)) return changed;
+            var so = new SerializedObject(toyCard);
+            changed += SetRef(so, "taglineText", tagline, "the toy tagline", false);
+            changed += SetRef(so, "sectionText", section, "the toy category", false);
+            so.ApplyModifiedProperties();
+            return changed;
+        }
+
+        TMP_Text EnsureCardLabel(GameObject card, string name, TMP_Text donor, Vector2 anchorMin, Vector2 anchorMax,
+                                 float min, float max, TextAlignmentOptions align, float alpha,
+                                 bool dryRun, ref int changed)
+        {
+            var label = FindComponentIn<TMP_Text>(card, name);
+            if (!label)
+            {
+                _log.Add($"{card.name}: add the {name} line.");
+                changed++;
+                if (dryRun) return null;
+
+                var go = new GameObject(name, typeof(RectTransform));
+                Undo.RegisterCreatedObjectUndo(go, "toy card label");
+                go.transform.SetParent(card.transform, false);
+                label = Undo.AddComponent<TextMeshProUGUI>(go);
+                if (donor) label.font = donor.font;
+                label.color = new Color(1f, 1f, 1f, alpha);
+                label.raycastTarget = false;
+                label.text = string.Empty;
+                label.overflowMode = TextOverflowModes.Ellipsis;
+                label.alignment = align;
+            }
+
+            changed += SetRect((RectTransform)label.transform, anchorMin, anchorMax,
+                               Vector2.zero, Vector2.zero, $"the {name} line", dryRun);
+            changed += SizeType(label, min, max, $"the toy card {name.ToLowerInvariant()}", dryRun);
+            return label;
+        }
+
+        /// <summary>
+        /// Give a label an autosize BAND, and only write when the band actually differs so a
+        /// re-run on an already-authored scene reports nothing and dirties nothing.
+        ///
+        /// <para>A band rather than a size, everywhere: these labels carry toy names and authored
+        /// prose of no fixed length, and a fixed size on any of them is a clip waiting for the
+        /// first long one. Autosizing off at a fixed size is what the arcade authored, which is
+        /// correct for a caption over a card grid and wrong for the whole left column of a
+        /// window.</para>
+        /// </summary>
+        int SizeType(TMP_Text text, float min, float max, string label, bool dryRun)
+        {
+            if (!text) return 0;
+
+            if (text.enableAutoSizing
+                && Mathf.Approximately(text.fontSizeMin, min)
+                && Mathf.Approximately(text.fontSizeMax, max)
+                && text.textWrappingMode == TextWrappingModes.Normal)
+                return 0;
+
+            _log.Add($"{text.name}: size {label} at {min:0}-{max:0}.");
+            if (dryRun) return 1;
+
+            Undo.RecordObject(text, "toy window type");
+            text.enableAutoSizing = true;
+            text.fontSizeMin = min;
+            text.fontSizeMax = max;
+            // Without somewhere to wrap, a band answers a long line by shrinking it to nothing -
+            // which is the failure the band is here to avoid, wearing a different costume.
+            text.textWrappingMode = TextWrappingModes.Normal;
+            return 1;
+        }
+
+        /// <summary>
+        /// Anchor a rect, idempotently. Pivot is part of the comparison: the arcade's labels are
+        /// authored at a top-left pivot, so a rect that matched on anchors alone would be left
+        /// hanging off its own band.
+        /// </summary>
+        int SetRect(RectTransform rect, Vector2 anchorMin, Vector2 anchorMax,
+                    Vector2 offsetMin, Vector2 offsetMax, string label, bool dryRun)
+        {
+            if (!rect) return 0;
+
+            var pivot = new Vector2(0.5f, 0.5f);
+            if (rect.anchorMin == anchorMin && rect.anchorMax == anchorMax
+                && rect.offsetMin == offsetMin && rect.offsetMax == offsetMax
+                && rect.pivot == pivot)
+                return 0;
+
+            _log.Add($"{rect.name}: lay out {label}.");
+            if (dryRun) return 1;
+
+            Undo.RecordObject(rect, "toy card layout");
+            rect.pivot = pivot;
+            rect.anchorMin = anchorMin;
+            rect.anchorMax = anchorMax;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+            return 1;
         }
 
         // ── slot helpers ─────────────────────────────────────────────────────

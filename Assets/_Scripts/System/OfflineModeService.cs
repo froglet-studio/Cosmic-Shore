@@ -72,7 +72,7 @@ namespace CosmicShore.Core
             {
                 PlayerPrefs.SetInt(OFFLINE_PREFERENCE_KEY, value ? 1 : 0);
                 PlayerPrefs.Save();
-                CSDebug.Log($"[OfflineModeService] Offline preference set to {value}.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[OfflineModeService] Offline preference set to {value}.");
             }
         }
 
@@ -127,7 +127,7 @@ namespace CosmicShore.Core
             //    were deciding), this is not an offline session - use it as-is.
             if (nm.IsListening)
             {
-                CSDebug.Log("[OfflineModeService] NetworkManager already listening - not entering offline mode.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] NetworkManager already listening - not entering offline mode.");
                 return true;
             }
 
@@ -164,7 +164,7 @@ namespace CosmicShore.Core
             //    offline session. Reverted on failure.
             _gameData.IsOfflineSession = true;
 
-            CSDebug.Log("[OfflineModeService] Starting offline local host (127.0.0.1) ...");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] Starting offline local host (127.0.0.1) ...");
             bool started;
             try
             {
@@ -210,7 +210,7 @@ namespace CosmicShore.Core
                 return false;
             }
 
-            CSDebug.Log("[OfflineModeService] Offline local host running - session is offline until app restart.");
+            CSDebug.LogVerbose(CSLogChannel.Boot, "[OfflineModeService] Offline local host running - session is offline until app restart.");
             return true;
         }
 

@@ -257,9 +257,6 @@ namespace CosmicShore.UI
         {
             if (AudioSystem.Instance)
                 AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
-
-            CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
-
         }
 
         /// <summary>

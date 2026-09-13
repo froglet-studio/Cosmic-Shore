@@ -964,7 +964,6 @@ GameObject:
   - component: {fileID: 3901220300008001}
   - component: {fileID: 8279817603024118170}
   - component: {fileID: 8279817603024118171}
-  - component: {fileID: -4664130834794149013}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -1711,47 +1710,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   wardedSources: -1
---- !u!114 &-4664130834794149013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8279817603024118164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c60d4d8af5894e23a818d119516c513, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.DriftAudioController
-  driftEvent:
-    Guid:
-      Data1: 1371965537
-      Data2: 1135115445
-      Data3: -989720186
-      Data4: 1732397784
-    Path: event:/SFX/Loops/Drift Squriel
-  driftAmountParameterName: Drift Amount
-  releaseEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  attachReleaseEventToShip: 1
-  driveParamToOneOnRelease: 0
-  triggerDeadzone: 0.05
-  useAnalogScaling: 0
-  amountSmoothing: 10
-  releaseSmoothing: 20
-  releaseHoldSeconds: 0.4
-  onlyAudibleToController: 1
-  forceAttachToListener: 0
-  tieVolumeToSFXSlider: 1
-  baseVolumeMultiplier: 1
-  restrictToVesselClass: 1
-  targetVesselClass: 11
-  debugLog: 0
 --- !u!1 &8788541063350086745
 GameObject:
   m_ObjectHideFlags: 0

@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             LifeForm.OnLifeFormDeath += OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected += OnCrystalScoringEvent;
             isTracking = true;
-            CSDebug.Log("[ScoreTracker] Started Tracking");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ScoreTracker] Started tracking");
         }
 
         public void StopTracking()
@@ -53,7 +53,7 @@ namespace CosmicShore.Gameplay
             LifeForm.OnLifeFormDeath -= OnScoringEvent;
             ElementalCrystalImpactor.OnCrystalCollected -= OnCrystalScoringEvent;
             isTracking = false;
-            CSDebug.Log("[ScoreTracker] Stopped Tracking");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, "[ScoreTracker] Stopped tracking");
         }
         
         void OnScoringEvent(string playerName, int cellId)

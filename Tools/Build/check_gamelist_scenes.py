@@ -183,6 +183,65 @@ def parse_entries(text: str) -> "list[str | None]":
     return entries
 
 
+# The three rosters whose relationship is a stated contract:
+# Docs/HomeHub/ARCHITECTURE.md - "ArcadeGames | the Arcade grid's rosterOverride |
+# the master minus the arena cards". MASTER is the asset AppManager.prefab wires
+# for [Inject] SO_GameList, so a card absent from BOTH grids is launchable by the
+# lookups and reachable from no screen.
+MASTER_ROSTER = os.path.join("Assets", "_SO_Assets", "Games", "GameLists",
+                             "OrganicRematchGames.asset")
+GRID_ROSTERS = [
+    os.path.join("Assets", "_SO_Assets", "Games", "GameLists", "ArcadeGames.asset"),
+    os.path.join("Assets", "_SO_Assets", "Games", "GameLists", "ArenaGames.asset"),
+]
+
+
+def report_grid_coverage(assets_dir: str) -> "list[str]":
+    """Master-roster cards that reach NEITHER the Arcade nor the Arena grid.
+
+    REPORTS, never fails -- deliberately. Withholding a finished mode from the
+    grid while keeping it launchable is a legitimate state (an unannounced mode,
+    one still being tuned), so this cannot be a hard gate without being wrong
+    about that case. What it is for is the opposite case, which has now happened
+    twice in a row and is silent both times: a mode ships, its card is added to
+    the master roster because the AI spawner and the config sync resolve through
+    that list, and nobody adds it to `ArcadeGames` -- so the mode is complete,
+    launchable, in the build settings, drawn by no screen, and reported by
+    nothing. Breakwater (50) and Skein (51) sat in exactly that state.
+
+    Returns display lines; an empty list means every master card is on a grid.
+    """
+    guids = index_guids(assets_dir)
+
+    def entries(rel: str) -> "set[str]":
+        path = os.path.join(ROOT, rel)
+        if not os.path.isfile(path):
+            return set()
+        return {g for g in parse_entries(read(path)) if g}
+
+    master = entries(MASTER_ROSTER)
+    if not master:
+        return []                      # no master to compare against; say nothing
+    on_a_grid: "set[str]" = set()
+    for rel in GRID_ROSTERS:
+        on_a_grid |= entries(rel)
+
+    lines = []
+    for g in sorted(master - on_a_grid):
+        path = guids.get(g)
+        label = g
+        if path:
+            text = read(os.path.join(ROOT, path))
+            name = re.search(r"^  DisplayName: (.*)$", text, re.M)
+            mode = re.search(r"^  Mode: (.*)$", text, re.M)
+            label = (unquote(name.group(1).strip()) if name
+                     else os.path.basename(path))
+            if mode:
+                label += f" (mode {mode.group(1).strip()})"
+        lines.append(label)
+    return lines
+
+
 def scan(assets_dir: str, build_settings: str) -> "tuple[list[str], list[str]]":
     """Returns (failure lines, report lines)."""
     guids = index_guids(assets_dir)
@@ -439,6 +498,16 @@ def main() -> int:
         print("SO_GameList rosters:")
         for line in report:
             print(line)
+        print()
+
+    stranded = report_grid_coverage(args.root)
+    if stranded:
+        print("on the master roster but on NEITHER grid (Arcade or Arena) - "
+              "launchable, reachable from no screen:")
+        for line in stranded:
+            print(f"  {line}")
+        print("  Add the card to GameLists/ArcadeGames.asset (or ArenaGames.asset), "
+              "or leave it if the mode is deliberately unlisted. Reported, not failed.")
         print()
 
     if failures:

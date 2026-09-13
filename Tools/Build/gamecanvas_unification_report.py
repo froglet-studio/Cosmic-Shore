@@ -48,10 +48,10 @@ FORK_GUID = "abd30ad4cfca9ae4a8aecfde9f650cf3"
 # A scene that joins later is picked up by the guid scan; this list only scopes the gate.
 MIGRATED_SCENES = [
     "MinigameAstroLeague", "MinigameBends", "MinigameBroodRush", "MinigameDogFight",
-    "MinigameDrumfire", "MinigameHijack", "MinigameJoust_Gameplay", "MinigamePeelTheCage",
+    "MinigameHijack", "MinigameJoust_Gameplay", "MinigamePeelTheCage",
     "MinigameRampage", "MinigameSalvo", "MinigameScarabScramble",
     "MinigameScurryMultiplayer_Gameplay", "MinigameSkimRace", "MinigameSwitchback",
-    "MinigameWildlifeLiberation",
+    "MinigameTollway", "MinigameWildlifeLiberation",
 ]
 
 # Overrides the gate tolerates on a migrated scene's canvas instance. Root placement and

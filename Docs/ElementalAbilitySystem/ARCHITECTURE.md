@@ -9,6 +9,28 @@ rather than initialized from `VesselController.Initialize`, and maps are Resourc
 class (`Resources/ElementalAbilityMaps/{VesselClassType}.asset`) rather than referenced from
 `SO_Vessel`. `AUDIT.md` is the ground truth of what existed; `BACKLOG.md` sequences the work.
 
+**The live state of the fleet is a QUERY, not a table in a document.** Every fleet-status table
+that has ever been written here — this file's, `FLEET_MAPS.md`'s, CLAUDE.md's — has contradicted
+the shipped assets at some point, because an element's ability is DECLARED in the map asset and
+IMPLEMENTED somewhere else, and the two drift silently: an `UpgradeLabel` with no
+`IsUpgradeActive` gate is prose, and a `MultiplierAtFullLevel` nothing reads is dead tuning. Run
+
+```bash
+python3 Tools/Build/element_ability_table.py [Vessel ...] [--gaps] [-e Space] [--json]
+```
+
+It joins the map asset to the code each vessel's prefab actually REACHES (a reference walk through
+the wired action SOs, executors, vessel-root components and impact-effect containers, plus one hop
+through static calls), reports the L5 gate site for every declared upgrade and every live scaling
+channel with its authored numbers, and flags the four ways declaration and wiring disagree. It is
+a reader: no writes, no ship contract, no Unity. Skill: `/element-ability-table`.
+
+Note it covers **four** scaling channels, not one: the map's generic multiplier, bespoke
+`…AtRest<Element>`/`…AtFull<Element>` endpoints on an action or effect SO, an `ElementalFloat`
+(pure serialized data with no call site at all — the Squirrel's Mass slot is only this), and a
+direct `GetLevel(Element.X)` read feeding a lerp beside it (the Urchin's Slip is only this). A
+grep for `ElementalScaling` sees at most half of them.
+
 ---
 
 ## 1. What this is
@@ -325,13 +347,16 @@ oversights:
 Mechanics for what those four icons will label: `_Scripts/Controller/Vessel/R_VesselActions/`
 `URCHIN_CHAIN_SPIKES.md` and `URCHIN_TRAIL_RIDER.md`.
 
-Manta, Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
-with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. Run
+Rhino and Serpent are blocked on **design**: their maps are still `(open design slot)`
+with `Input = 0` and no `UpgradeLabel`, and their HUDs carry 0–2 lower-right icons. (The Manta
+left this set 2026-08-26 — its spec remake shipped a full map, four bound icons at the wirer
+bands, and all four L5 upgrades; see FLEET_MAPS.md §2 Manta and
+`_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`.) Run
 **FrogletTools > Vessels > Audit Vessel Ability Rows** (`VesselAbilityRowAuditor`) for the live table — it
 checks map completeness, icon count and order, pitch/size uniformity and hint coverage across the whole
 fleet from assets alone. At runtime a vessel with no row now warns once per class instead of failing
 silently. The
-remaining flyable HUDs (Manta, Rhino, Serpent, and the Urchin until its row is authored) have no
+remaining flyable HUDs (Rhino, Serpent, and the Urchin until its row is authored) have no
 `abilityIcons` bindings and varied lower-right layouts; wiring them is per-vessel HUD work — the
 framework above needs no further changes.
 

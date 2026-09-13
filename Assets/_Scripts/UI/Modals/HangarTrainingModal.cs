@@ -57,14 +57,11 @@ namespace CosmicShore.UI
         {
             SelectedGame = selectedGame;
 
-            CSDebug.Log($"SelectTainingGame: {SelectedGame.Game.DisplayName}");
             TrainingGameButton1.SetActive(TrainingGameButton1.TrainingGame == selectedGame);
             TrainingGameButton2.SetActive(TrainingGameButton2.TrainingGame == selectedGame);
 
             // Disable Intensity Buttons based on progress
             var trainingProgress = TrainingGameProgressSystem.GetGameProgress(selectedGame.Game.Mode);
-
-            CSDebug.LogWarning($"trainingProgress.CurrentIntensity: {trainingProgress.CurrentIntensity}, Game.Mode:{selectedGame.Game.Mode}");
 
             for (var i = 0; i < 4; i++)
             {
@@ -72,7 +69,6 @@ namespace CosmicShore.UI
 
                 if (trainingProgress.IsTierSatisfied(i + 1) && !trainingProgress.IsTierClaimed(i + 1))
                 {
-                    CSDebug.Log($"Claimable tier alert {i + 1}!!");
                     IntensityButtons[i].GetComponent<Image>().color = Color.green;
 
                 }
@@ -84,10 +80,6 @@ namespace CosmicShore.UI
         void PopulateTrainingGameDetails(int currentIntensity)
         {
             var game = SelectedGame.Game;
-            CSDebug.Log($"Populating Training Details List: {game.DisplayName}");
-            CSDebug.Log($"Populating Training  Details List: {game.Description}");
-            CSDebug.Log($"Populating Training  Details List: {game.IconInactive}");
-
             // Game details
             if (ShipModelImage != null) ShipModelImage.sprite = game.IconInactive;
             SelectedGameName.text = game.DisplayName;

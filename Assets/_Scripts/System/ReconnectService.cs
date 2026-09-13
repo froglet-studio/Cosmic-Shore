@@ -138,7 +138,7 @@ namespace CosmicShore.Core
 
             try
             {
-                CSDebug.Log($"[ReconnectService] {reason} - re-running the boot chain.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[ReconnectService] {reason} - re-running the boot chain.");
 
                 // Cover the screen for the whole transition. The overlay is released on the
                 // far side by SceneLoader.FadeFromSplashOnReady when the menu vessel spawns,
@@ -193,7 +193,7 @@ namespace CosmicShore.Core
                 _appStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
                 string authScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
-                CSDebug.Log($"[ReconnectService] Loading {authScene} to re-run the boot chain.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[ReconnectService] Loading {authScene} to re-run the boot chain.");
 
                 if (_sceneTransition != null)
                     await _sceneTransition.LoadSceneAsync(authScene);

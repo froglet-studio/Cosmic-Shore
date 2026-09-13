@@ -59,7 +59,9 @@ namespace CosmicShore.Gameplay
             PublishDomainSum(2, n_DomainSum2.Value);
 
             if (IsServer)
+            {
                 _domainSumSyncRoutine = StartCoroutine(SyncDomainSumsRoutine());
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -69,6 +71,7 @@ namespace CosmicShore.Gameplay
                 StopCoroutine(_domainSumSyncRoutine);
                 _domainSumSyncRoutine = null;
             }
+
             base.OnNetworkDespawn();
         }
 
@@ -189,7 +192,7 @@ namespace CosmicShore.Gameplay
                 var stat = gameData.RoundStatsList.FirstOrDefault(s => s.Name == sName);
                 if (stat == null)
                 {
-                    CSDebug.LogError($"[{GetType().Name}] Client could not match RoundStats for '{sName}'. " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn");
                                      $"Available: {string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}");
                     continue;
                 }
@@ -221,29 +224,18 @@ namespace CosmicShore.Gameplay
         }
 
         [ServerRpc(RequireOwnership = false)]
-        void OnReadyClicked_ServerRpc(string playerName)
+        void OnReadyClicked_ServerRpc(string playerName, ServerRpcParams rpcParams = default)
         {
-            readyClientCount++;
-
-            // Use connected clients count (humans only - excludes AI)
-            int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
-
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
-            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
+            MarkClientReady(rpcParams.Receive.SenderClientId);
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);
 
-            if (readyClientCount < humanCount)
-            {
-                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
-                return;
-            }
-
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
-            readyClientCount = 0;
-            OnReadyClicked_ClientRpc();
+            EvaluateReadyGate($"{playerName} pressed Ready");
         }
+
+        /// <summary>Every human has pressed Ready - start the shared countdown.</summary>
+        protected override void OnAllPlayersReady() => OnReadyClicked_ClientRpc();
 
         [ClientRpc]
         void NotifyPlayerReady_ClientRpc(string playerName)
@@ -278,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
-                readyClientCount = 0;
+                ResetReadyGate();
             }
 
             // First round: MiniGameHUD shows ReadyButton after cinematic.

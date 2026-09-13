@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
                 _netPrismTarget.Value = target;
                 gameData.PrismTargetCount = target;
 
-                CSDebug.Log($"[RampagePrismMonitor] Server set prism target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[RampagePrismMonitor] Server set prism target: {target}");
             }
             else if (_netPrismTarget.Value > 0)
             {

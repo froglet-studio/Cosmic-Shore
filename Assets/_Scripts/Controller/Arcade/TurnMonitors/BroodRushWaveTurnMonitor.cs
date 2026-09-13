@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
                 _netWaveTarget.Value = target;
                 gameData.GoalTargetCount = target;
 
-                CSDebug.Log($"[BroodRushWaveMonitor] Server set wave target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[BroodRushWaveMonitor] Server set wave target: {target}");
             }
             else if (_netWaveTarget.Value > 0)
             {

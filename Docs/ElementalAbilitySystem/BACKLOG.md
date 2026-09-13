@@ -99,7 +99,9 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 ### Blocked on design (cannot be wired until someone authors the map)
 
-1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+1. **Author the open `ElementalAbilityMapSO` slots** for Rhino and Serpent (Manta shipped
+   2026-08-26 via the spec remake — see FLEET_MAPS.md §2 Manta and `MANTA_STING_KABLOOM.md`;
+   Dolphin shipped earlier). Each
    still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
    Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
    mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
@@ -110,9 +112,10 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
    vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
    They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
    ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
-3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+3. **Re-survey Dolphin at the vessel level.** The Rhino's icons were missed because the
    first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
-   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+   same may be true of Dolphin (1 icon found) until checked the same way. (Manta is resolved:
+   the 2026-08-26 remake authored its four-icon row into Manta.prefab at the wirer bands.)
 
 ### Independent of the maps
 

@@ -124,6 +124,45 @@ unscaled, the same ribbon engulfs the small hulls and disappears on the big ones
 1. It is a transform-independent multiplier on purpose: a transform scale would do nothing, and a
 per-hull width would fork the shared prefab twelve ways.
 
+### A jet has TWO sizes, and `widthScale` is only one of them
+
+**`widthScale` reaches the ribbon inside a jet and nothing else.** `VesselFXWidth.Apply` walks
+`TrailRenderer`s, and a jet is not a trail renderer — `VesselJet.prefab` nests `vfx_Projectile_02`,
+which is **three particle systems** (`Head`, `Particles`, and a one-shot on the root) beside one
+`Trail`. Those particle systems are `scalingMode: Hierarchy`, so their size, their shape and their
+speeds come from the jet's **transform scale**, which is exactly the thing a `TrailRenderer` ignores
+and therefore exactly the thing `widthScale` was written not to be.
+
+So the two halves of one jet are sized by two unrelated numbers, and until this pass only one of
+them was authored per vessel. **The plume's dial is `m_LocalScale` on the jet instance**, and the
+reference is a measurement rather than a preference: the Dolphin and the Squirrel are the two hulls
+whose jets were actually hand-tuned, and both author exactly **(0.6, 0.6, 0.13)** — girth 0.6,
+length 0.13, a short tight puff. Scale that by the same camera ratio the ribbon uses:
+
+> **plume = (0.6, 0.6, 0.13) × `|followOffset.z| / 20`**
+
+A jet that authors no scale gets `(1, 1, 1)` times whatever its **mount** inherited, which is not a
+decision anybody made. That is how the Urchin shipped: its jets hang on `JetTop/Bottom Left/Right`,
+model nodes carrying a **1.75** scale, so its plumes were the LARGEST in the fleet on the smallest
+hull with the closest camera — **8.75× the target girth and 40× its length** (girth 1.75 against a
+target of 0.200; length 1.75 against 0.0434). Its four jets now author
+`(0.1145143, 0.1145143, 0.02481143)`, which is the target divided back through that 1.75. The odd
+digits are the mount, not a magic number.
+
+Scaling the transform is the right instrument here precisely because it moves the whole plume
+together: particle size, emission shape, particle speed, and the `Trail` child's own +0.36 standoff
+(which the Urchin was rendering at 0.63 units — one and a half hull diameters behind a ship whose
+body sphere is 0.207 in radius).
+
+**Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets* now reports
+each hull's effective plume scale against its camera-derived target and flags a jet that authors no
+scale at all as `UNSIZED`. For a bone-mounted jet it calls **`VesselJet.ResolveMountBone`** — the
+same method `MountOnBone` uses at Awake, not a second copy of the search — so what it reports is
+what will actually ship. That matters more than it looks: the reader previously reached the private
+field through `SerializedObject.FindProperty("mountBone")`, and a `FindProperty` that misses after a
+rename returns null, which is indistinguishable from *this jet has no mount* and would have made the
+audit quietly report the prefab's scale instead of the bone's.
+
 ### Where it binds
 
 `VesselController.Initialize` calls `ShipHelper.SetShipProperties`, which calls
@@ -149,7 +188,7 @@ animates. Where it does not, the jet is placed at the measured rear of the hull 
 | **Dolphin** | −20 | −21 | 1.0 | 6 | parented to the six `Engine case *`, at each pod's measured exhaust mouth |
 | **Squirrel** | −17 | ±4, −12 (authored pair) | 0.85 | 4 | parented to model nodes (authored) |
 | **Sparrow** | −50 | −52.5 | 2.5 | 6 | bone-mounted at width×1.5 on `b_Tail1..3 .L/.R` (see §3.1) |
-| **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` |
+| **Urchin** | −6.67 | −7.0 | 0.334 | 4 | parented to `JetTopLeft/Right`, `JetBottomLeft/Right` (those nodes carry a **1.75** scale, so the jets author `m_LocalScale (0.1145, 0.1145, 0.0248)` to land the plume on target — see §3) |
 | **Rhino** | −120 | −126 | 6.0 | 10 | 2 on `engine left`/`engine right` at width×10 (the wing pods); 8 on `fusalage`, one per nozzle — table below |
 | **Grizzly** | −30 † | −31.5 | 1.5 | 4 | parented to `Ship_Wedge_Jet_UL/UR/BL/BR` |
 | **Scarab** | −50 | −52.5 | 2.5 | 2 | `(±1.50, 0.10, −4.40)` — the carapace rear |
@@ -180,6 +219,9 @@ bone, and the jet stays where the prefab put it.
 
 The search starts at the vessel's `VesselTailAndJets`, never at `transform.root`: during a spawn
 the root may still be the scene root, and a bone on a DIFFERENT vessel must never be a candidate.
+It lives in **`VesselJet.ResolveMountBone`** (public) because the audit tool has to ask the same
+question, and two transcriptions of one search drift the first time either is retuned — the same
+argument `TailGradient` records for the tail's colour.
 
 ### How the mount numbers were measured
 
@@ -372,8 +414,21 @@ the same pass that gives them real art, when "where is the engine" has an answer
 
 - **Width scale is the first dial.** Every vessel's is derived, not play-tested. It is one float on
   the vessel's own tail/jet instance.
-- **The Urchin is the extreme case**: its hull is ~0.4 units across with a 6.67-unit camera, so its
-  0.334 scale is doing real work. Check it first.
+- ~~**The Urchin is the extreme case**: its hull is ~0.4 units across with a 6.67-unit camera, so
+  its 0.334 scale is doing real work. Check it first.~~ — **checked, and the ribbon was the half
+  that was fine.** Its `widthScale` 0.334 was working; its PLUMES were at 8.75× the target girth and
+  40× its length, because `widthScale` never reaches a jet's particle systems and its engine nodes
+  carry a 1.75 scale. Fixed by authoring the plume scale on the four jet instances (§3).
+- **Four hulls still author no plume scale at all**, so they render at `(1, 1, 1)` — Sparrow,
+  Rhino, Grizzly and Scarab. Measured against the (0.6, 0.6, 0.13) reference scaled by their own
+  cameras, their girth lands between **0.28×** (Rhino) and **1.11×** (Grizzly) of target, which is
+  defensible, but their plume **length** is **1.28×–5.13×** because the reference is a *short* puff
+  and an unauthored jet is not. None of them is anywhere near the Urchin's 40×, and every one is a
+  look call on a hull nobody has complained about — so they are left alone deliberately rather than
+  swept up. The audit names them `UNSIZED`; fixing one is a single `m_LocalScale` on its jets.
+  Note the Sparrow's number is the one to actually LOOK at rather than compute: its jets are
+  bone-mounted into an armature that carries its own scale, so the shipped size is the bone's,
+  not the prefab's.
 - **Jet count on the Dolphin.** Six mouths sit ~0.3 apart with a 0.3-wide ribbon each, so they may
   merge into one sheet. Levers in order: `widthScale`, then dropping to the outer pair.
 - **Count and location are look questions, not bounding-box ones.** The Sparrow proved both: two

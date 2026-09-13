@@ -47,6 +47,22 @@ namespace CosmicShore.Utility
                  "number could serve them all. Seeded prisms scale as the PRODUCT of this and " +
                  "FloraPopulationScale.")]
         [Min(0f)] public float FloraPlantBudgetScale = 1f;
+
+        [Tooltip("HOW BIG each PRISM is, as a multiplier on the leaf size a plant would " +
+                 "otherwise lay. 1 = exactly as authored.\n\n" +
+                 "This is the cell saying how chunky its flora reads - a bigger leaf is an " +
+                 "easier target to hit and an easier one to skim, at no extra collider count " +
+                 "(the same prisms, larger). It is a CELL constant, not per-plant growth: every " +
+                 "plant of a species in this cell is the same size, so it says nothing about an " +
+                 "individual's history (Docs/ECOSYSTEM.md 40 retired lifeform levels and this " +
+                 "does not bring them back).\n\n" +
+                 "VOLUME IS THE SPINE, so this lands straight on the cell's PhaseThresholds and " +
+                 "the per-family exponent is NOT the same: branching flora lay leafSize on all " +
+                 "three axes (volume scales as s^3), while phyllotactic flora read only " +
+                 "leafSize.x/y and take their lengths from their own structure (s^2). Re-derive " +
+                 "the volume ladder after changing it. Lattice species are exempt entirely - see " +
+                 "Flora.PrismSizeFixedByGrowthRule.")]
+        [Min(0f)] public float FloraPrismScale = 1f;
         // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
         // was removed: it was a hard-coded growth oscillator faking the "breathing" the
         // food web is meant to produce. Mass is conserved - growth resumes only when an
@@ -183,5 +199,22 @@ namespace CosmicShore.Utility
 
             return Mathf.Max(1, Mathf.FloorToInt(authored * FloraPopulationScale + 0.5f));
         }
+
+        /// <summary>
+        /// This profile's take on a plant's authored leaf size, scaled by
+        /// <see cref="FloraPrismScale"/>.
+        ///
+        /// <para>Read it through <c>Cell.ResolveFloraPrismScale</c> rather than calling it
+        /// directly, for the same reason the two population scalers say so: which SPAWNER a
+        /// biome runs is decided by an unrelated field (<c>CellTypeChoiceOptions.IntensityWise</c>
+        /// silently swaps the class), and flora has FOUR producers besides. The cell is the one
+        /// object all of them already hold.</para>
+        ///
+        /// <para>A non-positive scale is treated as 1, so an unauthored field can never collapse
+        /// a biome's prisms to nothing. Unlike the population scalers there is no rounding and no
+        /// floor-at-1 here: a leaf is a continuous size, not a count.</para>
+        /// </summary>
+        public float ScaleFloraPrism(float authored) =>
+            FloraPrismScale <= 0f ? authored : authored * FloraPrismScale;
     }
 }
