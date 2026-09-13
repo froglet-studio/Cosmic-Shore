@@ -21,9 +21,9 @@ which prompt executes it.
 | **3** | Obvious SOAP | **Owner is adding the licence file** | §2 — nothing to build |
 | **4** | NiceVibrations plugin | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md`](prompts/HAPTICS_VENDOR_INDEPENDENCE_PROMPT.md) |
 | **5** | NiceVibrations demo art in the shipped menu | **Replace with a placeholder** | ✅ **Landed 12 Sep** — [`NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md`](prompts/NICEVIBRATIONS_DEMO_ASSET_REPLACEMENT_PROMPT.md) |
-| **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | [`VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md`](prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md) |
+| **6** | Shift Sci-Fi UI + PrimitivePlus | **Replace with a placeholder** | ✅ **DONE 12 Sep 2026** — both replaced first-party and removed; see §4 row 6 and `THIRD_PARTY_REGISTER.md` §2.1 |
 | **7** | "Effects Library" provenance | **Owner will look into it** | [`EFFECTS_LIBRARY_PROVENANCE_PROMPT.md`](prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md) |
-| **8** | Wwise | **Owner will see to it** | [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md) |
+| **8** | Wwise + Parse + SerializeInterface | **Owner will see to it** | ✅ **Executed 12 Sep 2026** — [`WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md`](prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md). Code side complete; **one human item open**, §2 below |
 
 Then, once 4–8 have landed: [`THIRD_PARTY_FOLDER_HYGIENE_PROMPT.md`](prompts/THIRD_PARTY_FOLDER_HYGIENE_PROMPT.md).
 
@@ -39,17 +39,51 @@ engineering work.
 | **FMOD Studio** | Firelight Technologies | ✅ EULA present | **A tier decision, not necessarily a purchase.** Free commercial use is capped at **dev budget < $600k USD** *and* **gross revenue + funding < $200k USD/yr**. Froglet Inc. is a Delaware C-corp shipping paid Steam EA — confirm both, buy the Indie/Basic tier if either is exceeded. | Distributing without a tier that covers us. Independent of this, the **credit line is required on every tier** (§1 row 1). |
 | **Obvious SOAP 2.7.0** | Obvious Games | ❌ **none** | **The receipt.** The README's *"Thanks for purchasing Soap :)"* shows someone bought it; the tree carries no EULA. Owner is adding it. | **Not removable** — 128 first-party files use it; it is the project's primary architecture. This is a receipt problem only. |
 | **NiceVibrations 4.1.1** | Lofelt / More Mountains | ❌ **no product EULA** (the two licence-looking files are a Rust crate list and a CC audio notice) | **Nothing — we are replacing it.** Buy a seat *only* if mobile pattern haptics are wanted back before launch. | Nothing, once row 4 lands. |
-| **Shift — Complete Sci-Fi UI** | Michsky | ❌ none | **A seat (~$20–35) *or* nothing** — we are replacing it. It is 3 border textures and 1 switch prefab, with **zero first-party code coupling**. Cheapest honest outcome: buy the seat if anyone wants the art kept; otherwise replace. | Nothing, once row 6 lands. |
-| **PrimitivePlus** | unknown (ns `PrimitivePlus`) | ❌ none | **A seat *or* nothing** — we are replacing it. 4 meshes and one 36-line component are live. **Vendor is not even identifiable from the tree**, so "buy it" may not be an available action. | Nothing, once row 6 lands. |
+| ~~**Shift — Complete Sci-Fi UI**~~ | Michsky | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed. | — |
+| ~~**PrimitivePlus**~~ | unknown (ns `PrimitivePlus`) | ❌ none | ✅ **Nothing — replaced and removed 12 Sep 2026.** No purchase needed, which is just as well: the vendor was never identifiable from the tree. | — |
 | **DOTween (free tier)** | Demigiant | ❌ none | **No purchase.** Demigiant documents the free tier as usable commercially; the licence TEXT is simply not vendored. **Fetch `LICENSE.txt` from the DOTween distribution and commit it beside the DLL.** (DOTween **Pro** is a separate paid product and is *not* what is in the tree.) | A shipped dependency with no licence document, in 44 first-party files. |
 | **NativeShare** | yasirkula | ❌ none | **No purchase** — MIT upstream. **Vendor the MIT notice.** | MIT's notice-preservation term unmet. |
 | **UniTask / Reflex / ParrelSync** | Cysharp / G. Santos / **Greg M; Ian and Contributors** | ❌ not vendored (git packages) | **No purchase** — MIT. ✅ Their notices now ride the credits screen (row 1); each `LICENSE` was fetched from the project, and all six MIT bodies are textually identical. | ParrelSync's holders are **not** "VeriorPies" — that is the GitHub org, not the copyright line. |
-| **Wwise** | Audiokinetic | — | **No purchase. Confirm no evaluation licence was ever signed, then delete.** 84 KB, **0 asset files**, 14 orphan `.meta`. | A licensed-audio-middleware question that never needed to exist. |
+| **Wwise** | Audiokinetic | — | ⚠️ **STILL OPEN, and it is the only thing left on this row: confirm no Wwise evaluation or project licence was ever signed.** Audiokinetic licenses **per title**, so an evaluation agreement — if one exists — is an obligation attached to *Cosmic Shore*, and deleting the folder does not discharge it. **It must be recorded and closed out with Audiokinetic rather than left implicit.** No purchase is expected. **Asked, not yet answered** — see §2.1. The folder itself was **deleted 12 Sep 2026** without waiting on this, deliberately: it held 0 asset files and 0 references, so keeping it could not have preserved any evidence. | A licensed-audio-middleware obligation nobody can find, on a title that never used the middleware. |
 | **"Effects Library"** | ❓ unknown | ❌ none | **Identify the vendor.** 8.2 MB; exactly **one** prefab is live. | An unattributable 8.2 MB pack in a shipping build. |
-| **SerializeInterface** | ❓ unknown | ❌ none, no namespace, no header | **No purchase — rewrite it.** 290 lines total (48 runtime / 242 editor), 7 first-party consumers. | An unattributable shipping code drop. |
+| ~~**SerializeInterface**~~ | ❓ unknown | ❌ none, no namespace, no header | ✅ **Done 12 Sep 2026 — no purchase, rewritten.** The live half (the `[RequireInterface]` attribute + its drawer) is now first-party at 48 + 219 lines; the dead half (`InterfaceReference<>`, its drawer, `InterfaceArgs` — **zero** consumers) was not reproduced. Folder deleted. | — closed |
 
-**Everything above that says "no purchase" resolves to either a text file or a prompt.** The only two
-rows that can cost money are **FMOD's tier** and — optionally, only if the art is wanted — **Shift**.
+**Everything above that says "no purchase" resolves to either a text file or a prompt.** As of
+12 Sep 2026 the only row that can cost money is **FMOD's tier**: Shift was the other one, and it is
+now replaced and removed, so the choice it represented no longer exists.
+
+---
+
+### §2.1 · The Wwise evaluation-licence question — asked, OPEN
+
+**Asked 12 Sep 2026, as part of deleting the folder. Not answered here, because nothing in this
+repository can answer it.**
+
+> Was a Wwise **evaluation** or **project** licence ever signed with Audiokinetic during the
+> middleware evaluation that left `Assets/Wwise/` behind?
+
+**Why it cannot be answered from the tree, stated so nobody re-runs the search:** the folder held
+**zero asset files** — 14 `.meta` describing directories whose contents were already gone — so there
+was never a licence document, a version string, a project GUID or an `AkWwiseProjectData` asset to
+read. There is no `Wwise` entry in `ProjectSettings` or `Packages` either. And `git log
+--diff-filter=A` cannot date the import: this clone is **shallow**, so it reports the graft-boundary
+commit (register §6). A **full clone** would give *when and by whom*; it would still not give *was
+anything signed*.
+
+**Who can answer:** whoever ran the evaluation, and the Audiokinetic account holder — the same person
+as the Asset Store account holder for the §2 entitlement rows above.
+
+**What to do with each answer:**
+
+| Answer | Action |
+|---|---|
+| **No licence was ever signed** | Record that here and close the row. Nothing further is owed. |
+| **An evaluation licence was signed** | Close it out with Audiokinetic in writing. An evaluation agreement is per-title and does not lapse just because the integration was removed; the integration's removal is the evidence that no Wwise runtime ships, which is what makes closing it cheap. |
+| **A project licence was signed** | Same, plus check whether anything was paid and whether it is recoverable or transferable. |
+
+**This row does not block anything.** It is paperwork, it was never a code question, and it is
+recorded as outstanding rather than quietly dropped so that it cannot be mistaken — by the absence of
+the folder — for something that was settled.
 
 ---
 
@@ -66,19 +100,19 @@ rows that can cost money are **FMOD's tier** and — optionally, only if the art
 | **NiceVibrations** | ships (incl. Demo, 30 `.cs`) | ~~**1** file, **5** API symbols~~ → **0** | ✅ **REPLACED** (row 4). Folder still ships for rows 4b/5 |
 | ├ demo sprites | ship | ~~6 usages in 5 shipped locations~~ → **0** | ✅ **REPLACED** (row 5) — `_Graphics/UI/Chrome/` |
 | └ `HapticSamples/*.wav` | ship | ~~4 clips on legacy `AudioClip` fields~~ → **0** | ✅ **REPLACED** (row 5) — FMOD `EventReference`s, shipped empty |
-| **Shift Sci-Fi UI** | ships (+ `Resources/`) | **0** code files; 3 textures + 1 prefab | **REPLACE** (row 6) |
-| **PrimitivePlus** | ships (+ 47-mesh `Resources/`) | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | **REPLACE** (row 6) |
+| ~~**Shift Sci-Fi UI**~~ | — | **0** code files; 3 textures + 1 prefab | ✅ **REPLACED + REMOVED** 12 Sep 2026 |
+| ~~**PrimitivePlus**~~ | — | **0** code files; 1 component on 3 prefabs, 4 meshes on 16 prefabs + 1 shadergraph | ✅ **REPLACED + REMOVED** 12 Sep 2026 |
 | **DOTween** | ships | **44** files | **KEEP** — vendor the licence |
 | **NativeShare** | ships | **4** files | **KEEP** — vendor the licence |
-| **PlayFabSDK** | ships | **20** files (inert backend) | **DEFER** — launch-blocker index §B2 |
-| **PlayFabEditorExtensions** | editor-only ✅ | — | **KEEP** — costs the player nothing |
+| ~~**PlayFabSDK**~~ | ~~ships~~ | ~~**20** files (inert backend)~~ | **DONE — deleted.** `Docs/PLAYFAB_RETIREMENT.md` |
+| ~~**PlayFabEditorExtensions**~~ | ~~editor-only~~ | — | **DONE — deleted** with the SDK. The earlier *keep* stood on "costs the player nothing", which was true and is not the only cost: an editor window that configures a deleted backend reads as a live integration. |
 | **QuickScene Pro** | editor code, but `Resources/` (1.8 MB) ships | editor tool | **KEEP, move the `Resources/`** — index §A2 |
 | **EDM4U** | editor-only ✅ | — | **KEEP** — Apache 2.0, licence present |
 | **Microsoft.Unity.Analyzers** | compile-time | — | **KEEP** |
 | **TextMesh Pro** | ships (ONE `Resources/`) | fleet-wide | **KEEP**. Examples & Extras ✅ **pruned 12 Sep 2026** — index §A1 |
-| **Parse** | ships if referenced | **0** references, **0** code | **DELETE** (row 8 prompt) |
-| **Wwise** | ships nothing (0 assets) | **0** | **DELETE** (row 8 prompt) |
-| **SerializeInterface** | ships (no asmdef) | **7** files | **REWRITE first-party** (row 8 prompt) |
+| ~~**Parse**~~ | — | **0** references, **0** code | ✅ **DELETED** 12 Sep 2026 |
+| ~~**Wwise**~~ | — | **0** | ✅ **DELETED** 12 Sep 2026 (licence question open — §2.1) |
+| ~~**SerializeInterface**~~ | the attribute ships; the drawer is `Editor/` | **6** live files (+1 commented out) | ✅ **REWRITTEN first-party** 12 Sep 2026 |
 | **Effects Library** | ships | **1** prefab (`VesselJet`) | **SALVAGE + identify** (row 7) |
 | **Shader Graph samples** | ships if referenced | — | **KEEP** — Unity UCL |
 | **CC-BY vessel models** | not shipping (0 refs) | — | **KEEP** — attribution only if ever wired |
@@ -184,14 +218,46 @@ Three method notes worth carrying to rows 6-8, which are the same shape of job:
 | First-party **code** references | **0** | **0** |
 | Live assets | 3 border textures, `Switch.prefab` | `PrimitivePlusMaterial.cs`, `Sphere`, `Cone`, `Cube`, `CylinderTube` |
 | Live in | `Menu_Main`, `Authentication`, `ModalWindows`, `OptionsMenuContent` | 16 prefabs + `LaserGraph.shadergraph` |
-| `Resources/` that ships regardless | `Shift UI Manager.asset` | **47 meshes + 1 material** |
+| `Resources/` that ships regardless | `Shift UI Manager.asset` | **44 meshes + 1 material** |
 | Replacement | 3 sprites re-authored (9-sliced frames) + a first-party toggle | 4 meshes baked first-party + a 36-line component rewritten |
 
-Two hazards the prompt has to respect. `Cone.asset` is on **`AOEConicExplosion`** and
+Two hazards the prompt had to respect. `Cone.asset` is on **`AOEConicExplosion`** and
 **`AOEConicSkyBurst`** — the Dolphin's crystal blast and the Sparrow's skyburst, both
 gameplay-critical; and `Switch.prefab` carries **two `m_Script` guids owned by no `.meta` under
 `Assets/`** (almost certainly package scripts — unverifiable here, because `Library/PackageCache/`
-is not committed), so it must be rebuilt rather than edited in place.
+is not committed), so it had to be rebuilt rather than edited in place.
+
+#### ✅ Landed 12 Sep 2026 — and three things worth carrying
+
+Full record, with every measurement: [`THIRD_PARTY_REGISTER.md` §2.1](THIRD_PARTY_REGISTER.md).
+Five commits: author the replacements, re-point, remove each pack (one commit each, each carrying
+its own per-asset guid proof), update the docs.
+
+**(1) The replacement had to be measured while the thing it replaced still existed.** Both authoring
+tools carry a `--verify-vendor` mode that compares against the pack, and those numbers are the only
+evidence that will ever exist — after deletion the mode correctly stands down with "vendor asset is
+gone" rather than aborting. All four meshes and all three frames came back surface-identical /
+0-pixels-off; the Cone, the one that could have changed a blast, matched to a max UV delta of
+**0.000001** and now has *cleaner* bounds than the vendor's (exactly ±0.5 against ±0.5000004).
+
+**(2) Two of the three things the prompt asked us to build turned out not to need building**, and
+saying so was worth more than building them. `PrimitivePlusMaterial` is an editor-authoring helper
+whose only two callers are the vendor's own inspector — at runtime it caches a `MeshRenderer` into a
+private field nobody reads — so a first-party rewrite would have been a no-op compiled into
+`Assembly-CSharp` and carried on three prefabs; the component was deleted instead. The Shift
+**switch** was the same shape of answer for a different reason: its one instance shipped
+`m_IsActive: 0`, inside a prefab (`_Prefabs/UI Elements/ModalWindows.prefab`) that **nothing
+references**, while the live settings panel expresses all seven of its on/off rows as a
+`GameSettingsPanelController.OnOffControl`. There was no toggle to rebuild. *The `ModalWindows` that
+first-party code does name is `ScreenSwitcher.ModalWindows`, an enum — not that prefab.*
+
+**(3) Fit the geometry, do not read it off.** Both replacements were first derived by reading alpha
+ramps and vertex dumps by hand, and both hand-derivations were WRONG in ways that looked right: the
+frame's bottom-right chamfer was 3 px out (a printed row index misread), and the outline band was
+built as a coordinate inset when the art is a true perpendicular offset — 7.4 % too heavy. Solving
+each constant numerically against the asset found both in seconds. The same pass caught a defect in
+the *replacement* nobody would have seen otherwise: the generated cube's ±Z faces were wound
+backwards, which a comparison by triangle winding reported and an eyeball would not have.
 
 ### Row 7 — Effects Library
 
@@ -201,11 +267,28 @@ Measured: the four `FE_*` render-pipeline settings assets — which look like th
 project's live URP configuration — have **zero external references** and are not the live pipeline;
 `Mountains01.fbx` (860 KB) has zero references; four of the five `vfx_*` prefabs have zero references.
 
-### Row 8 — the dead drops
+### Row 8 — the dead drops ✅ **DONE 12 Sep 2026**
 
-`Wwise` (84 KB, **0 asset files**, 14 orphan `.meta`), `Parse` (76 KB, **0** references, **0** code),
-and `SerializeInterface` (290 lines, **7** consumers, no vendor, no licence, ships via
-`Assembly-CSharp`).
+`Wwise` (84 KB, **0 asset files**, 14 orphan `.meta`) and `Parse` (76 KB, **0** references, **0**
+code) are **deleted**; `SerializeInterface` (290 lines, no vendor, no licence, shipped via
+`Assembly-CSharp`) is **rewritten first-party**. One human item survives, §2.1.
+
+**Two of the measurements this row was planned from were wrong, and both corrections are worth
+keeping:**
+
+* **Six live consumers, not seven.** `AIGunner.cs`'s `[RequireInterface]` is inside a `/* */` block
+  along with the `Start()` that read it, so no inspector field ever existed and the file does not
+  reference the attribute at compile time. *A grep for an attribute's name counts the comments too* —
+  the commented usage was indistinguishable from the six live ones in the inventory that planned this.
+* **Only 141 of the 290 lines were load-bearing.** `InterfaceReference<>`, `InterfaceReferenceDrawer`
+  and `InterfaceArgs` had **zero** consumers project-wide, so "rewrite 290 lines" would have meant
+  writing 149 lines of unused first-party code the studio then owns and maintains. The rewrite is 48
+  runtime + 219 editor lines, the larger editor figure being doc comments and the four small fixes
+  recorded in the commit. *When the plan is to rewrite a drop rather than delete it, measure which
+  half of it anything actually uses first — the dead half costs the same to write and more to keep.*
+
+The cheapness of the call held up, though, and for the stated reason: the behaviour was fully
+specified by the call sites, so nothing had to be reverse-engineered from the vendored code.
 
 ---
 
@@ -216,11 +299,14 @@ Sequenced last on purpose: moving a folder rewrites paths in every `.meta`-adjac
 
 Current state, measured:
 
-* **17 third-party folders sit at the `Assets/` root**, interleaved with the first-party `_`-prefixed
-  ones — `NiceVibrations`, `Effects Library`, `PlayFabSDK`, `PlayFabEditorExtensions`, `YethGameDev`,
-  `PrimitivePlus`, `Samples`, `ExternalDependencyManager`, `Shift - Complete Sci-Fi UI`, `Analyzers`,
-  `Wwise`, `Parse`, `SerializeInterface`, `Unity Assests` *(sic)*, `Adaptive Performance`,
-  `Resolvers`, `Environment`.
+* **12 third-party folders sit at the `Assets/` root** (17 before row 8 landed, 14 before the
+  PlayFab retirement), interleaved with the first-party `_`-prefixed ones — `NiceVibrations`,
+  `Effects Library`, `YethGameDev`, `PrimitivePlus`, `Samples`, `ExternalDependencyManager`,
+  `Shift - Complete Sci-Fi UI`, `Analyzers`, `Unity Assests` *(sic)*, `Adaptive Performance`,
+  `Resolvers`, `Environment`. ~~`Wwise`~~, ~~`Parse`~~, ~~`SerializeInterface`~~,
+  ~~`PlayFabSDK`~~ and ~~`PlayFabEditorExtensions`~~ were all deleted 12 Sep 2026 — so five of the
+  moves this section was sequenced to protect no longer have to happen at all, which is the
+  cheapest way a folder gets tidied.
 * **`Assets/Environment/` is empty.**
 * **`Assets/ArcadeDPadNav.cs`** — a first-party script — sits loose at the `Assets/` root.
 * **`Assets/.DS_Store` is tracked in git** (2 `.DS_Store` files are).

@@ -31,9 +31,9 @@ work each one implies is sequenced in **[`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY
 | **4** | **NiceVibrations 4.1.1** | ⚠️ Commercial, **no product EULA** | The two files that look like a licence are not one — see §2. Seat must cover commercial distribution. | ✅ **Code coupling REMOVED** (12 Sep) — `HapticController` now drives `UnityEngine.InputSystem.Gamepad.SetMotorSpeeds` through first-party `GamepadRumblePlayer` / `GamepadRumblePattern`; **zero** `Lofelt` references remain in `Assets/_Scripts`. Every clip was already first-party data, so no feel changed. The folder still ships, but **nothing first-party reaches it** now that rows 4b/5 have landed too; deleting `Assets/NiceVibrations/` is a separate final commit with its own reference proof (`Tools/Build/check_vendor_tree_references.py`). |
 | **4b** | **NiceVibrations `HapticSamples/*.wav` in shipped UI** | ⚠️ **Non-commercial licence claim** | **New finding, 12 Sep.** Four clips are wired into shipped UI as legacy `AudioClip` fields — `Beep1` (`CountdownTimer.countdownBeep`), `Cash5` (`onTriggerClip`), `Coins2` (`targetReachedClip`), `Keyboard3` (`TypingAudio` on `Profile`/`ModalWindows`/`Menu_Main`). Their notice **opens by declaring the pack "licensed under CCBYNC 3.0"** — *non-commercial* — while its source list is almost all CC0 and **names freesound titles, not shipped filenames**, so no clip maps to a term. | ✅ **Done 12 Sep** — all four migrated to FMOD `EventReference` fields on the components that make them (`CountdownTimer.countdownBeepEvent`, `ProfileModal.typingAudioEvent`, `IconEmitter.onTriggerEvent`/`targetReachedEvent`). **Shipped empty, so all four are silent** until the audio owner authors the events (`AudioSystem/CHARLES_TASKS.md` C9). `IconEmitter` also stopped calling `AudioSource.PlayOneShot`, so these now respect the SFX slider. Zero shipped references remain. |
 | **5** | **NiceVibrations demo ART is in the shipped menu** | ⚠️ Distribution question | `RegularPresetsIcons.png` → `Menu_Main.unity` (a build scene). Asset Store EULAs treat demo content separately from the plugin. **4 distinct sprites, 6 usages** — two of them (`NVCar`, `NV7Dots`) are the **Termite class icons**, i.e. already placeholders for an unimplemented vessel. | ✅ **Done 12 Sep** — re-pointed to first-party glyphs under `_Graphics/UI/Chrome/`, authored by `Tools/Build/author_ui_chrome_icons.py` (`--check`), which shares its drawing engine with the objective-icon set so the two cannot drift. **New assets under a first-party PATH, not an in-place edit of the vendor PNG** — an in-place edit works and hides itself, leaving the path still saying `NiceVibrations/Demo/…` for the next audit to re-report and the next plugin re-import to revert. The two Termite slots take a neutral placeholder; real art is a design task. Zero shipped references remain. |
-| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ⚠️ Commercial, no licence | Both load-bearing in shipped scenes. Purchase records needed. **Measured: neither has a single first-party code reference** — Shift is 3 textures + 1 prefab, PrimitivePlus is 4 meshes + one 36-line component (with **47** meshes shipping via `Resources/`). | 🔄 **Replace** — `prompts/VENDORED_UI_PACK_PLACEHOLDERS_PROMPT.md` |
+| **6** | **Shift Sci-Fi UI (Michsky)**, **PrimitivePlus** | ✅ **RESOLVED — both removed 12 Sep 2026** | Replaced first-party and deleted, in two commits each carrying a per-asset guid-ownership proof (`0` inbound references, `0` ambiguous owners, counted over `Assets/` + `ProjectSettings/` + `Packages/`). Shift's 3 frames → `Assets/_Graphics/UI/Frames/` (`Tools/Build/author_ui_frame_sprites.py`); PrimitivePlus's 4 meshes → `Assets/_Models/Primitives/` (`Tools/Build/author_primitive_meshes.py`). Both replacements were **measured against the packs before deletion** — see §2.1. | ✅ **Done** |
 | **7** | **"Effects Library"** | ❓ Unknown vendor | Contains only `Froglet Stuff/`, but carries an `FE_` import prefix. Whose is it? **Measured: 8.2 MB of which exactly ONE prefab is live** (`vfx_Projectile_02` → `VesselJet`); the four `FE_*` render-pipeline assets are **not** the live pipeline (0 references). | 🔍 **Owner will identify** — `prompts/EFFECTS_LIBRARY_PROVENANCE_PROMPT.md` |
-| **8** | **Wwise** | ⚠️ Per-title licensing | Zero files, zero references — but was it ever licensed during evaluation? Then remove. | 🗑 **Owner will confirm, then delete** — with `Parse` (0 refs) and a first-party rewrite of `SerializeInterface`. `prompts/WWISE_AND_DEAD_SDK_REMOVAL_PROMPT.md` |
+| **8** | **Wwise**, **Parse**, **SerializeInterface** | ✅ **Done — all three gone from the tree** | **Landed 12 Sep 2026.** `Assets/Wwise/` (0 asset files, 14 orphan `.meta`) and `Assets/Parse/` (2 DLLs, 0 references) **deleted**, each with its own guid-ownership + inbound-holder + type-reference + `Resources.Load`-by-name proof re-measured at deletion time. `SerializeInterface` **rewritten first-party** into `CosmicShore.Utility` / `CosmicShore.Editor`, all seven `[RequireInterface]` lines byte-identical. **Five prose residue sites** were swept, not the two the brief predicted — and the two extra **never name the vendor**: `VesselAbilityRowWirer`'s alias-convention comment cited the deleted `InterfaceReference.cs`, and this register's own sweeper tool offered `--tree Assets/Wwise` as its usage example. *A grep for the vendor's name finds only the residue that mentions it; sweep the deleted paths and type names too.* ⚠️ **One human item is still OPEN and it is NOT a code question:** whether a Wwise **evaluation or project licence** was ever signed during that evaluation — see §2 of [`THIRD_PARTY_DECISIONS.md`](THIRD_PARTY_DECISIONS.md). Deleting the folder does not settle it, and did not wait on it. | 🗑/🔄 **Executed** |
 | **9** | **CC-BY 4.0 models** | ✅ Not shipping today | Two Sketchfab models by **VertaScan** under CC-BY 4.0 (`_Models/Vessel Models/Placeholder/`). Measured **0 references** — they do not ship, and they are **deliberately absent from the credits screen**, because crediting an asset the build does not contain is a false statement about the build. | ⏸ Watch — the trigger is recorded in `VESSEL_CONSTRUCTION_FOLLOWUP.md`; wiring one makes the attribution mandatory and the credits screen is where it goes |
 | **10** | **EmojiOne**, **Roboto**, **Liberation Sans** | ✅ **Credited 12 Sep 2026** | All three sat under a `Resources/` folder, so they **shipped whether referenced or not** (Roboto's TMP asset has since gone with `Examples & Extras`, index §A1 — the entry stays earned by NiceVibrations' `RobotoMono-*.ttf`) — the register previously said *"ships if used"* for the first two and did not list Liberation Sans (TMP's default font) at all. Each now has its own entry: EmojiOne's own terms, Roboto under Apache 2.0, Liberation Sans under SIL OFL 1.1. | ✅ **Done** — see §7 |
 | **11** | **Bangers**, **Electronic Highway Sign** | ❌ **Ship, not credited** | **New finding, 12 Sep.** Pruning TMP's `Examples & Extras` found two fonts reachable from shipped prefabs — `Bangers SDF` ← `QuestItemPrefab`, `Electronic Highway Sign SDF` ← `Manta.prefab` — both **DYNAMIC**, so each needs its TTF at runtime and both were relocated rather than deleted (index §A1). Bangers is SIL OFL 1.1 and its notice was preserved beside it; **Electronic Highway Sign has no licence document anywhere in the repository.** | ➕ **Add a Bangers entry to `CreditsManifest.asset`** (an asset edit). 🔍 **Owner: where did Electronic Highway Sign come from?** — nothing can be credited until that is answered |
@@ -67,22 +67,22 @@ Sizes are `du -sh`; file counts exclude `.meta`.
 | **NiceVibrations** ⚠️ | Lofelt / More Mountains | **4.1.1** (Lofelt SDK 1.3.3) | `NiceVibrations` | 47 MB / 395 | ⚠️ **not the product EULA** — see below | **Ships**, but nothing first-party reaches it any more (12 Sep). The **Demo**'s 30 `.cs` were made **editor-only** (index §A3); no first-party CODE calls the plugin (row 4); and no first-party ASSET references it (rows 4b/5) — measured by sweeping all **411** guids owned under `Demo/` and `HapticSamples/` against every shipped scene, prefab and asset. The only holders left are in `_Prefabs/MIgration_Prefabs (DELETE LATER)/`, which ships nothing and is an open decision (`LAUNCH_BLOCKER_INDEX.md` §B3). Still shipping regardless of references: the plugin's own assemblies and `Scripts/Components/Resources`. **The folder is now deletable on its own evidence.** |
 | **DOTween** (free — **not** Pro) | Demigiant / D. Giardini | asm `1.0.0.0`; no product version in tree | `Plugins/Demigiant` | 764 KB / 18 | ❌ none | **Ships** (`DOTween.dll`) |
 | **NativeShare** | yasirkula | not stated | `Plugins/NativeShare` | 148 KB / 10 | ❌ none | **Ships** (`NativeShare.Runtime`) |
-| **PlayFab SDK** | Microsoft | not stated | `PlayFabSDK` | 4.7 MB / 104 | ❌ none | **Ships** — `PlayFab.asmdef` `includePlatforms: []` + `Resources/` |
-| **PlayFab Editor Extensions** | Microsoft | not stated | `PlayFabEditorExtensions` | 4.9 MB / 70 | ❌ none | **Editor-only** ✅ |
+| ~~**PlayFab SDK**~~ | Microsoft | not stated | ~~`PlayFabSDK`~~ | — | — | **REMOVED** — deleted with the backend, `Docs/PLAYFAB_RETIREMENT.md` |
+| ~~**PlayFab Editor Extensions**~~ | Microsoft | not stated | ~~`PlayFabEditorExtensions`~~ | — | — | **REMOVED** — went with the SDK it configures |
 | ├ **Microsoft.Identity.Client (MSAL)** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | ├ **Microsoft.IdentityModel** (`.JsonWebTokens`, `.Logging`, `.Tokens`) | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | └ **System.IdentityModel.Tokens.Jwt** | Microsoft | not stated | `…/Editor/Resources/` | — | ❌ none | Editor-only |
 | **QuickScene Pro** | yethgamedevv | © 2025 | `YethGameDev` | 4.4 MB / 10 | ✅ `LICENSE.md` — **MIT** (+ Indian jurisdiction clause) | **Editor-only since 12 Sep 2026** — `Resources/` and `Demo/` moved under `Editor/` (index §A2), so none of it now reaches a build |
-| **PrimitivePlus** ⚠️ | *unknown* (ns `PrimitivePlus`) | not stated | `PrimitivePlus` | 1008 KB / 53 | ❌ none | **Ships** — 5 runtime `.cs` + `Resources/` |
-| **Shift — Complete Sci-Fi UI** ⚠️ | **Michsky** (ns `Michsky.UI.Shift`) | not stated | `Shift - Complete Sci-Fi UI` | 584 KB / 15 | ❌ none | **Ships** — 4 runtime `.cs` + `Resources/` |
+| ~~**PrimitivePlus**~~ | *unknown* (ns `PrimitivePlus`) | not stated | ~~`PrimitivePlus`~~ | ~~1008 KB / 53~~ | ❌ none | ✅ **REMOVED 12 Sep 2026** — see §2.1 |
+| ~~**Shift — Complete Sci-Fi UI**~~ | **Michsky** (ns `Michsky.UI.Shift`) | not stated | ~~`Shift - Complete Sci-Fi UI`~~ | ~~584 KB / 15~~ | ❌ none | ✅ **REMOVED 12 Sep 2026** — see §2.1 |
 | **External Dependency Manager (EDM4U)** | **Google** | **1.2.183** | `ExternalDependencyManager` | 816 KB / 9 | ✅ `LICENSE` (**Apache 2.0**) | **Editor-only** ✅ |
 | **Microsoft.Unity.Analyzers** | Microsoft | not stated | `Analyzers` | 256 KB / 2 | ❌ none (`README.md` only) | Roslyn analyzer — compile-time |
 | **TextMesh Pro** (imported assets) | Unity | bundled | `Unity Assests/TextMesh Pro` | **12 MB / 62** | — (Unity UCL) | **Ships** — now ONE `Resources/`; `Examples & Extras` (incl. its second `Resources/` and 34 `.cs`) removed 12 Sep 2026, index §A1 |
 | ├ **EmojiOne** sample sprites | EmojiOne | — | `…/TextMesh Pro/Sprites` | — | ⚠️ `EmojiOne Attribution.txt` — defers to their terms | Ships if used |
 | └ **Bangers** + **Electronic Highway Sign** fonts | Google Fonts / unknown | — | `…/TextMesh Pro/Fonts` | — | ✅ `Bangers - OFL.txt` · ❌ **none for Electronic Highway Sign** | **Ship** — both are DYNAMIC TMP fonts referenced by shipped prefabs, so each carries its TTF. Relocated here 12 Sep 2026 from `Examples & Extras`, whose **Roboto** went with the folder (index §A1) |
-| **Parse** (support DLLs) | Parse / Meta | not stated | `Parse` | 76 KB / 2 | ❌ none | Ships if referenced — **nothing references it** |
-| **Wwise** ⚠️ | Audiokinetic | — | `Wwise` | 84 KB / **0 files** | — | **Ships nothing** (14 `.meta`, 0 assets) |
-| **SerializeInterface** | ❓ **unknown** | — | `SerializeInterface` | 56 KB / 5 | ❌ none, no namespace, no header | **Ships** (no asmdef → `Assembly-CSharp`) |
+| ~~**Parse** (support DLLs)~~ | Parse / Meta, via **Google EDM4U** (`gvh_version-9.4.0`, .NET 3.5 — recovered from the `.meta` labels) | not stated | ~~`Parse`~~ | ~~76 KB / 2~~ | ❌ none | **DELETED 12 Sep 2026.** Was 0 references; both DLLs were additionally importer-disabled (`Any: enabled: 0`, `Editor: enabled: 0`) so they reached no target at all |
+| ~~**Wwise**~~ | Audiokinetic | — | ~~`Wwise`~~ | ~~84 KB / **0 files**~~ | — | **DELETED 12 Sep 2026.** Shipped nothing (14 `.meta`, 0 assets). The per-title licence question is §0 row 8 and is a human item, not a tree item |
+| **SerializeInterface** → **first-party** | ~~unknown~~ → **Froglet** | — | `_Scripts/Utility/RequireInterfaceAttribute.cs` + `_Scripts/Editor/RequireInterfaceDrawer.cs` | 48 + 219 lines | n/a — first-party | **Ships** (the attribute only; the drawer is under `Editor/`). Rewritten 12 Sep 2026; `Assets/SerializeInterface/` deleted |
 | **Shader Graph samples** | Unity | 12.1.6 | `Samples` | 972 KB / 14 | — (Unity UCL) | Ships if referenced |
 | **"Effects Library"** ❓ | **unknown — §5** | — | `Effects Library` | 8.2 MB / 25 | ❌ none | **Ships** — nested in `VesselJet.prefab` |
 | **CC-BY vessel models** | **VertaScan** (Sketchfab) | — | `_Models/Vessel Models/Placeholder` | 11.6 MB / 2 | ✅ `CC_Attribution_…txt` — **CC-BY 4.0** | **Not shipping** (0 refs) — see §0.9 |
@@ -111,6 +111,144 @@ already says `AudioClip` + `AudioSource` is legacy and new SFX is FMOD, so the f
 to FMOD `EventReference` fields — finishing a migration the project had already committed to.
 The events ship **empty and silent** on purpose (`CHARLES_TASKS.md` C9); pointing them at a
 borrowed event to keep a noise would have been an invisible TODO.
+
+---
+
+## §2.1 · Removed — Shift Sci-Fi UI and PrimitivePlus (12 Sep 2026)
+
+Both packs are **gone from the tree**. Neither had a licence document, a vendor identifiable from
+the tree, or a recoverable purchase record, and — the part that made replacing cheaper than chasing
+a receipt — both shipped a `Resources/` folder into the player whole, so **44 PrimitivePlus meshes
+shipped for the 4 that were used** and Shift's `Shift UI Manager.asset` shipped for nothing.
+
+**What replaced what, and what it cost.** Neither pack had a single first-party code reference, so
+the whole dependency was art:
+
+| was | is | authored by |
+|---|---|---|
+| `PrimitivePlus/Resources/Meshes/{Cone,Sphere,Cube,CylinderTube}.asset` | `Assets/_Models/Primitives/Primitive{Cone,Sphere,Cube,CylinderTube}.asset` | `Tools/Build/author_primitive_meshes.py` |
+| `Shift …/Cut Frame Big - 6px (200ppu).png` | `Assets/_Graphics/UI/Frames/frame_cut_outline_200.png` | `Tools/Build/author_ui_frame_sprites.py` |
+| `Shift …/Cut Frame Filled Big (200ppu).png` | `…/frame_cut_filled_200.png` | ″ |
+| `Shift …/Cut Frame Filled Big (300ppu).png` | `…/frame_cut_filled_300.png` | ″ |
+| `PrimitivePlusMaterial` on 3 prefabs | *removed* — an editor-authoring helper, inert at runtime | — |
+| `Switch.prefab` instance in `ModalWindows.prefab` | *removed* — inactive, in an unreferenced prefab | — |
+
+**The replacements were MEASURED against the packs before deletion**, which is the only window in
+which that can be done — both tools carry a `--verify-vendor` mode that now stands down with
+"vendor asset is gone" rather than aborting, and a `--self-test` that proved the comparison FAILS on
+a mesh or a frame that really differs.
+
+| replacement | result |
+|---|---|
+| `PrimitiveCone` | surface **IDENTICAL**, max normal delta 0.0159°, **max UV delta 0.000001** |
+| `PrimitiveSphere` | surface **IDENTICAL**, 0.4429°, 0.003906 (= 1/256) |
+| `PrimitiveCube` | surface **IDENTICAL**, 0.0000°, 0.000000 |
+| `PrimitiveCylinderTube` | surface **IDENTICAL**, 0.0175°, UVs not reproduced *(see below)* |
+| `frame_cut_filled_200/300` | coverage **−0.008 %**, **0** of 16384 px off by >0.25, max \|alpha\| 0.022 |
+| `frame_cut_outline_200` | coverage **−0.159 %**, **0** of 16384 px off by >0.25, max \|alpha\| 0.103 |
+
+"Surface IDENTICAL" means the triangle coverage and winding agree exactly, compared per supporting
+plane so a free triangulation choice does not read as a difference while a curved quad's diagonal
+still has to match; vertex clusters agree within 1.2e-06 world units. The two non-zero UV deltas are
+deliberate and neither reaches a shader: the **Sphere**'s vendor UVs sit on a k/256 grid (an export
+quantiser upstream of an otherwise Float32 asset) and the first-party asset emits the analytic
+values those are a rounding of; the **CylinderTube**'s are a modelled non-uniform unwrap that is not
+reproduced, which nothing can see because its one consumer wires a **null material** and also uses
+the mesh as a non-convex `MeshCollider`.
+
+**`Cone.asset` was the gameplay-critical one** — it is the mesh on `AOEConicExplosion` (the
+Dolphin's crystal blast) and `AOEConicSkyBurst` (the Sparrow's skyburst), and its material's shader
+`LaserGraph.shadergraph` carries a `UVNode` feeding two `SampleTexture2DNode`s, so UV0 really does
+reach the screen. Measured before → after:
+
+    bounds   (−0.5000001, −0.5000001, −0.5000004) → (−0.5, −0.5, −0.5)
+             (+0.4999999, +0.5000001, +0.4999997) → (+0.5, +0.5, +0.5)
+    pivot    +1e−07 off the bounds centre          → exactly the bounds centre
+    axis     base centre → apex = +Y (to 6e−07)    → +Y exactly
+    apex (0, +0.5, 0) · base plane y = −0.5 · ring radius 0.5 · 20 segments — unchanged
+
+**Proof of removal**, per asset, by the guid-ownership method (a unique owner asserted per `.meta`,
+never `grep -rl | head -1`), counted over `Assets/` + `ProjectSettings/` + `Packages/`:
+
+    Assets/PrimitivePlus                 53 assets · all UNIQUE · 0 inbound · 0 ambiguous
+    Assets/Shift - Complete Sci-Fi UI    15 assets · all UNIQUE · 0 inbound · 0 ambiguous
+
+A guid sweep has two blind spots (`LAUNCH_BLOCKER_INDEX.md` §"blind spots"): it cannot see
+`Resources.Load` **by name**, and it cannot see a **C# type** reference. Both were closed by hand —
+the project's complete `Resources.Load` literal list is 14 names, none of them either pack's, and no
+first-party `.cs` mentions `PrimitivePlus`, `Michsky`, `SwitchManager`, `UIManagerImage` or
+`UIElementSound`. Nothing outside the packs named them by path, and neither appeared in preloaded
+assets or the always-included shader list.
+
+**One thing did NOT become recoverable.** `Switch.prefab` carried two `m_Script` guids owned by no
+`.meta` under `Assets/` — `fe87c0e1cc204ed48ad3b37840f39efc` and `4e29b1a8efbd4b44bb3f3716e73f07ff`
+— almost certainly package scripts, unverifiable in this clone because `Library/PackageCache/` is
+not committed (§3.2). That is why the toggle was **rebuilt-or-retired rather than edited in place**;
+in the event it was retired, because the instance shipped `m_IsActive: 0` inside a prefab nothing
+references, and the live settings panel expresses all seven of its on/off rows as a
+`GameSettingsPanelController.OnOffControl` (an ON button + an OFF button) rather than a switch.
+
+### §2.1.1 · Verification status — ⚠ NOT opened in the Unity editor
+
+**`/verify-unity` did not run.** This work was done in a remote container with no `unity` binary,
+no editor attached, and no `Library/` — so the project has never been imported against these
+changes. Everything below was verified **out of editor**, and the gap is stated rather than papered
+over.
+
+What *was* verified, mechanically:
+
+* **Reference integrity.** The two packs owned **88** guids between them, of which exactly **9** had
+  a referrer outside their own trees (the 7 re-pointed assets, plus `PrimitivePlusMaterial` and
+  `Switch.prefab`). All 9 now resolve to **0 files** across `Assets/`, `ProjectSettings/` and
+  `Packages/`; all 7 replacement guids resolve to exactly the referrer counts the originals had
+  (Cone 3, Sphere 7, Cube 5, CylinderTube 1, outline 2, filled-200 1, filled-300 2) — re-derived at
+  ship time against the merge base, which also corrected this line's earlier count of 10.
+* **No orphaned reference, in the project's own tool.** `measure_dangling_guid_references.py`
+  (which arrived on `bleeding-edge` while this branch was in flight, written for exactly this class
+  of removal) differenced a snapshot of the merge base against one of this branch:
+  **0 new unowned guids, 0 new edges, and 0 of the 7 removed edges had a referrer outside the two
+  removed trees** — the second line being the one that matters. Its `--removed-under` took a single
+  path, which reported each pack's own internal referrers as losses from the other, so this branch
+  made the flag repeatable; its `--self-test` negative control still fires.
+* **No dangling YAML.** A *regression* comparison over all 20 re-pointed files: exactly 4 anchors
+  removed, every referrer to each gone, **no new dangling fileID**. (The naive "every local fileID
+  has an anchor" check was tried first and is useless here — it cannot tell a dangling id from a
+  reference into a nested prefab or a built-in, and flagged all 20 files.)
+* **Asset integrity.** Every emitted PNG decodes with correct per-chunk CRCs at 128×128 RGBA8; every
+  emitted mesh's `m_DataSize`, vertex stride (48 B), index-buffer length and 14-channel block are
+  self-consistent; all 7 new guids are unique project-wide (0 duplicate guids anywhere in `Assets/`).
+* **Serialization shape.** The mesh `.asset` is line-for-line identical in structure to the file it
+  replaces, and both `.meta` shapes are byte-identical to Unity's own formatting (see 96a319e6 —
+  the empty-scalar trailing space, which would otherwise have made `--check` report phantom drift
+  after the first import).
+* **Standing gates.** `check_conditional_compilation`, `check_enum_member_references`,
+  `check_switch_label_collisions`, `check_self_referential_locals` all pass.
+  `check_using_directives` reports **OK, 0 files in scope** — which is the honest answer rather
+  than a clean bill of health: it scopes to CHANGED `.cs`, and every `.cs` this work touched is a
+  DELETION (the 11 vendor scripts), so there is nothing left for it to read. This work changed
+  **zero** first-party `.cs` files. (An earlier pass recorded 18 problems in 12 files here; those
+  were the whole-tree pre-existing findings, reproduced identically at the commit before this work,
+  in files it never touched.)
+
+**What still needs a human in the editor**, in rough order of what would hurt most if wrong:
+
+1. **The Dolphin's crystal blast** and **the Sparrow's skyburst** — the cone should read exactly as
+   before: same gape, same reach, same texture flow along it. This is the one place a wrong mesh
+   would change gameplay *feel* without changing the blast VOLUME, since the trigger `BoxCollider`,
+   the Burst sweep job and `ExplosionImpactor` all keep their own numbers.
+2. **`Menu_Main`** — the party panel (`ArcadeLobbyList`) and the friends panel (`FriendListPanel`):
+   the cut-corner plates, at the right corner size. These are the 200-vs-300 PPU pair, so a
+   swapped-over import would show as corners ~1.5× too big on one of them.
+3. **`Authentication`** — the username field's plate.
+4. **The options panel** (`SettingsModal` → `OptionsMenuContent`) — the four tab-button outlines.
+5. **`ModalWindows.prefab`** opens with no missing-script warning and no missing nested prefab.
+6. **The projectile and FX prefabs** — the sphere-bodied rounds and the crackle FX emit as before.
+7. **A console with no import errors**, which is the one check that covers everything above at once.
+
+A re-import will also be the first time Unity assigns the generated sprites their `21300000`
+sub-asset fileID. That is the universal convention for a `spriteMode: 1` texture and is the value
+the vendor references already used, but it is an assumption until an import confirms it — if a
+frame renders as a white box, that is where to look first.
 
 ---
 
@@ -224,13 +362,19 @@ unanswered provenance question, not a build defect. It is **26% of `Assets/`**.
 **Who would know:** whoever commissioned or downloaded it; the art lead. General lesson: *a
 first-party folder name is not evidence that everything inside it is first-party.*
 
-**`Assets/SerializeInterface/` (5 `.cs`).** No namespace, no header comment, no licence, no vendor.
-It is the well-known community `[RequireInterface]` pattern, which exists in several public repos
-under different licences. It **ships** (no asmdef).
-**Who would know:** whoever added `[RequireInterface]` to the project.
+**`Assets/SerializeInterface/` — RESOLVED 12 Sep 2026, by rewrite rather than by answer.** It had
+no namespace, no header comment, no licence and no vendor, and it shipped (no asmdef). Nobody needed
+to remember where it came from: it is the well-known community `[RequireInterface]` pattern, and what
+the project actually depends on is fully specified by its own call sites, so it was **rewritten
+first-party** (`CosmicShore.Utility.RequireInterfaceAttribute` + `CosmicShore.Editor.RequireInterfaceDrawer`)
+and the folder deleted. **Half of it turned out to be dead** — `InterfaceReference<>`, its drawer and
+the `InterfaceArgs` struct had zero consumers — and that half was deliberately not reproduced.
+*General lesson: an unattributable code drop small enough to re-derive from its call sites does not
+need its provenance answered — it needs replacing. Ask the provenance question only where the thing
+is too large to rewrite, as with the three below.*
 
-**`Assets/PrimitivePlus/`, `Assets/Shift - Complete Sci-Fi UI/`, `Assets/Unity Assests/`.** No
-vendor, version or import record recoverable. **Git cannot supply it:** this clone is **shallow**
+**`Assets/PrimitivePlus/`, `Assets/Shift - Complete Sci-Fi UI/`** *(both since removed — §2.1)*
+**and `Assets/Unity Assests/`.** No vendor, version or import record recoverable. **Git cannot supply it:** this clone is **shallow**
 (`.git/shallow` present, 741 commits, history begins 2026-08-12), so `git log --diff-filter=A`
 reports the graft-boundary commit for every one of them. A **full clone** would answer *when and by
 whom*; it would still not answer *was it paid for*.
@@ -328,5 +472,6 @@ Searched `Assets/`, `ProjectSettings/`, `Tools/` for `*.keystore`, `*.jks`, `*.p
 "SECRET HIDE AWAY" and its SO. `ProjectSettings.asset` carries no Android keystore or alias fields.
 
 This is a filename-and-known-location sweep, **not** a content scan for embedded API keys. Note that
-PlayFab title IDs and UGS project IDs are configuration rather than secrets, and were not audited.
+UGS project IDs are configuration rather than secrets, and were not audited. (PlayFab title IDs
+were in the same category; the SDK that read them is deleted.)
 A content-level secret scan is a separate job and is not claimed here.

@@ -1,5 +1,29 @@
 # Prompt — replace Shift Sci-Fi UI and PrimitivePlus with first-party assets
 
+> ## ✅ EXECUTED 12 Sep 2026 — do not run this again
+>
+> `Assets/Shift - Complete Sci-Fi UI/` and `Assets/PrimitivePlus/` are **deleted**, each in its own
+> commit carrying a per-asset guid-ownership proof. Replacements: `Assets/_Graphics/UI/Frames/`
+> (`Tools/Build/author_ui_frame_sprites.py`) and `Assets/_Models/Primitives/`
+> (`Tools/Build/author_primitive_meshes.py`), both with `--check`; references re-pointed by
+> `Tools/Build/repoint_vendored_ui_assets.py`. Outcome, measurements and the Cone's before/after
+> bounds/pivot/axis: [`THIRD_PARTY_REGISTER.md` §2.1](../THIRD_PARTY_REGISTER.md).
+>
+> **Two of the three things this prompt asked for were answered with a REMOVAL and evidence rather
+> than a rebuild**, as §2.1 records: `PrimitivePlusMaterial` is inert at runtime (its only callers
+> are the vendor's own editor inspector), and the Shift switch had no live instance to rebuild — the
+> options panel expresses every on/off row as `GameSettingsPanelController.OnOffControl`, and the
+> one `Switch.prefab` instance was inactive inside a prefab nothing references.
+>
+> **One number in the brief below is wrong and is left as written**: the pack's `Resources/`
+> folder held **44** meshes plus one material, not 47 (measured off the deleted tree at ship
+> time — `git ls-tree` counts 45 `.asset` files, 44 of them `!u!43` Mesh). The argument is
+> unchanged: 44 shipped for the 4 that were used.
+>
+> ⚠️ **Not opened in the Unity editor** — no compile, no import, no play mode. The generators and the
+> guid proofs answer offline; the rendering and the mesh import are unverified. The ranked in-editor
+> test list is `THIRD_PARTY_REGISTER.md` §2.1.1. Kept for the record.
+
 Paste everything below into a fresh session.
 
 ---

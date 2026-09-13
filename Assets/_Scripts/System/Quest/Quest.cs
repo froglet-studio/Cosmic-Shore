@@ -23,7 +23,7 @@ namespace CosmicShore.Core
         public DateTime Expiration;
 
         /* Rewards */
-        [Tooltip("Playfab Item ID to be granted when the Quest is completed")]
+        [Tooltip("Catalog item id granted when the Quest is completed. Was a PlayFab item id; the quest reward path has no backend today.")]
         public string RewardItemID;
         public VirtualItem UnlockedItem;
         public List<(Element, int)> CrystalRewards;

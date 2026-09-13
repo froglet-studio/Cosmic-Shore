@@ -55,7 +55,7 @@ USAGE
     measure_dangling_guid_references.py --save before.json
     ...make the change...
     measure_dangling_guid_references.py --save after.json
-    measure_dangling_guid_references.py --diff before.json after.json [--removed-under PATH]
+    measure_dangling_guid_references.py --diff before.json after.json [--removed-under PATH]...
     measure_dangling_guid_references.py --self-test
 """
 import argparse, collections, json, os, re, sys
@@ -140,6 +140,12 @@ def report(snap, label):
 
 
 def diff(before, after, removed_under=None):
+    # `removed_under` is a LIST of paths, because one change can remove more than one
+    # tree: the branch that retired the two unlicensed vendor packs removed
+    # `Assets/PrimitivePlus/` and `Assets/Shift - Complete Sci-Fi UI/` together, and
+    # naming only one reported the other's own internal referrers as losses.
+    removed_under = ([removed_under] if isinstance(removed_under, str)
+                     else list(removed_under or []))
     bu, au = before["unowned"], after["unowned"]
     new_guids = sorted(set(au) - set(bu))
     # Edge identity is (target guid, referrer IDENTITY) -- so a file that merely
@@ -164,10 +170,11 @@ def diff(before, after, removed_under=None):
 
     outside = gone
     if removed_under:
-        key = os.path.normpath(removed_under)
+        keys = [os.path.normpath(k) for k in removed_under]
         outside = [(g, rid) for g, rid in gone
-                   if not os.path.normpath(bu[g][rid]).startswith(key)]
-        print(f"  of which the referrer was NOT under {removed_under!r}: {len(outside)}")
+                   if not any(os.path.normpath(bu[g][rid]).startswith(k) for k in keys)]
+        shown = ", ".join(repr(k) for k in removed_under)
+        print(f"  of which the referrer was NOT under {shown}: {len(outside)}")
         for g, rid in outside[:40]:
             print(f"    {g}  <- {bu[g][rid]}")
 
@@ -218,9 +225,11 @@ def main():
     ap.add_argument("--save", metavar="OUT", help="write a snapshot to this JSON file")
     ap.add_argument("--diff", nargs=2, metavar=("BEFORE", "AFTER"),
                     help="difference two snapshots; exits 1 if not clean")
-    ap.add_argument("--removed-under", metavar="PATH",
-                    help="with --diff: the path the change removed, so removed edges "
-                         "can be split by whether their referrer was inside it")
+    ap.add_argument("--removed-under", metavar="PATH", action="append",
+                    help="with --diff: a path the change removed, so removed edges can be "
+                         "split by whether their referrer was inside it. Repeatable — a "
+                         "change that removes two trees must name both, or each tree's own "
+                         "internal referrers are reported as losses from the other.")
     ap.add_argument("--self-test", action="store_true",
                     help="negative control: inject a dangling reference and require a catch")
     args = ap.parse_args()

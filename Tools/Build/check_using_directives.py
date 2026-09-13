@@ -52,10 +52,16 @@ MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
 
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
+# `#region <free text>` is PROSE, not code -- C# lets the label be anything to end of line and
+# does not require quotes, so an ordinary section heading like `#region Player Profile` reads as
+# a bare type reference and reports a missing `using` for a file that compiles perfectly.
+# `#error` / `#warning` take free text the same way. (`#if`/`#pragma` take real identifiers and
+# are deliberately left alone.)
+DIRECTIVE_TEXT = re.compile(r"^[ \t]*#[ \t]*(?:region|endregion|error|warning)\b.*?$", re.M)
 
 
 def strip(src: str) -> str:
-    return STRING.sub('""', COMMENT.sub(" ", src))
+    return STRING.sub('""', COMMENT.sub(" ", DIRECTIVE_TEXT.sub(" ", src)))
 
 
 def index_declarations():
@@ -164,6 +170,10 @@ def self_test():
          "a name inside a COMMENT is not a reference"),
         ("namespace CosmicShore.Gameplay { class A { int x = Foo.WidgetSO; } }", 0,
          "a qualified member access is not a bare reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { int x; }\n#endregion\n}", 0,
+         "a name in a #region LABEL is not a reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { WidgetSO w; }\n#endregion\n}", 1,
+         "...but a real reference in the same file is still caught"),
     ]
     ok = True
     for src, want, label in cases:

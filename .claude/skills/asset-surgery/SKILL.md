@@ -2620,6 +2620,36 @@ signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
 
+### Trap: a guid sweep written as `for f in $(git ls-tree ...)` silently drops every path with a SPACE
+
+`for f in $(...)` word-splits on whitespace, so `Assets/Shift - Complete Sci-Fi UI/Textures/...`
+arrives as the four tokens `Assets/Shift`, `-`, `Complete`, `Sci-Fi`, and every `.meta` under that
+tree contributes nothing. The sweep does not error — it completes, prints a total, and the total is
+**plausible**: a removal proof that should have found 9 referenced vendor guids found 5, with the
+four missing ones being exactly the pack whose name has spaces in it. Nothing distinguishes that
+from a correct answer except knowing what the answer should be.
+
+This project has at least two such trees (`Assets/Shift - Complete Sci-Fi UI/`,
+`Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/`), so any `.meta`/guid/asset sweep must be
+null-delimited:
+
+```sh
+git ls-tree -r -z --name-only "$REF" -- 'Assets/Some Tree With Spaces' \
+  | while IFS= read -r -d '' f; do
+      case "$f" in *.meta) git show "$REF:$f" | sed -n 's/^guid: //p';; esac
+    done | sort -u
+```
+
+`find -print0 | while IFS= read -r -d ''` and `git grep -z` are the same shape. The tell that you
+have been bitten: a count that is lower than expected and whose *missing* members all live under
+one directory.
+
+**The general rule — a measurement that cannot fail loudly must be cross-checked against a second,
+independent derivation.** Here the cross-check was free: the re-point tool's own remap table names
+exactly which guids should have been found, so comparing the sweep's output against it turns a
+silent undercount into an immediate mismatch. Prefer a sweep you can check against something you
+already know over a sweep you can only read.
+
 ### Trap: a fault that comes and goes across builds has an UNCONTROLLED VARIABLE, not a cause in your diff
 
 You ship a change, the human playtests, it is broken. You ship another, it works. Another, broken

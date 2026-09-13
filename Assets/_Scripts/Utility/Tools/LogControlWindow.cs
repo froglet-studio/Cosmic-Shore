@@ -343,7 +343,6 @@ namespace CosmicShore.Utility
             DrawSceneButton("Main Menu",              "Assets/_Scenes/Menu_Main.unity");
             DrawSceneButton("Photo Booth",            "Assets/_Scenes/Tools/PhotoBooth.unity");
             DrawSceneButton("Recording Studio (WIP)", "Assets/_Scenes/Tools/Recording Studio.unity");
-            DrawSceneButton("PlayFab Sandbox",        "Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity");
         }
 
         // ═════════════════════════════════════════════════════════════════════

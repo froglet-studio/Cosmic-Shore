@@ -869,13 +869,25 @@ since the asset's own active state is about the asset, not about a row.
 `_Scripts/System/DailyChallengeSystem.cs`, `UI/Modals/DailyChallengeModal.cs`,
 `UI/Views/DailyChallengeGameView.cs`, `UI/Views/DailyChallengeLeaderboardView.cs`,
 `Data/Structs/DailyChallengeRewardState.cs` and the ticket/reward economy around them
-(`CatalogManager.GetDailyChallengeTicket`, `DailyRewardHandler`, `LeaderboardManager`'s
-`DAILY_CHALLENGE` PlayFab statistic) are the **PlayFab-era implementation**: PlayerPrefs storage, a
+(`CatalogManager.GetDailyChallengeTicket` and `DailyRewardHandler`, both of which survive minus
+their PlayFab backends; `LeaderboardManager` and its `DAILY_CHALLENGE` PlayFab statistic are
+deleted) are the **PlayFab-era implementation**: PlayerPrefs storage, a
 `SO_TrainingGame` pool, a three-tier reward ladder, and an `Arcade` singleton that is in no scene.
 
-They are inert — nothing here reads them, and `DailyChallengeSystem` is in no scene either — and are
-left in the tree because the reward ladder and the leaderboard view are the ideas in them worth
-reviving. **They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
+They are inert as far as *this* system is concerned — nothing here reads them — and are left in the
+tree because the reward ladder and the leaderboard view are the ideas in them worth reviving.
+
+> **Correction (measured, PlayFab retirement).** This paragraph used to say `DailyChallengeSystem`
+> "is in no scene either". **It is in one.** `_Prefabs/CORE/DailyChallengeSystem.prefab` is a real
+> `PrefabInstance` in **`Bootstrap.unity`**, so it is a `SingletonPersistent` whose `Start()` runs
+> every session: it issues daily tickets and selects a daily game into `PlayerPrefs`, and
+> `GameplayRewardButton` in Menu_Main can still reach `ClaimReward`. What was dead was its **PlayFab
+> coupling** — a `SaveToPref(GetUserDataResult)` mirror hung off `PlayerDataController`, whose own
+> prefab really is in no scene — and that is now removed. *"Inert" is a claim about a runtime, and
+> the cheapest way to be wrong about one is to infer it from the system you are documenting rather
+> than measure it.* See `Docs/PLAYFAB_RETIREMENT.md` §0.
+
+**They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
 is how two systems come to look like one, and the next person to grep `WeeklyChallenge` should find
 exactly the code that runs. Do not wire both.
 

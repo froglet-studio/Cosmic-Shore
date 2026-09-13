@@ -206,7 +206,7 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(text.Contains("CommerceSurface") || text.Contains("SO_CommerceAvailability"),
                     $"{relativePath} now consults the commerce de-scope. Crystal earning and vessel " +
                     "unlocking must keep working in the invite build - only the real-money and " +
-                    "PlayFab-catalog paths are de-scoped.");
+                    "catalog purchase paths are de-scoped.");
             }
         }
 
