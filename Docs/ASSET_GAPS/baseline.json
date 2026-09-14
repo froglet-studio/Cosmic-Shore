@@ -28,6 +28,7 @@
   "no-slot:sound:Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/UrchinSlipActionExecutor.cs",
   "no-slot:sound:Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/YawsteryActionExecutor.cs",
   "no-slot:sound:Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/ZoomOutActionExecutor.cs",
+  "sound:AudioSystem.creatureBlockHitEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
   "sound:AudioSystem.driftEndEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
   "sound:AudioSystem.driftStartEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
   "sound:CountdownTimer.countdownBeepEvent@Assets/_Prefabs/UI Elements/In Game/CountdownTimer.prefab#1536147401936628604",

@@ -130,6 +130,41 @@ def owning_class(text: str, pos: int) -> str | None:
     return best
 
 
+def mask_literals(text: str) -> str:
+    """The text with every string literal and comment blanked, LENGTH PRESERVED.
+
+    Needed because the delimiters that bound an attribute block are also ordinary characters
+    inside a tooltip. `[SerializeField, Tooltip("... for creature kills; flora blocks ...")]`
+    carries a semicolon, so a raw rfind cuts INSIDE the string, finds no [SerializeField] after
+    it, and drops a real slot — which is what hid AudioSystem.creatureBlockHitEvent, a slot the
+    audio owner's own task list names."""
+    out, i, n = [], 0, len(text)
+    while i < n:
+        c = text[i]
+        if c == '"' and text[i - 1:i] != "\\":
+            j = i + 1
+            while j < n and not (text[j] == '"' and text[j - 1] != "\\"):
+                j += 1
+            out.append(" " * (min(j, n - 1) - i + 1))
+            i = j + 1
+        elif c == "'" and text[i - 1:i] != "\\":
+            j = i + 1
+            while j < n and not (text[j] == "'" and text[j - 1] != "\\"):
+                j += 1
+            out.append(" " * (min(j, n - 1) - i + 1))
+            i = j + 1
+        elif text.startswith("//", i):
+            j = text.find("\n", i)
+            j = n if j < 0 else j
+            out.append(" " * (j - i))
+            i = j
+        else:
+            out.append(c)
+            i += 1
+    masked = "".join(out)
+    return masked if len(masked) == n else masked.ljust(n)[:n]
+
+
 def serialized_event_fields(text: str):
     """Every EventReference field Unity will actually SERIALIZE, as (class, name, is_array).
 
@@ -152,7 +187,7 @@ def serialized_event_fields(text: str):
         # the first of them — which silently dropped ShipAudioController's engine-layer slots and
         # reported them as no slot at all.
         head = text[:m.start()]
-        cut = max(head.rfind(";"), head.rfind("{"), head.rfind("}"))
+        cut = max(*(mask_literals(head).rfind(c) for c in ";{}"))
         attrs = head[cut + 1:]
         serialized = "public" in mods or "SerializeField" in attrs
         if not serialized:
@@ -608,6 +643,15 @@ def self_test():
                '    [SerializeField, Tooltip("one " +\n        "two " +\n        "three")]\n'
                '    EventReference wrappedEvent;\n}\n')
     assert serialized_event_fields(wrapped) == [("B", "wrappedEvent", False)], serialized_event_fields(wrapped)
+    # A tooltip containing the very characters that delimit an attribute block. This is real:
+    # AudioSystem.creatureBlockHitEvent's tooltip carries a semicolon, and it vanished from the
+    # census entirely until the scan learned to ignore string literals.
+    punct = ('public class C : MonoBehaviour\n{\n    int other;\n\n'
+             '    [SerializeField, Tooltip("kills; flora blocks {still} play their own")]\n'
+             '    EventReference punctuatedEvent;\n}\n')
+    assert serialized_event_fields(punct) == [("C", "punctuatedEvent", False)], serialized_event_fields(punct)
+    assert len(mask_literals('a "b;c" d')) == len('a "b;c" d')
+    assert ";" not in mask_literals('x("b;c")') and ";" in mask_literals("x; y")
     assert is_stripped("--- !u!114 &3100000003 stripped\nMonoBehaviour:\n  m_Script: {fileID: 11500000, guid: x}\n")
     assert is_stripped("--- !u!114 &7\nMonoBehaviour:\n  m_PrefabInstance: {fileID: 3100000001}\n")
     assert not is_stripped("--- !u!114 &7\nMonoBehaviour:\n  m_PrefabInstance: {fileID: 0}\n  m_Script: {}\n")

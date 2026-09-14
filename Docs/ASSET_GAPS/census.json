@@ -1,15 +1,15 @@
 {
  "summary": {
-  "slots_declared": 74,
-  "slot_instances": 1502,
-  "gaps": 69,
+  "slots_declared": 80,
+  "slot_instances": 1510,
+  "gaps": 70,
   "gaps_by_discipline": {
    "2D graphics": 12,
    "Haptic/Sound/Visual FX": 4,
-   "Sound": 53
+   "Sound": 54
   },
-  "wired": 1389,
-  "silent": 23,
+  "wired": 1396,
+  "silent": 24,
   "unauthored_slots": 1
  },
  "slots": [
@@ -155,6 +155,17 @@
    "group": "sound:FloraAmbientAudioController",
    "source": "code",
    "script_guid": "21e650c29a22542cbb411fd605251760"
+  },
+  {
+   "cls": "DriftAudioController",
+   "field": "driftEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "DriftAudioController.driftEvent",
+   "required_when": {},
+   "group": "sound:DriftAudioController",
+   "source": "code",
+   "script_guid": "6c60d4d8af5894e23a818d119516c513"
   },
   {
    "cls": "DriftAudioController",
@@ -710,6 +721,50 @@
   },
   {
    "cls": "AudioSystem",
+   "field": "joustBuffChargeEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "AudioSystem.joustBuffChargeEvent",
+   "required_when": {},
+   "group": "sound:AudioSystem",
+   "source": "code",
+   "script_guid": "041326fa7f1db0944a3fa50cbacd061c"
+  },
+  {
+   "cls": "AudioSystem",
+   "field": "joustBuffMassEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "AudioSystem.joustBuffMassEvent",
+   "required_when": {},
+   "group": "sound:AudioSystem",
+   "source": "code",
+   "script_guid": "041326fa7f1db0944a3fa50cbacd061c"
+  },
+  {
+   "cls": "AudioSystem",
+   "field": "joustBuffSpaceEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "AudioSystem.joustBuffSpaceEvent",
+   "required_when": {},
+   "group": "sound:AudioSystem",
+   "source": "code",
+   "script_guid": "041326fa7f1db0944a3fa50cbacd061c"
+  },
+  {
+   "cls": "AudioSystem",
+   "field": "joustBuffTimeEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "AudioSystem.joustBuffTimeEvent",
+   "required_when": {},
+   "group": "sound:AudioSystem",
+   "source": "code",
+   "script_guid": "041326fa7f1db0944a3fa50cbacd061c"
+  },
+  {
+   "cls": "AudioSystem",
    "field": "trackImpactEvent",
    "kind": "sound",
    "discipline": "Sound",
@@ -725,6 +780,17 @@
    "kind": "sound",
    "discipline": "Sound",
    "label": "AudioSystem.floraCollisionEvent",
+   "required_when": {},
+   "group": "sound:AudioSystem",
+   "source": "code",
+   "script_guid": "041326fa7f1db0944a3fa50cbacd061c"
+  },
+  {
+   "cls": "AudioSystem",
+   "field": "creatureBlockHitEvent",
+   "kind": "sound",
+   "discipline": "Sound",
+   "label": "AudioSystem.creatureBlockHitEvent",
    "required_when": {},
    "group": "sound:AudioSystem",
    "source": "code",
@@ -5226,6 +5292,58 @@
    "label": "AudioSystem.comebackTimeEvent"
   },
   {
+   "id": "sound:AudioSystem.joustBuffChargeEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "AudioSystem",
+   "field": "joustBuffChargeEvent",
+   "asset": "Assets/_Prefabs/CORE/AudioSystem.prefab",
+   "object_name": "AudioSystem",
+   "status": "wired-by-override",
+   "detail": "in Assets/_Scenes/Bootstrap.unity",
+   "group": "sound:AudioSystem",
+   "label": "AudioSystem.joustBuffChargeEvent"
+  },
+  {
+   "id": "sound:AudioSystem.joustBuffMassEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "AudioSystem",
+   "field": "joustBuffMassEvent",
+   "asset": "Assets/_Prefabs/CORE/AudioSystem.prefab",
+   "object_name": "AudioSystem",
+   "status": "wired-by-override",
+   "detail": "in Assets/_Scenes/Bootstrap.unity",
+   "group": "sound:AudioSystem",
+   "label": "AudioSystem.joustBuffMassEvent"
+  },
+  {
+   "id": "sound:AudioSystem.joustBuffSpaceEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "AudioSystem",
+   "field": "joustBuffSpaceEvent",
+   "asset": "Assets/_Prefabs/CORE/AudioSystem.prefab",
+   "object_name": "AudioSystem",
+   "status": "wired-by-override",
+   "detail": "in Assets/_Scenes/Bootstrap.unity",
+   "group": "sound:AudioSystem",
+   "label": "AudioSystem.joustBuffSpaceEvent"
+  },
+  {
+   "id": "sound:AudioSystem.joustBuffTimeEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "AudioSystem",
+   "field": "joustBuffTimeEvent",
+   "asset": "Assets/_Prefabs/CORE/AudioSystem.prefab",
+   "object_name": "AudioSystem",
+   "status": "wired-by-override",
+   "detail": "in Assets/_Scenes/Bootstrap.unity",
+   "group": "sound:AudioSystem",
+   "label": "AudioSystem.joustBuffTimeEvent"
+  },
+  {
    "id": "sound:AudioSystem.trackImpactEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
    "kind": "sound",
    "discipline": "Sound",
@@ -5250,6 +5368,19 @@
    "detail": "in Assets/_Scenes/Bootstrap.unity",
    "group": "sound:AudioSystem",
    "label": "AudioSystem.floraCollisionEvent"
+  },
+  {
+   "id": "sound:AudioSystem.creatureBlockHitEvent@Assets/_Prefabs/CORE/AudioSystem.prefab#5246419679807688196",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "AudioSystem",
+   "field": "creatureBlockHitEvent",
+   "asset": "Assets/_Prefabs/CORE/AudioSystem.prefab",
+   "object_name": "AudioSystem",
+   "status": "silent",
+   "detail": "key absent from YAML: field added after the asset was last saved; runtime value is the field initializer (empty)",
+   "group": "sound:AudioSystem",
+   "label": "AudioSystem.creatureBlockHitEvent"
   },
   {
    "id": "vfx:Prism.ParticleEffect@Assets/_Prefabs/Projectile/Ellipsoid1.prefab#628030931339223057",
@@ -19760,6 +19891,19 @@
    "label": "ShipAudioController.engineEvent"
   },
   {
+   "id": "sound:DriftAudioController.driftEvent@Assets/_Prefabs/Spacevessels/Squirrel.prefab#5363059078414614678",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "DriftAudioController",
+   "field": "driftEvent",
+   "asset": "Assets/_Prefabs/Spacevessels/Squirrel.prefab",
+   "object_name": "Squirrel",
+   "status": "wired",
+   "detail": "event:/SFX/Drift",
+   "group": "sound:DriftAudioController",
+   "label": "DriftAudioController.driftEvent"
+  },
+  {
    "id": "sound:DriftAudioController.releaseEvent@Assets/_Prefabs/Spacevessels/Squirrel.prefab#5363059078414614678",
    "kind": "sound",
    "discipline": "Sound",
@@ -19825,6 +19969,19 @@
    "label": "ShipAudioController.engineEvent"
   },
   {
+   "id": "sound:DriftAudioController.driftEvent@Assets/_Prefabs/Spacevessels/Rhino.prefab#-7706008104071495775",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "DriftAudioController",
+   "field": "driftEvent",
+   "asset": "Assets/_Prefabs/Spacevessels/Rhino.prefab",
+   "object_name": "Rhino",
+   "status": "wired",
+   "detail": "event:/SFX/Drift",
+   "group": "sound:DriftAudioController",
+   "label": "DriftAudioController.driftEvent"
+  },
+  {
    "id": "sound:DriftAudioController.releaseEvent@Assets/_Prefabs/Spacevessels/Rhino.prefab#-7706008104071495775",
    "kind": "sound",
    "discipline": "Sound",
@@ -19849,6 +20006,19 @@
    "detail": "event:/Engine stuff/space ship engine main",
    "group": "sound:ShipAudioController",
    "label": "ShipAudioController.engineEvent"
+  },
+  {
+   "id": "sound:DriftAudioController.driftEvent@Assets/_Prefabs/Spacevessels/Dolphin.prefab#-4120751054643637272",
+   "kind": "sound",
+   "discipline": "Sound",
+   "cls": "DriftAudioController",
+   "field": "driftEvent",
+   "asset": "Assets/_Prefabs/Spacevessels/Dolphin.prefab",
+   "object_name": "Dolphin",
+   "status": "wired",
+   "detail": "event:/SFX/Loops/Drift dolphin",
+   "group": "sound:DriftAudioController",
+   "label": "DriftAudioController.driftEvent"
   },
   {
    "id": "sound:DriftAudioController.releaseEvent@Assets/_Prefabs/Spacevessels/Dolphin.prefab#-4120751054643637272",

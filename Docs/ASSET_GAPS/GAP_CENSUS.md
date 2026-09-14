@@ -6,9 +6,9 @@ Architecture and the task pipeline this feeds: `Docs/ASSET_GAPS/ARCHITECTURE.md`
 
 | Slots declared | Slot instances | Wired | Gaps | Silent keys | Never-authored slots |
 |---|---|---|---|---|---|
-| 74 | 1502 | 1389 | **69** | 23 | 1 |
+| 80 | 1510 | 1396 | **70** | 24 | 1 |
 
-Gaps by discipline: 2D graphics 12, Haptic/Sound/Visual FX 4, Sound 53
+Gaps by discipline: 2D graphics 12, Haptic/Sound/Visual FX 4, Sound 54
 
 ## Gaps (one task per group, one checkbox per row)
 
@@ -37,8 +37,9 @@ Gaps by discipline: 2D graphics 12, Haptic/Sound/Visual FX 4, Sound 53
 - [ ] `Prism.ParticleEffect` on `Assets/_Prefabs/Trails/TrailRing.prefab` (InnerCircle) 🔴 empty
 - [ ] `Prism.ParticleEffect` on `Assets/_Prefabs/Trails/TrailRing.prefab` (OuterCircle) 🔴 empty
 
-### Sound — `sound:AudioSystem` (2)
+### Sound — `sound:AudioSystem` (3)
 
+- [ ] `AudioSystem.creatureBlockHitEvent` on `Assets/_Prefabs/CORE/AudioSystem.prefab` (AudioSystem) 🔴 silent — silent key
 - [ ] `AudioSystem.driftEndEvent` on `Assets/_Prefabs/CORE/AudioSystem.prefab` (AudioSystem) 🔴 silent — silent key
 - [ ] `AudioSystem.driftStartEvent` on `Assets/_Prefabs/CORE/AudioSystem.prefab` (AudioSystem) 🔴 silent — silent key
 
@@ -146,6 +147,7 @@ Every declared slot and how its instances resolved. The per-instance detail live
 | `AudioSystem.comebackSpaceEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.comebackTimeEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.confirmedEvent` | sound | 0 | 1 | 0 | 0 |
+| `AudioSystem.creatureBlockHitEvent` | sound | 0 | 0 | **1** | 0 |
 | `AudioSystem.creatureDeathEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.crystalCollectEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.crystalSkimEvent` | sound | 0 | 1 | 0 | 0 |
@@ -161,6 +163,10 @@ Every declared slot and how its instances resolved. The per-instance detail live
 | `AudioSystem.floraCollisionEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.gameEndEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.gunFireEvent` | sound | 0 | 1 | 0 | 0 |
+| `AudioSystem.joustBuffChargeEvent` | sound | 0 | 1 | 0 | 0 |
+| `AudioSystem.joustBuffMassEvent` | sound | 0 | 1 | 0 | 0 |
+| `AudioSystem.joustBuffSpaceEvent` | sound | 0 | 1 | 0 | 0 |
+| `AudioSystem.joustBuffTimeEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.joustReceivedEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.joustScoredEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.letsGoEvent` | sound | 0 | 1 | 0 | 0 |
@@ -183,6 +189,7 @@ Every declared slot and how its instances resolved. The per-instance detail live
 | `AudioSystem.upgradeEvent` | sound | 0 | 1 | 0 | 0 |
 | `AudioSystem.vesselImpactEvent` | sound | 0 | 1 | 0 | 0 |
 | `CountdownTimer.countdownBeepEvent` | sound | 0 | 0 | **1** | 0 |
+| `DriftAudioController.driftEvent` | sound | 3 | 0 | 0 | 0 |
 | `DriftAudioController.releaseEvent` | sound | 2 | 0 | **1** | 0 |
 | `FaunaVariantTuning.AudioLoopEvent` | sound | 2 | 0 | **2** | 59 |
 | `IconEmitter.onTriggerEvent` | sound | 0 | 0 | **9** | 0 |
