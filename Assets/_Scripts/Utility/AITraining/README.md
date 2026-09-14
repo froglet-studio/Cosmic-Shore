@@ -266,6 +266,32 @@ is what actually scores in the mode's own rules.
 
 ## Roadmap (in rough order of value)
 
+- **Teach the pilot to SKIM — the one capability the fleet's AI has never had.**
+  `AIPilot` contains no prism-seeking of any kind (the word "skim" appears in it
+  exactly once, in a comment about drift). That is a whole dimension of
+  competence missing, and it is load-bearing rather than cosmetic: the Dolphin
+  banks blast energy **only** by skimming, so an AI Dolphin in Rampage or The
+  Bends can never arm its one weapon, and the Squirrel farms trail energy the
+  same way. Today's AI flies past mass it should be grazing.
+
+  The shape to build — salvaged from the retired `claude/ai-pilot-intensity-levels`
+  branch (Feb 2026), which is the one idea in it worth keeping:
+  **nudge the PATH, never swap the TARGET.** Project the candidate prism onto the
+  objective-bound course, and if its perpendicular offset exceeds skim standoff,
+  steer perpendicular by just enough to close the gap *to standoff* — returning
+  zero when already in range. That composes with the objective instead of
+  competing with it, which is exactly what a second target would do (and what
+  `AIObjectiveScoring`'s commitment hysteresis exists to prevent). It is
+  naturally three or four genes — detection radius, standoff, minimum lead
+  distance, nudge ceiling — so it drops straight into `PilotTuningGenes`.
+
+  **Do not copy that branch's implementation.** It scanned with
+  `Physics.OverlapSphereNonAlloc` and a per-frame raycast fan, which CLAUDE.md
+  forbids for prisms and which is *structurally blind to the freshest trail*
+  (colliders are disabled for ~0.6s after spawn) — i.e. blind to exactly the
+  mass worth skimming. Query `PrismSpatialIndex`, which is the canonical index
+  and already Burst-resident.
+
 - **Difficulty calibration from human outcomes.** Record human-vs-AI match
   results per intensity into the archive and nudge dither settings toward a
   target win rate (~55% for the human at their chosen intensity). The data
