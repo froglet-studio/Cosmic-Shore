@@ -24,6 +24,8 @@ MonoBehaviour:
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
   tollwayTollTarget: 4
+  wreckingBallPrismTarget: 1500
+  undertowPointTarget: 12
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   breakwaterStationTarget: 15
@@ -43,6 +45,8 @@ MonoBehaviour:
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
   tollwayTollTargetBuild: 4
+  wreckingBallPrismTargetBuild: 1500
+  undertowPointTargetBuild: 12
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   breakwaterStationTargetBuild: 15

@@ -64,6 +64,8 @@ game scene and still exists.
 | **MinigameSwitchback** | `_Scenes/Multiplayer Scenes/` | `Switchback (45)` | `SwitchbackController` |
 | **MinigameHijack** | `_Scenes/Multiplayer Scenes/` | `Hijack (46)` | `HijackController` |
 | **MinigameTollway** | `_Scenes/Multiplayer Scenes/` | `Tollway (48)` | `TollwayController` |
+| **MinigameWreckingBall** | `_Scenes/Multiplayer Scenes/` | `WreckingBall (54)` | `WreckingBallController` |
+| **MinigameUndertow** | `_Scenes/Multiplayer Scenes/` | `Undertow (55)` | `UndertowController` |
 | **MinigameHeadlong** | `_Scenes/Multiplayer Scenes/` | `Headlong (49)` | `HeadlongController` |
 | **MinigameBreakwater** | `_Scenes/Multiplayer Scenes/` | `Breakwater (50)` | `BreakwaterController` |
 | **MinigameSkein** | `_Scenes/Multiplayer Scenes/` | `Skein (51)` | `SkeinController` |
@@ -291,6 +293,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
+| 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |
+| 55 | `Undertow` | MP | MinigameUndertow | `UndertowController` (Scarab cavitation duel — see `UNDERTOW.md`) |
 | 49 | `Headlong` | MP | MinigameHeadlong | `HeadlongController` (Rhino circuit race — see `HEADLONG.md`) |
 | 50 | `Breakwater` | MP | MinigameBreakwater | `BreakwaterController` (Sparrow station race — see `BREAKWATER.md`) |
 | 51 | `Skein` | MP | MinigameSkein | `SkeinController` (Urchin cable race — see `SKEIN.md`) |
@@ -569,6 +573,8 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
+| `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
+| `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

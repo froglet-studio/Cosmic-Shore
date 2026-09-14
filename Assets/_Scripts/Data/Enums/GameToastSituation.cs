@@ -100,6 +100,19 @@ namespace CosmicShore.Data
         // telling what flying into things does.
         BloomrushStingHint = 91,
 
+        // Wrecking Ball. Lead: {0} = leading domain, {1} = its prisms destroyed, {2} = target.
+        // The two hints take no args.
+        WreckingBallLeadChanged = 92,   // the lead changes hands past the first milestone
+        WreckingBallForgeHint = 93,     // idle hint: fly through a bright crystal to forge a ball
+        WreckingBallDashHint = 94,      // idle hint: flick the right stick beside the forest
+
+        // Undertow. {0} = leading domain, {1} = that domain's points, {2} = point target. The
+        // hint takes no args.
+        UndertowQuarter = 95,           // the leading domain is a quarter of the way to the target
+        UndertowHalf = 96,              // the leading domain is halfway
+        UndertowLeadChanged = 97,       // the lead changes hands after a milestone
+        UndertowDashHint = 98,          // idle hint: dash beside a rival to catch them in the plate
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.
