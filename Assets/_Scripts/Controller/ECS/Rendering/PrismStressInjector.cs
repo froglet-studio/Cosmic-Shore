@@ -24,6 +24,7 @@ namespace CosmicShore.ECS
     {
         const string StatsSection = "Debug";
         const string CommandName = "prisms";
+        const string PathCommandName = "prismpath";
         const string IdleHint = "off — cmd: prisms <count> | prisms off";
 
         static PrismStressInjector _instance;
@@ -50,6 +51,7 @@ namespace CosmicShore.ECS
         {
             DiagnosticsHUD.RegisterCommand(CommandName, HandlePrismsCommand);
             DiagnosticsHUD.RegisterCommand("prismcolors", HandlePrismColorsCommand);
+            DiagnosticsHUD.RegisterCommand(PathCommandName, HandlePrismPathCommand);
             DiagnosticsHUD.SetStat(StatsSection, "stress", IdleHint);
         }
 
@@ -117,6 +119,58 @@ namespace CosmicShore.ECS
             DiagnosticsHUD.SetStat(StatsSection, "stress", IdleHint);
         }
 
+        /// <summary>
+        /// The instanced-vs-legacy render A/B, which PrismRenderService's own summary has
+        /// pointed at as "the PRISM_RENDER_TOGGLE in the benchmark workflow" while no such
+        /// toggle existed anywhere in the project — so the one question every render
+        /// decision rests on ("is the instanced path actually beating the MeshRenderer
+        /// path?") had no way to be asked at runtime.
+        ///
+        ///   prismpath          report the current path + population
+        ///   prismpath off      force the legacy MeshRenderer path
+        ///   prismpath on       force the instanced BatchRendererGroup path
+        ///   prismpath auto     drop the override, back to the PrismRenderConfig asset
+        ///
+        /// SetRuntimeOverride alone gates only entity CREATION, so every prism already
+        /// holding a companion entity would keep drawing through it and the A/B would
+        /// compare the two paths on an empty population. The whole live population is
+        /// therefore re-synced through Prism.ResyncRenderPathForDiagnostics, and the
+        /// command reports how many prisms moved so a silent no-op is impossible to
+        /// mistake for a measurement.
+        /// </summary>
+        string HandlePrismPathCommand(string[] args)
+        {
+            if (args.Length == 0)
+                return $"prism render path: {PrismRenderService.StatusLine()} " +
+                       $"| usage: {PathCommandName} on | off | auto";
+
+            switch (args[0].ToLowerInvariant())
+            {
+                case "on":   PrismRenderService.SetRuntimeOverride(true);  break;
+                case "off":  PrismRenderService.SetRuntimeOverride(false); break;
+                case "auto": PrismRenderService.SetRuntimeOverride(null);  break;
+                default:     return $"usage: {PathCommandName} on | off | auto";
+            }
+
+            int moved = ResyncLivePrisms();
+            return $"prism render path: {PrismRenderService.StatusLine()} ({moved:N0} live prisms re-synced)";
+        }
+
+        /// <summary>
+        /// Moves every live prism onto whichever path is now enabled. Inactive prisms are
+        /// included (FindObjectsInactive.Include) because the pools are full of them and a
+        /// pooled prism carries its companion entity across a release — leave those behind
+        /// and the next Get() re-introduces the path the toggle just switched off.
+        /// Debug tool fired from a console command; the object scan is not a hot path.
+        /// </summary>
+        static int ResyncLivePrisms()
+        {
+            var prisms = FindObjectsByType<Prism>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < prisms.Length; i++)
+                prisms[i].ResyncRenderPathForDiagnostics();
+            return prisms.Length;
+        }
+
         (Mesh mesh, Material material) FindDonor()
         {
             // Debug tool, fired from a console command — the object scan is not a hot path.
@@ -134,6 +188,7 @@ namespace CosmicShore.ECS
         {
             DiagnosticsHUD.UnregisterCommand(CommandName);
             DiagnosticsHUD.UnregisterCommand("prismcolors");
+            DiagnosticsHUD.UnregisterCommand(PathCommandName);
             DiagnosticsHUD.ClearStats(StatsSection);
             if (_instance == this) _instance = null;
         }

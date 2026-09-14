@@ -75,8 +75,10 @@ namespace CosmicShore.ECS
     /// All methods are main-thread only and no-op safely when the ECS world or
     /// EntitiesGraphicsSystem is unavailable (tool scenes, headless, teardown),
     /// so the legacy MeshRenderer path remains a complete fallback at runtime
-    /// via the master toggle (PrismRenderConfigSO, runtime override, or the
-    /// PRISM_RENDER_TOGGLE in the benchmark workflow).
+    /// via the master toggle (PrismRenderConfigSO, SetRuntimeOverride, or the
+    /// DiagnosticsHUD console command "prismpath on | off | auto", which also
+    /// re-syncs the LIVE population — SetRuntimeOverride alone gates only entity
+    /// CREATION, so prisms that already own one keep drawing through it).
     /// </summary>
     public static class PrismRenderService
     {
