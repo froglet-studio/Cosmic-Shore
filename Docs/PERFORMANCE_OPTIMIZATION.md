@@ -58,7 +58,196 @@ retired architecture; do not resurrect a per-frame pass to "optimize" anything.
 
 ---
 
-## 0. SESSION HANDOFF (2026-07-15) — next session starts here
+## 0. SESSION HANDOFF (2026-09-14) — START HERE
+
+> **The `§0.x` ladder is session order, newest first — it is not strictly
+> chronological.** §0.6 (2026-07-15) predates §0.2–§0.5, which are later FMOD
+> and platform sessions that landed on other branches. Read §0 for what is
+> true now; read the rest for what each session bought.
+
+**Tree:** this doc describes **`1f160508f`** (`origin/bleeding-edge`). The three
+findings below were re-verified against it on 2026-09-14, and their line numbers
+are this tree's.
+
+**The boot world has been measured once — see §0.8. It is CPU-bound, the typical
+frame is inside the 60 FPS budget, and the problem is a periodic SPIKE, not
+throughput.** Everything below §1 still predates enabling Burst and has not been
+re-confirmed at the current population; treat the rest of the log as history and
+§0.8 as the only measured statement about the boot world today.
+
+> ### ⚠ Where the measurements came from, and what that costs you
+>
+> **§0.8, `PERFORMANCE_CAPTURE_RECIPES.md` and `MEMORY_AUDIT.md` were authored on
+> `origin/Ys-merge-2026-09-07` (`78a95259f`), a branch that was ABANDONED** — its
+> merge resolved 76 conflicts and was never compiled in an editor. The perf record
+> was recovered onto bleeding-edge on 2026-09-14 because it was otherwise reachable
+> only from a dead branch.
+>
+> **So every number in §0.8 and in `MEMORY_AUDIT.md` §2 was measured on a tree this
+> one is not.** They remain the only measurements that exist, and the *shape* of the
+> finding (CPU-bound; a flora-birth spike; 1,080 allocating coroutines) is
+> structural and re-verified here. But do not quote an absolute millisecond or
+> megabyte figure as a statement about `1f160508f` — re-take it. The captures are
+> also editor-side; see §0.8's last subsection.
+>
+> General rule this is an instance of: **a measurement is a statement about the tree
+> it was taken on.** Stamp the SHA with the number, or the number outlives the tree
+> and starts lying.
+
+### The three things to fix first
+
+Ordered by value for cost. Full analysis in §4. **All three re-verified on
+`1f160508f`, 2026-09-14.**
+
+1. **Four O(total prisms) main-thread sync scans, not one.** Every AOE and
+   shell path ends in `job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete()`
+   over *every registered slot*: `PrismSpatialIndex.cs:1945` (shell contacts),
+   `:2097` (explosion), `:2182` (cone), `:2254` (cylinder). There is **no "any
+   prism is shielded" early-out anywhere** — zero matches for
+   `IsAnyShielded|_shieldedCount|anyShielded` in runtime code — so a 63k-prism
+   cell with no shielded mass in reach still pays a full parallel scan plus a
+   hard sync, every frame. Already instrumented (`ShellContact.Query`).
+2. **`AstroLeagueBall.ProcessPrismInteractions`** — up to 8 `QuerySphere` calls
+   per ball per tick on every peer (`:1139`), with a `List<Prism>.Contains` in
+   the inner loop, in a **2,577-line file carrying zero `ProfilerMarker`s**. It
+   needs instrumentation before it will show up as anything but unattributed
+   main-thread time.
+3. **`HijackController.ChooseRail` is phase-locked across every AI** —
+   `float nextRetarget = 0f` (`:217`) for all of them, so every AI re-censuses on
+   the same frame forever. Watch for a periodic hitch rather than a steady cost.
+
+### What is owed, and by whom
+
+| | |
+|---|---|
+| **Captures A–D** | yours, on Windows — recipes in `Docs/PERFORMANCE_CAPTURE_RECIPES.md`. **Re-take A against `1f160508f`**; the existing numbers describe `78a95259f`. |
+| **A development-build capture** | yours — §0.8's frame carries `EditorOnly [CheckAllowDestructionRecursive]` and `TextureStreamingManager.RemoveRenderer`, so its absolute milliseconds are not ship numbers. This gates §4 Tier 0a. |
+| **`ECOSIM_PROBE`** | claimed absent from every `scriptingDefineSymbols` line, so the live collider count is unreadable until you add it. **Not re-verified on this tree** — check before Capture A. |
+| **The Unity CI job** | claimed skipped in all three workflows (`unity-ci.yml`, `bleeding-edge-guard.yml`, `build-branch-ci.yml`) because `UNITY_RUNNER_LABEL` is unset — so not even the edit-mode suite runs on PRs. **Not re-verified on this tree.** |
+
+**Take Capture A before acting on §4's ordering.** If the boot world reads
+GPU-bound at 8 minutes, all of Tier 1 is the wrong lever and the answer is
+overdraw/shader work — which §0.6 suspected (capture #4: 2.16M verts,
+transparent-prism overdraw) and never confirmed. One HUD row settles it.
+
+---
+
+## 0.8 CAPTURE A + A2 — the boot world, MEASURED (2026-09-10)
+
+Two spike frames captured off a 10-minute Menu_Main sit (Lattice boot world), in
+the editor with the standalone profiler. **This is the first measurement of this
+cell at any density, and it changes the shape of the problem.**
+
+### The verdict: CPU-bound, and it is a SPIKE problem, not a throughput problem
+
+The Highlights panel reads **CPU 14.919 ms / GPU 11.379 ms** against a 60 FPS
+target, annotated *"You are within your target frame time."* So:
+
+- **CPU-bound** — the §4 CPU backlog is aimed at the right half. GPU has ~3.5 ms
+  of headroom.
+- **The typical frame is fine.** What hurts is a periodic spike, which is what
+  the user reported ("happens in short intervals") and what both captures caught.
+
+Optimising steady-state cost is therefore the *wrong* target here. Find what
+bursts.
+
+### What bursts: a flora BIRTH
+
+Capture A2 (frame 3613) expanded `UpdateScene` and named it outright:
+
+| Row | Calls | Time | GC |
+|---|---|---|---|
+| PlayerLoop | 3 | 13.93 ms | 27.6 KB |
+| └ UpdateScene | 1 | 10.30 ms | 27.6 KB |
+| &nbsp;&nbsp;└ **Update.ScriptRunDelayedDynamicFrameRate** (coroutines) | 1 | **2.83 ms** | **18.2 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ **`AssembledFlora.GrowCoroutine()`** | **10** | **1.78 ms** | **17.0 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ **`Instantiate`** | **4** | **1.22 ms** | **11.2 KB** |
+| &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;└ `GC.Alloc` | 88 | — | 5.5 KB |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ `Prism.CreateBlockCoroutine()` | 16 | 0.75 ms | 0 B |
+| &nbsp;&nbsp;&nbsp;&nbsp;└ `AssembledFlora.ShieldRegenCoroutine()` | 2 | 0.19 ms | 1.0 KB |
+| &nbsp;&nbsp;└ Update.ScriptRunBehaviourUpdate | 1 | 2.12 ms | 7.5 KB |
+
+**Four `Instantiate` calls cost 1.22 ms and 11.2 KB in one frame — 7% of the
+frame from four object creations.**
+
+### Root cause: growth was budgeted, BIRTH never was
+
+`AssembledFlora.cs:405` already carries the comment describing this exact spike
+and the fix that was applied to it:
+
+> *"Decision pass only: pick branches, claim sites, enqueue. The heavyweight
+> Instantiate work (prism + spindle prefab per child — the multi-ms
+> AssembledFlora.GrowCoroutine burst in captures) drains at maxSpawnsPerFrame
+> in Update."*
+
+That fix is real and it works — the growth path enqueues into `pendingSpawns`
+and drains under a budget. **Reproduction was never routed through it.** Both
+birth entry points still call `Instantiate` synchronously inside the coroutine
+tick:
+
+- `Flora.TryReproduce()` → `SpawnOffspring()` → `CellLifeSpawnerBase.SpawnFlora`
+  (per-plant quota path), and
+- `Flora.TrySpawnOneOffspring()` (the lattice colony's one-birth-per-cycle path,
+  `Docs/ECOSYSTEM.md` §32.7), called from `AssembledFlora.TickOctagonPopulation`
+  / `TickTilePopulation` / `TickStarPopulation` —
+
+and all of those run at the **top of `Flora.Grow()`**, which is called from
+`Flora.GrowCoroutine`. One birth is a chain of instantiates — the plant prefab,
+its heart crystal (`LifeFormCrystal`, two `Object.Instantiate` sites), its first
+spindle (`SpindleTracker.Instantiate`) — which is why the profiler shows four
+with four `Instantiate.Awake` calls.
+
+**Why it reads as a periodic spike:** the Lattice cell runs **12 colonies**, each
+birthing one daughter per fauna-wave period — **5 s in the boot world** — so a
+birth lands roughly every 0.4 s, and each one is ~1.2 ms in a single frame.
+
+> **One birth, not four.** `CellLifeSpawnerBase.SpawnFlora` does exactly one
+> `Instantiate`; the rest of the chain is the child's own `Initialize` creating
+> its heart crystal and first spindle. The single `Activate`/`Deactivate` pair in
+> the trace is the tell. This matters because it rules out the obvious fix —
+> see the correction in §4 Tier 0a before designing anything.
+
+### Second finding: 1,080 infinite coroutines, allocating
+
+`Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
+— **one live coroutine per plant, allocating a fresh `WaitForSeconds` every
+tick**. At 1,080 plants that is the bulk of the 5.5 KB `GC.Alloc` (88 calls) and
+a standing contributor to the 18.2 KB the coroutine group allocates per frame.
+The `WaitForSeconds` is trivially cacheable per plant.
+
+### A correction to the previous reading (Capture A, first screenshot)
+
+Capture A's tree showed `UpdateScene` 13.66 ms with `Update.ScriptRunBehaviourUpdate`
+3.62 ms expanded beneath it, and this doc inferred *"~10 ms is not scripts"*.
+**That was wrong** — `Update.ScriptRunDelayedDynamicFrameRate` was simply
+collapsed. In A2 coroutines are 2.83 ms and behaviours 2.12 ms, so scripts are
+roughly half of `UpdateScene`, not a third of it. *An inference from a partly
+expanded profiler tree is a guess about the rows you did not open.*
+
+### Two rows that are NOT the problem (asked about, measured, demoted)
+
+- **`AssembledFlora.Update()` × 1080** — the Lattice's documented 1,080 plants at
+  cap. The body early-outs on line 1; **0.28 µs/call**, essentially pure dispatch.
+- **`JustRotate.Update()` × 540** — exactly half of 1,080 because only
+  `CrystalCharge` and `CrystalTime` carry the component (`CrystalMass` and
+  `CrystalSpace` do not — an authoring accident, not a design). 0.58 ms.
+
+Together **0.88 ms of a 34.92 ms frame — 2.5%.** Real, worth fixing eventually,
+and not the spike. They move to §4 Tier 2. The one non-obvious cost there is that
+`JustRotate` shares its GameObject with an enabled trigger `SphereCollider`, so
+540 collider transforms are dirtied per frame for a rotation a sphere is
+invariant to; that lands in `UpdateScene`, not in the row it is billed to.
+
+### Editor tax in the numbers
+
+`EditorOnly [CheckAllowDestructionRecursive]` and
+`TextureStreamingManager.RemoveRenderer` both appear in the A2 trace. These are
+editor-only costs — **re-take against a development build before treating the
+absolute milliseconds as ship numbers**; the ratios and the burst shape hold.
+
+---
+
+## 0.6 FRAME-COST SESSION (2026-07-15) — superseded as the handoff; still the regression record
 
 Branch `claude/domainvolumeindicator-perf-spike-cp32yn` — everything
 committed and pushed, tree clean. Session focus: the "10 ms
@@ -125,6 +314,13 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 | Biggest remaining script row | — | `CapsuleMembrane.UpdateMatrices` 0.70 ms |
 
 ### TODO NEXT SESSION — in priority order
+
+> **Superseded 2026-09-09 — see §0 and §4.** Item 1 (the Burst-ON capture) was
+> **never taken**, which is why every number in this doc still predates Burst;
+> it survives as Capture A/B in `Docs/PERFORMANCE_CAPTURE_RECIPES.md`. Item 3
+> (the rendering frontier) is unchanged and is still the question Capture A
+> answers first. Item 4's carried-over backlog is now §4 Tier 3. The list is
+> kept below as the record of what that session expected to find.
 
 1. **Burst-ON verification capture** (user just enabled it). Expected:
    `LodClassifyJob` ~0.1–0.3 ms; `CellVolumeSumJob` ~0.15 ms on a worker
@@ -1066,6 +1262,10 @@ fix spreads or de-allocates the same work.
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 | `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
+| `bec6338c` | `AIPilot` + `AICinematicBehavior` `enabled` mirrors their active state — zero `Update()` dispatch on vessels not actively AI-driven (was every vessel, every frame, early-out); `StartAIPilot` idempotent (repeated activations stacked duplicate ability/seek coroutines forever); `StopAIPilot` uses `StopAllCoroutines` (the old `StopCoroutine(new enumerator)` was a no-op) |
+| `6e899993` | Non-local players' `InputController.enabled = false` at pair-init — AI/remote copies no longer poll the physical devices per frame nor raise duplicate global button events |
+| `ce11eaf6` | `R_VesselActionHandler` button-event subscription idempotent — init + input-unpause both subscribed, so every button press dispatched its actions (and RPC round-trip) twice |
+| `e75569d3` | Drift/AI-pilot trims: `StopAIPilot` early-out when already stopped (per-turn-start native calls skipped); `ToggleAIPilot` cinematic stop via `TryGetComponent` (no component instantiated just to no-op stop it); trigger rest-remap short-circuits to identity on healthy pads; `DriftAudioController` self-disables on class-gate fail (was a permanent early-out `Update`) |
 | `f0ddfc21` | Batched pure-entity debris: prism-death explosion VFX spawn as ONE `em.Instantiate(prototype, N)` batch per frame (`PrismDebris` + `PrismRenderService.SpawnExplosionDebrisBatch`), retire via time-ordered sweep into ONE batched destroy — no GameObject/pool/per-effect timer per death, full 5s duration always. Root cause it kills: a lifted-throttle 30³ blast put 2,408 deaths in one frame, all pool misses, `PrismExplosion.OnDisable` alone 1,863 ms (its `EnabledInstances` `List.Remove` O(n) scan — now O(1) swap-remove on both effect classes for the surviving pooled uses). `PrismDebris.Drain`/`.Sweep` markers. Remainder (implosion port, `AOE.ResolveDamage` 0.43 ms/kill self + per-kill `PrismEventData` alloc): `Docs/PRISM_CLOCK_FOLLOWUP_PROMPTS.md` Prompt 9 |
 
 ---
@@ -1104,39 +1304,257 @@ fix spreads or de-allocates the same work.
 
 ## 3. Instrumentation inventory
 
-- **Profiler markers**: `PrismScaleManager.Process`,
-  `MaterialStateManager.Process`, `CapsuleMembrane.UpdateMatrices`,
-  `CapsuleMembrane.RenderMeshInstanced`. (The generic
-  `AdaptiveAnimationManager.Update` row collapses all manager instances — the
-  per-manager markers are what attribute cost.)
-- **Markers added this session**: `Prism.Create.Visibility` / `.SOAPRaise` /
-  `.SpatialBind` (creation-tick split — Visibility was the verdict);
-  `PrismRender.VisibilityFlush` (batched entity toggles, LateUpdate);
-  `PoolRefill.<prefab>` (maintenance refills — async request only),
-  `PoolMiss.<prefab>` (on-demand Get miss = buffer empty on the caller's
-  frame), `PoolActivate.<prefab>` (pooled Get `SetActive(true)` — first-Awake
-  vs OnEnable attribution).
+**Re-counted against `1f160508f` on 2026-09-14: 53 distinct static markers across
+19 files**, plus one dynamic family. (It was 48 across 18 when this section was
+written against `78a95259f` on 2026-09-09 — the inventory drifts, so re-count it
+rather than quoting the number.) Reproduce it with a **multiline-aware** walk: a
+single-line `grep -c "ProfilerMarker("` finds **4**, because declarations are
+target-typed `new("…")` split across lines. An earlier version of this section named
+three classes deleted in the D2 pass (2026-08-02) — anyone following it was
+profiling rows that cannot appear.
+
+**Reproduce this list** with a multiline-aware walk for
+`ProfilerMarker <name> = new(…)` and `new ProfilerMarker(…)`. A single-line
+`grep -c "ProfilerMarker("` finds **4** and is useless here: nearly every
+declaration is target-typed `new("…")`, and several span two lines.
+
+### The markers, by file
+
+| File (under `Assets/_Scripts/`) | Markers |
+|---|---|
+| `Controller/Managers/PrismSpatialIndex.cs` | `AOE.BurstJob.Schedule`, `AOE.ProcessExplosion`, `AOE.ResolveDamage`, `Cell.VolumeSum.Snapshot`, `ShellContact.Query` |
+| `Controller/Vessel/Prism.cs` | `Prism.Create.SOAPRaise`, `.SpatialBind`, `.Visibility`; `Prism.Destroy.EffectRequest`, `.SFX`, `.Setup`, `.SpatialIndex`, `.StatRaise` |
+| `UI/ObjectiveIndicator.cs` | `ObjectiveIndicator.LateUpdate`, `.PositionAtEdge`, `.ResolveCamera`, `.TryGetObjective`, `.UpdateDistance`, `.WorldToScreen` |
+| `Utility/Effects/PrismDebris.cs` | `PrismDebris.Drain`, `.DrainImplosions`, `.RefreshConvergence`, `.Sweep`, `.SweepImplosions` |
+| `Controller/ImpactEffects/Impactors/ExplosionImpactor.cs` | `AOE.OnTriggerEnter`, `AOE.OnTriggerEnter.Skipped`, `AOE.ProcessBatchFrame` |
+| `Controller/Managers/PrismShellContactManager.cs` | `ShellContact.Build`, `ShellContact.Dispatch` |
+| `Controller/Managers/PrismColliderLodManager.cs` | `LOD.Drain`, `LOD.Sweep` |
+| `Utility/Effects/PrismShieldShatter.cs` | `PrismShieldShatter.Drain`, `.Sweep` |
+| `UI/DomainVolumeIndicator.cs` | `DomainVolumeIndicator.Push`, `.Sample` |
+| `Game/Environment/CapsuleMembrane.cs` | `CapsuleMembrane.RenderMeshInstanced`, `.UpdateMatrices` |
+| `Controller/Arcade/{Hijack,Rampage,SkimRace}ObjectiveProvider.cs` | `<Provider>.RecomputeTarget`, `<Provider>.TryGetObjective` (×3 providers) |
+| `Controller/Environment/Cell.cs` | `Cell.VolumeSum` |
+| `Controller/ECS/Rendering/PrismRenderService.cs` | `PrismRender.VisibilityFlush` |
+| `Controller/Projectiles/AOEExplosion.cs` | `AOE.ExplodeAsync.Frame` |
+| `Controller/Vessel/ForcefieldCrackleController.cs` | `ForcefieldCrackleController.Update` |
+| `Utility/PerformanceBenchmark/PerformanceBenchmarkRunner.cs` | `CosmicShore.BenchmarkCapture` |
+
+**Plus one dynamic family:** `ImpactorBase.cs:238` mints
+`<Type>.AcceptImpactee` per impactor subclass at runtime, so those rows appear
+by concrete impactor name and are not greppable as literals. The shell tier
+routes through the same lazy marker, so these cover shell dispatches too.
+
+### The blind spots (what carries NO marker)
+
+This is the actionable half. Deep Profile inflates the frame ~10× and changes
+what you are measuring, so an uninstrumented system is effectively invisible in
+a real capture:
+
+`AstroLeagueBall` (2,577 lines — see §4 Tier 1 #4) · `HijackController` ·
+`WormFauna` · `AssembledFlora` and every assembler · the Wanderway belt · the
+occlusion corridor · Echo Sight · `ConnectingPanelController` · all the new
+mode controllers.
+
+### Tooling (all of it self-installing)
+
+Every piece below installs itself via `[RuntimeInitializeOnLoadMethod]` +
+`DontDestroyOnLoad` — **none is scene-wired**, so a capture works in any scene
+and does not depend on which controller a scene carries:
+
+- **`DiagnosticsHUD`** — F7 panel, F6 cycles sections, F5 resets. Carries the
+  CPU/GPU **Bound** verdict (`FrameBoundness.Classify`) and the Memory section.
+- **`BenchmarkBuildAutoRunner`** — headless `-csmbench` self-runner, writes JSON
+  with cross-commit diffing (`BenchmarkComparison`, `MetricDeltaTests`).
+- **`EcosystemPerfProbe`** — the `[ECOSIM]` line. **Gated behind the
+  `ECOSIM_PROBE` define, which is not set in any `scriptingDefineSymbols`
+  entry** — add it temporarily to read live collider counts.
+- **`PerformanceBenchmarkRunner`** — FrogletTools ▸ Performance Benchmark
+  (tabs, score/hints, sweep, Load Time Insights). See `BENCHMARK_TOOL.md`.
+
 - **Console commands**: `prisms N` / `prisms off` / `prismcolors`.
 - **Collider-LOD telemetry**: `PrismColliderLodManager.LastNearCount` /
   `LastLiveCount`.
-- **Shell-contact tier markers**: `ShellContact.Build` (per-frame probe
-  rebuild from live collider poses), `ShellContact.Query` (the synchronous
-  Burst `ShellContactQueryJob` schedule+complete inside
-  `PrismSpatialIndex.CollectShellContacts`), `ShellContact.Dispatch`
-  (enter/exit resolution + `AcceptImpactee` effect chains). Per-impactor
-  `<Type>.AcceptImpactee` markers cover shell dispatches too (the shell tier
-  routes through the same lazy marker). A/B switch:
-  `PrismShellContactManager.ForceLegacyBoxInteraction` reverts shielded
-  interaction to the authored box trigger (see Docs/SPATIAL_INDEX.md § Shell
-  view).
-- **Benchmark tool**: `Assets/_Scripts/Utility/PerformanceBenchmark/`
-  (`BENCHMARK_TOOL.md` — tabs, score/hints, sweep).
+- **A/B switch**: `PrismShellContactManager.ForceLegacyBoxInteraction` reverts
+  shielded interaction to the authored box trigger (`Docs/SPATIAL_INDEX.md`
+  § Shell view).
 - **Raycast audit tool**: `FrogletTools > Interface > Raycast Target Audit`
-  (`Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`).
+  (`Assets/_Scripts/Editor/RaycastTargetAuditTool.cs`) — shipped `669b5ef8`,
+  **never run**.
+- **Dead weight, flagged not fixed**: `SandboxBenchmarkController.cs` has zero
+  scene references since upstream re-derived the benchmark scene, and
+  `BenchmarkSceneLauncher`'s class docstring still names it.
 
 ---
 
 ## 4. Backlog (priority order = value for cost)
+
+> **Re-prioritized 2026-09-09 against `78a95259f`; Tier 1's three findings
+> re-verified against `1f160508f` on 2026-09-14 (see §0 for this tree's line
+> numbers — the ones quoted inside Tier 1 below are `78a95259f`'s).** The Tier 1/2/3 list below
+> is the live backlog. The numbered **Task 1–10** entries that follow it are the
+> historical record — several describe classes deleted in the D2 pass, and
+> `Task 6`'s adaptive frame-interval machinery no longer exists. Keep them for
+> the root-cause analyses and the shipped-fix provenance; do not pick work from
+> them without checking it against this list first. Every `file:line` below was
+> re-verified on the merged tree on 2026-09-09.
+
+### Tier 0 — MEASURED, and it is the spike (2026-09-10, §0.8)
+
+Capture A/A2 says the boot world is **CPU-bound with a healthy typical frame and
+a periodic ~1.2 ms burst**. Everything in Tier 1 below is steady-state work and
+was ranked before any of this was measured — **do Tier 0 first.**
+
+**0a. A flora BIRTH instantiates synchronously inside `Flora.GrowCoroutine`.**
+1.22 ms and 11.2 KB across 4 `Instantiate` calls in one frame, roughly every
+0.4 s (12 Lattice colonies × one daughter per 5 s fauna-wave period). The GROWTH
+path was already fixed this way — `AssembledFlora.Grow()` is a decision pass that
+enqueues into `pendingSpawns`, drained under `maxSpawnsPerFrame` in `Update`
+(`AssembledFlora.cs:405`, and the comment there names this exact burst). The BIRTH
+path never joined it: `Flora.TryReproduce()` and `Flora.TrySpawnOneOffspring()`
+both call `SpawnOffspring()` → `CellLifeSpawnerBase.SpawnFlora` inline, and both
+run at the top of `Grow()`.
+**⚠ CORRECTED 2026-09-10, before implementing.** The first version of this entry
+proposed a cell-wide per-frame **birth budget**, on the assumption that the four
+`Instantiate` calls were four coinciding births. **They are not.** Reading the
+spawn path: `CellLifeSpawnerBase.SpawnFlora` does exactly ONE `Instantiate`, and
+the child's own `Initialize` then instantiates its heart crystal
+(`LifeFormCrystal`, `Object.Instantiate`) and its first spindle
+(`SpindleTracker.Instantiate`). The single `GameObject.Activate` /
+`GameObject.Deactivate` pair in the trace confirms one staged object, not four.
+So **4 `Instantiate` ≈ ONE birth ≈ 1.22 ms**, and *a budget that spreads births
+across frames cannot reduce the cost of a single birth.* Seeded prisms are not in
+this count — they are pooled (`Prism.CreateBlockCoroutine`, 16 calls, **0 B**).
+
+**What a budget is still worth, stated honestly:** the 12 colonies run
+independent staggered clocks (`PopulationCycleStagger`), which spreads them but
+does not make coincidence impossible. A cell-wide 1-birth-per-frame gate bounds
+the *worst* case (two colonies landing together) and is cheap and safe — it
+declines *before* `TryResolveOffspringPlacement`, so it cannot strand a
+`PrismSpatialIndex` reservation, and the code already documents the correct
+response to a declined birth ("a plant blocked by the cap … stays ARMED").
+It is production gating, which `§0` permits; nothing is culled. But it is a
+**bound, not the fix.**
+
+**The actual single-birth cost needs a number before anyone designs for it.**
+Every prefab involved is tiny — `GyroidFlora` 6 GameObjects, `SchwarzPFlora` and
+`QuasicrystalFlora` 2 each, the crystals 2–5 — so **0.3 ms per `Instantiate` is
+implausible for a player build**, and the same trace carries
+`EditorOnly [CheckAllowDestructionRecursive]` and
+`TextureStreamingManager.RemoveRenderer`. **Re-take this frame in a development
+build first.** If the cost survives, the candidates in order are: pool the heart
+crystal (4 prefabs, one per lifeform birth *and* per death drop — the project
+already pools prisms and projectiles), then `InstantiateAsync` (already the
+established pattern here for pool refills, commit `75828ff0`). Do not pool or
+async-ify anything on the strength of an editor measurement.
+
+**Either way this is an ecology change: route it through the `/ecology` skill.**
+
+**0b. 1,080 infinite coroutines, each allocating per tick.**
+`Flora.GrowCoroutine` is `while (true) { … yield return new WaitForSeconds(growPeriod); }`
+— one live coroutine per plant, minting a `WaitForSeconds` every tick. Cache it
+per plant (`growPeriod` is stable between re-tunes). Cheap, contained, and it is
+a real share of the 18.2 KB/frame the coroutine group allocates.
+
+---
+
+### Tier 1 — structural, capture-gated
+
+> **Ranked before Capture A existed.** Item 3's premise is now partly measured
+> (§0.8); the rest is still unconfirmed at 63k prisms. Re-read §0.8 before
+> starting any of it.
+
+**1. Four O(total prisms) main-thread sync scans, not one.**
+`PrismSpatialIndex.cs` ends four separate paths in
+`job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete()`, each scanning
+*every registered slot*:
+
+| Line | Path |
+|---|---|
+| `:1934` | `CollectShellContacts` |
+| `:2086` | `ProcessExplosionFrame` |
+| `:2171` | `ProcessExplosionConeFrame` |
+| `:2238` | `ProcessExplosionCylinderFrame` |
+
+The shell path's only gates are `s_owners.Count == 0`
+(`PrismShellContactManager.cs:194`) and `_probeCount == 0` (`:203`). **There is
+no "any prism is shielded" early-out anywhere** — zero matches for
+`IsAnyShielded|_shieldedCount|anyShielded` across the file — so a 63k-prism
+cell with no shielded mass in reach still pays a full parallel scan plus a hard
+sync, every frame. Plus one GC alloc per contact *enter* and a full dictionary
+walk per frame in `SweepStalePairs` (`:389`).
+
+Instrumented (`ShellContact.Query`), so **Capture A reads the cost directly**
+before anything is changed. The cheap first move is the missing early-out; the
+structural one is dropping the sync.
+
+**2. The collider budget is unbounded by design.** `ColliderBudget` has **zero
+references** in `Assets/_Scripts` — it is still only a proposal in
+`ECOSYSTEM_MASTERPLAN.md:118` / `:425` (target ≤ ~1,500 per cell). The only
+governor is `PrismColliderLodManager`'s radius LOD, which caps *toggles per
+frame* but places no ceiling on how many prisms may be near. Meanwhile the
+**Lattice cell is the boot world** (`CellConfigs[0]`, `Docs/ECOSYSTEM.md:6253`)
+at **~63,360 prism colliders + 1,080 always-on heart colliders at cap**
+(`:6172`, `:6236`), reached by growth over ~7 minutes. The doc's central
+contract — *every per-frame system must be O(near/active), not O(population)* —
+has never been tested at that density. Capture A decides whether this is theory
+or the frame.
+
+**3. `Prism.Create.Visibility` and the pool path at 2.5× population.** Both
+fixed and confirmed at 11–25k prisms, neither re-measured at 63k. Markers exist.
+
+**4. `AstroLeagueBall.ProcessPrismInteractions` — NEW, the top find in the
+merged code.** `AstroLeagueBall.cs:1131` takes up to **8** samples along the
+segment the ball just moved and runs `PrismSpatialIndex.QuerySphere` at each
+(`:1139`) — *per ball, per tick, on every peer* — and inside that loop does
+`List<Prism>.Contains` on `_shieldPoppedThisVisit` (`:1172`, `:1194`; a plain
+`List` at `:303`). Scarab Scramble allows **4 loose balls per cell**
+(`cellBallLimit`). Compounding it, `Update()` (`:1908`) gates only on
+`settings == null || ballRenderer == null` — **not on `n_Hidden`** — so
+embedded and hidden balls still run the full tick. 2,577 lines, **zero
+markers**: add those first, then the `HashSet` and the `n_Hidden` gate, which
+are both cheap and independent of the sample-count question.
+
+**5. `HijackController.ChooseRail` is phase-locked across every AI — NEW.**
+`nextRetarget` is initialised to `0f` for every AI (`:217`) and advanced by a
+fixed `aiRetargetSeconds = 3f` (`:248`), so **all AIs re-choose on the same
+frame, forever**. Each call censuses every burr's hostile mass and walks every
+rail's whole `TrailList` in `OwnFractionOf` (`:346-388`) — on the order of 10k
+prism reads per AI, ×4 AIs, in one frame every 3 s. The fix is a per-AI phase
+offset: costs nothing, changes no behaviour, removes the whole spike.
+
+### Tier 2 — wrong by inspection, no capture needed
+
+All re-verified on the merged tree 2026-09-09.
+
+| Where | What |
+|---|---|
+| `AstroLeagueBall.cs:1194` | `List.Contains` in the inner prism loop (Tier 1 #4 — the `List` → `HashSet` half stands alone). |
+| `ConnectingPanelController.cs:175-193` | **NEW.** Per frame during arena load: `new string('.', dots)` plus interpolated `:P0` / `:N0` / `:F0` strings written to `statusText.text` → a TMP mesh regeneration every frame, on the one screen whose entire job is to not stutter. Gate on a changed value. |
+| `WormFauna.cs:356` → `Prism.cs` | `SyncBodyPrismsToIndex` resyncs every body prism of every segment of every worm **every frame** (bucket re-file + shell transform + render transform), plus a `RemoveAll` sweep and a danger-prism centroid walk. Opt-in creature, so bounded — the pattern is the concern. |
+| `Boid.cs:627` | Allocating `Physics.OverlapSphere` + per-hit `GetComponent`, inside a `while (…) yield return null` loop — per frame per boid, potentially forever if hits exist but none qualifies. **The last non-NonAlloc `Physics.Overlap*` in runtime code.** |
+| `CurrentScore.cs:20` | Per frame: a sorted-list copy + a closure + two `FirstOrDefault` predicates + `ToString("F0")`. |
+| `GunTransformer.cs:28` | `GetComponentsInChildren<Transform>()` inside `Update`. |
+| `TurnMonitorController.cs:73` | `.Any(` boxes the `List<T>` struct enumerator — one alloc per frame, every match. |
+| `AssembledFlora.cs:248` | **CONFIRMED by Capture A2 — see Tier 0a, which supersedes this row.** `maxSpawnsPerFrame` is **per-plant**, not a shared pool → N growing plants do N × 2 `Instantiate` in one frame. `PrismTrailBuilder.cs:188` is the correct global-ms-budget pattern to copy. |
+| `JustRotate.cs` on `CrystalCharge` / `CrystalTime` | 540 `Update` calls (0.58 ms) in the boot world — half of the 1,080 hearts, because only those two of the four elemental crystal prefabs carry the component. It shares its GameObject with an enabled trigger `SphereCollider`, so 540 collider transforms are dirtied per frame **for a rotation a sphere is invariant to**; that cost lands in `UpdateScene`, not in the row it is billed to. Fix is a shader-clock rotation on the model child — planned, blast radius measured (5 shaders, 3 shared with domain/shielded crystals and flora spindles), must be opt-in per material. |
+| `AssembledFlora.Update()` × 1080 | 0.30 ms — the body early-outs on line 1, so this is **0.28 µs/call of pure Unity dispatch**. Only worth removing as part of a central tick; note `enabled = false` is NOT available (`AssembledFlora : Flora : LifeForm`, and `LifeForm.OnEnable/OnDisable` own a SOAP subscription). |
+| `Microscene.cs:60` | `TransportBudgetMsPerFrame = 3f` is per call, `MaxConcurrentArrivals = 3` → up to 9 ms/frame. |
+| `EchoSightActionExecutor.cs` | Method-group → `Func<>` conversion allocates a delegate per frame per engaged Dolphin. |
+
+**Closed by upstream:** `ScarabHullBuilder` — the `LateUpdate → GetComponent` +
+`sharedMaterials` allocation is gone; it now uses
+`GetSharedMaterials(_materialWatchScratch)` and only touches `sharedMaterials`
+on the changed path (`:309-324`). Do not re-file it.
+
+### Tier 3 — carried over, still open
+
+- **Task 2 raycast audit** — tool shipped `669b5ef8`, **never run**, est.
+  ~0.4 ms/frame.
+- **Task 3 shader warmup** — **0 variants recorded**, so the warmup is a no-op.
+- **Task 8 graphics hygiene** — 2 dead Always-Included shader entries, 7
+  force-included graphs to audit.
+- **Density partitioning in-editor validation** — shipped in two phases, never
+  validated; the open item is production swarm reach.
 
 ### Task 1 — PrismScaleManager growth-wave cost ✔ SHIPPED (2026-07-08)
 
@@ -1750,3 +2168,68 @@ not compiler, at the time of the merge).
 | 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`MaelstromController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |
 | 2026-08-21 (hang diagnosis round) | Five Crash Detector reports diagnosed the "Run managed callbacks" freeze: 4/5 hangs strike in EDIT mode 20-60s after play exit — the recompile-triggered reload — with **FMOD Live Update enabled for playInEditor** (the attribution's item-5 never-recovers precondition); 1/5 was a per-contact **NRE storm** from `SkimmerImpactor` (legacy `Components/Skimmer.prefab` predates the container refactor; six nesting vessels ran a null container). Shipped: FMOD play-in-editor Live Update OFF; `PlayModeReloadGuard` (assembly-reload lock held for all of play mode — no mid-play reloads, project-wide); `ImpactorBase.IsEffectContainerMissing` + `RunEffectIsolated` wired into Skimmer/Vessel impactors (impact dispatch can no longer storm, closing the open item); `HostConnectionService` no longer disposes awaited semaphores; and the Crash Detector watchdog now writes a live **HangDump-*.dmp** minidump when the main thread is unresponsive past 45s and keeps running through `beforeAssemblyReload`, so the next hang arrives with the deadlock's stack instead of a guess. |
 | 2026-08-21 (mechanism pinned) | A live screenshot of the recurrence ("Running managed callbacks — Executing PlayModeStateChanged Callback (EnteredEditMode), busy 02:15", after a GitHub Desktop branch switch during play) corrected the round-3 framing: the freeze is INSIDE the play-exit `playModeStateChanged` dispatch, and the blocker is FMOD — `RuntimeManager.HandlePlayModeStateChange → Destroy()` releasing the Studio system synchronously at `EnteredEditMode` (and `EditorUtils.HandleOnPausedModeChanged`'s synchronous calls for the pause/unpause reports), blocking forever on a wedged Live Update socket. Live-Update-off (round 3) stands as the cure; two amplifiers fixed: the Soap `playModeStateChanged` re-subscription leak (832 assets × every reimport round — patched on bleeding-edge 2026-08-20; pulling IS part of the fix) and `PlayModeSOProtector`, whose diff-based restore mass-overwrote a mid-play branch switch — it now restores only what an `OnWillSaveAssets` ledger proves UNITY saved during play, making it structurally blind to git. `Assets/_Recovery/` gitignored; the "Recovering Scene Backups" prompt is a symptom of killed sessions — answer No. |
+| 2026-09-09 (re-baseline against the merge) | Re-based the whole doc on `78a95259f` (`origin/Ys-merge-2026-09-07`) — 563 upstream commits merged into the party/presence line, bringing **197 new `.cs` files** no perf survey had read. **§0** is a new handoff (the old one is retitled §0.6; its "TODO NEXT SESSION" is marked superseded rather than deleted, since item 1 — the Burst-ON capture — was never taken and is why every number below §1 still predates Burst). **§3 rewritten**: the old list named three classes deleted in the D2 pass, so anyone following it profiled rows that cannot appear; the real inventory is **48 static markers across 18 files** plus the dynamic `<Type>.AcceptImpactee` family, now listed per file with a note that a single-line `grep` finds 4 because declarations are target-typed. Added the zero-marker blind-spot list and recorded that every benchmark tool self-installs (so a capture is scene-independent). **§4 re-prioritized**: Tier 1 corrected from one `_highWaterMark` sync scan to **four** (`PrismSpatialIndex.cs:1934/2086/2171/2238`) with no shielded early-out anywhere; two new Tier 1 items from the merged code (`AstroLeagueBall.ProcessPrismInteractions` — up to 8 `QuerySphere` per ball per tick plus `List.Contains` in the inner loop, zero markers; `HijackController.ChooseRail` phase-locked across every AI by `nextRetarget = 0f`); `ConnectingPanelController`'s per-frame TMP churn added to Tier 2; `ScarabHullBuilder` **removed — fixed upstream**. **§7 new**: cross-doc TODO/test reconciliation, and the finding that `PRISM_ANIMATION.md` §5 is nearly closed (C6 remainder + D3, converging with C11/C13b playtests on one Prompt 11 sitting). Two companion docs added: `PERFORMANCE_CAPTURE_RECIPES.md`, `MEMORY_AUDIT.md`. Also fixed, as its own commit: two duplicate-GUID scene copies the merge restore left behind. Docs-only otherwise — no `/verify-unity` run, and none required. |
+
+---
+| 2026-09-10 (Capture A + A2) | **First measurement of the Lattice boot world, ever.** Verdict: **CPU-bound** (CPU 14.919 ms / GPU 11.379 ms, inside the 60 FPS target) and the problem is a **periodic spike, not throughput**. Named the spike: a flora BIRTH instantiates synchronously inside `Flora.GrowCoroutine` — 4 `Instantiate` = 1.22 ms + 11.2 KB in one frame, roughly every 0.4 s (12 Lattice colonies x one daughter per 5 s fauna-wave period). The GROWTH path was already budgeted (`AssembledFlora.cs:405`); `TryReproduce` / `TrySpawnOneOffspring` never joined it. Also found 1,080 infinite `GrowCoroutine`s each minting a `WaitForSeconds` per tick. Added §0.8 and §4 Tier 0; confirmed Tier 2's `AssembledFlora.cs:248` per-plant-budget finding by measurement. **Corrected a wrong inference from Capture A**: 'about 10 ms of UpdateScene is not scripts' was an artefact of `ScriptRunDelayedDynamicFrameRate` being collapsed in the tree — coroutines are 2.83 ms and behaviours 2.12 ms, so scripts are ~half of UpdateScene. Demoted `JustRotate` (540 calls) and `AssembledFlora.Update` (1080 calls) to Tier 2: together 0.88 ms of a 34.92 ms frame. Caveat: captures are editor-side (`EditorOnly [CheckAllowDestructionRecursive]`, `TextureStreamingManager.RemoveRenderer` both present) — re-take against a dev build before quoting absolute ms. |
+| 2026-09-14 (perf record recovered onto bleeding-edge) | **The entire performance record above was reachable only from an ABANDONED branch.** `origin/Ys-merge-2026-09-07` (`63fe6bc3a`) held §0.8, §4 Tier 0, `PERFORMANCE_CAPTURE_RECIPES.md` and `MEMORY_AUDIT.md`; its merge resolved 76 conflicts, was never compiled in an editor, and the branch was dropped. The merge-base of the two branches **is** bleeding-edge's own tip, so nothing on bleeding-edge was newer — the docs had simply never landed. Recovered all three onto `1f160508f`, docs-only: **3 docs + 3 `CLAUDE.md` index rows**, out of a 152-file / +11,565-line branch diff whose performance payload was 2 code files and these docs (~0.5% of its insertions). Deliberately NOT taken: the Party/Presence line (20 files, +2,590, LOCKED and MPPM-gated), `Bootstrap.unity`, `AppManager.cs`, 10 arcade controllers, and `UNITY_VERIFICATION_CHECKLIST.md`'s +210 entry lines (bleeding-edge's own newer banner says new work goes to `Docs/QA/` instead). **Corrections made while porting, not copies:** §0 rewritten to describe `1f160508f` (its abandoned-merge action items dropped, its measurement provenance stamped); Tier 1's three findings re-verified here and their line numbers updated (`PrismSpatialIndex.cs:1934/2086/2171/2238` → **`1945/2097/2182/2254`**; `AstroLeagueBall` 2,577 lines / 0 markers and `HijackController`'s `nextRetarget = 0f` both exact); §3's inventory **re-counted 48/18 → 53/19**. Two of the recipes' tree-claims re-verified as still true (one `BenchmarkStressTest.unity`; `ScarabHullBuilder`'s `GetSharedMaterials` fix). **The lesson worth keeping: a measurement is a statement about the tree it was taken on** — every ported number is now SHA-stamped, because an unstamped one outlives its tree and starts lying. Nothing re-measured; no `/verify-unity` run and none required for docs. |
+
+## 7. TODO & test reconciliation (2026-09-09)
+
+One table replacing a search across six trackers that disagreed with each other.
+Verified against `78a95259f`; **not re-verified against `1f160508f`** — treat each
+row as a claim to re-check.
+
+### Cross-doc status
+
+| Doc | State on the merged tree |
+|---|---|
+| `Docs/QA/QA_BACKLOG.md` (+ `DEV_TASKS.md`, `RESULTS/`, `ARCHIVE.md`) | The **live** QA loop. `Docs/UNITY_VERIFICATION_CHECKLIST.md` is its superseded hand-maintained predecessor — treat QA_BACKLOG as authoritative and rank its items by perf relevance. |
+| `PRISM_ANIMATION.md` §5 | **Nearly closed, and in far better shape than earlier drafts of this doc claimed.** C7, C9, C11, C12, C13b, C15 and D4 all landed 2026-08-25; C15 and C4/C10 closed *by deletion*. Open: **C6** (☐ remainder — devour/graze suction + boid husk shrink; the parent-scale sub-item went moot when `ECOSYSTEM.md` §40 deleted `GrowToScale` with lifeform levels) and **D3** (◐ — the in-editor verification pass; Validate Clock Wiring and the pause check are done, the rest is not). |
+| `PRISM_CLOCK_FOLLOWUP_PROMPTS.md` **Prompt 11** | **The single highest-leverage item across these docs.** C11 and C13b are both marked *"Playtest outstanding → Prompt 11"*, and D3 is the same editor session. Three rows, one sitting. If you are in the editor for captures anyway, folding it in is close to free. |
+| `PRISM_EXPLOSION_BENCHMARK.md` | Protocol and tooling shipped, **runs never executed**. The `AOE.ResolveDamage` 0.43 ms/death figure is flagged stale by the doc itself. |
+| `PRISM_ECS_MIGRATION.md` | Checkpoints A–C "done, needs in-editor verification"; D gated on it. **Also carries a factual error to correct:** it reads as if the instanced path were off, but the shipped `Resources/PrismRenderConfig.asset` has `useInstancedRendering: 1`. That is the asset, not the C# field default, and it changes what a capture means. |
+| `ECOSYSTEM_MASTERPLAN.md` §4 | Still lists *"recycle the oldest/farthest prism when the budget is exceeded"* as a collider-budget lever. **That is the passive-removal cheat the ecology invariants reject** (`Docs/ECOSYSTEM.md` §0). Flagged stale so no future perf session reads it as licence; the `ColliderBudget` proposal itself (`:118`, `:425`) is still unbuilt and is §4 Tier 1 #2. |
+
+### Contradictions to resolve
+
+- PhaseThresholds re-baseline is `[x] DONE` in one doc and "pending" in four
+  places in another.
+- C7 is `☐` in one doc and closed in the other.
+- *"`PrismType.Grow` is dead"* is asserted in three docs and two code comments
+  and has been **false since 2026-08-09**.
+- Two checklist rows reference deleted classes and a DiagnosticsHUD "Animators"
+  section that no longer exists — which **blocks D3 from ever completing** as
+  written.
+
+### Test posture (recorded, not changed)
+
+**116** `*Tests.cs` files under an `Editor/` folder. The one outside
+(`System/Playfab/PlayFabTests/PlayFabCatalogTests.cs`) carries its own asmdef
+and is correct — not a build risk.
+
+Good perf law-gates already exist: `PrismOcclusionCoverageTests`,
+`SpeedTunnelLawTests`, `PrismSpatialIndexTests`, `ShieldShellMathTests`,
+`PrismShieldMorphTests`, `FrameBoundnessTests`.
+
+**Gaps:** nothing covers `PrismColliderLodManager` (classification / hysteresis
+/ cull budget), `Cell.VolumeSum` accumulation, or `PrismRenderService`
+visibility batching.
+
+### The structural gap: there is no automated performance gate
+
+CI runs static checks only. The Unity job is skipped in **all three** workflows
+unless `UNITY_RUNNER_LABEL` is set (`unity-ci.yml:225`,
+`bleeding-edge-guard.yml:179`, `build-branch-ci.yml:52`) — and it is not — so
+not even the edit-mode suite runs on PRs.
+
+Everything a gate needs already exists: `BenchmarkBuildAutoRunner` (`-csmbench`),
+`BenchmarkComparison`, `MetricDeltaTests`, `EcosystemPerfProbe`'s `[ECOSIM]`
+line, `Tools/ecosim/ecosim.py`.
+
+**And the shape is already proven in this repo.** An earlier draft of this doc
+claimed `PrismClockWiringValidator` was a `[MenuItem]` with zero callers; that
+is no longer true — upstream added `PrismClockWiringTests.cs`, an edit-mode CI
+gate over that validator's `Specs`. So a menu tool *can* be turned into a gate,
+and one already has been. Write the perf gate up as a proposal with a cost
+estimate modelled on it; do not build it this pass.
