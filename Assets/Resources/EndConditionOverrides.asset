@@ -27,6 +27,8 @@ MonoBehaviour:
   switchbackGateTarget: 20
   hijackStealTarget: 750
   drumfireSeconds: 75
+  frictionCrystalCount: 0
+  frictionSeconds: 0
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -42,4 +44,6 @@ MonoBehaviour:
   switchbackGateTargetBuild: 20
   hijackStealTargetBuild: 750
   drumfireSecondsBuild: 75
+  frictionCrystalCountBuild: 0
+  frictionSecondsBuild: 0
   autoRestoreBuildValuesBeforeBuild: 1

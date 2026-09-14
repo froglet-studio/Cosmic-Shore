@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
         [Test]
         public void GetDomainsByGameModes_WildlifeBlitz_AlwaysReturnsJade()
         {
-            var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerWildlifeBlitzGame);
+            var domain = DomainAssigner.GetDomainsByGameModes(GameModes.CoOpWildlifeBlitz);
 
             Assert.AreEqual(Domains.Jade, domain);
         }

@@ -257,6 +257,8 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnButton1AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton2AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
+            public event Action<IRoundStats> OnLivesChanged;
+            public event Action<IRoundStats> OnEliminatedChanged;
 #pragma warning restore CS0067
 
             public string Name { get; set; }
@@ -292,6 +294,8 @@ namespace CosmicShore.Tests
             public int DebuffHitsLanded { get; set; }
             public int CombatPoints { get; set; }
             public int SwitchesThreaded { get; set; }
+            public int Lives { get; set; }
+            public bool IsEliminated { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }

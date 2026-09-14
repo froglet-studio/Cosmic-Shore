@@ -49,6 +49,8 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
         event Action<IRoundStats> OnSwitchesThreadedChanged;
+        event Action<IRoundStats> OnLivesChanged;
+        event Action<IRoundStats> OnEliminatedChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -155,6 +157,21 @@ namespace CosmicShore.Data
         /// </summary>
         int SwitchesThreaded { get; set; }
 
+        /// <summary>
+        /// Lives remaining before elimination - Friction's hunter-pressure mechanic.
+        /// Set to the mode's starting-lives count at run start (FrictionController) and
+        /// decremented by VesselLifeLossByHunterSkimmerEffectSO on each hunter hit.
+        /// Zero in every other mode.
+        /// </summary>
+        int Lives { get; set; }
+
+        /// <summary>
+        /// True once Lives has reached 0 - the player is out for the rest of the run.
+        /// Read by AllHumansEliminatedTurnMonitor to end a Friction turn early when every
+        /// human player is eliminated. False in every other mode.
+        /// </summary>
+        bool IsEliminated { get; set; }
+
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
         float RightStickAbilityActiveTime { get; set; }
@@ -206,6 +223,8 @@ namespace CosmicShore.Data
             DebuffHitsLanded = 0;
             CombatPoints = 0;
             SwitchesThreaded = 0;
+            Lives = 0;
+            IsEliminated = false;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

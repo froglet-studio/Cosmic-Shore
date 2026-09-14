@@ -16,8 +16,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Friction: Skim-Race-style crystal collection under Joust-style hunter pressure.
     /// Reach the per-intensity crystal target before time runs out or every human player
-    /// is eliminated by the Rhino hunters. Modeled directly on HexRaceController for the
+    /// is eliminated by the Rhino hunters. Modeled directly on SkimRaceController for the
     /// track/seed/replay plumbing, with hunter-elimination and storm-hazard handling added.
+    ///
+    /// Scoring is delegated to <see cref="FrictionScoringRuleSO"/> like every other mode: the
+    /// rule owns the end condition the crystal monitor polls, the "remaining" readout the goal
+    /// stack draws, the per-player scores and the ranked results the scoreboard shows. This
+    /// controller only decides WHICH of the three end conditions fired and replicates that.
     /// </summary>
     public class FrictionController : MultiplayerDomainGamesController
     {
@@ -53,6 +58,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Shared with TurnMonitorController — reused here to check *why* the turn ended, since all three Friction monitors OR-trigger the same OnTurnEndedCustom callback.")]
         [SerializeField] AllHumansEliminatedTurnMonitor allHumansEliminatedMonitor;
 
+        [Header("Scoring")]
+        [Tooltip("Drag FrictionScoringRule.asset - the per-mode scoring strategy (end condition, " +
+                 "remaining readout, scores, results, reveal). Published to GameDataSO.ScoringRule " +
+                 "on spawn; the shared crystal monitor and the HUD goal stack both read it there.")]
+        [SerializeField] ScoringRuleSO rule;
+
         [Header("Hunter Activation")]
         [Tooltip("At or below this intensity the hunters hold position when the countdown ends and only start pursuing once a human collects their first crystal. Above it they engage immediately. Set to 0 to always engage immediately.")]
         [SerializeField] int hunterDormancyMaxIntensity = 2;
@@ -72,8 +83,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// How the run finished. Server-authoritative, replicated to every client by
-        /// <see cref="SyncFinalResults_ClientRpc"/>. Read by FrictionEndGameController to
-        /// pick the VICTORY / DEFEAT / no-winner headline.
+        /// <see cref="SyncFinalResults_ClientRpc"/>. The end-game headline itself comes from
+        /// <see cref="FrictionScoringRuleSO.BuildReveal"/> off replicated GameDataSO state;
+        /// this is the controller's own record of the cause (the Rhino unlock gates on it).
         /// </summary>
         public FrictionOutcome Outcome => _outcome;
 
@@ -92,6 +104,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _matchEnded = false;
@@ -317,59 +330,56 @@ namespace CosmicShore.Gameplay
             base.OnTurnEndedCustom();
             if (!IsServer || _matchEnded) return;
 
-            int target = ResolveCrystalTarget();
-            var winner = gameData.RoundStatsList.FirstOrDefault(s => s.CrystalsCollected >= target);
-
-            if (winner != null)
+            // Domain-aggregated, like SkimRace: the first active domain whose summed crystals
+            // reach the target wins together. The hunters are Blue - never an active domain -
+            // so a crystal one clips in passing cannot win for anyone.
+            if (rule.IsObjectiveReached(gameData, out var winningDomain))
             {
-                HandleWin(winner, target);
+                HandleWin(winningDomain);
                 return;
             }
 
             // Re-use the same monitor the TurnMonitorController already runs, rather than
             // duplicating its human-vs-AI RoundStats query here.
             bool allEliminated = allHumansEliminatedMonitor && allHumansEliminatedMonitor.CheckForEndOfTurn();
-            HandleLoss(target, allEliminated);
+            HandleLoss(allEliminated);
         }
 
-        int ResolveCrystalTarget() => gameData.CrystalTargetCount > 0 ? gameData.CrystalTargetCount : 10;
-
-        void HandleWin(IRoundStats winner, int target)
+        void HandleWin(Domains winningDomain)
         {
             _matchEnded = true;
             _reachedTarget = true;
-            Domains winningDomain = winner.Domain;
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
 
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                stats.Score = stats.Domain == winningDomain
-                    ? finishTime
-                    : 10000f + Mathf.Max(0, target - stats.CrystalsCollected);
-            }
+            // Representative winner name = best individual contributor on the winning domain.
+            // Display strings only - VICTORY/DEFEAT attribution is by WinnerDomain.
+            var winnerRep = gameData.RoundStatsList
+                .Where(s => s.Domain == winningDomain)
+                .OrderByDescending(s => s.CrystalsCollected)
+                .FirstOrDefault();
+
+            // Winning domain = finish time; everyone else = crystals-left sentinel (the rule owns it).
+            rule.AssignScores(gameData, winningDomain, finishTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalResultsSnapshot(winner.Name, winningDomain, FrictionOutcome.TargetReached);
+            SyncFinalResultsSnapshot(winnerRep?.Name ?? "", winningDomain, FrictionOutcome.TargetReached);
         }
 
-        void HandleLoss(int target, bool allEliminated)
+        void HandleLoss(bool allEliminated)
         {
             _matchEnded = true;
-            CSDebug.Log($"[FrictionController] Run ended without reaching target={target}. Cause={(allEliminated ? "all humans eliminated" : "time expired")}");
-
-            // No one reached the target — score everyone by crystals remaining (golf: lower
-            // is better), whether the cause was the clock or total elimination.
-            foreach (var stats in gameData.RoundStatsList)
-                stats.Score = 10000f + Mathf.Max(0, target - stats.CrystalsCollected);
-
-            gameData.SortRoundStats(UseGolfRules);
-            gameData.CalculateDomainStats(UseGolfRules);
+            CSDebug.Log($"[FrictionController] Run ended without reaching target={rule.TargetFor(gameData)}. Cause={(allEliminated ? "all humans eliminated" : "time expired")}");
 
             // No winner: Domains.Blue is the project's "no team" sentinel, so end-game screens
             // (and anything else reading WinnerDomain) correctly report that nobody won rather
-            // than crowning whoever happened to rank first. Ranking is unaffected — Scoreboard
-            // derives placement from RoundStatsList/DomainStatsList, not from WinnerName.
+            // than crowning whoever happened to rank first. With no player on Blue the rule
+            // hands the whole roster the crystals-left sentinel, so the scoreboard still ranks
+            // teams by how close they got.
+            rule.AssignScores(gameData, Domains.Blue, 0f);
+
+            gameData.SortRoundStats(UseGolfRules);
+            gameData.CalculateDomainStats(UseGolfRules);
             SyncFinalResultsSnapshot("", Domains.Blue,
                 allEliminated ? FrictionOutcome.AllHumansEliminated : FrictionOutcome.TimeExpired);
         }
@@ -430,6 +440,7 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(rule.BuildResults(gameData));
 
             TryAwardRhinoUnlock();
 

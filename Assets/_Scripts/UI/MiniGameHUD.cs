@@ -853,26 +853,45 @@ namespace CosmicShore.UI
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
                                rule != null ? rule.TargetFor(gameData) : 0,
-                               ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+                               ObjectiveChannelCarriesSeconds());
         }
 
-        TurnMonitor _turnMonitor;
+        TurnMonitor[] _turnMonitors;
 
         /// <summary>
-        /// The scene's turn monitor, resolved once. There is exactly one per gameplay scene - the
-        /// same assumption (and the same one-shot lookup) EnsureReadyButtonWiring already makes for
-        /// the controller, and this runs twice a turn rather than per frame.
-        ///
-        /// It is asked ONE question: does its display string mean seconds or a count? The string
-        /// cannot answer that itself - every monitor publishes a bare integer - and Cellular Duel
-        /// multiplayer has both a time monitor and a scoring rule, so guessing renders a countdown
-        /// as an objective count.
+        /// The scene's turn monitors, resolved once (the same one-shot lookup
+        /// EnsureReadyButtonWiring makes for the controller; this runs twice a turn, not per
+        /// frame). Most scenes have exactly one. Friction has three - crystal target, clock,
+        /// all-humans-eliminated - which is why this is a set rather than the first hit:
+        /// FindAnyObjectByType returned whichever it liked, and when that was the clock the
+        /// crystal count was drawn as a time.
         /// </summary>
-        TurnMonitor ResolveTurnMonitor()
+        TurnMonitor[] ResolveTurnMonitors()
         {
-            if (_turnMonitor == null)
-                _turnMonitor = FindAnyObjectByType<TurnMonitor>(FindObjectsInactive.Include);
-            return _turnMonitor;
+            if (_turnMonitors == null)
+                _turnMonitors = FindObjectsByType<TurnMonitor>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            return _turnMonitors;
+        }
+
+        /// <summary>
+        /// Does the string on the objective channel mean SECONDS? The string cannot answer that
+        /// itself - every monitor publishes a bare integer - and Cellular Duel multiplayer has
+        /// both a time monitor and a scoring rule, so guessing renders a countdown as an
+        /// objective count. Only the monitors know, so only they say: it is a clock only when
+        /// EVERY monitor in the scene is a time monitor (the six clock-only modes). A scene with
+        /// any count monitor keeps the count as the objective, and its clock - if it has one -
+        /// reaches the goal stack on the separate clock channel as the secondary row.
+        /// </summary>
+        bool ObjectiveChannelCarriesSeconds()
+        {
+            var monitors = ResolveTurnMonitors();
+            if (monitors == null || monitors.Length == 0) return false;
+
+            for (int i = 0; i < monitors.Length; i++)
+                if (monitors[i] != null && !monitors[i].PublishesSecondsRemaining)
+                    return false;
+
+            return true;
         }
 
         private void HideLocalVesselHUD()

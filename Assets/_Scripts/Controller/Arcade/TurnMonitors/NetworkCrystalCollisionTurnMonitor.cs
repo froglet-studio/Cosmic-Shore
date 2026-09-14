@@ -40,8 +40,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void OnCrystalTargetSynced(int previousValue, int newValue)
         {
-            if (newValue > 0)
-                gameData.CrystalTargetCount = newValue;
+            if (newValue <= 0) return;
+            gameData.CrystalTargetCount = newValue;
+            // The readout raised at StartMonitor was computed against the fallback target;
+            // now that the real one has landed, publish the remaining count against it.
+            UpdateCrystalsRemainingUI();
         }
 
         public override void StartMonitor()
@@ -63,6 +66,13 @@ namespace CosmicShore.Gameplay
 
             _netCrystalCollisions.Value = CrystalCollisions;
             gameData.CrystalTargetCount = CrystalCollisions;
+
+            // base.StartMonitor already raised the remaining count, but against the rule's
+            // FALLBACK target (CrystalTargetCount was still 0). Raise it again against the
+            // target just published, or the goal row shows the fallback's arithmetic until the
+            // first crystal is collected - invisible where fallback ~= target (SkimRace's 39),
+            // a wrong "0/10" at intensity 3 in Friction.
+            UpdateCrystalsRemainingUI();
 
             CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
                       $"(intensity={gameData.SelectedIntensity.Value})");

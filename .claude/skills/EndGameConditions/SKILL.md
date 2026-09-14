@@ -39,6 +39,16 @@ at runtime via `Resources.Load`.
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
     wins the shuffle. NOT a per-turn count — it ends the whole tournament.
+  - **Friction** — TWO numbers, because the mode has two authored end conditions (the third,
+    every human eliminated, has no count). `0` on the crystal count → the scene's
+    `FrictionCrystalTurnMonitor.crystalTargetByIntensity` (10/20/30/50), its auto-calc — the
+    per-intensity analogue of SkimRace's `waypoints × laps`, and like `lapsPerIntensity` a
+    legitimate per-scene INPUT to the auto-calc, not the resolved count. `0` on the run seconds →
+    `FrictionTimeBasedTurnMonitor.timeLimitByIntensity` (120/150/180/210). A number on either
+    flattens all four intensities onto it. Both resolve at `StartMonitor`; the crystal count goes
+    through the same `GetCrystalCount(mode, autoCalc)` switch as SkimRace and Crystal Capture,
+    and the auto-calc is the `protected virtual CrystalCollisionTurnMonitor.ComputeAutoCalcCount()`
+    Friction overrides.
 - The setting **applies wherever the mode runs** — standalone arcade *and* inside a Maelstrom.
 - SkimRace and Crystal Capture share the same monitor class, so the SO keys the count by
   `gameData.GameMode` (SkimRace 33 vs Scurry 35). Keep that switch in
@@ -82,7 +92,8 @@ networking.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-SkimRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`.
+SkimRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`, Rampage `2000`,
+Friction crystals `0` (auto, per intensity), Friction seconds `0` (auto, per intensity).
 
 ## Live vs. Build values (don't ship a test config)
 

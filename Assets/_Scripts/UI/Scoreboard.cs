@@ -336,7 +336,11 @@ namespace CosmicShore.UI
             // produce results (freestyle, DuelForCell) fall back to the legacy path.
             if (gameData.Results is { Count: > 0 })
             {
-                var winnerDomain = gameData.WinnerDomain != Domains.Blue
+                // Blue from a mode that DECLARES its winner (requireDeclaredWinner) means nobody
+                // won - Friction's clock or its hunters ended the run - and the banner must say
+                // GAME OVER rather than crown whoever ranked first. Everywhere else Blue only
+                // means "the mode never set it", and the top-ranked domain is the winner.
+                var winnerDomain = gameData.WinnerDomain != Domains.Blue || requireDeclaredWinner
                     ? gameData.WinnerDomain
                     : gameData.Results[0].Domain;
                 SetBannerForDomain(winnerDomain);

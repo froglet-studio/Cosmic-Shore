@@ -158,6 +158,19 @@ namespace CosmicShore.ScriptableObjects
                  "0 = default (75).")]
         [Min(0)] public int drumfireSeconds = 75;
 
+        [Tooltip("Friction: crystals a DOMAIN must collect between them to win (race to N), summed " +
+                 "across that domain's players - the Rhino hunters are Blue and never count. " +
+                 "0 = auto: the per-intensity table on the scene's FrictionCrystalTurnMonitor " +
+                 "(10/20/30/50), so a number here flattens all four intensities onto one target.")]
+        [Min(0)] public int frictionCrystalCount = 0;
+
+        [Tooltip("Friction: how many SECONDS a run lasts before the clock ends it with NO winner " +
+                 "- the second of the mode's two end conditions (the first is the crystal " +
+                 "target above; total elimination by the hunters is the third). 0 = auto: the " +
+                 "per-intensity table on the scene's FrictionTimeBasedTurnMonitor " +
+                 "(120/150/180/210).")]
+        [Min(0)] public int frictionSeconds = 0;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -175,6 +188,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int hijackStealTargetBuild = 750;
 
         [Min(0)] public int drumfireSecondsBuild = 75;
+        [Min(0)] public int frictionCrystalCountBuild = 0;
+        [Min(0)] public int frictionSecondsBuild = 0;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -205,6 +220,7 @@ namespace CosmicShore.ScriptableObjects
             {
                 GameModes.SkimRace => hexRaceCrystalCount,
                 GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.Friction => frictionCrystalCount,
                 _ => 0,
             };
             return configured > 0 ? configured : autoCalcFallback;
@@ -309,6 +325,15 @@ namespace CosmicShore.ScriptableObjects
             drumfireSeconds > 0 ? drumfireSeconds : DefaultDrumfireSeconds;
 
         /// <summary>
+        /// Friction run length in seconds: the configured value when &gt; 0, otherwise
+        /// <paramref name="autoCalcFallback"/> - the scene monitor's per-intensity entry. Unlike
+        /// Drumfire's clock there is no flat default here, because a flat number is exactly
+        /// what the intensity table exists to avoid; 0 means "let intensity decide".
+        /// </summary>
+        public int GetFrictionSeconds(int autoCalcFallback) =>
+            frictionSeconds > 0 ? frictionSeconds : autoCalcFallback;
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -330,6 +355,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
+                GameModes.Friction                  => frictionCrystalCount,
                 _                                   => 0,
             };
 
@@ -352,7 +378,9 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
-            drumfireSeconds == drumfireSecondsBuild;
+            drumfireSeconds == drumfireSecondsBuild &&
+            frictionCrystalCount == frictionCrystalCountBuild &&
+            frictionSeconds == frictionSecondsBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -372,6 +400,8 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget = switchbackGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             drumfireSeconds = drumfireSecondsBuild;
+            frictionCrystalCount = frictionCrystalCountBuild;
+            frictionSeconds = frictionSecondsBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -392,6 +422,8 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTargetBuild = switchbackGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             drumfireSecondsBuild = drumfireSeconds;
+            frictionCrystalCountBuild = frictionCrystalCount;
+            frictionSecondsBuild = frictionSeconds;
         }
     }
 }

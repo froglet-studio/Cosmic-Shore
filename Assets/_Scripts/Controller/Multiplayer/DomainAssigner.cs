@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Considering in co-op modes, all local users will be assigned to Jade Domain
-            return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.MultiplayerWildlifeBlitzGame ? Domains.Jade : GetAvailableDomain();
+            return gameMode is GameModes.Multiplayer2v2CoOpVsAI or GameModes.CoOpWildlifeBlitz ? Domains.Jade : GetAvailableDomain();
         }
 
         /// <summary>

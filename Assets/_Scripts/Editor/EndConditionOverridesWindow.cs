@@ -99,7 +99,11 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultHijackStealTarget + ".\n" +
                 "  \u2022 Drumfire: match length in SECONDS, not a target - the mode ends on the " +
                 "clock and is scored on volume destroyed, so its rule never reaches an " +
-                "objective. Default " + EndConditionOverridesSO.DefaultDrumfireSeconds + ".",
+                "objective. Default " + EndConditionOverridesSO.DefaultDrumfireSeconds + ".\n" +
+                "  \u2022 Friction: crystals a DOMAIN must collect to win (race to N), and the " +
+                "SECONDS the clock allows before the run ends with no winner. 0 on either keeps " +
+                "the scene monitors' per-intensity tables (10/20/30/50 crystals, 120/150/180/210 " +
+                "seconds); a number flattens all four intensities onto it.",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -121,6 +125,8 @@ namespace CosmicShore.Editor
             int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int hj  = Mathf.Max(0, EditorGUILayout.IntField("Hijack - Steal Target", _config.hijackStealTarget));
             int dr  = Mathf.Max(0, EditorGUILayout.IntField("Drumfire - Match Seconds", _config.drumfireSeconds));
+            int fc  = Mathf.Max(0, EditorGUILayout.IntField("Friction - Crystal Count", _config.frictionCrystalCount));
+            int fs  = Mathf.Max(0, EditorGUILayout.IntField("Friction - Run Seconds", _config.frictionSeconds));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -139,6 +145,8 @@ namespace CosmicShore.Editor
                     _config.switchbackGateTarget = sw;
                     _config.hijackStealTarget = hj;
                     _config.drumfireSeconds = dr;
+                    _config.frictionCrystalCount = fc;
+                    _config.frictionSeconds = fs;
                 });
 
             EditorGUILayout.Space();
@@ -159,6 +167,8 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Hijack", hj > 0 ? hj.ToString() : EndConditionOverridesSO.DefaultHijackStealTarget + " (default)");
             EditorGUILayout.LabelField("Drumfire", (dr > 0 ? dr.ToString() : EndConditionOverridesSO.DefaultDrumfireSeconds + " (default)") + " seconds");
+            EditorGUILayout.LabelField("Friction - crystals", fc > 0 ? fc.ToString() : "auto (per intensity: 10/20/30/50)");
+            EditorGUILayout.LabelField("Friction - seconds", fs > 0 ? fs + " seconds" : "auto (per intensity: 120/150/180/210)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -202,7 +212,9 @@ namespace CosmicShore.Editor
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
                    "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Hijack: " + Fmt(_config.hijackStealTargetBuild, "default " + EndConditionOverridesSO.DefaultHijackStealTarget) + "\n" +
-                   "Drumfire: " + Fmt(_config.drumfireSecondsBuild, "default " + EndConditionOverridesSO.DefaultDrumfireSeconds) + " seconds";
+                   "Drumfire: " + Fmt(_config.drumfireSecondsBuild, "default " + EndConditionOverridesSO.DefaultDrumfireSeconds) + " seconds\n" +
+                   "Friction crystals: " + Fmt(_config.frictionCrystalCountBuild, "auto, per intensity") + "\n" +
+                   "Friction seconds: " + Fmt(_config.frictionSecondsBuild, "auto, per intensity");
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

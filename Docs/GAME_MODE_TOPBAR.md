@@ -200,11 +200,18 @@ would render seconds as an objective count in **Cellular Duel multiplayer**, whi
 time monitor *and* a scoring rule with a target.
 
 So the monitor declares it: **`TurnMonitor.PublishesSecondsRemaining`** (virtual, false;
-`TimeBasedTurnMonitor` overrides it true). `MiniGameHUD` resolves the scene's monitor once
-— the same one-shot lookup `EnsureReadyButtonWiring` already makes for the controller,
-twice a turn rather than per frame — and passes the answer to `GoalStack.SetObjective`.
-The clock row then formats the seconds as `m:ss`, gets the `Time remaining` label and no
-glyph, and shows no target and no hairline.
+`TimeBasedTurnMonitor` overrides it true). `MiniGameHUD` resolves the scene's monitors
+once — the same one-shot lookup `EnsureReadyButtonWiring` already makes for the
+controller, twice a turn rather than per frame — and passes the answer to
+`GoalStack.SetObjective`. The clock row then formats the seconds as `m:ss`, gets the
+`Time remaining` label and no glyph, and shows no target and no hairline.
+
+**It resolves ALL of the scene's monitors, not the first one it finds.** The first pass
+used `FindAnyObjectByType`, on the assumption that a scene has exactly one monitor. Friction
+has three (crystal target, clock, all-humans-eliminated), and whenever the arbitrary hit
+was the clock, the crystal count was formatted as a time. The objective channel is read as
+seconds only when EVERY monitor in the scene is a time monitor — the six clock-only scenes —
+so a scene with any count monitor keeps its count as the objective.
 
 A payload that is a count the stack cannot NAME (config not yet synced, or a rule with no
 target) draws **nothing** — an unlabelled number under a borrowed label is the thing the
@@ -221,13 +228,33 @@ invisible in every modern mode. `Tools/Build/author_goal_stack.py` does both, re
 its anchors by NAME and script guid rather than by literal fileID because the two
 canvases number everything differently.
 
-### 2.5 Known gap — secondary goals have no producer
+### 2.5 Secondary goals — the clock under an objective
 
 The stack authors **three** rows and the layout handles any number, but a
 `ScoringRuleSO` names exactly ONE objective: the one that ends the turn. Rows 2 and 3
-therefore ship INACTIVE and nothing fills them. `GoalStack.SetGoals(IReadOnlyList<GoalEntry>)`
-is the seam a mode-authored list plugs into — that list is the actual work, and it is
-not done here.
+ship INACTIVE until something fills them, and `GoalStack.SetGoals(IReadOnlyList<GoalEntry>)`
+remains the seam a fully mode-authored list would plug into.
+
+The first producer is the one case every mode with a time LIMIT needs: **a count objective
+with a clock under it.** Friction ends three ways — crystal target, clock, or every human
+eliminated — and one string channel cannot carry a count and a countdown. So its time
+monitor publishes on a SECOND SOAP channel, **`Resources/Channels/TurnClockChannel`**
+(a `ScriptableEventString`, found by `GoalStack` the way it finds the icon set — no
+per-scene HUD wiring), and the stack appends what arrives there as a quieter
+`Time remaining m:ss` row under the objective:
+
+```
+COLLECT CRYSTALS   12/30      <- objective channel, from FrictionCrystalTurnMonitor
+TIME REMAINING     1:42       <- clock channel, from FrictionTimeBasedTurnMonitor
+```
+
+The rules that keep it honest: the clock row is drawn only while the objective is a count
+(a scene whose clock IS the objective keeps publishing on the objective channel and never
+shows two clocks); it is blanked with the objective when the HUD clears the channel at turn
+end, so a stopped clock cannot outlive its turn; and it rides the monitor's existing
+`ClientRpc`, so clients see the server's countdown, not a local one. To give another mode a
+clock row, assign its `TimeBasedTurnMonitor`'s `onUpdateTurnMonitorDisplay` to the clock
+channel instead of the objective channel — nothing else changes.
 
 ### 2.5.1 The row is sized to the widest label it can be asked to show
 

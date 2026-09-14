@@ -24,6 +24,12 @@ namespace CosmicShore.Gameplay
     public class FrictionHunterVesselInitializer : ServerPlayerVesselInitializerWithAI
     {
         [Header("Friction Hunter Scaling")]
+        [Tooltip("The hull every hunter spawns in. Deliberately exempt from the card's Vessels " +
+                 "list — that list is the human's skim hull (Squirrel), and the hunters are the " +
+                 "mode's adversary, not its roster.")]
+        [SerializeField]
+        VesselClassType hunterVesselClass = VesselClassType.Rhino;
+
         [SerializeField]
         int[] hunterCountByIntensity = { 2, 3, 4, 5 };
 
@@ -70,6 +76,16 @@ namespace CosmicShore.Gameplay
             int intensity = Mathf.Clamp(gameData.SelectedIntensity.Value, 1, hunterSkillByIntensity.Length);
             return Mathf.Clamp01(hunterSkillByIntensity[intensity - 1]);
         }
+
+        /// <summary>
+        /// Hunters bypass the game-vessel clamp. ArcadeGameFriction.asset authors Squirrel alone
+        /// (the skim hull the human flies), and the base's default folds any AI class into that
+        /// list — which turned the authored Rhino templates into a pack of Squirrels the moment
+        /// the clamp landed. The hunter hull is a property of the MODE, so it is stated here once
+        /// rather than trusted to the scene's per-slot templates (which the base would also
+        /// fall back to a captain roll for, past the authored count).
+        /// </summary>
+        protected override VesselClassType ResolveAIVesselType(VesselClassType requested) => hunterVesselClass;
 
         // Tag the spawned instance only — the shared Rhino vessel prefab asset stays
         // untouched, so human Rhino players in every other mode are unaffected by

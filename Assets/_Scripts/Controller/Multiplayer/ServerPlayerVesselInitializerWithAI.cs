@@ -230,13 +230,9 @@ namespace CosmicShore.Gameplay
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
-                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
-                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
-                // mode's rules - so a scene authored with the wrong template, or a captain roll
-                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
-                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
-                // game authors no Vessels list.
-                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+                // Routed through the virtual: the default clamps into the game's Vessels list,
+                // Friction substitutes its hunter hull (see ResolveAIVesselType).
+                aiVesselType = ResolveAIVesselType(aiVesselType);
 
                 var aiName = tournament && i < tournamentData.MaelstromAINames.Count
                     ? tournamentData.MaelstromAINames[i]
@@ -317,6 +313,25 @@ namespace CosmicShore.Gameplay
         /// with selected intensity. Friction overrides this with its own 4-level curve.
         /// </summary>
         protected virtual float ResolveAISkill() => Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+
+        /// <summary>
+        /// The hull an AI actually spawns in, given the class its scene template (or the
+        /// captain roll) asked for. Default: clamped into the game's
+        /// <see cref="SO_ArcadeGame.Vessels"/> list — a restricted-vessel mode restricts its AI
+        /// OPPONENTS too, because neither the scene's aiInitializeDatas nor the captain roll
+        /// knows the mode's rules, so a scene authored with the wrong template (or a captain
+        /// roll in a single-vessel mode) would field opponents in an illegal hull. Same clamp
+        /// and same authority as the human path (ResolveSpawnVesselType); a no-op when the game
+        /// authors no Vessels list.
+        ///
+        /// Friction overrides it: its hunters are not opponents playing the mode's game in the
+        /// mode's hull, they are the mode's ADVERSARY — authored as Rhinos against a card whose
+        /// Vessels list is the Squirrel the human skims in. Left to the default, the clamp
+        /// silently turned the whole pack into Squirrels, which is how "the Rhino hunters aren't
+        /// there" shipped.
+        /// </summary>
+        protected virtual VesselClassType ResolveAIVesselType(VesselClassType requested) =>
+            gameData.ClampVesselToGame(requested);
 
         /// <summary>
         /// Called once an AI's vessel NetworkObject has spawned, before pair

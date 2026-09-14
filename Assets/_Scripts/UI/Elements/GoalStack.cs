@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -44,6 +45,12 @@ namespace CosmicShore.UI
     /// count on every monitor tick - so both are stored and the row is rebuilt from whichever
     /// lands. Neither is meaningful without the other, which is why the stack hides until it has
     /// both rather than showing half an objective.
+    ///
+    /// A mode with a count objective AND a time limit (Friction) has two things to say, and one
+    /// string cannot carry both. Its time monitor publishes on a SECOND channel -
+    /// <see cref="ClockChannelPath"/> - which the stack draws as a quieter clock row UNDER the
+    /// objective. The six clock-only modes are untouched: their monitor still publishes on the
+    /// objective channel and the clock stays the primary row, so nothing is drawn twice.
     /// </summary>
     public class GoalStack : MonoBehaviour
     {
@@ -54,6 +61,15 @@ namespace CosmicShore.UI
 
         [Tooltip("Leave empty to load Resources/ObjectiveIconSet.")]
         [SerializeField] ObjectiveIconSetSO iconSet;
+
+        [Tooltip("The channel a time monitor raises seconds-remaining on when the clock is NOT " +
+                 "the mode's objective (Friction). Leave empty to load " +
+                 "Resources/Channels/TurnClockChannel - no per-scene wiring, the same way the " +
+                 "icon set is found.")]
+        [SerializeField] ScriptableEventString clockChannel;
+
+        /// <summary>Resources path of the secondary clock channel.</summary>
+        public const string ClockChannelPath = "Channels/TurnClockChannel";
 
         [Header("Content")]
         [Tooltip("What to call the objective when the mode publishes a value that is not a count " +
@@ -67,11 +83,23 @@ namespace CosmicShore.UI
         int _target;
         bool _secondsMode;
         string _payload = string.Empty;
+        string _clockPayload = string.Empty;
 
         void Awake()
         {
             if (iconSet == null) iconSet = ObjectiveIconSetSO.Load();
+            if (clockChannel == null) clockChannel = Resources.Load<ScriptableEventString>(ClockChannelPath);
             Rebuild();
+        }
+
+        void OnEnable()
+        {
+            if (clockChannel != null) clockChannel.OnRaised += SetClockPayload;
+        }
+
+        void OnDisable()
+        {
+            if (clockChannel != null) clockChannel.OnRaised -= SetClockPayload;
         }
 
         /// <summary>
@@ -96,6 +124,20 @@ namespace CosmicShore.UI
         public void SetMonitorPayload(string payload)
         {
             _payload = payload ?? string.Empty;
+            // The HUD blanks the objective channel at turn end and on replay. A clock that
+            // stopped ticking would otherwise outlive the turn it was counting down.
+            if (_payload.Length == 0) _clockPayload = string.Empty;
+            Rebuild();
+        }
+
+        /// <summary>
+        /// Seconds remaining from a time monitor that is NOT the objective, raised on
+        /// <see cref="clockChannel"/>. Drawn as the secondary row while the primary is a count;
+        /// ignored while the primary IS the clock, so a scene can never show two clocks.
+        /// </summary>
+        public void SetClockPayload(string payload)
+        {
+            _clockPayload = payload ?? string.Empty;
             Rebuild();
         }
 
@@ -137,6 +179,12 @@ namespace CosmicShore.UI
                 // publishes no target). Draw nothing rather than a bare number under a borrowed
                 // label - an unlabelled count is the thing the ring was retired for.
             }
+
+            // The secondary clock. Appended AFTER the objective so it takes the quieter rank;
+            // when the objective cannot be drawn yet it is simply the only row, which beats
+            // hiding the one thing the mode can say.
+            if (!_secondsMode && !string.IsNullOrEmpty(_clockPayload))
+                _entries.Add(GoalEntry.Text(null, clockLabel, FormatClock(_clockPayload)));
 
             Draw();
         }
