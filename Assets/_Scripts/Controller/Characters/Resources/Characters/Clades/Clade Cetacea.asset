@@ -1,0 +1,156 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2607a9b2d9b6a7866342cf7354c6b502, type: 3}
+  m_Name: Clade Cetacea
+  m_EditorClassIdentifier: 
+  Key: Cetacea
+  DisplayName: Cetacea
+  IsHuman: 0
+  AxisTargets:
+  - Axis: 3
+    Value: 1.0
+  - Axis: 9
+    Value: 0.45
+  - Axis: 10
+    Value: 0.6
+  - Axis: 6
+    Value: -0.55
+  - Axis: 5
+    Value: 0.9
+  - Axis: 7
+    Value: -0.6
+  - Axis: 4
+    Value: -1.0
+  - Axis: 11
+    Value: -1.0
+  - Axis: 12
+    Value: -0.3
+  - Axis: 13
+    Value: -0.6
+  - Axis: 14
+    Value: 1.0
+  - Axis: 15
+    Value: 0.5
+  - Axis: 16
+    Value: -0.4
+  - Axis: 17
+    Value: -0.2
+  - Axis: 18
+    Value: 1.0
+  - Axis: 19
+    Value: -0.5
+  - Axis: 1
+    Value: 0.4
+  - Axis: 2
+    Value: 0.3
+  - Axis: 8
+    Value: -0.4
+  Traits:
+  - Id: Blowhole
+    Signature: 1
+    MinWeight: 0.0
+    Feature: 9
+    Slots:
+    - 3
+    - 0
+    Site: CrownBack
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides:
+    - Axis: 11
+      Value: -1.0
+    - Axis: 12
+      Value: -0.5
+    Params:
+      Blowhole:
+        Radius: 0.045
+        RimHeight: 0.012
+  - Id: Melon
+    Signature: 1
+    MinWeight: 0.0
+    Feature: 0
+    Slots: []
+    Site: 
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides:
+    - Axis: 3
+      Value: 1.0
+    - Axis: 4
+      Value: -1.0
+    Params:
+  - Id: NoEars
+    Signature: 0
+    MinWeight: 0.0
+    Feature: 0
+    Slots:
+    - 2
+    Site: 
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides: []
+    Params:
+  - Id: SmallEyes
+    Signature: 0
+    MinWeight: 0.0
+    Feature: 1
+    Slots:
+    - 1
+    Site: Eye
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides: []
+    Params:
+      Eye:
+        Radius: 0.048
+        IrisFraction: 0.85
+        LidOpen: 0.55
+        CanthalTiltDeg: -4.0
+        LidThickness: 0.009
+        Pupil: 3
+        PupilSize: 0.7
+        IrisA: {r: 0.08, g: 0.07, b: 0.06, a: 1.0}
+        IrisB: {r: 0.16, g: 0.12, b: 0.1, a: 1.0}
+        Sclera: {r: 0.55, g: 0.5, b: 0.48, a: 1.0}
+  - Id: Rostrum
+    Signature: 0
+    MinWeight: 0.0
+    Feature: 0
+    Slots: []
+    Site: 
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides:
+    - Axis: 9
+      Value: 0.55
+    - Axis: 14
+      Value: 1.0
+    Params:
+  Covering:
+    Kind: 5
+    BaseA: {r: 0.42, g: 0.5, b: 0.58, a: 1.0}
+    BaseB: {r: 0.28, g: 0.34, b: 0.42, a: 1.0}
+    Marking: 2
+    MarkingColor: {r: 0.8, g: 0.82, b: 0.84, a: 1.0}
+    MarkingStrength: 0.85
+    MarkingScale: 1.0
+    Smoothness: 0.75
+    DetailStrength: 0.4
+    AnchorThetaDeg: 0.0
+    ReachDegAtMin: 72.0
+    ReachDegAtMax: 170.0
+    PaintsBrows: 0
