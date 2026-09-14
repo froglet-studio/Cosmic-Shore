@@ -71,7 +71,11 @@ are this tree's.
 
 **The boot world has been measured once — see §0.8. It is CPU-bound, the typical
 frame is inside the 60 FPS budget, and the problem is a periodic SPIKE, not
-throughput.** Everything below §1 still predates enabling Burst and has not been
+throughput.** **§0.9 (2026-09-14) is a second, live HUD reading UNDER STRESS on
+this tree** — it kills two hypotheses with arithmetic (the coroutine-allocation
+class cannot produce the measured GC/frame, and draw calls cannot produce the
+measured frame time) and explains a 14,244-draw-call reading exactly. Read it
+before picking up anything below. Everything below §1 still predates enabling Burst and has not been
 re-confirmed at the current population; treat the rest of the log as history and
 §0.8 as the only measured statement about the boot world today.
 
@@ -129,6 +133,133 @@ Ordered by value for cost. Full analysis in §4. **All three re-verified on
 GPU-bound at 8 minutes, all of Tier 1 is the wrong lever and the answer is
 overdraw/shader work — which §0.6 suspected (capture #4: 2.16M verts,
 transparent-prism overdraw) and never confirmed. One HUD row settles it.
+
+---
+
+### 0.9 A LIVE READING FROM THE HUD (2026-09-14) — and two hypotheses it kills
+
+A **development-build-style** run of the Menu_Main boot world with a
+`prisms <count>` stress cloud on top, read off `DiagnosticsHUD`:
+
+```
+FPS 31   Frame 32.0 ms   CPU(busy) 23.6   GPU 0.8   ->  Bound: CPU-bound
+Main thread 23.6 ms      Render thread 2.8 ms
+Draw Calls 14,244   Batches 14,235   SetPass 1,324
+Triangles 7.21 M    Vertices 7.37 M
+Prism Path: ON - ents=33,114  meshes=3  mats=10
+GC / frame 197.9 KB      Managed 1,716 MB   Reserved 2,031 MB
+```
+
+**Caveat, stated up front:** `DiagnosticsHUD`'s draw/batch/tri rows are
+`ProfilerRecorder`s on `ProfilerCategory.Render`, which **in the Editor include
+the Scene view's own pass**. Re-read these in a Development *build* before
+treating 14,244 as the shipping number.
+
+#### The draw-call explosion is real, and the arithmetic explains it exactly
+
+`ents=33,114  meshes=3  mats=10` should batch into the low hundreds. §"Phase R"
+below states the target as *"≤~56 instanced batches (7 prism meshes × 4 domains
+× opaque/transparent)"* — **that target assumes BatchRendererGroup merges
+instances globally by (mesh × material). It does not: Entities Graphics batches
+per ArchetypeChunk.** Two multipliers follow, both computed from the shipped
+component set rather than estimated:
+
+1. **The archetype is too fat, so chunks hold too few entities.**
+   `PrismRenderService.GetPrototype` adds **26 material-property components** to
+   every `PrismRenderOverrideSet.Prism` entity — 16 × `float` + 6 × `float3` +
+   4 × `float4` = **200 B**, plus `LocalToWorld` 64 + `RenderBounds` 24 +
+   `WorldRenderBounds` 24 + `MaterialMeshInfo` 12 = **324 B/entity across ~30
+   component types**. A 16 KiB chunk therefore holds **44–50** entities against
+   the 128 a lean archetype reaches, so 33,114 entities ≈ **690 chunks**. That
+   is the FLOOR on draw commands, and it makes "≤56" arithmetically unreachable
+   at this population no matter what else is fixed.
+2. **Every material is interleaved inside every chunk.** The prototype is keyed
+   `(layer, overrideSet)` — mesh and material deliberately excluded, so the
+   clone's real `MaterialMeshInfo` is a per-entity `SetComponentData`. Every
+   prism of every domain and tier therefore packs into the SAME chunks with the
+   mesh/material varying entity-by-entity, and a chunk emits a draw command per
+   distinct combination instead of one.
+
+**14,244 ÷ ~690 chunks = 20.6 draw commands per chunk**, against `3 × 10 = 30`
+possible combinations. The two multipliers reproduce the measurement.
+
+Prototype sharing is called "load-bearing" in the source and is — for keeping
+every clock stamp non-structural. It was bought by destroying draw-call
+coalescing, and nothing recorded that trade. Keying the prototype on
+`(layer, overrideSet, mesh, material)` should take ~14,244 → ~690 (**20×**), at
+the cost of a structural change on MATERIAL CHANGE (repaint, shield transition)
+— rare against per-frame rendering, but **measure it, do not assume it**.
+
+> ⚠ **Not proven offline:** the one-draw-command-per-chunk rule could not be read
+> from the Entities Graphics 1.4.15 source (the package is not in a fresh clone).
+> The arithmetic matches to a rounding error; confirm in the **Frame Debugger**
+> — consecutive prism draws differing only in material — before paying for the fix.
+
+#### Draw calls are NOT what costs 32 ms — GPU is 0.8 ms
+
+The render thread is **2.8 ms**, so submission is bounded there; the frame is
+main-thread bound at **23.6 ms**. Entities Graphics' culling and draw-command
+emission run as jobs the main thread waits on, so the 14k commands tax it too —
+but only a capture separates the two. **Fixing draw calls buys at most single-digit
+milliseconds; it is not the headline.**
+
+#### GC / frame 197.9 KB is 49× the project's own warning line…
+
+`DiagnosticsHUD.cs:355` colours this row `Warn` above **4 KB**. At 31 fps,
+197.9 KB/frame is 6.1 MB/s ≈ 368 MB/min — which is very likely why the managed
+heap reached **1,716 MB** after a few minutes, and a heap that size makes
+collections expensive, on the main thread.
+
+#### …and it is NOT in first-party per-frame code. Two hypotheses killed.
+
+Run `python3 Tools/Build/scan_perframe_allocations.py --gc-kb 197.9 --fps 31`.
+Its arithmetic header is the point:
+
+| 197.9 KB/frame as… | implies | verdict |
+|---|---|---|
+| `WaitForSeconds` (~28 B) | 7,237/frame = **224,362/sec** | impossible — the scene has ~1,080 plants |
+| small `List<T>` (~64 B) | 3,166/frame = 98,158/sec | impossible |
+
+**So the coroutine-wait class (Tier 0b, §0.8's "1,080 allocating coroutines") is
+ruled out as the source of this number by two orders of magnitude.** That fix is
+still correct and still landed — it just was never going to move this row, and
+believing otherwise would have bought a week of correct, irrelevant work.
+
+Three scans then come back negative at the scale required:
+
+| scan | hits | at scale in the boot world? |
+|---|---|---|
+| large allocations in `Update`/`LateUpdate`/`FixedUpdate`/`OnGUI` | 3 | no — `GunTransformer` (per vessel), `ScarabHullBuilder` (Scarab only), `SavePng` (tool) |
+| large allocations in per-FRAME coroutines (`yield return null`) | 7 | no — all one-shot transitions (wither, devour, cell swap, card cascade) |
+| `yield return new …` inside a loop | 54 | real, but ruled out by the arithmetic above |
+
+Also checked by hand and clean: `Prism`, `Flora`, `LifeForm`, `Fauna` and
+`Crystal` have **no per-frame method at all**; `AssembledFlora.Update` early-outs
+on an empty queue and allocates nothing; `PrismRenderService.FlushVisibility`
+uses `Allocator.Temp` `NativeList`s (native, not GC) and early-outs when empty;
+`DiagnosticsHUD` rebuilds its text at 4 Hz, not per frame.
+
+**Conclusion: the ~200 KB/frame is engine- or package-side** — Entities Graphics'
+culling/draw-command path, UGUI layout, or the render path — and the 14k draw
+calls are the prime suspect precisely because that number is so large. The next
+step is attribution, not another scan.
+
+#### How to attribute it — the A/B, using the toggle added in this pass
+
+`prismpath` (`PrismStressInjector`) was added on 2026-09-14 because
+`PrismRenderService`'s own summary had pointed at "the `PRISM_RENDER_TOGGLE` in
+the benchmark workflow" while that symbol existed **in that one comment and
+nowhere else in the project**. It re-syncs the LIVE population, which
+`SetRuntimeOverride` alone does not.
+
+1. F7 for the HUD. Let the boot world settle; read **GC / frame** and **Draw Calls**.
+2. `prisms 30000` → read both again. *Does the stress cloud allocate?*
+3. `prisms off`, then `prismpath off` → read both again.
+   **If GC/frame collapses here, Entities Graphics is the allocator** and §0.9's
+   draw-call fix and this GC row are the same problem.
+4. `prismpath auto` to restore.
+5. Whatever survives: Unity Profiler, **Deep Profile OFF**, Hierarchy view sorted
+   by **GC Alloc** — one frame names the caller. That is Capture B.
 
 ---
 
