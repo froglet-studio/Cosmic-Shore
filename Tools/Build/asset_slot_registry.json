@@ -1,0 +1,136 @@
+{
+  "_readme": [
+    "The DECLARED asset slots the gap census cannot discover on its own, plus refinements to the ones it can.",
+    "",
+    "Sound slots are auto-discovered from the C# (every FMODUnity.EventReference field), because the",
+    "project's convention makes every one of them a slot by construction. Visual and art slots are NOT",
+    "auto-discoverable: a null GameObject or Sprite field is usually optional, and only a human can say",
+    "which ones a discipline is expected to fill. So they are declared here, one row each, and the census",
+    "reports exactly what this file claims and nothing more.",
+    "",
+    "Adding a slot here is how a NEW asset need becomes a tracked task without anyone remembering to file",
+    "one. Fields:",
+    "  class          the C# type that declares the field (the file name under Assets/_Scripts)",
+    "  field          the serialized field name, exactly as Unity writes it",
+    "  kind           sound | vfx | art2d | video | model",
+    "  discipline     who fills it - matches the Notion 'Type' options where one applies",
+    "  group          tasks are grouped by this; one group becomes one task",
+    "  required_when  sibling key/value that must hold for the slot to be required at all",
+    "  label          human phrasing for the task line",
+    "  script         the .cs file that declares a nested [Serializable] holder, when it differs from 'class'",
+    "waivers: a slot that is deliberately unfilled, WITH the reason. Use it instead of the baseline whenever somebody has actually decided; the baseline only records that a gap exists."
+  ],
+  "exclude_paths": [
+    "Assets/_SO_Assets/_TEMP/",
+    "Assets/Plugins/",
+    "Assets/NiceVibrations/",
+    "Assets/Samples/"
+  ],
+  "slots": [
+    {
+      "class": "FaunaVariantTuning",
+      "field": "AudioLoopEvent",
+      "kind": "sound",
+      "discipline": "Sound",
+      "group": "sound:fauna-loops",
+      "required_when": {
+        "OverrideAudio": 1
+      },
+      "label": "Per-species creature loop (only required when the variant overrides the prefab emitter)",
+      "_note": "the field is declared on the nested [Serializable] FaunaVariantTuning inside FaunaConfigurationSO.cs; the census attributes a nested field to the NESTED class, and the asset carries it at a deeper indent",
+      "script": "FaunaConfigurationSO"
+    },
+    {
+      "class": "Prism",
+      "field": "ParticleEffect",
+      "kind": "vfx",
+      "discipline": "Haptic/Sound/Visual FX",
+      "group": "vfx:prism-skim",
+      "label": "Skim particle burst for this prism kind (SkimFxRunner instantiates it; an empty slot is silent by design, not broken)"
+    },
+    {
+      "class": "SO_ArcadeGame",
+      "field": "IconActive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:arcade-card",
+      "label": "Arcade card icon (selected state)"
+    },
+    {
+      "class": "SO_ArcadeGame",
+      "field": "IconInactive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:arcade-card",
+      "label": "Arcade card icon (unselected state)"
+    },
+    {
+      "class": "SO_ArcadeGame",
+      "field": "CardBackground",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:arcade-card",
+      "label": "Arcade card background plate"
+    },
+    {
+      "class": "SO_Vessel",
+      "field": "IconActive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:vessel-card",
+      "label": "Vessel icon (selected state)"
+    },
+    {
+      "class": "SO_Vessel",
+      "field": "IconInactive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:vessel-card",
+      "label": "Vessel icon (unselected state)"
+    },
+    {
+      "class": "SO_Vessel",
+      "field": "PreviewImage",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:vessel-card",
+      "label": "Vessel hangar preview image"
+    },
+    {
+      "class": "SO_VesselAbility",
+      "field": "IconActive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:ability-icon",
+      "label": "Ability icon (the four-icon HUD row reads this)"
+    },
+    {
+      "class": "SO_VesselAbility",
+      "field": "IconInactive",
+      "kind": "art2d",
+      "discipline": "2D graphics",
+      "group": "art2d:ability-icon",
+      "label": "Ability icon, unselected state"
+    }
+  ],
+  "no_slot_expectations": [
+    {
+      "kind": "sound",
+      "discipline": "Sound",
+      "pattern": "Assets/_Scripts/Controller/Vessel/R_VesselActions/Executors/*ActionExecutor.cs",
+      "exclude_name_patterns": [
+        "^ActionExecutorRegistry",
+        "^VesselActionExecutorBase"
+      ],
+      "rule": "CLAUDE.md: every ship ability gets its own dedicated EventReference field. This executor declares no audio surface at all, so its ability is silent and nothing in the inspector says so."
+    }
+  ],
+  "waivers": [
+    {
+      "class": "Prism",
+      "field": "ParticleEffect",
+      "asset": "Assets/_Prefabs/Trails/MenuTrailBlock Variant.prefab",
+      "reason": "the menu trail prism deliberately authors no skim burst - SkimFxRunner treats an empty slot as silence by design (see its own comment naming this prefab)"
+    }
+  ]
+}
