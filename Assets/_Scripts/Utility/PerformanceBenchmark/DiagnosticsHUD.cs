@@ -236,7 +236,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
             {
                 _rawCpuMs = (float)_frameTimings[0].cpuFrameTime;
-                _rawGpuMs = (float)_frameTimings[0].gpuFrameTime;
+                // Sanitize BEFORE Smooth: one garbage sample poisons the EMA for many
+                // frames, and a 7.7e10 ms reading makes Bound read GPU-bound on an idle GPU.
+                _rawGpuMs = FrameBoundness.SanitizeGpuMs((float)_frameTimings[0].gpuFrameTime);
                 _rawMainMs = (float)_frameTimings[0].cpuMainThreadFrameTime;
                 _rawWaitMs = (float)_frameTimings[0].cpuMainThreadPresentWaitTime;
                 _rawRenderMs = (float)_frameTimings[0].cpuRenderThreadFrameTime;

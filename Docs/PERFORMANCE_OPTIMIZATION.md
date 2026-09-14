@@ -261,6 +261,40 @@ nowhere else in the project**. It re-syncs the LIVE population, which
 5. Whatever survives: Unity Profiler, **Deep Profile OFF**, Hierarchy view sorted
    by **GC Alloc** — one frame names the caller. That is Capture B.
 
+#### ⚠ The `Bound` row lied, and it is the row the recipes say to read FIRST
+
+A later reading in the same session showed **`GPU 77028560000.0 ms` → `Bound:
+GPU-bound`** on a frame whose GPU was idle (2.8 ms in the very next capture).
+77,028,560,000 ms is 2.4 years — `FrameTimingManager.gpuFrameTime` does not only
+return **0** on an unsupported path, it can return **garbage**, and
+`FrameBoundness` guarded only the zero.
+
+Any garbage value exceeds any CPU time, so `Classify` returned `GpuBound` with
+total confidence. Fixed 2026-09-14 by `FrameBoundness.SanitizeGpuMs` (non-finite,
+negative, or `> MaxPlausibleGpuMs` 10 s → 0, the sentinel the whole API already
+reads as "unavailable", so every consumer's unsupported-platform handling applies
+unchanged). Applied at all three `gpuFrameTime` READ sites **before smoothing** —
+one poisoned sample otherwise corrupts an exponential average for many frames —
+plus defensively inside `Classify` for data recorded before the fix.
+
+The ceiling is deliberately generous: **the filter's job is to reject values that
+are not timings, never to hide a real — even catastrophic — frame.** A 250 ms GPU
+frame passes.
+
+Two general rules:
+
+- **A derived verdict is only as trustworthy as its worst input, and a
+  confidently-wrong verdict is more expensive than a missing one** — "GPU-bound"
+  in red sends the next session at overdraw and shaders, which is exactly the
+  wrong lever here.
+- **Guarding a sensor's "unavailable" value is not the same as validating its
+  range.** `gpuFrameTime == 0` was handled from the start; nothing asked whether
+  a non-zero reading was a plausible frame time.
+
+Regression cover: `FrameBoundnessTests` carries the exact 77,028,560,000 ms
+reading **and a negative control** (24.5 ms CPU vs a real 40 ms GPU still reads
+`GPU-bound`), so the filter cannot be "fixed" by disabling the verdict.
+
 ---
 
 ## 0.8 CAPTURE A + A2 — the boot world, MEASURED (2026-09-10)
