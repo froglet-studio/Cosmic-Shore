@@ -59,6 +59,8 @@ namespace CosmicShore.Gameplay
                 // Sync game config to all clients now that we're in the game scene.
                 // Previously this was done by SceneLoader via ClientRpc before scene load,
                 // but SceneLoader is now a plain MonoBehaviour (no RPCs).
+                VesselStartingElements.Pack(gameData.StartingElements,
+                    out var startClasses, out var startIntensities, out var startLevels);
                 SyncGameConfigToClients_ClientRpc(
                     gameData.SceneName,
                     (int)gameData.GameMode,
@@ -72,7 +74,8 @@ namespace CosmicShore.Gameplay
                     gameData.ComebackRatePerScoreDeficit,
                     gameData.MatchId,
                     gameData.PartyId,
-                    gameData.InviteTriggered
+                    gameData.InviteTriggered,
+                    startClasses, startIntensities, startLevels
                 );
             }
 
@@ -834,6 +837,8 @@ namespace CosmicShore.Gameplay
                 }
             };
 
+            VesselStartingElements.Pack(gameData.StartingElements,
+                out var startClasses, out var startIntensities, out var startLevels);
             SyncGameConfigToClients_ClientRpc(
                 gameData.SceneName,
                 (int)gameData.GameMode,
@@ -848,8 +853,30 @@ namespace CosmicShore.Gameplay
                 gameData.MatchId,
                 gameData.PartyId,
                 gameData.InviteTriggered,
+                startClasses, startIntensities, startLevels,
                 target
             );
+        }
+
+        readonly List<VesselStartingElements> _startingElementsScratch = new();
+
+        /// <summary>
+        /// Seed every vessel this machine already holds from the freshly published starting
+        /// element table. Idempotent: a vessel with no row is left alone, and one already seeded
+        /// at spawn is seeded again with the same numbers. Elements are per-machine state, so
+        /// applying to replicas as well as the local hull is harmless and keeps every peer's
+        /// reading of a remote pilot's levels consistent with the host's.
+        /// </summary>
+        void ReapplyStartingElementsToLiveVessels()
+        {
+            var vessels = gameData.Vessels;
+            for (int i = 0; i < vessels.Count; i++)
+            {
+                var vessel = vessels[i];
+                if (vessel?.VesselStatus == null) continue;
+                if (gameData.TryGetStartingElements(vessel.VesselStatus.VesselType, out var levels))
+                    vessel.SetResourceLevels(levels);
+            }
         }
 
         /// <summary>
@@ -863,6 +890,7 @@ namespace CosmicShore.Gameplay
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
             int domainCount, bool isMaelstrom, float comebackRate,
             string matchId, string partyId, bool inviteTriggered,
+            int[] startClasses, int[] startIntensities, float[] startLevels,
             ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
@@ -883,6 +911,16 @@ namespace CosmicShore.Gameplay
             gameData.RequestedDomainCount = domainCount;
             gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
+
+            // The card's per-hull starting element levels (SO_ArcadeGame.StartingElements). A
+            // client never runs SyncFromArcadeGame, and element levels are simulated on the
+            // machine that OWNS a vessel and never replicate - so without this a guest's own
+            // hull would race at rest while the host's replica of it carried the handicap.
+            // Re-applied to any vessel already initialised on this machine, because a client's
+            // pending player/vessel pairs can resolve before this RPC lands.
+            VesselStartingElements.Unpack(startClasses, startIntensities, startLevels, _startingElementsScratch);
+            gameData.PublishStartingElements(_startingElementsScratch);
+            ReapplyStartingElementsToLiveVessels();
 
             // Clients began recording before these values replicated — refresh the report header
             // with the authoritative config now that it has arrived.

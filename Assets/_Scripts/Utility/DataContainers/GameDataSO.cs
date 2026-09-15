@@ -408,7 +408,45 @@ namespace CosmicShore.Utility
             // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
             MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
 
+            // The card's per-hull starting element levels, published for the same reason as the
+            // hull list and shipped to every client by the config sync RPC: element levels are
+            // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
+            // vessel has to be seeded from the same table the host seeds its replica from.
+            PublishStartingElements(game.StartingElements);
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The CURRENT card's per-hull starting element levels
+        /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
+        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
+        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
+        /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
+        /// the vessels that read it spawn.
+        /// </summary>
+        public readonly List<VesselStartingElements> StartingElements = new();
+
+        /// <summary>Replace the published starting-element table. Single writers: the card sync
+        /// on the host, the config RPC on a client, the menu's reset.</summary>
+        public void PublishStartingElements(IList<VesselStartingElements> table)
+        {
+            StartingElements.Clear();
+            if (table == null) return;
+            for (int i = 0; i < table.Count; i++)
+                StartingElements.Add(table[i]);
+        }
+
+        /// <summary>
+        /// The element levels a hull of <paramref name="vesselClass"/> starts THIS match at, at
+        /// the selected intensity. False when the card authors no row for it - the caller then
+        /// leaves the vessel at rest rather than writing zeros over a seed some other path made.
+        /// </summary>
+        public bool TryGetStartingElements(VesselClassType vesselClass, out ResourceCollection levels)
+        {
+            int intensity = SelectedIntensity != null ? SelectedIntensity.Value : 1;
+            return VesselStartingElements.TryResolve(StartingElements, vesselClass, intensity, out levels);
         }
 
         /// <summary>
