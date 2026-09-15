@@ -447,6 +447,11 @@ namespace CosmicShore.UI
                     // and "your next gate" is the only thing that tells two pilots on the same
                     // ring at the same moment apart.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Redline");
+                case GameModes.Regatta:
+                    // Same provider once more: a lapped circuit of neutral rings. The rails are
+                    // painted per DOMAIN and say which lane is yours; they say nothing about which
+                    // ring is next, so the arrow is still the only per-pilot answer.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Regatta");
                 case GameModes.Bloomrush:
                     // Rampage's provider again, and again on purpose: the nearest managed omni
                     // crystal is the Kabloom trigger — the "cash in now?" half of the mode's

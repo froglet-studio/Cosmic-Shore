@@ -182,7 +182,7 @@ Arena screen modal is a duplicate of the arcade one with its explore view pointe
 |---|---|---|
 | `OrganicRematchGames` | the INJECTED `SO_GameList` — `ArcadeConfigSyncManager.FindGameByMode`, `QuickPlayButton`, the AI vessel pick, leaderboards, loadouts | **every** card, arcade and arena alike |
 | `ArcadeGames` | the Arcade grid's `rosterOverride` | the master minus the arena cards |
-| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush |
+| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush, Regatta |
 
 The master list is deliberately still the union: a guest resolves the card the host opened **by
 mode** through the injected list, so a card removed from it would open on the host and never on

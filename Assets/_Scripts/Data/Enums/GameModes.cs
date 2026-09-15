@@ -223,9 +223,18 @@ namespace CosmicShore.Data
         // See _Scripts/Controller/Arcade/UNDERTOW.md.
         Undertow = 55,
 
+        // Regatta (56): the ARENA race - every playable hull on the same closed circuit of
+        // switch rings, three super-shielded rails (one per domain) braided along the racing
+        // line so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a Scarab
+        // or a Sparrow flies beside it; first DOMAIN whose LEAD RUNNER threads the last gate
+        // of the last lap wins. The mixed fleet is balanced by the card's per-hull STARTING
+        // ELEMENTS (SO_ArcadeGame.StartingElements) and the corner mix, never by a mode-local
+        // speed dial. See _Scripts/Controller/Arcade/REGATTA.md.
+        Regatta = 56,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 53) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 54) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
