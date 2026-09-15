@@ -353,7 +353,36 @@ The objective runner starts on the tap, which is also the arrival.
 ## 2. Focus — who holds the stick
 
 Focus is an input handoff and nothing else: `ToggleAIPilot(false)` + `InputController.SetPause`
-+ `EventSystem.sendNavigationEvents = false`. No fades, no camera blend, no state-machine change.
++ `PauseSystem.TogglePauseGame(false)` + `EventSystem.sendNavigationEvents = false`. No fades, no
+camera blend, no state-machine change.
+
+**The global pause is part of the handover, and leaving it out made every preview unflyable.**
+`ScreenSwitcher` pauses the game on every non-HOME screen to free CPU for the UI
+(`ScreenSwitcher.cs`, `screenId == HOME ? TogglePauseGame(false) : TogglePauseGame(true)`), and
+`PauseSystem.TogglePauseGame` also sets `Time.timeScale = 0`. An arcade card is opened from the
+arcade screen, so by the time this window exists the menu is hard-paused — and flight dies at
+**both** ends of the chain: `InputController.Update` returns on `PauseSystem.Paused` *before* any
+strategy runs, so nothing ever writes a stick, a trigger or a throttle; and `VesselTransformer`
+integrates on `Time.deltaTime`, so a vessel handed perfect input still moves by exactly zero.
+Clearing `InputStatus.Paused` alone grants a stick that cannot reach the ship.
+`MenuCrystalClickHandler.TransitionToFreestyle` has always lifted this for the lava lamp — but
+freestyle is entered from HOME, where the menu is *already* unpaused, so that call is a safety
+net there and load-bearing here. That asymmetry is why the omission survived review.
+
+`ModePreviewSession` tracks whether **it** lifted the pause (`_liftedMenuPause`) rather than
+reading `PauseSystem` back, so it can only ever restore a pause it removed — a card opened from
+the HOME hub runs unpaused and must not be handed a pause it never had. Every route out of a
+flight restores it: the focus release (which `Stop` routes through), `AbortHard`, and `OnDestroy`.
+
+> **General rule:** *a handover of control is only complete once every gate between the input
+> device and the thing being controlled is open.* This one had four — the AI pilot, the player's
+> own input pause, the global pause, and the EventSystem — and three of them were.
+
+It presented as a hull bug: *"the Wrecking Ball microgame loaded but the Scarab would not move
+when I pulled the trigger."* The Scarab is simply the hull with no cruise floor (`MinimumSpeed 0`)
+whose throttle is one analog channel and nothing else (`ScarabVesselTransformer.ReadThrottle01`
+→ `RightTriggerAnalog`), so a frozen world reads there as a broken ship rather than as a slow one.
+Every other hull was equally frozen.
 
 **Gamepad B is deliberately NOT a release.** While flying, every face button belongs to the
 vessel. `sendNavigationEvents = false` only silences EventSystem-driven UI — three places poll the

@@ -157,6 +157,9 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
+            // Before AbortHard, which early-returns when already Idle - a destroyed session must
+            // never leave the menu running unpaused behind its own card.
+            RestoreMenuPause();
             // Never create GameObjects while the scene closes, and never raise into subscribers
             // that are being destroyed alongside us.
             AbortHard(strikeWorld: false, notify: false);
@@ -486,6 +489,23 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(false);
             player.InputController?.SetPause(false);
 
+            // ...AND the menu's GLOBAL pause, which is the other half of "who holds the stick"
+            // and was missing. ScreenSwitcher pauses the game on every non-HOME screen to free
+            // CPU for the UI, and the arcade card lives on one - so by the time a card is open
+            // PauseSystem.Paused is true and Time.timeScale is 0. Both halves of flight die on
+            // that: InputController.Update returns BEFORE any strategy runs (so no strategy ever
+            // writes a stick, a trigger or a throttle), and VesselTransformer integrates on
+            // Time.deltaTime, so even a vessel handed perfect input moves by zero. Clearing
+            // InputStatus.Paused alone - which is all this did - grants a stick that cannot
+            // reach the ship. MenuCrystalClickHandler.TransitionToFreestyle has always lifted
+            // this for the lava lamp; the preview is the same handover and needs the same lift.
+            //
+            // Reported as "the Wrecking Ball microgame loaded but the Scarab would not move when
+            // I pulled the trigger" - the Scarab because it is the hull with no cruise floor and
+            // a throttle that is one analog channel, so a frozen world reads as a broken ship
+            // rather than as a slow one.
+            TakeMenuOffPause();
+
             // The pad flies the ship, so it must stop driving the UI at the same time. The
             // EventSystem half; direct device polls (the modal's B-to-close) check
             // ModePreviewWindow.AnyHasFocus instead.
@@ -496,6 +516,39 @@ namespace CosmicShore.Gameplay
             }
 
             _window?.GrantFocus();
+        }
+
+        // The menu behind this window runs PAUSED (ScreenSwitcher pauses on every non-HOME
+        // screen; PauseSystem.TogglePauseGame also sets Time.timeScale = 0). Flight needs it
+        // lifted, and the card needs it back. Tracked as "did WE lift it?" rather than read back
+        // off PauseSystem, so this can only ever restore a pause it removed - a preview that runs
+        // while the menu happens to be unpaused (the card opened from the HOME hub rather than
+        // the arcade screen) must not hand the menu a pause it never had.
+        bool _liftedMenuPause;
+
+        void TakeMenuOffPause()
+        {
+            if (_liftedMenuPause || !CosmicShore.Core.PauseSystem.Paused) return;
+            _liftedMenuPause = true;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(false);
+        }
+
+        /// <summary>
+        /// Put the menu's pause back. Idempotent, and called from every route out of a flight -
+        /// the focus release (which <see cref="Stop"/> routes through), the hard abort, and
+        /// OnDestroy - because leaving the menu unpaused would leave the card's screen running
+        /// the whole lava lamp behind a modal that was built on the assumption it is not.
+        ///
+        /// <para>On the LAUNCH route this restores the timeScale 0 the menu has always launched
+        /// from - the arcade screen was paused long before this window existed, and the game
+        /// scene's own <c>MiniGame</c> unpauses on entry - so it is status quo, not a new
+        /// hazard.</para>
+        /// </summary>
+        void RestoreMenuPause()
+        {
+            if (!_liftedMenuPause) return;
+            _liftedMenuPause = false;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(true);
         }
 
         /// <summary>
@@ -509,6 +562,8 @@ namespace CosmicShore.Gameplay
         {
             if (EventSystem.current)
                 EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+
+            RestoreMenuPause();
 
             if (_state != State.Live) return;
 
@@ -708,6 +763,10 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
+
+            // The one teardown that does not route through ReleaseFocus, so it restores the
+            // menu's pause itself.
+            RestoreMenuPause();
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();
