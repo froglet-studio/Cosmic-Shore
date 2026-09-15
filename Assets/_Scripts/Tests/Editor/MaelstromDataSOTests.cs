@@ -404,7 +404,6 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Gold), "Gold didn't play → 0.");
             Assert.AreEqual(0, _data.CrystalsForDomain(null, Domains.Jade), "Null results → 0.");
         }
-    }
 
         // ── The draw bag (no mode repeats inside a shuffle) ───────────────────
 
