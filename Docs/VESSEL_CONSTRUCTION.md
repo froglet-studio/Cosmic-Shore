@@ -556,6 +556,12 @@ appendage disagree with the hull it is bolted to. `RiptideAnimation` now carries
 at all, and a note saying that if an axis reads backwards the fault is in the flight model or the
 rig, and gets fixed there.
 
+**And the composed term was only HALF of what the hierarchy gave** — flight 17 (§4.6.5) found the
+other half sixteen flights later: a chassis child also *orbits* the chassis pivot, and its own
+turn is about the seat its transform was authored at, not about its bone. Composing the parent's
+rotation into the child's orientation reproduces how the parent TURNS the child; it says nothing
+about where the parent CARRIES it. Reproduce the motion, not the term.
+
 ### 4.6.2 A frame that must hold still cannot be a Transform parented under the thing that moves
 
 The other half of the Dolphin's drift. While drifting, the wings and engines must hold the direction
@@ -961,6 +967,50 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   is four flights of tuning against a shipped artifact that could have been measured on the
   first — **when the ask names something that already exists, measure that thing before turning
   a dial.**
+
+  **Flight 17 — the seat was never the defect; the HIERARCHY was** (*"this is still worse than
+  what is on bleeding edge … the boosters and wings are the issue. try to tune them so they mimic
+  old puppetry while flying"*). Flight 16 put the boosters on bleeding-edge's station to the
+  digit and the playtest still read worse, which is the measurement that finally pointed away
+  from the z-station. What the legacy chassis-child hierarchy (§4.6.1) delivered was never
+  orientation alone. Two things, both missing from every construction since flight 3:
+
+  **(1) The parts ORBIT.** A chassis child rides the chassis's `Euler(25p, 25y, 25r)` as a
+  *position*: a booster 1.7 wu aft of the pivot travels **0.74 wu** on a full deflection, a wing
+  bone 0.97 wu out travels 0.42. Composing the chassis turn into the appendages' orientation only
+  spun them in place about their own bone pivots while the fuselage tail swept away underneath —
+  which no seat depth could reach, and which is what four flights of seat tuning were chasing.
+  **(2) Each part's own turn is about ONE shared seat, not its own bone.** All six legacy engine
+  cases were authored at `(0, 0.147, −2.047)` and lerped to `(0, .15, −1.7)` every frame; both
+  wings at `(0, 0, 0.1)` lerped to `(0, 0, 0)`. On the rig each jet's bone sits at its own nozzle,
+  0.27–0.37 wu from that seat, so turning a bone about itself at 75° is a different motion from
+  turning it about the seat — and flights 13–15 cut the amplitude 75 → 5 to tame a swing that was
+  the wrong pivot, not the wrong number.
+
+  Both fall out of one statement: **each rig bone is a point rigidly attached to the legacy part
+  frame, and undergoes that frame's motion** — from `(authoredPivot, rest)` to
+  `(chassisTurn·flightPivot, chassisTurn·ownTurn·rest)`, so a bone resting at `R` lands at
+  `P_c + C·(F + E·(R − P_c − A))` with orientation `C·E·rest` (`RiptideAnimation.PlacePartOnChassis`;
+  the chassis pivot `P_c` is read off the `fuse` bone's rest, zero on both arts). Every vertex the
+  bone skins therefore lands **exactly** where the legacy vertex resting at the same point would —
+  the verifier's check 8a proves it to **6.7e-16 wu** over 12 stick poses × 8 parts × 4 vertices —
+  and at zero input it reduces to `rest + (F − A)`: the **+0.347** forward booster seat flight 16
+  measured (its lead delta against bleeding-edge is still +0.0000) plus the **0.1 wu aft wing
+  drag flight 16 missed** (wing geometry z −0.4038 vs bleeding-edge's drawn −0.4032). The retired
+  held-position construction, run as the negative control, put a bone pivot up to **1.92 wu**
+  from where the hierarchy carries it — 1.17 wu with the own term at zero, the orbit alone.
+  Consequences: `jetRestBackward` is retired in favour of the four pivots (`wingAuthoredPivot` /
+  `wingFlightPivot` / `thrusterAuthoredPivot` / `thrusterFlightPivot`, bleeding-edge's numbers
+  verbatim, read from BOTH the C# and `Dolphin.prefab` by the verifier so a retune that forgets
+  one fails the build); `thrusterAnimationScaler` **5 → 75** (bleeding-edge's
+  `exaggeratedAnimationScaler`); the flight-8/15 **roll mirror becomes an opt-in**
+  (`mirrorAppendageRoll`, off = legacy parity — it negates the own term only, never the orbit),
+  because that ask was made against a construction whose roll response was wrong for its own
+  reasons; and the flight-13–16 seat/envelope/separation assertions are retired with the
+  construction they measured. The drift path (§4.6.2, flight 12) is untouched. **General rule: a
+  hierarchy is a MOTION, not a term — when a rig breaks a parent/child relationship, reproduce
+  where the parent CARRIES the child, not only how it turns it; and when a measured seat lands on
+  the reference to the digit and the playtest still says no, the dial is the wrong dial.**
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and
@@ -970,21 +1020,25 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   at (−0.760, 0, −0.614)) that puts every wing vertex outside that sweep ×1.05 gape margin, so
   the jaws cannot reach the wings at *any* drift aim angle. Asserted geometrically in the
   verifier (check 8's clearance assertion); re-measure the two radii if the rig changes;
-* **the drift total and the rest seat are two independent numbers, not a seat plus a slide** —
+* **the drift total and the flight seat are two independent numbers, not a seat plus a slide** —
   flight 12's decoupling above. Since flight 16 they are not even judged against the same
   landmark: the DRIFT total still has to clear the fuselage tail (a drift deliberately swings the
-  engines out of the body), while the REST seat is judged against bleeding-edge's own station and
-  is allowed — required — to sit inside the hull's rear. Both are asserted in the verifier's
-  check 8, against their own landmark; a future retune of either must re-check the other rather
-  than assuming the old coupled arithmetic still applies;
-* **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
-  negated everywhere it reaches them (their own term and the composed chassis term), so their net
-  roll deflection is the exact mirror of legacy. The chassis keeps the true roll, the aileron
-  cross-coupling (pitch in the wings' z term) is untouched, and the drift cage still follows the
-  hull's roll (up stays toward the camera — its own signed ask). The §4.6.1 composition
-  *mechanism* is unchanged; only the roll variable's sign into the appendage terms flips.
+  engines out of the body), while the flight station — since flight 17 the difference between
+  `thrusterFlightPivot` and `thrusterAuthoredPivot` — is judged against bleeding-edge's own
+  station and is allowed — required — to sit inside the hull's rear. Both are asserted in the
+  verifier's check 8, against their own landmark; a future retune of either must re-check the
+  other rather than assuming the old coupled arithmetic still applies;
+* **the appendages' ROLL mirror is an OPT-IN, off by default** (`mirrorAppendageRoll`). Flight 8
+  asked for the wings' and boosters' roll response mirrored, and flights 9–15 carried it; flight
+  17 showed the construction that ask was judged against was wrong for its own reasons, so the
+  chain ships at legacy parity and the mirror survives as a switch that negates the roll input in
+  the appendages' OWN terms only — never the orbit, which is the hierarchy and would tear the
+  parts off the body if mirrored. The chassis keeps the true roll, the aileron cross-coupling
+  (pitch in the wings' z term) is untouched, and the drift cage still follows the hull's roll (up
+  stays toward the camera — its own signed ask).
 
-Everything else outside a drift is the §4.6.1/§4.6.3 identity, provable on both art families.
+Everything else outside a drift is the legacy chassis chain (flight 17) over the §4.6.1/§4.6.3
+identity, provable on both art families.
 
 Measurement provenance: the collider-oracle fit, FK vs the FBX's own `TransformLink` bind matrices
 (0.0006 cm worst), the old prefab's `−2.047034` reproduced to six decimals, and the rig's jaw

@@ -286,8 +286,24 @@ namespace CosmicShore.Gameplay
         protected void MovePartFromRest(Transform part, Vector3 offset, Quaternion frame)
         {
             if (!part || !_restPositionInVessel.TryGetValue(part, out var restInVessel)) return;
+            MovePartInFrame(part, restInVessel + offset, frame);
+        }
 
-            Vector3 targetWorld = transform.position + frame * (restInVessel + offset);
+        /// <summary>
+        /// Drives the part toward an arbitrary point <paramref name="pointInVessel"/> (vessel
+        /// frame, world units) carried by <paramref name="frame"/> - the general form of
+        /// <see cref="MovePartFromRest"/>, for a caller that computes the whole target itself
+        /// (the Dolphin's chassis chain orbits its parts about the chassis pivot, so its target
+        /// is a rotation of the rest, not a displacement of it). Same world-space round trip:
+        /// the target is built in world space and localized through the part's LIVE parent, so
+        /// it is exact through any bone-chain scale; then lerped at lerpAmount, exactly as the
+        /// legacy AnimatePart lerped a localPosition.
+        /// </summary>
+        protected void MovePartInFrame(Transform part, Vector3 pointInVessel, Quaternion frame)
+        {
+            if (!part) return;
+
+            Vector3 targetWorld = transform.position + frame * pointInVessel;
 
             Vector3 targetLocal = part.parent ? part.parent.InverseTransformPoint(targetWorld)
                                               : targetWorld;

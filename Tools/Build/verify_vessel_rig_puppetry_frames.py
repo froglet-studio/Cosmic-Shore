@@ -19,6 +19,11 @@ could not fix because neither of them is a sign:
     `winghold.l|r` and the engines off `jetholdT|m|B.l|r` - a sibling branch of
     `fuse` - so that inherited term is gone.  The wings' own pitch input is
     Brake(throttle), zero unless braking, so losing it left them dead on that axis.
+    And the inheritance was never orientation alone: a chassis child ORBITS the
+    chassis pivot, and its own turn is about the ONE seat its class was authored
+    at (all six engine cases at (0,0.147,-2.047), lerped to (0,.15,-1.7) in
+    flight) - not about its own bone.  Check 8 proves the shipped chain lands every
+    rig vertex where the legacy hierarchy would, to 1e-15 (flight 17).
   * the drift frame was a `DriftHandle` Transform parented under the vessel, so the
     hull's own aiming carried it between one frame's write and the next read.
     Re-pointing only its forward axis leaves that twist in place, and it
@@ -398,164 +403,287 @@ def main():
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
     print("   clamp: an authored 80 or -12 is bounded to +-4 wu; measured values pass untouched")
 
-    # A TUNING STEP BELOW THE THRESHOLD OF VISIBILITY READS AS "NOTHING HAPPENED".
-    # Flights 9 and 10 were both spent moving the jet rest seat by 0.125 wu - 3.6% of the hull's
-    # own length, a handful of pixels at chase distance - because an earlier pass PINNED the
-    # drift station at 0.50 and then had to halve the seat's remaining travel to preserve it.
-    # Two playtests bought no information. The pin is retired (the station moves with the seat;
-    # what must stay visible is the drift SLIDE, which is the motion the drift actually shows),
-    # and the floor is asserted instead: an authored offset that is meant to read on screen has
-    # to be at least 5% of the hull, and so does any step away from the value it replaces.
-    HULL = 3.4482
-    VISIBLE = 0.05 * HULL          # 0.172 wu
+    # ---- FLIGHT 17: THE LEGACY CHASSIS CHAIN, REPRODUCED IN VESSEL SPACE -----------------
+    #
+    # Flights 13-16 tuned the boosters' z-station and own amplitude against bleeding-edge, and
+    # every one of them still read as "the boosters and wings are the issue" - because the seat
+    # was never the defect. The old art parented the wings and the six engine cases under the
+    # CHASSIS, and that hierarchy did two things per frame that the previous construction
+    # reproduced neither of: the parts ORBITED the chassis pivot (their POSITION swung with the
+    # 25-degree chassis deflection, not only their orientation), and each part's own turn was
+    # about ONE shared seat per class - all six engine cases at (0, 0.147, -2.047), lerped by
+    # AnimatePart to (0, .15, -1.7) every frame; both wings at (0, 0, 0.1), lerped to (0, 0, 0)
+    # - never about its own bone. RiptideAnimation.PlacePartOnChassis now treats each rig bone
+    # as a point rigidly attached to the legacy part frame and applies that frame's motion:
+    #
+    #     pos = P_c + C * (F + E * (R - P_c - A))          rot = C * E * rest
+    #
+    # (C chassis turn, E the part's own turn, A the authored pivot, F the flight pivot, R the
+    # bone's rest position, P_c the chassis pivot). The constants are READ from the shipped C#
+    # and the shipped prefab rather than restated here, so a retune that forgets one of the two
+    # fails this check; the bleeding-edge reference values are stated once, with provenance.
+    import os, re
+    REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    CS = os.path.join(REPO, "Assets", "_Scripts", "Controller", "Animation", "RiptideAnimation.cs")
+    PREFAB = os.path.join(REPO, "Assets", "_Prefabs", "Spacevessels", "Dolphin.prefab")
+    RIPTIDE_GUID = "0f8854390007c384796664b8fc0cf25d"
 
-    # FLIGHT 12: DECOUPLED. jetRestBackward used to feed the drift total too (rest + a slide on
-    # top), so bumping the rest seat silently moved a drift clearance flight 12 had just called
-    # perfect. driftJetBackwardTotal is now its own field, independent of the rest seat, locked
-    # at the exact total (1.0 + 0.25) that read as perfect - a rest retune can change nothing
-    # about it, by construction (BackwardThrusterOffset no longer reads jetRestBackward at all).
-    # FLIGHT 13: the seat comes back to its TRUE-geometry value. Three seats (0.6/1.0/1.8) all
-    # read "too far forward" from the chase camera while the scene view showed the geometry
-    # marching backwards - because that camera is ON-AXIS AND LEVEL (followOffset 0,0,-20), so a
-    # part's station along the hull projects to almost nothing; the surviving cues are SIZE and
-    # OCCLUSION and both invert (a deeper seat is nearer the lens, renders larger, draws OVER the
-    # wings). The read is fixed in the PUPPETRY (thruster amplitude, below); the seat is judged
-    # against the ship's own geometry: 1.0 = nozzle leading edge 0.42 wu behind the tail.
-    # FLIGHT 16: the seat is no longer judged against the tail plane at all - it is judged
-    # against the SHIPPED BLEEDING-EDGE DOLPHIN, which is what "very closely near the back of
-    # the vessel" was asked to mean. The comparison is exact rather than analogous because the
-    # two models share the fuselage: Dolphin_Test.fbx's `Chassis` mesh and this rig's `fuse`
-    # cluster are both 2,763 verts spanning z -2.471..+0.977. See scratch flight16.py/16b.py.
-    JET_REST, DRIFT_TOTAL = -0.347, 1.25
-    PREVIOUS_REST = 1.0   # flights 10-12's seat, which hung the boosters off the back
-    print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
-    print("   jet rest seat %.3f (%.1f%% of hull, NEGATIVE = forward), drift total %.3f (%.1f%%)"
-          % (JET_REST, 100 * JET_REST / HULL, DRIFT_TOTAL, 100 * DRIFT_TOTAL / HULL))
-    # abs(): the seat may now be forward, and a floor written as `0 < seat < VISIBLE` silently
-    # stops guarding the moment the value goes negative.
-    if 0 < abs(JET_REST) < VISIBLE:
-        failures.append("the jet rest seat %.3f is below the visibility floor" % JET_REST)
-    if 0 < abs(DRIFT_TOTAL) < VISIBLE:
-        failures.append("the drift total %.3f is below the visibility floor" % DRIFT_TOTAL)
-    step = abs(JET_REST - PREVIOUS_REST)
-    print("   step from flight 15's seat: %.3f wu (%.1f%% of hull)%s"
-          % (step, 100 * step / HULL, "" if step >= VISIBLE else "   <-- FAIL"))
-    if step < VISIBLE:
-        failures.append("the seat moved %.3f, under the floor - another invisible step" % step)
+    def cs_vec3(src, field):
+        m = re.search(r"Vector3\s+%s\s*=\s*(?:new\s*\(([^)]*)\)|Vector3\.zero)\s*;" % re.escape(field), src)
+        if not m:
+            raise SystemExit("cannot read the C# default of %s" % field)
+        if m.group(1) is None:
+            return (0.0, 0.0, 0.0)
+        return tuple(float(c.strip().rstrip("fF")) for c in m.group(1).split(","))
 
-    # THE MEASURED REFERENCE. Bleeding-edge authors its six engine cases at z -2.047 and then
-    # AnimatePart lerps every one to defaultThrusterPosition (0,.15,-1.7) EVERY FRAME, so the
-    # authored pose is not the shipped one: the drawn cases sit at z -1.898..-1.540, stopping
-    # 0.572 wu SHORT of the tail. (Its six 712-vert `Engine *` children carry Lcl Scaling 0.010
-    # on top of the file's own cm->m, so they render at 1e-4 - a 0.015 wu speck that never draws
-    # and is NOT the reference; CLAUDE.md records the same thing.) This rig's own bind pose puts
-    # the outer `jet*` bones on bleeding-edge's AUTHORED cases to 0.0000 wu, so the seat that
-    # reproduces the shipped station is exactly that drag: -0.347.
-    NOZZLE_LEAD, NOZZLE_TRAIL, FUSELAGE_TAIL = -1.887, -2.290, -2.471
-    BE_DRAG = -1.700 - (-2.0470)                      # +0.347, the per-frame pull
-    BE_REST_LEAD, BE_REST_TRAIL = -1.540, -1.898      # bleeding-edge's DRAWN station
-    BE_ENV_FRONT = -1.010                             # its envelope at its own 75-degree term
-    lead, trail = NOZZLE_LEAD - JET_REST, NOZZLE_TRAIL - JET_REST
-    print("   rest station z %.3f..%.3f vs bleeding-edge %.3f..%.3f (lead delta %+.4f)"
+    def cs_float(src, field):
+        m = re.search(r"float\s+%s\s*=\s*([-+0-9.eE]+)f?\s*;" % re.escape(field), src)
+        if not m:
+            raise SystemExit("cannot read the C# default of %s" % field)
+        return float(m.group(1))
+
+    def cs_bool(src, field):
+        m = re.search(r"bool\s+%s\s*=\s*(true|false)\s*;" % re.escape(field), src)
+        if not m:
+            raise SystemExit("cannot read the C# default of %s" % field)
+        return m.group(1) == "true"
+
+    def prefab_block(text):
+        i = text.find("guid: %s" % RIPTIDE_GUID)
+        if i < 0:
+            raise SystemExit("Dolphin.prefab carries no RiptideAnimation")
+        j = text.find("--- !u!", i)
+        return text[i:j if j > 0 else len(text)]
+
+    def yaml_vec3(block, field):
+        m = re.search(r"^\s*%s: \{x: ([-+0-9.eE]+), y: ([-+0-9.eE]+), z: ([-+0-9.eE]+)\}" % re.escape(field),
+                      block, re.M)
+        if not m:
+            raise SystemExit("Dolphin.prefab does not serialize %s" % field)
+        return tuple(float(m.group(k)) for k in (1, 2, 3))
+
+    def yaml_scalar(block, field):
+        m = re.search(r"^\s*%s: ([-+0-9.eE]+)\s*$" % re.escape(field), block, re.M)
+        if not m:
+            raise SystemExit("Dolphin.prefab does not serialize %s" % field)
+        return float(m.group(1))
+
+    src = open(CS, encoding="utf-8").read()
+    blk = prefab_block(open(PREFAB, encoding="utf-8").read())
+    shipped = {
+        "wingAuthoredPivot":     (cs_vec3(src, "wingAuthoredPivot"),     yaml_vec3(blk, "wingAuthoredPivot")),
+        "wingFlightPivot":       (cs_vec3(src, "wingFlightPivot"),       yaml_vec3(blk, "wingFlightPivot")),
+        "thrusterAuthoredPivot": (cs_vec3(src, "thrusterAuthoredPivot"), yaml_vec3(blk, "thrusterAuthoredPivot")),
+        "thrusterFlightPivot":   (cs_vec3(src, "thrusterFlightPivot"),   yaml_vec3(blk, "thrusterFlightPivot")),
+        "thrusterAnimationScaler": (cs_float(src, "thrusterAnimationScaler"), yaml_scalar(blk, "thrusterAnimationScaler")),
+        "driftWingForward":      (cs_float(src, "driftWingForward"),      yaml_scalar(blk, "driftWingForward")),
+        "driftJetBackwardTotal": (cs_float(src, "driftJetBackwardTotal"), yaml_scalar(blk, "driftJetBackwardTotal")),
+        "mirrorAppendageRoll":   (cs_bool(src, "mirrorAppendageRoll"),    yaml_scalar(blk, "mirrorAppendageRoll") != 0.0),
+    }
+    # THE REFERENCE - bleeding-edge, verbatim. Provenance: origin/bleeding-edge
+    # Assets/_Prefabs/Spacevessels/Dolphin.prefab (Engine case Left|Right.1-3 m_LocalPosition,
+    # LeftWing / RightWing.001 m_LocalPosition - x is 1e-8 float noise on both) and
+    # Assets/_Scripts/Controller/Animation/RiptideAnimation.cs (defaultThrusterPosition,
+    # defaultWingPosition, exaggeratedAnimationScaler = 3 * animationScaler, no roll mirror).
+    REFERENCE = {
+        "wingAuthoredPivot":     (0.0, 0.0, 0.1),
+        "wingFlightPivot":       (0.0, 0.0, 0.0),
+        "thrusterAuthoredPivot": (0.0, 0.14725685, -2.0470345),
+        "thrusterFlightPivot":   (0.0, 0.15, -1.7),
+        "thrusterAnimationScaler": 75.0,
+        "mirrorAppendageRoll":   False,
+    }
+    print("   shipped chain constants (C# default | Dolphin.prefab | bleeding-edge):")
+    for name, (cs_v, yaml_v) in shipped.items():
+        ref = REFERENCE.get(name)
+        def fmt(v):
+            if isinstance(v, bool): return "off" if not v else "ON"
+            if isinstance(v, tuple): return "(%g, %g, %g)" % v
+            return "%g" % v
+        def close(a, b):
+            if isinstance(a, bool) or isinstance(b, bool): return a == b
+            if isinstance(a, tuple): return max(abs(x - y) for x, y in zip(a, b)) < 1e-6
+            return abs(a - b) < 1e-6
+        agree = close(cs_v, yaml_v)
+        matches = ref is None or close(yaml_v, ref)
+        print("     %-24s %-28s %-28s %s%s" % (name, fmt(cs_v), fmt(yaml_v),
+              fmt(ref) if ref is not None else "(rig's own, no reference)",
+              "" if agree and matches else "   <-- FAIL"))
+        if not agree:
+            failures.append("%s: C# default %s disagrees with the prefab's %s - the prefab wins in the "
+                            "engine, so the documented number is not the shipped one" % (name, fmt(cs_v), fmt(yaml_v)))
+        if not matches:
+            failures.append("%s: shipped %s is not bleeding-edge's %s" % (name, fmt(yaml_v), fmt(ref)))
+    A_W, F_W = shipped["wingAuthoredPivot"][1], shipped["wingFlightPivot"][1]
+    A_T, F_T = shipped["thrusterAuthoredPivot"][1], shipped["thrusterFlightPivot"][1]
+    THRUSTER_AMP = shipped["thrusterAnimationScaler"][1]
+    DRIFT_TOTAL = shipped["driftJetBackwardTotal"][1]
+    MIRROR = shipped["mirrorAppendageRoll"][1]
+    if shipped["driftWingForward"][1] != AUTHORED_WING_LUNGE:
+        failures.append("the wing lunge asserted above (%g) is not the shipped %g"
+                        % (AUTHORED_WING_LUNGE, shipped["driftWingForward"][1]))
+
+    # THE RIG'S BONES, vessel frame, world units (fbx_bones dump of
+    # dolphin_shapekey_with_animations.fbx, x mirrored into Unity's frame). The chassis (`fuse`)
+    # sits at the origin, as Dolphin_Test did.
+    P_C = (0.0, 0.0, 0.0)
+    JETS = {"jetT.l": (-0.26948,  0.39609, -1.90064), "jetT.r": (0.26948,  0.39609, -1.90064),
+            "jetm.l": (-0.37291,  0.20079, -1.89641), "jetm.r": (0.37291,  0.20079, -1.89641),
+            "jetB.l": (-0.35035, -0.01851, -1.89164), "jetB.r": (0.35035, -0.01851, -1.89164)}
+    WINGS = {"wing.l": (-0.96897, 0.0, -0.11397), "wing.r": (0.96897, 0.0, -0.11398)}
+    JETHOLD_PIVOT = (0.0, 0.1833, -1.8991)   # the six jethold* bones' shared origin, for the record
+
+    def v_add(a, b): return tuple(x + y for x, y in zip(a, b))
+    def v_sub(a, b): return tuple(x - y for x, y in zip(a, b))
+
+    def chain(rest, chassis_turn, own_turn, authored, flight):
+        """RiptideAnimation.ChainPosition, transcribed."""
+        return v_add(P_C, rot(chassis_turn, v_add(flight, rot(own_turn, v_sub(v_sub(rest, P_C), authored)))))
+
+    def legacy_point(x_rest, chassis_turn, own_turn, authored, flight):
+        """Where the legacy hierarchy carries a point resting at x_rest on a chassis child whose
+        transform was authored at `authored`, lerped to `flight`, and turned by own_turn:
+        world = C * (flight + own * (x_rest - authored))."""
+        return rot(chassis_turn, v_add(flight, rot(own_turn, v_sub(x_rest, authored))))
+
+    S_C, E_W = 25.0, 75.0
+    def wing_own(side, p, y, r, th, mirror):
+        rs = -1.0 if mirror else 1.0
+        brake = th - 0.65 if th < 0.65 else 0.0
+        return euler(brake * S_C, (y + side * th) * E_W, (rs * r + side * p) * S_C)
+    def jet_own(p, y, r, mirror, amp):
+        rs = -1.0 if mirror else 1.0
+        return euler(p * amp, y * amp, rs * r * amp)
+
+    POSES = [(1, 1, 1, 1), (1, -1, 1, -1), (-1, 1, -1, 1), (-1, -1, -1, -1), (1, 1, -1, 0),
+             (-1, 1, 1, 0.3), (0.6, -0.5, 0.8, 0.3), (0.4, 0, 0, 0), (0, 0.7, 0, 0), (0, 0, 1, 0),
+             (0, 0, 0, 1), (0, 0, 0, 0)]
+    OFFSETS = [(0.0, 0.0, 0.0), (0.10, 0.05, -0.30), (-0.05, 0.12, 0.08), (0.2, -0.2, -0.4)]
+    # plausible, non-trivial rest orientations for the bones (the proof is orientation-agnostic:
+    # it holds for ANY rest, as the algebra shows - these keep the numbers honest)
+    RESTS = {"jetT.l": qmul(euler(128.277, -1.361, -95.378), euler(-2.018, 172.348, 57.201)),
+             "jetm.l": qmul(euler(92.691, 0.38, -95.968), euler(-4.049, 169.045, 57.459)),
+             "jetB.l": qmul(euler(60.061, 1.163, -96.79), euler(-3.559, 176.371, 58.567)),
+             "jetT.r": qmul(euler(-51.723, -1.361, 84.622), euler(2.006, 4.254, -57.321)),
+             "jetm.r": qmul(euler(-87.309, 0.38, 84.032), euler(3.984, 3.773, -57.967)),
+             "jetB.r": qmul(euler(-119.939, 1.163, 83.21), euler(3.568, 5.525, -58.448)),
+             "wing.l": qmul(euler(77.08, 0, -180), euler(5.901, 0, 0)),
+             "wing.r": qmul(euler(-102.92, 0, 0), euler(5.901, 0, 0))}
+
+    # 8a. EXACTNESS. Every vertex a rig bone skins must land where the legacy vertex resting at
+    #     the same point lands, for every stick pose - to float64 round-off.
+    worst = 0.0
+    for (p, y, r, th) in POSES:
+        C = euler(p * S_C, y * S_C, r * S_C)
+        for name, B in list(JETS.items()) + list(WINGS.items()):
+            Q = RESTS[name]
+            if name.startswith("jet"):
+                E, A, F = jet_own(p, y, r, MIRROR, THRUSTER_AMP), A_T, F_T
+            else:
+                E, A, F = wing_own(1.0 if name.endswith(".r") else -1.0, p, y, r, th, MIRROR), A_W, F_W
+            pos = chain(B, C, E, A, F)                # the shipped bone position
+            rq = qmul(qmul(C, E), Q)                   # the shipped bone orientation
+            for u in OFFSETS:
+                rig_vert = v_add(pos, rot(rq, u))
+                x_rest = v_add(B, rot(Q, u))           # the same vertex, at rest
+                legacy_vert = legacy_point(x_rest, C, E, A, F)
+                worst = max(worst, max(abs(a - b) for a, b in zip(rig_vert, legacy_vert)))
+    print("   8a exactness: rig bone chain vs the legacy chassis hierarchy, %d poses x 8 parts x %d "
+          "vertices: worst %.3e wu%s" % (len(POSES), len(OFFSETS), worst, "" if worst <= 1e-12 else "   <-- FAIL"))
+    if worst > 1e-12:
+        failures.append("the chassis chain differs from the legacy hierarchy by %.3e wu" % worst)
+
+    # 8b. ZERO INPUT reduces to rest + (flightPivot - authoredPivot): the +0.347 forward seat
+    #     flight 16 measured for the boosters, and the 0.1 aft drag on the wings it missed.
+    drag_t = v_sub(F_T, A_T); drag_w = v_sub(F_W, A_W)
+    for name, B in list(JETS.items()) + list(WINGS.items()):
+        A, F, drag = (A_T, F_T, drag_t) if name.startswith("jet") else (A_W, F_W, drag_w)
+        at_rest = chain(B, euler(0, 0, 0), euler(0, 0, 0), A, F)
+        if max(abs(a - b) for a, b in zip(at_rest, v_add(B, drag))) > 1e-12:
+            failures.append("%s does not reduce to rest + drag at zero input" % name)
+    print("   8b zero input: boosters rest + (%.4f, %.4f, %+.4f), wings rest + (%.4f, %.4f, %+.4f)"
+          % (drag_t + drag_w))
+    NOZZLE_LEAD, NOZZLE_TRAIL, FUSELAGE_TAIL = -1.887, -2.290, -2.471   # rig jet clusters, vessel z
+    BE_REST_LEAD, BE_REST_TRAIL = -1.540, -1.898                        # bleeding-edge's DRAWN station
+    lead, trail = NOZZLE_LEAD + drag_t[2], NOZZLE_TRAIL + drag_t[2]
+    print("      booster station z %.3f..%.3f vs bleeding-edge %.3f..%.3f (lead delta %+.4f)"
           % (trail, lead, BE_REST_TRAIL, BE_REST_LEAD, lead - BE_REST_LEAD))
-    if abs(-JET_REST - BE_DRAG) > 1e-3:
-        failures.append("the rest seat %.3f is no longer bleeding-edge's %.3f drag"
-                        % (JET_REST, -BE_DRAG))
     if abs(lead - BE_REST_LEAD) > 0.01:
-        failures.append("the boosters' leading edge %.3f is off bleeding-edge's %.3f"
-                        % (lead, BE_REST_LEAD))
-    # They must still read as ENGINES AT THE REAR: behind the wings' trailing edge (-0.617).
+        failures.append("the boosters' leading edge %.3f is off bleeding-edge's %.3f" % (lead, BE_REST_LEAD))
+    RIG_WING_REST_Z, BE_WING_DRAWN_Z = -0.3038, -0.4032   # wing geometry, vessel z (check 8's forensic)
+    wing_z = RIG_WING_REST_Z + drag_w[2]
+    print("      wing geometry z %.4f vs bleeding-edge's drawn %.4f (delta %+.4f)"
+          % (wing_z, BE_WING_DRAWN_Z, wing_z - BE_WING_DRAWN_Z))
+    if abs(wing_z - BE_WING_DRAWN_Z) > 0.002:
+        failures.append("the wings' rest station %.4f is off bleeding-edge's %.4f" % (wing_z, BE_WING_DRAWN_Z))
     WING_TRAIL = -0.617
     if lead > WING_TRAIL:
-        failures.append("the boosters lead at %.3f, forward of the wings' trailing edge %.3f"
-                        % (lead, WING_TRAIL))
-    # The DRIFT total is untouched and keeps its own signed-off assertion: a drift deliberately
-    # swings the engines clear of the body, so there the tail-plane test still means something.
+        failures.append("the boosters lead at %.3f, forward of the wings' trailing edge %.3f" % (lead, WING_TRAIL))
+
+    # 8c. THE NEGATIVE CONTROL - the retired construction (flights 3-16): orientation composed
+    #     C * E * rest about the bone's OWN pivot, position HELD at rest + drag. Its orientation
+    #     was already exact; what it lacked was the ORBIT and the shared PIVOT, and this is how
+    #     far that put a bone from where the legacy part frame carries it.
+    worst_ctrl, worst_ctrl_name = 0.0, ""
+    ctrl_at_zero_own = 0.0
+    for (p, y, r, th) in POSES:
+        C = euler(p * S_C, y * S_C, r * S_C)
+        for name, B in list(JETS.items()) + list(WINGS.items()):
+            if name.startswith("jet"):
+                E, A, F, drag = jet_own(p, y, r, MIRROR, THRUSTER_AMP), A_T, F_T, drag_t
+            else:
+                E, A, F, drag = wing_own(1.0 if name.endswith(".r") else -1.0, p, y, r, th, MIRROR), A_W, F_W, drag_w
+            held = v_add(B, drag)
+            d = dist(held, chain(B, C, E, A, F))
+            if d > worst_ctrl:
+                worst_ctrl, worst_ctrl_name = d, name
+            # and with the own term at ZERO (flight 15's own=0 experiment): the orbit alone
+            ctrl_at_zero_own = max(ctrl_at_zero_own, dist(held, chain(B, C, euler(0, 0, 0), A, F)))
+    print("   8c control - the retired held-position construction: bone pivot up to %.3f wu (%s) from "
+          "where the legacy hierarchy carries it; %.3f wu with the own term at zero (the orbit alone)"
+          % (worst_ctrl, worst_ctrl_name, ctrl_at_zero_own))
+    if worst_ctrl < 0.3 or ctrl_at_zero_own < 0.3:
+        failures.append("the held-position control did not reproduce the defect (%.3f / %.3f wu)"
+                        % (worst_ctrl, ctrl_at_zero_own))
+
+    # 8d. THE MIRROR is an own-term flip only: with it on, a part whose own amplitude is zero is
+    #     BIT-IDENTICAL to the legacy chain (the orbit is never mirrored), and a booster's relative
+    #     roll against the fuselage flips sign. Shipped OFF (asserted against the reference above).
+    C = euler(0, 0, 25.0)
+    for name, B in JETS.items():
+        same = chain(B, C, jet_own(0, 0, 1, True, 0.0), A_T, F_T)
+        base = chain(B, C, jet_own(0, 0, 1, False, 0.0), A_T, F_T)
+        if max(abs(a - b) for a, b in zip(same, base)) > 1e-12:
+            failures.append("the mirror moved %s's orbit" % name)
+    rel_on = to_axis_angle(jet_own(0, 0, 1, True, THRUSTER_AMP))
+    rel_off = to_axis_angle(jet_own(0, 0, 1, False, THRUSTER_AMP))
+    flipped = rel_on[0][2] * rel_on[1] * (rel_off[0][2] * rel_off[1]) < 0
+    print("   8d mirror (opt-in, %s): orbit untouched; own roll %+.1f -> %+.1f deg at full roll%s"
+          % ("ON" if MIRROR else "off", rel_off[0][2] * rel_off[1], rel_on[0][2] * rel_on[1],
+             "" if flipped else "   <-- FAIL"))
+    if not flipped:
+        failures.append("the roll mirror does not flip the own term's roll")
+
+    # 8e. THE DRIFT is untouched by the chain and keeps its own signed-off assertions: the drift
+    #     total is visible, and it swings the nozzles clear of the fuselage tail.
+    HULL = 3.4482
+    VISIBLE = 0.05 * HULL
+    if 0 < abs(DRIFT_TOTAL) < VISIBLE:
+        failures.append("the drift total %.3f is below the visibility floor" % DRIFT_TOTAL)
     drift_lead = NOZZLE_LEAD - DRIFT_TOTAL
     clears = drift_lead <= FUSELAGE_TAIL
-    print("   at drift the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
-          % (drift_lead, FUSELAGE_TAIL, "clear of the body" if clears else "still alongside it"))
+    print("   8e drift: total %.2f (%.1f%% of the %.3f hull); nozzles lead at z %.3f vs the fuselage "
+          "tail %.3f - %s" % (DRIFT_TOTAL, 100 * DRIFT_TOTAL / HULL, HULL, drift_lead, FUSELAGE_TAIL,
+                              "clear of the body" if clears else "still alongside it"))
     if not clears:
         failures.append("the drift seat leaves the nozzles alongside the fuselage tail")
-
-    # THE SWING-ENVELOPE ASSERTION, RESTATED (flight 16). Flight 13's version demanded the
-    # envelope stay BEHIND the tail plane - authored when the intent was "engines at the back of
-    # the body, clear of the tail". Bleeding-edge does the opposite (its boosters live inside the
-    # hull's rear and sweep to z -1.010), so that invariant is what this flight overturns, and it
-    # is restated rather than quietly dropped: the boosters may sit inside the hull's rear, but
-    # they must never sweep FORWARD OF WHERE BLEEDING-EDGE SWEEPS. Envelope maxZ values are
-    # MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated about the six measured
-    # bone pivots (scratch flight13.py/16b.py); re-measure if the rig changes.
-    CHASSIS_AMP = 25.0
-    THRUSTER_OWN_AMP = 5.0             # shipped (75 originally, 25 flight 13, 12 flight 14)
-    # seat-0 envelope front per own-amplitude, under the SHIPPED chassis composition
-    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715, 12.0: -1.846, 5.0: -1.880}
-    env_front = ENV_MAXZ[THRUSTER_OWN_AMP] - JET_REST
-    ok = env_front <= BE_ENV_FRONT
-    print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs bleeding-edge's %.3f"
-          "  %s (margin %.3f)"
-          % (THRUSTER_OWN_AMP, CHASSIS_AMP, env_front, BE_ENV_FRONT,
-             "BEHIND" if ok else "<-- CROSSES", BE_ENV_FRONT - env_front))
-    if not ok:
-        failures.append("the booster swing envelope reaches forward of bleeding-edge's")
-    # control: the retired 75-degree own term at this seat sweeps to -1.134, which is still
-    # behind bleeding-edge's -1.010 - so amplitude alone can no longer demonstrate a crossing.
-    # The control that DOES is the seat this flight retires: at 1.0 the boosters trailed 0.819 wu
-    # BEHIND a hull bleeding-edge never lets them leave, 1.347 off the reference station.
-    ctrl_trail = NOZZLE_TRAIL - PREVIOUS_REST
-    print("   control: flight 15's seat %.1f -> trailing edge z %.3f, %.3f wu behind the tail "
-          "%.3f and %.3f off bleeding-edge"
-          % (PREVIOUS_REST, ctrl_trail, FUSELAGE_TAIL - ctrl_trail, FUSELAGE_TAIL,
-             abs((NOZZLE_LEAD - PREVIOUS_REST) - BE_REST_LEAD)))
-    if ctrl_trail >= FUSELAGE_TAIL:
-        failures.append("the seat control stopped demonstrating an overhang - re-derive")
-
-    # THE SEPARATION ASSERTION (flight 14): "it should still separate, just closer to pinned".
-    # Chassis resolves to the `fuse` bone and turns at CHASSIS_AMP, and the boosters compose that
-    # same turn before their own - so on pitch/yaw the own term IS the separation from the
-    # fuselage, and it must be strictly smaller than what it replaced and strictly non-zero.
-    # Peak swing of a booster off a perfectly-pinned one, over the input cube at the farthest jet
-    # vertex (0.444 wu from its pivot); measurements from scratch flight14.py, re-measure on a
-    # rig change.
-    SEP_WU = {75.0: 0.847, 25.0: 0.345, 12.0: 0.165, 5.0: 0.068, 0.0: 0.000}
-    PREVIOUS_OWN_AMP = 12.0
-    sep, prev_sep = SEP_WU[THRUSTER_OWN_AMP], SEP_WU[PREVIOUS_OWN_AMP]
-    print("   separation: own %g -> peak swing %.3f wu off pinned (was %.3f at own %g, %.0f%% of it)"
-          % (THRUSTER_OWN_AMP, sep, prev_sep, PREVIOUS_OWN_AMP, 100 * sep / prev_sep))
-    if sep >= prev_sep:
-        failures.append("the boosters did not get more pinned than own %g" % PREVIOUS_OWN_AMP)
-    if sep <= 0:
-        failures.append("the boosters stopped separating at all - the ask was closer, not pinned")
-
-    # THE ROLL FLOOR IS REMOVED (flight 15). The boosters used to take the appendage chassis term,
-    # whose roll is MIRRORED, while the fuselage (`fuse`, driven as Chassis) keeps true roll - so
-    # on roll the two ADDED and a pure roll input pulled a booster 50 deg off the body with the own
-    # term at ZERO, a floor no amplitude cut could reach. They now take the body's true roll and
-    # keep the mirror in their OWN term only, so the chassis component cancels on all three axes
-    # and the worst-case separation is bounded by the dial. Angles are measured over the input cube
-    # (scratch flight15.py); the mirror DIRECTION is preserved and asserted by sign below.
-    REL_WORST_DEG = {12.0: 21.5, 8.0: 14.2, 5.0: 8.8, 4.0: 7.0, 0.0: 0.0}
-    OLD_ROLL_FLOOR_DEG = 50.0          # what own=0 still separated by, before flight 15
-    rel = REL_WORST_DEG[THRUSTER_OWN_AMP]
-    print("   roll floor: removed - worst separation on ANY axis is now %.1f deg (own=0 gives %.1f);"
-          % (rel, REL_WORST_DEG[0.0]))
-    print("               the retired mirrored-chassis composition left %.1f deg at own=0"
-          % OLD_ROLL_FLOOR_DEG)
-    if REL_WORST_DEG[0.0] != 0.0:
-        failures.append("a separation floor survives own=0 - the chassis term is not cancelling")
-    if rel >= OLD_ROLL_FLOOR_DEG:
-        failures.append("worst-case separation is no better than the floor flight 15 removed")
-    # The signed-off mirror must survive as a DIRECTION. Relative roll of a booster vs the fuselage
-    # is -(own) deg per unit roll under the shipped composition and was -(50 + own) before: same
-    # sign, smaller magnitude. A construction that cancelled the own term's mirror too would read
-    # 0 or flip sign here, which is the flight-9 ask being lost.
-    for r in (-1.0, 1.0):
-        shipped_rel_roll = -THRUSTER_OWN_AMP * r
-        retired_rel_roll = -(OLD_ROLL_FLOOR_DEG + THRUSTER_OWN_AMP) * r
-        if shipped_rel_roll * retired_rel_roll <= 0:
-            failures.append("the boosters' mirrored roll direction changed sign at roll %+g" % r)
-    print("   mirror kept: relative roll %+.2f deg at full roll (was %+.2f) - same sign"
-          % (-THRUSTER_OWN_AMP, -(OLD_ROLL_FLOOR_DEG + THRUSTER_OWN_AMP)))
+    # for the record: how far the chain carries a booster pivot at full stick (bleeding-edge's
+    # own sweep, by 8a)
+    travel = max(dist(v_add(B, drag_t), chain(B, euler(p * S_C, y * S_C, r * S_C),
+                                             jet_own(p, y, r, MIRROR, THRUSTER_AMP), A_T, F_T))
+                 for (p, y, r, th) in POSES for B in JETS.values())
+    print("      booster pivot travel at full stick on the chain: %.3f wu (bleeding-edge's, by 8a); "
+          "shared jethold origin %s" % (travel, "(%g, %g, %g)" % JETHOLD_PIVOT))
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")
@@ -761,8 +889,9 @@ def main():
         for f in failures:
             print("  !", f)
         return 1
-    print("OK - ship-axis turns, the chassis term once on any art, a guarded stateless Course frame,\n"
-          "     the drift cage in that frame, and measured world-unit offsets that survive any chain scale.")
+    print("OK - ship-axis turns, the legacy chassis chain exact (orbit + shared pivots, constants read\n"
+          "     off the shipped C# and prefab), a guarded stateless Course frame, the drift cage in that\n"
+          "     frame, and measured world-unit offsets that survive any chain scale.")
     return 0
 
 if __name__ == "__main__":

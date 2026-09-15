@@ -3865,7 +3865,7 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 
 ---
 
-## 🔴 Dolphin rig swap — FLOWN, BROKE, FIXED; needs a re-flight (2026-08-26)
+## 🔴 Dolphin rig swap — FLOWN, BROKE, FIXED; needs a re-flight (2026-08-26; flight 17 pending 2026-09-15)
 
 > **DO NOT MERGE until step 7 passes.** The swap ran, every asset check passed, and the ship was
 > still broken in flight — the puppetry tore apart and the hull wore a leftover Blender colour.
@@ -3873,6 +3873,15 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 > **every structural check on this list passed while the vessel was unusable**, because both
 > defects lived in things the swap did not touch. Asset verification bounds what a swap BROKE; it
 > cannot tell you the ship is right.
+>
+> **Flight 17 (2026-09-15) is the one to fly next.** Sixteen flights tuned the boosters' seat and
+> the last landed it on bleeding-edge's station to the digit while the playtest still read worse.
+> The seat was the wrong dial: the legacy art's chassis-child hierarchy made the wings and boosters
+> ORBIT the fuselage's turn and swing about ONE shared seat per class, and every construction since
+> flight 3 composed the chassis turn into their orientation only. `RiptideAnimation.PlacePartOnChassis`
+> now reproduces that chain in vessel space (`Docs/VESSEL_CONSTRUCTION.md` §4.6.5, flight 17), at
+> bleeding-edge's 75° booster amplitude, with the roll mirror OFF (an opt-in field). Proven offline
+> only — the verifier lands every rig vertex where the legacy vertex would (6.7e-16 wu).
 
 ### What the flight found, and why nothing here caught it
 
@@ -3949,10 +3958,18 @@ rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` 
    something else changed.
 6. ⬜ **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
    not under the model), so it must still pass exactly as before.
-7. 🔴 **Fly it — THE ONE THAT MATTERS.** Failed once (see above), fixed, NOT yet re-flown. Element level 0 → 10 on each of the four elements and watch the hull morph; check the
+7. 🔴 **Fly it — THE ONE THAT MATTERS.** Sixteen flights so far; flight 17 NOT yet flown. Element level 0 → 10 on each of the four elements and watch the hull morph; check the
    jaws, wings and six thrusters still animate (`RiptideAnimation` re-binds by bone name, so its
    inspector fields are deliberately left EMPTY); check the trail, the skim and the crystal blast
-   are unchanged.
+   are unchanged. **Flight 17's specific read, judged against a bleeding-edge Dolphin flown side
+   by side:** in ordinary flight the wings and all six boosters must swing WITH the fuselage's
+   turn (they orbit it, no longer spinning in place while the tail sweeps away) and the boosters
+   must swing about the common seat behind the body at the old art's exaggerated 75° — the
+   legacy read, drift untouched. Two legacy-parity choices to confirm or flip in the inspector
+   on `Dolphin.prefab`'s `RiptideAnimation`: `thrusterAnimationScaler 75` (the old amplitude; a
+   lower number is a FEEL cut on a construction that is now right) and `mirrorAppendageRoll`
+   off (flight 8's mirror was asked for against the broken construction; tick it if the roll
+   still reads backwards on the parts and not on the hull).
 8. ✅ **Ship the output.** Use the window's **Validate & Push** button, which stages only the prefab
    the tool recorded. Do not `git add -A`.
 

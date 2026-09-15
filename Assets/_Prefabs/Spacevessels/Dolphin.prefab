@@ -1593,7 +1593,6 @@ MonoBehaviour:
   brakeThreshold: 0.65
   lerpAmount: 2
   smallLerpAmount: 0.7
-  DriftHandle: {fileID: 0}
   Chassis: {fileID: 0}
   NoseTop: {fileID: 0}
   RightWing: {fileID: 0}
@@ -1609,8 +1608,12 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   driftWingForward: 3.5
   driftJetBackwardTotal: 1.25
-  jetRestBackward: -0.347
-  thrusterAnimationScaler: 5
+  wingAuthoredPivot: {x: 0, y: 0, z: 0.1}
+  wingFlightPivot: {x: 0, y: 0, z: 0}
+  thrusterAuthoredPivot: {x: 0, y: 0.14725685, z: -2.0470345}
+  thrusterFlightPivot: {x: 0, y: 0.15, z: -1.7}
+  thrusterAnimationScaler: 75
+  mirrorAppendageRoll: 0
   JawResourceIndex: 0
   MinJawAngle: 4.7636
   MaxJawAngle: 23.4287

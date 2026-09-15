@@ -86,64 +86,106 @@ namespace CosmicShore.Gameplay
         // numbers. Tools/Build/verify_vessel_rig_puppetry_frames.py re-proves the round trip.
         [Header("Drift clearance (world units, measured against the shipped rig)")]
         [Tooltip("How far FORWARD (+z) the wings lunge while drifting, in world units in the " +
-                 "COURSE frame. 3.5 is the MEASURED true-clearance lunge: the aiming hull's " +
-                 "jaw tip sweeps a 2.835-radius sphere about the vessel origin, and 3.5 is the " +
-                 "smallest lunge (bisected L* = 3.492) that puts every wing vertex outside " +
-                 "that sweep x1.05 gape margin - so the jaws cannot reach the wings at ANY " +
-                 "drift aim angle. (2.2 was old-game parity, and the old game interpenetrated.)")]
+                 "COURSE frame, from the wing's RIG rest. 3.5 is the MEASURED true-clearance " +
+                 "lunge: the aiming hull's jaw tip sweeps a 2.835-radius sphere about the vessel " +
+                 "origin, and 3.5 is the smallest lunge (bisected L* = 3.492) that puts every " +
+                 "wing vertex outside that sweep x1.05 gape margin - so the jaws cannot reach the " +
+                 "wings at ANY drift aim angle. (2.2 was old-game parity, and the old game " +
+                 "interpenetrated.)")]
         [SerializeField] float driftWingForward = 3.5f;
 
-        [Tooltip("Engine offset during a DRIFT, world units along -z, in the COURSE frame. " +
-                 "DECOUPLED from jetRestBackward below (flight 12) - it used to be jetRestBackward " +
-                 "+ a slide on top, which meant bumping the rest seat silently moved the drift " +
-                 "clearance out from under a value that had already been signed off. 1.25 is " +
-                 "exactly that prior total (1.0 + 0.25) - the drift position flight 12 confirmed " +
-                 "perfect - now held as its own independent number so a future rest retune can " +
-                 "never touch it again.")]
+        [Tooltip("Engine offset during a DRIFT, world units along -z, in the COURSE frame, from " +
+                 "the jet's RIG rest. Its own independent number since flight 12: it used to be " +
+                 "the rest seat + a slide on top, so bumping the seat silently moved a drift " +
+                 "clearance that had already been signed off. 1.25 is exactly that prior total " +
+                 "(1.0 + 0.25), the drift position flight 12 confirmed perfect. The FLIGHT " +
+                 "puppetry below never reads it and it never reads the flight pivots.")]
         [SerializeField] float driftJetBackwardTotal = 1.25f;
 
-        [Tooltip("Engine REST offset along -z, world units. NEGATIVE = forward. -0.347 is not a " +
-                 "fitted number: it is EXACTLY the per-frame drag the shipped bleeding-edge " +
-                 "Dolphin applies, and the two models make that directly comparable because " +
-                 "they share the fuselage (Dolphin_Test's `Chassis` mesh and this rig's `fuse` " +
-                 "cluster are both 2,763 verts spanning z -2.471..+0.977). Bleeding-edge " +
-                 "authors its six engine cases at z -2.047 and then AnimatePart lerps every " +
-                 "one to defaultThrusterPosition (0,.15,-1.7) every frame - +0.347 forward - " +
-                 "so the station a player actually sees is z -1.898..-1.540, which STOPS 0.572 " +
-                 "wu SHORT of the tail plane. On bleeding-edge no part of a booster is ever " +
-                 "behind the hull. This rig retires that drag (an absolute localPosition write " +
-                 "is what flung six engine bones 1.7u, VESSEL_CONSTRUCTION.md 4.6), so the same " +
-                 "station is expressed as a rest offset instead. MEASURED LANDMARKS (vessel " +
-                 "frame): this rig's jet clusters sculpt at z -2.290..-1.887 - the outer `jet*` " +
-                 "bones land on bleeding-edge's authored cases to 0.0000 wu, and the extra " +
-                 "0.045 is real nozzle geometry the old art scaled to a 0.015 wu speck that " +
-                 "never drew. So 0 = bleeding-edge's AUTHORED station (0.347 aft of its " +
-                 "screen); 0.181 puts the trailing edge exactly ON the tail; 1.0 (flights " +
-                 "10-12) hung it 0.819 wu BEHIND the hull, 1.347 off the reference. DO NOT " +
-                 "deepen this to fix a 'boosters read too far forward' report from the CHASE " +
-                 "CAMERA: that camera is on-axis and level (followOffset 0,0,-20), so a part's " +
-                 "station along the hull projects to almost nothing - the only surviving cues " +
-                 "are SIZE and OCCLUSION, and both invert (a deeper seat is nearer the lens, " +
-                 "renders ~20-25% larger, and draws OVER the wings, reading as beside them). " +
-                 "Flight 13 proved this by scene view: three seats 0.6/1.0/1.8 all read the " +
-                 "same in-game while the true geometry marched backwards. Fix the READ via " +
-                 "thrusterAnimationScaler below; judge THIS number against the reference.")]
-        [SerializeField] float jetRestBackward = -0.347f;
+        // THE FLIGHT PUPPETRY IS THE LEGACY CHASSIS CHAIN, REPRODUCED IN VESSEL SPACE (flight 17).
+        //
+        // On the part-per-mesh art the wings and the six engine cases were CHILDREN of the
+        // chassis (Dolphin_Test). That hierarchy did two things per frame that a rig's sibling
+        // bones do not, and flights 1-16 reproduced neither:
+        //
+        //   * ORBIT. The chassis deflects Euler(25p, 25y, 25r) about its own origin and every
+        //     child rides that turn - its POSITION swings around the chassis pivot, not only its
+        //     orientation. A booster 1.7 wu aft of the pivot travels ~0.74 wu on a full 25-degree
+        //     deflection; a wing bone 0.97 wu out travels ~0.42. Composing the chassis turn into
+        //     the appendages' ORIENTATION alone (the previous construction) spun them in place
+        //     about their own bone pivots while the fuselage tail swept away underneath them -
+        //     which is what "the boosters and wings are the issue" looks like, and what no
+        //     z-station could reach, because the seat was never the defect.
+        //   * PIVOT. Each child's OWN turn is about ITS transform origin, and the art put that at
+        //     ONE shared point per part class: all six engine cases at (0, 0.147, -2.047), both
+        //     wings at (0, 0, 0.1). The code then LERPS that origin to a FLIGHT station every
+        //     frame - engines to (0, 0.15, -1.7), wings to (0, 0, 0) - so in flight the boosters
+        //     swing about a common seat 0.35 wu ahead of where they were authored, carrying their
+        //     geometry +0.347 forward with them. On this rig each jet's bone sits at its own
+        //     nozzle, 0.27-0.37 wu from that seat, and the wing bones at (+-0.969, 0, -0.114);
+        //     turning a bone about itself is a different motion from turning it about the seat.
+        //
+        // Both fall out of ONE statement: each rig bone is a point RIGIDLY ATTACHED to the legacy
+        // part frame, and it undergoes that frame's motion. The legacy frame goes from
+        // (authoredPivot, rest) to (chassisTurn * flightPivot, chassisTurn * ownTurn * rest), so
+        // a bone resting at R in the vessel frame lands at
+        //
+        //     chassisPivot + chassisTurn * (flightPivot + ownTurn * (R - chassisPivot - authoredPivot))
+        //
+        // with orientation chassisTurn * ownTurn * restOrientation. Every vertex the bone skins
+        // therefore lands EXACTLY where a legacy vertex resting at the same point would - proven
+        // to 1e-12 by Tools/Build/verify_vessel_rig_puppetry_frames.py check 8 - and at zero
+        // input it reduces to rest + (flightPivot - authoredPivot): the +0.347 forward seat
+        // flight 16 measured for the boosters, and the 0.1 wu aft drag on the wings that flight
+        // 16 missed, both of them the per-frame drag bleeding-edge applies. The pivots are the
+        // bleeding-edge prefab's and script's authored numbers verbatim; the chassis pivot is the
+        // Chassis part's own rest position, read off the rig rather than authored.
+        [Header("Flight puppetry - the legacy chassis chain (bleeding-edge's Dolphin.prefab, verbatim)")]
+        [Tooltip("Where the legacy wing transforms were AUTHORED, in chassis (= vessel) space: " +
+                 "both wings at (0, 0, 0.1) in bleeding-edge's Dolphin.prefab. The wing geometry " +
+                 "is defined around this point, so it is the pivot the wing's own turn is taken " +
+                 "about. A measurement, not a tuning.")]
+        [SerializeField] Vector3 wingAuthoredPivot = new(0f, 0f, 0.1f);
 
-        [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick, composed on top " +
-                 "of the chassis term. THIS IS THE SEPARATION DIAL, and since flight 15 it is " +
-                 "the ONLY separation on every axis: Chassis resolves to the `fuse` bone and " +
-                 "the boosters now compose that same turn INCLUDING its true roll, so the " +
-                 "chassis component cancels against the fuselage on pitch, yaw AND roll. " +
-                 "Measured worst-case relative-to-fuselage angle over the input cube: 12 with " +
-                 "the old mirrored chassis term 65.3 deg, 12 here 21.5, 8 -> 14.2, 5 (shipped) " +
-                 "-> 8.8, 0 -> pinned. Peak swing off a perfectly-pinned booster, at the " +
-                 "farthest jet vertex (0.444 wu from its pivot): 75 -> 0.847 wu, 25 -> 0.345, " +
-                 "12 -> 0.165, 5 -> 0.068. Full-input swing envelope stays 0.41 wu behind the " +
-                 "fuselage tail plane at the 1.0 seat. The wings keep their own signed-off " +
-                 "terms and the mirrored chassis term - this dial reaches ONLY the six " +
-                 "boosters.")]
-        [SerializeField] float thrusterAnimationScaler = 5f;
+        [Tooltip("Where bleeding-edge PARKS that transform every frame (defaultWingPosition = " +
+                 "(0, 0, 0) in its RiptideAnimation.cs): the wings' pivot in flight. Its " +
+                 "difference from the authored pivot is the 0.1 wu aft drag the wings show at " +
+                 "rest on bleeding-edge - the rig's wing geometry rests at z -0.304, the old " +
+                 "game drew it at -0.403.")]
+        [SerializeField] Vector3 wingFlightPivot = Vector3.zero;
+
+        [Tooltip("Where the legacy engine-case transforms were AUTHORED: all six at " +
+                 "(0, 0.14725685, -2.0470345) in bleeding-edge's Dolphin.prefab. ONE shared " +
+                 "point - the boosters radiate from it, so their own turn swings each about that " +
+                 "seat, never about its own nozzle. A measurement, not a tuning.")]
+        [SerializeField] Vector3 thrusterAuthoredPivot = new(0f, 0.14725685f, -2.0470345f);
+
+        [Tooltip("Where bleeding-edge parks every engine case each frame (defaultThrusterPosition " +
+                 "= (0, .15, -1.7) in its RiptideAnimation.cs): the boosters' pivot in flight, " +
+                 "and the +0.347 forward seat flight 16 measured (with the 0.0027 wu lift that " +
+                 "came with it). This is the dial for the boosters' STATION: bleeding-edge draws " +
+                 "them at z -1.898..-1.540, the leading edge 0.572 wu inside the tail plane. The " +
+                 "drift total above is independent of it by construction.")]
+        [SerializeField] Vector3 thrusterFlightPivot = new(0f, 0.15f, -1.7f);
+
+        [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick on all three axes, " +
+                 "composed after the chassis term and taken about the flight pivot. 75 is " +
+                 "bleeding-edge's exaggeratedAnimationScaler (3 x the 25-degree chassis term): " +
+                 "the legacy look. Flights 13-15 cut this to 5 to stop the boosters 'swinging " +
+                 "off the body' - that swing was the bone-pivot construction, not the amplitude, " +
+                 "and on the chain at 75 they sweep exactly as the old art did.")]
+        [SerializeField] float thrusterAnimationScaler = 75f;
+
+        [Tooltip("OFF = legacy parity: the wings and boosters take the roll input the way " +
+                 "bleeding-edge does. ON = flight 8's ask ('rolling clockwise should do what " +
+                 "rolling counterclockwise does now'): negates the roll input in the appendages' " +
+                 "OWN terms only - they still ORBIT with the chassis's true roll, because the " +
+                 "orbit IS the hierarchy and mirroring it would tear the parts off the body - so " +
+                 "they deflect about their own pivot the other way. That ask was made against " +
+                 "the bone-pivot construction, whose roll response was wrong for its own reasons " +
+                 "(flight 15's 50-degree floor), so it ships OFF for a flight that judges the " +
+                 "legacy chain first.")]
+        [SerializeField] bool mirrorAppendageRoll = false;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
@@ -153,9 +195,12 @@ namespace CosmicShore.Gameplay
             Mathf.Clamp(worldUnits, -MaxOffsetWorldUnits, MaxOffsetWorldUnits);
 
         Vector3 ForwardWingOffset => new(0, 0, Sane(driftWingForward));
-        Vector3 RestThrusterOffset => new(0, 0, -Sane(jetRestBackward));
         Vector3 BackwardThrusterOffset => new(0, 0, -Sane(driftJetBackwardTotal));
-        static readonly Vector3 defaultWingOffset = Vector3.zero;
+
+        // The point the chassis turns about, in the vessel frame: the Chassis part's own rest
+        // position (the `fuse` bone, and Dolphin_Test before it, both sit at the vessel origin).
+        // Captured in Initialize, after the rest positions are.
+        Vector3 _chassisPivot;
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
                  "fills and a crystal impact spends.")]
@@ -296,6 +341,11 @@ namespace CosmicShore.Gameplay
             // Seed the drift frame's degeneracy hold (see PerformShipPuppetry) with something
             // sane for the first frame.
             _lastAppendageFrame = transform.rotation;
+
+            // The chain orbits about the chassis's own rest position (captured by ResolveParts
+            // above). Zero on both arts; read rather than authored so a rig that seats `fuse`
+            // elsewhere is still right.
+            _chassisPivot = TryGetRestPositionInVessel(Chassis, out var chassisRest) ? chassisRest : Vector3.zero;
         }
 
         // POSITIONS MUST SETTLE WHEN THE STICK IS IDLE TOO.
@@ -326,18 +376,19 @@ namespace CosmicShore.Gameplay
             ApplyRestingLayout();
         }
 
-        /// <summary>Where the positioned parts live when nothing is asking them to move: the wings
-        /// at rest, the engines at their resting setback. Shared by the idle path and by
-        /// PerformShipPuppetry, so the two can never describe a different ship.</summary>
+        /// <summary>Where the positioned parts live when nothing is asking them to move: the
+        /// legacy chain at zero input - every part at its rest, dragged by (flightPivot -
+        /// authoredPivot): the boosters +0.347 forward, the wings 0.1 aft. Shared by the idle
+        /// path and by PerformShipPuppetry, so the two can never describe a different ship.</summary>
         void ApplyRestingLayout()
         {
             Quaternion frame = transform.rotation;
             MovePartFromRest(Chassis, Vector3.zero, frame);
-            MovePartFromRest(RightWing, defaultWingOffset, frame);
-            MovePartFromRest(LeftWing, defaultWingOffset, frame);
+            SeatPartOnChassis(RightWing, wingAuthoredPivot, wingFlightPivot, frame);
+            SeatPartOnChassis(LeftWing, wingAuthoredPivot, wingFlightPivot, frame);
             if (animationTransforms == null) return;
             for (int i = 0; i < animationTransforms.Count; i++)
-                MovePartFromRest(animationTransforms[i], RestThrusterOffset, frame);
+                SeatPartOnChassis(animationTransforms[i], thrusterAuthoredPivot, thrusterFlightPivot, frame);
         }
 
         protected override void PerformShipPuppetry(float pitch, float yaw, float roll, float throttle)
@@ -354,10 +405,12 @@ namespace CosmicShore.Gameplay
 
             // THE TERMS BELOW ARE THE ONES THIS SHIP HAS ALWAYS USED. Three passes of per-axis
             // sign scalers were tried here and every one of them was wrong on playtest, because
-            // the defect was never a sign: it was the CHASSIS TERM, which the old art delivered
-            // through the hierarchy and the rig does not (see the composition note below).
-            // Nothing in this method flips an axis. If an axis reads backwards, it is backwards
-            // in the flight model or in the rig, and that is where it gets fixed.
+            // the defect was never a sign: it was the CHASSIS HIERARCHY, which the old art
+            // delivered for free and the rig does not - first its orientation term (flight 3),
+            // then its ORBIT and its shared PIVOTS (flight 17, see PlacePartOnChassis). With the
+            // roll mirror at its default (off) nothing in this method flips an axis. If an axis
+            // reads backwards, it is backwards in the flight model or in the rig, and that is
+            // where it gets fixed.
             Quaternion chassisTurn = Quaternion.Euler(pitch * animationScaler,
                                                       yaw * animationScaler,
                                                       roll * animationScaler);
@@ -450,90 +503,55 @@ namespace CosmicShore.Gameplay
             // the "parts still move as I aim" read the drift split exists to remove. With the
             // Dolphin's locked-course drift the cage now holds perfectly still while the nose
             // turns.
-            Vector3 wingOffset = drifting ? ForwardWingOffset : defaultWingOffset;
-            Vector3 thrusterOffset = drifting ? BackwardThrusterOffset : RestThrusterOffset;
+            Vector3 wingOffset = ForwardWingOffset;
+            Vector3 thrusterOffset = BackwardThrusterOffset;
 
-            // THE CHASSIS TERM, PUT BACK BY HAND. On the part-per-mesh art every one of these
-            // parts was a direct CHILD of the chassis (Dolphin.prefab before the rig swap:
-            // LeftWing / RightWing.001 / Engine case L|R.1-3 all hung off `Dolphin_Test`, which is
-            // what `Chassis` resolved to), so each inherited the chassis's own turn for free and
-            // added its own on top. On the rig the wings hang off `winghold.l|r` and the engines
-            // off `jetholdT|m|B.l|r` - a sibling branch of `fuse` - so that inherited term is
-            // simply gone. Its loss is not subtle: the wings' own PITCH input is Brake(throttle),
-            // which is zero unless the pilot is braking, so every bit of pitch response the wings
-            // had came from the chassis. Without it they sit dead on that axis. Composed, never
-            // added: Euler angles do not add at these amplitudes.
-            // THE APPENDAGES' ROLL IS MIRRORED - a flight-8 feel ask, deliberate departure from
-            // legacy parity: "rolling the vessel clockwise should cause the effect on those parts
-            // that rolling counterclockwise does now", for the wings and all six boosters. The
-            // roll INPUT is negated in their OWN term; for the WINGS it is negated in the
-            // composed chassis term too, so their net roll deflection is the exact mirror of what
-            // it was. The BOOSTERS take the body's true roll in their chassis term (flight 15,
-            // see below) - still mirrored in the direction they deflect, just no longer fighting
-            // the fuselage by a whole chassis turn; the CHASSIS keeps the true roll (its bank was
-            // never the complaint),
-            // and the aileron cross-coupling (the pitch component of the wings' z term) is
-            // untouched - only the roll variable flips. Scoped to the puppetry: during a drift
-            // the cage follows the hull's roll so up stays toward the camera, which is its own
-            // signed ask and stays as it is.
-            Quaternion appendageChassisTurn = Quaternion.Euler(pitch * animationScaler,
-                                                               yaw * animationScaler,
-                                                               -roll * animationScaler);
+            // THE APPENDAGES' OWN TERMS - bleeding-edge's, verbatim: the wings pitch on the brake,
+            // yaw on (yaw +- throttle) at 3x, and bank on (roll +- pitch); the boosters take all
+            // three inputs at thrusterAnimationScaler. The chassis term is NOT written here: on
+            // the legacy art it arrived through the HIERARCHY (every one of these parts was a
+            // child of the chassis), and PlacePartOnChassis puts that hierarchy back - orbit and
+            // pivot both - rather than composing the chassis turn into the orientation alone,
+            // which is what flights 1-16 did and what left the parts spinning in place while the
+            // fuselage swept away under them (see the field comment above the pivots).
+            //
+            // The roll mirror is an opt-in (mirrorAppendageRoll) and OFF by default: with it off
+            // nothing in this method flips an axis, and the direction question belongs to the
+            // flight model.
+            float rollSign = mirrorAppendageRoll ? -1f : 1f;
 
-            Quaternion rightWingTurn = drifting ? Quaternion.identity
-                : appendageChassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
-                                                 (yaw + throttle) * exaggeratedAnimationScaler,
-                                                 (-roll + pitch) * animationScaler);
+            Quaternion rightWingTurn = Quaternion.Euler(Brake(throttle) * animationScaler,
+                                                        (yaw + throttle) * exaggeratedAnimationScaler,
+                                                        (rollSign * roll + pitch) * animationScaler);
 
-            Quaternion leftWingTurn = drifting ? Quaternion.identity
-                : appendageChassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
-                                                 (yaw - throttle) * exaggeratedAnimationScaler,
-                                                 (-roll - pitch) * animationScaler);
+            Quaternion leftWingTurn = Quaternion.Euler(Brake(throttle) * animationScaler,
+                                                       (yaw - throttle) * exaggeratedAnimationScaler,
+                                                       (rollSign * roll - pitch) * animationScaler);
+
+            Quaternion thrusterTurn = Quaternion.Euler(pitch * thrusterAnimationScaler,
+                                                       yaw * thrusterAnimationScaler,
+                                                       rollSign * roll * thrusterAnimationScaler);
 
             if (drifting)
             {
+                // The drift cage: rest orientation, rest + clearance position, held in the
+                // course frame. Signed off (flight 12) and untouched by the chain.
                 PlacePartInCage(RightWing, wingOffset, appendageFrame);
                 PlacePartInCage(LeftWing, wingOffset, appendageFrame);
-            }
-            else
-            {
-                AnimatePart(RightWing, rightWingTurn, wingOffset, appendageFrame);
-                AnimatePart(LeftWing, leftWingTurn, wingOffset, appendageFrame);
-            }
-
-            // Each thruster is driven around ITS OWN rest pose, looked up per part. The previous
-            // InitialRotations[partIndex] indexing was offset by two against animationTransforms
-            // (InitialRotations starts with the two nose entries), so every engine animated around
-            // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
-            // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
-            // THE BOOSTERS TAKE THE CHASSIS TERM WITH THE FUSELAGE'S TRUE ROLL (flight 15).
-            // `Chassis` resolves to the `fuse` bone, so on pitch and yaw the shared chassis term
-            // CANCELS against the body and only the own term separates a booster from it. On roll
-            // the mirrored appendage term did the opposite - the fuselage rolls +25 and the
-            // boosters rolled -25 - so a pure roll pulled them 50 degrees off the body BEFORE
-            // their own term, a floor no amplitude cut could reach (measured: 50.0 deg at own 0).
-            // Taking the body's true roll here removes that floor while the boosters' OWN term
-            // keeps the mirror, so their roll response still deflects the way flight 9 signed off
-            // for - verified by sign, not by argument: relative roll is +5.00/-5.00 deg at own 5
-            // where it was +62.00/-62.00, same sign throughout. The WINGS are deliberately
-            // untouched and keep `appendageChassisTurn`; nobody has reported them, and flight 12
-            // called them perfect.
-            Quaternion thrusterChassisTurn = Quaternion.Euler(pitch * animationScaler,
-                                                              yaw * animationScaler,
-                                                              roll * animationScaler);
-
-            Quaternion thrusterTurn = drifting ? Quaternion.identity
-                : thrusterChassisTurn * Quaternion.Euler(pitch * thrusterAnimationScaler,
-                                                 yaw * thrusterAnimationScaler,
-                                                 -roll * thrusterAnimationScaler);
-
-            for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
-            {
-                if (drifting)
+                for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
                     PlacePartInCage(animationTransforms[partIndex], thrusterOffset, appendageFrame);
-                else
-                    AnimatePart(animationTransforms[partIndex], thrusterTurn, thrusterOffset, appendageFrame);
+                return;
             }
+
+            PlacePartOnChassis(RightWing, chassisTurn, rightWingTurn, wingAuthoredPivot, wingFlightPivot, appendageFrame);
+            PlacePartOnChassis(LeftWing, chassisTurn, leftWingTurn, wingAuthoredPivot, wingFlightPivot, appendageFrame);
+
+            // All six boosters share one turn and one pair of pivots, exactly as they shared one
+            // Euler and one defaultThrusterPosition on bleeding-edge; what fans them out is each
+            // bone's own rest, which the chain carries through untouched.
+            for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
+                PlacePartOnChassis(animationTransforms[partIndex], chassisTurn, thrusterTurn,
+                                   thrusterAuthoredPivot, thrusterFlightPivot, appendageFrame);
         }
 
         // NEITHER THE DRIFT RE-PARENTING NOR THE DRIFT HANDLE IS USED ANY MORE, deliberately.
@@ -550,12 +568,44 @@ namespace CosmicShore.Gameplay
         // rotation for anything that belongs to the hull, the Course-aligned frame for the parts
         // that go on flying straight while it aims. Never the part's OWN parent, which on this
         // rig is a bone whose axes are nothing like the ship's; that is what made pitch read as
-        // roll and inverted it.
+        // roll and inverted it. Used for the chassis alone since flight 17; the appendages go
+        // through PlacePartOnChassis below.
         void AnimatePart(Transform part, Quaternion turn, Vector3 offset, Quaternion frame)
         {
             if (!part) return;
             RotatePartFromRestInFrame(part, turn, frame);
             MovePartFromRest(part, offset, frame);
+        }
+
+        // THE LEGACY CHASSIS CHAIN, ONE PART AT A TIME. Where a legacy part frame carried a point
+        // resting at restPos: the chassis turn orbits the whole part about the chassis pivot, the
+        // part's own turn swings it about its FLIGHT pivot, and its geometry rides from the
+        // authored pivot to the flight pivot. Pure, so the flight path and the resting layout
+        // read the same function and cannot describe two different ships.
+        static Vector3 ChainPosition(Vector3 restPos, Vector3 chassisPivot, Quaternion chassisTurn,
+                                     Quaternion ownTurn, Vector3 authoredPivot, Vector3 flightPivot)
+            => chassisPivot + chassisTurn * (flightPivot + ownTurn * (restPos - chassisPivot - authoredPivot));
+
+        // The flight-time pose writer for the wings and boosters: orientation chassis * own *
+        // rest, position on the chain, both lerped in the part's own parent space exactly as
+        // bleeding-edge's AnimatePart lerped them under the chassis.
+        void PlacePartOnChassis(Transform part, Quaternion chassisTurn, Quaternion ownTurn,
+                                Vector3 authoredPivot, Vector3 flightPivot, Quaternion frame)
+        {
+            if (!part || !TryGetRestPositionInVessel(part, out var restPos)) return;
+            RotatePartFromRestInFrame(part, chassisTurn * ownTurn, frame);
+            MovePartInFrame(part, ChainPosition(restPos, _chassisPivot, chassisTurn, ownTurn,
+                                                authoredPivot, flightPivot), frame);
+        }
+
+        // The chain at zero input, position only: rest + (flightPivot - authoredPivot). Rotations
+        // are the idle path's (VesselAnimation.Idle relaxes every part to its rest), which is the
+        // same pose the chain converges to with both turns at identity.
+        void SeatPartOnChassis(Transform part, Vector3 authoredPivot, Vector3 flightPivot, Quaternion frame)
+        {
+            if (!part || !TryGetRestPositionInVessel(part, out var restPos)) return;
+            MovePartInFrame(part, ChainPosition(restPos, _chassisPivot, Quaternion.identity, Quaternion.identity,
+                                                authoredPivot, flightPivot), frame);
         }
 
         IEnumerable<Transform> CagedParts()
