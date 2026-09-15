@@ -166,6 +166,7 @@ namespace CosmicShore.Gameplay
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
                 case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
+                case GameModes.WreckingBall: // same: the Scarab demolition race (ball + plate)
                     return ScoreDifferenceSource.PrismsDestroyed;
                 case GameModes.Bloomrush: // Score lands only at game end - VOLUME is the live stat,
                                           // and the deficit is read in the quantity the mode scores
@@ -176,6 +177,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
                 case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
+                case GameModes.Undertow: // bends land as CombatPoints; the rule folds kills in on top,
+                                         // so the comeback reads the BEND deficit alone (see UNDERTOW.md)
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
