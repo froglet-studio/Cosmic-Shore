@@ -615,11 +615,19 @@ namespace CosmicShore.Editor.Codex
             if (flatMaterial) temporaries.Add(flatMaterial);
             bool any = false;
 
+            // A procedural hull (the Scarab) hides its inherited model at AWAKE, so on the asset
+            // that model's renderers are still enabled and the hull itself is an empty MeshFilter.
+            // Reading renderers alone therefore photographs the hidden ship - the Scarab's
+            // portrait came out byte-identical to the Sparrow's. Skip what the ship hides, and
+            // ask the source for the hull it builds (below).
+            var hiddenRoot = ToyModelBuilder.HiddenLegacyModelRoot(prefab.transform);
+
             foreach (var filter in prefab.GetComponentsInChildren<MeshFilter>(true))
             {
                 if (!filter || !filter.sharedMesh) continue;
                 var renderer = filter.GetComponent<MeshRenderer>();
                 if (!renderer || !renderer.enabled) continue;
+                if (ToyModelBuilder.IsUnderHiddenLegacyModel(filter.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(filter.transform, prefab.transform,
                         NonBodyNameHints)) continue;
                 AddMesh(root.transform, prefab.transform, filter.transform, filter.sharedMesh,
@@ -630,11 +638,36 @@ namespace CosmicShore.Editor.Codex
             foreach (var skinned in prefab.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
                 if (!skinned || !skinned.sharedMesh || !skinned.enabled) continue;
+                if (ToyModelBuilder.IsUnderHiddenLegacyModel(skinned.transform, hiddenRoot)) continue;
                 if (ToyModelBuilder.AnyAncestorNameContains(skinned.transform, prefab.transform,
                         NonBodyNameHints)) continue;
                 AddMesh(root.transform, prefab.transform, skinned.transform, skinned.sharedMesh,
                         skinned.sharedMaterials, ref flatMaterial, temporaries);
                 any = true;
+            }
+
+            // The hull the asset cannot show: built from its authored settings by the source
+            // itself. Flat bakes paint every slot the shared fill; an authored bake keeps the
+            // source renderer's own materials, padded with the fill where a slot is empty.
+            var minted = new List<Mesh>();
+            Material Fill()
+            {
+                if (!flatMaterial)
+                {
+                    flatMaterial = BuildFlatMaterial();
+                    temporaries.Add(flatMaterial);
+                }
+                return flatMaterial;
+            }
+            ToyModelBuilder.MaterialResolver keepAuthored = null;
+            if (!flat) keepAuthored = (node, source, authored) => authored;
+            if (ToyModelBuilder.HarvestProceduralHulls(prefab.transform, root.transform, Fill, keepAuthored, minted))
+                any = true;
+            foreach (var mesh in minted)
+            {
+                if (!mesh) continue;
+                mesh.hideFlags = HideFlags.HideAndDontSave;
+                temporaries.Add(mesh);
             }
 
             if (!any)

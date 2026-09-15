@@ -159,6 +159,11 @@ bloom in through eight rings, an Urchin latches at 300 u/s on its colour, a Squi
 gauge fills on the rail, the HUD flowers show the seeded levels (fire petals on a Manta, white
 on a Sparrow), and a guest's own hull carries the same levels as the host's replica.
 
+- **First playtest (2026-09-15): the carousel offered two hulls and the Scarab wore the Sparrow's
+  icon.** Neither was this mode's: the arena carousel filtered the card's `Vessels` by the
+  Hangar's purchase lock, and the Scarab's `IconActive` was a codex bake that photographed the
+  hidden Sparrow the Scarab wraps. Both fixed platform-wide — `Docs/HomeHub/ARCHITECTURE.md`
+  §3.3/§3.4 — and held by `ArenaRosterTests`.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
   five hulls by ~1.5× and the Rhino not at all. The honest next steps, in order of how much
   they respect the fundamentals: (1) give the Rhino's ramp a Time endpoint (a `/vessel` change:

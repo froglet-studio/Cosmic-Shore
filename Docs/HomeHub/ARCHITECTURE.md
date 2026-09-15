@@ -220,8 +220,8 @@ it is the first entry in the one `ArcadeGameConfigureModal`'s `launchPanels` (fi
 and the arcade panel accepts every non-Maelstrom card). `ArenaLaunchPanel.Handles` answers for
 the cards in `ArenaGames`, so a card moved between the rosters changes windows with no code.
 
-The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (the card's
-own unlocked `Vessels`), writes the pick through the existing `SetSelectedShipInternal` (so the
+The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (EVERY hull
+the card lists — §3.3), writes the pick through the existing `SetSelectedShipInternal` (so the
 local player's `NetDefaultVesselType` carries it), and gates Start through
 `RefreshStartAvailability` — the ONE place Start's availability is decided, shared with the
 weekly-challenge lock so the two can never disagree. The confirmation is **per session**: armed
@@ -231,6 +231,53 @@ press itself, because a disabled button is never the whole gate.
 
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
+
+### 3.3 What the carousel offers: the card's list, never the Hangar's lock
+
+**A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
+(`SO_Vessel.IsLocked`) gates the Hangar.** The first cut of the carousel filtered the card's list
+by that lock — copied from the legacy `ArcadeLoadoutView` — and it shipped: six of the eight class
+assets are authored `isLocked: 1` (only the Squirrel is `ownedFromStart`; the Scarab's asset
+happens to carry `isLocked: 0`), the commerce surfaces are de-scoped for this window, and the
+unlocks a cloud save grants are mirrored onto the assets only for hulls the player bought with
+crystals — so on a fresh account every arena carousel held exactly **Squirrel and Scarab**, and
+the Regatta, a card that lists all eight hulls, offered two. Reported as *"the vessel select was
+only allowing me to pick the squirrel and another vessel that looked kinda like the sparrow image,
+but it was the scarab"* (the second half is §3.4).
+
+Two facts make dropping the filter the right shape rather than a workaround:
+
+- **The arcade already ignores the lock.** An arcade card pins one hull, and
+  `ArcadeGameConfigureModal.ResolveModeVessel` hands the pilot that hull whether or not they own it
+  — a player who owns only the Squirrel flies a Dolphin on Rampage. Honouring the lock in the arena
+  therefore made the SAME hull flyable on one card and hidden on the next, which is not a
+  progression system, it is an inconsistency wearing one's clothes.
+- **The list is already the gate.** A hull the card should not admit is a hull the card does not
+  list; `ArenaRosterTests` holds that every listed hull exists and carries its icons, and the
+  `/arenagame` skill holds that every listed hull has had its kit read.
+
+What the lock still gates is unchanged: the Hangar's own views, the freestyle vessel-selection
+panel, and the legacy loadout view all read `IsLocked` as before. The carousel's other rules are
+untouched — the default pick, the per-session confirmation, Start dead until confirmed.
+
+### 3.4 The Scarab's icon was the Sparrow's
+
+`SO_Class_Scarab.IconActive` pointed at the codex's `tool_vessel-changer__scarab.png`, and that
+file is **byte-identical** to `tool_vessel-changer__sparrow.png`. Every asset-reading mesh
+harvester — `CodexImageBaker.HarvestModel` and `ToyModelBuilder.TryBuild` (the toybox's mini
+hulls) — sees what the prefab ASSET shows, and the Scarab's asset shows a Sparrow: its hull is
+generated in `ScarabHullBuilder.Awake` and its wrapped Sparrow model's renderers are switched off
+in the same `Awake`, so on the asset the real hull is an empty `MeshFilter` beside a still-enabled
+Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyModelRoot` and
+harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
+runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
+card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
+rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
+runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
+until the script is re-run) in the card family's palette — a stand-in until an artist draws
+one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+hulls, because the two sprites were different assets with the same pixels, which a reference
+check cannot see.
 
 ## 4. The Toy Box drives the LIVE toys
 
