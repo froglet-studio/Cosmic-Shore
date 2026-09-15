@@ -279,6 +279,40 @@ one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE byte
 hulls, because the two sprites were different assets with the same pixels, which a reference
 check cannot see.
 
+### 3.5 Second playtest: the CONFIRM button sat on Play, and the Urchin was a white square
+
+Two more defects in the same window, both invisible to every static check that had been run on
+it, both reported off the rendered frame (*"the urchin's card icon isn't correct, and there is a
+strange button that sits over the play button in the arena card. it goes away when clicked"*).
+
+**The SELECT VESSEL button was a CLONE of the Play button that never got moved.** Same parent
+(`ConfigurationDetailView`), same anchors (0.690..0.998 × 0.056..0.156), same pivot, same
+(0, −22) offset — with the CONFIRM plate in place of START GAME. So it sat exactly on Play, and
+because `ArenaLaunchPanel.ShowVessel` hides it the moment the pilot confirms, what the pilot saw
+was a button over Play that vanished when pressed. The code was right; the rect was a copy. It
+now lives INSIDE the carousel (`ControlsDescription/Content`, beside `VesselIcon` and the two
+arrows), centred under the icon at the plate's native 272×72 — the fixed-pixel idiom the arrows
+already use, and the resolution rule §5.3 records (a 272×72 plate stretched to 326×92 upscales on
+every display). `Tools/Build/author_arena_launch_panel_layout.py` (`--check`) authors it and
+PROVES the picker's button and Play are disjoint by solving both rects against the canvas's
+reference resolution — a clone-and-forget cannot pass it again. General rule: **a widget cloned
+from a sibling inherits that sibling's PLACE, and a cloned rect is a fact about the donor, not a
+decision about the copy.**
+
+**The Urchin's `IconActive` / `IconInactive` pointed at two sprite guids no `.meta` in the tree
+owns** — art deleted before this clone's history begins, class asset never re-pointed. A
+`UnityEngine.UI.Image` whose sprite is missing draws a SOLID WHITE QUAD in its tint (the
+`Pip.prefab` frame trap in CLAUDE.md's anti-patterns, in a second costume), so the carousel showed
+a white square and called it the Urchin. The Urchin's real card art was in the tree the whole
+time (`CardImages/Urchin_Square.png`, which the class's `CardSilohoutteActive` already used — the
+same file shape the Dolphin uses for ITS `IconActive`); it had no inactive sibling, so
+`Tools/Build/author_urchin_card_icons.py` (`--check`) derives `Urchin_Inactive.png` with the card
+family's greyed look and re-points the class asset. `Tools/Build/check_vessel_class_icons.py`
+(`--self-test`) is the general gate: every `SO_Class_*.asset`'s two icons must resolve to an
+owned guid, because a dangling sprite reference fails as a white rectangle and never as an
+error. `ArenaRosterTests` already asserted the icons non-null — in the editor, where a missing
+sprite loads as null, so it would have caught this the first time the suite ran on this card.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle

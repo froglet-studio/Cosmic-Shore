@@ -1850,8 +1850,18 @@ therefore correct on its next run, and the card icons are rendered from the SHIP
 has both icons, no two hulls on a card wear byte-identical icon FILES (the two sprites were
 different assets with the same pixels, which a reference check cannot see), and the roster
 builder never consults the lock. General rule: **a harvester that reads a prefab asset sees the
-asset, and a hull that builds or hides itself at Awake looks like a different ship there.** See
-`_Scripts/Controller/Arcade/REGATTA.md`.
+asset, and a hull that builds or hides itself at Awake looks like a different ship there.**
+**Its second playtest found two more, both readable only off the rendered frame**: the SELECT
+VESSEL button was a CLONE of the Play button's rect that never got moved (same parent, anchors
+and offset, hidden on confirm — so it read as "a strange button over Play that goes away when
+clicked"; it now lives inside the carousel under the icon, and
+`Tools/Build/author_arena_launch_panel_layout.py --check` proves the two rects disjoint), and
+the Urchin's `IconActive`/`IconInactive` pointed at sprite guids no `.meta` owns — a missing
+sprite draws a SOLID WHITE QUAD, so the carousel showed a white square and called it the Urchin
+(`author_urchin_card_icons.py` re-points the class asset at `Urchin_Square.png` and derives the
+inactive; `check_vessel_class_icons.py` is the general gate). **A widget cloned from a sibling
+inherits the sibling's PLACE; a dangling sprite reference fails as a white rectangle, never as an
+error.** See `_Scripts/Controller/Arcade/REGATTA.md`.
 
 `WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
 

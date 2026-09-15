@@ -93,7 +93,7 @@ a playtest, the AI).
 
 | Decision | The rule |
 |---|---|
-| **Vessels** | Every hull in the list must be able to finish AND win in a human's hands; every hull's kit has been read (§0). Grizzly, Termite, Falcon and Shrike are not shipped playable kits - `arcade_mode_lib.VESSELS` is the roster. **The list IS the gate**: the carousel offers every hull on it and never consults the Hangar's purchase lock (`SO_Vessel.IsLocked` - six of eight class assets author it, and honouring it left two hulls in every arena carousel; `Docs/HomeHub/ARCHITECTURE.md` §3.3). Every listed hull needs `IconActive` + `IconInactive` that are ITS OWN art (`ArenaRosterTests` compares file bytes - the Scarab shipped wearing the Sparrow's bake). |
+| **Vessels** | Every hull in the list must be able to finish AND win in a human's hands; every hull's kit has been read (§0). Grizzly, Termite, Falcon and Shrike are not shipped playable kits - `arcade_mode_lib.VESSELS` is the roster. **The list IS the gate**: the carousel offers every hull on it and never consults the Hangar's purchase lock (`SO_Vessel.IsLocked` - six of eight class assets author it, and honouring it left two hulls in every arena carousel; `Docs/HomeHub/ARCHITECTURE.md` §3.3). Every listed hull needs `IconActive` + `IconInactive` that are ITS OWN art AND that RESOLVE (`ArenaRosterTests` compares file bytes - the Scarab shipped wearing the Sparrow's bake; `check_vessel_class_icons.py` resolves the guids - the Urchin shipped pointing at deleted art, which draws as a white square). |
 | **Roster** | `g.register_arena_card(card)` - master + `ArenaGames`, never `ArcadeGames`. `check_gamelist_scenes.py` reports the arena grid's coverage. |
 | **Domains** | 2..3 unless the mode has a fixed team shape; a fixed shape (`MaxDomainsAllowed = 2`) excludes the card from the Maelstrom. |
 | **AI templates** | `vesselClass: 0` (Random) in the scene's `aiInitializeDatas`, so `PickAIVesselType` draws the bot's hull from the card and a bot grid is a mixed grid too. |
@@ -123,6 +123,8 @@ python3 Tools/Build/<mode>_balance.py                 # prints the model; read t
 python3 Tools/Build/author_<mode>_assets.py --check   # asserts the spread, the course hash, the rails
 python3 Tools/Build/check_gamelist_scenes.py          # the arena grid's coverage line
 python3 Tools/Build/render_scarab_card_icons.py --check  # the one generated card icon, if the Scarab is on the card
+python3 Tools/Build/check_vessel_class_icons.py       # every hull's IconActive/IconInactive resolves (a dangling sprite is a white square)
+python3 Tools/Build/author_arena_launch_panel_layout.py --check  # the SELECT VESSEL button is in the carousel, not on Play
 bash Tools/Build/regatta_course_harness/run.sh        # after ANY edit to a pure course file
 ```
 

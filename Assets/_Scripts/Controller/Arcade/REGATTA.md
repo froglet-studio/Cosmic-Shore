@@ -164,6 +164,15 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   Hangar's purchase lock, and the Scarab's `IconActive` was a codex bake that photographed the
   hidden Sparrow the Scarab wraps. Both fixed platform-wide — `Docs/HomeHub/ARCHITECTURE.md`
   §3.3/§3.4 — and held by `ArenaRosterTests`.
+- **Second playtest (2026-09-15): the CONFIRM button sat on Play, and the Urchin was a white
+  square.** `SelectVesselButton` was a clone of `Play Button`'s RectTransform (same parent, anchors,
+  pivot and offset) that never got moved, hidden on confirm — reported as a strange button over Play
+  that goes away when clicked; it now lives inside the carousel under the vessel icon at the CONFIRM
+  plate's native 272×72, and `Tools/Build/author_arena_launch_panel_layout.py --check` proves it and
+  Play disjoint. `SO_Class_Urchin.IconActive`/`IconInactive` pointed at sprite guids no `.meta` owns
+  (a missing sprite draws a solid white quad); `author_urchin_card_icons.py` re-points them at
+  `Urchin_Square.png` plus a derived `Urchin_Inactive.png`, and `check_vessel_class_icons.py` gates
+  every class asset's icons. `Docs/HomeHub/ARCHITECTURE.md` §3.5.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
   five hulls by ~1.5× and the Rhino not at all. The honest next steps, in order of how much
   they respect the fundamentals: (1) give the Rhino's ramp a Time endpoint (a `/vessel` change:
