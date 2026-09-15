@@ -45,6 +45,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static readonly List<string> s_statSectionOrder = new();
         static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
         static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+        // Who registered each name, so a collision can NAME both sides. Two owners claiming
+        // one name is not theoretical: PrismStressInjector (a render-only ECS cloud) and
+        // PrismGridExplosionHarness (a lattice of REAL prisms) both claimed "prisms", and
+        // registration order is not guaranteed — so `prisms 50000` gave you whichever ran
+        // last, and the two measure completely different things.
+        static readonly Dictionary<string, string> s_commandOwners = new();
 
         // Command handlers are closures over play-mode components; an owner that misses
         // UnregisterCommand in OnDestroy would otherwise ghost into the next session.
@@ -54,6 +60,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             s_statSectionOrder.Clear();
             s_customStats.Clear();
             s_commands.Clear();
+            s_commandOwners.Clear();
         }
 #endif
 
@@ -94,8 +101,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static void RegisterCommand(string name, System.Func<string[], string> handler)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!string.IsNullOrEmpty(name) && handler != null)
-                s_commands[name.ToLowerInvariant()] = handler;
+            if (string.IsNullOrEmpty(name) || handler == null) return;
+
+            string key = name.ToLowerInvariant();
+            string owner = handler.Target?.GetType().Name
+                           ?? handler.Method.DeclaringType?.Name
+                           ?? "<static>";
+
+            // Loud, because the failure mode is silent and total: the command still works, it
+            // just belongs to somebody else, and a measurement taken through it is a
+            // measurement of the wrong thing. Re-registering from the SAME owner (a component
+            // re-enabled) is normal and says nothing.
+            if (s_commandOwners.TryGetValue(key, out string previous) && previous != owner)
+                Debug.LogWarning(
+                    $"[DiagnosticsHUD] Console command '{key}' re-registered by {owner}, " +
+                    $"replacing {previous}. Registration order is NOT guaranteed, so this " +
+                    $"command is now whichever component happened to start last. Give one of " +
+                    $"them a distinct name.");
+
+            s_commands[key] = handler;
+            s_commandOwners[key] = owner;
 #endif
         }
 
@@ -103,7 +128,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public static void UnregisterCommand(string name)
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            if (!string.IsNullOrEmpty(name)) s_commands.Remove(name.ToLowerInvariant());
+            if (string.IsNullOrEmpty(name)) return;
+            string key = name.ToLowerInvariant();
+            s_commands.Remove(key);
+            s_commandOwners.Remove(key);
 #endif
         }
 

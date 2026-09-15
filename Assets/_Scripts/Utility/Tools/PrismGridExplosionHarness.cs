@@ -280,8 +280,12 @@ namespace CosmicShore.Utility
                      "Re-run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
-            // Alias: operators consistently type `prisms 50000` — meet them there.
-            DiagnosticsHUD.RegisterCommand("prisms", HandleGridCommand);
+            // The "prisms" alias that used to live here is RETIRED. PrismStressInjector
+            // auto-spawns in every scene and claims that name for its render-only ECS cloud
+            // — no GameObjects, no colliders, no MonoBehaviours — which is a completely
+            // different measurement from this lattice of real prisms. Registration order is
+            // not guaranteed, so `prisms 50000` silently resolved to whichever started last.
+            // `grid` is unambiguous; use it.
             PublishStats();
         }
 
@@ -297,7 +301,6 @@ namespace CosmicShore.Utility
             CancelSpawn();
             RestoreThrottleLifts();
             DiagnosticsHUD.UnregisterCommand(CommandName);
-            DiagnosticsHUD.UnregisterCommand("prisms");
             DiagnosticsHUD.ClearStats(StatsSection);
         }
 
