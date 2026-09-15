@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
                     float taper = 1f + 0.10f * sa - 0.16f * Mathf.Max(0f, -sa);
                     float stretch = 1f + p.Pointed * 0.85f * GeometryKit.SafePow(Mathf.Max(0f, sa), 3f);
                     float x = hw * 0.85f + rho * hw * ca * taper;   // plate centred at x = 0.85 hw so the root sits at the head
-                    float y = rho * hh * sa * stretch;
+                    float y = rho * hh * sa * stretch + p.RootOffset * hh * 0.92f;
                     // Profile. Weights: back half (the helix side) vs the front (root/tragus) half.
                     float backW = 0.5f + 0.5f * ca;
                     float topW = Mathf.Max(0f, sa);

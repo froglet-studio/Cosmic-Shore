@@ -45,9 +45,16 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f)] public float IrisKey;      // position along the covering's iris range
         [Range(0f, 1f)] public float MarkingKey;   // which marking variant / strength inside the clade's range
         public Domains Domain;
+        [Tooltip("Pilot gear worn (goggles up / on). Placed by the resolver, never by a clade.")]
+        public GearKind Gear;
+        [Tooltip("Multiplies the clade coverings' base colour (fur, feather, scale, chitin). Alpha 0 = unset = as authored.")]
+        public Color CoatTint;
 
         [Tooltip("Resolved expression, written by the resolver for labelling. Not an input.")]
         public string[] ExpressedTraits;
+
+        /// <summary>The coat tint as a multiplier: white when unset.</summary>
+        public Color CoatMultiplier => CoatTint.a > 0.001f ? new Color(CoatTint.r, CoatTint.g, CoatTint.b, 1f) : Color.white;
 
         public bool IsPureHuman => string.IsNullOrEmpty(CladeA) && string.IsNullOrEmpty(CladeB);
 
@@ -60,6 +67,7 @@ namespace CosmicShore.Gameplay
             BaseShape = HeadShape.Neutral,
             ExpressedTraits = Array.Empty<string>(),
             Domain = Domains.Blue,
+            CoatTint = new Color(0f, 0f, 0f, 0f),
         };
 
         /// <summary>Short label for a contact-sheet cell: "Felidae 0.33 / Corvidae 0.27 · H 0.40".</summary>
@@ -105,7 +113,10 @@ namespace CosmicShore.Gameplay
             sb.Append('|').Append(Age.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(Fleshiness.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(HairVolume.ToString("R", CultureInfo.InvariantCulture))
               .Append('|').Append(SkinTone.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(SkinWarmth.ToString("R", CultureInfo.InvariantCulture)).Append(',')
               .Append(HairShade.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(HairWarmth.ToString("R", CultureInfo.InvariantCulture)).Append(',')
-              .Append(IrisKey.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(MarkingKey.ToString("R", CultureInfo.InvariantCulture)).Append('|').Append((int)Domain);
+              .Append(IrisKey.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(MarkingKey.ToString("R", CultureInfo.InvariantCulture)).Append('|').Append((int)Domain)
+              .Append('|').Append((int)Gear).Append('|')
+              .Append(CoatTint.r.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(CoatTint.g.ToString("R", CultureInfo.InvariantCulture)).Append(',')
+              .Append(CoatTint.b.ToString("R", CultureInfo.InvariantCulture)).Append(',').Append(CoatTint.a.ToString("R", CultureInfo.InvariantCulture));
             return Fnv1a(sb.ToString());
         }
 

@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
                 CharacterMaterialSlot.Skin => config.SkinMaterialTemplate,
                 CharacterMaterialSlot.Eye => config.EyeMaterialTemplate,
                 CharacterMaterialSlot.Keratin => config.KeratinMaterialTemplate,
+                CharacterMaterialSlot.Gear => config.GearMaterialTemplate,
                 _ => config.HairMaterialTemplate,
             };
             Material m;
@@ -111,6 +112,7 @@ namespace CosmicShore.Gameplay
                 case CharacterMaterialSlot.Skin: canvas = t.Skin; smooth = 0.4f; break;
                 case CharacterMaterialSlot.Eye: canvas = t.Eye; smooth = t.EyeSmoothness; break;
                 case CharacterMaterialSlot.Keratin: canvas = t.Keratin; smooth = t.KeratinSmoothness; metallicIsh = true; break;
+                case CharacterMaterialSlot.Gear: canvas = t.Gear; smooth = 0.5f; break;
                 default: canvas = t.Hair; smooth = t.HairSmoothness; break;
             }
             var albedo = Upload(canvas, true, owned);
@@ -121,12 +123,12 @@ namespace CosmicShore.Gameplay
             if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smooth);
             if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", smooth);
             if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metallicIsh ? 0.05f : 0f);
-            if (slot == CharacterMaterialSlot.Skin)
+            if (slot == CharacterMaterialSlot.Skin || slot == CharacterMaterialSlot.Gear)
             {
-                // Smoothness lives in the albedo alpha (painted per covering).
+                // Smoothness lives in the albedo alpha (painted per covering / per gear region).
                 if (m.HasProperty("_SmoothnessTextureChannel")) m.SetFloat("_SmoothnessTextureChannel", 1f);
                 m.EnableKeyword("_SMOOTHNESS_TEXTURE_ALBEDO_CHANNEL_A");
-                if (t.SkinNormal != null && config.DetailNormalStrength > 0f)
+                if (slot == CharacterMaterialSlot.Skin && t.SkinNormal != null && config.DetailNormalStrength > 0f)
                 {
                     var normal = Upload(t.SkinNormal, false, owned);
                     m.SetTexture("_BumpMap", normal);

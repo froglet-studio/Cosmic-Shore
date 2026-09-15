@@ -60,6 +60,17 @@ namespace CosmicShore.Gameplay
                     float ridge = 0.5f + 0.5f * Mathf.Sin(px.ThetaDeg * 0.3f * r.MarkingScale);
                     return Color.Lerp(c, marking, ridge * s * 0.5f);
                 }
+                case MarkingKind.Blaze:
+                {
+                    // Nose stripe: a band along φ = 0 between the brow and the mouth; cheek
+                    // flanks either side of it in BaseB. Read straight off the head angles, so it
+                    // lands wherever the muzzle is.
+                    float stripe = GeometryKit.Bell(px.Phi / 0.13f) * GeometryKit.SmoothStep(84f, 92f, px.ThetaDeg) * (1f - GeometryKit.SmoothStep(118f, 126f, px.ThetaDeg));
+                    float flank = GeometryKit.Bell((Mathf.Abs(px.Phi) - 0.42f) / 0.28f) * GeometryKit.SmoothStep(88f, 98f, px.ThetaDeg) * (1f - GeometryKit.SmoothStep(122f, 132f, px.ThetaDeg));
+                    Color flankCol = r.BaseB;
+                    Color o = Color.Lerp(c, flankCol, flank * s);
+                    return Color.Lerp(o, marking, stripe * s);
+                }
                 default:
                     return c;
             }

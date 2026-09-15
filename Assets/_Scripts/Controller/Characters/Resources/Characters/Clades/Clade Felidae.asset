@@ -62,8 +62,8 @@ MonoBehaviour:
     AxisOverrides: []
     Params:
       Pinna:
-        Height: 0.17
-        Width: 0.12
+        Height: 0.23
+        Width: 0.16
         Pointed: 1.0
         CupDepth: 0.4
         RimThickness: 0.12
@@ -71,6 +71,7 @@ MonoBehaviour:
         ForwardTiltDeg: 0.0
         OutwardRollDeg: 0.0
         Thickness: 0.01
+        RootOffset: 0.85
   - Id: SlitEyes
     Signature: 1
     MinWeight: 0.0
@@ -126,6 +127,17 @@ MonoBehaviour:
         Length: 0.05
         Radius: 0.011
         Keratin: {r: 0.92, g: 0.88, b: 0.8, a: 1.0}
+  - Id: Coat
+    Signature: 1
+    MinWeight: 0.0
+    Feature: 0
+    Slots: []
+    Site: 
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides: []
+    Params:
   Covering:
     Kind: 1
     BaseA: {r: 0.74, g: 0.54, b: 0.3, a: 1.0}

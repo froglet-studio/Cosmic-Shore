@@ -36,7 +36,7 @@ namespace CosmicShore.Editor
             w.minSize = new Vector2(900f, 640f);
         }
 
-        enum Tab { Sheet, Inspector }
+        enum Tab { Sheet, Inspector, Avatars }
 
         Tab _tab;
         int _sheetSeed = 1;
@@ -59,6 +59,14 @@ namespace CosmicShore.Editor
         string[] _animalKeys = Array.Empty<string>();
         readonly List<Action> _deferred = new();
 
+        // Avatars tab: the shipped profile icons beside their recreations.
+        const string ProfileIconsPath = "Assets/_SO_Assets/SO_DefaultProfileIcons.asset";
+        readonly List<AvatarPresets.Preset> _presets = new();
+        readonly List<Texture2D> _presetPortraits = new();
+        readonly List<string> _presetErrors = new();
+        readonly Dictionary<string, Sprite> _icons = new();
+        Vector2 _avatarScroll;
+
         void OnEnable()
         {
             Refresh();
@@ -69,6 +77,7 @@ namespace CosmicShore.Editor
         void OnDisable()
         {
             ClearSheetTextures();
+            ClearPresetTextures();
             if (_currentPortrait) Object.DestroyImmediate(_currentPortrait);
         }
 
@@ -115,13 +124,14 @@ namespace CosmicShore.Editor
             {
                 if (GUILayout.Toggle(_tab == Tab.Sheet, "Contact Sheet", EditorStyles.toolbarButton)) _tab = Tab.Sheet;
                 if (GUILayout.Toggle(_tab == Tab.Inspector, "Inspector", EditorStyles.toolbarButton)) _tab = Tab.Inspector;
+                if (GUILayout.Toggle(_tab == Tab.Avatars, "Avatars", EditorStyles.toolbarButton)) _tab = Tab.Avatars;
                 GUILayout.FlexibleSpace();
                 if (GUILayout.Button("Clear portrait cache", EditorStyles.toolbarButton))
                     _deferred.Add(() => { CharacterPortraitBaker.ClearCache(); ClearSheetTextures(); _currentDirty = true; });
                 if (GUILayout.Button("Refresh assets", EditorStyles.toolbarButton)) _deferred.Add(Refresh);
             }
 
-            if (_tab == Tab.Sheet) DrawSheet(); else DrawInspector();
+            if (_tab == Tab.Sheet) DrawSheet(); else if (_tab == Tab.Inspector) DrawInspector(); else DrawAvatars();
 
             if (_deferred.Count > 0 && Event.current.type == EventType.Repaint)
             {
@@ -188,6 +198,96 @@ namespace CosmicShore.Editor
                 }
             }
             EditorGUILayout.EndScrollView();
+        }
+
+        void DrawAvatars()
+        {
+            if (_presets.Count == 0) LoadPresets();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (FrogletEditorPalette.ColorButton($"Bake all {_presets.Count} avatar recreations", FrogletEditorPalette.Jade, 300f))
+                    _deferred.Add(BakePresets);
+                if (GUILayout.Button("Reload presets", GUILayout.Width(120f))) _deferred.Add(() => { LoadPresets(); ClearPresetTextures(); });
+                GUILayout.FlexibleSpace();
+            }
+            EditorGUILayout.LabelField("Left: the shipped profile icon. Right: the generator's nearest genome, baked in the painterly style. Click a pair to open it in the Inspector.", EditorStyles.miniLabel);
+            if (_presets.Count == 0)
+            {
+                EditorGUILayout.HelpBox($"No presets under Resources/{AvatarPresets.ResourcesFolder}. Run author_character_assets.py.", MessageType.Info);
+                return;
+            }
+            _avatarScroll = EditorGUILayout.BeginScrollView(_avatarScroll);
+            const int pairsPerRow = 3;
+            float pair = Mathf.Max(260f, (position.width - 40f) / pairsPerRow);
+            float cell = pair * 0.5f - 6f;
+            int rows = (_presets.Count + pairsPerRow - 1) / pairsPerRow;
+            var area = GUILayoutUtility.GetRect(pair * pairsPerRow, rows * (cell + 24f));
+            for (int i = 0; i < _presets.Count; i++)
+            {
+                var pr = _presets[i];
+                float x = area.x + (i % pairsPerRow) * pair, y = area.y + (i / pairsPerRow) * (cell + 24f);
+                var left = new Rect(x, y, cell, cell);
+                var right = new Rect(x + cell + 8f, y, cell, cell);
+                FrogletEditorPalette.DrawCard(left, FrogletEditorPalette.Surface, FrogletEditorPalette.Muted.WithAlpha(0.3f));
+                FrogletEditorPalette.DrawCard(right, FrogletEditorPalette.Surface, i == _selected ? FrogletEditorPalette.Jade : FrogletEditorPalette.Muted.WithAlpha(0.3f));
+                if (_icons.TryGetValue(pr.IconName, out var sprite) && sprite)
+                    GUI.DrawTexture(new Rect(left.x + 2f, left.y + 2f, left.width - 4f, left.height - 4f), sprite.texture, ScaleMode.ScaleToFit, true);
+                if (i < _presetPortraits.Count && _presetPortraits[i])
+                    GUI.DrawTexture(new Rect(right.x + 2f, right.y + 2f, right.width - 4f, right.height - 4f), _presetPortraits[i], ScaleMode.ScaleToFit, true);
+                else if (i < _presetErrors.Count && !string.IsNullOrEmpty(_presetErrors[i]))
+                    GUI.Label(new Rect(right.x + 4f, right.y + 4f, right.width - 8f, right.height - 8f), _presetErrors[i], FrogletEditorPalette.CardBodyWrapped);
+                GUI.Label(new Rect(x, y + cell + 2f, pair - 8f, 18f), $"{pr.Name}   ·   {pr.Genome.Label()}", FrogletEditorPalette.CardTitle);
+                var both = new Rect(x, y, pair - 8f, cell);
+                if (Event.current.type == EventType.MouseDown && both.Contains(Event.current.mousePosition))
+                {
+                    _selected = i;
+                    _current = pr.Genome;
+                    _currentSeed = _current.Seed;
+                    _currentDirty = true;
+                    if (Event.current.clickCount == 2) _tab = Tab.Inspector;
+                    Event.current.Use();
+                    Repaint();
+                }
+            }
+            EditorGUILayout.EndScrollView();
+        }
+
+        void LoadPresets()
+        {
+            _presets.Clear();
+            _presets.AddRange(AvatarPresets.FromResources());
+            _icons.Clear();
+            var list = AssetDatabase.LoadAssetAtPath<SO_ProfileIconList>(ProfileIconsPath);
+            if (list != null && list.profileIcons != null)
+                foreach (var icon in list.profileIcons)
+                    if (icon.IconSprite) _icons[icon.IconSprite.name] = icon.IconSprite;
+        }
+
+        void BakePresets()
+        {
+            ClearPresetTextures();
+            try
+            {
+                for (int i = 0; i < _presets.Count; i++)
+                {
+                    EditorUtility.DisplayProgressBar("Baking avatar recreations", $"{i + 1}/{_presets.Count}  {_presets[i].Name}", i / (float)_presets.Count);
+                    var result = CharacterPortraitBaker.Bake(_presets[i].Genome, _catalog, _config, _colorSet, SheetPortraitSize);
+                    _presetPortraits.Add(result.Texture);
+                    _presetErrors.Add(result.Error);
+                    if (!string.IsNullOrEmpty(result.Error)) Debug.LogWarning($"[Characters] avatar {_presets[i].Name}: {result.Error}");
+                }
+            }
+            finally
+            {
+                EditorUtility.ClearProgressBar();
+            }
+        }
+
+        void ClearPresetTextures()
+        {
+            foreach (var t in _presetPortraits) if (t) Object.DestroyImmediate(t);
+            _presetPortraits.Clear();
+            _presetErrors.Clear();
         }
 
         void DrawInspector()

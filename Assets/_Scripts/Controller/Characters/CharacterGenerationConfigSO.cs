@@ -57,11 +57,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Strength of the pore/detail normal map. 0 disables it.")]
         [Range(0f, 4f)] public float DetailNormalStrength = 1.8f;
 
+        [Header("Gear (the space-pilot dressing every portrait wears)")]
+        public GearStyle GearStyle = GearStyle.Default;
+
+        [Header("Portrait style (the painterly post-process the baker applies)")]
+        [Tooltip("Apply the painterly post-process to every baked portrait. Off = the raw lit render, for judging the geometry.")]
+        public bool PaintPortraits = true;
+        public PortraitStyle PortraitStyle = PortraitStyle.Default;
+
         [Header("Materials (optional templates; URP Lit is found when empty)")]
         public Material SkinMaterialTemplate;
         public Material EyeMaterialTemplate;
         public Material KeratinMaterialTemplate;
         public Material HairMaterialTemplate;
+        public Material GearMaterialTemplate;
 
         /// <summary>
         /// THE swap point. Returning an <see cref="AuthoredBaseHead"/> here is the whole of the

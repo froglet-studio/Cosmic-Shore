@@ -146,6 +146,17 @@ MonoBehaviour:
     - Axis: 1
       Value: 0.5
     Params:
+  - Id: Chitin
+    Signature: 1
+    MinWeight: 0.0
+    Feature: 0
+    Slots: []
+    Site: 
+    SitePitchDeg: 0.0
+    SiteYawDeg: 0.0
+    SiteRollDeg: 0.0
+    AxisOverrides: []
+    Params:
   Covering:
     Kind: 4
     BaseA: {r: 0.04, g: 0.03, b: 0.03, a: 1.0}

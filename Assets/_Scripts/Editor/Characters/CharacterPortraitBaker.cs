@@ -25,13 +25,13 @@ namespace CosmicShore.Editor
     public static class CharacterPortraitBaker
     {
         /// <summary>Bump when the generator changes visibly, so stale cache files are never mistaken for the new look.</summary>
-        public const string BakeVersion = "v5";
+        public const string BakeVersion = "v6";
         public const string CacheFolder = "Library/CharacterPortraits";
         public const float FieldOfView = 26f;
         public const float CameraYawDeg = 22f;
-        public const float CameraPitchDeg = 6f;
-        public const float CameraDistance = 2.6f;
-        static readonly Vector3 CameraTarget = new Vector3(0f, -0.02f, 0f);
+        public const float CameraPitchDeg = 4f;
+        public const float CameraDistance = 4.7f;
+        static readonly Vector3 CameraTarget = new Vector3(0f, -0.26f, 0f);
 
         public struct BakeResult
         {
@@ -105,9 +105,9 @@ namespace CosmicShore.Editor
                 var rimGo = new GameObject("RimLight") { hideFlags = HideFlags.HideAndDontSave };
                 var rim = rimGo.AddComponent<Light>();
                 rim.type = LightType.Directional;
-                rim.intensity = 1.2f;
+                rim.intensity = 2.2f;
                 rim.color = new Color(0.9f, 0.95f, 1.0f);
-                rimGo.transform.rotation = Quaternion.LookRotation(-new Vector3(0.3f, 0.55f, -0.8f).normalized);
+                rimGo.transform.rotation = Quaternion.LookRotation(-new Vector3(0.4f, 0.8f, -0.5f).normalized);
                 preview.AddSingleGO(rimGo);
                 preview.AddSingleGO(bust.Root);
 
@@ -122,6 +122,13 @@ namespace CosmicShore.Editor
                     return result;
                 }
                 result.Texture = RecoverAlpha(onBlack, onWhite);
+                if (config.PaintPortraits)
+                {
+                    var painted = Stylize(result.Texture, config.PortraitStyle,
+                        CharacterPaletteBinding.Resolve(genome.Domain, colorSet).Accent, genome.Seed);
+                    Object.DestroyImmediate(result.Texture);
+                    result.Texture = painted;
+                }
                 result.Texture.name = "Portrait";
                 Object.DestroyImmediate(onBlack);
                 Object.DestroyImmediate(onWhite);
@@ -166,6 +173,32 @@ namespace CosmicShore.Editor
             texture.Apply();
             RenderTexture.active = previous;
             return texture;
+        }
+
+        /// <summary>
+        /// The painterly pass. The preview render is sRGB-encoded; the stylizer works in linear
+        /// and hands back sRGB with the frame composited in, so the cached PNG is the finished
+        /// avatar. Same code the offline harness runs.
+        /// </summary>
+        static Texture2D Stylize(Texture2D lit, in PortraitStyle style, Color accent, int seed)
+        {
+            int w = lit.width, h = lit.height;
+            var px = lit.GetPixels();
+            var rgba = new float[w * h * 4];
+            for (int i = 0; i < px.Length; i++)
+            {
+                rgba[i * 4] = PortraitStylizer.FromSrgb(px[i].r);
+                rgba[i * 4 + 1] = PortraitStylizer.FromSrgb(px[i].g);
+                rgba[i * 4 + 2] = PortraitStylizer.FromSrgb(px[i].b);
+                rgba[i * 4 + 3] = px[i].a;
+            }
+            var outp = PortraitStylizer.Apply(rgba, w, h, style, accent, seed);
+            var result = new Texture2D(w, h, TextureFormat.RGBA32, false) { hideFlags = HideFlags.HideAndDontSave };
+            var colors = new Color[px.Length];
+            for (int i = 0; i < colors.Length; i++) colors[i] = new Color(outp[i * 4], outp[i * 4 + 1], outp[i * 4 + 2], outp[i * 4 + 3]);
+            result.SetPixels(colors);
+            result.Apply(false, false);
+            return result;
         }
 
         static Texture2D RecoverAlpha(Texture2D onBlack, Texture2D onWhite)

@@ -15,6 +15,7 @@ namespace CosmicShore.Gameplay
         Eye = 1,
         Keratin = 2,   // beak, mandibles, antennae, fangs, claws
         Hair = 3,      // hair cap, crest feathers, whiskers
+        Gear = 4,      // jacket, collar, goggle frames and lenses
     }
 
     /// <summary>
@@ -70,6 +71,21 @@ namespace CosmicShore.Gameplay
         {
             AddTri(a, b, c);
             AddTri(a, c, d);
+        }
+
+        /// <summary>Duplicate every triangle with the opposite winding and mirrored normals, so a thin part draws from both sides.</summary>
+        public void MakeDoubleSided()
+        {
+            int n = Verts.Count;
+            for (int i = 0; i < n; i++) AddVertex(Verts[i], Uvs[i]);
+            for (int i = 0; i < n; i++) Normals[n + i] = -Normals[i];
+            int tris = Tris.Count;
+            for (int i = 0; i < tris; i += 3)
+            {
+                Tris.Add(Tris[i] + n);
+                Tris.Add(Tris[i + 2] + n);
+                Tris.Add(Tris[i + 1] + n);
+            }
         }
 
         public void FlipWinding()

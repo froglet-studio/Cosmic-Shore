@@ -37,6 +37,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Pitch of the pinna away from the head normal, degrees. Positive tips it forward.")] public float ForwardTiltDeg = 22f;
         [Tooltip("Roll of the pinna about the head normal, degrees. Positive tips the top outward.")] public float OutwardRollDeg = 10f;
         [Tooltip("Thickness of the ear shell.")] public float Thickness = 0.012f;
+        [Tooltip("0 = the plate is centred on the site (a side ear, canal in the middle); 1 = its root edge sits on the site (a standing ear grows UP from it).")]
+        [Range(0f, 1f)] public float RootOffset = 0f;
     }
 
     [Serializable] public class BeakParams
@@ -127,6 +129,15 @@ namespace CosmicShore.Gameplay
         public Color Keratin = new Color(0.92f, 0.88f, 0.80f);
     }
 
+    [Serializable] public class TrunkParams
+    {
+        public float Length = 0.55f;
+        public float RootRadius = 0.075f;
+        public float TipRadius = 0.032f;
+        [Tooltip("How far the trunk curls down and back toward the chest, 0..1.")] [Range(0f, 1f)] public float Droop = 0.7f;
+        [Tooltip("Ring count along the trunk (the wrinkle bands are painted per ring).")] public int Rings = 22;
+    }
+
     /// <summary>All groups on one trait; only the group its <see cref="FeatureKind"/> reads matters.</summary>
     [Serializable] public class FeatureParams
     {
@@ -141,5 +152,6 @@ namespace CosmicShore.Gameplay
         public WhiskerParams Whisker = new WhiskerParams();
         public HairParams Hair = new HairParams();
         public FangParams Fang = new FangParams();
+        public TrunkParams Trunk = new TrunkParams();
     }
 }

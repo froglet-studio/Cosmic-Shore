@@ -18,6 +18,7 @@ namespace CosmicShore.Gameplay
         public CharacterRandom Rng;
         public float HairVolume;
         public float Age;
+        public GearKind Gear;
         public string TraitId;
         public readonly List<MeshPart> Output = new();
 
@@ -52,6 +53,8 @@ namespace CosmicShore.Gameplay
                 case FeatureKind.Whiskers: WhiskerFeature.Generate(ctx); return;
                 case FeatureKind.HairCap: HairCapFeature.Generate(ctx); return;
                 case FeatureKind.Fangs: FangFeature.Generate(ctx); return;
+                case FeatureKind.Trunk: TrunkFeature.Generate(ctx); return;
+                case FeatureKind.Goggles: GogglesFeature.Generate(ctx); return;
                 default:
                     throw new System.InvalidOperationException($"FeatureCatalog: no generator for {kind}.");
             }
@@ -72,6 +75,8 @@ namespace CosmicShore.Gameplay
             FeatureKind.Whiskers => "Cheek",
             FeatureKind.HairCap => "Crown",
             FeatureKind.Fangs => "MouthCorner",
+            FeatureKind.Trunk => "NoseTip",
+            FeatureKind.Goggles => "CrownFront",
             _ => string.Empty,
         };
 

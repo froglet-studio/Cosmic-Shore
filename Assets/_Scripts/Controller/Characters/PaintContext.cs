@@ -12,6 +12,8 @@ namespace CosmicShore.Gameplay
         public int Seed;
         public Color HumanSkin, HairColor, BrowColor;
         public float BeardShadow;   // 0..1, rolled per individual by the painter
+        public Color CoatTint = Color.white;   // the genome's covering colour when CoatTinted
+        public bool CoatTinted;
 
         /// <summary>Per-pixel geometry the layers share.</summary>
         public struct Pixel

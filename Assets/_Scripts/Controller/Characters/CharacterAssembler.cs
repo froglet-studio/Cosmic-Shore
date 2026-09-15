@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
                     {
                         Site = site, Surface = surface, Params = feature.Params, Shape = bp.Shape,
                         Rng = new CharacterRandom(bp.Genome.Seed ^ StableHash(feature.TraitId) ^ (mirrored ? 0x5A5A : 0)),
-                        HairVolume = bp.Genome.HairVolume, Age = bp.Genome.Age,
+                        HairVolume = bp.Genome.HairVolume, Age = bp.Genome.Age, Gear = bp.Genome.Gear,
                         TraitId = $"{feature.SourceKey}.{feature.TraitId}{(spec.Bilateral ? (mirrored ? ".R" : ".L") : string.Empty)}",
                     };
                     FeatureCatalog.Generate(feature.Kind, ctx);
@@ -73,6 +73,12 @@ namespace CosmicShore.Gameplay
                     }
                 }
             }
+
+            // The bust below the head: shoulders and a flight jacket with a collar. Not a
+            // feature (no site, no clade) — the framing every portrait shares.
+            var torso = BustTorso.Generate(surface, bp);
+            if (GeometryKit.AnyNaN(torso)) throw new InvalidOperationException("Torso produced a NaN vertex.");
+            model.Parts.Add(torso);
             return model;
         }
 

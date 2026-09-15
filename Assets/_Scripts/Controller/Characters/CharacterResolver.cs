@@ -168,6 +168,15 @@ namespace CosmicShore.Gameplay
                 });
             }
 
+            // Gear: worn by the genome, never by a clade. Goggles ON claim the Eyes' worn space
+            // visually but not the slot — the eyes are still generated under them.
+            if (bp.Genome.Gear != GearKind.None)
+                bp.Features.Add(new ResolvedFeature
+                {
+                    TraitId = bp.Genome.Gear.ToString(), SourceKey = "Gear", Kind = FeatureKind.Goggles,
+                    Site = FeatureCatalog.DefaultSite(FeatureKind.Goggles), Signature = false, Weight = 0f, Params = new FeatureParams(),
+                });
+
             // Slot-derived facts the painter and assembler read.
             bp.HasBeak = bp.HasFeature(FeatureKind.Beak);
             bp.HasMandibles = bp.HasFeature(FeatureKind.Mandibles);

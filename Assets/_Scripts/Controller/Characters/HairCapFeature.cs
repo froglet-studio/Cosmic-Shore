@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
         {
             var p = ctx.Params.Hair;
             float volume = Mathf.Clamp01(ctx.HairVolume);
+            if (volume < 0.05f) return;   // a genome with no hair volume is bald (an animal avatar)
             float thickness = p.Thickness * (0.3f + 0.7f * volume);
             Cap(ctx, p, thickness);
             if (p.StrandCount > 0) Strands(ctx, p, volume, thickness);

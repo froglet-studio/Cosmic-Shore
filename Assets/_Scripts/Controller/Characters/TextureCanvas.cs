@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
         public TextureCanvas Eye;
         public TextureCanvas Keratin;
         public TextureCanvas Hair;
+        public TextureCanvas Gear;        // rgb albedo, alpha = smoothness
         public float EyeSmoothness = 0.92f;
         public float KeratinSmoothness = 0.55f;
         public float HairSmoothness = 0.30f;

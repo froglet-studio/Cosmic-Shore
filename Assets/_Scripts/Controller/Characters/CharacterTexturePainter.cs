@@ -25,6 +25,7 @@ namespace CosmicShore.Gameplay
                 Seed = g.Seed,
                 HumanSkin = SkinBaseLayer.HumanBase(config, g),
                 HairColor = HairTextureLayer.HairColor(config, g),
+                CoatTint = g.CoatMultiplier, CoatTinted = g.CoatTint.a > 0.001f,
             };
             ctx.BrowColor = Color.Lerp(ctx.HairColor, Color.black, 0.35f);
             // Beard shadow: about half of humans carry some, strength off the seed.
@@ -61,6 +62,9 @@ namespace CosmicShore.Gameplay
             foreach (var f in bp.Features)
                 if (f.Kind == FeatureKind.Crest) { hair = new Color(0.05f, 0.05f, 0.07f); break; }
             HairTextureLayer.Paint(textures.Hair, hair, hair + new Color(0.06f, 0.08f, 0.16f), g.Seed);
+
+            textures.Gear = new TextureCanvas(small, small);
+            GearTextureLayer.Paint(textures.Gear, config.GearStyle, ctx.Accent, g.Seed);
             return textures;
         }
 
@@ -100,6 +104,16 @@ namespace CosmicShore.Gameplay
                         float cov = MarkingsLayer.Coverage(layer, px, ctx.Seed + i * 17);
                         if (cov <= 0.002f) continue;
                         Color lc = MarkingsLayer.Base(layer.Recipe, bp.Genome.MarkingKey, px, ctx.Accent, ctx.Seed + i * 17);
+                        if (ctx.CoatTinted)
+                        {
+                            // The tint REPLACES the covering's colour and keeps its shading: markings
+                            // stay dark, highlights stay light, and a black feather can still be red.
+                            Color baseCol = Color.Lerp(layer.Recipe.BaseA, layer.Recipe.BaseB, Mathf.Clamp01(bp.Genome.MarkingKey));
+                            float lumBase = Mathf.Max(0.03f, 0.2126f * baseCol.r + 0.7152f * baseCol.g + 0.0722f * baseCol.b);
+                            float lumPx = 0.2126f * lc.r + 0.7152f * lc.g + 0.0722f * lc.b;
+                            float k = Mathf.Min(1.6f, lumPx / lumBase);
+                            lc = new Color(ctx.CoatTint.r * k, ctx.CoatTint.g * k, ctx.CoatTint.b * k, 1f);
+                        }
                         if (ctx.Accent.SkinTint > 0f) lc = Color.Lerp(lc, ctx.Accent.Accent, ctx.Accent.SkinTint);
                         float llum = SurfaceDetailLayer.Evaluate(layer.Recipe.Kind, layer.Recipe.DetailStrength, bp.Genome.Age, px, ctx.Seed + i * 17, out float lh);
                         color = Color.Lerp(color, lc, cov);

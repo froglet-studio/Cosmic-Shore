@@ -203,7 +203,12 @@ back to PALETTE.md §2.4's table when no colour set is available, asserted equal
 | "the portrait is lit wrong / framed wrong" | `CharacterPortraitBaker.cs` |
 | "the weights slider feels wrong" | `CharacterWeights.cs` |
 | "the humans all look alike" | `GenomeRoller.cs` (what is rolled) · `CharacterGenerationConfigSO.HumanVariationSigma` |
-| "add a seventh clade" | a new `.asset` under `Resources/Characters/Clades` — **no code** |
+| "it doesn't look painted", "too much ink", "the frame / background is wrong" | `PortraitStylizer.cs` · `PortraitStyle` on the config asset |
+| "the jacket / collar / shoulders are wrong" | `BustTorso.cs` (shape) · `GearStyle` on the config asset (colours) · `GearTextureLayer.cs` (fabric) |
+| "the goggles are wrong" | `GogglesFeature.cs` |
+| "the trunk is wrong" | `TrunkFeature.cs` · the Proboscidea asset's `Trunk` params |
+| "avatar N doesn't look like the icon" | the `PRESETS` row in `author_character_assets.py` (clades, weights, coat, gear) |
+| "add a seventh clade" | a new `.asset` under `Resources/Characters/Clades` — **no code** (twelve ship now) |
 | "add a new kind of discrete feature" | one new `*Feature.cs` + one case in `FeatureCatalog.cs` |
 | "the procedural human is hopeless, use a sculpt" | `CharacterGenerationConfigSO` (`Head = Authored`, the mesh) — see §3 |
 
@@ -293,3 +298,59 @@ pass) replaced the head, eyes, ears and hair. The sheets in `Docs~/` are from th
 row and say *who* it is. Whether these are people you could care about is the human gate this
 branch is being handed over for; the offline answer is "closer than the brief expected from a
 procedural head, and every remaining complaint lands in one file".
+
+## 8. The avatar pass — the shipped illustrations as points in this space
+
+The eighteen selectable profile icons (`Assets/_Graphics/Profile/ProfileIcon*.png`,
+`SO_DefaultProfileIcons`) are painted anthropomorphic animals in space-pilot dress: soft
+brushwork, a warm key and a cool rim, saturated fur, a jacket with a big collar, goggles, an
+octagonal frame over a two-tone background. The generator now renders INTO that language and
+carries each icon as a genome, so the eighteen are eighteen vectors in a space that also holds
+everything between and beyond them.
+
+**How the style is produced — three layers, each its own file.**
+
+- `PortraitStylizer.cs` — the painterly post-process, a pure function over the lit render:
+  a soft tone curve with an S for contrast, a warm-light / cool-shadow split, a soft
+  posterisation of value, a bilateral smoothing (paint has no pores; edges stay), a diagonal
+  brush texture, ink on strong edges and on the silhouette, the octagonal frame, a two-tone
+  background with a domain-lit halo and a vignette. Every dial is `PortraitStyle` on the config
+  asset (`PortraitStyle.Default` is the shipped look; `PaintPortraits = false` bakes the raw lit
+  render for judging geometry). The editor baker and the offline harness run the SAME code.
+- `BustTorso.cs` + `GearTextureLayer.cs` — the bust below the head: shoulders and a flight
+  jacket lofted from superellipse rings, a stand-up collar around the neck. The gear atlas
+  paints jacket fabric (with the collar band in the DOMAIN accent — which is where the domain
+  now most visibly enters a portrait), leather with rivets, and goggle glass; alpha carries
+  smoothness. `GearStyle` on the config asset holds every colour.
+- `GogglesFeature.cs` — pilot goggles pushed up on the forehead or worn over the eyes
+  (`GearKind` on the genome: gear is worn by an INDIVIDUAL, never by a clade, so the resolver
+  places it from the genome rather than from a ladder).
+
+**Six clades were added as DATA** (no generator code — the promise held): Leporidae, Canidae,
+Squamata, Hymenoptera, Proboscidea, Primates. Two things they needed from code, both general:
+a `Trunk` feature kind (`TrunkFeature.cs`, a curling tapered tube — the one new geometry) and a
+`Blaze` marking (a nose stripe with cheek flanks, the mandrill's face). `PinnaParams.RootOffset`
+was added so a STANDING ear grows up from its root instead of being centred on its site — the
+cat and bat ears had been half-buried in the skull.
+
+**The coat.** `CharacterGenome.CoatTint` recolours the clade coverings while keeping their
+shading (a black feather can be red; stripes stay dark), because the icons' fur colours are the
+icons' identity and no clade should own one colour. Alpha 0 = unset = as authored.
+
+**The presets** live in `Resources/Characters/AvatarPresets/Avatar_NN_ProfileIconNN.json`,
+authored by the `PRESETS` table in `author_character_assets.py` and loaded by `AvatarPresets`.
+They are ordinary genomes. The window's **Avatars** tab bakes all eighteen beside the shipped
+icons; clicking a pair opens the genome in the Inspector, where every slider still works.
+Weights obey the [0.20, 0.60] region, so every recreation is at least a fifth human by
+construction — a tiger icon becomes a tiger *person*, which is the design, not a limit.
+
+**Honest read of the recreations (offline, `Docs~/CHARACTERS_avatar_compare.jpg`).** Species,
+colour, gear and framing read: red crested corvid, goggle hare, blue-flanked mandrill, striped
+tiger, yellow chick, pink mantis, white hound, tabby, green goggled lizard, pink rabbit, elephant
+with trunk and tusks, goggled cat aviator, shepherd, cosmonaut hare, helmeted pilot, goggle jack,
+field mouse, bee. What does NOT yet read: the illustrations' painterly *texture* (ours is smooth
+clay with a brush on the background), their hats and helmets (no gear kinds for them yet — one
+feature file each), the icons' full-animal muzzles (the minimum human fifth keeps a human mouth
+and nose bridge on most), and the hand-drawn asymmetry. The next dials, in order: a `Hat` /
+`Helmet` gear kind, a fur-card covering so fur has depth at the silhouette, and a per-genome
+mouth-corner axis so expressions vary.

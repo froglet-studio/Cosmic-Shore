@@ -21,6 +21,8 @@ namespace CosmicShore.Gameplay
         Whiskers = 10,
         HairCap = 11,
         Fangs = 12,
+        Trunk = 13,
+        Goggles = 14,   // gear, not a clade trait: placed from the genome's GearKind
     }
 
     /// <summary>
@@ -38,6 +40,17 @@ namespace CosmicShore.Gameplay
         Brow = 5,
         Cheeks = 6,
         Neck = 7,
+    }
+
+    /// <summary>
+    /// Pilot gear a genome wears — the space-pilot dressing every shipped avatar illustration
+    /// carries. Not a clade trait: the resolver places it from <c>CharacterGenome.Gear</c>.
+    /// </summary>
+    public enum GearKind
+    {
+        None = 0,
+        GogglesUp = 1,   // goggles pushed up onto the forehead / hairline
+        GogglesOn = 2,   // goggles worn over the eyes
     }
 
     public enum PupilKind
@@ -67,5 +80,6 @@ namespace CosmicShore.Gameplay
         Scutes = 3,       // plate cells with seams
         Sheen = 4,        // iridescent gradient (chitin, corvid)
         Ridges = 5,       // bat pinna / nose leaf ribbing
+        Blaze = 6,        // a coloured stripe down the nose (MarkingColor) with cheek flanks in BaseB (mandrill)
     }
 }
