@@ -146,6 +146,27 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            // A scene carrying StandaloneSceneMarker runs ALONE: no network monitor, no UGS
+            // authentication, and no load of the Authentication scene. Reflex instantiates
+            // this prefab as a ROOT SCOPE, so without this guard AppManager reaches every
+            // scene in the project — and a bare measurement scene replaced itself with
+            // Authentication after MinimumSplashDuration, which makes it unable to measure
+            // anything.
+            //
+            // INSTALLING IS NOT BOOTING: InstallBindings has already run (Reflex calls it at
+            // container construction, before any Start), so a standalone scene keeps every DI
+            // binding and loses only the boot SEQUENCE.
+            //
+            // AutoCreateBootstrapFlow — the other way this class reaches a scene — has always
+            // opened with `if (activeScene.buildIndex != 0) return;`. This is the same
+            // decision applied to the path that never got it.
+            if (StandaloneSceneMarker.IsActive)
+            {
+                Log("Standalone scene — bootstrap stood down. DI bindings ARE installed; " +
+                    "auth, network monitor and the Authentication scene load are skipped.");
+                return;
+            }
+
             applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
 
             ConfigureGameData();
