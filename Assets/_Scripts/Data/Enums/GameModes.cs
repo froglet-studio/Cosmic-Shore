@@ -205,9 +205,27 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/REDLINE.md.
         Redline = 53,
 
+        // WreckingBall (54, display name "Wrecking Ball"): the Scarab-only demolition race, and
+        // Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court is
+        // grown full of Rampage's five breakable flora; every bright crystal you fly through
+        // becomes your ball and every prism it plows through is yours, and the juke dash's
+        // cavitation plate shreds whatever is beside you. First DOMAIN to the hostile-prism
+        // target wins (ScoringMetric.PrismsDestroyed). Intensity is DENSITY and SUPPLY: more
+        // forest and more crystals at 1, a sparse court and a scarce ball at 4. See
+        // _Scripts/Controller/Arcade/WRECKING_BALL.md.
+        WreckingBall = 54,
+
+        // Undertow (55): the Scarab-only cavitation duel - The Bends for the hull whose blast is a
+        // sideways PLATE rather than a cone. Fought in Wildlife Liberation's caged arena: dash
+        // beside a rival to catch them in the plate (every element stripped for four seconds -
+        // one BEND) and drag the wildlife through it (a creature caught in the plate dies -
+        // one KILL). Points are bends and kills together; first DOMAIN to the target wins.
+        // See _Scripts/Controller/Arcade/UNDERTOW.md.
+        Undertow = 55,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 51) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 53) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

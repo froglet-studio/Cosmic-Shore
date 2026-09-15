@@ -400,6 +400,16 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.WreckingBall:
+                    // Scramble's provider on purpose: your team's nearest live ball, else the
+                    // nearest forge-source crystal - the ball IS the demolition tool here, and a
+                    // pilot with no ball needs the crystal that makes one.
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_WreckingBall");
+                case GameModes.Undertow:
+                    // The Bends' provider on purpose: the nearest pilot this player may bend. The
+                    // domain check is the whole point (teammates cannot be caught in your plate),
+                    // and a caged arena is exactly where "which way is the fight" needs answering.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Undertow");
                 case GameModes.Switchback:
                     // The arrow is a gate race's ONLY answer to "which of these identical rings
                     // is mine next" - the gates are deliberately all neutral, so nothing in the

@@ -67,6 +67,16 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
         public const int DefaultTollwayTollTarget = 4;
 
+        /// <summary>Wrecking Ball hostile-prism target used when <see cref="wreckingBallPrismTarget"/>
+        /// is 0. Lower than Rampage's 2000 because the court forest is smaller than Rampage's
+        /// (35-59 plants against 59-295) and a match should end with forest still standing.</summary>
+        public const int DefaultWreckingBallPrismTarget = 1500;
+
+        /// <summary>Undertow point target used when <see cref="undertowPointTarget"/> is 0. A bend
+        /// (an opposing pilot caught in the plate) is 3 and a creature killed by it is 1
+        /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
+        public const int DefaultUndertowPointTarget = 12;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -212,6 +222,16 @@ namespace CosmicShore.ScriptableObjects
                  "slower than shooting at a net and faster than tearing down a wreck.")]
         [Min(0)] public int tollwayTollTarget = 8;
 
+        [Tooltip("Wrecking Ball: hostile prisms (the court forest, rival trails, fauna bodies) a " +
+                 "DOMAIN must destroy between them to win (race to N) - with the ball OR the " +
+                 "cavitation plate; your own team's mass never counts. 0 = default (1500).")]
+        [Min(0)] public int wreckingBallPrismTarget = 1500;
+
+        [Tooltip("Undertow: POINTS a DOMAIN needs to win (race to N). A bend - an opposing pilot " +
+                 "caught in your cavitation plate - is 3 points and a creature the plate kills is " +
+                 "1, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int undertowPointTarget = 12;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -235,6 +255,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int redlineGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
+        [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
+        [Min(0)] public int undertowPointTargetBuild = 12;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -416,6 +438,22 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
 
         /// <summary>
+        /// Wrecking Ball prism target ("race to N" hostile prisms destroyed): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWreckingBallPrismTarget"/>. Compared against a
+        /// DOMAIN's summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetWreckingBallPrismTarget() =>
+            wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget;
+
+        /// <summary>
+        /// Undertow point target ("first domain to N points"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultUndertowPointTarget"/>. Compared against a DOMAIN's bends
+        /// (CombatPoints) plus kills (LifeformsKilled), folded by UndertowScoringRuleSO.DomainValue.
+        /// </summary>
+        public int GetUndertowPointTarget() =>
+            undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -442,6 +480,8 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
+                GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
+                GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 _                                   => 0,
             };
 
@@ -469,7 +509,9 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTarget == headlongGateTargetBuild &&
             redlineGateTarget == redlineGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
-            tollwayTollTarget == tollwayTollTargetBuild;
+            tollwayTollTarget == tollwayTollTargetBuild &&
+            wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
+            undertowPointTarget == undertowPointTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -494,6 +536,8 @@ namespace CosmicShore.ScriptableObjects
             redlineGateTarget = redlineGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
+            wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
+            undertowPointTarget = undertowPointTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -519,6 +563,8 @@ namespace CosmicShore.ScriptableObjects
             redlineGateTargetBuild = redlineGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
+            wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
+            undertowPointTargetBuild = undertowPointTarget;
         }
     }
 }
