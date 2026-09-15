@@ -40,8 +40,8 @@ namespace CosmicShore.Gameplay
         [Range(0.1f, 1f)] public float HumanVariationClamp = 0.85f;
 
         [Header("Human palette")]
-        public Color SkinPale = new Color(0.94f, 0.80f, 0.70f);
-        public Color SkinDeep = new Color(0.30f, 0.17f, 0.11f);
+        public Color SkinPale = new Color(0.82f, 0.64f, 0.52f);
+        public Color SkinDeep = new Color(0.26f, 0.15f, 0.10f);
         [Tooltip("Blended in by SkinWarmth: 0 = cool/olive, 1 = warm/ruddy.")]
         public Color SkinCoolTint = new Color(0.92f, 0.96f, 0.88f);
         public Color SkinWarmTint = new Color(1.03f, 0.94f, 0.92f);

@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         /// <summary>The one decision.</summary>
         public const DomainAccentMode Mode = DomainAccentMode.Accent;
 
-        public const float IrisTint = 0.45f;
+        public const float IrisTint = 0.28f;
         public const float MarkingTint = 0.22f;
         public const bool PaintAdornment = true;
         public const float DomainSkinTint = 0.30f;

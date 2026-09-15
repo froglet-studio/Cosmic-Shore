@@ -30,6 +30,10 @@ namespace CosmicShore.Gameplay
                     float band = GeometryKit.Bell((v - 0.55f) / 0.3f);
                     col = Color.Lerp(col, sheen, band * 0.08f);
                     col *= 0.75f + 0.25f * GeometryKit.Smooth(v / 0.35f);   // roots darker near the crown
+                    // Brow band (u ≥ 0.9): the same hair, darker and matte, for the eyebrow cards.
+                    float brow = GeometryKit.SmoothStep(0.88f, 0.905f, u);
+                    Color browCol = hair * (0.42f + 0.25f * strands + 0.1f * fine);
+                    col = Color.Lerp(col, browCol, brow);
                     col.a = 1f;
                     c.Set(x, y, col);
                 }

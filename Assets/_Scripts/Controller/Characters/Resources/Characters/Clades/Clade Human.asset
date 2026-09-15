@@ -30,11 +30,17 @@ MonoBehaviour:
     AxisOverrides: []
     Params:
       Hair:
-        Thickness: 0.034
-        FrontHairlineDeg: 36
-        SideHairlineDeg: 72
-        BackHairlineDeg: 118
+        Thickness: 0.03
+        FrontHairlineDeg: 44
+        SideHairlineDeg: 68
+        BackHairlineDeg: 108
         Clumping: 0.5
+        StrandCount: 700
+        StrandLength: 0.3
+        StrandWidth: 0.036
+        PartDeg: 26
+        Fringe: 0.3
+        BrowCards: 60
   - Id: Eyes
     Signature: 1
     MinWeight: 0.0
@@ -48,9 +54,9 @@ MonoBehaviour:
     AxisOverrides: []
     Params:
       Eye:
-        Radius: 0.066
-        IrisFraction: 0.58
-        LidOpen: 0.6
+        Radius: 0.058
+        IrisFraction: 0.5
+        LidOpen: 0.58
         CanthalTiltDeg: 3.0
         LidThickness: 0.011
         Pupil: 0
@@ -71,14 +77,14 @@ MonoBehaviour:
     AxisOverrides: []
     Params:
       Pinna:
-        Height: 0.17
-        Width: 0.1
+        Height: 0.19
+        Width: 0.105
         Pointed: 0.0
         CupDepth: 0.45
         RimThickness: 0.16
         Tragus: 0.4
-        ForwardTiltDeg: 30
-        OutwardRollDeg: 8
+        ForwardTiltDeg: 24
+        OutwardRollDeg: 6
         Thickness: 0.012
   - Id: Nose
     Signature: 1
@@ -112,8 +118,8 @@ MonoBehaviour:
     MarkingColor: {r: 0.0, g: 0.0, b: 0.0, a: 1.0}
     MarkingStrength: 0.0
     MarkingScale: 1.0
-    Smoothness: 0.38
-    DetailStrength: 0.6
+    Smoothness: 0.32
+    DetailStrength: 0.75
     AnchorThetaDeg: 180.0
     ReachDegAtMin: 0.0
     ReachDegAtMax: 0.0

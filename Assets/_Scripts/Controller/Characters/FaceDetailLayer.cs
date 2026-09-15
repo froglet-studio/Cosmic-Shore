@@ -71,11 +71,11 @@ namespace CosmicShore.Gameplay
                 float noseW = GeometryKit.Dial(bp.Shape.Clamped(HeadAxis.NoseWidth), 0.7f, 1.6f);
                 for (int side = -1; side <= 1; side += 2)
                 {
-                    float du = (PaintContext.WrapU(px.U - nose.Uv.x) - side * nose.UvRadius.x * 0.95f * noseW) / (nose.UvRadius.x * 0.42f);
-                    float dv = (px.V - (nose.Uv.y - nose.UvRadius.y * 0.55f)) / (nose.UvRadius.y * 0.34f);
+                    float du = (PaintContext.WrapU(px.U - nose.Uv.x) - side * nose.UvRadius.x * 0.55f * noseW) / (nose.UvRadius.x * 0.30f);
+                    float dv = (px.V - (nose.Uv.y - nose.UvRadius.y * 1.9f)) / (nose.UvRadius.y * 0.18f);
                     float m = GeometryKit.Bell(GeometryKit.SafeSqrt(du * du + dv * dv));
                     m = GeometryKit.SmoothStep(0.15f, 0.7f, m);
-                    color = Color.Lerp(color, new Color(0.12f, 0.06f, 0.05f), m * 0.85f);
+                    color = Color.Lerp(color, new Color(0.12f, 0.06f, 0.05f), m * 0.55f);
                     height -= m * 0.5f;
                 }
             }
@@ -112,12 +112,12 @@ namespace CosmicShore.Gameplay
             float upper = dv >= 0f ? 1f : 0.25f;
             float band = GeometryKit.Bell((r - openR - 0.04f) / 0.075f) * upper;
             band *= 0.35f + 0.65f * Mathf.Abs(Mathf.Sin(angle * 0.5f + 0.4f));
-            color = Color.Lerp(color, new Color(0.12f, 0.07f, 0.06f), band * 0.6f);
+            color = Color.Lerp(color, new Color(0.12f, 0.07f, 0.06f), band * 0.18f);
             // Socket shading: gentle, cool, wider than the opening.
-            float socket = GeometryKit.Bell(r / 2.8f) * 0.055f;
+            float socket = GeometryKit.Bell(r / 2.8f) * 0.03f;
             color.r -= socket * 0.9f; color.g -= socket; color.b -= socket * 0.6f;
             // Lid crease above the eye.
-            float crease = GeometryKit.Bell((r - openR - 0.42f) / 0.12f) * Mathf.Clamp01(dv) * 0.35f;
+            float crease = GeometryKit.Bell((r - openR - 0.42f) / 0.12f) * Mathf.Clamp01(dv) * 0.15f;
             color *= 1f - crease * 0.5f;
             height -= crease * 0.3f;
         }
@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
             float m = GeometryKit.Bell(d) * ends;
             float strands = 0.6f + 0.4f * Noise.Value(px.U * 1400f, px.V * 300f, ctx.Seed + 42);
             m = GeometryKit.SmoothStep(0.12f, 0.7f, m * strands) * humanMask;
-            color = Color.Lerp(color, ctx.BrowColor, m * 0.92f);
+            color = Color.Lerp(color, ctx.BrowColor, m * 0.55f);
             height += m * 0.25f;
         }
 

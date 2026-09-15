@@ -25,13 +25,13 @@ namespace CosmicShore.Editor
     public static class CharacterPortraitBaker
     {
         /// <summary>Bump when the generator changes visibly, so stale cache files are never mistaken for the new look.</summary>
-        public const string BakeVersion = "v4";
+        public const string BakeVersion = "v5";
         public const string CacheFolder = "Library/CharacterPortraits";
         public const float FieldOfView = 26f;
         public const float CameraYawDeg = 22f;
         public const float CameraPitchDeg = 6f;
-        public const float CameraDistance = 2.35f;
-        static readonly Vector3 CameraTarget = new Vector3(0f, -0.06f, 0f);
+        public const float CameraDistance = 2.6f;
+        static readonly Vector3 CameraTarget = new Vector3(0f, -0.02f, 0f);
 
         public struct BakeResult
         {
@@ -94,10 +94,10 @@ namespace CosmicShore.Editor
                 preview.camera.farClipPlane = 20f;
 
                 // Key: warm, upper-left, from the camera side. Fill: cool, right. Rim: behind.
-                preview.lights[0].intensity = 2.0f;
+                preview.lights[0].intensity = 1.5f;
                 preview.lights[0].color = new Color(1.0f, 0.96f, 0.90f);
                 preview.lights[0].transform.rotation = Quaternion.LookRotation(-new Vector3(-0.55f, 0.65f, 0.55f).normalized);
-                preview.lights[1].intensity = 0.7f;
+                preview.lights[1].intensity = 0.6f;
                 preview.lights[1].color = new Color(0.70f, 0.78f, 1.0f);
                 preview.lights[1].transform.rotation = Quaternion.LookRotation(-new Vector3(0.85f, 0.10f, 0.35f).normalized);
                 preview.ambientColor = new Color(0.20f, 0.21f, 0.26f, 1f);
@@ -105,7 +105,7 @@ namespace CosmicShore.Editor
                 var rimGo = new GameObject("RimLight") { hideFlags = HideFlags.HideAndDontSave };
                 var rim = rimGo.AddComponent<Light>();
                 rim.type = LightType.Directional;
-                rim.intensity = 1.4f;
+                rim.intensity = 1.2f;
                 rim.color = new Color(0.9f, 0.95f, 1.0f);
                 rimGo.transform.rotation = Quaternion.LookRotation(-new Vector3(0.3f, 0.55f, -0.8f).normalized);
                 preview.AddSingleGO(rimGo);

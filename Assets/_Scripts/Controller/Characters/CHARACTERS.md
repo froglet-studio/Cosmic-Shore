@@ -118,15 +118,36 @@ flipped), so every feature is generated once.
 ## 3. The base head and the swap plan
 
 `IBaseHead` is the seam the spike stands on: topology, `Evaluate(shape)`, a surface sampler, and
-sites. `ProceduralBaseHead` is shipped: three implicit volumes (cranium with a flattened crown,
-jaw mass with taper and a flat face plane, neck) smooth-unioned and sampled along rays from the
-skull centre onto a ring × segment grid, then shaped by angular bumps (brow, sockets, melon,
-muzzle, nose, cheekbones, lips, chin, gonial angles) whose sizes and amplitudes are functions of
-the axes. Integer `HeadDetail` decides topology; `Portrait` (96 × 128) for baking, `Runtime`
-(40 × 56) as a decimation target — `HeadTopologyTests` asserts no shape ever changes a count.
+sites. `ProceduralBaseHead` is shipped, and since the fidelity pass it is an **anatomical
+sculpt expressed as a signed-distance field**, not a union of two eggs: braincase + parietal
+fullness + occiput, frontal boss (the melon when `ForeheadBulge` rises), brow ridges and
+glabella, orbital dishes, zygomatic mass and arch, mid-face and lower-face masses, buccal
+flesh, a mandible of round cones (chin → gonion → condyle) with a chin, a throat, and a
+MODELLED nose (dorsum cone, tip, alae, columella, nostril dents), lips (cupid's bow, vermilion
+cones, the fissure as a thin cut) and the mentolabial sulcus — every primitive's position and
+size a function of the axes, in `AnalyticSurface.BuildAnatomy`. It is sampled along rays from
+the skull centre (on the eye line) onto a ring × segment grid; each ray takes the OUTERMOST
+crossing (march in, then bisect), which is what keeps a brow overhang or a nose tip from
+denting the surface where a single bisection would land on the wrong crossing. A lower-face
+transform (`LF`) scales everything below the eye line by `LowerFaceHeight` and pushes it forward
+by `MuzzleLength`, so a muzzle carries nose, lips and chin out with it; `NoseProjection` and
+`LipFullness` at −1 sink their primitives into the face, which is how a beak's axis overrides
+leave a smooth muzzle for its base ring. Integer `HeadDetail` decides topology; `Portrait`
+(160 × 192) for baking, `Runtime` (40 × 56) as a decimation target — `HeadTopologyTests`
+asserts no shape ever changes a count.
 
-**If the procedural human fails the human gate** — the honest possibility the brief named —
-the fix is one file: `CharacterGenerationConfigSO.Head = Authored` + an `AuthoredHeadMesh`
+Three features were rebuilt to the same standard. `VertebrateEyeFeature` gives the eyeball a
+corneal bulge, the fissure a nasal-biased upper peak and temporal lower trough, the upper lid a
+fold, and both lids an orbital skirt that is **sampled off the head surface** so the lids seal
+to whatever socket the head sculpted (plus a caruncle). `PinnaFeature` is a sculpted profile —
+helix rim, scapha, antihelix, concha bowl, tragus, antitragus, fleshy lobe — on an ear-shaped
+outline, still one generator for human / felid / chiropteran ears. `HairCapFeature` is a thin
+scalp cap plus a field of two-sided STRAND CARDS combed from a parting and falling with
+gravity over scalp, temples and forehead, plus eyebrow cards along the brow ridge (painted in
+a darker band of the hair texture).
+
+**If the procedural human still fails the human gate**, the fix is one file:
+`CharacterGenerationConfigSO.Head = Authored` + an `AuthoredHeadMesh`
 whose blend shapes are named after `HeadAxis` members (`MuzzleLength`, optionally `MuzzleLength-`
 for the negative direction), scaled to head space. `AuthoredBaseHead` evaluates it linearly like
 every real character creator, ray-casts the blended mesh for the surface sampler, and takes its
@@ -141,8 +162,11 @@ Procedural, painted into pure `TextureCanvas`es and uploaded once. The skin canv
 sockets, lighter forehead, age mottling) → each clade's `MarkingsLayer` covering composited by
 its coverage, heaviest last → `SurfaceDetailLayer` pores/strands/barbs/scute seams/chitin polish
 as colour *and* height (the normal map is derived) → `FaceDetailLayer` painted features keyed on
-landmarks: eyebrows, lash line, socket shading, mouth crease with lifted corners, lip colour,
-nostrils, the blowhole aperture, the domain adornment. Alpha carries smoothness per covering.
+landmarks: a faint eyebrow underlay (the brows themselves are hair cards), lash line, socket
+shading, lip colour and the philtrum shadow over the modelled lips, nostril shadow under the
+modelled alae, the blowhole aperture, the domain adornment. Every colour constant is authored in
+sRGB — the albedo canvases upload as sRGB textures — so a value here is what you would pick in a
+colour picker, not a linear intensity; a beard shadow is rolled per individual off the seed. Alpha carries smoothness per covering.
 `IrisTextureLayer` paints the eye (round / slit / bar / all-dark pupils; hexagonal facets for a
 compound eye), `KeratinTextureLayer` the beak with its gape line, `HairTextureLayer` the hair.
 
@@ -159,19 +183,20 @@ back to PALETTE.md §2.4's table when no colour set is available, asserted equal
 
 | Complaint | File |
 |---|---|
-| "the jaw reads wrong", "the chin recedes", "the face is too flat / too round", "the brow is too heavy", "the eyes are too far apart", "the nose is too small", "the skull is an egg" | `ProceduralBaseHead.cs` — every volume in `Form.Default` / `AnalyticSurface` ctor, every bump in `BuildBumps`, site angles in `DefaultSites` |
-| "the eyes look dead" (lids, opening, stare) | `VertebrateEyeFeature.cs` |
+| "the jaw reads wrong", "the chin recedes", "the cheeks bulge", "the brow is too heavy", "the eyes are too far apart", "the nose is too small / the nostrils", "the lips don't read", "the skull is an egg" | `ProceduralBaseHead.cs` — every primitive in `AnalyticSurface.BuildAnatomy`, the global form in `Form.Default`, site angles in `DefaultSites` |
+| "the eyes look dead", "the eyes bulge", "the lids are wrong", "the eye is too big" | `VertebrateEyeFeature.cs` (+ the human clade asset's `Eye` params: radius, iris fraction, lid open) |
 | "the eyes look dead" (iris, pupil, sclera) | `IrisTextureLayer.cs` |
-| "the eyes look dead" (lash line, socket shadow) / "the mouth corners are wrong" / "the eyebrows are wrong" / "the nostrils" | `FaceDetailLayer.cs` |
-| "the skin texture is plastic" (colour, blood, mottling) | `SkinBaseLayer.cs` |
+| "the eyes look dead" (lash line, socket shadow) / "the lip colour" / "the nostril shadow" | `FaceDetailLayer.cs` |
+| "the mouth corners are wrong" (geometry: the fissure and lip cones) | `ProceduralBaseHead.cs` `BuildAnatomy` — the mouth block |
+| "the skin texture is plastic" (colour, blood, mottling, beard shadow) | `SkinBaseLayer.cs` (+ the skin palette on the config asset, in sRGB) |
 | "the skin texture is plastic" (pores / fur / barbs / scutes / polish) | `SurfaceDetailLayer.cs` (+ `DetailNormalStrength` on the config asset) |
 | "the beak reads wrong" | `BeakFeature.cs` (shape) · the clade asset's `Beak` params (length, hook, colour) |
 | "Corvidae doesn't read" — the LADDER (what 0.20 buys) | `CharacterResolver.cs` (`RungThreshold`, slot priority) |
 | "Corvidae doesn't read" — the DATA (what its rungs are, signatures) | `Resources/Characters/Clades/Clade Corvidae.asset` (regenerate with `author_character_assets.py`) |
 | "20% clade isn't enough to see" | `CharacterGenerationConfigSO.TravelGamma` (continuous travel) — and the clade asset's `ReachDegAtMin` (covering) |
 | "the feathers stop in the wrong place", "the markings are wrong", "the stripes" | `MarkingsLayer.cs` |
-| "the ears are wrong" (any clade) | `PinnaFeature.cs` (shape) · the clade asset's `Pinna` params + `SitePitchDeg` |
-| "the hairline is wrong", "the hair is a helmet" | `HairCapFeature.cs` (+ `HairTextureLayer.cs` for the strands) |
+| "the ears are wrong" (any clade), "the ears are discs" | `PinnaFeature.cs` (the profile) · the clade asset's `Pinna` params + `SitePitchDeg` |
+| "the hairline is wrong", "the hair is a helmet", "the hair sticks out", "the eyebrows are wrong" | `HairCapFeature.cs` (+ the human clade asset's `Hair` params: strand count/length/width, parting, fringe, brow cards; `HairTextureLayer.cs` for the strand streaks and the brow band) |
 | "the feature is floating / in the wrong place / the wrong size" | `CharacterAssembler.cs` (placement) or the site angles in `ProceduralBaseHead.DefaultSites` |
 | "a chimera has two of something / lost something" | `CharacterResolver.cs` (slot resolution) |
 | "the domain colour is wrong / the skin should be teal" | `CharacterPaletteBinding.cs` |
@@ -196,6 +221,8 @@ in the inspector and accept that `--check` will then report drift.
   clades before revealing them. *Inspector* tab: pick clades, drag the three weight sliders (each
   drag holds its value and re-distributes the other two inside the region), re-roll the
   individual, bake, save/load a genome JSON, copy the JSON to the clipboard.
+- **Bake cost:** the first sheet is ~24 busts × (SDF head at 160 × 192 + ~700 hair cards +
+  1024² paint) — expect a few minutes on the first bake, then the cache makes it instant.
 - **Cache:** `Library/CharacterPortraits/<hash>_<size>_<version>.png`. Bump
   `CharacterPortraitBaker.BakeVersion` when the generator changes, or use *Clear portrait cache*.
 - **Assets:** `python3 Assets/_Scripts/Editor/Characters/author_character_assets.py` writes the
@@ -217,49 +244,52 @@ in the inspector and accept that `--check` will then report drift.
 
 ## 7. Verdict (offline, before the human gate)
 
+Two passes: the first proved the architecture on a cartoon head; the second (the fidelity
+pass) replaced the head, eyes, ears and hair. The sheets in `Docs~/` are from the second.
+
 **Where it holds.**
 
-- **The architecture holds.** Genome → face is deterministic and JSON-portable; topology is
-  invariant under every shape; every clade pair at every weight corner assembles with no NaN and
-  every seam passes the contract; a seventh clade is an asset. The critique map is real: every
-  complaint we could think of lands in one file.
-- **The categorical / continuous split holds, and the ladder works.** On the sheet, a 0.20
-  Corvidae is a person with a crow's beak and dark eyes; a 0.50 Corvidae on a Cetacea base is a
-  crow-headed thing with no hair and a blowhole. Signatures read at a glance — beak, slit eyes +
-  pointed ears + whiskers, compound eyes + mandibles + antennae, blowhole + melon, scutes + hooked
-  horn beak, great ears + nose leaf. The blind sheet is worth running: the author can name the
-  two clades on most cells, which is the test the brief set.
-- **Corvidae and Testudines DO distinguish** — but only after the signature model was thickened
-  (§1). Finding that out was the useful part.
-- **The control proved the right thing.** The pure humans read as people — stylised,
-  game-character people, not photographs — with eyes, brows, lips and ears that sit where a face
-  keeps them, and the chimeras read as *those* people with something animal done to them. So the
-  blending model is not the problem; the ceiling on how *appealing* a face gets is the base head.
+- **The architecture holds, and it survived a total replacement of the base head.** The SDF
+  sculpt, the sealed lids, the ear profile and the strand hair landed with no change to the
+  resolver, the assembler, the painter, the clade data model or the tests — the seams the brief
+  asked for are real seams. Genome → face is deterministic and JSON-portable; topology is
+  invariant under every shape; every clade pair at every weight corner assembles with no NaN
+  and every seam passes the contract; a seventh clade is an asset.
+- **The categorical / continuous split holds, and the ladder works.** A 0.20 Corvidae is a
+  person with a crow's beak and dark eyes; a 0.50 Corvidae on a Cetacea base is a crow-headed
+  thing with no hair and a blowhole. Signatures read at a glance — beak, slit eyes + pointed
+  ears + whiskers, compound eyes + mandibles + antennae, blowhole + melon, scutes + hooked horn
+  beak, great ears + nose leaf — and Corvidae and Testudines distinguish.
+- **The control now reads as people.** Six seeds give six faces with different skulls, noses,
+  jaws, brows, skin, hair and beard shadow; eyes sit in sockets under real lids with a corneal
+  highlight; lips have volume and a fissure; ears have a helix. They are stylised — clay /
+  game-character people, a shade caricatured — but they are faces you can read an age and a
+  temperament off, which the first pass's dolls were not. The chimeras read as *those* people
+  with something animal done to them.
 
-**Where it breaks.**
+**Where it still breaks — honest list, in order of what the user will see first.**
 
-- **The procedural human is a cartoon, not a person.** Bulbous cranium, simple lids, a painted
-  mouth, buzz-cut hair as a shell. It is on the right side of uncanny (it reads as stylised
-  rather than nearly-right-and-wrong), but "someone you could care about" is a ceiling this base
-  head will not reach with more bump-tuning. Fix cost: **one authored sculpt** with the 20 blend
-  shapes behind `AuthoredBaseHead` (§3) — a few days of sculpting, zero code — and the chimeras
-  inherit it for free.
-- **Coverings are painted, not modelled.** Fur, feathers and scales are texture + normal; a real
-  cat ear is furry and a real crest has depth. Reads as "textured mannequin" up close. Fix cost:
-  a fur/feather card layer per covering (a second `HairCapFeature`-shaped shell) — a day each.
-- **One keratin colour per bust.** The Keratin slot takes the heaviest keratin feature's colour,
-  so a cat's fangs beside a beetle's mandibles go dark. Fix cost: per-feature material slots —
-  an afternoon.
-- **The mouth is a crease.** Coleoptera's mandibles and every beak are geometry, but the human
-  mouth is lips + a painted line; it cannot open, and a closed painted mouth is where "dead" hides.
-  Fix cost: a lip/mouth-bag feature on the Mouth slot — a day.
-- **Ear geometry is a cupped disc** with thickness; it reads as an ear at portrait distance and
-  as a plate up close.
-- **Not profiled, not baked in-editor.** The bake is ~3 s per bust offline (resolve + 1024²
-  paint + build); the first in-editor run will tell whether `PreviewRenderUtility` needs the
-  scriptable-pipeline flag (§6).
+- **Expression.** The resting mouth reads as a faint smile on most seeds because the lip cones
+  and the fissure are one authored shape; a per-individual mouth-corner axis (or a 21st
+  `HeadAxis`) is the fix — an hour, `BuildAnatomy`'s mouth block.
+- **Hair is cards, not hair.** It reads as hair at sheet distance and as straw up close; the
+  cap shows through where the strands thin, and side strands can splay at the temples. A real
+  fix is a hair asset or alpha-tested cards — the pipeline has no alpha today.
+- **Coverings are painted, not modelled.** Fur, feathers and scales are texture + normal; a
+  cat ear is furry in life. Fix cost: a fur/feather card layer per covering, on the same
+  ribbon code the hair uses — a day each.
+- **The lips are faceted at portrait distance** (the fissure is a 5–8 ring feature on a
+  160-ring head). A denser row distribution over the face, or a lip feature on the Mouth
+  slot, fixes it; the mouth still cannot open.
+- **One keratin colour per bust.** The Keratin slot takes the heaviest keratin feature's colour.
+  Fix cost: per-feature material slots — an afternoon.
+- **Not profiled, not baked in-editor.** ~8 s per bust offline at portrait detail (the SDF march
+  dominates); the first in-editor run will tell whether `PreviewRenderUtility` needs the
+  scriptable-pipeline flag (§6), and whether URP Lit with these textures matches the offline
+  rasterizer's read (the harness decodes the sRGB albedo and uses no tonemapper, as the preview
+  utility does).
 
-**What the sheet says.** The distribution reads as *characters* — a viewer can point at any cell
-and say what it is. It does not yet read as people you could care about, and the reason is
-isolated to the base head by the control. That is the result the spike was built to produce, and
-the next step is the one-file swap, not another pass on the bumps.
+**What the sheet says.** A viewer can point at any cell and say what it is, and at the human
+row and say *who* it is. Whether these are people you could care about is the human gate this
+branch is being handed over for; the offline answer is "closer than the brief expected from a
+procedural head, and every remaining complaint lands in one file".

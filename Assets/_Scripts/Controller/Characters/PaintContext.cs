@@ -11,6 +11,7 @@ namespace CosmicShore.Gameplay
         public CharacterPaletteBinding.DomainAccent Accent;
         public int Seed;
         public Color HumanSkin, HairColor, BrowColor;
+        public float BeardShadow;   // 0..1, rolled per individual by the painter
 
         /// <summary>Per-pixel geometry the layers share.</summary>
         public struct Pixel

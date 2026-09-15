@@ -112,6 +112,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Polar angle of the hairline at the sides, degrees.")] public float SideHairlineDeg = 88f;
         [Tooltip("Polar angle of the hairline at the nape, degrees.")] public float BackHairlineDeg = 124f;
         [Range(0f, 1f)] public float Clumping = 0.5f;
+        [Tooltip("Number of strand cards at full HairVolume. 0 = cap only.")] public int StrandCount = 700;
+        [Tooltip("Strand length at full HairVolume, head units.")] public float StrandLength = 0.30f;
+        [Tooltip("Strand card width, head units.")] public float StrandWidth = 0.036f;
+        [Tooltip("Azimuth of the parting, degrees from the face toward the character's left. 0 = centre part.")] public float PartDeg = 26f;
+        [Tooltip("How far the front strands fall over the forehead, 0..1.")] [Range(0f, 1f)] public float Fringe = 0.3f;
+        [Tooltip("Eyebrow cards along the brow ridge. 0 = none.")] public int BrowCards = 60;
     }
 
     [Serializable] public class FangParams

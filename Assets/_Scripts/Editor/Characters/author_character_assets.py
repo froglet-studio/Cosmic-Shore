@@ -106,20 +106,20 @@ def covering(**kv):
     check_keys("CoveringRecipe", kv); return kv
 
 # ---------------------------------------------------------------- THE CLADE TABLE
-HUMAN_EYE = dict(Radius=0.066, IrisFraction=0.58, LidOpen=0.60, CanthalTiltDeg=3.0, LidThickness=0.011,
+HUMAN_EYE = dict(Radius=0.058, IrisFraction=0.50, LidOpen=0.58, CanthalTiltDeg=3.0, LidThickness=0.011,
                  Pupil="Round", PupilSize=0.34, IrisA=C(0.30,0.18,0.08), IrisB=C(0.34,0.50,0.58), Sclera=C(0.88,0.85,0.80))
 
 CLADES = [
  dict(Key="Human", DisplayName="Human", IsHuman=True, AxisTargets=[],
       Traits=[
-        trait("Hair", "HairCap", ["Crown"], "Crown", signature=True, Hair=dict(Thickness=0.034, FrontHairlineDeg=36, SideHairlineDeg=72, BackHairlineDeg=118, Clumping=0.5)),
+        trait("Hair", "HairCap", ["Crown"], "Crown", signature=True, Hair=dict(Thickness=0.030, FrontHairlineDeg=44, SideHairlineDeg=68, BackHairlineDeg=108, Clumping=0.5, StrandCount=700, StrandLength=0.30, StrandWidth=0.036, PartDeg=26, Fringe=0.3, BrowCards=60)),
         trait("Eyes", "VertebrateEye", ["Eyes"], "Eye", signature=True, Eye=HUMAN_EYE),
-        trait("Ears", "Pinna", ["Ears"], "EarSide", signature=True, Pinna=dict(Height=0.17, Width=0.10, Pointed=0.0, CupDepth=0.45, RimThickness=0.16, Tragus=0.4, ForwardTiltDeg=30, OutwardRollDeg=8, Thickness=0.012)),
+        trait("Ears", "Pinna", ["Ears"], "EarSide", signature=True, Pinna=dict(Height=0.19, Width=0.105, Pointed=0.0, CupDepth=0.45, RimThickness=0.16, Tragus=0.4, ForwardTiltDeg=24, OutwardRollDeg=6, Thickness=0.012)),
         trait("Nose", "None", ["Nose"], signature=True),
         trait("Mouth", "None", ["Mouth"], signature=True),
       ],
       Covering=covering(Kind="Skin", BaseA=C(0.75,0.58,0.48), BaseB=C(0.45,0.30,0.22), Marking="None", MarkingColor=C(0,0,0),
-                        MarkingStrength=0.0, MarkingScale=1.0, Smoothness=0.38, DetailStrength=0.6, AnchorThetaDeg=180.0,
+                        MarkingStrength=0.0, MarkingScale=1.0, Smoothness=0.32, DetailStrength=0.75, AnchorThetaDeg=180.0,
                         ReachDegAtMin=0.0, ReachDegAtMax=0.0, PaintsBrows=True)),
 
  dict(Key="Felidae", DisplayName="Felidae", IsHuman=False,
@@ -144,7 +144,7 @@ CLADES = [
                        LipFullness=-1.0, NoseProjection=-1.0, CranialHeight=0.25, CranialLength=0.20, NeckThickness=-0.35,
                        NeckLength=0.40, CheekboneWidth=-0.30, JawWidth=-0.40, MuzzleLength=0.20, ForeheadBulge=0.20),
       Traits=[
-        trait("Beak", "Beak", ["Mouth", "Nose"], "Muzzle", signature=True,
+        trait("Beak", "Beak", ["Mouth", "Nose"], "Muzzle", signature=True, pitch=16,
               overrides=dict(LipFullness=-1.0, NoseProjection=-1.0, ChinProjection=-0.6),
               Beak=dict(Length=0.42, Hook=0.12, BaseHeight=0.95, BaseWidth=0.80, TipSharpness=0.75, GapeHeight=0.42, Culmen=0.20,
                         KeratinA=C(0.05,0.05,0.06), KeratinB=C(0.13,0.12,0.11))),
@@ -221,7 +221,7 @@ CLADES = [
                        LipFullness=-1.0, NoseProjection=-0.90, NoseWidth=-0.40, MouthWidth=0.50, NeckThickness=0.50, NeckLength=0.70,
                        CranialLength=0.35, CranialHeight=-0.35, CranialWidth=0.15, JawWidth=0.10, CheekboneWidth=-0.20, ForeheadBulge=-0.30),
       Traits=[
-        trait("HookedBeak", "Beak", ["Mouth", "Nose"], "Muzzle", signature=True, overrides=dict(LipFullness=-1.0, NoseProjection=-1.0),
+        trait("HookedBeak", "Beak", ["Mouth", "Nose"], "Muzzle", signature=True, pitch=16, overrides=dict(LipFullness=-1.0, NoseProjection=-1.0),
               Beak=dict(Length=0.17, Hook=0.75, BaseHeight=0.85, BaseWidth=1.10, TipSharpness=0.9, GapeHeight=0.5, Culmen=0.05,
                         KeratinA=C(0.42,0.36,0.24), KeratinB=C(0.64,0.56,0.38))),
         trait("Scutes", "None", [], signature=True),

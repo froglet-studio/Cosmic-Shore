@@ -119,7 +119,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Segments around the head. Even, so the face centre line lands on a column.")] public int Segments;
 
         /// <summary>The portrait bake budget — model high, bake down.</summary>
-        public static HeadDetail Portrait => new HeadDetail { Rings = 96, Segments = 128 };
+        public static HeadDetail Portrait => new HeadDetail { Rings = 160, Segments = 192 };
         /// <summary>An in-world budget the next game can decimate to; same generator, fewer ints.</summary>
         public static HeadDetail Runtime => new HeadDetail { Rings = 40, Segments = 56 };
 

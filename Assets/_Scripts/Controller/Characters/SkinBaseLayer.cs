@@ -31,8 +31,8 @@ namespace CosmicShore.Gameplay
             if (lm.TryGet("Eye.R", out var eyeR)) shadow += GeometryKit.Bell(PaintContext.LandmarkDistance(eyeR, px.U, px.V, 2.1f, 2.4f));
             if (lm.TryGet("Mouth", out var mouth)) shadow += 0.5f * GeometryKit.Bell(PaintContext.LandmarkDistance(mouth, px.U, px.V, 2.4f, 2.0f));
 
-            blush = Mathf.Clamp01(blush) * 0.06f;
-            shadow = Mathf.Clamp01(shadow) * 0.11f;
+            blush = Mathf.Clamp01(blush) * 0.09f;
+            shadow = Mathf.Clamp01(shadow) * 0.07f;
             // Blush pushes red up, green/blue down; the socket shadow darkens and cools.
             skin.r += blush * 0.9f; skin.g -= blush * 0.35f; skin.b -= blush * 0.25f;
             skin.r -= shadow * 0.9f; skin.g -= shadow * 1.1f; skin.b -= shadow * 0.7f;
@@ -42,9 +42,22 @@ namespace CosmicShore.Gameplay
             float jaw = GeometryKit.Bell((px.ThetaDeg - 125f) / 20f) * 0.04f;
             skin.r += fore - jaw; skin.g += fore - jaw; skin.b += fore - jaw * 0.6f;
 
-            // Mottling: low-frequency blotches of warmth, more with age.
-            float mottle = (Noise.Fbm(px.Phi * 4f + 30f, px.ThetaDeg * 0.08f, 3, 2f, 0.55f, ctx.Seed) - 0.5f) * (0.05f + 0.06f * ctx.Blueprint.Genome.Age);
-            skin.r += mottle * 1.2f; skin.g += mottle * 0.7f; skin.b += mottle * 0.5f;
+            // Mottling: low-frequency blotches of warmth, more with age; a finer capillary flush.
+            float age = ctx.Blueprint.Genome.Age;
+            float mottle = (Noise.Fbm(px.Phi * 4f + 30f, px.ThetaDeg * 0.08f, 3, 2f, 0.55f, ctx.Seed) - 0.5f) * (0.07f + 0.07f * age);
+            skin.r += mottle * 1.2f; skin.g += mottle * 0.6f; skin.b += mottle * 0.4f;
+            float flush = (Noise.Fbm(px.Phi * 11f + 3f, px.ThetaDeg * 0.22f, 2, 2f, 0.5f, ctx.Seed + 5) - 0.5f) * 0.05f;
+            skin.r += flush; skin.g -= flush * 0.4f; skin.b -= flush * 0.5f;
+            // Beard shadow on the jaw, chin and upper lip: a per-individual strength rolled off the seed.
+            float beard = ctx.BeardShadow;
+            if (beard > 0.01f)
+            {
+                float jawZone = GeometryKit.Smooth((px.ThetaDeg - 112f) / 12f) * (1f - GeometryKit.Smooth((px.ThetaDeg - 150f) / 10f));
+                float lipZone = GeometryKit.Bell((px.ThetaDeg - 118f) / 5f) * GeometryKit.Bell(px.Phi / 0.35f);
+                float stubble = 0.5f + 0.5f * Noise.Value(px.Phi * 260f, px.ThetaDeg * 1.6f, ctx.Seed + 9);
+                float m = Mathf.Max(jawZone * (1f - GeometryKit.Smooth((Mathf.Abs(px.Phi) - 1.5f) / 0.5f)), lipZone) * beard * (0.6f + 0.4f * stubble);
+                skin.r -= m * 0.12f; skin.g -= m * 0.13f; skin.b -= m * 0.10f;
+            }
             return skin;
         }
     }

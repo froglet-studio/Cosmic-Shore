@@ -61,7 +61,7 @@ MonoBehaviour:
     - 4
     - 3
     Site: Muzzle
-    SitePitchDeg: 0.0
+    SitePitchDeg: 16.0
     SiteYawDeg: 0.0
     SiteRollDeg: 0.0
     AxisOverrides:

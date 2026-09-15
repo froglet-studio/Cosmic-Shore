@@ -27,6 +27,12 @@ namespace CosmicShore.Gameplay
                 HairColor = HairTextureLayer.HairColor(config, g),
             };
             ctx.BrowColor = Color.Lerp(ctx.HairColor, Color.black, 0.35f);
+            // Beard shadow: about half of humans carry some, strength off the seed.
+            {
+                var br = new CharacterRandom(g.Seed ^ 0x2B3D);
+                float roll = br.NextFloat();
+                ctx.BeardShadow = roll < 0.45f ? 0f : (roll - 0.45f) / 0.55f * 0.8f;
+            }
             if (ctx.Accent.SkinTint > 0f)
                 ctx.HumanSkin = Color.Lerp(ctx.HumanSkin, ctx.Accent.Accent, ctx.Accent.SkinTint);
 

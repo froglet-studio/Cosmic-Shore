@@ -37,6 +37,12 @@ namespace CosmicShore.Gameplay
 
         public Vector3 ToHead(Vector3 local) => Position + Right * local.x + Up * local.y + Normal * local.z;
         public Vector3 DirToHead(Vector3 local) => (Right * local.x + Up * local.y + Normal * local.z);
+        public Vector3 ToLocal(Vector3 head)
+        {
+            Vector3 d = head - Position;
+            return new Vector3(Vector3.Dot(d, Right), Vector3.Dot(d, Up), Vector3.Dot(d, Normal));
+        }
+        public Vector3 DirToLocal(Vector3 headDir) => new Vector3(Vector3.Dot(headDir, Right), Vector3.Dot(headDir, Up), Vector3.Dot(headDir, Normal));
     }
 
     /// <summary>
