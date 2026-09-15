@@ -199,7 +199,7 @@ namespace CosmicShore.Core
         /// <summary>End the CURRENT PHASE and advance the quest to the next phase graph.</summary>
         public Action CompletePhase;
 
-        /// <summary>Complete the WHOLE QUEST (persists completion to UGS + local, restores breadcrumb authority).</summary>
+        /// <summary>Complete the WHOLE QUEST (persists completion to UGS + local).</summary>
         public Action CompleteQuest;
 
         // ── Per-node subscription cleanup ──

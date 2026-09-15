@@ -173,8 +173,8 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
 - Gated by `QuestProgressStore.IsCompleted(questId)`; `debugForceRun` / `debugDisable` for testing;
   `debugPhaseOverride` runs a single phase graph without persistence.
 - **Resume:** every completed node is recorded; the runner resumes at the saved phase + node.
-- **Breadcrumb authority:** sets `GameModeProgressionService.BreadcrumbSuppressed` while running,
-  restores it on completion/teardown.
+- **Breadcrumb authority:** none — the runner no longer suppresses anything. The progression
+  service's frontier breadcrumb went with the CTA badge surface (see the note at the top).
 
 ## Persistence (UGS)
 

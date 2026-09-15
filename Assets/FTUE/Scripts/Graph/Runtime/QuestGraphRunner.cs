@@ -18,8 +18,6 @@ namespace CosmicShore.Core
     ///   • Resumes at the saved phase + node (every completed node is persisted to UGS).
     ///   • Executes each phase graph node-by-node; a <c>QuestPhaseEndNode</c> advances to the
     ///     next phase, a <c>QuestEndNode</c> completes the quest.
-    ///   • While running, the runner owns guidance: the progression service's automatic
-    ///     frontier breadcrumb is suppressed and restored on completion/teardown.
     ///
     /// Wire the scene/asset references in the inspector (drop this on the Menu_Main "Game"
     /// object). FrogletTools ▸ Quest Graph ▸ Setup Runner In Scene auto-resolves most of them.

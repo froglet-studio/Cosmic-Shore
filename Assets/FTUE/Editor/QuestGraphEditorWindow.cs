@@ -1451,7 +1451,6 @@ namespace CosmicShore.Editor
             (QuestNodeCategory.Presentation, "Presentation — instructions & dialogue"),
             (QuestNodeCategory.Gameplay, "Gameplay — control, navigation, locking"),
             (QuestNodeCategory.Gate, "Gate — waits for player / game"),
-            (QuestNodeCategory.Guidance, "Guidance — CTA breadcrumbs"),
             (QuestNodeCategory.Progression, "Progression — unlock writes"),
             (QuestNodeCategory.Terminal, "Terminal — phase / quest end"),
         };

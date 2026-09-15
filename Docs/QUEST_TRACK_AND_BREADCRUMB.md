@@ -2,6 +2,20 @@
 
 _Cosmic Shore · Unity 6 / C#_
 
+> **⚠ HALF OF THIS DOCUMENT DESCRIBES A RETIRED SYSTEM.** The **Breadcrumb (Call-to-Action)**
+> layer no longer exists: `bleeding-edge` retired the CTA badge surface and its `gameCards`
+> targets (commit `fe92c8134`, 2026-09-08) as a product decision, with
+> `Tools/Build/retire_call_to_action.py --check` standing guard so it cannot come back by
+> accident. `CallToActionSystem`, `CallToActionTarget`, `CallToActionTargetType` and
+> `GameModeProgressionService.BreadcrumbSuppressed` are all gone, and the quest graph's
+> `QuestHighlightCTANode` went with them.
+>
+> **The Quest Track half is live and accurate** — the progression spine
+> (`GameModeProgressionService` + cloud `GameModeProgressionData`), the Unlock chain and the
+> completion gating all still work as written here. Read the breadcrumb sections as a design
+> record of what "guide the player THERE" used to mean, not as a description of the build.
+> A replacement wants designing against the mode roster that exists now.
+
 Two systems compose into one activation engine. The **Quest Track** is a chain of **Unlocks**;
 each Unlock reveals a new app feature and is gated by a **Quest** (a completion condition). The
 **Breadcrumb** (Call-to-Action) system highlights the app-shell element — and the nested path to

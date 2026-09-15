@@ -19,7 +19,11 @@ namespace CosmicShore.Core
         Gameplay = 2,
         /// <summary>Waits for the player or the game to do something.</summary>
         Gate = 3,
-        /// <summary>CTA breadcrumbs — "go here, do this".</summary>
+        /// <summary>
+        /// RESERVED, currently empty. Held the CTA breadcrumb nodes until the badge surface
+        /// they drew on was retired upstream; kept so the two members below keep their values
+        /// and so a future "go here, do this" node has a category to land in.
+        /// </summary>
         Guidance = 4,
         /// <summary>Writes progression state (unlocks).</summary>
         Progression = 5,
