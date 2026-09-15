@@ -2,7 +2,7 @@
 
 **Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
 plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
-improvements, Ribcage scoring, game-data JSON schema, profile/ads, quit button,
+improvements, PeelTheCage scoring, game-data JSON schema, profile/ads, quit button,
 menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
@@ -82,7 +82,7 @@ camera losing the vessel (framing empty space) · a camera left stuck in the gam
 pose after returning to the menu · any exception from the camera controller.
 
 ### QA-SCORING-CLIENT-MIRROR ⬜ — non-host players no longer start with the last game's score
-**Source:** Ribcage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
+**Source:** PeelTheCage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
 **B17**. **Why P0:** this was reproduced *every time* by the reporter and it corrupts
 the scoreboard of **every multiplayer mode** — so any score you read while testing
 another item is untrustworthy until this passes. Fix is
@@ -170,7 +170,7 @@ change the effect anchors to the new home value.
 entity, log `[PrismClock] STRICT MODE` and pop into existence instead of blooming.
 Strict mode is working as designed; QA's job is to bound the blast radius.
 
-1. Launch **Skim Race / HexRace** (any intensity) and watch the track build.
+1. Launch **Skim Race / SkimRace** (any intensity) and watch the track build.
 2. Read the Console for `[PrismClock] STRICT MODE` errors; note the count and whether
    it is bounded (one burst at build) or continuous.
 3. Fly the **Wanderway** conveyor toy in freestyle and watch scenes arrive.
@@ -280,11 +280,11 @@ in · a non-Sparrow vessel spawning on either machine.
 ### QA-RIBCAGE-MODE ⬜ — "Peel the Cage" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
 merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
-Whole new game mode (`GameModes.Ribcage = 39`), authored headless. Reference:
-`_Scripts/Controller/Arcade/RIBCAGE.md` § In-editor verification.
+Whole new game mode (`GameModes.PeelTheCage = 39`), authored headless. Reference:
+`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md` § In-editor verification.
 
-1. Open `MinigameRibcage.unity`. Confirm no `Missing (Mono Script)`, the controller
-   shows `rule = RibcageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
+1. Open `MinigamePeelTheCage.unity`. Confirm no `Missing (Mono Script)`, the controller
+   shows `rule = PeelTheCageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
    lists **four** configs with **Cell Type Choice = Intensity Wise**.
 2. Launch at intensity 1 → count the shells. Relaunch at intensity 4 → count again.
 3. Inspect the weave: are the openings **triangles** (each cell crossed by a diagonal,
@@ -352,7 +352,7 @@ verification". Touches every skim and every shield pop in the game.
    spikes.
 2. **Rhino:** swipe a shielded prism and note at what distance the shield pops.
 3. Fly a dense trail while crystals auto-shield prisms around you.
-4. Profile a HexRace round: watch `ShellContact.Build` / `ShellContact.Query` and
+4. Profile a SkimRace round: watch `ShellContact.Build` / `ShellContact.Query` and
    `Physics.SendEvents`.
 5. Toggle the runtime A/B switch off and back on.
 
@@ -429,7 +429,7 @@ any of it. Reference: `Docs/PALETTE.md` §6.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
    **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
-3. **Danger prisms** — Ribcage ("Peel the Cage") ships the same trap in all three
+3. **Danger prisms** — PeelTheCage ("Peel the Cage") ships the same trap in all three
    domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
    Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
    not a dark edge.
@@ -644,7 +644,7 @@ with the jaw gape).
    Center 0/-0.5/0) — **not "Missing", not still a Sphere**. This is the riskiest edit
    on the branch and shows up nowhere else. Also confirm **Inertia 1.8 / Proportional
    Debris ✓ / Debris Restitution 0.333**.
-2. After a HexRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
+2. After a SkimRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
    Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
 3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
    **Roll 90° and fire again** — the fan must roll with the ship (ship-up, not world-up).
@@ -1073,7 +1073,7 @@ Recording Studio.
 
 ### QA-ARCADE-SKIMRACE-INTENSITY3 ⬜ — new circuit + per-intensity laps
 **Source:** PR #626 (scene YAML hand-authored; a silent fallback is the failure mode).
-1. Open `MinigameHexRace.unity`, select the crystal turn-monitor object, and confirm
+1. Open `MinigameSkimRace.unity`, select the crystal turn-monitor object, and confirm
    **Laps Per Intensity** shows `3, 3, 2, 2`.
 2. Launch Skim Race at **intensity 3**.
 3. Race the full track; watch the lane braid and the 120-unit lane separation at speed.
@@ -1193,7 +1193,7 @@ screen · the field starving (fewer scenes ahead) at high speed.
 removed by YAML surgery, plus a stale-key purge across 13 more files — no Unity import
 has ever run on it).
 1. Open all six vessel prefabs plus the Sparrow / Rhino / Squirrel / Serpent / Manta HUD
-   variants, `GameCanvas.prefab`, `GameCanvas-HexRace.prefab` and `MiniGameHUD.prefab`.
+   variants, `GameCanvas.prefab`, `GameCanvas-SkimRace.prefab` and `MiniGameHUD.prefab`.
    Look for missing-script warnings and confirm the hierarchy and HUD layout are intact.
 2. Play a round on **Squirrel** and on **Sparrow** and watch the elemental petal bars.
 3. Fly **Rhino / Serpent / Manta** briefly — nothing should have disappeared **except**

@@ -10,8 +10,8 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// An Unlock reveals ANY app feature (game mode, vessel, screen, captain, episode, UI
     /// element — see <see cref="FeatureKind"/>), is gated by a Quest (a completion condition),
-    /// and carries the breadcrumb (Call-to-Action) that guides the player to whatever they need
-    /// to do next. The quest track decides WHAT'S NEXT; the breadcrumb guides the player THERE.
+    /// and describes what the player must do next. The quest track decides WHAT'S NEXT; how the
+    /// player is guided there is the app shell's business, not this asset's.
     ///
     /// Formerly <c>SO_GameModeQuestData</c>. The script GUID is preserved across the rename so
     /// existing authored assets keep resolving; the legacy field names are unchanged so their
@@ -85,22 +85,6 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("If true, this node is a placeholder for a feature not yet implemented")]
         public bool IsPlaceholder;
 
-        [Header("Breadcrumb (Call-to-Action)")]
-        [Tooltip("App-shell element the breadcrumb lights to guide the player toward this " +
-                 "unlock's objective (e.g. the game's PlayGame* card). None = no breadcrumb.")]
-        public CallToActionTargetType CallToActionTargetID = CallToActionTargetType.None;
-
-        [Tooltip("The user action that dismisses this breadcrumb once performed. Use None for a " +
-                 "progression-owned frontier (a multi-play quest, e.g. reach intensity 4): it stays " +
-                 "lit until the objective is met and the service retracts it on frontier advance — " +
-                 "NOT dismissed after a single play. Use a specific action (e.g. ViewHangarMenu) for " +
-                 "a one-shot 'go here' guide.")]
-        public UserActionType CompletionUserAction = UserActionType.None;
-
-        [Tooltip("Parent targets lit alongside the main target — the nested path to it (e.g. " +
-                 "ArcadeMenu before a game card). Each is dismissed in sequence as it resolves.")]
-        public List<CallToActionTargetType> DependencyTargetIDs = new();
-
         /// <summary>
         /// Runtime flag set when the quest goal is achieved during gameplay.
         /// Not serialized — lives only in the current session, synced from ProgressionData on load.
@@ -115,24 +99,6 @@ namespace CosmicShore.ScriptableObjects
         public string UnlockKey =>
             FeatureKind == FeatureKind.GameMode ? GameMode.ToString() : FeatureRef;
 
-        /// <summary>True if this node has an authored breadcrumb target.</summary>
-        public bool HasBreadcrumb => CallToActionTargetID != CallToActionTargetType.None;
-
-        /// <summary>
-        /// Builds the <see cref="CallToAction"/> breadcrumb instruction for this unlock,
-        /// or null when no breadcrumb target is authored. The dependency list is copied so the
-        /// CTA system cannot mutate the authored asset.
-        /// </summary>
-        public CallToAction BuildCallToAction()
-        {
-            if (!HasBreadcrumb) return null;
-            return new CallToAction(
-                CallToActionTargetID,
-                CompletionUserAction,
-                DependencyTargetIDs != null
-                    ? new List<CallToActionTargetType>(DependencyTargetIDs)
-                    : null);
-        }
     }
 
     /// <summary>

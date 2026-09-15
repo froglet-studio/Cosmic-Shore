@@ -55,7 +55,7 @@ per-vessel and per-moment, so the gate is:
 
 `ownerID` (not `PlayerName`) because it records **who laid it** and a steal does not reassign it —
 a prism taken off an opponent was never yours to be making, so it stays interactable.
-`IsEnvironmentOwned` mass (flora, fauna, cell structure, the HexRace track) is never anyone's own
+`IsEnvironmentOwned` mass (flora, fauna, cell structure, the SkimRace track) is never anyone's own
 trail and is excluded outright.
 
 ## 3. Where it is enforced

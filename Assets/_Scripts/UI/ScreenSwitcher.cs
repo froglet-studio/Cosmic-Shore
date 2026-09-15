@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -36,10 +38,18 @@ namespace CosmicShore.UI
 
             // ARCADE MODALS
             ARCADE_GAME_CONFIGURE = 1,
-            DAILY_CHALLENGE       = 2,
+            // 2 was DAILY_CHALLENGE - the PlayFab-era modal, superseded by the weekly
+            // challenge and deleted. Do not reuse the value: a stale ReturnToModal pref
+            // could still carry it.
 
             // HOME MODALS
             PROFILE                = 3,
+
+            // RETIRED. PlayerDataSelectModal used to answer to this while the older ProfileModal
+            // held PROFILE; the older one is retired and its replacement now IS the profile modal,
+            // so it answers to PROFILE. The value stays reserved rather than reused, for the same
+            // reason as the deleted member above: a stale ReturnToModal pref carrying 4 must find
+            // nothing, not somebody else's window.
             PROFILE_ICON_SELECT    = 4,
             SETTINGS               = 5,
 
@@ -52,6 +62,48 @@ namespace CosmicShore.UI
 
             // ARCADE (as modal overlay)
             ARCADE                 = 10,
+
+            // The Maelstrom's launch panel lives in its OWN window rather than as a second
+            // panel inside ARCADE_GAME_CONFIGURE: its layout shares almost nothing with a
+            // minigame card's (a clip instead of the live preview, a pool list instead of the
+            // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
+            // window is separate, the authority is not.
+            MAELSTROM_GAME_CONFIGURE = 11,
+
+            // The weekly challenge's leaderboard. Its own window rather than a panel inside the
+            // arcade modal: it is opened from the weekly card AND has to be reachable while that
+            // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
+            WEEKLY_CHALLENGE_LEADERBOARD = 12,
+
+            // HOME HUB MODALS
+            //
+            // The home screen is a hub of four things to play: Mission, Toy Box, Arena, Arcade.
+            // Each is its own modal so they can be designed, gated and shipped independently -
+            // ARENA is a full arcade-shaped card grid behind a lock, MISSION is not built yet, and
+            // both are opened (or refused) through the same MenuHubButton the Arcade uses.
+            TOYBOX  = 13,
+            ARENA   = 14,
+            MISSION = 15,
+
+            // The Toy Box's second window: one toy, its description, and the button that takes
+            // the player to it in the lava lamp. Its own modal TYPE rather than a panel inside
+            // TOYBOX, for the reason the Maelstrom's launch panel is its own window - the two
+            // layouts share almost nothing, and a modal type is what ScreenSwitcher unwinds by,
+            // so gamepad B out of the toy lands back on the grid instead of closing the Toy Box.
+            TOYBOX_CONFIGURE = 16,
+
+            // The Arena's launch window. Its own modal TYPE for the reason the Maelstrom's is:
+            // the window is separate (it carries the vessel picker an arcade card has no use
+            // for), the authority is not - it is still driven by the ONE ArcadeGameConfigureModal
+            // through an ArenaLaunchPanel whose HostModal is this window.
+            ARENA_GAME_CONFIGURE = 17,
+
+            // The credits screen. Its own modal TYPE rather than a panel inside SETTINGS: it is
+            // opened FROM the settings modal, and a modal type is what ScreenSwitcher unwinds by,
+            // so gamepad B out of the credits lands back on Settings instead of closing both.
+            // It also has to stay reachable if a second entry point (a home-hub tile) is ever
+            // added. Shipping without it breaches FMOD's EULA clause 3 - see CreditsModal.
+            CREDITS = 18,
         }
 
         [System.Serializable]
@@ -92,16 +144,42 @@ namespace CosmicShore.UI
         [Tooltip("CanvasGroup on the Screens root. Disabled during freestyle to hide all screens without SetActive.")]
         [SerializeField] private CanvasGroup screensCanvasGroup;
 
+        // The scene's Reflex container, for the credits window this component BUILDS. A runtime
+        // `new GameObject` gets no injection, and ModalWindowManager carries an [Inject]
+        // AudioSystem -- CLAUDE.md's rule is to inject at the creating site rather than rely on
+        // the callee's fallback, which exists for the spawn site that forgets.
+        [Inject] private Container _container;
+
         [Inject] private MenuFreestyleEventsContainerSO freestyleEvents;
         [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("Disabled Screens")]
-        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
+        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.\n" +
+                 "Their nav-bar links are marked MenuAvailability.Locked at Start, so they READ as locked " +
+                 "rather than looking enabled and doing nothing. This list is the single source of truth for " +
+                 "PERMANENTLY closed screens - adding a screen here is all it takes.\n" +
+                 "It is not the only source: a COMMERCE screen (the Store) is closed by " +
+                 "Resources/CommerceAvailability instead, so the paid-EA conversion is one asset edit and " +
+                 "carries its own reading (Unavailable rather than Locked). Do not author one in both.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+
+        [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
+                 "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
+        [SerializeField] private string disabledScreenMessage = "Not open yet.";
 
         [Header("Arcade Panel")]
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
+
+        [Header("Home Hub Buttons")]
+        [Tooltip("Seconds the four home-hub buttons (Mission / Toy Box / Arena / Arcade) take to fade " +
+                 "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
+                 "The buttons' shared parent gets a CanvasGroup (added if missing) - no scene wiring.")]
+        [SerializeField] private float hubButtonsFadeSeconds = 0.2f;
+        [Tooltip("Objects that stand down WITH the hub buttons - the HOME header's avatar and username " +
+                 "today. Each gets a CanvasGroup (added if missing) and follows the same fade, so a " +
+                 "window never opens over a live profile chip. Empty entries are ignored.")]
+        [SerializeField] private List<GameObject> hubCompanions = new();
 
         [Header("Gamepad Freestyle Toggle")]
         [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
@@ -113,6 +191,12 @@ namespace CosmicShore.UI
         private Coroutine navigateCoroutine;
         private bool _isInFreestyle;
         private float _freestyleToggleCooldownUntil;
+
+        // The hub row's CanvasGroup (the four MenuHubButtons' shared parent), every companion's,
+        // and their one shared fade.
+        private readonly List<CanvasGroup> _hubGroups = new();
+        private bool _hubGroupsResolved;
+        private Coroutine _hubButtonsFade;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -194,7 +278,159 @@ namespace CosmicShore.UI
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
             UpdateScreensInteractable();
             UpdateModalStackInteractable();
+            UpdateHubButtonsVisibility();
+            Refocus();
         }
+
+        #region Home hub buttons
+
+        /// <summary>
+        /// The four hub buttons live under ONE parent on the HOME screen; that parent's
+        /// CanvasGroup (added here if the scene authored none) is what the gate drives. Found by
+        /// component rather than wired, so a hub entry added or moved in the scene is covered.
+        /// The <see cref="hubCompanions"/> (avatar, username) join the same list, so one fade
+        /// moves the whole header.
+        /// </summary>
+        private void ResolveHubButtonsGroup()
+        {
+            if (_hubGroupsResolved) return;
+            _hubGroupsResolved = true;
+            _hubGroups.Clear();
+
+            var hub = GetComponentInChildren<MenuHubButton>(true);
+            if (hub && hub.transform.parent)
+                _hubGroups.Add(EnsureGroup(hub.transform.parent.gameObject));
+
+            foreach (var companion in hubCompanions)
+                if (companion) _hubGroups.Add(EnsureGroup(companion));
+        }
+
+        private static CanvasGroup EnsureGroup(GameObject go)
+        {
+            if (!go.TryGetComponent<CanvasGroup>(out var cg))
+                cg = go.AddComponent<CanvasGroup>();
+            return cg;
+        }
+
+        /// <summary>
+        /// The hub buttons are visible only with NO modal open, on HOME, outside freestyle - they
+        /// fade out the moment any window opens over them and come back when the last one
+        /// closes. Interactable / raycasts follow immediately so a fading-out button cannot take
+        /// a click through the incoming window. Freestyle hides the whole screens group itself,
+        /// so this never has to fight that state.
+        /// </summary>
+        private void UpdateHubButtonsVisibility()
+        {
+            ResolveHubButtonsGroup();
+            if (_hubGroups.Count == 0) return;
+
+            bool visible = activeModalStack.Count == 0
+                        && !InFreestyle
+                        && GetScreenIdForIndex(currentScreen) == MenuScreens.HOME;
+
+            foreach (var group in _hubGroups)
+            {
+                if (!group) continue;
+                group.interactable = visible;
+                group.blocksRaycasts = visible;
+            }
+
+            float target = visible ? 1f : 0f;
+            if (_hubButtonsFade != null)
+            {
+                StopCoroutine(_hubButtonsFade);
+                _hubButtonsFade = null;
+            }
+
+            if (hubButtonsFadeSeconds <= 0f || !isActiveAndEnabled)
+            {
+                SetHubAlpha(target);
+                return;
+            }
+            _hubButtonsFade = StartCoroutine(FadeHubButtons(target));
+        }
+
+        private void SetHubAlpha(float alpha)
+        {
+            foreach (var group in _hubGroups)
+                if (group) group.alpha = alpha;
+        }
+
+        // Unscaled: the menu sits at timeScale 0 on every non-HOME screen and under most modals.
+        // Every group fades from the ROW's current alpha, so a companion added mid-fade lands
+        // with the row rather than a beat behind it.
+        private IEnumerator FadeHubButtons(float target)
+        {
+            float from = _hubGroups[0] ? _hubGroups[0].alpha : 1f - target;
+            float elapsed = 0f;
+            while (elapsed < hubButtonsFadeSeconds)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                SetHubAlpha(Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / hubButtonsFadeSeconds)));
+                yield return null;
+            }
+            SetHubAlpha(target);
+            _hubButtonsFade = null;
+        }
+
+        #endregion
+
+        #region Gamepad focus
+
+        /// <summary>
+        /// Put the EventSystem's selection where the pad should be: inside the top modal when one
+        /// is open, else on the current screen. Nothing else in the appshell may call Select()
+        /// on its own schedule - the arcade modal used to select its toggle at Start, from inside
+        /// a window at alpha 0, so A on the home screen opened the first game card.
+        /// </summary>
+        private void Refocus()
+        {
+            if (InFreestyle) return; // the pad belongs to the vessel; ApplyFreestyleInputGate cleared it
+            var eventSystem = EventSystem.current;
+            if (!eventSystem) return;
+
+            GameObject scope = activeModalStack.Count > 0 && activeModalStack.Last().modal
+                ? activeModalStack.Last().modal.gameObject
+                : CurrentScreenRoot();
+            if (!scope) return;
+
+            // Already inside the right scope: leave the player's own D-pad position alone.
+            var current = eventSystem.currentSelectedGameObject;
+            if (current && current.activeInHierarchy && current.transform.IsChildOf(scope.transform))
+                return;
+
+            var target = PreferredSelectable(scope);
+            if (target) eventSystem.SetSelectedGameObject(target.gameObject);
+        }
+
+        private GameObject CurrentScreenRoot()
+        {
+            if (screens == null || currentScreen < 0 || currentScreen >= screens.Count) return null;
+            var root = screens[currentScreen].root;
+            return root ? root.gameObject : null;
+        }
+
+        /// <summary>
+        /// The first control worth landing on. On a hub screen that is the first AVAILABLE hub
+        /// entry (Arcade), so A does what the screen is for; a Locked or Unavailable entry is still
+        /// reachable by D-pad but is not where the pad starts. Elsewhere, the first live Selectable.
+        /// </summary>
+        private static Selectable PreferredSelectable(GameObject scope)
+        {
+            foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
+            {
+                var view = hub.GetComponent<MenuAvailabilityView>();
+                if (view && !view.IsAvailable) continue;
+                if (hub.TryGetComponent(out Selectable s) && s.IsInteractable()) return s;
+            }
+
+            foreach (var s in scope.GetComponentsInChildren<Selectable>(false))
+                if (s.IsInteractable() && s.navigation.mode != Navigation.Mode.None) return s;
+
+            return null;
+        }
+
+        #endregion
 
         /// <summary>
         /// Screens stay visible under an open modal but must not accept input - without
@@ -331,6 +567,8 @@ namespace CosmicShore.UI
         private void UnsubscribeFreestyleEvents()
         {
             if (!freestyleEvents) return;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleExitCompleted;
+            _pendingFreestyleExit = null;
             freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
             freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
             freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
@@ -345,17 +583,20 @@ namespace CosmicShore.UI
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas == null)
             {
-                Debug.LogError("[ScreenSwitcher] No parent Canvas found! Screen sliding will not work.");
+                CSDebug.LogError("[ScreenSwitcher] No parent Canvas found - screen sliding will not work.");
                 return;
             }
             _rootCanvas = parentCanvas.rootCanvas;
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
 
-            Debug.Log($"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
+            EnsureCreditsModal();
             LayoutScreensToViewport();
+            MarkDisabledNavLinks();
+            UpdateHubButtonsVisibility();
 
             panelLocation = transform.position;
 
@@ -397,8 +638,8 @@ namespace CosmicShore.UI
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
-                          or ModalWindows.DAILY_CHALLENGE
-                          or ModalWindows.ARCADE)
+                          or ModalWindows.ARCADE
+                          or ModalWindows.ARENA_GAME_CONFIGURE)
                 yield break;
 
             foreach (var modal in Modals.Where(modal => modal.ModalType == modalType))
@@ -415,7 +656,15 @@ namespace CosmicShore.UI
             // and (re)apply the EventSystem gating whenever it flips.
             bool inFreestyle = InFreestyle;
             if (inFreestyle != _appliedFreestyleGate)
+            {
                 ApplyFreestyleInputGate(inFreestyle);
+
+                // The hub row and the pad's selection are computed from the SAME live state, so
+                // they get the same self-heal: a hub row stranded at alpha 0 and non-interactable
+                // is the app's primary navigation gone, with no way back except paging screens.
+                UpdateHubButtonsVisibility();
+                Refocus();
+            }
 
             // Same self-healing contract for the modal gate: a modal that went away without
             // ModalWindowOut would otherwise hold every screen non-interactable forever.
@@ -496,9 +745,25 @@ namespace CosmicShore.UI
         /// <summary>
         /// Returns the current viewport width in canvas units.
         /// This adapts to any aspect ratio and CanvasScaler configuration.
+        ///
+        /// <para>It reads THIS transform's rect rather than the canvas rect, and the difference is
+        /// the horizontal half of the safe area. <see cref="LayoutScreensToViewport"/> sizes every
+        /// screen panel to this width and offsets panel <c>i</c> by <c>i * width</c>; with the menu
+        /// canvas split into a full-bleed layer and a fitted content layer
+        /// (<c>Docs/UI_ARCHITECTURE_AUDIT.md</c> §1.3), the strip lives inside the content layer,
+        /// so measuring the CANVAS would leave every panel full canvas width inside a
+        /// horizontally-inset parent — the vertical half of the safe area respected and the
+        /// horizontal half silently not.</para>
+        ///
+        /// <para>On any display whose safe area is the full screen — every desktop — the content
+        /// layer is authored full-stretch with zero offsets, so its rect IS the canvas rect and
+        /// this returns exactly what it returned before. A non-notched display cannot regress.</para>
         /// </summary>
         private float GetViewportWidthInCanvasUnits()
         {
+            if (transform is RectTransform self && self.rect.width > 0f)
+                return self.rect.width;
+
             if (_canvasRect != null)
                 return _canvasRect.rect.width;
 
@@ -604,14 +869,129 @@ namespace CosmicShore.UI
             return (int)screen;
         }
 
+        /// <summary>
+        /// The commerce surface a screen IS, or null when it is not one — the Store screen today.
+        /// The mapping lives here rather than in <see cref="SO_CommerceAvailability"/> so that asset
+        /// stays a statement about commerce and never becomes a second screen table.
+        /// </summary>
+        private static CommerceSurface? CommerceSurfaceFor(MenuScreens screen)
+            => screen == MenuScreens.STORE ? CommerceSurface.StoreScreen : null;
+
         private bool IsScreenDisabled(MenuScreens screen)
         {
-            return disabledScreens != null && disabledScreens.Contains(screen);
+            if (disabledScreens != null && disabledScreens.Contains(screen)) return true;
+
+            // A de-scoped commerce screen is skipped for the same reason an authored one is:
+            // nothing behind it works (Docs/STEAM_RELEASE_TASKS.md R4). It is read from the config
+            // rather than authored into disabledScreens so the paid-EA conversion stays ONE asset
+            // edit, and so the two facts - "is it navigable" and "what does its link say" - can
+            // never be flipped separately and leave a screen navigable but refusing.
+            var surface = CommerceSurfaceFor(screen);
+            return surface.HasValue && !SO_CommerceAvailability.Instance.IsAvailable(surface.Value);
         }
 
         private bool IsIndexDisabled(int index)
         {
             return IsScreenDisabled(GetScreenIdForIndex(index));
+        }
+
+        /// <summary>
+        /// Gives every disabled screen's nav-bar link the shared LOCKED state, so it reads as
+        /// closed rather than looking enabled and doing nothing on press
+        /// (<c>Docs/HomeHub/ARCHITECTURE.md</c> §2 - an entry that is simply not drawn tells the
+        /// player the game has fewer things in it than it does).
+        ///
+        /// <para>Driven from <see cref="disabledScreens"/> at runtime rather than authored on the
+        /// links, for the reason that list exists at all: it is the single source of truth. A screen
+        /// added to it tomorrow is marked with no scene edit, and a screen removed from it goes back
+        /// to normal without one either - two authored copies of the same fact would drift.</para>
+        ///
+        /// <para>A COMMERCE screen is the same mechanism with a different authority: its state comes
+        /// from <see cref="SO_CommerceAvailability"/>, because that de-scope flips as a build posture
+        /// rather than as a permanent design decision, and it reads Unavailable rather than Locked.
+        /// The look is still this one component's in both cases.</para>
+        ///
+        /// <para>Only the disabled links get a view. An Available entry has nothing to present, and
+        /// the component would cost every other link a colour capture for nothing.</para>
+        /// </summary>
+        private void MarkDisabledNavLinks()
+        {
+            int count = GetScreenCount();
+            for (int i = 0; i < count; i++)
+            {
+                if (!IsIndexDisabled(i)) continue;
+
+                var link = ResolveNavLinkObject(i);
+                if (!link) continue;
+
+                // A de-scoped commerce screen carries the COMMERCE posture's own state and
+                // wording: the Store reads Unavailable ("this is not built", because nothing in it
+                // is purchasable this window), where an authored disabled screen reads Locked
+                // ("not yet"). Anything the config calls Available has only reached this loop
+                // because it is authored in disabledScreens, so it falls through to Locked below -
+                // a nav entry that is skipped AND reads as open is the exact defect this method
+                // exists to prevent.
+                //
+                // Unreachable TODAY: MenuScreens.STORE has no entry in `screens` at all, so no index
+                // resolves to it and the store has no nav link to mark (Docs/MENU_PROGRESSION_AND_IAP.md
+                // section 1). Kept because the IsScreenDisabled half of the same pair is NOT dead - it
+                // is what makes NavigateTo(STORE) refuse instead of falling through to index 0 and
+                // landing the player on the Hangar - and the day STORE gains a screen entry its link
+                // has to read correctly without anyone remembering this.
+                var surface = CommerceSurfaceFor(GetScreenIdForIndex(i));
+                if (surface.HasValue && !SO_CommerceAvailability.Instance.IsAvailable(surface.Value))
+                {
+                    SO_CommerceAvailability.Mark(link, surface.Value);
+                    continue;
+                }
+
+                var view = MenuAvailabilityView.Ensure(link);
+                if (!view) continue;
+
+                view.SetLockedMessage(disabledScreenMessage);
+                view.SetAvailability(MenuAvailability.Locked);
+            }
+        }
+
+        /// <summary>
+        /// The nav-bar button GameObject for a screen index, resolved the same two ways
+        /// <see cref="UpdateNavBar"/> highlights one - the explicit icon lists first (each entry's
+        /// PARENT is its button), then the legacy container walk. Null when neither is configured,
+        /// which is a nav bar with nothing to mark rather than an error.
+        /// </summary>
+        private GameObject ResolveNavLinkObject(int index)
+        {
+            if (NavActiveImages != null && index >= 0 && index < NavActiveImages.Count &&
+                NavActiveImages[index] && NavActiveImages[index].transform.parent)
+                return NavActiveImages[index].transform.parent.gameObject;
+
+            // Legacy: NavBar points at the buttons container and each button holds [inactive, active].
+            if (NavBar && index >= 0 && index < NavBar.childCount)
+            {
+                var child = NavBar.GetChild(index);
+                if (child && child.childCount >= 2) return child.gameObject;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Answers a press on a disabled screen out loud. Routed through that link's own
+        /// <see cref="MenuAvailabilityView"/> so the sting and the wording are the ones every other
+        /// locked surface in the shell uses; the bare sting is the fallback for a nav bar whose link
+        /// could not be resolved.
+        /// </summary>
+        private void RefuseDisabledScreen(MenuScreens screen)
+        {
+            var link = ResolveNavLinkObject(GetIndexForScreen(screen));
+            if (link && link.TryGetComponent(out MenuAvailabilityView view))
+            {
+                view.TryPress();
+                return;
+            }
+
+            var system = AudioSystem.Instance;
+            if (system) system.PlayMenuAudio(MenuAudioCategory.Denied);
         }
 
         #endregion
@@ -620,15 +1000,108 @@ namespace CosmicShore.UI
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
+            // Disabled is checked FIRST so a closed screen always explains itself. It used to sit
+            // below the host-only guard, which meant a party guest pressing ARK got the silent
+            // return from the wrong rule and no refusal at all.
+            if (IsScreenDisabled(screen))
+            {
+                RefuseDisabledScreen(screen);
+                return;
+            }
+
             // Arcade is host-only in multiplayer sessions
             if (screen == MenuScreens.ARK && !IsHostOrSolo())
                 return;
 
-            if (IsScreenDisabled(screen))
-                return;
-
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
+        }
+
+        /// <summary>
+        /// Take a party GUEST to the arcade screen because the HOST opened a card there - the one
+        /// sanctioned way past the host-only guard above.
+        ///
+        /// <para>That guard stops a guest BROWSING the arcade and launching their own game, which
+        /// is right; it also blocked the guest from ever standing on the screen the host is
+        /// driving them to, so the card modal opened over whatever screen they happened to be on.
+        /// Being pulled by the host is not the same act as navigating there, so this is a separate
+        /// entry point rather than a hole in the guard - nothing on a guest's own UI calls it.</para>
+        /// </summary>
+        public void FollowHostToArcadeScreen()
+        {
+            if (IsScreenDisabled(MenuScreens.ARK)) return;
+            if (ScreenIsActive(MenuScreens.ARK)) return;
+            NavigateTo(GetIndexForScreen(MenuScreens.ARK));
+        }
+
+        /// <summary>
+        /// The Arena counterpart of <see cref="FollowHostToArcadeScreen"/>: the host opened an
+        /// ARENA card, so the guest's app shell shows the Arena grid under the launch window the
+        /// same way the arcade screen sits under an arcade card. Host-driven only - nothing on the
+        /// guest's own UI calls it.
+        /// </summary>
+        public void FollowHostToArenaWindow()
+        {
+            if (ModalIsActive(ModalWindows.ARENA)) return;
+            OpenModal(ModalWindows.ARENA);
+        }
+
+        /// <summary>LIVE freestyle state, for anything the host is driving the local player into.</summary>
+        public bool IsInFreestyle => InFreestyle;
+
+        /// <summary>
+        /// True while a freestyle blend is still running. <see cref="IsInFreestyle"/> goes false at
+        /// the START of an exit, so a poller that only asks that one can act half way through the
+        /// camera ease and the UI fade - which reads as a window appearing over a moving shot.
+        /// </summary>
+        public bool IsFreestyleSettling => crystalClickHandler && crystalClickHandler.IsTransitioning;
+
+        /// <summary>
+        /// Bring the local player out of freestyle because the HOST is pulling them somewhere -
+        /// then run <paramref name="onExited"/>.
+        ///
+        /// <para>Freestyle is not merely a screen the appshell is not on: <see cref="NavigateTo"/>
+        /// refuses outright, the screens CanvasGroup is faded out and non-raycastable,
+        /// <c>ModalWindowIn</c> refuses to open at all while the input gate is engaged, and
+        /// <see cref="HandleEnterFreestyle"/> has already closed every modal. So a host who opened
+        /// an arcade card reached a flying guest with an event that could not draw anything, and
+        /// the guest kept flying while the rest of the party sat in a lobby.</para>
+        ///
+        /// <para>The callback runs on <c>OnMenuStateTransitionEnd</c>, never on the start event and
+        /// never on the live flag: <see cref="HandleExitFreestyle"/> answers the START of the
+        /// transition with another <c>CloseAllModals</c>, so anything opened before the end is
+        /// closed again on the way out. Returns false and does nothing when there is no freestyle
+        /// to leave (the caller should just proceed), or when a transition is already running.</para>
+        /// </summary>
+        public bool RequestExitFreestyle(System.Action onExited)
+        {
+            if (!InFreestyle) return false;
+            if (!crystalClickHandler || !freestyleEvents) return false;
+
+            // One pending follow at a time - a host flicking between cards must not stack
+            // callbacks that each re-open a lobby that has already moved on.
+            if (_pendingFreestyleExit != null)
+            {
+                _pendingFreestyleExit = onExited;
+                return true;
+            }
+
+            _pendingFreestyleExit = onExited;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleExitCompleted;
+            crystalClickHandler.ToggleTransition();
+            return true;
+        }
+
+        System.Action _pendingFreestyleExit;
+
+        void HandleFreestyleExitCompleted()
+        {
+            if (freestyleEvents)
+                freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleExitCompleted;
+
+            var pending = _pendingFreestyleExit;
+            _pendingFreestyleExit = null;
+            pending?.Invoke();
         }
 
         bool IsHostOrSolo()
@@ -643,7 +1116,7 @@ namespace CosmicShore.UI
             // Block screen navigation while in freestyle mode (live state, not just the flag)
             if (InFreestyle)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
                 return;
             }
 
@@ -658,17 +1131,17 @@ namespace CosmicShore.UI
 
             if (IsIndexDisabled(ScreenIndex))
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
             }
 
             if (ScreenIndex == currentScreen)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
                 return;
             }
 
-            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -725,6 +1198,8 @@ namespace CosmicShore.UI
             currentScreen = ScreenIndex;
             SetReturnToScreen(screenId);
             UpdateNavBar(currentScreen);
+            UpdateHubButtonsVisibility();
+            Refocus();
         }
 
         #endregion
@@ -739,18 +1214,86 @@ namespace CosmicShore.UI
                 ArcadeModal.ModalWindowIn();
         }
 
-        private void OpenModalByType(ModalWindows modalType)
+        /// <summary>
+        /// Open the modal registered under <paramref name="modalType"/>, or report that none is.
+        ///
+        /// <para>Public because the home hub's buttons are the second caller: a hub button names a
+        /// modal TYPE and lets the switcher find it, so a new hub entry is a serialized enum value
+        /// plus a <c>ModalWindowManager</c> in <see cref="Modals"/> - never a direct reference
+        /// wired from the button to the window, which is how a modal ends up opened by two
+        /// authorities.</para>
+        /// </summary>
+        public bool OpenModal(ModalWindows modalType)
         {
-            if (Modals == null) return;
+            if (Modals == null) return false;
 
             foreach (var modal in Modals)
             {
                 if (modal != null && modal.ModalType == modalType)
                 {
                     modal.ModalWindowIn();
-                    return;
+                    return true;
                 }
             }
+
+            CSDebug.LogWarning($"[ScreenSwitcher] No modal registered for '{modalType}' - " +
+                               "add its ModalWindowManager to the Modals list.");
+            return false;
+        }
+
+        private void OpenModalByType(ModalWindows modalType) => OpenModal(modalType);
+
+        /// <summary>
+        /// Guarantees a CREDITS modal is reachable from this scene, building one when none is
+        /// registered.
+        ///
+        /// <para>FMOD's EULA (<c>Assets/Plugins/FMOD/LICENSE.txt</c>, clause 3) requires an in-game
+        /// credit naming <c>FMOD</c> and <c>Firelight Technologies Pty Ltd.</c> on every tier, and
+        /// the same screen carries every other attribution the tree owes
+        /// (<c>Docs/THIRD_PARTY_REGISTER.md</c> §7). <c>CreditsReleaseGuard</c> refuses to
+        /// ship a release build whose manifest has lost that line — but a manifest nobody can read
+        /// discharges nothing, so the WINDOW is ensured here for the same reason the DATA is
+        /// guarded there. A modal that can be deleted out of a scene is not a guarantee.</para>
+        ///
+        /// <para>It stands down completely the moment a human authors one: an authored CREDITS
+        /// modal in <see cref="Modals"/> is found first and nothing is built, so replacing this
+        /// with proper chrome is an ordinary scene edit.</para>
+        /// </summary>
+        private void EnsureCreditsModal()
+        {
+            Modals ??= new List<ModalWindowManager>();
+
+            foreach (var authored in Modals)
+                if (authored != null && authored.ModalType == ModalWindows.CREDITS)
+                    return;
+
+            // A CreditsModal may exist in the scene without being registered (authored, but the
+            // Modals list not updated). Adopt it rather than building a second one - two windows
+            // of one type is the state ModalStackEntry carries an instance to survive, but it is
+            // still a bug the player would see as a credits screen behind a credits screen.
+            // Explicit null test, never `??`: Unity's Object overloads `==` to report a destroyed
+            // object as null while the C# null-coalescing operator does not, so `??` on a
+            // UnityEngine.Object is a trap even where (as here) the finder returns a true null.
+            var modal = FindFirstObjectByType<CreditsModal>(FindObjectsInactive.Include);
+            if (modal == null)
+            {
+                modal = CreditsModal.Build(_canvasRect);
+                if (modal != null && _container != null)
+                    GameObjectInjector.InjectRecursive(modal.gameObject, _container);
+            }
+
+            if (modal == null)
+            {
+                CSDebug.LogError(
+                    "[ScreenSwitcher] Could not create the credits window. The game would then " +
+                    "ship with no in-game FMOD credit, which breaches FMOD's EULA clause 3 - see " +
+                    "Docs/THIRD_PARTY_REGISTER.md §7.");
+                return;
+            }
+
+            modal.ModalType = ModalWindows.CREDITS;
+            modal.AttachScreenSwitcher(this);
+            Modals.Add(modal);
         }
 
         #endregion
@@ -759,25 +1302,21 @@ namespace CosmicShore.UI
 
         public void OnClickStoreNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickStoreNav");
             NavigateTo(MenuScreens.STORE);
         }
 
         public void OnClickPortNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickPortNav");
             NavigateTo(MenuScreens.PORT);
         }
 
         public void OnClickHomeNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHomeNav");
             NavigateTo(MenuScreens.HOME);
         }
 
         public void OnClickHangarNav()
         {
-            Debug.Log("[ScreenSwitcher] OnClickHangarNav");
             NavigateTo(MenuScreens.HANGAR);
         }
 
@@ -791,10 +1330,32 @@ namespace CosmicShore.UI
             NavigateTo(MenuScreens.PROFILE);
         }
 
+        /// <summary>
+        /// Opens the profile MODAL (the avatar + display-name editor), as distinct from
+        /// <see cref="OnClickProfileNav"/>, which navigates to the profile SCREEN.
+        ///
+        /// <para>The avatar buttons on the Profile and Home screens call this rather than a direct
+        /// <c>ModalWindowIn</c> on the window, per <c>Docs/HomeHub/ARCHITECTURE.md</c> §1: the
+        /// switcher already owns the modal stack, the return-to-modal pref and the close sweeps, so
+        /// a button reaching past it would be a second authority. A parameterless wrapper because a
+        /// UnityEvent persistent call cannot pass an enum - the same shape as the hub's
+        /// <see cref="OnClickToyboxNav"/>.</para>
+        /// </summary>
+        public void OnClickProfileModal() => OpenModal(ModalWindows.PROFILE);
+
         public void OnClickArcadeNav()
         {
             OpenArcadePanel();
         }
+
+        /// <summary>The home hub's Toy Box entry - the app-shell face of the freestyle toybox.</summary>
+        public void OnClickToyboxNav() => OpenModal(ModalWindows.TOYBOX);
+
+        /// <summary>The home hub's Arena entry.</summary>
+        public void OnClickArenaNav() => OpenModal(ModalWindows.ARENA);
+
+        /// <summary>The home hub's Mission entry.</summary>
+        public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
 
         public void OnClickLeftArrow()
         {
@@ -920,6 +1481,7 @@ namespace CosmicShore.UI
             // Hide NavBar and Screens via CanvasGroup
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
+            UpdateHubButtonsVisibility();
 
             ApplyFreestyleInputGate(true);
         }
@@ -991,10 +1553,13 @@ namespace CosmicShore.UI
             // Show NavBar and Screens
             SetNavBarVisible(true);
             SetCanvasGroupVisible(screensCanvasGroup, true);
+            UpdateHubButtonsVisibility();
 
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+
+            Refocus();
         }
 
         private static void SetCanvasGroupVisible(CanvasGroup cg, bool visible)
@@ -1024,10 +1589,24 @@ namespace CosmicShore.UI
             foreach (var modal in Modals)
             {
                 if (!modal) continue;
+
+                // Visible OR open - the two disagree more often than they look like they should,
+                // and this used to test only the first and then act through ModalWindowOut, which
+                // is gated on the second. A modal that was visible but not `isOn` (ModalWindowIn
+                // refuses to open while the freestyle gate is engaged; a launch panel shows itself
+                // before opening its host) therefore ignored this call completely and stayed on
+                // screen over the flight.
                 var cg = modal.GetComponent<CanvasGroup>();
-                if (cg && cg.alpha > 0.01f)
-                    modal.ModalWindowOut();
+                bool visible = cg && cg.alpha > 0.01f;
+                if (visible || modal.IsOpen)
+                    modal.ForceCloseImmediate();
             }
+
+            // The ARCADE modal is wired on its own field and is NOT required to be in `Modals` -
+            // and it is the one carrying a live preview RenderTexture, so a copy that never got
+            // added to that list is precisely the one whose absence is most visible.
+            if (ArcadeModal)
+                ArcadeModal.ForceCloseImmediate();
         }
 
         #endregion

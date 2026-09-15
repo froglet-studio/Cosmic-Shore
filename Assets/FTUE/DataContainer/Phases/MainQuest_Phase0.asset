@@ -93,7 +93,7 @@ MonoBehaviour:
   graphPosition: {x: 820, y: 700}
   outputs:
   - portName: next
-    targetNodeId: 4e9d130b72e147619021272ddaacfec8
+    targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
     delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
@@ -143,29 +143,6 @@ MonoBehaviour:
     targetNodeId: 22266fc0e2a14456a92d8a0d2710790b
     delaySeconds: 0
   unlock: 1
---- !u!114 &-3657544113375997979
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Profile Screen'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: 4e9d130b72e147619021272ddaacfec8
-  displayName: 'CTA: Profile Screen'
-  nodeEnabled: 1
-  graphPosition: {x: 1200, y: 700}
-  outputs:
-  - portName: next
-    targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
-    delaySeconds: 0
-  target: 500
-  completionAction: 500
-  dependencies: 
 --- !u!114 &-3574500432832461629
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -399,11 +376,8 @@ MonoBehaviour:
   - {fileID: -2831186680509351210}
   - {fileID: -6396760779086463806}
   - {fileID: 355363919843681768}
-  - {fileID: 4514294701776155490}
-  - {fileID: 8129599645032818001}
   - {fileID: -5450907927303977473}
   - {fileID: -4537693602846388663}
-  - {fileID: -3657544113375997979}
   - {fileID: -8744157475343824200}
   - {fileID: -3332032966003280309}
   - {fileID: -5565553608570610728}
@@ -457,7 +431,7 @@ MonoBehaviour:
   graphPosition: {x: 1200, y: 260}
   outputs:
   - portName: next
-    targetNodeId: 7b57585db85147d3ba2a8d8827bac682
+    targetNodeId: 467d633fe0e745afa54ed2c99049f452
     delaySeconds: 0
   clearConstraints: 0
   allowedMode: 35
@@ -539,29 +513,6 @@ MonoBehaviour:
   targetSkims: 10
   perSkimHaptic: 0
   successHaptic: 1
---- !u!114 &4514294701776155490
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Arcade'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: 7b57585db85147d3ba2a8d8827bac682
-  displayName: 'CTA: Arcade'
-  nodeEnabled: 1
-  graphPosition: {x: 1580, y: 260}
-  outputs:
-  - portName: next
-    targetNodeId: b86125208ea445679021639310070914
-    delaySeconds: 0
-  target: 100
-  completionAction: 100
-  dependencies: 
 --- !u!114 &4726066212902674985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -700,26 +651,3 @@ MonoBehaviour:
   panelKey: speed_up
   minDisplaySeconds: 0
   hideOnAdvance: 0
---- !u!114 &8129599645032818001
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Play CC (Intensity 2)'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: b86125208ea445679021639310070914
-  displayName: 'CTA: Play CC (Intensity 2)'
-  nodeEnabled: 1
-  graphPosition: {x: 1960, y: 260}
-  outputs:
-  - portName: next
-    targetNodeId: 467d633fe0e745afa54ed2c99049f452
-    delaySeconds: 0
-  target: 433
-  completionAction: 400
-  dependencies: 

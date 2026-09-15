@@ -1,6 +1,8 @@
 #if UNITY_EDITOR
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Tests
@@ -150,12 +152,32 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(2, _go.transform.childCount);
 
-            _go.DestroyChildren();
+            // Object.Destroy is REFUSED in Edit Mode, not deferred: Unity logs an error per
+            // call and the child survives. The Test Framework fails on any undeclared error
+            // log, so one is declared per child. Declared BY COUNT rather than as a literal,
+            // which turns the noise into the assertion: LogAssert fails both on an undeclared
+            // extra and on an expectation that never arrives, so this now proves DestroyChildren
+            // calls Destroy exactly once per child - the loop contract the test name is about.
+            // (The name describes the Play-Mode intent; scheduling is not observable here.)
+            ExpectEditModeDestroyErrors(_go.transform.childCount);
 
-            // In Edit Mode, Destroy is deferred. Children are still present
-            // but scheduled for destruction. Verify the call doesn't throw.
-            // (In Play Mode, children would be gone after the next frame.)
             Assert.DoesNotThrow(() => _go.DestroyChildren());
+
+            // Refused, so nothing was removed. Asserted so the Edit-Mode reality is stated
+            // rather than left to the reader - the previous comment here claimed the children
+            // were "scheduled for destruction", which is Play-Mode behaviour.
+            Assert.AreEqual(2, _go.transform.childCount);
+        }
+
+        /// <summary>
+        /// Declares the error Unity logs for each <c>Object.Destroy</c> made in Edit Mode, where
+        /// Destroy is refused rather than deferred. Regex-matched because the real message runs
+        /// to a second line ("Destroying an object in edit mode destroys it permanently.").
+        /// </summary>
+        static void ExpectEditModeDestroyErrors(int count)
+        {
+            for (int i = 0; i < count; i++)
+                LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"));
         }
 
         [Test]

@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"Until {mode} unlocked (claim)";
 
         [Tooltip("The game mode whose unlock (claim) this node waits on.")]
-        public GameModes mode = GameModes.HexRace;
+        public GameModes mode = GameModes.SkimRace;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

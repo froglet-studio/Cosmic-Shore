@@ -12,7 +12,7 @@ namespace CosmicShore.ScriptableObjects
     /// (there is no XP). This asset centralizes the rules that used to be hardcoded inside
     /// <c>GameModeProgressionService</c> so they can be changed without touching code:
     ///
-    ///   • which modes are always unlocked (e.g. Tournament),
+    ///   • which modes are always unlocked (e.g. Maelstrom),
     ///   • whether the first quest in the chain is free,
     ///   • the intensity floor a mode starts at and the absolute intensity cap,
     ///   • which modes ignore intensity gating,
@@ -29,9 +29,9 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Default Unlocks")]
         [Tooltip("Game modes that are ALWAYS unlocked regardless of quest progress " +
-                 "(e.g. Tournament, a session-level meta that is not part of the chain).")]
-        // Maelstrom (Tournament) is now part of the quest chain — claimed after Joust —
-        // so nothing is always-unlocked by default anymore.
+                 "(e.g. Maelstrom, a session-level meta that is not part of the chain).")]
+        // Maelstrom is now part of the quest chain — claimed after Joust — so nothing is
+        // always-unlocked by default anymore. The shipped ProgressionConfig.asset agrees.
         public List<GameModes> alwaysUnlockedModes = new();
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
@@ -49,8 +49,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(1)] public int maxIntensity = 4;
 
         [Tooltip("Game modes whose FULL intensity range is always available (not gated by " +
-                 "play counts), e.g. Tournament (one intensity is picked in the lobby).")]
-        public List<GameModes> fullIntensityModes = new() { GameModes.Tournament };
+                 "play counts), e.g. Maelstrom (one intensity is picked in the lobby).")]
+        public List<GameModes> fullIntensityModes = new() { GameModes.Maelstrom };
 
         [Header("Feature Unlocks")]
         [Tooltip("DisplayName of the quest that gates the Vessel Hangar feature. The hangar " +

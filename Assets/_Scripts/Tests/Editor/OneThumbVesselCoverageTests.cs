@@ -43,8 +43,17 @@ namespace CosmicShore.Tests
         // Unity fileIDs are SIGNED - a negative anchor is ordinary, and a `&(\d+)` regex
         // silently skips those documents (which is how a first pass of this census lost the
         // Grizzly entirely).
+        //
+        // The trailing `\r?` is load-bearing and platform-critical. .NET's Multiline `$` matches
+        // only immediately before a `\n`, never before the `\r` of a `\r\n` pair - and this repo's
+        // .gitattributes sets `* text=auto`, so a prefab is LF in the repository and CRLF in a
+        // WINDOWS working tree. Without it this regex matched every header on Linux and NOT ONE on
+        // Windows, so the census read an empty component list: this test failed claiming the
+        // Sparrow had no transformer (it has one), while the two tests below - which `continue`
+        // when they find no transformers - passed VACUOUSLY on the same run. Measured on .NET:
+        // 2 matches on LF, 0 on CRLF, and 2/2 with the `\r?`.
         static readonly Regex DocHeader =
-            new(@"^--- !u!(\d+) &(-?\d+)( stripped)?$", RegexOptions.Multiline);
+            new(@"^--- !u!(\d+) &(-?\d+)( stripped)?\r?$", RegexOptions.Multiline);
 
         static string GuidOf(string scriptName)
         {

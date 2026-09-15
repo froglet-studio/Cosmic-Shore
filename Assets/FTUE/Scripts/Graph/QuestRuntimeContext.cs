@@ -47,7 +47,7 @@ namespace CosmicShore.Core
         public MenuCrystalClickHandler CrystalHandler;
         public QuestInstructionView InstructionView;
         public ScreenSwitcher ScreenSwitcher;
-        public IReadOnlyList<CallToActionTarget> GameCards;
+        public IReadOnlyList<GameCard> GameCards;
 
         /// <summary>Extra UI groups hidden while flight training runs (designer-authored; the
         /// vessel HUD itself is hidden through its own controller, not this list).</summary>

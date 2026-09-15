@@ -113,17 +113,9 @@ namespace CosmicShore.Gameplay.Audio
             if (reference.IsNull) return;
             if (volume <= 0f) return;
 
-            EventInstance instance;
-            try
-            {
-                instance = RuntimeManager.CreateInstance(reference);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[FMODOneShotVolumeHelper] CreateInstance failed for '{reference}': {ex.Message}");
-                return;
-            }
-            if (!instance.isValid()) return;
+            // FmodSafe: no throw on a missing event / dead system, reported once per event, and
+            // nothing is created while the application is quitting.
+            if (!FmodSafe.TryCreateInstance(reference, out EventInstance instance)) return;
 
             if (!IsFireAndForgetSafe(reference, instance)) { RejectLoopingOneShot(reference, instance); return; }
 
@@ -147,17 +139,7 @@ namespace CosmicShore.Gameplay.Audio
             if (attachTo == null) return;
             if (volume <= 0f) return;
 
-            EventInstance instance;
-            try
-            {
-                instance = RuntimeManager.CreateInstance(reference);
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogWarning($"[FMODOneShotVolumeHelper] CreateInstance failed for '{reference}': {ex.Message}");
-                return;
-            }
-            if (!instance.isValid()) return;
+            if (!FmodSafe.TryCreateInstance(reference, out EventInstance instance)) return;
 
             // Doubly important on the attached path: a leaked instance ALSO sits in
             // RuntimeManager's attachedInstances list, which it walks every frame.

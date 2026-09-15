@@ -160,7 +160,7 @@ Two separate failures, one fix:
   small positional disagreement between peers simulating the same spike, fine enough that two
   genuinely different volleys do not collide onto one pattern.
 - **Stream pollution.** `UnityEngine.Random` is one global stream, and deterministic systems seed
-  it — `SegmentSpawner` calls `Random.InitState(seed)` for the HexRace track. A gun firing dozens
+  it — `SegmentSpawner` calls `Random.InitState(seed)` for the SkimRace track. A gun firing dozens
   of times a second must not be able to change what the track looks like.
 
 ### Domain paint

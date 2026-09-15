@@ -15,8 +15,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="ScoringRuleSO.PointsForCombatHit"/> exists. The platform counts landed hits as
     /// raw facts (<see cref="IRoundStats.BulletHitsLanded"/> /
     /// <see cref="IRoundStats.MissileHitsLanded"/>) and has no opinion about what one is worth;
-    /// this asset says a bullet is 1 and a rocket is 50, and <c>CombatHitScoring.Credit</c>
-    /// applies that server-side at the instant of the hit. Every other mode's rule returns 0, so
+    /// this asset prices a bullet at 1 and a rocket by HOW CLOSE it got - 10 for the shockwave, 20
+    /// for the prism blast, 30 for a direct strike - and <c>CombatHitScoring.Credit</c> applies
+    /// that server-side at the instant of the hit. Every other mode's rule returns 0, so
     /// gunnery is counted everywhere and scored only here.
     ///
     /// <b>Weighting once, at the hit, rather than in the metric reader</b> is what keeps
@@ -43,14 +44,39 @@ namespace CosmicShore.Gameplay
         [Tooltip("Points for one landed bullet - a direct full-auto round on an opposing hull.")]
         [Min(0)] [SerializeField] int bulletPoints = 1;
 
-        [Tooltip("Points for one landed missile - a direct skyburst strike OR being caught in " +
-                 "its blast. Deliberately the SAME for both: 'hit by the missile or caught in " +
-                 "the blast radius' is one event, and the shared VesselCombatHitLatch window is " +
-                 "what stops a clean centre-punch (which is both) paying twice.")]
-        [Min(0)] [SerializeField] int missilePoints = 50;
+        [Tooltip("Points for a rocket's SHOCKWAVE - the outermost radius, the warhead blast. " +
+                 "The ordinary outcome of a proximity kill, so it is the cheapest tier and the " +
+                 "one a pilot will actually see most of the time.")]
+        [Min(0)] [SerializeField] int missileShockwavePoints = 10;
 
-        public override int PointsForCombatHit(CombatHitClass hitClass) =>
-            hitClass == CombatHitClass.Missile ? missilePoints : bulletPoints;
+        [Tooltip("Points for a rocket's PRISM BLAST - the middle radius. Rarer than the " +
+                 "shockwave because the victim has to be well inside it.")]
+        [Min(0)] [SerializeField] int missileBlastPoints = 20;
+
+        [Tooltip("Points for a DIRECT skyburst strike - the round's own hit sphere on a hull. " +
+                 "Rarest of the three: the proximity fuze reaches 20x the round's hit radius, " +
+                 "so it normally detonates well before a direct strike is possible.")]
+        [Min(0)] [SerializeField] int missileDirectPoints = 30;
+
+        /// <summary>
+        /// The mode's price list. Written as an exhaustive switch rather than
+        /// <c>hitClass == X ? a : b</c> ON PURPOSE: that shape prices every enum member added
+        /// later as the default arm, which is exactly how The Bends' Debuff class was once paid
+        /// at the bullet rate. A class this mode has no opinion about is worth 0 and says so.
+        ///
+        /// <para>The three missile tiers are RANKED, not cumulative - one rocket pays the best
+        /// tier it achieved against a victim and no more, which <c>VesselCombatHitLatch</c>
+        /// enforces by upgrading its claim rather than opening a second one. So a centre-punch
+        /// is worth <see cref="missileDirectPoints"/>, not the sum of all three.</para>
+        /// </summary>
+        public override int PointsForCombatHit(CombatHitClass hitClass) => hitClass switch
+        {
+            CombatHitClass.Bullet           => bulletPoints,
+            CombatHitClass.MissileShockwave => missileShockwavePoints,
+            CombatHitClass.MissileBlast     => missileBlastPoints,
+            CombatHitClass.MissileDirect    => missileDirectPoints,
+            _                               => 0,
+        };
 
         protected override int TargetCount(GameDataSO gameData) => gameData.CombatPointTargetCount;
 
@@ -82,13 +108,13 @@ namespace CosmicShore.Gameplay
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
             // Same sentinel scheme as every time-based golf mode (GolfScoreSentinels is the
-            // single source of truth; the "HexRace" naming is legacy - the encoding is shared).
+            // single source of truth; the "SkimRace" naming is legacy - the encoding is shared).
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == null) continue;
                 stats.Score = stats.Domain == winner
                     ? finishTime
-                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
+                    : GolfScoreSentinels.EncodeSkimRaceLoserScore(Remaining(gameData, stats.Domain));
             }
         }
 

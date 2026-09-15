@@ -19,7 +19,7 @@ namespace CosmicShore.Core
         public const string HangarData            = "HANGAR_DATA";
         public const string CaptainProgress       = "CAPTAIN_PROGRESS";
         public const string TrainingProgress      = "TRAINING_PROGRESS";
-        public const string DailyChallenge        = "DAILY_CHALLENGE";
+        public const string WeeklyChallenge        = "WEEKLY_CHALLENGE";
         public const string EpisodeProgress       = "EPISODE_PROGRESS";
         public const string PlayerSettings        = "PLAYER_SETTINGS";
         public const string Squad                 = "SQUAD_DATA";

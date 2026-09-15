@@ -81,9 +81,36 @@ namespace CosmicShore.Gameplay
         // The buffer is bounded, deliberately: a blast engulfing more than 16 crystals at once
         // reaches the rest on a later frame as it grows (_crystalsHit stops the ones already
         // handled from repeating), and no shipped cell places 16 crystals in one blast radius.
-        private static readonly Collider[] s_crystalHits = new Collider[16];
+        /// <summary>
+        /// Broadphase scratch for <see cref="SweepCrystals"/>. It is sized against the WORST cell
+        /// rather than the busiest mode: every lifeform heart is a crystal on the Crystals layer,
+        /// and the type filter that rejects them runs AFTER the buffer is filled — so in a
+        /// flora-dense cell the arena's own ecology can saturate a small buffer and hide the omni
+        /// crystal the blast was actually reaching for. It was 16, which the mirrored plate's
+        /// 2.4x larger sphere made materially riskier. `OverlapSphereNonAlloc` truncates SILENTLY,
+        /// so the size is paired with the saturation warning below: a cap that can be hit without
+        /// saying so is the failure mode this project keeps re-learning.
+        /// </summary>
+        private static readonly Collider[] s_crystalHits = new Collider[64];
+        static bool s_warnedCrystalSweepSaturated;
         private int _crystalLayerMask;
         private HashSet<int> _crystalsHit;
+
+        // Living lifeform HEARTS this blast has already acted on, the twin of _crystalsHit and
+        // for the same reason: a blast grows over many frames and its sweep re-finds a creature
+        // that is still standing inside it. Its own buffer, sized for a forest rather than for
+        // the handful of omni crystals a cell places — a 95-unit warhead in a seeded cell can
+        // legitimately contain dozens of hearts.
+        // Growable, for the reason Projectile's fuze records: OverlapSphereNonAlloc fills in
+        // unspecified order and silently drops the remainder, and every discriminating test here
+        // (embedded, alive, fauna-not-flora, domain) runs AFTER the fill. Layer 9 is dominated by
+        // hearts this sweep rejects - one always-on collider per FLORA plant, and a lattice
+        // colony or a Hesperides garden stands hundreds inside a 95-unit warhead - so a fixed
+        // buffer means the creatures the rocket visibly engulfed are arbitrarily not passed to
+        // the effect. A full buffer is a POSSIBLY-TRUNCATED result, so grow and re-ask.
+        private static Collider[] s_heartHits = new Collider[128];
+        private const int HeartSweepBufferCap = 1024;
+        private HashSet<int> _heartsHit;
 
         // Distinct VESSELS this blast has landed on, keyed by instance ID. Same once-per-blast
         // ledger shape as _crystalsHit and for the same reason: a blast grows over many frames and
@@ -129,6 +156,14 @@ namespace CosmicShore.Gameplay
         {
             if (ForceLegacyPhysics) return;
 
+            // A blast that does not touch mass never starts the prism pass at all. ONE gate here
+            // rather than one per explosion SHAPE: the spherical, conic and cylindrical blasts
+            // each own their ExplodeAsync but all three begin batch processing through this
+            // method, so a flag honoured here cannot be silently ignored by two of the three.
+            // The prism layer is additionally excluded on such a blast's own trigger collider
+            // (authored on the prefab), so the Physics fallback cannot reach a prism either.
+            if (explosion != null && !explosion.AffectsPrisms) return;
+
             var registry = PrismSpatialIndex.Instance;
             if (registry == null || !registry.IsAvailable)
             {
@@ -150,6 +185,7 @@ namespace CosmicShore.Gameplay
                 _batchPending.Clear();
 
             _crystalsHit?.Clear();
+            _heartsHit?.Clear();
             _vesselsHit?.Clear();
 
             if (explosion != null && explosion.Vessel != null)
@@ -171,8 +207,11 @@ namespace CosmicShore.Gameplay
             using (s_processBatch.Auto())
             {
                 // Runs whether or not the batch path is available: crystals are not prisms and
-                // are not in the spatial index, so nothing below would ever reach them.
+                // are not in the spatial index, so nothing below would ever reach them. That is
+                // also what makes a NON-PRISM blast (AffectsPrisms off, so batch never began)
+                // still able to act on crystals and creatures.
                 SweepCrystals(center, radius);
+                SweepLifeformHearts(center, radius);
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
@@ -213,8 +252,10 @@ namespace CosmicShore.Gameplay
                 // discrete, once-per-blast event, so the sphere's slight over-reach at the cone's
                 // flanks is not worth an exact test.
                 float coneReach = Mathf.Max(sliceMax, 0f);
-                SweepCrystals(apex + axis * (coneReach * 0.5f),
-                              coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit)));
+                float coneSweepRadius = coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit));
+                Vector3 coneSweepCentre = apex + axis * (coneReach * 0.5f);
+                SweepCrystals(coneSweepCentre, coneSweepRadius);
+                SweepLifeformHearts(coneSweepCentre, coneSweepRadius);
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
@@ -241,12 +282,17 @@ namespace CosmicShore.Gameplay
         /// The cross-section is a DISC of constant <paramref name="radius"/>, and every prism the
         /// plate claims is shoved along <paramref name="axis"/> — the blast's own velocity —
         /// rather than radially from an origin.
+        ///
+        /// With <paramref name="mirrored"/> the slab is reflected through the start plane as well,
+        /// so one frame claims |axial| ∈ [sliceMin, sliceMax] rather than the forward interval.
+        /// The impulse is untouched: the mirrored half throws mass the SAME way, which is what
+        /// makes the back half drag mass forward through the emitter instead of away from it.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
         public bool ProcessBatchCylinderFrame(
             Vector3 origin, Vector3 axis, float sliceMin, float sliceMax, float radius,
-            in ExplosionImpulse impulse)
+            in ExplosionImpulse impulse, bool mirrored = false)
         {
             using (s_processBatch.Auto())
             {
@@ -259,23 +305,49 @@ namespace CosmicShore.Gameplay
                 // built a ball out of mass it visibly missed while its prism half, running the
                 // exact slab, agreed it had touched nothing there.
                 float depth = Mathf.Max(sliceMax, 0f);
-                float half = depth * 0.5f;
-                SweepCrystals(origin + axis * half,
-                              Mathf.Sqrt(half * half + radius * radius),
-                              new SweptCylinder(origin, axis, depth, radius));
+                // A MIRRORED plate is centred on the emitter and spans depth BOTH ways, so its
+                // bounding sphere is centred on the origin with the full half-diagonal - not on a
+                // midpoint that no longer exists. Getting this wrong under-reaches behind the
+                // pilot, which is the half of the volume the mirror was added for. Both sweeps
+                // ride the SAME broadphase and the SAME narrowphase: a heart is spent exactly as
+                // a crystal is, so a mirror that reached one and not the other would be a blast
+                // whose two halves disagree about what they touched.
+                float half = mirrored ? depth : depth * 0.5f;
+                float cylinderSweepRadius = Mathf.Sqrt(half * half + radius * radius);
+                Vector3 cylinderSweepCentre = mirrored ? origin : origin + axis * half;
+                var cylinderNarrowphase = new SweptCylinder(origin, axis, depth, radius, mirrored);
+                SweepCrystals(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
+                SweepLifeformHearts(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase);
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
 
-                return registry.ProcessExplosionCylinderFrame(
-                    origin, axis, sliceMin, sliceMax, radius, impulse,
+                bool shouldContinue = registry.ProcessExplosionCylinderFrame(
+                    origin, axis, sliceMin, sliceMax, radius, mirrored, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
                     explosion.AnonymousExplosion,
                     explosion.Vessel,
                     _batchHitTracker,
                     _batchPending);
+
+                // A MIRRORED PLATE CANNOT BE BLOCKED, and that is a consequence of the mirror
+                // rather than a waiver of the rule. `shouldContinue = false` means "a super-
+                // shielded prism physically stopped the front here", which is a statement about
+                // ONE expanding front — and a mirrored plate has two, claiming |axial| so that
+                // frame 1 evaluates mass BEHIND the pilot before anything ahead of them. Left
+                // alone, a super-shielded prism the pilot had already flown past would abort the
+                // punch on its first frame, and in Scarab Scramble the pilot's own dais pays out
+                // super-shielded sun cores — so a player's reward would silently cancel their
+                // weapon, with nothing on screen to explain it.
+                //
+                // Nothing is made destructible: the shielded prism is still fully invulnerable and
+                // still rocks on the shared gate (Prism.AbsorbSuperShieldHit). The stated cost is
+                // that a super-shielded wall no longer truncates this blast's remaining sweep
+                // either — bounded by the plate's own authored reach, which is a fixed 54 u over
+                // 0.21 s rather than an expanding shell.
+                return mirrored || shouldContinue;
             }
         }
 
@@ -405,6 +477,16 @@ namespace CosmicShore.Gameplay
                     break;
                 
                 case PrismImpactor prismImpactee:
+                    // A blast that does not touch mass declines here TOO, not only in
+                    // BeginBatchProcessing. The flag has to hold on BOTH paths or it holds on
+                    // neither in practice: the batch early-return leaves _useBatchProcessing
+                    // false, which is exactly the state in which OnTriggerEnter does NOT skip the
+                    // prism layer - so a prism trigger would fall straight through to
+                    // ExecuteCommonPrismCommands, whose first branch on a non-destructive blast
+                    // ARMOURS the prism (ActivateShield) instead of ignoring it. The prefab's
+                    // authored layer exclusion is a second line, not the only one; an explosion
+                    // authored tomorrow without it would otherwise shield half an arena.
+                    if (explosion != null && !explosion.AffectsPrisms) return;
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
                     if (!explosionImpactorDataContainer) return;
                     var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
@@ -429,6 +511,21 @@ namespace CosmicShore.Gameplay
         /// debris rides, instead of authoring a second one that drifts from it.
         /// </summary>
         public ExplosionImpulse BlastImpulse => explosion != null ? explosion.Impulse : default;
+
+        /// <summary>
+        /// Which way this blast throws what it claims, at <paramref name="at"/> — the blast's own
+        /// <see cref="AOEExplosion.CalculateImpactVector"/>, exposed for effects that need to LAUNCH
+        /// something rather than damage it.
+        ///
+        /// It exists because "away from the centre" is only one blast shape's answer. A spherical
+        /// blast does radiate, so this is the radial there and nothing changes; a swept plate throws
+        /// everything it claims ALONG THE SWEEP, at every position, which is the whole of what makes
+        /// a mirrored plate DRAG mass forward instead of pushing it further away. An effect that
+        /// re-derives the direction from (target − blastOrigin) is correct for exactly one of those
+        /// and silently backwards for the other half of the other.
+        /// </summary>
+        public Vector3 BlastImpactVector(Vector3 at) =>
+            explosion != null ? explosion.CalculateImpactVector(at) : Vector3.zero;
 
         /// <summary>
         /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
@@ -458,10 +555,12 @@ namespace CosmicShore.Gameplay
             public readonly Vector3 Axis;
             public readonly float Depth;
             public readonly float Radius;
+            public readonly bool Mirrored;
 
-            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius)
+            public SweptCylinder(Vector3 origin, Vector3 axis, float depth, float radius,
+                                 bool mirrored = false)
             {
-                Origin = origin; Axis = axis; Depth = depth; Radius = radius;
+                Origin = origin; Axis = axis; Depth = depth; Radius = radius; Mirrored = mirrored;
             }
 
             public bool IsValid => Radius > 0f;
@@ -473,7 +572,12 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 rel = point - Origin;
                 float s = Vector3.Dot(rel, Axis);
-                if (s < 0f || s > Depth) return false;
+                // A MIRRORED plate claims its own reflection through the start plane, so the axial
+                // test is on |s| and the volume runs [-Depth, +Depth]. Same expression the Burst
+                // job runs — these two must not drift, or the crystal half of a blast disagrees
+                // with the prism half about what it touched.
+                if (Mirrored) { if (s < -Depth || s > Depth) return false; }
+                else if (s < 0f || s > Depth) return false;
                 return Vector3.ProjectOnPlane(rel, Axis).sqrMagnitude <= Radius * Radius;
             }
         }
@@ -487,17 +591,21 @@ namespace CosmicShore.Gameplay
             var effects = explosionImpactorDataContainer.explosionCrystalEffects;
             if (!DoesEffectExist(effects)) return;
 
-            if (_crystalLayerMask == 0)
-            {
-                int layer = LayerMask.NameToLayer("Crystals");
-                _crystalLayerMask = layer >= 0 ? 1 << layer : -1;   // -1 = resolved-and-absent
-            }
-            if (_crystalLayerMask <= 0) return;
+            int mask = ResolveCrystalLayerMask();
+            if (mask <= 0) return;
 
             _crystalsHit ??= new HashSet<int>(8);
 
             int found = Physics.OverlapSphereNonAlloc(centre, radius, s_crystalHits,
-                                                      _crystalLayerMask, QueryTriggerInteraction.Collide);
+                                                      mask, QueryTriggerInteraction.Collide);
+            if (found == s_crystalHits.Length && !s_warnedCrystalSweepSaturated)
+            {
+                s_warnedCrystalSweepSaturated = true;
+                CosmicShore.Utility.CSDebug.LogWarning(
+                    $"[ExplosionImpactor] Crystal broadphase saturated its {s_crystalHits.Length}-slot " +
+                    $"buffer (r={radius:F0} at {centre}) — a crystal inside this blast may have been " +
+                    "silently skipped. Raise s_crystalHits, or narrow the query. Reported once.");
+            }
             for (int i = 0; i < found; i++)
             {
                 var col = s_crystalHits[i];
@@ -522,6 +630,86 @@ namespace CosmicShore.Gameplay
             }
         }
         
+        /// <summary>
+        /// The Crystals layer as a mask, resolved once. 0 means "not looked up yet" and -1 means
+        /// "resolved, and this project has no Crystals layer" — the same sentinel pair both
+        /// sweeps read, so they cannot disagree about where crystals live.
+        /// </summary>
+        int ResolveCrystalLayerMask()
+        {
+            if (_crystalLayerMask != 0) return _crystalLayerMask;
+            int layer = LayerMask.NameToLayer("Crystals");
+            _crystalLayerMask = layer >= 0 ? 1 << layer : -1;
+            return _crystalLayerMask;
+        }
+
+        void SweepLifeformHearts(Vector3 centre, float radius) =>
+            SweepLifeformHearts(centre, radius, default);
+
+        /// <summary>
+        /// Blast → a LIVING lifeform's HEART, dispatched by an explicit overlap for exactly the
+        /// reason <see cref="SweepCrystals"/> is: layer 9 (Crystals) × layer 10 (Explosions) is
+        /// off in the collision matrix, so no trigger pair is ever generated and a case in
+        /// <see cref="AcceptImpactee"/> would compile, read correctly and never fire.
+        ///
+        /// Skipped entirely unless this blast AUTHORS lifeform-crystal effects — today only the
+        /// Sparrow's missile warhead — so every other AOE prefab pays one array null-check per
+        /// frame. <c>_heartsHit</c> is the once-per-blast ledger: a growing blast re-finds a
+        /// creature that has not finished dying yet, and <c>Jousted</c> is idempotent but the
+        /// effect list should not run twice for one creature.
+        ///
+        /// A heart stops matching on its own once the creature dies —
+        /// <c>Crystal.ActivateCrystal</c> clears <c>EmbeddedIn</c> and it becomes an ordinary
+        /// free pickup — so the sweep never re-kills what it already killed.
+        /// </summary>
+        void SweepLifeformHearts(Vector3 centre, float radius, in SweptCylinder narrowphase)
+        {
+            if (!explosionImpactorDataContainer || radius <= 0f) return;
+            var effects = explosionImpactorDataContainer.explosionLifeformCrystalEffects;
+            if (!DoesEffectExist(effects)) return;
+
+            int mask = ResolveCrystalLayerMask();
+            if (mask <= 0) return;
+
+            _heartsHit ??= new HashSet<int>(16);
+
+            int found;
+            while (true)
+            {
+                found = Physics.OverlapSphereNonAlloc(centre, radius, s_heartHits,
+                                                      mask, QueryTriggerInteraction.Collide);
+                if (found < s_heartHits.Length || s_heartHits.Length >= HeartSweepBufferCap) break;
+                s_heartHits = new Collider[s_heartHits.Length * 2];
+            }
+            for (int i = 0; i < found; i++)
+            {
+                var col = s_heartHits[i];
+                if (col == null) continue;
+                if (!col.TryGetComponent(out Crystal crystal)) continue;
+                if (!crystal.IsEmbedded) continue;
+                // EMBEDDED IS NOT ALIVE. A creature with a progressive wither re-homes its heart
+                // onto the cell at the TOP of its death and deliberately leaves it embedded for
+                // the whole animation (Docs/ECOSYSTEM.md §26), so a corpse's heart is swept for
+                // seconds after it died. Jousting one re-runs the sealed death: a second kill
+                // credit for one creature, and - because the joust stamps the style first - the
+                // heart pops free while the wither is still eating inward. Fauna.Predated now
+                // declines a corpse outright, so this is the belt to that brace; it also keeps
+                // the sweep from spending effect dispatches on the dead.
+                if (crystal.EmbeddedIn is { IsDying: true }) continue;
+                // The sphere is only the broadphase when the caller supplied a real shape.
+                if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
+                if (!_heartsHit.Add(crystal.GetInstanceID())) continue;
+
+                for (int e = 0; e < effects.Length; e++)
+                {
+                    if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
+                            nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
+                        continue;
+                    effects[e].Execute(this, crystal);
+                }
+            }
+        }
+
         /// <summary>
         /// The Physics-trigger fallback's per-prism resolution. Mirrors
         /// <c>PrismSpatialIndex.ResolveExplosionHit</c>, INCLUDING the debris ceiling:

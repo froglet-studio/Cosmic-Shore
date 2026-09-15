@@ -57,7 +57,7 @@ result:
 
 So the mode is one new scoring rule, one new controller, one new asset, and **one wiring edit**
 — section below. There is no per-event listener in the controller at all, exactly like Rampage,
-Ribcage and Dog Fight.
+PeelTheCage and Dog Fight.
 
 ---
 
@@ -167,6 +167,7 @@ server-owned and its hits must still be recorded:
 `Player.ReportCombatHit_ServerRpc` re-validated the wire value like this:
 
 ```csharp
+// (as it stood; the member is now called MissileDirect — see below)
 var resolved = hitClass == (int)CombatHitClass.Missile
     ? CombatHitClass.Missile
     : CombatHitClass.Bullet;      // ← everything else collapses here
@@ -183,6 +184,14 @@ the point of re-validating rather than trusting the wire.
 
 **General lesson:** a "check for the one special member, else the default" validator encodes the
 current size of an enum. It does not fail when the enum grows — it mis-files.
+
+**And the enum did grow again, twice, which is the point.** `CombatHitClass.Missile` was renamed
+`MissileDirect` in 2026-09 when the skyburst's three radii became three ranked classes
+(`MissileBlast = 3`, `MissileShockwave = 4`; the snippet above is preserved as it stood). Nothing
+about this mode changed — a Dolphin bend is still `Debuff`, still validated by `Enum.IsDefined`,
+still paid at this mode's rate and nowhere else — which is exactly what the fix bought: the
+validator absorbed two new members without anyone revisiting it. The version it replaced would
+have mis-filed both as `Bullet`.
 
 ---
 
@@ -440,7 +449,7 @@ latch is static, `Time.time` keeps running across a scene load, and the latch is
 wherever a blast is simulated — so a fast rematch could otherwise inherit a claimed window and
 silently eat the first bend of the new match.
 
-This is belt-and-braces against the Ribcage regression where players started a match on a
+This is belt-and-braces against the PeelTheCage regression where players started a match on a
 non-zero score. `RoundStats` lives on the **persistent** Player object, so a stat that survives
 is worth zeroing twice rather than never.
 
@@ -593,7 +602,7 @@ editor and a real lobby.
 - **No toast copy.** `BendsQuarterBent` / `BendsHalfBent` / `BendsLeadChanged` are posted but no
   `GameToastConfigSO` defines them, so `TryGetDefinition` misses and the milestone toast is a
   silent no-op (the alert haptic still fires). This matches the shipped state of Dog Fight,
-  Rampage, Ribcage and Wildlife Liberation, which all post situations with no authored copy. One
+  Rampage, PeelTheCage and Wildlife Liberation, which all post situations with no authored copy. One
   config asset covering all five modes is the right fix, not five.
 - **`BendsObjectiveProvider` is not wired into the scene**, exactly like `DogFightObjectiveProvider`
   — the objective-marker HUD element has no host in these scenes yet. The provider is correct and

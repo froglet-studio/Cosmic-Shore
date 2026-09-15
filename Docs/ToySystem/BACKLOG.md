@@ -576,7 +576,8 @@ unchanged by this work.
 - **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
   blooms in already ringed; the ring reads as the thing you aim at from the far side of the
   membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
-  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged
+  *(superseded — see "The Domain Changer is a switch" below; it is now ringed like everything else)*; and
   the Wanderway return station's hoop turns to face you as you fly back down the tether.
 
 ## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
@@ -629,3 +630,84 @@ Changer"). Open items:
 - **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
   dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
   check in the editor", step 6.
+
+## The Domain Changer is a switch, and a switch's shader says what it does (2026-08-28)
+
+The Domain Changer's slots were **cones you flew at**, in the target domain's prism material. That
+shape is now **reserved for a booster** (prompter-directed), so the slots became **switches** — and
+losing the cone's read is what made it worth giving the ring one of its own: every switch is drawn
+in the **prism shader**, and *which prism it is painted as* says what it will do (`ToySwitchSignal`
+→ `ToyFactory.SwitchMaterial`). **A switch wearing a playable domain's colour is one that hands you
+that domain**; everything else is neutral `Domains.Blue`. Design + reasoning:
+`ARCHITECTURE.md` § "The switch" → "What a switch's SHADER says".
+
+Open items:
+
+- **Not play-verified in-editor.** An in-editor pass should confirm: the two Domain Changer slots
+  bloom in as rings in the two domain colours you are *not*, with a hub of the same material at
+  the centre and the name clear above the rim; threading one still changes your domain **and the
+  slot you used visibly repaints to the colour you just left** (the flip is now a material swap on
+  a live ring, `Toy.SetSwitchSignal`, not a rebuilt body); and every other switch in the toybox —
+  toy roots, matrix stations, painting milestones, the SHARE/REPAINT gates, the Wanderway return
+  station — reads as periwinkle-blue prism rather than as its toy's old accent.
+- **Is a Blue prism ring bright enough at membrane range?** The neutral colour is the shipped
+  `BlueColors` pair (dark navy base, periwinkle fresnel rim), which on a thin torus is mostly rim.
+  It is the *right* colour by the platform's own "Blue = no team" rule; whether it is *loud* enough
+  at 984 u is a look question only the editor can answer. If it is not, the lever is the neutral
+  tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
+- **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
+  ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
+  `ToySwitchVocabularyTests` with that reason. It draws in the LIVE per-domain prism material —
+  `PlaceSwitchActionExecutor` now `[Inject]`s `GameDataSO` and hands the theme to
+  `ScarabSwitch.Build` — so the ring and the dais prisms it pays out are the same asset. **Worth a
+  look in-editor**: that ring changes material (URP Unlit accent → domain prism) in a shipped
+  competitive mode. It should read as a domain-coloured prism hoop; if it reads dark, the prism
+  fresnel is doing what it does on a thin tube and the answer is a brighter tier, not a revert.
+- **The Domain Changer's ring radius is now clamped** against the chord between its slots
+  (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
+  no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
+  models the fallback case, which is the tight one — re-run it (not the constant) after any change
+  to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **`AstroLeagueBall` has the same latent `_Alpha` trap, untouched.** Its no-prism-material
+  fallback does `new Material(Shader.Find("Shader Graphs/BlockGraph"))` and sets `_Spread` but not
+  `_Alpha`, which the graph defaults to 0. It only fires when no prism material is supplied, so it
+  may never have run — but if an Astro League ball ever renders invisible, that is the line. Not
+  fixed here: it is an Astro League change and this branch has no way to play-verify it.
+- **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
+  `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.
+
+## Arkway — the cellular Wanderway and the Ark (2026-09-01)
+
+Shipped: the corridor of three satellite traversal cells (`CellConveyor`), the `Ark`
+fundamental's first body (hull = grazeable conserved mass in the player's domain, mover
+contract per frame, cell re-bind via `PrismSpatialIndex.NotifyCellChanged`), the voyage run
+(`ArkwayRun`: leash + recall, disembark dinghy, freestyle-edge exit, Ark-death reset), the
+screen telegraph (`ArkwayVoyageHud`), and the three platform capabilities it stands on
+(`Cell.SatelliteEcologyEnabled`, `Cell.RuntimePopulationScale`,
+`PrismSpatialIndex.NotifyCellChanged`). Record: `Docs/ECOSYSTEM.md §41`.
+
+Follow-ups, none blocking:
+
+- **Takeover feel is untested.** A traversal cell's starting controlling colour is whatever
+  domain dominates its authored environment volume, and out-laying a thinned freestyle world
+  is a real ask. The dials are `prismStride`, `populationScale`, and cell choice (the authored
+  `cells` list); the first playtest should watch whether a cell can flip inside one Ark
+  transit at all. If it can't, consider seeding the corridor from the LIGHTER worlds first
+  (an authored list ordered by volume) before reaching for any new lever.
+- **The Ark's hull volume sways control a little** (~150 prisms in the player's domain).
+  Deliberate — mass wearing a colour in a cell counts, no exemptions — but worth watching:
+  if it reads as self-protection, shrink the hull, don't special-case the books.
+- **Fauna convergence on the Ark is emergent, not guaranteed**: herbivores steer by
+  density-grid centroids, and a thinned world's own mass competes with the hull's tight
+  cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
+  plates are dense and re-filed every 2.5 s), not a scripted goal.
+- **An AI companion released from the Lifeform Matrix stays home** during a voyage (it is
+  not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
+  vessels aboard.
+- **The Arkway and the Wanderway can technically run together** — same class as two conveyor
+  definitions coexisting (no cross-toy coordinator exists). Bounded: the belt's stock is
+  instantiated mass and survives every strike/swap by design. If it ever matters, the fix is
+  a toybox-level "one World-category run at a time" rule, not toy-to-toy coupling.
+- **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
+  player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
+  which already exists for the core slot.

@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.CrashReportHandler;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -62,7 +63,7 @@ namespace CosmicShore.Core
 
                 if (granted) StampMetadataOnce();
 
-                Debug.Log($"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
+                CSDebug.LogVerbose(CSLogChannel.Boot, $"[CrashReporting] Capture {(granted ? "ENABLED" : "disabled")} by consent.");
             }
             catch (Exception ex)
             {

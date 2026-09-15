@@ -246,7 +246,7 @@ namespace CosmicShore.UI
             }
 
             int id = _selectedIcon.Id;
-            CSDebug.Log($"[ProfileIconSelectView] SaveProfileIconSelection: {id}");
+            CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileIconSelectView] SaveProfileIconSelection - id={id}");
 
             // Cloud save through UGS profile service
             if (dataService != null && dataService.IsInitialized)
@@ -270,7 +270,7 @@ namespace CosmicShore.UI
             {
                 avatarId = dataService.CurrentProfile.Identity.AvatarId;
                 hasId    = avatarId != 0;
-                CSDebug.Log($"[ProfileIconSelectView] Load from UGS: {avatarId}");
+                CSDebug.LogVerbose(CSLogChannel.MenuUI, $"[ProfileIconSelectView] Loaded avatar from UGS - id={avatarId}");
             }
 
             return avatarId;

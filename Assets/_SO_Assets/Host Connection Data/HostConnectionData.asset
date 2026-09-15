@@ -23,7 +23,8 @@ MonoBehaviour:
   OnPartyMemberLeft: {fileID: 11400000, guid: e46521365dff429d92dca5dfbc2ab29d, type: 2}
   OnPartyMemberKicked: {fileID: 11400000, guid: 442c0c9b53a54dbb91bda890a6ef827a,
     type: 2}
-  maxPartySlots: 4
+  maxPartySlots: 6
+  partyDisplaySlots: 4
   OnInviteReceived: {fileID: 11400000, guid: db939ca3a772435abb2ed54650cd49fc, type: 2}
   OnInviteSent: {fileID: 11400000, guid: 3327ddf7fdd8409bba1a0992053e1229, type: 2}
   OnPartyJoinCompleted: {fileID: 11400000, guid: 82ab7e405f6340b48c876102c08ac4a9,

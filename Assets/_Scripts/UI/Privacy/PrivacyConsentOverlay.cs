@@ -38,6 +38,16 @@ namespace CosmicShore.UI
 
         static PrivacyConsentOverlay _instance;
 
+        /// <summary>
+        /// The overlay currently holding the screen, or null once the flow is resolved. The
+        /// Authentication scene reads this to PAUSE its boot while the player is still on the
+        /// age gate: the overlay is deliberately non-blocking, so without that wait the scene's
+        /// sign-in, profile-load and safety timeouts all expire behind the scrim and the player
+        /// surfaces in the menu having never been offered a username (the shipped symptom on a
+        /// first launch: "asked my birthday, then nothing, then the menu").
+        /// </summary>
+        public static PrivacyConsentOverlay Current => _instance;
+
         AnalyticsServiceFacade _analytics;
         PrivacyConsentConfigSO _config;
 
@@ -103,13 +113,21 @@ namespace CosmicShore.UI
             gameObject.AddComponent<GraphicRaycaster>();
 
             // Scrim: dims the game behind and swallows clicks so nothing underneath reacts.
+            // It BLEEDS - a dimmer that stopped at the safe area would leave lit strips of live
+            // gameplay under the cutout - so the panels ride a fitted sibling above it rather than
+            // being its children (Docs/UI_ARCHITECTURE_AUDIT.md §1.3).
             var scrim = NewRect("Scrim", transform);
             Stretch(scrim);
             var scrimImage = scrim.gameObject.AddComponent<Image>();
             scrimImage.color = new Color(0.02f, 0.02f, 0.04f, 0.88f);
 
-            _agePanel = BuildAgeGate(scrim).gameObject;
-            _consentPanel = BuildConsent(scrim).gameObject;
+            // Both panels are centred and fixed-size, so nothing is clipped today; fitted anyway so
+            // that under a ONE-SIDED cutout they stay centred in the usable area rather than in a
+            // screen a slice of which the player cannot see.
+            var content = SafeAreaLayer.Create(transform);
+
+            _agePanel = BuildAgeGate(content).gameObject;
+            _consentPanel = BuildConsent(content).gameObject;
 
             // Resume mid-flow: an age-checked player only owes the consent answer.
             bool ageDone = _analytics.AgeChecked;

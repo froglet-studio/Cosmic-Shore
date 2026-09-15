@@ -45,6 +45,12 @@ Fleet-status tables go stale — CLAUDE.md's fleet table, `ARCHITECTURE.md` §3.
 `FLEET_MAPS.md` proposals have each contradicted the shipped assets at some point. **The map
 asset, the prefab, and the code are the record.** Before changing a vessel:
 
+0. Run **`python3 Tools/Build/element_ability_table.py {Vessel}`** (~1s, reader, no Unity)
+   — it performs steps 1-2 for you and prints, per element: the declared ability and input,
+   the L5 upgrade AND the call site that actually gates it, and every live scaling channel
+   with its authored numbers. It flags an `UpgradeLabel` with no gate, a
+   `MultiplierAtFullLevel` nothing reads, and a gate a serialized bool switches off on this
+   hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
 1. Read `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` — what is actually authored?
    `(open design slot)` + `Input: 0` + empty `UpgradeLabel` = the design does not exist yet.
 2. Read the vessel prefab (`Assets/_Prefabs/Spacevessels/{Vessel}.prefab`) for the real wiring —
@@ -66,6 +72,21 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
    prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
    `Default*` pair.)
+4-i. **…and a SILENT prefab is not an unset one — check whether the KEY is present before you
+   trust either source.** Unity writes a component's serialized fields when it last saved that
+   prefab, then runs field initializers first and applies only the keys the YAML actually
+   carries. So a field added to the C# AFTER a prefab was last written appears nowhere in that
+   prefab, and the **initializer is the shipped value**. `Scarab.prefab`'s
+   `ScarabVesselTransformer` block is exactly this: it serializes only the inherited
+   `VesselTransformer` fields, and six Scarab-specific knobs (`baseTopSpeed`,
+   `accelerationPerSecond`, `coastDragPerSecond`, `doubleTapWindowSeconds`, `dashSpeed`,
+   `dashDurationSeconds`) are absent, so tuning them means editing the C#. This is the converse
+   of rule 4, not an exception to it — the rule is about which source is AUTHORITATIVE, and
+   reading a silent prefab as "unset" is as wrong as reading a class default over a real
+   override. Two consequences: `grep <field> <prefab>` returning nothing is a RESULT, not a
+   miss; and the moment anyone opens that prefab in the editor and saves, Unity writes all the
+   missing keys at their then-current values and the prefab becomes authoritative — so say in
+   the doc which source is live today.
 4a. **…and the AUTHORED number is not the EFFECTIVE one — trace the consumer before you tune
    against it.** Reading the field is only half the job; a tuning request is about the value
    that reaches the screen. `VesselTransformer.CurrentBoostAmount()` multiplies
@@ -211,7 +232,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
     capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
 18. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
-    deterministic systems seed (`Random.InitState` for the HexRace track), so a gun rolling it
+    deterministic systems seed (`Random.InitState` for the SkimRace track), so a gun rolling it
     120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
     of a per-shot serial: no global state, and peers that agree on the shot count agree on the
     result — which matters wherever the spawned object is local and unreplicated.
@@ -353,7 +374,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 31. **A DEFENSIVE ability is a MODE-level rule in every mode where its vessel is mandatory — and
     the comeback system hands it to whoever is LOSING.** The fleet has mono-vessel modes (Bends +
-    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + Ribcage = Rhino,
+    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + PeelTheCage = Rhino,
     Scarab Scramble = Scarab), so a ward / immunity / invulnerability authored as one vessel's
     upgrade is simultaneously a rule that every pilot in those modes holds. Ask the question the
     per-vessel view cannot: **does this ability deny the thing a mono-vessel mode SCORES on?** The
@@ -493,6 +514,38 @@ which is the least diagnostic symptom in the fleet.
   `NetworkObject.Spawn()` - `Player.OnNetworkSpawn` raises the event from inside that call. And
   the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
   the prefab every game scene wires by hand into `aiPlayerPrefab`.
+
+### 4.z Sizing a vessel's FX — a jet has TWO sizes and the documented dial reaches ONE
+
+`VesselTail.widthScale` / `VesselJet.widthScale` are the fleet's documented "this hull is a
+different size" dial, and `VesselFXWidth.Apply` walks **`TrailRenderer`s and nothing else**. A jet
+is not a trail renderer: `VesselJet.prefab` nests `vfx_Projectile_02`, which is **three
+`scalingMode: Hierarchy` particle systems beside one `Trail`**. So the plumes — most of what a jet
+actually draws — take their size from the **transform chain**, which is precisely the thing a
+`TrailRenderer` ignores and therefore precisely the thing `widthScale` was written not to be.
+
+- **A jet that authors no `m_LocalScale` renders at `(1,1,1)` x whatever its MOUNT inherited**,
+  which is nobody's decision. The Urchin's hang on engine nodes carrying a **1.75** scale and
+  shipped at **8.75x the reference girth and 40x its length** — the largest plumes in the fleet on
+  the smallest hull with the closest camera — while its ribbon sat correctly at 0.334 the whole
+  time. That split is why it survived review: half the jet was right, and the half that was wrong
+  had no dial pointing at it.
+- **The plume's dial is `m_LocalScale` on the jet instance**, target
+  **`(0.6, 0.6, 0.13) x |followOffset.z| / 20`** — the value BOTH hand-tuned hulls (Dolphin,
+  Squirrel) author, scaled by the camera ratio the ribbon already uses. Divide back through the
+  mount's own scale if it has one.
+- **Scale the TRANSFORM, not the particle module**, and only because these systems are
+  `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
+  `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
+- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+  hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
+  Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
+
+**The general shape, which is not about jets:** *when one object's size (or colour, or lifetime)
+is set by two unrelated mechanisms, a dial that reaches one of them reads as a dial that reaches
+the object.* Before tuning any per-vessel FX number, enumerate what the component the number lives
+on actually walks, and compare it against everything the prefab draws. Full record:
+`Docs/VESSEL_TAIL_AND_JETS.md` §3.
 
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 

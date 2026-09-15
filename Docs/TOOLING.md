@@ -340,6 +340,7 @@ their paths do not start with `FrogletTools/`.
 |---|---|---|
 | Build | **Pending Tool Changes** | Uncommitted asset output from editor tools. Validate, push, retire. The last gate before a branch ships. |
 | Game Modes | **Game Mode Prefab Kit** | The prefabs a new game-mode scene needs; Add to Scene / Open Prefab / Validate, plus cross-scene drift detection and consolidation. See `Docs/GAMECANVAS.md`. |
+| Game Modes | **GameCanvas Unifier** | Absorb a forked in-game canvas into `CORE/GameCanvas.prefab`, re-point every scene onto it, and delete the fork. **Keeper, half spent.** The migration half (Absorb / Re-point / Delete fork) has run: the fork is gone and all 15 domain scenes are on CORE, so those buttons are dormant until another canvas forks. What stays live is **Fix prefab** — it enforces the canvas contract (1920x1080, Scale-With-Screen-Size, `AdaptiveCanvasScaler`, smart re-anchor through the Canvas Upgrader's own passes), strips missing scripts before saving, and **reverts any nested-instance override that NULLS a script-declared reference**, which is the class of bug that silently broke the domain picker and, later, every toast in the game — and **Fix scene**, which reverts redundant overrides. Note Unity cannot revert an override whose target no longer exists in the prefab; those have to come out of the scene YAML, which `gamecanvas_unification_report.py` reports. WRITER: records to the ledger, draws the ship panel. See `Docs/GAMECANVAS.md` §9. |
 | Game Modes | End Game Conditions | The one place win conditions are authored for the domain modes. |
 | Build | Windows x64 (Release / Development), Reveal Build Folder | Player builds. |
 | Ecology | Prism Animation ▸ Validate Clock Wiring / Auto-Wire Clock Properties | The clock-material law gate. |
@@ -350,6 +351,8 @@ their paths do not start with `FrogletTools/`.
 | Performance | Performance Benchmark, Prism Grid Benchmark, Texture Memory, Scene Object Counter | Frame cost and memory. |
 | Scene Setup | Setup Freestyle Toybox, Setup Prism Grid Explosion Scene | Scene scaffolding. |
 | Interface | Canvas Upgrader, Raycast Target Audit, Toast Notification setup | UI authoring. |
+| Interface | **Codex** | The in-game encyclopedia, authored in one place across all three kingdoms — **Ethirions** (every crystal), **Ecology** (every lifeform) and **Tools** (every freestyle toy, grouped by the fundamental it changes: Pilot / World / Creation). *Scan & Merge* re-reads the project, *Bake* renders each entry's hero image, and the right-hand panel edits any entry by hand. Keeper (idempotent — the codex needs re-scanning every time a crystal, species or toy is added; **do not retire it**). Its load-bearing property is that **Scan & Merge is always safe to run**: a field-ownership contract makes harvested facts the tool's and all prose the writer's, and an entry whose source asset vanished is reported as an orphan and never auto-deleted. WRITER: records the codex asset and every PNG on the ledger; ships via Pending Tool Changes. See `Docs/CODEX.md`. |
+| Interface | **Wire Offline Menu Surfaces** (+ *Regenerate Icons*) | Wires Menu_Main's offline surfaces: the online/offline lamp, its `ConfirmQuestionBar`, and an `OfflineUIGate` per online-only panel. Keeper (idempotent, re-runnable whenever a panel is added). Works on the OPEN scene, never the YAML, so unsaved authoring is adopted rather than clobbered; finds panels by COMPONENT TYPE (they sit in prefab instances whose object names differ from their script names) and creates only what is missing. Screens dim in place, sub-panels hide — a screen the nav bar can reach must never be hidden. Generates the accept/cancel icons and never overwrites an existing file; the *Regenerate Icons* entry forces a re-render. WRITER: records to the ledger, ships via Pending Tool Changes. See `Docs/OFFLINE_MODE.md` §7–§11. |
 | Misc | Toolbox ▸ Logging | Log levels, **diagnostic channels**, and console stack-trace depth. Channels (`CSLogChannel`) carry a finished system's BRING-UP telemetry — `[FLOW-n]` spawn/session flow, `[GyroidColony]` lattice — and default to OFF, so the trace stays in the tree as knowledge without spamming the console; turn one on before investigating that system. Warnings and errors never sit on a channel. Reader only — writes `EditorPrefs`, never assets, so no ship panel. |
 | Misc | Toolbox | Scene shortcuts, runtime switches, quest/crystal/UGS debug tabs. |
 | Diagnostics | **Crash Detector** | Always-on editor crash watchdog. A background thread journals every error/exception to `Logs/CrashDetector/` and heartbeats a session sentinel; when the editor dies abnormally (Unity crash, PC fault, force-kill — even with the main thread hung), the next launch writes a `Crash-*.log` report from the stale sentinel + captured errors + the tail of Unity's own `Editor-prev.log`. Reader only — writes machine-local logs and `UserSettings/`, never assets, so no ship panel. Shares the Diagnostics window with the Bug Ledger; a crash report can be filed into the ledger with one button. |
@@ -371,10 +374,19 @@ their paths do not start with `FrogletTools/`.
 | Pending Tool Changes window | `Assets/_Scripts/Editor/FrogletTools/FrogletToolShipWindow.cs` |
 | git CLI wrapper (quoting-safe, no wildcards) | `Assets/_Scripts/Editor/FrogletTools/FrogletGit.cs` |
 | Prefab kit window | `Assets/_Scripts/Editor/FrogletTools/GameModePrefabKitWindow.cs` |
+| GameCanvas Unifier (window / engine) | `Assets/_Scripts/Editor/FrogletTools/GameCanvasUnifierWindow.cs`, `GameCanvasUnifier.cs` |
 | Prefab kit validation | `Assets/_Scripts/Editor/FrogletTools/KitValidator.cs` |
 | Scene drift scanner (read-only) | `Assets/_Scripts/Editor/FrogletTools/PrefabInstanceSceneScanner.cs` |
 | Drift fixer (writes via PrefabUtility) | `Assets/_Scripts/Editor/FrogletTools/PrefabDriftFixer.cs` |
 | Kit config SO | `Assets/_Scripts/ScriptableObjects/GameModePrefabKitSO.cs` |
+| Codex window (list + actions) | `Assets/_Scripts/Editor/Codex/CodexWindow.cs` |
+| Codex window (detail panel) | `Assets/_Scripts/Editor/Codex/CodexWindow.Detail.cs` |
+| Codex harvester — ethirions + ecology, and the shared merge | `Assets/_Scripts/Editor/Codex/CodexHarvester.cs` |
+| Codex harvester — tools (freestyle toys) | `Assets/_Scripts/Editor/Codex/ToolCodexHarvester.cs` |
+| Codex image baker (photographs a prefab) | `Assets/_Scripts/Editor/Codex/CodexImageBaker.cs` |
+| Codex tool portrait (draws a toy, which has no prefab) | `Assets/_Scripts/Editor/Codex/ToolPortraitBuilder.cs` |
+| Codex data asset + schema | `Assets/_Scripts/ScriptableObjects/Codex/CodexSO.cs`, `Assets/Resources/Codex.asset` |
+| Codex documentation | `Docs/CODEX.md` |
 | Crash detector monitor (always-on watchdog) | `Assets/_Scripts/Editor/Diagnostics/CrashDetectorMonitor.cs` |
 | Crash detector settings (`ScriptableSingleton`, `UserSettings/`) | `Assets/_Scripts/Editor/Diagnostics/CrashDetectorSettings.cs` |
 | Diagnostics window (Crash Detector + Bug Ledger tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |

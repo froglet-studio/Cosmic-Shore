@@ -18,7 +18,7 @@ MonoBehaviour:
   graphPosition: {x: 1580, y: 260}
   outputs:
   - portName: next
-    targetNodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
+    targetNodeId: adcb6c7d76e94882b216fcc2a06079b4
     delaySeconds: 0.5
   speakerName: Captain
   portrait: {fileID: 0}
@@ -112,7 +112,6 @@ MonoBehaviour:
   - {fileID: 8068318484658040026}
   - {fileID: 6836187036387692030}
   - {fileID: -7957287587653399167}
-  - {fileID: 3420469172688409254}
   - {fileID: 5683260495802250319}
   - {fileID: -7389795359798162980}
   - {fileID: 2512483548895660448}
@@ -140,29 +139,6 @@ MonoBehaviour:
     targetNodeId: d4bd50f6eee54654bec7b27ecb94a2b4
     delaySeconds: 0
   action: 500
---- !u!114 &3420469172688409254
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Play HexRace'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
-  displayName: 'CTA: Play HexRace'
-  nodeEnabled: 1
-  graphPosition: {x: 1960, y: 260}
-  outputs:
-  - portName: next
-    targetNodeId: adcb6c7d76e94882b216fcc2a06079b4
-    delaySeconds: 0
-  target: 431
-  completionAction: 400
-  dependencies: 64000000
 --- !u!114 &5683260495802250319
 MonoBehaviour:
   m_ObjectHideFlags: 0

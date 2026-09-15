@@ -196,6 +196,22 @@ def backlog_preconditions():
     return _unwrap(m.group(1), bullet=r"[-•]") if m else ""
 
 
+def branch_exists(name):
+    """Does the session's recorded branch still exist, locally or on the remote?
+
+    A finished session's Branch row is a RECORD of where the tester was, and a
+    feature branch is routinely deleted once it merges. Knowing it is gone is what
+    lets the window say "start a fresh session" instead of telling somebody to go
+    and check out a branch that no longer exists.
+    """
+    if not name:
+        return False
+    for ref in ("refs/heads/" + name, "refs/remotes/origin/" + name):
+        if git("rev-parse", "--verify", "-q", ref):
+            return True
+    return False
+
+
 def git(*args):
     try:
         return subprocess.check_output(("git",) + args, cwd=ROOT,
@@ -305,6 +321,17 @@ def create(tester, items, unity="", platform="Editor", date=None, name=None):
     slug = re.sub(r"[^a-z0-9-]+", "-", tester.strip().lower()).strip("-") or "tester"
     fname = name or "%s-%s.md" % (date, slug)
     path = session_path(fname)
+
+    # NEVER clobber. A same-day second session is ordinary — a different build, a
+    # retest after a fix (which the frozen-verdict rule REQUIRES be a new file), or
+    # simply another sitting — and silently overwriting the first would destroy
+    # verdicts that may already be published and frozen in the ledger.
+    if not name and os.path.exists(path):
+        n = 2
+        while os.path.exists(session_path("%s-%s-%d.md" % (date, slug, n))):
+            n += 1
+        fname = "%s-%s-%d.md" % (date, slug, n)
+        path = session_path(fname)
     known = {i["id"]: i for i in backlog_items()}
     items = [i for i in items if i in known]
     body = "".join("| %s |  |  |\n" % i for i in items) or "| |  |  |\n"
@@ -353,7 +380,7 @@ def state(path):
                               if f.endswith(".md") and f != "TEMPLATE.md"),
            "hasSession": False, "sessionFile": "", "sessionPath": "",
            "tester": "", "date": "", "commit": "", "unity": "", "platform": "",
-           "sessionBranch": "",
+           "sessionBranch": "", "sessionBranchExists": False,
            "submitted": False, "canSubmit": False, "blocking": 0,
            "rows": [], "problems": [], "verdicts": sorted(VALID)}
     if not path or not os.path.exists(path):
@@ -385,6 +412,7 @@ def state(path):
         "commit": meta.get("Commit", ""), "unity": meta.get("Unity version", ""),
         "platform": meta.get("Platform(s)", ""),
         "sessionBranch": meta.get("Branch", ""),
+        "sessionBranchExists": branch_exists(meta.get("Branch", "")),
         "submitted": entry.get("submitted_hash") == file_hash(text),
         "blocking": sum(1 for x in problems if x.blocking),
         "canSubmit": not any(x.blocking for x in problems),
@@ -575,6 +603,14 @@ def selftest():
         drop(p, "QA-ONE")
         assert [r["id"] for r in state(p)["rows"]] == ["QA-TWO"]
 
+        # a second session the same day must NEVER overwrite the first: its
+        # verdicts may already be published and frozen in the ledger
+        again = create("Ada Lovelace", ["QA-ONE"], "6000.3.17f1")
+        assert again != p, "same-day session must get its own file"
+        assert os.path.basename(again).endswith("-2.md"), again
+        assert "QA-TWO" in utf8_open(p).read(), "the first session must be untouched"
+        os.remove(again)
+
         # adding a row the tester did not start with
         upsert(p, "QA-THREE", "BLOCKED", "no second machine available today")
         assert len(state(p)["rows"]) == 2
@@ -618,7 +654,7 @@ def selftest():
         assert "QA-TWO" not in answered_items(), \
             "an edited (unsubmitted) session must not answer anything"
 
-        print("session selftest: 30/30 checks passed")
+        print("session selftest: 33/33 checks passed")
         return 0
     finally:
         ar.BACKLOG, ar.ARCHIVE, ar.RESULTS_DIR, ar.LEDGER = saved

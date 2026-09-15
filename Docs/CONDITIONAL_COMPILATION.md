@@ -139,7 +139,12 @@ public class MyEditorWindow : EditorWindow { /* ... */ }
 #endif
 ```
 
-Reference implementations: `ActiveGameModesWindow.cs`, `LeaderboardConfigSOEditor.cs`.
+Reference implementation: `Assets/Resolvers/ObjectResolver.cs` — the only file in the
+project that needs this shape. It is the *last* resort, and the count says so: the two
+files this line used to name (`ActiveGameModesWindow.cs`, `LeaderboardConfigSOEditor.cs`)
+were deleted with the per-mode leaderboard path, and every other whole-file-guarded type
+in the tree also sits under an `Editor/` folder, where the guard is belt-and-braces rather
+than the thing doing the work.
 
 **Better still:** if the type is purely editor-side, put the file under an
 `Editor/` folder. Unity then compiles it into `Assembly-CSharp-Editor`, which

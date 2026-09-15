@@ -88,7 +88,7 @@ namespace CosmicShore.Utility
     /// **It does not touch <see cref="UnityEngine.Random"/>.** The perturbation is a pure
     /// hash of a caller-supplied shot serial, for two reasons:
     ///   1. the global RNG stream is shared state that deterministic systems seed
-    ///      (<c>Random.InitState</c> for the HexRace track), and a gun drawing from it 120
+    ///      (<c>Random.InitState</c> for the SkimRace track), and a gun drawing from it 120
     ///      times a second would make those systems' output depend on how long someone held
     ///      the trigger; and
     ///   2. a hash keeps peers that agree on the shot count agreeing on where the shot went,

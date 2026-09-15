@@ -49,8 +49,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How far the cone has opened toward its SUSTAINABLE cap, 0..1 — deliberately not
         /// toward the blow-out cap. It drives the haptic ramp, and both of that ramp's channels
-        /// are already at their ceiling when the plateau is reached (strength 1.0, the shortest
-        /// pulse interval NiceVibrations can hold), so there is no headroom left to spend on the
+        /// are already at their ceiling when the plateau is reached (strength 1.0, and a pulse
+        /// interval already inside the spray clip's own length), so there is no headroom left to spend on the
         /// blow-out and measuring against the far cap would only make the first six seconds —
         /// the part a pilot actually flies in — read weaker. Pinned at 1 for the whole blow-out,
         /// which is itself the signal: the buzz stops climbing because the gun already has.

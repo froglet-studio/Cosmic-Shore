@@ -57,7 +57,7 @@ change the option assessments, so they lead the report:
    Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package — the only "Steam" hits in
    `Assets/` are inside the inert PlayFab SDK). There is no Steam build target configuration;
    the only build profile on disk is a Linux one, and `ProjectSettings.asset` carries mobile
-   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone). Current public
+   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone — *the Standalone id became `com.FrogletGames.CosmicShore` on 2026-09-11; Android and iPhone are unchanged*). Current public
    distribution per `README.md` is **itch.io + TestFlight**. Steam/PC is aspirational — it
    appears in `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and `Docs/MENU_PROGRESSION_AND_IAP.md`
    as a planned platform. Consequence: there is no Steam acquisition data to bridge *yet*;
@@ -103,7 +103,7 @@ singleton (`AppManager.cs:384`) and wires ~25 event subscriptions in its constru
 | `com.unity.services.analytics` | 6.2.1 | **Yes** | `AnalyticsServiceFacade` (single writer) |
 | `com.unity.services.core` | 1.16.0 | **Yes** | `UnityServices.InitializeAsync()`; Authentication (anonymous) |
 | `com.unity.services.cloudsave` | 3.4.0 | **Yes** | `UGSCloudSaveProvider`, 12 keyed repositories (`DATA_INVENTORY.md` §1) |
-| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `UGSStatsManager.cs:230` (`AddPlayerScoreAsync`; per-mode × intensity board IDs from `LeaderboardConfigSO`) |
+| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `WeeklyChallengeLeaderboardService` (`AddPlayerScoreAsync` / `GetScoresAsync` against ONE board, id on `WeeklyChallengeCatalogSO.leaderboardId`). The per-mode path in `UGSStatsManager` was retired. |
 | `com.unity.services.friends` | 1.1.1 | **Yes** | `FriendsServiceFacade` (relationships + presence) |
 | `com.unity.services.multiplayer` | 1.1.8 | **Yes** | Sessions + Relay: `PartySessionService.cs:184/239`, `PresenceLobbyService` (lobby-only presence session), `MultiplayerSetup` |
 | `com.unity.purchasing` | 4.12.2 | **Installed, unused** | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |

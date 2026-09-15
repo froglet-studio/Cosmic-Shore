@@ -2,17 +2,24 @@
 
 > **Naming.** `GameModes.DogFight = 41` is the code/data/enum identity. The player-facing
 > `DisplayName` on `ArcadeGameDogFight.asset` is **"Dog Fight"** too — no split today, but if
-> one is ever wanted, change the DisplayName only (the Tournament/"Maelstrom" and
-> Ribcage/"Peel the Cage" precedent). Do not rename the enum, the controller, the scene, or
+> one is ever wanted, change the DisplayName only (the Maelstrom/"Maelstrom" and
+> PeelTheCage/"Peel the Cage" precedent). Do not rename the enum, the controller, the scene, or
 > this file.
 
 ## Overview
 
 Dog Fight is the **Sparrow-only gun duel**. Two to four pilots hunt each other through the
 **Boneyard** — a wrecked world of hollow hulks, leaning spires and rubble canyons built for
-close encounters and hiding places. A **bullet hit scores 1**, a **missile hit scores 50**
-(direct strike *or* caught in the blast), and the first **DOMAIN** to the point target
-(default **90**) wins.
+close encounters and hiding places. A **bullet hit scores 1**, a **rocket scores by HOW CLOSE
+it got** — **10** for the warhead shockwave, **20** for the prism blast, **30** for a direct
+strike — and the first **DOMAIN** to the point target (default **90**) wins.
+
+**The three missile tiers are RANKED, not additive.** One skyburst reaches a pilot through three
+concentric radii and a victim inside the inner one is always inside the outer ones, so
+`VesselCombatHitLatch` folds all three onto ONE window per victim and pays the best tier
+achieved: a centre-punch is worth 30, not 10+20+30. The shockwave is the ordinary outcome (the
+proximity fuze trips at 20x the round's hit radius, so a rocket almost always detonates before
+it can touch a hull) and the two inner tiers are correspondingly rare.
 
 **One axis, and it is gunnery.** The scored stat is `IRoundStats.CombatPoints` — a weighted sum
 of landed vessel-vs-vessel hits. Nothing else scores: not the wreckage, not crystals, not
@@ -20,7 +27,7 @@ wildlife. **A pilot who spends the match demolishing scenery loses to one who sp
 shooting people**, and that is the whole design.
 
 **It is the platform's first mode whose score comes from vessel-vs-vessel combat.** Every other
-multiplayer mode races prisms (Rampage, Ribcage), crystals (Skim Race, Scurry), goals (Astro
+multiplayer mode races prisms (Rampage, PeelTheCage), crystals (Skim Race, Scurry), goals (Astro
 League), fauna waves (Brood Rush) or fauna kills (Wildlife Liberation) — every one of them a
 per-DOMAIN sum, and this mode is no exception. Landing a shot on another *pilot* had no
 scoreboard anywhere before this.
@@ -120,9 +127,14 @@ DogFightController.OnTurnEndedCustom → AssignScores → SyncFinalScores_Client
 ## Where the point VALUES live, and why
 
 The platform counts landed hits as **raw facts** (`BulletHitsLanded` / `MissileHitsLanded`) and
-has no opinion about what one is worth. `DogFightScoringRuleSO` says a bullet is 1 and a rocket
-is 50, through the new `ScoringRuleSO.PointsForCombatHit` virtual (default **0** — every other
-mode counts gunnery and scores none of it).
+has no opinion about what one is worth. `DogFightScoringRuleSO` prices a bullet at 1 and a
+rocket by proximity — 10 / 20 / 30 — through the `ScoringRuleSO.PointsForCombatHit` virtual
+(default **0** — every other mode counts gunnery and scores none of it).
+
+It is written as an **exhaustive switch**, not `hitClass == X ? a : b`. That shape prices every
+enum member added later as the default arm, which is exactly how The Bends' `Debuff` class was
+once paid at the bullet rate — and it would have priced both new missile tiers at 1 here. A
+class this mode has no opinion about is worth 0 and says so.
 
 **Both of the Sparrow's fire modes count as "bullet".** Full-auto rounds and turret-stance prism
 rounds are the same weapon class — one direct projectile hit — so
@@ -150,7 +162,7 @@ PROJECTILES, not the scoring.**
 
 A prism sits at the same world position on the host and on every client, so when a client rams
 one the server's own physics sees the same collision with the same attribution and
-`StatsManager` records it server-side — which is why Rampage and Ribcage need no RPC at all.
+`StatsManager` records it server-side — which is why Rampage and PeelTheCage need no RPC at all.
 
 **Projectiles are not like that.** A bullet or a skyburst is a pooled **local** object spawned by
 whichever machine's gun fired it: no `NetworkObject`, no RPCs, no replication. A shot a client
@@ -188,8 +200,8 @@ rather than each carrying its own:
 1. **A rocket scores through two code paths for one shot.** A skyburst that hits a vessel
    directly *detonates on impact* (`VesselSpinBySkyBurstProjectileEffectSO.detonateOnHit`), so
    the direct hit fires from `ProjectileImpactor` and the blast fires again from
-   `ExplosionImpactor` a fraction of a second later. One missile, two events — and at 50 points
-   each that is not a rounding error.
+   `ExplosionImpactor` a fraction of a second later, and the *warhead* blast fires from a third.
+   One missile, three events — and at 10-30 points each that is not a rounding error.
 2. **A hull is more than one collider.** The Squirrel carries two box colliders and the Manta a
    body per wing, so a single blast sphere raises `OnTriggerEnter` once per pair.
    `VesselImpactor` already latches *crystals* for exactly this reason.
@@ -198,8 +210,34 @@ The window is therefore also an anti-spam floor: two genuinely different rockets
 same pilot inside 0.5 s score once. That is intended — a dogfight should reward two hits a
 second apart, not a shotgun of simultaneous detonations.
 
-The generator **asserts** the two missile effects carry the same non-zero cooldown, because
+The generator **asserts** all three missile effects carry the same non-zero cooldown, because
 splitting them silently reinstates the double-count.
+
+**The latch UPGRADES rather than first-wins, and that ordering is forced by geometry.** The
+warhead is both the largest radius and the fastest to expand, so on an ordinary proximity kill
+the *cheapest* tier lands first. Under first-wins it would claim the window and a victim who was
+also inside the blast — or took the round on the nose — would be paid as a graze. `TryAdmit`
+therefore reports what an admission **supersedes** (`out int supersededRank`), and
+`CombatHitScoring.Credit` pays only the difference: the raw `MissileHitsLanded` count is *not*
+incremented on an upgrade, because it is the same rocket arriving closer. It never revises
+downward — a shockwave arriving after a direct hit is the same rocket's outer edge and is
+refused.
+
+**The whole ranked-not-additive design rests on one line in `VesselCombatHitLatch.Key`'s
+constructor**: the three missile classes canonicalise to `MissileDirect`, so they contend for a
+single window. Key them apart — the obvious reading of "dedupe by (shooter, victim, class)" —
+and the tiers become additive again: a centre-punch pays 10 + 20 + 30 = 60 through three fresh
+windows, each of them individually correct. The upgrade rule is machinery *on top of* that one
+line and cannot compensate for its absence, because a fresh key has nothing to supersede.
+
+That is worth stating because the first round of tests could not see it. Every upgrade test
+called `CombatHitScoring.Credit` directly with a hand-supplied `supersededRank`, so it proved
+the arithmetic and never touched the thing that has to produce that rank — the value under test
+was supplied by the test, and keying the tiers apart would not have moved one assertion.
+`SparrowCombatTierTests`'s `ThroughTheLatch_*` cases now run the full path an effect asset takes
+(`TryAdmit`, then `Credit` with whatever it reported). **General shape: when a design lives in a
+lookup key, a test that starts downstream of the lookup is testing the consequence, not the
+design.**
 
 ## The skyburst launches from the missile bay (2026-08)
 
@@ -208,7 +246,7 @@ animated missile bay (right bay first, left bay second) and the projectile — n
 own missile, not the wedge polyhedron — spawns **0.2 s later at the live bay bone's pose**
 (`SkyBurstGunAction.launchDelaySeconds`; `FireGunActionExecutor` cancels a pending launch on
 turn end or vessel teardown, with ammo staying spent). For this mode that means ~0.2 s of
-fire-to-impact latency on the 50-point weapon; the scoring path, cooldown latch, hit sphere,
+fire-to-impact latency on the 10-30-point weapon; the scoring path, cooldown latch, hit sphere,
 and blast are untouched. Mechanics + tuning:
 `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
 
@@ -229,6 +267,46 @@ would label a crystal blast as gunnery in every mode. The conic burst is the big
 effects. Today the container holds *only* the scoring effect, so outside Dog Fight the observable
 change is that `BulletHitsLanded` / `MissileHitsLanded` start accumulating (worth 0 points
 everywhere else). Verify in-editor rather than assuming — checklist item 11.
+
+## The missile got a proximity fuze (2026-09) — this mode gets faster
+
+A skyburst now detonates when an opposing vessel comes within **20× its own hit radius** (~76 u at
+resting MASS) rather than only on contact. A missile hit is worth 50 points here and the mode runs
+to 90, so the practical effect is that the EXISTING blast — the conic/sphere pair, radius up to 85 —
+routinely catches a pilot the rocket would previously have flown past. Expect shorter matches until
+this is retuned.
+
+**Scoring is unchanged, deliberately.** The new warhead blast (which debuffs pilots and kills
+wildlife) carries **no** `VesselCombatHitByExplosionEffectSO`, so it does not add a second
+50-point event; a rocket still scores once, through its direct hit or the conic blast, sharing one
+`VesselCombatHitLatch` window.
+
+**It does not debuff YOU, and that took an explicit decision.** The warhead is a 95-unit sphere
+centred at most a fuze-radius (76 u) away, i.e. the shooter is routinely inside their own blast at
+exactly the close range the fuze encourages. `ProjectileDetonatorSO` originally handed it the same
+friendly-fire snapshot it hands the prism blasts (`AffectSelfOverride = !proj.SpareOwnDomain`),
+which is TRUE *below* CHARGE 5 — so every pilot without that upgrade took `−0.5` on all four
+elements for 4 s on their own close-range kills, and so did any wingman in the sphere. It now
+passes `false` unconditionally: domains ARE the sides here, the same rule
+`Projectile.DisallowImpactOnVessel` already enforces on the direct hit. A blast that destroys mass
+has a real reason to read that flag; one whose entire payload is a debuff on vessels does not.
+
+**A direct missile hit on a pilot is now unreachable**, and that is a consequence of the fuze
+rather than a bug: the fuze trips at 20× the round's hit radius and switches the round's own
+collider off, and the gap cannot be crossed inside one frame (53–145 u of fuze radius against
+~8 u of closure at 60 fps even head-on at combined top speed). So
+`SparrowSkyBurstProjectileImpactContainer`'s vessel branch — the spin and its combat-hit report —
+is dead for opposing pilots. Scoring survives because the conic blast carries its own report, but
+**the SPIN has no blast counterpart and is therefore gone**. Left as a design call rather than
+silently re-homed: moving the spin onto the warhead would spin every pilot in a 95-unit sphere,
+which is a much larger change than the one that was asked for. The lever if this proves too fast is
+`proximityFuzeRadiusMultiplier` on `SkyBurstProjectile.prefab`. Full mechanics:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+Note the Sparrow's omni crystals also changed meaning: they no longer refill the missile tank
+(prism destruction does that now) and instead grant 8 s of elemental-debuff immunity. That does not
+touch this mode's scoring — `VesselCombatHitByMissile*` runs with `requireDebuffableVictim: false`,
+so a warded pilot is still fully scoreable.
 
 ## The Boneyard (the arena)
 
@@ -295,7 +373,7 @@ this; it falls out of the geometry.
 
 **Intensity ramps the DENSITY OF COVER and nothing else** — more wrecks, tighter warrens, shorter
 sightlines — through the four prefab variants' structure counts plus the base `density` knob. The
-arena **radius is fixed at 520 at every intensity**, for the same reason Ribcage and the wildlife
+arena **radius is fixed at 520 at every intensity**, for the same reason PeelTheCage and the wildlife
 cages fix theirs: it is what the spawn shell, the AI's fallback aim point and the silhouette are
 all defined against.
 
@@ -325,7 +403,7 @@ estimate; confirm with FrogletTools ▸ Ecology ▸ Measure Cell Environment Bas
 The top end is the same order as the freestyle cell environments (34–41k), and **half** of
 Atlantis (~69k, itself flagged as un-profiled and ~2.8× the largest profiled cohort). That
 headroom is deliberate: this arena carries four Sparrows' worth of projectile and AOE traffic on
-top of the structure, which no other mode does. Ribcage runs 10,620 → 20,153 and Wildlife
+top of the structure, which no other mode does. PeelTheCage runs 10,620 → 20,153 and Wildlife
 Liberation 9,206 → 13,956 of cage, so intensity 4 is now the heaviest party-game arena — **soak it
 on device**, and if it will not hold, the scavenger cap (`SCAVENGER_CAP[3]`) is the cheapest thing
 to pull before the structure counts.
@@ -380,7 +458,7 @@ Players spawn on a **sphere at r = 700** (`CellSpawnFormation.Formation.Symmetri
 wreck field (520) and inside the membrane (1200), all facing the cell — so every pilot's opening
 move is to fly in.
 
-Symmetric rather than Ribcage's `EquatorialRing` because **a dogfight arena has no meaningful
+Symmetric rather than PeelTheCage's `EquatorialRing` because **a dogfight arena has no meaningful
 "up"**: the crust is a bowl, not a floor with a ceiling, so there is no pole to be unfair about,
 and a spherical spread means the opening merge comes from every direction instead of everyone
 converging on one plane.
@@ -573,13 +651,14 @@ the prism is 2.5× longer and the sphere 1.58× wider.
 **The rate is a function of the target.** `bonusLevels = deficit × rate`, so a rate only means
 anything next to the scale of deficits the mode produces. This shipped at **0.004**, which was
 scaled for the original 500-point target and never rescaled when the target changed — a whole
-rocket behind (50 points) bought 0.2 of a level, i.e. nothing. It is now **0.12**, against a
-**90**-point target:
+rocket behind (50 points at the time) bought 0.2 of a level, i.e. nothing. It is now **0.12**,
+against a **90**-point target — unchanged by the 2026-09 retier, because the rate is a function
+of the TARGET and the target did not move:
 
 | deficit | bonus levels | in words |
 |---:|---:|---|
 | 22.5 (¼ of target) | 2.7 | a couple of exchanges behind |
-| 50 (one rocket) | 6.0 | one missile behind |
+| 30 (a direct rocket strike) | 3.6 | one perfect missile behind |
 | 90 (shutout) | 10.8 → **capped at 10** | `ResourceSystem.SustainedCeiling` |
 
 That puts it on the same footing as the other party games (Rampage: a quarter-of-target deficit is
@@ -596,11 +675,11 @@ posts `DogFightLeadChanged`.
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a toast,
 never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone feedback**
-(same state as Ribcage and Wildlife Liberation).
+(same state as PeelTheCage and Wildlife Liberation).
 
 ## Everyone starts at zero
 
-Ribcage shipped a bug where some players began a match on a non-zero score. `RoundStats` lives on
+PeelTheCage shipped a bug where some players began a match on a non-zero score. `RoundStats` lives on
 the **persistent** Player NetworkObject and survives every scene load, so a missed reset carries
 the previous game's stats straight in. Four layers here:
 
@@ -620,11 +699,11 @@ there and asserted there.**
 ## Sparrow-only
 
 Enforced in **three** places, all reading the single `Vessels` entry on
-`ArcadeGameDogFight.asset`. This is not belt-and-braces for its own sake — Ribcage shipped with
+`ArcadeGameDogFight.asset`. This is not belt-and-braces for its own sake — PeelTheCage shipped with
 two of these and a client still flew a Dolphin:
 
 1. **`GameDataSO.SyncFromArcadeGame`** clamps `selectedVesselClass` on the machine that pressed
-   Start, on every route (modal, rematch, Tournament chain).
+   Start, on every route (modal, rematch, Maelstrom chain).
 2. **`ServerPlayerVesselInitializer.ResolveSpawnVesselType`** re-clamps **server-side at spawn**.
    This is the one that matters in multiplayer: `Player.NetDefaultVesselType` is an OWNER-write
    NetworkVariable each client sets from its own local config and the menu's vessel-changer toy,
@@ -653,8 +732,9 @@ target automatically, since they are fractions of it.
 | Scoring rule | `_SO_Assets/Scoring Rules/DogFightScoringRule.asset` |
 | Combat-hit SOAP channel | `_SO_Assets/Event Channels/Event_CombatHitStats.asset` |
 | Bullet scoring effect | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBullet.asset` |
-| Missile direct-hit effect | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset` |
-| Missile blast effect | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset` |
+| Missile direct-hit effect (30) | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissileDirect.asset` |
+| Missile blast effect (20) | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset` |
+| Missile shockwave effect (10) | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileShockwave.asset` |
 | Skyburst explosion container | `_SO_Assets/Effects/Effect Containers/Explosion Containers/SkyBurstExplosionImpactorDataContainer.asset` |
 | Cell configs (4) | `_SO_Assets/Cell Configs/Boneyard Cell/Boneyard Cell Config {1..4}.asset` |
 | Spawn profiles (4) | `_SO_Assets/Cell Configs/Boneyard Cell/Boneyard Spawn Profile {1..4}.asset` |
@@ -680,7 +760,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 | Site | Change |
 |---|---|
 | `GameModes` | `DogFight = 41` |
-| `CombatHitClass` | new enum (`Bullet` / `Missile`) |
+| `CombatHitClass` | new enum. `Bullet` / `MissileDirect` / `Debuff` / `MissileBlast` / `MissileShockwave` — the three missile members are RANKED tiers of one rocket (`CombatHitClasses.MissileProximityRank` / `IsMissile`). The two added in 2026-09 took values **3 and 4**, so every already-serialized `hitClass: 0/1/2` keeps its meaning |
 | `IRoundStats` / `RoundStats` | `BulletHitsLanded`, `MissileHitsLanded`, `CombatPoints` (+ events, + server-write NetworkVariables, + `Cleanup`, + `ClearEventSubscriptions`) |
 | `ScoringMetric` / `ScoringMetrics.Read` | `CombatPoints = 8` |
 | `ScoringRuleSO` | `PointsForCombatHit` virtual — a mode's opinion of what a landed hit is worth (0 everywhere else) |
@@ -702,6 +782,10 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 | `ElementalCrystalSetSO` | `RandomElementFrom(System.Random)` — a seeded pick, so a scatter can be reproduced identically on every peer |
 | `AOEConicSkyBurst.prefab` | given the explosion container it never had — a skyburst BLAST can now reach a pilot |
 | `IRoundStatsCleanupTests` | asserts the three new stats zero |
+| `Projectile` | `sweptVesselDetection` — the vessel twin of `sweptPrismDetection`. Both sweeps rent their scratch BY DEPTH: dispatching a swept contact runs the effect list synchronously, and a chain-firing effect re-enters mid-iteration. That re-entry is unreachable from the ship arm *today* only because `ProjectileChainFire` happens to be authored as a projectile-PRISM effect — a guard made of which container an asset sits in, not of anything in the code |
+| `ProjectileImpactor` | vessel-case suppression mirroring the prism arm: a sweeping round's PhysX trigger path is skipped for vessels, so nothing double-dispatches |
+| `VesselRearmOnPrismDestruction` | new: the missile tank fills from hostile prism kills (0.01/prism, 50 per rocket) |
+| `VesselTimedElementalWard` | new: the event-driven half of debuff immunity — a window that opens on an event and closes on a clock, which `VesselElementalImmunity`'s condition-polling cannot express |
 
 ## In-editor verification (authored headless — NOT yet run)
 
@@ -729,12 +813,18 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
    generator and `boneyard_budget.py` have drifted — fix both.
 6. **Spawn outside, on a sphere.** All players start ~700 u out, spread over a sphere, facing the
    arena with the whole thing visible ahead. Nobody starts inside it. Also check Crystal Capture
-   still spawns on its sphere and Ribcage on its own ring — those scenes must be unchanged.
+   still spawns on its sphere and PeelTheCage on its own ring — those scenes must be unchanged.
 7. **BULLETS SCORE — the load-bearing check.** Shoot an opponent with the full-auto: your score
    should tick **+1 per hit**, and shooting a hulk, the crust, or a scavenger should move it by
-   **nothing**.
-8. **MISSILES SCORE 50, ONCE.** Hit an opponent dead-on with a skyburst: **+50, not +100** (the
-   direct hit and its own blast both fire — the latch is what makes it one). Then detonate one
+   **nothing**. **This one regressed and was fixed in 2026-09** — the effects were always wired
+   and the rounds were *tunnelling*: PhysX samples a trigger once per FIXED step (0.04 s), a
+   Sparrow round covers 15 u in one at its base 375 u/s, and an enemy hull presents roughly a
+   6 u window, so ~60% of otherwise-perfect shots (and ~97% at SPACE 10) passed straight through
+   a pilot with PhysX never sampling inside them. Both gun rounds now carry
+   `sweptVesselDetection`, the vessel twin of the prism sweep. Fly straight at a hovering
+   opponent at full SPACE and confirm every burst registers.
+8. **A ROCKET PAYS ITS BEST TIER, ONCE.** Hit an opponent dead-on with a skyburst: **+30, not
+   +60** (all three tiers fire — the latch upgrades one claim rather than opening three). Then detonate one
    *near* an opponent without touching them: also **+50**. This is the pair of checks the whole
    latch exists for.
 9. **A CLIENT'S HITS SCORE.** In a real lobby (host + at least one client), have the CLIENT do
@@ -754,8 +844,12 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
     time, everyone else "N Points Left", and the secondary line reads `N pts · X×● Y×◆`. Confirm
     a *teammate* of the winner DOES get the winner's time — teammates pool, so they share the
     win. Replay (scene reload) resets the milestones and the counters.
-14. **Milestones.** When the leading domain reaches **125** points the device should shake hard
-    for ~1.2 s; again at **250**. Nothing else should change.
+14. **Milestones.** The rungs are FRACTIONS of the target (`firstMilestoneFraction` 0.25,
+    `secondMilestoneFraction` 0.5), so at the shipped 90-point target the leading domain crosses
+    them at **23** and **45** points — the device shakes hard for ~1.2 s at each, and nothing
+    else changes. *(This step read "125 / 250" until 2026-09: those were the 500-target numbers
+    and survived two re-targets. The rungs move with the target — read them off
+    `EndConditionOverridesSO.dogFightPointTarget` × the two fractions, never off this line.)*
 15. **AI DOGFIGHTS — it must LEAVE.** Watch an AI Sparrow for a minute. The loop should read as
     *close → pass → run out a long way → turn → come back in*, with a visible gap between passes.
     If it stays glued to you circling, the extend is not committing (check that
@@ -787,6 +881,17 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 17d. **Mass grows what you HIT WITH.** With Mass buffed, turret rounds should be both visibly
     longer *and* easier to land. If they look bigger but feel identical to aim, the hit diameter
     has stopped riding the multiplier.
+17e. **THE MISSILE GAUGE FILLS AND RESETS** (new in 2026-09, and visible in every mode, not
+    just this one). The Charge card's plate is now the missile charge bar. Destroy hostile prisms
+    and watch it fill; on the **50th** it should snap back to empty as a rocket lands in the bay,
+    then start filling again toward the second. Two specific things to confirm, because they are
+    the two ways this can be wrong and still look plausible: the bar must **reset**, not saturate
+    (a gauge stuck full says the tank is full, which is what the ICON ladder says — the bar says
+    how close the NEXT one is, and a tank of two cannot say both on one bar); and firing a rocket
+    must drop the icon ladder while the bar keeps its own progress, since spending ammo is not
+    the same event as earning it. Seed check: entering a match, the bar should paint from the
+    live ammo value rather than starting at 0 and jumping on the first kill.
+
 18. **The objective arrow points at an ENEMY.** In a 2v2, confirm the marker tracks an opposing
     pilot and never your wingman, and that it re-targets when your quarry disappears behind a
     hulk.
@@ -801,10 +906,30 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 
 ## Known limitations / follow-ups
 
-- **90 is unmeasured, and so is the 1:50 ratio** — at this target a single rocket is **56%** of
-  a domain's whole race, which is either the drama of the mode or its flaw. The target has now
-  moved 500 → 120 → 90 without a measured match behind any of them. See the pacing flag under
-  "End condition".
+- **`author_dogfight_assets.py --check` was validating nothing, and two sibling generators
+  still are.** Section 9 clones the Rampage scene and asserts on a donor field block the Rampage
+  rework deleted; every validation in the file lives ~130 lines further down, so the abort took
+  all of it — while `--check` was still being run and still looked like a gate. It now stands the
+  spent one-shot down (`SCENE_STEP_LIVE`) and validates the rest, proven with two negative
+  controls (a price list out of proximity order, and one tier emitted with a different latch
+  window — both silently green before). **`author_ribcage_assets.py` and
+  `author_wildlife_liberation_assets.py` abort on the identical `controller field block not found
+  in donor scene` assertion** and have the same shape; they were not fixed here.
+  Two scoping facts worth carrying: this generator's `--check` validates the RECIPE in memory and
+  never diffs against disk, so it cannot see an asset hand-edited away from what the script would
+  author (`author_bends_assets.py` does diff, and is the better pattern); and the general rule is
+  that **a spent one-shot must stand down, not abort — an `assert` at the top of a generator
+  silently disables every check below it, and a gate that aborts looks exactly like a gate that
+  passes if nobody reads its output.**
+- **90 is unmeasured, and so is the new 1 : 10/20/30 ladder** — the target has now moved
+  500 → 120 → 90 without a measured match behind any of them, and the rocket has moved 50 → 10
+  for its common outcome. Two consequences to watch for in the next playtest, both introduced
+  in the same pass and pulling in opposite directions: a rocket is no longer half a race
+  (10 points is 11% of 90, where 50 was 56%), and **bullets now actually land**, so sustained
+  full-auto fire is a real scoring line for the first time rather than a near-no-op. The
+  comeback rate is untouched and still correct — it is a function of the TARGET
+  (`bonusLevels = deficit × rate`) and the target did not move — but the *shape* of a match
+  almost certainly did. Time a full match and note the bullet/rocket split (step 20).
 - **Hits are not replicated as FEELING, only as score.** The victim's spin / debuff runs on the
   shooter's machine (projectiles are local), so a pilot being shot does not see themselves get
   knocked about the way the shooter does. That is pre-existing behaviour for every Sparrow

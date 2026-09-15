@@ -273,3 +273,103 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades — no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | UGS Friends SDK, every call uses `.AsMainThread()` (12 sites). |
 | `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
+| `Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs` | Same UGS APIs from OUTSIDE the party layer — six sites, marshalled 2026-09-12. `OnTransportFailure` is the one wired at sign-in, so it is live in `Menu_Main`. |
+
+## `.AsMainThread()` covers the SUCCESS path only (2026-08-27)
+
+```csharp
+try   { await SomethingAsync(linkedCts.Token).AsMainThread(); }
+catch (OperationCanceledException)
+{
+    // ← resumes on the TIMER's thread. The marshal above never ran: the exception
+    //   propagated out of the inner await, before .AsMainThread()'s continuation.
+    await MainThreadDispatcher.SwitchToMainThreadAsync();   // REQUIRED
+    ...Unity APIs...
+}
+```
+
+Shipped instance: `AuthenticationSceneController.LoadMainMenuNetworkedAsync` read
+`Application.internetReachability` in its post-loop offline fallback and threw
+`get_internetReachability can only be called from the main thread` whenever the Relay wait timed
+out — i.e. on every offline boot, the one path that most needed to work.
+
+**Rule:** any `catch` after a cancellable await, and any code after a loop containing one, must
+marshal explicitly. On these paths a timeout is not an edge case, it is the path. See
+`Docs/OFFLINE_MODE.md` §9.2.
+
+## The Cloud Save + Auth boundary had NO marshal at all (2026-09-03)
+
+`grep -c AsMainThread` returned **0** for `UGSDataService.cs`, `CloudDataRepository.cs`,
+`UGSCloudSaveProvider.cs` and `AuthenticationServiceFacade.cs` — the four files that make up the
+entire boot chain between "signed in" and "the main menu is usable". Every UGS `Task` in them was
+awaited bare.
+
+Two of the resulting continuations touch Unity immediately:
+
+| Site | What runs on the continuation |
+|---|---|
+| `UGSDataService.InitializeAsync` → `await Task.WhenAll(…10 repository loads…)` | `SyncHangarToVessels()`, which writes `SO_Vessel` assets |
+| `AuthenticationServiceFacade` → `await SignInAnonymouslyAsync()` | `OnSignInSuccess()` → `authenticationData.OnSignedIn.Raise()`, whose listeners instantiate `NetworkManager`, start the presence lobby, and load cloud data — **inline**, because SOAP raises inline |
+
+Both throw `EnsureRunningOnMainThread` off-thread, and in both cases the throw is **swallowed**:
+`PlayerDataService.HandleSignedIn` is `async void` with a catch that logs one line, and the
+facade's own `catch` treated it as a sign-in *failure*. So the observable symptom was neither an
+exception nor a failure — it was a boot that sat in the Authentication scene, with the only clue
+`[Analytics] DROPPING EVENTS - UGS sign-in has not completed` at quit.
+
+Three companion defects in the same file, each of which alone can produce the same silence:
+
+1. **`AuthenticationService.Instance` THROWS, it never returns null** (verified against
+   `com.unity.services.authentication` 3.6.1). Every `Instance != null` guard in the facade was
+   dead code that raised `ServicesInitializationException` instead of taking its own guarded
+   branch. Routed through `TryGetAuthService(out …)`.
+2. **`EnsureInitializedAsync` trusted our own SOAP mirror** (`AuthenticationData.State`) instead
+   of `UnityServices.State`. `State` is a plain auto-property on a class held by a
+   ScriptableObject: Unity does not serialize it and SOAP never resets it, so with this project's
+   disabled domain reload (`m_EnterPlayModeOptions: 3`) the *second* Play of an editor session
+   started holding the *first* session's `SignedIn` — and skipped `UnityServices.InitializeAsync`
+   entirely. Meanwhile the SDK resets itself on every Play
+   (`[RuntimeInitializeOnLoadMethod] ResetStaticsOnLoad`), so the mirror and the truth were
+   guaranteed to disagree. The guard now asks the SDK; the facade, as single writer, resets the
+   mirror in its constructor (CLAUDE.md's SOAP runtime-state rule).
+3. **`OnSignInSuccess()` sat inside the sign-in `try`**, so a throwing *listener* was reported as
+   a failed sign-in — flipping the state to `Failed` on a session that had in fact signed in.
+
+**Rules this leaves behind.** A mirror of another system's state is a *report*, never the
+authority — reconcile with what is independently readable (the same rule
+`AnalyticsServiceFacade` records for its `_signedIn` latch). A raise is not part of the operation
+that triggered it: keep it out of the operation's `try`. And a failure on a path whose only
+symptom is *waiting* must log unprompted — `AuthenticationServiceFacade.LogFailure` is
+deliberately not gated on the verbose flag.
+
+## `MultiplayerSetup` had no marshal either, and one of its awaits fires in the MENU (2026-09-12)
+
+The same `grep -c AsMainThread` returned **0** for
+`Assets/_Scripts/Controller/Multiplayer/MultiplayerSetup.cs`. Six UGS `Task`s were awaited bare:
+`CreateSessionAsync`, `JoinSessionByIdAsync`, `QuerySessionsAsync`,
+`AuthenticationService.GetPlayerNameAsync`, and `ISession.AsHost().DeleteAsync()` /
+`ISession.LeaveAsync()`.
+
+Five of them are on the game-launch path, where the worst case is bounded by a scene load. The
+sixth is not. **`OnTransportFailure` is registered by `EnsureNetcodeCallbacksWired` at sign-in**,
+so it is live for the whole of `Menu_Main` — and after its two bare awaits it called
+`networkManager.Shutdown()`, reloaded a scene, and raised SOAP through
+`PartyInviteController.HandleHostLossAsync`, all of which are main-thread-only. A transport
+hiccup while partied in the menu therefore had exactly the shape of the "random editor crash"
+this document exists to prevent, on the one screen a developer leaves running for tens of minutes.
+
+It survived the party-layer sweep because it is not in the party layer. `PartySessionService`,
+`PresenceLobbyService` and `LobbyPropertyWriter` were all correct; `MultiplayerSetup` calls the
+**same UGS APIs** from `Controller/Multiplayer/`, and a sweep scoped to a folder cannot see that.
+
+**Rules this leaves behind.** Audit this contract by **API** — grep for `MultiplayerService`,
+`AuthenticationService`, `ISession` and the Netcode surface across `Assets/_Scripts` — never by
+subsystem folder; the contract belongs to the SDK boundary, not to the feature that happens to
+call it. And when ranking which bare await to fix first, ask **which scene its handler is alive
+in**: a callback wired at sign-in outlives every scene transition, so its blast radius is the
+whole session rather than the operation that registered it.
+
+**Known gap, not introduced here.** `.AsMainThread()` still covers the success path only (see the
+2026-08-27 entry above), so a throwing UGS call resumes its `catch` off-thread at every one of
+these sites. It is safe as written — the four catch bodies do only `Debug.Log*` (thread-safe) and
+a `string.Contains` rate-limit test — but it is safe by inspection, not by construction.

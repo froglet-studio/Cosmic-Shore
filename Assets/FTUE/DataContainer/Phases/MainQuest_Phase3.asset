@@ -1,28 +1,5 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-8946081474847190317
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Profile Screen'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: 0641bcba83df4162b8f49b46f36add32
-  displayName: 'CTA: Profile Screen'
-  nodeEnabled: 1
-  graphPosition: {x: 60, y: 260}
-  outputs:
-  - portName: next
-    targetNodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
-    delaySeconds: 0
-  target: 500
-  completionAction: 500
-  dependencies: 
 --- !u!114 &-5548270743310986343
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -41,7 +18,7 @@ MonoBehaviour:
   graphPosition: {x: 1960, y: 260}
   outputs:
   - portName: next
-    targetNodeId: bfc2404831d647cea43c667a9c4f05b4
+    targetNodeId: 17b9b30c76674383a1d8f6a41c7061e1
     delaySeconds: 0.5
   speakerName: Captain
   portrait: {fileID: 0}
@@ -151,7 +128,7 @@ MonoBehaviour:
   graphPosition: {x: 60, y: 40}
   outputs:
   - portName: next
-    targetNodeId: 0641bcba83df4162b8f49b46f36add32
+    targetNodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
     delaySeconds: 1
   mode: 34
   intensityTier: 4
@@ -177,11 +154,9 @@ MonoBehaviour:
   entryNode: {fileID: -885182985515146407}
   nodes:
   - {fileID: -885182985515146407}
-  - {fileID: -8946081474847190317}
   - {fileID: -4167917275112030552}
   - {fileID: -1930776475551863198}
   - {fileID: -5548270743310986343}
-  - {fileID: 2764328277780040822}
   - {fileID: -3913885852676656839}
   - {fileID: -2628149559964758023}
   - {fileID: 31459265358979303}
@@ -233,26 +208,3 @@ MonoBehaviour:
   portrait: {fileID: 0}
   lines:
   - Tap the JOUST card on your quest track to collect your reward!
---- !u!114 &2764328277780040822
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Play Tournament'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: bfc2404831d647cea43c667a9c4f05b4
-  displayName: 'CTA: Play Tournament'
-  nodeEnabled: 1
-  graphPosition: {x: 2340, y: 260}
-  outputs:
-  - portName: next
-    targetNodeId: 17b9b30c76674383a1d8f6a41c7061e1
-    delaySeconds: 0
-  target: 437
-  completionAction: 400
-  dependencies: 64000000

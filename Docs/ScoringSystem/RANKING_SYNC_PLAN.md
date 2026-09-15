@@ -18,7 +18,7 @@ Status legend: 🔴 open · 🟡 partial · 🟢 done.
 
 ## ⚠ Open decision — REQUIRED before Step 5 (ask the owner if not supplied)
 
-**How are LOSERS ranked in HexRace?**
+**How are LOSERS ranked in SkimRace?**
 
 | Option | Ordering | Consequence |
 |---|---|---|
@@ -26,7 +26,7 @@ Status legend: 🔴 open · 🟡 partial · 🟢 done.
 | **(b) Individual crystals first** (owner's stated rule from the bug report) | winners first (finish time), then ALL losers by individual `CrystalsCollected` desc, time tie-break | Matches "players who collected more crystals rank first". Mixes members of different teams in the ranking. Changes the final `Scoreboard` order too (both surfaces read the same `Results`). |
 
 The tie-break itself (Step 5) applies under either option. Implement the
-chosen option in `HexRaceScoringRuleSO.BuildResults` only — the surfaces are
+chosen option in `SkimRaceScoringRuleSO.BuildResults` only — the surfaces are
 mode-agnostic consumers.
 
 ---
@@ -39,7 +39,7 @@ frozen stats, which corrupted everything assembled from the local list,
 including the client-side `rule.BuildResults` rebuild. Some of the observed
 host/client ranking divergence may already be gone.
 
-Re-run: 2 humans + 2 AI HexRace → play to end → compare the podium
+Re-run: 2 humans + 2 AI SkimRace → play to end → compare the podium
 (`EndGameStatsPanel`) and the card list (`Scoreboard`) on host vs client.
 Whatever you observe, Steps 4–6 are still required — tie ordering is
 nondeterministic by construction (see below) — but record the new baseline in
@@ -54,7 +54,7 @@ nondeterministic by construction (see below) — but record the new baseline in
 The server computes scores and syncs raw arrays, but **every peer re-derives
 the ORDER locally**:
 
-- `HexRaceController.SyncFinalScores_ClientRpc` (`_Scripts/Controller/Arcade/HexRaceController.cs:289-323`)
+- `SkimRaceController.SyncFinalScores_ClientRpc` (`_Scripts/Controller/Arcade/SkimRaceController.cs:289-323`)
   overwrites local stats by name, then calls `gameData.SetResults(rule.BuildResults(gameData))`
   — a re-sort over the **local** `RoundStatsList`.
 - `ScoreResultBuilder` ordering is a stable LINQ `OrderBy`, so ties keep
@@ -67,8 +67,8 @@ the ORDER locally**:
 - A name-match failure in the RPC silently leaves stale local values in the
   sort input (already logged via `CSDebug.LogError`).
 
-Same shape in `MultiplayerJoustController.cs` (~`:148`) and
-`MultiplayerCrystalCaptureController.cs` (~`:128`).
+Same shape in `JoustController.cs` (~`:148`) and
+`ScurryController.cs` (~`:128`).
 
 ### Design (agreed)
 
@@ -76,7 +76,7 @@ Same shape in `MultiplayerJoustController.cs` (~`:148`) and
 `Results` from the arrays verbatim** (rank = index + 1). Clients stop calling
 `rule.BuildResults`.
 
-Per mode (HexRace first, then Joust, then CrystalCapture — one commit each):
+Per mode (SkimRace first, then Joust, then Scurry — one commit each):
 
 1. **Server** (`OnTurnEndedCustom`, after `rule.AssignScores`):
    `var results = rule.BuildResults(gameData);` → `gameData.SetResults(results)`
@@ -114,7 +114,7 @@ AI) renders through the identical path.
 
 "If two or more players collected the same number of crystals, the one who
 took less time to collect them ranks first." No per-player completion time
-exists server-side: `HexRaceScoreTracker` (`_Scripts/Controller/Arcade/HexRaceScoreTracker.cs:77-83`)
+exists server-side: `SkimRaceScoreTracker` (`_Scripts/Controller/Arcade/SkimRaceScoreTracker.cs:77-83`)
 tracks elapsed time **only for the local player on each machine** (writes
 `gameData.LocalRoundStats.Score` per frame), so the server has nothing to
 break ties with.
@@ -134,8 +134,8 @@ break ties with.
    (`_Scripts/Data/Enums/IRoundStats.cs:109`) or it leaks across replays —
    there is an edit-mode test suite (`IRoundStatsCleanupTests`) that should
    gain a case for it.
-3. **Ordering** (`HexRaceScoringRuleSO.BuildResults`,
-   `_Scripts/Controller/Arcade/Scoring/HexRaceScoringRuleSO.cs:46`):
+3. **Ordering** (`SkimRaceScoringRuleSO.BuildResults`,
+   `_Scripts/Controller/Arcade/Scoring/SkimRaceScoringRuleSO.cs:46`):
    per the Open decision above, either
    - (a) `OrderBy(Score).ThenByDescending(CrystalsCollected).ThenBy(LastCrystalCollectedTime).ThenBy(Name)`, or
    - (b) winners first (Score asc), then losers
@@ -211,10 +211,10 @@ asymmetry is exactly the reported "podium wrong, cards right".
 
 | Scenario | Expect |
 |---|---|
-| 2 humans + 2 AI HexRace, distinct crystal counts | Podium order == card order == identical on host + client; rank labels 1st..4th unique |
+| 2 humans + 2 AI SkimRace, distinct crystal counts | Podium order == card order == identical on host + client; rank labels 1st..4th unique |
 | Forced tie: 2 same-domain players, equal crystals | Order identical host/client; earlier `LastCrystalCollectedTime` ranks first (Step 5) |
 | Solo host (1 human + 3 AI) | Same path, same surfaces correct (no `IsMultiplayerMode` branching added) |
-| Joust + CrystalCapture sweep | Unchanged behavior until their Step-4 commits; identical parity after |
+| Joust + Scurry sweep | Unchanged behavior until their Step-4 commits; identical parity after |
 | Replay (scene reload) ×2 | `LastCrystalCollectedTime` zeroed (Cleanup); no rank carry-over |
 | Edit-mode tests | `GameDataSOTests`, `IRoundStatsCleanupTests` (+ new F1 guard test) green |
 

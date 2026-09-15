@@ -117,8 +117,26 @@ namespace CosmicShore.UI
 
         IEnumerator UpdateTicketBalanceCoroutine()
         {
-            var ticketBalance = int.Parse(TicketBalanceText.text);
-            var newTicketBalance = ticketBalance + 1;
+            // Parse defensively, for the same reason UpdateBalanceCoroutine does: the field
+            // can hold placeholder/non-numeric text and int.Parse would throw a
+            // FormatException on the coroutine's FIRST line, aborting it before the balance
+            // is ever written - so the player pays for a ticket and the count does not move.
+            //
+            // The label is read rather than the catalog, and the +1 is not a guess: the
+            // label still holds the PRE-purchase balance (SetVirtualItem wrote it when the
+            // modal opened and nothing has rewritten it), while CatalogManager.PurchaseItem
+            // calls AddToInventory BEFORE its success callback - so the catalog is already
+            // incremented by the time this runs. Reading it here and adding one would be
+            // off by one.
+            //
+            // That is also why the fallback is the catalog rather than a defaulted 0: on the
+            // parse path the label never held the pre-purchase number, so there is nothing to
+            // add one to, and the catalog is exactly the value the label should be showing.
+            // A ticket balance is a real-money surface - displaying a fabricated "1" is worse
+            // than displaying nothing.
+            var newTicketBalance = int.TryParse(TicketBalanceText.text, out var ticketBalance)
+                ? ticketBalance + 1
+                : CatalogManager.Instance.GetDailyChallengeTicketBalance();
 
             var duration = .5f;
             var elapsedTime = 0f;

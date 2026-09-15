@@ -16,7 +16,7 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"Unlock {mode}";
 
         [Tooltip("The game mode to unlock.")]
-        public GameModes mode = GameModes.HexRace;
+        public GameModes mode = GameModes.SkimRace;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

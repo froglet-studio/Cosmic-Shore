@@ -190,10 +190,8 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">UGS Leaderboards <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">hexrace_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Best race time per intensity (1–4)</div><div class="impl">HexRaceScoreTracker → UGSStatsManager.SubmitScoreInternal()</div></div>
-    <div class="event-row"><div><span class="event-name">blitz_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Wildlife Blitz high score per intensity</div><div class="impl">SinglePlayerWildlifeBlitzScoreTracker</div></div>
-    <div class="event-row"><div><span class="event-name">joust_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Joust best time per intensity</div><div class="impl">JoustStatsReporter</div></div>
-    <div class="event-row"><div><span class="event-name">crystal_capture_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Crystals collected per intensity</div><div class="impl">CrystalCaptureStatsReporter — IDs from LeaderboardConfigSO</div></div>
+    <div class="event-row"><div><span class="event-name">weekly_challenge</span><span class="st st-live">LIVE</span></div><div class="event-desc">Completion TIME for this week&rsquo;s challenge, lowest first. Only a completion earns an entry &mdash; a player who never reached the target has no time, not a slow one.</div><div class="impl">WeeklyChallengeLeaderboardService &mdash; one board, id <code>weekly_challenge</code>, reset weekly by UGS with archiving on</div></div>
+    <div class="event-row"><div><span class="event-name">per-mode &times; intensity boards</span><span class="st st-none">RETIRED</span></div><div class="event-desc">Twenty boards (<code>hexrace_time</code>, <code>blitz_score</code>, <code>joust_time</code>, <code>crystal_capture_score</code> &times; 4 intensities) submitted on every arcade game end.</div><div class="impl">Deleted 2026-09 with <code>LeaderboardConfigSO</code> and <code>UGSStatsManager.SubmitScoreInternal</code>. Per-mode bests still land in Cloud Save <code>MODE_STATS</code>; they are simply not ranked globally.</div></div>
   </div>
   </div>
 
@@ -217,7 +215,7 @@
   <table class="inv">
     <tr><th>Key</th><th>Contents</th><th>Status</th><th>Writes</th></tr>
     <tr><td>player_profile</td><td>userId, displayName, avatarId, <strong>crystalBalance</strong> (== "omnicrystals"), xp, unlockedRewardIds</td><td><span class="st st-live">LIVE</span></td><td>per mutation, 1.5s debounce</td></tr>
-    <tr><td>PLAYER_STATS_PROFILE</td><td>Per-mode-per-intensity bests: Blitz/CrystalCapture high scores, HexRace/Joust best times, LastLoginTick</td><td><span class="st st-live">LIVE</span></td><td>game end (on new best), 2s debounce</td></tr>
+    <tr><td>PLAYER_STATS_PROFILE</td><td>Per-mode-per-intensity bests: Blitz/Scurry high scores, SkimRace/Joust best times, LastLoginTick</td><td><span class="st st-live">LIVE</span></td><td>game end (on new best), 2s debounce</td></tr>
     <tr><td>VESSEL_STATS</td><td>Per-vessel lifetime: GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged + Counters dict (Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak)</td><td><span class="st st-live">LIVE</span></td><td>every game end, 2s debounce</td></tr>
     <tr><td>GAME_MODE_PROGRESSION</td><td>UnlockedModes, CompletedQuests, BestStats, MaxUnlockedIntensity, IntensityPlayCounts</td><td><span class="st st-live">LIVE</span></td><td>quest/intensity = immediate; stats = debounced</td></tr>
     <tr><td>HANGAR_DATA</td><td>UnlockedVessels, per-vessel {LastUsedTicks, Favorited}, SelectedVessel</td><td><span class="st st-live">LIVE</span></td><td>per unlock/lock</td></tr>
@@ -238,9 +236,9 @@
 // PLAYER_STATS_PROFILE        (keys are "{GameMode}_{Intensity}")
 { "LastLoginTick": 638537251200000000,
   "BlitzStats":          { "HighScores": { "WildlifeBlitz_2": 1840 } },
-  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "HexRace_2": 93.41 } },
-  "JoustStats":          { "BestRaceTimes": { "MultiplayerJoust_1": 75.2 } },
-  "CrystalCaptureStats": { "HighScores": { "MultiplayerCrystalCapture_3": 42 } } }
+  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "SkimRace_2": 93.41 } },
+  "JoustStats":          { "BestRaceTimes": { "Joust_1": 75.2 } },
+  "ScurryStats": { "HighScores": { "Scurry_3": 42 } } }
 
 // VESSEL_STATS
 { "Vessels": { "Sparrow": {
@@ -249,7 +247,7 @@
     "Counters": { "PrismBlocksShot": 1894, "SkyburstMissilesShot": 230 } } } }
 
 // GAME_MODE_PROGRESSION
-{ "UnlockedModes": ["WildlifeBlitz","HexRace"], "CompletedQuests": ["HexRace"],
+{ "UnlockedModes": ["WildlifeBlitz","SkimRace"], "CompletedQuests": ["SkimRace"],
   "BestStats": { "WildlifeBlitz": 1840.0 },
   "MaxUnlockedIntensity": { "WildlifeBlitz": 3 },
   "IntensityPlayCounts": { "WildlifeBlitz_2": 11 } }</pre>

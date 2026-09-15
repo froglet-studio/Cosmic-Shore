@@ -11,11 +11,11 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// One-click generator for the canonical Main Quest (the FTUE): six phases matching the
-    /// design map — onboarding + Crystal Capture, then one unlock phase per mode (HexRace,
+    /// design map — onboarding + Crystal Capture, then one unlock phase per mode (SkimRace,
     /// Joust, Maelstrom), the vessel tour, and the episodes finale. Produces a fully-wired
     /// <see cref="QuestSO"/> + per-phase <see cref="QuestPhaseGraphSO"/> assets (nodes as
     /// sub-assets) with designer notes baked in, runnable end-to-end once DialogueSets are
-    /// assigned and the new CTA targets exist in the scene.
+    /// assigned.
     /// </summary>
     public static class QuestDefaultContentBuilder
     {
@@ -35,27 +35,24 @@ namespace CosmicShore.Editor
                 "intensity-4 milestone → guide to the profile screen → player CLAIMS the next mode " +
                 "(unlocks to intensity 3) → reward dialogue → guide back to the arcade → play it.\n\n" +
                 "Reference map: see QUEST_GRAPH_TOOL.md. Dialogue lines are authored ON the nodes " +
-                "(no DialogueSet assets — the panel is driven directly). New CTA targets " +
+                "(no DialogueSet assets — the panel is driven directly). " +
                 "(ProfileMenu / EpisodeMenu / PlayGameMaelstrom) and user actions " +
                 "(ViewProfileMenu / ViewEpisodeMenu / UnlockVessel) need scene UI wiring.";
             string questPath = AssetDatabase.GenerateUniqueAssetPath($"{QuestsFolder}/MainQuest.asset");
             AssetDatabase.CreateAsset(quest, questPath);
 
             quest.phases.Add(BuildPhase0());
-            quest.phases.Add(BuildUnlockPhase(1, "Unlock HexRace",
+            quest.phases.Add(BuildUnlockPhase(1, "Unlock SkimRace",
                 gateMode: GameModes.MultiplayerCrystalCapture,
-                claimMode: GameModes.HexRace,
-                playCta: CallToActionTargetType.PlayGameHexRace,
+                claimMode: GameModes.SkimRace,
                 nextLabel: "Phase 2 (Joust)"));
             quest.phases.Add(BuildUnlockPhase(2, "Unlock Joust",
-                gateMode: GameModes.HexRace,
+                gateMode: GameModes.SkimRace,
                 claimMode: GameModes.MultiplayerJoust,
-                playCta: CallToActionTargetType.PlayGameMultiplayerJoust,
                 nextLabel: "Phase 3 (Maelstrom)"));
             quest.phases.Add(BuildUnlockPhase(3, "Unlock Maelstrom",
                 gateMode: GameModes.MultiplayerJoust,
-                claimMode: GameModes.Tournament,
-                playCta: CallToActionTargetType.PlayGameMaelstrom,
+                claimMode: GameModes.Maelstrom,
                 nextLabel: "Phase 4 (Vessel Tour)"));
             quest.phases.Add(BuildPhase4());
             quest.phases.Add(BuildPhase5());
@@ -156,14 +153,6 @@ namespace CosmicShore.Editor
             constraintsCC1.forcedPlayerCount = 2;
             constraintsCC1.forcedDomainCount = 2;
 
-            var ctaArcade = Add<QuestHighlightCTANode>(g, "CTA: Arcade");
-            ctaArcade.target = CallToActionTargetType.ArcadeMenu;
-            ctaArcade.completionAction = UserActionType.ViewArcadeMenu;
-
-            var ctaCC1 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 1)");
-            ctaCC1.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
-            ctaCC1.completionAction = UserActionType.PlayGame;
-
             var playedCC1 = Add<QuestWaitForGamePlayedNode>(g, "Wait: CC Played @1");
             playedCC1.filterByMode = true;
             playedCC1.expectedMode = GameModes.MultiplayerCrystalCapture;
@@ -187,10 +176,6 @@ namespace CosmicShore.Editor
                 "Great flying out there, pilot — your first match is in the books!",
                 "Tap the PROFILE button below. Your quest track is waiting for you.",
             };
-
-            var ctaProfile = Add<QuestHighlightCTANode>(g, "CTA: Profile Screen");
-            ctaProfile.target = CallToActionTargetType.ProfileMenu;
-            ctaProfile.completionAction = UserActionType.ViewProfileMenu;
 
             var mapsDialogue = Add<QuestDialogueNode>(g, "Maps Tour + Intensity-4 Rule");
             mapsDialogue.lines = new List<string>
@@ -217,8 +202,8 @@ namespace CosmicShore.Editor
             Chain(g, enter,
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
-                lockNav, arcadeDialogue, constraintsCC1, ctaArcade, ctaCC1, playedCC1,
-                loosenFunnel, unlockNav, profileDialogue, ctaProfile, mapsDialogue,
+                lockNav, arcadeDialogue, constraintsCC1, playedCC1,
+                loosenFunnel, unlockNav, profileDialogue, mapsDialogue,
                 clearFunnel, arcadeReturn, socialTour, end);
 
             // Pacing: breathing room between beats (editable per arrow in the editor).
@@ -236,11 +221,11 @@ namespace CosmicShore.Editor
         }
 
         static QuestPhaseGraphSO BuildUnlockPhase(int index, string phaseName,
-            GameModes gateMode, GameModes claimMode, CallToActionTargetType playCta, string nextLabel)
+            GameModes gateMode, GameModes claimMode, string nextLabel)
         {
             var g = NewPhase(index, phaseName,
                 $"Entry gate: {gateMode} reaches intensity tier 4 (its quest milestone). Light the " +
-                "profile CTA + explainer, WAIT until the player actually opens the profile, then point " +
+                "explainer, WAIT until the player actually opens the profile, then point " +
                 $"at the {FriendlyName(gateMode)} card's claim button. Player CLAIMS {claimMode} on the " +
                 "quest track (unlocks to intensity 3), reward dialogue, then guide back to the arcade " +
                 $"and play it. Ends → {nextLabel}.");
@@ -248,10 +233,6 @@ namespace CosmicShore.Editor
             var gate = Add<QuestWaitForIntensityNode>(g, $"Gate: {gateMode} Tier 4");
             gate.mode = gateMode;
             gate.intensityTier = 4;
-
-            var ctaProfile = Add<QuestHighlightCTANode>(g, "CTA: Profile Screen");
-            ctaProfile.target = CallToActionTargetType.ProfileMenu;
-            ctaProfile.completionAction = UserActionType.ViewProfileMenu;
 
             var explain = Add<QuestDialogueNode>(g, "Profile Explainer");
             explain.lines = new List<string>
@@ -279,18 +260,13 @@ namespace CosmicShore.Editor
                 $"{FriendlyName(claimMode)} is yours, pilot! Intensities 1–3 are open — dive in.",
             };
 
-            var ctaPlay = Add<QuestHighlightCTANode>(g, $"CTA: Play {FriendlyName(claimMode)}");
-            ctaPlay.target = playCta;
-            ctaPlay.completionAction = UserActionType.PlayGame;
-            ctaPlay.dependencies = new List<CallToActionTargetType> { CallToActionTargetType.ArcadeMenu };
-
             var played = Add<QuestWaitForGamePlayedNode>(g, $"Wait: {FriendlyName(claimMode)} Played");
             played.filterByMode = true;
             played.expectedMode = claimMode;
 
             var end = Add<QuestPhaseEndNode>(g, $"Phase {index} Complete");
 
-            Chain(g, gate, ctaProfile, explain, waitProfile, claimHint, claim, reward, ctaPlay, played, end);
+            Chain(g, gate, explain, waitProfile, claimHint, claim, reward, played, end);
             SetDelay(gate, 1f);
             SetDelay(waitProfile, 0.5f);
             SetDelay(claim, 0.5f);
@@ -303,9 +279,9 @@ namespace CosmicShore.Editor
         static string FriendlyName(GameModes mode) => mode switch
         {
             GameModes.MultiplayerCrystalCapture => "Crystal Capture",
-            GameModes.HexRace => "Hex Race",
+            GameModes.SkimRace => "Skim Race",
             GameModes.MultiplayerJoust => "Joust",
-            GameModes.Tournament => "Maelstrom",
+            GameModes.Maelstrom => "Maelstrom",
             _ => mode.ToString(),
         };
 
@@ -315,10 +291,6 @@ namespace CosmicShore.Editor
                 "Entry: after Maelstrom is played. Guide to the hangar, tour the vessel-unlock flow, " +
                 "wait until the player unlocks a vessel (the hangar UI fires UserActionType.UnlockVessel), " +
                 "reward dialogue. Ends → Phase 5 (finale).");
-
-            var ctaHangar = Add<QuestHighlightCTANode>(g, "CTA: Hangar");
-            ctaHangar.target = CallToActionTargetType.HangarMenu;
-            ctaHangar.completionAction = UserActionType.ViewHangarMenu;
 
             var tour = Add<QuestDialogueNode>(g, "Vessel Unlock Tour");
             tour.lines = new List<string>
@@ -338,15 +310,15 @@ namespace CosmicShore.Editor
 
             var end = Add<QuestPhaseEndNode>(g, "Phase 4 Complete");
 
-            Chain(g, ctaHangar, tour, unlocked, reward, end);
-            return Finish(g, ctaHangar);
+            Chain(g, tour, unlocked, reward, end);
+            return Finish(g, tour);
         }
 
         static QuestPhaseGraphSO BuildPhase5()
         {
             var g = NewPhase(5, "Episodes & Beyond — Finale",
                 "Entry: vessel unlocked. Closing dialogue ('you can also buy new game modes'), then " +
-                "enable the (authored non-interactable) Episodes button, CTA to the episodes screen, " +
+                "enable the (authored non-interactable) Episodes button, " +
                 "then Quest End — the FTUE is complete and persisted to UGS.");
 
             var finale = Add<QuestDialogueNode>(g, "Finale Dialogue");
@@ -357,18 +329,14 @@ namespace CosmicShore.Editor
             };
 
             // The Episodes button is authored non-interactable — enable it only AFTER the
-            // finale dialogue names it, so its CTA gate is satisfiable when it lights up.
+            // finale dialogue names it, so the player knows where to go once it is live.
             var enableEpisodes = Add<QuestSetButtonInteractableNode>(g, "Enable Episodes Button");
             enableEpisodes.buttonKey = "episodes";
             enableEpisodes.interactable = true;
 
-            var ctaEpisodes = Add<QuestHighlightCTANode>(g, "CTA: Episodes");
-            ctaEpisodes.target = CallToActionTargetType.EpisodeMenu;
-            ctaEpisodes.completionAction = UserActionType.ViewEpisodeMenu;
-
             var end = Add<QuestEndNode>(g, "FTUE Complete");
 
-            Chain(g, finale, enableEpisodes, ctaEpisodes, end);
+            Chain(g, finale, enableEpisodes, end);
             return Finish(g, finale);
         }
 

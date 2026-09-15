@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
             // exactly once — so a throwing subscriber must not go quiet. Catch, name the
             // culprit loudly, and let the downstream fail-open guards (EndGameSequencer /
             // Scoreboard) still surface an exit path.
-            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd");
             try
             {
                 gameData.InvokeGameTurnConditionsMet();

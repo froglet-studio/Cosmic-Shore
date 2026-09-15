@@ -52,7 +52,7 @@ namespace CosmicShore.Core
         [SerializeField] Transform dialoguePanelParent;
         [SerializeField] ScreenSwitcher screenSwitcher;
         [Tooltip("Arcade game cards, used by LockModes nodes.")]
-        [SerializeField] List<CallToActionTarget> gameCards = new();
+        [SerializeField] List<GameCard> gameCards = new();
 
         [Tooltip("EXTRA UI groups hidden during flight training. The vessel HUD is hidden automatically through its own controller — do NOT add 'Game UI' here (that would also hide the volume button, which is the taught exit).")]
         [SerializeField] List<CanvasGroup> hideDuringFlightTraining = new();
@@ -116,7 +116,6 @@ namespace CosmicShore.Core
             // NOTE: QuestArcadeConstraints are NOT cleared here — they must survive the
             // Menu → game → Menu scene round-trip. They clear via an authored Clear node,
             // quest completion, or the editor's progress reset.
-            SetBreadcrumbSuppressed(false);
         }
 
         // ── Start gating ───────────────────────────────────────────────
@@ -162,7 +161,6 @@ namespace CosmicShore.Core
                 yield return new WaitForSecondsRealtime(startDelaySeconds);
 
             BuildContext();
-            SetBreadcrumbSuppressed(true);
 
             if (debugPhaseOverride != null)
             {
@@ -365,7 +363,6 @@ namespace CosmicShore.Core
             if (debugPhaseOverride != null)
             {
                 Debug.Log("[Quest] TEST phase finished.");
-                SetBreadcrumbSuppressed(false);
                 return;
             }
 
@@ -394,16 +391,9 @@ namespace CosmicShore.Core
 
             instructionView?.Hide();
             QuestProgressStore.MarkQuestCompleted(QuestId);
-            SetBreadcrumbSuppressed(false);
             FTUEEventManager.RaiseQuestCompleted(QuestId);
             Debug.Log($"[Quest] '{QuestId}' COMPLETE (persisted to UGS + local).");
         }
 
-        static void SetBreadcrumbSuppressed(bool suppressed)
-        {
-            var svc = GameModeProgressionService.Instance;
-            if (svc != null)
-                svc.BreadcrumbSuppressed = suppressed;
-        }
     }
 }

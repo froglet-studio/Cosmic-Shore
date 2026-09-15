@@ -1,16 +1,22 @@
 # Quest Graph Tool
 
-One unified system for the FTUE, quest progression, and CTA breadcrumbs: quests are authored
+One unified system for the FTUE and quest progression: quests are authored
 as **phase graphs** in a visual editor, executed by a runner that drives the existing runtime
 systems, with every node the player completes persisted to UGS.
 
 > **How-to-use guide (editor walkthrough, testing workflow, recipes, troubleshooting):**
 > `QUEST_GRAPH_EDITOR_TOOL.md` — this file is the architecture/data-model reference.
 
-**The graph is the source of truth.** Guidance nodes light `CallToActionSystem` breadcrumbs
-(the progression service's automatic frontier breadcrumb is suppressed while a quest runs),
-gate nodes listen to `GameModeProgressionService`'s own events (intensity tiers, claims), and
-progression writes go through the service so the quest-track UI stays in sync.
+**The graph is the source of truth.** Gate nodes listen to `GameModeProgressionService`'s own
+events (intensity tiers, claims), and progression writes go through the service so the
+quest-track UI stays in sync.
+
+> **There is no Guidance category.** The call-to-action badge surface this system was built
+> against was retired upstream as a product decision (2026-09-08) and a CI gate keeps it
+> retired — its addressing enum encoded a pre-2026 mode roster and could not be repaired.
+> `HighlightCTA` went with it, along with the progression service's frontier breadcrumb.
+> A quest still *advances* on the same player actions; it just does not light a badge saying
+> "go here". A replacement breadcrumb wants designing against the roster that exists.
 
 ---
 
@@ -102,7 +108,6 @@ already arranged.
 | Gate | **WaitForUserAction** | Generic `UserActionType` gate (e.g. `UnlockVessel` from the hangar UI) |
 | Gate | **WaitForDrift** | Local vessel `IsDrifting` (LT+RT) sustained for a hold time; success haptic |
 | Gate | **WaitForSkim** | Counts prisms skimmed via the skim-boost SOAP channel (local vessel, boost-increase filtered); the live "n / target" count is appended to the active instruction set's own text; per-skim + completion haptics |
-| Guidance | **HighlightCTA** | Lights a CTA breadcrumb (+ dependency path) and waits for its completion action |
 | Progression | **UnlockMode** | Direct unlock write via `GameModeProgressionService.UnlockMode` |
 | Terminal | **PhaseEnd / End** | Ends the phase / completes the quest |
 
@@ -113,14 +118,14 @@ P0 Onboarding & Crystal Capture: camera → player vessel (enter freestyle on me
    HUD hidden + A/X/B suppressed) → speed up / slow down / look around / drift L+R / skim×10
    (counter) → tap VOLUME button (passive exit — never forced) → nav locked to Arcade + dialogue
    → arcade funnel (CC only, intensity 2, max players, 3 domains) → play CC@2 → nav unlocked
-   → CTA profile → maps/intensity-4 dialogue → funnel intensity 3 → play CC@3 → funnel cleared
+   → maps/intensity-4 dialogue → funnel intensity 3 → play CC@3 → funnel cleared
    → social-UI tour → PhaseEnd
-P1 Unlock HexRace:  WaitIntensity(CC,4) → CTA profile → explainer → WaitModeUnlocked(HexRace)=claim
-   → reward dialogue → CTA play HexRace → played → PhaseEnd
-P2 Unlock Joust:     same pattern (HexRace→Joust)
-P3 Unlock Maelstrom: same pattern (Joust→Tournament, card CTA PlayGameMaelstrom)
-P4 Vessel Tour:      CTA hangar → tour dialogue → WaitForUserAction(UnlockVessel) → reward → PhaseEnd
-P5 Finale:           CTA episodes → closing dialogue → End (quest complete)
+P1 Unlock SkimRace: WaitIntensity(CC,4) → explainer → WaitModeUnlocked(SkimRace)=claim
+   → reward dialogue → played → PhaseEnd
+P2 Unlock Joust:     same pattern (SkimRace→Joust)
+P3 Unlock Maelstrom: same pattern (Joust→Maelstrom)
+P4 Vessel Tour:      tour dialogue → WaitForUserAction(UnlockVessel) → reward → PhaseEnd
+P5 Finale:           closing dialogue → End (quest complete)
 ```
 
 Interactive/editable reference map (browser): the "Main Quest Progression Map" artifact.
@@ -150,7 +155,7 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
   did it (skip a game, a gate, a dialogue) so a full test pass doesn't require replaying every
   beat. Persists progress exactly like a real advance.
 - **PlayGame user action** — `SceneLoader.LaunchGame` completes `UserActionType.PlayGame` at
-  every game launch (while the menu listeners are still alive). Play-game CTA nodes complete
+  every game launch (while the menu listeners are still alive). Play-game gates complete
   on launch; the following WaitForGamePlayed gate holds until the run actually finishes.
 - **Arcade funnel persistence** — `QuestArcadeConstraints` is persisted in PlayerPrefs with the
   quest cursor, so a play-session restart mid-quest keeps the arcade funnel (one card, one
@@ -199,8 +204,6 @@ Inward, Thumbstick_Look, Trigger_LT/RT, Button_B.
 
 ## Scene/UI wiring still needed (game-side)
 
-- `CallToActionTarget` components for the new targets: **ProfileMenu (500)**, **EpisodeMenu (600)**,
-  **PlayGameMaelstrom (437)** — plus the existing arcade/hangar/game-card targets.
 - `ScreenSwitcher` now fires `ViewProfileMenu` on Profile navigation; the episodes screen and the
   hangar's vessel-unlock flow must fire `ViewEpisodeMenu` / `UnlockVessel` (use `UserActionTrigger`
   or `UserActionSystem.Instance.CompleteAction`).

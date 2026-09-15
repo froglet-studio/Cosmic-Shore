@@ -85,7 +85,7 @@ namespace CosmicShore.Gameplay
 
             // End-game counts are the tool's authority: FrogletTools > Game Modes > End Game Conditions
             // (Resources/EndConditionOverrides). A 0 there means "auto" → this autoCalc.
-            // Keyed by GameMode so HexRace and Crystal Capture (same monitor class) stay independent.
+            // Keyed by GameMode so SkimRace and Crystal Capture (same monitor class) stay independent.
             var overrides = EndConditionOverridesSO.Instance;
             return overrides != null ? overrides.GetCrystalCount(gameData.GameMode, autoCalc) : autoCalc;
         }

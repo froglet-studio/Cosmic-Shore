@@ -24,6 +24,7 @@
 
 using System;
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -93,6 +94,14 @@ namespace CosmicShore.Gameplay
             // Recovery paths ──────────────────────────────────────────────────
             (PartyState.Reconnecting,    PartyState.HostingParty),      // recovery: recreate solo Relay
             (PartyState.Reconnecting,    PartyState.InParty),           // rejoin succeeded
+
+            // Re-entry through the FRONT DOOR. The refresh watchdog can drop us into
+            // Reconnecting at any moment (MAX_REFRESH_ERRORS_BEFORE_RECONNECT), including while
+            // a reconnect / offline→online switch is re-running HCS init - and that init's first
+            // move is InPresenceLobby. Without this the transition was refused, HCS never
+            // finished initialising, no Relay session was ever created, and the auth scene's
+            // Relay wait timed out against a session nobody was going to make.
+            (PartyState.Reconnecting,    PartyState.InPresenceLobby),   // re-run lobby join after a drop
         };
 
         // ─────────────────────────────────────────────────────────────────────
@@ -116,7 +125,7 @@ namespace CosmicShore.Gameplay
             {
                 // Log a warning instead of throwing - an illegal transition
                 // should be loudly visible but should not crash the game.
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[PartyStateMachine] Illegal transition: {CurrentState} → {to}. " +
                     $"Add it to LegalTransitions if it is intentional.");
                 return false;
@@ -125,9 +134,8 @@ namespace CosmicShore.Gameplay
             var from = CurrentState;
             CurrentState = to;
 
-            // This log line is intentionally always on so the MPPM console shows
-            // the exact lifecycle timeline during manual testing.
-            Debug.Log($"[PartyStateMachine] {from} → {to}");
+            // Lifecycle timeline for MPPM testing - enable the Party channel to see it.
+            CSDebug.LogVerbose(CSLogChannel.Party, $"[PartyStateMachine] {from} -> {to}");
 
             OnStateChanged?.Invoke(from, to);
             return true;

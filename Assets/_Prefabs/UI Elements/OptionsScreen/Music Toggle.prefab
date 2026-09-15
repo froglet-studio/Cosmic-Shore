@@ -204,7 +204,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 3714575686235003607}
-        m_TargetAssemblyTypeName: CosmicShore.Mixer, Assembly-CSharp
+        m_TargetAssemblyTypeName: CosmicShore.UI.AudioLevelSlider, Assembly-CSharp
         m_MethodName: SetVolume
         m_Mode: 0
         m_Arguments:
@@ -240,7 +240,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8cf19f18ea4fe48d291e92a3a0eef608, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Mixer
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.AudioLevelSlider
   VCA: Music
 --- !u!1 &1239807981
 GameObject:

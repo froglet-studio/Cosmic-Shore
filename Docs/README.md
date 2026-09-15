@@ -15,7 +15,8 @@ Docs/
 │   │                            error-handling matrix, exit criteria
 │   ├── REFACTOR.md              active backlog + deferred items
 │   │                            + per-commit revision protocol
-│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9/B10 fixed)
+│   ├── BUGS.md                  open: B5 (needs retest), B7 (deferred);
+│   │                            B2/B3/B8-B17 fixed
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
@@ -29,7 +30,7 @@ Docs/
 ├── PresenceSystem/              ← the lobby-only discovery layer
 │   ├── ARCHITECTURE.md          locked design, ForceReset semantics
 │   ├── REFACTOR.md              backlog for PresenceLobbyService
-│   ├── BUGS.md                  open bugs (B1, B4, B6)
+│   ├── BUGS.md                  open: B1, B4, B6 (all 🟡 - see each entry)
 │   ├── TESTS.md                 manual procedures (P1-P6)
 │   └── TODOS.md
 │
@@ -45,12 +46,12 @@ Docs/
 │   ├── BUGS.md                  open correctness issues (B1-B5)
 │   └── TESTS.md                 manual procedures (T1-T10)
 │
-├── TournamentSystem/            ← session-level meta chaining the 3 domain games
+├── MaelstromSystem/            ← session-level meta chaining the 3 domain games
 │   └── ARCHITECTURE.md          load model, controller brain, standings,
 │                                end-game flow, data + file index
 │
-├── ShuffleSystem/               ← "Shuffle" = display name of Tournament mode
-│   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
+├── ShuffleSystem/               ← legacy folder name; the mode is Maelstrom (pointer doc)
+│   └── ARCHITECTURE.md          pointer to MaelstromSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
 │
 ├── ASSEMBLY_SPLIT.md            splitting the single-assembly monolith:
@@ -88,8 +89,8 @@ session-scoped findings that benefit from a timeline view.
 | Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
-| Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
-| Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
+| Understand the tournament meta-mode (chains the 3 domain games) | `MaelstromSystem/ARCHITECTURE.md` |
+| Find "Shuffle" (it's Maelstrom's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `MaelstromSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
 | Find a scene | `SCENES.md` |

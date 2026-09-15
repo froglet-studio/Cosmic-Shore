@@ -37,6 +37,10 @@ namespace CosmicShore.ScriptableObjects
         public float StationSpacing => stationSpacing;
         public float MatrixDistanceFactor => matrixDistanceFactor;
 
+        /// <summary>The hull you fly. It changes VESSEL and nothing else - the world is exactly where you
+        /// left it, and you are a different ship in it.</summary>
+        public override ToyCategory Category => ToyCategory.Pilot;
+
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
             var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);

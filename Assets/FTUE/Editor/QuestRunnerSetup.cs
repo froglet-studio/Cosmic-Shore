@@ -91,9 +91,8 @@ namespace CosmicShore.Editor
             if (prop == null) return;
             if (prop.arraySize > 0) return; // don't clobber a manual wiring
 
-            // Game cards are CallToActionTargets whose TargetID is in the PlayGame range (400s).
-            var cards = Object.FindObjectsByType<CallToActionTarget>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-                .Where(t => (int)t.TargetID >= 400 && (int)t.TargetID < 500)
+            // A game card identifies itself by the mode it launches.
+            var cards = Object.FindObjectsByType<GameCard>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .ToArray();
 
             prop.arraySize = cards.Length;

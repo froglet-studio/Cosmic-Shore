@@ -13,9 +13,15 @@ using Object = UnityEngine.Object;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// Reads the project and produces codex entries - every ethirion (crystal) and every ecology
-    /// species (flora and fauna) - then MERGES them into the live <see cref="CodexSO"/> under the
-    /// field-ownership contract documented on <see cref="CodexEntry"/>.
+    /// Reads the project and produces codex entries - every ethirion (crystal), every ecology
+    /// species (flora and fauna) and every tool (freestyle toy) - then MERGES them into the live
+    /// <see cref="CodexSO"/> under the field-ownership contract documented on
+    /// <see cref="CodexEntry"/>.
+    ///
+    /// <para>The tool pass lives in <see cref="ToolCodexHarvester"/> because it reads a different
+    /// KIND of asset - a toy has no prefab, it is built at runtime from its definition - but it
+    /// merges through the same <see cref="MergeList"/> here, so there is exactly one
+    /// implementation of the contract however many kingdoms exist.</para>
     ///
     /// <para><b>The merge is the whole design.</b> A generator that rebuilds the asset from
     /// scratch is useless the moment a designer writes a paragraph of body copy, because the next
@@ -51,9 +57,11 @@ namespace CosmicShore.Editor.Codex
 
             MergeList(codex, codex.Ethirions, BuildEthirionEntries(report), report);
             MergeList(codex, codex.Ecology, BuildEcologyEntries(usage, report), report);
+            MergeList(codex, codex.Tools, ToolCodexHarvester.BuildToolEntries(report), report);
 
             FlagOrphans(codex.Ethirions, report);
             FlagOrphans(codex.Ecology, report);
+            FlagOrphans(codex.Tools, report);
 
             if (report.AnyChange) EditorUtility.SetDirty(codex);
             return report;
@@ -228,11 +236,12 @@ namespace CosmicShore.Editor.Codex
             {
                 var variant = new CodexVariant
                 {
-                    Label = cfg.Element == Element.None ? cfg.name : cfg.Element.ToString(),
+                    Label = VariantLabel(cfg, cfg.Element, configs, c => c.Element),
                     Element = cfg.Element,
                     SourceConfig = cfg,
                     SourcePrefab = prefab,
                 };
+                variant.AccentColor = AccentFor(cfg.Element);
                 Add(variant.Stats, "Seed floor", Count(cfg.PopulationSize, "plant"));
                 Add(variant.Stats, "Live cap", Count(cfg.MaxLivePopulation, "plant"));
                 Add(variant.Stats, "Growth per child", cfg.GrowthPerOffspring > 0
@@ -280,11 +289,12 @@ namespace CosmicShore.Editor.Codex
             {
                 var variant = new CodexVariant
                 {
-                    Label = cfg.Element == Element.None ? cfg.name : cfg.Element.ToString(),
+                    Label = VariantLabel(cfg, cfg.Element, configs, c => c.Element),
                     Element = cfg.Element,
                     SourceConfig = cfg,
                     SourcePrefab = prefab,
                 };
+                variant.AccentColor = AccentFor(cfg.Element);
                 Add(variant.Stats, "Shoal size", Count(cfg.PopulationSize, "creature"));
                 Add(variant.Stats, "Live cap", Count(cfg.MaxLivePopulation, "creature"));
                 Add(variant.Stats, "Feeds per child", cfg.FeedsPerOffspring > 0
@@ -343,11 +353,15 @@ namespace CosmicShore.Editor.Codex
 
             // Harvester-owned.
             if (target.Kingdom != fresh.Kingdom) { target.Kingdom = fresh.Kingdom; changed = true; }
+            if (target.Group != fresh.Group) { target.Group = fresh.Group; changed = true; }
             if (target.SourcePrefab != fresh.SourcePrefab) { target.SourcePrefab = fresh.SourcePrefab; changed = true; }
+            if (target.SourceConfig != fresh.SourceConfig) { target.SourceConfig = fresh.SourceConfig; changed = true; }
 
             // Filled only when empty - a human's value always wins.
             if (string.IsNullOrWhiteSpace(target.DisplayName) && !string.IsNullOrWhiteSpace(fresh.DisplayName))
             { target.DisplayName = fresh.DisplayName; changed = true; }
+            if (string.IsNullOrWhiteSpace(target.Tagline) && !string.IsNullOrWhiteSpace(fresh.Tagline))
+            { target.Tagline = fresh.Tagline; changed = true; }
             if (target.AccentColor.a <= 0f && fresh.AccentColor.a > 0f)
             { target.AccentColor = fresh.AccentColor; changed = true; }
             if (string.IsNullOrWhiteSpace(target.DiscoveryKey) && !string.IsNullOrWhiteSpace(fresh.DiscoveryKey))
@@ -392,14 +406,26 @@ namespace CosmicShore.Editor.Codex
 
         /// <summary>
         /// Variants are matched on label. Per-variant IMAGES are kept (they are baked art, not
-        /// harvested facts); wiring and stats are re-derived. A variant the project no longer
-        /// produces is dropped - unlike an entry, a variant carries no prose worth protecting.
+        /// harvested facts); wiring, accent and stats are re-derived. A variant the project no
+        /// longer produces is dropped - unlike an entry, a variant carries no prose worth
+        /// protecting.
+        ///
+        /// <para><b>Duplicate labels are tolerated, not assumed away.</b> A species can carry more
+        /// than one config per element (several fauna do), so "Charge" is not a unique key inside
+        /// an entry. <c>ToDictionary</c> throws on a duplicate key, and only never did here
+        /// because no variant had ever carried an image - the first baked one would have taken
+        /// the scan down. The harvester now disambiguates such labels at the source, and this
+        /// keeps first-wins as the backstop rather than trusting that it did.</para>
         /// </summary>
         static bool MergeVariants(CodexEntry target, CodexEntry fresh)
         {
-            var keptImages = target.Variants
-                .Where(v => v != null && v.Image)
-                .ToDictionary(v => v.Label ?? string.Empty, v => v.Image, StringComparer.Ordinal);
+            var keptImages = new Dictionary<string, Sprite>(StringComparer.Ordinal);
+            foreach (var kept in target.Variants)
+            {
+                if (kept == null || !kept.Image) continue;
+                var key = kept.Label ?? string.Empty;
+                if (!keptImages.ContainsKey(key)) keptImages[key] = kept.Image;
+            }
 
             bool changed = target.Variants.Count != fresh.Variants.Count;
 
@@ -415,6 +441,7 @@ namespace CosmicShore.Editor.Codex
                     var b = fresh.Variants[i];
                     changed = a == null || a.Label != b.Label || a.Element != b.Element ||
                               a.SourceConfig != b.SourceConfig || a.SourcePrefab != b.SourcePrefab ||
+                              a.AccentColor != b.AccentColor ||
                               !StatsEqual(a.Stats, b.Stats);
                 }
             }
@@ -431,8 +458,8 @@ namespace CosmicShore.Editor.Codex
             foreach (var entry in live)
             {
                 if (entry == null || entry.LockAutoHarvest) continue;
-                if (!entry.SourcePrefab)
-                    report.Orphans.Add($"{entry.Kingdom} · {entry.DisplayName} (no source prefab)");
+                if (!entry.HasSource)
+                    report.Orphans.Add($"{entry.Kingdom} · {entry.DisplayName} (no source asset)");
             }
         }
 
@@ -543,9 +570,23 @@ namespace CosmicShore.Editor.Codex
             return sb.ToString().Trim('-') is { Length: > 0 } s ? s : "unnamed";
         }
 
-        static CodexEntry NewEntry(CodexKingdom kingdom, string displayName) => new()
+        /// <summary>
+        /// The one place a codex id is minted. Shared with <see cref="ToolCodexHarvester"/> so a
+        /// second kingdom cannot invent a second id convention - the ids are what a save file and
+        /// the merge both key on.
+        /// </summary>
+        /// <param name="idSource">
+        /// What to slug the id from, when that is not the display name. A tool passes its
+        /// definition's own stable id: renaming what a toy is CALLED must not orphan its page,
+        /// and <c>ToyDefinitionSO.Id</c> is already the project's promise of a name that never
+        /// changes. Null falls back to the display name, which is right for a species (its name
+        /// IS derived from its assets) and for an ethirion.
+        /// </param>
+        internal static CodexEntry NewEntry(CodexKingdom kingdom, string displayName,
+            string idSource = null) => new()
         {
-            Id = $"{kingdom.ToString().ToLowerInvariant()}.{Slug(displayName)}",
+            Id = $"{kingdom.ToString().ToLowerInvariant()}." +
+                 Slug(string.IsNullOrWhiteSpace(idSource) ? displayName : idSource),
             Kingdom = kingdom,
             DisplayName = displayName,
             UnlockedByDefault = true,
@@ -553,7 +594,12 @@ namespace CosmicShore.Editor.Codex
 
         // ── Formatting helpers ───────────────────────────────────────────────────
 
-        static void Add(List<CodexStat> stats, string label, string value)
+        /// <summary>
+        /// Append a harvested row, or nothing at all when there is no value. Shared with
+        /// <see cref="ToolCodexHarvester"/>: "a fact we do not have is a row we do not draw" has
+        /// to hold identically in every kingdom, or one of them starts printing blanks.
+        /// </summary>
+        internal static void Add(List<CodexStat> stats, string label, string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
             stats.Add(new CodexStat(label, value));
@@ -619,6 +665,25 @@ namespace CosmicShore.Editor.Codex
             return set.Count == 1 ? set[0] : string.Join(" / ", set);
         }
 
+        /// <summary>
+        /// A variant's label: normally just the element, but qualified with the config's own asset
+        /// name when a species carries MORE THAN ONE config for that element. Several fauna do
+        /// (the Wildlife roster is authored per species per cell), and a grid of icons showing
+        /// three cards all labelled "Charge" tells a reader nothing about which is which - as well
+        /// as making the label ambiguous as the key the merge matches on.
+        /// </summary>
+        internal static string VariantLabel<T>(T config, Element element, IEnumerable<T> siblings,
+            Func<T, Element> elementOf) where T : Object
+        {
+            if (element == Element.None) return config.name;
+
+            int sameElement = 0;
+            foreach (var sibling in siblings)
+                if (elementOf(sibling) == element) sameElement++;
+
+            return sameElement > 1 ? $"{element} · {config.name}" : element.ToString();
+        }
+
         static IEnumerable<T> OrderByElement<T>(IEnumerable<T> items, Func<T, Element> element) =>
             items.OrderBy(i => element(i) switch
             {
@@ -671,7 +736,11 @@ namespace CosmicShore.Editor.Codex
             return meshes == 1 ? $"{tris:N0} triangles" : $"{meshes} parts, {tris:N0} triangles";
         }
 
-        static Color AccentFor(Element element) => element switch
+        /// <summary>
+        /// One element, one colour. Internal so a lifeform's element VARIANT is tinted the same
+        /// as the ethirion page it drops - two tables would be two chances to disagree.
+        /// </summary>
+        internal static Color AccentFor(Element element) => element switch
         {
             Element.Charge => new Color(0.98f, 0.75f, 0.18f, 1f),
             Element.Mass => new Color(0.93f, 0.27f, 0.38f, 1f),

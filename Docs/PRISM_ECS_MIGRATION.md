@@ -1,7 +1,7 @@
 # Prism ECS Migration — Assessment & Plan
 
 **Status:** Assessment complete; Phase R is the launch-blocking work item.
-**Context:** A full 3-player Skim Race (HexRace, mode 33) round ends in single-digit FPS.
+**Context:** A full 3-player Skim Race (SkimRace, mode 33) round ends in single-digit FPS.
 Target: sustained 60 fps. This doc evaluates the ECS exploration on
 `claude/ecs-migration-guide-Db42i` and lays out the migration plan.
 **Companion docs:** `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` (original audit),
@@ -229,7 +229,7 @@ Design rules encoded:
   bodies, gyroid steering) — same hook the spatial index already requires.
 
 In-editor verification protocol (Checkpoint A):
-1. Open any gameplay scene (MinigameHexRace), enter play, fly and lay trail.
+1. Open any gameplay scene (MinigameSkimRace), enter play, fly and lay trail.
    Expected: prisms render identically (bloom-in growth, domain colors, theme
    transitions, shield engage/shatter, danger tint, destruction hiding the block).
 2. Frame Debugger / Stats: SetPass + draw calls must NOT grow with trail length —
@@ -390,7 +390,7 @@ baseline and a build is never broken by default. The fixed ECS path is one flag 
    (Create ▸ ScriptableObjects ▸ Rendering ▸ Prism Render Config), tick
    *Use Instanced Rendering*. Or call `PrismRenderService.SetRuntimeOverride(true)`.
    On first active frame the console logs `[PrismRenderService] … ACTIVE`.
-4. **Gameplay check.** MinigameHexRace: fly, lay trail, destroy prisms. Colors,
+4. **Gameplay check.** MinigameSkimRace: fly, lay trail, destroy prisms. Colors,
    bloom-in, theme transitions, shield engage/shatter, explosions (animating now),
    implosions must match the legacy path. A/B with the toggle.
 5. **Residual risk to watch — Vector3 override size.** `_Spread`/`_Location`/`_Velocity`
@@ -408,3 +408,52 @@ baseline and a build is never broken by default. The fixed ECS path is one flag 
 | What gates launch? | Phase 0 + Phase R only. Phase 2 if schedule allows; Phase 3 explicitly post-launch. |
 | Biggest open product decision | Android GLES3: raise min-spec to Vulkan, or keep the legacy render path as fallback (the A/B toggle makes "both" cheap). |
 | Biggest technical unknown | ShaderGraph → DOTS-instanced property overrides on `UnstablePrismGraph` (Phase 0 spike, day one). |
+
+## 8. The device gate — a GPU that cannot run Entities Graphics must not crash the game (2026-09-09)
+
+**The shipped crash.** A Windows build died on an Intel Iris Xe laptop right after the Unity
+splash, before the Bootstrap scene finished its first frame, and ran fine on every dev machine.
+`Player.log` told the whole story:
+
+1. The Windows build listed **Direct3D 12 only** (`m_APIs: 12000000` — 0x12 = D3D12; an earlier
+   reading of that line as "DX11" was wrong). Unity's built-in D3D12 device filter refused the
+   integrated Intel GPU (`D3D12 API denied by user filter: {Vendor: Intel, Device Type: Integrated}`)
+   and the player fell back to **Direct3D 11**.
+2. Under that fallback every Entities Graphics compute kernel failed to load — four
+   `ArgumentException: Kernel '…' not found` from `ComputeShader.FindKernel` inside
+   `DefaultWorldInitialization.Initialize`, the last one (`CopyKernel`, `SparseUploader`) inside
+   `EntitiesGraphicsSystem.OnCreate`.
+3. `World.GetOrCreateSystemsAndLogException` catches an `OnCreate` exception, logs it, and
+   **leaves the system registered half-built**. Entities Graphics' own gate
+   (`IsEntitiesGraphicsSupportedOnSystem`) only asks for an SRP and
+   `SystemInfo.supportsComputeShaders`, both true here, so nothing stood it down.
+4. Two log lines after DI finished, the process died in a native crash inside
+   `il2cpp_runtime_class_init` — the first frame to touch the broken renderer.
+
+**The fix is two halves, and both are needed.**
+
+- **`CosmicShoreEntitiesBootstrap` (`ICustomBootstrap`) + `EntitiesGraphicsSupportProbe`**
+  (`_Scripts/Controller/ECS/Bootstrap/`). Before the default world is created the probe runs
+  the exact call that failed — `FindKernel("CopyKernel")` / `"ReplaceKernel"` on the package's
+  own `SparseUploader` compute shader, loaded from Resources the way the package loads it. On a
+  healthy device the bootstrap returns `false` and Unity's default initialization runs untouched.
+  On a failing one it creates the default world **EMPTY** and returns `true` — empty rather than
+  absent, because Entities asserts `World.DefaultGameObjectInjectionWorld` is set by a bootstrap
+  that claims success. `PrismRenderService` then finds no `EntitiesGraphicsSystem`, its on-demand
+  world bootstrap reads the same probe, and every prism stays on the legacy MeshRenderer path
+  (`StatusLine` names the device reason instead of "EntitiesGraphicsSystem missing"). The game
+  runs with instanced prisms OFF instead of dying. Instanced prism rendering is the project's only
+  runtime Entities consumer, which is what makes an empty world safe; a second consumer should
+  build the world with every system except the Entities Graphics assembly's instead.
+- **Direct3D 11 added to the Windows API list, below D3D12** (`m_APIs: 1200000002000000`). Unity
+  compiles shaders only for the listed APIs, so a build that lists D3D12 alone hands the D3D11
+  fallback nothing to load. Whether the kernels then load on Intel's DX11 driver is a separate
+  question the gate answers at runtime either way.
+
+**General rules.** (1) *A package's support gate tests what the package's author could think of,
+not what your build does* — `supportsComputeShaders == true` and "every compute kernel loads" are
+different claims, and only the second is the one `OnCreate` needs. (2) *Entities logs and keeps a
+system whose `OnCreate` threw*, so an exception there is not a clean failure but a delayed crash;
+gate BEFORE world creation, never after. (3) *A single-API graphics list is a promise that the
+denylist will never fall back* — Unity's D3D12 filter falls back on its own, so the fallback API
+must ship shaders too. Tests: `EntitiesGraphicsSupportProbeTests`.

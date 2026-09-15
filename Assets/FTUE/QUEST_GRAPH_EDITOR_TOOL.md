@@ -86,7 +86,7 @@ player physically is at every point of a track, and every row break is a real co
 
 ```
 row 0  gameplay   enter freestyle → …flight-school beats…
-row 1  app shell  exit freestyle → lock nav → dialogue → funnel → CTAs
+row 1  app shell  exit freestyle → lock nav → dialogue → funnel → gates
 row 2  gameplay   wait for the match to be played          (the away trip)
 row 3  app shell  …everything that greets them on the way back… → Phase Complete
 ```
@@ -132,7 +132,6 @@ appear. Details: `QUEST_GRAPH_TOOL.md` § "Canvas layout — venue rows".
 | Gate | **WaitForIntensity** | A mode reaches an intensity tier |
 | Gate | **WaitForModeUnlocked** | The player claims/unlocks a mode on the quest track |
 | Gate | **WaitForUserAction** | Generic `UserActionType` gate (ViewProfileMenu=500, ViewEpisodeMenu=600, UnlockVessel, …) |
-| Guidance | **HighlightCTA** | Lights a CTA breadcrumb and waits for its completion action; one-shot (retracts when the beat completes by any means) |
 | Progression | **UnlockMode** | Direct mode unlock via the progression service |
 | Terminal | **PhaseEnd** | Ends the phase (also clears any active arcade funnel) |
 | Terminal | **End** | Completes the whole quest |
@@ -154,7 +153,7 @@ Everything below lives in the **QUEST** section of the inspector.
 ### ▶ Force-Advance Current Node
 
 Completes the **▶ NEXT** node as if the player did it — and applies the **real** state it was
-waiting for (tier unlocks write real intensity, mode gates really unlock the mode, CTA gates
+waiting for (tier unlocks write real intensity, mode gates really unlock the mode, action gates
 fire the real user action). Progress persists exactly like a real advance, so you can chain
 Force-Advance through an entire run without replaying every game.
 
@@ -210,7 +209,7 @@ UGS cloud sync once the FTUE is signed off — no other changes needed.
 | Quest never starts | Quest/phase enabled? Not already COMPLETED (see PLAYER PROGRESS — reset to replay)? `debugDisable` off? Runner in the scene with the quest assigned? |
 | Stuck — nothing advances | Find the **▶ NEXT** node on the canvas: that's the gate the quest is waiting on. The Console `[Quest]` lines log every node enter/advance |
 | A card/intensity is locked unexpectedly | LIVE STATE box — if the funnel is active, **Clear Arcade Funnel Now**; otherwise it's real progression (unlock via Force-Advance or play) |
-| A CTA glows but tapping does nothing | The target button may be authored non-interactable — precede the CTA with **SetButtonInteractable** |
+| A button the quest is gating on does nothing | It may be authored non-interactable — precede the gate with **SetButtonInteractable** |
 | `SetButtonInteractable: no button registered` warning | The runner's Quest Buttons list is missing that key — re-run the Phase 0 wirer or add the entry manually |
 | My tool edits aren't in git | Toolbar shows **Save\*** → press Save. Toggles save automatically |
 | Validation warnings | Fix before shipping: unreachable nodes, dangling edges, missing terminal, funnel applied but never cleared |

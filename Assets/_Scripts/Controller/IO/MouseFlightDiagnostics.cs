@@ -38,10 +38,20 @@ namespace CosmicShore.Gameplay
             Autopilot = 3,
             /// <summary>A two-stick hull. The mouse cannot serve one — see the strategy's doc.</summary>
             NotSingleStick = 4,
+            /// <summary>
+            /// A gamepad currently holds the input family on a ONE-THUMB hull. Legitimate while the
+            /// player is actually using the pad — and the shape of this scheme's longest-running
+            /// bug when they are not: with mouse MOTION excluded from actuation, a connected pad
+            /// took the ship at startup and any stick drift over 0.25 took it back after every
+            /// click, so the cursor locked, the mouse buttons fired abilities, and the vessel never
+            /// turned. Moving the mouse now wins it back within 0.08 s; if this keeps printing
+            /// while nobody is touching the pad, that pad is actuating on its own.
+            /// </summary>
+            GamepadOwnsInput = 5,
         }
 
         static bool _engagedReported;
-        static readonly bool[] _reported = new bool[5];
+        static readonly bool[] _reported = new bool[6];
 
         // Domain reload can be disabled, which would otherwise latch every flag from the previous
         // play session and make the whole diagnostic silent exactly when it is being iterated on.

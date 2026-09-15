@@ -1,6 +1,5 @@
 using System;
 using CosmicShore.Core;
-using CosmicShore.Data;
 
 namespace CosmicShore.Core
 {
@@ -9,14 +8,6 @@ namespace CosmicShore.Core
     /// </summary>
     public static class FTUEEventManager
     {
-        /// <summary>
-        /// Fired when a Call-To-Action card is selected in the arcade menu.
-        /// Carries the target ID so subscribers can react accordingly.
-        /// </summary>
-        public static event Action<CallToActionTargetType> OnCTAClicked;
-        public static void RaiseCTAClicked(CallToActionTargetType id)
-            => OnCTAClicked?.Invoke(id);
-
         /// <summary>
         /// Fired two times. Once when a user enters the game for the first time.
         /// Second, when the user starts Phase 3 of the FTUE.

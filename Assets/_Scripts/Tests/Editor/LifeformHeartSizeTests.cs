@@ -105,7 +105,13 @@ namespace CosmicShore.Tests
         /// </summary>
         static bool TryVariantBlock(string text, out string block)
         {
-            var m = Regex.Match(text, @"^  Variant:\n(?<body>(?:^    [^\n]*\n?)+)", RegexOptions.Multiline);
+            // `\r?` / `[^\r\n]` are platform-critical, not tidiness. .gitattributes sets
+            // `* text=auto`, so an .asset is LF in the repository and CRLF in a WINDOWS working
+            // tree - and a literal `\n` in the pattern cannot match the `\r\n` there. Without
+            // this the block was never found on Windows and every Variant assertion below passed
+            // VACUOUSLY. Measured on .NET: 1 match on LF, 0 on CRLF; 1/1 once anchored this way.
+            var m = Regex.Match(text, @"^  Variant:\r?\n(?<body>(?:^    [^\r\n]*\r?\n?)+)",
+                                RegexOptions.Multiline);
             block = m.Success ? m.Groups["body"].Value : null;
             return m.Success;
         }

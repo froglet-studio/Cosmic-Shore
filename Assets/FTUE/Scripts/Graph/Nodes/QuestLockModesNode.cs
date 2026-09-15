@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"Only {tutorialGame}";
 
         [Tooltip("The one game card left interactable during the tutorial.")]
-        public CallToActionTargetType tutorialGame = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
+        public GameModes tutorialGame = GameModes.MultiplayerCrystalCapture;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
@@ -29,7 +29,7 @@ namespace CosmicShore.Core
 
                     var btn = card.GetComponentInChildren<Button>();
                     if (btn != null)
-                        btn.interactable = (card.TargetID == tutorialGame);
+                        btn.interactable = (card.GameMode == tutorialGame);
                 }
             }
             else

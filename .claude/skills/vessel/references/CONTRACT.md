@@ -206,6 +206,18 @@ juice through `ElementBars` when a vessel wants it.
   `mass_hull` binds, `massive_jaw` doesn't; two-element names are ambiguous → ignored;
   FBX deformer prefixes fine; the shape's last-frame weight is its extreme). Discovery is
   `VesselAnimation.CollectElementShapes` at Initialize. No per-prefab flags exist.
+- **A GENERATED hull morphs procedurally, and it must say so.** The Scarab has no morphable FBX —
+  its morphs are the four element extremes of its own pure hull function, baked to deltas and
+  blended at the shared config's feel (SCARAB.md §3.0.2). Such a vessel implements
+  **`IProceduralElementMorphSource`** (`ProceduralMorphElements` + `HiddenLegacyModelRoot`), which
+  is what keeps the audit honest twice over: procedural coverage counts as real, and element
+  blend shapes under the declared hidden legacy root are marked INERT instead of counted — a
+  shape on a renderers-off placeholder greens the audit while the hull morphs by nothing. If you
+  build a second procedural hull, keep the split: the builder owns geometry (topology-asserted
+  extreme bakes, bounds pinned to the weight-lattice union, `DontRecalculateBounds` writes), the
+  animation owns time (config SO feel, instant seed, kill-and-retween, LateUpdate push after the
+  base's shape-key write) — and the morph writes localPosition/mesh while puppetry writes
+  localRotation, so no channel gains a second writer.
 - Morphs express only the **[0,10] band** (deficit holds level-0, overcharge holds level-10 —
   hull and flowers always agree); DOTween glides from
   `Assets/Resources/VesselElementalMorphConfig.asset`, never snaps.
@@ -359,6 +371,28 @@ warning). Be exhaustive here; this is the contract's least-guarded clause.
   authored effects (Sparrow lost all elemental-crystal feedback this way); an effect asset that
   exists but sits in no container executes never (several orphans exist); fork shared effect SOs
   before changing per-vessel behavior.
+
+### 9.x A shared component's AMBIENT default is a per-vessel visual nobody authored
+
+`Skimmer.prefab` is nested by eight vessels and carries a `ForcefieldCrackleOverlay` whose
+shader composes `Alpha = fresnel + impact contributions`. `ForcefieldCrackleController` pushes
+`fresnelRimIntensity = 0.08` **every frame regardless of impacts**, so every one of those eight
+draws a permanently visible bubble the size of its skimmer sphere — 20-40 units on the Manta.
+
+The part worth carrying is *why nobody caught it*: the crackle is a skimmer PRISM effect, and
+only the Dolphin's and Squirrel's `SkimmerImpactorDataContainerSO`s list it. On the other six,
+the overlay's driver never runs and the ambient rim is the whole of what it draws — an effect
+that is simultaneously "not wired" and "always on screen". Rule 22 says a shared impact effect
+is per-vessel wiring; this is its inverse: **a shared component's non-zero default needs no
+wiring at all, so the vessels that never opted in are exactly the ones showing it raw.**
+
+So when a vessel "shows something it shouldn't": ask which shared prefab it nests, read that
+component's field INITIALIZERS (not its serialized block — see the asset-surgery technique on
+overriding a field the source never serializes), and check whether this vessel's container
+actually lists the effect that drives it. Fix by overriding the value on that vessel's nested
+instance, never by disabling the renderer.
+
+Still open at time of writing: Urchin, Grizzly, Falcon, Shrike and Termite.
 
 ## 10. Docs & paper trail
 

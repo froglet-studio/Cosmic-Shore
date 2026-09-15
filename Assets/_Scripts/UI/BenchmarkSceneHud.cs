@@ -149,7 +149,7 @@ namespace CosmicShore.UI
         {
             var s = DisplayGraphicsSettings.Instance;
             if (s == null) return;
-            int[] caps = { 30, 60, 120, 144, -1 };
+            int[] caps = { 30, 60, 120, 144, 240, -1 };
             int cur = s.Current.TargetFrameRate;
             int i = Array.IndexOf(caps, cur);
             s.SetTargetFrameRate(caps[(i + 1 + caps.Length) % caps.Length]);

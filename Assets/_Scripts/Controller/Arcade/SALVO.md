@@ -1,8 +1,24 @@
 # Salvo — Technical Documentation
 
+
+> **⚠ Changed under this mode's feet (2026-09).** The premise below — *"the tank never regenerates
+> and the only refuel is an omni crystal"* — is no longer the whole truth. The Sparrow's missiles
+> now also recharge by **destroying hostile prisms** (0.01 per prism, 50 prisms per rocket:
+> `VesselRearmOnPrismDestruction`), which in Salvo is the mode's own objective. So the crystal run
+> is no longer the only way to reload, and the crystal-run rhythm this mode is built around is
+> correspondingly weaker.
+>
+> **The wingman reload is untouched** and is still the reason to play together: an omni crystal
+> collected by any pilot fills the whole domain's bays instantly, where prism-destruction pays one
+> pilot 2% of a rack at a time. But the balance between the two wants a playtest, and if the
+> crystal line needs to matter more the lever is `ammoPerPrism` on `Sparrow.prefab`, not this
+> mode. Missiles also now carry a proximity fuze and a second, creature-killing blast — see
+> `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+
 > **Naming.** `GameModes.Salvo = 44` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameSalvo.asset` is **"Salvo"** too. Do not rename the enum, the
-> controller, the scene, or this file (the Tournament/"Maelstrom" precedent covers a display
+> controller, the scene, or this file (the Maelstrom/"Maelstrom" precedent covers a display
 > split if one is ever wanted).
 >
 > **ID history:** authored as 42, renumbered to **44** when this branch merged
@@ -65,7 +81,7 @@ The whole missile economy is the Sparrow's shipped wiring, not this mode's inven
 | Missile tank: max **1**, starts full, **no regeneration** | `Sparrow.prefab` ResourceSystem, resource 0 ("Missiles") |
 | A skyburst costs **0.5** of the tank → 2 rockets per refuel | `SkyBurstGunAction.asset` (`ammoCost`) |
 | Full-auto guns cost **0** — always available, chip damage | `FullAutoAction.asset` |
-| An omni crystal **sets the tank full** on collect | `SparrowVesselChangeResourceByCrystalEffect.asset` (the Sparrow's one `vesselCrystalEffects` entry), replayed on the collector's own machine by `CrystalManager.ReplayVesselCrystalEffects` |
+| ~~An omni crystal **sets the tank full** on collect~~ — **RETIRED 2026-09** | `SparrowVesselChangeResourceByCrystalEffect.asset` is DELETED. Missiles now reload by DESTROYING HOSTILE PRISMS (`VesselRearmOnPrismDestruction` on `Sparrow.prefab`, 0.01 per prism = 50 prisms per rocket); the omni crystal grants an 8 s elemental-debuff ward instead. See the ⚠ section below |
 
 Salvo's job was to build a mode where that loop is the game: stock the arena with crystals,
 make destruction the score, and extend the refuel to the domain.
@@ -104,7 +120,7 @@ Why this shape:
 ## Scoring (nothing new)
 
 `ScoringMetric.PrismsDestroyed` against `GameDataSO.PrismTargetCount` — the exact Rampage /
-Ribcage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
+PeelTheCage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
 (server-side for trails, and via `Player.ReportEnvironmentPrismDestroyed_ServerRpc` for the
 client-simulated environment — the Boneyard's wreckage is environment-owned `Domains.Blue`
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is

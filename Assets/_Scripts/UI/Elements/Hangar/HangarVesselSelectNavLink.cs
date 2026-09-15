@@ -20,7 +20,6 @@ namespace CosmicShore.UI
         [SerializeField] Image ShipImage;
         [SerializeField] Image LockImage;
         [SerializeField] Button Button;
-        [SerializeField] CallToActionTarget CallToActionTarget;
         [SerializeField] float ActiveSize = 64;
         [SerializeField] float InactiveSize = 52;
 

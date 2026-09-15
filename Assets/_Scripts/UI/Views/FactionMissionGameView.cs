@@ -15,9 +15,7 @@ namespace CosmicShore.UI
             var mission = SelectedModel as SO_Mission;
             GameDescription.text = $"{mission.Description}";
 
-            var preview = Instantiate(mission.PreviewClip);
-            preview.transform.SetParent(PreviewWindow.transform, false);
-            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);
+            // The per-game preview video was retired with SO_Game.PreviewClip.
 
             Canvas.ForceUpdateCanvases();
         }

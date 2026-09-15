@@ -77,10 +77,10 @@ too, so I left it.
 
 Checked spawner selection across all scenes. `IntensityWiseLifeSpawner` is **NOT
 dead** — `MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`, and
-`MinigameTournamentMultuplayer` select it (`cellTypeChoiceOptions: 1`). The docs
+`MinigameMaelstromMultuplayer` select it (`cellTypeChoiceOptions: 1`). The docs
 (ECOSYSTEM.md §1 root-causes, §8, §9, §10; the kickoff brief) claimed it was dead
 and recommended deletion — that would have broken those scenes. Corrected all five
-places to say it's live (used by WildlifeBlitz + Tournament), do not delete, and
+places to say it's live (used by WildlifeBlitz + Maelstrom), do not delete, and
 note it has diverged from `RandomLifeSpawner` (no `FaunaFoodFloor` gate, 1/tick).
 Doc-only; no code change.
 
@@ -150,7 +150,7 @@ visibly? does Skim Race FPS recover?) and I'll tune from there.
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via
    `fauna2` is dead; forager = any-domain-unshielded Consume; etc.).
-2. Reconcile `IntensityWiseLifeSpawner` — likely dead now that HexRace uses Random;
+2. Reconcile `IntensityWiseLifeSpawner` — likely dead now that SkimRace uses Random;
    document clearly (no blind deletion).
 3. Edit-mode tests for testable logic (`FaunaDiet`, predation immunity timing,
    `GameDataSO` team counts) where they don't need Unity runtime.
@@ -183,16 +183,16 @@ What changed:
 - `DomainVolumeIndicator` — `concentricPhaseMode` toggle (+ `SetConcentricPhaseMode`
   for the AddComponent path), `_massNow/_massTarget` lerp, and per-phase frac
   computation from `cell.ResolvedThresholds`.
-- `HexRaceHUD` — auto-attaches a concentric indicator (top-left, tunable
+- `SkimRaceHUD` — auto-attaches a concentric indicator (top-left, tunable
   `indicatorAnchoredPos`/`indicatorSize`) and hands it the injected `GameDataSO`.
-  Lives in `GameCanvas-HexRace.prefab`, which is in `MinigameHexRace.unity`, so it
+  Lives in `GameCanvas-SkimRace.prefab`, which is in `MinigameSkimRace.unity`, so it
   appears in Skim Race with no scene edit. A pre-placed indicator can be wired into
   the prefab to override the auto-created one.
 
 **Needs your in-editor validation** (procedural UI I can't render): position/size
 of the gauge in the Skim Race HUD, ring thickness/alpha legibility, and that the
 dominant-domain color reads correctly against the track background. Tune via the
-`HexRaceHUD` fields and the `DomainVolumeHexGraphic` "Concentric phase rings"
+`SkimRaceHUD` fields and the `DomainVolumeHexGraphic` "Concentric phase rings"
 header.
 
 Requests 1/2/4 from this batch (lower mass-vs-crystal threshold, 10× hunt speed,
@@ -222,7 +222,7 @@ by name under the HUD canvas, or wire `volumePauseButton`/`volumeIndicator` per
 GameCanvas). Every gameplay HUD inherits it; the button keeps its authored onClick
 (open PauseMenu) — the gauge only replaces the face. Mirrors what
 `MenuMiniGameHUD.EnsureDomainVolumeIndicator()` already does for the menu, so the
-gauge is now identical and present everywhere. `HexRaceHUD` reverted to its minimal
+gauge is now identical and present everywhere. `SkimRaceHUD` reverted to its minimal
 original (no bespoke widget).
 
 `DomainVolumeIndicator` now always computes the threshold fractions from
@@ -321,7 +321,7 @@ newborns automatically (stamped in `Awake`).
 seed floor (`PopulationSize`) each period — bootstrap + extinction recovery — and
 stays out while the food web sustains the population (pure gating in
 `FaunaReproductionRules.SeedSpawnCount`; prey-floor gate unchanged).
-`IntensityWiseLifeSpawner` (WildlifeBlitz/Tournament) only gained lineage-binding
+`IntensityWiseLifeSpawner` (WildlifeBlitz/Maelstrom) only gained lineage-binding
 (counting + config-opt-in reproduction); its 1/tick cadence is unchanged.
 
 ### 3. Shark re-added to the Blob (menu) profile — full 3-tier web

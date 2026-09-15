@@ -19,6 +19,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The player's UGS authentication PlayerId, replicated to every peer. Empty for AI.
         /// This is the real identity - <see cref="PlayerUUID"/> is the display name.
+        ///
+        /// <para><b>It ALLOCATES on every read.</b> The implementation is
+        /// <c>NetUgsPlayerId.Value.ToString()</c> and <c>FixedString64Bytes.ToString()</c> mints a
+        /// managed string each time, so reading it per player per frame is throwaway garbage at
+        /// frame rate. Read it on a tick, or cache it - never in a per-frame loop over the
+        /// roster.</para>
         /// </summary>
         string UgsPlayerId { get; }
         IVessel Vessel { get; }
@@ -62,6 +68,24 @@ namespace CosmicShore.Gameplay
         /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) binds on exactly this.
         /// </summary>
         bool IsLocalPilot { get; }
+        /// <summary>
+        /// True once THIS player's machine has finished building the arena and is past its own
+        /// connecting screen. The arena is built independently on every peer, so only that
+        /// player's machine can know - it reports through <see cref="ReportArenaReady"/> and the
+        /// answer replicates. A player that is not network-spawned (the legacy single-player
+        /// path) is trivially ready: there is no second machine to wait for.
+        /// </summary>
+        bool IsArenaReady { get; }
+        /// <summary>Announce that this machine's arena build is complete. Owner-side; idempotent.</summary>
+        void ReportArenaReady();
+        /// <summary>
+        /// True once this player has asked for a rematch on the current scoreboard. Replicated
+        /// state, not an event, so the scoreboard can draw a face per vote on every peer - the
+        /// host's above all, since only the host's press actually restarts the match. Always
+        /// false for a player that is not network-spawned (the legacy single-player path): there
+        /// is nobody to ask.
+        /// </summary>
+        bool HasVotedRematch { get; }
         /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>

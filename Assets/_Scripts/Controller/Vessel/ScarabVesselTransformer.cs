@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Speed shed per second when the trigger is released (world units/s²). The Scarab " +
                  "has no brake — releasing the throttle IS the brake, so this is deliberately " +
-                 "strong: at 120 a full-speed vessel is stopped in about a second and a half. " +
+                 "strong: at 120 a full-speed vessel is stopped in about 1.8 seconds. " +
                  "Linear rather than proportional so it actually reaches zero instead of " +
                  "asymptotically crawling. Speed never decays below MinimumSpeed (authored 0 on " +
                  "the Scarab, so releasing brings you to a genuine stop).")]
@@ -57,8 +57,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("The throttle ceiling at element level 0. The EFFECTIVE ceiling is this × " +
                  "ThrottleScalerMultiplier.EvaluateLive — author that ElementalFloat on the " +
                  "prefab as the TIME element, 1 → 1.5 (SCARAB.md §7: Time = top speed of the " +
-                 "throttle ramp; the map's generic Time multiplier stays pinned to 1).")]
-        [SerializeField, Min(0f)] float baseTopSpeed = 180f;
+                 "throttle ramp; the map's generic Time multiplier stays pinned to 1), so the " +
+                 "shipped band is 216 → 324. NOTE this initializer IS the authored value: the " +
+                 "Scarab prefab's transformer block was last written by Unity before these " +
+                 "fields existed, so it carries no override for any of them (SCARAB.md §13). " +
+                 "At accelerationPerSecond 90 the ramp to 216 is 2.4s, and coastDragPerSecond " +
+                 "120 brings it back down in 1.8s.")]
+        [SerializeField, Min(0f)] float baseTopSpeed = 216f;
 
         [Header("Snap Dash (TIME 5)")]
         [Tooltip("Two throttle-trigger presses inside this window fire the dash (seconds).")]
@@ -126,6 +131,12 @@ namespace CosmicShore.Gameplay
         /// Scarab prefab as element Time, 1 → 1.5.</summary>
         float ThrottleCeiling()
             => baseTopSpeed * ThrottleScalerMultiplier.EvaluateLive(VesselStatus);
+
+        /// <summary>The LIVE top speed, Time scaling included — what anything normalizing
+        /// against "how fast can this vessel go right now" must read (ScarabAnimation's leg
+        /// tuck: normalized against the authored base, a Time-10 Scarab rides pinned 'tucked'
+        /// from two-thirds throttle up and the fleet's best throttle read carries nothing).</summary>
+        public float CurrentTopSpeed => ThrottleCeiling();
 
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two

@@ -368,7 +368,13 @@ namespace CosmicShore.Editor
         static string ReplaceFirst(string input, string pattern, string replacement) =>
             new Regex(pattern).Replace(input, replacement, 1);
 
-        static string FindGraphPath(string graphName)
+        /// <summary>
+        /// Resolves a prism ShaderGraph by NAME: Graphs/, then Graphs/PrismGraphs/, then an
+        /// AssetDatabase search. Internal rather than private because the structural tests must
+        /// resolve a graph exactly the way the tool that WROTE it does - a test that hardcodes one
+        /// of the two folders reports a graph that is present and correct as "missing".
+        /// </summary>
+        internal static string FindGraphPath(string graphName)
         {
             string[] known =
             {

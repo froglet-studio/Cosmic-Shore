@@ -202,7 +202,6 @@ namespace CosmicShore.UI
             if (ship == null) return;
 
             SelectedShip = ship;
-            CSDebug.Log($"HangarScreen: Selected vessel for detail: {ship.Name}");
 
             if (detailView)
             {
@@ -255,7 +254,6 @@ namespace CosmicShore.UI
             for (var i = 0; i < Ships.Count; i++)
             {
                 var ship = Ships[i];
-                CSDebug.Log($"Populating Vessel Select List: {ship.Name}");
                 var shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
                 shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
                 shipSelectCard.AssignShipClass(ship);
@@ -272,7 +270,6 @@ namespace CosmicShore.UI
         public void SelectShip(int index)
         {
             var selectedShip = Ships[index];
-            CSDebug.Log($"SelectShip: {selectedShip.Name}");
 
             if (ShipSelectionContainer)
             {
@@ -321,7 +318,6 @@ namespace CosmicShore.UI
             if (ShipSelectionContainer && ShipSelectionContainer.childCount > 0)
             {
                 var shipSelectCard = ShipSelectionContainer.GetChild(0).gameObject.GetComponent<HangarShipSelectNavLink>();
-                CSDebug.Log($"Starting SelectShipCoroutine: {shipSelectCard.name}, {shipSelectCard.Ship.Name}");
                 shipSelectCard.Select();
             }
         }

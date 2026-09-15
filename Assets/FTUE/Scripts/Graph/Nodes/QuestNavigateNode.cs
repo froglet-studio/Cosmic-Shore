@@ -22,7 +22,8 @@ namespace CosmicShore.Core
     /// <summary>
     /// Programmatically navigates the menu to a destination via <see cref="ScreenSwitcher"/>,
     /// then advances. Use this to *force* navigation (scripted tour). To instead *ask* the
-    /// player to navigate and wait for them, use a <see cref="QuestHighlightCTANode"/>.
+    /// player to navigate and wait for them, gate on the matching
+    /// <see cref="QuestWaitForUserActionNode"/> instead.
     /// </summary>
     public class QuestNavigateNode : QuestNodeSO
     {
