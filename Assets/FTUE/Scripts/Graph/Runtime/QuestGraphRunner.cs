@@ -126,13 +126,13 @@ namespace CosmicShore.Core
 
             if (debugDisable)
             {
-                Debug.Log("[Quest] Runner disabled (debugDisable).");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, "[Quest] Runner disabled (debugDisable).");
                 return;
             }
 
             if (quest != null && !quest.questEnabled && debugPhaseOverride == null)
             {
-                Debug.Log($"[Quest] '{QuestId}' is disabled (questEnabled=false) — not running.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] '{QuestId}' is disabled (questEnabled=false) — not running.");
                 return;
             }
 
@@ -145,7 +145,7 @@ namespace CosmicShore.Core
 
             if (!debugForceRun && QuestProgressStore.IsCompleted(QuestId))
             {
-                Debug.Log($"[Quest] '{QuestId}' already completed — not running.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] '{QuestId}' already completed — not running.");
                 return;
             }
 
@@ -164,7 +164,7 @@ namespace CosmicShore.Core
             {
                 _phaseIndex = -1;
                 _activeGraph = debugPhaseOverride;
-                Debug.Log($"[Quest] TEST-running single phase '{debugPhaseOverride.PhaseName}'.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] TEST-running single phase '{debugPhaseOverride.PhaseName}'.");
                 RunNode(_activeGraph.entryNode);
                 yield break;
             }
@@ -172,7 +172,7 @@ namespace CosmicShore.Core
             _phaseIndex = debugForceRun ? 0
                 : Mathf.Clamp(QuestProgressStore.GetPhaseIndex(QuestId), 0, quest.phases.Count - 1);
 
-            Debug.Log($"[Quest] Starting '{QuestId}' at phase {_phaseIndex}.");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Starting '{QuestId}' at phase {_phaseIndex}.");
             StartPhase(resume: !debugForceRun);
         }
 
@@ -219,8 +219,9 @@ namespace CosmicShore.Core
             while (_phaseIndex < quest.phases.Count
                    && (quest.phases[_phaseIndex] == null || !quest.phases[_phaseIndex].phaseEnabled))
             {
-                Debug.Log($"[Quest] Phase {_phaseIndex} of '{QuestId}' is " +
-                          $"{(quest.phases[_phaseIndex] == null ? "null" : "disabled")} — skipping.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE,
+                    $"[Quest] Phase {_phaseIndex} of '{QuestId}' is " +
+                    $"{(quest.phases[_phaseIndex] == null ? "null" : "disabled")} — skipping.");
                 _phaseIndex++;
             }
 
@@ -239,11 +240,11 @@ namespace CosmicShore.Core
                 if (savedNode != null)
                 {
                     startNode = savedNode;
-                    Debug.Log($"[Quest] Resuming phase {_phaseIndex} ('{_activeGraph.PhaseName}') at node '{savedNode.displayName}'.");
+                    CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Resuming phase {_phaseIndex} ('{_activeGraph.PhaseName}') at node '{savedNode.displayName}'.");
                 }
             }
 
-            Debug.Log($"[Quest] Phase {_phaseIndex}: '{_activeGraph.PhaseName}'.");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Phase {_phaseIndex}: '{_activeGraph.PhaseName}'.");
             RunNode(startNode);
         }
 
@@ -261,7 +262,7 @@ namespace CosmicShore.Core
 
             if (!node.nodeEnabled)
             {
-                Debug.Log($"[Quest] Node '{node.displayName}' disabled — passing through.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Node '{node.displayName}' disabled — passing through.");
                 _current = node;
                 _advanced = false;
                 Advance(node, QuestPorts.Next);
@@ -270,7 +271,7 @@ namespace CosmicShore.Core
 
             _current = node;
             _advanced = false;
-            Debug.Log($"[Quest] Node → {node.NodeTypeLabel} ({node.displayName})");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Node → {node.NodeTypeLabel} ({node.displayName})");
             StartCoroutine(RunNodeCoroutine(node));
         }
 
@@ -334,7 +335,7 @@ namespace CosmicShore.Core
 
             var node = _current;
             string port = node.OutputPorts.Count > 0 ? node.OutputPorts[0] : QuestPorts.Next;
-            Debug.Log($"[Quest] TEST force-advance past '{node.displayName}' ({node.NodeTypeLabel}).");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] TEST force-advance past '{node.displayName}' ({node.NodeTypeLabel}).");
 
             // Apply the REAL state the node was waiting for (unlock the tier / the mode) so
             // downstream systems behave as if the player earned it. May advance the node by
@@ -360,11 +361,11 @@ namespace CosmicShore.Core
 
             if (debugPhaseOverride != null)
             {
-                Debug.Log("[Quest] TEST phase finished.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, "[Quest] TEST phase finished.");
                 return;
             }
 
-            Debug.Log($"[Quest] Phase {_phaseIndex} ('{_activeGraph.PhaseName}') complete.");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Phase {_phaseIndex} ('{_activeGraph.PhaseName}') complete.");
             instructionView?.Hide();
             QuestProgressStore.ReportPhaseCompleted(QuestId, _phaseIndex);
             FTUEEventManager.RaiseQuestPhaseCompleted(QuestId, _phaseIndex);
@@ -390,7 +391,7 @@ namespace CosmicShore.Core
             instructionView?.Hide();
             QuestProgressStore.MarkQuestCompleted(QuestId);
             FTUEEventManager.RaiseQuestCompleted(QuestId);
-            Debug.Log($"[Quest] '{QuestId}' COMPLETE (persisted to UGS + local).");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] '{QuestId}' COMPLETE (persisted to UGS + local).");
         }
 
     }

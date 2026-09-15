@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -24,7 +25,7 @@ namespace CosmicShore.Core
         {
             if (QuestArcadeConstraints.Active)
             {
-                Debug.Log("[Quest] Phase end — clearing the arcade funnel (per-phase scope).");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, "[Quest] Phase end — clearing the arcade funnel (per-phase scope).");
                 QuestArcadeConstraints.Clear();
             }
 

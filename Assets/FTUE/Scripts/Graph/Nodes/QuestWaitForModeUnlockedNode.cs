@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Data;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -59,7 +60,7 @@ namespace CosmicShore.Core
             }
 
             svc.UnlockMode(mode);
-            Debug.Log($"[Quest] Force-satisfy: {mode} unlocked (as if claimed).");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Force-satisfy: {mode} unlocked (as if claimed).");
         }
     }
 }

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -72,7 +73,7 @@ namespace CosmicShore.Core
             // and the claim button lights up on the quest track (IntensityUnlocked quests
             // evaluate against the max unlocked tier we just wrote).
             svc.ReportQuestStat(mode, 0f);
-            Debug.Log($"[Quest] Force-satisfy: {mode} max intensity → {intensityTier}, quest evaluated for completion.");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Force-satisfy: {mode} max intensity → {intensityTier}, quest evaluated for completion.");
         }
     }
 }

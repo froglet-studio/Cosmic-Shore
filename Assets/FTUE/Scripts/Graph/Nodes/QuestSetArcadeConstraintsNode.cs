@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Data;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -47,7 +48,7 @@ namespace CosmicShore.Core
             else
                 QuestArcadeConstraints.Apply(allowedMode, forcedIntensity, forcedPlayerCount, forcedDomainCount);
 
-            Debug.Log($"[Quest] Arcade constraints {(clearConstraints ? "cleared" : $"applied: {EditorSummary}")}.");
+            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Arcade constraints {(clearConstraints ? "cleared" : $"applied: {EditorSummary}")}.");
             advance(QuestPorts.Next);
             yield break;
         }

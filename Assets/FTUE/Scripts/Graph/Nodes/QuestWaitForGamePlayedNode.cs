@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Data;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -54,7 +55,7 @@ namespace CosmicShore.Core
             {
                 if (QuestPlayRecorder.HasPlayed(expectedMode, minIntensity))
                 {
-                    Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played (recorded @ ≥{Mathf.Max(1, minIntensity)}) — advancing (resume).");
+                    CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] WaitForGamePlayedNode: {expectedMode} already played (recorded @ ≥{Mathf.Max(1, minIntensity)}) — advancing (resume).");
                     advance(QuestPorts.Next);
                     yield break;
                 }
@@ -66,7 +67,7 @@ namespace CosmicShore.Core
                     {
                         if (svc.GetIntensityPlayCount(expectedMode, intensity) > 0)
                         {
-                            Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played @ intensity {intensity} — advancing (resume).");
+                            CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] WaitForGamePlayedNode: {expectedMode} already played @ intensity {intensity} — advancing (resume).");
                             advance(QuestPorts.Next);
                             yield break;
                         }

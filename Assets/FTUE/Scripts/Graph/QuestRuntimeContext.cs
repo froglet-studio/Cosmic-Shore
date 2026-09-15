@@ -73,7 +73,7 @@ namespace CosmicShore.Core
                     if (entry?.button == null || !string.Equals(entry.key, key, StringComparison.OrdinalIgnoreCase))
                         continue;
                     entry.button.interactable = interactable;
-                    Debug.Log($"[Quest] Button '{key}' → interactable={interactable}.");
+                    CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Button '{key}' → interactable={interactable}.");
                     return;
                 }
             }
@@ -189,7 +189,7 @@ namespace CosmicShore.Core
             else
             {
                 _dialogueInstance = UnityEngine.Object.Instantiate(DialoguePanel, DialoguePanelParent);
-                Debug.Log("[Quest] Dialogue panel instantiated from prefab.");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, "[Quest] Dialogue panel instantiated from prefab.");
             }
 
             return _dialogueInstance;

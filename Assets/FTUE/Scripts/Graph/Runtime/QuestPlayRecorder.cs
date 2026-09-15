@@ -54,7 +54,7 @@ namespace CosmicShore.Core
                     PlayerPrefs.Save();
                 }
 
-                Debug.Log($"[Quest] Play recorded: {mode} @ intensity {intensity} (best {Mathf.Max(best, intensity)}).");
+                CSDebug.LogVerbose(CSLogChannel.FTUE, $"[Quest] Play recorded: {mode} @ intensity {intensity} (best {Mathf.Max(best, intensity)}).");
                 return; // all GameDataSO assets mirror the same session — one record is enough
             }
         }
