@@ -23,7 +23,7 @@ namespace CosmicShore.Core
         public override QuestVenue VenueAfter => QuestVenue.AppShell;
 
         [Tooltip("The game mode whose intensity gate this node waits on.")]
-        public GameModes mode = GameModes.MultiplayerCrystalCapture;
+        public GameModes mode = GameModes.Scurry;
 
         [Tooltip("The intensity tier that satisfies this gate (4 = the tier that completes the mode's quest).")]
         [Range(2, 4)] public int intensityTier = 4;

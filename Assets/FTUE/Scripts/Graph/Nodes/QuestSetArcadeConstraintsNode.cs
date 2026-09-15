@@ -28,7 +28,7 @@ namespace CosmicShore.Core
         public bool clearConstraints;
 
         [Tooltip("The one game card left clickable. Random = no card restriction.")]
-        public GameModes allowedMode = GameModes.MultiplayerCrystalCapture;
+        public GameModes allowedMode = GameModes.Scurry;
 
         [Tooltip("The only selectable intensity in the configure modal (0 = no restriction).")]
         [Range(0, 4)] public int forcedIntensity = 1;

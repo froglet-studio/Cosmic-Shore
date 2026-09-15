@@ -31,7 +31,7 @@ namespace CosmicShore.Core
         public bool filterByMode;
 
         [Tooltip("The mode that must have been played (used when Filter By Mode is on).")]
-        public GameModes expectedMode = GameModes.MultiplayerCrystalCapture;
+        public GameModes expectedMode = GameModes.Scurry;
 
         [Tooltip("Minimum selected intensity for the run to count (0 = any).")]
         [Range(0, 4)] public int minIntensity;

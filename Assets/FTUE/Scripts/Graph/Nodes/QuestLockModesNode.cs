@@ -17,7 +17,7 @@ namespace CosmicShore.Core
         public override string EditorSummary => $"Only {tutorialGame}";
 
         [Tooltip("The one game card left interactable during the tutorial.")]
-        public GameModes tutorialGame = GameModes.MultiplayerCrystalCapture;
+        public GameModes tutorialGame = GameModes.Scurry;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

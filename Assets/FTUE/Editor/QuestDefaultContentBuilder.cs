@@ -16,6 +16,15 @@ namespace CosmicShore.Editor
     /// <see cref="QuestSO"/> + per-phase <see cref="QuestPhaseGraphSO"/> assets (nodes as
     /// sub-assets) with designer notes baked in, runnable end-to-end once DialogueSets are
     /// assigned.
+    ///
+    /// <para><b>"Crystal Capture" below is the mode now called <c>Scurry</c>.</b> Upstream
+    /// renamed the enum member (<c>MultiplayerCrystalCapture</c> -> <c>Scurry</c>; see
+    /// <c>GameModeRenameMigration</c>) while this branch was out of the rename tool's reach,
+    /// so the enum references were corrected but the prose, the node display names here, and
+    /// the display names already baked into the shipped <c>MainQuest_Phase*</c> assets still
+    /// say "Crystal Capture" / "CC". Those three would have to move together, and the assets
+    /// can only be re-authored by re-running this tool in the editor - renaming the strings
+    /// here alone would make this generator disagree with its own committed output.</para>
     /// </summary>
     public static class QuestDefaultContentBuilder
     {
@@ -43,15 +52,15 @@ namespace CosmicShore.Editor
 
             quest.phases.Add(BuildPhase0());
             quest.phases.Add(BuildUnlockPhase(1, "Unlock SkimRace",
-                gateMode: GameModes.MultiplayerCrystalCapture,
+                gateMode: GameModes.Scurry,
                 claimMode: GameModes.SkimRace,
                 nextLabel: "Phase 2 (Joust)"));
             quest.phases.Add(BuildUnlockPhase(2, "Unlock Joust",
                 gateMode: GameModes.SkimRace,
-                claimMode: GameModes.MultiplayerJoust,
+                claimMode: GameModes.Joust,
                 nextLabel: "Phase 3 (Maelstrom)"));
             quest.phases.Add(BuildUnlockPhase(3, "Unlock Maelstrom",
-                gateMode: GameModes.MultiplayerJoust,
+                gateMode: GameModes.Joust,
                 claimMode: GameModes.Maelstrom,
                 nextLabel: "Phase 4 (Vessel Tour)"));
             quest.phases.Add(BuildPhase4());
@@ -148,21 +157,21 @@ namespace CosmicShore.Editor
             };
 
             var constraintsCC1 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 1 · 2p · 2 domains");
-            constraintsCC1.allowedMode = GameModes.MultiplayerCrystalCapture;
+            constraintsCC1.allowedMode = GameModes.Scurry;
             constraintsCC1.forcedIntensity = 1;
             constraintsCC1.forcedPlayerCount = 2;
             constraintsCC1.forcedDomainCount = 2;
 
             var playedCC1 = Add<QuestWaitForGamePlayedNode>(g, "Wait: CC Played @1");
             playedCC1.filterByMode = true;
-            playedCC1.expectedMode = GameModes.MultiplayerCrystalCapture;
+            playedCC1.expectedMode = GameModes.Scurry;
             playedCC1.minIntensity = 1;
 
             // The first game is done — lift the forced intensity IMMEDIATELY so the player
             // can pick any unlocked tier (1–3 by default; tier 4 stays progression-gated).
             // The arcade stays funneled to Crystal Capture until the funnel clears.
             var loosenFunnel = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC only (intensities open)");
-            loosenFunnel.allowedMode = GameModes.MultiplayerCrystalCapture;
+            loosenFunnel.allowedMode = GameModes.Scurry;
             loosenFunnel.forcedIntensity = 0;
             loosenFunnel.forcedPlayerCount = 2;
             loosenFunnel.forcedDomainCount = 2;
@@ -278,9 +287,9 @@ namespace CosmicShore.Editor
         /// <summary>Player-facing mode names for dialogue lines (enum names read clunky).</summary>
         static string FriendlyName(GameModes mode) => mode switch
         {
-            GameModes.MultiplayerCrystalCapture => "Crystal Capture",
+            GameModes.Scurry => "Scurry",
             GameModes.SkimRace => "Skim Race",
-            GameModes.MultiplayerJoust => "Joust",
+            GameModes.Joust => "Joust",
             GameModes.Maelstrom => "Maelstrom",
             _ => mode.ToString(),
         };
