@@ -90,7 +90,8 @@ namespace CosmicShore.Core
 
             // Clear ownership only. Lifetime per-vessel stats live in the same record now
             // and are TELEMETRY, not entitlement - a debug unlock reset must not wipe them.
-            var ds = UGSDataService.Instance;
+            // Skipped entirely while the progression backend gate is closed (local-only mode).
+            var ds = ProgressionBackendGate.CloudEnabled ? UGSDataService.Instance : null;
             if (ds?.HangarRepo != null)
             {
                 foreach (var name in new List<string>(ds.HangarRepo.Data.UnlockedVesselNames()))
@@ -109,6 +110,8 @@ namespace CosmicShore.Core
 
         static void PersistUnlockToCloud(string vesselName, bool unlocked)
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var ds = UGSDataService.Instance;
             if (ds?.HangarRepo == null) return;
 

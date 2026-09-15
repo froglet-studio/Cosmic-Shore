@@ -17,7 +17,7 @@ string fallback on load.
 
 | # | Key | Model | Status | Debounce | Writes |
 |---|---|---|---|---|---|
-| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name) |
+| 1 | `player_profile` | `PlayerProfileData` | **ACTIVE** | 1.5s | Per mutation (crystals, rewards, avatar/name; the `xp` field is dormant) |
 | 2 | `PLAYER_STATS_PROFILE` | `PlayerStatsProfile` | **ACTIVE** | 2.0s | Game end (only when a best is beaten) |
 | 3 | `VESSEL_STATS` | `VesselStatsCloudData` | **ACTIVE** | 2.0s | Every game end |
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
@@ -48,7 +48,8 @@ string fallback on load.
 (Phase 2) — used for install-relative cohorting / retention analysis.
 
 Writer: `PlayerDataService` (sole writer; `AddCrystals`, `TrySpendCrystals`, `UnlockReward`,
-profile edits → `MarkDirty`).
+profile edits → `MarkDirty`). XP was removed (no `AddXP`, no `ParticipationXpAwarder`); the
+`PlayerProfileData.xp` field persists dormant for back-compat.
 Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs).
 **Note for the data team: "omnicrystals" in the instrumentation doc == `crystalBalance` here.**
 
