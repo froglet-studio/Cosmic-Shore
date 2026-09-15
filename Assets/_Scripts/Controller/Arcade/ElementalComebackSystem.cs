@@ -188,6 +188,9 @@ namespace CosmicShore.Gameplay
                                            // same lead runner. No new source - a second one
                                            // reading the same field could only ever disagree.
                 case GameModes.Redline:    // a lapped circuit: the same stat, the same fold
+                case GameModes.Regatta:    // the mixed-fleet lapped circuit: same stat, same fold -
+                                           // and here the comeback is the mode's SECOND balancer
+                                           // after the card's starting elements (REGATTA.md)
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;

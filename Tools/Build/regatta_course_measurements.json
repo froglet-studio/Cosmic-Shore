@@ -1,0 +1,171 @@
+{
+  "_readme": "MEASURED by Tools/Build/regatta_course_harness/run.sh from the shipped C# (Roslyn-compiled, run for real). sourceHash covers the three pure course files; author_regatta_assets.py --check fails when it is stale. Regenerate with the harness, never by hand.",
+  "sources": [
+    "Assets/_Scripts/Controller/Arcade/Racing/RaceCourseGeometry.cs",
+    "Assets/_Scripts/Controller/Arcade/Headlong/HeadlongCircuit.cs",
+    "Assets/_Scripts/Controller/Arcade/Regatta/RegattaCourse.cs"
+  ],
+  "sourceHash": "bd9092b59c9f2e9585b039c9dee12337a72ca9646ff5e1d8d91ed40d1183ea46",
+  "intensities": {
+    "1": {
+      "seed": 20268834,
+      "rings": 8,
+      "ringRadius": 110,
+      "cornerFloor": 200,
+      "spineLength": 4828.5,
+      "laneLengths": [
+        4829.8,
+        4831.7,
+        4830.2
+      ],
+      "prismCount": 1812,
+      "minLaneSeparation": 38.09,
+      "maxSpacingError": 0.006,
+      "cornerRadii": [
+        362.1,
+        3338.0,
+        523.7,
+        633.7,
+        550.1,
+        1028.0,
+        528.3,
+        1014.3
+      ],
+      "legLengths": [
+        624.0,
+        569.7,
+        561.9,
+        594.9,
+        643.0,
+        555.0,
+        563.3,
+        563.8
+      ],
+      "gate0": [
+        0.0,
+        1056.27,
+        0.0
+      ]
+    },
+    "2": {
+      "seed": 20276753,
+      "rings": 8,
+      "ringRadius": 88,
+      "cornerFloor": 150,
+      "spineLength": 5431.8,
+      "laneLengths": [
+        5449.1,
+        5405.3,
+        5445.1
+      ],
+      "prismCount": 2038,
+      "minLaneSeparation": 38.08,
+      "maxSpacingError": 0.009,
+      "cornerRadii": [
+        151.1,
+        544.7,
+        311.4,
+        1198.2,
+        610.8,
+        617.5,
+        609.5,
+        4941.7
+      ],
+      "legLengths": [
+        464.4,
+        625.8,
+        623.2,
+        746.2,
+        758.9,
+        758.0,
+        749.6,
+        466.9
+      ],
+      "gate0": [
+        0.0,
+        1058.54,
+        0.0
+      ]
+    },
+    "3": {
+      "seed": 20284672,
+      "rings": 8,
+      "ringRadius": 72,
+      "cornerFloor": 120,
+      "spineLength": 5886.5,
+      "laneLengths": [
+        5909.5,
+        5876.4,
+        5882.8
+      ],
+      "prismCount": 2209,
+      "minLaneSeparation": 38.06,
+      "maxSpacingError": 0.014,
+      "cornerRadii": [
+        134.8,
+        279.0,
+        169.5,
+        3745.2,
+        451.6,
+        539.5,
+        450.6,
+        1028.1
+      ],
+      "legLengths": [
+        542.0,
+        572.0,
+        461.4,
+        798.8,
+        828.8,
+        857.5,
+        753.7,
+        657.4
+      ],
+      "gate0": [
+        0.0,
+        1067.48,
+        0.0
+      ]
+    },
+    "4": {
+      "seed": 20292591,
+      "rings": 8,
+      "ringRadius": 54,
+      "cornerFloor": 100,
+      "spineLength": 5867.7,
+      "laneLengths": [
+        5926.1,
+        5824.7,
+        5858.2
+      ],
+      "prismCount": 2201,
+      "minLaneSeparation": 38.08,
+      "maxSpacingError": 0.011,
+      "cornerRadii": [
+        104.1,
+        1248.1,
+        504.2,
+        660.1,
+        443.7,
+        884.6,
+        215.1,
+        224.6
+      ],
+      "legLengths": [
+        464.5,
+        839.7,
+        844.3,
+        774.4,
+        788.9,
+        565.0,
+        577.0,
+        603.4
+      ],
+      "gate0": [
+        -0.0,
+        1070.32,
+        0.0
+      ]
+    }
+  }
+}
