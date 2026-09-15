@@ -172,9 +172,13 @@ plant cap, plus Rampage's wildlife. That is Rampage's shipped, play-tested inten
 in a smaller volume; the denser packing changes nothing about collider count. Higher intensities
 are lighter.
 
-## Verification — authored headless, NOT yet run in the editor
+## Verification — compiled and played once; the ladder is still unmeasured
 
-Nothing in this branch has been compiled or played. In the editor, in this order:
+Status at ship: the branch compiles in the editor (one missing `using` was caught and fixed on
+the first compile) and BOTH modes were played once by the author, who called them excellent
+starts. Nothing below has been MEASURED — the ladder, the AI dash ranges and the plant density
+are still the estimates §"Known limitations" records. The checklist stands as the re-verification
+pass after any retune, in this order:
 
 1. Compile. `WreckingBallController` / `UndertowController` and the two `TryAutopilotDash` /
    `RecordPilotServer` additions are the new surface.

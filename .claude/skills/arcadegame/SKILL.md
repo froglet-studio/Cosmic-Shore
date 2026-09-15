@@ -123,6 +123,13 @@ python3 Tools/Build/author_preview_spawns.py --check
 These are syntax-level. What stays editor-only: a member that does not exist, an override whose
 signature drifted, an argument mismatch - and everything about how the mode PLAYS. Say so.
 
+**Run `check_using_directives.py` AFTER the last new file is written, not once mid-branch.** It
+is scoped to changed files, so it sees a file only once the file exists - and a Roslyn stub
+harness does NOT stand in for it: a stub declares every type in one namespace, so a real
+`GameDataSO` (`CosmicShore.Utility`) referenced from a `CosmicShore.Gameplay` file with no using
+type-checks clean against the stubs and fails in the Editor (CS0246, the first thing the author
+saw when opening Wrecking Ball). The gate names the exact using to add; it only has to be run.
+
 ## 5. Docs (the mode is not done without them)
 
 - `Assets/_Scripts/Controller/Arcade/<MODE>.md` - overview, the loop in the vessel's own terms,

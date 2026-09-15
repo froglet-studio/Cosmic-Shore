@@ -151,7 +151,12 @@ provider — the nearest bendable pilot), `GameToastSituation` 95–98, `author_
 Wildlife Liberation's, unchanged — the arena is referenced. The two new effects add no colliders:
 the heart sweep is an `OverlapSphere` the impactor already ran for the crystal forge.
 
-## Verification — authored headless, NOT yet run in the editor
+## Verification — compiled and played once; the AI ranges are still geometry
+
+Status at ship: the branch compiles in the editor and the mode was played once by the author
+(reported as an excellent start). The AI dash ranges and the per-player HUD card's bends-only
+read are unmeasured beyond that one session. The checklist stands as the re-verification pass
+after any retune:
 
 1. Compile.
 2. Launch Undertow, two seats, one AI. Expect Wildlife Liberation's cages and swarm, pilots on
