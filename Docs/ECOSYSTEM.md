@@ -8265,11 +8265,12 @@ the prototype entity, in all 15 prism materials and in both graphs. So:
   lifeform's body prisms to the cell as ordinary mass — clears the stamp. A husk that went on
   swaying would read as a creature nobody could kill.
 - **A prism seated AT its limb's root does not translate**, because the shear is exactly zero
-  at z = 0. That is why every LATTICE species is left essentially still by this feature:
-  `AssembledFlora` parents its prism to its spindle at `localPosition = Vector3.zero`, so
-  `Z0 = 0` and a gyroid plate only shears about its own centre by its own half-extent. A
-  crystalline structure staying crystalline is the correct answer and it falls out of the
-  geometry rather than needing a species exception.
+  at z = 0. An earlier version of this bullet claimed that was the LATTICE case and it is
+  not — see §47.7, which measures it. The limb frame is the RENDERER's (the bullet two above),
+  and a lattice branch mesh is posed under the spindle root rather than at identity, so an
+  `AssembledFlora` prism at `localPosition = Vector3.zero` sits at **`Z0 = ±0.55` of its
+  limb**, not at 0. Every lattice species was already swaying the day this shipped; what was
+  wrong was how MUCH, and the cause was somewhere else entirely.
 
 ### 47.4 How it is proven
 
@@ -8322,3 +8323,84 @@ prototype. That is 48 bytes per prism — ~2.4 MB at the heaviest shipped cell (
 - **The amplitude is the LIMB's, so a species tunes its prisms by tuning its limb.** There is
   deliberately no per-prism dial: two prisms on one limb moving by different amounts is the
   defect, not a feature.
+
+### 47.7 A dimensionless slope is not dimensionless under a non-uniform scale (Sep 2026)
+
+Reported as *"i was hoping for a barely perceptible sway in the lattice species."* The three
+lattice flora — gyroid, Schwarz P, quasicrystal — read as dead. §47.3 said that was by
+design, on the grounds that their prisms sit at `Z0 = 0`. **Both halves of that were wrong**,
+and the measurement is the useful part.
+
+**The prisms were never at zero.** `Spindle.SwayFrame` is the RENDERER's transform, and every
+lattice branch prefab poses its mesh *under* the spindle root — `GyroidBranch` at
+`(0, ±1.7133, 0)` with a ±90° twist and `localScale (1, 1, 3.1)`, `AssemblyBranch` at
+`(0, −3.58, 0)` on `6.2`, `QuasicrystalBranch` at `(±3.9399, 0, 0)` on `7.1288`. Taking the
+spindle origin back through each of those puts the prism at `|Z0| = 0.5527 / 0.5774 / 0.5527`
+of its limb, and the mirrored PAIRS agree with each other exactly, which is load-bearing: the
+two half-branches meet AT the prism (§34.12), so halves that disagreed would move the joint
+they share by different amounts and visibly separate. `author_lattice_spindle_materials.py`
+asserts that agreement rather than assuming it.
+
+**The real cause is that `Amplitude` is a slope in OBJECT space.** `SpindleSway.hlsl`'s own
+header called it "a dimensionless SLOPE, so the same number means the same visual bend on
+every mesh that shares the material". That holds for a UNIFORMLY scaled mesh and for nothing
+else: a renderer carrying `localScale (1, 1, sz)` deflects its tip by
+
+```
+world tip angle = atan(Amplitude · sx / sz)
+```
+
+so a mesh stretched along its own bend axis bends that much LESS. And the sentence offered in
+that header as reassurance — *"every shipped spindle prefab is scaled on z to match (Branch
+6.2, TadpoleSpindle 3.0)"* — names the two prefabs that **disagree**. Measured over every
+spindle renderer in the project at the shared 0.08:
+
+| renderer | localScale | world tip lean |
+|---|---|---|
+| `TadpoleSpindle`, worm head/body/tail, `QuadFish` | uniform | **4.57°** |
+| `GyroidBranch` ×2 | (1, 1, 3.1) | 1.48° |
+| `Branch` (every ordinary flora), `AssemblyBranch` | (1, 1, 6.2) | 0.74° |
+| `QuasicrystalBranch` ×2 | (1, 1, 7.1288) | 0.64° |
+
+*A constant that is scale-free in one space is not scale-free in another, and the claim is
+worth re-deriving in the space the player actually sees.*
+
+**The fix is per-mesh amplitudes, not a per-mesh shader.** Three new materials —
+`GyroidSpindleMaterial`, `AssemblySpindleMaterial` (Wall and Schwarz P share that branch),
+`QuasicrystalSpindleMaterial` — each a verbatim clone of `SpindleMaterial` with one number
+changed, authored by `Tools/Build/author_lattice_spindle_materials.py` (`--check`) with the
+amplitude SOLVED from that prefab's own stretch for one target lean. This is §46's rule
+applied one level down: *a shared material is a claim that everything wearing it moves alike*,
+and three meshes that disagree about their own z by 2.3× do not move alike under one slope.
+
+| material | branch | z stretch | amplitude | prism sweep / limb |
+|---|---|---|---|---|
+| `GyroidSpindleMaterial` | `GyroidBranch` | 3.1 | **0.1625** | 3.18% |
+| `AssemblySpindleMaterial` | `AssemblyBranch` | 6.2 | **0.3249** | 3.32% |
+| `QuasicrystalSpindleMaterial` | `QuasicrystalBranch` | 7.1288 | **0.3736** | 3.18% |
+
+**Equal ANGLE is equal FRACTION OF THE LIMB**, which is why one authored number serves a
+family whose bonds span 3 to 24 world units, and why it stays true under
+`FloraVariantTuning.LatticeScale` — that scales the branch and the bond together, so the ratio
+is scale-invariant by construction and all twelve lattice configs are covered by three
+materials.
+
+**3° is the authored number and the bound that set it is the JOINT.** Two neighbouring prisms
+draw independent phases from `Spindle.PhaseBucket`, so the most they ever move APART is twice
+the sweep, ~6.4% of their bond — inside the lattice's own 10% mate-snap tolerance (0.3 on 3,
+§34.8), so a breathing lattice can never read as a broken one. It also keeps a crystal moving
+strictly less than a fish (3° against 4.57°), which is the ordering that should hold. The
+tool asserts the derived amplitudes and the resulting prism sweeps against stated bands, so a
+future branch prefab that seats its prism at a different height cannot silently leave them.
+
+**Stated rather than silently changed: the ordinary flora `Branch` keeps the shared 0.08 and
+its 0.74°.** Twelve prefabs wear it, nobody has asked for it to move, and it is a look call —
+not a bug — now that the number is measured instead of assumed. The cost of the three new
+base materials is 24 runtime phase variants where the lattice family previously shared eight
+(`Spindle` mints them per base material), i.e. ~16 extra draw calls in the Lattice cell and
+zero colliders.
+
+**Open:** unrun in the editor, like the rest of §47. The frequency is left at the shared
+1.4 rad/s deliberately — a crystal arguably wants to be slower than a fern, but that is a
+second unrequested look change and the amplitude is what "barely perceptible" is about.
+`TARGET_TIP_DEGREES` in the authoring tool is the one number to move after the first playtest.

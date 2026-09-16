@@ -21,11 +21,21 @@ SpindleMaterial is shared by twelve prefabs — every flora branch, the shark's 
 the brittlestar's arms, the worm segments and the QuadFish. A fern and a fish do not
 sway alike: a plant wants a slow gentle drift, a swimming fish wants a tail beat near
 1 Hz, and one frequency cannot be both without the plant looking like it is buzzing.
-Amplitude is unit-free (a slope — see SpindleSway.hlsl), so it transfers across the
-twelve meshes' wildly different scales; FREQUENCY is the thing that genuinely differs
-per creature, and a second material is the cheapest honest way to say so. Spindle.cs
-caches its 8 phase variants PER BASE MATERIAL, so a second base material costs 8 more
-shared materials and no batching.
+FREQUENCY is the obvious thing that differs per creature, and a second material is the
+cheapest honest way to say so. Spindle.cs caches its 8 phase variants PER BASE MATERIAL,
+so a second base material costs 8 more shared materials and no batching.
+
+AMPLITUDE IS NOT UNIT-FREE ACROSS A NON-UNIFORMLY SCALED MESH, and an earlier version of
+this note said it was. The shear is authored in OBJECT space, so a renderer carrying
+localScale (1, 1, sz) bends by atan(Amplitude * sx / sz) in WORLD terms — the same slope
+on a mesh stretched along its own bend axis buys that much less visible bend. Measured
+over every spindle renderer in the project at the 0.08 below: TadpoleSpindle and the worm
+segments are uniform and lean 4.57 degrees, while Branch and AssemblyBranch (1, 1, 6.2)
+lean 0.74 and QuasicrystalBranch (1, 1, 7.1288) leans 0.64. The three LATTICE branch
+meshes are therefore re-dressed with their own materials, each solved for one authored
+world bend, by Tools/Build/author_lattice_spindle_materials.py — see Docs/ECOSYSTEM.md
+47.7. The ordinary flora Branch is deliberately left on this material's 0.08, stated
+rather than silently changed: it is a look call nobody has asked for.
 
 Numbers, and where they come from:
 

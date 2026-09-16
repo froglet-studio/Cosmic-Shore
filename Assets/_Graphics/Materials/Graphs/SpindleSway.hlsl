@@ -20,9 +20,17 @@
 // which is first-order bending. Three properties fall out for free and none of them
 // had to be authored: it is exactly zero at the root (z = 0), so a spindle can never
 // tear away from whatever it is attached to; it grows toward the tip, which is what
-// a frond, a fin and a tail all do; and `Amplitude` is a dimensionless SLOPE, so the
-// same number means the same visual bend on every mesh that shares the material.
-// (atan(0.12) ≈ 6.8° of tip deflection.)
+// a frond, a fin and a tail all do; and `Amplitude` is a dimensionless SLOPE, so it
+// carries across meshes whose SIZE disagrees by three orders of magnitude.
+//
+// IT DOES NOT CARRY ACROSS A NON-UNIFORMLY SCALED ONE, and this header used to claim
+// it did. The shear is authored in OBJECT space, so a renderer carrying localScale
+// (1, 1, sz) deflects its tip by atan(Amplitude * sx / sz) in WORLD terms: a mesh
+// stretched along its own bend axis bends that much LESS. The line below is where that
+// bites — "scaled on z to match" names the two prefabs that DISAGREE, since 3.0 is
+// uniform and 6.2 is a stretch, and at 0.08 the tadpole leans 4.57° while a lattice
+// branch leans 0.64-1.48°. The fix is per-mesh amplitudes, not a per-mesh shader: see
+// Tools/Build/author_lattice_spindle_materials.py and Docs/ECOSYSTEM.md §47.7.
 //
 // +Z IS THE SPINDLE'S LENGTH. This is the platform's prism/spindle pose convention —
 // `SpawnPoint.LookRotation(fwd, up)` puts local +Z on the branch direction, and every

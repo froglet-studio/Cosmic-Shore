@@ -114,11 +114,32 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   exact no-op and is the DEFAULT, which is the feature rather than a safe default**: a vessel's
   trail, an authored environment and the SKELETON a dead lifeform leaves behind
   (`HealthPrism.LeaveAsSkeleton` clears the stamp) all stay still, so a player can tell a plant
-  that is alive from the husk of one that is not without being told. A prism seated AT its
-  limb's root does not translate at all, because the shear is zero at z = 0 — which is why
-  every LATTICE species is left crystalline by this, with no species exception needed. Costs
+  that is alive from the husk of one that is not without being told. Costs
   zero colliders and zero frame time; the one honest cost is 48 bytes of instance data on every
-  prism, living or not. `Docs/ECOSYSTEM.md §47`.
+  prism, living or not. **A DIMENSIONLESS SLOPE IS NOT DIMENSIONLESS UNDER A NON-UNIFORM
+  SCALE** — the shear is authored in OBJECT space, so a renderer at `localScale (1, 1, sz)`
+  deflects its tip by `atan(Amplitude · sx / sz)` in WORLD terms and a mesh stretched along its
+  own bend axis bends that much LESS. `SpindleSway.hlsl`'s header claimed the opposite, and the
+  line it offered as reassurance (*"every shipped spindle prefab is scaled on z to match (Branch
+  6.2, TadpoleSpindle 3.0)"*) names the two prefabs that DISAGREE: at the shared 0.08 the
+  uniformly-scaled tadpole, worms and QuadFish lean **4.57°** while every branch-family spindle
+  leans **0.64–1.48°**, which is why the lattice species read as dead. The fix is per-mesh
+  amplitudes, never a per-mesh shader: three materials (`GyroidSpindleMaterial`,
+  `AssemblySpindleMaterial`, `QuasicrystalSpindleMaterial`), each a verbatim clone of
+  `SpindleMaterial` with its amplitude SOLVED from that prefab's own stretch for one authored
+  **3°** lean — §46's "a shared material is a claim that everything wearing it moves alike",
+  applied one level down. **Equal ANGLE is equal FRACTION OF THE LIMB**, so one number serves a
+  family whose bonds span 3 to 24 world units and stays true under
+  `FloraVariantTuning.LatticeScale` (which scales branch and bond together). The bound that set
+  3° is the JOINT: neighbouring prisms draw independent phases, so the most they move APART is
+  ~6.4% of their bond, inside the lattice's own 10% mate-snap tolerance — a breathing lattice
+  can never read as a broken one. A prism seated AT its limb's root would not translate at all
+  (the shear is zero at z = 0), but **that is not the lattice case**: `SwayFrame` is the
+  RENDERER's transform and a lattice branch mesh is posed under the spindle root, so an
+  `AssembledFlora` prism at `localPosition = Vector3.zero` sits at `Z0 = ±0.55` of its limb.
+  The ordinary flora `Branch` keeps 0.08 and its 0.74°, stated rather than silently changed.
+  Authored by `Tools/Build/author_lattice_spindle_materials.py` (`--check`).
+  `Docs/ECOSYSTEM.md §47`, `§47.7`.
 - **A SPINDLE IS A LIMB, NOT A ROD — and until Sep 2026 no spindle in the game deformed,
   including the one named `AnimatedSpindleGraph`.** That graph's `Add` into
   `VertexDescription.Position` has a hardcoded `(0,0,0)` A input (`Position + 0`), it is
