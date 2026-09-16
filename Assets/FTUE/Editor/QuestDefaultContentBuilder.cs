@@ -37,6 +37,31 @@ namespace CosmicShore.Editor
         {
             EnsureFolders();
 
+            // This is a SEEDER, and it writes through GenerateUniqueAssetPath - so a second run
+            // does not overwrite the shipped chain, it quietly creates "MainQuest 1.asset" beside
+            // it. That is worse than overwriting: the graph editor discovers quests with
+            // FindAssets("t:QuestSO"), so the duplicate shows up in the picker as a second
+            // plausible Main Quest, and the one being edited is whichever was clicked. Refuse by
+            // default and make re-seeding a deliberate answer to a question.
+            var existing = AssetDatabase.FindAssets("t:QuestSO", new[] { QuestsFolder });
+            if (existing != null && existing.Length > 0)
+            {
+                var paths = new List<string>();
+                foreach (var guid in existing)
+                    paths.Add(AssetDatabase.GUIDToAssetPath(guid));
+
+                if (!EditorUtility.DisplayDialog(
+                        "Main Quest already exists",
+                        $"{paths.Count} quest asset(s) already live in {QuestsFolder}:\n\n" +
+                        string.Join("\n", paths) +
+                        "\n\nThis tool does not overwrite - it would ADD a second quest chain " +
+                        "beside the existing one, and both would appear in the Quest Graph " +
+                        "Editor's picker.\n\nDelete the existing chain first if you mean to " +
+                        "re-seed from scratch.",
+                        "Create anyway", "Cancel"))
+                    return;
+            }
+
             var quest = ScriptableObject.CreateInstance<QuestSO>();
             quest.questId = "MainQuest";
             quest.designerNotes =
