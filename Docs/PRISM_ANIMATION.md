@@ -1578,6 +1578,23 @@ Four properties of the design worth preserving if it is ever touched:
   flush-to-the-plane behaviour. A camera closer than the clearance switches the corridor
   off entirely, which is correct rather than dangerous: inside one hull radius there is no
   room for occluding mass to hide behind.
+- **The corridor OPENS AS A CIRCLE at the lens — `_PrismOcclusionNearRadius`
+  (2026-09-15).** The bare cone was a POINT at the camera, which is the one place its own
+  argument fails: the eye→silhouette cone is the minimal volume that can occlude the
+  *ship*, but a prism at the lens occludes the whole *screen*, and the cone — sized only to
+  the ship — was thinnest exactly there, so mass the camera drifted into stayed solid and
+  blacked out the view. The profile now opens from a near circle
+  (`PrismOcclusionConfigSO.nearRadiusScale`, **0.5** hull radii, clamped to the outer scale)
+  and lerps LINEARLY to the hull circle at `t = 1`: still one ruled surface, so no seam; the
+  inner radius rides it as the same fraction at every depth, so the feather's shape is
+  unchanged along the whole length; and `near = 0` is the old cone bit for bit. The near
+  radius travels as its OWN file-scope global float (published beside `_PrismOcclusionParams`
+  by `PrismOcclusionCorridor.Publish`, `Shader.SetGlobalFloat`) rather than as a fourth
+  lane of the params vector, for the same reason the Lab's dither dials do — it reaches
+  both wired graphs with **no Custom Function node edit**, and unpublished it reads 0. The
+  trade: past the lens the cleared region is no longer exactly a constant angular size —
+  it converges on the silhouette from a wider start — so slightly more mass dissolves in
+  the first stretch out from the camera than strictly needs to for the ship's sake.
 - **The corridor test is per-fragment**, from the Position(World) node — the same
   post-vertex-animation position the rasterizer used. A per-object test would make a large
   environment plate flip wholesale between solid and dissolved.

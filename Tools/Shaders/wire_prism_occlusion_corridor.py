@@ -36,6 +36,8 @@ What it adds to each graph:
   from PrismOcclusionCorridor.cs; same shape as the existing _PrismClock global):
       _PrismOcclusionTarget  float3  vessel world position
       _PrismOcclusionParams  float3  (outerRadius, innerRadius, minAlpha)
+      (_PrismOcclusionNearRadius, the radius at the lens, is a FILE-SCOPE global in the
+       HLSL — it needs no graph property and this script does not wire it.)
 
   nodes:
       Position (World)                       -> fragment world position
