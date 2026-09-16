@@ -113,6 +113,12 @@ namespace CosmicShore.Data
         UndertowLeadChanged = 97,       // the lead changes hands after a milestone
         UndertowDashHint = 98,          // idle hint: dash beside a rival to catch them in the plate
 
+        // Regatta. Two idle hints, no args: the mode's whole tutorial is "the rail in your
+        // colour is your speed" and which verb your hull uses on it. 110+ because the lobby
+        // block below took 100 and the per-mode blocks under it are full.
+        RegattaRailHint = 110,          // idle hint: the rail in your colour is the racing line
+        RegattaLaneHint = 111,          // idle hint: ride it, skim it, or fly beside it - by hull
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

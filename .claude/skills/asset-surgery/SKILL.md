@@ -1297,6 +1297,43 @@ per task; it is cheap.
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
 
+### Technique: SOLVE a UI rect in canvas pixels offline (and prove two widgets are disjoint)
+
+"Does this button sit on top of that one?" is answerable from the scene YAML alone, and it is
+the question a rendered-frame report ("a strange button over the play button, it goes away when
+clicked") reduces to. Walk the `RectTransform` chain from the canvas root, taking the root's size
+from the scene's `CanvasScaler.m_ReferenceResolution` (never from the root's own anchors — a
+canvas root is `(0,0)-(0,0)` with zero `m_SizeDelta` and measures 0×0 walked naively), and for
+each level compute `size = (amax − amin) ⊗ parentSize + sizeDelta`, the anchor reference point
+`amin ⊗ parentSize + pivot ⊗ (amax − amin) ⊗ parentSize`, then
+`left/bottom = ref + anchoredPosition − pivot ⊗ size`. `Tools/Build/author_arena_launch_panel_layout.py`
+carries the worked version (`solve_rect`, `overlaps`) and uses it as a GATE: it places the widget
+AND asserts the two rects are disjoint, so the clone-and-forget below cannot pass `--check` again.
+Watch the assert fire once on a negative control (an oversized `size`) before trusting it.
+
+### Trap: a widget CLONED from a sibling inherits the sibling's PLACE
+
+Duplicating a button to make a second one copies its `RectTransform` verbatim — same parent, same
+anchors, same pivot, same offset — and the copy renders exactly on top of the original until
+someone moves it. Nothing fails: both draw, both raycast, the top one wins the press. The arena
+launch panel shipped its SELECT VESSEL button as a byte-for-byte clone of the Play button's rect,
+hidden on confirm, so it read as "a button over Play that vanishes when pressed" and survived every
+static check because a rect is not a reference. When a report is about what is ON SCREEN and the
+scene shows two siblings with identical `m_AnchorMin/Max`, `m_AnchoredPosition`, `m_SizeDelta` and
+`m_Father`, that IS the finding — solve the rects (above) rather than reading the component fields,
+which will all look correct.
+
+### Trap: a sprite guid no `.meta` owns draws a SOLID WHITE QUAD, not nothing
+
+A `UnityEngine.UI.Image` whose `m_Sprite` guid resolves to no asset keeps drawing — its quad, in
+its tint, at its rect. The Urchin's class asset pointed `IconActive`/`IconInactive` at art deleted
+before the clone's history begins, and the arena carousel showed a white square and called it the
+Urchin. Same family as the `RawImage` frame trap in CLAUDE.md, and the same invisibility: a
+reference check by guid is the only offline test (`Tools/Build/check_vessel_class_icons.py`
+resolves every `SO_Class_*` icon against the `.meta` set; `--self-test` fires on a dangling and an
+empty guid). When a surface reads as a blank rectangle, grep the guid it names BEFORE reading the
+component — the component is correct.
+
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
 "How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on

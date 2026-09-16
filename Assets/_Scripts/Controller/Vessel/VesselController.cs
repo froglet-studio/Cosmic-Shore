@@ -184,7 +184,25 @@ namespace CosmicShore.Gameplay
 
             VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
+            ApplyStartingElements();
             OnInitialized?.Invoke();
+        }
+
+        /// <summary>
+        /// Seed this hull's element levels from the current card's per-hull table
+        /// (<c>SO_ArcadeGame.StartingElements</c>, published into <c>GameDataSO</c>). Bound HERE
+        /// for the reason the platform laws above are: Initialize is the one method every vessel
+        /// passes through on every spawn path, on every machine, human and AI alike - so a card's
+        /// handicap cannot be escaped by choosing a spawn path, and a guest's own vessel is seeded
+        /// exactly as the host's replica of it. A hull with no row is left at rest: this never
+        /// writes zeros over a seed some other path made. After ResetForPlay, which resets the
+        /// named resources and leaves element levels alone.
+        /// </summary>
+        void ApplyStartingElements()
+        {
+            if (gameData == null || VesselStatus == null) return;
+            if (!gameData.TryGetStartingElements(VesselStatus.VesselType, out var levels)) return;
+            SetResourceLevels(levels);
         }
         
         public Transform Transform => transform;
