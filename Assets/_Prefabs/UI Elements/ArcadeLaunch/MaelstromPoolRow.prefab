@@ -110,7 +110,7 @@ MonoBehaviour:
   lockedText: {fileID: 0}
   lockedFormat: Intensity {0}
   neverUnlockedText: Not in pool
-  detailFormat: 'TIER {0}  ·  {1}'
+  detailFormat: TIER {0}  -  {1}
   lockedAlpha: 0.4
 --- !u!1 &3269776104706994920
 GameObject:
@@ -252,7 +252,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: TIER 1  ·  DOLPHIN
+  m_text: TIER 1  -  DOLPHIN
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}

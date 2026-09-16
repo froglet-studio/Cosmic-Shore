@@ -19,6 +19,10 @@ WHAT IT FIXES (measured on the authored assets, 2026-09-16):
   chamfer is a chamfer at any rect), the name bottom-left, and one detail line above it -
   "TIER 2  ·  SPARROW". Cell 310x88 against the variant row's 275x88.
 
+ASCII ONLY in every string it writes: the fleet's UI font (ALDRICH-REGULAR SDF) carries 32..126
+plus nbsp and an ellipsis and has an EMPTY fallback table, so a middle dot or a check mark
+renders as tofu. A separator here shipped as an empty box once already.
+
 WHAT IT DELIBERATELY DOES NOT DO: put the mode's IconActive on the row. That field is the ARCADE
 GRID's card art and is legacy - Salvo carries Rampage's picture and Joust carries Duel for the
 Cell's - so filling the Toy Box card's PORTRAIT slot from it would be inventing art out of a field
@@ -309,7 +313,7 @@ MonoBehaviour:
   lockedText: {{fileID: 0}}
   lockedFormat: Intensity {{0}}
   neverUnlockedText: Not in pool
-  detailFormat: 'TIER {{0}}  ·  {{1}}'
+  detailFormat: TIER {{0}}  -  {{1}}
   lockedAlpha: 0.4
 """)
     # rim
@@ -321,7 +325,7 @@ MonoBehaviour:
     parts.append(go_doc(GO_DET, "Detail", [TR_DET, CR_DET, TMP_DET]))
     parts.append(rect_doc(TR_DET, GO_DET, TR_ROOT, [], DETAIL_ANCHORS[0], DETAIL_ANCHORS[1]))
     parts.append(cr_doc(CR_DET, GO_DET))
-    parts.append(tmp_doc(TMP_DET, GO_DET, "TIER 1  ·  DOLPHIN", DETAIL_BAND, align_h=1, color_a=0.72))
+    parts.append(tmp_doc(TMP_DET, GO_DET, "TIER 1  -  DOLPHIN", DETAIL_BAND, align_h=1, color_a=0.72))
     # name line
     parts.append(go_doc(GO_NAME, "Name", [TR_NAME, CR_NAME, TMP_NAME]))
     parts.append(rect_doc(TR_NAME, GO_NAME, TR_ROOT, [], NAME_ANCHORS[0], NAME_ANCHORS[1]))

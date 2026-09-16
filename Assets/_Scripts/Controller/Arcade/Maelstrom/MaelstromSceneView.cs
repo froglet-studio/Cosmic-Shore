@@ -273,7 +273,11 @@ namespace CosmicShore.Gameplay
                     // The tally rides the button when nothing else shows it, so a hub whose scene
                     // has no tally line still answers "who are we waiting for?".
                     string tally = readyTallyText || total <= 0 ? string.Empty : $"  {ready}/{total}";
-                    readyButtonLabel.text = localReady ? $"READY ✓{tally}" : $"READY{tally}";
+                    // ASCII only. The fleet's UI font (ALDRICH-REGULAR SDF) carries 32..126
+                    // plus nbsp and an ellipsis, and has an EMPTY fallback table - so any
+                    // glyph outside that range renders as tofu. A check mark here shipped as
+                    // an empty box between READY and the tally.
+                    readyButtonLabel.text = localReady ? $"READY!{tally}" : $"READY{tally}";
                 }
 
                 if (readyTallyText)

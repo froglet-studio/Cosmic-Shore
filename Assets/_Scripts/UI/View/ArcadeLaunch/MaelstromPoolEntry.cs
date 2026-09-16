@@ -59,7 +59,7 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Copy for the detail line of a mode that IS in the pool. " +
                                  "{0} = the intensity it enters on, {1} = the hull it locks to " +
                                  "(blank when the mode takes any vessel).")]
-        string detailFormat = "TIER {0}  ·  {1}";
+        string detailFormat = "TIER {0}  -  {1}";
 
         [SerializeField, Tooltip("Alpha applied to the whole row while locked.")]
         [Range(0f, 1f)] float lockedAlpha = 0.4f;
