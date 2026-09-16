@@ -140,9 +140,13 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[WeeklyChallenge] weekly challenge resolution and attempts")]
         WeeklyChallenge = 1 << 10,
         /// <summary>
-        /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
+        /// <c>[CrystalMorph]</c> — a vessel's bespoke crystal retirement, step by step: the
         /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
         /// hand-off to the real object.
+        ///
+        /// Covers BOTH shapes. An OMNI retirement lands on a thing the pickup made (the Scarab's
+        /// ball); the ELEMENTAL one lands on the hull that took it and there is no second object,
+        /// so the crystal is morphed in place (VESSEL_CRYSTAL_ABSORB.md).
         ///
         /// It exists because a morph's dependencies are invisible to it — the thing it lands on
         /// is minted by somebody else — and every way that can fail produces the SAME symptom on
@@ -150,7 +154,7 @@ namespace CosmicShore.Utility
         /// "the retirement never ran" from "the target never arrived" from "the target arrived
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
-        [CSLogChannelLabel("[CrystalMorph] omni-crystal retirement steps")]
+        [CSLogChannelLabel("[CrystalMorph] crystal retirement steps (omni → forged object, elemental → hull)")]
         CrystalMorph = 1 << 11,
         /// <summary>
         /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a

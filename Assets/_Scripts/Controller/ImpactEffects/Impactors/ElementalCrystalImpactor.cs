@@ -3,6 +3,7 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;   // CSDebug / CSLogChannel. Nothing here shadows a bare System/UnityEngine name used in this file (checked).
 namespace CosmicShore.Gameplay
 {
     public class ElementalCrystalImpactor : CrystalImpactor
@@ -149,64 +150,127 @@ namespace CosmicShore.Gameplay
                                             UnityEngine.Random.onUnitSphere);
             arcAxis = arcAxis.sqrMagnitude > 1e-4f ? arcAxis.normalized : Vector3.up;
 
+            // A vessel that carries VesselCrystalAbsorbMorph retires the crystal by carrying its
+            // BODY onto the hull instead of shrinking it away. Resolved here rather than per frame,
+            // and null on every hull that has not opted in - which is the fleet default and plays
+            // the shipped absorb untouched.
+            var absorbMorph = VesselCrystalAbsorbMorph.For(vesselStatus);
+            Mesh morphMesh = null;
+            bool morphAttempted = false;
+            bool morphing = false;
+            float heldScaleMultiplier = 1f;
+
             bool burstFired = false;
             float elapsed = 0f;
             float total = cfg.TotalDuration;
 
-            while (elapsed < total)
+            // try/finally because the loop has early exits on a destroyed crystal and the morph
+            // mesh is a RUNTIME Mesh this method owns: destroying the crystal's GameObject does not
+            // collect it, and one leaked mesh per pickup is ~39 of them in a single Skim Race.
+            try
             {
-                if (crystal == null) return;
-
-                var phase = cfg.ResolvePhase(elapsed, out float u);
-                if (phase == CrystalCaptureConfigSO.Phase.Done) break;
-
-                // Track the vessel LIVE - it is moving fast, and the whole reason the old capture
-                // read as a drag is that it lerped toward a stale point over three seconds.
-                if (vesselTransform) target = vesselTransform.position;
-
-                Vector3 position;
-                switch (phase)
+                while (elapsed < total)
                 {
-                    case CrystalCaptureConfigSO.Phase.Snatch:
-                        position = Vector3.LerpUnclamped(start, anchor, CrystalCaptureConfigSO.SnatchProgress01(u));
-                        break;
+                    if (crystal == null) return;
 
-                    case CrystalCaptureConfigSO.Phase.Suction:
+                    var phase = cfg.ResolvePhase(elapsed, out float u);
+                    if (phase == CrystalCaptureConfigSO.Phase.Done) break;
+
+                    // Track the vessel LIVE - it is moving fast, and the whole reason the old capture
+                    // read as a drag is that it lerped toward a stale point over three seconds.
+                    if (vesselTransform) target = vesselTransform.position;
+
+                    // The morph starts with the FLIGHT, not with the landing. The absorb happens at the
+                    // vessel's own origin - inside the hull, where an opaque z-writing ship occludes a
+                    // transparent crystal - so a fold confined to it would be invisible. Opening the
+                    // cage across the suction instead means the shape is on screen the whole way in and
+                    // lands, fully formed, exactly as the absorb's opacity ramp takes it.
+                    if (!morphAttempted && absorbMorph && vesselTransform
+                        && phase == CrystalCaptureConfigSO.Phase.Suction)
                     {
-                        float flight = cfg.FlightProgress01(u);
-                        position = Vector3.LerpUnclamped(anchor, target, flight)
-                                 + arcAxis * (CrystalCaptureConfigSO.ArcOffset01(u) * cfg.SuctionArcRadii * radius);
-                        break;
+                        morphAttempted = true;
+                        if (!VesselCrystalAbsorbMorph.CanMorph(crystal))
+                        {
+                            // A designed state, not a fault: only ShepardGraph carries the morph splice
+                            // today, so Charge/Space/Time crystals fall through to the shipped absorb
+                            // until their own graphs are spliced.
+                            CSDebug.LogVerbose(CSLogChannel.CrystalMorph,
+                                $"[CrystalMorph] hull: '{crystal.name}' draws no shader carrying " +
+                                "_CrystalMorph, so it plays the ordinary absorb.");
+                        }
+                        else
+                        {
+                            // Seat the held scale BEFORE the bake. TryBegin reads the crystal's CURRENT
+                            // local space, so a scale the loop is about to change would put the landing
+                            // radius out by exactly that factor. Doing it here also means the held value
+                            // never depends on the phase curve being continuous across the boundary -
+                            // it is, but a bake that is only correct because of that is a bake waiting
+                            // for someone to retune snatchScale.
+                            heldScaleMultiplier = cfg.ScaleMultiplier(phase, u);
+                            crystalTransform.localScale = baseScale * heldScaleMultiplier;
+
+                            morphMesh = absorbMorph.TryBegin(crystal, vesselTransform,
+                                                             cfg.SuctionDuration, out string diagnosis);
+                            morphing = morphMesh;
+                            if (!morphing)
+                                CSDebug.LogWarning($"[CrystalMorph] hull: cannot morph '{crystal.name}' " +
+                                                   $"onto {vesselTransform.name}: {diagnosis}. It falls " +
+                                                   "back to the ordinary absorb.");
+                        }
                     }
 
-                    default: // Absorb - ride the hull.
-                        if (!burstFired)
+                    Vector3 position;
+                    switch (phase)
+                    {
+                        case CrystalCaptureConfigSO.Phase.Snatch:
+                            position = Vector3.LerpUnclamped(start, anchor, CrystalCaptureConfigSO.SnatchProgress01(u));
+                            break;
+
+                        case CrystalCaptureConfigSO.Phase.Suction:
                         {
-                            burstFired = true;
-                            FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
+                            float flight = cfg.FlightProgress01(u);
+                            position = Vector3.LerpUnclamped(anchor, target, flight)
+                                     + arcAxis * (CrystalCaptureConfigSO.ArcOffset01(u) * cfg.SuctionArcRadii * radius);
+                            break;
                         }
-                        position = target;
-                        break;
+
+                        default: // Absorb - ride the hull.
+                            if (!burstFired)
+                            {
+                                burstFired = true;
+                                FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
+                            }
+                            position = target;
+                            break;
+                    }
+
+                    crystalTransform.SetPositionAndRotation(
+                        position,
+                        baseRotation * Quaternion.AngleAxis(cfg.SpinDegrees(phase, u), spinAxis));
+                    // A morphing capture HOLDS its scale: the cage is carrying the whole size change,
+                    // and the shipped ramp drives to ZERO through the absorb - which would scale the
+                    // baked targets to a point and delete the shape whatever the shader did.
+                    crystalTransform.localScale = baseScale *
+                        (morphing ? heldScaleMultiplier : cfg.ScaleMultiplier(phase, u));
+
+                    crystal.ApplyCaptureVisual(cfg.FlareMultiplier(phase, u),
+                                               CrystalCaptureConfigSO.Opacity(phase, u));
+
+                    elapsed += Time.deltaTime;
+                    await UniTask.Yield(PlayerLoopTiming.Update);
                 }
 
-                crystalTransform.SetPositionAndRotation(
-                    position,
-                    baseRotation * Quaternion.AngleAxis(cfg.SpinDegrees(phase, u), spinAxis));
-                crystalTransform.localScale = baseScale * cfg.ScaleMultiplier(phase, u);
+                if (crystal == null) return;
 
-                crystal.ApplyCaptureVisual(cfg.FlareMultiplier(phase, u),
-                                           CrystalCaptureConfigSO.Opacity(phase, u));
+                // A zero-length absorb still owes the payoff.
+                if (!burstFired) FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
 
-                elapsed += Time.deltaTime;
-                await UniTask.Yield(PlayerLoopTiming.Update);
+                crystal.DestroyCrystal();
             }
-
-            if (crystal == null) return;
-
-            // A zero-length absorb still owes the payoff.
-            if (!burstFired) FireHuskBurst(crystal, cfg, vesselStatus, baseScale);
-
-            crystal.DestroyCrystal();
+            finally
+            {
+                if (morphMesh) Destroy(morphMesh);
+            }
         }
 
         /// <summary>
