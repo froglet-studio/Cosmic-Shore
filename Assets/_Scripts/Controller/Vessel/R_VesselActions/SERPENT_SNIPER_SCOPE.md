@@ -126,16 +126,18 @@ at 70°.
 
 ## The shot
 
-- **Hitscan**, not a projectile: `PrismSpatialIndex.QuerySegment(origin, origin + forward × range,
-  pathRadius, …)`.
+- **Hitscan**, not a projectile:
+  `PrismSpatialIndex.QueryCone(origin, forward, range, coneHalfAngle, minPathRadius, …)`.
 - **The line is the CAMERA's line** — the vessel's forward axis, which is exactly what the cockpit
   camera is aimed down, so the shot lands where the view is pointing. Deriving it from `Course`
   would put the round somewhere the pilot is not looking whenever the vessel is sliding.
-- **The path is a capsule, not a ray.** `QuerySegment` tests a prism's *centre* and a prism is
-  several units across, so a mathematical line threaded through a lattice of centres misses almost
-  everything it visually passes through. `pathRadius` (4 u) is what makes the round hit what the
-  reticle covers.
-- **`QuerySegment`'s snapshot is unordered** (it walks buckets), so hits are sorted along the ray
+- **The path is a CONE, not a ray — and not a tube.** `QueryCone` tests a prism's *centre* and a
+  prism is several units across, so a mathematical line threaded through a lattice of centres
+  misses almost everything it visually passes through. The first cut fixed that with a
+  fixed-radius capsule and introduced a worse problem: a radius is measured in world units while
+  the pilot aims in **angle**, so 4 u was a blunderbuss at the muzzle and **0.076°** — about 7 px
+  inside the 22° scope — at the 3,000 u reach. See §"Round 2" below.
+- **`QueryCone`'s snapshot is unordered** (it walks buckets), so hits are sorted along the axis
   before anything is destroyed — a sniper round has to stop at the *first* thing it reaches.
 - **Own-domain mass is skipped.** The Serpent's identity is the wall it weaves; a rifle that cut
   through it would make the two abilities fight. `Domains.Blue` is the neutral sentinel and stays
@@ -185,9 +187,13 @@ deflection **before** Space 5.
 | `cooldownSeconds` | 12 | wait between shots at resting Charge — the ability's whole cost |
 | `cooldownMultiplierAtFullCharge` | 0.45 | → 5.4 s at Charge 10 |
 | `rangeUnits` | 3000 | the whole flight; there is no projectile to outrun |
-| `pathRadius` | 4 | capsule radius of the hitscan (see above) |
+| `coneHalfAngleDegrees` | 0.5° | angular half-width of the hitscan — 26.2 u at 3,000 u, ~49 px across at the 22° scope |
+| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past 688 u |
 | `pierceCount` | 3 | prisms a PIERCING round takes; 0 = unlimited |
 | `debrisSpeed` / `debrisSpeedLimit` | 90 / 120 | true-velocity debris and its ceiling |
+| `beamSeconds` | 0.35 s | how long the tracer takes to fade out |
+| `beamStartWidth` | 1.5 u | tracer width at the muzzle; the far end is drawn at the cone's own radius |
+| `impactFlareSeconds` / `impactFlareRadius` | 0.3 s / 18 u | the flare at the kill point |
 | `shakeIntensity` / `shakeDuration` | 0.6 / 0.18 s | the report, local pilot only |
 
 ## Files
@@ -201,13 +207,134 @@ deflection **before** Space 5.
 | `…/R_VesselActions/Data Containers/SniperScopeActionSO.cs` | **new** — Space ability config |
 | `…/R_VesselActions/Data Containers/SniperShotActionSO.cs` | **new** — Charge ability config |
 | `…/R_VesselActions/Executors/SniperScopeActionExecutor.cs` | **new** — scope state, zoom drive, `IsScoped` |
-| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown |
+| `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer |
+| `…/R_VesselActions/Executors/SniperBeam.cs` | **new** — the pooled domain-coloured tracer + impact flare |
+| `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the reticle, the recharge arc and the PIP host |
+| `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
+| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture chase camera |
+| `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | **+** `QueryCone` / `ConeContains` |
 | `_Scripts/UI/View/CloakSeedWallActionSO.cs` | **+** declines while scoped |
 | `_Scripts/UI/Controller/SerpentVesselHUDController.cs` | **+** drives the Charge card's cooldown veil |
 | `Assets/Resources/ElementalAbilityMaps/Serpent.asset` | Charge + Space entries authored; Time's `Input` corrected |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperScopeAction.asset` | **new** |
 | `Assets/_SO_Assets/VesselActions/Serpent/SniperShotAction.asset` | **new** |
 | `Assets/_Prefabs/Spacevessels/Serpent.prefab` | two executor children, registry entries, LT + RT bindings |
+
+## Round 2 — what the first playtest found
+
+Four reports, all of them true, and three of them one defect each:
+
+> *"I didn't notice the shot at all. The UI did not indicate if a shot was ready. Let's use a PIP
+> so players can still see themselves fly while zoomed in. The hitscan will hit very little."*
+
+### 1. The hitscan was a needle — and widening it is the wrong fix
+
+The instinct was right even though the path was not literally zero: it was a capsule of radius 4
+tested against prism **centres**, which at 3,000 u subtends **0.076°** — about **7 px** inside the
+22° scope. Functionally a needle.
+
+The tempting fix is a bigger radius, and it is wrong in both directions at once: **a radius is a
+world distance and a pilot aims in ANGLE.** Anything wide enough to be aimable at 3,000 u is a
+blunderbuss at 100 u, which is the opposite of a sniper rifle. A bundle of parallel rays — the
+other suggestion — has the same problem plus gaps between the rays, and costs N queries.
+
+So the path is an **angular cone**: `radius(t) = max(minRadius, t · tan(halfAngle))`. At a **0.5°**
+half-angle that is 26.2 u at 3,000 u and, crucially, **the same on-screen size at every range** —
+about 49 px across at the 22° scope, 135 px at full magnification. *That* is what lets the reticle
+be drawn at the beam's true size rather than at a guess, which is the whole of §2 below.
+
+The `minPathRadius` floor (6 u) is not a fudge: a pure cone has **zero** radius at the apex, so
+mass the ship is about to fly into would be missed by the one weapon pointed straight at it. The
+angular term overtakes it at 688 u.
+
+**The cone is deliberately NOT a function of zoom**, and this is the trap worth recording. Widening
+it as the pilot zooms out is the obvious next feature and it would **desync the prismscape**: the
+zoom is a locally smoothed value (`SniperScopeActionExecutor.Zoom01` eases toward the trigger on
+the owner's machine only) while this shot resolves on **every peer**, so destruction would depend
+on a number each machine holds a different version of. Conserved mass cannot ride a local ease.
+
+New platform surface: `PrismSpatialIndex.QueryCone` — the tapering sibling of `QuerySegment`, same
+bucket walk, same unordered-snapshot contract, with the radius a function of axial distance.
+
+### 2. The readiness push was correct and invisible
+
+`SerpentVesselHUDController` pushes `CooldownRemaining01` into the fleet's clockwise cooldown veil
+every frame, and it has been doing so since round 1. The veil is drawn **on an ability ICON**, and
+**the Serpent binds 0 of its 4 ability icons** — so its lockup renders four LOCKED cards and the
+veil has nothing to sit on. A perfectly wired readout with nowhere to appear.
+
+*General shape: a push into a display is only as visible as the display, and "the vessel has no
+icons yet" is a fact about a different file.*
+
+The long-term fix is to author that vessel's four icons (`FLEET_MAPS.md` §2). What ships now is a
+**scope overlay** that says something the ability row could not anyway — **where the shot goes**:
+
+- a **reticle** whose radius is the cone's own half-angle projected through the camera's **live**
+  vertical field of view (`r = (h/2)·tan(halfAngle)/tan(fov/2)`), read every frame off the camera
+  that is actually rendering, so it tracks the zoom **and** tracks the speed tunnel narrowing the
+  view at speed. Anything inside the ring is inside the shot;
+- a **recharge arc** around it, filling clockwise from the top — the same direction as the fleet's
+  cooldown veil, because an arc that filled the other way would read as the opposite of every other
+  recharge in the game;
+- a **ready flash** when the weapon comes back, so a pilot watching the target rather than the arc
+  still sees it arrive.
+
+Both readouts are driven, so the day the Serpent's icons are authored the row lights up and this
+stays correct. It is **generated** — one runtime canvas, three `ScopeRingGraphic`s and a
+`RawImage`, no sprites and no prefab — and built lazily for the **local pilot only** on the first
+frame a scope is actually held, so every AI and every remote replica costs nothing.
+
+### 3. The shot had no visible output at all
+
+A hitscan is over in the frame it fires: there is no projectile to watch, and at 3,000 u the prism
+that died is a few pixels. The only evidence of a shot was a camera kick — which is exactly "I
+didn't notice the shot".
+
+`SniperBeam` draws a **domain-coloured tracer** down the round's own path, at the cone's radius at
+each end (so the beam *is* the volume that was tested — a tracer thinner than the cone teaches the
+pilot to aim at something the weapon does not use), plus a **flare** at the stop point when
+something died. It **fades** rather than vanishing (continuity of existence), and it is drawn on
+**every peer** for free, because `R_VesselActionHandler` round-trips the press and the hitscan
+therefore already resolves everywhere. A rifle only the shooter can see is a rifle nobody can learn
+to dodge.
+
+It shares **one** colour resolver with the reticle (`SniperShotActionExecutor.TracerColour`), read
+live off the shared `ColorSet`, so the mark the pilot aims with and the mark the shot leaves can
+never disagree about whose shot it was — and the freestyle domain-changer toy re-colours both.
+
+**Still silent, deliberately.** `fireEvent` ships EMPTY, which is the audio convention: an unwired
+slot is a visible TODO and a borrowed event is an invisible one. The shot will stay quiet until
+somebody authors an FMOD event for it — that is the one piece of "I didn't notice the shot" this
+branch does not close.
+
+### 4. The PIP
+
+`ScopePipView` shows the ordinary chase shot of your own vessel in the bottom-right corner while
+the cockpit view has the middle of the screen. The scope takes away every cue a pilot flies by —
+where the hull is, how it is banked, what is beside it — so without it a scoped Serpent could line
+up a shot or fly, not both.
+
+**It is not a second gameplay camera**, which the platform forbids for four concrete reasons
+(`Docs/REAR_VIEW.md`): the speed tunnel resolves `CameraManager`'s *active* controller,
+`ApplyCameraGraphicsSettings` pushes the player's FOV and AA onto three managed cameras and no
+others, background colour is applied per camera, and `Camera.main` returns the first **enabled**
+camera tagged MainCamera. This one is created at runtime, **never tagged MainCamera**, renders only
+into a `RenderTexture` and is left **disabled** and stepped by hand — outside all four systems by
+construction. It is the `ConnectingArenaPreview` shape.
+
+**The retired `Pip` prefab was deliberately not revived.** Its `border` `RawImage` names a texture
+guid no asset carries, and a `RawImage` with a missing texture draws a **solid quad in its own
+tint** — a navy rectangle over ~55% of the display (CLAUDE.md records it). It also gates on
+`AutoPilotEnabled`, which is false at `Start` on every vessel and is a documented anti-pattern. The
+new window has no frame at all for the first reason and no ownership test of its own for the
+second: it is created by the scope, which is already local-pilot-gated.
+
+**The cost is real and is stated rather than hidden.** Unlike the connecting panel's preview — which
+stands the gameplay camera *down* because the panel covers the screen — this is a genuine **second
+render of the world**, because the first one is what the player is looking through. It is paid for
+the only way left: 216p, no post-processing, no shadows, no anti-aliasing, a 20 Hz refresh, and a
+lifetime of exactly as long as the trigger is held. If it proves too expensive on a phone,
+`RenderHeight` and `RefreshHz` are the dials, and switching it off costs the ability nothing.
 
 ## Drive-by corrections
 
@@ -243,9 +370,16 @@ deflection **before** Space 5.
   way `R_VesselActionHandler.NetEchoSightShape` replicates the Dolphin's cone — deliberately not
   paid for here.
 - **No ability ICONS.** The Serpent binds 0/4 icons, so the ability lockup renders four LOCKED
-  cards (its designed state for an un-iconed vessel) and the Charge card's cooldown veil now moves
-  on one of them. Wiring real icons needs art plus an in-editor pass with
-  **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
+  cards (its designed state for an un-iconed vessel) and the Charge card's cooldown veil has **no
+  icon to sit on** — which is why the scope draws its own reticle and recharge arc. Both are
+  driven, so authoring the icons lights the row up and changes nothing here. Wiring real icons
+  needs art plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
+- **The PIP is a second render of the world**, and unlike the connecting panel's preview there is
+  no gameplay camera to stand down — the player is looking through it. Paid for with 216p, no post,
+  no shadows, no AA, 20 Hz and a lifetime of exactly as long as the trigger is held;
+  `ScopePipView.RenderHeight` / `RefreshHz` are the dials if a phone disagrees. **Unprofiled.**
+- **The scope overlay rebuilds three small UI meshes per frame while held** (≈96 segments each,
+  guarded by `Mathf.Approximately` so an unchanged value costs nothing). Cheap, and unmeasured.
 - **The shot has no FMOD event.** `fireEvent` ships **empty**, which is silence — never a borrowed
   event (CLAUDE.md's audio convention). It is an inspector-visible TODO on the
   `SniperShotActionExecutor` component.
@@ -289,14 +423,33 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     `R_VesselActionHandler.ReleaseHeldInputs` and the executor's `OnDisable`.
 11. **Vessel swap while scoped:** scope, then swap hulls with the vessel-changer toy. The new hull
     must arrive in third person at its own FOV, with no stranded zoom.
-12. **MPPM, two clients:** scope and fire on client A. On client B the same prisms must die. Then
-    check B's own camera never moved — `IsScoped` is shared, the camera is not.
+12. **MPPM, two clients:** scope and fire on client A. On client B the same prisms must die, and
+    **B must see A's tracer** in A's domain colour. Then check B's own camera never moved, that B
+    got no reticle and no PIP — `IsScoped` is shared, the screen is not.
+13. **The reticle is a measurement.** Scope and read the ring against what dies: a prism just
+    inside it must die and one just outside must not. Then ease the zoom — the ring must grow in
+    screen pixels while covering the same mass, which is the whole claim. Then accelerate: the
+    speed tunnel narrows the view and the ring must grow with it.
+14. **The recharge arc:** fire, then watch the arc fill clockwise from the top over ~12 s and flash
+    once as it completes. Raise Charge to 10 and confirm it fills in ~5.4 s instead.
+15. **The tracer:** fire into empty space — expect a beam to the full 3,000 u and **no** flare.
+    Fire at mass — expect the beam to stop at the kill and a flare there. Fire twice in quick
+    succession (Charge 10) and confirm the second beam does not start from where the first ended,
+    which is the pooled-instance reset.
+16. **The PIP:** scope and confirm a chase view of your own hull appears bottom-right, updating as
+    you fly, with **no UI drawn inside it** and no navy rectangle anywhere. Release and it must
+    disappear. Swap hulls while scoped and confirm no stray camera or render texture is left
+    behind (check the hierarchy for `[SerpentScopePipCamera]`).
 
 ## Follow-ups
 
 - Wire the four ability icons (art + `Wire Vessel Ability Row`), so the Charge veil and the Space
   card have marks to sit on.
-- Author the FMOD event for the shot.
+- Author the FMOD event for the shot — this is the one half of "I didn't notice the shot" this
+  branch does not close.
+- Consider whether the reticle should be shown UNSCOPED too (it currently is not: the cone is the
+  same cone, but the shot cannot fire unscoped, and a permanent reticle on a hull with no crosshair
+  would be a claim about a weapon that is not available).
 - Fill the **Mass** slot — the last open Serpent design slot. `Docs/ElementalAbilitySystem/FLEET_MAPS.md`
   §2 still proposes *wall prism scale* / **Fortified Wall**, which does not collide with either
   ability added here.

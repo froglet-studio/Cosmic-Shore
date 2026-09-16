@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -21,11 +23,22 @@ namespace CosmicShore.Gameplay
     /// pointing. Deriving the direction from <c>Course</c> instead would put the round somewhere
     /// the pilot is not looking the moment the vessel is sliding.</para>
     ///
-    /// <para><b>Why the hitscan is a capsule and not a ray.</b>
-    /// <see cref="PrismSpatialIndex.QuerySegment"/> tests a prism's CENTRE, and a prism is several
+    /// <para><b>Why the hitscan is a CONE and not a ray — or a tube.</b>
+    /// <see cref="PrismSpatialIndex.QueryCone"/> tests a prism's CENTRE, and a prism is several
     /// units across, so a mathematical line threaded through a lattice of centres misses almost
-    /// everything it visually passes through. The authored path radius is what makes the round hit
-    /// what the reticle covers.</para>
+    /// everything it visually passes through. A fixed-radius capsule fixes that and introduces a
+    /// worse problem: it is measured in world units while the pilot aims in ANGLE, so the first
+    /// cut's 4 u path was a blunderbuss at the muzzle and 0.076° — about 7 px inside the scope —
+    /// at its 3,000 u reach. The cone covers the same on-screen area at every range, which is what
+    /// makes "put the reticle on it" mean one thing, and it is what lets the scope HUD draw a
+    /// reticle at the beam's TRUE size rather than at a guess.</para>
+    ///
+    /// <para><b>The cone is deliberately NOT a function of zoom.</b> Widening it as the pilot zooms
+    /// out would be the obvious next step and would desync the prismscape: the zoom is a LOCALLY
+    /// smoothed value (<c>SniperScopeActionExecutor.Zoom01</c> eases toward the trigger every
+    /// frame on the owner's machine only), and this shot resolves on EVERY peer. Making destruction
+    /// depend on it would have each machine destroying a different set of conserved mass. The
+    /// angular size is authored, so every peer's cone is the same cone.</para>
     ///
     /// <para><b>Breaking a super-shield uses the ONE sanctioned sequence.</b> Super-shielded mass
     /// is invulnerable to <c>Prism.Damage</c> outright — it early-returns through
@@ -68,6 +81,11 @@ namespace CosmicShore.Gameplay
                  "borrowed event (CLAUDE.md, the audio convention).")]
         [SerializeField] private FMODUnity.EventReference fireEvent;
 
+        // The player roster carries the shared ColorSet, which is where the tracer's domain colour
+        // comes from. Injected rather than searched: vessels DO get
+        // GameObjectInjector.InjectRecursive at spawn, so this resolves on every spawn path.
+        [Inject] GameDataSO _gameData;
+
         IVesselStatus _status;
         ActionExecutorRegistry _registry;
 
@@ -94,6 +112,20 @@ namespace CosmicShore.Gameplay
                 return Mathf.Clamp01(CooldownRemaining / total);
             }
         }
+
+        /// <summary>
+        /// The authored half-angle of the round's path, in degrees — what the scope's reticle is
+        /// drawn at. Exposed so the readout is a measurement of THIS weapon rather than a second
+        /// number that can drift from it.
+        /// </summary>
+        public float ConeHalfAngleDegrees => config != null ? config.ConeHalfAngleDegrees : 0.5f;
+
+        /// <summary>
+        /// The firing pilot's domain colour. One resolver for the tracer and the reticle, so the
+        /// mark the pilot aims with and the mark the shot leaves can never disagree about whose
+        /// shot it was.
+        /// </summary>
+        public Color TracerColour => ResolveTracerColour();
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -171,49 +203,93 @@ namespace CosmicShore.Gameplay
             var ship = _status.ShipTransform;
             if (ship == null) return;
 
-            var index = PrismSpatialIndex.EnsureInstance();
-            if (index == null || !index.IsAvailable) return;
-
             Vector3 origin = ship.position;
             Vector3 direction = ship.forward;
-            Vector3 end = origin + direction * so.RangeUnits;
+            Vector3 stop = origin + direction * so.RangeUnits;
+            bool hit = false;
 
-            index.QuerySegment(origin, end, so.PathRadius, _hits);
-            if (_hits.Count == 0)
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index != null && index.IsAvailable)
             {
-                PlayReport(so);
-                return;
+                index.QueryCone(origin, direction, so.RangeUnits, so.ConeHalfAngleDegrees,
+                                so.MinPathRadius, _hits);
+
+                // QueryCone's snapshot is UNORDERED (it walks buckets), and a sniper round has to
+                // stop at the FIRST thing it reaches, so the hits are ordered along the axis here.
+                _ordered.Clear();
+                for (int i = 0; i < _hits.Count; i++)
+                {
+                    var prism = _hits[i];
+                    if (!IsValidTarget(prism)) continue;
+                    _ordered.Add((prism, Vector3.Dot(prism.transform.position - origin, direction)));
+                }
+                _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
+
+                bool pierces = IsPierceUnlocked;
+                int budget = pierces
+                    ? (so.PierceCount <= 0 ? int.MaxValue : so.PierceCount)
+                    : 1;
+
+                int killed = 0;
+                for (int i = 0; i < _ordered.Count && killed < budget; i++)
+                {
+                    var prism = _ordered[i].prism;
+                    // Re-tested: the list is a snapshot, and destroying a prism can destroy others
+                    // through its own side effects (QueryCone's own documented contract). The stop
+                    // point is read BEFORE the kill, because a destroyed prism's transform is on
+                    // its way back to the pool.
+                    if (!IsValidTarget(prism)) continue;
+
+                    stop = prism.transform.position;
+                    hit = true;
+                    DestroyPrism(prism, so, direction);
+                    killed++;
+                }
             }
 
-            // QuerySegment's snapshot is UNORDERED (it walks buckets), and a sniper round has to
-            // stop at the FIRST thing it reaches, so the hits are ordered along the ray here.
-            _ordered.Clear();
-            for (int i = 0; i < _hits.Count; i++)
-            {
-                var prism = _hits[i];
-                if (!IsValidTarget(prism)) continue;
-                _ordered.Add((prism, Vector3.Dot(prism.transform.position - origin, direction)));
-            }
-            _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
-
-            bool pierces = IsPierceUnlocked;
-            int budget = pierces
-                ? (so.PierceCount <= 0 ? int.MaxValue : so.PierceCount)
-                : 1;
-
-            int killed = 0;
-            for (int i = 0; i < _ordered.Count && killed < budget; i++)
-            {
-                var prism = _ordered[i].prism;
-                // Re-tested: the list is a snapshot, and destroying a prism can destroy others
-                // through its own side effects (QuerySegment's own documented contract).
-                if (!IsValidTarget(prism)) continue;
-
-                DestroyPrism(prism, so, direction);
-                killed++;
-            }
-
+            DrawTracer(so, origin, direction, stop, hit);
             PlayReport(so);
+        }
+
+        /// <summary>
+        /// The tracer, drawn at the CONE's own radius at each end, so what the pilot sees is the
+        /// volume the shot tested rather than a decorative line through the middle of it.
+        ///
+        /// It runs on every peer for free, because this whole method is reached from a replicated
+        /// press — see the class summary.
+        /// </summary>
+        void DrawTracer(SniperShotActionSO so, Vector3 origin, Vector3 direction, Vector3 stop,
+            bool hit)
+        {
+            if (so.BeamSeconds <= 0f) return;
+
+            float distance = Vector3.Distance(origin, stop);
+            float endRadius = Mathf.Max(so.MinPathRadius,
+                distance * Mathf.Tan(so.ConeHalfAngleDegrees * Mathf.Deg2Rad));
+
+            SniperBeam.Fire(origin, stop,
+                startWidth: so.BeamStartWidth,
+                endWidth: endRadius * 2f,
+                colour: ResolveTracerColour(),
+                beamSeconds: so.BeamSeconds,
+                flareRadius: so.ImpactFlareRadius,
+                flareSeconds: so.ImpactFlareSeconds,
+                hit: hit);
+        }
+
+        /// <summary>
+        /// The firing vessel's own domain colour at full strength, read LIVE off the shared
+        /// ColorSet — the path every other domain-tinted surface reads, so the freestyle
+        /// domain-changer toy re-colours the next shot and nothing is snapshotted at
+        /// component-creation time. White is the honest fallback: <c>Domains.Blue</c> is the
+        /// platform's "no team" sentinel and <c>GetDomainSignalColor</c> already answers white
+        /// for it.
+        /// </summary>
+        Color ResolveTracerColour()
+        {
+            var colorSet = _gameData?.ThemeManagerData?.ColorSet;
+            var domain = _status?.Player != null ? _status.Domain : Domains.Blue;
+            return colorSet != null ? colorSet.GetDomainSignalColor(domain) : Color.white;
         }
 
         bool IsValidTarget(Prism prism)

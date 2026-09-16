@@ -45,11 +45,20 @@ namespace CosmicShore.Gameplay
                  "its flight - there is no projectile to outrun or dodge.")]
         [SerializeField, Min(10f)] private float rangeUnits = 3000f;
 
-        [Tooltip("Radius of the round's path, in world units. The hitscan is a thin capsule " +
-                 "rather than a mathematical line: a line through a lattice of prism CENTRES " +
-                 "misses almost everything, because the query tests centres (PrismSpatialIndex." +
-                 "QuerySegment) and a prism is several units across.")]
-        [SerializeField, Min(0.1f)] private float pathRadius = 4f;
+        [Tooltip("Half-angle of the round's path, in DEGREES. The hitscan is a CONE, not a " +
+                 "tube: the query tests prism CENTRES and a prism is several units across, so a " +
+                 "mathematical line misses almost everything it visually passes through - but a " +
+                 "fixed radius is aimed in world units while the pilot aims in ANGLE, so 4 u is " +
+                 "a blunderbuss at the muzzle and 0.076 degrees (about 7 px in the scope) at " +
+                 "3,000 u. An angular cone covers the same on-screen area at every range, which " +
+                 "is what lets the reticle be drawn at the beam's true size.")]
+        [SerializeField, Range(0.05f, 5f)] private float coneHalfAngleDegrees = 0.5f;
+
+        [Tooltip("Floor on that cone's radius near the muzzle, in world units. A pure cone has " +
+                 "zero radius at the apex, so mass the ship is about to fly into would be missed " +
+                 "by the one weapon pointed straight at it. Beyond range * tan(halfAngle) the " +
+                 "angular term takes over and this stops mattering.")]
+        [SerializeField, Min(0f)] private float minPathRadius = 6f;
 
         [Header("Charge 5 — Pierce")]
         [Tooltip("How many prisms a PIERCING round destroys before it stops. 0 is unlimited " +
@@ -67,6 +76,25 @@ namespace CosmicShore.Gameplay
                  "flatten every sniper kill to the same speed.")]
         [SerializeField, Min(0f)] private float debrisSpeedLimit = 120f;
 
+        [Header("Report")]
+        [Tooltip("How long the tracer stays on screen, in seconds, before it has finished fading " +
+                 "out. A hitscan is over in the frame it fires, so the tracer is the ONLY thing " +
+                 "that says a shot happened at all - and it fades rather than vanishing, because " +
+                 "continuity of existence applies to anything the player can see.")]
+        [SerializeField, Min(0f)] private float beamSeconds = 0.35f;
+
+        [Tooltip("Width of the tracer at the muzzle, in world units. The far end is drawn at the " +
+                 "cone's own radius there, so the beam IS the volume it tested - a tracer thinner " +
+                 "than the cone teaches the player to aim at something the shot does not use.")]
+        [SerializeField, Min(0.05f)] private float beamStartWidth = 1.5f;
+
+        [Tooltip("Seconds the impact flare at the kill point lasts. Zero disables it. It is what " +
+                 "separates a hit from a miss at range, where the dying prism is a few pixels.")]
+        [SerializeField, Min(0f)] private float impactFlareSeconds = 0.3f;
+
+        [Tooltip("Radius of that impact flare, in world units.")]
+        [SerializeField, Min(0.1f)] private float impactFlareRadius = 18f;
+
         [Tooltip("Camera shake on firing: intensity then duration in seconds. Zero intensity " +
                  "disables it.")]
         [SerializeField] private float shakeIntensity = 0.6f;
@@ -75,10 +103,15 @@ namespace CosmicShore.Gameplay
         public float CooldownSeconds => cooldownSeconds;
         public float CooldownMultiplierAtFullCharge => cooldownMultiplierAtFullCharge;
         public float RangeUnits => rangeUnits;
-        public float PathRadius => pathRadius;
+        public float ConeHalfAngleDegrees => coneHalfAngleDegrees;
+        public float MinPathRadius => minPathRadius;
         public int PierceCount => pierceCount;
         public float DebrisSpeed => debrisSpeed;
         public float DebrisSpeedLimit => debrisSpeedLimit;
+        public float BeamSeconds => beamSeconds;
+        public float BeamStartWidth => beamStartWidth;
+        public float ImpactFlareSeconds => impactFlareSeconds;
+        public float ImpactFlareRadius => impactFlareRadius;
         public float ShakeIntensity => shakeIntensity;
         public float ShakeDuration => shakeDuration;
 

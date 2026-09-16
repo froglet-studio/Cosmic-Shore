@@ -105,6 +105,28 @@ Two things differ, and both are worth knowing before a third vantage is added:
   `VesselSpeedTunnel.SetHomeFieldOfViewOverride` (`Docs/SPEED_TUNNEL.md §2.1`) and never through
   the camera. A vantage that only moves the camera, as this one does, needs none of that.
 
+### 3.1.1 The one sanctioned way to show a SECOND view at the same time
+
+That scope also needed the chase shot it takes away, in a corner — and §3's "there is deliberately
+NO second camera" still holds, because the rule is about a second **live gameplay** camera. A
+camera that renders only into a `RenderTexture`, is left **disabled** and stepped by hand, and is
+**never tagged MainCamera** is outside all four of §3's systems by construction: the speed tunnel
+resolves `CameraManager`'s active controller and never sees it, `ApplyCameraGraphicsSettings` and
+`SetBackgroundColor` reach only the managed cameras, and `Camera.main` skips it twice over. That is
+the `ConnectingArenaPreview` shape, and `ScopePipView` is the second user of it.
+
+It reproduces the chase pose from `CustomCameraController.FollowOffset` — exposed read-only for
+exactly this — rather than from a constant, so the window cannot become a second opinion about
+where a hull is watched from. **It is a genuine extra render of the world** (the preview stands the
+gameplay camera down; this one cannot, since that is what the player is looking through), so it is
+paid for with a low render height, no post, no shadows, no AA, a capped refresh and a lifetime of
+exactly as long as the ability is held.
+
+**Do not revive `Pip`/`PipCamera.prefab` for this.** Its `border` `RawImage` names a texture guid
+no asset carries, and a `RawImage` with a missing texture draws a solid quad in its own tint — a
+navy rectangle over ~55% of the display — and it gates on `AutoPilotEnabled`, which is false at
+`Start` on every vessel.
+
 ## 4. The mirror is applied at the point of use, never written into the offset
 
 `CustomCameraController.RearView` is a **flag**; `_followOffset` is never touched. This is the

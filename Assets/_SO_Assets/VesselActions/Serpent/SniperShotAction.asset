@@ -15,9 +15,14 @@ MonoBehaviour:
   cooldownSeconds: 12
   cooldownMultiplierAtFullCharge: 0.45
   rangeUnits: 3000
-  pathRadius: 4
+  coneHalfAngleDegrees: 0.5
+  minPathRadius: 6
   pierceCount: 3
   debrisSpeed: 90
   debrisSpeedLimit: 120
+  beamSeconds: 0.35
+  beamStartWidth: 1.5
+  impactFlareSeconds: 0.3
+  impactFlareRadius: 18
   shakeIntensity: 0.6
   shakeDuration: 0.18

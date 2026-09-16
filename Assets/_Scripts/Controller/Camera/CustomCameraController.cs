@@ -70,6 +70,18 @@ namespace CosmicShore.Gameplay
         public Vector3 FirstPersonOffset { get; set; }
 
         /// <summary>
+        /// The vessel-relative offset this camera sits at in its ORDINARY third-person pose, before
+        /// the rear-view mirror or the first-person vantage are applied. Exposed read-only so a
+        /// window that has to reproduce the chase shot (the Serpent scope's PIP) frames it from the
+        /// camera's own authored value rather than from a constant, which would be a second opinion
+        /// about where this vessel is watched from and would drift from its CameraSettingsSO.
+        /// </summary>
+        public Vector3 FollowOffset => _followOffset;
+
+        /// <summary>The vessel this camera is following, or null before a target is set.</summary>
+        public Transform FollowTarget => _followTarget;
+
+        /// <summary>
         /// The offset actually used to pose the camera this frame: the cockpit while
         /// <see cref="FirstPerson"/> is set, else the authored one, or its z-mirror while
         /// <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is

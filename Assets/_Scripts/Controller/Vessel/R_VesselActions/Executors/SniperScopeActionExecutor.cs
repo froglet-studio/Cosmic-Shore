@@ -53,6 +53,10 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         SniperScopeActionSO _activeSo;
 
+        ActionExecutorRegistry _registry;
+        SniperShotActionExecutor _shot;
+        SniperScopeOverlay _overlay;
+
         bool _engaged;
         float _zoom01;   // the APPLIED zoom, chasing the trigger
 
@@ -69,9 +73,23 @@ namespace CosmicShore.Gameplay
         {
             _status = shipStatus;
 
+            // GetComponentInParent, NOT GetComponent: the registry lives on the "ShipActions"
+            // container and each executor sits on a CHILD of it. includeInactive so a vessel
+            // initialized while deactivated still resolves.
+            _registry = GetComponentInParent<ActionExecutorRegistry>(true);
+            if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
+
             // A re-init hands this component to a different pilot (the vessel swap, the Cellular
             // Duel ownership swap). Whatever the last pilot was holding is not this one's.
             ReleaseInternal();
+        }
+
+        void OnDestroy()
+        {
+            // The overlay is a GameObject of its own, so it does not die with the vessel by
+            // parentage - and the PIP behind it owns a RenderTexture, which is a leak nothing
+            // reports if it outlives its owner.
+            if (_overlay != null) { _overlay.Dispose(); _overlay = null; }
         }
 
         void OnDisable()
@@ -104,6 +122,7 @@ namespace CosmicShore.Gameplay
             _engaged = false;
             _zoom01 = 0f;
             _activeSo = null;
+            if (_overlay != null) _overlay.Hide();
             if (was) PushView();
         }
 
@@ -120,6 +139,33 @@ namespace CosmicShore.Gameplay
             _zoom01 = Mathf.MoveTowards(_zoom01, target, response * Time.deltaTime);
 
             PushView();
+            DrawOverlay();
+        }
+
+        /// <summary>
+        /// The scope's own readout — the cone-sized reticle, the recharge arc and the flight PIP.
+        ///
+        /// <para>LOCAL PILOT ONLY, for the same reason as <see cref="PushView"/>: a screen is a
+        /// thing one machine has. It is built lazily on the first frame a local pilot actually
+        /// holds the scope, so a vessel that is never scoped — every AI, every remote replica —
+        /// costs nothing at all.</para>
+        ///
+        /// <para>It carries the weapon's readiness because the fleet's ability lockup cannot: the
+        /// Serpent binds none of its four ability icons, so the cooldown veil pushed into
+        /// <c>SerpentVesselHUDController</c> has no icon to sit on. Both are driven, so the day
+        /// that vessel's icons are authored the row lights up and this stays correct.</para>
+        /// </summary>
+        void DrawOverlay()
+        {
+            if (_status?.Player == null || !_status.Player.IsLocalPilot) return;
+            if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
+            if (_shot == null) return;
+
+            // An explicit == null, NOT ??=: the null-coalescing operators compare by REFERENCE
+            // and so cannot see a destroyed UnityEngine.Object, which would leave this holding a
+            // dead overlay forever.
+            if (_overlay == null) _overlay = SniperScopeOverlay.Create();
+            _overlay.Tick(_shot.ConeHalfAngleDegrees, _shot.CooldownRemaining01, _shot.TracerColour);
         }
 
         SniperScopeActionSO ResolvedConfig => _activeSo != null ? _activeSo : config;
