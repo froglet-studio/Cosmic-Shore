@@ -89,6 +89,28 @@ per-hull levels, and print the spread at rest and tuned. The generator imports i
 tuned spread under the number the doc states. State plainly what the model is not (a frame time,
 a playtest, the AI).
 
+Three things the Rhino cost Broadside, each of which a future model will meet again:
+
+- **"Read it by key" has no gate behind it, so the day you copy one number in is the day the
+  model starts going stale.** `broadside_balance.py` hardcoded `cruise 60 / top 1210` and was
+  wrong within the week, because a parallel branch zeroed `Rhino.prefab`'s `DefaultMinimumSpeed`
+  and moved both by 10 u/s. Nothing failed: the `--check` passed, the spread printed, the doc
+  quoted it, and the model was describing a vessel the project no longer ships. **A constant
+  copied out of an asset is true only on the day it is copied.** Import the reader
+  (`regatta_balance.read_constants()`) rather than the value.
+- **An endpoint moves a PARAMETER, not the quantity you are pricing.** Time on the Rhino is the
+  ramp's ACCELERATION, and feeding its 2.5x ratio in as a speed ratio overpaid the hull into
+  first place. Integrate what the parameter actually produces over the window the mode gives it
+  (`min(top, cruise + a.t)` over a brawl straight = **2.22x**, saturating once the hull tops out).
+  Before writing "element X reaches nothing on hull Y", **check the executor, not the map** - a
+  capability live in code and flat in data reads exactly like one that does not exist.
+- **A level picker with two buckets is a coin toss.** Sorting hulls around the median and handing
+  the lower half +1 flips a hull that gains a real endpoint from slowest straight past everyone
+  to fastest, because +1 is the only thing on offer. Move each hull to the level nearest the
+  **anchor** - the median rate of the hulls the lever CANNOT reach, the part of the roster no
+  handicap can move. Where a level is answering a playability question rather than a scoring one,
+  pin a floor and clamp UP to it afterwards: the balance pass may raise that level, never spend it.
+
 ## 3. What an arena card owns beyond an arcade card
 
 | Decision | The rule |
