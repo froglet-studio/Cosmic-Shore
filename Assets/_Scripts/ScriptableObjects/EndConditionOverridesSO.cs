@@ -77,6 +77,13 @@ namespace CosmicShore.ScriptableObjects
         /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
         public const int DefaultUndertowPointTarget = 12;
 
+        /// <summary>Broadside point target used when <see cref="broadsidePointTarget"/> is 0.
+        /// The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round is 1,
+        /// a contact strike 8, an area debuff 12, a rocket 10/20/30 by how close it got. 600 is
+        /// about four minutes for a domain at the modelled sustained rate, whichever hulls it
+        /// fields (Tools/Build/broadside_balance.py).</summary>
+        public const int DefaultBroadsidePointTarget = 600;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -245,6 +252,11 @@ namespace CosmicShore.ScriptableObjects
                  "1, summed across the domain's pilots. 0 = default (12).")]
         [Min(0)] public int undertowPointTarget = 12;
 
+        [Tooltip("Broadside: POINTS a DOMAIN needs to win (race to N). Every hull on the card " +
+                 "scores into one total, priced by the VERB that landed the hit - a round is 1, a " +
+                 "contact strike 8, an area debuff 12, a rocket 10/20/30. 0 = default (600).")]
+        [Min(0)] public int broadsidePointTarget = 600;
+
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -271,6 +283,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tollwayTollTargetBuild = 8;
         [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
         [Min(0)] public int undertowPointTargetBuild = 12;
+        [Min(0)] public int broadsidePointTargetBuild = 600;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -476,6 +489,14 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
 
         /// <summary>
+        /// Broadside point target ("first domain to N points"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultBroadsidePointTarget"/>. Compared against a DOMAIN's summed
+        /// CombatPoints, which every hull on the card pays into through its own weapon class.
+        /// </summary>
+        public int GetBroadsidePointTarget() =>
+            broadsidePointTarget > 0 ? broadsidePointTarget : DefaultBroadsidePointTarget;
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -505,6 +526,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
+                GameModes.Broadside                 => broadsidePointTarget > 0 ? broadsidePointTarget : DefaultBroadsidePointTarget,
                 _                                   => 0,
             };
 
@@ -535,7 +557,8 @@ namespace CosmicShore.ScriptableObjects
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild &&
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
-            undertowPointTarget == undertowPointTargetBuild;
+            undertowPointTarget == undertowPointTargetBuild &&
+            broadsidePointTarget == broadsidePointTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -563,6 +586,7 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget = tollwayTollTargetBuild;
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
+            broadsidePointTarget = broadsidePointTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -591,6 +615,7 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTargetBuild = tollwayTollTarget;
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
+            broadsidePointTargetBuild = broadsidePointTarget;
         }
     }
 }

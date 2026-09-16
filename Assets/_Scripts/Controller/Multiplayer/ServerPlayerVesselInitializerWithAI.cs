@@ -469,9 +469,14 @@ namespace CosmicShore.Gameplay
             // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
             // Fight then layers a stand-off distance on top via its own external target
             // provider, because a gun duel is not a ramming contest.
+            // Broadside joins them for the same reason and needs nothing else: most of its
+            // roster lands a hit by ARRIVING (a Rhino's sword, a Squirrel's joust, a Manta's
+            // bomb), so the shared opponent lock IS the AI for those hulls. Its controller adds
+            // only the two triggers that are stick gestures and therefore inert under autopilot.
             bool shouldSeekPlayers =
                 gameData.GameMode == GameModes.Joust ||
-                gameData.GameMode == GameModes.DogFight;
+                gameData.GameMode == GameModes.DogFight ||
+                gameData.GameMode == GameModes.Broadside;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }

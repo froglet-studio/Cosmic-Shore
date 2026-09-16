@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameBroadside
+  m_EditorClassIdentifier:
+  Mode: 57
+  IsMultiplayer: 1
+  DisplayName: Broadside
+  Description: Every hull that can fight, loose in the Boneyard, each with the weapon it
+    actually has - a Sparrow's guns and rockets, an Urchin's spikes, a Rhino's sword, a
+    Squirrel's joust, a Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is worth
+    what it cost you to land, not what you flew: a round is 1, a contact strike 8, a debuff
+    12, a rocket up to 30. First team to the target wins. Pick the hull you fight best.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameBroadside
+  Vessels:
+  - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
+  - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+  - {fileID: 11400000, guid: bde48fa4833b6364b93111a55ba90958, type: 2}
+  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
+  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  Tips:
+  - Your hull already has a weapon. The card does not hand you one - it pays for the one you brought.
+  - A contact strike is worth eight rounds. Closing is the expensive part, so it pays like it.
+  - You cannot hit a teammate with anything here. The domains are the sides.
+  - Slow hulls start with Time already high. Fast ones start with it low.
+  ViewUserAction: 0
+  PlayUserAction: 0
+  StartingElements:
+  - Class: 2
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 2
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 2
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 2
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 12
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 12
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 12
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 12
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 11
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 11
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 11
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 11
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  ComebackRatePerScoreDeficit: 0.02

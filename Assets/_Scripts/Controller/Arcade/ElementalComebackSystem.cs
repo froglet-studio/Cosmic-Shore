@@ -179,6 +179,9 @@ namespace CosmicShore.Gameplay
                 case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
                 case GameModes.Undertow: // bends land as CombatPoints; the rule folds kills in on top,
                                          // so the comeback reads the BEND deficit alone (see UNDERTOW.md)
+                case GameModes.Broadside: // every verb on the card pays into CombatPoints, so the
+                                          // deficit is already hull-agnostic - which is the whole
+                                          // reason the mode weights at the HIT rather than here
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
