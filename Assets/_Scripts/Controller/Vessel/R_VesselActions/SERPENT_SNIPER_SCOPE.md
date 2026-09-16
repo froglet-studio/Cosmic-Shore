@@ -11,7 +11,7 @@ Two of the Serpent's three open element slots are now filled. **Mass stays open.
 |---|---|---|---|---|
 | Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first |
 | Mass | *(open design slot)* | — | — | — |
-| Space | **Scope** | LT (`LeftStickAction`) | magnification: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° | **Steady Eye** — the zoom no longer bleeds off while turning |
+| Space | **Scope** | LT (`LeftStickAction`) | magnification: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it (13.8° at rest, 6.9° at Space 10) |
 | Time | Boost Duration | A / Space (`Button1Action`) | boost duration ×1.6 at L10 | — *(unchanged)* |
 
 ## Why these elements
@@ -43,86 +43,93 @@ every press and release through the server, so both executors already run on eve
 the sniper resolves its own shot on every machine. Had the flag been local-pilot-only, a remote
 replica would have run the cloak *and* the shot on the same press.
 
-## The camera
+## The view
 
-`VesselFirstPersonView` (`_Scripts/Utility/`) is a new platform driver and a deliberate sibling of
-`VesselRearView` — same static shape, same `LateUpdate` push, same identity-guarded bind at the
-four `IsLocalPilot` sites in `VesselController`, same `GetCloseCamera` identity test so a death or
-replay camera is never seated.
+**The pilot's own camera never moves.** The scope is a **second, magnified picture** — a round
+eyepiece in the top-left corner, under the goal stack — and the flight view behind it is untouched.
 
-- **No second camera.** The same rig, read from a different seat, for the four reasons
-  `Docs/REAR_VIEW.md` records in full (the speed tunnel, `ApplyCameraGraphicsSettings`, per-camera
-  background colour, and `Camera.main` all resolve one camera).
-- **The pose is applied at the POINT OF USE.** `CustomCameraController.EffectiveOffset`
-  substitutes the cockpit while `FirstPerson` is set; `_followOffset` is untouched, so the four
-  systems that legitimately move the camera mid-flight (zoom-out abilities, adaptive zoom, the
-  skimmer's camera-scaling prism effect, a vessel swap re-applying its `CameraSettingsSO`) keep
-  working and cannot eject the pilot from the cockpit.
-- **First person beats rear view** rather than composing with it: the z-mirror of a cockpit offset
-  is another point inside the same hull.
-- **It is a rigid attachment, and both halves matter.** The camera aims along the *target's*
-  forward, because the usual look vector (target position − camera position) is ~zero in the
-  cockpit and `SafeLookRotation` would decline it, freezing the view. And it does not SmoothDamp:
-  any lag at all puts the camera inside the hull it is trying to see past.
+That is round 4's inversion, and it is the whole design now. Rounds 1–3 did the obvious thing:
+take the gameplay camera into the cockpit and narrow its field of view. It worked exactly as
+specified and read as **nauseating**, because a magnified view is a lever on every motion that
+reaches it — a 22° scope multiplies the pilot's own turn, the vessel's roll, the camera's settle
+and the speed tunnel's narrowing by the same ~4× it multiplies the target, and the pilot has no
+way to tell which half of what they are seeing they caused. Putting the magnification in a window
+leaves the flight view at 1×, where motion is read, and confines the lever to the picture being
+aimed with.
+
+`ScopePipView` (`_Scripts/Utility/`) owns it:
+
+- **It is not a second gameplay camera.** Created at runtime, **never tagged MainCamera**, renders
+  only into a `RenderTexture`, and left **disabled** and stepped by hand — outside all four systems
+  `Docs/REAR_VIEW.md` §3 names (the speed tunnel resolves `CameraManager`'s *active* controller;
+  `ApplyCameraGraphicsSettings` pushes the player's FOV and AA onto three managed cameras and no
+  others; background colour is per camera; `Camera.main` returns the first **enabled** MainCamera).
+  §3.1.1 is the carve-out this shape was written for, and `ConnectingArenaPreview` is its sibling.
+- **Being outside the speed tunnel is what makes the zoom pure.** Nothing narrows this camera but
+  the trigger.
+- **It is a rigid attachment, and both halves matter.** The eye is written outright every frame —
+  any lag at all at zero distance puts the camera inside the hull it is trying to see past — and it
+  aims along the vessel's **own forward** rather than at anything, because a look-at vector is
+  ~zero in the cockpit and `SafeLookRotation` would decline it, freezing the view.
 - **The eye is MEASURED**, at `1.05 ×` the vessel's own circumscribing hull radius
   (`PrismOcclusionCorridor.MeasureCircumscribedRadius`, the rotation-invariant hull-only
-  measurement the occlusion corridor already sizes itself from). The Serpent sits 250 units behind
-  its camera in third person; a constant could not serve both it and a Squirrel.
-- **The occlusion corridor needs no special handling and is why the view is usable.** It reads
-  `_WorldSpaceCameraPos` on the GPU, so in the cockpit it collapses to almost nothing — correct,
-  since there is no longer any mass *between* the camera and the ship, and a scoped pilot wants the
-  arena undissolved.
+  measurement the occlusion corridor already sizes itself from), cached per hull. A constant could
+  not serve both a Serpent and a Squirrel.
+- **It aims down the same vector the shot is cast along** (`vessel.forward`), so the reticle is a
+  promise rather than a decoration — by construction, not by tuning.
+- **The picture is SQUARE** (1:1 render target, camera aspect 1) because the window is round, so
+  `ScopeDiscGraphic` samples the unit circle straight onto `[0,1]²` with nothing squashed and
+  nothing cropped away.
+- **The clip planes ARE borrowed** from `Camera.main` here — unlike the connecting panel's preview,
+  which derives its own. That preview frames a whole arena from outside and clips out of a borrowed
+  far plane; this camera sits on the vessel looking down the same line the gameplay camera already
+  renders, so its planes are correct for this shot by construction.
 
-## The zoom goes through the speed tunnel's HOME, never through the camera
+**What this retired:** `VesselFirstPersonView` is **deleted**, and `CustomCameraController` no
+longer carries `FirstPerson` / `FirstPersonOffset` or the rigid-attach branch. An unreferenced
+camera vantage bound at two `IsLocalPilot` sites is exactly the "unreferenced subsystem eventually
+mistaken for a live feature" trap CLAUDE.md records, so it went with its caller rather than being
+kept just in case. `VesselSpeedTunnel.SetHomeFieldOfViewOverride` **is** kept, with no caller, and
+that asymmetry is deliberate: it is a **guard** rather than a feature — the one sanctioned way to
+magnify the gameplay camera — and deleting it re-opens the direct `Camera.fieldOfView` write the
+law exists to prevent. `Docs/SPEED_TUNNEL.md` §2.1 now carries the finding as the thing to read
+before reaching for it.
 
-`VesselSpeedTunnel` owns the gameplay camera's field of view fleet-wide and is its only writer
-(`Docs/SPEED_TUNNEL.md`). A direct `Camera.fieldOfView` write fails two ways, both silent: while
-the tunnel is engaged it is overwritten every frame, and when the tunnel *engages* it captures
-whatever FOV it finds as the home to restore later — **baking the zoom in permanently**.
+## The zoom is a pure function of the trigger
 
-So the tunnel grew one sanctioned surface:
+Nothing else reaches it. Not the stick, not the speed, not the camera the pilot is flying with:
 
-```csharp
-VesselSpeedTunnel.SetHomeFieldOfViewOverride(float fov, Transform key);
-VesselSpeedTunnel.ClearHomeFieldOfViewOverride(Transform key);   // swap-guarded, like ClearTarget
-VesselSpeedTunnel.HasHomeFieldOfViewOverride;
-VesselSpeedTunnel.HomeFieldOfView;                               // the PLAYER's own value
+```
+zoom01 ← MoveTowards(zoom01, deadzone(LeftTriggerAnalog), zoomResponse · dt)
+fov    = lerp(unscopedFieldOfView, fieldOfViewAtFullZoom / spaceDepth, zoom01)
 ```
 
-Three properties make it safe:
+`zoomResponse` is the one remaining term and it is a function of the **trigger's own history**, not
+of the world: it exists so a BINARY trigger (mouse, keyboard — 0 or 1) ramps instead of snapping. It
+ships at **12/s**, up from 6: at 6 a full pull took ~167 ms to arrive, which on a pad reads as the
+scope moving on its own — the same complaint from the other end.
 
-1. **One writer survives.** The tunnel still narrows for speed, it just narrows *from* the scoped
-   base — so a scoped Serpent that accelerates still reads its speed in the optics instead of the
-   two effects fighting over one number.
-2. **`RestoreFov` deliberately does NOT read the override.** Releasing always hands the camera back
-   the player's own value.
-3. **An active override engages the law on its own** (`Tick`), because the zoom has to hold at a
-   standstill where the speed term is zero and nothing else would be writing FOV at all.
+Two terms were removed to get here, and both were defensible when written:
 
-The scope's unscoped endpoint is read **live** off the camera (or off `HomeFieldOfView` while an
-override is already held, or it would ratchet a little tighter every frame), so the scope respects
-the player's own FOV setting — a scope that snapped to 90° would be a zoom *out* for anyone playing
-at 70°.
+- **The Steady-Eye stick bleed.** Below Space 5 the magnification eased back out as the pilot
+  hauled the stick over. It was a real design idea — commit to a line, settle, then take the long
+  shot — and it made the zoom a function of *steering*, i.e. a second thing moving the view at
+  exactly the moment the pilot is already moving it. Retired with its upgrade.
+- **The speed-tunnel lerp base.** `ScopedFieldOfView` lerped from `VesselSpeedTunnel.HomeFieldOfView`
+  (or the live camera), so the scoped view went on narrowing with speed. That was *correct* as a
+  composition — "a scoped pilot who accelerates still reads their speed in the optics" — and it
+  meant magnification changed when the pilot did nothing but accelerate. Gone with the main-camera
+  cockpit.
 
-> Rule 21 of the `/vessel` contract says to check an ability still earns the FOV surface without
-> the zoom; the Dolphin's Echo Sight did, and its surface was reverted. **A scope without
-> magnification is not a scope**, which is why this one earns it.
+> **The rule this leaves behind.** A magnified view is a lever on every input that reaches it, so a
+> zoom that is a function of anything but the zoom control amplifies motion the pilot never asked
+> for. Compose magnification with *nothing*.
 
-### Two traps this hit, both found by re-reading the diff rather than by any check
-
-- **A keyed release must happen BEFORE the key moves.** `SetTarget` originally rebound
-  `_targetKey` and *then* released, so an outgoing vessel's FOV override stayed keyed to a
-  transform nobody would ever pass again — a zoom stranded on the camera for the rest of the
-  session, on exactly the path (a mid-match hull swap while scoped) that is hardest to notice.
-  The swap guard that matters is upstream in `ClearTarget(Transform)`; once this view has *decided*
-  to release, the override is its own to drop outright.
-- **"The camera's current FOV" is only the player's FOV while nothing is writing it.** The scope's
-  unscoped endpoint read `controller.Camera.fieldOfView` directly, which the speed tunnel has
-  already narrowed whenever the pilot is moving — so scoping at speed lerped from the narrowed
-  value *and then locked it in as the base*, ratcheting a little tighter every frame. It now asks
-  `VesselSpeedTunnel.IsActive` first and takes the tunnel's own `HomeFieldOfView` when the law is
-  engaged, falling back to the live camera only when genuinely nothing is writing it (where the
-  tunnel's `_homeFov` would instead be stale from some other camera in some other scene).
+**Space 5 — "Deep Focus"** replaces Steady Eye, and it is deliberately not movement-shaped: one
+more magnification step. `upgradeZoomDepthMultiplier` (1.6) multiplies the zoom depth **and divides
+the floor by the same number**, so the extra reach is actually reachable instead of running into a
+ceiling the upgrade cannot pass — 22° at full zoom at rest becomes 13.8°, and Space 10 reaches
+6.9°.
 
 ## The shot
 
@@ -171,10 +178,12 @@ lining are super-shielded for exactly that reason — should be re-checked again
 
 | Field | Ships at | What it does |
 |---|---|---|
+| `unscopedFieldOfView` | 60° | the window's FOV with the scope raised but not zoomed — the wide end of the dial. A constant, never a read of the live gameplay camera, or magnification becomes a function of speed |
 | `fieldOfViewAtFullZoom` | 22° | FOV at full zoom at the resting Space level |
 | `zoomDepthAtFullSpace` | 2 | zoom depth multiplier at Space 10 (divides the angle → 11°) |
 | `minFieldOfView` | 8° | floor, so no element level makes the scope a soda straw |
-| `zoomResponse` | 6 /s | how fast the applied zoom chases the trigger — this is what ramps a BINARY trigger (mouse/keyboard) smoothly |
+| `upgradeZoomDepthMultiplier` | 1.6 | **Deep Focus** (Space 5): multiplies the depth AND divides the floor, so the extra reach is reachable |
+| `zoomResponse` | 12 /s | how fast the applied zoom chases the trigger — its ONLY job is ramping a BINARY trigger (mouse/keyboard). High enough to be a pass-through on a pad |
 | `zoomDeadzone` | 0.08 | dead travel at the top of the trigger, so a resting pad cannot creep the view in |
 
 `SniperScopeActionExecutor.steadyZoomFloor` (0.35) — fraction of the zoom surviving at full stick
@@ -200,18 +209,20 @@ deflection **before** Space 5.
 
 | File | Role |
 |---|---|
-| `_Scripts/Utility/VesselFirstPersonView.cs` | **new** — the cockpit platform driver |
-| `_Scripts/Utility/VesselSpeedTunnel.cs` | **+** the sanctioned home-FOV override surface |
-| `_Scripts/Controller/Camera/CustomCameraController.cs` | **+** `FirstPerson` / `FirstPersonOffset`, the rigid-attach branch, `ApplyShake` extracted |
-| `_Scripts/Controller/Vessel/VesselController.cs` | **+** binds the view at the four `IsLocalPilot` sites |
+| `_Scripts/Utility/VesselSpeedTunnel.cs` | **+** the sanctioned home-FOV override surface — kept in round 4 as a GUARD, with no caller |
+| `_Scripts/Controller/Camera/CustomCameraController.cs` | round 1 added `FirstPerson` / `FirstPersonOffset` and the rigid-attach branch; **round 4 removed all of it**. `ApplyShake` stays extracted |
+| `_Scripts/Utility/VesselFirstPersonView.cs` | round 1 added the cockpit platform driver; **round 4 deleted it** |
+| `_Scripts/Controller/Vessel/VesselController.cs` | round 1 bound that view at the four `IsLocalPilot` sites; **round 4 removed the four lines** |
 | `…/R_VesselActions/Data Containers/SniperScopeActionSO.cs` | **new** — Space ability config |
 | `…/R_VesselActions/Data Containers/SniperShotActionSO.cs` | **new** — Charge ability config |
 | `…/R_VesselActions/Executors/SniperScopeActionExecutor.cs` | **new** — scope state, zoom drive, `IsScoped` |
 | `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer |
 | `…/R_VesselActions/Executors/SniperBeam.cs` | **new** — the pooled domain-coloured tracer + impact flare |
-| `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the reticle, the recharge arc and the PIP host |
+| `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it |
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
-| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture chase camera |
+| `_Scripts/UI/View/ScopeDiscGraphic.cs` | **new** (round 4) — the generated circular picture |
+| `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
+| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | **+** `QueryCone` / `ConeContains` |
 | `_Scripts/UI/View/CloakSeedWallActionSO.cs` | **+** declines while scoped |
 | `_Scripts/UI/Controller/SerpentVesselHUDController.cs` | **+** drives the Charge card's cooldown veil |
@@ -387,6 +398,84 @@ Its top margin (220) clears the goal stack's three authored rows
 (`Tools/Build/author_goal_stack.py`: anchored `(16, -52)`, `48` per row), not the one row that is
 populated today — a mode that authors secondary goals must not land one behind this window.
 
+## Round 4 — "the zoom is nauseating"
+
+> *"i see the icon light up when i use or try to use it but there is only a dashed light. no icon
+> and no cooldown indication. the zoom is nauseating. it should be only a function of the analog
+> trigger pull and nothing else like movement. the pip should show the zoom (keep flying the same)
+> and it should be a circular window."*
+
+Four asks, and three of them are one idea: **the magnification was on the wrong picture.**
+
+### 1. The inversion
+
+The PIP and the main view swapped jobs. The window now carries the **magnified** cockpit view and
+the main camera keeps the ordinary chase shot, untouched. Everything the scope says — the picture,
+the reticle, the recharge ring — is now said in **one place**, because a reticle over the middle of
+the screen would be a measurement of a view nobody is aiming with.
+
+That retired the main-camera cockpit outright (`VesselFirstPersonView` deleted,
+`CustomCameraController.FirstPerson` / `FirstPersonOffset` and the rigid-attach branch removed, the
+four `VesselController` bind lines removed, `CustomCameraController.FollowOffset` / `FollowTarget`
+— added in round 2 for the old PIP — removed with their only reader). `SetHomeFieldOfViewOverride`
+is kept with no caller because it is a guard, not a feature; see **The view** above.
+
+### 2. The zoom composes with nothing
+
+See **The zoom is a pure function of the trigger** above. Both removed terms were defensible, which
+is the interesting part: one was a design idea (Steady Eye) and one was a *correct composition*
+(the speed tunnel narrowing the scoped base). Neither is wrong on its own; both were wrong on a
+magnified picture.
+
+**Space 5 was re-scoped** from Steady Eye to **Deep Focus** as a direct consequence — the upgrade
+existed to switch off a bleed that no longer exists, and re-pointing it at more magnification keeps
+Space owning exactly one thing on this hull.
+
+### 3. The window is circular
+
+`ScopeDiscGraphic` is a new generated `MaskableGraphic`: a triangle-fan disc that samples a texture,
+with UVs taken from the unit circle straight onto `[0,1]²` and a zero-alpha feather ring for
+antialiasing.
+
+**Deliberately not a `RawImage` behind a `Mask`.** A mask is a stencil pass — an extra graphic, an
+extra draw call and two stencil state changes — to produce a shape the component can emit as
+geometry, and it is the same call the rest of this HUD family already makes: a sprited circle is
+crisp only at the size it was exported at, and this window is a fraction of whatever screen it is
+drawn on.
+
+The render target went **360p 16:9 → 512² square**, because a round window wants a square picture:
+sampling a 16:9 source into a disc either squashes it or throws its sides away. Refresh went
+20 Hz → **30 Hz** with it — the magnified picture is what the pilot is now aiming with, and 20 Hz
+reads as judder at 4× magnification in a way a chase shot at 1× did not.
+
+The instrument is laid out as one object: the disc, a rim ring at the same radius, the recharge bed
+and arc **outside** the rim, and the cone-sized reticle **inside** it. The reticle's projection is
+unchanged in form — the window's own radius stands in for half the screen height, and the window's
+own field of view for the camera's:
+
+```
+r = R · tan(coneHalfAngle) / tan(windowFov / 2)
+```
+
+### 4. The ability card
+
+**The lockup's cooldown veil now draws on a LOCKED card.** `AbilityLockupView.SetAbilityCooldown`
+refused a locked slot, so the Serpent's recharge — pushed correctly from
+`SerpentVesselHUDController` since the ability shipped — landed nowhere for three rounds of
+playtest. The veil never needed an icon anyway: it sizes itself on the ability **plate**, which a
+locked card has.
+
+> **An indicator that refuses to draw because its decoration is missing is indistinguishable from
+> an indicator nobody is driving.** Locked means "this vessel has not authored an icon for this
+> slot", which is a fact about the ART; a slot that is being DRIVEN is an ability that exists.
+
+`SetUpgraded` is deliberately **not** changed by the same argument read the other way: an upgrade is
+a statement about an ability the player can see, and on a locked card there is nothing to light.
+
+**The icon itself is still missing** and is still art — the dashed bar the report describes is
+`BuildLockedMark`, the lockup's designed placeholder, doing its job. What changed is that the card
+now also says whether the weapon is loaded.
+
 ## Drive-by corrections
 
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
@@ -420,16 +509,18 @@ populated today — a mode that authors secondary goals must not land one behind
   or replayed press. The exact fix, if it is ever needed, is to replicate the resolved cooldown the
   way `R_VesselActionHandler.NetEchoSightShape` replicates the Dolphin's cone — deliberately not
   paid for here.
-- **No ability ICONS.** The Serpent binds 0/4 icons, so the ability lockup renders four LOCKED
-  cards (its designed state for an un-iconed vessel) and the Charge card's cooldown veil has **no
-  icon to sit on** — which is why the scope draws its own reticle and recharge arc. Both are
-  driven, so authoring the icons lights the row up and changes nothing here. Wiring real icons
-  needs art plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
-- **The PIP is a second render of the world**, and unlike the connecting panel's preview there is
-  no gameplay camera to stand down — the player is looking through it. Paid for with 216p, no post,
-  no shadows, no AA, 20 Hz and a lifetime of exactly as long as the trigger is held;
-  `ScopePipView.RenderHeight` / `RefreshHz` are the dials if a phone disagrees. **Unprofiled.**
-- **The scope overlay rebuilds three small UI meshes per frame while held** (≈96 segments each,
+- **No ability ICONS.** The Serpent still binds 0/4 icons, so the ability lockup renders four
+  LOCKED cards (its designed state for an un-iconed vessel) with a dashed placeholder mark where
+  the art goes. Since round 4 the Charge card's cooldown veil **does** draw on it, so the row
+  reports the recharge; what is missing is the icon, which is art. Wiring real icons needs that art
+  plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
+- **The scope window is a second render of the world**, and unlike the connecting panel's preview
+  there is no gameplay camera to stand down — the player is flying with it. Paid for with a 512²
+  target, no post, no shadows, no AA, 30 Hz and a lifetime of exactly as long as the trigger is
+  held; `ScopePipView.RenderSize` / `RefreshHz` are the dials if a phone disagrees. **Unprofiled**,
+  and round 4 made it more expensive on both axes (2.0× the pixels of round 3's 360p 16:9 target,
+  1.5× the refresh) because it is now the picture the pilot aims with rather than a glance.
+- **The scope overlay rebuilds six small UI meshes per frame while held** (≈96 segments each,
   guarded by `Mathf.Approximately` so an unchanged value costs nothing). Cheap, and unmeasured.
 - **The shot has no FMOD event.** `fireEvent` ships **empty**, which is silence — never a borrowed
   event (CLAUDE.md's audio convention). It is an inspector-visible TODO on the
@@ -447,18 +538,22 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
 1. **Scene:** any Serpent-capable scene (Menu_Main freestyle is enough; swap to the Serpent with
    the vessel-changer toy). Confirm no console errors on spawn.
 2. **Scope:** hold **LT** (or **Left Shift** on keyboard, **LMB** on the one-thumb mouse scheme).
-   Expect: the camera cuts to just past the nose, aims where the ship points, and the FOV narrows.
-   Ease the trigger — on a pad the zoom should track the depth continuously; on mouse/keyboard it
-   should ramp in smoothly over ~1/6 s rather than snapping.
-3. **Release:** the camera cuts back to 250 u behind and the FOV returns to **the player's own
-   setting** (check Settings ▸ FOV, set it to something non-default first — this is the assertion
-   that the speed tunnel's home was not clobbered).
-4. **Compose with speed:** scope, then accelerate. The view should narrow *further* with speed and
-   widen back to the scoped value, not fight itself. Then unscope at speed — FOV should land on
-   the speed-tunnel value for that speed, not on the scoped one.
-5. **Steady Eye:** below Space 5, hold the scope and haul the stick over — the zoom should ease
-   back out to ~35 % and return when you centre. Raise Space to 5 and it should hold through the
-   same manoeuvre.
+   Expect: a **round** window in the top-left showing a view down your own nose, and **the flight
+   view completely unchanged** — the camera must not move by a pixel. Ease the trigger: the picture
+   inside the window magnifies and the reticle grows with it; on mouse/keyboard it should ramp in
+   over ~1/12 s rather than snapping.
+3. **The zoom composes with nothing.** This is the round-4 assertion and it has three parts, all
+   read off the WINDOW: (a) hold a steady trigger and haul the stick over — the magnification must
+   not move; (b) hold a steady trigger and accelerate to top speed — the magnification must not
+   move (the flight view's own speed tunnel still narrows, which is correct, and must not reach the
+   window); (c) set Settings ▸ FOV to something non-default — the window is unaffected by it, and
+   the flight view still honours it.
+4. **Release:** the window disappears. The flight camera and the player's FOV are untouched
+   throughout, so there is nothing to restore — if either moves at any point in steps 2–4,
+   something is writing the gameplay camera that should not be.
+5. **Deep Focus:** at Space 5 a full trigger pull should magnify visibly further than at Space 4
+   (13.8° vs 22° at rest), and the reticle should grow with it. Raise Space to 10 and it reaches
+   6.9°.
 6. **Shot:** scoped, press **RT**. Expect a camera kick, the prism under the reticle destroyed with
    ordinary animated debris, and the **Charge** card's veil sweeping clockwise over ~12 s. Press
    again during the veil — nothing should happen.
@@ -477,25 +572,34 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
 12. **MPPM, two clients:** scope and fire on client A. On client B the same prisms must die, and
     **B must see A's tracer** in A's domain colour. Then check B's own camera never moved, that B
     got no reticle and no PIP — `IsScoped` is shared, the screen is not.
-13. **The reticle is a measurement.** Scope and read the ring against what dies: a prism just
-    inside it must die and one just outside must not. Then ease the zoom — the ring must grow in
-    screen pixels while covering the same mass, which is the whole claim. Then accelerate: the
-    speed tunnel narrows the view and the ring must grow with it.
+13. **The reticle is a measurement.** Scope and read the ring **inside the window** against what
+    dies: a prism just inside it must die and one just outside must not. Then ease the zoom — the
+    ring must grow while covering the same mass, which is the whole claim. It must NOT move when
+    you accelerate.
 14. **The recharge arc:** fire, then watch the arc fill clockwise from the top over ~12 s and flash
     once as it completes. Raise Charge to 10 and confirm it fills in ~5.4 s instead.
 15. **The tracer:** fire into empty space — expect a beam to the full 3,000 u and **no** flare.
     Fire at mass — expect the beam to stop at the kill and a flare there. Fire twice in quick
     succession (Charge 10) and confirm the second beam does not start from where the first ended,
     which is the pooled-instance reset.
-16. **The PIP:** scope and confirm a chase view of your own hull appears bottom-right, updating as
-    you fly, with **no UI drawn inside it** and no navy rectangle anywhere. Release and it must
-    disappear. Swap hulls while scoped and confirm no stray camera or render texture is left
-    behind (check the hierarchy for `[SerpentScopePipCamera]`).
+16. **The window:** confirm it is a **circle**, not a rounded rectangle and not a squashed one —
+    a straight edge anywhere means the disc's UVs or the render target's aspect drifted. Confirm
+    **no UI is drawn inside it** and no navy rectangle anywhere. Release and it must disappear.
+    Swap hulls while scoped and confirm no stray camera or render texture is left behind (check the
+    hierarchy for `[SerpentScopeCamera]`).
+17. **The ability card (round 4).** Fire, then look at the bottom-right ability row: the **Charge**
+    card is LOCKED (a dashed mark, no icon) and its **cooldown veil must now sweep clockwise over
+    it** for ~12 s. Before round 4 it drew nothing. Check it works with the scope DOWN as well —
+    the row is the readout a pilot who is not scoped has.
 
 ## Follow-ups
 
-- Wire the four ability icons (art + `Wire Vessel Ability Row`), so the Charge veil and the Space
-  card have marks to sit on.
+- Wire the four ability icons (art + `Wire Vessel Ability Row`). The Charge veil no longer needs
+  one, but the row still cannot say WHICH ability is recharging.
+- Profile the scope window on a phone. It is a second render of the world at 512² / 30 Hz and it is
+  the one cost in this branch nobody has measured.
+- Consider whether the window should be placeable (top-left is a guess that clears the goal stack),
+  and whether a left-handed or small-screen layout wants it elsewhere.
 - Author the FMOD event for the shot — this is the one half of "I didn't notice the shot" this
   branch does not close.
 - Consider whether the reticle should be shown UNSCOPED too (it currently is not: the cone is the

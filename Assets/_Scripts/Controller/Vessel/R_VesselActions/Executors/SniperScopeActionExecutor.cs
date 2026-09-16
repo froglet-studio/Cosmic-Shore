@@ -1,14 +1,26 @@
 using CosmicShore.Data;
-using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Serpent's <b>scope</b>. Hold the left trigger: the view drops into the cockpit
-    /// (<see cref="VesselFirstPersonView"/>) and magnifies with the trigger's own depth, and the
-    /// right trigger stops being the cloak and becomes the sniper shot
-    /// (<see cref="SniperShotActionExecutor"/>). Release and everything returns.
+    /// The Serpent's <b>scope</b>. Hold the left trigger: a magnified forward view opens in a
+    /// window beside the flight view, and the right trigger stops being the cloak and becomes the
+    /// sniper shot (<see cref="SniperShotActionExecutor"/>). Release and the window closes.
+    ///
+    /// <para><b>The pilot's own view never moves.</b> The first cut put the whole screen in the
+    /// cockpit and magnified it, which read as nauseating, so the magnified picture now lives in
+    /// the scope WINDOW (<c>SniperScopeOverlay</c> → <c>ScopePipView</c>) and the flight view is
+    /// untouched. That inversion retired the main-camera cockpit outright — there is no longer a
+    /// <c>VesselFirstPersonView</c>, and <c>CustomCameraController</c> no longer carries a
+    /// first-person flag. <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4.</para>
+    ///
+    /// <para><b>The zoom is a pure function of the trigger's own depth.</b> Nothing else reaches
+    /// it — not the stick (the retired "Steady Eye" bleed), not the vessel's speed (the retired
+    /// read of the speed-tunnel-narrowed camera). The rule this leaves behind is general:
+    /// <i>a magnified view is a lever on every input that reaches it</i>, so a zoom that is a
+    /// function of anything but the zoom control amplifies motion the pilot never asked for, and
+    /// the pilot has no way to tell which half of what they are seeing they caused.</para>
     ///
     /// <para><b>This executor is the AUTHORITY on "am I scoped"</b>, and that is why
     /// <see cref="IsScoped"/> is maintained on EVERY peer rather than only where the camera is.
@@ -18,22 +30,21 @@ namespace CosmicShore.Gameplay
     /// decide whether they may fire. Had the flag been kept only for the local pilot, a remote
     /// replica would have run the cloak and the shot on the same press.</para>
     ///
-    /// <para>Only the CAMERA half is local-pilot-only. A camera is a thing one machine has.</para>
+    /// <para>Only the WINDOW is local-pilot-only. A screen is a thing one machine has.</para>
     ///
     /// <para><b>Element → parameter: SPACE sets the magnification</b> — the authored field of view
     /// at full zoom divided by Space's multiplier, floored so the scope can never narrow into a
     /// soda straw. Read at USE time (every frame while held), never cached at init, so a crystal
     /// collected mid-scope widens the reach immediately.</para>
     ///
-    /// <para><b>Space 5 — "Steady Eye".</b> Below the upgrade the zoom BLEEDS OFF as the pilot
-    /// turns: hauling the stick over eases the magnification back out, so a scoped Serpent is
-    /// committed to a line and has to settle before it can take a long shot. At Space 5 the bleed
-    /// is gone and the scope holds its magnification through any manoeuvre. Gated on
+    /// <para><b>Space 5 — "Deep Focus".</b> One more magnification step: the upgrade multiplies
+    /// the zoom depth AND divides the floor by the same number, so the extra reach is actually
+    /// reachable rather than running straight into a ceiling the upgrade cannot pass. Gated on
     /// <c>IsUpgradeActive(Element.Space)</c> — the replicated unlock bit — rather than a raw local
-    /// level read, because it is read on every peer.</para>
+    /// level read, because the same value sizes the reticle, which is drawn from it.</para>
     ///
-    /// <para><b>It touches no mass and no speed.</b> The whole ability is a camera pose, a field
-    /// of view and a flag. A pilot who wants to hold still to take a shot already has a way: the
+    /// <para><b>It touches no mass and no speed.</b> The whole ability is a window, a field of
+    /// view and a flag. A pilot who wants to hold still to take a shot already has a way: the
     /// Serpent's own stationary mode on the face button. Nothing here duplicates it.</para>
     /// </summary>
     public sealed class SniperScopeActionExecutor : ShipActionExecutorBase
@@ -44,11 +55,6 @@ namespace CosmicShore.Gameplay
                  "reference makes a missing wire visible in the inspector instead of silently " +
                  "falling back to field initializers.")]
         [SerializeField] private SniperScopeActionSO config;
-
-        [Header("Steady Eye (below Space 5)")]
-        [Tooltip("Fraction of the zoom that survives at FULL stick deflection before the Space-5 " +
-                 "upgrade. 1 disables the bleed entirely; the upgrade sets it to 1 at runtime.")]
-        [SerializeField, Range(0.05f, 1f)] private float steadyZoomFloor = 0.35f;
 
         IVesselStatus _status;
         SniperScopeActionSO _activeSo;
@@ -87,16 +93,16 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             // The overlay is a GameObject of its own, so it does not die with the vessel by
-            // parentage - and the PIP behind it owns a RenderTexture, which is a leak nothing
-            // reports if it outlives its owner.
+            // parentage - and the scope window behind it owns a RenderTexture, which is a leak
+            // nothing reports if it outlives its owner.
             if (_overlay != null) { _overlay.Dispose(); _overlay = null; }
         }
 
         void OnDisable()
         {
             // Unconditional and idempotent: a scoped vessel that is despawned, pooled or
-            // deactivated must hand the camera back, and OnDisable is the one place that runs
-            // however the vessel goes away. The input-pause case is covered a layer up by
+            // deactivated must close its window, and OnDisable is the one place that runs however
+            // the vessel goes away. The input-pause case is covered a layer up by
             // R_VesselActionHandler.ReleaseHeldInputs, which sends a real release.
             ReleaseInternal();
         }
@@ -109,21 +115,18 @@ namespace CosmicShore.Gameplay
 
             _engaged = true;
             // Start from no magnification and ramp in, so the scope reads as being RAISED rather
-            // than as the world snapping. Continuity of existence, applied to a view.
+            // than as the window snapping to a magnification the pilot has not asked for yet.
             _zoom01 = 0f;
-            PushView();
         }
 
         public void Release(SniperScopeActionSO so, IVesselStatus status) => ReleaseInternal();
 
         void ReleaseInternal()
         {
-            bool was = _engaged;
             _engaged = false;
             _zoom01 = 0f;
             _activeSo = null;
             if (_overlay != null) _overlay.Hide();
-            if (was) PushView();
         }
 
         void Update()
@@ -131,29 +134,30 @@ namespace CosmicShore.Gameplay
             if (!_engaged) return;
 
             float target = ResolveZoomTarget();
-            float response = ResolvedConfig != null ? ResolvedConfig.ZoomResponse : 6f;
+            float response = ResolvedConfig != null ? ResolvedConfig.ZoomResponse : 12f;
 
-            // Frame-rate independent chase. On a pad this is nearly a pass-through of an already
-            // continuous value; on mouse/keyboard, whose trigger reports 0 or 1, it IS the zoom
-            // ramp — one mechanism, so no device needs a branch of its own.
+            // Frame-rate independent chase, and the ONE term here that is not the raw trigger.
+            // It is a function of the trigger's own history rather than of the world: on a pad it
+            // is nearly a pass-through of an already continuous value, and on mouse/keyboard,
+            // whose trigger reports 0 or 1, it IS the zoom ramp — one mechanism, so no device
+            // needs a branch of its own.
             _zoom01 = Mathf.MoveTowards(_zoom01, target, response * Time.deltaTime);
 
-            PushView();
             DrawOverlay();
         }
 
         /// <summary>
-        /// The scope's own readout — the cone-sized reticle, the recharge arc and the flight PIP.
+        /// The scope's whole readout — the magnified window, the cone-sized reticle inside it and
+        /// the recharge ring around it.
         ///
-        /// <para>LOCAL PILOT ONLY, for the same reason as <see cref="PushView"/>: a screen is a
-        /// thing one machine has. It is built lazily on the first frame a local pilot actually
-        /// holds the scope, so a vessel that is never scoped — every AI, every remote replica —
-        /// costs nothing at all.</para>
+        /// <para>LOCAL PILOT ONLY: a screen is a thing one machine has. It is built lazily on the
+        /// first frame a local pilot actually holds the scope, so a vessel that is never scoped —
+        /// every AI, every remote replica — costs nothing at all.</para>
         ///
-        /// <para>It carries the weapon's readiness because the fleet's ability lockup cannot: the
-        /// Serpent binds none of its four ability icons, so the cooldown veil pushed into
-        /// <c>SerpentVesselHUDController</c> has no icon to sit on. Both are driven, so the day
-        /// that vessel's icons are authored the row lights up and this stays correct.</para>
+        /// <para>It carries the weapon's readiness IN ADDITION to the fleet's ability lockup
+        /// rather than instead of it: the lockup's veil now draws on a locked card too, so the
+        /// Serpent's recharge reads on the HUD row whether or not the scope is up, and this
+        /// duplicate is the one a pilot looking down the scope can see without leaving it.</para>
         /// </summary>
         void DrawOverlay()
         {
@@ -161,18 +165,23 @@ namespace CosmicShore.Gameplay
             if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
             if (_shot == null) return;
 
+            var ship = _status.ShipTransform;
+            if (ship == null) return;
+
             // An explicit == null, NOT ??=: the null-coalescing operators compare by REFERENCE
             // and so cannot see a destroyed UnityEngine.Object, which would leave this holding a
             // dead overlay forever.
             if (_overlay == null) _overlay = SniperScopeOverlay.Create();
-            _overlay.Tick(_shot.ConeHalfAngleDegrees, _shot.CooldownRemaining01, _shot.TracerColour);
+
+            _overlay.Tick(ship, ResolveScopeFieldOfView(), _shot.ConeHalfAngleDegrees,
+                          _shot.CooldownRemaining01, _shot.TracerColour);
         }
 
         SniperScopeActionSO ResolvedConfig => _activeSo != null ? _activeSo : config;
 
         /// <summary>
         /// Where the pilot is asking the zoom to sit this frame: their trigger depth, deadzoned,
-        /// and — below Space 5 — bled off by how hard they are turning.
+        /// and nothing else at all. See the class summary on why there is nothing else.
         /// </summary>
         float ResolveZoomTarget()
         {
@@ -183,31 +192,11 @@ namespace CosmicShore.Gameplay
             float depth = Mathf.Clamp01(input.LeftTriggerAnalog);
             float dead = so.ZoomDeadzone;
             if (depth <= dead) return 0f;
-            depth = Mathf.InverseLerp(dead, 1f, depth);
 
-            return depth * SteadyFactor(input);
+            return Mathf.InverseLerp(dead, 1f, depth);
         }
 
-        /// <summary>
-        /// 1 while the pilot is flying straight, falling toward <see cref="steadyZoomFloor"/> as
-        /// they haul the stick over — and pinned at 1 outright once Space 5 is unlocked.
-        ///
-        /// <para>The stick rather than the vessel's measured turn rate, deliberately: the stick is
-        /// the pilot's INTENT and is the same number on every device, where a measured rate also
-        /// moves under an impact slow, a danger-prism hit or a blast knockback — none of which the
-        /// pilot asked for, and all of which would read as the scope breaking on its own.</para>
-        /// </summary>
-        float SteadyFactor(IInputStatus input)
-        {
-            if (IsSteadyEyeUnlocked) return 1f;
-
-            // Single-stick hull: the Serpent flies on the left stick alone
-            // (IsSingleStickControls), so this is the whole of its turning input.
-            float stick = Mathf.Clamp01(input.EasedLeftJoystickPosition.magnitude);
-            return Mathf.Lerp(1f, steadyZoomFloor, stick);
-        }
-
-        bool IsSteadyEyeUnlocked
+        bool IsDeepFocusUnlocked
         {
             get
             {
@@ -217,23 +206,25 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Hand the view the vantage and the magnification together. LOCAL PILOT ONLY: a camera
-        /// is a thing one machine has, and <see cref="VesselFirstPersonView"/> is a static bound
-        /// to whichever vessel that machine's pilot is flying. A remote replica running this
-        /// method would seat the local player in a stranger's cockpit.
+        /// The window's field of view this frame: the wide authored value with the scope merely
+        /// raised, narrowing to <see cref="ResolveFieldOfViewAtFullZoom"/> as the trigger goes
+        /// down. The wide end is AUTHORED rather than read off the live gameplay camera, because
+        /// that camera is narrowed by the speed tunnel and reading it back is exactly how the
+        /// magnification became a function of how fast the pilot was going.
         /// </summary>
-        void PushView()
+        public float ResolveScopeFieldOfView()
         {
-            if (_status?.Player == null || !_status.Player.IsLocalPilot) return;
-
-            VesselFirstPersonView.SetEngaged(_engaged, _zoom01, ResolveFieldOfViewAtFullZoom());
+            var so = ResolvedConfig;
+            if (so == null) return 60f;
+            return Mathf.Lerp(so.UnscopedFieldOfView, ResolveFieldOfViewAtFullZoom(), _zoom01);
         }
 
         /// <summary>
         /// The field of view at FULL magnification, after Space. Space's multiplier is a zoom
         /// DEPTH, so it divides the angle — more Space, narrower scope, further sight — and the
         /// result is floored by the authored minimum so no element level can narrow the view into
-        /// something unflyable.
+        /// something unreadable. Deep Focus (Space 5) multiplies the depth and divides the floor
+        /// by the same number, so the upgrade moves the ceiling with the dial.
         /// </summary>
         float ResolveFieldOfViewAtFullZoom()
         {
@@ -246,7 +237,11 @@ namespace CosmicShore.Gameplay
             float depth = ElementalScaling.Multiplier(
                 _status, Element.Space, atFull: so.ZoomDepthAtFullSpace, minMul: 1f);
 
-            return Mathf.Max(so.MinFieldOfView, so.FieldOfViewAtFullZoom / Mathf.Max(0.0001f, depth));
+            float upgrade = IsDeepFocusUnlocked ? Mathf.Max(1f, so.UpgradeZoomDepthMultiplier) : 1f;
+            depth *= upgrade;
+
+            float floor = so.MinFieldOfView / upgrade;
+            return Mathf.Max(floor, so.FieldOfViewAtFullZoom / Mathf.Max(0.0001f, depth));
         }
     }
 }

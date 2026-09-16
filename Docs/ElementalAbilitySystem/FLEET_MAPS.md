@@ -299,7 +299,7 @@ Element assignment and the right-trigger resolution were confirmed in the same s
 |---|---|---|
 | Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`, map pinned 1) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
 | Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
-| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`, map pinned 1) | **Steady Eye** — the zoom no longer bleeds off while the pilot turns (`SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
+| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`, map pinned 1) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
 | Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
 
 Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
@@ -310,14 +310,27 @@ caller-less and still worth keeping for a future ability.
 bound to it and each asks `SniperScopeActionExecutor.IsScoped` whether the context is its own —
 scoped fires the rifle, unscoped still cloaks. Neither ability learns about the other's wiring.
 
-**Two platform surfaces came with it**, both documented in
-`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`: `VesselFirstPersonView` (a
-sibling of `VesselRearView`; the cockpit pose applied at the point of use, the eye MEASURED off the
-hull radius) and `VesselSpeedTunnel.SetHomeFieldOfViewOverride` — the sanctioned way an ability
-magnifies the view, because the tunnel owns FOV fleet-wide and a direct write is BAKED IN as the
-home the next time the tunnel engages. This is the case rule 21 anticipates: the Dolphin's Echo
-Sight wanted a zoom, worked without one, and its surface was reverted; a scope without
-magnification is not a scope.
+**Two platform surfaces came with it and BOTH were unwound on playtest**, which is the part worth
+carrying (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md` round 4).
+`VesselFirstPersonView` — a sibling of `VesselRearView`, the cockpit pose applied at the point of
+use, the eye MEASURED off the hull radius — is **deleted**, and
+`VesselSpeedTunnel.SetHomeFieldOfViewOverride` is **kept with no caller**, as a guard rather than a
+feature. The reason is one finding: *a magnified view is a lever on every motion that reaches it*,
+so magnifying the camera the pilot FLIES with multiplies their own turn, the hull's roll and the
+speed tunnel's narrowing by the same factor it multiplies the target, and it read as nauseating.
+The magnification now lives in a round window beside the flight view (`ScopePipView` +
+`ScopeDiscGraphic`, the `ConnectingArenaPreview` shape), and the zoom is a pure function of the
+trigger's own depth — which is also why **Space 5 was re-cut from Steady Eye to Deep Focus**: the
+old upgrade existed to switch off a stick-driven zoom bleed that no longer exists. Rule 21's test
+sharpens with it: an ability earns the FOV surface only when magnifying the FLIGHT VIEW is the
+mechanic, not merely when magnification is.
+
+**One fleet-wide UI fix came out of the same round.** `AbilityLockupView.SetAbilityCooldown`
+refused a LOCKED card, so this vessel's recharge — pushed correctly from
+`SerpentVesselHUDController` from the day the ability shipped — landed nowhere for three rounds of
+playtest, because the Serpent binds 0/4 icons. It now draws (the veil sizes itself on the ability
+PLATE, which a locked card has). *An indicator that refuses to draw because its decoration is
+missing is indistinguishable from an indicator nobody is driving.*
 
 **It is also the fleet's SECOND force that can break a super-shield**, after the Rhino's energised
 blade, using the same sanctioned `DeactivateShields` → `Damage(devastate: true)` sequence.

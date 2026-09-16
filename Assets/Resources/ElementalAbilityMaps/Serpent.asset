@@ -45,22 +45,23 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 3
     AbilityLabel: Scope
-    AbilityDescription: 'Hold the left trigger and the view drops into the cockpit and magnifies
-      with the trigger''s own depth - an analog dial, not a toggle - while the right trigger
-      becomes the Sniper Shot. Space sets the MAGNIFICATION: 22 degrees of field of view at full
-      zoom at rest, narrowing to 11 at Space 10, floored at 8 so the scope can never become a
-      soda straw. Reach is Space''s job fleet-wide and a scope''s whole claim is reach.'
+    AbilityDescription: 'Hold the left trigger and a magnified view down your own nose opens in
+      a round eyepiece beside the flight view - the ship keeps flying exactly as it did - while
+      the right trigger becomes the Sniper Shot. The zoom is the trigger''s own depth and nothing
+      else: an analog dial, not a toggle. Space sets the MAGNIFICATION: 22 degrees of field of
+      view at full zoom at rest, narrowing to 11 at Space 10, floored at 8 so the scope can never
+      become a soda straw. Reach is Space''s job fleet-wide and a scope''s whole claim is reach.'
     Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Steady Eye
-    UpgradeDescription: 'Below the upgrade the zoom BLEEDS OFF as the pilot turns - hauling the
-      stick over eases the magnification back out, so a scoped Serpent is committed to a line and
-      has to settle before it can take a long shot. At Space 5 the bleed is gone and the scope
-      holds through any manoeuvre.'
+    UpgradeLabel: Deep Focus
+    UpgradeDescription: 'One more magnification step. Deep Focus multiplies the scope''s zoom
+      depth by 1.6 and divides its floor by the same number, so the extra reach is actually
+      reachable instead of running into a ceiling the upgrade cannot pass - 22 degrees at full
+      zoom at rest becomes 13.8, and Space 10 reaches 6.9.'
   - Element: 4
     AbilityLabel: Boost Duration
     AbilityDescription: Time extends the boost duration.

@@ -84,30 +84,43 @@ the ship and dissolves whatever the pilot is flying *into* while they are lookin
 
 ---
 
-## 3.1 It now has a sibling — and they share every rule in §3 and §4
+## 3.1 It had a sibling, and it was RETIRED — read this before adding a third vantage
 
 `VesselFirstPersonView` (2026-09-16, the Serpent's scope —
-`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`) seats the camera IN the
-cockpit instead of ahead of the ship. It is deliberately built to this file's shape: the same
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`) seated the camera IN the
+cockpit instead of ahead of the ship. It was deliberately built to this file's shape: the same
 static-plus-`LateUpdate`-`Driver`, the same `GetCloseCamera` identity test so a death or replay
 camera is never re-posed, the same identity-guarded bind at the four `IsLocalPilot` sites in
-`VesselController`, and the same "apply at the point of use" rule — it sets
+`VesselController`, and the same "apply at the point of use" rule — it set
 `CustomCameraController.FirstPerson` rather than writing `_followOffset`, for the reason §4 gives.
 
-Two things differ, and both are worth knowing before a third vantage is added:
+**It was deleted three weeks later, on its own ability's first playtest of the feature**, and the
+reason is the useful part: *"the zoom is nauseating"*. The vantage was right and the MAGNIFICATION
+on it was not — a magnified view is a lever on every motion that reaches it, so a 22° scope
+multiplies the pilot's own turn, the vessel's roll, the camera's settle and the speed tunnel's own
+narrowing by exactly the ~4× it multiplies the target. The scope's magnified picture moved into a
+window of its own (§3.1.1) and the flight camera went back to doing one thing;
+`CustomCameraController` no longer carries `FirstPerson` / `FirstPersonOffset` at all, and the four
+`VesselController` bind lines went with it, because an unreferenced camera vantage is the
+"eventually mistaken for a live feature" trap.
 
-- **First person BEATS rear view** in `EffectiveOffset` rather than composing with it. The z-mirror
-  of a cockpit offset is another point inside the same hull, so "look behind from the cockpit" is
-  not a vantage the mirror can express. A pilot who scopes while looking back gets the scope, and
-  gets the look-back again on release.
-- **It also changes the FIELD OF VIEW, which the rear view never touches.** That is not free: the
-  speed tunnel owns FOV fleet-wide, so the zoom goes through
+Three things it established are still true and are what a third vantage inherits:
+
+- **A vantage BEATS rather than composes.** First person beat rear view in `EffectiveOffset`: the
+  z-mirror of a cockpit offset is another point inside the same hull, so "look behind from the
+  cockpit" is not a vantage the mirror can express. Two vantages that both re-pose one camera have
+  to be ordered, not blended.
+- **Changing the FIELD OF VIEW is a different, heavier thing than changing the POSE.** The speed
+  tunnel owns FOV fleet-wide, so a zoom must go through
   `VesselSpeedTunnel.SetHomeFieldOfViewOverride` (`Docs/SPEED_TUNNEL.md §2.1`) and never through
-  the camera. A vantage that only moves the camera, as this one does, needs none of that.
+  the camera. That surface is kept with **no caller today**, as a guard rather than a feature.
+- **Ask whether the magnification belongs on the camera the pilot FLIES with at all.** A second,
+  magnified picture (§3.1.1) costs a render and leaves motion readable at 1×; magnifying the flight
+  view costs nothing and makes every input the pilot did not give as loud as the one they did.
 
 ### 3.1.1 The one sanctioned way to show a SECOND view at the same time
 
-That scope also needed the chase shot it takes away, in a corner — and §3's "there is deliberately
+That scope needed a magnified picture WITHOUT magnifying the flight view — and §3's "there is deliberately
 NO second camera" still holds, because the rule is about a second **live gameplay** camera. A
 camera that renders only into a `RenderTexture`, is left **disabled** and stepped by hand, and is
 **never tagged MainCamera** is outside all four of §3's systems by construction: the speed tunnel

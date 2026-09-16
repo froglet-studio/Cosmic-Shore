@@ -12,8 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 880bc0c4531842aca221bbe2ef78ac27, type: 3}
   m_Name: SniperScopeAction
   m_EditorClassIdentifier: 
+  unscopedFieldOfView: 60
   fieldOfViewAtFullZoom: 22
   zoomDepthAtFullSpace: 2
   minFieldOfView: 8
-  zoomResponse: 6
+  upgradeZoomDepthMultiplier: 1.6
+  zoomResponse: 12
   zoomDeadzone: 0.08

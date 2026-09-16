@@ -1,85 +1,103 @@
+using CosmicShore.UI;
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.UI;
-using CosmicShore.Gameplay;
 
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The Serpent scope's <b>picture-in-picture</b>: the ordinary chase shot of your own vessel,
-    /// drawn into a corner of the screen while the cockpit view has the middle of it.
+    /// The Serpent scope's <b>window</b>: a magnified view down the vessel's own nose, drawn into
+    /// a round eyepiece in the corner of the screen while the pilot keeps flying with their
+    /// ordinary chase view.
     ///
-    /// <para><b>Why it exists.</b> The scope takes the pilot's whole view into the cockpit and
-    /// magnifies it, which is the point — and it also takes away every cue they fly by: where the
-    /// hull is, how it is banked, what is beside it. A scoped Serpent could line up a shot or fly,
-    /// not both. The PIP gives the flying half back without giving up the magnification.</para>
+    /// <para><b>The inversion is the whole design.</b> The first cut did the obvious thing — take
+    /// the gameplay camera into the cockpit and narrow its field of view — and it read as
+    /// nauseating, because a magnified view is a lever on every motion that reaches it: a 22°
+    /// scope multiplies the pilot's own turn, the vessel's roll and the camera's own settle by the
+    /// same ~4× it multiplies the target. Putting the magnification in a WINDOW leaves the flight
+    /// view at 1× where the pilot reads their motion, and confines the lever to the picture they
+    /// are aiming with. <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4.</para>
     ///
     /// <para><b>It is NOT a second gameplay camera</b>, which the platform forbids for four
-    /// concrete reasons (Docs/REAR_VIEW.md): the speed tunnel resolves <c>CameraManager</c>'s
+    /// concrete reasons (Docs/REAR_VIEW.md §3): the speed tunnel resolves <c>CameraManager</c>'s
     /// ACTIVE controller, <c>ApplyCameraGraphicsSettings</c> pushes the player's FOV and AA onto
     /// three managed cameras and no others, background colour is applied per camera, and
     /// <c>Camera.main</c> returns the first ENABLED camera tagged MainCamera. This camera is
     /// created at runtime, is <b>never tagged MainCamera</b>, renders only into a
     /// <c>RenderTexture</c> and is left <b>disabled</b> — it is stepped by hand — so it is outside
     /// all four systems by construction and cannot draw to the display at all. It is the same
-    /// shape the connecting panel's arena preview uses (<c>ConnectingArenaPreview</c>).</para>
+    /// shape the connecting panel's arena preview uses (<c>ConnectingArenaPreview</c>), and §3.1.1
+    /// is the carve-out it was written for. <b>Because it is outside the speed tunnel, the scope's
+    /// magnification is a function of the trigger alone</b> — the thing the pilot asked for.</para>
     ///
     /// <para><b>The cost is real and is stated rather than hidden.</b> Unlike that preview — which
     /// stands the gameplay camera DOWN because the panel covers the screen — this one is a genuine
-    /// SECOND render of the world, because the first one is what the player is looking through. So
-    /// it is paid for the only way left: a low render height, no post-processing, no shadows, no
-    /// anti-aliasing, a capped refresh rate, and a lifetime of exactly as long as the trigger is
-    /// held. It is off the moment the scope drops.</para>
+    /// SECOND render of the world, because the first one is what the player is flying with. So it
+    /// is paid for the only way left: a small square render target, no post-processing, no
+    /// shadows, no anti-aliasing, a capped refresh rate, and a lifetime of exactly as long as the
+    /// trigger is held. It is off the moment the scope drops.</para>
     ///
-    /// <para><b>It shows the camera's OWN chase pose</b>, read from
-    /// <c>CustomCameraController.FollowOffset</c> — the vessel's authored <c>CameraSettingsSO</c>
-    /// value — rather than a constant, so a Serpent whose camera is retuned gets the retuned shot
-    /// and the PIP cannot drift into being a second opinion about where this hull is watched
-    /// from.</para>
+    /// <para><b>The eye is MEASURED, not authored</b> — a multiple of the vessel's own
+    /// circumscribing hull radius (<see cref="PrismOcclusionCorridor.MeasureCircumscribedRadius"/>,
+    /// the same rotation-invariant hull-only measurement the occlusion corridor sizes itself
+    /// from), so the camera sits just clear of its own geometry on a hull of any size rather than
+    /// at a constant that is inside one ship and far ahead of another. It aims along the vessel's
+    /// own forward, which is <b>the same vector the sniper's cone is cast along</b>
+    /// (<c>SniperShotActionExecutor.ResolveShot</c>) — so the shot lands where the reticle is by
+    /// construction rather than by tuning.</para>
+    ///
+    /// <para><b>The picture is SQUARE</b>, because the window is round: the render target is 1:1
+    /// and the camera therefore renders at aspect 1, so <see cref="ScopeDiscGraphic"/> can sample
+    /// the unit circle straight onto [0,1]² with nothing squashed and nothing thrown away.</para>
     /// </summary>
     public sealed class ScopePipView
     {
-        readonly RawImage _surface;
+        readonly ScopeDiscGraphic _surface;
 
         Camera _camera;
         RenderTexture _texture;
+        Transform _measuredHull;
+        float _hullRadius;
         float _nextRenderTime;
 
         /// <summary>
-        /// Render height in pixels. Small on purpose — see the class note on cost — but it has to
-        /// track the WINDOW: the surface is half the screen's height, so a 216p texture upscaled
-        /// into 540 screen pixels is visibly soft, and a picture of your own hull that cannot be
-        /// read is the same as no picture.
+        /// How far past the vessel's own circumscribing hull radius the eye sits, so the scope is
+        /// never looking at the inside of its own ship. A multiple rather than a distance: see the
+        /// class summary on why the eye is measured.
         /// </summary>
-        public int RenderHeight = 360;
+        const float EyeForwardHullRadii = 1.05f;
+
+        /// <summary>
+        /// Render size in pixels, square. Small on purpose — see the class note on cost — but it
+        /// has to track the WINDOW: an eyepiece that is a quarter of the screen tall and is fed a
+        /// 216px texture is visibly soft, and a magnified picture that cannot be read is the same
+        /// as no picture.
+        /// </summary>
+        public int RenderSize = 512;
 
         /// <summary>How often the window refreshes, in Hz. Capped for the same reason.</summary>
-        public float RefreshHz = 20f;
+        public float RefreshHz = 30f;
 
-        public ScopePipView(RawImage surface) => _surface = surface;
+        public ScopePipView(ScopeDiscGraphic surface) => _surface = surface;
 
         public bool Visible => _surface != null && _surface.enabled;
 
         /// <summary>
         /// Show the window and advance it, at most <see cref="RefreshHz"/> times a second. Safe to
-        /// call every frame; safe to call before a camera controller exists.
+        /// call every frame.
         /// </summary>
-        public void Tick()
+        /// <param name="vessel">The local pilot's hull. The eye rides just past its nose.</param>
+        /// <param name="fieldOfView">The magnified vertical field of view, in degrees. A pure
+        /// function of the pilot's trigger depth — see the class summary.</param>
+        public void Tick(Transform vessel, float fieldOfView)
         {
             if (_surface == null) return;
-
-            var controller = CameraManager.Instance != null
-                ? CameraManager.Instance.GetActiveController() as CustomCameraController
-                : null;
-            var target = controller != null ? controller.FollowTarget : null;
-            if (controller == null || target == null) { Hide(); return; }
-
+            if (vessel == null) { Hide(); return; }
             if (!EnsureCamera()) { Hide(); return; }
 
-            _surface.texture = _texture;
+            _surface.Source = _texture;
             _surface.enabled = true;
 
-            PoseCamera(controller, target);
+            PoseCamera(vessel, fieldOfView);
 
             // Stepped by hand rather than left enabled: an enabled camera renders every frame, and
             // this one is drawing the whole arena a second time.
@@ -112,27 +130,29 @@ namespace CosmicShore.Utility
                 Object.Destroy(_texture);
                 _texture = null;
             }
+            _measuredHull = null;
+            _hullRadius = 0f;
         }
 
-        void PoseCamera(CustomCameraController controller, Transform target)
+        void PoseCamera(Transform vessel, float fieldOfView)
         {
-            // Exactly the controller's own non-first-person pose: offset in the vessel's frame,
-            // then look back at it with the vessel's up. Reproducing it here rather than borrowing
-            // the live camera is what keeps this window outside the four systems above.
-            Vector3 offset = controller.FollowOffset;
-            Vector3 position = target.position + target.rotation * offset;
+            // Measured once per hull, not per frame: it is a property of the ship, and the
+            // measurement walks every renderer on it.
+            if (_measuredHull != vessel)
+            {
+                _measuredHull = vessel;
+                _hullRadius = PrismOcclusionCorridor.MeasureCircumscribedRadius(vessel);
+            }
 
-            _camera.transform.position = position;
-            if (SafeLookRotation.TryGet(target.position - position, target.up, out var rot,
-                                        context: null, logError: false))
-                _camera.transform.rotation = rot;
+            // A RIGID attachment, and both halves are load-bearing. The eye is written outright
+            // every frame — any lag at all at zero distance puts the camera inside the hull it is
+            // trying to see past — and it aims along the vessel's OWN forward rather than at
+            // anything, because in the cockpit a look-at vector is very nearly zero.
+            _camera.transform.SetPositionAndRotation(
+                vessel.position + vessel.forward * (_hullRadius * EyeForwardHullRadii),
+                vessel.rotation);
 
-            float distance = Mathf.Max(1f, offset.magnitude);
-            // Derived from the shot, never copied from the gameplay camera: that camera's planes
-            // are sized for a view this one does not have, and the arena clips out of a borrowed
-            // far plane (the same finding ConnectingArenaPreview records).
-            _camera.nearClipPlane = Mathf.Max(0.3f, distance * 0.01f);
-            _camera.farClipPlane = Mathf.Max(2000f, distance * 200f);
+            _camera.fieldOfView = Mathf.Clamp(fieldOfView, 1f, 170f);
         }
 
         bool EnsureCamera()
@@ -141,10 +161,10 @@ namespace CosmicShore.Utility
 
             if (_texture == null)
             {
-                int height = Mathf.Clamp(RenderHeight, 96, 480);
-                _texture = new RenderTexture(Mathf.RoundToInt(height * 16f / 9f), height, 16)
+                int size = Mathf.Clamp(RenderSize, 128, 1024);
+                _texture = new RenderTexture(size, size, 16)
                 {
-                    name = "SerpentScopePipRT",
+                    name = "SerpentScopeRT",
                     antiAliasing = 1,
                     filterMode = FilterMode.Bilinear,
                     useMipMap = false,
@@ -153,11 +173,10 @@ namespace CosmicShore.Utility
 
             if (_camera == null)
             {
-                var go = new GameObject("[SerpentScopePipCamera]");
+                var go = new GameObject("[SerpentScopeCamera]");
                 // Deliberately NOT tagged MainCamera, and deliberately left disabled.
                 _camera = go.AddComponent<Camera>();
                 _camera.enabled = false;
-                _camera.fieldOfView = 60f;
 
                 var source = Camera.main;
                 if (source != null)
@@ -166,11 +185,20 @@ namespace CosmicShore.Utility
                     _camera.backgroundColor = source.backgroundColor;
                     _camera.cullingMask = source.cullingMask;
                     _camera.allowHDR = source.allowHDR;
+                    // The clip planes ARE borrowed here, unlike the connecting panel's preview
+                    // which derives its own: that one frames a whole arena from outside and clips
+                    // out of a borrowed far plane, while this camera sits on the vessel looking
+                    // down the same line the gameplay camera already renders. Its planes are
+                    // correct for this shot by construction.
+                    _camera.nearClipPlane = source.nearClipPlane;
+                    _camera.farClipPlane = source.farClipPlane;
                 }
                 else
                 {
                     _camera.clearFlags = CameraClearFlags.Skybox;
                     _camera.cullingMask = ~0;
+                    _camera.nearClipPlane = 0.3f;
+                    _camera.farClipPlane = 20000f;
                 }
 
                 // Everything except UI: a window that rendered the canvas would draw itself inside

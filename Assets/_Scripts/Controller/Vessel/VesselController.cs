@@ -64,7 +64,6 @@ namespace CosmicShore.Gameplay
             PrismOcclusionCorridor.ClearTarget(transform);
             VesselSpeedTunnel.ClearTarget(transform);
             VesselRearView.ClearTarget(transform);
-            VesselFirstPersonView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
 
             // The base is what tears down this behaviour's NetworkVariables. An override that
@@ -174,7 +173,6 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
-                VesselFirstPersonView.SetTarget(transform);
             }
 
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
@@ -330,7 +328,6 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
                 VesselRearView.SetTarget(transform);
-                VesselFirstPersonView.SetTarget(transform);
             }
             else
             {
@@ -338,7 +335,6 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
                 VesselRearView.ClearTarget(transform);
-                VesselFirstPersonView.ClearTarget(transform);
             }
 
             // If the player is AI in general, or if it is a network client

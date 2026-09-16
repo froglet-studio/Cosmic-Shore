@@ -93,8 +93,19 @@ VesselSpeedTunnel.HasHomeFieldOfViewOverride;
 VesselSpeedTunnel.HomeFieldOfView;                               // the PLAYER's own value
 ```
 
-The one caller today is `VesselFirstPersonView` (the Serpent's scope,
-`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`).
+**There is NO caller today, and the surface is kept anyway**, because it is a GUARD rather than a
+feature: it is the one sanctioned way to magnify the gameplay camera, and deleting it re-opens the
+direct `Camera.fieldOfView` write this law exists to prevent.
+
+Its first caller was `VesselFirstPersonView` (the Serpent's scope,
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`), which no longer magnifies
+the gameplay camera at all — a magnified flight view read as **nauseating** on playtest, so that
+scope's magnification moved into a window of its own. **Read that finding before reaching for this
+surface**: a magnified view is a lever on every motion that reaches it, so magnifying what the
+pilot FLIES with multiplies the camera's settle, the vessel's roll and this law's own speed
+narrowing by exactly the factor it multiplies the target. An ability earns this surface only when
+magnifying the FLIGHT VIEW is the mechanic — not merely when magnification is. Prefer a second,
+magnified picture (`Docs/REAR_VIEW.md §3.1.1`).
 
 **Why an ability may not just write `Camera.fieldOfView`.** It fails two ways, both silent: while
 the tunnel is engaged the write is overwritten every frame, and when the tunnel *engages* it

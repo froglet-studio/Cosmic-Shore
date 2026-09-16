@@ -16,12 +16,12 @@ namespace CosmicShore.Gameplay
     /// about each other's wiring — each asks the scope. That flag is maintained on EVERY peer
     /// precisely so this gate resolves the same way everywhere.</para>
     ///
-    /// <para><b>The line is the CAMERA's line.</b> The round leaves along the vessel's forward
-    /// axis, which is exactly what the cockpit camera is aimed down
-    /// (<c>CustomCameraController</c>'s first-person branch writes
-    /// <c>transform.rotation = _followTarget.rotation</c>), so the shot lands where the view is
-    /// pointing. Deriving the direction from <c>Course</c> instead would put the round somewhere
-    /// the pilot is not looking the moment the vessel is sliding.</para>
+    /// <para><b>The line is the SCOPE's line.</b> The round leaves along the vessel's forward
+    /// axis, which is exactly the axis the scope window's camera is posed along
+    /// (<c>ScopePipView.PoseCamera</c> writes <c>vessel.rotation</c>), so the shot lands where the
+    /// eyepiece is pointing and the reticle is a promise rather than a decoration. Deriving the
+    /// direction from <c>Course</c> instead would put the round somewhere the pilot is not looking
+    /// the moment the vessel is sliding.</para>
     ///
     /// <para><b>Why the hitscan is a CONE and not a ray — or a tube.</b>
     /// <see cref="PrismSpatialIndex.QueryCone"/> tests a prism's CENTRE, and a prism is several

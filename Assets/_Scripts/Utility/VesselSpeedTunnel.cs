@@ -150,8 +150,19 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Replace the field of view this law treats as HOME — the value it narrows down FROM and
-        /// restores TO — for as long as an ability is magnifying the view. The one sanctioned
-        /// caller is <c>VesselFirstPersonView</c> (the Serpent's scope).
+        /// restores TO — for as long as an ability is magnifying the view.
+        ///
+        /// <para><b>It has NO caller today</b>, and is kept anyway because it is a GUARD rather
+        /// than a feature: it is the one sanctioned way to magnify the gameplay camera, and
+        /// deleting it re-opens the direct <c>Camera.fieldOfView</c> write the law exists to
+        /// prevent. Its first caller was the Serpent's scope, which no longer magnifies the
+        /// gameplay camera at all — a magnified flight view read as nauseating, so that scope's
+        /// magnification moved into a window of its own
+        /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4). The finding that leaves
+        /// behind is worth having before reaching for this: <i>a magnified view is a lever on
+        /// every motion that reaches it</i>, so magnifying what the pilot FLIES with multiplies
+        /// the camera's settle, the vessel's roll and this law's own speed narrowing by exactly
+        /// the factor it multiplies the target. Prefer a second, magnified picture.</para>
         ///
         /// <para><b>Why this exists rather than an ability writing the camera.</b> This law is the
         /// only writer of the gameplay camera's FOV, and a direct write fails two ways, both
@@ -162,9 +173,10 @@ namespace CosmicShore.Utility
         /// narrows from the scoped base, so a scoped pilot who accelerates still reads their speed
         /// in the optics instead of the two effects fighting over one number.</para>
         ///
-        /// <para>An ability earns this surface only when magnification IS the mechanic. The
-        /// Dolphin's Echo Sight wanted a zoom, worked without one, and the surface was reverted;
-        /// a scope without magnification is not a scope, which is why the Serpent gets it.</para>
+        /// <para>An ability earns this surface only when magnifying the FLIGHT VIEW is the
+        /// mechanic — not merely when magnification is. The Dolphin's Echo Sight wanted a zoom,
+        /// worked without one, and the surface was reverted; the Serpent's scope needed the
+        /// magnification and did not need it on the flight view.</para>
         ///
         /// <para>The override does NOT itself engage the effect — <see cref="Tick"/> engages
         /// whenever one is active, so the zoom applies at a standstill, where the speed effect is
