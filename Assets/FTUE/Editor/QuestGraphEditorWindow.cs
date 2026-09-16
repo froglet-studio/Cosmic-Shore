@@ -1027,8 +1027,17 @@ namespace CosmicShore.Editor
                     DrawLiveState();
 
                 GUILayout.Space(4);
-                if (CenteredButton(new GUIContent("Reset ALL Player Progress",
-                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE it also resets game-mode progression (unlocks + intensity tiers + play counts), all vessel unlocks, and any quest arcade constraints — plus the UGS cloud records when the backend gate is open. The Froglet Toolbox reads this state live and can still manually re-unlock anything.")))
+                // The button does two different jobs and the label has to say which one you are
+                // about to press: in EDIT mode it is the NARROW reset (this quest's own progress and
+                // nothing else), in PLAY mode it is the wide one. A single "Reset ALL" label reads as
+                // the nuclear option in both, which is how the narrow route became impossible to find.
+                if (CenteredButton(new GUIContent(
+                        Application.isPlaying
+                            ? "Reset ALL Player Progress (quest + progression + vessels)"
+                            : "Restart This Quest (quest progress only)",
+                        Application.isPlaying
+                            ? "PLAY MODE: the WIDE reset — this quest's progress, game-mode progression (unlocks + intensity tiers + play counts), all vessel unlocks, quest arcade constraints, plus the UGS cloud records when the backend gate is open. The Froglet Toolbox reads this state live and can still manually re-unlock anything. For a quest-only restart, press this OUTSIDE play mode.\n\nThis is NOT FrogletTools > Services > Wipe Player Data, which clears every PlayerPrefs key, the local cloud snapshot and the session token."
+                            : "EDIT MODE: the NARROW reset — clears ONLY this quest's progress (phase, resume node, completed set), its arcade constraints and its played-game record, so the FTUE starts from the beginning on the next play. Settings, profile, vessels and everything else are untouched.\n\nWith the progression backend gate closed this IS the complete reset: quest progress lives only in PlayerPrefs, and mode progression + vessel unlocks are session-local and start fresh every play anyway.")))
                 {
                     if (Application.isPlaying)
                     {
