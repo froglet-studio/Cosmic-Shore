@@ -1012,8 +1012,12 @@ the hull; every other triangle stays put. The amount ramps from nothing at 15 u 
 10 u (measured at the triangle's centroid), so as the hull slides from one triangle to the next the
 two meet at the seam, both touching the sphere, and hand off with nothing snapping. It reads as
 being cradled by the mass you are grinding. In free flight, and in the glide after a launch,
-nothing moves. (The first cut moved whole faces — *"it brought the whole rectangular face"* — and
-was re-cut to wedges the same day.)
+nothing moves. **How much of that motion is actually performed is `maxStrength`, and it ships at
+0.1** — a tenth of the way to the hull and a tenth of the angle, because the full motion read as
+the mass lurching rather than cradling. Everything below describes the geometry at full strength;
+the dial scales the whole rigid motion as one quantity, so a triangle is a whole triangle a tenth
+of the way there, never a distorted one. (The first cut moved whole faces — *"it brought the whole
+rectangular face"* — and was re-cut to wedges the same day.)
 
 It is a **§4.7 global-uniform effect** (`Docs/PRISM_ANIMATION.md §4.7.2`), which is the whole
 reason it is affordable on a 42,000-prism cell: `PrismCradleSource` — ensured on the hull by
@@ -1114,6 +1118,7 @@ Vector feed. Nothing has been run in the editor yet.
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `outerRange` / `innerRange` | `Resources/PrismCradleConfig.asset` | **15 / 10** u from the hull centre to a triangle's centroid: zero effect at the outer, full at the inner. |
+| `maxStrength` | `Resources/PrismCradleConfig.asset` | **0.1** — the ceiling the eased strength runs to, i.e. how much of the full motion the cradle ever performs. THE dial for "the effect is too strong": it scales the centroid's travel and the rotation together, so the triangle stays rigid at every setting. 1 puts the nearest triangle exactly on the hull. Never tone the effect down with the band, which decides WHICH triangles are involved, not how far they go. |
 | `neighbourSpread` | `Resources/PrismCradleConfig.asset` | **2.5** u — how much farther than the nearest triangle one of its three neighbours may be and still come partway; at that excess it stays put. THIS is the seam hand-off: narrow it and only the one nearest triangle ever moves, widen it and the whole face comes along. |
 | `PRISM_CRADLE_STRAY_POWER` | `PrismCradle.hlsl` (`#define 4.0`) | How hard a triangle that is near the nearest but adjacent to nothing near it is held back (`near^(1+power)`). 0 lets every triangle within the spread come as far as a neighbour would. |
 | `engageSeconds` / `releaseSeconds` | `Resources/PrismCradleConfig.asset` | **0.25 / 0.4** s ease of the cradle's strength on attach / detach. Never 0: that is the one-frame snap the ease exists to remove. |

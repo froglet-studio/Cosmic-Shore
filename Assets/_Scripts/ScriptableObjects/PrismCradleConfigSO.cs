@@ -13,7 +13,8 @@ namespace CosmicShore.ScriptableObjects
     /// close as the nearest they are (<see cref="NeighbourSpread"/>), the one across the prism
     /// edge wrapping so its outward face meets the hull; every other triangle is untouched.
     /// The whole thing ramps from nothing at <see cref="OuterRange"/> to everything at
-    /// <see cref="InnerRange"/>. The pilot reads it as the mass they are grinding cradling them.
+    /// <see cref="InnerRange"/>, and <see cref="MaxStrength"/> scales how much of that motion is
+    /// ever performed. The pilot reads it as the mass they are grinding cradling them.
     ///
     /// Everything here is a GLOBAL shader uniform written once per frame — there is no
     /// per-prism state to tune and no per-prism cost to pay for widening the band. The hull's
@@ -53,6 +54,16 @@ namespace CosmicShore.ScriptableObjects
         [Min(0.001f)]
         [SerializeField] float neighbourSpread = 2.5f;
 
+        [Tooltip("The CEILING the eased strength runs to — how much of the full motion the cradle " +
+                 "ever performs. It scales the whole rigid motion as ONE quantity (the centroid's " +
+                 "travel toward the hull AND the rotation onto it), so the triangle stays a whole " +
+                 "rigid triangle at every setting: at 1 its centroid lands exactly on the hull's " +
+                 "surface with its normal on the centre, at 0.1 it goes a tenth of the way there " +
+                 "and turns a tenth of the angle. This is the dial for \"the effect is too strong\" " +
+                 "— never the band, which decides WHICH triangles are involved.")]
+        [Range(0f, 1f)]
+        [SerializeField] float maxStrength = 0.1f;
+
         [Header("Continuity")]
         [Tooltip("Seconds the cradle takes to reach full strength after the Urchin attaches. A bare " +
                  "on/off would snap every face in the band into place on one frame — continuity of " +
@@ -70,6 +81,14 @@ namespace CosmicShore.ScriptableObjects
         public float OuterRange => Mathf.Max(0f, outerRange);
         public float InnerRange => Mathf.Clamp(innerRange, 0f, OuterRange);
         public float NeighbourSpread => Mathf.Max(0.001f, neighbourSpread);
+
+        /// <summary>
+        /// The ceiling the eased strength runs to, 0..1. Clamped rather than merely floored: above
+        /// 1 the blend overshoots — the centroid travels past the hull's surface and the normal
+        /// rotates past the direction to its centre — which is not a stronger cradle, it is a
+        /// different (and wrong) one.
+        /// </summary>
+        public float MaxStrength => Mathf.Clamp01(maxStrength);
         public float EngageSeconds => Mathf.Max(0f, engageSeconds);
         public float ReleaseSeconds => Mathf.Max(0f, releaseSeconds);
 

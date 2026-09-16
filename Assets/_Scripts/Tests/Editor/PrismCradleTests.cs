@@ -195,6 +195,13 @@ namespace CosmicShore.Tests
                 "The cradle band must ramp: outer strictly wider than inner, or the smoothstep divides by zero.");
             Assert.Greater(config.NeighbourSpread, 0f,
                 "NeighbourSpread must be positive: at 0 the adjacency smoothstep divides by zero and no neighbour ever hands off.");
+            // The ceiling the eased strength runs to. Above 1 the blend overshoots the hull's
+            // surface and over-rotates past its centre, which is a different motion rather than a
+            // stronger one; at 0 the cradle is off, which is what `enabled` is for.
+            Assert.Greater(config.MaxStrength, 0f,
+                "PrismCradleConfig.MaxStrength is 0 — the cradle publishes a zero weight and nothing deforms. Use `enabled` to switch it off.");
+            Assert.LessOrEqual(config.MaxStrength, 1f,
+                "PrismCradleConfig.MaxStrength is above 1 — the motion would overshoot the hull rather than land on it.");
         }
 
         [Test]

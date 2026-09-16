@@ -171,7 +171,7 @@ namespace CosmicShore.Utility
                     var src = kv.Value;
                     if (count < Slots)
                     {
-                        Write(count++, src);
+                        Write(count++, src, config.MaxStrength);
                         continue;
                     }
 
@@ -183,8 +183,11 @@ namespace CosmicShore.Utility
                     for (int i = 1; i < Slots; i++)
                         if (_weight[i].x < _weight[weakest].x)
                             weakest = i;
-                    if (src.Strength > _weight[weakest].x)
-                        Write(weakest, src);
+                    // Both sides of the compare are SCALED: the bank holds published strengths,
+                    // so weighing a raw one against them would evict by the wrong ordering the
+                    // moment MaxStrength is anything but 1.
+                    if (src.Strength * config.MaxStrength > _weight[weakest].x)
+                        Write(weakest, src, config.MaxStrength);
                 }
             }
 
@@ -207,11 +210,18 @@ namespace CosmicShore.Utility
             _publishedCount = count;
         }
 
-        static void Write(int slot, in Source src)
+        /// <summary>
+        /// Pack one hull. <paramref name="maxStrength"/> is the config's ceiling, applied HERE
+        /// rather than in the shader: the shader's contract is "this is how far through the motion
+        /// you are", and how far through it a full-strength cradle goes is a tuning fact about the
+        /// feel. Applying it on the way into the bank also means the tuning costs no uniform lane
+        /// and no shader edit, so the harness that proves the deformation still proves it.
+        /// </summary>
+        static void Write(int slot, in Source src, float maxStrength)
         {
             Vector3 p = src.Hull.position;
             _centre[slot] = new Vector4(p.x, p.y, p.z, src.Radius);
-            _weight[slot] = new Vector4(src.Strength, 0f, 0f, 0f);
+            _weight[slot] = new Vector4(src.Strength * maxStrength, 0f, 0f, 0f);
         }
 
         // ---------------- Lifecycle ----------------
