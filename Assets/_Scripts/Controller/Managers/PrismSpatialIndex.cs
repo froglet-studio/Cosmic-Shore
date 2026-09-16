@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
         public const byte None = 0;
         public const byte Octahedron = 1; // SHIELDED: L1 ball circumscribing the authored box
         public const byte Stella = 2;     // SUPER-SHIELDED: union of two tetrahedra (non-convex)
+        public const byte Box = 3;        // UNSHIELDED: the prism's own authored box (extended coverage only)
     }
 
     /// <summary>
@@ -188,6 +189,10 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public NativeArray<PrismShellData> Shells;
         [ReadOnly] public NativeArray<ShellProbe> Probes;
         [ReadOnly] public int ProbeCount;
+        /// <summary>1 while the tier also owns UNSHIELDED prisms. This is the flag-byte
+        /// early-out below going away: with it set the scan pays a bound test per slot
+        /// per probe instead of one byte read, which is the whole cost question.</summary>
+        [ReadOnly] public byte CoverUnshielded;
 
         public NativeList<ShellContactHit>.ParallelWriter Hits;
 
@@ -195,7 +200,7 @@ namespace CosmicShore.Gameplay
         {
             var p = Prisms[index];
             if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) return;
-            if ((p.Flags & PrismFlags.AnyShieldMask) == 0) return;
+            if (CoverUnshielded == 0 && (p.Flags & PrismFlags.AnyShieldMask) == 0) return;
 
             var shell = Shells[index];
             if (shell.Kind == ShellKind.None) return;
@@ -216,24 +221,30 @@ namespace CosmicShore.Gameplay
                     frameBuilt = true;
                 }
 
-                bool octa = shell.Kind == ShellKind.Octahedron;
+                byte kind = shell.Kind;
                 bool hit;
                 switch (probe.Kind)
                 {
                     case ShellProbeKind.Sphere:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.SphereOverlapsOcta(in frame, probe.A, probe.Radius)
-                            : ShieldShellMath.SphereOverlapsStella(in frame, probe.A, probe.Radius);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.SphereOverlapsStella(in frame, probe.A, probe.Radius)
+                                : ShieldShellMath.SphereOverlapsBox(in frame, probe.A, probe.Radius);
                         break;
                     case ShellProbeKind.Capsule:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.CapsuleOverlapsOcta(in frame, probe.A, probe.B, probe.Radius)
-                            : ShieldShellMath.CapsuleOverlapsStella(in frame, probe.A, probe.B, probe.Radius);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.CapsuleOverlapsStella(in frame, probe.A, probe.B, probe.Radius)
+                                : ShieldShellMath.CapsuleOverlapsBox(in frame, probe.A, probe.B, probe.Radius);
                         break;
                     default:
-                        hit = octa
+                        hit = kind == ShellKind.Octahedron
                             ? ShieldShellMath.BoxOverlapsOcta(in frame, probe.A, probe.E1, probe.E2, probe.E3)
-                            : ShieldShellMath.BoxOverlapsStella(in frame, probe.A, probe.E1, probe.E2, probe.E3);
+                            : kind == ShellKind.Stella
+                                ? ShieldShellMath.BoxOverlapsStella(in frame, probe.A, probe.E1, probe.E2, probe.E3)
+                                : ShieldShellMath.BoxOverlapsBox(in frame, probe.A, probe.E1, probe.E2, probe.E3);
                         break;
                 }
 
@@ -1848,7 +1859,9 @@ namespace CosmicShore.Gameplay
         {
             if (!_shell.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
-            if (_shell[index].Kind == ShellKind.None) return;
+            // While the extension is live an unshielded slot legitimately holds a Box
+            // shell, so "Kind == None" can no longer stand in for "nothing to refresh".
+            if (_shell[index].Kind == ShellKind.None && !PrismShellContactManager.ExtendToUnshieldedPrisms) return;
             RefreshShellData(index);
         }
 
@@ -1865,10 +1878,21 @@ namespace CosmicShore.Gameplay
             byte kind = ShellKind.None;
             if ((s.Flags & PrismFlags.IsSuperShielded) != 0) kind = ShellKind.Stella;
             else if ((s.Flags & PrismFlags.IsShielded) != 0) kind = ShellKind.Octahedron;
+            else if (PrismShellContactManager.ExtendToUnshieldedPrisms) kind = ShellKind.Box;
 
             var prism = _prisms[index];
-            if (kind == ShellKind.None || prism == null
-                || !prism.TryGetShellGeometry(out Vector3 centerLocal, out Vector3 semiAxesLocal))
+            // Written out rather than folded into a ternary: an `out` behind a
+            // short-circuited && is exactly the shape C#'s definite-assignment analysis
+            // refuses, and that is an editor-only error no out-of-editor gate can see.
+            Vector3 centerLocal = Vector3.zero, semiAxesLocal = Vector3.zero;
+            bool haveGeometry = false;
+            if (kind != ShellKind.None && prism != null)
+            {
+                haveGeometry = kind == ShellKind.Box
+                    ? prism.TryGetBoxGeometry(out centerLocal, out semiAxesLocal)
+                    : prism.TryGetShellGeometry(out centerLocal, out semiAxesLocal);
+            }
+            if (!haveGeometry)
             {
                 _shell[index] = default;
                 return;
@@ -1882,7 +1906,7 @@ namespace CosmicShore.Gameplay
                 Mathf.Abs(semiAxesLocal.z * lossy.z));
             // Octahedron vertices sit at ±semi along each axis; stella spike tips at
             // the scaled cube corners (±sx, ±sy, ±sz).
-            float bound = kind == ShellKind.Stella ? math.length(semi) : math.cmax(semi);
+            float bound = kind == ShellKind.Octahedron ? math.cmax(semi) : math.length(semi);
 
             _shell[index] = new PrismShellData
             {
@@ -1920,6 +1944,48 @@ namespace CosmicShore.Gameplay
         /// Schedule-then-Complete discipline as ProcessExplosionFrame — the caller
         /// dispatches from the results afterwards, never during the scan.
         /// </summary>
+        /// <summary>
+        /// Rebuilds every slot's shell entry. Called when
+        /// <see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/> is toggled:
+        /// the shell view is maintained incrementally (register / shield change /
+        /// growth / move), so a policy change that alters which slots HAVE a shell has
+        /// no incremental event to ride and must sweep.
+        /// </summary>
+        public void RebuildAllShells()
+        {
+            if (!_shell.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++) RefreshShellData(i);
+        }
+
+        /// <summary>Live shell-view census (diagnostics): how many slots present each kind.</summary>
+        public void CountShells(out int box, out int octa, out int stella)
+        {
+            box = octa = stella = 0;
+            if (!_shell.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                switch (_shell[i].Kind)
+                {
+                    case ShellKind.Box: box++; break;
+                    case ShellKind.Octahedron: octa++; break;
+                    case ShellKind.Stella: stella++; break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Does this slot currently present a shell to probes? The authority for
+        /// <see cref="PrismShellContactManager.ShellOwnsContact"/> under extended
+        /// coverage: a prism the tier claims but has no shell for would be suppressed
+        /// out of the trigger path AND invisible to the query — an uninteractable
+        /// prism, which is the one failure this mode must not be able to produce.
+        /// </summary>
+        public bool HasShell(int index)
+        {
+            if (!_shell.IsCreated || index < 0 || index >= _highWaterMark) return false;
+            return _shell[index].Kind != ShellKind.None;
+        }
+
         public void CollectShellContacts(NativeArray<ShellProbe> probes, int probeCount, NativeList<ShellContactHit> hits)
         {
             hits.Clear();
@@ -1928,7 +1994,13 @@ namespace CosmicShore.Gameplay
 
             // AddNoResize throws on overflow; size for a dense worst case (a large
             // skimmer riding a fully super-shielded track lining).
-            int capacity = math.min(65536, math.max(1024, probeCount * 512));
+            // AddNoResize THROWS on overflow, so the capacity is the crash surface, not a
+            // perf knob. Extended coverage puts every prism a probe overlaps in the list
+            // (a 30 u skimmer inside dense flora), so it is sized against the population
+            // rather than the probe count there.
+            int capacity = PrismShellContactManager.ExtendToUnshieldedPrisms
+                ? math.min(262144, math.max(4096, _highWaterMark))
+                : math.min(65536, math.max(1024, probeCount * 512));
             if (hits.Capacity < capacity)
                 hits.Capacity = capacity;
 
@@ -1940,6 +2012,7 @@ namespace CosmicShore.Gameplay
                     Shells = _shell,
                     Probes = probes,
                     ProbeCount = probeCount,
+                    CoverUnshielded = (byte)(PrismShellContactManager.ExtendToUnshieldedPrisms ? 1 : 0),
                     Hits = hits.AsParallelWriter()
                 };
                 job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();

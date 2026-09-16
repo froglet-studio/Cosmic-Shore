@@ -341,6 +341,70 @@ at the editor:
   the octahedron stays rendered while flags + shell interaction correctly
   retire. Visual-only mismatch, owned by PrismStateManager.
 
+## Shell view — EXTENDED COVERAGE (experimental, default OFF, measure before believing)
+
+`PrismShellContactManager.ExtendToUnshieldedPrisms` extends the tier from shielded
+prisms to **every registered prism**, so vessel/skimmer contact resolves against this
+index at render rate instead of against PhysX box triggers at the physics tick.
+Flip it only through `SetExtendToUnshieldedPrisms(bool)` — the shell view is maintained
+incrementally (register / shield change / growth / move) and a POLICY change has no
+incremental event to ride, so the setter sweeps `RebuildAllShells()` and drops live
+pairs with exit bookkeeping.
+
+**It buys nothing in SHAPE, and saying so is the point.** An unshielded prism's exact
+surface already IS its authored box, which is what PhysX tests — so shape parity is the
+CORRECTNESS BAR here, not a feature. `ShieldShellMath.SphereOverlapsBox` /
+`CapsuleOverlapsBox` / `BoxOverlapsBox` are validated against brute force over 40,000
+randomised poses with zero disagreements by `Tools/Build/shield_shell_box_harness/run.sh`,
+which compiles and RUNS the shipped file. What the mode does buy:
+
+- **Sampling rate.** `Update` (~60 Hz) against PhysX's 25 Hz tick. The project has paid
+  for that gap once already — a 375 u/s Sparrow round was invisible to the trigger path.
+- **Determinism.** A Burst scan over a deterministic array orders identically on every
+  peer; PhysX contact order does not. Flora are simulated per-peer, so this is not
+  academic.
+- **It can own a prism whose COLLIDER cannot be trusted** — one posed per-frame from the
+  GPU. This is the only property PhysX cannot be tuned into having, and it is the reason
+  the mode exists.
+
+**What it costs, and why that is the whole question.** `ShellContactQueryJob` escapes on
+a flag byte for the unshielded majority, which is why the tier is nearly free today.
+Extended coverage deletes that escape: `job.Schedule(_highWaterMark, …)` is a FLAT
+parallel scan with **no broadphase under it** — `QuerySegment` uses the bucket grid, this
+path does not — so cost grows with the REGISTRY, not with what is near the vessel. Three
+further exposures come with it, all of which only exist at scale:
+
+| Exposure | Where |
+|---|---|
+| Main-thread stall — the query is `Schedule().Complete()`, not pipelined | `CollectShellContacts` |
+| `AddNoResize` **throws** on overflow; capacity is a crash surface, not a perf knob | `CollectShellContacts` (sized off `_highWaterMark` in extended mode) |
+| `Dictionary<long, ActivePair>` with class values, swept every frame | `PrismShellContactManager` |
+
+**The collider saving is smaller than it looks.** `PrismColliderLodManager` already culls
+prism colliders to a 200 m bubble with hysteresis and a 512-toggle/frame budget, so the
+standing collider count is `LastNearCount`, not the population. Extended coverage removes
+the near set, not the plant. (Projectiles already find prisms through `QuerySegment`,
+explosions already batch through the index, and fauna use `NonPrismOverlapMask` — so the
+remaining collider consumers are the vessel/skimmer trigger path and the explosion legacy
+fallback, and that is all.)
+
+**The one failure this mode must not be able to produce** is an uninteractable prism:
+claimed by the tier (so `Skimmer`/`VesselImpactor` suppress their box-trigger dispatch)
+but carrying no shell for the query to hit. `ShellOwnsContact` therefore asks
+`PrismSpatialIndex.HasShell(prism.SpatialIndexId)` before claiming an unshielded prism,
+and a prism with no box geometry falls back to the trigger path.
+
+### Measuring it — FrogletTools > Diagnostics > Prism Contact Probe
+
+Play mode, reader only, writes no assets. **Run A/B** samples both modes for the same
+wall time and prints one block: query ms (median / p95 / max), hits and active pairs
+(median / max), enter dispatches per second, the `AddNoResize` headroom, the collider-LOD
+near count, and the shell census. Read it as: **B is the whole cost of the change.**
+If B is affordable in the heaviest cell that ships, the bucket-grid broadphase is
+optional; if it is not, that broadphase is the prerequisite and nothing else should be
+built on this until it exists. A large rise in enter dispatches per second is contacts
+the 25 Hz path was missing — unless it is enormous, which would be double-firing.
+
 ## What NOT to use it for
 
 - **Raycasts / general narrow-phase geometry** (`AIPilot` obstacle rays,

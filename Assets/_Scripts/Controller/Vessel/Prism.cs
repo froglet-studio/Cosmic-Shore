@@ -139,6 +139,35 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// Local-space geometry of the prism's OWN authored box — the surface an
+        /// UNSHIELDED prism presents. Distinct from <see cref="TryGetShellGeometry"/>,
+        /// which always returns the SHIELD (3x circumscribing) geometry even for a
+        /// prism that is not currently shielded; reading that for a plain prism would
+        /// hand the shell tier a box three times too big.
+        ///
+        /// Used only by the experimental extended-coverage shell tier
+        /// (<see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/>).
+        /// </summary>
+        internal bool TryGetBoxGeometry(out Vector3 centerLocal, out Vector3 halfExtentsLocal)
+        {
+            if (_authoredColliderSizeCached)
+            {
+                centerLocal = blockCollider != null ? blockCollider.center : Vector3.zero;
+                halfExtentsLocal = _authoredColliderSize * 0.5f;
+                return true;
+            }
+            if (blockCollider != null)
+            {
+                centerLocal = blockCollider.center;
+                halfExtentsLocal = blockCollider.size * 0.5f;
+                return true;
+            }
+            centerLocal = default;
+            halfExtentsLocal = default;
+            return false;
+        }
+
         public Domains Domain
         {
             get => teamManager?.Domain ?? Domains.Blue;
