@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
     /// The envelope every <c>GameModes.Cleave</c> arena is built to — <b>one per INTENSITY</b>.
     ///
     /// Cleave's four intensities are four DIFFERENT PLACES rather than four sizes of one — angled
-    /// panes, wave sheets, the nested cage, twisted ribbons. Each arena class is used by exactly
+    /// panes, wavy roads, the nested cage, twisted ribbons. Each arena class is used by exactly
     /// ONE intensity, so each can carry its own scale as a compile-time constant; what this file
     /// owns is the TABLE, plus the two derived numbers every intensity-blind consumer needs.
     ///
@@ -15,22 +15,24 @@ namespace CosmicShore.Gameplay
     ///     designed and reviewed at <see cref="AuthoredRadius"/>. Prism COUNTS do not move: every
     ///     count in these generators is a ratio of two lengths that both carry it.
     ///   • <see cref="GapScaleI1"/>… — the SPACING. Multiplies the ACROSS-grain step ALONE, so a
-    ///     pane's ribs (or a sheet's) sit G times further apart while each rib stays a continuous
-    ///     bar. That is the one dial that DOES move a count: rib count falls by G.
+    ///     pane's ribs sit G times further apart while each rib stays a continuous bar. That is
+    ///     the one dial that DOES move a count: rib count falls by G.
     ///
     /// The two are separate because they answer different questions. The similarity asks "how big
-    /// is this place"; the gap asks "how much of it is mass". Intensities 1 and 2 turn both up —
-    /// 6 x the authored radius at 3 x the rib spacing — so they read as vast and open, which is
-    /// also why their destruction target is a quarter of the others'
-    /// (<c>EndConditionOverridesSO.cleavePrismTargetByIntensity</c>).
+    /// is this place"; the gap asks "how much of it is mass". Intensities 1 and 2 are both 6 x the
+    /// authored radius — vast open places you cross rather than dense objects you peel — which is
+    /// why their destruction target is well under the others'
+    /// (<c>EndConditionOverridesSO.cleavePrismTargetByIntensity</c>). Only the Panes spends the gap
+    /// dial: it is a set of RIBS, and thinning ribs is what turns a slab into a place.
     ///
-    /// <b>A gap scale above 1 is only defined for an arena whose across-grain density is a STEP.</b>
-    /// The Panes and the Swell sample ribs at a spacing, so tripling it is one constant. The CAGE
-    /// has no such step at all — its density is a rib/hoop COUNT on a sphere — so a gap scale
-    /// authored for it would be silently INERT, and <c>SpawnableRibcage.AssertNoGapScale</c> says so
-    /// loudly instead. The Twistbands DOES have a step and carries the dial, authored at 1 because
-    /// its deck is a continuous plated road rather than a set of ribs; raising it there opens the
-    /// road into a lattice, which is a different arena, not a sparser one.
+    /// <b>A gap scale above 1 is only defined for an arena whose across-grain density is a STEP,
+    /// and only wanted where the surface is a set of BARS rather than a road.</b> The Panes samples
+    /// ribs at a spacing, so tripling it is one constant. The CAGE has no such step at all — its
+    /// density is a rib/hoop COUNT on a sphere — so a gap scale authored for it would be silently
+    /// INERT, and <c>SpawnableRibcage.AssertNoGapScale</c> says so loudly instead. The Swell and
+    /// the Twistbands both HAVE a step and both carry the dial authored at 1, for one reason: each
+    /// lays a continuous plated deck a blade is held against, so opening its lanes up is not
+    /// "sparser", it is a lattice the sword rattles through — a different arena, not a lighter one.
     ///
     /// <b>Three systems are sized against the arena and only one of them knows the intensity.</b>
     ///   • <c>CleaveController</c> parks its AI stations at that intensity's
@@ -96,8 +98,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Extra ACROSS-grain spacing, intensity 1. Multiplies the rib step alone.</summary>
         public const float GapScaleI1 = 3f;
-        /// <summary>Extra ACROSS-grain spacing, intensity 2. Multiplies the rib step alone.</summary>
-        public const float GapScaleI2 = 3f;
+        /// <summary>Intensity 2's deck is a plate lattice sized to its ribbon — see the class summary.</summary>
+        public const float GapScaleI2 = 1f;
         /// <summary>Intensity 3's density is a rib/hoop COUNT, not a step — see the class summary.</summary>
         public const float GapScaleI3 = 1f;
         /// <summary>Intensity 4's deck is a plate lattice sized to its ribbon — see the class summary.</summary>

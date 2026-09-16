@@ -15,10 +15,10 @@ MonoBehaviour:
   Mode: 39
   IsMultiplayer: 1
   DisplayName: Cleave
-  Description: Four arenas, one blade. Angled panes, rolling wave sheets, a cage of
+  Description: Four arenas, one blade. Angled panes, wide wavy roads, a cage of
     nested shells, and twisted ribbons that roll out from under you - every intensity
     is a different place to cut, not a bigger version of the last. Danger prisms ride
-    the rims and the crests, so read the grain before you commit.
+    the rims and the outside of the bends, so read the place before you commit.
   IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
   IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
@@ -34,4 +34,4 @@ MonoBehaviour:
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.01
+  ComebackRatePerScoreDeficit: 0.0125

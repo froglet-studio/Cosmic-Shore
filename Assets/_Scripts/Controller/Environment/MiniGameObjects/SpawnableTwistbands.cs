@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
         /// Three bands, one per coordinate plane so they interlock rather than nest. Radii and
         /// half-widths are in AUTHORED units (see <see cref="S"/>); the constructor scales them.
         /// They are authored so the outermost reach (<c>Radius + HalfWidth + KeelDrop</c>) stays
-        /// inside <see cref="SliceArenaGeometry.OuterRadius"/> - asserted at build, because a band
+        /// inside <see cref="SliceArenaGeometry.OuterRadiusI4"/> - asserted at build, because a band
         /// that quietly grew past the envelope would put mass outside the AI's stations and the
         /// spawn ring without failing anything.
         ///

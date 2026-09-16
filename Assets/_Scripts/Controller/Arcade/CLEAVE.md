@@ -10,8 +10,8 @@
 
 ## Overview
 
-Cleave is the **Rhino-only slicing race**. Domains race to be first to **destroy 2,000 hostile
-prisms** with the sword, and the arena *is* the score — cutting it apart and winning are the same
+Cleave is the **Rhino-only slicing race**. Domains race to be first to destroy their
+intensity's **hostile-prism target** with the sword, and the arena *is* the score — cutting it apart and winning are the same
 act.
 
 **Intensity is WHICH PLACE you cut, not how much of it there is.** The four intensities are four
@@ -19,10 +19,10 @@ unrelated arenas with four different verbs, built by four different generators:
 
 | i | arena | the verb | radius | prisms | volume | danger | far reach | target |
 |---|---|---|---:|---:|---:|---:|---:|---:|
-| 1 | **The Panes** | commit to a line | 2,160 | 5,107 | 345,120,416 | 170 | 2,230 | 500 |
-| 2 | **The Swell** | read the grain | 2,160 | 4,587 | 174,700,630 | 128 | 2,066 | 500 |
-| 3 | **The Cage** | peel inward | 720 | 14,731 | 23,357,561 | 428 | 749 | 2,000 |
-| 4 | **The Twistbands** | roll the blade | 720 | 16,423 | 32,466,038 | 228 | 715 | 2,000 |
+| 1 | **The Panes** | commit to a line | 2,160 | 5,107 | 345,120,416 | 170 | 2,230 | 400 |
+| 2 | **The Swell** | follow the road | 2,160 | 4,607 | 898,182,615 | 119 | 2,008 | 400 |
+| 3 | **The Cage** | peel inward | 720 | 14,731 | 23,357,561 | 428 | 749 | 1,500 |
+| 4 | **The Twistbands** | roll the blade | 720 | 16,423 | 32,466,038 | 228 | 715 | 1,500 |
 
 This replaced a ladder that was **2 / 3 / 4 / 5 nested shells** — the same arena four times, and
 the reason the mode was renamed. The three-rind cage is the only rung kept, and its GEOMETRY is
@@ -31,25 +31,32 @@ unchanged: same generator, same seed, same 14,731 prisms, same count thresholds.
 **Intensity is now SPACE as well as place.** Two scale-ups happened, and they answer different
 complaints. The first made all four arenas **twice** the size they were authored at — 360 → 720 —
 after a playtest read the arena as a little ball in the middle of the cell. The second, on
-request, took rungs **1 and 2 three times further out again**: 720 → **2,160**, at **triple** the
-rib spacing, so the two easy rungs are vast open places you cross rather than dense objects you
-peel. Their destruction target came down to **500** to match (four times less mass, four times
-less to destroy), and they carry their own **3,600**-radius membrane — the standard 1,200 one
-would be *inside* their arena.
+request, took rungs **1 and 2 three times further out again**: 720 → **2,160**, so the two easy
+rungs are vast open places you cross rather than dense objects you peel. The Panes also went to
+**triple** its rib spacing; the Swell was then re-authored outright (below). Their destruction
+target came down to **400** to match (about a third of the mass of 3 and 4, and under a third of
+the target), and they carry their own **3,600**-radius membrane — the standard 1,200 one would be
+*inside* their arena.
+
+**Rung 2 is a different arena from the one that first shipped here.** It was seven corrugated
+wave SHEETS, and it read as the Panes with a ripple on it — the same proposition (angled surfaces
+you cross) wearing a different texture. It is now five wide wavy ROADS, holding the same prism
+count in the same ball: same mass, concentrated into a handful of continuous surfaces you can
+FOLLOW instead of spread across seven you can only cross. The verb moved with it, from *read the
+grain* to *follow the road*.
 
 So the ladder reads as two pairs: open-and-far at 1–2, dense-and-tight at 3–4. Every rung still
-holds **5.6×–7.4×** its own target in hostile mass, which is what `cleave_budget.py` asserts in
+holds **7.4×–9.3×** its own target in hostile mass, which is what `cleave_budget.py` asserts in
 place of the monotone prism-count check it retired — raw count stopped meaning anything about
 match length the moment the target became per-intensity, and the counts are deliberately NOT
-monotone (the Panes hold more than the Swell, because tripling a rib step takes more from a sheet
-than from a slab).
+monotone (the two open rungs hold about a third of what the two dense ones do).
 
 > **Player-facing unit is PRISMS, never "bars" or "plates".** Every number a player reads counts
 > PRISMS — the scoreboard, the reveal, and any toast copy. Two words for one counter reads as two
 > counters.
 
 **One axis.** Destruction is the race: `HostilePrismsDestroyed`, the same platform stat Rampage
-runs on, at a PER-INTENSITY target (500 on the two open arenas, 2,000 on the two dense ones). Scoring mass is everything that is not your own team's laid
+runs on, at a PER-INTENSITY target (400 on the two open arenas, 1,500 on the two dense ones). Scoring mass is everything that is not your own team's laid
 trail — the arena (environment mass, non-roster owner ⇒ hostile whatever colour it wears) and
 rival trails. Your own and your teammates' trails never score, so there is no lay-and-smash
 farming loop.
@@ -63,7 +70,7 @@ farming loop.
   `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`), plus progress milestones and the AI
 - **Scoring**: `CleaveScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`; golf-timed)
 - **Turn monitor**: `CleavePrismTurnMonitor` → `EndConditionOverridesSO.GetCleavePrismTarget(intensity)`
-  (**500 / 500 / 2000 / 2000**, FrogletTools ▸ Game Modes ▸ End Game Conditions — never a
+  (**400 / 400 / 1500 / 1500**, FrogletTools ▸ Game Modes ▸ End Game Conditions — never a
   per-scene field). Resolved SERVER-side and replicated through `_netPrismTarget`, so a client
   receives the number rather than deriving it from an intensity it may not have yet. A rung
   authored 0 falls back to the mode scalar
@@ -100,29 +107,58 @@ built on — **a sword rewards commitment to a line**.
 
 ### 2 · The Swell — `SpawnableSwell`
 
-Seven great **corrugated sheets** stacked through the cell at seven angles, each rolling on its own
-wavelength (156 → 480, a 3× span) with a weaker second swell running *along* the ridges so the
-troughs themselves rise and fall.
+Five wide **wavy roads**, each a plated ribbon meandering a closed circuit through the cell at its
+own angle, threaded through one another. A road is **744–948 units across** and its spine weaves
+in-plane (the primary sway) while rising and falling out of it (a weaker secondary), so it rolls
+left and right and up and down for its whole lap and never repeats.
 
-Where the panes teach commitment, the swell teaches the thing that makes commitment interesting:
-**a surface has a GRAIN, and the line only pays if you read it.** Fly a trough and the deck stays
-level under the blade for its whole length — the longest uninterrupted cut in the mode. Fly the
-same sheet ninety degrees off and you climb and drop through every ridge, clipping a handful of
-prisms per crest and nothing between. Same sheet, same speed, several times the score.
+Where the panes teach commitment, the swell teaches the other half of it: **the line does not have
+to be straight.** A ribbon is one continuous surface, so a pilot who finds one can hold the blade
+down and simply FOLLOW it — the longest uninterrupted cut in the mode, and the one that asks for
+flying rather than for aim.
 
-Four things make that legible rather than merely true:
+Four things are load-bearing:
 
-- **The grain is PAINTED.** Gold on the crests, Jade in the troughs, Blue on the flanks — the
-  corrugation reads as colour banding from across the arena, before the relief is visible. (Scoring
-  does not care: every non-roster prism is hostile to everyone, in any colour.)
-- **The crests are the traps.** The only danger prisms here ride the ridge lines, so the grain is
-  worth reading twice — the trough is both the richest cut and the safe one.
-- **Sheets have an UNDERSIDE.** A zero-thickness surface is invisible edge-on and a blade can cross
-  the plane of it without touching anything. A half-density reef hangs 26 below each sheet with its
-  planks turned crosswise.
-- **Sheets FRAY rather than ending.** The void threshold ramps up past 78% of a sheet's radius, so
-  a sheet dissolves into open water instead of stopping at a hard rim. The panes are framed slabs
-  and say so; the swell is weather.
+- **The road is WIDE, and the width is forgiveness.** The meander is what makes the cut
+  interesting; the width is what stops a small steering error ending it. That is the whole reason
+  this rung is ribbons rather than the corrugated sheets it replaced — sheets put the mass where a
+  blade CROSSES it, ribbons put the mass where a blade can STAY on it.
+- **The deck is solid, not a lattice.** Plates overlap in both directions (step 102 under a 132
+  plate, both ways), which is the Twistbands' rule for the Twistbands' reason: a sparse deck is
+  something the sword rattles through rather than something it cuts. It is also why this is the
+  second rung to author `GapScaleI2 = 1` — see § "Two dials".
+- **The road is PAINTED as a road.** A Gold crown down the middle, Blue shoulders, Jade verges, as
+  fractions of each road's own half-width so all five wear the same carriageway whatever their
+  width works out to. A pilot can see where the middle of a ribbon is from across the arena.
+  (Scoring does not care: every non-roster prism is hostile to everyone, in any colour.)
+- **Running wide on a bend bites.** The only danger prisms here sit on the OUTER verge of the
+  tighter corners — one lane, outside only, and only where the ribbon is genuinely turning — so the
+  racing line is always clean and the mass you reach by drifting off it on a turn is the mass that
+  punishes you. The bend test is curvature × the ribbon's own radius (1 for a perfect circle,
+  biting above **1.35**), which is dimensionless and therefore survives the arena's length scale
+  untouched.
+
+Three construction facts worth keeping:
+
+- **The deck never rolls about its own direction of travel.** The width direction is
+  `cross(tangent, loop axis)`, so the surface banks with the climb and nothing else — deliberately,
+  because holding a blade against a surface that rotates under it is the TWISTBANDS' lesson and
+  this rung is the one that should be a joy rather than a test. Every ribbon's climb is authored so
+  the bank stays under ~22°.
+- **A road's half-width is bounded by its own narrowest spine radius** (0.6 of it, an authoring
+  guard): wider than that and the inner verge folds through itself at the inside of a bend, which
+  is invisible in a screenshot and unflyable in the arena.
+- **Stations are walked by ARC LENGTH, not by parameter.** A meandering spine covers very different
+  distance per radian at the apex of a bend than on a straight, so stepping `u` uniformly would
+  bunch the deck in the corners and stretch it on the straights. The count therefore stays a ratio
+  of two lengths (measured spine length ÷ plate step), which is what keeps prism counts invariant
+  under `LengthScaleI2` — the same property the other three rungs rely on.
+
+⚠ **This rung's VOLUME is 2.6× the Panes' on 10% fewer prisms**, because a road is tiled with wide
+plates where a pane is drawn with narrow ribs. Nothing reads it — the cell grows nothing and the
+volume ladder is frozen at this scale either way (§ "The float32 cliff") — but do not read the
+volume column as "how much arena there is" when comparing rungs 1 and 2. Prism COUNT is the
+collider budget and the thing a player destroys.
 
 ### 3 · The Cage — `SpawnableRibcage` (the kept arena)
 
@@ -264,23 +300,26 @@ visible.
 ### The second dial: GAP
 
 `LengthScale` answers *how big is this place*. **`GapScale` answers *how much of it is mass*** — it
-multiplies the ACROSS-grain step alone, so a pane's ribs (or a sheet's) sit G times further apart
-while each rib stays a continuous bar. It is the one dial that moves a prism count, and only ever
-down: rib count falls by G. Rungs 1 and 2 run **G = 3**; 3 and 4 run 1.
+multiplies the ACROSS-grain step alone, so a pane's ribs sit G times further apart while each rib
+stays a continuous bar. It is the one dial that moves a prism count, and only ever down: rib count
+falls by G. Only the **Panes** spends it (**G = 3**); the other three run 1.
 
-**The two dials are provably orthogonal, and the control is exact.** Setting `GapScaleI1/I2` back
-to 1 and re-measuring reproduces the pre-change counts **to the prism** — 11,021 and 13,738, the
-numbers those arenas had at 2× — which says two things at once: the 6× `LengthScale` moved
-**zero** prisms (it really is a similarity), and the whole ~60% reduction is attributable to the
-gap dial alone. Nothing else in either generator changed a count.
+**The two dials are provably orthogonal, and the control is exact.** Setting `GapScaleI1` back to 1
+and re-measuring reproduces the Panes' pre-change count **to the prism** — 11,021, the number that
+arena had at 2× — which says two things at once: the 6× `LengthScale` moved **zero** prisms (it
+really is a similarity), and the whole ~54% reduction is attributable to the gap dial alone.
+Nothing else in that generator changed a count.
 
-**A gap scale above 1 is only definable for an arena whose across-grain density is a STEP.** The
-Panes and the Swell sample ribs at a spacing, so tripling it is one constant. The **Cage has no
-such step at all** — its density is a rib/hoop COUNT on a sphere compounded inward — so a gap scale
-authored for it would be silently INERT, which is why `SpawnableRibcage.AssertNoGapScale` says so
-loudly instead of leaving a comment in a file nobody edits when they change the table. The
-Twistbands *do* have a step and carry the dial at 1: their deck is a continuous plated road, and
-opening its lanes is a lattice the sword rattles through rather than a sparser road.
+**A gap scale above 1 is only definable for an arena whose across-grain density is a STEP, and only
+WANTED where the surface is a set of BARS rather than a road.** The Panes samples ribs at a
+spacing, so tripling it is one constant. The **Cage has no such step at all** — its density is a
+rib/hoop COUNT on a sphere compounded inward — so a gap scale authored for it would be silently
+INERT, which is why `SpawnableRibcage.AssertNoGapScale` says so loudly instead of leaving a comment
+in a file nobody edits when they change the table. The **Swell and the Twistbands both HAVE a step
+and both carry the dial at 1**, for one reason: each lays a continuous plated deck a blade is held
+against, so opening its lanes up is not "sparser", it is a lattice the sword rattles through — a
+different arena, not a lighter one. *Rung 2 spent that dial once, and the answer was to re-author
+the arena instead.*
 
 The **spawn ring and membrane are not pure scales of the arena either**, for a reason worth
 carrying: at the 2× pass the MEMBRANE did not scale, so `576 × 2` would have put players 48 units
@@ -293,7 +332,7 @@ between the scaled and unscaled halves are what has to be re-derived by hand.*
 
 `Cell.liveVolumeTotal` is a **float32 running accumulator**, so its resolution is the ulp at the
 value it holds. Scaling an arena 6× makes every prism **216×**, and rungs 1 and 2 reach baselines
-of **345M** and **175M**, where float32's ulp is **32** and **16** — against a Rhino trail prism's
+of **345M** and **898M**, where float32's ulp is **32** and **64** — against a Rhino trail prism's
 whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5). Adding one is a no-op: round-to-nearest hands
 back the same total. **So on the two open arenas the cell stays in Calm for the whole match, no
 matter how much trail is laid.**
@@ -389,7 +428,7 @@ Cell.AssignConfig                                     [Cell.cs]
 ```
 
 Each intensity needs its OWN `CellConfigDataSO` because `PhaseThresholds` must ride its own
-baseline — and the spread is now enormous: the arenas run ~4.6k…16.4k prisms and **23M…345M**
+baseline — and the spread is now enormous: the arenas run ~4.6k…16.4k prisms and **23M…898M**
 volume (rungs 1 and 2 are 6× the authored radius, so each of their prisms is 216× in volume), so
 one shared threshold block would put three of the four cells in the wrong phase from frame one. It
 is also where each rung's `MembranePrefab` lives, which is how intensities 1 and 2 get their
@@ -399,14 +438,16 @@ is also where each rung's `MembranePrefab` lives, which is how intensities 1 and
 assertion used to stand here as a proxy for "intensity reads as more to destroy"; it was retired
 when the destruction target became per-intensity, because raw count then says nothing about how
 long a match runs. What `cleave_budget` asserts in its place is the thing that actually has to
-hold: **every rung's arena holds 4×–12× its own target in hostile mass** (measured 5.6×–7.4×), so
+hold: **every rung's arena holds 4×–12× its own target in hostile mass** (measured 7.4×–9.3×), so
 a domain can reach its target off the arena alone without the arena being mostly scenery.
 
 ## Collider budget
 
-One box collider per prism, so the arena *is* the collider count: **5,107 / 4,587 / 14,731 /
+One box collider per prism, so the arena *is* the collider count: **5,107 / 4,607 / 14,731 /
 16,423**, plus nothing else (no fauna, no flora in this cell). Tripling the rib spacing took the
-two open arenas down by ~60% each; the two dense ones are untouched.
+Panes down by ~54%, and rung 2 was re-authored to the same order (4,607 against the 4,587 the
+sheets held, deliberately — the brief was the same mass in the same ball, concentrated); the two
+dense arenas are untouched.
 
 **The whole ladder got lighter at the top**: the heaviest arena was 20,153 prisms and is now 16,423,
 an **18.5% cut** to the worst case. `cleave_budget` asserts the heaviest arena never exceeds the
@@ -474,7 +515,7 @@ at a fixed point in the race. A lead change after the first milestone posts `Cle
 
 The two rung situations are `CleaveQuarterCut` / `CleaveHalfCut` — renamed from `…QuarterPeeled` /
 `…HalfPeeled` with this branch, because "peeled" described ONE of the four arenas (you do not peel
-a wave sheet). All three renames of these two values have been free for the same reason: no
+a wide wavy road). All three renames of these two values have been free for the same reason: no
 `GameToastConfigSO` authors them yet, so nothing serialized points at any old name. Toast copy is
 still unauthored, so **right now the shake IS the milestone feedback**.
 
@@ -530,33 +571,35 @@ a preference. See above.
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.cleavePrismTargetByIntensity` — **500 / 500 / 2000 / 2000**, with
+(`EndConditionOverridesSO.cleavePrismTargetByIntensity` — **400 / 400 / 1500 / 1500**, with
 `cleavePrismTarget` as the scalar fallback for a rung authored 0) — the number of hostile prisms a
 domain must DESTROY to win. The field was `ribcagePrismTarget` until this branch; both it and its
 Build twin were renamed with the mode, and both gained a per-intensity twin.
 
 **Why it is per-intensity:** rungs 1 and 2 are vast open arenas holding about a third of the mass
-of 3 and 4, so a shared 2,000 would make the two EASIEST rungs the longest matches in the mode —
-the exact inversion the intensity ladder is supposed to express. At 500/500/2000/2000 every rung
-asks for the same *fraction* of its own arena, which `cleave_budget` check 1 asserts as a band
+of 3 and 4, so a shared target would make the two EASIEST rungs the longest matches in the mode —
+the exact inversion the intensity ladder is supposed to express. At 400/400/1500/1500 every rung
+asks for a comparable *fraction* of its own arena, which `cleave_budget` check 1 asserts as a band
 rather than leaving to inspection.
 
 `CleavePrismTurnMonitor` resolves it SERVER-side and replicates the result through
 `_netPrismTarget`, so a client receives the number rather than deriving it from an intensity it may
 not have yet — the distinction `Docs/ECOSYSTEM.md §28` records for `IntensityWise`.
 
-> **⚠ Pacing flag — none of this has been playtested.** The old 2,000 was set when every bar was a
-> two-hit shielded prism in a 14,977-prism cage; the bars are one-hit now, three of the four arenas
-> are new geometry nobody has flown, and two of them have been scaled up twice. 500 is **13%** of
-> the Panes' 5,107 prisms and 2,000 is **12%** of the Twistbands' 16,423 — comparable fractions by
-> construction, which is what the per-intensity split bought, but the absolute match LENGTH is
-> still a guess. It is four editor fields, and the milestones follow whichever applies.
+> **⚠ Pacing flag — none of this has been playtested.** The original 2,000 was set when every bar
+> was a two-hit shielded prism in a 14,977-prism cage; the bars are one-hit now, three of the four
+> arenas are new geometry nobody has flown, and rung 2 has been re-authored outright. 400 is
+> **8%** of the Panes' 5,107 prisms and 1,500 is **9%** of the Twistbands' 16,423 — comparable
+> fractions by construction, which is what the per-intensity split bought, but the absolute match
+> LENGTH is still a guess. It is four editor fields, and the milestones follow whichever applies.
 
-Comeback rate is `0.01`, so a quarter-of-target deficit buys **1.25** element levels at the 500
-target (5 at 2,000) — still over the one-whole-level floor the arcade recipe requires, but only
-just. ⚠ A further cut to the 500 rungs must raise the rate with it: `bonusLevels = deficit × rate`,
-so the rate is a function of the TARGET, and that trap has now been recorded by Dog Fight, The
-Bends, Wildlife Liberation and Tollway.
+Comeback rate is **`0.0125`**, so a quarter-of-target deficit buys **1.25** element levels at the
+400 target (4.69 at 1,500) — over the one-whole-level floor the arcade recipe requires, and the
+rate was raised from `0.01` in the same edit that cut 500 → 400 precisely because it was sitting
+exactly ON that floor. ⚠ Any further cut must raise the rate with it: `bonusLevels = deficit ×
+rate`, so the rate is a function of the TARGET. That trap has now been recorded by Dog Fight, The
+Bends, Wildlife Liberation and Tollway, and **`author_cleave_assets.py` now FAILS the build on
+it** rather than leaving it to this paragraph.
 
 ## The fauna removal (2026-08)
 
@@ -655,19 +698,26 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
    `aiCageRadiusOverride`, the scene was not re-authored), and the **Cell shows four configs with
    Cell Type Choice = Intensity Wise**.
 2. **Intensity picks a DIFFERENT PLACE.** Launch each of 1–4 in turn. You should get angled slabs,
-   then corrugated sheets, then three nested shells, then twisted ribbons — four arenas that look
+   then wide wavy roads, then three nested shells, then twisted ribbons — four arenas that look
    nothing like each other. *This is the headline check*: if two intensities look alike, the Cell is
    not on `IntensityWise` or the configs are listed out of order.
 3. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should report
-   **5,107 / 4,587 / 14,731 / 16,423** prisms. If it disagrees, the harness and the editor have
+   **5,107 / 4,607 / 14,731 / 16,423** prisms. If it disagrees, the harness and the editor have
    drifted — re-run the harness and investigate before shipping.
 4. **Panes — the mullions.** Find a pane-pair intersection: it should be a straight, visibly denser
    beam. Flying one end to the other should be the best single cut in the arena.
-5. **Swell — the grain is legible.** From a distance the sheets should read as gold/jade banding.
-   Fly a trough with the blade laid flat, then fly the same sheet across the grain, and confirm the
-   first is worth several times the second.
-6. **Swell — crests punish.** Clipping a ridge should full-stop you, debuff all four elements for
-   4 s and reset boost. Troughs should be clean.
+5. **Swell — the road is legible, and holdable.** From a distance each ribbon should read as a
+   carriageway: a Gold crown down the middle, Blue shoulders, Jade verges. Find one, put the blade
+   on the deck and FOLLOW it through a full lap — the cut should stay unbroken through the weave
+   and the climbs, and that is the whole rung. If contact keeps dropping, the plate overlap or the
+   arc-length walk is wrong, not the pilot.
+6. **Swell — running wide on a bend punishes, and the racing line never does.** Hold the crown
+   through the tighter corners: nothing should bite. Drift out to the OUTSIDE verge on one of those
+   same corners and you should full-stop, debuff all four elements for 4 s and lose boost. Danger
+   on an inside verge, or on a straight, means `BendAt`'s sign or threshold is wrong.
+6a. **Swell — no fold-through.** Fly the INSIDE verge of the tightest bend on each of the five
+   ribbons. The deck must stay a single surface; a road doubling back over itself there means a
+   half-width got authored past its spine's narrowest radius and the build-time guard did not fire.
 7. **Cage — unchanged, full stop.** Three rinds at 720 / 590 / 460, triangular openings, tightening
    inward, each inner rind tilted onto its own axis, no free radial corridor. Rungs 3 and 4 were
    NOT touched by the 3× pass, so anything that differs from the previous build here is a
@@ -697,11 +747,11 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
     from laying trail. Shatter one of your OWN team's trail prisms — the sum must not move; a
     rival's trail must.
 17. **Milestones follow the rung's own target.** At intensity 4 the leading domain should shake
-    hard for ~1.2 s at **500** destroyed and again at **1,000**; at intensity **1** those rungs are
-    **125** and **250**, because the milestones are fractions of whichever target applies.
-18. **Win + scoreboard.** First domain to its rung's target (**500** at 1–2, **2,000** at 3–4) ends
+    hard for ~1.2 s at **375** destroyed and again at **750**; at intensity **1** those rungs are
+    **100** and **200**, because the milestones are fractions of whichever target applies.
+18. **Win + scoreboard.** First domain to its rung's target (**400** at 1–2, **1,500** at 3–4) ends
     the turn; winners show a time, losers "N Prisms Left". Confirm the goal row counts to the right
-    number on intensity 1 — if it says 2,000 there, the per-intensity target did not replicate.
+    number on intensity 1 — if it says 1,500 there, the per-intensity target did not replicate.
     Replay (scene reload) resets the milestones.
 19. **Pacing.** Time each intensity end to end — see the pacing flag. Most likely thing to need a
     change, and the two open arenas are the least known quantity in the mode.
@@ -744,19 +794,26 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 ## Known limitations / follow-ups
 
 - **Nothing has been run in the editor.** The arenas are measured, not seen. Every claim about how
-  they LOOK — that the mullions read as beams, that the swell's banding is legible at range, that
-  the twistbands' roll is a manageable ask rather than an infuriating one — is a design intention
-  awaiting a playtest.
-- **The 500 / 500 / 2,000 / 2,000 targets are unmeasured for all four arenas** — see the pacing
+  they LOOK — that the mullions read as beams, that a Swell ribbon reads as a carriageway at
+  range, that the twistbands' roll is a manageable ask rather than an infuriating one — is a design
+  intention awaiting a playtest. **Intensity 1 is the one exception: it has been flown and
+  approved**, which is why it was not touched in the pass that re-authored rung 2.
+- **The 400 / 400 / 1,500 / 1,500 targets are unmeasured for all four arenas** — see the pacing
   flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
   improvement over one shared number, but nothing here says what the resulting match LENGTH is.
-- **⚠ Intensities 1 and 2 are the least-known thing in the mode.** They were scaled up twice
-  (2× then 3× again) and had their rib spacing tripled, so almost nothing about how they read has
-  been seen: a 4,320-unit-wide arena with ribs three times further apart may be open and dramatic
-  or may be sparse and unreadable. `SliceArenaGeometry.LengthScaleI1/I2` and `GapScaleI1/I2` are
-  the two dials, and re-running the harness plus `cleave_budget.py` is the whole re-tune loop.
+- **⚠ Intensity 2 is the least-known thing in the mode.** It is brand-new geometry at a scale
+  nobody has flown, and unlike its three siblings it is not a variation on anything that has been:
+  five closed meandering roads is a different proposition from a stack of surfaces, and whether a
+  pilot can FIND one from the spawn ring at 3,150 units out is the first thing to check. The dials
+  are the ribbon table (`RibbonSpecs` — count, radii, half-widths and harmonics) and
+  `PlateStepAlong`/`PlateStepAcross`; re-running the harness plus `cleave_budget.py` is the whole
+  re-tune loop.
+- **The bank ceiling is authored, not enforced.** Every ribbon's `rise x harmonic` is held under
+  ~0.4 of its radius so the deck banks at most ~22°, which is what keeps this rung from quietly
+  becoming a second Twistbands. Nothing asserts it — a bigger `RiseAmp` or harmonic will simply
+  make the road roll, and the only signal is a playtest that says it stopped being a joy.
 - **The volume phase ladder is frozen on intensities 1 and 2** — float32 cannot register a trail
-  prism against a 345M baseline. Harmless while the cell grows nothing, and gated by
+  prism against a 345M/898M baseline. Harmless while the cell grows nothing, and gated by
   `cleave_budget` check 7 so it fails loudly the day it stops being harmless. See "Stated cost"
   above.
 - **Toast copy is unauthored.** The three `GameToastSituation` values exist but no

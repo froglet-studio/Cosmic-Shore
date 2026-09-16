@@ -4,45 +4,58 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "The Swell" - Cleave's intensity-2 arena: seven great CORRUGATED SHEETS, stacked through the
-    /// cell at six different angles, each rolling on its own wavelength. Where the panes
-    /// (intensity 1) teach that a sword rewards committing to a line, the swell teaches the thing
-    /// that makes that interesting - <b>a surface has a GRAIN, and the line only pays if you read
-    /// it.</b>
+    /// "The Swell" - Cleave's intensity-2 arena: five great WAVY RIBBONS, each a wide plated road
+    /// meandering a closed circuit through the cell, threaded through one another at five different
+    /// angles.
     ///
-    /// Every sheet ripples along one in-plane direction (<c>Across</c>) and is therefore smooth
-    /// along the other (<c>Along</c>). Fly a trough and the deck stays level under the blade for
-    /// its whole length - the longest uninterrupted cut in the mode. Fly the same sheet ninety
-    /// degrees off and you are climbing and dropping through every ridge, clipping a handful of
-    /// prisms per crest and nothing in between. Same sheet, same speed, several times the score:
-    /// the difference is entirely whether the pilot found the grain.
+    /// The panes (intensity 1) are flat slabs at fixed angles and teach that a sword rewards
+    /// committing to a LINE. The swell holds the same mass in the same ball and teaches the other
+    /// half of that: <b>the line does not have to be straight.</b> A ribbon is one continuous
+    /// surface that rolls left and right and rises and falls for its whole lap, so a pilot who
+    /// finds one can hold the blade down and simply FOLLOW it - the longest uninterrupted cut in
+    /// the mode, and the one that asks for flying rather than for aim.
     ///
-    /// Four things make that legible instead of merely true:
+    /// Four properties are load-bearing:
     ///
-    ///   • <b>The grain is PAINTED.</b> A prism's domain is chosen by where it sits on the wave -
-    ///     Gold on the crests, Jade in the troughs, Blue on the flanks - so the corrugation reads
-    ///     as colour banding from right across the arena, before you are close enough to see the
+    ///   • <b>The road is WIDE, and the width is forgiveness.</b> Half-widths run
+    ///     <see cref="RibbonSpecs"/> 54..84 authored units - 324 to 504 in world, which at the
+    ///     shipped plate step lays 7 or 9 lanes and so covers 744 to 948 units of deck. The
+    ///     meander is what makes the cut interesting; the width is what
+    ///     stops a small steering error ending it. That is the whole reason this arena is ribbons
+    ///     rather than the corrugated sheets it replaced: sheets put the mass where a blade crosses
+    ///     it, ribbons put the mass where a blade can STAY on it.
+    ///   • <b>The deck is solid, not a lattice.</b> Plates overlap in both directions
+    ///     (<see cref="PlateStepAlong"/> under <see cref="PlateLength"/>,
+    ///     <see cref="PlateStepAcross"/> under <see cref="PlateWidth"/>) - the Twistbands' rule,
+    ///     for the Twistbands' reason: a sparse deck is something the sword rattles through rather
+    ///     than something it cuts.
+    ///   • <b>The road is PAINTED as a road.</b> A crown lane in Gold down the middle, shoulders in
+    ///     Blue, verges in Jade, so the ribbon reads as a carriageway from right across the arena
+    ///     and a pilot can see where the middle of it is before they are close enough to see the
     ///     relief. Colour carries information here; it is not decoration. (Scoring does not care:
     ///     every non-roster prism is hostile to everyone, in any colour.)
-    ///   • <b>The crests are the traps.</b> The only <see cref="PrismKind.Danger"/> prisms in this
-    ///     arena sit on the ridge lines. So the grain is worth reading TWICE - the trough is both
-    ///     the richest cut and the safe one, and a pilot carving across the grain is the one who
-    ///     keeps catching the punishment. It is a small trap budget on purpose
-    ///     (<see cref="DangerEveryNthCrestPrism"/> of the prisms that are already near a peak).
-    ///   • <b>Sheets have an UNDERSIDE.</b> A zero-thickness surface is invisible edge-on and a
-    ///     blade can pass clean through the plane of it without touching anything. A half-density
-    ///     reef layer hangs <see cref="ReefDrop"/> below each sheet with its planks turned
-    ///     CROSSWISE, so the sheet has body, reads from any angle, and pays a second time to a cut
-    ///     that goes deep enough.
-    ///   • <b>Sheets FRAY rather than ending.</b> The void threshold ramps up with distance from a
-    ///     sheet's centre (<see cref="EdgeFrayStart"/>), so a sheet dissolves into open water
-    ///     instead of stopping at a hard circular rim. The panes are framed slabs and say so; the
-    ///     swell is weather.
+    ///   • <b>Running wide on a bend bites.</b> The only <see cref="PrismKind.Danger"/> prisms in
+    ///     this arena sit on the OUTER verge of the tighter corners
+    ///     (<see cref="CurveBiteRatio"/>) - the racing line is safe and the mass you reach by
+    ///     drifting off it on a turn is the mass that punishes you. It is a small trap budget on
+    ///     purpose: one lane, on the outside only, and only where the ribbon is actually turning.
     ///
-    /// The working disc is shrunk by the wave amplitude (<see cref="Sheet.Rho"/>) rather than
-    /// clipped afterwards: a displaced point must still be inside
-    /// <see cref="SliceArenaGeometry.OuterRadius"/>, and solving that up front means no prism is
-    /// ever generated and thrown away.
+    /// <b>The deck never rolls about its own direction of travel.</b> The width direction is
+    /// <c>cross(tangent, loop axis)</c>, so the surface banks with the climb and nothing else -
+    /// deliberately, because holding a blade against a surface that rotates under it is the
+    /// TWISTBANDS' lesson (intensity 4) and this rung is the one that should be a joy rather than a
+    /// test. Every ribbon's climb is authored so the bank stays under ~22 degrees.
+    ///
+    /// <b>A ribbon's half-width is bounded by its own narrowest radius</b> (<see cref="Ribbon"/>'s
+    /// build guard): a road wider than about 0.6 of the closest the spine comes to its axis folds
+    /// through itself at the inside of a bend, which is invisible in a screenshot and unflyable in
+    /// the arena.
+    ///
+    /// Stations are walked by ARC LENGTH, not by parameter - a meandering spine covers very
+    /// different distance per radian at the apex of a bend than on a straight, so stepping <c>u</c>
+    /// uniformly would bunch the deck up in the corners and stretch it on the straights. The count
+    /// therefore stays a ratio of two lengths (spine length / plate step), which is what keeps
+    /// prism counts invariant under <see cref="SliceArenaGeometry.LengthScaleI2"/>.
     ///
     /// Nothing is <see cref="PrismKind.Shielded"/> or <see cref="PrismKind.SuperShielded"/> - see
     /// CLEAVE.md for why (an AI can never energize its blade, so unbreakable mass is mass an
@@ -54,254 +67,350 @@ namespace CosmicShore.Gameplay
         const float R = SliceArenaGeometry.OuterRadiusI2;
 
         /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry</c>. Every LENGTH here
-        /// is multiplied by it and the noise frequency divided by it. The wave terms in
-        /// <see cref="SheetSpecs"/> are lengths too, and are scaled in <see cref="Sheet"/>'s
+        /// is multiplied by it and the noise frequency divided by it. A ribbon's radius, half-width
+        /// and wave amplitudes are lengths too, and are scaled inside <see cref="RibbonSpec"/>'s
         /// constructor - the one place an authored number becomes a world distance - so the table
-        /// keeps the readable wavelengths it was tuned with.</summary>
+        /// keeps the readable numbers it was tuned with.</summary>
         const float S = SliceArenaGeometry.LengthScaleI2;
 
-        /// <summary>Extra ACROSS-grain spacing, and the ONLY dial here that moves a prism count. It
-        /// multiplies <see cref="RibStep"/> alone, so the corrugation is SAMPLED G times more
-        /// coarsely: a third as many ridge lines, each still a continuous run of overlapping
-        /// planks. The wave itself is untouched - the grain a pilot reads is the same grain.</summary>
+        /// <summary>Extra ACROSS-ribbon plate spacing. Authored at 1 for this rung, for the
+        /// Twistbands' reason: the deck is a continuous plated ROAD a blade is held against, so
+        /// opening its lanes up is not "sparser", it is a lattice the sword rattles through. Kept
+        /// as a named dial so the table reads the same on all four rungs.</summary>
         const float G = SliceArenaGeometry.GapScaleI2;
 
-        // ── The deck ─────────────────────────────────────────────────────────
-        /// <summary>Spacing ALONG a ridge - under <see cref="PlankLength"/>, so a trough line is
-        /// continuous mass rather than a dotted line.</summary>
-        const float PlankStep = 12f * S;
-        const float PlankLength = 16f * S;
-        /// <summary>Spacing ACROSS the grain, i.e. ridge to ridge sampling.</summary>
-        const float RibStep = 15f * S * G;
+        // -- The deck --------------------------------------------------------
+        /// <summary>Spacing ALONG the spine, measured in ARC LENGTH (see the class summary).</summary>
+        const float PlateStepAlong = 17f * S;
+        const float PlateLength = 22f * S;      // long axis, along the direction of travel
+        const float PlateStepAcross = 17f * S * G;
+        const float PlateWidth = 22f * S;       // cross axis, across the road
+        const float PlateThickness = 2.6f * S;
 
-        /// <summary>The reef: a half-density layer this far below the deck along its own normal,
-        /// laid crosswise.</summary>
-        const float ReefDrop = 13f * S;
+        /// <summary>The keel: half-density plates this far below the deck along its own normal,
+        /// laid crosswise, so the ribbon has body edge-on and a deep cut pays twice.</summary>
+        const float KeelDrop = 12f * S;
+        const float KeelPlate = 20f * S;
+        const float KeelThickness = 2.4f * S;
 
-        // ── Fraying ──────────────────────────────────────────────────────────
-        const float VoidThreshold = 0.22f;
-        const float VoidFreq = 0.014f / S;
-        /// <summary>Fraction of a sheet's radius at which the edge fray begins. Inside this the
-        /// sheet is solid weather; outside it the void threshold climbs to 1 at the rim.</summary>
-        const float EdgeFrayStart = 0.78f;
+        // -- Weathering ------------------------------------------------------
+        /// <summary>Light only. The deck's whole job is to be continuous enough to hold a blade
+        /// against, so this is a fraction of the panes' cull rather than a match for it.</summary>
+        const float VoidThreshold = 0.10f;
+        const float VoidFreq = 0.011f / S;
 
-        // ── Traps ────────────────────────────────────────────────────────────
-        /// <summary>|sin| above which a prism counts as "on the ridge" for trap purposes.</summary>
-        const float CrestBand = 0.93f;
-        const int DangerEveryNthCrestPrism = 5;
-        /// <summary>|sin| above/below which a prism is painted as crest / trough.</summary>
-        const float PaintBand = 0.55f;
+        // -- Traps -----------------------------------------------------------
+        /// <summary>Fractions of a road's half-width at which the crown becomes shoulder and the
+        /// shoulder becomes verge. Authored as fractions so all five ribbons wear the same road
+        /// whatever their width and however many lanes that works out to.</summary>
+        const float CrownFraction = 0.34f;
+        const float ShoulderFraction = 0.70f;
+
+        /// <summary>Dimensionless bend tightness (curvature x the ribbon's own radius, so it is
+        /// invariant under <see cref="S"/>) above which the outer verge bites. A perfect circle
+        /// sits at exactly 1, so this picks out the corners the meander actually tightens.</summary>
+        const float CurveBiteRatio = 1.35f;
+
+        /// <summary>Arc-length samples used to measure a spine before walking it. High enough that
+        /// the measured length is exact to well under a plate, cheap because it runs five times per
+        /// build.</summary>
+        const int ArcSamples = 2048;
+
+        /// <summary>A road wider than this fraction of its spine's narrowest radius folds through
+        /// itself at the inside of a bend. Authoring guard only - see the class summary.</summary>
+        const float MaxWidthOfNarrowestRadius = 0.6f;
 
         /// <summary>
-        /// One sheet. The normal is aimed exactly as a pane's is; <c>GrainDeg</c> then spins the
-        /// RIDGE direction inside the plane. <c>Wavelength</c>/<c>Amplitude</c> are the primary
-        /// corrugation (across the grain); <c>SwellLength</c>/<c>SwellAmp</c> are a weaker second
-        /// wave ALONG the ridges, which is what stops the sheet reading as machined sheet metal
-        /// and makes the troughs themselves rise and fall as you fly them.
+        /// One ribbon. <c>TiltDeg</c>/<c>AzimuthDeg</c> aim the loop's axis exactly as a pane's
+        /// normal is aimed. <c>Sway</c> is the primary meander - an in-plane wobble of the spine's
+        /// radius, which is what makes the road weave left and right and is where every corner
+        /// comes from. <c>Rise</c> is a weaker out-of-plane wave that lifts and drops the road;
+        /// it is deliberately the SECONDARY term, because out-of-plane climb is what banks the
+        /// deck and this rung is not the one that asks a pilot to track a roll.
         /// </summary>
-        readonly struct SheetSpec
+        readonly struct RibbonSpec
         {
-            public readonly float TiltDeg, AzimuthDeg, OffsetFraction, GrainDeg;
-            public readonly float Wavelength, Amplitude, SwellLength, SwellAmp, PhaseDeg;
+            public readonly float TiltDeg, AzimuthDeg;
+            public readonly float Radius, HalfWidth;
+            public readonly float SwayAmp, SwayPhaseDeg, RiseAmp, RisePhaseDeg;
+            public readonly int SwayHarmonic, RiseHarmonic;
 
-            public SheetSpec(float tilt, float azimuth, float offset, float grain,
-                             float wavelength, float amplitude,
-                             float swellLength, float swellAmp, float phase)
+            public RibbonSpec(float tilt, float azimuth, float radius, float halfWidth,
+                              float swayAmp, int swayHarmonic, float swayPhase,
+                              float riseAmp, int riseHarmonic, float risePhase)
             {
-                TiltDeg = tilt; AzimuthDeg = azimuth; OffsetFraction = offset; GrainDeg = grain;
-                Wavelength = wavelength; Amplitude = amplitude;
-                SwellLength = swellLength; SwellAmp = swellAmp; PhaseDeg = phase;
+                TiltDeg = tilt; AzimuthDeg = azimuth;
+                // Scaled HERE, at the single point the authored literals below become world
+                // distances, so every consumer - the deck, the keel and the envelope guard alike -
+                // gets the scaled value without each having to remember to ask.
+                Radius = radius * S; HalfWidth = halfWidth * S;
+                SwayAmp = swayAmp * S; RiseAmp = riseAmp * S;
+                SwayHarmonic = swayHarmonic; RiseHarmonic = riseHarmonic;
+                SwayPhaseDeg = swayPhase; RisePhaseDeg = risePhase;
             }
+
+            /// <summary>The closest the spine comes to its own loop axis.</summary>
+            public float NarrowestRadius => Radius - SwayAmp;
+
+            /// <summary>Everything this ribbon can reach from the cell centre, keel included. The
+            /// plate's own half-extent is added by the caller.</summary>
+            public float Reach =>
+                Mathf.Sqrt((Radius + SwayAmp) * (Radius + SwayAmp) + RiseAmp * RiseAmp)
+                + HalfWidth + KeelDrop;
         }
 
         /// <summary>
-        /// Seven sheets, authored rather than generated for the same reason the panes are: which
-        /// approach is cheap and where the arena is thick is a gameplay surface. The wavelengths
-        /// deliberately span 3x (78 to 240 in authored units, so 156 to 480 in world at the
-        /// shipped LengthScale of 2) - a short-wave sheet is a washboard whose troughs are
-        /// barely wider than the vessel, a long-wave sheet is a pair of enormous valleys you can
-        /// boost down, and having both in one arena is what makes "read the grain" a skill rather
-        /// than a habit.
+        /// Five ribbons, authored rather than generated for the same reason the panes are: where
+        /// the arena is thick, and which approach finds a road broadside rather than end-on, is a
+        /// gameplay surface. Radii climb 140..242 (authored) so the roads interleave at different
+        /// scales instead of nesting, and the harmonics are all different so no two of them wave
+        /// in step - what a pilot is reading, once they are on one, is which road they are on.
+        ///
+        /// Half-widths fall as the radius rises because the ENVELOPE binds out there, not the
+        /// fold-through guard: the outermost ribbon has ~90 authored units of room between its
+        /// spine and <see cref="SliceArenaGeometry.OuterRadiusI2"/> and spends it on width, keel
+        /// and plate extent.
         /// </summary>
-        static readonly SheetSpec[] SheetSpecs =
+        static readonly RibbonSpec[] RibbonSpecs =
         {
-            //             tilt  azim   offset grain  wavelen amp  swellLen swellAmp phase
-            new SheetSpec(   0f,   0f,  0.00f,   0f,    240f,  54f,   430f,  20f,    0f),
-            new SheetSpec(  37f,  63f, -0.31f,  64f,    150f,  40f,   360f,  16f,   70f),
-            new SheetSpec(  72f, 141f,  0.26f,  18f,     96f,  27f,   300f,  13f,  145f),
-            new SheetSpec(  53f, 218f, -0.18f,  81f,    186f,  46f,   410f,  18f,  220f),
-            new SheetSpec(  88f, 289f,  0.35f,  41f,     78f,  22f,   260f,  11f,  300f),
-            new SheetSpec(  26f, 338f, -0.40f,  27f,    124f,  33f,   330f,  15f,   35f),
-            new SheetSpec(  61f,  19f,  0.14f,  73f,    168f,  43f,   380f,  17f,  255f),
+            //               tilt  azim  radius halfW  sway  k  phase  rise  k  phase
+            new RibbonSpec(    0f,   0f,  140f,   64f,   26f, 2,    0f,  26f, 1,    0f),
+            new RibbonSpec(   38f,  72f,  170f,   76f,   30f, 4,   55f,  34f, 2,  120f),
+            new RibbonSpec(   66f, 151f,  190f,   84f,   34f, 3,  140f,  38f, 2,  200f),
+            new RibbonSpec(   49f, 228f,  215f,   72f,   28f, 2,   25f,  30f, 1,   60f),
+            new RibbonSpec(   81f, 305f,  242f,   54f,   20f, 4,   95f,  22f, 2,  280f),
         };
 
         protected override int DefaultSeed => 392;
 
         protected override int BuildParameterHash() => System.HashCode.Combine(
-            nameof(SpawnableSwell), R, PlankStep, PlankLength, RibStep, ReefDrop,
-            System.HashCode.Combine(VoidThreshold, VoidFreq, EdgeFrayStart, CrestBand,
-                                    DangerEveryNthCrestPrism, PaintBand),
-            SheetHash());
+            nameof(SpawnableSwell), R, PlateStepAlong, PlateLength, PlateStepAcross,
+            System.HashCode.Combine(PlateWidth, PlateThickness, KeelDrop, KeelPlate,
+                                    VoidThreshold, VoidFreq, CurveBiteRatio, CrownFraction),
+            RibbonHash());
 
-        static int SheetHash()
+        static int RibbonHash()
         {
             int h = 17;
-            foreach (var s in SheetSpecs)
+            foreach (var s in RibbonSpecs)
                 h = h * 31 + System.HashCode.Combine(
-                    System.HashCode.Combine(s.TiltDeg, s.AzimuthDeg, s.OffsetFraction, s.GrainDeg),
-                    s.Wavelength, s.Amplitude, s.SwellLength, s.SwellAmp, s.PhaseDeg);
+                    System.HashCode.Combine(s.TiltDeg, s.AzimuthDeg, s.Radius, s.HalfWidth),
+                    s.SwayAmp, s.SwayHarmonic, s.SwayPhaseDeg,
+                    System.HashCode.Combine(s.RiseAmp, s.RiseHarmonic, s.RisePhaseDeg));
             return h;
         }
 
-        protected override int LayCapacity => 5800;
+        protected override int LayCapacity => 6000;
 
-        /// <summary>A sheet's resolved frame plus its wave terms. <c>Along</c> is the direction
-        /// ridges RUN (and therefore the flyable line); <c>Across</c> is the direction the
-        /// corrugation varies along.</summary>
-        readonly struct Sheet
+        /// <summary>
+        /// A ribbon's resolved frame. <c>E1</c>/<c>E2</c> span the loop plane and <c>E3</c> is its
+        /// axis. The spine is a wavy ring - radius modulated in-plane by the sway, lifted out of
+        /// plane by the rise - and every derivative below is the EXACT partial rather than a finite
+        /// difference, so the plate orientations are square to the road at any step size.
+        /// </summary>
+        readonly struct Ribbon
         {
-            public readonly Vector3 Normal, Along, Across, Centre;
-            public readonly float Rho;                       // usable in-plane radius
-            public readonly float K, Amp, KSwell, SwellAmp, Phase;
+            public readonly Vector3 E1, E2, E3;
+            public readonly float Radius, HalfWidth, SwayAmp, RiseAmp, SwayPhase, RisePhase;
+            public readonly int SwayK, RiseK;
 
-            public Sheet(in SheetSpec spec)
+            public Ribbon(Vector3 e1, Vector3 e2, Vector3 e3, in RibbonSpec spec)
             {
-                var orientation = Quaternion.AngleAxis(spec.AzimuthDeg, Vector3.up)
-                                * Quaternion.AngleAxis(spec.TiltDeg, Vector3.forward);
-                Normal = (orientation * Vector3.up).normalized;
-
-                var seedDir = Mathf.Abs(Vector3.Dot(Normal, Vector3.forward)) > 0.95f
-                    ? Vector3.right : Vector3.forward;
-                var e1 = Vector3.Cross(Normal, seedDir).normalized;
-                var e2 = Vector3.Cross(Normal, e1);
-
-                float g = spec.GrainDeg * Mathf.Deg2Rad;
-                Along = (e1 * Mathf.Cos(g) + e2 * Mathf.Sin(g)).normalized;
-                // Cross(Along, Across) == Normal, so (Along, Across, Normal) is right-handed and
-                // the surface normal below comes out on the authored side rather than inverted.
-                Across = Vector3.Cross(Normal, Along);
-
-                float offset = spec.OffsetFraction * R;
-                Centre = Normal * offset;
-
-                // Shrink the working disc by everything the waves can add along the normal, so a
-                // DISPLACED point is still inside the arena. Solving it here beats generating
-                // prisms and rejecting them, and it keeps the offline budget model exact.
-                // The wave terms are AUTHORED lengths, so they take the arena's length scale
-                // here, where they first become world distances. Scaling the amplitudes and the
-                // wavelengths together is what keeps the corrugation a similarity of the surface
-                // that was tuned at SliceArenaGeometry.AuthoredRadius rather than the same
-                // washboard stretched flat across an arena twice the size.
-                float amplitude = spec.Amplitude * S, swellAmp = spec.SwellAmp * S;
-                float reach = Mathf.Abs(offset) + amplitude + swellAmp + ReefDrop;
-                Rho = Mathf.Sqrt(Mathf.Max(1f, R * R - reach * reach));
-
-                K = 2f * Mathf.PI / (spec.Wavelength * S);
-                Amp = amplitude;
-                KSwell = 2f * Mathf.PI / (spec.SwellLength * S);
-                SwellAmp = swellAmp;
-                Phase = spec.PhaseDeg * Mathf.Deg2Rad;
+                E1 = e1; E2 = e2; E3 = e3;
+                Radius = spec.Radius; HalfWidth = spec.HalfWidth;
+                SwayAmp = spec.SwayAmp; RiseAmp = spec.RiseAmp;
+                SwayK = spec.SwayHarmonic; RiseK = spec.RiseHarmonic;
+                SwayPhase = spec.SwayPhaseDeg * Mathf.Deg2Rad;
+                RisePhase = spec.RisePhaseDeg * Mathf.Deg2Rad;
             }
 
-            /// <summary>Signed wave height at (along, across), in [-1, 1] before amplitude.</summary>
-            public float Crest(float across) => Mathf.Sin(K * across + Phase);
+            Vector3 Radial(float u) => E1 * Mathf.Cos(u) + E2 * Mathf.Sin(u);
+            Vector3 Tangential(float u) => E2 * Mathf.Cos(u) - E1 * Mathf.Sin(u);
 
-            public float Height(float along, float across) =>
-                Amp * Crest(across) + SwellAmp * Mathf.Sin(KSwell * along);
+            float Rho(float u) => Radius + SwayAmp * Mathf.Cos(SwayK * u + SwayPhase);
+            float RhoPrime(float u) => -SwayAmp * SwayK * Mathf.Sin(SwayK * u + SwayPhase);
+            float Lift(float u) => RiseAmp * Mathf.Sin(RiseK * u + RisePhase);
+            float LiftPrime(float u) => RiseAmp * RiseK * Mathf.Cos(RiseK * u + RisePhase);
 
-            public Vector3 At(float along, float across) =>
-                Centre + Along * along + Across * across + Normal * Height(along, across);
+            public Vector3 Spine(float u) => Radial(u) * Rho(u) + E3 * Lift(u);
 
-            /// <summary>Exact dP/d(along): the ridge direction, tipped by the secondary swell.</summary>
-            public Vector3 TangentAlong(float along) =>
-                Along + Normal * (SwellAmp * KSwell * Mathf.Cos(KSwell * along));
+            /// <summary>Exact dP/du. Its MAGNITUDE is how much arc length a radian buys here,
+            /// which is what the station walk divides by.</summary>
+            public Vector3 SpineTangent(float u) =>
+                Radial(u) * RhoPrime(u) + Tangential(u) * Rho(u) + E3 * LiftPrime(u);
 
-            /// <summary>Exact dP/d(across): climbs the corrugation.</summary>
-            public Vector3 TangentAcross(float across) =>
-                Across + Normal * (Amp * K * Mathf.Cos(K * across + Phase));
+            /// <summary>The road's across direction. Taking it from the LOOP AXIS rather than from
+            /// a transported frame is what stops the deck rolling about its own travel: the
+            /// surface banks exactly as much as the spine climbs, and never more.</summary>
+            public Vector3 Width(float u) =>
+                Vector3.Cross(SpineTangent(u).normalized, E3).normalized;
 
-            public Vector3 SurfaceNormal(float along, float across) =>
-                Vector3.Cross(TangentAlong(along), TangentAcross(across)).normalized;
+            public Vector3 Normal(float u)
+            {
+                var w = Width(u);
+                return Vector3.Cross(w, SpineTangent(u).normalized).normalized;
+            }
+
+            public Vector3 At(float u, float v) => Spine(u) + Width(u) * v;
         }
 
-        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
-        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
-        /// continuous bar. The Swell states plank lengths of 96 at 6 x, under the prefab's max of 100 today — but its
-        /// jitter reaches 115 and its ribs share the dial, so it opts in with its sibling rather
-        /// than sitting one tuning pass away from a silent clamp.</summary>
+        Ribbon[] _ribbons;
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a SIMILARITY, so
+        /// the plates grow with the spacing and the deck keeps reading as a continuous road. The
+        /// Swell states plates of 132 world units at 6 x, over the shared prefab's serialized
+        /// <c>maxScale</c> of 100 - which clamps PER AXIS inside the setter with no log and no
+        /// return value, so without this the whole road would silently render as 100-unit
+        /// tiles.</summary>
         protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
         {
-            for (int s = 0; s < SheetSpecs.Length; s++)
-                BuildSheet(new Sheet(SheetSpecs[s]), s);
+            BuildRibbons();
+
+            for (int i = 0; i < RibbonSpecs.Length; i++)
+                BuildRoad(RibbonSpecs[i], _ribbons[i], i);
         }
 
-        void BuildSheet(in Sheet sheet, int sheetIndex)
+        void BuildRibbons()
         {
-            int ribs = Mathf.Max(1, Mathf.FloorToInt(sheet.Rho / RibStep));
+            _ribbons = new Ribbon[RibbonSpecs.Length];
 
-            for (int rib = -ribs; rib <= ribs; rib++)
+            for (int i = 0; i < RibbonSpecs.Length; i++)
             {
-                float across = rib * RibStep;
-                float half = Mathf.Sqrt(Mathf.Max(0f, sheet.Rho * sheet.Rho - across * across));
-                if (half < PlankLength) continue;
+                ref readonly RibbonSpec spec = ref RibbonSpecs[i];
 
-                float crest = sheet.Crest(across);
-                var deckDom = crest > PaintBand ? Domains.Gold
-                            : crest < -PaintBand ? Domains.Jade
-                            : Domains.Blue;
-                bool onRidge = Mathf.Abs(crest) > CrestBand;
+                // Authoring guards, not runtime fixes - both failures are invisible in-editor.
+                if (spec.Reach > R)
+                    Debug.LogError($"[Swell] Ribbon {i} reaches r={spec.Reach:F0}, outside the " +
+                                   $"arena envelope {R}. The AI's stations and the player spawn " +
+                                   "ring are both derived from that number - narrow the road or " +
+                                   "pull its radius in.");
+                if (spec.HalfWidth > spec.NarrowestRadius * MaxWidthOfNarrowestRadius)
+                    Debug.LogError($"[Swell] Ribbon {i} is {spec.HalfWidth:F0} half-wide against a " +
+                                   $"narrowest spine radius of {spec.NarrowestRadius:F0} - the " +
+                                   "inner verge folds through itself at the inside of a bend.");
 
-                int planks = Mathf.Max(1, Mathf.FloorToInt(half / PlankStep));
-                float stagger = (rib & 1) == 0 ? 0f : PlankStep * 0.5f;
-                bool reefRib = (rib & 1) == 0;      // the reef is half density, by rib
+                var orientation = Quaternion.AngleAxis(spec.AzimuthDeg, Vector3.up)
+                                * Quaternion.AngleAxis(spec.TiltDeg, Vector3.forward);
+                var axis = (orientation * Vector3.up).normalized;
 
-                for (int i = -planks; i <= planks; i++)
-                {
-                    float along = i * PlankStep + stagger;
-                    if (Mathf.Abs(along) > half) continue;
+                var seedDir = Mathf.Abs(Vector3.Dot(axis, Vector3.forward)) > 0.95f
+                    ? Vector3.right : Vector3.forward;
+                var e1 = Vector3.Cross(axis, seedDir).normalized;
+                var e2 = Vector3.Cross(axis, e1);
 
-                    var pos = sheet.At(along, across);
-                    if (Frayed(pos, along, across, sheet.Rho)) continue;
-
-                    var tangent = sheet.TangentAlong(along);
-                    var normal = sheet.SurfaceNormal(along, across);
-
-                    // Traps ride the ridge line only, thinned so a crest is a hazard to respect
-                    // rather than a wall. Indexed on the global walk so they spread along the
-                    // ridge instead of clustering at one end.
-                    bool danger = onRidge
-                        && (sheetIndex * 17 + rib * 101 + i) % DangerEveryNthCrestPrism == 0;
-
-                    Emit(pos, SpawnPoint.LookRotation(tangent, normal),
-                        Jit(new Vector3(3.4f * S, 3.4f * S, PlankLength)), deckDom,
-                        danger ? PrismKind.Danger : PrismKind.Plain);
-
-                    if (!reefRib) continue;
-
-                    // The underside. Planks turned CROSSWISE (forward = the across-tangent) so the
-                    // reef reads as a truss under the deck rather than as a second copy of it.
-                    var reefPos = pos - normal * ReefDrop;
-                    Emit(reefPos, SpawnPoint.LookRotation(sheet.TangentAcross(across), normal),
-                        Jit(new Vector3(3.0f * S, 3.0f * S, PlankLength)), Domains.Ruby);
-                }
+                _ribbons[i] = new Ribbon(e1, e2, axis, spec);
             }
         }
 
         /// <summary>
-        /// Void test. Below <see cref="EdgeFrayStart"/> of the sheet's radius this is the ordinary
-        /// weathering cull; beyond it the threshold climbs linearly to 1, so the sheet thins out
-        /// and disappears instead of ending at a rim.
+        /// One ribbon's plated road, walked by ARC LENGTH so the deck is evenly dense whatever the
+        /// spine is doing. The station count is measured length / plate step and therefore closes
+        /// the loop exactly: the walk takes <c>stations</c> equal steps of <c>ds</c>, which is the
+        /// measured length divided by that same count.
         /// </summary>
-        bool Frayed(Vector3 pos, float along, float across, float rho)
+        void BuildRoad(in RibbonSpec spec, in Ribbon ribbon, int ribbonIndex)
         {
-            float t = Mathf.Sqrt(along * along + across * across) / rho;
-            float threshold = t <= EdgeFrayStart
-                ? VoidThreshold
-                : Mathf.Lerp(VoidThreshold, 1f, (t - EdgeFrayStart) / (1f - EdgeFrayStart));
+            float length = ArcLength(ribbon);
+            int stations = Mathf.Max(24, Mathf.RoundToInt(length / PlateStepAlong));
+            float ds = length / stations;
 
-            return N01(pos.x * VoidFreq, pos.y * VoidFreq, pos.z * VoidFreq, 3) < threshold;
+            int lanes = Mathf.Max(1, Mathf.FloorToInt(spec.HalfWidth / PlateStepAcross));
+
+            float u = 0f;
+            for (int station = 0; station < stations; station++)
+            {
+                var tangent = ribbon.SpineTangent(u);
+                var across = ribbon.Width(u);
+                var normal = ribbon.Normal(u);
+                var rotation = SpawnPoint.LookRotation(tangent, normal);
+                var keelRotation = SpawnPoint.LookRotation(across, normal);
+
+                // Which way this station is turning, and how hard. Curvature x the ribbon's own
+                // radius is dimensionless, so the trap threshold is a shape fact rather than a
+                // length and survives the arena's length scale untouched.
+                BendAt(ribbon, u, across, out float bendRatio, out int outerSide);
+                bool biting = bendRatio > CurveBiteRatio;
+
+                // Rows staggered against each other so the plate joints never line up into a seam
+                // running the length of the road.
+                float stagger = (station & 1) == 0 ? 0f : PlateStepAcross * 0.25f;
+
+                for (int lane = -lanes; lane <= lanes; lane++)
+                {
+                    float v = lane * PlateStepAcross + stagger;
+                    var pos = ribbon.At(u, v);
+
+                    if (N01(pos.x * VoidFreq, pos.y * VoidFreq, pos.z * VoidFreq, 3) < VoidThreshold)
+                        continue;
+
+                    // Painted as a FRACTION of the road's own width rather than by lane index:
+                    // lane counts run 7..9 across the five ribbons, and an integer rule at that
+                    // resolution loses a whole band on the narrow ones.
+                    float t = Mathf.Abs(v) / spec.HalfWidth;
+                    var dom = t < CrownFraction ? Domains.Gold           // the crown
+                            : t < ShoulderFraction ? Domains.Blue        // the shoulders
+                            : Domains.Jade;                              // the verge
+
+                    // Run wide on a bend and you clip it. One lane, outside only, and only where
+                    // the road is genuinely turning - so the racing line is always clean.
+                    bool danger = biting && lane == outerSide * lanes;
+
+                    Emit(pos, rotation, Jit(new Vector3(PlateWidth, PlateThickness, PlateLength)),
+                        dom, danger ? PrismKind.Danger : PrismKind.Plain);
+
+                    if (((station + lane) & 1) != 0) continue;
+
+                    Emit(pos - normal * KeelDrop, keelRotation,
+                        Jit(new Vector3(KeelThickness, KeelThickness, KeelPlate)), Domains.Ruby);
+                }
+
+                u = Advance(ribbon, u, ds);
+            }
+        }
+
+        /// <summary>Total arc length of a spine, by midpoint rule over <see cref="ArcSamples"/>
+        /// samples. Measured rather than approximated by <c>2 pi r</c> because the sway can add a
+        /// third of the length back and the station count has to close the loop.</summary>
+        static float ArcLength(in Ribbon ribbon)
+        {
+            float du = 2f * Mathf.PI / ArcSamples;
+            float total = 0f;
+            for (int i = 0; i < ArcSamples; i++)
+                total += ribbon.SpineTangent((i + 0.5f) * du).magnitude * du;
+            return total;
+        }
+
+        /// <summary>Advance <c>u</c> by <paramref name="ds"/> of ARC LENGTH. Four substeps rather
+        /// than one because <c>|dP/du|</c> varies within a single plate on the tighter ribbons, and
+        /// a one-shot division there walks visibly short through a corner.</summary>
+        static float Advance(in Ribbon ribbon, float u, float ds)
+        {
+            const int Substeps = 4;
+            float step = ds / Substeps;
+            for (int i = 0; i < Substeps; i++)
+                u += step / Mathf.Max(1e-4f, ribbon.SpineTangent(u).magnitude);
+            return u;
+        }
+
+        /// <summary>
+        /// How hard the spine is turning here, as a multiple of its own mean radius (1 for a
+        /// perfect circle), and which SIDE the outside of that turn is on. The curvature vector
+        /// <c>dT/ds</c> points toward the INSIDE of the bend, so the outer verge is the lane on the
+        /// opposite side of it.
+        /// </summary>
+        static void BendAt(in Ribbon ribbon, float u, Vector3 across,
+                           out float bendRatio, out int outerSide)
+        {
+            const float Du = 1e-3f;
+            var t0 = ribbon.SpineTangent(u);
+            var t1 = ribbon.SpineTangent(u + Du).normalized;
+            float speed = Mathf.Max(1e-4f, t0.magnitude);
+
+            var dTdu = (t1 - t0.normalized) / Du;
+            bendRatio = dTdu.magnitude / speed * ribbon.Radius;
+            outerSide = Vector3.Dot(dTdu, across) > 0f ? -1 : 1;
         }
     }
 }

@@ -48,8 +48,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>Cleave cage-destruction target used when <see cref="cleavePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultCleavePrismTarget = 2000;
+        /// <summary>Cleave hostile-prism destruction target used when <see cref="cleavePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultCleavePrismTarget = 1500;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
@@ -154,15 +154,15 @@ namespace CosmicShore.ScriptableObjects
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
                  "escalation ladder with it. 0 = default (2000).")]
-        [Min(0)] public int cleavePrismTarget = 2000;
+        [Min(0)] public int cleavePrismTarget = 1500;
 
         [Tooltip("Cleave: per-INTENSITY override of the target above - element 0 is intensity 1. " +
                  "Empty, a 0 entry, or an intensity past the end falls back to the scalar. It " +
                  "exists because this mode's intensities are four different PLACES rather than " +
-                 "four sizes of one: 1 and 2 are 2,160-radius arenas at triple rib spacing, so " +
-                 "they hold roughly a third of the mass of 3 and 4 and a shared target would make " +
-                 "the open arenas the longest matches in the mode.")]
-        public List<int> cleavePrismTargetByIntensity = new() { 500, 500, 2000, 2000 };
+                 "four sizes of one: 1 and 2 are vast 2,160-radius arenas holding about a third " +
+                 "of the mass of the compact 3 and 4, so a shared target would make the open " +
+                 "arenas the longest matches in the mode.")]
+        public List<int> cleavePrismTargetByIntensity = new() { 400, 400, 1500, 1500 };
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
@@ -262,8 +262,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
-        [Min(0)] public int cleavePrismTargetBuild = 2000;
-        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 500, 500, 2000, 2000 };
+        [Min(0)] public int cleavePrismTargetBuild = 1500;
+        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 400, 400, 1500, 1500 };
         [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;

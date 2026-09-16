@@ -3,7 +3,7 @@
 Authors every serialized asset the Cleave game mode needs (GameModes.Cleave = 39).
 
 Cleave is the Rhino-only slicing race. Its FOUR intensities are four DIFFERENT PLACES to put a
-sword through rather than four sizes of one - angled panes, corrugated wave sheets, the nested
+sword through rather than four sizes of one - angled panes, wide wavy roads, the nested
 cage, twisted Mobius ribbons - so this script authors one arena prefab and one CellConfigDataSO
 per intensity and puts the Cell on CellTypeChoiceOptions.IntensityWise.
 
@@ -95,8 +95,8 @@ ARENA_AUTHORING = {
     "swell": dict(
         prefab="Assets/_Prefabs/Spawnables/SpawnableSwell.prefab",
         guid_seed="asset/SpawnableSwell.prefab",
-        blurb="seven great corrugated sheets on wavelengths from 78 to 240, crests painted "
-              "gold and troughs jade so the grain reads across the arena"),
+        blurb="five wide wavy roads meandering closed circuits through the cell, crown painted "
+              "gold and verges jade so the carriageway reads across the arena"),
     "cage": dict(
         # The path lost its index when the other four shell variants were retired; the SEED
         # keeps it, because the seed is this prefab's identity and the scene points at it.
@@ -189,6 +189,18 @@ MEMBRANE_GUID_BY_INTENSITY = {
 # model, which asserts each rung's arena holds a comparable multiple of its own target.
 CLEAVE_PRISM_TARGET_BY_INTENSITY = [budget.TARGET_BY_INTENSITY[i] for i in (1, 2, 3, 4)]
 CLEAVE_PRISM_TARGET = max(CLEAVE_PRISM_TARGET_BY_INTENSITY)
+
+# The comeback buff is `bonusLevels = deficit x rate`, so THE RATE IS A FUNCTION OF THE TARGET and
+# re-targeting a mode silently kills it - the trap Dog Fight, The Bends, Wildlife Liberation and
+# Tollway each record, hit here the moment the ladder went per-intensity. This mode's SMALLEST
+# target is what binds: at a quarter-of-target deficit the trailing domain must still buy a whole
+# element level, or the buff is a rounding error in exactly the match it exists to rescue.
+COMEBACK_RATE = 0.0125
+_worst = min(CLEAVE_PRISM_TARGET_BY_INTENSITY)
+assert _worst / 4 * COMEBACK_RATE >= 1.0, (
+    f"a quarter-of-target deficit on the {_worst}-prism rungs buys "
+    f"{_worst / 4 * COMEBACK_RATE:.2f} element levels - under one whole level. Raise "
+    "COMEBACK_RATE with the target, or the comeback stops doing anything on those rungs.")
 
 _HEADER_TMPL = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -335,10 +347,10 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameCleave") + f"""  Mode: 39
   IsMultiplayer: 1
   DisplayName: Cleave
-  Description: Four arenas, one blade. Angled panes, rolling wave sheets, a cage of
+  Description: Four arenas, one blade. Angled panes, wide wavy roads, a cage of
     nested shells, and twisted ribbons that roll out from under you - every intensity
     is a different place to cut, not a bigger version of the last. Danger prisms ride
-    the rims and the crests, so read the grain before you commit.
+    the rims and the outside of the bends, so read the place before you commit.
   IconActive: {{fileID: 21300000, guid: {EXISTING['IconActive']}, type: 3}}
   IconInactive: {{fileID: 21300000, guid: {EXISTING['IconInactive']}, type: 3}}
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
@@ -354,7 +366,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset",
   MaxIntensity: 4
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.01
+  ComebackRatePerScoreDeficit: {COMEBACK_RATE}
 """)
 emit("Assets/_SO_Assets/Games/ArcadeGameCleave.asset.meta", asset_meta(G_ASSET["ArcadeGameCleave"]))
 
@@ -559,7 +571,13 @@ END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for live_key, new_key in (("rampagePrismTarget", "cleavePrismTarget"),
                           ("rampagePrismTargetBuild", "cleavePrismTargetBuild")):
-    if f"\n  {new_key}: " in endcond:
+    # Authored every run, not only-if-missing. The scalar was left alone once, and it went on
+    # saying 2000 for a ladder whose heaviest rung had come down to 1500 - inert, because the list
+    # covers every intensity and GetCleavePrismTarget(intensity) clamps into it, but a stale
+    # fallback is a number the End Game Conditions window shows a human as if it were live.
+    endcond, n = re.subn(rf"^  {new_key}: \d+\n", f"  {new_key}: {CLEAVE_PRISM_TARGET}\n",
+                         endcond, count=1, flags=re.M)
+    if n:
         continue
     m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
     assert m, f"{live_key} not found in {END_PATH}"
