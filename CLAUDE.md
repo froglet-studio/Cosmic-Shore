@@ -1032,7 +1032,7 @@ throttle and near-zero stick, and past that it does not switch off — it GRADES
 boost multiplier toward plain cruise as the stick goes over (`RampBoostActionSO.MultiplierFor`,
 `RHINO_RAMP_BOOST.md`). Composing that one lerp with two formulas that were already there — turn
 rate is linear in stick, and max turn rate grows with speed — gives a continuous speed/radius
-trade from **332 u at 1210 u/s** down to **29 u at cruise**, so a corner is an OPTIMISATION (the
+trade from **332 u at 1200 u/s** down to **25 u at cruise**, so a corner is an OPTIMISATION (the
 largest speed whose radius fits, traded against how long the following straight is) rather than
 a binary classification. Before the grading there were exactly two points on that curve and
 therefore one decision per corner, which a play test reported as nothing to master; authoring
@@ -1816,7 +1816,7 @@ cleared by the menu so no handicap follows a pilot home. Before it, `SO_Vessel.I
 was read only on the legacy single-player launch path and every hull started every multiplayer
 match at rest. The table is authored by `Tools/Build/regatta_balance.py`, an offline lap-time
 model over the MEASURED circuits (constants read off the prefabs by key), and **the honest result
-is a residual spread of 6.0× at intensity 1 (8.8× at rest) and 5.3× at intensity 4**: an element
+is a residual spread of 6.0× at intensity 1 (8.7× at rest) and 5.3× at intensity 4**: an element
 spans ~1.5× on the five hulls it reaches (Time = Soar / afterburner / Serpent boost / Scarab
 ceiling / Dolphin fill) and nothing on the Rhino, the Urchin or the Squirrel, while straight-line
 speeds span 35×. The generator asserts that spread under 6.1× and asserts the measured course

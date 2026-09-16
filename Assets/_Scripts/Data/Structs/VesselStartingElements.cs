@@ -12,7 +12,7 @@ namespace CosmicShore.Data
     /// <para><b>Why this exists.</b> Element levels are the one thing that reaches a hull's
     /// SPEED without touching the vessel (Time is Soar on the Manta, the throttle ceiling on the
     /// Scarab, the boost on the Sparrow and the Serpent, the charge fill rate on the Dolphin).
-    /// A card that lets a 35 u/s Sparrow and a 1210 u/s Rhino start the same race has no other
+    /// A card that lets a 35 u/s Sparrow and a 1200 u/s Rhino start the same race has no other
     /// per-hull lever the platform already owns: a mode-local speed multiplier would be the
     /// bespoke system CLAUDE.md forbids, and a per-vessel prefab edit would move every other
     /// mode. Starting levels are already a concept (<c>SO_Vessel.InitialResourceLevels</c>,

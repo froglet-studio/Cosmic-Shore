@@ -148,9 +148,12 @@ finishes it.
 
 Three properties make it safe to put in the shared step rather than per vessel:
 
-- **It engages only on a ZERO target.** A vessel with a floor (the Rhino's `MinimumSpeed` 10)
-  targets 10 at minimum throttle and is bit-identical to before; so is any deceleration toward a
-  lower-but-nonzero cruise, and so is accelerating away from a stop.
+- **It engages only on a ZERO target.** Any deceleration toward a lower-but-nonzero cruise is
+  bit-identical to before, and so is accelerating away from a stop. A vessel that authors a
+  non-zero `MinimumSpeed` therefore cannot be braked at all — which is why **the Rhino's
+  `DefaultMinimumSpeed` went 10 → 0 in the same pass**: a floor is a speed the pilot cannot give
+  back, so a two-thumb flier that is meant to be able to STOP cannot author one. See below for
+  what that cost.
 - **The rate is the vessel's OWN cruise** (`ThrottleScaler / minimumThrottleBrakeSeconds`, default
   2 s), not an absolute u/s — so a 180 u/s Manta and a 68 u/s Dolphin stop in the same *time*
   rather than the fast hull coasting three times as far.
@@ -274,12 +277,13 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    - **Decelerating to a lower cruise is NOT braked** — ease the scissor to a mid throttle from
      top speed and confirm that fall feels exactly as it always did. Only a *minimum* throttle
      brakes.
-   - **The Rhino is deliberately excluded** and will still crawl: it authors
-     `DefaultMinimumSpeed: 10`, so its minimum-throttle target is 10 rather than 0 and the brake
-     never engages. Zeroing it is a live design question, not an oversight —
-     `HeadlongCircuit.RhinoMinimumSpeed` is a compile-time copy of that 10 and every corner radius
-     in Headlong is derived from it (`RhinoRampGradingTests` holds the two in step), so the floor
-     cannot move without re-deriving that mode's whole course ladder.
+   - **The Rhino is in the list now** — its `DefaultMinimumSpeed` went 10 → 0, so it stops like
+     the rest. Its cruise is correspondingly 50 rather than 60 and its ramp top 1200 rather than
+     1210; both readouts are worth a glance, and `HEADLONG.md` §2 carries the re-derived tables.
+     The thing to watch for is a **Headlong** lap feeling different — it should not: measured over
+     1,600 generated circuits the gate positions are bit-identical and the corner ladder
+     (99/82/65/37% of top speed) is unchanged to the digit, because the only thing that number
+     fed was a safety floor that never binds.
    - **If the Dolphin's throttle still does nothing after a drift**, the cause is not this: it is
      the only vessel in the fleet with `holdSpeedWhileDrifting: 1`, and that latch pins the cruise
      speed for the drift's duration and releases on the drift's RELEASE edge. A missed release
