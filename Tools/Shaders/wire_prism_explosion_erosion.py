@@ -14,10 +14,11 @@ The splice sits BETWEEN the explosion clock and the occlusion corridor:
 
   BEFORE:  PrismExplosionClock.Opacity ------------------------> PrismOcclusionFade.BaseAlpha
   AFTER:   PrismExplosionClock.Opacity -> EROSION.BaseOpacity
+           PrismExplosionClock.Opacity ------------------------> PrismOcclusionFade.BaseAlpha
            UV (channel 0) --------------> EROSION.UV
            Tangent Vector (object) -----> EROSION.Tangent       (per-PIECE wipe identity)
            Prop[Velocity] --------------> EROSION.Velocity      (per-PRISM wipe identity)
-           EROSION.Survival (0..1) -----> PrismOcclusionFade.BaseAlpha
+           EROSION.Threshold -----------> PrismOcclusionFade.ErosionThreshold
 
 THE TANGENT IS THE PIECE (2026-09-16). UV0 says WHERE ON a face a fragment sits and
 nothing about WHICH face: every one of the shipped debris cube's 24 wedges carries the
@@ -31,9 +32,17 @@ VertexDescription.Tangent turns the block from an identity pass-through of the m
 attribute into an animated value, and the wipe would start crawling with nothing else
 in the graph changing.
 
-So the erosion owns the FADE (angle-free) while the corridor keeps owning OCCLUSION (a
-view effect by definition); Survival is fractional only in the narrow fringe leading
-the front, which the corridor stage renders as screen-door speckle (soft-hard-soft).
+ONE FIELD DECIDES (2026-09-16). The erosion emits a THRESHOLD rather than a 0/1 survival,
+and the clock's Opacity reaches the corridor UNCHANGED as well — the corridor's single
+clip then SELECTS which field carves a fragment (the front outside the tunnel, the dither
+inside it) instead of the two carving it independently. So the erosion still owns the FADE
+(angle-free) and the corridor still owns OCCLUSION (a view effect by definition), but they
+no longer compose: see ONE FIELD DECIDES in PrismOcclusionCorridor.hlsl.
+
+OWNERSHIP, because two scripts now touch this wiring: THIS one owns the erosion NODE and
+its four input feeds; `wire_prism_erosion_handoff.py` owns the corridor's `ErosionThreshold`
+input slot (in BOTH graphs) and the two edges that cross between them. A fresh wire here
+therefore leaves that input to be connected — this script asserts it and names the other.
 Live prisms on this graph are exact pass-throughs: with no explosion stamped the clock
 hands _Opacity through, and the erosion's >=1 / <=0 early-outs return 1 or 0 untouched.
 
@@ -73,12 +82,15 @@ CF_SLOTS = [
     (1, "Tangent", "Vector3", False),
     (2, "Velocity", "Vector3", False),
     (3, "BaseOpacity", "Vector1", False),
-    (4, "Survival", "Vector1", True),
+    (4, "Threshold", "Vector1", True),
 ]
 # Slot ids of the inputs whose feeder nodes exist ONLY to serve this function, so a
 # migration from an older signature must take them with it (see strip_old_erosion).
 EROSION_BASEOPACITY_SLOT = 3
-EROSION_SURVIVAL_SLOT = 4
+EROSION_THRESHOLD_SLOT = 4
+# The corridor's erosion input (appended after its two outs — see
+# wire_prism_erosion_handoff.py, which OWNS that slot and the edge into it).
+CORRIDOR_EROSION_SLOT = 6
 
 
 def load_docs(path):
@@ -255,9 +267,16 @@ def validate(docs, expect_wired):
                 "VertexDescription.Tangent is wired — that animates the erosion's per-piece " \
                 "anchor and the wipe will crawl; use a different identity or re-anchor"
 
+    # ONE FIELD DECIDES: the corridor takes the clock's TRUE opacity, and the erosion's
+    # threshold arrives on its own input. Both edges belong to wire_prism_erosion_handoff.py
+    # and are asserted here because a revert to the old shape (erosion survival into
+    # BaseAlpha) is invisible from the erosion node alone.
     assert sources.get((corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT)) == \
-        (erosion["m_ObjectId"], EROSION_SURVIVAL_SLOT), \
-        "corridor BaseAlpha is not fed by erosion Survival"
+        (clock["m_ObjectId"], node_output_slot(idx, clock, "Opacity")), \
+        "corridor BaseAlpha is not fed by the clock's Opacity — run wire_prism_erosion_handoff.py"
+    assert sources.get((corridor["m_ObjectId"], CORRIDOR_EROSION_SLOT)) == \
+        (erosion["m_ObjectId"], EROSION_THRESHOLD_SLOT), \
+        "corridor ErosionThreshold is not fed by the erosion — run wire_prism_erosion_handoff.py"
 
 
 def strip_old_erosion(docs, graph, idx):
@@ -306,9 +325,15 @@ def strip_old_erosion(docs, graph, idx):
     graph["m_Nodes"] = [r for r in graph["m_Nodes"] if r["m_Id"] not in doomed_nodes]
     docs = [d for d in docs if d.get("m_ObjectId") not in doomed_docs]
 
-    # Restore the pre-erosion feed so the fresh-wire path sees the canonical shape.
-    graph["m_Edges"].append(edge(clock["m_ObjectId"], node_output_slot(index(docs), clock, "Opacity"),
-                                 corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT))
+    # The clock -> corridor.BaseAlpha edge is NOT restored here any more: under ONE FIELD
+    # DECIDES it was never retargeted, so it survives the strip untouched. Restoring it
+    # would make a second feeder on that slot, which validate() rejects.
+    if not any(e["m_InputSlot"]["m_Node"]["m_Id"] == corridor["m_ObjectId"]
+               and e["m_InputSlot"]["m_SlotId"] == CORRIDOR_BASEALPHA_SLOT
+               for e in graph["m_Edges"]):
+        graph["m_Edges"].append(edge(clock["m_ObjectId"],
+                                     node_output_slot(index(docs), clock, "Opacity"),
+                                     corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT))
     return docs, True
 
 
@@ -391,17 +416,18 @@ def main():
     for node in (uv_node, tan_node, er_node):
         graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
 
-    # ---- edges: retarget clock -> corridor.BaseAlpha into the erosion ----
-    retargeted = 0
+    # ---- edges: the clock feeds BOTH the erosion and the corridor ----
+    # It used to be RETARGETED into the erosion, which is what made the corridor's
+    # BaseAlpha the erosion's 0/1 survival. Under ONE FIELD DECIDES the corridor needs the
+    # TRUE opacity, so this is an ADD and the existing edge is left alone.
+    feeders = 0
     for e in graph["m_Edges"]:
         i = e["m_InputSlot"]
         if i["m_Node"]["m_Id"] == corridor["m_ObjectId"] and i["m_SlotId"] == CORRIDOR_BASEALPHA_SLOT:
             assert e["m_OutputSlot"]["m_Node"]["m_Id"] == clock["m_ObjectId"], \
                 "corridor BaseAlpha is not fed by the explosion clock — graph shape drifted, refusing"
-            e["m_InputSlot"] = {"m_Node": {"m_Id": er_node["m_ObjectId"]},
-                                "m_SlotId": EROSION_BASEOPACITY_SLOT}
-            retargeted += 1
-    assert retargeted == 1, f"expected exactly one BaseAlpha feeder, retargeted {retargeted}"
+            feeders += 1
+    assert feeders == 1, f"expected exactly one BaseAlpha feeder, found {feeders}"
 
     vel = property_node(idx, graph, "Velocity")
     assert vel is not None, "no Velocity property node in the graph"
@@ -409,9 +435,17 @@ def main():
         edge(uv_node["m_ObjectId"], uv_slot["m_Id"], er_node["m_ObjectId"], 0),
         edge(tan_node["m_ObjectId"], tan_slot["m_Id"], er_node["m_ObjectId"], 1),
         edge(vel["m_ObjectId"], node_output_slot(idx, vel), er_node["m_ObjectId"], 2),
-        edge(er_node["m_ObjectId"], EROSION_SURVIVAL_SLOT,
-             corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT),
+        edge(clock["m_ObjectId"], node_output_slot(idx, clock, "Opacity"),
+             er_node["m_ObjectId"], EROSION_BASEOPACITY_SLOT),
     ]
+
+    # The handoff's own edge. The slot it lands on belongs to wire_prism_erosion_handoff.py,
+    # so refuse by NAME rather than wiring a slot this script does not own.
+    assert any(idx[sl["m_Id"]]["m_Id"] == CORRIDOR_EROSION_SLOT
+               for sl in corridor["m_Slots"]), \
+        "the corridor has no ErosionThreshold input — run wire_prism_erosion_handoff.py first"
+    graph["m_Edges"].append(edge(er_node["m_ObjectId"], EROSION_THRESHOLD_SLOT,
+                                 corridor["m_ObjectId"], CORRIDOR_EROSION_SLOT))
 
     docs += new_docs
     validate(docs, expect_wired=True)   # nothing written yet
@@ -420,7 +454,7 @@ def main():
     validate(load_docs(path), expect_wired=True)
     print(f"  {os.path.basename(GRAPH)}: wired and validated "
           f"({'migrated from an older signature, ' if migrated else ''}"
-          f"+3 nodes, +{len(new_docs) - 3} slots, 4 new edges, 1 retargeted).")
+          f"+3 nodes, +{len(new_docs) - 3} slots, 5 new edges).")
     return 0
 
 

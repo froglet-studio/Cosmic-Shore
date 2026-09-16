@@ -93,7 +93,7 @@ int main()
         float3 p(0.0f, 0.0f, (float)(t * D));
         float3 params((float)R, (float)(0.25 * R), 0.0f);
         float a, thr;
-        PrismOcclusionFade_float(p, target, params, 1.0f, a, thr);
+        PrismOcclusionFade_float(p, target, params, 1.0f, a, thr, 0.0f);
         printf("%.9g\n", a);
     }
     return 0;
@@ -106,7 +106,12 @@ MAX_BASE_SHARE_NAME = "PRISM_OCCLUSION_MAX_BASE_SHARE"
 def extract_slice(text, legacy=False):
     """The shipped corridor's stage 1, verbatim, plus what it calls."""
     parts = ["float _PrismOcclusionNearRadius;"]
-    for const in ("PRISM_OCCLUSION_NOSE_CLEARANCE", MAX_BASE_SHARE_NAME):
+    # PRISM_EROSION_END_MARGIN is here because the corridor reads it (through
+    # PrismErosionCoverage) to convert a debris piece's clock opacity into the surface
+    # its own wipe has left — see ONE FIELD DECIDES. This test never exercises that path
+    # (it passes ErosionThreshold 0), but the slice has to compile.
+    for const in ("PRISM_OCCLUSION_NOSE_CLEARANCE", MAX_BASE_SHARE_NAME,
+                  "PRISM_EROSION_END_MARGIN"):
         m = re.search(rf"^static const float {const} = [-\d.]+;", text, re.M)
         if const == MAX_BASE_SHARE_NAME and m is None:
             continue  # pre-fix tree; the legacy control below is then the shipped shape
@@ -120,6 +125,7 @@ def extract_slice(text, legacy=False):
         return text[i:k + 3]
 
     parts.append(body("float PrismOcclusionSmootherStep(float t)"))
+    parts.append(body("float PrismErosionCoverage(float opacity)"))
     fn = body("void PrismOcclusionFade_float(")
     assert fn.count("out float Alpha, out float ClipThreshold") == 1, \
         "corridor out-parameter shape drifted"

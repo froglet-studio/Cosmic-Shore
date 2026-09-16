@@ -126,6 +126,18 @@ namespace CosmicShore.Tests
                 $"{graphPath} has no Tangent Vector node — PrismErosionFade has lost its " +
                 "per-piece identity and every debris piece will peel alike. " +
                 "Fix: python3 Tools/Shaders/wire_prism_explosion_erosion.py");
+
+            // ONE FIELD DECIDES (2026-09-16). The erosion emits a THRESHOLD and the
+            // corridor takes the clock's TRUE opacity, so the single clip SELECTS which
+            // field carves a fragment. Revert to the old shape — erosion survival into
+            // BaseAlpha — and the corridor is told every surviving chunk is fully opaque:
+            // inside the tunnel two threshold patterns fight over one surface, and OUTSIDE
+            // it an alpha of 1 takes the solid-mass fast out, so debris is never dithered
+            // at any range. Both are look defects with nothing else failing.
+            Assert.IsTrue(text.Contains("\"m_DisplayName\": \"ErosionThreshold\""),
+                $"{graphPath} has no ErosionThreshold input on PrismOcclusionFade — the " +
+                "debris fade and the corridor are carving the same fragment independently. " +
+                "Fix: python3 Tools/Shaders/wire_prism_erosion_handoff.py");
         }
 
         [Test]

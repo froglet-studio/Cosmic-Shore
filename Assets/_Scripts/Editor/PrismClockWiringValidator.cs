@@ -95,11 +95,15 @@ namespace CosmicShore.Editor
             },
         };
 
+        // The erosion signature moved TWICE and this table did not follow it either time,
+        // which is the hazard a slot-index table carries: a stale index does not fail as
+        // "slot renamed", it fails as "edge missing" and reads like a broken graph.
+        // Today: PrismErosionFade(UV 0, Tangent 1, Velocity 2, BaseOpacity 3) -> Threshold 4.
         static readonly GraphEdgeCheck[] ExplosionErosionEdges =
         {
             new GraphEdgeCheck
             {
-                InputFunction = "PrismErosionFade", InputSlot = 2,
+                InputFunction = "PrismErosionFade", InputSlot = 3,
                 OutputFunction = "PrismExplosionClock", OutputSlot = 8,
                 Description = "erosion BaseOpacity fed by PrismExplosionClock.Opacity",
             },
@@ -111,13 +115,32 @@ namespace CosmicShore.Editor
             new GraphEdgeCheck
             {
                 InputFunction = "PrismErosionFade", InputSlot = 1,
-                Description = "erosion Velocity connected",
+                Description = "erosion Tangent connected (the per-PIECE identity — an " +
+                              "unconnected Tangent collapses all 24 wedges onto one wipe)",
             },
             new GraphEdgeCheck
             {
+                InputFunction = "PrismErosionFade", InputSlot = 2,
+                Description = "erosion Velocity connected (the per-PRISM identity)",
+            },
+            // ONE FIELD DECIDES (2026-09-16): the corridor takes the clock's TRUE opacity
+            // and the erosion's THRESHOLD on a separate input, and selects between the two
+            // fields. It used to take the erosion's 0/1 survival as BaseAlpha, which told
+            // the corridor every surviving chunk was opaque — so debris outside the
+            // corridor was never dithered at all. Both edges are load-bearing: lose the
+            // first and the corridor is lied to again, lose the second and the front never
+            // reaches the clip.
+            new GraphEdgeCheck
+            {
                 InputFunction = "PrismOcclusionFade", InputSlot = 3,
-                OutputFunction = "PrismErosionFade", OutputSlot = 3,
-                Description = "corridor BaseAlpha fed by erosion Survival",
+                OutputFunction = "PrismExplosionClock", OutputSlot = 8,
+                Description = "corridor BaseAlpha fed by PrismExplosionClock.Opacity",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismOcclusionFade", InputSlot = 6,
+                OutputFunction = "PrismErosionFade", OutputSlot = 4,
+                Description = "corridor ErosionThreshold fed by erosion Threshold",
             },
         };
 

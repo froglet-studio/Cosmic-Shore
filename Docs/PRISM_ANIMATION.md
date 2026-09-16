@@ -1134,6 +1134,8 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Debris erosion splice (idempotent) | `Tools/Shaders/wire_prism_explosion_erosion.py` |
 | Erosion CDF re-fit (after lattice retune) | `Tools/Shaders/fit_prism_erosion_cdf.py` |
 | Erosion per-piece anchor + fade span (compiles the shipped HLSL) | `Tools/Shaders/verify_prism_erosion_anchor.py` |
+| Erosion→corridor threshold handoff (compiles both shipped functions) | `Tools/Shaders/verify_prism_erosion_handoff.py` |
+| Erosion→corridor handoff wiring (idempotent) | `Tools/Shaders/wire_prism_erosion_handoff.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
@@ -1683,8 +1685,11 @@ Four properties of the design worth preserving if it is ever touched:
   no tangents degrades to the old shared wipe — the same meshes `RotateFacesAlongAxis`
   already needs tangents from, so no new authoring requirement.
   The stamped `_Velocity` still seeds the per-PRISM half of that identity so no two
-  prisms peel alike. **Soft-hard-soft**: Survival is
-  a HARD edge (`PRISM_EROSION_FRINGE` 0, 2026-08-11). It briefly led the front with
+  prisms peel alike. **Soft-hard-soft**: the front is
+  a HARD edge, and since 2026-09-16 that is STRUCTURAL rather than a constant set to zero
+  — the function emits a THRESHOLD, which has no room for a fringe, because softness
+  would have to come from the one clip and that clip is the corridor's to spend
+  (`PRISM_EROSION_FRINGE` is deleted). It briefly led the front with
   a dithered fringe, on the reading that soft-hard-soft wanted a soft trailing
   component; in motion that was wrong, because the debris edge then dissolved in the
   SAME visual language as the corridor it flies through and the two read as one
@@ -1721,7 +1726,53 @@ Four properties of the design worth preserving if it is ever touched:
   `WIGGLE`/`WIGGLE_FREQ` move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and
   tune freely) and the fit got markedly better for the same reason the wipe did:
   mean |coverage − alpha| **0.0363 → 0.00128**.
-  The gates are `Tools/Shaders/verify_prism_erosion_anchor.py` — which compiles the shipped
+  **ONE FIELD DECIDES, NEVER TWO (2026-09-16).** This function used to resolve its own
+  front into a 0/1 SURVIVAL and hand that to `PrismOcclusionFade` as `BaseAlpha`, so the
+  corridor was told every surviving chunk was fully opaque. Two consequences, and the
+  second is the one that was reported as *"exploding fragments blinding me when I destroy
+  lots of prisms"*. (a) Inside the corridor the fragment was carved TWICE and
+  independently — the corridor dithered that constant 1 with its screen-anchored lattice
+  while the front went on cutting the same surface in UV space, which is two threshold
+  patterns at similar mid-band values on one surface, i.e. the LAYERED BEAT §4.7 already
+  attacks from the other side. (b) Outside the corridor an alpha of exactly 1 took the
+  "solid mass" fast out, so **debris was never dithered at any range, however far its fade
+  had run** — every surviving piece rendered at full opacity until its own front reached
+  it. The fix is to make the two fields interchangeable and then SELECT between them
+  rather than combine them: the erosion emits a **threshold** (`Threshold`, not
+  `Survival`), the corridor receives the **true opacity** as `BaseAlpha`, and the single
+  clip at the end of the chain decides — outside the corridor the front is the whole story
+  and no kernel runs (bit-identical to the retired verdict, since `clip(Opacity −
+  Threshold)` IS `Opacity >= Threshold`); inside it the tunnel is the whole story and the
+  front stands down. It costs one in-parameter, appended AFTER the two outs so every
+  existing slot id on the Custom Function node survives untouched in both graphs
+  (`Tools/Shaders/wire_prism_erosion_handoff.py`). Three properties make it exact:
+  * **The gate is `ErosionThreshold > 0`**, not a flag — 0 is outside the live range by
+    construction (a real threshold is compressed above `END_MARGIN`), so BlockGraph, which
+    wires nothing into it, is unchanged sample for sample, and a **cloaked** prism — also
+    a fractional alpha outside the corridor, with no erosion — keeps falling through to
+    the dither. Dropping that test is one of the three negative controls.
+  * **The tunnel is handed `PrismErosionCoverage(BaseAlpha)`, never the raw opacity.**
+    Both fields are uniform-marginal but over DIFFERENT ranges: the end margin has already
+    taken 15% of the piece that the clock opacity knows nothing about. Hand over the raw
+    value and the two laws disagree by `0.176 × (1 − opacity)` — up to 15 points of
+    surface, appearing as a brightness STEP along the corridor wall and in the WRONG
+    direction, a nearly-dead chunk showing MORE surface inside the tunnel than outside it.
+    Measured at the wall: **0.025** with the remap, **0.131** without.
+  * **Combining them is what does not work.** `max()` of two independent uniform fields
+    gives coverage `alpha²`; a lerp of their thresholds is trapezoidal and off by 2× at
+    `a = 0.25`. A select changes only the PATTERN, so a piece entering the tunnel stops
+    peeling and starts breaking up — the correct story rather than a pop.
+  The honest residual: the erosion's coverage tracks its design ramp to **0.025** at worst
+  — a smooth S-bend, the limit of fitting one `smoothstep` to the wipe coordinate's true
+  CDF, and a TIME-domain lean in the fade curve rather than a spatial artefact. It bounds
+  the wall agreement above, which is why both gates sit at 0.03 while the control that
+  proves them sits at 0.13.
+  The gates are `Tools/Shaders/verify_prism_erosion_handoff.py` — which compiles BOTH
+  shipped functions with clang++ and writes a SENTINEL on the line the dither kernel
+  occupies, so "this fragment fell through to the dither" is an observable value instead
+  of an inference; six assertions, three negative controls (drop the `> 0` gate, drop the
+  handoff, drop the coverage remap), all of which must fire —
+  `Tools/Shaders/verify_prism_erosion_anchor.py` — which compiles the shipped
   file's own erosion slice with clang++ and runs it over the per-wedge UV and tangent data
   decoded out of the shipped mesh, with a negative control that restores the legacy shape
   and must fail — the wirer's `--check`, and
