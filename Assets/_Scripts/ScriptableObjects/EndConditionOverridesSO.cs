@@ -47,8 +47,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>PeelTheCage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultPeelTheCagePrismTarget = 2000;
+        /// <summary>Cleave cage-destruction target used when <see cref="cleavePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultCleavePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
@@ -149,11 +149,11 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
-        [Tooltip("PeelTheCage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+        [Tooltip("Cleave: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
                  "escalation ladder with it. 0 = default (2000).")]
-        [Min(0)] public int ribcagePrismTarget = 2000;
+        [Min(0)] public int cleavePrismTarget = 2000;
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
@@ -253,7 +253,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
-        [Min(0)] public int ribcagePrismTargetBuild = 2000;
+        [Min(0)] public int cleavePrismTargetBuild = 2000;
         [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
@@ -331,11 +331,11 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
-        /// PeelTheCage target ("race to N" hostile prisms destroyed): the configured value when
-        /// &gt; 0, otherwise <see cref="DefaultPeelTheCagePrismTarget"/>.
+        /// Cleave target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultCleavePrismTarget"/>.
         /// </summary>
-        public int GetPeelTheCagePrismTarget() =>
-            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget;
+        public int GetCleavePrismTarget() =>
+            cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget;
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
@@ -489,7 +489,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
                 GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
                 GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
-                GameModes.PeelTheCage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget,
+                GameModes.Cleave                   => cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget,
                 GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
@@ -519,7 +519,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget == maelstromWinTargetBuild &&
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
             rampagePrismTarget == rampagePrismTargetBuild &&
-            ribcagePrismTarget == ribcagePrismTargetBuild &&
+            cleavePrismTarget == cleavePrismTargetBuild &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
@@ -546,7 +546,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
-            ribcagePrismTarget = ribcagePrismTargetBuild;
+            cleavePrismTarget = cleavePrismTargetBuild;
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
@@ -574,7 +574,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
-            ribcagePrismTargetBuild = ribcagePrismTarget;
+            cleavePrismTargetBuild = cleavePrismTarget;
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;

@@ -39,7 +39,7 @@ SCENE_FOR_MODE = {
     36: 'MinigameAstroLeague',
     37: 'MinigameAstroLeague',
     38: 'MinigameBroodRush',
-    39: 'MinigamePeelTheCage',
+    39: 'MinigameCleave',
     40: 'MinigameWildlifeLiberation',
     41: 'MinigameDogFight',
     42: 'MinigameBends',

@@ -2,7 +2,7 @@
 
 **Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
 plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
-improvements, PeelTheCage scoring, game-data JSON schema, profile/ads, quit button,
+improvements, Cleave scoring, game-data JSON schema, profile/ads, quit button,
 menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
@@ -82,7 +82,7 @@ camera losing the vessel (framing empty space) · a camera left stuck in the gam
 pose after returning to the menu · any exception from the camera controller.
 
 ### QA-SCORING-CLIENT-MIRROR ⬜ — non-host players no longer start with the last game's score
-**Source:** PeelTheCage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
+**Source:** Cleave second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
 **B17**. **Why P0:** this was reproduced *every time* by the reporter and it corrupts
 the scoreboard of **every multiplayer mode** — so any score you read while testing
 another item is untrustworthy until this passes. Fix is
@@ -277,14 +277,14 @@ a counter ticking per prism · score moving for a starvation or a shark kill · 
 clumped at the arena centre or wandering between rooms · a flat population three minutes
 in · a non-Sparrow vessel spawning on either machine.
 
-### QA-RIBCAGE-MODE ⬜ — "Peel the Cage" has never been opened
+### QA-CLEAVE-MODE ⬜ — "Cleave" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
 merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
-Whole new game mode (`GameModes.PeelTheCage = 39`), authored headless. Reference:
-`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md` § In-editor verification.
+Whole new game mode (`GameModes.Cleave = 39`), authored headless. Reference:
+`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification.
 
-1. Open `MinigamePeelTheCage.unity`. Confirm no `Missing (Mono Script)`, the controller
-   shows `rule = PeelTheCageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
+1. Open `MinigameCleave.unity`. Confirm no `Missing (Mono Script)`, the controller
+   shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
    lists **four** configs with **Cell Type Choice = Intensity Wise**.
 2. Launch at intensity 1 → count the shells. Relaunch at intensity 4 → count again.
 3. Inspect the weave: are the openings **triangles** (each cell crossed by a diagonal,
@@ -429,7 +429,7 @@ any of it. Reference: `Docs/PALETTE.md` §6.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
    **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
-3. **Danger prisms** — PeelTheCage ("Peel the Cage") ships the same trap in all three
+3. **Danger prisms** — Cleave ships the same trap in all three
    domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
    Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
    not a dark edge.

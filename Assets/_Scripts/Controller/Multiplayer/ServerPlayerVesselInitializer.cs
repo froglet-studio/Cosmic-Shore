@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
                  "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
-                 "PeelTheCage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "Cleave needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
                  "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
                  "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
@@ -450,7 +450,7 @@ namespace CosmicShore.Gameplay
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
             // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
-            // than a nucleus (PeelTheCage's cage), where nucleusRadius is legitimately 0. Without a
+            // than a nucleus (Cleave's cage), where nucleusRadius is legitimately 0. Without a
             // floor that case is indistinguishable from "cell not resolvable yet" below.
             if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
@@ -696,7 +696,7 @@ namespace CosmicShore.Gameplay
         /// wearing the hull it last flew, and the launcher-side clamp in
         /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
         /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
-        /// therefore flew Rhino-only PeelTheCage on every client while the AI (whose class comes from
+        /// therefore flew Rhino-only Cleave on every client while the AI (whose class comes from
         /// the scene's aiInitializeDatas) correctly spawned Rhinos.
         ///
         /// The SERVER is the only authority that sees every player's request and the mode's rules

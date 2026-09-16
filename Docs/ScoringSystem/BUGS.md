@@ -511,7 +511,7 @@ mixed-domain forest wearing the destroying pilot's own colour. Domain was decora
 **Fix.** `PrismStats` carries the destroyed prism's `OwnDomain`, and
 `StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
 own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
-everyone so neutral structure still scores. PeelTheCage rides the same metric and is unaffected in
+everyone so neutral structure still scores. Cleave rides the same metric and is unaffected in
 practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
 2,000 target out of ~10,620 prisms.
 

@@ -75,8 +75,8 @@ namespace CosmicShore.Editor
                 EndConditionOverridesSO.DefaultBroodRushWaveTarget + ".\n" +
                 "  • Rampage: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultRampagePrismTarget + ".\n" +
-                "  • PeelTheCage: hostile prisms destroyed to win (race to N), default " +
-                EndConditionOverridesSO.DefaultPeelTheCagePrismTarget +
+                "  • Cleave: hostile prisms destroyed to win (race to N), default " +
+                EndConditionOverridesSO.DefaultCleavePrismTarget +
                 ". The 25%/50% fauna-release rungs are fractions of this.\n" +
                 "  • Wildlife Liberation: creatures a domain must kill to win (race to N), " +
                 "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget + ".\n" +
@@ -128,7 +128,7 @@ namespace CosmicShore.Editor
             int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom - Win Target (points)", _config.maelstromWinTarget));
             int nr  = Mathf.Max(0, EditorGUILayout.IntField("Brood Rush - Wave Target", _config.nucleusRushWaveTarget));
             int ra  = Mathf.Max(0, EditorGUILayout.IntField("Rampage - Prism Target", _config.rampagePrismTarget));
-            int rc  = Mathf.Max(0, EditorGUILayout.IntField("PeelTheCage - Prism Target", _config.ribcagePrismTarget));
+            int rc  = Mathf.Max(0, EditorGUILayout.IntField("Cleave - Prism Target", _config.cleavePrismTarget));
             int wl  = Mathf.Max(0, EditorGUILayout.IntField("Wildlife Liberation - Kill Target", _config.wildlifeKillTarget));
             int df  = Mathf.Max(0, EditorGUILayout.IntField("Dog Fight - Point Target", _config.dogFightPointTarget));
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
@@ -151,7 +151,7 @@ namespace CosmicShore.Editor
                     _config.maelstromWinTarget = mw;
                     _config.nucleusRushWaveTarget = nr;
                     _config.rampagePrismTarget = ra;
-                    _config.ribcagePrismTarget = rc;
+                    _config.cleavePrismTarget = rc;
                     _config.wildlifeKillTarget = wl;
                     _config.dogFightPointTarget = df;
                     _config.bendsPointTarget = bd;
@@ -176,7 +176,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Maelstrom", mw > 0 ? mw.ToString() : EndConditionOverridesSO.DefaultMaelstromWinTarget + " (default)");
             EditorGUILayout.LabelField("Brood Rush", nr > 0 ? nr.ToString() : EndConditionOverridesSO.DefaultBroodRushWaveTarget + " (default)");
             EditorGUILayout.LabelField("Rampage", ra > 0 ? ra.ToString() : EndConditionOverridesSO.DefaultRampagePrismTarget + " (default)");
-            EditorGUILayout.LabelField("PeelTheCage", rc > 0 ? rc.ToString() : EndConditionOverridesSO.DefaultPeelTheCagePrismTarget + " (default)");
+            EditorGUILayout.LabelField("Cleave", rc > 0 ? rc.ToString() : EndConditionOverridesSO.DefaultCleavePrismTarget + " (default)");
             EditorGUILayout.LabelField("Wildlife Liberation", wl > 0 ? wl.ToString() : EndConditionOverridesSO.DefaultWildlifeKillTarget + " (default)");
             EditorGUILayout.LabelField("Dog Fight", df > 0 ? df.ToString() : EndConditionOverridesSO.DefaultDogFightPointTarget + " (default)");
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
@@ -225,7 +225,7 @@ namespace CosmicShore.Editor
                    "Maelstrom: " + Fmt(_config.maelstromWinTargetBuild, "default " + EndConditionOverridesSO.DefaultMaelstromWinTarget) + "\n" +
                    "Brood Rush: " + Fmt(_config.nucleusRushWaveTargetBuild, "default " + EndConditionOverridesSO.DefaultBroodRushWaveTarget) + "\n" +
                    "Rampage: " + Fmt(_config.rampagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultRampagePrismTarget) + "\n" +
-                   "PeelTheCage: " + Fmt(_config.ribcagePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultPeelTheCagePrismTarget) + "\n" +
+                   "Cleave: " + Fmt(_config.cleavePrismTargetBuild, "default " + EndConditionOverridesSO.DefaultCleavePrismTarget) + "\n" +
                    "Wildlife Liberation: " + Fmt(_config.wildlifeKillTargetBuild, "default " + EndConditionOverridesSO.DefaultWildlifeKillTarget) + "\n" +
                    "Dog Fight: " + Fmt(_config.dogFightPointTargetBuild, "default " + EndConditionOverridesSO.DefaultDogFightPointTarget) + "\n" +
                    "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +

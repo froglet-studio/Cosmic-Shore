@@ -18,7 +18,7 @@ MonoBehaviour:
   maelstromWinTarget: 6
   nucleusRushWaveTarget: 3
   rampagePrismTarget: 2000
-  ribcagePrismTarget: 2000
+  cleavePrismTarget: 2000
   wildlifeKillTarget: 30
   dogFightPointTarget: 90
   bendsPointTarget: 3
@@ -40,7 +40,7 @@ MonoBehaviour:
   maelstromWinTargetBuild: 6
   nucleusRushWaveTargetBuild: 3
   rampagePrismTargetBuild: 2000
-  ribcagePrismTargetBuild: 2000
+  cleavePrismTargetBuild: 2000
   wildlifeKillTargetBuild: 30
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3

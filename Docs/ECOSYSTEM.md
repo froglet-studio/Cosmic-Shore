@@ -2334,9 +2334,9 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 
 ---
 
-## 22. PeelTheCage — a mode redefining "control", and the shielded-steering finish (August 2026)
+## 22. Cleave — a mode redefining "control", and the shielded-steering finish (August 2026)
 
-> **STATUS (2026-08, later the same month): PeelTheCage no longer has fauna.** The brood was removed
+> **STATUS (2026-08, later the same month): Cleave no longer has fauna.** The brood was removed
 > from the level on request, and with it the controller's ladder. Everything §22.1–§22.2b describes
 > is therefore a record of a SHIPPED-THEN-RETIRED consumer, not live behaviour — but the **platform
 > capabilities it drove all remain** (`Cell.SetModeControlOverride` / `ModePhaseFloor` /
@@ -2346,12 +2346,16 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 > reusable part, and re-adding a brood to any mode is a data change against these APIs.
 > **§22.3 (shielded mass leaves the targeting grids) is live and cross-mode — it is unaffected.**
 
-PeelTheCage (`GameModes.PeelTheCage = 39`, display name "Peel the Cage",
-`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
-shells of prism bone that domains race to smash their way out of — the bone IS the score
-(`ScoringMetric.PrismsDestroyed`, target 2,000), and intensity picks how many shells there are
-(2–5, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
-plain one-hit prisms, so §22.3 no longer applies to its own arena.
+Cleave (`GameModes.Cleave = 39`, `_Scripts/Controller/Arcade/CLEAVE.md`) is the Rhino-only
+slicing race: domains race to cut 2,000 hostile prisms out of the arena
+(`ScoringMetric.PrismsDestroyed`), and the arena IS the score. Intensity picks WHICH PLACE you
+cut rather than how much of it there is — four unrelated arenas, one `CellConfigDataSO` each via
+`CellTypeChoiceOptions.IntensityWise`: angled panes, corrugated wave sheets, the three-rind cage
+this mode used to be named after, and interlocked one-sided Möbius ribbons. Every prism in all
+four is plain or danger, so §22.3 no longer applies to its own arena — and the reason it may
+never apply again is an ECOLOGY-adjacent one worth having here: a super-shielded prism can only
+be popped by an ENERGIZED Rhino blade, and an AI never pulls the triggers that energize it, so
+hardened mass in a destruction-scored arena is mass an all-AI domain can never remove.
 
 While it HAD fauna it was ecologically interesting for one reason — **the whole "the fauna hunt
 whoever is losing" feature was written in zero lines of fauna code**, and getting there needed one
@@ -2360,7 +2364,7 @@ mode that wants it.
 
 ### 22.1 The leader IS the controlling domain
 
-`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. PeelTheCage's
+`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. Cleave's
 controller sets it to whichever domain leads the destruction race. Everything else is
 existing machinery:
 
@@ -2374,7 +2378,7 @@ existing machinery:
   mass. That is the entire feature. There is no targeting code, no per-player fauna
   steering, no "find the loser" query — the diet rule was always this, and the mode
   merely arranged for the fauna to wear the right colour.
-- PeelTheCage's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
+- Cleave's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
   a nucleus control zone switches herbivores to the spatial "eat anything outside the
   nucleus" diet, which would point the swarm at every team including the leader's.
 
@@ -2404,7 +2408,7 @@ that is the point of the override being a domain rather than a rule.
 
 `Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a
 phase. The volume ladder still runs every tick; the floor only ever **raises** the
-answer. PeelTheCage floors the cell at Restless once the LEADING domain reaches 25% of the win
+answer. Cleave floors the cell at Restless once the LEADING domain reaches 25% of the win
 target and Frenzy at 50%, so fauna aggression, steering, danger-immunity and speed all come
 from the existing `CellPhase → CellAggressionLevel` mapping. Keying the rungs to the
 leader's own progress rather than a cross-domain total is what keeps the escalation
@@ -2416,7 +2420,7 @@ clock. Note the direction of travel — destruction *lowers* the cell's volume, 
 ordinary ladder would only ever descend here; the floor is the sole thing that climbs.
 
 `Cell.FaunaReleaseTier` + `FaunaConfigurationSO.ReleaseTier` stage which species may
-seed (PeelTheCage: the four grazer species from the first tick — penned, not gated — and the
+seed (Cleave: the four grazer species from the first tick — penned, not gated — and the
 predator at 50%). Defaults — config tier 0, cell `int.MaxValue` — leave every shipped
 biome released from the first tick.
 Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
@@ -2451,17 +2455,17 @@ driven by the pen instead of by mode progress, so it adds no new ladder. Detecti
 Burst `PrismSpatialIndex.QuerySphere` on the PHASE tick (0.4 s, shared buffer, shielded
 mass filtered) — never a physics query, and only while a pen exists.
 
-The pen radius deliberately sits INSIDE the structure that visually encloses it (PeelTheCage:
+The pen radius deliberately sits INSIDE the structure that visually encloses it (Cleave:
 338 vs a 360 shell), so the enclosure's own prisms are outside the pen. That is what stops
 a penned brood from quietly eating its own cage — which matters because a cage may
-legitimately contain unshielded prisms (PeelTheCage's danger traps) that would otherwise be
+legitimately contain unshielded prisms (Cleave's danger traps) that would otherwise be
 food, and would also read as a permanent "intruder".
 
 Collider budget: unchanged by the containment mechanism itself. Containment adds two
 squared-distance compares on paths that already ran; the intruder probe is one
-existing-index sphere query per 0.4 s. The CELL it is used in is another matter — PeelTheCage's
+existing-index sphere query per 0.4 s. The CELL it is used in is another matter — Cleave's
 cage is ~10,229 prisms (Rampage's deliberate arena gate) plus ~150 creature bodies, which
-is the branch's headline perf risk and is stated as such in PEEL_THE_CAGE.md.
+is the branch's headline perf risk and is stated as such in CLEAVE.md.
 
 **The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
 InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of
@@ -2474,7 +2478,7 @@ can never decide whether the gate holds.
 
 ### 22.3 The shielded-steering finish (the generalization §16 left half-done)
 
-**Symptom this would have caused.** PeelTheCage's arena is a huge shielded structure. Under
+**Symptom this would have caused.** Cleave's arena is a huge shielded structure. Under
 the pre-existing rules the cage sat in the cell's density grids, so every density
 centroid — the goal at aggression Level1 and Level2 — pointed at mass §16.2 had already
 declared inedible. The swarm would have flown to the cage and found nothing to eat.
@@ -2500,7 +2504,7 @@ a future grazer cannot re-acquire either half of the bug.
 
 **Cross-mode effect, and it is the correct one.** Skim Race's super-shielded track and
 Astro League's super-shielded edge lining no longer pull fauna steering. Both need an
-in-editor regression pass (PEEL_THE_CAGE.md § verification, step 10).
+in-editor regression pass (CLEAVE.md § verification, step 10).
 
 **Collider budget: unchanged, and strictly less work.** No collider, no physics query,
 no index query is added. Shielded prisms are *removed* from the grids, so every density
@@ -2512,7 +2516,7 @@ and ~3.7× *under* Rampage's deliberate 10,000-prism arena gate, in a cell with 
 
 **Known gap, left deliberately.** `Cell.OpposingVolume` still counts shielded mass as
 the fauna prey signal, so a shielded structure satisfies `FaunaFoodFloor` without being
-food. PeelTheCage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
+food. Cleave sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
 the honest fix is to net shielded volume out of that signal. It is the population bound
 for every biome, so it deserves its own change and its own verification rather than
 riding along here.
@@ -3953,7 +3957,7 @@ only hostility test was the owner-name/roster comparison and a cactus has no ros
 applies to the world the same rule trails always had — **your own colour is worth nothing** —
 with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
 still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
-a real targeting decision instead of decoration. PeelTheCage rides the same metric and is
+a real targeting decision instead of decoration. Cleave rides the same metric and is
 unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
 can still reach a 2,000 target out of ~10,620 prisms.
 
@@ -4055,7 +4059,7 @@ Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1
 index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
 whole match. With no error — the clamp is silent and the default is legal.
 
-This was **already live in every IntensityWise scene** (Dog Fight, PeelTheCage, Wildlife Liberation,
+This was **already live in every IntensityWise scene** (Dog Fight, Cleave, Wildlife Liberation,
 both Wildlife Blitz cells) before Rampage went near it.
 
 Fixed with three pieces that only work together:

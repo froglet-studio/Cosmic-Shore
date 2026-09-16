@@ -18,7 +18,7 @@ is REFERENCED. A mode that builds its own copy of any of those is the mistake CL
 - `CLAUDE.md` § "Game Modes & Controllers" (the roster and what each mode contributed) and
   § "Controller Hierarchy".
 - The two nearest siblings' docs under `Assets/_Scripts/Controller/Arcade/*.md`. Pick by the
-  SHAPE of the race, not the hull: a **destruction race** (Rampage / Peel the Cage / Salvo /
+  SHAPE of the race, not the hull: a **destruction race** (Rampage / Cleave / Salvo /
   Wrecking Ball), a **vessel-vs-vessel duel** (Dog Fight / The Bends / Undertow), a **goal
   race** (Astro League / Scarab Scramble / Tollway), a **gate race** (Switchback / Headlong /
   Breakwater / Skein / Redline - the `GateRaceController` platform), a **timed highest-score**

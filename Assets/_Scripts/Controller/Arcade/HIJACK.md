@@ -154,7 +154,7 @@ be authored because this cell has no nucleus: without it the crystal falls throu
 The whole yard is rotated **22.5° about world Y** as the last build step, so the equatorial spawn
 ring lines up with rail midpoints rather than the gaps between them. Players spawn through
 `arrangeSpawnPointsAroundCell` + `spawnFormation EquatorialRing` + `spawnRingRadiusFloor 1120` —
-**equatorial, not the default symmetric sphere**, for the same reason Peel the Cage is: the yard's
+**equatorial, not the default symmetric sphere**, for the same reason Cleave is: the yard's
 rails ring the core, so a polar spawn slot would face no rail at all.
 
 Outermost mass reaches **985u** < spawn ring **1120** < membrane **1200**. All three are asserted

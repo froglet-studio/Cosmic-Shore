@@ -202,7 +202,7 @@ therefore sit.
 | 3 | 7 | 11 | 13 @ 165 u | 4 | 1,396 u | ~127 s | 5,083 | 1.46 M | 25 | 1.90° | 11.37 u | 3.2 % |
 | 4 | 9 | 22 | 2 @ 150 u | 6 | 2,095 u | ~190 s | 6,699 | 1.93 M | 32 | 1.90° | 11.87 u | 0.0 % |
 
-Prism counts sit inside the shipped band (Hijack 2,772–9,930; Peel the Cage 10,620–20,153).
+Prism counts sit inside the shipped band (Hijack 2,772–9,930; Cleave 10,620–20,153).
 **Volume does not**, and that is deliberate — see § 8.
 
 **A ring is one of two things.** A **PINNED** ring sits on one named strand — a seeded draw that is
@@ -438,7 +438,7 @@ idempotent (34/34 unchanged on a second run); 7,402 project guids scanned with z
 `GlobalObjectIdHash` values. Unity recomputes them the first time `MinigameSkein.unity` is opened
 and saved — commit that diff. It is harmless meanwhile (two game scenes are never loaded at once,
 and NGO indexes in-scene objects by `(hash, sceneHandle)`), but `MinigameSwitchback` carries
-distinct values only because a human opened it, and Hijack shipped with PeelTheCage's.
+distinct values only because a human opened it, and Hijack shipped with Cleave's.
 
 **The AI is wired, mode-side, with no platform change.** `SkeinController.ArmRacers` installs one
 `SetExternalTargetProvider` closure per bot. While ATTACHED it aims a lead point down the pilot's

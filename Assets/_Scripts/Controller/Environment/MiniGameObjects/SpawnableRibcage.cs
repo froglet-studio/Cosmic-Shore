@@ -4,8 +4,9 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "PeelTheCage" - the cage cell environment and the arena of <see cref="GameModes.PeelTheCage"/>
-    /// (player-facing name: "Peel the Cage"). A LAYERED ORANGE: one or more concentric hollow
+    /// "The Cage" - <see cref="GameModes.Cleave"/>'s INTENSITY-3 arena, and the one rung of that
+    /// mode's ladder that predates it: Cleave was called "Peel the Cage" when all four of its
+    /// intensities were nested shells. A LAYERED ORANGE: one or more concentric hollow
     /// shells of prism bone, added INWARD from a fixed outer radius. Each shell is meridian ribs
     /// running pole to pole, latitude hoops binding them, a diagonal through every rib x hoop cell
     /// that splits it into TRIANGLES, chunky joints at each crossing, and a crown closing each pole.
@@ -48,14 +49,18 @@ namespace CosmicShore.Gameplay
     ///
     /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
     /// Baselines): 10,620 / 14,731 / 17,992 / 20,153 prisms at intensity 1..4 (2..5 shells). See
-    /// PEEL_THE_CAGE.md for the per-shell table and the collider-budget statement, and
+    /// CLEAVE.md for the per-shell table and the collider-budget statement, and
     /// Tools/Build/ribcage_budget.py for the model.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
     {
         // Outermost shell. Density is where the prism budget goes, not radius: a bigger sphere
         // would just move the arena out. The OUTER weave is deliberately open - see the summary.
-        const float CageR = 360f;
+        //
+        // The radius itself belongs to SliceArenaGeometry, not to this file: all four Cleave
+        // arenas are built to one envelope, and the AI's stations and the player spawn ring are
+        // both derived from it. A local copy of the number is how one of them drifts.
+        const float CageR = SliceArenaGeometry.OuterRadius;
 
         /// <summary>Radial spacing between rinds - shells land at 360 / 295 / 230 / 165 / 100.</summary>
         const float ShellGap = 65f;
@@ -68,14 +73,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const int MaxShells = 5;
 
-        /// <summary>
-        /// The cage's OUTER shell radius, exposed so <c>PeelTheCageController</c> can aim its AI
-        /// cage-breakers at the bone without hard-coding a second copy of the number. Shells are
-        /// added inward, so this is intensity-independent and the AI needs no per-intensity case.
-        /// </summary>
-        public const float ShellRadius = CageR;
-
-        [Header("PeelTheCage")]
+        [Header("Cleave")]
         [Tooltip("How many concentric rinds to build, from the outer shell inward. THE INTENSITY " +
                  "DIAL: author one prefab variant per shell count and point each intensity's " +
                  "CellConfigDataSO at the matching variant (Cell picks by IntensityWise). Each " +

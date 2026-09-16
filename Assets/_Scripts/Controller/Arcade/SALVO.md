@@ -120,7 +120,7 @@ Why this shape:
 ## Scoring (nothing new)
 
 `ScoringMetric.PrismsDestroyed` against `GameDataSO.PrismTargetCount` — the exact Rampage /
-PeelTheCage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
+Cleave machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
 (server-side for trails, and via `Player.ReportEnvironmentPrismDestroyed_ServerRpc` for the
 client-simulated environment — the Boneyard's wreckage is environment-owned `Domains.Blue`
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is

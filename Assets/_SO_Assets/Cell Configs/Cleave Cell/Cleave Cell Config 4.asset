@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Cleave Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Cleave
+  Description: 'The Twistbands - intensity 4 of Cleave: three interlocked one-sided Mobius ribbons carrying a plated deck that rolls out from under the blade as you fly it.
+    16423 prisms, 228 of them danger traps. NO NUCLEUS by design,
+    and no fauna. PhaseThresholds ride THIS arena''s own MEASURED baseline; regenerate with
+    Tools/Build/author_cleave_assets.py after any geometry change rather than hand-editing.'
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: cd48ee57babf1969b767be400358c056, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000203, guid: bb9ca47fb80de4f74ac23703df6b7774, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 17123
+    RestlessExit: 16923
+    FrenzyEnter: 20023
+    FrenzyExit: 19423
+    RestlessEnterVolume: 4069455
+    RestlessExitVolume: 4066255
+    FrenzyEnterVolume: 4115855
+    FrenzyExitVolume: 4106255

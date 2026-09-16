@@ -602,7 +602,7 @@ answer. It is read-only on scenes and idempotent.
 
 | Mode | Arenas | Note |
 |---|---|---|
-| PeelTheCage | 5 | the cage's rind count IS the intensity |
+| Cleave | 5 | the cage's rind count IS the intensity |
 | Dog Fight, Salvo's twin arena | 4 | the shared Boneyard configs |
 | The Bends | 4 | Rampage's arena, referenced not forked |
 | Wildlife Liberation | 4 | |
@@ -622,7 +622,7 @@ at that intensity.
 | Intensity | Adds | Pool |
 |---|---|---|
 | 1 | Joust, Skim Race, Scurry | 3 |
-| 2 | Rampage, Peel the Cage | 5 |
+| 2 | Rampage, Cleave | 5 |
 | 3 | Scarab Scramble | 6 |
 | 4 | The Bends | 7 |
 

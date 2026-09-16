@@ -20,7 +20,7 @@ the scenes — the real per-mode configuration is tiny and always was.
 
 > **Scope, re-measured 2026-09-07 (`Tools/Build/gamecanvas_unification_report.py`):** the fork is
 > on **15** scenes, not six — every mode cloned since (Drumfire, Hijack, Switchback, Salvo, Scarab
-> Scramble, Dog Fight, Bends, Wildlife Liberation, Peel the Cage) inherited the whole override blob
+> Scramble, Dog Fight, Bends, Wildlife Liberation, Cleave) inherited the whole override blob
 > from its donor scene. And the overrides were only half the story: **every fork scene also carries
 > STRUCTURAL edits on its canvas instance** — 9 removed objects, 3 removed components and 3
 > scene-added components — identical across 12 of the 15. See §9. **The prefab asset was never what
@@ -47,7 +47,7 @@ never reaches the six newer modes, and vice versa.
 
 | Fork | Scenes |
 |---|---|
-| `GameCanvas-SkimRace` (15 when measured; **14 today** — the Drumfire scene was deleted with that mode in 2026-09) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, PeelTheCage, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, ~~Drumfire~~ |
+| `GameCanvas-SkimRace` (15 when measured; **14 today** — the Drumfire scene was deleted with that mode in 2026-09) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, Cleave, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, ~~Drumfire~~ |
 | `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), DuelForTheCell, BenchmarkStressTest, Recording Studio ×2 |
 
 (The 6-scene table below §2 is the 2026-08 measurement kept for the record; the nine newer scenes

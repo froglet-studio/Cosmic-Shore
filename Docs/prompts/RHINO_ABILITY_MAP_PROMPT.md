@@ -4,7 +4,7 @@ Paste everything below into a fresh session.
 
 ---
 
-The Rhino locks three shipped game modes — **Astro League**, **Peel the Cage** and **Headlong** —
+The Rhino locks three shipped game modes — **Astro League**, **Cleave** and **Headlong** —
 and its elemental ability map has **one of four slots designed and none of its four level-5
 upgrades authored**. Three modes outsiders will play in the invite build rest on a hull the fleet's
 own contract calls unfinished, and its HUD consequently renders four cards of which three are
@@ -52,7 +52,7 @@ from the code and quote the authored numbers:
   contact on the **point of the blade that touched**, with the strike speed being that point's true
   velocity, so a swung tip fires an Astro League ball far harder than the hull — with an extra tip
   bonus on top. It is also the one force that breaks a super-shield.
-- **Trail slabs.** The existing Mass scalar, and the reason Peel the Cage's arena reads the way it
+- **Trail slabs.** The existing Mass scalar, and the reason Cleave's arena reads the way it
   does.
 - **Turn-radius convergence.** `RotationThrottleScaler 0.5` gives the Rhino an asymptotic turn
   radius of `180/(π·r)` = **115 u**, where every other hull's grows without bound. This is *why*

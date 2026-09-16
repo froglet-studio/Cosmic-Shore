@@ -39,7 +39,7 @@ other domain minigame.
   three platform layers (`SyncFromArcadeGame`, `ResolveSpawnVesselType`, the AI clamp). No
   mode-local vessel check
 - **Intensity**: **traffic**, and it is `CellTypeChoiceOptions.IntensityWise` over **four** cell
-  configs (list order = intensity, the Rampage / Peel the Cage shape). Court radius climbs
+  configs (list order = intensity, the Rampage / Cleave shape). Court radius climbs
   (480→720) while the crystal count falls (`CrystalCountMode.IntensityScaled`: 4 players get
   7 / 6 / 4 / 2), so intensity 1 is a small court thick with balls and intensity 4 is a big court
   where every ring has to be aimed at a line somebody will actually fly — and each setting grows
@@ -478,7 +478,7 @@ nucleus), count per intensity, neutral domain.
 
 **Collider budget.** The arena's growth is bounded **by the win condition, not by a culler**: at
 most 10 monuments (4 + 3 + 3) × 255 prisms = **2,550 prisms**, plus the standing **560** anchor
-prisms — comparable to PeelTheCage's intensity-1 cage (10,620) and well inside Atlantis (~69k). A
+prisms — comparable to Cleave's intensity-1 cage (10,620) and well inside Atlantis (~69k). A
 typical match lands nearer 10–14 monuments. The anchors add **14 always-on** colliders (one heart
 each); their body prisms are LOD-cullable boxes. Rings themselves cost nothing — `ToyFactory.AddSwitchRing` is a generated mesh with
 **no collider**, which is also why a vessel flies straight through one and only a ball can

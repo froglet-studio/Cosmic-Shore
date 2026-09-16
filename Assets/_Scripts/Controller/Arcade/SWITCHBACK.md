@@ -251,7 +251,7 @@ waypoints**:
 
 `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and passes through on
 arrival — so handing it the ring's centre produces a pilot orbiting the hoop, the defect both
-PeelTheCage and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
+Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
