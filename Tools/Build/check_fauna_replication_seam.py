@@ -21,16 +21,33 @@ producers (`ModePreviewArena`, `LifeformMatrixToy`, `Microscene`) reached
 `CellLifeSpawnerBase.SpawnFaunaWithDomain` directly and so bypassed a seam that
 lived one level up in `SpawnFaunaBanded`.  The seam has since moved down to the
 one `Instantiate` every producer reaches, which closes those three by
-construction - but a NEW producer can still call `Instantiate` itself, which is
-exactly what `LightFaunaManager` did.  That is what this gate watches.
+construction - but a NEW producer can still call `Instantiate` itself.  Three
+did: `LightFaunaManager` (a school of QuadFish), `BoidManager` (100-150
+TadPoleFauna, both of them NetworkObject-carrying prefabs) and `WormFauna`
+(five producers).  That is what this gate watches, and all three were found by
+RUNNING it rather than by reading the code.
 
 WHAT IT CHECKS
 --------------
-For every `Instantiate(<expr>, ...)` whose argument names a fauna prefab -
-matched textually: the expression contains "fauna" AND ends in "prefab", both
-case-insensitively, so `faunaPrefab`, `lightFaunaPrefab` and `cfg.FaunaPrefab`
-match while `definition.PreviewFauna` (a CONFIG asset, not a creature) does not
-- the enclosing METHOD must also contain a `FaunaNetworkSync.ServerSpawn` call.
+For every `Instantiate(<expr>, ...)` whose argument names a creature, the
+enclosing METHOD must also contain a `FaunaNetworkSync.ServerSpawn` call.
+
+"Names a creature" is matched textually, and the test WIDENS inside a file that
+declares a `Fauna` subclass, because a creature class instantiating a prefab is
+instantiating a creature:
+
+  * anywhere: the expression contains "fauna" AND ends in "prefab" - so
+    `faunaPrefab`, `lightFaunaPrefab` and `cfg.FaunaPrefab` match while
+    `definition.PreviewFauna` (a CONFIG asset, not a creature) does not;
+  * in a creature file: ending in "prefab" is enough (`headPrefab`,
+    `bodyPrefab`, `tailPrefab`, `boidPrefab`), and `Instantiate(this, ...)` -
+    how a colony splits itself into a second population - counts too.
+
+That widening is what reaches `WormFauna` and `BoidManager`, whose producers
+name no fauna at all.  It stays clean because what a creature class
+instantiates that is NOT a creature does not end in "prefab": `Boid.cs`
+instantiates `healthPrism`, which is exactly a negative control in the
+self-test.
 
 Method extent is found by expanding outward one brace block at a time until a
 block containing the call is found, or until the enclosing block's header names
@@ -38,11 +55,19 @@ a `class`, `struct` or `namespace`, at which point the site has no covering
 call and is reported.
 
 It is a TEXTUAL check on purpose: it needs no Unity assemblies and no symbol
-table, which is what lets it run in the same second as the other gates.  The
-cost is that it is scoped narrowly enough to stay quiet - it will not notice a
-producer that assigns the prefab to a differently-named local first.  That is
-stated rather than papered over; the runtime backstop for anything this misses
-is `NetworkSceneObjectGuard.Sweep` at connection approval.
+table, which is what lets it run in the same second as the other gates.  Two
+costs, both stated rather than papered over:
+
+  * OUTSIDE a creature file it stays narrow, so a producer there that assigns a
+    creature prefab to a neutrally-named local is invisible to it;
+  * it asks about the enclosing METHOD, so a producer that hands its newborn
+    straight to a funnel one call away is reported even when that funnel is
+    correct.  That is deliberate - a sibling method holding the seam is one of
+    the negative controls - and the right answer is to move the `Instantiate`
+    INTO the funnel, which is what `WormFauna.AddSegmentToChain` now does.
+
+The runtime backstop for anything this misses is
+`NetworkSceneObjectGuard.Sweep` at connection approval.
 
 Usage:
     python3 Tools/Build/check_fauna_replication_seam.py
@@ -59,14 +84,26 @@ REPO = Path(__file__).resolve().parents[2]
 SCAN_ROOT = REPO / "Assets" / "_Scripts"
 
 # Instantiate(<expr>  -- <expr> is an identifier possibly qualified with dots.
-INSTANTIATE = re.compile(r"\bInstantiate\s*(?:<[^>]*>\s*)?\(\s*([A-Za-z_][\w.]*)")
+INSTANTIATE = re.compile(r"\bInstantiate\s*(?:<[^>]*>\s*)?\(\s*([A-Za-z_][\w.]*|this)")
 SERVER_SPAWN = re.compile(r"\bFaunaNetworkSync\s*\.\s*ServerSpawn\s*\(")
 TYPE_HEADER = re.compile(r"\b(class|struct|interface|namespace|enum)\b")
 
+# A file whose own class IS a creature. Inside one, "prefab" alone is enough - a
+# creature class instantiating a prefab is instantiating a creature - which is what
+# reaches WormFauna's headPrefab/bodyPrefab/tailPrefab and BoidManager's boidPrefab.
+# Outside one the test has to stay narrow, because "prefab" project-wide is every
+# projectile, prism and UI row.
+FAUNA_SUBCLASS = re.compile(r"\bclass\s+\w+\s*:\s*(?:Fauna|LightFauna|WormFauna|WormSegmentFauna)\b")
 
-def names_a_fauna_prefab(expr: str) -> bool:
+
+def names_a_fauna_prefab(expr: str, in_creature_file: bool) -> bool:
     low = expr.lower()
-    return "fauna" in low and low.endswith("prefab")
+    if low.endswith("prefab"):
+        # Inside a creature class, any prefab it spawns is a creature. `healthPrism`
+        # and friends do not end in "prefab", which is what keeps this clean.
+        return in_creature_file or "fauna" in low
+    # `Instantiate(this, ...)` is how a colony splits itself into a second population.
+    return in_creature_file and expr == "this"
 
 
 def strip_noise(src: str) -> str:
@@ -153,11 +190,12 @@ def block_header(src: str, open_brace: int) -> str:
 def check_source(src: str, path_label: str) -> list[str]:
     clean = strip_noise(src)
     opens, close_of = brace_map(clean)
+    in_creature_file = bool(FAUNA_SUBCLASS.search(clean))
     problems: list[str] = []
 
     for m in INSTANTIATE.finditer(clean):
         expr = m.group(1)
-        if not names_a_fauna_prefab(expr):
+        if not names_a_fauna_prefab(expr, in_creature_file):
             continue
         pos = m.start()
         line_no = clean.count("\n", 0, pos) + 1
@@ -246,6 +284,45 @@ class S {
 class S {
   void Lay() {
     var p = Instantiate(prismPrefab, pos, rot);
+  }
+}
+""", False),
+    ("creature file: a neutrally-named prefab DOES fire", """
+class WormFauna : Fauna {
+  void Grow() {
+    var seg = Instantiate(headPrefab, pos, rot);
+    seg.Initialize(cell);
+  }
+}
+""", True),
+    ("creature file: Instantiate(this) is a second population", """
+class WormFauna : Fauna {
+  void Split() {
+    var colony = Instantiate(this, pos, rot);
+    colony.Initialize(cell);
+  }
+}
+""", True),
+    ("creature file: a covered neutrally-named prefab is clean", """
+class BoidManager : Fauna {
+  void Spawn() {
+    Boid b = Instantiate(boidPrefab, pos, rot, transform);
+    b.Initialize(cell);
+    FaunaNetworkSync.ServerSpawn(b);
+  }
+}
+""", False),
+    ("creature file: a PRISM is not a creature", """
+class Boid : Fauna {
+  void AddBlock() {
+    var newBlock = Instantiate(healthPrism, transform.position, transform.rotation, transform);
+  }
+}
+""", False),
+    ("NOT a creature file: Instantiate(this) must not fire", """
+class Spawner : MonoBehaviour {
+  void Clone() {
+    var copy = Instantiate(this, pos, rot);
   }
 }
 """, False),

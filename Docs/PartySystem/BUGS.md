@@ -13,7 +13,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 |----|-------|-----------|--------|
 | B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | Root-caused & fixed | 🟢 |
 | B3 | TC4 bounce leaves 2 vessels + dead controls | Fixed-by-construction | 🟢 |
-| B5 | TC2/TC4 second joiner fails to join | Root-caused 2026-09-16: a leaked fauna `NetworkObject` (B16 via three producers that skipped `FaunaNetworkSync.ServerSpawn`). Seam moved to `SpawnFaunaWithDomain`; sweep added at connection approval. Wants a multi-machine pass | 🟢 |
+| B5 | TC2/TC4 second joiner fails to join | Root-caused 2026-09-16: a leaked fauna `NetworkObject` (B16 via **six** producers that skipped `FaunaNetworkSync.ServerSpawn` — three found by reading, three by the new gate). Seams moved to the funnels, sweep added at connection approval, gate added. Wants a multi-machine pass | 🟢 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B8 | Host-side phantom-rejoin loop after a client leaves (stale `joined_party`) | Fixed & MPPM-verified | 🟢 |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
@@ -441,12 +441,38 @@ The 2026-09-11 audit was right about everything it examined and was looking in
 the wrong place: it swept the JOIN path, and the defect was planted by the MENU
 long before anyone knocked.
 
+### Three MORE producers, found by the gate rather than by reading
+
+The fix above came with a gate (`Tools/Build/check_fauna_replication_seam.py`).
+Running it named three producers nobody had looked for — they do not go through
+`CellLifeSpawnerBase` at all, they call `Instantiate` themselves, and **none of
+them names a fauna**, so no amount of grepping for "fauna" would have produced
+them:
+
+| Producer | What it releases | Live? |
+|---|---|---|
+| `BoidManager.SpawnBoids` | **100–150** `TadPoleFauna` — one of the two prefabs that CARRY a `NetworkObject` | **yes** — `MinigameDuelForTheCell` and two tool scenes |
+| `LightFaunaManager.SpawnGroup` | a school of `QuadFish` — the other one | dormant: no shipped multiplayer cell wires one |
+| `WormFauna` (×5) | four segment producers plus the split colony | dormant: no worm prefab carries a `NetworkObject` |
+
+`BoidManager` is the one that matters. `MassTadpolePopulation.prefab` and
+`SpaceTadpolePopulation.prefab` both wire `boidPrefab` to `TadPoleFauna.prefab`
+and spawn **150** and **100** of them, so one of those populations is a hundred
+identical-hash un-spawned `NetworkObject`s in a single scene. The other two are
+dormant rather than absent and were closed for exactly that reason — *a defect
+fenced behind an unused prefab is one consumer away from shipping.*
+
 ### Fix
 
-1. **At the producer.** The lineage bind and the replication seam move down out
-   of `SpawnFaunaBanded` into **`SpawnFaunaWithDomain`** — the single
-   `Instantiate` every producer reaches — so a fourth site cannot bypass them by
-   construction. `SpawnFaunaBanded` collapses to placement, which is all it was
+1. **At the producer, in three places** — the same move each time: put the seam
+   at the one `Instantiate` a family of producers all reach.
+   **`CellLifeSpawnerBase.SpawnFaunaWithDomain`** takes the lineage bind and the
+   seam down out of `SpawnFaunaBanded` (covering the mode preview, the Lifeform
+   Matrix toy and the Wanderway conveyor);
+   **`WormFauna.AddSegmentToChain`** absorbs the `Instantiate` its four segment
+   producers each did for themselves, so the colony has ONE; and
+   `BoidManager` / `LightFaunaManager` / the worm split each seam their own single
+   site. `SpawnFaunaBanded` collapses to placement, which is all it was
    ever about. The unused `SpawnFauna` overload gets the seam too, rather than
    leaving the hazard parked in an entry point that has no callers today.
    Ordering is preserved: `AssignLineage` first (the bind rolls the element that
@@ -461,6 +487,12 @@ long before anyone knocked.
    hash, keeping one). This is what makes the NEXT leak survivable instead of
    session-ending.
 
+3. **A gate at the door.** `Tools/Build/check_fauna_replication_seam.py`
+   (`--self-test`) requires every runtime `Instantiate` of a creature prefab to
+   reach `FaunaNetworkSync.ServerSpawn` in the same method. It is what found the
+   three producers in the second table — none of which a human reading the diff
+   had thought to look for.
+
 **The general rule, which is the platform's own arriving from a new direction:**
 *a rule enforced at one PRODUCER can only ever see that producer.* The old
 `SpawnFaunaBanded` comment asked the next author not to add a spawn site that
@@ -468,13 +500,20 @@ skipped the seam. Three sites did anyway — not carelessly, but because they
 needed placement that method already did and had no reason to suspect a seam
 lived in a sibling.
 
-**Verification.** All six out-of-editor gates pass. A standalone dotnet repro
-compiles the new 6-parameter signature plus all four updated call shapes and the
-two legacy shapes, with a negative control on the old signature that fails all
-four with `CS1501` — arity and overload errors are otherwise editor-only.
+**Verification.** All seven out-of-editor gates pass. A standalone dotnet repro
+compiles every changed call shape — the new 6-parameter `SpawnFaunaWithDomain`
+plus its four updated callers and two legacy shapes, and the re-signatured
+`AddSegmentToChain` with all four of its callers including the one that uses the
+return value — with a negative control on the old signature that fails with
+`CS1501`, since arity and overload errors are otherwise editor-only.
 **Nothing has been run in a Unity editor.** This still wants a real
 multi-machine pass: host + 2 guests, **with an arcade card selected before the
 second guest joins**, which is the condition that made the old build fail.
+A second, independent reproduction now exists thanks to `BoidManager`: **play a
+round of Cellular Duel (`MinigameDuelForTheCell`) and come back**, which loads
+`SpaceTadpolePopulation` and its 100 strays into the host's session. Either
+precondition alone should be enough; neither is optional to the test, because
+without one the pre-fix build passes too.
 
 *The 2026-09-11 source audit and the original diagnosis follow, kept because the
 table of closed causes is still the record for each of them.*
