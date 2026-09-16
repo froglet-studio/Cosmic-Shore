@@ -2578,6 +2578,53 @@ remove every `Connections` record whose src OR dst is a doomed id, then fix the 
 `ObjectType → Count` rows. Assert afterwards that no connection references a missing object —
 that one check is worth more than re-reading the diff.
 
+**Repairing geometry the IMPORTER discards, and the one technique that makes it safe.**
+Unity's `"A polygon of Mesh 'X' ... is self-intersecting and has been discarded"` is not a
+quality warning — it names an action the importer TOOK, so it is a report of missing faces in
+the shipped mesh. **Measure the action a warning names, not the ratio**: "one face out of
+11,113, 0.009%, pre-existing art" is entirely true and answers the wrong question, and it is
+how twelve missing hull faces survived a first pass. (The mesh name in the message is the
+**Model** node, not the Geometry node — they differ, and searching the wrong one finds nothing.)
+
+The usual offender is a **zero-length edge**: two adjacent corners indexing different vertices
+at the identical position. Repair by dropping the redundant CORNER, not by moving or merging a
+vertex — and check first whether the two corners carry the same UV (if so the edit is lossless;
+if not you are about to weld a seam). Where they differ only in normal, pick which to keep by
+MEASURING — the corner whose normal sits farther from the polygon's own Newell normal is the
+one to drop. Scope the repair to exactly what the importer discards: a zero-area triangle is
+degenerate too and Unity KEEPS it, so repairing one both exceeds the report and would leave a
+2-gon.
+
+Removing one corner touches five parallel arrays with three different domains —
+`PolygonVertexIndex` (corner), normals (ByPolygonVertex), UV indices (ByPolygonVertex +
+IndexToDirect), materials (**ByPolygon — unchanged**, the polygon count does not move), and
+`Edges` + smoothing (ByEdge). Getting the domain wrong is silent.
+
+**The generalizable technique: PROVE A REBUILD RULE AGAINST THE SHIPPED ARTIFACT BEFORE YOU
+RELY ON IT.** `Edges` stores one corner position per unique undirected edge, so removing a
+corner shifts every later entry and patching it by hand is guesswork. Instead, guess the rule
+that BUILT it — emit the first occurrence of each undirected vertex pair in polygon-corner
+order — and compare against what is already in the file. When that reproduces the shipped array
+exactly (same length, same order, same values), "I think this is how it was built" becomes a
+fact and rebuilding it is safe; when it does not, you have learned that cheaply and can refuse
+to write. This applies to any derived array you must regenerate rather than patch. Sanity-check
+the *direction* of the result too: here the edge count RISES by one per repaired polygon, and a
+model that predicted a fall would have been wrong about the topology.
+
+Then verify in layers, cheapest first: round-trip the writer on the untouched file (node count
+and every property value, plus an independent reader); diff the node tree and assert that ONLY
+the arrays you meant to touch differ; assert the invariants that must hold (vertex positions
+byte-identical, blend shapes byte-identical, polygon count unchanged, each layer's length
+matching its domain); then `assimp` the before and after and diff the reports.
+
+**A path with a space silently truncates a shell sweep.** `for f in $(git diff --name-only …)`
+and `… | xargs grep` both word-split, so `Assets/_Models/Vessel Models/Thing.fbx.meta` becomes
+two nonexistent paths — and the loop does not fail, it just processes the files that happen to
+have no spaces. A deleted-asset guid sweep reported "1 file, 0 references" for a change that
+deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
+`while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
+clean result.
+
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
 Origin: the crystal-capture rework (2026-08). The branch's whole payoff was routed through

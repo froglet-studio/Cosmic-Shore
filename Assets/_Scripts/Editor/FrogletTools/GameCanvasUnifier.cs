@@ -693,7 +693,16 @@ namespace CosmicShore.Editor.Froglet
         {
             // Same instanceID, possibly a new managed wrapper type after the m_Script swap.
             var id = before.GetInstanceID();
+            // Guarded the way FMOD guards the same call in this very assembly
+            // (Plugins/FMOD/src/Editor/EventBrowser.cs): EntityIdToObject replaced the
+            // deprecated InstanceIDToObject in 6000.3, and an unguarded call is a compile
+            // error for anyone who opens the project on an older editor - which takes
+            // Assembly-CSharp-Editor, and therefore every Froglet tool, down with it.
+#if UNITY_6000_3_OR_NEWER
             return EditorUtility.EntityIdToObject(id) as Component;
+#else
+            return EditorUtility.InstanceIDToObject(id) as Component;
+#endif
         }
 
         // ── Field copying ────────────────────────────────────────────────────────

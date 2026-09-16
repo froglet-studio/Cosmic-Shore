@@ -1,4 +1,4 @@
-# Vessel construction — how the fleet is actually built, and the three ways that goes wrong silently
+# Vessel construction — how the fleet is actually built, and the four ways that goes wrong silently
 
 **Read before wiring a vessel prefab, swapping a vessel's model, deleting a vessel model, or
 placing anything on a hull by measurement.**
@@ -1045,6 +1045,73 @@ Measurement provenance: the collider-oracle fit, FK vs the FBX's own `TransformL
 centroids equal to the old nose geometry to four decimals — five independent negative controls
 before the pipeline was trusted. Re-proven by `Tools/Build/verify_vessel_rig_puppetry_frames.py`
 (checks 8–11).
+
+### 4.7 Discrepancy class 4 — geometry the importer DISCARDS
+
+`A polygon of Mesh 'dolohin' ... is self-intersecting and has been discarded.`
+
+Read the verb. Unity does not warn about a self-intersecting polygon and then draw it — it
+**drops the face**. So that console line is not noise about art quality, it is a report of
+**missing geometry**, and on `dolphin_shapekey_with_animations.fbx` there were twelve of them:
+six mirrored pairs at y ≈ +2.21, 0.263% of the mesh's surface, absent from the hull this
+document's own rig swap put on the Dolphin.
+
+It survived a first pass because of how it was framed rather than how it was measured — "one
+discarded face out of 11,113 polygons, 0.009%, pre-existing art." Every clause of that was true
+and the conclusion was wrong, because the percentage answers *how much of the mesh is affected*
+when the question is *what happens to the face*. **A warning that names an action the importer
+TOOK is a statement about the shipped asset; measure the action, not the ratio.**
+
+**What the offenders actually were.** Twelve 13-gons, each carrying a **zero-length edge** — two
+adjacent corners indexing *different* vertices that sit at the identical position (the vertices
+themselves are ordinary, four faces use each). Any robust simplicity test calls that non-simple,
+so the importer discarded all thirteen sides over one corner occupying no space. Note the mesh
+name in the message is the **Model** node (`dolohin`, a typo in the source art), not the Geometry
+node (`Chassis`) — searching for the wrong one finds nothing.
+
+**The repair is the minimal one**: drop the redundant CORNER, leaving a 12-gon. No vertex is
+moved, merged or added. Both corners carried the **identical UV**, so the edit is UV-lossless;
+they differ only in normal, and which one survives is measured rather than picked — the corner
+whose normal sits farther from the polygon's own Newell normal is the one dropped.
+
+**Scope is exactly what the importer discards.** The same mesh also carries twelve **zero-area
+triangles** (two of three corners coincident). Unity keeps those — they are not self-intersecting,
+they simply render nothing — so they are reported and left alone. Repairing one would leave a
+2-gon, and widening a fix past what was reported is how an art file acquires changes nobody asked
+for.
+
+**Removing a corner is five parallel arrays, not one.** Mind each domain:
+
+| array | domain | what the repair does |
+|---|---|---|
+| `PolygonVertexIndex` | corner | remove one entry (fix the `~i` terminator if it was last) |
+| `LayerElementNormal` | ByPolygonVertex, Direct | remove 3 floats |
+| `LayerElementUV` | ByPolygonVertex, IndexToDirect | remove 1 `UVIndex` entry |
+| `LayerElementMaterial` | ByPolygon | **unchanged** — polygon count does not change |
+| `Edges` + `LayerElementSmoothing` | ByEdge, Direct | rebuilt, see below |
+
+**The technique worth carrying: prove a rebuild rule against the SHIPPED artifact before you
+rely on it.** `Edges` holds one corner position per unique undirected edge, so removing a corner
+shifts every later entry and patching it by hand is guesswork. Instead, emit the first occurrence
+of each undirected vertex pair in polygon-corner order and compare to what is already in the file
+— on this mesh that reproduced the shipped array **exactly**, same length, same order, same
+values, which turns "I think this is how it was built" into a fact and makes rebuilding it safe.
+Smoothing rides across by vertex pair with a position-pair fallback for the one newly-formed edge
+per repair. Expect the edge count to **rise** by one per repaired polygon, not fall: the two old
+edges survive on the neighbouring zero-area triangle, and the merged edge is new.
+
+**Verified without an editor, four ways** — the writer round-trips the file first (32,095 nodes,
+zero property mismatches, assimp's report identical); across those nodes exactly five differ, the
+intended set and nothing else; all four blend shapes stay byte-identical and the vertex array is
+untouched, so the element morphs cannot have moved; and `assimp` independently shows the twelve
+degenerate line-primitives gone (24 → 12, the remainder being the triangles left alone) while
+meshes, submesh order, materials, bones, animations and the bounding box are unchanged. Edited in
+place, so the guid and the `Chassis` fileID survive and no prefab or material array needs
+re-pointing.
+
+Tool: `Tools/Build/repair_fbx_selfintersecting_polygons.py` — idempotent, and `--check` is the
+standing gate (it fails on the original and passes on the repaired file). In-editor import is the
+one thing it cannot prove; that is a human re-import.
 
 ## 7. Phase 0 re-survey — what moved, and the two rows that were wrong about liveness
 
