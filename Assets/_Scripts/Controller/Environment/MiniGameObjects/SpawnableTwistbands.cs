@@ -56,24 +56,31 @@ namespace CosmicShore.Gameplay
     {
         const float R = SliceArenaGeometry.OuterRadius;
 
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
+        /// LENGTH here is multiplied by it and the noise frequency divided by it. A band's radius
+        /// and half-width are lengths too, and are scaled inside <see cref="BandSpec"/>'s
+        /// constructor so that EVERY reader of them - the deck, the cornice and the envelope guard
+        /// alike - gets the scaled value without each having to remember to ask.</summary>
+        const float S = SliceArenaGeometry.LengthScale;
+
         // ── The deck ─────────────────────────────────────────────────────────
-        const float PlateStepAlong = 7f;
-        const float PlateLength = 10f;     // long axis, along the direction of travel
-        const float PlateStepAcross = 7.5f;
-        const float PlateWidth = 10f;      // cross axis, across the ribbon
-        const float PlateThickness = 3f;
+        const float PlateStepAlong = 7f * S;
+        const float PlateLength = 10f * S;     // long axis, along the direction of travel
+        const float PlateStepAcross = 7.5f * S;
+        const float PlateWidth = 10f * S;      // cross axis, across the ribbon
+        const float PlateThickness = 3f * S;
 
         /// <summary>How far below the deck the keel hangs, along the surface normal.</summary>
-        const float KeelDrop = 11f;
+        const float KeelDrop = 11f * S;
 
         /// <summary>Light weathering only. The deck's whole job is to be continuous enough to hold
         /// a blade against, so this is a fraction of the panes' cull, not a match for it.</summary>
         const float VoidThreshold = 0.12f;
-        const float VoidFreq = 0.02f;
+        const float VoidFreq = 0.02f / S;
 
         // ── The cornice (the single boundary curve) ──────────────────────────
-        const float CorniceStep = 13f;
-        const float CorniceLength = 15f;
+        const float CorniceStep = 13f * S;
+        const float CorniceLength = 15f * S;
         /// <summary>Every Nth cornice prism is a trap.</summary>
         const int DangerEveryNthCornicePrism = 4;
 
@@ -88,14 +95,18 @@ namespace CosmicShore.Gameplay
 
             public BandSpec(float radius, float halfWidth, int halfTwists, float tiltDeg, float phaseDeg)
             {
-                Radius = radius; HalfWidth = halfWidth; HalfTwists = halfTwists;
+                // Scaled HERE, at the single point the authored literals below become world
+                // distances, so spec.Radius / spec.HalfWidth are already in world units for every
+                // consumer and the table stays the readable numbers the bands were tuned as.
+                Radius = radius * S; HalfWidth = halfWidth * S; HalfTwists = halfTwists;
                 TiltDeg = tiltDeg; PhaseDeg = phaseDeg;
             }
         }
 
         /// <summary>
         /// Three bands, one per coordinate plane so they interlock rather than nest. Radii and
-        /// widths are authored so the outermost reach (<c>Radius + HalfWidth + KeelDrop</c>) stays
+        /// half-widths are in AUTHORED units (see <see cref="S"/>); the constructor scales them.
+        /// They are authored so the outermost reach (<c>Radius + HalfWidth + KeelDrop</c>) stays
         /// inside <see cref="SliceArenaGeometry.OuterRadius"/> - asserted at build, because a band
         /// that quietly grew past the envelope would put mass outside the AI's stations and the
         /// spawn ring without failing anything.
@@ -257,7 +268,7 @@ namespace CosmicShore.Gameplay
                     if (((iu + iv) & 1) != 0) continue;
 
                     Emit(pos - normal * KeelDrop, SpawnPoint.LookRotation(band.Width(u), normal),
-                        Jit(new Vector3(3.2f, 3.2f, PlateLength)),
+                        Jit(new Vector3(3.2f * S, 3.2f * S, PlateLength)),
                         Triad(bandIndex + iu));
                 }
             }
@@ -290,7 +301,7 @@ namespace CosmicShore.Gameplay
                 bool danger = (bandIndex * 37 + i) % DangerEveryNthCornicePrism == 0;
 
                 Emit(pos, SpawnPoint.LookRotation(tangent, normal),
-                    Jit(new Vector3(4.4f, 4.4f, CorniceLength)), Domains.Ruby,
+                    Jit(new Vector3(4.4f * S, 4.4f * S, CorniceLength)), Domains.Ruby,
                     danger ? PrismKind.Danger : PrismKind.Plain);
             }
         }

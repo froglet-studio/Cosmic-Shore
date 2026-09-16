@@ -279,35 +279,44 @@ in · a non-Sparrow vessel spawning on either machine.
 
 ### QA-CLEAVE-MODE ⬜ — "Cleave" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
-merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
-Whole new game mode (`GameModes.Cleave = 39`), authored headless. Reference:
-`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification.
+merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR),
+then the **four-arena rework** (three of the four nested-shell intensities replaced with
+unrelated arenas) and the **2× scale-up** of all four. Whole game mode
+(`GameModes.Cleave = 39`), authored headless and never run. Reference:
+`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification (26 steps; this is the
+short form).
 
 1. Open `MinigameCleave.unity`. Confirm no `Missing (Mono Script)`, the controller
-   shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
-   lists **four** configs with **Cell Type Choice = Intensity Wise**.
-2. Launch at intensity 1 → count the shells. Relaunch at intensity 4 → count again.
-3. Inspect the weave: are the openings **triangles** (each cell crossed by a diagonal,
-   lean alternating)?
-4. Compare outer vs innermost rind spacing.
-5. Orbit the whole cage: do the inner rinds' dense polar caps point different ways?
-6. Line up on the centre from outside and fly straight in.
-7. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
-   **10,620 / 14,731 / 17,992 / 20,153** prisms for intensities 1–4.
-8. Ram a plain rib. Then find a **danger** bar (distinct material) and ram it.
-9. Play a full round to the target and watch the scoreboard.
+   shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5 and a field named
+   **`aiArenaRadiusOverride`** (a stray `aiCageRadiusOverride` means the scene is stale),
+   and the Cell lists **four** configs with **Cell Type Choice = Intensity Wise**.
+2. Launch each of intensities **1 → 4** in turn and look at the arena, not the score.
+3. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
+   **11,021 / 13,738 / 14,731 / 16,423** prisms for intensities 1–4.
+4. **Scale:** from the spawn ring, does the arena fill the view? Time a boosted
+   straight-line run across the whole thing.
+5. Sight-check the arena's far side against the membrane shell — nothing may poke through.
+6. Look closely at a pane rib / a swell trough / a twistband deck plate.
+7. Select one laid arena prism at intensity 1 and read its transform scale.
+8. Ram a plain prism. Then find a **danger** prism (distinct material) and ram it.
+9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4.
+10. Play a full round to the target and watch the scoreboard.
 
-**PASS:** 2 shells at intensity 1 and 5 at intensity 4 (nested at 360/295/230/165/100);
-triangular openings; the innermost rind is visibly the tightest; the cage visibly twists
-as you orbit; no free corridor to the centre; baselines within a few hundred of the
-expected counts; a plain bar shatters on **one** hit with no shield to shed; the danger
-bar also one-hits but full-stops you, debuffs all four elements ~4 s and resets boost;
-**no fauna hatch at any point**; the round ends on prisms destroyed and the scoreboard
-counts prisms.
-**FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs
-out of order) · bubble-shaped openings · uniform spacing core-to-surface · rinds all
-aligned at the poles · a clean corridor to the centre · two-hit/shielded bars ·
-any fauna · baselines off by thousands.
+**PASS:** four arenas that look nothing like each other — angled **slabs**, corrugated
+**sheets**, three nested **shells**, twisted **ribbons** · baselines within a few hundred
+of 11,021 / 13,738 / 14,731 / 16,423 · the arena spans most of the view from spawn and a
+boosted crossing takes **~1.2 s** · the far side sits well inside the membrane · ribs,
+troughs and deck plates read as **continuous surfaces**, not as beads · a pane rib prism
+measures roughly **6.8 × 6.8 × 34** · a plain prism shatters on **one** hit with no shield
+to shed · the danger prism also one-hits but full-stops you, debuffs all four elements
+~4 s and resets boost · the AI orbits **outside** and cuts on transits · **no fauna hatch
+at any point** · the round ends on prisms destroyed and the scoreboard counts prisms.
+**FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out of
+order) · baselines off by thousands · the arena reading as a small ball in the middle of an
+empty cell, or a crossing taking ~0.6 s (the scale did not land) · mass outside the
+membrane · any surface reading as a dotted line of separated prisms, or a prism whose long
+axis measures exactly **10** (a prism dimension was left unscaled, or `PrismScaleAnimator`
+clamped it) · two-hit/shielded prisms · an AI that settles inside the arena · any fauna.
 
 ### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
 **Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger

@@ -48,7 +48,11 @@ MEASUREMENTS = os.path.join(REPO, "Tools/Build/cleave_arena_measurements.json")
 # The spawn ring is authored onto the scene's ServerPlayerVesselInitializer and the membrane
 # comes from the cell config's MembranePrefab; both are restated here so the ORDERING below can
 # be asserted in one place. author_cleave_assets.py writes the ring from this constant.
-SPAWN_RING = 576.0
+# The ring is NOT a pure scale of the arena, and that is the one place the 2x arena scale-up
+# (SliceArenaGeometry.LengthScale) does not simply double a number: the MEMBRANE did not scale,
+# so the pre-scale 576 doubled would put players 48 units off the membrane wall. 1050 keeps the
+# same absolute clearance above the AI station (114 units, was 108) and 150 inside the membrane.
+SPAWN_RING = 1050.0
 MEMBRANE_RADIUS = 1200.0
 
 # PhaseThresholds = measured baseline + the standard Blob deltas (Docs/ECOSYSTEM.md §18).

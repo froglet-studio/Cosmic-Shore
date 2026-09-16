@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// lesson. A shell curves away from you: you cross it perpendicular and you are through in a
     /// moment, or you try to run along it and it bends out from under the blade. A PLANE does
     /// neither. Line the vessel up with a pane and the mass stays exactly where you left it for
-    /// the full 720 units of its diameter, so the pilot's first discovery is the one the whole
+    /// the full 1440 units of its diameter, so the pilot's first discovery is the one the whole
     /// mode is built on - <b>a sword rewards commitment to a line</b>.
     ///
     /// Four properties are load-bearing:
@@ -51,28 +51,35 @@ namespace CosmicShore.Gameplay
     {
         const float R = SliceArenaGeometry.OuterRadius;
 
+        /// <summary>Authored-units -> world-units. Every LENGTH below is a number that was tuned
+        /// against <c>SliceArenaGeometry.AuthoredRadius</c> and is multiplied by this; the noise
+        /// frequency is divided by it so the void pattern keeps the same size RELATIVE to the
+        /// arena. Counts, angles and fractions-of-R are deliberately left bare - writing every
+        /// scaled value as `x * S` is what makes an unscaled one visible in review.</summary>
+        const float S = SliceArenaGeometry.LengthScale;
+
         // ── The weave ────────────────────────────────────────────────────────
         /// <summary>Spacing ALONG a rib. Under <see cref="PlankLength"/> on purpose: consecutive
         /// planks overlap, so a rib reads as one continuous bar you can drag a blade down.</summary>
-        const float PlankStep = 15f;
-        const float PlankLength = 17f;
+        const float PlankStep = 15f * S;
+        const float PlankLength = 17f * S;
         /// <summary>Spacing ACROSS the grain, i.e. rib to rib. Deliberately much wider than
         /// <see cref="PlankStep"/> - that ratio IS the corduroy, and it is what lets a pilot see
         /// (and fly) through a pane instead of meeting a wall.</summary>
-        const float RibStep = 21f;
+        const float RibStep = 21f * S;
 
         /// <summary>Value-noise threshold below which a plank is skipped. Breaks each pane into
         /// weathered patches and open windows so the arena is porous rather than nine barricades.</summary>
         const float VoidThreshold = 0.30f;
-        const float VoidFreq = 0.016f;
+        const float VoidFreq = 0.016f / S;
 
         // ── Mullions (pane x pane intersections) ─────────────────────────────
-        const float MullionStep = 19f;
-        const float MullionLength = 22f;
+        const float MullionStep = 19f * S;
+        const float MullionLength = 22f * S;
 
         // ── Rims (the frame around each pane, and the arena's only traps) ─────
-        const float RimStep = 16f;
-        const float RimLength = 18f;
+        const float RimStep = 16f * S;
+        const float RimLength = 18f * S;
         /// <summary>Every Nth rim prism is a trap. The rim is what a sloppy pass clips, so the
         /// downside sits exactly where the mistake is.</summary>
         const int DangerEveryNthRimPrism = 7;
@@ -215,7 +222,7 @@ namespace CosmicShore.Gameplay
                         continue;
 
                     Emit(pos, SpawnPoint.LookRotation(pane.Grain, pane.Normal),
-                        Jit(new Vector3(3.4f, 3.4f, PlankLength)), dom);
+                        Jit(new Vector3(3.4f * S, 3.4f * S, PlankLength)), dom);
                 }
             }
         }
@@ -242,7 +249,7 @@ namespace CosmicShore.Gameplay
                 bool danger = (paneIndex * 31 + i) % DangerEveryNthRimPrism == 0;
 
                 Emit(pos, SpawnPoint.LookRotation(tangent, pane.Normal),
-                    Jit(new Vector3(4.2f, 4.2f, RimLength)), Domains.Blue,
+                    Jit(new Vector3(4.2f * S, 4.2f * S, RimLength)), Domains.Blue,
                     danger ? PrismKind.Danger : PrismKind.Plain);
             }
         }
@@ -289,7 +296,7 @@ namespace CosmicShore.Gameplay
                     // `dir` lies in BOTH planes, so either normal is a legal "up" for it. Using
                     // p's keeps a mullion visually parented to the pane whose grain it crosses.
                     Emit(pos, SpawnPoint.LookRotation(dir, p.Normal),
-                        Jit(new Vector3(5.2f, 5.2f, MullionLength)), dom);
+                        Jit(new Vector3(5.2f * S, 5.2f * S, MullionLength)), dom);
                 }
             }
         }

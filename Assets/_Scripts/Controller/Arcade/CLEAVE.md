@@ -19,14 +19,20 @@ unrelated arenas with four different verbs, built by four different generators:
 
 | i | arena | the verb | prisms | volume | danger | far reach |
 |---|---|---|---:|---:|---:|---:|
-| 1 | **The Panes** | commit to a line | 11,021 | 2,806,755 | 170 | 372 |
-| 2 | **The Swell** | read the grain | 13,738 | 2,433,470 | 461 | 349 |
-| 3 | **The Cage** | peel inward | 14,731 | 2,919,695 | 428 | 375 |
-| 4 | **The Twistbands** | roll the blade | 16,423 | 4,058,255 | 228 | 357 |
+| 1 | **The Panes** | commit to a line | 11,021 | 22,454,037 | 170 | 744 |
+| 2 | **The Swell** | read the grain | 13,738 | 19,467,760 | 461 | 698 |
+| 3 | **The Cage** | peel inward | 14,731 | 23,357,561 | 428 | 749 |
+| 4 | **The Twistbands** | roll the blade | 16,423 | 32,466,038 | 228 | 715 |
 
 This replaced a ladder that was **2 / 3 / 4 / 5 nested shells** — the same arena four times, and
-the reason the mode was renamed. The three-rind cage is the only rung kept, and it is kept
-**byte-identical**: same generator, same seed, same 14,731 prisms, same count thresholds.
+the reason the mode was renamed. The three-rind cage is the only rung kept, and its GEOMETRY is
+unchanged: same generator, same seed, same 14,731 prisms, same count thresholds.
+
+**All four are twice the size they were first authored at.** The envelope went 360 → **720** after
+a playtest read the arena as a little ball in the middle of the cell — a uniform 2× similarity of
+the whole family, counts and topology untouched. Everything a player sees is twice as far apart and
+twice as big; see "The arena is bigger than a nucleus" below for why that is a scale rather than a
+re-author, and what it cost.
 
 > **Player-facing unit is PRISMS, never "bars" or "plates".** Every number a player reads counts
 > PRISMS — the scoreboard, the reveal, and any toast copy. Two words for one counter reads as two
@@ -60,13 +66,13 @@ prism palette; each one exists to ask the sword a different question.
 ### 1 · The Panes — `SpawnablePanes`
 
 Nine flat slabs cutting the cell at nine authored angles, each a **corduroy of parallel ribs** with
-its own grain direction. Planks overlap along a rib (step 15 under length 17) and ribs sit 21 apart
+its own grain direction. Planks overlap along a rib (step 30 under length 34) and ribs sit 42 apart
 across it, so a pane is something you fly *through* as much as *at*.
 
 It is intensity 1 because a plane is the most forgiving surface in the mode. A shell curves away
 from you — you cross it perpendicular and you are through, or you run along it and it bends out
 from under the blade. A plane does neither: line up with it and the mass stays where you left it
-for the full 720 units of its diameter. The pilot's first discovery is the one the whole mode is
+for the full 1,440 units of its diameter. The pilot's first discovery is the one the whole mode is
 built on — **a sword rewards commitment to a line**.
 
 - **Panes are OFFSET, and not all by the same amount** (−0.55…+0.5 of the radius). Nine planes
@@ -82,7 +88,7 @@ built on — **a sword rewards commitment to a line**.
 ### 2 · The Swell — `SpawnableSwell`
 
 Seven great **corrugated sheets** stacked through the cell at seven angles, each rolling on its own
-wavelength (78 → 240, a 3× span) with a weaker second swell running *along* the ridges so the
+wavelength (156 → 480, a 3× span) with a weaker second swell running *along* the ridges so the
 troughs themselves rise and fall.
 
 Where the panes teach commitment, the swell teaches the thing that makes commitment interesting:
@@ -99,7 +105,7 @@ Four things make that legible rather than merely true:
 - **The crests are the traps.** The only danger prisms here ride the ridge lines, so the grain is
   worth reading twice — the trough is both the richest cut and the safe one.
 - **Sheets have an UNDERSIDE.** A zero-thickness surface is invisible edge-on and a blade can cross
-  the plane of it without touching anything. A half-density reef hangs 13 below each sheet with its
+  the plane of it without touching anything. A half-density reef hangs 26 below each sheet with its
   planks turned crosswise.
 - **Sheets FRAY rather than ending.** The void threshold ramps up past 78% of a sheet's radius, so
   a sheet dissolves into open water instead of stopping at a hard rim. The panes are framed slabs
@@ -107,14 +113,14 @@ Four things make that legible rather than merely true:
 
 ### 3 · The Cage — `SpawnableRibcage` (the kept arena)
 
-Three concentric hollow rinds of prism bone at radius **360 / 295 / 230** — meridian ribs, latitude
+Three concentric hollow rinds of prism bone at radius **720 / 590 / 460** — meridian ribs, latitude
 hoops, a diagonal through every cell, joints at every crossing, two polar crowns. Unchanged from
 the mode that was named after it.
 
 - **The openings are TRIANGLES.** Every rib × hoop cell carries one diagonal with an alternating
   lean, so the weave reads as a truss rather than as rounded bubbles.
 - **It tightens inward.** `DensityStep` (1.05) compounds with the shrinking radius: cells run
-  **94u → 74u → 56u**. The last layer is the hardest to slip through, not the easiest.
+  **188u → 148u → 112u**. The last layer is the hardest to slip through, not the easiest.
 - **Every inner rind is TILTED onto its own axis** (`ShellTilts`, pole axes ≥34° apart), because a
   latitude-hoop sphere is densest at its poles and stacked caps would collapse the match into
   "everyone drills the top".
@@ -170,11 +176,11 @@ energize first.
 
 ## The shared envelope
 
-All four arenas are built to one radius — `SliceArenaGeometry.OuterRadius` (**360**) — because
+All four arenas are built to one radius — `SliceArenaGeometry.OuterRadius` (**720**) — because
 three systems are sized against it and none of them can be told which intensity is running:
 
 ```
-arena 360  <  AI station 468 (360 × 1.3)  <  spawn ring 576  <  membrane 1200
+arena 720  <  AI station 936 (720 × 1.3)  <  spawn ring 1050  <  membrane 1200
 ```
 
 - `CleaveController` parks its AI stations at `OuterRadius × AiStationStandoff`. `AIPilot` has no
@@ -184,8 +190,55 @@ arena 360  <  AI station 468 (360 × 1.3)  <  spawn ring 576  <  membrane 1200
   so the computed ring would otherwise collapse to the cell centre).
 
 The ordering is asserted in `cleave_budget.verify`, and it is asserted on the prism's **far corner**
-rather than on its lay point: a lay at exactly 360 still puts geometry outside 360. The measured
-worst case is **375** (the cage's rim), comfortably inside the 468 station radius.
+rather than on its lay point: a lay at exactly 720 still puts geometry outside 720. The measured
+worst case is **749** (the cage's rim), comfortably inside the 936 station radius.
+
+### The arena is bigger than a nucleus, and that is the requirement
+
+Cleave first shipped at radius **360** — *smaller than a standard nucleus* (`Nucleus.prefab` at
+scale 400 is ~392 world radius). The four arenas were different places, and every one of them read
+as the same thing: a small ball parked at the centre of an otherwise empty 1200-radius cell, with a
+boosted Rhino (1,210 u/s off the ramp) crossing the whole of it in **0.6 s**. The envelope is now
+**720**: a 1,440-unit play space, 1.8× a nucleus radius and 60% of the membrane's own diameter, so
+the arena *is* the cell rather than an ornament inside it.
+
+**The scale-up is a SIMILARITY, not a re-author.** `SliceArenaGeometry.LengthScale`
+(= `OuterRadius / AuthoredRadius` = **2**) multiplies every authored LENGTH in all four
+generators — steps, prism dimensions, shell gaps, band radii, wave amplitudes — and *divides*
+every noise FREQUENCY, so the void pattern keeps the same size relative to the arena. Counts,
+angles and fractions-of-the-radius are left bare. Three things fall out of doing it that way, and
+each is why it was done that way:
+
+- **Prism counts do not move, so the collider budget is untouched.** Every count in these
+  generators is a ratio of two lengths that both carry the scale — `floor(radius / step)`,
+  `round(arc / step)`.
+- **Growing the prisms with the spacing is what keeps the geometry readable.** A rib at twice the
+  spacing with the same plank is a dotted line, not a bar. Prism SIZE is free in colliders (only
+  COUNT costs one), and `SpawnablePrism.prefab` — the prefab every Cleave arena lays through —
+  authors `maxScale` **100**, so the doubled dimensions clear `PrismScaleAnimator`'s silent
+  per-axis clamp. (363 of 404 prism prefabs inherit a `maxScale` of 10; an arena laying through one
+  of those would have had its planks silently truncated with nothing reporting it. See CLAUDE.md.)
+- **The scale is an exact power of two**, so every scaled constant is bit-exact and no `floor`
+  boundary or noise sample can land on the other side of itself. That is not a hope — the harness
+  re-measured after the change and every arena came back with an **identical prism count, identical
+  danger count, identical per-domain split, and a volume exactly 8×**.
+
+**Identical counts is also the proof that no constant was left unscaled**, and the negative control
+says how much that is worth: reverting just `SpawnablePanes.RibStep` to its unscaled `21f` and
+re-measuring takes the Panes from **11,021 prisms to 19,890** — an 80% collider-budget blowout from
+one missed `* S`, and one that looks perfectly reasonable in a diff. Every scaled length is written
+`x * S` at its declaration for exactly that reason: it is what makes an unscaled one visible.
+
+The **one number that is not a pure scale is the spawn ring**, because the membrane did not scale:
+576 × 2 would put players 48 units off the membrane wall. It is authored at **1050** (station 936 →
+ring 1050 → membrane 1200), which keeps the same absolute clearance above the stations that the
+pre-scale ring had.
+
+⚠ **Stated cost:** the phase ladder's deltas above each arena's baseline are absolute (the standard
+Blob deltas, a trail band), so Restless and Frenzy still fire after the same absolute *volume* of
+trail — but a lap of a 2× arena lays roughly 2× the trail, so both fire sooner in laps than they
+did. Nothing in this cell reads phase today (no fauna, no flora), so it is a note for whoever adds
+either, not a defect.
 
 ## How the numbers are measured
 
@@ -246,7 +299,7 @@ Cell.AssignConfig                                     [Cell.cs]
 ```
 
 Each intensity needs its OWN `CellConfigDataSO` because `PhaseThresholds` must ride its own
-baseline — the arenas run 11,021…16,423 prisms and 2.43M…4.06M volume, so one shared threshold
+baseline — the arenas run 11,021…16,423 prisms and 19.5M…32.5M volume, so one shared threshold
 block would put three of the four cells in the wrong phase from frame one.
 
 **Prism count is monotone across the ladder** (asserted). Nothing about four unrelated arenas forces
@@ -340,7 +393,7 @@ densest at its poles, so a tetrahedral spread would drop two of four players ont
 it remains the right default for the other three, none of which is uniform about its poles either.
 
 The ring normally measures off the cell's nucleus radius, and this cell deliberately has none — so
-it would collapse to the cell centre. `spawnRingRadiusFloor` (**576**) gives the ring a floor for
+it would collapse to the cell centre. `spawnRingRadiusFloor` (**1050**) gives the ring a floor for
 exactly this case: a cell whose "core" is a structure rather than a nucleus. The number is owned by
 `cleave_budget.SPAWN_RING`, which asserts it sits outside the AI stations and inside the membrane,
 and the generator writes it into the scene from there.
@@ -493,9 +546,9 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
    first is worth several times the second.
 6. **Swell — crests punish.** Clipping a ridge should full-stop you, debuff all four elements for
    4 s and reset boost. Troughs should be clean.
-7. **Cage — unchanged.** Three rinds at 360 / 295 / 230, triangular openings, tightening inward,
-   each inner rind tilted onto its own axis, no free radial corridor. This rung is supposed to be
-   exactly what it was before the branch.
+7. **Cage — unchanged apart from the scale.** Three rinds at 720 / 590 / 460, triangular openings,
+   tightening inward, each inner rind tilted onto its own axis, no free radial corridor. This rung
+   is supposed to be the same arena it was, at twice the size.
 8. **Twistbands — the roll.** Fly a band holding the blade against the deck: keeping contact should
    require continuously rolling the sword. Fly a full lap and confirm you arrive back at your start
    inverted, and that the lane colours have mirrored.
@@ -510,7 +563,7 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
     in the menu (vessel-changer toy), then have the host launch Cleave. The client must spawn a
     **Rhino**, with a `does not allow Dolphin; spawning Rhino instead` warning on the host. Then
     return to the menu and confirm the client can pick a Dolphin again.
-14. **Spawn outside, on the equator.** All four players start on ONE horizontal circle ~576u out,
+14. **Spawn outside, on the equator.** All four players start on ONE horizontal circle ~1050u out,
     90° apart, facing the arena, with the whole thing visible ahead. Also check Crystal Capture
     still spawns on its sphere (tetrahedral) — that scene must be unchanged.
 15. **Everyone starts at 0.** In a real lobby, check every score panel reads 0 the instant the
@@ -533,6 +586,20 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 22. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
     should behave normally and should no longer park against the super-shielded track / edge lining.
 23. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4.
+24. **THE SCALE — the check this branch exists for.** At every intensity, the arena must fill the
+    cell rather than sit in the middle of it: from the spawn ring the mass should span most of the
+    view, and a boosted straight-line run across the whole thing should take **~1.2 s**, not ~0.6.
+    Sight-check that the arena's far side is still comfortably inside the membrane (the far corner
+    measures 749 against a 1200 membrane) and that nothing pokes through it.
+25. **The prisms grew with the spacing.** A pane's rib must still read as a continuous BAR at the
+    new spacing, not as a dotted line — same for a swell trough and a twistband deck plate. If any
+    of them reads as beads, a prism dimension was left unscaled while its step was not (and the
+    prism counts would be unchanged, so no offline check can see it — this is the one thing on the
+    list the harness structurally cannot prove).
+26. **Nothing was silently clamped.** Select one laid arena prism at intensity 1 and read its
+    transform scale: the pane ribs should be **~6.8 × 6.8 × 34**, not capped at 10 on the long axis.
+    A truncated long axis means the arena is laying through a prism prefab whose
+    `PrismScaleAnimator.maxScale` is the default 10 rather than `SpawnablePrism.prefab`'s 100.
 
 ## Known limitations / follow-ups
 

@@ -17,14 +17,14 @@ namespace CosmicShore.Gameplay
     ///     <c>CellConfigDataSO</c> per intensity (<c>CellTypeChoiceOptions.IntensityWise</c>),
     ///     and each config points at a prefab variant of this component with a different shell
     ///     count - two rinds to peel at intensity 1, five at intensity 4. Shells are added
-    ///     INWARD (<see cref="ShellRadius"/> never moves) so the AI's aim point, the player spawn
+    ///     INWARD (<see cref="CageR"/> never moves) so the AI's aim point, the player spawn
     ///     ring and the arena's outer silhouette are identical at every intensity.
-    ///   • The OUTER shell's weave is open - a ~94u x ~98u cell. This is a ribcage, not a prison
+    ///   • The OUTER shell's weave is open - a ~188u x ~196u cell. This is a ribcage, not a prison
     ///     wall: you fly between the bones freely, and the gaps are what let you see the next rind
     ///     waiting behind this one.
     ///   • Each shell inward is <see cref="DensityStep"/> times denser than the one outside it, ON
     ///     TOP of the tightening that shrinking radius already gives - so the pith at the core is
-    ///     a far harder skin than the rind at the surface (~94u cells outside, ~22u at the core
+    ///     a far harder skin than the rind at the surface (~188u cells outside, ~44u at the core
     ///     - a 4.3x tightening). Successive shells are also rotated by a fraction of a rib spacing
     ///     (<see cref="ShellLonOffsets"/>) so the gaps never line up radially - there is no free
     ///     corridor straight through to the core.
@@ -62,8 +62,17 @@ namespace CosmicShore.Gameplay
         // both derived from it. A local copy of the number is how one of them drifts.
         const float CageR = SliceArenaGeometry.OuterRadius;
 
-        /// <summary>Radial spacing between rinds - shells land at 360 / 295 / 230 / 165 / 100.</summary>
-        const float ShellGap = 65f;
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
+        /// LENGTH here is multiplied by it. Counts (ribs, hoops, crowns, the danger stride) and
+        /// ANGLES (latitudes, tilts) are deliberately bare: a shell's bar count is
+        /// <c>arc / BarStep</c> and both halves scale together, so the weave is identical and only
+        /// its size changes.</summary>
+        const float S = SliceArenaGeometry.LengthScale;
+
+        /// <summary>Radial spacing between rinds. In authored units the shells land at
+        /// 360 / 295 / 230 / 165 / 100; at the shipped <c>LengthScale</c> of 2 that is
+        /// 720 / 590 / 460 / 330 / 200.</summary>
+        const float ShellGap = 65f * S;
 
         /// <summary>
         /// Ceiling on <see cref="shellCount"/>. Intensity does NOT map 1:1 onto shells: the ramp
@@ -89,14 +98,14 @@ namespace CosmicShore.Gameplay
         /// Per-shell density multiplier, applied to BOTH rib and hoop counts: shell k has
         /// round(Base * DensityStep^k). This is what makes the core the hard part - it compounds
         /// with the tightening that shrinking radius already provides, so the four shells go from
-        /// ~94u cells at the surface to ~22u at the core. Turn this DOWN before turning shells
+        /// ~188u cells at the surface to ~44u at the core. Turn this DOWN before turning shells
         /// down if the collider budget bites; it is the second-cheapest dial after shellCount.
         /// </summary>
         const float DensityStep = 1.05f;
 
-        const float BarStep = 17f;      // arc-length spacing along every rib and hoop
-        const float StrutStep = 26f;    // arc-length spacing along a triangulating diagonal
-        const float StrutLength = 24f;  // long axis of a diagonal prism (chunkier than a bar)
+        const float BarStep = 17f * S;      // arc-length spacing along every rib and hoop
+        const float StrutStep = 26f * S;    // arc-length spacing along a triangulating diagonal
+        const float StrutLength = 24f * S;  // long axis of a diagonal prism (chunkier than a bar)
         const float CrownLat = 84f;
         const int CrownCount = 18;
         const float HoopSpanDeg = 78f;  // outermost hoop latitude; poles are closed by crowns
@@ -279,7 +288,7 @@ namespace CosmicShore.Gameplay
                         -Mathf.Sin(theta) * Mathf.Sin(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f, 3.6f, 16f)), dom,
+                        Jit(new Vector3(3.6f * S, 3.6f * S, 16f * S)), dom,
                         danger ? PrismKind.Danger : PrismKind.Plain);
                 }
             }
@@ -301,7 +310,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f, 3.6f, 16f)), Domains.Blue, PrismKind.Plain);
+                        Jit(new Vector3(3.6f * S, 3.6f * S, 16f * S)), Domains.Blue, PrismKind.Plain);
                 }
             }
         }
@@ -337,7 +346,7 @@ namespace CosmicShore.Gameplay
                         // Push the strut back onto the shell - a straight chord would sag inside it.
                         var pos = Vector3.Lerp(from, to, u).normalized * s.Radius;
                         Emit(pos, SpawnPoint.LookRotation(along, pos.normalized),
-                            Jit(new Vector3(2.4f, 2.4f, StrutLength)), Domains.Blue, PrismKind.Plain);
+                            Jit(new Vector3(2.4f * S, 2.4f * S, StrutLength)), Domains.Blue, PrismKind.Plain);
                     }
                 }
             }
@@ -355,7 +364,7 @@ namespace CosmicShore.Gameplay
                 {
                     var pos = s.ToCell(Shell(lon, latDeg * Mathf.Deg2Rad, s.Radius));
                     Emit(pos, SpawnPoint.LookRotation(pos.normalized, Vector3.up),
-                        Jit(new Vector3(5.4f, 5.4f, 5.4f)), dom, PrismKind.Plain);
+                        Jit(new Vector3(5.4f * S, 5.4f * S, 5.4f * S)), dom, PrismKind.Plain);
                 }
             }
         }
@@ -377,7 +386,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.2f, 3.2f, 12f)), BoneDoms[i % BoneDoms.Length],
+                        Jit(new Vector3(3.2f * S, 3.2f * S, 12f * S)), BoneDoms[i % BoneDoms.Length],
                         PrismKind.Plain);
                 }
             }

@@ -52,21 +52,28 @@ namespace CosmicShore.Gameplay
     {
         const float R = SliceArenaGeometry.OuterRadius;
 
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
+        /// LENGTH here is multiplied by it and the noise frequency divided by it. The wave terms in
+        /// <see cref="SheetSpecs"/> are lengths too, and are scaled in <see cref="Sheet"/>'s
+        /// constructor - the one place an authored number becomes a world distance - so the table
+        /// keeps the readable wavelengths it was tuned with.</summary>
+        const float S = SliceArenaGeometry.LengthScale;
+
         // ── The deck ─────────────────────────────────────────────────────────
         /// <summary>Spacing ALONG a ridge - under <see cref="PlankLength"/>, so a trough line is
         /// continuous mass rather than a dotted line.</summary>
-        const float PlankStep = 12f;
-        const float PlankLength = 16f;
+        const float PlankStep = 12f * S;
+        const float PlankLength = 16f * S;
         /// <summary>Spacing ACROSS the grain, i.e. ridge to ridge sampling.</summary>
-        const float RibStep = 15f;
+        const float RibStep = 15f * S;
 
         /// <summary>The reef: a half-density layer this far below the deck along its own normal,
         /// laid crosswise.</summary>
-        const float ReefDrop = 13f;
+        const float ReefDrop = 13f * S;
 
         // ── Fraying ──────────────────────────────────────────────────────────
         const float VoidThreshold = 0.22f;
-        const float VoidFreq = 0.014f;
+        const float VoidFreq = 0.014f / S;
         /// <summary>Fraction of a sheet's radius at which the edge fray begins. Inside this the
         /// sheet is solid weather; outside it the void threshold climbs to 1 at the rim.</summary>
         const float EdgeFrayStart = 0.78f;
@@ -103,7 +110,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Seven sheets, authored rather than generated for the same reason the panes are: which
         /// approach is cheap and where the arena is thick is a gameplay surface. The wavelengths
-        /// deliberately span 3x (78 to 240) - a short-wave sheet is a washboard whose troughs are
+        /// deliberately span 3x (78 to 240 in authored units, so 156 to 480 in world at the
+        /// shipped LengthScale of 2) - a short-wave sheet is a washboard whose troughs are
         /// barely wider than the vessel, a long-wave sheet is a pair of enormous valleys you can
         /// boost down, and having both in one arena is what makes "read the grain" a skill rather
         /// than a habit.
@@ -172,13 +180,19 @@ namespace CosmicShore.Gameplay
                 // Shrink the working disc by everything the waves can add along the normal, so a
                 // DISPLACED point is still inside the arena. Solving it here beats generating
                 // prisms and rejecting them, and it keeps the offline budget model exact.
-                float reach = Mathf.Abs(offset) + spec.Amplitude + spec.SwellAmp + ReefDrop;
+                // The wave terms are AUTHORED lengths, so they take the arena's length scale
+                // here, where they first become world distances. Scaling the amplitudes and the
+                // wavelengths together is what keeps the corrugation a similarity of the surface
+                // that was tuned at SliceArenaGeometry.AuthoredRadius rather than the same
+                // washboard stretched flat across an arena twice the size.
+                float amplitude = spec.Amplitude * S, swellAmp = spec.SwellAmp * S;
+                float reach = Mathf.Abs(offset) + amplitude + swellAmp + ReefDrop;
                 Rho = Mathf.Sqrt(Mathf.Max(1f, R * R - reach * reach));
 
-                K = 2f * Mathf.PI / spec.Wavelength;
-                Amp = spec.Amplitude;
-                KSwell = 2f * Mathf.PI / spec.SwellLength;
-                SwellAmp = spec.SwellAmp;
+                K = 2f * Mathf.PI / (spec.Wavelength * S);
+                Amp = amplitude;
+                KSwell = 2f * Mathf.PI / (spec.SwellLength * S);
+                SwellAmp = swellAmp;
                 Phase = spec.PhaseDeg * Mathf.Deg2Rad;
             }
 
@@ -247,7 +261,7 @@ namespace CosmicShore.Gameplay
                         && (sheetIndex * 17 + rib * 101 + i) % DangerEveryNthCrestPrism == 0;
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, normal),
-                        Jit(new Vector3(3.4f, 3.4f, PlankLength)), deckDom,
+                        Jit(new Vector3(3.4f * S, 3.4f * S, PlankLength)), deckDom,
                         danger ? PrismKind.Danger : PrismKind.Plain);
 
                     if (!reefRib) continue;
@@ -256,7 +270,7 @@ namespace CosmicShore.Gameplay
                     // reef reads as a truss under the deck rather than as a second copy of it.
                     var reefPos = pos - normal * ReefDrop;
                     Emit(reefPos, SpawnPoint.LookRotation(sheet.TangentAcross(across), normal),
-                        Jit(new Vector3(3.0f, 3.0f, PlankLength)), Domains.Ruby);
+                        Jit(new Vector3(3.0f * S, 3.0f * S, PlankLength)), Domains.Ruby);
                 }
             }
         }
