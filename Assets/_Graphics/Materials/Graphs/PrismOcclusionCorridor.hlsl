@@ -2,13 +2,16 @@
 // (Docs/PRISM_ANIMATION.md §3 C1 / §5 C1, the "moving-target exception" class of §1).
 //
 // PURPOSE. Prisms that sit between the player's camera and the player's vessel must
-// not hide the ship. The corridor is a BARE CONE from the camera to the vessel — a
-// point at the lens, widening to the circle that circumscribes the hull, ending at the
-// vessel's plane with no cap at either end. That is the minimal volume able to occlude
-// the ship: nothing outside the eye->silhouette cone can be in front of it, and nothing
-// at or past the vessel's own depth can either. A fragment inside fades out; a fragment
-// outside is untouched, and the ENTIRE boundary — sides and base alike — is one
-// gradient shell of uniform thickness, so the shape has no seam anywhere on it.
+// not hide the ship. The corridor is a BARE FRUSTUM from the camera to the vessel — a
+// CIRCLE at the lens (`_PrismOcclusionNearRadius`, since 2026-09-15; 0 collapses it to
+// the original point), widening linearly to the circle that circumscribes the hull,
+// ending at the vessel's plane with no cap at either end. The eye->silhouette cone is
+// the minimal volume able to occlude the SHIP; the near circle is what the cone cannot
+// give — mass at the lens occludes the whole SCREEN, not just the ship, and at a point
+// the cone was thinnest exactly where a prism does the most damage. A fragment inside
+// fades out; a fragment outside is untouched, and the ENTIRE boundary — sides and base
+// alike — is one gradient shell of uniform thickness, so the shape has no seam anywhere
+// on it.
 //
 // WHY IT LIVES HERE AND NOT ON THE CPU. Occlusion is camera-relative LIVE data — it
 // can never be a per-prism stamp, because the answer changes every frame for every
@@ -29,14 +32,20 @@
 //   float3 _PrismOcclusionParams  — (outerRadius, innerRadius, coreAlpha).
 //                                   outerRadius <= 0 means "corridor off" — the very
 //                                   first branch below returns the untouched alpha.
+//   float  _PrismOcclusionNearRadius — the outer radius AT THE LENS, world units. A
+//                                   file-scope global (like the Lab's dither dials) rather
+//                                   than a fourth Params lane, so it costs no graph
+//                                   surgery: the Custom Function node's inputs are
+//                                   untouched. Unpublished it reads 0 = the old point.
 //
 // THE PROFILE. Both radii TAPER with distance along the axis, so they describe two
-// nested cones. Inside the inner cone the alpha is EXACTLY coreAlpha (0 by default:
+// nested frustums. Inside the inner one the alpha is EXACTLY coreAlpha (0 by default:
 // fully tapered to nothing, so no dithered ghost survives anywhere the ship can be); at
-// and beyond the outer cone it is EXACTLY 1. Because the radius grows in proportion to
-// depth, the cleared region has a CONSTANT ANGULAR size — the ship's own silhouette —
-// rather than a constant world size. The inner cone is deliberately much narrower than
-// the outer one (a quarter of it by default), so most of the corridor's cross-section
+// and beyond the outer one it is EXACTLY 1. Past the near circle the radius grows in
+// proportion to depth, so the cleared region approaches a CONSTANT ANGULAR size — the
+// ship's own silhouette — rather than a constant world size; the near circle is the one
+// place that argument is deliberately overruled. The inner frustum is always the same
+// FRACTION of the outer one (a quarter by default), so most of the corridor's cross-section
 // is gradient rather than hard clearance and the dissolve reads as a soft column with a
 // small solid-clear centre. The BASE is graded on the same shell thickness (see
 // clearAxial below), so the corridor closes toward the vessel as softly as it feathers
@@ -128,6 +137,13 @@
 // nobody driving it looks exactly like shipped mode.
 // -----------------------------------------------------------------------------
 #define PRISM_OCCLUSION_LIVE_TUNING 0
+
+// The corridor's radius AT THE LENS, world units — published by PrismOcclusionCorridor.cs
+// beside _PrismOcclusionParams (Shader.SetGlobalFloat). Declared here, not as a graph
+// property, for the same reason as the dither dials below: a file-scope global reaches
+// every wired graph with no node edit, and an unpublished one reads 0, which is exactly
+// the point-at-the-lens cone this file shipped with.
+float _PrismOcclusionNearRadius;
 
 #if PRISM_OCCLUSION_LIVE_TUNING
 float4 _PrismOcclusionDitherA;  // (kernel + 1, cellSize, shardOrient, morphRate)
@@ -1169,17 +1185,31 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                 perp = rel - axis * t;
                 float distanceToAxis = length(perp);
 
-                // THE RADIUS TAPERS WITH t — this one multiply is what makes the corridor
-                // a CONE rather than a capsule, and it is the whole shape argument. The
-                // volume that can actually hide the ship is the eye->silhouette cone: it
-                // is a point at the lens and only reaches the hull's radius at the hull.
-                // A constant radius (the capsule the retired ClearPrisms CapsuleCollider
+                // THE RADIUS TAPERS WITH t — this one lerp is what makes the corridor a
+                // FRUSTUM rather than a capsule, and it is the whole shape argument. The
+                // volume that can actually hide the ship is the eye->silhouette cone: a
+                // point at the lens that only reaches the hull's radius at the hull. A
+                // constant radius (the capsule the retired ClearPrisms CapsuleCollider
                 // imposed, carried over into the first shader version) massively
                 // over-clears near the camera, where a fixed world radius subtends a huge
                 // solid angle. Tapering makes the cleared region a CONSTANT ANGULAR SIZE —
                 // exactly the ship's own silhouette, at every depth — so the corridor
                 // never dissolves a single prism more than it must.
-                float outerAtT = outerRadius * t;
+                //
+                // THE NEAR CIRCLE (2026-09-15) is the one deliberate exception to that
+                // argument. A pure cone is thinnest at the lens, which is exactly where a
+                // prism does the most damage: mass at the camera occludes the whole SCREEN,
+                // not just the ship, and the cone — sized only to the ship — left it solid.
+                // So the profile opens from `_PrismOcclusionNearRadius` at t = 0 instead of
+                // from 0, and reaches the hull circle at t = 1 as before. Between the two it
+                // is LINEAR in t, so it is still a single ruled surface with no seam, and the
+                // inner radius rides it as the same FRACTION at every depth, so the feather's
+                // shape is unchanged across the whole length. Near = 0 is the old cone, bit
+                // for bit. Near is clamped to the outer radius: a wider lens than hull would
+                // be a corridor narrowing toward the ship, which is the capsule's over-clear
+                // returning with a taper on it.
+                float nearRadius = clamp(_PrismOcclusionNearRadius, 0.0, outerRadius);
+                float outerAtT = lerp(nearRadius, outerRadius, t);
                 if (distanceToAxis < outerAtT)
                 {
                     insideCorridor = true;
@@ -1195,7 +1225,9 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // and the dither is low-discrepancy: both exist to keep a narrow band
                     // from reading as an edge.
                     float innerRadius = min(Params.y, outerRadius);
-                    float innerAtT = innerRadius * t;
+                    // Same fraction of the outer profile at every depth (innerRadius * t
+                    // before the near circle existed — identical when near = 0).
+                    float innerAtT = outerAtT * (innerRadius / outerRadius);
 
                     // Radial clearance: 1 inside the inner cone, 0 at the outer surface.
                     float clearRadial = 1.0 - PrismOcclusionSmootherStep(
@@ -1227,10 +1259,9 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 
                     Alpha = BaseAlpha * fade;
 
-                    // Corridor-relative radial ratio: 0 on the axis, 1 at the cone wall —
-                    // it tracks the taper, so the spiral's bands are nested CONES and hold
-                    // a constant angular width at every depth, exactly like the profile
-                    // they dither.
+                    // Corridor-relative radial ratio: 0 on the axis, 1 at the corridor
+                    // wall — it tracks the taper, so the spiral's bands are nested frustums
+                    // and follow the profile they dither at every depth.
                     radialRatio = distanceToAxis / max(outerAtT, 1e-4);
                 }
             }
