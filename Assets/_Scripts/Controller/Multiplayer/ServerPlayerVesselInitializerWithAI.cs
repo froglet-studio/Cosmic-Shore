@@ -414,8 +414,42 @@ namespace CosmicShore.Gameplay
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}");
         }
 
+        /// <summary>
+        /// Draws an AI's hull from the card's own roster.
+        ///
+        /// <para><b>The card is read through <see cref="GameDataSO.AllowedVesselClasses"/>, not
+        /// through <c>gameList</c>.</b> That list is published by
+        /// <see cref="GameDataSO.SyncFromArcadeGame"/> at launch and is deliberately NOT cleared
+        /// by <c>ResetRuntimeData()</c>, so it is the one representation of "which hulls does
+        /// this mode admit" that survives the scene load and is already the authority every other
+        /// server-side spawn check reads (<see cref="GameDataSO.ClampVesselToGame"/>). The
+        /// <c>gameList</c> lookup below is the fallback and was the only path until 2026-09 -
+        /// which is why every AI in Broadside, Regatta and Dog Fight was a Sparrow: that field is
+        /// a per-scene <c>[SerializeField]</c> and those three scenes leave it null, so the
+        /// lookup fell straight through to the hardcoded default and an ARENA card - whose whole
+        /// premise is a mixed grid - fielded eight identical hulls.</para>
+        ///
+        /// <para>A single-hull card publishes a one-entry list, so the draw is that hull and
+        /// nothing changes for the arcade modes. Classes with no prefab (Termite / Falcon /
+        /// Shrike) are skipped rather than drawn and failed, so a roster may name a planned hull
+        /// without breaking the backfill.</para>
+        /// </summary>
         VesselClassType PickAIVesselType()
         {
+            var allowed = gameData?.AllowedVesselClasses;
+            if (allowed != null && allowed.Count > 0)
+            {
+                // Draw from the flyable subset rather than rejecting a draw and falling through:
+                // one unbuilt hull on a roster must not bias the rest toward the fallback.
+                _aiVesselDrawBuffer.Clear();
+                for (int i = 0; i < allowed.Count; i++)
+                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _))
+                        _aiVesselDrawBuffer.Add(allowed[i]);
+
+                if (_aiVesselDrawBuffer.Count > 0)
+                    return _aiVesselDrawBuffer[Random.Range(0, _aiVesselDrawBuffer.Count)];
+            }
+
             if (gameList != null)
             {
                 var game = FindGameByMode(gameData.GameMode);
@@ -428,6 +462,8 @@ namespace CosmicShore.Gameplay
             }
             return VesselClassType.Sparrow;
         }
+
+        readonly List<VesselClassType> _aiVesselDrawBuffer = new();
 
         SO_ArcadeGame FindGameByMode(GameModes mode)
         {
@@ -490,9 +526,14 @@ namespace CosmicShore.Gameplay
             // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
             // Fight then layers a stand-off distance on top via its own external target
             // provider, because a gun duel is not a ramming contest.
+            // Broadside joins them for the same reason and needs nothing else: most of its
+            // roster lands a hit by ARRIVING (a Rhino's sword, a Squirrel's joust, a Manta's
+            // bomb), so the shared opponent lock IS the AI for those hulls. Its controller adds
+            // only the two triggers that are stick gestures and therefore inert under autopilot.
             bool shouldSeekPlayers =
                 gameData.GameMode == GameModes.Joust ||
-                gameData.GameMode == GameModes.DogFight;
+                gameData.GameMode == GameModes.DogFight ||
+                gameData.GameMode == GameModes.Broadside;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }

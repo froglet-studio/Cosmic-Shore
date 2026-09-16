@@ -232,6 +232,15 @@ namespace CosmicShore.Data
         // speed dial. See _Scripts/Controller/Arcade/REGATTA.md.
         Regatta = 56,
 
+        // Broadside (57): the ARENA brawl - Regatta's fighting twin. Seven hulls loose in Dog
+        // Fight's Boneyard, each fighting with the weapon it actually has: a Sparrow's guns and
+        // rockets, an Urchin's chain spikes, a Rhino's energised sword, a Squirrel's joust, a
+        // Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is priced by the VERB that
+        // landed it and never by the hull - a round is 1, a contact strike 8, an area debuff 12,
+        // a rocket 10/20/30 by how close it got - and the first DOMAIN to the point target wins
+        // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
+        Broadside = 57,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 54) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved

@@ -54,9 +54,17 @@ CurrentBoostAmount() + MinimumSpeed`, and the Rhino authors `DefaultThrottleScal
 > feeds (`CornerRadiusFactor × FlatOutRadius`, 356.3 → 355.9) never binds. What moved is 10 u/s
 > off every speed in the tables below.
 
-`ThrottleScalerMultiplier` is disabled on the Rhino and its map's Time entry is an open design
-slot pinned to 1, so `CurrentBoostAmount()` is exactly `maxBoostMultiplier` — no elemental
-factor and no squaring (the Dolphin's `IsChargedBoostDischarging` path does not apply here).
+`ThrottleScalerMultiplier` is disabled on the Rhino, so `CurrentBoostAmount()` is exactly
+`maxBoostMultiplier` — no elemental factor and no squaring (the Dolphin's
+`IsChargedBoostDischarging` path does not apply here). **TIME does not touch that ceiling; it
+scales `accelerationPerSecond`**, so the build times above are the resting ones — at Time 10 the
+ramp climbs at 550/s and reaches top in **2.1 s**, at Time −5 it climbs at 110/s and takes
+**10.5 s**. The executor has always read `Multiplier(Element.Time)` here; the map entry behind it
+was an `(open design slot)` authored 1.0/1.0 until Broadside's first playtest filled it
+(**Ramp Spool**, 2.5 / 0.5 — `Assets/_Scripts/Controller/Arcade/BROADSIDE.md`). *A capability
+live in code and flat in data reads exactly like a capability that does not exist* — three
+separate documents recorded "Time reaches nothing on the Rhino" as a measurement while this line
+sat above the multiply.
 `VesselTransformer.MaxBoostMultiplier` (5) does **not** clamp this: it is read only by the
 `boostChanged` payload and by `DecayBoost`, and the Rhino authors `decayBoost: 0`.
 
@@ -178,7 +186,7 @@ fleet, which is the point of it being a law.
 | Knob | Where | Shipped value |
 |---|---|---|
 | `maxBoostMultiplier` | `_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset` | **24** (1200 top speed) |
-| `accelerationPerSecond` | same asset | **220** (cruise → top in 5.2 s) |
+| `accelerationPerSecond` | same asset | **220** at Time rest (cruise → top in 5.2 s); ×`Multiplier(Element.Time)`, **2.5 at Time 10 / 0.5 at Time −5** |
 | `straightnessGraceBand` | same asset | **1.0** — hard-over stick = plain cruise; `0.3` restores the binary latch |
 | `bleedPerSecond` | same asset | **300** — tracking down to the target a steering pilot chose |
 | `returnPerSecond` | same asset | **120** (9.6 s coast back to cruise once disengaged) |
@@ -282,12 +290,13 @@ with the rest of the law.
 - **`MinimumSpeedStraightAction` is raised by all six strategies and bound by nothing.** It is
   the mirror of the gesture this ability rides and would be the natural home for a Rhino
   brake/anchor if one is ever wanted.
-- **Three of the four element slots are still open design** (`Resources/ElementalAbilityMaps/Rhino.asset`
-  authors only Mass → trail slab size), so three of the Rhino's four HUD cards render LOCKED and
-  nothing in this pass scales with an element. Proposals are in
-  `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 "Rhino — Bulldozer"; none of them touch speed or
-  handling, so a future pass may want a Time → acceleration / Space → turn-authority re-cut
-  instead. Deliberately out of scope here.
+- **Two of the four element slots are still open design** (`Resources/ElementalAbilityMaps/Rhino.asset`
+  authors Mass → trail slab size and, since Broadside's playtest, **Time → this ability's
+  wind-up rate**), so two of the Rhino's four HUD cards render LOCKED and no L5 upgrade is
+  authored on any row. Proposals for Charge and Space are in
+  `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 "Rhino — Bulldozer"; neither touches speed or
+  handling, so a Space → turn-authority re-cut is still the obvious shape. The Time row's own
+  `Input` is deliberately **0**: the ramp engages on a full-throttle straight, not a button.
 - **The graded ramp is not yet reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
   is published for exactly this and is read by nothing: the Rhino renders four LOCKED ability
   cards, so there is no gauge to bind it to. When the Rhino's map is authored, that value is the
