@@ -1071,6 +1071,32 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 // -----------------------------------------------------------------------------
 static const float PRISM_OCCLUSION_NOSE_CLEARANCE = 1.0;
 
+// -----------------------------------------------------------------------------
+// THE BASE SHARE (2026-09-16) — the most of the corridor's LENGTH that the nose
+// clearance and its axial grade may take between them.
+//
+// Both of those are written in HULL RADII and both eat the same end of a corridor
+// whose length is the CAMERA DISTANCE, so what they cost is one ratio and nothing
+// else: rho = cameraDistance / hullRadius. The fleet spans rho by a factor of ~37
+// (the Urchin's camera sits 6.72 units back, the Serpent's 250), so an unbounded
+// pair is a sliver on one hull and most of the tunnel on another. Measured against
+// this very function (Tools/Shaders/verify_prism_corridor_base.py), the fully-clear
+// corridor was EMPTY at rho <= 1.75, 0.127 of the length at rho = 2 and 0.384 at
+// rho = 2.83 — while the clearance constant's own degenerate-case note above
+// reasons about tSolid alone and concludes the corridor is only lost at rho <= 1.
+// That note was right about tSolid and blind to the grade, which subtracts a second
+// (outer - inner)/axisLen from the same end.
+//
+// 0.5 is not a taste call: the clearance is described above as "trading a SLIVER of
+// see-through for the impact reading", and a sliver that takes more than half the
+// tunnel is not a sliver. At 0.5 every vessel keeps at least half its corridor fully
+// see-through, and the cap is a BIT-EXACT no-op for rho >= 1.75 / 0.5 = 3.5 — so no
+// long-camera hull changes by a single sample. Raise it toward 1 to give the
+// clearance more of a short corridor (at 1.0 the corridor can vanish again); lower
+// it to guarantee more see-through on the close-camera hulls.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_MAX_BASE_SHARE = 0.5;
+
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
 // zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
 // crease where the band begins and ends. That crease is what you notice when the band
@@ -1172,8 +1198,23 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
             // clearance, so the ship and the mass it is about to hit sit in solid air.
             // saturate: a camera inside the clearance yields 0 and switches the corridor
             // off, which is the correct degenerate behaviour (see the constant's note).
+            // Both ends of the base — the solid clearance and the grade that leads into
+            // it — are scaled by ONE factor so that together they never take more than
+            // PRISM_OCCLUSION_MAX_BASE_SHARE of the corridor (see that constant). One
+            // factor rather than two clamps is what keeps the grade's isotropy argument
+            // below intact: it stays exactly the fraction of the clearance it was
+            // derived as. shrink is exactly 1 wherever the cap does not bite, and
+            // multiplying by 1 is bit-exact, so every hull with a camera at least
+            // 3.5 hull radii back is unchanged sample for sample.
             float axisLen = sqrt(axisLenSq);
-            float tSolid = saturate(1.0 - (outerRadius * PRISM_OCCLUSION_NOSE_CLEARANCE) / axisLen);
+            float innerRadius = min(Params.y, outerRadius);
+            float clearanceT = (outerRadius * PRISM_OCCLUSION_NOSE_CLEARANCE) / axisLen;
+            float bandT = (outerRadius - innerRadius) / axisLen;
+            float baseShare = clearanceT + bandT;
+            float shrink = min(1.0, PRISM_OCCLUSION_MAX_BASE_SHARE / max(baseShare, 1e-4));
+            clearanceT = clearanceT * shrink;
+            bandT = bandT * shrink;
+            float tSolid = saturate(1.0 - clearanceT);
 
             if (t > 0.0 && t < tSolid)
             {
@@ -1224,7 +1265,6 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // Short and smooth are in tension, which is why the easing is quintic
                     // and the dither is low-discrepancy: both exist to keep a narrow band
                     // from reading as an edge.
-                    float innerRadius = min(Params.y, outerRadius);
                     // Same fraction of the outer profile at every depth (innerRadius * t
                     // before the near circle existed — identical when near = 0).
                     float innerAtT = outerAtT * (innerRadius / outerRadius);
@@ -1245,10 +1285,13 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // thickness across the base as around the sides — so the corridor's
                     // whole boundary fades at one rate and there is no seam anywhere on
                     // it. It also self-scales: a long corridor gets a proportionally short
-                    // axial band, a short one a longer band, with nothing to tune. Clamped
-                    // to 1 for the degenerate case where the camera is closer to the ship
-                    // than the shell is thick.
-                    float baseBand = clamp((outerRadius - innerRadius) / axisLen, 1e-4, 1.0);
+                    // axial band, a short one a longer band, with nothing to tune. It
+                    // is capped WITH the clearance above (PRISM_OCCLUSION_MAX_BASE_SHARE)
+                    // rather than on its own, which is what preserves that self-scaling on
+                    // a short corridor instead of letting the two eat the whole tunnel.
+                    // Clamped to 1 for the degenerate case where the camera is closer to
+                    // the ship than the shell is thick.
+                    float baseBand = clamp(bandT, 1e-4, 1.0);
                     float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (tSolid - baseBand)) / baseBand);
 
                     // PRODUCT, not min(): a fragment is cleared only where it is inside

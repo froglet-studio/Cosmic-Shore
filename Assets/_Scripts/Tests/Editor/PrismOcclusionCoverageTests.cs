@@ -129,6 +129,37 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void Corridor_CapsWhatItsBaseMayTakeOfTheTunnel()
+        {
+            // The nose clearance and the axial grade that leads into it are both written
+            // in HULL RADII and both come off the same end of a corridor whose length is
+            // the CAMERA DISTANCE — which the fleet authors from 6.72 (Urchin) to 250
+            // (Serpent). Uncapped, they took 1.75/rho of the tunnel, so the FULLY-CLEAR
+            // corridor was empty at rho <= 1.75 and 0.384 of the length at the Squirrel's
+            // rho: on a close-camera hull the corridor was nearly inert, and mass sat
+            // solid in front of the ship while the same mass dissolved for a long-camera
+            // one. The cap is what makes the clearance constant's own degenerate-case
+            // note ("only lost inside one hull radius") true.
+            //
+            // Numeric proof, including that the cap is a bit-exact no-op for rho >= 3.5:
+            // Tools/Shaders/verify_prism_corridor_base.py. This gate only catches the
+            // wholesale revert, from assets alone.
+            string hlsl = "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl";
+            Assert.IsTrue(File.Exists(hlsl), $"{hlsl} is missing.");
+            string text = File.ReadAllText(hlsl).Replace("\r\n", "\n");
+            Assert.IsTrue(text.Contains("PRISM_OCCLUSION_MAX_BASE_SHARE"),
+                $"{hlsl} no longer caps what the nose clearance plus its axial grade may " +
+                "take of the corridor. A close-camera vessel then has little or no " +
+                "see-through corridor at all and nothing else fails. " +
+                "Verify with: python3 Tools/Shaders/verify_prism_corridor_base.py");
+            Assert.IsTrue(text.Contains("float shrink = min(1.0, PRISM_OCCLUSION_MAX_BASE_SHARE"),
+                $"{hlsl} declares PRISM_OCCLUSION_MAX_BASE_SHARE but no longer applies it — " +
+                "an authored cap nothing reads is exactly the shape of a fix that was " +
+                "reverted in the body and left in the header. " +
+                "Verify with: python3 Tools/Shaders/verify_prism_corridor_base.py");
+        }
+
+        [Test]
         public void EveryMaterialOnAWiredGraph_CanBeDissolvedByTheCorridor()
         {
             var failures = new List<string>();

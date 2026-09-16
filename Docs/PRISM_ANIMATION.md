@@ -1175,6 +1175,43 @@ The two clearances are combined by **product, not `min()`**: multiplying two C2 
 stays C2, whereas `min()` would crease wherever they cross — precisely the artefact the
 grading exists to remove.
 
+**But the clearance and its grade are both HULL-sized and both eat the same end of a
+CAMERA-sized corridor — so what they cost is one ratio (2026-09-16).** Call it
+`ρ = cameraDistance / hullRadius`. The nose clearance takes `1·R/axisLen` of the corridor
+and the axial band takes another `(R − innerR)/axisLen`, off the *same* end, so together
+they take **`1.75/ρ`** of its length at the shipped `innerRadiusScale 0.25`. The fleet
+authors ρ across a factor of ~37 (`|followOffset|` 6.72 on the Urchin against 250 on the
+Serpent), so one constant is a sliver on one hull and most of the tunnel on another.
+
+Measured against the shipped function itself
+(`Tools/Shaders/verify_prism_corridor_base.py`), the **fully-clear** corridor was:
+
+| ρ | 1.25 | 1.75 | 2.0 | 2.83 | 3.5 | 5.0 | 11.7 | 41.7 |
+|---|---|---|---|---|---|---|---|---|
+| clear fraction (before) | **0.000** | 0.002 | 0.127 | 0.384 | 0.500 | 0.650 | 0.851 | 0.958 |
+| clear fraction (now) | 0.500 | 0.500 | 0.500 | 0.500 | 0.500 | 0.650 | 0.851 | 0.958 |
+
+so on a close-camera hull the corridor was nearly inert, and that reads in play as mass —
+trail, environment and especially the 24-wedge explosion debris, which is born wherever
+the ship destroyed something — **sitting solid in front of the ship while the same mass
+dissolves for a long-camera hull**. The clearance constant's own degenerate-case note said
+the corridor is only lost inside one hull radius; that was an analysis of `tSolid` alone
+and was blind to the grade subtracting a second `(outer − inner)/axisLen` from the same
+end, which is why it is empty at **1.75**, not 1.
+
+`PRISM_OCCLUSION_MAX_BASE_SHARE` (**0.5**) caps the pair as a share of the corridor's
+LENGTH. Both are scaled by **one** factor, which keeps the grade exactly the fraction of
+the clearance it was derived as (the isotropy argument above survives untouched) and makes
+the cap a **bit-exact no-op for ρ ≥ 1.75/0.5 = 3.5** — 2,406 samples, exact, with the
+pre-cap formula as the negative control. 0.5 is not a taste call: the clearance is
+described in the file as trading *a sliver* of see-through for the impact reading, and a
+sliver that takes more than half the tunnel is not a sliver.
+
+**The general rule**: *a clearance written in the units of the OBJECT, subtracted from a
+volume whose extent is a property of the CAMERA, is a different fraction on every vessel* —
+and the fleet's camera distances are the thing that varies most. State such a constant as a
+share of what it is taken from, or measure it on the closest-camera hull.
+
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
 world radius subtends a *huge* solid angle near the camera, so a capsule massively

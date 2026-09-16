@@ -16,8 +16,15 @@ are exactly what per-vessel / per-mode opt-in used to produce. The census:
 names survive as the cloak-state bind targets, but their transparency is dither coverage,
 not blending; enable_prism_alpha_clip.py enforces that and converts strays.)
 
-SuctionGraph is deliberately excluded: it renders a prism DURING consumption (a sub-second
-implode of mass that is being removed), never standing mass the player can be occluded by.
+SuctionGraph is excluded, and that exclusion is a KNOWN HOLE rather than a clean argument
+(2026-09-16). It renders a prism DURING consumption, which was described here as "a
+sub-second implode ... never standing mass the player can be occluded by"; measured,
+PrismImplosion.prefab authors implosionDuration 2 and every implosion converges on a LIVE
+creature Transform, so a consumed prism's faces cross the arena over two full seconds with
+no way to dither. Closing it is not a census edit - SuctionGraph has no
+SurfaceDescription.Alpha or AlphaClipThreshold block at all, so it needs both blocks
+created, this splice applied, and ImplodingPrismMaterial converted to opaque + alpha clip.
+See PrismOcclusionDiagnostics.WiredPrismShaderNames for the same note.
 The legacy SpreadFresnel/TriangleFresnel prism family is also excluded - it is decor/tool-
 scene only (its two Prism-carrying prefabs are referenced by nothing but the Recording
 Studio scenes) and PRISM_ANIMATION.md 3.7 I says do not extend it. Both are reported by
