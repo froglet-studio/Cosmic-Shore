@@ -15,5 +15,6 @@ MonoBehaviour:
   enabled: 1
   outerRange: 15
   innerRange: 10
+  neighbourSpread: 2.5
   engageSeconds: 0.25
   releaseSeconds: 0.4

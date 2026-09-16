@@ -373,7 +373,7 @@ def validate(docs, expect_wired):
     # §4.7.2 splices PrismCradleDeform LAST on Position, after this converge. Walk through
     # it: the position it hands the block is the converged position it was given.
     cradle = find_cf(docs, "PrismCradleDeform")
-    if cradle is not None and pos_src == (cradle["m_ObjectId"], 2):
+    if cradle is not None and pos_src == (cradle["m_ObjectId"], 3):   # OutPosition is slot 3
         pos_src = sources.get((cradle["m_ObjectId"], 0))
     assert pos_src == (converge["m_ObjectId"], 3), \
         "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition (directly, or through PrismCradleDeform)"

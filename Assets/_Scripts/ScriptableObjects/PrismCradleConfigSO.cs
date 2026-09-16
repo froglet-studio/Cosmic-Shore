@@ -6,11 +6,14 @@ namespace CosmicShore.ScriptableObjects
     /// Tuning for the Urchin's CRADLE (<c>PrismCradle</c>, <c>PrismCradle.hlsl</c>,
     /// Docs/PRISM_ANIMATION.md §4.7.2).
     ///
-    /// While an Urchin RIDES a prismscape — attached, not launched, not in free flight — every
-    /// prism face inside <see cref="OuterRange"/> of the hull swings so that its normal points
-    /// at the hull's centre and its centroid sits ON the hull's surface, by an amount that
-    /// ramps from nothing at <see cref="OuterRange"/> to everything at <see cref="InnerRange"/>.
-    /// The pilot reads it as the mass they are grinding cradling them.
+    /// While an Urchin RIDES a prismscape — attached, not launched, not in free flight — the
+    /// prism TRIANGLE (a wedge: four per face, fanned from the face centre) whose centroid is
+    /// nearest the hull swings so that its normal points at the hull's centre and its centroid
+    /// sits ON the hull's surface; its three adjacent wedges come partway, by how nearly as
+    /// close as the nearest they are (<see cref="NeighbourSpread"/>), the one across the prism
+    /// edge wrapping so its outward face meets the hull; every other triangle is untouched.
+    /// The whole thing ramps from nothing at <see cref="OuterRange"/> to everything at
+    /// <see cref="InnerRange"/>. The pilot reads it as the mass they are grinding cradling them.
     ///
     /// Everything here is a GLOBAL shader uniform written once per frame — there is no
     /// per-prism state to tune and no per-prism cost to pay for widening the band. The hull's
@@ -29,18 +32,26 @@ namespace CosmicShore.ScriptableObjects
                  "this feature existed.")]
         [SerializeField] bool enabled = true;
 
-        [Tooltip("Distance from the hull's centre to a prism FACE's centroid, in world units, at " +
-                 "which the cradle is exactly zero. Faces farther than this are untouched.")]
+        [Tooltip("Distance from the hull's centre to a prism TRIANGLE's centroid, in world units, at " +
+                 "which the cradle is exactly zero. Triangles farther than this are untouched.")]
         [Min(0f)]
         [SerializeField] float outerRange = 15f;
 
-        [Tooltip("Distance at (and inside) which the cradle is at full strength: the face's centroid " +
-                 "sits on the hull's surface and its normal points at the hull's centre. Between " +
-                 "this and the outer range the face does the same thing by a smoothly smaller " +
-                 "amount — that gradient is what lets one face hand off to the next at a seam. " +
-                 "Clamped below the outer range.")]
+        [Tooltip("Distance at (and inside) which the cradle is at full strength: the nearest triangle's " +
+                 "centroid sits on the hull's surface and its normal points at the hull's centre. " +
+                 "Between this and the outer range it does the same thing by a smoothly smaller " +
+                 "amount. Clamped below the outer range.")]
         [Min(0f)]
         [SerializeField] float innerRange = 10f;
+
+        [Tooltip("How much FARTHER from the hull than the nearest triangle one of its three adjacent " +
+                 "triangles may be, in world units, and still come partway toward the hull: a " +
+                 "neighbour as close as the nearest comes all the way, one this much farther stays " +
+                 "put, and the ramp between is what makes one triangle hand off to the next at a " +
+                 "seam without a snap. Narrow it and only the one nearest triangle ever moves; widen " +
+                 "it and the whole face comes along.")]
+        [Min(0.001f)]
+        [SerializeField] float neighbourSpread = 2.5f;
 
         [Header("Continuity")]
         [Tooltip("Seconds the cradle takes to reach full strength after the Urchin attaches. A bare " +
@@ -58,6 +69,7 @@ namespace CosmicShore.ScriptableObjects
         public bool Enabled => enabled;
         public float OuterRange => Mathf.Max(0f, outerRange);
         public float InnerRange => Mathf.Clamp(innerRange, 0f, OuterRange);
+        public float NeighbourSpread => Mathf.Max(0.001f, neighbourSpread);
         public float EngageSeconds => Mathf.Max(0f, engageSeconds);
         public float ReleaseSeconds => Mathf.Max(0f, releaseSeconds);
 

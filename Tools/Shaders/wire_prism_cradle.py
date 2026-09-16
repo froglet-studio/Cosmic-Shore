@@ -2,13 +2,18 @@
 """
 Wire the Urchin's CRADLE deformation into every graph a live prism can render with.
 
-Docs/PRISM_ANIMATION.md §4.7.2. While an Urchin rides a prismscape, every prism face inside
-a 15 u band around the hull swings so its normal points at the hull's centre and its centroid
-sits on the hull's surface — a rigid per-face motion blended by distance, evaluated entirely
-on the GPU from a bank of per-frame GLOBALS (the hull's centre + radius + an eased strength,
-one slot per riding Urchin). The prism graphs need ONE new node and no new properties:
-PrismCradle.hlsl declares its uniforms at file scope, exactly as PrismDestructionSight.hlsl's
-peer bank does, so Shader.SetGlobalVectorArray reaches them with no property surgery.
+Docs/PRISM_ANIMATION.md §4.7.2. While an Urchin rides a prismscape, the prism TRIANGLE (wedge —
+four per face, fanned from the face centre) whose centroid is nearest the hull swings so its
+normal points at the hull's centre and its centroid sits on the hull's surface; its three
+adjacent wedges come partway, the one across the prism edge wrapping so its outward face meets
+the hull; every other triangle is untouched — a rigid per-wedge motion blended by distance,
+evaluated entirely on the GPU from a bank of per-frame GLOBALS (the hull's centre + radius + an
+eased strength, one slot per riding Urchin). The prism graphs need TWO new nodes and no new
+properties: PrismCradle.hlsl declares its uniforms at file scope, exactly as
+PrismDestructionSight.hlsl's peer bank does, so Shader.SetGlobalVectorArray reaches them with
+no property surgery. The second node is an OBJECT-space Tangent Vector: the prism mesh's
+tangent points from a face's centre at its own wedge's outer edge, so (normal, tangent) is the
+wedge id and the vertex needs no bake and no neighbour access to know which triangle it is in.
 
 It is a §4.7 GLOBAL rather than a §1 STAMP because the value depends on where the hull is THIS
 frame; contrast PrismJiggleClock / PrismShieldMorph on these same graphs, which are pure
@@ -23,6 +28,7 @@ What it adds to each graph:
 
   nodes:
       PrismCradleDeform (Custom Function) -> PrismCradle.hlsl
+      Tangent Vector (Object space)       -> PrismCradleDeform.Tangent
 
   edges (the splice — the cradle goes LAST on the vertex chain, so it operates on the position
   every earlier stage has already produced; that is what lets its face-centroid proxy stay
@@ -32,6 +38,7 @@ What it adds to each graph:
                <normal chain tail> ------------> VertexDescription.Normal
       AFTER:   <position chain tail> -> PrismCradleDeform.Position
                <normal chain tail> ---> PrismCradleDeform.Normal
+               Tangent Vector (Object) -> PrismCradleDeform.Tangent
                PrismCradleDeform.OutPosition --> VertexDescription.Position
                PrismCradleDeform.OutNormal ----> VertexDescription.Normal
 
@@ -43,7 +50,10 @@ Out-of-editor ShaderGraph JSON synthesis per the /asset-surgery protocol: parse 
 file, clone same-file donors so the schema is exact by construction, rebuild in memory,
 assert every invariant, and only then write.
 
-Idempotent: re-running after a successful pass prints "already wired" and exits 0. That also
+Idempotent: re-running after a successful pass prints "already wired" and exits 0. A graph
+carrying the FIRST cut's per-face node (four slots, no Tangent) is MIGRATED: the old node is
+unspliced (its feeders handed back to the blocks), removed with its slots and edges, and the
+wedge node spliced fresh — so a re-run is the upgrade path as well. That also
 makes this the resolver for a .shadergraph merge conflict — take one side whole, re-run every
 wirer, confirm each reports "already wired".
 
@@ -76,10 +86,19 @@ DONOR_FUNCTION = "PrismSuctionConverge"
 CF_SLOTS = [
     (0, "Position", "Vector3", False),
     (1, "Normal", "Vector3", False),
-    (2, "OutPosition", "Vector3", True),
-    (3, "OutNormal", "Vector3", True),
+    (2, "Tangent", "Vector3", False),
+    (3, "OutPosition", "Vector3", True),
+    (4, "OutNormal", "Vector3", True),
 ]
-SLOT_POSITION, SLOT_NORMAL, SLOT_OUT_POSITION, SLOT_OUT_NORMAL = 0, 1, 2, 3
+SLOT_POSITION, SLOT_NORMAL, SLOT_TANGENT, SLOT_OUT_POSITION, SLOT_OUT_NORMAL = 0, 1, 2, 3, 4
+
+# The first cut's signature (per FACE: no Tangent). A graph carrying it is migrated, not
+# reported as wired.
+LEGACY_CF_SLOT_IDS = {0, 1, 2, 3}
+
+OBJECT_SPACE = 0  # UnityEditor.ShaderGraph.CoordinateSpace.Object
+TANGENT_NODE_TYPE = "UnityEditor.ShaderGraph.TangentVectorNode"
+NORMAL_NODE_TYPE = "UnityEditor.ShaderGraph.NormalVectorNode"
 
 VERTEX_POSITION_BLOCK = "VertexDescription.Position"
 VERTEX_NORMAL_BLOCK = "VertexDescription.Normal"
@@ -186,6 +205,38 @@ def make_custom_function_node(donor_cf, donor_slot_v3, x, y):
     return node, slots
 
 
+def find_node_by_type(docs, type_suffix):
+    for d in docs:
+        if d.get("m_Type", "").endswith(type_suffix):
+            return d
+    return None
+
+
+def make_object_tangent_node(docs, idx, x, y):
+    """Clone the graph's own NormalVectorNode (the same GeometryNode shape: one Vector3 "Out"
+    slot + m_Space) and re-type it to a Tangent Vector in OBJECT space. Same-file donor, so the
+    serializer version and slot schema are exact by construction; the two node classes differ
+    only in m_Type and m_Name."""
+    donor = find_node_by_type(docs, NORMAL_NODE_TYPE)
+    assert donor is not None, "no NormalVectorNode donor in this graph to clone a Tangent Vector from"
+    node = json.loads(json.dumps(donor))
+    node["m_ObjectId"] = new_oid()
+    node["m_Type"] = TANGENT_NODE_TYPE
+    node["m_Name"] = "Tangent Vector"
+    node["synonyms"] = []
+    node["m_Space"] = OBJECT_SPACE
+    node["m_DrawState"]["m_Position"].update({"x": x, "y": y})
+    slots = []
+    for ref in donor["m_Slots"]:
+        sd = json.loads(json.dumps(idx[ref["m_Id"]]))
+        sd["m_ObjectId"] = new_oid()
+        slots.append(sd)
+    assert len(slots) == 1 and slots[0]["m_SlotType"] == 1 and slots[0]["m_Id"] == 0, \
+        "NormalVectorNode donor does not carry the single Out slot the Tangent Vector needs"
+    node["m_Slots"] = [{"m_Id": sd["m_ObjectId"]} for sd in slots]
+    return node, slots
+
+
 def edge(out_node, out_slot, in_node, in_slot):
     return {
         "m_OutputSlot": {"m_Node": {"m_Id": out_node}, "m_SlotId": out_slot},
@@ -284,13 +335,69 @@ def validate(docs, expect_wired):
     if "NormalVectorNode" in nrm_feeder.get("m_Type", ""):
         assert nrm_feeder.get("m_Space") == 0, "PrismCradleDeform.Normal is fed by a NON-object-space NormalVector node"
 
+    # --- the wedge id: Tangent is fed by an OBJECT-space Tangent Vector node, directly ---
+    tan_src = sources.get((cf["m_ObjectId"], SLOT_TANGENT))
+    assert tan_src is not None, "PrismCradleDeform.Tangent is unconnected — the vertex cannot name its wedge"
+    tan_feeder = idx[tan_src[0]]
+    assert tan_feeder.get("m_Type") == TANGENT_NODE_TYPE, \
+        f"PrismCradleDeform.Tangent must be fed by a Tangent Vector node, not {tan_feeder.get('m_Type')}"
+    assert tan_feeder.get("m_Space") == OBJECT_SPACE, \
+        "PrismCradleDeform.Tangent is fed by a NON-object-space Tangent Vector node — the wedge id is object-space (n, t)"
+    assert any(r["m_Id"] == tan_feeder["m_ObjectId"] for r in graph["m_Nodes"]), \
+        "the cradle's Tangent Vector node is not registered in m_Nodes"
+
 
 # ---------------------------------------------------------------------------
 # the edit
 # ---------------------------------------------------------------------------
 
+def cf_slot_ids(docs, cf):
+    idx = index(docs)
+    return {idx[s["m_Id"]]["m_Id"] for s in cf["m_Slots"]}
+
+
 def already_wired(docs):
-    return find_cf(docs, FUNCTION_NAME) is not None
+    cf = find_cf(docs, FUNCTION_NAME)
+    return cf is not None and cf_slot_ids(docs, cf) == {s[0] for s in CF_SLOTS}
+
+
+def carries_legacy_node(docs):
+    cf = find_cf(docs, FUNCTION_NAME)
+    return cf is not None and cf_slot_ids(docs, cf) == LEGACY_CF_SLOT_IDS
+
+
+def unsplice_legacy(docs):
+    """Hand the legacy per-face node's Position/Normal feeders back to the vertex blocks, then
+    drop the node, its slots and every edge that touched it. Leaves the graph exactly as it was
+    before the first cut wired it, so the ordinary splice below applies unchanged."""
+    graph = find_graph(docs)
+    idx = index(docs)
+    cf = find_cf(docs, FUNCTION_NAME)
+    sources = edge_sources(graph)
+    pos_block = find_block(docs, VERTEX_POSITION_BLOCK)
+    nrm_block = find_block(docs, VERTEX_NORMAL_BLOCK)
+    pos_in = block_input_slot(idx, pos_block)
+    nrm_in = block_input_slot(idx, nrm_block)
+    # Legacy ids: 0 Position, 1 Normal, 2 OutPosition, 3 OutNormal.
+    pos_feed = sources.get((cf["m_ObjectId"], 0))
+    nrm_feed = sources.get((cf["m_ObjectId"], 1))
+    assert pos_feed and nrm_feed, "legacy cradle node has an unconnected input; cannot migrate"
+    assert sources.get((pos_block["m_ObjectId"], pos_in)) == (cf["m_ObjectId"], 2), \
+        "legacy cradle node does not feed VertexDescription.Position; cannot migrate"
+    assert sources.get((nrm_block["m_ObjectId"], nrm_in)) == (cf["m_ObjectId"], 3), \
+        "legacy cradle node does not feed VertexDescription.Normal; cannot migrate"
+    graph["m_Edges"] = [e for e in graph["m_Edges"]
+                        if e["m_InputSlot"]["m_Node"]["m_Id"] != cf["m_ObjectId"]
+                        and e["m_OutputSlot"]["m_Node"]["m_Id"] != cf["m_ObjectId"]]
+    graph["m_Edges"].extend([
+        edge(pos_feed[0], pos_feed[1], pos_block["m_ObjectId"], pos_in),
+        edge(nrm_feed[0], nrm_feed[1], nrm_block["m_ObjectId"], nrm_in),
+    ])
+    graph["m_Nodes"] = [r for r in graph["m_Nodes"] if r["m_Id"] != cf["m_ObjectId"]]
+    dead = {cf["m_ObjectId"]} | {s["m_Id"] for s in cf["m_Slots"]}
+    docs[:] = [d for d in docs if d.get("m_ObjectId") not in dead]
+    validate(docs, expect_wired=False)
+    assert find_cf(docs, FUNCTION_NAME) is None
 
 
 def wire(path):
@@ -301,6 +408,13 @@ def wire(path):
         validate(docs, expect_wired=True)
         print(f"  {os.path.basename(path)}: already wired")
         return False
+
+    migrated = False
+    if carries_legacy_node(docs):
+        unsplice_legacy(docs)
+        migrated = True
+    assert find_cf(docs, FUNCTION_NAME) is None, \
+        f"{FUNCTION_NAME} exists with an unrecognised slot set — neither the wedge signature nor the legacy one"
 
     graph = find_graph(docs)
     idx = index(docs)
@@ -321,8 +435,10 @@ def wire(path):
     x = donor_cf["m_DrawState"]["m_Position"]["x"] + 320.0
     y = donor_cf["m_DrawState"]["m_Position"]["y"] + 320.0
     cf, cf_slots = make_custom_function_node(donor_cf, donor_slot_v3, x, y)
-    new_docs = [cf] + cf_slots
+    tan, tan_slots = make_object_tangent_node(docs, idx, x - 320.0, y + 200.0)
+    new_docs = [cf] + cf_slots + [tan] + tan_slots
     graph["m_Nodes"].append({"m_Id": cf["m_ObjectId"]})
+    graph["m_Nodes"].append({"m_Id": tan["m_ObjectId"]})
 
     # ---- the splice: retarget both block feeders into the cradle -----------
     retargeted = {SLOT_POSITION: 0, SLOT_NORMAL: 0}
@@ -345,6 +461,7 @@ def wire(path):
     graph["m_Edges"].extend([
         edge(cf["m_ObjectId"], SLOT_OUT_POSITION, pos_block["m_ObjectId"], pos_in),
         edge(cf["m_ObjectId"], SLOT_OUT_NORMAL, nrm_block["m_ObjectId"], nrm_in),
+        edge(tan["m_ObjectId"], 0, cf["m_ObjectId"], SLOT_TANGENT),
     ])
 
     docs.extend(new_docs)
@@ -352,7 +469,8 @@ def wire(path):
 
     open(os.path.join(REPO, path), "w", encoding="utf-8").write(dump_docs(docs))
     validate(load_docs(os.path.join(REPO, path)), expect_wired=True)
-    print(f"  {os.path.basename(path)}: wired (+1 node, +{len(cf_slots)} slots, 2 new edges, 2 retargeted)")
+    print(f"  {os.path.basename(path)}: {'migrated from the per-face node and ' if migrated else ''}"
+          f"wired (+2 nodes, +{len(cf_slots) + len(tan_slots)} slots, 3 new edges, 2 retargeted)")
     return True
 
 
@@ -360,7 +478,8 @@ def check(path):
     docs = load_docs(os.path.join(REPO, path))
     validate(docs, expect_wired=False)
     if not already_wired(docs):
-        print(f"  {os.path.basename(path)}: NOT wired")
+        print(f"  {os.path.basename(path)}: NOT wired"
+              + (" (carries the legacy per-face node — run without --check to migrate)" if carries_legacy_node(docs) else ""))
         return False
     validate(docs, expect_wired=True)
     print(f"  {os.path.basename(path)}: wired ✅")

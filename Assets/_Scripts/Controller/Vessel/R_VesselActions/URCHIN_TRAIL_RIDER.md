@@ -1002,13 +1002,18 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 ## The cradle (round 23): the mass wraps the hull while you ride
 
 While the Urchin is **riding** — `GunVesselTransformer.IsRiding`: attached with a live ride kernel
-under it, which is false the moment a launch, a Slip or a cleared trail lets go — every prism FACE
-within 15 u of the hull swings so that its normal points at the hull's centre and its centroid sits
-on the hull's surface, on the line from where the face was to that centre. The amount ramps from
-nothing at 15 u to everything at 10 u (measured at the face centroid), so as the hull slides from
-one face to the next the two faces meet at the seam, both touching the sphere, and hand off with
-nothing snapping. It reads as being cradled by the mass you are grinding. In free flight, and in
-the glide after a launch, nothing moves.
+under it, which is false the moment a launch, a Slip or a cleared trail lets go — the prism
+TRIANGLE nearest the hull swings so that its normal points at the hull's centre and its centroid
+sits on the hull's surface, on the line from where it was to that centre. A prism face is four
+triangles fanned from its centre (`Prism.asset`), and the nearest one's three neighbours — the two
+beside it on the face and the one across the prism edge — come partway, by how nearly as close as
+the nearest they are, the cross-edge one wrapping round the edge so its OUTWARD face is what meets
+the hull; every other triangle stays put. The amount ramps from nothing at 15 u to everything at
+10 u (measured at the triangle's centroid), so as the hull slides from one triangle to the next the
+two meet at the seam, both touching the sphere, and hand off with nothing snapping. It reads as
+being cradled by the mass you are grinding. In free flight, and in the glide after a launch,
+nothing moves. (The first cut moved whole faces — *"it brought the whole rectangular face"* — and
+was re-cut to wedges the same day.)
 
 It is a **§4.7 global-uniform effect** (`Docs/PRISM_ANIMATION.md §4.7.2`), which is the whole
 reason it is affordable on a 42,000-prism cell: `PrismCradleSource` — ensured on the hull by
@@ -1019,7 +1024,20 @@ transformer has moved the vessel, so a 300 u/s grind is never published a frame 
 `PrismCradle.hlsl` does every bit of the geometry in the prism VERTEX stage, spliced last on both
 live-prism graphs. There is no per-prism CPU work, no query, no material swap and no collider.
 
-Three things to know when it looks wrong:
+Four things to know when it looks wrong:
+
+- **Which triangle is which comes from the MESH, not from a bake.** Every vertex of `Prism.asset`
+  carries its face normal and a tangent pointing from the face centre at its own wedge's outer
+  edge, so `(normal, tangent)` names the wedge and the vertex shader can find its two side
+  neighbours (`normal × tangent`) and its cross-edge neighbour (`(tangent, normal)`) with no
+  neighbour access — and it finds the prism's NEAREST wedge itself, over all 24 closed-form
+  centroids. A prism drawn with a mesh that has one tangent per face (the legacy blocks on the
+  built-in cube, the shield octahedra) still moves rigidly per face, about a pivot two-thirds of
+  the way along that tangent. Adjacency is a continuous max, never a hard gate: on a thin slab
+  the four wedges of a side face sit within a unit of each other, so a non-adjacent one nearly
+  tied with the nearest comes some of the way too (`PRISM_CRADLE_STRAY_POWER` holds it back);
+  that is the price of no snap when the nearest changes, which it can do to a non-adjacent
+  wedge over a corner.
 
 - **The radius is a CONSTANT of the vessel, not a tuning of the feel.** `PrismCradleSource.
   hullRadius` is 0 by default, which measures the hull's circumscribing radius once (the same
@@ -1035,10 +1053,13 @@ Three things to know when it looks wrong:
   sees it around every AI's.
 
 `Tools/Shaders/verify_prism_cradle.py` compiles the shipped HLSL with clang++ and proves the
-contract (centroid on the surface, normal at the centre, rigid under a (3, 1, 6) prism scale, the
-two-face hand-off at an edge, continuity of ≤ 0.03 u per 0.01 u hull step, the facing gate and its
-negative control). `Tools/Shaders/wire_prism_cradle.py --check` proves the splice. Nothing has been
-run in the editor yet.
+contract on the real 24-wedge layout (the nearest triangle's centroid on the surface and normal at
+the centre, rigid under a (3, 1, 6) prism scale; exactly its three neighbours partway and the
+other twenty bit-identical under a clear nearest; the cross-edge wrap arriving outward-face-first;
+two triangles on the surface at an edge; continuity of ≤ 0.04 u per 0.01 u hull step across
+hand-offs and the face-centre tie; the facing gate and its negative control).
+`Tools/Shaders/wire_prism_cradle.py --check` proves the splice, including the object-space Tangent
+Vector feed. Nothing has been run in the editor yet.
 
 ## Files
 
@@ -1060,7 +1081,7 @@ run in the editor yet.
 | Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
 | The cradle — vessel half | `Controller/Vessel/PrismCradleSource.cs` (ensured by `GunVesselTransformer.Initialize`; reads `IsRiding`; eases strength; measures the radius once) |
 | The cradle — publisher | `Utility/PrismCradle.cs` (4-slot frame-stamped bank → `_PrismCradleCentre[]`, `_PrismCradleWeight[]`, `_PrismCradleParams`; flushed in LateUpdate) |
-| The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py` |
+| The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`: Position, Normal, an object-space Tangent Vector for the wedge id), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py` |
 | The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 
 ## Tuning knobs
@@ -1092,10 +1113,12 @@ run in the editor yet.
 | `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
-| `outerRange` / `innerRange` | `Resources/PrismCradleConfig.asset` | **15 / 10** u from the hull centre to a face centroid: zero effect at the outer, full at the inner. The gradient between them is the seam hand-off — narrow it and adjacent faces read as one popping to the surface. |
+| `outerRange` / `innerRange` | `Resources/PrismCradleConfig.asset` | **15 / 10** u from the hull centre to a triangle's centroid: zero effect at the outer, full at the inner. |
+| `neighbourSpread` | `Resources/PrismCradleConfig.asset` | **2.5** u — how much farther than the nearest triangle one of its three neighbours may be and still come partway; at that excess it stays put. THIS is the seam hand-off: narrow it and only the one nearest triangle ever moves, widen it and the whole face comes along. |
+| `PRISM_CRADLE_STRAY_POWER` | `PrismCradle.hlsl` (`#define 4.0`) | How hard a triangle that is near the nearest but adjacent to nothing near it is held back (`near^(1+power)`). 0 lets every triangle within the spread come as far as a neighbour would. |
 | `engageSeconds` / `releaseSeconds` | `Resources/PrismCradleConfig.asset` | **0.25 / 0.4** s ease of the cradle's strength on attach / detach. Never 0: that is the one-frame snap the ease exists to remove. |
-| `hullRadius` | `PrismCradleSource` (C# default **0** = measured once from the hull) | The sphere the cradled faces settle on. A constant of the vessel, not of the feel. |
-| `PRISM_CRADLE_FACING_LO` / `_HI` | `PrismCradle.hlsl` (`#define -0.5 / 0.0`) | The facing gate: dot(face normal, direction to hull) at which a face starts (LO) and fully (HI) participates. Raise LO toward 0 only with the far-face flip in mind. |
+| `hullRadius` | `PrismCradleSource` (C# default **0** = measured once from the hull) | The sphere the cradled triangles settle on. A constant of the vessel, not of the feel. |
+| `PRISM_CRADLE_FACING_LO` / `_HI` | `PrismCradle.hlsl` (`#define -0.5 / 0.0`) | The facing gate: dot(triangle normal, direction to hull) at which a triangle starts (LO) and fully (HI) participates. Raise LO toward 0 only with the far-side flip in mind. |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
 
 The two `GunVesselTransformer` fields marked "C# default" are **not serialized on
@@ -1119,8 +1142,8 @@ frame to turn facets into arcs. It is bounded by the search radius (~2.5 ground 
 only while attached to a surface, and at most a handful of vessels can ever be rolling at once.
 
 The cradle adds **nothing**: three global shader writes per frame while an Urchin rides, whatever
-the prism count, and the deformation is vertex-stage work on a 24-vertex mesh inside the same
-instanced batch.
+the prism count, and the deformation is vertex-stage work on a 72-vertex mesh (27 lengths per
+vertex to find the prism's nearest wedge and its neighbours) inside the same instanced batch.
 
 The one budget-adjacent effect is indirect and belongs to the ecology rather than to physics:
 `FinalBlockSlideEffects` calls `Prism.Restore()` on a destroyed prism and `Prism.Grow()` on a

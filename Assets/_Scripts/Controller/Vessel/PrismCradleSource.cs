@@ -6,8 +6,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Urchin's half of the CRADLE (Docs/PRISM_ANIMATION.md §4.7.2): while this vessel is
     /// RIDING a prismscape — attached, not launched off a ribbon's end, not in free flight — it
-    /// reports its hull to <see cref="PrismCradle"/> every frame, and the prism faces around it
-    /// wrap onto the hull on the GPU.
+    /// reports its hull to <see cref="PrismCradle"/> every frame, and the prism triangles around
+    /// it wrap onto the hull on the GPU.
     ///
     /// <para><b>Ensured, not authored.</b> <see cref="GunVesselTransformer.Initialize"/> adds this
     /// component when the prefab does not carry one, so the cradle cannot be omitted from an
@@ -20,9 +20,9 @@ namespace CosmicShore.Gameplay
     /// <see cref="hullRadius"/> is either authored here or measured ONCE from the hull's own
     /// renderers, the same measurement the occlusion corridor sizes itself with, and cached — it
     /// is never recomputed per frame. The shader takes it beside the centre because a slot is one
-    /// float4, and uses it to put every cradled face's centroid exactly on the hull's surface.</para>
+    /// float4, and uses it to put the nearest triangle's centroid exactly on the hull's surface.</para>
     ///
-    /// <para><b>Strength is eased, never switched.</b> A bare on/off would snap every face in the
+    /// <para><b>Strength is eased, never switched.</b> A bare on/off would snap every triangle in the
     /// band on one frame; the strength ramps over the config's engage/release seconds instead,
     /// so a launch reads as the mass releasing the hull. Reported from <c>Update</c> because the
     /// publisher flushes in <c>LateUpdate</c> and reads the hull's LIVE position there — a hull

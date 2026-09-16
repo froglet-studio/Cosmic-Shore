@@ -33,9 +33,11 @@ namespace CosmicShore.Tests
             "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
         };
 
-        // Slot ids in the order the HLSL declares its parameters (inputs first, then outputs).
-        const int SlotOutPosition = 2;
-        const int SlotOutNormal = 3;
+        // Slot ids in the order the HLSL declares its parameters (inputs first, then outputs):
+        // Position 0, Normal 1, Tangent 2, OutPosition 3, OutNormal 4.
+        const int SlotTangent = 2;
+        const int SlotOutPosition = 3;
+        const int SlotOutNormal = 4;
 
         static string[] Blocks(string path)
         {
@@ -61,8 +63,9 @@ namespace CosmicShore.Tests
             Assert.IsTrue(File.Exists(HlslPath), $"{HlslPath} is missing.");
             string hlsl = File.ReadAllText(HlslPath);
 
-            Assert.IsTrue(hlsl.Contains("void PrismCradleDeform_float("),
-                "PrismCradle.hlsl no longer declares PrismCradleDeform_float — every wired graph would fail to compile.");
+            Assert.IsTrue(hlsl.Contains("void PrismCradleDeform_float(float3 Position, float3 Normal, float3 Tangent,"),
+                "PrismCradle.hlsl no longer declares PrismCradleDeform_float(Position, Normal, Tangent, ...) — every " +
+                "wired graph would fail to compile, or bind its slots to the wrong parameters.");
 
             // The bank is FILE-SCOPE arrays (Shader Graph has no array property type, and an
             // array inside UnityPerMaterial breaks SRP batching) — so they must be declared here,
@@ -133,6 +136,18 @@ namespace CosmicShore.Tests
                     Assert.AreNotEqual(cradleId, src.outNode, $"{graphPath}: {FunctionName}.{label} is fed by itself.");
                 }
 
+                // The wedge id: Tangent is fed by an OBJECT-space Tangent Vector node. A world-space
+                // one names the wrong wedge on every rotated prism; a missing one collapses the
+                // cradle to whole faces about an off-centre pivot, silently.
+                var tanSrc = edges.FirstOrDefault(e => e.inNode == cradleId && e.inSlot == SlotTangent);
+                Assert.IsNotNull(tanSrc.outNode, $"{graphPath}: {FunctionName}.Tangent is unconnected — no vertex can name its wedge.");
+                var tanBlock = blocks.FirstOrDefault(b => b.Contains($"\"m_ObjectId\": \"{tanSrc.outNode}\""));
+                Assert.IsNotNull(tanBlock, $"{graphPath}: the node feeding {FunctionName}.Tangent is missing from the file.");
+                Assert.IsTrue(tanBlock.Contains("\"m_Type\": \"UnityEditor.ShaderGraph.TangentVectorNode\""),
+                    $"{graphPath}: {FunctionName}.Tangent must be fed by a Tangent Vector node.");
+                Assert.IsTrue(Regex.IsMatch(tanBlock, "\"m_Space\":\\s*0\\b"),
+                    $"{graphPath}: the cradle's Tangent Vector node is not OBJECT space (m_Space 0).");
+
                 // The bank must NOT also exist as graph properties: a same-named property would
                 // shadow the file-scope declaration and read the per-material default (zero).
                 foreach (var name in new[] { "_PrismCradleCentre", "_PrismCradleWeight", "_PrismCradleParams" })
@@ -178,6 +193,8 @@ namespace CosmicShore.Tests
                 $"PrismCradleConfig is not sane (outer {config.OuterRange}, inner {config.InnerRange}): the shader treats that band as OFF.");
             Assert.Greater(config.OuterRange, config.InnerRange,
                 "The cradle band must ramp: outer strictly wider than inner, or the smoothstep divides by zero.");
+            Assert.Greater(config.NeighbourSpread, 0f,
+                "NeighbourSpread must be positive: at 0 the adjacency smoothstep divides by zero and no neighbour ever hands off.");
         }
 
         [Test]

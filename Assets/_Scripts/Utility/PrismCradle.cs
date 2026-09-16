@@ -5,8 +5,9 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The CPU half of the Urchin's CRADLE: while an Urchin rides a prismscape, every prism face
-    /// within the cradle band swings to face the hull and settles onto its surface.
+    /// The CPU half of the Urchin's CRADLE: while an Urchin rides a prismscape, the prism triangle
+    /// nearest the hull swings to face it and settles onto its surface, its three neighbours come
+    /// partway, and every other triangle stays put.
     ///
     /// It publishes a small bank of global shader uniforms once per frame and does nothing else.
     /// There is no per-prism work of any kind — no spatial query, no trigger volume, no material
@@ -199,8 +200,10 @@ namespace CosmicShore.Utility
 
             Shader.SetGlobalVectorArray(CentreId, _centre);
             Shader.SetGlobalVectorArray(WeightId, _weight);
-            // z is the shader's MASTER sentinel: 0 means "the loop does not execute".
-            Shader.SetGlobalVector(ParamsId, new Vector4(config.OuterRange, config.InnerRange, count, 0f));
+            // z is the shader's MASTER sentinel: 0 means "the loop does not execute". w is how much
+            // farther than the nearest triangle a neighbour may be and still come partway.
+            Shader.SetGlobalVector(ParamsId,
+                new Vector4(config.OuterRange, config.InnerRange, count, config.NeighbourSpread));
             _publishedCount = count;
         }
 
