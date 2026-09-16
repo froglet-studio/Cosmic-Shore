@@ -30,26 +30,32 @@ namespace CosmicShore.Core
     /// displays ENTITLEMENT reads the raw twin; anything that asks "may the player use this
     /// right now" reads the gated one.
     ///
-    /// The five choke points, one per lock surface:
+    /// The six choke points, one per lock surface:
     ///   • SO_Vessel.IsLocked                                  — all vessels
     ///   • GameModeProgressionService.IsGameModeUnlocked       — all game modes
     ///   • GameModeProgressionService.GetMaxUnlockedIntensity  — all intensity tiers
     ///   • GameModeProgressionService.IsVesselHangarUnlocked   — the hangar feature
-    ///   • QuestArcadeConstraints.Active                       — the FTUE arcade funnel
+    ///   • QuestArcadeConstraints.Active                       — a stale, persisted FTUE funnel
+    ///   • QuestGraphRunner.TryStart                           — the quest graph itself
     ///
-    /// WHAT IT DOES TO THE QUEST GRAPH, which matters to whoever designs the FTUE. The graph
-    /// still runs, still shows its dialogue and still advances - but every node that WAITS on
-    /// progression passes instantly, because the thing it waits for is already true:
-    /// QuestWaitForModeUnlockedNode asks IsGameModeUnlocked, QuestWaitForIntensityNode asks
-    /// GetMaxUnlockedIntensity, and both are gated here. A graph authored around those waits
-    /// will therefore race through them with the gate on. That is correct - there is nothing to
-    /// wait for when everything is unlocked - but it means the FTUE flow can only be play-tested
-    /// with the gate OFF. Nothing deadlocks either way: no node waits for a lock to CLOSE.
+    /// IT STANDS THE QUEST GRAPH DOWN ENTIRELY. Everything the graph can apply is a lock this
+    /// gate exists to open — the arcade funnel, the nav-button lock, button interactability —
+    /// so a graph that still ran would spend the session re-applying them behind a switch that
+    /// says nothing is locked. TryStart is the one choke point both start paths funnel through
+    /// (OnClientReady and FTUEEventManager.InitializeFTUE), so NOT STARTING is the whole
+    /// implementation: no node runs, nothing needs undoing, and the runner's own teardown has
+    /// nothing to clean.
     ///
-    /// WHAT IT DELIBERATELY DOES NOT COVER. QuestLockNavigationNode's nav-button lock and
-    /// QuestSetButtonInteractableNode are tutorial CHOREOGRAPHY rather than entitlement, they
-    /// are scene-state only (a scene reload restores them), and making them no-ops would change
-    /// the behaviour of the thing currently being designed. They stay live.
+    /// The consequence to know is that no dialogue, instruction or reward reveal plays either,
+    /// so THE FTUE CAN ONLY BE PLAY-TESTED WITH THE GATE OFF. That is the design rather than a
+    /// limitation: with every entitlement open there is nothing left for the quest to teach,
+    /// and its progression WAITS would pass instantly anyway (QuestWaitForModeUnlockedNode asks
+    /// IsGameModeUnlocked, QuestWaitForIntensityNode asks GetMaxUnlockedIntensity, and both are
+    /// gated here) — so a running graph would race its own script.
+    ///
+    /// A constraint set persisted by an EARLIER session is a separate problem and is covered
+    /// separately: QuestArcadeConstraints lives in PlayerPrefs and survives a restart, so it
+    /// reads this gate too rather than relying on the runner never starting.
     ///
     /// It is deliberately NOT the same switch as <see cref="ProgressionBackendGate"/>: that one
     /// decides whether progression state is PERSISTED to the cloud, this one decides whether it
@@ -130,9 +136,9 @@ namespace CosmicShore.Core
             if (!AllUnlocked) return;
             CSDebug.LogWarning(
                 "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity " +
-                "and the Vessel Hangar are unlocked, and the FTUE arcade funnel is off. This is the " +
-                "shipped default until the FTUE is designed. Turn it off in " +
-                "FrogletTools > Toolbox > Progression to test real progression.");
+                "and the Vessel Hangar are unlocked, and the quest graph is stood down. This is the " +
+                "shipped default until the FTUE is designed. Turn it off in the Froglet Toolbox " +
+                "(Quest Debug or Vessel Unlock tab) to test real progression or the FTUE itself.");
         }
     }
 }

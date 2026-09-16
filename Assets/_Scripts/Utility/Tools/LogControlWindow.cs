@@ -1291,8 +1291,8 @@ namespace CosmicShore.Utility
             GUILayout.Space(Pad);
             EditorGUILayout.LabelField(
                 on
-                    ? "OPEN - every vessel, game mode and intensity is playable and the FTUE arcade funnel is off."
-                    : "ENFORCED - real progression is in effect. Locks, the quest chain and the FTUE funnel all apply.",
+                    ? "OPEN - every vessel, game mode and intensity is playable, and the quest graph does not run at all."
+                    : "ENFORCED - real progression is in effect. Locks, the quest graph and the FTUE funnel all apply.",
                 _infoStyle);
             EditorGUILayout.EndHorizontal();
 

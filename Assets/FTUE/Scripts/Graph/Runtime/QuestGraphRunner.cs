@@ -124,6 +124,24 @@ namespace CosmicShore.Core
         {
             if (_started || _stopped) return;
 
+            // The MASTER DEVELOPER UNLOCK stops the quest graph outright. Every lock the graph
+            // can apply - the arcade funnel, the nav-button lock, button interactability - is
+            // something that gate exists to open, and a graph that still ran would spend the
+            // session re-applying them behind a switch that says nothing is locked.
+            //
+            // TryStart is the ONE choke point both start paths funnel through (OnClientReady
+            // and FTUEEventManager.InitializeFTUE), so not starting is all it takes: no node
+            // runs, so there is nothing to undo, and OnDisable's cleanup has nothing to clean.
+            // A constraint set persisted by an EARLIER session is covered separately, by
+            // QuestArcadeConstraints.Active reading the same gate.
+            if (DeveloperUnlockGate.AllUnlocked)
+            {
+                CSDebug.LogVerbose(CSLogChannel.FTUE,
+                    "[Quest] Runner stood down - the master developer unlock is on, so there is " +
+                    "nothing for the quest to gate. Turn it off in FrogletTools > Toolbox to run the FTUE.");
+                return;
+            }
+
             if (debugDisable)
             {
                 CSDebug.LogVerbose(CSLogChannel.FTUE, "[Quest] Runner disabled (debugDisable).");
