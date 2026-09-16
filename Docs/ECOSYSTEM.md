@@ -8171,3 +8171,154 @@ anchor becomes the **Nerve flora** (body 158.0), and the band tightens from `1.0
 *A measurement that is wrong by a FACTOR can hide inside a band that is SOLVED, because the
 solve re-normalises the top of it.* Nothing here looked out of range; what it did was re-rank
 the roster.
+
+---
+
+## 47. Living mass is the mass that MOVES — the health prism sway (Sep 2026)
+
+§44 gave every spindle a GPU bend. It stopped at the spindle. The conserved mass **bolted to
+the spindle** — the health prisms that are a creature's body and a plant's leaves — stayed
+rigid, so a Clawfish's fluke bent away from the four ribs lying on it and the lockup that reads
+as ONE creature came apart the moment the sway became visible. It was reported exactly that
+way: *"the sway on the clawfish was competing with its prism lock up."*
+
+This is the other half, and it pays for itself three times over: the lockup holds, a plant's
+leaves move with its branches, and — because the default is an exact no-op — **a living health
+prism is now visibly different from the skeleton a dead lifeform leaves behind and from a
+vessel's trail.** That third one is the part worth keeping: it is a read the player gets for
+free, off a channel nothing else was using.
+
+### 47.1 The sway is a property of the LIMB, not of the mesh
+
+`SpindleSway` displaces a vertex by a pure shear along the limb's own +z:
+
+```
+offset = z_limb * (Amplitude·sin(t), Amplitude·W·sin(t'), 0)        [limb object space]
+```
+
+and the property that makes everything here possible is that **the offset is a function of z
+ALONE**. Every point at the same height on the limb moves identically, whatever its x and y. So
+a prism bolted to the limb does not need to know where AROUND it it sits; it needs its own
+height and the limb's axes. Evaluate the SAME field at the prism's own vertices and the prism
+and the limb surface move together **exactly**, not approximately.
+
+That exactness is the requirement rather than a flourish. An approximation reads as the rib
+sliding on the fin, which is the defect being fixed — so the headline test
+(`Tools/Shaders/verify_prism_sway.py` T3) demands that `PrismSway` with a degenerate basis is
+**bit-identical** to `SpindleSway`, not close to it. Getting there needed one non-obvious thing
+in the shader: the limb height is folded into the span BEFORE the sine, because
+`(Amplitude·height)·sin` and `Amplitude·(height·sin)` are the same real number and different
+float32s. *When two shaders have to agree, the order of operations is part of the contract.*
+
+`PrismSway.hlsl` `#include`s `SpindleSway.hlsl` rather than copying its two wave constants. A
+copy would drift over exactly the timescale the secondary ratio was chosen to make
+non-repeating — i.e. it would look fine for the first few seconds and then slowly come apart,
+which is the worst available failure mode.
+
+### 47.2 What is stamped, and why it is a creation stamp
+
+Four Hybrid-Per-Instance properties, all **constants of the attachment**:
+
+| property | what it is |
+|---|---|
+| `_SwaySpanX` | the limb's +x in THIS prism's object space, × the limb's sway amplitude |
+| `_SwaySpanY` | the limb's +y, same basis and amplitude — the secondary wave's axis |
+| `_SwayAxis` | the limb's +z as a linear FUNCTIONAL on this prism's object space |
+| `_SwayTiming` | (Frequency rad/s, Phase rad, Z0 = the prism ORIGIN's height up the limb) |
+
+A prism does not move relative to the limb it is part of, so **nothing here is ever
+re-computed**: this is `Docs/PRISM_ANIMATION.md`'s clock-material law in its purest form, with
+zero per-frame CPU at any population. It is also the first stamp on the service with **no start
+time and no duration** — the sway does not end, it is what being alive looks like.
+
+Three details are each a trap avoided:
+
+- **`_SwayAxis` is a ROW of the change of basis, never a normalized direction.** A prism
+  routinely carries a non-uniform `leafSize` as its `localScale`, and under that a normalized
+  axis is simply a different — wrong — number. The row is exact by construction.
+- **The limb frame is the RENDERER's transform, not the Spindle root's** (`Spindle.SwayFrame`).
+  `SpindleSway` shears `PositionOS`, and PositionOS is the *rendered mesh's* own space. The two
+  coincide on a spindle whose geometry sits at local identity and do NOT on one whose mesh is
+  posed under it — the Clawfish's body is a nested FBX instance carried at an offset — so
+  baking off the root would shear a rib about an axis its own limb is not using.
+- **The phase is the bucket the limb's material was minted from, not a fresh hash.** `Spindle`
+  desyncs its sway through eight shared phase-variant materials chosen by a position hash
+  (§44), and that hash is now a single `Spindle.PhaseBucket` both the variant picker and the
+  prism stamp read. Two copies of it would be a desync nobody would look for. It is resolved in
+  `Start` and CACHED, because a spindle is routinely `Instantiate`d and only THEN posed
+  (`AssembledFlora`) — re-hashing later hands a prism a phase its own limb is not using.
+
+The stamp site is **`Prism.OnCreationComplete`**, a new one-line virtual called from the
+creation coroutine's completion. It cannot be `Initialize`: Initialize runs before the
+companion entity exists and, on the assembled-flora path, before the prism has been re-parented
+onto its spindle at local identity. `Spindle.Start` re-stamps everything already bound to it,
+so the two orderings both land; every stamped value is a pure function of the attachment, so
+re-stamping is idempotent by construction.
+
+### 47.3 The default is the feature
+
+`_SwaySpanX = _SwaySpanY = (0,0,0)` is an exact, bit-identical no-op, and it is the default on
+the prototype entity, in all 15 prism materials and in both graphs. So:
+
+- **A vessel's trail does not sway.** Neither does an authored cell environment.
+- **A SKELETON does not sway.** `HealthPrism.LeaveAsSkeleton` — the §26 path that hands a dead
+  lifeform's body prisms to the cell as ordinary mass — clears the stamp. A husk that went on
+  swaying would read as a creature nobody could kill.
+- **A prism seated AT its limb's root does not translate**, because the shear is exactly zero
+  at z = 0. That is why every LATTICE species is left essentially still by this feature:
+  `AssembledFlora` parents its prism to its spindle at `localPosition = Vector3.zero`, so
+  `Z0 = 0` and a gyroid plate only shears about its own centre by its own half-extent. A
+  crystalline structure staying crystalline is the correct answer and it falls out of the
+  geometry rather than needing a species exception.
+
+### 47.4 How it is proven
+
+Four layers, because the two halves can each be right and still not compose:
+
+1. `Tools/Shaders/verify_prism_sway.py` — compiles the SHIPPED HLSL with clang (resolving the
+   include the way Unity will) and runs 8 tests, two negative-controlled: the zero-span no-op,
+   the **bit-identical** agreement with `SpindleSway`, linearity in limb height, a rotated +
+   non-uniformly scaled prism landing on the limb, that the constants are included rather than
+   copied, and the culling-envelope number (`1.0964 × Amplitude × limbHeight`).
+2. `PrismSwayBakeTests` — the C# bake as a pure function (`PrismSway.BakeAttachment`, extracted
+   precisely so the one thing that can be silently wrong is testable without a render service,
+   an entity world or play mode). The identity under test is the whole design in one line: *a
+   prism vertex displaced by the baked span lands, IN LIMB SPACE, exactly where the limb's
+   shear puts the point at that vertex's own height.*
+3. `Tools/Shaders/wire_prism_sway.py --check` — the graph splice, validated structurally before
+   it writes and re-asserted after, including that the sway sits immediately AFTER the shield
+   morph in the vertex chain so the two compose.
+4. `PrismClockWiringValidator` — the four properties are Hybrid Per Instance in both graphs, the
+   Custom Function points at `PrismSway.hlsl`, and six `SwayEdges` assert the composition order,
+   which is the one thing a property check cannot see: every property can be present and correct
+   while the node sits in a branch nothing reads.
+
+### 47.5 Collider budget
+
+**Zero.** This is a vertex shader and four floats of per-instance data. No collider, no spawn,
+no consumption, no per-frame CPU, and — because the sway is baked rather than ticked — no cost
+that scales with the number of living prisms. The renderer's culling box is expanded by the
+measured sweep so a swaying prism at the edge of the screen cannot pop, which is bounds
+arithmetic done once at the stamp.
+
+The one honest cost is **instance data**: four `float3`s per prism, on every prism in the game
+rather than only the living ones, because Entities Graphics carries the override set on the
+prototype. That is 48 bytes per prism — ~2.4 MB at the heaviest shipped cell (the Lattice cell's
+~50,000) — and it buys the whole feature at zero frame cost.
+
+### 47.6 Open, stated rather than hidden
+
+- **Nothing here has been run in the editor.** The HLSL is compiled and proven by clang, the
+  graph splice is validated before writing and re-proven by `--check`, the bake is proven
+  numerically against the shader's own formula, and every touched C# file parses under Roslyn.
+  None of that is a frame.
+- **Only prisms whose PARENT carries the Spindle are reached.** `HealthPrism.Initialize`
+  resolves its limb with `transform.parent.GetComponent<Spindle>()`, which is the platform's
+  own stated convention ("every healthPrism requires a spindle parent") and is satisfied by the
+  Clawfish and by all three flora growth paths. It is NOT satisfied by the **Shark** or the
+  **Brittlestar**, whose body prisms are bound to armature bones by Animation Rigging — which
+  is correct, because their motion comes from the rig rather than from a spindle's shear, and a
+  prism swaying on top of a `DampedTransform` chain would fight it.
+- **The amplitude is the LIMB's, so a species tunes its prisms by tuning its limb.** There is
+  deliberately no per-prism dial: two prisms on one limb moving by different amounts is the
+  defect, not a feature.

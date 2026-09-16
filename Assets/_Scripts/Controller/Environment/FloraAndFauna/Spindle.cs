@@ -10,6 +10,8 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
+        private static readonly int SwayAmplitudeID = Shader.PropertyToID("_SwayAmplitude");
+        private static readonly int SwayFrequencyID = Shader.PropertyToID("_SwayFrequency");
         private static readonly int DeathStartTimeID = Shader.PropertyToID("_DeathStartTime");
         private static readonly int DeathDurationID = Shader.PropertyToID("_DeathDuration");
         private static readonly int DeathDirectionID = Shader.PropertyToID("_DeathDirection");
@@ -90,6 +92,15 @@ namespace CosmicShore.Gameplay
         // Isolation breaks both up front - and suspends CheckForLife, so handing this
         // spindle's prisms to the skeleton cannot wither it out of turn.
         bool isolatedForOrderedWither;
+
+        // The phase bucket this spindle's variant material was minted from, resolved in
+        // Start alongside that material and cached so nothing can derive a DIFFERENT one
+        // later. It has to be cached rather than re-hashed on demand because a spindle is
+        // routinely Instantiated and only THEN posed (AssembledFlora), so the position the
+        // bucket was chosen from is not the position it has a frame later — re-hashing
+        // would hand a prism a phase its own limb is not using.
+        float _swayPhase;
+        bool _swayPhaseResolved;
 
         void CleanupDeadRefs()
         {
@@ -209,6 +220,13 @@ namespace CosmicShore.Gameplay
                 _phaseVariants[i] = GetPhaseVariant(_phaseBaseMaterials[i], transform.position);
                 if (_phaseVariants[i]) partRenderer.sharedMaterial = _phaseVariants[i];
             }
+            _swayPhase = PhaseForBucket(PhaseBucket(transform.position));
+            _swayPhaseResolved = true;
+            // Any prism already bound to this limb finished creating before Start ran, so
+            // its own creation stamp found no phase to ride. Stamp them now — the values
+            // are pure functions of the attachment, so re-stamping is idempotent.
+            RestampSway();
+
             if (!dying)
                 StampCondense();
 
@@ -238,10 +256,55 @@ namespace CosmicShore.Gameplay
                 PhaseVariants[baseMat] = variants;
             }
 
-            // Cheap position hash -> stable per-spindle bucket that scatters neighbours.
+            return variants[PhaseBucket(worldPos)];
+        }
+
+        /// Cheap position hash -> stable per-spindle bucket that scatters neighbours. Shared
+        /// by the variant picker and by <see cref="TryGetSwayConstants"/>, so the phase a
+        /// health prism is stamped with is the SAME number baked into the material its limb
+        /// draws with — two copies of this hash is a desync nobody would look for.
+        static int PhaseBucket(Vector3 worldPos)
+        {
             float h = Mathf.Sin(worldPos.x * 12.9898f + worldPos.y * 78.233f + worldPos.z * 37.719f) * 43758.5453f;
-            int idx = (int)((h - Mathf.Floor(h)) * PhaseVariantCount);
-            return variants[Mathf.Clamp(idx, 0, PhaseVariantCount - 1)];
+            return Mathf.Clamp((int)((h - Mathf.Floor(h)) * PhaseVariantCount), 0, PhaseVariantCount - 1);
+        }
+
+        static float PhaseForBucket(int bucket) => bucket / (float)PhaseVariantCount * Mathf.PI * 2f;
+
+        /// <summary>The sway this limb is actually running, for anything BOLTED to it to
+        /// ride (Docs/ECOSYSTEM.md §47). Amplitude and frequency are read off the material
+        /// the spindle draws with — the phase variant is a clone of the base, so both carry
+        /// the authored values either way — and the phase is the bucket that variant was
+        /// minted from. Returns false until Start has resolved the bucket, and false for a
+        /// material that authors no sway, which is the honest answer: a prism bolted to a
+        /// motionless limb must not move.</summary>
+        /// <summary>The transform whose OBJECT SPACE the sway actually happens in. This is
+        /// the RENDERER's, not the spindle root's: `SpindleSway` shears `PositionOS`, and
+        /// PositionOS is the rendered mesh's own space. The two coincide on a spindle whose
+        /// geometry sits at local identity and do NOT on one whose mesh is posed under it —
+        /// the Clawfish's body is a nested FBX instance carried at an offset — so baking a
+        /// prism's basis off the root would shear it about an axis its limb is not using.</summary>
+        internal Transform SwayFrame
+        {
+            get
+            {
+                CacheRenderers();
+                return RenderedObject ? RenderedObject.transform : transform;
+            }
+        }
+
+        internal bool TryGetSwayConstants(out float amplitude, out float frequency, out float phase)
+        {
+            amplitude = frequency = phase = 0f;
+            if (!_swayPhaseResolved) return false;
+            CacheRenderers();
+            var mat = RenderedObject ? RenderedObject.sharedMaterial : null;
+            if (mat == null || !mat.HasProperty(SwayAmplitudeID)) return false;
+            amplitude = mat.GetFloat(SwayAmplitudeID);
+            if (Mathf.Approximately(amplitude, 0f)) return false;
+            frequency = mat.HasProperty(SwayFrequencyID) ? mat.GetFloat(SwayFrequencyID) : 0f;
+            phase = _swayPhase;
+            return true;
         }
 
         public void AddHealthBlock(HealthPrism healthPrism)
@@ -251,6 +314,17 @@ namespace CosmicShore.Gameplay
 
             healthBlocks.Add(healthPrism);
             healthPrism.LifeForm = LifeForm;
+            PrismSway.TryStamp(healthPrism, this);
+        }
+
+        /// Re-applies the living-mass sway to every prism on this limb. Cheap and
+        /// idempotent: every stamped value is a constant of the attachment, so this
+        /// writes the same numbers it wrote last time.
+        void RestampSway()
+        {
+            CleanupDeadRefs();
+            foreach (var prism in healthBlocks)
+                PrismSway.TryStamp(prism, this);
         }
 
         public void RemoveHealthBlock(HealthPrism healthPrism)

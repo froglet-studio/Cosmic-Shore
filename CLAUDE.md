@@ -88,6 +88,37 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   unravels around), so an interrupted wither can never destroy it with the husk and every later exit
   (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
   skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
+- **LIVING MASS IS THE MASS THAT MOVES — a health prism rides its limb's sway.** §44 bent
+  every spindle and stopped there, so the conserved mass BOLTED to the spindle stayed rigid
+  and a Clawfish's fluke bent away from the four ribs lying on it. `PrismSway.hlsl` is the
+  other half, and it works because of one property of the shear: **the offset is a function of
+  z ALONE**, so every point at the same height on the limb moves identically whatever its x and
+  y — a prism therefore needs only its own height and the limb's axes, and evaluating the SAME
+  field at its own vertices makes the two move together **exactly**. `verify_prism_sway.py` T3
+  asserts that as **bit-identical** to `SpindleSway`, which is why the limb height is folded
+  into the span BEFORE the sine (`(A·h)·sin` and `A·(h·sin)` are the same real number and
+  different float32s — *when two shaders must agree, the order of operations is part of the
+  contract*), and why the file `#include`s `SpindleSway.hlsl` instead of copying its two wave
+  constants (a copy drifts over exactly the timescale the ratio was chosen to make
+  non-repeating, i.e. invisibly at first). Four Hybrid-Per-Instance properties, all **constants
+  of the attachment** — so no start time, no duration, and no per-frame CPU at any population.
+  **`_SwayAxis` is a ROW of the change of basis, never a normalized direction** (a prism carries
+  a non-uniform `leafSize` as its `localScale`, under which a normalized axis is a different,
+  wrong number); **the limb frame is the RENDERER's transform, not the Spindle root's**
+  (`Spindle.SwayFrame` — `PositionOS` is the rendered mesh's space, and the Clawfish's body is
+  a nested FBX carried at an offset); and **the phase is the bucket the limb's own material was
+  minted from**, through one shared `Spindle.PhaseBucket`, resolved in `Start` and CACHED
+  because a spindle is routinely `Instantiate`d and only THEN posed. The stamp site is the new
+  `Prism.OnCreationComplete` — never `Initialize`, which runs before the companion entity
+  exists and before `AssembledFlora` re-parents the prism onto its spindle. **A ZERO span is an
+  exact no-op and is the DEFAULT, which is the feature rather than a safe default**: a vessel's
+  trail, an authored environment and the SKELETON a dead lifeform leaves behind
+  (`HealthPrism.LeaveAsSkeleton` clears the stamp) all stay still, so a player can tell a plant
+  that is alive from the husk of one that is not without being told. A prism seated AT its
+  limb's root does not translate at all, because the shear is zero at z = 0 — which is why
+  every LATTICE species is left crystalline by this, with no species exception needed. Costs
+  zero colliders and zero frame time; the one honest cost is 48 bytes of instance data on every
+  prism, living or not. `Docs/ECOSYSTEM.md §47`.
 - **A SPINDLE IS A LIMB, NOT A ROD — and until Sep 2026 no spindle in the game deformed,
   including the one named `AnimatedSpindleGraph`.** That graph's `Add` into
   `VertexDescription.Position` has a hardcoded `(0,0,0)` A input (`Position + 0`), it is

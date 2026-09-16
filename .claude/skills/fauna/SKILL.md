@@ -1,6 +1,6 @@
 ---
 name: fauna
-description: Use for ANY work on a CREATURE — adding a fauna species, reviving or repairing one, changing how a creature moves/looks/eats/dies, wiring a FaunaConfigurationSO or LightFaunaDataSO, seating a heart, placing body prisms, or answering "why does this creature look stiff / do nothing / not die". Loads the fauna anatomy contract, the five things a creature needs to be ALIVE, the four motion tiers, the heart-seat rule and its gate, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/** (Fauna, LightFauna, Boid, WormFauna, Spindle, HealthPrism, LifeFormCrystal), any Assets/_Prefabs/FloraAndFauna/*.prefab or Assets/_Models/Fauna/**, any `* Fauna *` config asset, or Docs/ECOSYSTEM.md §§23-26, 40, 44-46.
+description: Use for ANY work on a CREATURE — adding a fauna species, reviving or repairing one, changing how a creature moves/looks/eats/dies, wiring a FaunaConfigurationSO or LightFaunaDataSO, seating a heart, placing body prisms, or answering "why does this creature look stiff / do nothing / not die". Loads the fauna anatomy contract, the five things a creature needs to be ALIVE, the four motion tiers, the heart-seat rule and its gate, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/** (Fauna, LightFauna, Boid, WormFauna, Spindle, HealthPrism, LifeFormCrystal), any Assets/_Prefabs/FloraAndFauna/*.prefab or Assets/_Models/Fauna/**, any `* Fauna *` config asset, or Docs/ECOSYSTEM.md §§23-26, 40, 44-47.
 ---
 
 # Fauna: the per-creature contract
@@ -130,6 +130,19 @@ genuinely differs, in which case it gets its own material on the same graph, the
 `QuadFishSpindleMaterial` does (0.13 / 5.2). Never paint a fleet-wide colour onto the base
 material: `Spindle` mints eight phase-variant clones at runtime, copying the colour at mint
 time, so the paint is only correct if `ThemeManager.Awake` happens to beat the first spindle.
+
+**A CREATURE'S BODY PRISMS SWAY WITH IT, and that is where a new species gets it wrong.**
+`PrismSway` stamps a health prism with its limb's own shear field
+(`Docs/ECOSYSTEM.md §47`), but it only reaches a prism whose **PARENT carries the Spindle** —
+`HealthPrism.Initialize` resolves its limb with `transform.parent.GetComponent<Spindle>()`, not
+`GetComponentInParent`. So a body prism authored as a SIBLING of the spindle, or one layer too
+deep, silently stands still while the body bends: put the prisms directly under the Spindle
+GameObject, which is the convention the Clawfish and all three flora growth paths already
+follow. Two species deliberately do NOT get it — the **Shark** and the **Brittlestar**, whose
+prisms are bound to armature bones by Animation Rigging, because their motion comes from the
+rig and a sway on top of a `DampedTransform` chain would fight it. Nothing needs authoring: the
+amplitude, frequency and phase all come from the LIMB, so a species tunes its prisms by tuning
+its spindle material.
 
 ---
 
