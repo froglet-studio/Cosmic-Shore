@@ -173,6 +173,14 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
+            // The hub has no MiniGameController, so nothing else in this scene raises
+            // OnInitializeGame - and that is the ONE event Cell subscribes Initialize to. Without
+            // it the scene's Cell never binds runtime.Cell, never assigns a config and never
+            // spawns its membrane, so the preview's RequestCellSwap would be building a world onto
+            // a cell that had not started. Menu_Main does exactly this from MainMenuController;
+            // the hub is the same shape - a scene with a live cell and no match running in it.
+            if (gameData != null) gameData.InitializeGame();
+
             // Lift the loading splash the Single load left opaque (no vessel here raises
             // OnClientReady on its own until the hub's spawn pair does).
             if (gameData != null) gameData.InvokeClientReady();

@@ -458,7 +458,7 @@ fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/Editor/Maelstrom
 ## 7. Editor wiring
 
 The mode runs end-to-end; one **optional** wire remains for the §4 between-game summary overlay
-(last bullet).
+(last bullet). Everything else below is in the scene as committed.
 
 - **AppManager** — `tournamentData` assigned; `MaelstromController` registered and constructed with
   `gameData` + `tournamentData` + `sceneNames` + `sceneTransitionManager`, created eagerly at bootstrap
@@ -480,16 +480,36 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
     call it makes**: `ArcadeLaunchPanel.Show()`/`Hide()` toggle the panel's OWN GameObject, which is
     the object the host component lives on, so hiding it would stop the host that is meant to be
     driving the preview. The host takes the window down directly instead.
-  - **`MaelstromConfigureModal` also carries an `ArcadeGameConfigureModal`** (it came with the copied
-    layout). Only the layout is wanted: that component is the arcade's whole launch flow, so the view
-    warns once — it is a second thing in this scene that can start a game.
-  - **TWO things the scene must still carry**, because they cannot be ensured:
-    1. **A `Cell`** (`_Prefabs/Environment/Cell.prefab`). Without it the preview reports the miss and
-       shows "not available"; with it the hub swaps to each drawn round's arena.
-    2. **The standard spawn pair** — a `MaelstromHubVesselInitializer` beside a
-       `ClientPlayerVesselInitializer` on a `NetworkObject`, exactly as every other multiplayer scene
-       carries one (copy that object from e.g. `MinigameJoust_Gameplay` and swap the server script).
-       Without it the arena is look-only: there are no vessels to fly and tap-to-play says so once.
+  - **`ArcadeGameConfigureModal` was REMOVED from `MaelstromConfigureModal`** (it had come with the
+    copied layout). Only the layout was wanted: that component is the arcade's whole launch flow —
+    a static `Instance`, an `ArcadeGameConfigSO` reset in `Start`, its own ready-up and its own
+    launch — so leaving it live put a second authority in a scene where `MaelstromLobby` decides when
+    a round starts. `MaelstromSceneView` still warns once if it comes back.
+    **Its Animator went with it, and that is not cosmetic**: `Standard.controller`'s default state is
+    `Standard Start.anim`, which keys the root's `CanvasGroup.m_Alpha` to **0**. `ModalWindowManager`
+    is what normally drives that Animator out of Start; with the component gone and the Animator left
+    enabled, the modal would have been held permanently invisible and would have overwritten
+    `MaelstromTransitions.PanelIn`'s tween every LateUpdate. The Animator is disabled, not deleted.
+    *General rule: removing the DRIVER of an Animator leaves the Animator playing its default state,
+    and a modal's default state is usually "closed".*
+  - **The scene carries a `Cell` and the standard spawn pair** (added 2026-09):
+    1. **A `Cell`** (`_Prefabs/Environment/Cell.prefab`) at the scene root, `runtime` =
+       `Runtime Cell Data.asset`, `CellConfigs[0]` = **`Barren Cell Config`** — the hub opens on an
+       empty, instant world and `MaelstromPreviewHost.RequestCellSwap`s onto each drawn round's arena
+       from there. Without it the preview reports the miss and shows "not available".
+    2. **The standard spawn pair** on one root `Game` object — `NetworkObject` + `NetcodeHooks` +
+       `ClientPlayerVesselInitializer` + `MaelstromHubVesselInitializer`, exactly as every other
+       multiplayer scene carries one. It spawns no AI (the hub is not a match; the roster is dealt at
+       the round's own scene) and it arranges its ring around the cell
+       (`arrangeSpawnPointsAroundCell`, `spawnRingRadiusFloor 600`) rather than off authored points,
+       because the hub's world CHANGES under it every round and a fixed point set would be authored
+       against whichever arena happened to be standing.
+  - **The hub raises `OnInitializeGame` itself** (`MaelstromSceneView.Start`). It has no
+    `MiniGameController`, and that event is the only thing `Cell` subscribes `Initialize` to — so
+    without the raise the scene's Cell never binds `runtime.Cell`, never assigns a config and never
+    spawns its membrane, and `RequestCellSwap` would be building a world onto a cell that had not
+    started. `MainMenuController` does exactly this in Menu_Main; the hub is the same shape — a scene
+    with a live cell and no match running in it.
   - **The field renames carry their old wiring** via `[FormerlySerializedAs]`
     (`gameModesText`→`poolText`, `roundCounterText`→`roundStatusText`, `raceRuleText`→`infoText`,
     `countdownText`→`gameStartText`, `activeRoot`→`configureRoot`) — verified against the scene, where
