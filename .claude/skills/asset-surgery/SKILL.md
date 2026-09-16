@@ -2245,6 +2245,23 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+**Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
+second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and
+`clang_cmd()` as module members, so a scratch script can `import verify_prism_shard3d as H`,
+write its own three-line `extern "C"` ABI around any function in `PrismOcclusionCorridor.hlsl`
+(the 2026-09-15 near-circle change did this for `PrismOcclusionFade_float`) and set a file-scope
+global directly (`_PrismOcclusionNearRadius = n`) — no copy of the substitution list, so a fix to
+the harness reaches both. Then diff the compiled function against a Python reference over random
+samples; 40k samples at 2.8e-6 max deviation is a real proof, "I read the lerp" is not.
+
+**A new per-frame scalar for a Custom Function node is cheaper as a FILE-SCOPE HLSL global than as
+a new node input.** Widening `float3 Params` to `float4` costs a `.shadergraph` edit on every graph
+the function is spliced into (two here), a property retype and a re-run of the wiring script; a
+`float _Foo;` declared beside the file's other globals and driven by `Shader.SetGlobalFloat` costs
+none of that, reaches every graph the file is included in, and reads 0 until published — which is
+the old behaviour by construction. The corridor's `_PrismOcclusionNearRadius` and the Lab's dither
+dials are the shape.
+
 ## 4.5c-r Technique: RASTERIZE the shipped shader — the rung above compiling it
 
 §4.5c proves a shader *computes* what you think. It cannot tell you the effect is **invisible**,
