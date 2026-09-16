@@ -343,6 +343,31 @@ Walk every changed file against these gates:
   to reach, that difficulty is the finding. Its close relative — **when a design lives in a lookup
   KEY, a test that starts downstream of the lookup cannot see the design at all.**
 
+- **When a fix COMPOSES onto existing behaviour, the test that matters is that the UNTOUCHED
+  half is bit-identical — asserting the new half works is satisfied by every wrong composition
+  too.** Sibling of the rule above, reached from the other side: nothing is hand-supplied here, the
+  tests genuinely drive the shipped path, and they are still blind. A brake added to the fleet's
+  throttle tracking had ten green tests, all of the form "a zero throttle now reaches zero" — which
+  is true of `min(exponential, constant)`, of `exponential - constant`, and of a dozen other
+  compositions that feel completely different to fly. The shipped one was the SUM, measured **40%
+  under the legacy deceleration curve** half a second in: a different fall on every affected hull,
+  including the one the user had named as the CORRECT reference. The class docstring described the
+  intended composition correctly the whole time; only the code disagreed, and no test pinned the
+  docstring. **The tell: your change has a region where it must do nothing, and you have not
+  written that assertion.** Write the no-op half first — "identical to the previous implementation
+  above the crossover, strictly stronger below it" — because the region where a feature must be
+  INVISIBLE is the region no bug report will ever come from.
+
+- **Your own branch's WORKED EXAMPLES go stale, not just its constants.** §2 already says to
+  re-derive every constant a later round moved; the same applies to every place the prose
+  ILLUSTRATES a rule with a specific case. Commit 1 explained a gate with "a vessel with a
+  non-zero `MinimumSpeed` (the Rhino's 10) is untouched"; commit 2, on the user's next message,
+  zeroed exactly that number — leaving the claim in a class docstring, an inspector tooltip, a
+  design doc AND a test constant literally named `RhinoFloor = 10f`, all self-consistent and all
+  false. A named example is a fact assertion with a friendly face, and a test const carrying a
+  vessel's name is one no compiler will ever check. At ship time, grep the branch for the
+  examples its own earlier rounds chose, not only for the numbers they quoted.
+
 - **A gate that ABORTS looks exactly like a gate that passes, if nobody reads its output.** This
   repo's `Tools/Build/author_*.py` generators do a one-time migration first (clone a donor scene,
   patch its wiring) and validate everything they built AFTER it. When the donor moves on, the
