@@ -3445,6 +3445,35 @@ never fold it into a fix for something else.
   unchanged at 0.825, because `z = 20` still won the `max`. Compute it and assert it rather
   than assuming either way — the identical geometry that once made a collider 8× too big is
   what makes this edit free, and only arithmetic tells you which case you are in.
+- **A shader parameter documented as "unit-free" is unit-free only under a UNIFORM scale, and a
+  header claiming otherwise will name its own counter-examples.** `SpindleSway.hlsl` bends a limb
+  with a first-order shear, `offset.x = Amplitude * PositionOS.z * sin(...)`, so `Amplitude` is a
+  dimensionless SLOPE and the header said it therefore "transfers across meshes that disagree
+  about scale by three orders of magnitude". It does not: the shear is evaluated in OBJECT space,
+  so a renderer carrying `localScale (sx, sy, sz)` deflects its tip by `atan(Amplitude * sx / sz)`
+  in WORLD terms — a mesh stretched along its own bend axis bends that much LESS. At the shared
+  0.08 the uniformly-scaled creature spindles leaned 4.57° and every branch-family spindle
+  0.64–1.48°, i.e. the lattice species read as dead while wearing the material that made the fish
+  wave. The reassuring clause in the header (*"every shipped spindle prefab is scaled on z to
+  match (Branch 6.2, TadpoleSpindle 3.0)"*) named the two prefabs that DISAGREE — **a sentence
+  offered as evidence for a claim is the first place to check the claim**, because whoever wrote
+  it had the numbers in front of them and drew the wrong conclusion. Two general rules: any
+  normalized/unit-free/"scale-free" parameter consumed in OBJECT space is a claim about the
+  transform above it, so measure the tip deflection per prefab before sharing one material; and
+  when the fix is per-mesh, prefer **per-mesh MATERIALS with a solved constant** over a per-mesh
+  shader branch — the solve is offline arithmetic (`author_lattice_spindle_materials.py` reads
+  each prefab's own stretch and back-solves the amplitude for one authored angle), and the shader
+  stays one expression. Target the ANGLE, not the offset: equal angle is equal FRACTION OF THE
+  LIMB, so one number serves a family whose limbs span 3–24 world units and survives a later
+  uniform rescale of the whole family.
+- **An asset re-pointer is idempotent only if it asserts the END STATE, never a swap COUNT.** The
+  natural shape for "swap every renderer on this prefab onto the new material" is to count the
+  `guid:` substitutions and `assert swapped == len(renderers)` — which passes on the first run and
+  FAILS on the second with `expected 2 references to swap, swapped 0`, because the work is already
+  done. That makes the tool un-re-runnable and makes `--check` impossible, which is the whole
+  contract (§1.2). Assert instead that every named renderer now carries the new guid, and give the
+  "carries neither the old nor the new one" case its own error message — that is the only genuine
+  failure, and it is a hand-edit somebody else made, not your re-run.
 - **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
   The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
   effective number was 12, three assets had been tuned to match it, a config default and a
