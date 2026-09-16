@@ -66,8 +66,9 @@ public class VesselTransformer : MonoBehaviour
     [Tooltip("Seconds the brake takes to shed one full unboosted cruise's worth of speed once " +
              "the pilot's throttle target reaches ZERO, so \"throttle at minimum\" ends in a real " +
              "stop instead of an exponential tail that never lands. Only ever engages when the " +
-             "commanded target is 0 — a vessel with a non-zero MinimumSpeed (the Rhino's 10) is " +
-             "untouched, as is any deceleration toward a lower-but-nonzero cruise. 0 disables it " +
+             "commanded target is 0 — a vessel with a non-zero MinimumSpeed (the one-thumb hulls' " +
+             "10) is untouched, as is any deceleration toward a lower-but-nonzero cruise, and so " +
+             "is the whole of the fall above rate / LERP_AMOUNT. 0 disables it " +
              "and restores the legacy tail. See MinimumThrottleBrake.")]
     [SerializeField, Min(0f)] float minimumThrottleBrakeSeconds = MinimumThrottleBrake.DefaultBrakeSeconds;
 

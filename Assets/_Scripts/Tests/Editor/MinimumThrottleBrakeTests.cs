@@ -19,7 +19,10 @@ namespace CosmicShore.Tests
         const float Lerp = 1.5f;      // VesselTransformer.LERP_AMOUNT
         const float Dt = 1f / 60f;
         const float DolphinCruise = 68f;   // Dolphin.prefab DefaultThrottleScaler
-        const float RhinoFloor = 10f;      // Rhino.prefab DefaultMinimumSpeed
+        // The Rhino authored 10 here until this branch zeroed it so it could be stopped;
+        // the hulls that still author a floor are the one-thumb ones (Sparrow, Serpent,
+        // Falcon, Shrike, Termite), whose target can never be zero anyway.
+        const float AuthoredFloor = 10f;   // Sparrow.prefab DefaultMinimumSpeed
 
         static float Step(float current, float target, float throttleScaler, float brakeSeconds)
         {
@@ -54,11 +57,54 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheVisibleFall_IsBitIdenticalToTheLegacyExponential()
+        {
+            // THE DESIGN, not the consequence. Every other test here asserts that a stop
+            // HAPPENS, which a brake composed the wrong way also satisfies: subtracting the
+            // constant rate from the already-stepped value applies both every frame and runs
+            // ~40% under the legacy curve half a second in, i.e. a different deceleration feel on
+            // every affected hull — including the Squirrel, which was the reference for CORRECT
+            // behaviour when this work was asked for. The whole of the fall the pilot can see
+            // must be the curve that shipped, to the bit.
+            foreach (float scaler in new[] { 60f, 68f, 180f })   // Squirrel, Dolphin, Manta
+            {
+                float crossover = MinimumThrottleBrake.RateFor(scaler, MinimumThrottleBrake.DefaultBrakeSeconds) / Lerp;
+                Assert.Less(crossover, scaler,
+                    "the crossover must sit below cruise, or the brake owns the visible fall");
+
+                for (float v = scaler; v > crossover; v -= scaler / 32f)
+                {
+                    Assert.AreEqual(
+                        Step(v, 0f, scaler, brakeSeconds: 0f),
+                        Step(v, 0f, scaler, MinimumThrottleBrake.DefaultBrakeSeconds),
+                        0f,
+                        $"above the crossover ({crossover:F1} u/s at scaler {scaler}) the exponential "
+                        + $"must win outright; it did not at {v:F1} u/s.");
+                }
+            }
+        }
+
+        [Test]
+        public void BelowTheCrossover_TheConstantRateTakesOver()
+        {
+            // The other half of the same statement: the brake must actually be doing something
+            // down there, or the composition above is just the legacy exponential with extra steps.
+            const float scaler = 60f;
+            float crossover = MinimumThrottleBrake.RateFor(scaler, MinimumThrottleBrake.DefaultBrakeSeconds) / Lerp;
+            float v = crossover * 0.5f;
+            Assert.Less(Step(v, 0f, scaler, MinimumThrottleBrake.DefaultBrakeSeconds),
+                        Step(v, 0f, scaler, brakeSeconds: 0f),
+                        "below the crossover the constant rate must be the stronger of the two");
+        }
+
+        [Test]
         public void ZeroTarget_ReachesExactlyZero_FromCruise()
         {
             float t = SecondsToStop(DolphinCruise, 0f, DolphinCruise, MinimumThrottleBrake.DefaultBrakeSeconds);
             Assert.Greater(t, 0f, "minimum throttle must end in a stop");
-            Assert.Less(t, 1.5f, "and it must land promptly enough to read as a stop");
+            Assert.Less(t, 1.5f,
+                "and it must land promptly enough to read as a stop. Measured 1.40 s at "
+                + "DefaultBrakeSeconds 2 - if this fails, the composition or the rate moved.");
         }
 
         [Test]
@@ -68,7 +114,8 @@ namespace CosmicShore.Tests
             // two-thumb roster and the one the pilot actually complained about.
             float t = SecondsToStop(347f, 0f, DolphinCruise, MinimumThrottleBrake.DefaultBrakeSeconds);
             Assert.Greater(t, 0f);
-            Assert.Less(t, 3f, "a full-boost stop must still be a stop, not a coast");
+            Assert.Less(t, 3f,
+                "a full-boost stop must still be a stop, not a coast. Measured 2.47 s from 347 u/s.");
         }
 
         [Test]
@@ -77,8 +124,8 @@ namespace CosmicShore.Tests
             // The Rhino authors a 10 u/s floor, so its minimum-throttle target is 10, not 0 —
             // and HeadlongCircuit's whole corner model is derived from that floor. The brake
             // must not be able to reach it.
-            float withBrake = Step(DolphinCruise, RhinoFloor, 50f, MinimumThrottleBrake.DefaultBrakeSeconds);
-            float without = Step(DolphinCruise, RhinoFloor, 50f, brakeSeconds: 0f);
+            float withBrake = Step(DolphinCruise, AuthoredFloor, 50f, MinimumThrottleBrake.DefaultBrakeSeconds);
+            float without = Step(DolphinCruise, AuthoredFloor, 50f, brakeSeconds: 0f);
             Assert.AreEqual(without, withBrake, 1e-6f);
         }
 

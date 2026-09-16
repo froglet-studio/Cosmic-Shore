@@ -141,16 +141,32 @@ therefore targets a genuine 0 when the pilot holds the scissor, and then tails o
 forever. From a boosted Dolphin's 347 u/s that tail is seconds long and a couple of hundred units
 of travel, which is what *"it doesn't come to a stop"* looks like from the seat.
 
-`MinimumThrottleBrake` owns that last stretch: **when the commanded target is zero**, a constant
-rate is composed onto the exponential step so the speed actually reaches 0. The exponential still
-removes far more per frame at speed, so the visible part of the fall is unchanged — the brake only
-finishes it.
+`MinimumThrottleBrake` owns that last stretch: **when the commanded target is zero**, the step
+returns the LOWER of what the exponential reached and what a constant rate reached, so the speed
+actually lands on 0.
+
+**MIN, never SUM — and this is the part that is easy to get wrong.** Subtracting the constant rate
+*from* the already-stepped value applies BOTH every frame, which measures **40% under the legacy
+curve half a second into a Squirrel's stop**: not an end on the old deceleration but a different
+one, on every affected hull — including the Squirrel, which was the reference for *correct*
+behaviour when this was asked for. Taking the minimum instead lets the exponential win outright
+while it is the stronger of the two, i.e. above `rate / LERP_AMOUNT` (**20 u/s** on a Squirrel,
+22.7 on a Dolphin, 60 on a Manta), so the whole of the fall the pilot can see is bit-identical to
+what shipped and the constant rate owns only the tail. `MinimumThrottleBrakeTests` pins both
+halves: identical above the crossover, strictly stronger below it. The first cut of this shipped
+the SUM while every test passed, because every test asserted that a stop HAPPENS — which a
+wrongly-composed brake also satisfies.
 
 Three properties make it safe to put in the shared step rather than per vessel:
 
-- **It engages only on a ZERO target.** Any deceleration toward a lower-but-nonzero cruise is
-  bit-identical to before, and so is accelerating away from a stop. A vessel that authors a
-  non-zero `MinimumSpeed` therefore cannot be braked at all — which is why **the Rhino's
+- **It engages only on a ZERO target**, so two whole classes of vessel are untouched
+  *structurally* rather than by tuning. Every **one-thumb** hull is out because
+  `SingleStickVesselTransformer.ComputeThrottleTarget` is `ThrottleScaler * boost + MinimumSpeed`
+  with no throttle axis in it and so can never be zero; the **Scarab** is out because it overrides
+  `ComputeNoseAcceleration` wholesale and never reaches this step at all (it already brakes to a
+  real stop through its own `coastDragPerSecond`). Any deceleration toward a lower-but-nonzero
+  cruise is bit-identical to before, and so is accelerating away from a stop. A vessel that
+  authors a non-zero `MinimumSpeed` therefore cannot be braked at all — which is why **the Rhino's
   `DefaultMinimumSpeed` went 10 → 0 in the same pass**: a floor is a speed the pilot cannot give
   back, so a two-thumb flier that is meant to be able to STOP cannot author one. See below for
   what that cost.
@@ -271,7 +287,8 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 8. **Minimum throttle stops the vessel (§3.5, UNFLOWN).** Menu freestyle, on each two-thumb hull in
    turn — **Dolphin**, Squirrel, Manta, Urchin. Hold the throttle scissor (both sticks full
    horizontal, opposite directions; keyboard **L + D**) from cruise: the vessel must reach a
-   genuine standstill in ~1 s, and from a full boost in ~2 s. Then check the two things a brake can
+   genuine standstill in **1.40 s**, and from a full boosted 347 u/s in **2.47 s** (both measured
+   off the shipped composition, not estimated). Then check the two things a brake can
    get wrong: it must read as *settling*, not as hitting a wall, and throttling back up from the
    stop must be immediately responsive rather than feeling like a stall.
    - **Decelerating to a lower cruise is NOT braked** — ease the scissor to a mid throttle from
@@ -280,6 +297,15 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
    - **The Rhino is in the list now** — its `DefaultMinimumSpeed` went 10 → 0, so it stops like
      the rest. Its cruise is correspondingly 50 rather than 60 and its ramp top 1200 rather than
      1210; both readouts are worth a glance, and `HEADLONG.md` §2 carries the re-derived tables.
+   - **Watch the COUNTDOWN on the three Rhino modes** (Astro League, Peel the Cage, Headlong).
+     A paused `InputController` returns before writing `XDiff`, so the value simply holds — if
+     it holds 0 (a fresh `ResetInput`/`ResetForReplay` before any AI write) the target is now
+     `MinimumSpeed` 0 rather than 10, and the brake brings the hull to a dead stop during the
+     countdown where it used to drift at 10 u/s. That is what the other four two-thumb hulls have
+     always done, so it is a consistency change rather than a regression — but it is the one place
+     the floor removal is visible outside the pilot's own throttle, and it has not been flown.
+     Menu freestyle is NOT exposed: the AI writes a non-zero `XDiff` before handing over, so the
+     enter-freestyle camera blend still cruises forward exactly as before.
      The thing to watch for is a **Headlong** lap feeling different — it should not: measured over
      1,600 generated circuits the gate positions are bit-identical and the corner ladder
      (99/82/65/37% of top speed) is unchanged to the digit, because the only thing that number
