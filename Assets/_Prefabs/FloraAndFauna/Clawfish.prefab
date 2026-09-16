@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6455206541193087393}
   - component: {fileID: 369859875180954115}
-  - component: {fileID: 1012464960520922387}
   m_Layer: 0
   m_Name: Clawfish
   m_TagString: Untagged
@@ -58,23 +57,6 @@ MonoBehaviour:
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
   Population: {fileID: 0}
---- !u!111 &1012464960520922387
-Animation:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6455206541193087406}
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Animation: {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
-  m_Animations:
-  - {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
-  m_WrapMode: 0
-  m_PlayAutomatically: 1
-  m_AnimatePhysics: 0
-  m_UpdateMode: 0
-  m_CullingType: 0
 --- !u!1001 &8182856232501990
 PrefabInstance:
   m_ObjectHideFlags: 0

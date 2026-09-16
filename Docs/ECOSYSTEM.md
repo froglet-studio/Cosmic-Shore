@@ -7614,3 +7614,180 @@ Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four i
   nucleus is 2.5× wider, so the contested crystals sit in 15.6× the volume. It is offset by that
   level carrying twice the roster in crystals and by the objective arrow pointing at the nearest
   one, so the cost is flight time rather than findability.
+
+---
+
+## 44. A spindle is a limb, not a rod (Sep 2026)
+
+Reported as *"the quad fish lack animation at the level of their spindles — they
+shouldn't look so stiff. With the boids we get a murmuration and with brittlestars we
+get dangling legs. The sharks have a nice rig, but the quadfish is lacking."*
+
+The report was exactly right, and the reason is narrower and worse than "the QuadFish
+was never animated".
+
+### 44.1 NO spindle in the game deformed — including the "animated" one
+
+Measured on the merge base:
+
+| graph | edge into `VertexDescription.Position` |
+|---|---|
+| `SpindleGraph` | **none at all** |
+| `AnimatedSpindleGraph` | an `Add` whose A input is a hardcoded `(0,0,0)` — i.e. `Position + 0` |
+
+`AnimatedSpindleGraph` is animated in **colour only** (a Gradient Noise scroll on
+`BaseColor`), is used by **zero materials**, and exposes no `_Phase`. So
+`Spindle.cs`'s entire phase-variant apparatus — eight shared materials per base
+material, bucketed by world position, deliberately *not* a `MaterialPropertyBlock` so
+the renderers stay SRP-batchable — was stamping `_Phase` into a property that only ever
+drove a Voronoi shimmer on the surface. **The desync machinery was real and the thing it
+was desyncing did not exist.**
+
+Everything that *does* move gets it from somewhere else, which is why this was invisible:
+
+| creature | where its motion comes from |
+|---|---|
+| Shark | FBX armature (111 bone/deformer records) + Animator + Animation Rigging: `MultiParentConstraint` binds prism clusters to bones, `MultiAimConstraint` + `SharkJawDriver` work the jaw, `DampedTransform` adds lag |
+| Brittlestar | same family, 647 records — `DampedTransform` chains on five arms ARE the dangling legs |
+| Boids | flocking. Whole-body travel, no deformation |
+| **QuadFish** | **nothing.** `mediumfish.fbx` has one Model node and no bones; the four fin prisms are parented rigidly to a static transform |
+
+### 44.2 The fix, in two halves
+
+**GPU half — `SpindleSway.hlsl`, spliced into `SpindleGraph`** by
+`Tools/Shaders/wire_spindle_sway.py`. Zero per-frame CPU: a function of object-space
+position, `_PrismClock`, the `_Phase` `Spindle.cs` already stamps, and two per-material
+constants. A thousand swaying spindles cost what a thousand still ones did.
+
+**THE BEND IS A SHEAR, AND THAT IS WHAT MAKES IT UNIT-FREE.** One material
+(`SpindleMaterial`) is shared by twelve prefabs whose meshes disagree about scale by
+three orders of magnitude — a gyroid branch spans ~1 object unit, the QuadFish body
+spans 349. A displacement in absolute units is invisible on one and catastrophic on the
+other. So the lateral offset is a FRACTION OF DISTANCE ALONG THE SPINDLE'S OWN AXIS,
+`offset.x = Amplitude * PositionOS.z * sin(...)` — first-order bending. Three properties
+fall out that nobody had to author: it is exactly zero at the root, so a spindle can
+never tear off what it is attached to; it grows toward the tip, which is what a frond, a
+fin and a tail all do; and `Amplitude` is a dimensionless SLOPE, so one number means the
+same visual bend on every mesh sharing the material.
+
+**CPU half — `QuadFishSwimDriver`**, the sibling of `SharkJawDriver`: a presentation
+component that reads creature state and writes transforms. It does the part a vertex
+shader cannot, which is move the FINS, because a fin is a separate rigid object (a
+`HealthPrism` — conserved mass with its own collider) rather than vertices of the body
+mesh. Fins beat in diagonal pairs (a sea turtle's gait), derived from the authored fin
+positions rather than assigned by index; the body banks into measured turns.
+
+### 44.3 Two properties make animating conserved mass free here
+
+1. **The flap writes `localRotation`, never `localPosition`** — so a fin prism's
+   POSITION is untouched and `PrismSpatialIndex` sees no change whatsoever. PhysX
+   re-orients the collider on its own.
+2. **The bank writes the BODY transform, which does move the fins** — and
+   `LightFauna.Update` already calls `NotifyBodyPrismsMoved()` every frame for every
+   creature (the movers contract), so that sync is paid for whether this component
+   exists or not. `[DefaultExecutionOrder(-1)]` is what makes it see THIS frame's pose
+   rather than last frame's; script order between components on different GameObjects is
+   otherwise undefined.
+
+Nothing replicates. Every peer runs it against its own replica, exactly as the shark's
+jaw does — the fish looks alive on every machine for zero bytes on the wire.
+
+### 44.4 Blast radius: an authored list, not a side effect
+
+`_SwayAmplitude` defaults to **0**, and both sine terms are multiplied by it, so the
+splice is a **provable no-op** for any material that does not author the property —
+`verify_spindle_sway.py` T2 measures a **bit-identical** passthrough over 180
+position/clock/phase/frequency combinations, negative-controlled against a non-zero
+amplitude. `SpindleGraph` is worn by five materials and only one is a spindle:
+
+| material | users | swaying? |
+|---|---|---|
+| `SpindleMaterial` | 12 — every flora branch, shark, brittlestar, worm segment, QuadFish | **0.08 / 1.4 rad/s** |
+| `QuadFishSpindleMaterial` | the QuadFish body (new, flat copy) | **0.13 / 5.2 rad/s** |
+| `BranchingMembraneMaterial` | `BranchingMembrane.prefab` | no — default 0 |
+| `FireProjectileMaterial` | `SparrowExhaustProjectile.prefab` | no — default 0 |
+| `BlueProjectileMaterial`, `JadeSpindleMaterial` | none | no |
+
+**WHY THE QUADFISH GETS ITS OWN MATERIAL.** Amplitude is unit-free so it transfers
+across twelve wildly different meshes; FREQUENCY is what genuinely differs per creature.
+A fern wants a slow drift and a swimming fish wants a tail beat near 1 Hz, and one
+number cannot be both without the plant looking like it is buzzing. A second base
+material costs 8 more shared phase variants and no batching (`Spindle.cs` caches them
+per base material), which is the cheapest honest way to say *a fern and a fish do not
+sway alike*. **The general rule: a shared material is a claim that everything wearing it
+moves alike — when that stops being true, fork the material, not the shader.**
+
+The QuadFish numbers come out of the geometry. Its body mesh spans z −217.1 .. +132.0
+(measured off `mediumfish.fbx`), so the shear pivots about mid-body and **the tail
+travels 1.64× as far as the head — a fish, for free, out of where the artist put the
+origin**. Peak lateral excursion is `1.097 × 0.13 × 217 = 31` units on a 349-long body,
+≈ 9% of body length, which is about what a real fish's tail beat is worth.
+
+### 44.5 Collider budget
+
+**Zero.** No prism is created, destroyed, or moved in position; no collider is added,
+removed, or resized. The sway is vertex displacement in a fragment/vertex shader; the
+flap is a rotation of colliders that already existed. The only new cost is
+`QuadFishSwimDriver.Update` — four quaternion writes and one `SignedAngle` per QuadFish
+per frame, on a species whose shipped cap is 8 live creatures.
+
+### 44.6 Invariants
+
+Continuity of existence is respected at both ends: the sway is continuous by
+construction and a dying creature's fins **ease** to rest rather than freezing
+mid-stroke. Mass is conserved — nothing is created or removed. No timer, no lifespan, no
+cull. `_stroke` is INTEGRATED rather than computed as `time × frequency`, because a
+phase computed that way teleports whenever the frequency moves and an accelerating fish
+would visibly skip mid-stroke.
+
+### 44.7 Open, and stated rather than hidden
+
+- **Culling envelope.** A swaying spindle can leave its mesh bounds by
+  `1.097 × Amplitude × |z|` (measured, `verify_spindle_sway.py` T8) — at the shipped
+  0.08 that is 8.8% of a spindle's own length. Unity computes `MeshRenderer` bounds from
+  the mesh, so a spindle at the extreme screen edge can cull one frame early. No
+  per-renderer bounds expansion was added because that is a CPU write per spindle and
+  flora branches are numerous; if it ever pops, that is the fix and the number is above.
+- **NOT PLAY-TESTED.** Nothing here has been run in the editor. The amplitudes and
+  frequencies are reasoned from measured geometry, not from looking at them. `SpindleMaterial`'s
+  pair is the one to judge first, because it moves every plant in the game.
+- **The bank's SIGN is a guess.** `bankDegreesPerHundredTurnRate` is positive on the
+  assumption the fish banks into its turns; which way that actually reads depends on
+  which way the authored body mesh faces, which no code here can know. If the fish banks
+  *out* of its turns, negate that one serialized field.
+- **`Clawfish` is a separate, deeper problem — see §44.8.**
+
+### 44.8 What this found in the Clawfish, and did not fix
+
+`Clawfish` is a LIVE species (four `Clawfish Fauna *` configs plus a Codex entry) and it
+is in a rotted state that this pass deliberately did not paper over:
+
+- **Its root script is `QuadFish.cs`** — which is an EMPTY subclass of `Fauna` with no
+  behaviour at all. `Fauna`'s base has no movement, so the Clawfish does not swim; it is
+  not merely stiff, it is inert. (`QuadFish.cs`'s doc comment calls itself a
+  "placeholder for future quad-based fish creatures". It is not a placeholder; it is a
+  shipped species' script.)
+- **Its prefab carries eight ORPHAN serialized keys** (`healthPrism`, `spindle`,
+  `healthBlocksForMaturity`, `minHealthBlocks`, `shieldPeriod`, `onLifeFormCreated`,
+  `onLifeFormDestroyed`, `Population`) — residue of a class layout that no longer
+  exists, which Unity never prunes and which reads as real wiring.
+- **Its body is a raw `ClawfishTest.fbx` instance**, not a Spindle, so it gets no sway
+  from §44.4 and could not without being re-authored.
+
+What WAS fixed on it is the one defect it shares verbatim with the QuadFish (§44.9).
+
+### 44.9 The authored swim animation that never once played
+
+Both fish carried a legacy `Animation` component, `m_PlayAutomatically: 1`, pointing at
+`QuadFishSwim.anim` — **a clip with `m_Legacy: 0`**. The legacy `Animation` component
+refuses a non-legacy clip, so that animation has never played on either creature, on any
+build, ever. It also animated `m_LocalScale` on the ROOT, which `Fauna.Initialize`
+overwrites with `BaseBodyScale` — so even revived it would have fought the species'
+own body size, and being a whole-body squash it would not have moved a fin relative to
+the body anyway.
+
+The component is excised from both prefabs (the five-edit excise; no external referrer,
+dangling-reference set unchanged against `HEAD`). **`QuadFishSwim.anim` is KEPT** — it is
+hand-keyed authoring, and the salvage-before-delete gate applies; it is simply no longer
+referenced. The general rule: **a legacy `Animation` component with a non-legacy clip is
+a feature that has never run, and it looks exactly like a feature that works.**

@@ -88,6 +88,38 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   unravels around), so an interrupted wither can never destroy it with the husk and every later exit
   (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
   skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
+- **A SPINDLE IS A LIMB, NOT A ROD — and until Sep 2026 no spindle in the game deformed,
+  including the one named `AnimatedSpindleGraph`.** That graph's `Add` into
+  `VertexDescription.Position` has a hardcoded `(0,0,0)` A input (`Position + 0`), it is
+  animated in COLOUR only, and it is worn by zero materials; `SpindleGraph`, which every
+  shipped spindle actually uses, had no edge into vertex position at all. So `Spindle.cs`'s
+  phase-variant apparatus — 8 shared materials per base material, bucketed by world position,
+  deliberately NOT an MPB so renderers stay SRP-batchable — was desyncing an animation that
+  did not exist. Everything that visibly moves gets it elsewhere: the shark and brittlestar
+  from an FBX ARMATURE + Animation Rigging (`DampedTransform` chains are the dangling arms,
+  `MultiParentConstraint` binds prism clusters to bones), the boids from flocking. A creature
+  with no rig — the QuadFish, every flora branch, the worm segments — moved not at all.
+  `SpindleSway.hlsl` is the fix and it is GPU-only (zero per-frame CPU, off `_PrismClock` +
+  the `_Phase` already stamped). **The bend is a SHEAR, which is what makes it unit-free:**
+  `offset.x = Amplitude * PositionOS.z * sin(...)` is first-order bending, so it is exactly
+  zero at the root (a spindle can never tear off its parent), grows toward the tip, and
+  `Amplitude` is a dimensionless SLOPE — one number meaning the same bend on meshes that
+  disagree about scale by three orders of magnitude (gyroid branch ~1 unit, QuadFish body
+  349). `_SwayAmplitude` **defaults to 0** and multiplies both sine terms, so the splice is a
+  PROVABLE no-op (`verify_spindle_sway.py` T2: bit-identical, negative-controlled) and the
+  blast radius is an authored list rather than a side effect — the two non-spindle materials
+  on that graph (`BranchingMembraneMaterial`, `FireProjectileMaterial`) are untouched.
+  **A shared material is a claim that everything wearing it moves alike**: amplitude
+  transfers across meshes but FREQUENCY does not, so a fern (0.08 / 1.4 rad/s) and a fish
+  (0.13 / 5.2) get different materials rather than a compromise that makes the plant buzz.
+  The fins are a separate problem a vertex shader cannot touch — a fin is a `HealthPrism`,
+  conserved mass with its own collider — so `QuadFishSwimDriver` (the sibling of
+  `SharkJawDriver`) strokes them in diagonal pairs and banks the body. It costs ZERO colliders
+  and zero index work: the flap writes `localRotation` and never `localPosition`, so the
+  prism's POSITION never changes and `PrismSpatialIndex` sees nothing. **A legacy `Animation`
+  component with a NON-legacy clip is a feature that has never run and looks exactly like one
+  that works** — both fish carried one (`m_PlayAutomatically: 1` on `QuadFishSwim.anim`,
+  `m_Legacy: 0`), excised. `Docs/ECOSYSTEM.md §44`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
