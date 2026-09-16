@@ -71,7 +71,22 @@ member at different offsets auto-merge into a `CS0102` that only Unity will find
   `[SerializeField]`/public field names **and its base classes**, both directions. A key
   you misspelled is silently dropped; a field you omitted silently takes its initializer.
 - No `Missing (Mono Script)` rows: every `m_Script` GUID in a changed prefab/scene
-  resolves to a file that still exists.
+  resolves to a file that still exists. **That sweep needs a BASE-BRANCH CONTROL or it is
+  unreadable**: a fresh clone has no `Library/PackageCache`, so every TextMeshPro, UGUI and
+  Netcode script GUID resolves to nothing and the raw sweep reports dozens of "missing" scripts.
+  Re-ask each unresolved GUID against the base branch (`git grep "guid: $g" <base> -- Assets`) —
+  a GUID already referenced there is a package script and not your problem; what is left is
+  yours. One run split 28 hits into 25 package scripts and **3 real dangling references**, all
+  three in one asset: a graph left over from a class rename, which survived because the renames
+  were `git mv`s so its other GUIDs still resolved, and which therefore loaded as a live typed
+  asset with three permanently broken nodes in it.
+  **And distrust a uniform result.** The first attempt at that control reported 28 of 28 absent,
+  which was not a finding — it was `git grep -qs` erroring out on a flag that does not exist, on
+  every iteration. A probe that answers the same way for every input has usually not run; prove
+  it discriminates by feeding it a case you KNOW lands on each side before reading its output.
+  Pick that known-good case from the BASE branch, not from the branch under test — the first
+  control chosen here was a file the branch itself had added, so "not found" was correct and
+  looked like the probe was still broken.
 - Shader/graph edits: the property you rely on is actually referenced in the graph text
   (`Material.HasProperty` cannot see an unexposed property — `/asset-surgery` §5).
 
