@@ -400,6 +400,16 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.WreckingBall:
+                    // Scramble's provider on purpose: your team's nearest live ball, else the
+                    // nearest forge-source crystal - the ball IS the demolition tool here, and a
+                    // pilot with no ball needs the crystal that makes one.
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_WreckingBall");
+                case GameModes.Undertow:
+                    // The Bends' provider on purpose: the nearest pilot this player may bend. The
+                    // domain check is the whole point (teammates cannot be caught in your plate),
+                    // and a caged arena is exactly where "which way is the fight" needs answering.
+                    return CreateProviderComponent<BendsObjectiveProvider>("ObjectiveProvider_Undertow");
                 case GameModes.Switchback:
                     // The arrow is a gate race's ONLY answer to "which of these identical rings
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
@@ -437,6 +447,11 @@ namespace CosmicShore.UI
                     // and "your next gate" is the only thing that tells two pilots on the same
                     // ring at the same moment apart.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Redline");
+                case GameModes.Regatta:
+                    // Same provider once more: a lapped circuit of neutral rings. The rails are
+                    // painted per DOMAIN and say which lane is yours; they say nothing about which
+                    // ring is next, so the arrow is still the only per-pilot answer.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Regatta");
                 case GameModes.Bloomrush:
                     // Rampage's provider again, and again on purpose: the nearest managed omni
                     // crystal is the Kabloom trigger — the "cash in now?" half of the mode's

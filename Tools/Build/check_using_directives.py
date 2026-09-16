@@ -46,6 +46,8 @@ DECL = re.compile(
 NS = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
 USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
 ALIAS = re.compile(r"^\s*using\s+\w+\s*=", re.M)
+ENUM_BODY = re.compile(r"\benum\s+[A-Z]\w*[^{}]*\{([^{}]*)\}", re.S)
+ENUM_MEMBER = re.compile(r"^\s*(?:\[[^\]]*\]\s*)*([A-Z]\w*)\s*(?:=.*)?$", re.S)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
@@ -139,6 +141,18 @@ def check_file(path, decls):
     # Types this file declares itself are always in scope.
     own = set(DECL.findall(src))
 
+    # So are the MEMBERS of enums it declares. An enum member is written bare at its
+    # declaration (`Prism,`) and is not a type reference at all, so a member that happens to
+    # share a name with a type elsewhere — `PrismRenderOverrideSet.Prism` against the Prism
+    # class — reads as a missing using for a type the file never mentions. A gate that cries
+    # wolf is a gate nobody reads, and this one is scoped to CHANGED files, so the noise
+    # arrives attached to somebody's unrelated edit.
+    for body in ENUM_BODY.findall(src):
+        for member in body.split(","):
+            m = ENUM_MEMBER.match(member)
+            if m:
+                own.add(m.group(1))
+
     bad = []
     for name in sorted(set(MENTION.findall(src))):
         if name in own:
@@ -174,6 +188,10 @@ def self_test():
          "a name in a #region LABEL is not a reference"),
         ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { WidgetSO w; }\n#endregion\n}", 1,
          "...but a real reference in the same file is still caught"),
+        ("namespace CosmicShore.Gameplay { enum E { WidgetSO, Other } }", 0,
+         "an enum MEMBER sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay { enum E { Other } class A { WidgetSO w; } }", 1,
+         "...but a real reference beside that enum is still caught"),
     ]
     ok = True
     for src, want, label in cases:

@@ -1,0 +1,86 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_Undertow
+  m_EditorClassIdentifier:
+  gameMode: 55
+  toasts:
+  - situation: 82
+    messageTemplate: '<b>{0}</b> dragged a rival through the undertow!'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 84
+    messageTemplate: '<b>{0}</b> has drowned {1} creatures'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 3
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 95
+    messageTemplate: '{0} is a quarter of the way to {2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 96
+    messageTemplate: '{0} is halfway to {2} - {1} points'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 97
+    messageTemplate: '{0} takes the lead - {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 98
+    messageTemplate: 'Flick the right stick beside a rival - the plate takes them, and everything behind you'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    everyN: 1
+    isIdleHint: 1
+    resetOnSituation: 0
+    idleSeconds: 30
+    repeatWhileIdle: 1
+  - situation: 30
+    messageTemplate: 'Comeback system is on'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    everyN: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

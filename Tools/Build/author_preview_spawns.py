@@ -45,6 +45,9 @@ SCENE_FOR_MODE = {
     42: 'MinigameBends',
     43: 'MinigameScarabScramble',
     44: 'MinigameSalvo',
+    54: 'MinigameWreckingBall',
+    55: 'MinigameUndertow',
+    56: 'MinigameRegatta',
     8:  'MinigameDuelForTheCell',
     26: 'MinigameWildlifeBlitz',
 }

@@ -93,20 +93,6 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// SOAP data container for a Maelstrom session - the single source of truth for
-    /// the game lineup, the cumulative per-domain standings, and the placement-points
-    /// table. Authored once as an asset (lineup + points table); the runtime fields
-    /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
-    /// <see cref="MaelstromAINames"/>) are reduced locally on every peer by
-    /// <c>MaelstromController</c> from the already-synced <see cref="GameDataSO.Results"/>,
-    /// so no extra networking is needed (identical inputs → identical standings).
-    ///
-    /// See Docs/MaelstromSystem/ARCHITECTURE.md.
-    /// </summary>
-    [CreateAssetMenu(
-        fileName = "DataContainer_" + nameof(MaelstromDataSO),
-        menuName = "ScriptableObjects/Data Containers/" + nameof(MaelstromDataSO))]
-    /// <summary>
     /// One rung of the Maelstrom's intensity ladder: the modes this intensity ADDS to the draw
     /// pool.
     ///
@@ -127,6 +113,26 @@ namespace CosmicShore.Utility
         public List<SO_ArcadeGame> Games = new();
     }
 
+    // ORDER IS LOAD-BEARING HERE. An attribute binds to the next DECLARATION, and a doc
+    // comment is not one - so when MaelstromIntensityTier was inserted between this file's
+    // [CreateAssetMenu] and MaelstromDataSO, the attribute silently re-bound to the tier.
+    // Unity then reported it ignored (the tier is not a ScriptableObject) and, the part no
+    // warning states, MaelstromDataSO LOST its Assets > Create entry. The tier is declared
+    // first so the attribute and its class stay adjacent.
+    /// <summary>
+    /// SOAP data container for a Maelstrom session - the single source of truth for
+    /// the game lineup, the cumulative per-domain standings, and the placement-points
+    /// table. Authored once as an asset (lineup + points table); the runtime fields
+    /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
+    /// <see cref="MaelstromAINames"/>) are reduced locally on every peer by
+    /// <c>MaelstromController</c> from the already-synced <see cref="GameDataSO.Results"/>,
+    /// so no extra networking is needed (identical inputs → identical standings).
+    ///
+    /// See Docs/MaelstromSystem/ARCHITECTURE.md.
+    /// </summary>
+    [CreateAssetMenu(
+        fileName = "DataContainer_" + nameof(MaelstromDataSO),
+        menuName = "ScriptableObjects/Data Containers/" + nameof(MaelstromDataSO))]
     public class MaelstromDataSO : ScriptableObject
     {
         [Header("Lineup")]

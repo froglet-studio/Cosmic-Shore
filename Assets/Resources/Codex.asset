@@ -1123,7 +1123,7 @@ MonoBehaviour:
     LockAutoHarvest: 0
     Stats:
     - Label: Behaviour
-      Value: "Swimmer \u2014 steers to a goal on its own"
+      Value: "Shoals \u2014 separation, cohesion and a shared goal"
       Authored: 0
     - Label: Diet
       Value: "Herbivore \u2014 grazes prism mass (flora canopy and vessel trails)"
