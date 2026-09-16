@@ -199,7 +199,14 @@ namespace CosmicShore.Gameplay
 
             MaybeSnapToAllReady(nm);
             PublishTicket();
-            EnsureHubBots();
+
+            // NOT after _started. DespawnHubBots clears the spawner's per-seat ledger, and this
+            // Update keeps running for the frames between BeginNextRound and the scene actually
+            // loading - so an ungated call would re-field every bot it had just taken down, and
+            // those bodies are spawned destroyWithScene:false, which means they would survive the
+            // load and double the round's AI. The teardown has to be the LAST thing that happens
+            // to the roster in this hub.
+            if (!_started) EnsureHubBots();
 
             if (!_started && nm.ServerTime.Time >= _authoritative.StartServerTime)
             {
