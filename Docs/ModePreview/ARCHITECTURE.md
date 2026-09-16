@@ -517,6 +517,7 @@ table, but it cannot be the shipped shape.
 | `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
 | `ModePreviewPlantingModel` | `_Scripts/Controller/Arcade/Preview/` | A grown world's PLANTING as lays — one marker per plant, band resolved cell-override-first |
 | `Tools/Build/author_preview_spawns.py` | `Tools/Build/` | Authors every definition's spawn block from the mode's own scene (`--check` verifies) |
+| `Tools/Build/author_mode_previews.py` | `Tools/Build/` | Authors the eight definitions whose generators pre-date `register_preview`, off each card's own scene (`--check` verifies) |
 | `ModePreviewTrackModel` | `_Scripts/Controller/Arcade/Preview/` | A waypoint track's blocks as lays, per intensity, triad-cycled per segment |
 | `Tools/Build/author_preview_tracks.py` | `Tools/Build/` | Writes `TrackSpawnablesByIntensity` from the scenes' own spawners; `--check` in CI style |
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over. The beside-the-window readout is RETIRED: `StartRunner` hides the HUD and re-raises progress as `ModePreviewSession.OnObjectiveProgress(delta, total)`, which the modal routes into the launch panel's objective box + micro toast (`Docs/ArcadeLaunch/ARCHITECTURE.md` §5.5) — one counting source, one visible readout |
@@ -524,19 +525,26 @@ table, but it cannot be the shipped shape.
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
 | ~~`ModePreviewSetupTool`~~ | *retired* | **Gone — scaffolding, its job done.** It stood the preview window up in `Menu_Main` and migrated the scene off earlier revisions (deleting TestFlightButton / FocusFrame / ExitButton / legacy video instances). The migrated scene is on the branch; recover the tool from git history if a scene ever needs the migration again. |
 
-## 6. Shipped definitions (17) — every playable card
+## 6. Shipped definitions (29) — every playable card
 
 Every arcade card whose scene exists on disk now has a definition, so **every playable mode
 previews** and only genuinely dead modes (the ~24 single-player cards whose scenes were deleted)
-show the label. The display names that hid three of them: **Skim Race = SkimRace(33), Joust =
+show the label. **Eight of them shipped without one for a while** — Salvo, Switchback, Hijack,
+Headlong, Breakwater, Skein, Bloomrush and Redline, every mode whose generator pre-dates
+`arcade_mode_lib.register_preview` — and their cards fell back to the static background with no
+Test Flight. They are now authored by `Tools/Build/author_mode_previews.py` (`--check`), which
+reads each card's cell configs off its OWN SCENE (the same read `author_preview_intensities.py`
+makes, so the two cannot disagree) and pins the card's locked hull. The display names that hid three of them: **Skim Race = SkimRace(33), Joust =
 Joust(34), Scurry = Scurry(35)**.
 
 | Group | Modes | Arena source |
 |---|---|---|
 | Full arenas | Rampage, PeelTheCage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
 | Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
+| Later arcade modes | Tollway, Wrecking Ball, Undertow, Regatta, Salvo, Hijack, Skein, Bloomrush | The mode's own cell configs, four per intensity where the scene is IntensityWise (Hijack's Switchyard and Skein's knot are authored `EnvironmentPrefab`s, so their scale models show the rails; Salvo and Bloomrush reference the Boneyard and the Rampage forest exactly as the modes do) |
+| Shell-only gate races | Switchback, Headlong, Redline, Breakwater | Controller-built courses (rings solved at match start, Breakwater's stations) on a single cell, so the preview shows the cell and the hull and the Notes say OPEN-ENDED — the same honesty Tollway and Regatta already record. A `StructurePrefab` of a few standing rings is the recorded gap |
 
-Objectives count only where a stat fires solo (prisms destroyed, lifeforms killed); everything
+Objectives count only where a stat fires solo (prisms destroyed, prisms stolen, volume destroyed, lifeforms killed); everything
 else is open-ended — the satellite has no `CrystalManager`, so crystal-scored modes cannot count
 yet (§7). Maelstrom (Maelstrom) stays excluded in code.
 
