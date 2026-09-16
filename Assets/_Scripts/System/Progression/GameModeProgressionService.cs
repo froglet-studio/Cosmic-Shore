@@ -301,6 +301,7 @@ namespace CosmicShore.Core
                 quest.IsCompleted = true;
                 CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeProgressionService] Quest completed for {mode} stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
+                RecordQuestCompletedAnalytics(quest);
                 RaiseProgressionChanged();
                 SaveImmediateAsync();
                 return;
@@ -313,6 +314,24 @@ namespace CosmicShore.Core
         /// <summary>
         /// Returns the quest data for a given game mode, or null if not found.
         /// </summary>
+        /// <summary>
+        /// Emits the `quest_completed` analytics event. Its only producer used to be
+        /// <c>QuestSystem.cs</c>, which this branch deleted along with the XP/shard economy —
+        /// so the event was documented LIVE with nothing left to raise it, and
+        /// <c>AnalyticsServiceFacade.RecordQuestCompleted</c> had become dead code.
+        ///
+        /// The <c>shardValue</c> parameter is passed 0 because shards no longer exist. The
+        /// facade signature and the UGS event key are deliberately NOT changed to drop it: a
+        /// custom parameter is validated against a dashboard schema whose rows are PERMANENT
+        /// and capped per environment, so removing one costs a row that can never be reclaimed
+        /// and buys nothing. A constant 0 is the honest reading of "this game has no shards".
+        /// </summary>
+        void RecordQuestCompletedAnalytics(SO_UnlockData quest)
+        {
+            if (quest == null) return;
+            _analytics?.RecordQuestCompleted(quest.DisplayName, 0);
+        }
+
         public SO_UnlockData GetQuestForMode(GameModes mode)
         {
             if (questList == null) return null;
@@ -613,6 +632,7 @@ namespace CosmicShore.Core
                     ProgressionData.MarkQuestCompleted(modeName);
                     quest.IsCompleted = true;
                     OnQuestCompleted?.Invoke(quest);
+                    RecordQuestCompletedAnalytics(quest);
                     RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;

@@ -133,6 +133,16 @@ namespace CosmicShore.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void AnnounceOnce()
         {
+            // WARM THE CACHE FIRST, and deliberately so. EnsureLoaded reads PlayerPrefs, which
+            // is main-thread-only, and the getter is reached from ~20 SO_Vessel.IsLocked call
+            // sites plus four progression predicates - so whichever of those runs first would
+            // otherwise own that read. Doing it here pins it to BeforeSceneLoad on the main
+            // thread, after which _loaded is true and the read path touches PlayerPrefs never
+            // again. Without this line the property below still warms it, which is how it
+            // happened to be safe before this comment existed: an accident standing in for a
+            // decision, and one that a reordering or a removed announcement would quietly undo.
+            EnsureLoaded();
+
             if (!AllUnlocked) return;
             CSDebug.LogWarning(
                 "[DeveloperUnlockGate] ALL ENTITLEMENTS OPEN - every vessel, game mode, intensity " +
