@@ -636,7 +636,7 @@ an un-authored asset is never left unable to draw, which would be a mode that ca
 panel's list all still read it, and the list draws locked modes *greyed rather than hidden*,
 because a list that only grows tells the player nothing about what they are missing.
 
-`MaelstromController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
+`MaelstromController.DrawNextRound` draws from the filtered list. Repeat-avoidance maps
 `CurrentGameIndex` (a `GameQueue` index) **into** that list first — at low intensity the two
 index spaces are not the same, and treating them as one would avoid the wrong mode.
 

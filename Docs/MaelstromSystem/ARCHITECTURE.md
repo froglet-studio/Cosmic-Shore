@@ -41,12 +41,12 @@ intensity and it unlocks more modes (§1.1). Drawable modes × intensities: L1 =
 L2 = 10×2 = 20, L3 = 13×3 = 39, L4 = 16×4 = **64**.
 
 **The pool is authored, not coded** — it is `MaelstromData.asset`'s `GameQueue`, and every consumer
-(`LoadRandomGame`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
+(`DrawNextRound`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
 length-agnostic, so adding a mode is one asset edit. Three things a candidate must satisfy:
 
 1. **Domain-scored.** Standings fold through `ScoringRuleSO.ResolvePlacementOrder` (§3), so the mode
    must rank *domains* by team total. All seven are `MultiplayerDomainGamesController` subclasses.
-2. **Scene in Build Settings.** `LoadRandomGame` drives a `Single` load by scene name; a missing
+2. **Scene in Build Settings.** `LaunchPendingRound` drives a `Single` load by scene name; a missing
    scene fails the round, not the draw.
 3. **Player/domain range must contain the Maelstrom card's** (2–4 players, 2+ domains). The drawn
    mode's own card range is *not* re-checked at draw time — a mode capping at 3 players would break
@@ -92,7 +92,7 @@ it needs a guard for the case where every drawable mode shares one hull, or the 
 
 ### 1.2 The draw is a BAG, not a roll — no mode repeats inside a shuffle
 
-`MaelstromDataSO.DrawnGames` is the bag: `LoadRandomGame` draws uniformly from the drawable pool
+`MaelstromDataSO.DrawnGames` is the bag: `DrawNextRound` draws uniformly from the drawable pool
 **minus every mode already dealt this shuffle**, marks the winner, and only refills when the bag
 empties. So a shuffle deals every drawable mode once before any mode comes round again — *no game
 repeats itself in a shuffle*, as a property of the draw rather than of a lucky roll.
@@ -379,9 +379,10 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
 
 Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
 `Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `MaelstromDataSO`,
-outside that reset, so they survive. AI backfill re-runs per scene; the **AI roster is seeded once**
-(first game) into `MaelstromDataSO.MaelstromAINames` and reused, so bot identities stay stable
-across games (AI `Player` objects are destroyed/recreated each scene). Standings are keyed by
+outside that reset, so they survive. AI backfill re-runs per scene; the **AI roster is dealt once**, in the HUB
+before the first round, into `MaelstromDataSO.MaelstromAISeats` — a NAME and a DOMAIN per bot
+(§1.6) — and replayed into every round, so bot identities stay stable across games (AI `Player`
+objects are destroyed/recreated each scene). Standings are keyed by
 **domain**, so per-game roster churn never affects the leaderboard.
 
 ## 4. End-of-game UI — the Scoreboard is the progression surface
@@ -479,7 +480,9 @@ on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 `_Scripts/Utility/DataContainers/Maelstrom/MaelstromDataSO.cs` (asset:
 `_SO_Assets/Maelstrom/MaelstromData.asset`). Authored: `GameQueue` (the draw **pool** — the 3
 `SO_ArcadeGame`s), `ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`),
-`WinTarget` (6), `MaxGames` (7), `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime
+`WinTarget` (6), `MaxGames` (7), `LobbySceneName`, `seatCount` (the FIELD — 4; §1.6),
+`aiProfileList` (where AI seats get their names and faces, held here because the deal precedes
+every game scene), four `ScriptableEventNoParam`s. Runtime
 (non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode — repeat-avoidance),
 `DrawnGames` (the draw bag, §1.2),
 `PendingGameIndex`/`PendingIntensity` (the round the hub is previewing — §1.3; cleared at launch),
@@ -507,7 +510,8 @@ fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/Editor/Maelstrom
 | Ready-up + countdown (plain MonoBehaviour, ensured in code) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromLobby.cs` |
 | Replicated round pick | `_Scripts/Controller/Arcade/Maelstrom/MaelstromRoundTicket.cs` + `Player.NetMaelstromRound` / `NetMaelstromReady` |
 | Hub preview (ConfigurationContent) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromPreviewHost.cs` |
-| Hub vessel spawner (autopilot, next round's hull, no domain reset) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromHubVesselInitializer.cs` |
+| Replicated AI roster | `_Scripts/Controller/Arcade/Maelstrom/MaelstromRosterTicket.cs` + `Player.NetMaelstromRoster` |
+| Hub vessel spawner (autopilot, next round's hull, no domain reset) + the hub's BOTS (`EnsureHubBots` / `DespawnHubBots`) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromHubVesselInitializer.cs` |
 | Hub motion vocabulary | `_Scripts/Controller/Arcade/Maelstrom/MaelstromTransitions.cs` |
 | End-game buttons + entrance + placement wallet credit (via injected `MaelstromDataSO`) | `_Scripts/UI/Scoreboard.cs` |
 | Between-game summary text (SOAP, reuses the splash status surface) | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` (shuffle branch) → `BootStatusPanel` via `Event_BootStatusRequest` |
@@ -521,6 +525,8 @@ fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/Editor/Maelstrom
 | Data asset | `_SO_Assets/Maelstrom/MaelstromData.asset` (+ 4 `Event_Maelstrom*.asset`) |
 | Arcade card | `_SO_Assets/Games/ArcadeGameMaelstrom.asset` (in `GameLists/ArcadeGames.asset`) |
 | Lobby / hub / summary scene | `_Scenes/Multiplayer Scenes/Maelstrom.unity` |
+| Pool list row (the launch panel's ladder readout) | `_Scripts/UI/View/ArcadeLaunch/MaelstromPoolEntry.cs` + `_Prefabs/UI Elements/ArcadeLaunch/MaelstromPoolRow.prefab` |
+| Pool row + grid generator (`--check`) | `Tools/Build/author_maelstrom_pool_cards.py` |
 
 ## 7. Editor wiring
 
