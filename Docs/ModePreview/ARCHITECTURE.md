@@ -371,8 +371,26 @@ net there and load-bearing here. That asymmetry is why the omission survived rev
 
 `ModePreviewSession` tracks whether **it** lifted the pause (`_liftedMenuPause`) rather than
 reading `PauseSystem` back, so it can only ever restore a pause it removed — a card opened from
-the HOME hub runs unpaused and must not be handed a pause it never had. Every route out of a
-flight restores it: the focus release (which `Stop` routes through), `AbortHard`, and `OnDestroy`.
+the HOME hub runs unpaused and must not be handed a pause it never had.
+
+**Exactly one route RESTORES it, and the others must FORFEIT.** The focus release restores,
+because there the player hands the stick back and the card, its screen and the menu all stay put.
+Every route that LEAVES the menu — the launch, `AbortHard`, `OnDestroy` — drops the lift without
+re-pausing, because `SceneLoader.LaunchGame` and this session are **both** subscribers to
+`GameDataSO.OnLaunchGame` and SceneLoader wins the order (a Bootstrap object subscribed at app
+start, against one that subscribes when Menu_Main loads). SceneLoader unpauses as its very first
+statement, so a restore on that route fires immediately *after* it and hands the loading match
+`Time.timeScale = 0` — launching a game out of a flying preview would start it frozen.
+
+> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which does call
+> `TogglePauseGame(false)` on entry) is the legacy single-player base with two subclasses — not
+> the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
+> touches `PauseSystem` at all. A restore that leaned on the game scene unpausing itself would be
+> leaning on a class the arcade modes do not instantiate.
+
+The two failure directions are not symmetric, which is what decides the default: forfeiting
+wrongly leaves the **menu** running unpaused until the next screen change re-pauses it; restoring
+wrongly freezes a **match**.
 
 > **General rule:** *a handover of control is only complete once every gate between the input
 > device and the thing being controlled is open.* This one had four — the AI pilot, the player's

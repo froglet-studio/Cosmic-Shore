@@ -157,9 +157,9 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            // Before AbortHard, which early-returns when already Idle - a destroyed session must
-            // never leave the menu running unpaused behind its own card.
-            RestoreMenuPause();
+            // Before AbortHard, which early-returns when already Idle. Forfeited, not restored:
+            // the scene is going away and the next loader owns the pause state.
+            ForfeitMenuPauseRestore();
             // Never create GameObjects while the scene closes, and never raise into subscribers
             // that are being destroyed alongside us.
             AbortHard(strikeWorld: false, notify: false);
@@ -534,15 +534,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Put the menu's pause back. Idempotent, and called from every route out of a flight -
-        /// the focus release (which <see cref="Stop"/> routes through), the hard abort, and
-        /// OnDestroy - because leaving the menu unpaused would leave the card's screen running
-        /// the whole lava lamp behind a modal that was built on the assumption it is not.
-        ///
-        /// <para>On the LAUNCH route this restores the timeScale 0 the menu has always launched
-        /// from - the arcade screen was paused long before this window existed, and the game
-        /// scene's own <c>MiniGame</c> unpauses on entry - so it is status quo, not a new
-        /// hazard.</para>
+        /// Put the menu's pause back. The ONE route that may do this is the focus release - the
+        /// player handing the stick back while the card, its screen and the whole menu stay
+        /// exactly where they were. Leaving it unpaused there would run the lava lamp behind a
+        /// modal built on the assumption that it does not.
         /// </summary>
         void RestoreMenuPause()
         {
@@ -550,6 +545,30 @@ namespace CosmicShore.Gameplay
             _liftedMenuPause = false;
             CosmicShore.Core.PauseSystem.TogglePauseGame(true);
         }
+
+        /// <summary>
+        /// Drop the lift WITHOUT re-pausing: the menu is being LEFT, so its pause state stops
+        /// being this window's business and belongs to whoever loads next.
+        ///
+        /// <para><b>This is not a tidy-up, it is a correctness requirement.</b>
+        /// <c>SceneLoader.LaunchGame</c> and this session are BOTH subscribers to
+        /// <c>GameDataSO.OnLaunchGame</c>, and SceneLoader wins the order (it is a Bootstrap
+        /// object subscribed at app start; this one subscribes when Menu_Main loads). SceneLoader
+        /// unpauses as its very first statement, so a restore here fires immediately AFTER it and
+        /// hands the loading match <c>Time.timeScale = 0</c> - launching a game out of a flying
+        /// preview would start it frozen. The old comment here claimed the game scene's own
+        /// <c>MiniGame</c> unpauses on entry and made the restore safe; it does not.
+        /// <c>MiniGame</c> is the legacy single-player base (two subclasses), not the
+        /// <c>MiniGameControllerBase</c> hierarchy every shipped mode uses, and nothing in that
+        /// hierarchy touches <c>PauseSystem</c> at all - <c>SceneLoader.LaunchGame</c> is the
+        /// only producer.</para>
+        ///
+        /// <para>The failure directions are not symmetric, which is why teardown forfeits rather
+        /// than restoring: forfeiting wrongly leaves the MENU running unpaused (some CPU, behind
+        /// a modal, until the next screen change re-pauses it), while restoring wrongly freezes a
+        /// MATCH.</para>
+        /// </summary>
+        void ForfeitMenuPauseRestore() => _liftedMenuPause = false;
 
         /// <summary>
         /// Tapping out puts the vessel BACK, rather than leaving it flying under AI. The whole
@@ -764,9 +783,9 @@ namespace CosmicShore.Gameplay
 
             StopRunner();
 
-            // The one teardown that does not route through ReleaseFocus, so it restores the
-            // menu's pause itself.
-            RestoreMenuPause();
+            // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
+            // the lift is forfeited here, never restored.
+            ForfeitMenuPauseRestore();
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();
@@ -793,7 +812,14 @@ namespace CosmicShore.Gameplay
             if (notify) OnPreviewEnded?.Invoke(mode, ModePreviewOutcome.Abandoned);
         }
 
-        void HandleLaunchRequested() => AbortHard();
+        // The menu is being LEFT, so the pause lift is forfeited rather than restored - see
+        // ForfeitMenuPauseRestore: SceneLoader.LaunchGame has already unpaused for the match by
+        // the time this runs, and re-pausing here would load it frozen.
+        void HandleLaunchRequested()
+        {
+            ForfeitMenuPauseRestore();
+            AbortHard();
+        }
 
         // ── Vessel + AI bookkeeping ──────────────────────────────────────────
 
