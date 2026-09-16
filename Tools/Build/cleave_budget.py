@@ -68,7 +68,7 @@ MEMBRANE_RADIUS = {1: 3600.0, 2: 3600.0, 3: 1200.0, 4: 1200.0}
 
 # Hostile mass a rung's arena must hold per prism of its own destruction target
 # (EndConditionOverridesSO.cleavePrismTargetByIntensity). See check 1.
-TARGET_BY_INTENSITY = {1: 400, 2: 400, 3: 1500, 4: 1500}
+TARGET_BY_INTENSITY = {1: 1200, 2: 1200, 3: 1500, 4: 1500}
 MIN_ARENA_TARGET_MULTIPLE = 4.0
 MAX_ARENA_TARGET_MULTIPLE = 12.0
 
@@ -165,10 +165,11 @@ def verify(data):
     #    This REPLACES a monotone-prism-count check, and the replacement is the point. That check
     #    was a proxy for "intensity reads as more to destroy", and its own comment said nothing
     #    forced it - which was true while one target served all four rungs. It no longer is: the
-    #    target is per-intensity now (400/400/1500/1500) because rungs 1 and 2 are vast open
-    #    places holding about a third of the mass of 3 and 4, so raw count says nothing about how
-    #    long a match runs and the counts are deliberately NOT monotone (the Panes hold more than
-    #    the Swell because tripling the rib step takes more from a sheet than from a slab).
+    #    target is per-intensity now (1200/1200/1500/1500) because rungs 1 and 2 are vast open
+    #    places you cross while 3 and 4 are compact objects you peel, so raw count says nothing
+    #    about how long a match runs and the counts are deliberately NOT monotone (the Panes hold
+    #    more than the Swell because tripling the rib step takes more from a sheet than from a
+    #    road).
     #
     #    What actually has to hold is that a domain can REACH its target off the arena alone. The
     #    band is two-sided on purpose: under it a match leans on trails and fauna to be winnable

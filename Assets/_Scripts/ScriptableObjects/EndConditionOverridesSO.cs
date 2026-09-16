@@ -159,10 +159,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Cleave: per-INTENSITY override of the target above - element 0 is intensity 1. " +
                  "Empty, a 0 entry, or an intensity past the end falls back to the scalar. It " +
                  "exists because this mode's intensities are four different PLACES rather than " +
-                 "four sizes of one: 1 and 2 are vast 2,160-radius arenas holding about a third " +
-                 "of the mass of the compact 3 and 4, so a shared target would make the open " +
-                 "arenas the longest matches in the mode.")]
-        public List<int> cleavePrismTargetByIntensity = new() { 400, 400, 1500, 1500 };
+                 "four sizes of one: 1 and 2 are vast 2,160-radius arenas you cross, 3 and 4 are " +
+                 "compact 720-radius objects you peel. Every rung is made of the same small " +
+                 "prisms, so the counts are comparable and the target is what says how much of a " +
+                 "place a match asks you to get through.")]
+        public List<int> cleavePrismTargetByIntensity = new() { 1200, 1200, 1500, 1500 };
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
@@ -263,7 +264,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int cleavePrismTargetBuild = 1500;
-        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 400, 400, 1500, 1500 };
+        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 1200, 1200, 1500, 1500 };
         [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;

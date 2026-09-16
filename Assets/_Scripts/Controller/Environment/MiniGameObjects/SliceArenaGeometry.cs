@@ -8,22 +8,51 @@ namespace CosmicShore.Gameplay
     /// ONE intensity, so each can carry its own scale as a compile-time constant; what this file
     /// owns is the TABLE, plus the two derived numbers every intensity-blind consumer needs.
     ///
-    /// <b>Two dials per rung, and they do different things.</b>
-    ///   • <see cref="LengthScaleI1"/>… — the SIMILARITY. Multiplies every authored LENGTH in that
-    ///     arena (steps, prism dimensions, shell gaps, band radii, wave amplitudes) and divides its
-    ///     noise FREQUENCY, so the whole arena is a uniform k x transform of the geometry that was
-    ///     designed and reviewed at <see cref="AuthoredRadius"/>. Prism COUNTS do not move: every
-    ///     count in these generators is a ratio of two lengths that both carry it.
+    /// <b>Three dials per rung, and they do different things.</b>
+    ///   • <see cref="LengthScaleI1"/>… — the SIMILARITY. Multiplies every authored LENGTH that
+    ///     describes WHERE the arena is (radii, shell gaps, band radii, wave amplitudes, the
+    ///     across-grain spacing between one rib and the next) and divides its noise FREQUENCY, so
+    ///     the PLACE is a uniform k x transform of the geometry designed at
+    ///     <see cref="AuthoredRadius"/>.
+    ///   • <see cref="PrismScaleI1"/>… — how big ONE PRISM is, and the along-grain step that keeps
+    ///     a run of them continuous. <b>It is 2 on every rung</b>: a Cleave prism is the same small
+    ///     size in every Cleave arena, whatever size the place is. See below.
     ///   • <see cref="GapScaleI1"/>… — the SPACING. Multiplies the ACROSS-grain step ALONE, so a
     ///     pane's ribs sit G times further apart while each rib stays a continuous bar. That is
     ///     the one dial that DOES move a count: rib count falls by G.
     ///
-    /// The two are separate because they answer different questions. The similarity asks "how big
-    /// is this place"; the gap asks "how much of it is mass". Intensities 1 and 2 are both 6 x the
-    /// authored radius — vast open places you cross rather than dense objects you peel — which is
-    /// why their destruction target is well under the others'
-    /// (<c>EndConditionOverridesSO.cleavePrismTargetByIntensity</c>). Only the Panes spends the gap
-    /// dial: it is a set of RIBS, and thinning ribs is what turns a slab into a place.
+    /// They are separate because they answer different questions. The similarity asks "how big is
+    /// this place"; the prism scale asks "what is it MADE of"; the gap asks "how much of it is
+    /// mass". Intensities 1 and 2 are both 6 x the authored radius — vast open places you cross
+    /// rather than dense objects you peel. Only the Panes spends the gap dial: it is a set of RIBS,
+    /// and thinning ribs is what turns a slab into a place.
+    ///
+    /// <b>PRISM SIZE IS NOT PART OF THE SIMILARITY, and that is a design rule rather than a
+    /// factoring convenience.</b> It used to be: at <see cref="LengthScaleI1"/> = 6 a pane's plank
+    /// was 20 x 20 x 102 world units and a mullion 31 x 31 x 132, and the arena read as LOW POLY —
+    /// a handful of enormous slabs. <b>Destroying many small prisms is the fun; destroying one big
+    /// one is not</b>, and a field of small prisms reads as high-tech where the same mass in fewer
+    /// pieces reads as cheap geometry. So the prism scale is pinned at 2 on all four rungs and the
+    /// two 6 x arenas keep their SPACE while their mass is re-cut into roughly three times as many
+    /// pieces, each a third the size. Rungs 3 and 4 were already at 2 and are byte-for-byte
+    /// unchanged, which is what makes ONE number honest across the whole ladder.
+    ///
+    /// The cost is stated rather than hidden: <b>a count that is a ratio of two lengths moves when
+    /// the two lengths stop sharing a scale.</b> The along-grain step carries the PRISM scale (a run
+    /// of prisms must stay continuous) while an arena's across-grain layout carries the SIMILARITY,
+    /// so the 6 x rungs' counts rise by roughly <c>LengthScale / PrismScale</c> = 3 — the Panes
+    /// measured 5,107 -> 15,380. That is still under the collider ceiling the mode has already
+    /// shipped, and it forces the destruction target up with it
+    /// (<c>EndConditionOverridesSO.cleavePrismTargetByIntensity</c>, 400 -> 1,200) — a target is a
+    /// fraction of the arena, so re-cutting the arena into more pieces re-prices it. It is the same
+    /// match: 1,200 of the new prisms is a THIRD the volume 400 of the old ones were.
+    ///
+    /// One effect worth carrying beyond this mode: <b>shrinking the prisms bought back the volume
+    /// ladder's float32 resolution.</b> <c>Cell.liveVolumeTotal</c> is a float32 running total and
+    /// its resolution is the ulp at the value it holds; at 6 x the Panes' baseline was 345M (ulp 32)
+    /// so a 4.5-volume Rhino trail prism could not move it AT ALL. At 38.5M the ulp is 4 and the
+    /// ladder moves again. <c>Tools/Build/cleave_budget.py</c>'s check 7 measures it per rung; the
+    /// Swell is still over the line (ulp 8) and still gated on the cell growing nothing.
     ///
     /// <b>A gap scale above 1 is only defined for an arena whose across-grain density is a STEP,
     /// and only wanted where the surface is a set of BARS rather than a road.</b> The Panes samples
@@ -69,15 +98,20 @@ namespace CosmicShore.Gameplay
     ///   • <b>The scale is an exact power of two where it can be</b>, so scaled constants stay
     ///     bit-exact and no <c>floor</c> boundary or noise sample can flip. At 6 (2 x 3) that no
     ///     longer holds exactly, so the 6 x rungs are re-MEASURED rather than assumed.
-    ///   • <b>Prism SIZE is free in colliders</b> — only COUNT costs one — so growing the prisms
-    ///     with the spacing is what keeps a rib reading as a continuous bar. At 6 x, three of the
-    ///     Panes' authored lengths exceed <c>PrismScaleAnimator</c>'s serialized <c>maxScale</c> of
-    ///     100, which clamps PER AXIS inside the setter with no log and no return value. The Cleave
-    ///     arenas therefore opt into <c>CellEnvironmentSpawnableBase.AdmitsAuthoredPrismScale</c>,
+    ///   • <b>Prism SIZE is free in colliders</b> — only COUNT costs one — which is why the prism
+    ///     dial can be spent without a budget conversation, and why spending it DOWNWARD is not
+    ///     free: a third the size at the same along-grain density is three times the count.
+    ///     All four arenas opt into <c>CellEnvironmentSpawnableBase.AdmitsAuthoredPrismScale</c>,
     ///     which routes their lay through <c>Prism.AdmitTargetScale</c> — the documented call for
     ///     anything that STATES a size. It is opt-in rather than global because
     ///     <c>SpawnablePrism.prefab</c> is shared by ~30 spawnables and admitting a size that is
     ///     currently clamped is a behaviour change for whichever of them is relying on the clamp.
+    ///     <b>It was REQUIRED while prism size rode the envelope</b> — three of the 6 x rungs'
+    ///     lengths cleared that prefab's <c>maxScale</c> of 100, which clamps PER AXIS inside the
+    ///     setter with no log and no return value — and is now a standing guard, every authored
+    ///     size being comfortably inside the window. That is worth noticing rather than tidying
+    ///     away: <i>a shared prefab's scale ceiling was the only thing in the project saying the
+    ///     prisms had grown absurd, and it said it silently.</i>
     /// </summary>
     public static class SliceArenaGeometry
     {
@@ -95,6 +129,18 @@ namespace CosmicShore.Gameplay
         public const float LengthScaleI3 = 2f;
         /// <summary>Uniform authored-units -> world-units multiplier, intensity 4 (The Twistbands).</summary>
         public const float LengthScaleI4 = 2f;
+
+        /// <summary>Authored-units -> world-units for a PRISM'S OWN DIMENSIONS and for the
+        /// along-grain step that keeps a run of them continuous. Deliberately the SAME on every
+        /// rung — see the class summary. Rungs 3 and 4 also run <see cref="LengthScaleI3"/> = 2, so
+        /// for them this changes nothing at all.</summary>
+        public const float PrismScaleI1 = 2f;
+        /// <inheritdoc cref="PrismScaleI1"/>
+        public const float PrismScaleI2 = 2f;
+        /// <inheritdoc cref="PrismScaleI1"/>
+        public const float PrismScaleI3 = 2f;
+        /// <inheritdoc cref="PrismScaleI1"/>
+        public const float PrismScaleI4 = 2f;
 
         /// <summary>Extra ACROSS-grain spacing, intensity 1. Multiplies the rib step alone.</summary>
         public const float GapScaleI1 = 3f;
@@ -128,6 +174,15 @@ namespace CosmicShore.Gameplay
             2 => LengthScaleI2,
             3 => LengthScaleI3,
             _ => LengthScaleI4,
+        };
+
+        /// <summary>Intensity (1-based, clamped) -> that arena's prism scale.</summary>
+        public static float PrismScaleFor(int intensity) => intensity switch
+        {
+            <= 1 => PrismScaleI1,
+            2 => PrismScaleI2,
+            3 => PrismScaleI3,
+            _ => PrismScaleI4,
         };
 
         /// <summary>Intensity (1-based, clamped) -> that arena's across-grain gap scale.</summary>

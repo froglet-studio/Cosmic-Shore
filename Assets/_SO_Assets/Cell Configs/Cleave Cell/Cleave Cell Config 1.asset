@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Cleave
   Description: 'The Panes - intensity 1 of Cleave: nine flat slabs cutting the cell at nine angles, each a corduroy of parallel ribs with its own grain, beams down every pane-pair intersection.
-    5107 prisms, 170 of them danger traps. NO NUCLEUS by design,
+    15380 prisms, 511 of them danger traps. NO NUCLEUS by design,
     and no fauna. PhaseThresholds ride THIS arena''s own MEASURED baseline; regenerate with
     Tools/Build/author_cleave_assets.py after any geometry change rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
@@ -29,11 +29,11 @@ MonoBehaviour:
   EnvironmentIntensity: 1
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 5807
-    RestlessExit: 5607
-    FrenzyEnter: 8707
-    FrenzyExit: 8107
-    RestlessEnterVolume: 345131616
-    RestlessExitVolume: 345128416
-    FrenzyEnterVolume: 345178016
-    FrenzyExitVolume: 345168416
+    RestlessEnter: 16080
+    RestlessExit: 15880
+    FrenzyEnter: 18980
+    FrenzyExit: 18380
+    RestlessEnterVolume: 38534029
+    RestlessExitVolume: 38530829
+    FrenzyEnterVolume: 38580429
+    FrenzyExitVolume: 38570829

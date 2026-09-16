@@ -76,6 +76,12 @@ namespace CosmicShore.Gameplay
         /// table authors 1 for this rung and <see cref="AssertNoGapScale"/> holds it.</para></summary>
         const float S = SliceArenaGeometry.LengthScaleI3;
 
+        /// <summary>Authored-units -> world-units for a PRISM'S OWN DIMENSIONS and for the
+        /// along-grain arc-length step that keeps a rib reading as one continuous bar. This rung's
+        /// <see cref="S"/> is already 2, so here the split changes nothing at all — it is written
+        /// out so a future envelope change cannot silently inflate this cage's prisms.</summary>
+        const float P = SliceArenaGeometry.PrismScaleI3;
+
         /// <summary>Radial spacing between rinds. In authored units the shells land at
         /// 360 / 295 / 230 / 165 / 100; at the shipped <c>LengthScale</c> of 2 that is
         /// 720 / 590 / 460 / 330 / 200.</summary>
@@ -110,9 +116,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const float DensityStep = 1.05f;
 
-        const float BarStep = 17f * S;      // arc-length spacing along every rib and hoop
-        const float StrutStep = 26f * S;    // arc-length spacing along a triangulating diagonal
-        const float StrutLength = 24f * S;  // long axis of a diagonal prism (chunkier than a bar)
+        const float BarStep = 17f * P;      // arc-length spacing along every rib and hoop
+        const float StrutStep = 26f * P;    // arc-length spacing along a triangulating diagonal
+        const float StrutLength = 24f * P;  // long axis of a diagonal prism (chunkier than a bar)
         const float CrownLat = 84f;
         const int CrownCount = 18;
         const float HoopSpanDeg = 78f;  // outermost hoop latitude; poles are closed by crowns
@@ -324,7 +330,7 @@ namespace CosmicShore.Gameplay
                         -Mathf.Sin(theta) * Mathf.Sin(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f * S, 3.6f * S, 16f * S)), dom,
+                        Jit(new Vector3(3.6f * P, 3.6f * P, 16f * P)), dom,
                         danger ? PrismKind.Danger : PrismKind.Plain);
                 }
             }
@@ -346,7 +352,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f * S, 3.6f * S, 16f * S)), Domains.Blue, PrismKind.Plain);
+                        Jit(new Vector3(3.6f * P, 3.6f * P, 16f * P)), Domains.Blue, PrismKind.Plain);
                 }
             }
         }
@@ -382,7 +388,7 @@ namespace CosmicShore.Gameplay
                         // Push the strut back onto the shell - a straight chord would sag inside it.
                         var pos = Vector3.Lerp(from, to, u).normalized * s.Radius;
                         Emit(pos, SpawnPoint.LookRotation(along, pos.normalized),
-                            Jit(new Vector3(2.4f * S, 2.4f * S, StrutLength)), Domains.Blue, PrismKind.Plain);
+                            Jit(new Vector3(2.4f * P, 2.4f * P, StrutLength)), Domains.Blue, PrismKind.Plain);
                     }
                 }
             }
@@ -400,7 +406,7 @@ namespace CosmicShore.Gameplay
                 {
                     var pos = s.ToCell(Shell(lon, latDeg * Mathf.Deg2Rad, s.Radius));
                     Emit(pos, SpawnPoint.LookRotation(pos.normalized, Vector3.up),
-                        Jit(new Vector3(5.4f * S, 5.4f * S, 5.4f * S)), dom, PrismKind.Plain);
+                        Jit(new Vector3(5.4f * P, 5.4f * P, 5.4f * P)), dom, PrismKind.Plain);
                 }
             }
         }
@@ -422,7 +428,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.2f * S, 3.2f * S, 12f * S)), BoneDoms[i % BoneDoms.Length],
+                        Jit(new Vector3(3.2f * P, 3.2f * P, 12f * P)), BoneDoms[i % BoneDoms.Length],
                         PrismKind.Plain);
                 }
             }

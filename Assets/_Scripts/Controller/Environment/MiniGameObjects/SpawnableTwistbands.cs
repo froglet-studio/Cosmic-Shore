@@ -70,12 +70,19 @@ namespace CosmicShore.Gameplay
         /// same on all four rungs.</summary>
         const float G = SliceArenaGeometry.GapScaleI4;
 
+        /// <summary>Authored-units -> world-units for a PRISM'S OWN DIMENSIONS and for BOTH deck
+        /// steps. A plated deck is continuous in both directions, so the plate and the two steps it
+        /// tiles at move together, while the ribbon's <c>Radius</c>/<c>HalfWidth</c> stay on
+        /// <see cref="S"/> — a bigger place, paved with the same small plates. This rung's
+        /// <see cref="S"/> is already 2, so the split changes nothing here.</summary>
+        const float P = SliceArenaGeometry.PrismScaleI4;
+
         // ── The deck ─────────────────────────────────────────────────────────
-        const float PlateStepAlong = 7f * S;
-        const float PlateLength = 10f * S;     // long axis, along the direction of travel
-        const float PlateStepAcross = 7.5f * S * G;
-        const float PlateWidth = 10f * S;      // cross axis, across the ribbon
-        const float PlateThickness = 3f * S;
+        const float PlateStepAlong = 7f * P;
+        const float PlateLength = 10f * P;     // long axis, along the direction of travel
+        const float PlateStepAcross = 7.5f * P * G;
+        const float PlateWidth = 10f * P;      // cross axis, across the ribbon
+        const float PlateThickness = 3f * P;
 
         /// <summary>How far below the deck the keel hangs, along the surface normal.</summary>
         const float KeelDrop = 11f * S;
@@ -86,8 +93,8 @@ namespace CosmicShore.Gameplay
         const float VoidFreq = 0.02f / S;
 
         // ── The cornice (the single boundary curve) ──────────────────────────
-        const float CorniceStep = 13f * S;
-        const float CorniceLength = 15f * S;
+        const float CorniceStep = 13f * P;
+        const float CorniceLength = 15f * P;
         /// <summary>Every Nth cornice prism is a trap.</summary>
         const int DangerEveryNthCornicePrism = 4;
 
@@ -281,7 +288,7 @@ namespace CosmicShore.Gameplay
                     if (((iu + iv) & 1) != 0) continue;
 
                     Emit(pos - normal * KeelDrop, SpawnPoint.LookRotation(band.Width(u), normal),
-                        Jit(new Vector3(3.2f * S, 3.2f * S, PlateLength)),
+                        Jit(new Vector3(3.2f * P, 3.2f * P, PlateLength)),
                         Triad(bandIndex + iu));
                 }
             }
@@ -314,7 +321,7 @@ namespace CosmicShore.Gameplay
                 bool danger = (bandIndex * 37 + i) % DangerEveryNthCornicePrism == 0;
 
                 Emit(pos, SpawnPoint.LookRotation(tangent, normal),
-                    Jit(new Vector3(4.4f * S, 4.4f * S, CorniceLength)), Domains.Ruby,
+                    Jit(new Vector3(4.4f * P, 4.4f * P, CorniceLength)), Domains.Ruby,
                     danger ? PrismKind.Danger : PrismKind.Plain);
             }
         }

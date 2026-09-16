@@ -18,12 +18,17 @@ namespace CosmicShore.Gameplay
     /// Four properties are load-bearing:
     ///
     ///   • <b>The road is WIDE, and the width is forgiveness.</b> Half-widths run
-    ///     <see cref="RibbonSpecs"/> 54..84 authored units - 324 to 504 in world, which at the
-    ///     shipped plate step lays 7 or 9 lanes and so covers 744 to 948 units of deck. The
-    ///     meander is what makes the cut interesting; the width is what
-    ///     stops a small steering error ending it. That is the whole reason this arena is ribbons
-    ///     rather than the corrugated sheets it replaced: sheets put the mass where a blade crosses
-    ///     it, ribbons put the mass where a blade can STAY on it.
+    ///     <see cref="RibbonSpecs"/> 19..25 authored units - 114 to 150 in world, which at the
+    ///     shipped plate step lays 7 or 9 lanes and so covers 282 to 350 units of deck. That is
+    ///     roughly ten hull-widths of road, and it is what stops a small steering error ending
+    ///     the cut while the meander is what makes the cut interesting. It is the whole reason
+    ///     this arena is ribbons rather than the corrugated sheets it replaced: sheets put the
+    ///     mass where a blade CROSSES it, ribbons put the mass where a blade can STAY on it.
+    ///   • <b>The deck is MANY SMALL PLATES.</b> A plate is 44 x 44 x 5.2 world units on a road
+    ///     whose spine may be 1,700 out, because a plate's size rides
+    ///     <see cref="SliceArenaGeometry.PrismScaleI2"/> and the ribbon's radius rides
+    ///     <see cref="S"/>. Cutting a hundred small things is the fun; cutting one enormous slab
+    ///     reads as low poly, which is exactly what this deck did at 132-unit plates.
     ///   • <b>The deck is solid, not a lattice.</b> Plates overlap in both directions
     ///     (<see cref="PlateStepAlong"/> under <see cref="PlateLength"/>,
     ///     <see cref="PlateStepAcross"/> under <see cref="PlateWidth"/>) - the Twistbands' rule,
@@ -79,19 +84,28 @@ namespace CosmicShore.Gameplay
         /// as a named dial so the table reads the same on all four rungs.</summary>
         const float G = SliceArenaGeometry.GapScaleI2;
 
+        /// <summary>Authored-units -> world-units for a PLATE'S OWN DIMENSIONS and for BOTH deck
+        /// steps. A plated road is continuous in both directions, so the plate and the two steps it
+        /// tiles at move together — while the ribbon's <c>Radius</c>, <c>HalfWidth</c> and wave
+        /// amplitudes stay on <see cref="S"/>. A bigger place, paved with the same small plates:
+        /// at <see cref="S"/> the deck was 132-unit slabs and read as low poly, and the lane count
+        /// rises by <c>S / P</c> so the road is the same road made of three times as many pieces.
+        /// See <c>SliceArenaGeometry</c>'s summary.</summary>
+        const float P = SliceArenaGeometry.PrismScaleI2;
+
         // -- The deck --------------------------------------------------------
         /// <summary>Spacing ALONG the spine, measured in ARC LENGTH (see the class summary).</summary>
-        const float PlateStepAlong = 17f * S;
-        const float PlateLength = 22f * S;      // long axis, along the direction of travel
-        const float PlateStepAcross = 17f * S * G;
-        const float PlateWidth = 22f * S;       // cross axis, across the road
-        const float PlateThickness = 2.6f * S;
+        const float PlateStepAlong = 17f * P;
+        const float PlateLength = 22f * P;      // long axis, along the direction of travel
+        const float PlateStepAcross = 17f * P * G;
+        const float PlateWidth = 22f * P;       // cross axis, across the road
+        const float PlateThickness = 2.6f * P;
 
         /// <summary>The keel: half-density plates this far below the deck along its own normal,
         /// laid crosswise, so the ribbon has body edge-on and a deep cut pays twice.</summary>
-        const float KeelDrop = 12f * S;
-        const float KeelPlate = 20f * S;
-        const float KeelThickness = 2.4f * S;
+        const float KeelDrop = 12f * P;
+        const float KeelPlate = 20f * P;
+        const float KeelThickness = 2.4f * P;
 
         // -- Weathering ------------------------------------------------------
         /// <summary>Light only. The deck's whole job is to be continuous enough to hold a blade
@@ -162,23 +176,33 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Five ribbons, authored rather than generated for the same reason the panes are: where
         /// the arena is thick, and which approach finds a road broadside rather than end-on, is a
-        /// gameplay surface. Radii climb 140..242 (authored) so the roads interleave at different
-        /// scales instead of nesting, and the harmonics are all different so no two of them wave
-        /// in step - what a pilot is reading, once they are on one, is which road they are on.
+        /// gameplay surface. Radii climb 130..288 (authored), i.e. 780 to 1,728 in world with the
+        /// outermost road reaching ~2,000 - <b>the roads are spread across the whole shell rather
+        /// than nested near the middle</b>, which is the arena's answer to "the mass should be all
+        /// over the cell". The harmonics are all different so no two of them wave in step: what a
+        /// pilot is reading, once they are on one, is which road they are on.
         ///
-        /// Half-widths fall as the radius rises because the ENVELOPE binds out there, not the
-        /// fold-through guard: the outermost ribbon has ~90 authored units of room between its
-        /// spine and <see cref="SliceArenaGeometry.OuterRadiusI2"/> and spends it on width, keel
-        /// and plate extent.
+        /// Half-widths are a LANE BUDGET, not a fraction of the radius. A road is 7 or 9 plates
+        /// across at every radius, so an outer road is the same width as an inner one and simply
+        /// runs further - which is what keeps the deck's prism count proportional to how much
+        /// PLACE the ribbon covers. Two guards bound them anyway and both are checked at build:
+        /// the envelope (<see cref="RibbonSpec.Reach"/> against
+        /// <see cref="SliceArenaGeometry.OuterRadiusI2"/>) and the fold-through ratio, which every
+        /// shipped row clears by 3x or more.
+        ///
+        /// <b>Every ribbon's climb is authored under the bank ceiling</b> - <c>rise x harmonic /
+        /// radius</c>, the deck's worst bank angle in radians, stays at or under 0.4 (~22 degrees)
+        /// on all five. It is the harmonic that bites rather than the amplitude: ribbon 2 lifts
+        /// only 34 units but does it four times a lap on the sway, so its rise runs at harmonic 2.
         /// </summary>
         static readonly RibbonSpec[] RibbonSpecs =
         {
             //               tilt  azim  radius halfW  sway  k  phase  rise  k  phase
-            new RibbonSpec(    0f,   0f,  140f,   64f,   26f, 2,    0f,  26f, 1,    0f),
-            new RibbonSpec(   38f,  72f,  170f,   76f,   30f, 4,   55f,  34f, 2,  120f),
-            new RibbonSpec(   66f, 151f,  190f,   84f,   34f, 3,  140f,  38f, 2,  200f),
-            new RibbonSpec(   49f, 228f,  215f,   72f,   28f, 2,   25f,  30f, 1,   60f),
-            new RibbonSpec(   81f, 305f,  242f,   54f,   20f, 4,   95f,  22f, 2,  280f),
+            new RibbonSpec(    0f,   0f,  130f,   24f,   30f, 2,    0f,  28f, 1,    0f),
+            new RibbonSpec(   38f,  72f,  180f,   25f,   36f, 4,   55f,  34f, 2,  120f),
+            new RibbonSpec(   66f, 151f,  225f,   21f,   32f, 3,  140f,  34f, 2,  200f),
+            new RibbonSpec(   49f, 228f,  262f,   20f,   26f, 2,   25f,  28f, 1,   60f),
+            new RibbonSpec(   81f, 305f,  288f,   19f,   20f, 4,   95f,  22f, 2,  280f),
         };
 
         protected override int DefaultSeed => 392;
@@ -200,7 +224,7 @@ namespace CosmicShore.Gameplay
             return h;
         }
 
-        protected override int LayCapacity => 6000;
+        protected override int LayCapacity => 17000;
 
         /// <summary>
         /// A ribbon's resolved frame. <c>E1</c>/<c>E2</c> span the loop plane and <c>E3</c> is its
@@ -256,12 +280,15 @@ namespace CosmicShore.Gameplay
 
         Ribbon[] _ribbons;
 
-        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a SIMILARITY, so
-        /// the plates grow with the spacing and the deck keeps reading as a continuous road. The
-        /// Swell states plates of 132 world units at 6 x, over the shared prefab's serialized
-        /// <c>maxScale</c> of 100 - which clamps PER AXIS inside the setter with no log and no
-        /// return value, so without this the whole road would silently render as 100-unit
-        /// tiles.</summary>
+        /// <summary>A Cleave arena STATES its prism sizes, so its lay goes through
+        /// <c>Prism.AdmitTargetScale</c> rather than trusting <c>PrismScaleAnimator</c>'s
+        /// serialized window. It used to be REQUIRED here: at 132-unit plates this deck was over
+        /// the shared prefab's <c>maxScale</c> of 100, which clamps PER AXIS inside the setter
+        /// with no log and no return value, so the road silently rendered as 100-unit tiles.
+        /// <b>Every size this arena states is now well inside that window</b> (44 long, 5.2
+        /// thick), so the flag is a standing GUARD rather than a fix - and the clamp having fired
+        /// at all is worth keeping in mind: <i>a shared prefab's scale ceiling was the only thing
+        /// in the project telling us the prisms had grown absurd.</i></summary>
         protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
@@ -347,7 +374,8 @@ namespace CosmicShore.Gameplay
 
                     // Painted as a FRACTION of the road's own width rather than by lane index:
                     // lane counts run 7..9 across the five ribbons, and an integer rule at that
-                    // resolution loses a whole band on the narrow ones.
+                    // resolution loses a whole band on the narrow ones. It also means the crown
+                    // stays the same FRACTION of the road however many plates that works out to.
                     float t = Mathf.Abs(v) / spec.HalfWidth;
                     var dom = t < CrownFraction ? Domains.Gold           // the crown
                             : t < ShoulderFraction ? Domains.Blue        // the shoulders

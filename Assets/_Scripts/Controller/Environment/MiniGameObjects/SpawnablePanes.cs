@@ -65,11 +65,17 @@ namespace CosmicShore.Gameplay
         /// Rib count falls by G; planks per rib, mullions and rims are untouched.</summary>
         const float G = SliceArenaGeometry.GapScaleI1;
 
+        /// <summary>Authored-units -> world-units for a PRISM'S OWN DIMENSIONS and for the
+        /// ALONG-grain step that keeps a rib reading as one continuous bar. Deliberately NOT
+        /// <see cref="S"/>: at 6 a plank was 20 x 20 x 102 world units and the pane read as low
+        /// poly. Small prisms, lots of them - see <c>SliceArenaGeometry</c>'s summary.</summary>
+        const float P = SliceArenaGeometry.PrismScaleI1;
+
         // ── The weave ────────────────────────────────────────────────────────
         /// <summary>Spacing ALONG a rib. Under <see cref="PlankLength"/> on purpose: consecutive
         /// planks overlap, so a rib reads as one continuous bar you can drag a blade down.</summary>
-        const float PlankStep = 15f * S;
-        const float PlankLength = 17f * S;
+        const float PlankStep = 15f * P;
+        const float PlankLength = 17f * P;
         /// <summary>Spacing ACROSS the grain, i.e. rib to rib. Deliberately much wider than
         /// <see cref="PlankStep"/> - that ratio IS the corduroy, and it is what lets a pilot see
         /// (and fly) through a pane instead of meeting a wall.</summary>
@@ -81,12 +87,12 @@ namespace CosmicShore.Gameplay
         const float VoidFreq = 0.016f / S;
 
         // ── Mullions (pane x pane intersections) ─────────────────────────────
-        const float MullionStep = 19f * S;
-        const float MullionLength = 22f * S;
+        const float MullionStep = 19f * P;
+        const float MullionLength = 22f * P;
 
         // ── Rims (the frame around each pane, and the arena's only traps) ─────
-        const float RimStep = 16f * S;
-        const float RimLength = 18f * S;
+        const float RimStep = 16f * P;
+        const float RimLength = 18f * P;
         /// <summary>Every Nth rim prism is a trap. The rim is what a sloppy pass clips, so the
         /// downside sits exactly where the mistake is.</summary>
         const int DangerEveryNthRimPrism = 7;
@@ -143,7 +149,7 @@ namespace CosmicShore.Gameplay
             return h;
         }
 
-        protected override int LayCapacity => 6400;
+        protected override int LayCapacity => 18000;
 
         /// <summary>A pane resolved into the three directions and two scalars every builder needs,
         /// so no Build* method re-derives a frame.</summary>
@@ -184,10 +190,15 @@ namespace CosmicShore.Gameplay
 
         Pane[] _panes;
 
-        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
-        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
-        /// continuous bar. The Panes state plank/rim/mullion lengths of 102/108/132 at 6 x — the last two clear
-        /// the shared prefab's max of 100, and a clamped mullion is a gap in a wall.</summary>
+        /// <summary>A Cleave arena STATES its prism sizes, so its lay goes through
+        /// <c>Prism.AdmitTargetScale</c> rather than trusting <c>PrismScaleAnimator</c>'s
+        /// serialized window. It used to be REQUIRED here: at the old sizes the rim and mullion
+        /// were 108 and 132 world units, past the shared prefab's <c>maxScale</c> of 100, and a
+        /// clamped mullion is a gap in a wall. <b>Every length this arena now states is inside
+        /// that window</b> (34/36/44), because prism size came off the envelope scale — so the
+        /// flag is a standing GUARD rather than a fix, and the clamp having fired at all is worth
+        /// keeping in mind: <i>a shared prefab's scale ceiling was the only thing in the project
+        /// telling us the prisms had grown absurd.</i></summary>
         protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
@@ -235,7 +246,7 @@ namespace CosmicShore.Gameplay
                         continue;
 
                     Emit(pos, SpawnPoint.LookRotation(pane.Grain, pane.Normal),
-                        Jit(new Vector3(3.4f * S, 3.4f * S, PlankLength)), dom);
+                        Jit(new Vector3(3.4f * P, 3.4f * P, PlankLength)), dom);
                 }
             }
         }
@@ -262,7 +273,7 @@ namespace CosmicShore.Gameplay
                 bool danger = (paneIndex * 31 + i) % DangerEveryNthRimPrism == 0;
 
                 Emit(pos, SpawnPoint.LookRotation(tangent, pane.Normal),
-                    Jit(new Vector3(4.2f * S, 4.2f * S, RimLength)), Domains.Blue,
+                    Jit(new Vector3(4.2f * P, 4.2f * P, RimLength)), Domains.Blue,
                     danger ? PrismKind.Danger : PrismKind.Plain);
             }
         }
@@ -309,7 +320,7 @@ namespace CosmicShore.Gameplay
                     // `dir` lies in BOTH planes, so either normal is a legal "up" for it. Using
                     // p's keeps a mullion visually parented to the pane whose grain it crosses.
                     Emit(pos, SpawnPoint.LookRotation(dir, p.Normal),
-                        Jit(new Vector3(5.2f * S, 5.2f * S, MullionLength)), dom);
+                        Jit(new Vector3(5.2f * P, 5.2f * P, MullionLength)), dom);
                 }
             }
         }

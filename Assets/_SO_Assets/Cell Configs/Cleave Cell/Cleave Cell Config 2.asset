@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Cleave
   Description: 'The Swell - intensity 2 of Cleave: five wide wavy roads meandering closed circuits through the cell, crown painted gold and verges jade so the carriageway reads across the arena.
-    4607 prisms, 119 of them danger traps. NO NUCLEUS by design,
+    14277 prisms, 399 of them danger traps. NO NUCLEUS by design,
     and no fauna. PhaseThresholds ride THIS arena''s own MEASURED baseline; regenerate with
     Tools/Build/author_cleave_assets.py after any geometry change rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
@@ -29,11 +29,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 5307
-    RestlessExit: 5107
-    FrenzyEnter: 8207
-    FrenzyExit: 7607
-    RestlessEnterVolume: 898193815
-    RestlessExitVolume: 898190615
-    FrenzyEnterVolume: 898240215
-    FrenzyExitVolume: 898230615
+    RestlessEnter: 14977
+    RestlessExit: 14777
+    FrenzyEnter: 17877
+    FrenzyExit: 17277
+    RestlessEnterVolume: 103304904
+    RestlessExitVolume: 103301704
+    FrenzyEnterVolume: 103351304
+    FrenzyExitVolume: 103341704

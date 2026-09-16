@@ -284,13 +284,16 @@ then the **four-arena rework** (three of the four nested-shell intensities repla
 unrelated arenas), the **2× scale-up** of all four, then a **3× further spread of
 intensities 1 and 2** (envelope 720 → 2160, the Panes at triple rib spacing, their own
 3600-radius membrane), and finally a **re-author of intensity 2** from corrugated wave
-SHEETS into five wide wavy ROADS at the same prism count in the same ball, with the whole
-ladder re-targeted to **400 / 400 / 1500 / 1500** and the comeback rate raised 0.01 →
-**0.0125** to stay over the one-whole-level floor. Whole game mode
-(`GameModes.Cleave = 39`), authored headless and never run. **Intensity 1 has been flown
-and approved and was deliberately not touched by the last pass** — a change in how it reads
-is a regression. Reference: `_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification
-(29 steps; this is the short form).
+SHEETS into five wide wavy ROADS, and finally a **PRISM-SIZE pass**: prism size came off the
+envelope scale onto its own dial pinned at 2 on all four rungs, so the two 6× arenas are now
+built from small pieces (a pane plank 34 long, not 102; a road plate 44, not 132) and their
+counts tripled to **15,380 / 14,277**, with the Swell's five roads also re-spread across the
+whole shell (spines 780…1,728). The ladder is targeted **1200 / 1200 / 1500 / 1500** and the
+comeback rate is **0.0125**. Whole game mode (`GameModes.Cleave = 39`), authored headless and
+never run. **Intensity 1 was flown and approved BEFORE the prism pass**, so how it reads has
+deliberately changed — same arena, finer grain. Reference:
+`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification (29 steps; this is the short
+form).
 
 1. Open `MinigameCleave.unity`. Confirm no `Missing (Mono Script)`, the controller
    shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5 and a field named
@@ -298,13 +301,15 @@ is a regression. Reference: `_Scripts/Controller/Arcade/CLEAVE.md` § In-editor 
    and the Cell lists **four** configs with **Cell Type Choice = Intensity Wise**.
 2. Launch each of intensities **1 → 4** in turn and look at the arena, not the score.
 3. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
-   **5,107 / 4,607 / 14,731 / 16,423** prisms for intensities 1–4.
+   **15,380 / 14,277 / 14,731 / 16,423** prisms for intensities 1–4.
 4. **Scale:** from the spawn ring, does the arena fill the view? Time a boosted
    straight-line run across the whole thing, at intensity 1 AND at intensity 4.
 5. Sight-check the arena's far side against the membrane shell — nothing may poke through.
    At intensities 1–2 the shell must be the big one (3600), well outside the mass.
-6. Look closely at a pane rib / a Swell road deck / a twistband deck plate. **Intensity 2
-   is the one to scrutinise** — it is brand-new geometry nobody has flown.
+6. Look closely at a pane rib / a Swell road deck / a twistband deck plate. **Do intensities
+   1 and 2 read as LOTS OF SMALL PRISMS rather than a few big slabs?** That is what the
+   prism pass exists for. **Intensity 2 is the one to scrutinise** — it is brand-new geometry
+   nobody has flown, twice over.
 6a. **Swell only:** find a road from the spawn ring (can you even see one?), put the blade
    on its deck and follow it through a full lap. Then deliberately run wide on a tight
    corner, and separately fly the INSIDE verge of the tightest corner on each of the five
@@ -317,26 +322,28 @@ is a regression. Reference: `_Scripts/Controller/Arcade/CLEAVE.md` § In-editor 
 
 **PASS:** four arenas that look nothing like each other — angled **slabs**, wide wavy
 **roads**, three nested **shells**, twisted **ribbons** · baselines within a few hundred
-of 5,107 / 4,607 / 14,731 / 16,423 · the arena spans most of the view from spawn, and a
+of 15,380 / 14,277 / 14,731 / 16,423 · the arena spans most of the view from spawn, and a
 boosted crossing takes **~3.6 s** at intensities 1–2 and **~1.2 s** at 3–4 · the far side
 sits well inside the membrane at every rung · ribs, troughs and deck plates read as
-**continuous surfaces**, not as beads · a pane rib prism at intensity 1 measures roughly
-**20 × 20 × 102** and a mullion **31 × 31 × 132** · a Swell road reads as a carriageway
+**continuous surfaces**, not as beads, and every rung reads as MANY SMALL pieces rather than
+a handful of slabs · a pane rib prism at intensity 1 measures roughly **6.8 × 6.8 × 34**, a
+mullion **10.4 × 10.4 × 44** and a Swell deck plate **44 × 5.2 × 44** · a Swell road reads as a carriageway
 (gold crown, blue shoulders, jade verges), holds an unbroken cut through a whole lap, bites
 only on the OUTER verge of tight corners, and never doubles back over itself on the inside
 of one · a plain prism shatters on **one** hit with no shield to shed · the danger prism
 also one-hits but full-stops you, debuffs all four elements ~4 s and resets boost · the AI
 orbits **outside** and cuts on transits at both rungs · **no fauna hatch at any point** ·
-the goal row counts to **400** at intensities 1–2 and **1,500** at 3–4, and the round ends
+the goal row counts to **1,200** at intensities 1–2 and **1,500** at 3–4, and the round ends
 there.
 **FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out of
 order) · baselines off by thousands · the arena reading as a small ball in the middle of an
 empty cell, or an intensity-1 crossing taking ~1.2 s (the 3× did not land) · spawning
 INSIDE the arena at intensity 1–2 (`spawnRingRadiusFloorByIntensity` is stale) · mass
-outside the membrane, or the small 1200 membrane cutting through a big arena · any surface
-reading as a dotted line of separated prisms · a prism whose long axis measures exactly
-**100** (`AdmitsAuthoredPrismScale` is not reaching the lay) or exactly **10** (the arena
-is laying through the wrong prefab) · a goal row reading 1,500 at intensity 1 (the
+outside the membrane, or the small 1200 membrane cutting through a big arena · intensity 1
+or 2 still reading as a few enormous slabs (a prism dimension is still on `LengthScale`) ·
+any surface reading as a dotted line of separated prisms (an along-grain STEP went to the
+prism dial while its prism LENGTH did not, or the reverse) · a prism whose long axis measures
+exactly **10** (the arena is laying through the wrong prefab) · a goal row reading 1,500 at intensity 1 (the
 per-intensity target did not replicate) · two-hit/shielded prisms · an AI that settles
 inside the arena, or one parked 936u out in a 2160 arena · any fauna · **intensity 2
 specific:** a road you cannot find from spawn, a cut that keeps dropping while you follow
