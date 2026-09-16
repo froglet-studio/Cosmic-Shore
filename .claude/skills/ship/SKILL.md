@@ -407,6 +407,20 @@ Walk every changed file against these gates:
   generators for how many they write; the answer is usually "one" and it does not fail until
   somebody regenerates, on another branch, months later.
 
+- **A gate you wrote this branch is an INSTRUMENT — point it at the whole tree and READ it, don't
+  just confirm your branch is green.** A gate exists because you just learned a rule; the rule is
+  older than the gate, so the tree is full of places nobody applied it. One session wrote a gate for
+  a fauna-replication seam, watched it pass, and shipped — then a §2 read of a neighbouring file
+  suggested WIDENING the heuristic, and the widened gate immediately named **three more producers**,
+  one of them live and spawning a hundred of the exact object the bug is about. Reading the diff had
+  produced none of them, because none of them contained the word the search was built on. Two
+  corollaries. **Before widening a heuristic gate, enumerate its candidate hits on the current tree
+  and classify them by hand** — that turns "will this cry wolf?" from a fear into a measurement (8
+  hits, 1 false, and the false one was excluded by a rule already in the gate). And **a gate that
+  flags a correct-but-one-call-away funnel is not wrong** — it asks about the enclosing method
+  because a sibling holding the rule is a real failure mode; the answer is usually to move the
+  producer INTO the funnel, which leaves better code than the exemption would have.
+
 - **A LONG branch invalidates its own earlier rounds, and the doc from round 2 is the last place
   anyone looks.** The rule "a threshold that is a function of X must be re-derived when X moves"
   is normally about two branches or two authors; on a multi-round branch it is about YOU. Round 3
