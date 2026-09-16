@@ -37,8 +37,27 @@ namespace CosmicShore.Core
         static int _forcedPlayerCount;
         static int _forcedDomainCount;
 
-        /// <summary>Master switch — when false every query below is a no-op.</summary>
-        public static bool Active { get { EnsureLoaded(); return _active; } }
+        /// <summary>Master switch — when false every query below is a no-op.
+        ///
+        /// The MASTER DEVELOPER UNLOCK outranks it. The funnel's whole job is to lock the arcade
+        /// down to one card at one intensity, which is precisely what that gate exists to open,
+        /// so leaving the funnel live would let a quest graph re-lock the arcade behind a gate
+        /// that says everything is unlocked. Gating here rather than at each predicate is the
+        /// point: IsModeBlocked, AppliesTo and IsIntensityBlocked all resolve through Active,
+        /// so one line covers the funnel and no future predicate has to remember the gate.
+        ///
+        /// It suppresses the constraints only — the quest graph itself still runs, still shows
+        /// its dialogue and still advances. Turning the gate off restores the funnel exactly,
+        /// because the constraints are still persisted underneath.</summary>
+        public static bool Active
+        {
+            get
+            {
+                if (DeveloperUnlockGate.AllUnlocked) return false;
+                EnsureLoaded();
+                return _active;
+            }
+        }
 
         /// <summary>The one playable mode while active. <see cref="GameModes.Random"/> = no card restriction.</summary>
         public static GameModes AllowedMode { get { EnsureLoaded(); return _allowedMode; } }

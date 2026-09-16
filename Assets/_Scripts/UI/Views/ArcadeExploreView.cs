@@ -86,6 +86,8 @@ namespace CosmicShore.UI
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
             QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
+            // Flipping the master developer unlock changes every card's lock state.
+            DeveloperUnlockGate.OnChanged += HandleConstraintsChanged;
             // Guarded + idempotent, and retried from Start() — supersedes the raw
             // subscribe here, which would double-add alongside it.
             TrySubscribeToProgression();
@@ -102,6 +104,7 @@ namespace CosmicShore.UI
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
             QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
+            DeveloperUnlockGate.OnChanged -= HandleConstraintsChanged;
 
             // A reveal cut short by the grid going away must not strand a card at alpha 0.
             CardGridReveal.Snap(this, _revealCards, _reveal);

@@ -130,6 +130,11 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // The master developer unlock opens every mode. ON by default until the FTUE is
+            // designed - see DeveloperUnlockGate.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return true;
+
             // Always-unlocked modes (e.g. Maelstrom, a session-level meta outside the chain).
             if (Config.IsAlwaysUnlocked(mode))
                 return true;
@@ -175,6 +180,10 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
+            // The master developer unlock opens the hangar - see DeveloperUnlockGate.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return true;
+
             if (questList == null) return false;
 
             string hangarQuestName = Config.vesselHangarQuestDisplayName;
@@ -386,6 +395,12 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
+            // The master developer unlock opens every tier. This is the ONE intensity choke
+            // point - IsIntensityUnlocked and GetPlaysRemainingForIntensity both resolve
+            // through it, so gating it here covers the intensity ladder entirely.
+            if (DeveloperUnlockGate.AllUnlocked)
+                return Config.maxIntensity;
+
             // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
             if (Config.HasFullIntensity(mode)) return Config.maxIntensity;

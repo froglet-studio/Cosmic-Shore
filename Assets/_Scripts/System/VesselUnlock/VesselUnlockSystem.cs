@@ -18,7 +18,10 @@ namespace CosmicShore.Core
 
         public static bool UnlockVessel(SO_Vessel vessel)
         {
-            if (vessel == null || !vessel.IsLocked)
+            // IsLockedByEntitlement, never IsLocked: this GRANTS ownership, and IsLocked reads
+            // false for everything while the master developer unlock is on (the default until
+            // the FTUE is designed), which would make every grant a silent no-op.
+            if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
             vessel.Unlock();
@@ -30,7 +33,8 @@ namespace CosmicShore.Core
 
         public static bool LockVessel(SO_Vessel vessel)
         {
-            if (vessel == null || vessel.IsLocked)
+            // Entitlement, not playability - see UnlockVessel.
+            if (vessel == null || vessel.IsLockedByEntitlement)
                 return false;
 
             vessel.Lock();
@@ -45,7 +49,9 @@ namespace CosmicShore.Core
         /// </summary>
         public static bool TryPurchaseVessel(SO_Vessel vessel)
         {
-            if (vessel == null || !vessel.IsLocked)
+            // Entitlement, not playability: a purchase must not be refused (nor the crystals
+            // spent) on the strength of a developer gate - see UnlockVessel.
+            if (vessel == null || !vessel.IsLockedByEntitlement)
                 return false;
 
             if (vessel.UnlockCost > 0)
