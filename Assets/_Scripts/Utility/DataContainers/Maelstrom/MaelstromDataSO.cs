@@ -97,7 +97,7 @@ namespace CosmicShore.Utility
     /// the game lineup, the cumulative per-domain standings, and the placement-points
     /// table. Authored once as an asset (lineup + points table); the runtime fields
     /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
-    /// <see cref="MaelstromAINames"/>) are reduced locally on every peer by
+    /// <see cref="MaelstromAISeats"/>) are reduced locally on every peer by
     /// <c>MaelstromController</c> from the already-synced <see cref="GameDataSO.Results"/>,
     /// so no extra networking is needed (identical inputs → identical standings).
     ///
@@ -106,6 +106,20 @@ namespace CosmicShore.Utility
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(MaelstromDataSO),
         menuName = "ScriptableObjects/Data Containers/" + nameof(MaelstromDataSO))]
+    /// <summary>
+    /// One AI opponent's identity for the whole tournament: who they are and which team they play
+    /// for. Dealt once, on the first round that backfills, and replayed into every later round.
+    /// </summary>
+    [System.Serializable]
+    public class MaelstromAISeat
+    {
+        /// <summary>Profile name - also the key the summary resolves the bot's face from.</summary>
+        public string Name;
+
+        /// <summary>The team this bot plays for, for every round of the tournament.</summary>
+        public Domains Domain;
+    }
+
     /// <summary>
     /// One rung of the Maelstrom's intensity ladder: the modes this intensity ADDS to the draw
     /// pool.
@@ -211,7 +225,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The modes already DRAWN this shuffle — the bag. A shuffle deals every mode in the
-        /// drawable pool once before any mode comes round again (<c>MaelstromController.LoadRandomGame</c>
+        /// drawable pool once before any mode comes round again (<c>MaelstromController.DrawNextRound</c>
         /// draws from the pool MINUS this list, and only refills it when the bag empties), so
         /// "no game repeats itself" is a property of the draw rather than of a lucky roll.
         /// Host-only state: the draw is host-only, so nothing replicates it and nothing reads it
@@ -227,10 +241,23 @@ namespace CosmicShore.Utility
         [System.NonSerialized] public int IntensityCeiling;
 
         /// <summary>
-        /// AI display names seeded once at tournament start and reused for every game, so AI
-        /// identities stay stable across the lineup (see <c>ServerPlayerVesselInitializerWithAI</c>).
+        /// The tournament's AI opponents, seeded the first time a round backfills and reused for
+        /// every round after it (see <c>ServerPlayerVesselInitializerWithAI</c>).
+        ///
+        /// <para><b>A bot is a name AND a team.</b> This used to be a list of names only, and the
+        /// name half worked - the roster kept its names, and because the summary resolves an AI's
+        /// face by name, it kept its faces too. The DOMAIN was recomputed from scratch every round
+        /// by the balanced-placement pick, which reads the live human distribution: the moment a
+        /// pilot changed domain between rounds, the bots re-balanced around them and "Nomad" was
+        /// on Ruby in round 1 and Gold in round 2. Across a tournament scored per DOMAIN that is
+        /// worse than cosmetic - the opponent you were racing is now a team-mate - so the seat
+        /// carries both and is dealt once.</para>
+        ///
+        /// <para>What deliberately does NOT persist is the bot's HULL: fifteen of the sixteen pool
+        /// modes lock to one vessel, so the ship has to change with the round. A bot is its name,
+        /// its face and its colours, exactly like a human pilot.</para>
         /// </summary>
-        [System.NonSerialized] public List<string> MaelstromAINames = new();
+        [System.NonSerialized] public List<MaelstromAISeat> MaelstromAISeats = new();
 
         /// <summary>Cumulative standings, keyed by domain (team).</summary>
         [System.NonSerialized] public List<MaelstromDomainStanding> Standings = new();
@@ -244,12 +271,43 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The upcoming pool game's display name and the intensity rolled for it, stamped by the host's
-        /// random draw (<c>MaelstromController.LoadRandomGame</c>) just before launch so the between-game
+        /// random draw (<c>MaelstromController.DrawNextRound</c>) so the between-game
         /// loading splash can name what's loading. Host-side only (clients never draw); left empty on
         /// peers/games where no draw has run, so the splash simply omits the "up next" line.
         /// </summary>
         [System.NonSerialized] public string NextGameName;
         [System.NonSerialized] public int NextGameIntensity;
+
+        /// <summary>
+        /// The round the hub is standing in front of: the drawn mode's <see cref="GameQueue"/>
+        /// index (-1 = nothing drawn) and the intensity rolled for it.
+        ///
+        /// <para>The draw used to happen at LAUNCH, deliberately, so the upcoming mode stayed
+        /// hidden until its connecting panel. The hub now previews that mode - it stands the
+        /// arena and lets people fly it while the countdown runs - so the pick has to exist
+        /// several seconds earlier, and has to be the same pick on every peer. It is drawn once
+        /// per hub visit by the host (<c>MaelstromController.PrepareNextRound</c>), replicated as
+        /// a <see cref="MaelstromRoundTicket"/>, and mirrored here on every peer so the rest of
+        /// this asset's readers never have to care which side of the wire they are on.</para>
+        ///
+        /// <para>Cleared at launch: once the scene is loading, the pending round IS the current
+        /// one, and a stale pending index would have the next hub preview the round just played.</para>
+        /// </summary>
+        [System.NonSerialized] public int PendingGameIndex = -1;
+        [System.NonSerialized] public int PendingIntensity;
+
+        /// <summary>The drawn-but-not-yet-launched mode, or null when nothing is pending.</summary>
+        public SO_ArcadeGame PendingGame =>
+            GameQueue != null && PendingGameIndex >= 0 && PendingGameIndex < GameQueue.Count
+                ? GameQueue[PendingGameIndex]
+                : null;
+
+        /// <summary>Forget the pending draw (launch, reset, or a ticket that cleared).</summary>
+        public void ClearPendingRound()
+        {
+            PendingGameIndex = -1;
+            PendingIntensity = 0;
+        }
 
         public int GameCount => GameQueue?.Count ?? 0;
 
@@ -434,10 +492,13 @@ namespace CosmicShore.Utility
             CurrentGameIndex = 0;
             GamesPlayed = 0;
             DrawnGames.Clear();
+            ClearPendingRound();
+            NextGameName = null;
+            NextGameIntensity = 0;
             _resolvedWinTarget = 0;   // re-resolved from the End Game Conditions tool at the next start
             Standings.Clear();
             History.Clear();
-            MaelstromAINames.Clear();
+            MaelstromAISeats.Clear();
             // IntensityCeiling is intentionally NOT cleared - it is a config value captured at the
             // fresh start (lobby load) and must survive Play Again's reset (which routes through here).
         }

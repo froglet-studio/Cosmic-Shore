@@ -113,6 +113,87 @@ Three details:
   still two different experiences, but they are not what the bag is preventing — a mode is dealt
   once per bag whatever intensity it draws.
 
+### 1.3 The hub — the round is DRAWN early, PREVIEWED, and READIED into
+
+The between-round screen used to be a standings board with one button on it. It is now the place a
+round begins, and three things changed together to make that possible.
+
+**The draw moved from launch to hub entry.** It used to happen at the moment of loading, on purpose:
+the upcoming mode stayed hidden until its connecting panel, and a client never had to be told which
+mode it was because the loaded scene told it. A hub that STANDS the upcoming arena and lets people
+fly it needs the pick several seconds earlier, and needs it to be the same pick on every machine.
+`MaelstromController.PrepareNextRound()` draws (idempotent — one draw per hub visit, so the arena a
+player is looking at cannot change under them) and `BeginNextRound()` launches what is pending.
+
+**The pick travels as replicated STATE, not an announcement.** `MaelstromRoundTicket`
+(`GameIndex`, `Intensity`, `StartServerTime`) rides `Player.NetMaelstromRound` — server-write,
+everyone-read, written identically onto every player. An RPC would reach exactly the peers that are
+synchronized at the instant it is sent, and a peer still inside Netcode scene synchronization when
+the host draws would sit in front of a hub with no arena in it (the same argument
+`ArcadeConfigSyncManager.LobbySnapshot` already records for the arcade lobby). The index, not the
+asset, is what travels: `SO_ArcadeGame` has no network identity, and `GameQueue` order is the one
+ordering every peer shares.
+
+**The countdown is ONE deadline with two values.** `MaelstromLobby` arms it at **30 s** on hub
+entry; once every connected human has pressed READY it SNAPS to **3 s**. So "everybody readied" and
+"nobody readied" end the same way — a 3-2-1 — and the view needs one rule to decide whether to show
+it (`SecondsRemaining <= 3`). The snap is deliberately **one-way**: un-readying after the party has
+been shown a 3-2-1 does not push the deadline back out, because that is a griefing lever on a screen
+whose whole job is to get everyone into the next round.
+
+**`MaelstromLobbyNetwork` is retired.** It was a `NetworkBehaviour` that had to be placed in the
+Maelstrom scene to exist, and it never was — the scene shipped `lobbyNetwork: {fileID: 0}`, so the
+ready-up had not run once and the hub fell through to a local fallback where the host's button
+started the round immediately and nobody else's did anything. `MaelstromLobby` replaces it as a plain
+MonoBehaviour the scene view ENSURES, with the state on `Player`. *A component that has to be placed
+is a component that can be missing; the failure is silent, and it lasted as long as the feature had.*
+
+### 1.4 The three screens
+
+| Screen | Root | Button | Preview | When |
+|---|---|---|---|---|
+| **Hub** | `ArcadeGameConfigureModal` | READY (+ 3-2-1) | next round's arena, **flyable** | between every round |
+| **Stats** | same root | NEXT | last round's arena, **look-only** | once the tournament is decided |
+| **Summary** | `Summary Panel` | Play Again / Main Menu / **STATS** | — | after NEXT |
+
+A decided tournament therefore lands on the **stats screen**, not on the trophy: NEXT is what asks
+for the trophy, and the summary's STATS button goes back. The stats screen's preview has
+`ModePreviewWindow.SetFocusEnabled(false)`, so "tap to play" is not offered for a round that will
+never be played — an affordance the surface will not honour is worse than none.
+
+### 1.5 The hub preview — the hub IS the arena
+
+`MaelstromPreviewHost` fills `ConfigurationContent`. It does **not** stand a satellite cell the way
+the arcade modal's preview does: that exists because Menu_Main has a live world to protect, and the
+Maelstrom scene has no world at all. The hub swaps its own `Cell` onto the drawn mode's arena through
+`Cell.RequestCellSwap` — the platform's one sanctioned runtime world-change — so the ecology, the
+phase ladder and the spawners are the Cell's own rather than a parallel set this mode invented.
+
+Two cameras share one surface and hand over **in order** (incoming takes the `RenderTexture` before
+outgoing lets go, or the frame with nobody drawing into it is the white rectangle the window exists
+to prevent): an orbit camera frames the whole arena while nobody is flying, and tapping in hands the
+surface to the real gameplay camera behind the local pilot's vessel.
+
+It degrades rather than failing. **Six of the sixteen pool modes author no `ModePreviewDefinitionSO`**
+(Salvo, Switchback, Headlong, Breakwater, Hijack, Skein — their arenas are built by their own
+controllers rather than by a cell config), and those rounds show the honest "preview not available"
+with the mode's name and description still on screen. A scene with no vessel still gets the orbiting
+look at the arena; only the tap-in is lost, and it says so once with the fix attached.
+
+### 1.6 The AI roster is dealt ONCE
+
+`MaelstromDataSO.MaelstromAISeats` (name **+ domain**) is seeded on the first round that backfills
+and replayed into every round after it, so the party races the same named, same-coloured, same-faced
+opponents all tournament.
+
+It used to be a list of NAMES only. That half worked — and because the summary resolves an AI's face
+by name, the faces worked too — while the DOMAIN was recomputed every round by the balanced
+placement pick, which reads the live human distribution. The moment a pilot changed domain between
+rounds the bots re-balanced around them, and across a tournament scored per DOMAIN that is worse than
+cosmetic: the opponent you were racing is now a team-mate. What deliberately does NOT persist is the
+bot's HULL — fifteen of the sixteen pool modes lock to one vessel, so the ship has to change with the
+round. *A bot is its name, its face and its colours, exactly like a human pilot.*
+
 ### 1.1 The intensity ladder — which modes a run can draw
 
 `MaelstromDataSO.IntensityTiers` is **cumulative**: a run at intensity N draws from every rung up to
@@ -334,8 +415,9 @@ on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 `WinTarget` (6), `MaxGames` (7), `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime
 (non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode — repeat-avoidance),
 `DrawnGames` (the draw bag, §1.2),
+`PendingGameIndex`/`PendingIntensity` (the round the hub is previewing — §1.3; cleared at launch),
 `GamesPlayed`, `IntensityCeiling` (X, captured at start; **survives `ResetRuntime`** so Play Again
-keeps it), `MaelstromAINames`, `Standings` (a `List<MaelstromDomainStanding>` — **keyed by
+keeps it), `MaelstromAISeats` (name + domain, dealt once — §1.6), `Standings` (a `List<MaelstromDomainStanding>` — **keyed by
 `Domains`**, not player). Key methods: `RecordResults(results)` (per-domain fold + `GamesPlayed++`,
 see §3), `IsShuffleComplete` (race target reached or game cap hit — drives summary vs next game),
 `BuildSortedStandings()` (points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold),
@@ -354,14 +436,19 @@ fallback otherwise). Edit-mode coverage: `Assets/_Scripts/Tests/Editor/Maelstrom
 | Standings text formatting (shared, DRY) | `_Scripts/Utility/DataContainers/Maelstrom/MaelstromStandingsFormatter.cs` |
 | State machine | `_Scripts/Controller/Arcade/Maelstrom/MaelstromStateMachine.cs` |
 | Controller (brain) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromController.cs` |
-| Lobby scene view | `_Scripts/Controller/Arcade/Maelstrom/MaelstromSceneView.cs` |
+| Hub / stats / summary scene view | `_Scripts/Controller/Arcade/Maelstrom/MaelstromSceneView.cs` |
+| Ready-up + countdown (plain MonoBehaviour, ensured in code) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromLobby.cs` |
+| Replicated round pick | `_Scripts/Controller/Arcade/Maelstrom/MaelstromRoundTicket.cs` + `Player.NetMaelstromRound` / `NetMaelstromReady` |
+| Hub preview (ConfigurationContent) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromPreviewHost.cs` |
+| Hub vessel spawner (autopilot, next round's hull, no domain reset) | `_Scripts/Controller/Arcade/Maelstrom/MaelstromHubVesselInitializer.cs` |
+| Hub motion vocabulary | `_Scripts/Controller/Arcade/Maelstrom/MaelstromTransitions.cs` |
 | End-game buttons + entrance + placement wallet credit (via injected `MaelstromDataSO`) | `_Scripts/UI/Scoreboard.cs` |
 | Between-game summary text (SOAP, reuses the splash status surface) | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` (shuffle branch) → `BootStatusPanel` via `Event_BootStatusRequest` |
 | Lobby player/domain floor | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` (`MinDomainsForGame`) |
 | Per-game min domains field | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs` (`MinDomainsAllowed`) |
 | Joust-leg opponent-seek AI | `_Scripts/Controller/AI/AIPilot.cs` |
 | Client flag sync | `_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs` |
-| Stable AI roster | `_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs` |
+| Stable AI roster (seats replayed every round — §1.6) | `_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs` |
 | DI registration | `_Scripts/System/AppManager.cs` |
 | Card unlock | `_Scripts/System/Progression/GameModeProgressionService.cs` |
 | Data asset | `_SO_Assets/Maelstrom/MaelstromData.asset` (+ 4 `Event_Maelstrom*.asset`) |
@@ -376,16 +463,46 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
 - **AppManager** — `tournamentData` assigned; `MaelstromController` registered and constructed with
   `gameData` + `tournamentData` + `sceneNames` + `sceneTransitionManager`, created eagerly at bootstrap
   so it survives every Single load.
-- **`Maelstrom.unity`** — a UI-only scene whose `MaelstromSceneView` drives the intro lobby, the
-  between-round hub, and the results summary (layout chosen per load by phase / `IsShuffleComplete`). The
-  **current v2 layout + the exact field-by-field wiring** (active/summary panels, round cards,
-  `MaelstromLobbyNetwork` ready-up) is documented in `MAELSTROM_REWORK_SPEC.md` §6 + the v2 sections —
-  refer there rather than re-describing it here.
-  - **Buttons are code-wired only** — `MaelstromSceneView.Awake` adds `OnReadyButtonPressed` (START/NEXT),
-    `OnPlayAgainPressed`, and `OnMainMenuPressed`. Do **NOT** add inspector `onClick` entries: duplicate
-    wiring double-fires the press and launches a stray game off the summary (`MAELSTROM_REWORK_SPEC.md`
-    v2.5). `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu
-    `ScriptableEventNoParam` the Scoreboard's Main Menu raises and `SceneLoader` listens to.
+- **`Maelstrom.unity`** — `MaelstromSceneView` drives all three screens of §1.4.
+  - **It binds itself.** Every serialized field is looked up BY NAME under its own root when the
+    inspector leaves it empty (`ArcadeGameConfigureModal` / `Summary Panel` → `Title Text (TMP)`,
+    `PoolText`, `RoundStatusText`, `InfoText`, `LeadingDomainText`, `GameStartText`, `ReadyButton`,
+    `NextButton`, `ConfigurationContent`, `MaelstormSummaryScrollView` — the scene's own
+    misspelling is accepted alongside the correct one — and `RankText`, `StatsScreenButton`,
+    `PlayAgain Button`, `Main Menu Button`, `Content`). An explicit reference always wins. This is a
+    direct response to how the old ready-up died: a missing reference on this screen is silent.
+  - **`MaelstromLobby` and `MaelstromPreviewHost` are ENSURED in code** — nothing to place.
+  - **What the scene ALREADY carries, and is driven rather than duplicated.** `ConfigurationContent`
+    holds a real **`MinigameLaunchPanel`** (the main menu's own launch panel) with its
+    `ModePreviewWindow` on `Preview` and its `GameBriefingView` on `GameView` wired, so
+    `MaelstromPreviewHost` adopts that panel and `Bind`s it — which is literally what makes "the name
+    and description read like the main menu" true rather than re-implemented. **`Bind` is the only
+    call it makes**: `ArcadeLaunchPanel.Show()`/`Hide()` toggle the panel's OWN GameObject, which is
+    the object the host component lives on, so hiding it would stop the host that is meant to be
+    driving the preview. The host takes the window down directly instead.
+  - **`MaelstromConfigureModal` also carries an `ArcadeGameConfigureModal`** (it came with the copied
+    layout). Only the layout is wanted: that component is the arcade's whole launch flow, so the view
+    warns once — it is a second thing in this scene that can start a game.
+  - **TWO things the scene must still carry**, because they cannot be ensured:
+    1. **A `Cell`** (`_Prefabs/Environment/Cell.prefab`). Without it the preview reports the miss and
+       shows "not available"; with it the hub swaps to each drawn round's arena.
+    2. **The standard spawn pair** — a `MaelstromHubVesselInitializer` beside a
+       `ClientPlayerVesselInitializer` on a `NetworkObject`, exactly as every other multiplayer scene
+       carries one (copy that object from e.g. `MinigameJoust_Gameplay` and swap the server script).
+       Without it the arena is look-only: there are no vessels to fly and tap-to-play says so once.
+  - **The field renames carry their old wiring** via `[FormerlySerializedAs]`
+    (`gameModesText`→`poolText`, `roundCounterText`→`roundStatusText`, `raceRuleText`→`infoText`,
+    `countdownText`→`gameStartText`, `activeRoot`→`configureRoot`) — verified against the scene, where
+    each old field already points at the renamed object. `summaryRoot`'s reference had gone dangling
+    and is re-found by name.
+  - **Buttons are code-wired only** — `MaelstromSceneView.Awake` adds `OnReadyPressed`,
+    `OnNextPressed`, `OnStatsScreenPressed`, `OnPlayAgainPressed` and `OnMainMenuPressed`. Do **NOT**
+    add inspector `onClick` entries: duplicate wiring double-fires the press. `onClickToMainMenu` is
+    wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu `ScriptableEventNoParam`
+    the Scoreboard's Main Menu raises and `SceneLoader` listens to.
+  - **Main Menu must be reachable from the HUB**, not only the summary: if the scene parents it only
+    under `Summary Panel`, the view says so once (a tournament you cannot leave until it finishes is
+    not one anybody should have to finish).
 - **Scoreboard Continue button** — present on the shared end-game canvas
   (`GameCanvas-SkimRace.prefab`, used by all three domain-game scenes — SkimRace, Joust, Crystal
   Capture — plus `EndGameStatsPanel.prefab`) and wired to `OnContinueButtonPressed()`. Host-only,

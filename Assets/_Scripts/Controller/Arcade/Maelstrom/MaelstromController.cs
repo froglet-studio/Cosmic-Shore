@@ -22,8 +22,10 @@ namespace CosmicShore.Gameplay
     ///     via Netcode. No additive loading, no new NetworkBehaviour.
     ///   • <b>Randomized lineup</b> (the "Shuffle" card): each game the host draws a random pool mode
     ///     (from a BAG - no mode repeats until the pool is exhausted) + a random intensity in
-    ///     [1..ceiling] and launches it. Clients learn the mode from the
-    ///     loaded scene and the intensity from the existing config sync - no shared RNG seed needed.
+    ///     [1..ceiling] at HUB ENTRY, previews it, and launches it when the countdown elapses. The
+    ///     pick reaches clients as a replicated <see cref="MaelstromRoundTicket"/> (it has to, now
+    ///     that they build its arena BEFORE the load); the intensity still also rides the existing
+    ///     config sync at launch. No shared RNG seed anywhere.
     ///   • <b>Race to 6</b>: standings are network-free - on <c>OnMiniGameEnd</c> EVERY peer folds the
     ///     already-synced <see cref="GameDataSO.Results"/> into per-domain crystals identically and
     ///     evaluates <see cref="MaelstromDataSO.IsShuffleComplete"/> (a domain hit the target, or the
@@ -62,6 +64,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while the Maelstrom results screen is up (after the last game). Read by the scene view.</summary>
         public bool IsShowingSummary => _stateMachine.Current == MaelstromPhase.Summary;
+
+        /// <summary>
+        /// The mode the hub has drawn and is previewing, or null before the draw lands. Read by
+        /// the hub's vessel initializer (so pilots warm up in the round's own hull) and by the
+        /// preview host. Authoritative on the host; on a client it is the mirror
+        /// <c>MaelstromLobby</c> keeps from the replicated ticket.
+        /// </summary>
+        public SO_ArcadeGame PendingGame => _tournament != null ? _tournament.PendingGame : null;
+
+        /// <summary>The intensity rolled for <see cref="PendingGame"/>, or 0 when nothing is drawn.</summary>
+        public int PendingIntensity => _tournament != null ? _tournament.PendingIntensity : 0;
 
         /// <summary>
         /// True for the between-game transition whose loading splash shows the running standings - a
@@ -147,6 +160,12 @@ namespace CosmicShore.Gameplay
             if (idx >= 0 && _tournament.IsActive)
             {
                 _tournament.CurrentGameIndex = idx;   // which pool mode is loaded (for repeat-avoidance)
+
+                // The pending round has become the current one. The HOST cleared it in
+                // LaunchPendingRound; a client only ever mirrors the replicated ticket, so it
+                // clears here - otherwise its next hub opens previewing the round just played
+                // for the frame before the new ticket lands.
+                _tournament.ClearPendingRound();
                 _stateMachine.TransitionTo(MaelstromPhase.InGame);
             }
         }
@@ -287,14 +306,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Host draws + loads the next random game (mode + intensity). Called from the Maelstrom
-        /// lobby/hub once the ready-up countdown elapses - so the draw happens at Ready, keeping the
-        /// upcoming mode hidden until its connecting panel. The party follows the Single load.
+        /// Host DRAWS the next round (mode + intensity) without launching it, and stamps it on
+        /// <see cref="MaelstromDataSO.PendingGameIndex"/> / <c>PendingIntensity</c>. Idempotent -
+        /// a hub visit draws once, and every later call while that draw is still pending is a
+        /// no-op, so the arena a player is looking at cannot change under them.
+        ///
+        /// <para>The draw used to happen at LAUNCH, on purpose: the upcoming mode stayed hidden
+        /// until its connecting panel, and a client never needed to know it because the loaded
+        /// scene told it. The hub now stands that mode's arena and lets the party fly it while
+        /// the countdown runs, so the pick has to exist before the load and has to be the same
+        /// pick everywhere - it is published by <c>MaelstromLobby</c> as a
+        /// <see cref="MaelstromRoundTicket"/>.</para>
+        ///
+        /// <returns>True when a round is pending (drawn now or already).</returns>
+        /// </summary>
+        public bool PrepareNextRound()
+        {
+            if (!IsHost) return false;
+            if (_tournament == null || !_tournament.IsActive) return false;
+            if (_tournament.PendingGame != null) return true;
+            return DrawNextRound();
+        }
+
+        /// <summary>
+        /// Host launches the round the hub has been previewing. Draws one first if nothing is
+        /// pending, so a degraded hub (no preview, no draw) still starts a game rather than
+        /// stalling. The party follows the Single load.
         /// </summary>
         public void BeginNextRound()
         {
             if (!IsHost) return;
-            LoadRandomGame();
+            if (_tournament == null || !_tournament.IsActive) return;
+            if (_tournament.PendingGame == null && !DrawNextRound()) return;
+            LaunchPendingRound();
         }
 
         /// <summary>Back-compat alias for <see cref="BeginNextRound"/> (the first round is just the
@@ -339,15 +383,15 @@ namespace CosmicShore.Gameplay
         // ── Host-only random draw + scene load (reuse the proven SceneLoader path) ─
 
         /// <summary>
-        /// Draws a random (mode, intensity ∈ [1..ceiling]) "experience" from the pool and launches it.
-        /// The host drives the Single load; clients follow it (the mode is the loaded scene, the
-        /// intensity rides the existing <c>SyncGameConfigToClients</c> path), so no shared RNG/seed is
-        /// needed. The mode is drawn from a BAG: no mode repeats until every drawable mode has been
-        /// played, and a refill still never deals the same mode back-to-back.
+        /// Draws a random (mode, intensity ∈ [1..ceiling]) "experience" from the pool and stamps it
+        /// as PENDING. The host draws; the pick reaches clients as a <see cref="MaelstromRoundTicket"/>
+        /// (and the intensity still rides the existing <c>SyncGameConfigToClients</c> path at launch),
+        /// so no shared RNG/seed is needed. The mode is drawn from a BAG: no mode repeats until every
+        /// drawable mode has been played, and a refill still never deals the same mode back-to-back.
         /// </summary>
-        void LoadRandomGame()
+        bool DrawNextRound()
         {
-            if (_tournament == null || _tournament.GameCount == 0) return;
+            if (_tournament == null || _tournament.GameCount == 0) return false;
 
             int ceiling = Mathf.Clamp(_tournament.IntensityCeiling <= 0 ? 1 : _tournament.IntensityCeiling, 1, 4);
 
@@ -355,7 +399,7 @@ namespace CosmicShore.Gameplay
             // decides how wide the pool is (MaelstromDataSO.IntensityTiers). An un-authored
             // ladder returns the whole queue, so this is the legacy draw until tiers are written.
             var drawable = _tournament.GamesForIntensity(ceiling);
-            if (drawable.Count == 0) return;
+            if (drawable.Count == 0) return false;
 
             // A shuffle is a BAG, not a roll: every mode in the drawable pool is dealt once before
             // ANY mode comes round again. Drawing from the pool minus what has already been dealt
@@ -389,21 +433,49 @@ namespace CosmicShore.Gameplay
             int avoid = previous != null ? candidates.IndexOf(previous) : -1;
 
             var game = candidates[PickRandomIndex(candidates.Count, avoid)];
-            if (game == null) return;
+            if (game == null) return false;
 
             _tournament.MarkDrawn(game);
 
             int intensity = Random.Range(1, ceiling + 1);   // inclusive [1..ceiling]
+
+            // Stamp the pick as PENDING. The GameQueue index is what travels (an SO_ArcadeGame has
+            // no network identity), so it is taken from the queue rather than from `drawable`,
+            // which is an intensity-filtered subset with a different index space.
+            _tournament.PendingGameIndex = _tournament.GameQueue.IndexOf(game);
+            _tournament.PendingIntensity = intensity;
+
+            // Name what is coming so the between-game splash can show "up next: <mode> · Intensity N"
+            // (see MaelstromStandingsFormatter.FormatRunning) and the hub can title its preview.
+            _tournament.NextGameName = game.DisplayName;
+            _tournament.NextGameIntensity = intensity;
+            return true;
+        }
+
+        /// <summary>
+        /// Host-only launch of whatever <see cref="DrawNextRound"/> left pending. Everything that
+        /// used to sit at the tail of the draw lives here, so the pick and the load are separable:
+        /// the hub draws early to preview the arena, and launches minutes later.
+        /// </summary>
+        void LaunchPendingRound()
+        {
+            var game = _tournament.PendingGame;
+            if (game == null) return;
+
+            int intensity = Mathf.Clamp(_tournament.PendingIntensity <= 0 ? 1 : _tournament.PendingIntensity, 1, 4);
 
             // Per-game intensity: set BEFORE SyncFromArcadeGame (which doesn't touch intensity) and
             // before launch, so the game scene's config sync replicates it to clients.
             if (_gameData.SelectedIntensity != null)
                 _gameData.SelectedIntensity.Value = intensity;
 
-            // Stamp what's loading so the between-game splash can show "up next: <mode> · Intensity N"
-            // (see MaelstromStandingsFormatter.FormatRunning). Set before InvokeGameLaunch fires OnLaunchGame.
             _tournament.NextGameName = game.DisplayName;
             _tournament.NextGameIntensity = intensity;
+
+            // The pending round is now the CURRENT one. Cleared before the load rather than after,
+            // because the load is what tears this scene down - a pending index surviving it would
+            // have the next hub preview the round just played.
+            _tournament.ClearPendingRound();
 
             _gameData.SyncFromArcadeGame(game);        // scene / mode / multiplayer
             _gameData.IsMaelstromMode = true;         // SyncFromArcadeGame doesn't set it; keep it on.
