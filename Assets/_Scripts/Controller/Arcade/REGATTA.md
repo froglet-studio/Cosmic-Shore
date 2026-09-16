@@ -174,12 +174,22 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   `Urchin_Square.png` plus a derived `Urchin_Inactive.png`, and `check_vessel_class_icons.py` gates
   every class asset's icons. `Docs/HomeHub/ARCHITECTURE.md` §3.5.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
-  five hulls by ~1.5× and the Rhino not at all. The honest next steps, in order of how much
-  they respect the fundamentals: (1) give the Rhino's ramp a Time endpoint (a `/vessel` change:
-  `RampBoostActionSO.maxBoostMultiplier` as an `ElementalFloat`), which is also the only thing
-  that makes the comeback reach a Rhino; (2) a **pursuit start** — the regatta's own answer to
-  mixed boats, a per-hull start release derived from this model, first through the last ring
-  wins outright; (3) a playtest before either, because this model is arithmetic.
+  five hulls by ~1.5×. **This used to read "and the Rhino not at all", which was half wrong and
+  is now wholly stale.** `RampBoostActionExecutor` has always read `Multiplier(Element.Time)` and
+  scaled `accelerationPerSecond` by it; the Rhino's map entry was simply an `(open design slot)`
+  authored 1.0/1.0, and Broadside's first playtest filled it (**Ramp Spool**, 2.5 / 0.5 — see
+  `BROADSIDE.md` § "What the first playtest changed"). So Time now reaches the Rhino's **wind-up
+  rate**, fleet-wide. What it still does **not** reach is the ramp's **ceiling**
+  (`maxBoostMultiplier` 24), which over a lap is most of what a race is bounded by — so this
+  model's numbers stand and its Rhino row is **unchanged and now stale in one respect**:
+  `rhino_model` returns its acceleration as a constant and does not scale it by level. The honest
+  next steps, in order of how much they respect the fundamentals: (1) teach `rhino_model` the new
+  endpoint and re-solve, then decide whether a Rhino Time row buys a Regatta lap anything (this
+  file claims nothing until it is measured); (2) make `maxBoostMultiplier` an `ElementalFloat`
+  too, if (1) is not enough — that is the ceiling, and it is a `/vessel` change; (3) a **pursuit
+  start** — the regatta's own answer to mixed boats, a per-hull start release derived from this
+  model, first through the last ring wins outright; (4) a playtest before any of them, because
+  this model is arithmetic.
 - The Dolphin's Time lever is inert here (the first charge cycle of every leg dominates), and
   its 347 peak is `BoostMultiplier × ChargedBoostCharge` — a squaring the vessel pass flagged
   as a possible defect. The model follows the code.

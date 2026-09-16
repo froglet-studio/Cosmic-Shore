@@ -103,60 +103,88 @@ MonoBehaviour:
       Charge: 0
       Space: 0
       Time: 1
+  - Class: 3
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 3
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 3
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
+  - Class: 3
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 0.6
   - Class: 12
     Intensity: 1
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: 0.3
   - Class: 12
     Intensity: 2
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: 0.3
   - Class: 12
     Intensity: 3
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: 0.3
   - Class: 12
     Intensity: 4
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: 0.3
   - Class: 11
     Intensity: 1
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: -0.4
   - Class: 11
     Intensity: 2
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: -0.4
   - Class: 11
     Intensity: 3
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
+      Time: -0.4
   - Class: 11
     Intensity: 4
     Levels:
       Mass: 0
       Charge: 0
       Space: 0
-      Time: -0.5
-  ComebackRatePerScoreDeficit: 0.02
+      Time: -0.4
+  ComebackRatePerScoreDeficit: 0.12

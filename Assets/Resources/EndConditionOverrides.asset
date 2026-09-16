@@ -26,7 +26,7 @@ MonoBehaviour:
   tollwayTollTarget: 4
   wreckingBallPrismTarget: 1500
   undertowPointTarget: 12
-  broadsidePointTarget: 600
+  broadsidePointsPerPilot: 100
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   breakwaterStationTarget: 15
@@ -49,7 +49,7 @@ MonoBehaviour:
   tollwayTollTargetBuild: 4
   wreckingBallPrismTargetBuild: 1500
   undertowPointTargetBuild: 12
-  broadsidePointTargetBuild: 600
+  broadsidePointsPerPilotBuild: 100
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   breakwaterStationTargetBuild: 15

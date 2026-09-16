@@ -77,12 +77,29 @@ namespace CosmicShore.ScriptableObjects
         /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
         public const int DefaultUndertowPointTarget = 12;
 
-        /// <summary>Broadside point target used when <see cref="broadsidePointTarget"/> is 0.
-        /// The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round is 1,
-        /// a contact strike 8, an area debuff 12, a rocket 10/20/30 by how close it got. 600 is
-        /// about four minutes for a domain at the modelled sustained rate, whichever hulls it
-        /// fields (Tools/Build/broadside_balance.py).</summary>
-        public const int DefaultBroadsidePointTarget = 600;
+        /// <summary>Broadside points PER PILOT used when <see cref="broadsidePointsPerPilot"/>
+        /// is 0. The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round
+        /// is 1, a contact strike 8, an area debuff 12, a rocket 10/20/30 by how close it got.
+        ///
+        /// <para>Unlike every other target on this asset this one is a RATE, not a total: the
+        /// number a domain actually races to scales with how many pilots are on a side (see
+        /// <see cref="BroadsideExtraPilotFraction"/>), because a second pilot roughly doubles a
+        /// domain's scoring rate - the combat latch is per shooter-victim pair, so two pilots
+        /// working one victim really do both score - and a fixed total would make a 4v4 a third
+        /// the length of a 1v1. Modelled in Tools/Build/broadside_balance.py, which reads BOTH
+        /// constants off this file rather than restating them.</para></summary>
+        public const int DefaultBroadsidePointsPerPilot = 100;
+
+        /// <summary>How much of a whole pilot's worth of target each pilot AFTER the first adds:
+        /// <c>target = perPilot x (1 + this x (teamSize - 1))</c>, so 100 / 160 / 220 / 280 for a
+        /// 1 / 2 / 3 / 4 pilot team.
+        ///
+        /// <para>Deliberately below 1: at 1.0 the target would rise exactly as fast as the team's
+        /// rate and match length would be flat, which reads as a teammate contributing nothing.
+        /// At 0.6 a fuller side finishes somewhat sooner - filling your team is a real advantage,
+        /// stated rather than hidden - while a lone pilot is still asked for a number one hull
+        /// can reach.</para></summary>
+        public const float BroadsideExtraPilotFraction = 0.6f;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
@@ -252,10 +269,13 @@ namespace CosmicShore.ScriptableObjects
                  "1, summed across the domain's pilots. 0 = default (12).")]
         [Min(0)] public int undertowPointTarget = 12;
 
-        [Tooltip("Broadside: POINTS a DOMAIN needs to win (race to N). Every hull on the card " +
-                 "scores into one total, priced by the VERB that landed the hit - a round is 1, a " +
-                 "contact strike 8, an area debuff 12, a rocket 10/20/30. 0 = default (600).")]
-        [Min(0)] public int broadsidePointTarget = 600;
+        [Tooltip("Broadside: points PER PILOT on a domain. The number a domain actually races " +
+                 "to is this x (1 + 0.6 x (teamSize - 1)) - 100/160/220/280 for a 1/2/3/4 pilot " +
+                 "team - because a second pilot roughly doubles a side's scoring rate. Every " +
+                 "hull on the card scores into one total, priced by the VERB that landed the " +
+                 "hit: a round is 1, a contact strike 8, an area debuff 12, a rocket 10/20/30. " +
+                 "0 = default (100).")]
+        [Min(0)] public int broadsidePointsPerPilot = 100;
 
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
@@ -283,7 +303,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int tollwayTollTargetBuild = 8;
         [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
         [Min(0)] public int undertowPointTargetBuild = 12;
-        [Min(0)] public int broadsidePointTargetBuild = 600;
+        [Min(0)] public int broadsidePointsPerPilotBuild = 100;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -489,12 +509,28 @@ namespace CosmicShore.ScriptableObjects
             undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
 
         /// <summary>
-        /// Broadside point target ("first domain to N points"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultBroadsidePointTarget"/>. Compared against a DOMAIN's summed
-        /// CombatPoints, which every hull on the card pays into through its own weapon class.
+        /// Broadside points PER PILOT: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBroadsidePointsPerPilot"/>. Feed it to
+        /// <see cref="GetBroadsidePointTarget"/> - this is not itself a target.
         /// </summary>
-        public int GetBroadsidePointTarget() =>
-            broadsidePointTarget > 0 ? broadsidePointTarget : DefaultBroadsidePointTarget;
+        public int GetBroadsidePointsPerPilot() =>
+            broadsidePointsPerPilot > 0 ? broadsidePointsPerPilot : DefaultBroadsidePointsPerPilot;
+
+        /// <summary>
+        /// Broadside's actual race target for a domain of <paramref name="teamSize"/> pilots:
+        /// <c>perPilot x (1 + <see cref="BroadsideExtraPilotFraction"/> x (teamSize - 1))</c>.
+        /// Compared against a DOMAIN's summed CombatPoints, which every hull on the card pays
+        /// into through its own weapon class.
+        ///
+        /// <para>Resolved SERVER-side by BroadsidePointTurnMonitor and replicated as an int, so a
+        /// client RECEIVES the target rather than re-deriving it from a roster it may not have
+        /// finished building - the same distinction CrystalManager's IntensityScaled count
+        /// records. A team size below 1 is clamped, so an empty roster cannot produce a target
+        /// of 0 and end the match on the countdown.</para>
+        /// </summary>
+        public int GetBroadsidePointTarget(int teamSize) =>
+            Mathf.RoundToInt(GetBroadsidePointsPerPilot() *
+                             (1f + BroadsideExtraPilotFraction * (Mathf.Max(1, teamSize) - 1)));
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
@@ -526,7 +562,9 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
                 GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
-                GameModes.Broadside                 => broadsidePointTarget > 0 ? broadsidePointTarget : DefaultBroadsidePointTarget,
+                // Per PILOT, not a total - the race target scales with team size and is only known at
+                // runtime, so the editor's authored-target readout shows the rate.
+                GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
                 _                                   => 0,
             };
 
@@ -558,7 +596,7 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget == tollwayTollTargetBuild &&
             wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
             undertowPointTarget == undertowPointTargetBuild &&
-            broadsidePointTarget == broadsidePointTargetBuild;
+            broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -586,7 +624,7 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget = tollwayTollTargetBuild;
             wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
             undertowPointTarget = undertowPointTargetBuild;
-            broadsidePointTarget = broadsidePointTargetBuild;
+            broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -615,7 +653,7 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTargetBuild = tollwayTollTarget;
             wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
             undertowPointTargetBuild = undertowPointTarget;
-            broadsidePointTargetBuild = broadsidePointTarget;
+            broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
         }
     }
 }

@@ -119,8 +119,12 @@ W = bal.NEW_WINDOWS
 SHIPPED_W = bal.read_shipped_windows()
 
 # Comeback - a FUNCTION OF THE TARGET (bonusLevels = deficit x rate). This family has re-learned
-# that seven times; the assert below is the gate.
-COMEBACK_RATE = 0.02
+# that seven times; the assert below is the gate, and the EIGHTH outing was this mode's own
+# first playtest: the target went 600 -> 100 per pilot and 0.02 silently became worth half an
+# element level at a quarter-of-target deficit. 0.12 restores the ~3 levels the 600 target
+# bought. Sized against the SOLO target (the smallest the team-size rule can produce), so a
+# fuller lobby races to a bigger number and the comeback only ever buys more, never less.
+COMEBACK_RATE = 0.12
 
 # The card's per-hull handicap, solved by the model. Time is the only element that reaches a
 # speed on more than one hull, so it is the axis; three hulls it cannot reach get no row and the
@@ -144,8 +148,15 @@ def skimmer_hit(name, gd, window, require_faster):
 """)
 
 # The Rhino's SWORD: a swung blade is in contact continuously while it is alongside, so it takes
-# the longer window and does NOT require being faster - a sword connects on its own terms.
-skimmer_hit("VesselCombatHitBySword", G_ASSET["VesselCombatHitBySword"], W["strike_sword"], 0)
+# the longer window - AND, since the first playtest, it requires being FASTER than its victim,
+# the Squirrel joust's own rule. It shipped at 0 on the reasoning that "a sword connects on its
+# own terms", and what that actually bought was a mode that paid the Rhino to PARK: holding the
+# blade alongside a rival paid 8 points every 1.4 s for nothing but station-keeping, while
+# charging paid 8 points and left you 1200 units away. So the card was rewarding the exact
+# opposite of the hull's identity, which is what came back as "I played rhino and was not
+# charging full speed and straight to be a crazy fast and scary menace like he should have".
+# Requiring speed does not make the Rhino fast; it makes being fast the only way it scores.
+skimmer_hit("VesselCombatHitBySword", G_ASSET["VesselCombatHitBySword"], W["strike_sword"], 1)
 # The Squirrel's JOUST: discrete by definition - it must re-earn a fresh overtake each time, so
 # it takes the shorter window and DOES require being faster. That is the mode honouring what a
 # joust already means rather than inventing a second meaning for the same contact.
@@ -358,9 +369,11 @@ g.register_arena_card(G_ASSET["ArcadeGameBroadside"])      # master + ARENA grid
 g.register_always_unlocked()
 g.register_build_scene("MinigameDogFight", "MinigameBroadside", G_ASSET["MinigameBroadside.unity"])
 end = g.read_current(lib.END_CONDITIONS)
-g.set_end_condition("broadsidePointTarget",
+# The key is PER PILOT since the playtest - the turn monitor multiplies it by the live team
+# size. The value authored here is therefore what a SOLO domain races to, not a match total.
+g.set_end_condition("broadsidePointsPerPilot",
                     after="undertowPointTarget" if "undertowPointTarget:" in end else "wreckingBallPrismTarget",
-                    value=POINT_TARGET)
+                    value=bal.read_target(1))
 
 # ══ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ═════════════════════════════
 errors = []
@@ -391,11 +404,23 @@ r = bal.solve(LEVELS)
 tuned_spread = bal.spread(r["tuned"])
 if tuned_spread > 1.6:
     errors.append(f"tuned points/min spread {tuned_spread:.2f}x exceeds the 1.6x the doc claims")
+# WHAT THIS GATE CAN AND CANNOT SAY, after the first playtest corrected it.
+#
+# The model's points/min is a rate against a victim you are ALREADY engaged with, thinned by a
+# connect fraction that is an estimate. It does not model the time a brawl spends searching and
+# repositioning BETWEEN engagements, so its minutes are a FLOOR on match length, not a
+# prediction of one - and the playtest proved the gap is large, because a human who played a
+# 600-point match came back asking for 100. The old two-sided 2-8 min gate was therefore
+# asserting a number the model is not entitled to, and it is now a CEILING only: if even at full
+# engagement a hull cannot reach the target, the target is unreachable and that IS decidable
+# here. The floor is dropped with its reason stated rather than widened until it passes.
+FULL_ENGAGEMENT_CEILING_MIN = 8.0
 for h, ppm in r["tuned"].items():
     minutes = POINT_TARGET / ppm
-    if not (2.0 <= minutes <= 8.0):
-        errors.append(f"{h} reaches the target in {minutes:.1f} min - outside the 2-8 min a brawl "
-                      f"is authored for")
+    if minutes > FULL_ENGAGEMENT_CEILING_MIN:
+        errors.append(f"{h} cannot reach the solo target ({POINT_TARGET}) inside "
+                      f"{FULL_ENGAGEMENT_CEILING_MIN:.0f} min even at FULL engagement "
+                      f"({minutes:.1f} min) - the target is out of reach for this hull")
 
 # The windows must not have drifted from what the model priced against.
 for key, shipped in (("bullet", SHIPPED_W["bullet"]), ("debuff", SHIPPED_W["debuff"])):

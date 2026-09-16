@@ -1932,11 +1932,13 @@ match at rest. The table is authored by `Tools/Build/regatta_balance.py`, an off
 model over the MEASURED circuits (constants read off the prefabs by key), and **the honest result
 is a residual spread of 6.0× at intensity 1 (8.8× at rest) and 5.3× at intensity 4**: an element
 spans ~1.5× on the five hulls it reaches (Time = Soar / afterburner / Serpent boost / Scarab
-ceiling / Dolphin fill) and nothing on the Rhino, the Urchin or the Squirrel, while straight-line
-speeds span 35×. The generator asserts that spread under 6.1× and asserts the measured course
+ceiling / Dolphin fill) and nothing on the Urchin or the Squirrel, while straight-line speeds
+span 35×. (It reaches the Rhino's ramp ACCELERATION since Broadside's playtest filled that slot,
+but not the ramp's CEILING, which is most of what a lap is bounded by — `regatta_balance.py`'s
+Rhino row does not yet model the endpoint and this number therefore stands.) The generator asserts that spread under 6.1× and asserts the measured course
 JSON's source hash against the shipped C#, so neither a vessel retune nor a course edit can ship
-on stale numbers. What would close the rest is recorded, not faked: a Time endpoint on the
-Rhino's ramp (a `/vessel` change), or a pursuit start. Three general rules: **a per-hull
+on stale numbers. What would close the rest is recorded, not faked: an elemental endpoint on the
+Rhino's ramp CEILING (a `/vessel` change — its acceleration already has one), or a pursuit start. Three general rules: **a per-hull
 handicap is a fact about the CARD, not the vessel** (a prefab edit moves every mode; a mode-local
 multiplier is a cheat); **a structure several hulls use differently must be checked hull by
 hull** (what each can ride, skim, ram, and remove — `.claude/skills/arenagame/SKILL.md` §1 is
@@ -2004,14 +2006,50 @@ Balance rests on one measurement: **`VesselCombatHitLatch`'s window, not the fir
 bounds scoring against one victim** (the Sparrow's 90-rounds-per-second full-auto is capped by a
 0.05 s window long before its trigger is), and the windows are authored **per asset**, which is
 the mode's finest lever — the Rhino's sword takes 1.4 s because a swung blade is in contact
-*continuously*, the Squirrel's joust 1.0 s because it must re-earn a fresh overtake (its asset
-alone sets `requireFasterThanVictim`), the Urchin's spike 0.12 s because a volley is ~10
-projectiles inside ~0.1 s. Result **1.91x spread at rest → 1.33x tuned**, every hull reaching the
-target in 3.6–4.8 minutes, and the general rule it records: **a brawl is more balanceable than a
-race, because the mode owns the windows** — a race's rate is bounded by vessel speed, which a card
-cannot touch. Stated honestly, the per-hull CONNECT FRACTION is an estimate rather than a
-measurement, and **Time reaches nothing on the Urchin, the Rhino or the Squirrel**, so those three
-get no handicap row and the residual is reported rather than faked. The AI needs almost nothing:
+*continuously*, the Squirrel's joust 1.0 s because it must re-earn a fresh overtake, the Urchin's
+spike 0.12 s because a volley is ~10 projectiles inside ~0.1 s. Result **1.91x spread at rest →
+1.35x tuned**, and the general rule it records: **a brawl is more balanceable than a race, because
+the mode owns the windows** — a race's rate is bounded by vessel speed, which a card cannot touch.
+Stated honestly, the per-hull CONNECT FRACTION is an estimate rather than a measurement, so the
+model's MINUTES are a floor rather than a prediction (it prices a rate against a victim you are
+already engaged with and does not model the search between engagements), and **Time reaches
+nothing on the Urchin or the Squirrel**, so those two get no handicap row and the residual is
+reported rather than faked. **Its first playtest changed three things and the third generalises.**
+(1) **The target scales with TEAM SIZE** — `perPilot × (1 + 0.6 × (teamSize − 1))` → 100 / 160 /
+220 / 280, because the latch is per (shooter, victim, class) so two pilots on one victim BOTH
+score and a flat total would make a 4v4 a quarter the length of a 1v1; the fraction is under 1 so
+a fuller side still finishes sooner. It resolves on the SERVER and rides
+`CombatPointTurnMonitorBase`'s existing NetworkVariable, so a client never computes a target, and
+team size is the MEAN pilots per fielded domain (a lopsided 2v1 must not hand the pair a free win
+nor ask the lone pilot for a total they cannot reach). Re-targeting was the **eighth** outing of
+the comeback trap — 0.02 bought half a level at 100 where it bought three at 600 — now 0.12, sized
+against the SOLO target so a fuller lobby only ever buys more. (2) **An AI draws a random hull
+from the CARD**: `PickAIVesselType` read the roster through `gameList`, a per-scene
+`[SerializeField]` that MinigameBroadside, MinigameRegatta AND MinigameDogFight all leave null, so
+it fell through to a hardcoded Sparrow and both ARENA cards fielded eight identical hulls; it now
+reads `GameDataSO.AllowedVesselClasses`, which `SyncFromArcadeGame` publishes and
+`ResetRuntimeData()` deliberately does not clear. *A per-scene serialized reference is a per-scene
+chance to forget — when the same fact is already published on a shared runtime object, read it
+there.* (3) **The sword now requires being FASTER than its victim, and the RHINO GOT ITS TIME
+SLOT.** It shipped `requireFasterThanVictim: 0` on the reasoning that a sword connects on its own
+terms, and what that bought was a card paying the Rhino to PARK — holding the blade alongside a
+rival paid 8 points every 1.4 s for station-keeping while charging paid 8 and left you 1200 units
+away — so the mode rewarded the exact opposite of the hull's identity. The vessel's half is the
+rule: **`RampBoostActionExecutor` has always read `Multiplier(Element.Time)`** and scaled
+`accelerationPerSecond` by it, while the map's Time entry was an `(open design slot)` authored
+1.0/1.0 — **a capability live in code and flat in data reads exactly like a capability that does
+not exist, and it will be written down as one** (this document, BROADSIDE.md and the balance model
+all recorded "Time reaches nothing on the Rhino" as a measurement; before writing that down,
+check the executor, not the map). It is now **Ramp Spool** (2.5/0.5, no L5 upgrade invented — the
+slot is filled, not designed), a FLEET change accepted as one, so Headlong's Rhino spools faster
+too. Two modelling corollaries: Time is the ramp's WIND-UP RATE and not its ceiling, so the model
+integrates `min(top, cruise + a·t)` over a 2 s brawl straight and takes the ratio of means (2.18×
+at full, SATURATING once the hull tops out inside the straight) rather than feeding the raw 2.5×
+acceleration ratio in; and the level picker was **a coin toss with two faces** (sort around the
+median, hand the lower half +1 and the upper half −0.5), so a hull that gained a real endpoint
+flipped from slowest straight past everyone to fastest — `solve_levels` now moves each hull to the
+level nearest the ANCHOR, the median rate of the hulls Time cannot reach, which is the part of the
+roster no handicap can move. The AI needs almost nothing:
 Broadside joins Joust and Dog Fight in the seek-players set, so every bot hunts through the
 platform whatever hull it drew (most of this roster lands a hit by ARRIVING), and only the two
 stick-gesture weapons need a trigger pulled — the Scarab's dash and a replicated Urchin spike TAP
@@ -4056,7 +4094,7 @@ scale bump** with a one-shot unlock punch.
   | Scarab | complete | 4/4 | ✅ | ✅ | ✅ chip drawn. **Correction (2026-08-25):** `Scarab.prefab` does reference **`ScarabHUDVariant`** (guid `4f3ce7d760a1e0c76f3bc8c6a6842a92`) — the earlier note here read a stale prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as the reference. The override is deleted; `ScarabHUDVariant` is the live asset, not an orphan. *A prefab-instance name override is not a prefab reference.* |
   | Urchin | complete (4/4 named, 4/4 upgrades; re-cut 2026-08-18 — Charge owns the merged spike weapon, Space the new track projector) | 0/4 | — | — | n/a — **no `UrchinHUDVariant.prefab` exists**, so `UrchinVesselHUDController`/`View` are unreferenced code |
   | Manta | complete (4/4 named, 3/4 upgrades — the 2026-08-26 spec remake: Charge=Sting bomb bay / Contagion, Mass=Yastri turn trails / Shielded Turn Trails, Space=Kabloom bloom scale / No Friendly Fire, Time=Soar max speed / **L5 open** (Wake Highway was built and cut 2026-09 after its first playtest — a boost ring read as an unexplained launcher); Sting and Kabloom are deliberately Input 0 — planting is grazing, detonation is a crystal pickup. See `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOOM.md`) | 4/4 | ✅ | ✅ | ✅ chip drawn (placeholder silhouettes pending art pass) |
-  | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Rhino | 2/4 named, 0/4 upgrades (Time filled 2026-09 — **Ramp Spool**, the ramp's wind-up rate, which `RampBoostActionExecutor` had been reading all along against a flat 1.0/1.0 asset; Input 0 deliberately — the ramp engages on a full-throttle straight, not a button) | 0/4 | — | — | n/a |
   | Serpent | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
 
   **EVERY vessel HUD now wears the ABILITY LOCKUP** (`Docs/ABILITY_LOCKUP.md`) — the totem

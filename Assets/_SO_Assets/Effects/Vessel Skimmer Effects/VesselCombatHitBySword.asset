@@ -16,4 +16,4 @@ MonoBehaviour:
   onCombatHitLanded: {fileID: 11400000, guid: 45fb43a0cddb5cc3cc4dc448df994152, type: 2}
   sameVictimCooldownSeconds: 1.4
   requireOwningMachine: 1
-  requireFasterThanVictim: 0
+  requireFasterThanVictim: 1

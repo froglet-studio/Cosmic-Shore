@@ -70,9 +70,12 @@ HULLS = {
     "Urchin": dict(verbs=["spike"], connect=0.30,
         why="a 10-spike shotgun is far more forgiving than a single tracer, but it is a charged "
             "volley on a cooldown rather than a held trigger"),
-    "Rhino": dict(verbs=["strike_sword"], connect=0.45,
-        why="the sword is a swung blade with real reach and needs no ammunition; what bounds it "
-            "is getting alongside, and the Rhino is the fleet's fastest hull"),
+    "Rhino": dict(verbs=["strike_sword"], connect=0.38,
+        why="the sword needs no ammunition and has real reach, but since the playtest it also "
+            "requires being FASTER than its victim (requireFasterThanVictim, the Squirrel "
+            "joust's own rule) - so a parked blade scores nothing and the Rhino must keep "
+            "re-attacking at speed. Above the Squirrel's 0.35 because the Rhino's ramp tops "
+            "out far higher, so once wound up it clears the speed bar on more passes"),
     "Squirrel": dict(verbs=["strike_joust"], connect=0.35,
         why="the joust requires being FASTER than the victim, so roughly half of all passes "
             "score nothing - the price of the fleet's cheapest boost economy"),
@@ -94,7 +97,16 @@ TIME_REACH = {           # multiplier at normalized level +1 / -0.5, per REGATTA
     "Serpent": (1.60, 0.25),
     "Scarab":  (1.50, 0.75),
     "Dolphin": (1.20, 0.85),   # fill rate, not speed
-    "Rhino":   (1.00, 1.00),   # Time reaches nothing on the ramp
+    # CORRECTED after the first playtest. An earlier pass recorded "Time reaches nothing on the
+    # Rhino", which was FALSE: RampBoostActionExecutor.Begin reads Multiplier(Element.Time) and
+    # scales accelerationPerSecond by it. The map's Time slot was an OPEN DESIGN SLOT authored
+    # 1.0/1.0, so the hook was live and the asset behind it was flat - a capability that exists
+    # in code and is switched off in data reads exactly like a capability that does not exist.
+    # Time here is the ramp's WIND-UP RATE, not its top speed: it does not make the Rhino faster,
+    # it makes it reach fast sooner, which is what a brawl's short straights actually bound.
+    # NOT a speed multiplier - see rhino_speed_multiplier() for the conversion. Stored as the
+    # acceleration endpoint the executor actually reads so the model and the asset match.
+    "Rhino":   (2.50, 0.50),   # Time -> ramp acceleration (RhinoRampBoostAction 220/s base)
     "Urchin":  (1.00, 1.00),   # the grind is not elemental
     "Squirrel":(1.00, 1.00),   # skim energy is not elemental
 }
@@ -124,11 +136,28 @@ def read_shipped_windows():
     return w
 
 
-def read_target():
+def read_target(team_size=1):
+    """
+    The point target a DOMAIN races to, which since the first playtest SCALES WITH TEAM SIZE:
+
+        target = perPilot x (1 + extraFraction x (teamSize - 1))
+
+    so 100 / 160 / 220 / 280 for a 1 / 2 / 3 / 4 pilot team. Both numbers are read off the
+    shipped C# rather than restated, so the model and the turn monitor cannot disagree.
+
+    The fraction is 0.6 rather than 1.0 deliberately: a second pilot roughly DOUBLES a domain's
+    scoring rate (the latch is per shooter-victim pair, so two pilots on one victim really do
+    both score), and a target that doubled with them would leave match length flat while making
+    every teammate's contribution feel like a rounding error. At 0.6 a bigger team finishes
+    somewhat FASTER - which is the reward for filling your side - and the model reports by how
+    much rather than hiding it.
+    """
     t = _read("Assets/_Scripts/ScriptableObjects/EndConditionOverridesSO.cs")
-    m = re.search(r"DefaultBroadsidePointTarget\s*=\s*(\d+)", t)
-    assert m, "DefaultBroadsidePointTarget not found"
-    return int(m.group(1))
+    per = re.search(r"DefaultBroadsidePointsPerPilot\s*=\s*(\d+)", t)
+    frac = re.search(r"BroadsideExtraPilotFraction\s*=\s*([0-9.]+)f", t)
+    assert per, "DefaultBroadsidePointsPerPilot not found"
+    assert frac, "BroadsideExtraPilotFraction not found"
+    return int(round(int(per.group(1)) * (1.0 + float(frac.group(1)) * (max(1, team_size) - 1))))
 
 
 def read_comeback_rate():
@@ -161,6 +190,63 @@ def verb_rate(verb, windows):
     raise AssertionError(verb)
 
 
+# A BRAWL'S STRAIGHT. The one number the Rhino conversion below rests on, and the reason its
+# Time row is worth anything at all: a dogfight in the Boneyard gives you a couple of seconds of
+# clear line before you have to turn, not the ten-second runs a circuit race is made of. Chosen
+# from the arena rather than measured, and stated so a later pass can measure it.
+BRAWL_STRAIGHT_SECONDS = 2.0
+
+
+def elemental_multiplier(level, at_full, at_floor):
+    """The platform's own anchored-at-rest lerp: 1.0 at level 0, at_full at +1, at_floor at -0.5."""
+    if level >= 0:
+        return 1.0 + (at_full - 1.0) * level
+    return 1.0 + (1.0 - at_floor) * (level / 0.5)
+
+
+def rhino_speed_multiplier(level):
+    """
+    Converts the Rhino's ACCELERATION endpoint into the SPEED multiplier the rest of the model
+    is written in, because the two are not the same thing and treating them as one overpays the
+    hull badly.
+
+    The ramp climbs at `accelerationPerSecond x Multiplier(Time)` from cruise toward a ceiling
+    Time does not move (maxBoostMultiplier stays 24). Over a straight of
+    BRAWL_STRAIGHT_SECONDS the mean speed is therefore
+
+        mean = (1/T) INTEGRAL min(top, cruise + a t) dt
+
+    and what Time buys is the ratio of that mean to the mean at rest. It saturates: once the
+    hull tops out inside the straight, more acceleration buys nothing further, which is exactly
+    the shape the ceiling implies and exactly what a raw 2.5x acceleration ratio would have
+    claimed instead. At the shipped numbers (cruise 60, top 1210, a 220/s, T 2 s) the resting
+    mean is 280 u/s and +1 Time buys 610 - a 2.18x speed ratio rather than the 2.5x the
+    acceleration row reads.
+    """
+    cruise, top, base_accel = 60.0, 1210.0, 220.0
+    T = BRAWL_STRAIGHT_SECONDS
+
+    def mean_speed(a):
+        t_cap = (top - cruise) / a                     # when the ramp reaches the ceiling
+        if t_cap >= T:
+            return cruise + 0.5 * a * T                # never tops out inside the straight
+        area = cruise * t_cap + 0.5 * a * t_cap ** 2   # ramping
+        area += top * (T - t_cap)                      # held at the ceiling
+        return area / T
+
+    at_full, at_floor = TIME_REACH["Rhino"]
+    return mean_speed(base_accel * elemental_multiplier(level, at_full, at_floor)) / \
+           mean_speed(base_accel)
+
+
+def speed_multiplier(hull, time_level):
+    """What Time is worth to this hull, expressed as a SPEED ratio for every hull alike."""
+    if hull == "Rhino":
+        return rhino_speed_multiplier(time_level)
+    at_full, at_floor = TIME_REACH[hull]
+    return elemental_multiplier(time_level, at_full, at_floor)
+
+
 def points_per_minute(hull, windows, time_level=0.0):
     kit = HULLS[hull]
     rate = sum(verb_rate(v, windows) for v in kit["verbs"])
@@ -169,9 +255,7 @@ def points_per_minute(hull, windows, time_level=0.0):
     # Time's effect is on ENGAGEMENT RATE, not on the hit itself: a faster hull picks and holds
     # more fights. Modelled as a square-root of the speed multiplier - closing faster helps, but
     # not linearly, because a fight is two-sided.
-    at_full, at_floor = TIME_REACH[hull]
-    mul = 1.0 + (at_full - 1.0) * time_level if time_level >= 0 else 1.0 + (1.0 - at_floor) * (time_level / 0.5)
-    return ppm * (mul ** 0.5)
+    return ppm * (speed_multiplier(hull, time_level) ** 0.5)
 
 
 def solve(levels=None):
@@ -188,23 +272,67 @@ def spread(d):
     return max(d.values()) / min(d.values())
 
 
+# A hull whose Time level is a PLAYABILITY FLOOR rather than a free balance variable. The
+# balance pass may raise one of these and must never lower it.
+#
+# The Rhino is the only entry and the first playtest is why. Its identity is the full-speed
+# straight run, and the ramp takes accelerationPerSecond (220) to climb from ~60 u/s cruise to
+# ~1200 - 5.2 SECONDS of near-straight flight, which a brawl's short straights simply do not
+# contain, while bleedPerSecond (300) drags the speed back down FASTER than it built. So at Time
+# rest the Rhino in this mode is structurally never fast, which is exactly what came back as "I
+# played rhino and was not charging full speed and straight to be a crazy fast and scary menace".
+# At +0.5 the wind-up is 385/s - about 3 s to top speed, and ~830 u/s out of a 2 s straight -
+# which is the pace the hull is supposed to read at.
+#
+# It is a CARD-level row (SO_ArcadeGame.StartingElements), never a prefab edit: a per-hull
+# handicap is a fact about the card, so Headlong's Rhino is untouched.
+TIME_FLOOR = {"Rhino": 0.5}
+
+
+# The element ladder is integers, so a normalized level is a multiple of 0.1 and the solver may
+# not propose anything finer - a 0.37 it cannot author is a number that quietly becomes 0.4.
+LEVEL_STEP = 0.1
+LEVEL_BAND = (-0.5, 1.0)
+
+
 def solve_levels():
     """
-    Hand the slow hulls Time and take it off the fast ones, within the -0.5..+1 band the platform
-    allows. Only five hulls have a Time endpoint at all; the other three are handed nothing and
-    the residual is reported rather than hidden.
+    Pick each hull's starting Time so the tuned points/min sit as close together as the band
+    allows. Only six hulls have a Time endpoint at all; the other two are handed nothing and the
+    residual is reported rather than hidden.
+
+    This SOLVES rather than bucketing. An earlier pass sorted the hulls around the median and
+    handed the lower half +1 and the upper half -0.5, which is not a balance pass - it is a
+    coin toss with two faces, and the first playtest is what exposed it: giving the Rhino a real
+    Time endpoint flipped it from the slowest scorer straight past every other hull to the
+    fastest, because +1 was the only thing the bucket had to offer. Each hull is now moved to
+    the level whose tuned rate is nearest the ANCHOR - the median rate of the hulls Time cannot
+    reach, which is the part of the roster no handicap can move and therefore the only honest
+    thing to converge on.
+
+    A hull in TIME_FLOOR is clamped UP to its floor afterwards - its Time level is answering a
+    playability question, not a scoring one, so the balance pass is not allowed to spend it.
     """
     windows = read_shipped_windows()
     rest = {h: points_per_minute(h, windows, 0.0) for h in HULLS}
-    mid = sorted(rest.values())[len(rest) // 2]
+
+    fixed = [h for h in HULLS if TIME_REACH[h] == (1.0, 1.0)]
+    anchor_pool = sorted(rest[h] for h in fixed) or sorted(rest.values())
+    anchor = anchor_pool[len(anchor_pool) // 2]
+
+    lo, hi = LEVEL_BAND
+    steps = [round(lo + i * LEVEL_STEP, 2)
+             for i in range(int(round((hi - lo) / LEVEL_STEP)) + 1)]
 
     levels = {}
     for h in HULLS:
-        at_full, at_floor = TIME_REACH[h]
-        if at_full == 1.0 and at_floor == 1.0:
+        if h in fixed:
             levels[h] = 0.0            # Time reaches nothing on this hull - say so, do not fake it
             continue
-        levels[h] = 1.0 if rest[h] < mid else (-0.5 if rest[h] > mid else 0.0)
+        best = min(steps, key=lambda L: abs(points_per_minute(h, windows, L) - anchor))
+        if h in TIME_FLOOR:
+            best = max(best, TIME_FLOOR[h])
+        levels[h] = best
     return levels
 
 
@@ -230,6 +358,16 @@ def describe():
               f"{r['rest'][h]:>9.1f} {levels[h]:>6.2f} {r['tuned'][h]:>9.1f} "
               f"{tgt / r['tuned'][h]:>13.1f}m")
     print("-" * 78)
+    print(f"  (minutes above are a SOLO domain racing to {tgt}; a fuller team races to a bigger")
+    print("   target but scores proportionally faster - the per-team-size table is below)")
+    print()
+    print(f"{'team size':>10} {'target':>8} {'fastest hull':>14} {'slowest hull':>14}")
+    for n in (1, 2, 3, 4):
+        tn = read_target(n)
+        fast = max(r["tuned"].values()) * n
+        slow = min(r["tuned"].values()) * n
+        print(f"{n:>10} {tn:>8} {tn / fast:>13.1f}m {tn / slow:>13.1f}m")
+    print()
     print(f"spread at rest  {spread(r['rest']):.2f}x")
     print(f"spread tuned    {spread(r['tuned']):.2f}x")
     print()

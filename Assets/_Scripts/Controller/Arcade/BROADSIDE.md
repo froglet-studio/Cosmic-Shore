@@ -86,13 +86,12 @@ admits, and the separation is grounded in the mechanism:
 - **Sword 1.4 s** — a swung blade is in contact *continuously* while the Rhino is alongside, so
   without the longer window it would score every second of a pass it never had to re-earn.
 - **Joust 1.0 s** — a joust is *discrete*: it requires a fresh overtake at a closing speed the
-  Squirrel has to win, so it re-earns its window and is allowed a shorter one. Its asset alone
-  sets `requireFasterThanVictim`, which is the mode honouring what a joust already means.
+  Squirrel has to win, so it re-earns its window and is allowed a shorter one.
 - **Spike 0.12 s** — a volley is ~10 projectiles inside ~0.1 s; the Sparrow's 0.05 s would let one
   volley score ten times.
 
-**Result: 1.91× spread at rest → 1.33× tuned**, every hull reaching the target in **3.6–4.8
-minutes**. That is far tighter than Regatta's 6.0× residual, and the reason generalises:
+**Result: 1.91× spread at rest → 1.35× tuned.** That is far tighter than Regatta's 6.0× residual,
+and the reason generalises:
 
 > **A brawl is more balanceable than a race, because the mode owns the windows.** A race's rate is
 > bounded by vessel speed, which a card cannot touch; a brawl's is bounded by latch windows the
@@ -102,8 +101,95 @@ minutes**. That is far tighter than Regatta's 6.0× residual, and the reason gen
 engagement a hull spends with its weapon on a rival) is an **estimate, not a measurement**. It is
 the one term no static read can supply, and it is where the model is weakest; each value carries
 its reasoning in the source so a playtest can correct it by argument. **Time reaches nothing on
-the Urchin, the Rhino or the Squirrel**, so those three get no handicap row — the residual is
-structural, reported rather than faked.
+the Urchin or the Squirrel**, so those two get no handicap row — the residual is structural,
+reported rather than faked. *(An earlier version of this line named the Rhino too and was simply
+wrong — see "What the first playtest changed" below.)*
+
+The model's **minutes are a floor, not a prediction**, and the first playtest is what established
+that. Its points/min is a rate against a victim you are **already engaged with**; it does not
+model the time a brawl spends searching and repositioning between engagements, which is exactly
+what the connect fraction was meant to absorb and evidently does not absorb enough of. So the
+generator's duration assert is a **ceiling only** — *if even at full engagement a hull cannot
+reach the target, the target is unreachable* — and the two-sided 3.6–4.8 minute claim this
+document used to make is withdrawn rather than restated at new numbers.
+
+## What the first playtest changed
+
+Three corrections, and the third is the one worth carrying past this mode.
+
+**1. The target scales with team size.** It was a flat 600 and is now **100 per pilot**, resolved
+as `perPilot × (1 + 0.6 × (teamSize − 1))` → **100 / 160 / 220 / 280** for a 1 / 2 / 3 / 4 pilot
+team, in `EndConditionOverridesSO.GetBroadsidePointTarget`. The reason is the latch: it admits one
+hit per *(shooter, victim, class)* window, so two pilots working the same victim **both** score
+and a second pilot roughly doubles a domain's rate — a flat total would make a 4v4 about a quarter
+the length of a 1v1. The fraction is deliberately **below 1** so a fuller side still finishes
+sooner; filling your team is a real advantage rather than a flat trade. It is resolved on the
+**server** and replicated by `CombatPointTurnMonitorBase`'s existing NetworkVariable, so a client
+that has not finished building its roster cannot compute a different target — *it never computes
+one*. Team size is the **mean** pilots per domain that actually fielded someone, because the
+target is one number every domain races to: a lopsided 2v1 would otherwise either hand the pair a
+free win or ask the lone pilot for a total they cannot reach.
+
+Re-targeting also produced the **eighth** outing of the comeback trap this family records
+(`bonusLevels = deficit × rate`): at 600 the rate 0.02 bought ~3 element levels at a
+quarter-of-target deficit, and at 100 it silently became **half a level**. It is now **0.12**,
+sized against the *solo* target — the smallest the team-size rule can produce — so a fuller lobby
+only ever buys more.
+
+**2. The AI draws a random hull from the card.** `PickAIVesselType` read the mode's roster through
+`gameList`, a per-scene `[SerializeField]` that **MinigameBroadside, MinigameRegatta and
+MinigameDogFight all leave null** — so the lookup fell straight through to a hardcoded
+`VesselClassType.Sparrow` and both **arena** cards, whose whole premise is a mixed grid, fielded
+eight identical hulls. It now reads `GameDataSO.AllowedVesselClasses`, which
+`SyncFromArcadeGame` publishes at launch and `ResetRuntimeData()` deliberately does not clear, so
+it survives the scene load and is already the authority every other server-side spawn check uses.
+Hulls with no prefab are skipped rather than drawn-and-failed, so a roster may name a planned hull
+without breaking the backfill. General rule: **a per-scene serialized reference is a per-scene
+chance to forget** — when the same fact is already published on a shared runtime object, read it
+there.
+
+**3. The sword now requires being FASTER than its victim, and the Rhino got its Time slot.** This
+is the correction the playtest was actually about — *"I played rhino and was not charging full
+speed and straight to be a crazy fast and scary menace like he should have"* — and it had two
+independent causes, one in the mode and one in the vessel.
+
+The mode's half: `VesselCombatHitBySword` shipped `requireFasterThanVictim: 0`, on the reasoning
+that *a sword connects on its own terms*. What that actually bought was a card paying the Rhino to
+**park** — holding the blade alongside a rival paid 8 points every 1.4 s for nothing but
+station-keeping, while charging paid 8 points and left you 1200 units away. The mode was rewarding
+the exact opposite of the hull's identity. It is now `1`, the Squirrel joust's own rule. Requiring
+speed does not make the Rhino fast; it makes being fast the only way it scores.
+
+The vessel's half: **`RampBoostActionExecutor` has always read `Multiplier(Element.Time)`** and
+scaled `accelerationPerSecond` by it — and `ElementalAbilityMaps/Rhino.asset`'s Time entry was an
+`(open design slot)` authored `1.0 / 1.0`. **The hook was live and the asset behind it was flat**,
+which is why three separate documents (this one, CLAUDE.md, and the balance model) recorded "Time
+reaches nothing on the Rhino" as a measurement. It is now a real ability, **Ramp Spool** (2.5 /
+0.5), and Broadside's card starts the Rhino at **+0.6**. This is a fleet change and was accepted
+as one: Headlong's Rhino spools faster too. There is deliberately **no L5 upgrade** — the slot is
+filled, not designed.
+
+> **A capability that is live in code and flat in data reads exactly like a capability that does
+> not exist**, and it will be written down as one. The Rhino's ramp took 5.2 s to climb from
+> ~60 u/s cruise to ~1210 against a 300/s bleed — which a brawl's short straights simply do not
+> contain — so at Time rest the hull was *structurally* never fast. Before recording "element X
+> reaches nothing on hull Y", check the executor, not the map.
+
+The model converts that endpoint honestly: Time is the ramp's **wind-up rate**, not its ceiling
+(`maxBoostMultiplier` stays 24), so `rhino_speed_multiplier` integrates
+`min(top, cruise + a·t)` over a 2-second brawl straight and takes the ratio of the means — **2.18×
+at full**, not the 2.5× the acceleration row reads, and it **saturates** once the hull tops out
+inside the straight. Feeding the raw acceleration ratio in overpays the hull badly.
+
+That in turn exposed the level picker as a **coin toss with two faces**: it sorted the hulls around
+the median and handed the lower half +1 and the upper half −0.5, so the moment the Rhino gained a
+real endpoint it flipped from slowest scorer straight past every other hull to fastest, because
++1 was the only thing the bucket had to offer. `solve_levels` now moves each hull to the level
+whose tuned rate is nearest the **anchor** — the median rate of the hulls Time *cannot* reach,
+which is the part of the roster no handicap can move and therefore the only honest thing to
+converge on. The Rhino lands on **+0.6**, just above the **playability floor** of +0.5 that
+`TIME_FLOOR` pins: its Time level is answering a playability question, not a scoring one, so the
+balance pass is allowed to raise it and never to spend it.
 
 ## The drain follows the price — a fleet-wide correction
 
