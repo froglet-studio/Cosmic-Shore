@@ -182,7 +182,7 @@ Arena screen modal is a duplicate of the arcade one with its explore view pointe
 |---|---|---|
 | `OrganicRematchGames` | the INJECTED `SO_GameList` — `ArcadeConfigSyncManager.FindGameByMode`, `QuickPlayButton`, the AI vessel pick, leaderboards, loadouts | **every** card, arcade and arena alike |
 | `ArcadeGames` | the Arcade grid's `rosterOverride` | the master minus the arena cards |
-| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush |
+| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush, Regatta |
 
 The master list is deliberately still the union: a guest resolves the card the host opened **by
 mode** through the injected list, so a card removed from it would open on the host and never on
@@ -220,8 +220,8 @@ it is the first entry in the one `ArcadeGameConfigureModal`'s `launchPanels` (fi
 and the arcade panel accepts every non-Maelstrom card). `ArenaLaunchPanel.Handles` answers for
 the cards in `ArenaGames`, so a card moved between the rosters changes windows with no code.
 
-The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (the card's
-own unlocked `Vessels`), writes the pick through the existing `SetSelectedShipInternal` (so the
+The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (EVERY hull
+the card lists — §3.3), writes the pick through the existing `SetSelectedShipInternal` (so the
 local player's `NetDefaultVesselType` carries it), and gates Start through
 `RefreshStartAvailability` — the ONE place Start's availability is decided, shared with the
 weekly-challenge lock so the two can never disagree. The confirmation is **per session**: armed
@@ -231,6 +231,87 @@ press itself, because a disabled button is never the whole gate.
 
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
+
+### 3.3 What the carousel offers: the card's list, never the Hangar's lock
+
+**A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
+(`SO_Vessel.IsLocked`) gates the Hangar.** The first cut of the carousel filtered the card's list
+by that lock — copied from the legacy `ArcadeLoadoutView` — and it shipped: six of the eight class
+assets are authored `isLocked: 1` (only the Squirrel is `ownedFromStart`; the Scarab's asset
+happens to carry `isLocked: 0`), the commerce surfaces are de-scoped for this window, and the
+unlocks a cloud save grants are mirrored onto the assets only for hulls the player bought with
+crystals — so on a fresh account every arena carousel held exactly **Squirrel and Scarab**, and
+the Regatta, a card that lists all eight hulls, offered two. Reported as *"the vessel select was
+only allowing me to pick the squirrel and another vessel that looked kinda like the sparrow image,
+but it was the scarab"* (the second half is §3.4).
+
+Two facts make dropping the filter the right shape rather than a workaround:
+
+- **The arcade already ignores the lock.** An arcade card pins one hull, and
+  `ArcadeGameConfigureModal.ResolveModeVessel` hands the pilot that hull whether or not they own it
+  — a player who owns only the Squirrel flies a Dolphin on Rampage. Honouring the lock in the arena
+  therefore made the SAME hull flyable on one card and hidden on the next, which is not a
+  progression system, it is an inconsistency wearing one's clothes.
+- **The list is already the gate.** A hull the card should not admit is a hull the card does not
+  list; `ArenaRosterTests` holds that every listed hull exists and carries its icons, and the
+  `/arenagame` skill holds that every listed hull has had its kit read.
+
+What the lock still gates is unchanged: the Hangar's own views, the freestyle vessel-selection
+panel, and the legacy loadout view all read `IsLocked` as before. The carousel's other rules are
+untouched — the default pick, the per-session confirmation, Start dead until confirmed.
+
+### 3.4 The Scarab's icon was the Sparrow's
+
+`SO_Class_Scarab.IconActive` pointed at the codex's `tool_vessel-changer__scarab.png`, and that
+file is **byte-identical** to `tool_vessel-changer__sparrow.png`. Every asset-reading mesh
+harvester — `CodexImageBaker.HarvestModel` and `ToyModelBuilder.TryBuild` (the toybox's mini
+hulls) — sees what the prefab ASSET shows, and the Scarab's asset shows a Sparrow: its hull is
+generated in `ScarabHullBuilder.Awake` and its wrapped Sparrow model's renderers are switched off
+in the same `Awake`, so on the asset the real hull is an empty `MeshFilter` beside a still-enabled
+Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyModelRoot` and
+harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
+runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
+card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
+rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
+runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
+until the script is re-run) in the card family's palette — a stand-in until an artist draws
+one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+hulls, because the two sprites were different assets with the same pixels, which a reference
+check cannot see.
+
+### 3.5 Second playtest: the CONFIRM button sat on Play, and the Urchin was a white square
+
+Two more defects in the same window, both invisible to every static check that had been run on
+it, both reported off the rendered frame (*"the urchin's card icon isn't correct, and there is a
+strange button that sits over the play button in the arena card. it goes away when clicked"*).
+
+**The SELECT VESSEL button was a CLONE of the Play button that never got moved.** Same parent
+(`ConfigurationDetailView`), same anchors (0.690..0.998 × 0.056..0.156), same pivot, same
+(0, −22) offset — with the CONFIRM plate in place of START GAME. So it sat exactly on Play, and
+because `ArenaLaunchPanel.ShowVessel` hides it the moment the pilot confirms, what the pilot saw
+was a button over Play that vanished when pressed. The code was right; the rect was a copy. It
+now lives INSIDE the carousel (`ControlsDescription/Content`, beside `VesselIcon` and the two
+arrows), centred under the icon at the plate's native 272×72 — the fixed-pixel idiom the arrows
+already use, and the resolution rule §5.3 records (a 272×72 plate stretched to 326×92 upscales on
+every display). `Tools/Build/author_arena_launch_panel_layout.py` (`--check`) authors it and
+PROVES the picker's button and Play are disjoint by solving both rects against the canvas's
+reference resolution — a clone-and-forget cannot pass it again. General rule: **a widget cloned
+from a sibling inherits that sibling's PLACE, and a cloned rect is a fact about the donor, not a
+decision about the copy.**
+
+**The Urchin's `IconActive` / `IconInactive` pointed at two sprite guids no `.meta` in the tree
+owns** — art deleted before this clone's history begins, class asset never re-pointed. A
+`UnityEngine.UI.Image` whose sprite is missing draws a SOLID WHITE QUAD in its tint (the
+`Pip.prefab` frame trap in CLAUDE.md's anti-patterns, in a second costume), so the carousel showed
+a white square and called it the Urchin. The Urchin's real card art was in the tree the whole
+time (`CardImages/Urchin_Square.png`, which the class's `CardSilohoutteActive` already used — the
+same file shape the Dolphin uses for ITS `IconActive`); it had no inactive sibling, so
+`Tools/Build/author_urchin_card_icons.py` (`--check`) derives `Urchin_Inactive.png` with the card
+family's greyed look and re-points the class asset. `Tools/Build/check_vessel_class_icons.py`
+(`--self-test`) is the general gate: every `SO_Class_*.asset`'s two icons must resolve to an
+owned guid, because a dangling sprite reference fails as a white rectangle and never as an
+error. `ArenaRosterTests` already asserted the icons non-null — in the editor, where a missing
+sprite loads as null, so it would have caught this the first time the suite ran on this card.
 
 ## 4. The Toy Box drives the LIVE toys
 

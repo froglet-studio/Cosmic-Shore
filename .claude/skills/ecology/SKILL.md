@@ -15,6 +15,10 @@ this protocol exists to prevent that. Follow it exactly.
   contract (§4)**, the platform-wiring plan (§5), the phased roadmap (§6), the orchestration (§7).
 - `Docs/ECOSYSTEM.md` — the mechanics log (how the current system actually works).
 
+**If the change is about ONE CREATURE** — adding or reviving a species, how it moves,
+where its heart sits, its body prisms, its config wiring — **load `/fauna` as well**.
+This skill owns the system; that one owns the animal.
+
 ## 2. Restate before you edit (this kills the #1 source of rework)
 In one or two lines, state which invariants the change touches and confirm it violates **none**:
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·

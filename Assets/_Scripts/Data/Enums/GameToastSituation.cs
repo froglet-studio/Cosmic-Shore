@@ -100,6 +100,25 @@ namespace CosmicShore.Data
         // telling what flying into things does.
         BloomrushStingHint = 91,
 
+        // Wrecking Ball. Lead: {0} = leading domain, {1} = its prisms destroyed, {2} = target.
+        // The two hints take no args.
+        WreckingBallLeadChanged = 92,   // the lead changes hands past the first milestone
+        WreckingBallForgeHint = 93,     // idle hint: fly through a bright crystal to forge a ball
+        WreckingBallDashHint = 94,      // idle hint: flick the right stick beside the forest
+
+        // Undertow. {0} = leading domain, {1} = that domain's points, {2} = point target. The
+        // hint takes no args.
+        UndertowQuarter = 95,           // the leading domain is a quarter of the way to the target
+        UndertowHalf = 96,              // the leading domain is halfway
+        UndertowLeadChanged = 97,       // the lead changes hands after a milestone
+        UndertowDashHint = 98,          // idle hint: dash beside a rival to catch them in the plate
+
+        // Regatta. Two idle hints, no args: the mode's whole tutorial is "the rail in your
+        // colour is your speed" and which verb your hull uses on it. 110+ because the lobby
+        // block below took 100 and the per-mode blocks under it are full.
+        RegattaRailHint = 110,          // idle hint: the rail in your colour is the racing line
+        RegattaLaneHint = 111,          // idle hint: ride it, skim it, or fly beside it - by hull
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

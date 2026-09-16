@@ -933,6 +933,25 @@ Code: `AOECylindricalExplosion.mirrorAboutStartPlane` (+ `MirrorsAboutStartPlane
 
 ---
 
+### 3.10 AUTOPILOT can dash (SHIPPED 2026-09-14, with Wrecking Ball and Undertow)
+
+The juke is stick-driven and `Update` returns before the gesture logic for an autopilot vessel, so
+an AI Scarab could never dash and never fire the plate — in a mode whose weapon is the plate, an
+all-AI domain would be an opponent that cannot play (the Tollway rule).
+`ScarabJukeController.TryAutopilotDash(worldShove)` runs a **committed** dash through the same
+`Fire` path a human's perimeter push runs (steal window, roll, `OnJukeFired` → the plate), gated to
+the SIMULATING machine (an AI is server-owned; a spawned non-server peer refuses) and refused while
+the juke is spent or a roll is live, so an AI can never fire faster than a human. Returns whether
+it fired, so a caller paces off the answer. Modes call it from their `SetExternalTargetProvider`
+closure on a slow sample clock. Nothing changes for a human pilot.
+
+**And the plate now SCORES and KILLS THROUGH A HEART, platform-wide** (Undertow's platform change):
+`ScarabCavitationExplosionImpactorDataContainer` carries a Debuff-class
+`VesselCombatHitByExplosionEffectSO` (`requireDebuffableVictim`, so the score follows the drain)
+and an `ExplosionWitherLifeformByCrystalEffectSO` (fauna only, own-domain not spared), beside the
+debuff and the ball forge it always had. Counted everywhere, paid only by Undertow's rule.
+Record: `Arcade/UNDERTOW.md`.
+
 ## 4. The ball
 
 This is the largest departure from the shipped mode, and it is worth stating plainly: **today
@@ -1236,6 +1255,18 @@ That is `Docs/ECOSYSTEM.md §25` running in reverse. The recorded trap is that a
 Cell-owned visual **inherits semantics it did not want** with the geometry; this is the mirror —
 ask a semantic accessor a geometric question and you **lose the geometry along with the
 semantics**, silently, because zero is a perfectly plausible-looking radius.
+
+### 4.1d The ball SCORES for its pilot (SHIPPED 2026-09-14, with Wrecking Ball)
+
+The prism scan above named **"Astro League"** as the attacker of every prism a ball ate — a name on
+no roster, so nothing a ball ever ate scored for anyone. `AstroLeagueBall` now carries
+`n_PilotName` (server-written, replicated, mirrored into a managed string per change): stamped
+with the **forger** at the forge (`ScarabBallForge.Request` → `RecordPilotServer`), re-stamped by
+every **vessel strike** (`RecordTouchServer`), left alone by a **blast** (so a plate that shoves
+your ball does not launder its credit), cleared at the Astro League **kickoff**. Replicated because
+the scan runs on every peer and environment mass is credited by the machine that simulates the
+attacker (`StatsManager.OwnsAttacker`). `PilotName` falls back to the old string for a ball
+nobody has claimed. Record: `Arcade/WRECKING_BALL.md`.
 
 ### 4.2 Permanent team colour
 

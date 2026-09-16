@@ -106,7 +106,13 @@ namespace CosmicShore.Gameplay
             if (ForgeGate != null && !ForgeGate(status)) return null;
 
             var ball = Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
-            if (ball != null) OnForged?.Invoke(ball, status);
+            if (ball == null) return null;
+
+            // The ball SCORES for its maker until somebody else bats it: the mass it eats is
+            // credited to this pilot (AstroLeagueBall.RecordPilotServer), which is what makes a
+            // forged ball a demolition tool and not just a payload. A vessel strike re-stamps.
+            ball.RecordPilotServer(status.PlayerName);
+            OnForged?.Invoke(ball, status);
             return ball;
         }
 
