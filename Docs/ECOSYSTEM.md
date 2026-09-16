@@ -7757,7 +7757,7 @@ would visibly skip mid-stroke.
   *out* of its turns, negate that one serialized field.
 - **`Clawfish` is a separate, deeper problem — see §44.8.**
 
-### 44.8 What this found in the Clawfish, and did not fix
+### 44.8 What this found in the Clawfish (FIXED in §45)
 
 `Clawfish` is a LIVE species (four `Clawfish Fauna *` configs plus a Codex entry) and it
 is in a rotted state that this pass deliberately did not paper over:
@@ -7774,7 +7774,8 @@ is in a rotted state that this pass deliberately did not paper over:
 - **Its body is a raw `ClawfishTest.fbx` instance**, not a Spindle, so it gets no sway
   from §44.4 and could not without being re-authored.
 
-What WAS fixed on it is the one defect it shares verbatim with the QuadFish (§44.9).
+At the time of writing only the one defect it shares verbatim with the QuadFish
+(§44.9) was fixed. **The rest is fixed in §45**, which also found three more.
 
 ### 44.9 The authored swim animation that never once played
 
@@ -7791,3 +7792,164 @@ dangling-reference set unchanged against `HEAD`). **`QuadFishSwim.anim` is KEPT*
 hand-keyed authoring, and the salvage-before-delete gate applies; it is simply no longer
 referenced. The general rule: **a legacy `Animation` component with a non-legacy clip is
 a feature that has never run, and it looks exactly like a feature that works.**
+
+
+## 45. The Clawfish was never alive — a shipped species with no behaviour (Sep 2026)
+
+§44.8 recorded the Clawfish's state and deliberately did not paper over it. This is the
+pass that fixed it. The interesting part is not any one defect; it is that **five
+independent things were wrong and every one of them was invisible from where you would
+look for it**, on a species that has a prefab, four element configs, a Codex page, a
+baked portrait and a station on the Lifeform Matrix bench — every outward sign of a
+finished creature.
+
+Provenance, since it is the first question anyone asks: the Clawfish was added by
+**Angelo Funaro** on **2024-10-10** (`f28b5076`, *"Added clawfish + created animated
+texture for lifeforms + added png assets for use in shaders"*), with a follow-up the next
+day (`03b8583f`, *"Slight pulse to creature shader/material"*). **The local clone cannot
+answer that question** — it is shallow, and `git log` on every Clawfish asset returns one
+commit about a menu button, which is one of the clone's **45 graft boundaries** rather
+than an authoring commit. `Docs/THIRD_PARTY_REGISTER.md` records the same trap. Check
+`.git/shallow` before reporting a `git log` result as authorship.
+
+### 45.1 The five defects
+
+| # | defect | why nothing could see it |
+|---|---|---|
+| 1 | **No behaviour.** Root script was `QuadFish.cs`, an EMPTY `Fauna` subclass. `Fauna`'s base has no movement, so it spawned and sat there. | The component was present, enabled and named after a fish. An empty class looks exactly like a full one in the inspector. |
+| 2 | **`cellData` was a DANGLING guid** (`16d80244…`, owned by no `.meta` in the project). Every other living flora and fauna prefab points at `Runtime Cell Data.asset`. | A dangling object reference deserializes to `None` and renders as an empty slot, which is indistinguishable from a slot nobody filled in yet. |
+| 3 | **Eight ORPHAN serialized keys**, residue of a class layout that no longer exists (§39 is the same disease). | Unity never prunes an unresolvable key. It stays in the YAML forever and reads as real wiring. |
+| 4 | **Its heart was buried 5.2 units inside its own head** — seat `z −4.07` in a body spanning `z [−17.64, −0.28]`, violating §23.9 outright. | The two numbers live in three files and two unit conventions: the seat is a `m_Modifications` row, the body is an FBX's vertices, and that FBX declares `UnitScaleFactor 1` so it lands at **1/100** of its raw numbers. Nothing compared them. |
+| 5 | **The Codex advertised behaviour it did not have** — `CodexHarvester.BehaviourModel` carried a hand-written row, `"QuadFish" => "Swimmer — steers to a goal on its own"`, for a class that steers nowhere. | The encyclopedia is generated, so the sentence *looked* harvested. It was: the harvester harvested a prose row keyed on a type name, and the type name was the only true part. |
+
+### 45.2 What it now is
+
+`Clawfish.prefab`'s `m_Script` is re-pointed to **`LightFauna`** — the same repair commit
+`11f82f2e` made to the QuadFish, whose title says the whole story: *"give the QuadFish its
+LightFaunaDataSO"*. **The MonoBehaviour's `fileID` is unchanged (`369859875180954115`)**,
+which is the point of doing it as a guid swap rather than a component replace: all four
+`Clawfish Fauna *` configs address the prefab through that fileID, and the Codex addresses
+the GameObject through another, so nothing downstream had to move. `cellData` now points at
+`Runtime Cell Data.asset`, the eight orphans are gone, the six fields `LightFauna` actually
+declares are present, and a new `ClawfishFaunaDataSO` carries its swim tuning (derived from
+`QuadFishFaunaDataSO` and tightened for a body a third the size — 60/24/36 detection /
+separation / consume, 18–32 u/s, `rotationLerpSpeed` 7). `QuadFish.cs` is **deleted**: its
+only user in the project was the Clawfish, so the class's whole existence was a
+misassignment.
+
+### 45.3 The heart seat, and the gate it now has
+
+`Docs/ECOSYSTEM.md §23.9` says a heart *"is seated at the FRONT of its member's own prisms
+with the body trailing (the tadpole arrangement …), never buried inside them."* That rule
+had **no gate**, and the Clawfish had violated it since 2024.
+
+Measured from the shipped assets — the body out of `ClawfishTest.fbx`, the poses out of the
+prefab's two nested-instance blocks, the heart's size out of `spacecrystalanim.fbx` and the
+crystal prefab's own child scale:
+
+```
+body      z [−17.644, −0.279]   nose at −0.279   cross-section x ±2.82  y ±4.26
+heart     z −4.07 → 1.32
+  authored (prefab view)          half-extent 1.415   rear face −0.095   GAP +0.184   clear
+  runtime  (HeartWorldScale 1.384) half-extent 1.451   rear face −0.131   GAP +0.148   clear
+  the OLD seat buried it 5.206 units inside the body
+```
+
+Which end is the nose is not a guess: `LightFauna` steers with `LookRotation`, so a creature
+travels along **+z**, and the body's own silhouette agrees — the `+z` end is a dense,
+spiked, solid mass (the claws) and the `−z` end tapers away.
+
+**A heart has TWO sizes and a seat must clear both.** The prefab's authored `localScale` is
+what the prefab view shows; the runtime size is whatever `LifeFormCrystal.ApplyHeartSize`
+forces from the config's `HeartWorldScale` (§40). They are close here (1.35 vs 1.384) and
+they are not the same number — and here the **runtime** one is the larger, so a seat proven
+only against the prefab view would have been proven in the one place nobody plays.
+
+`Tools/Build/verify_fauna_heart_seat.py` is the gate. It **carries a negative control** —
+the pre-fix seat, asserted to FAIL — because a clearance test that has only ever been
+watched to pass is not evidence it can tell a clip from a clear. It names what it does
+**not** cover rather than guessing: Shark and Brittlestar assemble their bodies from
+`HealthPrism` children, the WormColony's body is its members, and the QuadFish's heart sits
+at its ORIGIN inside a body 3.7× its own width — centred, symmetric, and play-tested that
+way, so it was left alone.
+
+### 45.3a A sixth defect, found BY the fix: the heart's size was a function of the heart's seat
+
+Moving the seat made `author_lifeform_heart_sizes.py --check` fail — *"smallest heart 0.859
+is under HEART_MIN 1.0"*. That was not a symptom of the move; the move **exposed** it.
+
+`_measure_reach` walks a prefab's transform tree and recurses into a nested instance's
+**source prefab**, and the guard was `if src.suffix.lower() == ".prefab"`. A nested **FBX
+model** instance is neither a `.prefab` to recurse into nor a `!u!33 MeshFilter` document
+the same-file mesh scan can see, so **it contributed nothing at all** — its whole body
+counted as one unit. The tool's own docstring names the Clawfish as the case it handles
+(*"the Clawfish's entire model are nested instances, so a walk that ignores them measures
+those two species at a seventh of their real size"*), and it did not.
+
+So on the Clawfish the "body diameter" was measured from the only other thing it carried —
+**its own crystal**. `heart = K · bodyDiameter^0.5`, so the heart's SIZE was a function of
+where the heart SAT: seat −4.07 → body 12.4 → heart 1.16; seat +1.28 → body 6.8 → heart
+0.86. **A pure placement fix moved a reward number.** That is circular, and it is the kind
+of loop that is invisible from either end — the seat is a prefab row, the size is an
+authored config field, and nothing in between says they touch.
+
+Fixed by measuring a nested `.fbx` source's own mesh extent (normalised by its
+`UnitScaleFactor`, §45.5). Two species nest their body that way and only one moves:
+
+| species | before | after |
+|---|---|---|
+| Clawfish   | body 12.4 → heart 1.16 | **body 17.6 → heart 1.384** |
+| Brittlestar | body 65.5 → heart 2.67 | 65.5 → 2.67 (its `HealthPrism` children already reached further than its body mesh, so the mesh was never the binding term) |
+
+Everything else in the band is byte-identical, and `K` is unchanged because it is solved
+against the LARGEST lifeform (the Shark, assembled from prisms). The four
+`Clawfish Fauna *` configs were re-authored by the tool, never by hand.
+
+**The loop is now proven broken by measurement**, not by argument: sweeping the seat over
+`z ∈ {1.32, 4.00}` leaves the authored heart at 1.384. (At `z = 8.00` it rises again to
+1.48 — correctly, because a heart hung that far off the snout really does make the creature
+bigger. Every legal seat is far inside that.)
+
+### 45.4 What is still open on it, stated plainly
+
+- **It has ZERO body prisms.** Every other creature in the game carries `HealthPrism`
+  children; `Fauna._bodyPrisms` is `GetComponentsInChildren<HealthPrism>(true)`, which on
+  the Clawfish returns an empty array. So `OnBodyPrismExploded` can never fire and **the
+  Clawfish cannot be killed by shooting it** — it only ever dies to starvation or
+  predation. It also carries no conserved mass in its body and leaves no §26 skeleton.
+  This was NOT fixed here because placing gameplay colliders on a hull by inference is the
+  exact mistake `Docs/VESSEL_CONSTRUCTION.md` records twice over (two passes of Rhino jets
+  landed on a placeholder hull a fifth of the ship's height); it wants an editor session,
+  not a measurement. The recipe is four `HealthBlock.prefab` instances the way the QuadFish
+  carries four, which is 4 extra colliders per live creature against a cap of 6.
+- **It still does not sway.** Its body is a nested `ClawfishTest.fbx` instance wearing
+  `CreatureMaterial` on `CreatureTextureGraph` — a graph used by *nothing else*, so the
+  §44 splice would have a blast radius of exactly this species. Two things stop it being a
+  headless change: without a `Spindle` the graph's `_Phase` is a material constant, so all
+  six live Clawfish would undulate in perfect lockstep (the desync the phase-variant
+  machinery exists to provide); and binding `Spindle.RenderedObject` needs the renderer's
+  fileID *inside* the FBX, which cannot be derived outside Unity.
+
+### 45.5 The rules worth carrying
+
+- **A species can have every outward sign of being finished and still have never run.**
+  Prefab, four configs, a Codex page, a baked portrait, a bench station — the Clawfish had
+  all of it. What it did not have was a single line of code that moves it. When a creature
+  "looks stiff", check whether it has any behaviour at all before tuning its animation.
+- **A generated document describing a thing is not evidence the thing exists.** The Codex's
+  Behaviour sentence was real output from a real harvester, and its input was a hand-written
+  prose row keyed on a type name.
+- **`git log` in a shallow clone reports the graft boundary, not the author.** Check
+  `.git/shallow`, and go to the remote when it is non-empty.
+- **Raw FBX extents from two files are not comparable, and the conversion is a cliff**: a
+  file declaring `UnitScaleFactor 100` lands 1:1, one declaring `1` lands at **1/100**. Two
+  of the three meshes in this one fix declare `1`. Normalise before you compare anything.
+- **A rule with no gate is a rule the project has stopped enforcing.** §23.9 had been
+  written down for a month and violated the whole time.
+- **A measurement tool's docstring is a claim, not a test.** The heart-size tool said in
+  prose that it handled the Clawfish's nested model; its code handled `.prefab` sources
+  only. The prose had been right about the HAZARD and wrong about the FIX for as long as
+  both existed.
+- **Fixing one number can move another that has no business depending on it.** Re-run the
+  authoring gates after a placement change, and if one fails, ask whether the change
+  revealed a loop rather than caused one.

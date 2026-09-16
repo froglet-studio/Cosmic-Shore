@@ -396,6 +396,7 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
 
     nodes = {}                         # fileID -> (parent, localPos, localScale)
     nested = {}                        # fileID -> source prefab path
+    nested_fbx = {}                    # fileID -> source MODEL's mesh extent
     for fid, (cls, body) in docs.items():
         if cls != "4":
             continue
@@ -406,8 +407,23 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
     for fid, (parent, pos, scale, guid) in _instance_transforms(text, docs).items():
         nodes[fid] = (parent, pos, scale)
         src = _meta_index().get(guid) if guid else None
-        if src and src.suffix.lower() == ".prefab":
+        if not src:
+            continue
+        if src.suffix.lower() == ".prefab":
             nested[fid] = src
+        elif src.suffix.lower() == ".fbx":
+            # A nested MODEL instance has no MeshFilter document in this file to find
+            # (_node_mesh_extents only sees `!u!33` docs), and it is not a .prefab to
+            # recurse into - so before this branch a creature whose body IS a model
+            # instance contributed NOTHING and its "body" was measured from whatever
+            # else it carried. On the Clawfish that was its own CRYSTAL, making the
+            # heart's SIZE a function of where the heart SITS: moving the seat forward
+            # by 5.35 units (Docs/ECOSYSTEM.md §45.3) shrank the measured body from
+            # 12.4 to 6.8 and the authored heart from 1.16 to 0.86, which is circular.
+            # Two species nest their body this way - Clawfish and Brittlestar.
+            ext = _fbx_mesh_extent(src)
+            if ext:
+                nested_fbx[fid] = ext
 
     if not nodes:
         return 0.0
@@ -440,6 +456,8 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
             if fid in nested:
                 # The instance's whole source body, scaled by the pose it is placed at.
                 own = max(own, 2.0 * _measure_reach(nested[fid], True, seen) * biggest)
+            if fid in nested_fbx:
+                own = max(own, nested_fbx[fid] * biggest)
             reach = max(reach, math.dist(wpos, (0.0, 0.0, 0.0)) + 0.5 * own)
 
         for c in children.get(fid, ()):

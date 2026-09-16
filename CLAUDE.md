@@ -655,6 +655,11 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 
 Meta values: `Any (-1)`, `Random (0)`
 
+**Use the `/fauna` skill for ANY work on a CREATURE** — adding or reviving a species, how one
+moves, where its heart sits, its body prisms, its config wiring. It loads the per-creature
+anatomy contract on top of `/ecology`'s system invariants (`Docs/ECOSYSTEM.md` §45 is the worked
+example of a species that looked finished and had never run).
+
 **Use the `/arcadegame` skill for ANY new game mode** (the recipe, the shared generator library
 `Tools/Build/arcade_mode_lib.py`, the eleven registrations, the gates), **the `/arenagame` skill on
 top of it for ANY card that seats SEVERAL hulls** (the Arena roster, the fleet facts table, the
