@@ -15,8 +15,20 @@ freely.)
 
 It mirrors the shipped HLSL exactly — the Hoskins hashes, the normalized projection,
 the value-noise jag — and reads every constant out of the HLSL, so it cannot drift
-from the file it tunes. Samples the uniform UV square, which is exactly what renders:
-every cube face maps to UV [0,1].
+from the file it tunes.
+
+IT SAMPLES THE CANONICAL FACE TRIANGLE, NOT THE UV SQUARE, and that correction matters
+(2026-09-16). This used to sample the uniform square "which is exactly what renders" —
+it is not. Every debris mesh in the game is a TRIANGLE FAN: the shipped
+`Assets/_Models/Testing/Prism.asset` is 24 wedges, and both shield meshes are 8 and 24
+triangles, and all of them now carry the same canonical UV triangle (0,0) (1,0) (0.5,1).
+A triangle is HALF the square's area and is not centrally symmetric, so `w01` — while it
+was normalized against the SQUARE's support — never reached both ends, and the thresholds
+bunched into the middle of the fade. Measured on the shipped cube BEFORE that pass: the
+wipe occupied only 62% of the fade (38% at worst), starting 15% late and finishing a
+third early, against a design that says every fragment is gone by END_MARGIN. The shader
+now normalizes against the TRIANGLE's own support and this mirrors it, so the fitted
+quantity is the one that renders.
 
 Pure Python, no numpy. Prints the fitted LO/HI and both errors; pass --bake to write
 them into the HLSL (anchored, count-asserted).
@@ -63,14 +75,26 @@ def hash13(p):
 def raw_samples(wiggle, wiggle_freq, n):
     rng = random.Random(20260811)
     out = []
+    # The canonical face triangle in CENTRED UV, i.e. (0,0) (1,0) (0.5,1) mapped through
+    # `uv * 2 - 1`. This is what every debris mesh renders — see the module docstring.
+    A, B, C = (-1.0, -1.0), (1.0, -1.0), (0.0, 1.0)
     for _ in range(n):
-        uv = (rng.random() * 2.0 - 1.0, rng.random() * 2.0 - 1.0)
+        r1, r2 = rng.random(), rng.random()
+        if r1 + r2 > 1.0:            # fold: uniform BY AREA over the triangle
+            r1, r2 = 1.0 - r1, 1.0 - r2
+        uv = (A[0] + (B[0] - A[0]) * r1 + (C[0] - A[0]) * r2,
+              A[1] + (B[1] - A[1]) * r1 + (C[1] - A[1]) * r2)
+        # Stands for the shader's `Velocity + Tangent * 17` — per prism AND per piece.
         ent = [rng.uniform(-20.0, 20.0) for _ in range(3)]
         e = hash33(ent)
         h = hash33([e[0] * 64.0 + 17.0, e[1] * 64.0 + 17.0, e[2] * 64.0 + 17.0])
         ang = 6.28318530718 * h[0]
         dx, dy = math.cos(ang), math.sin(ang)
-        w01 = (uv[0] * dx + uv[1] * dy) / (abs(dx) + abs(dy)) * 0.5 + 0.5
+        # Support of the canonical face triangle along (dx, dy) — mirrors the shipped
+        # normalizer exactly (see "the wipe coordinate" in PrismOcclusionCorridor.hlsl).
+        s0, s1, s2 = -dx - dy, dx - dy, dy
+        s_lo, s_hi = min(s0, s1, s2), max(s0, s1, s2)
+        w01 = ((uv[0] * dx + uv[1] * dy) - s_lo) / max(s_hi - s_lo, 1e-5)
         c = (uv[0] * -dy + uv[1] * dx) * wiggle_freq + h[2] * 64.0
         ci = math.floor(c)
         cf = c - ci

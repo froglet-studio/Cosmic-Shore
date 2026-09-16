@@ -15,8 +15,21 @@ The splice sits BETWEEN the explosion clock and the occlusion corridor:
   BEFORE:  PrismExplosionClock.Opacity ------------------------> PrismOcclusionFade.BaseAlpha
   AFTER:   PrismExplosionClock.Opacity -> EROSION.BaseOpacity
            UV (channel 0) --------------> EROSION.UV
-           Prop[Velocity] --------------> EROSION.Velocity      (per-prism wipe identity)
+           Tangent Vector (object) -----> EROSION.Tangent       (per-PIECE wipe identity)
+           Prop[Velocity] --------------> EROSION.Velocity      (per-PRISM wipe identity)
            EROSION.Survival (0..1) -----> PrismOcclusionFade.BaseAlpha
+
+THE TANGENT IS THE PIECE (2026-09-16). UV0 says WHERE ON a face a fragment sits and
+nothing about WHICH face: every one of the shipped debris cube's 24 wedges carries the
+bit-identical UV triangle, so one wipe was serving the whole prism in its PRE-explosion
+body frame and the pieces all peeled in lockstep after they had hinged apart. The
+object-space tangent IS each wedge's hinge axis (RotateFacesAlongAxis rotates about it),
+is distinct per piece on every debris mesh the game ships, and — unlike the normal — is
+NOT written by this graph's vertex stage, so it cannot crawl. That last property is the
+one a future edit could silently take away, so it is ASSERTED here: an edge into
+VertexDescription.Tangent turns the block from an identity pass-through of the mesh
+attribute into an animated value, and the wipe would start crawling with nothing else
+in the graph changing.
 
 So the erosion owns the FADE (angle-free) while the corridor keeps owning OCCLUSION (a
 view effect by definition); Survival is fractional only in the narrow fringe leading
@@ -43,6 +56,7 @@ import uuid
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPH = "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph"
 UV_DONOR = "Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph"
+TANGENT_DONOR = "Assets/_Graphics/Materials/Graphs/PrismGraphs/Subgraphs/RotateFacesAlongAxis.shadersubgraph"
 
 # GUID of PrismOcclusionCorridor.hlsl (pinned by its committed .meta).
 HLSL_GUID = "bf8e2c1fa76142c89ba03b2e1ae46201"
@@ -56,10 +70,15 @@ CLOCK_FUNCTION = "PrismExplosionClock"
 # output truncates onto it without an adapter node; the function reads .xy.
 CF_SLOTS = [
     (0, "UV", "Vector3", False),
-    (1, "Velocity", "Vector3", False),
-    (2, "BaseOpacity", "Vector1", False),
-    (3, "Survival", "Vector1", True),
+    (1, "Tangent", "Vector3", False),
+    (2, "Velocity", "Vector3", False),
+    (3, "BaseOpacity", "Vector1", False),
+    (4, "Survival", "Vector1", True),
 ]
+# Slot ids of the inputs whose feeder nodes exist ONLY to serve this function, so a
+# migration from an older signature must take them with it (see strip_old_erosion).
+EROSION_BASEOPACITY_SLOT = 3
+EROSION_SURVIVAL_SLOT = 4
 
 
 def load_docs(path):
@@ -195,29 +214,56 @@ def validate(docs, expect_wired):
     clock = cf_by_function(idx, graph, CLOCK_FUNCTION)
     assert corridor is not None and clock is not None, "corridor / explosion clock node missing"
 
-    src = sources.get((erosion["m_ObjectId"], 2))
+    src = sources.get((erosion["m_ObjectId"], EROSION_BASEOPACITY_SLOT))
     assert src is not None, "erosion BaseOpacity unconnected"
     assert src[0] == clock["m_ObjectId"] and src[1] == node_output_slot(idx, clock, "Opacity"), \
         "erosion BaseOpacity is not fed by the clock's Opacity output"
 
     vel = property_node(idx, graph, "Velocity")
     assert vel is not None, "Velocity property node missing"
-    assert sources.get((erosion["m_ObjectId"], 1)) == (vel["m_ObjectId"], node_output_slot(idx, vel)), \
+    assert sources.get((erosion["m_ObjectId"], 2)) == (vel["m_ObjectId"], node_output_slot(idx, vel)), \
         "erosion Velocity is not fed by Prop[Velocity]"
 
     uv_src = sources.get((erosion["m_ObjectId"], 0))
     assert uv_src is not None, "erosion UV unconnected"
     uv_node = idx[uv_src[0]]
     assert uv_node.get("m_Type", "").endswith("UVNode"), "erosion UV is not fed by a UV node"
+    assert uv_node.get("m_OutputChannel", 0) == 0, \
+        "erosion UV must read channel 0 — channel 1 is the face-centroid feed"
+
+    tan_src = sources.get((erosion["m_ObjectId"], 1))
+    assert tan_src is not None, "erosion Tangent unconnected"
+    tan_node = idx[tan_src[0]]
+    assert tan_node.get("m_Type", "").endswith("TangentVectorNode"), \
+        "erosion Tangent is not fed by a Tangent Vector node"
+    assert tan_node.get("m_Space") == 0, \
+        "erosion Tangent must be OBJECT space — a world-space tangent turns with the prism"
+
+    # THE GUARD (see the module docstring). The tangent is a stable per-PIECE identity
+    # only while this graph leaves VertexDescription.Tangent unconnected, which makes the
+    # block an identity pass-through of the mesh attribute. Wire it and the fragment's
+    # tangent becomes animated, the hashed wipe direction becomes a function of time, and
+    # the erosion crawls — with nothing else in the graph looking different.
+    for ref in graph["m_Nodes"]:
+        block = idx[ref["m_Id"]]
+        if not block.get("m_Type", "").endswith("BlockNode"):
+            continue
+        if block.get("m_Name") != "VertexDescription.Tangent":
+            continue
+        for bs in block.get("m_Slots", []):
+            assert (block["m_ObjectId"], idx[bs["m_Id"]]["m_Id"]) not in sources, \
+                "VertexDescription.Tangent is wired — that animates the erosion's per-piece " \
+                "anchor and the wipe will crawl; use a different identity or re-anchor"
 
     assert sources.get((corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT)) == \
-        (erosion["m_ObjectId"], 3), "corridor BaseAlpha is not fed by erosion Survival"
+        (erosion["m_ObjectId"], EROSION_SURVIVAL_SLOT), \
+        "corridor BaseAlpha is not fed by erosion Survival"
 
 
 def strip_old_erosion(docs, graph, idx):
-    """Remove a previous-signature erosion node, its slots, its Position feeder, and
-    every edge touching them; restore the clock -> corridor BaseAlpha edge. Returns
-    the docs list (filtered)."""
+    """Remove a previous-signature erosion node, its slots, every feeder node that
+    existed ONLY to serve it, and every edge touching them; restore the clock ->
+    corridor BaseAlpha edge. Returns the docs list (filtered)."""
     erosion = cf_by_function(idx, graph, FUNCTION_NAME)
     if erosion is None:
         return docs, False
@@ -226,13 +272,25 @@ def strip_old_erosion(docs, graph, idx):
         return docs, False  # already the current shape
 
     doomed_nodes = {erosion["m_ObjectId"]}
-    # Its Object-space Position feeder (old wiring) is orphaned with it.
+    # Feeders that served the erosion and NOTHING else are orphaned with it — the old
+    # Object-space Position node (the pre-2026-08-11 anchoring) and, migrating from the
+    # 4-slot shape, that shape's own UV node. The test is "every outgoing edge of this
+    # node lands on the erosion", never the node's TYPE: the graph's other UV node
+    # (channel 1) feeds the face-centroid consumers and must survive, and guessing by
+    # type is exactly how a shared feeder gets deleted.
+    consumers = {}
     for e in graph["m_Edges"]:
-        if e["m_InputSlot"]["m_Node"]["m_Id"] == erosion["m_ObjectId"]:
-            feeder = idx.get(e["m_OutputSlot"]["m_Node"]["m_Id"])
-            if feeder is not None and feeder.get("m_Type", "").endswith("PositionNode") \
-                    and feeder.get("m_Space") == 0:
-                doomed_nodes.add(feeder["m_ObjectId"])
+        consumers.setdefault(e["m_OutputSlot"]["m_Node"]["m_Id"], set()).add(
+            e["m_InputSlot"]["m_Node"]["m_Id"])
+    for e in graph["m_Edges"]:
+        if e["m_InputSlot"]["m_Node"]["m_Id"] != erosion["m_ObjectId"]:
+            continue
+        fid = e["m_OutputSlot"]["m_Node"]["m_Id"]
+        feeder = idx.get(fid)
+        if feeder is None or feeder.get("m_Type", "").endswith("PropertyNode"):
+            continue  # a property node is shared by construction
+        if consumers.get(fid) == {erosion["m_ObjectId"]}:
+            doomed_nodes.add(fid)
 
     doomed_docs = set(doomed_nodes)
     for nid in doomed_nodes:
@@ -288,7 +346,14 @@ def main():
     uv_docs = load_docs(os.path.join(REPO, UV_DONOR))
     uv_idx = index(uv_docs)
     donor_uv = next(d for d in uv_docs if d.get("m_Type", "").endswith("UVNode"))
+    assert donor_uv.get("m_OutputChannel", 0) == 0, "UV donor is not channel 0"
     donor_uv_slot = uv_idx[donor_uv["m_Slots"][0]["m_Id"]]
+
+    tan_docs = load_docs(os.path.join(REPO, TANGENT_DONOR))
+    tan_idx = index(tan_docs)
+    donor_tan = next(d for d in tan_docs
+                     if d.get("m_Type", "").endswith("TangentVectorNode") and d.get("m_Space") == 0)
+    donor_tan_slot = tan_idx[donor_tan["m_Slots"][0]["m_Id"]]
 
     new_docs = []
 
@@ -299,6 +364,15 @@ def main():
     uv_slot["m_ObjectId"] = uuid.uuid4().hex
     uv_node["m_Slots"] = [{"m_Id": uv_slot["m_ObjectId"]}]
     new_docs += [uv_node, uv_slot]
+
+    tan_node = json.loads(json.dumps(donor_tan))
+    tan_node["m_ObjectId"] = uuid.uuid4().hex
+    tan_node["m_Group"] = {"m_Id": ""}
+    tan_node["m_DrawState"]["m_Position"].update({"x": -1500.0, "y": 2500.0})
+    tan_slot = json.loads(json.dumps(donor_tan_slot))
+    tan_slot["m_ObjectId"] = uuid.uuid4().hex
+    tan_node["m_Slots"] = [{"m_Id": tan_slot["m_ObjectId"]}]
+    new_docs += [tan_node, tan_slot]
 
     er_node = json.loads(json.dumps(corridor))
     er_node["m_ObjectId"] = uuid.uuid4().hex
@@ -314,7 +388,7 @@ def main():
     er_node["m_Slots"] = [{"m_Id": s["m_ObjectId"]} for s in er_slots]
     new_docs += [er_node] + er_slots
 
-    for node in (uv_node, er_node):
+    for node in (uv_node, tan_node, er_node):
         graph["m_Nodes"].append({"m_Id": node["m_ObjectId"]})
 
     # ---- edges: retarget clock -> corridor.BaseAlpha into the erosion ----
@@ -324,7 +398,8 @@ def main():
         if i["m_Node"]["m_Id"] == corridor["m_ObjectId"] and i["m_SlotId"] == CORRIDOR_BASEALPHA_SLOT:
             assert e["m_OutputSlot"]["m_Node"]["m_Id"] == clock["m_ObjectId"], \
                 "corridor BaseAlpha is not fed by the explosion clock — graph shape drifted, refusing"
-            e["m_InputSlot"] = {"m_Node": {"m_Id": er_node["m_ObjectId"]}, "m_SlotId": 2}
+            e["m_InputSlot"] = {"m_Node": {"m_Id": er_node["m_ObjectId"]},
+                                "m_SlotId": EROSION_BASEOPACITY_SLOT}
             retargeted += 1
     assert retargeted == 1, f"expected exactly one BaseAlpha feeder, retargeted {retargeted}"
 
@@ -332,8 +407,10 @@ def main():
     assert vel is not None, "no Velocity property node in the graph"
     graph["m_Edges"] += [
         edge(uv_node["m_ObjectId"], uv_slot["m_Id"], er_node["m_ObjectId"], 0),
-        edge(vel["m_ObjectId"], node_output_slot(idx, vel), er_node["m_ObjectId"], 1),
-        edge(er_node["m_ObjectId"], 3, corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT),
+        edge(tan_node["m_ObjectId"], tan_slot["m_Id"], er_node["m_ObjectId"], 1),
+        edge(vel["m_ObjectId"], node_output_slot(idx, vel), er_node["m_ObjectId"], 2),
+        edge(er_node["m_ObjectId"], EROSION_SURVIVAL_SLOT,
+             corridor["m_ObjectId"], CORRIDOR_BASEALPHA_SLOT),
     ]
 
     docs += new_docs
@@ -342,8 +419,8 @@ def main():
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
     validate(load_docs(path), expect_wired=True)
     print(f"  {os.path.basename(GRAPH)}: wired and validated "
-          f"({'migrated from the position-anchored shape, ' if migrated else ''}"
-          f"+2 nodes, +{len(new_docs) - 2} slots, 3 new edges, 1 retargeted).")
+          f"({'migrated from an older signature, ' if migrated else ''}"
+          f"+3 nodes, +{len(new_docs) - 3} slots, 4 new edges, 1 retargeted).")
     return 0
 
 

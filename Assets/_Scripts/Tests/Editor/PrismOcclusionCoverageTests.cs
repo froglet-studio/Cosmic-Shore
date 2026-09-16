@@ -115,6 +115,17 @@ namespace CosmicShore.Tests
                 $"{graphPath} has no PrismErosionFade Custom Function node — the debris fade has " +
                 "fallen back to the view-anchored corridor dither. " +
                 "Fix: python3 Tools/Shaders/wire_prism_explosion_erosion.py");
+
+            // The PER-PIECE anchor (2026-09-16). UV0 says where on a piece a fragment sits
+            // and nothing about WHICH piece — every one of the debris cube's 24 wedges
+            // carries the identical UV triangle — so without the object-space tangent feed
+            // one wipe serves the whole prism and every piece peels in lockstep in its
+            // pre-explosion body frame. That reads as the dither having been applied before
+            // the explosion, and nothing else fails.
+            Assert.IsTrue(text.Contains("\"UnityEditor.ShaderGraph.TangentVectorNode\""),
+                $"{graphPath} has no Tangent Vector node — PrismErosionFade has lost its " +
+                "per-piece identity and every debris piece will peel alike. " +
+                "Fix: python3 Tools/Shaders/wire_prism_explosion_erosion.py");
         }
 
         [Test]
