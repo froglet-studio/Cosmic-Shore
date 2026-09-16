@@ -80,10 +80,14 @@ aimed with.
 - **The picture is SQUARE** (1:1 render target, camera aspect 1) because the window is round, so
   `ScopeDiscGraphic` samples the unit circle straight onto `[0,1]²` with nothing squashed and
   nothing cropped away.
-- **The clip planes ARE borrowed** from `Camera.main` here — unlike the connecting panel's preview,
-  which derives its own. That preview frames a whole arena from outside and clips out of a borrowed
-  far plane; this camera sits on the vessel looking down the same line the gameplay camera already
-  renders, so its planes are correct for this shot by construction.
+- **It draws the way the GAME'S camera draws**, adopted through `OffscreenCameraSetup` — HDR, the
+  volume layer mask and the post-processing stack. That is not a quality setting here: the world is
+  authored HDR-emissive against the gameplay volume's tonemapper, so a camera on URP's defaults
+  renders a flat, near-black picture. It is what round 5 was about, below.
+- **The clip planes are DERIVED, not borrowed** — near hugs the eye (0.3), far reaches the arena.
+  Borrowing them was the first cut's choice and was wrong for a camera sitting *on* the hull: a
+  near plane sized for a chase camera 250 units back clips away everything this one is close to.
+  Its three sibling windows each derive their own for their own reasons.
 
 **What this retired:** `VesselFirstPersonView` is **deleted**, and `CustomCameraController` no
 longer carries `FirstPerson` / `FirstPersonOffset` or the rigid-attach branch. An unreferenced
@@ -222,7 +226,11 @@ deflection **before** Space 5.
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
 | `_Scripts/UI/View/ScopeDiscGraphic.cs` | **new** (round 4) — the generated circular picture |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
-| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE |
+| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image |
+| `_Scripts/Utility/OffscreenCameraSetup.cs` | **new** (round 5) — the ONE place a runtime off-screen camera adopts the game camera's framing and image. Extracted after the same finding had been written down at three other windows |
+| `_Scripts/Controller/Arcade/Preview/ModePreviewArena.cs` | **+** (round 5) `AdoptGameCameraSettings` routes through the helper |
+| `_Scripts/UI/Elements/ConnectingArenaPreview.cs` | **+** (round 5) `AdoptUrpSettings` routes through the helper |
+| `_Scripts/UI/Elements/ToyPreviewCamera.cs` | **+** (round 5) `EnsureRig`'s URP block routes through the helper |
 | `_Scripts/Controller/Managers/PrismSpatialIndex.cs` | **+** `QueryCone` / `ConeContains` |
 | `_Scripts/UI/View/CloakSeedWallActionSO.cs` | **+** declines while scoped |
 | `_Scripts/UI/Controller/SerpentVesselHUDController.cs` | **+** drives the Charge card's cooldown veil |
@@ -476,6 +484,81 @@ a statement about an ability the player can see, and on a locked card there is n
 `BuildLockedMark`, the lockup's designed placeholder, doing its job. What changed is that the card
 now also says whether the weapon is loaded.
 
+## Round 5 — "I no longer saw the pip"
+
+**One cause, and this codebase had already written it down three times.**
+
+A bare `AddComponent<Camera>()` comes up with **URP's defaults, not the project's** — no
+post-processing, no volume layer mask, SDR. Cosmic Shore's world is authored almost entirely
+HDR-emissive against the gameplay volume's tonemapper, so a camera that skips it renders a flat,
+colourless, near-black version of a world the game shows lit. Round 4's window explicitly set
+`renderPostProcessing = false` and copied no `volumeLayerMask`, on the reasonable-sounding ground
+that a second render of the world should be paid for wherever possible.
+
+**Why it surfaced at round 5 and not at round 2, when the window first appeared:** rounds 2–4
+framed the pilot's own **lit hull**, dead centre, from a chase pose. A bright, high-contrast
+object is unmistakable even rendered wrong — it reads as *low quality*, which nobody reports. The
+inversion pointed the same camera down the nose at **open space**, where the whole picture *is* the
+skybox and the volume, and a flat render of that is a dark circle on a dark screen behind a
+55%-alpha hairline rim. Nothing about the code path changed; the subject did.
+
+**The general rule, which is why this is worth a section:** *a picture that renders WRONG and a
+picture that does not render at all are the same report.* The distinction is available to whoever
+wrote the camera and to nobody looking at the screen, so the failure arrives as "the window is
+gone" and sends you hunting for a layout, a binding, a null, a compile error — everything except
+the image settings, which are the one thing that *looks* like a preference.
+
+**Three prior sites had each rediscovered it, and each wrote it down locally:**
+
+| site | its own words |
+|---|---|
+| `ModePreviewArena.AdoptGameCameraSettings` | *"comes up with URP's DEFAULTS… a flat, aliased, bloom-free version of a world the tap-in phase then showed correctly — which reads as the preview being low quality rather than as two different cameras"* |
+| `ConnectingArenaPreview.AdoptUrpSettings` | *"would render a flat, bloom-free version of a world the game shows lit"* |
+| `ToyPreviewCamera.EnsureRig` | *"POST-PROCESSING IS NOT OPTIONAL: every lifeform and prism material in the game is authored HDR-emissive against the gameplay volume's tonemapper, and drawn without it a creature comes out as a blown-out white silhouette with no colour in it"* |
+
+Three copies of one finding is three chances to not read any of them, and the fourth window paid
+the playtest. It is now **one helper** — `OffscreenCameraSetup` (`_Scripts/Utility/`) — and all
+four sites route through it:
+
+- `AdoptGameCameraFraming(target, excludeUiLayer)` — *what* it sees and clears to. Clip planes are
+  deliberately **not** copied: all four windows frame completely different shots and each records
+  why a borrowed far plane clips its subject away.
+- `AdoptGameCameraImage(target, postProcessing = true, antiAliasing = false, shadows = false)` —
+  *how* it draws. **The defaults are the rule**: shadows and anti-aliasing are the two a small
+  window may honestly decline, and post-processing is not, so a caller that switches the tonemapper
+  off has to say so at the call site. The **load-bearing half lives on
+  `UniversalAdditionalCameraData`**, not on `Camera` — which is the second reason this keeps
+  happening, since the `Camera` fields are the ones whose absence looks obviously wrong.
+
+### Two things that make the window legible whatever it is pointed at
+
+Adopting the tonemapper fixes the render. It does not fix the fact that a scope pointed at empty
+space is *correctly* showing very little, and the round-4 eyepiece drew nothing of its own:
+
+- **An opaque BACKING disc**, drawn under the picture and on from the moment the scope is raised.
+  A window showing nothing and no window at all must not look the same. It also covers the frames
+  before the first render lands.
+- **The rim is now full-strength** (4 px, α 0.9, up from 3 px at α 0.55). A 55%-alpha hairline
+  around a dark circle is not a readable object on a nebula background.
+
+Both discs are **children** of the window rather than a graphic on the window itself, because UGUI
+draws a parent before its children — which gives exactly one slot in the order, and the eyepiece
+needs two before the rings.
+
+### Two hardenings in the same pass
+
+Neither is the cause; both are failures that would have presented identically, and one of them
+would have been permanent:
+
+- **A zero hull measurement is no longer latched.** `MeasureCircumscribedRadius` skips *disabled*
+  renderers, so a hull asked before its art is switched on answers 0 — and a latched 0 parks the
+  eye on the vessel's own origin, *inside* its geometry, for the life of that vessel. It re-asks
+  while the answer is 0 (one walk per frame, in exactly the case where the alternative is a
+  permanently black window), warns once by name, and floors the eye at 2 units so the fallback is
+  still in *front* of the ship.
+- **The render target is `Create()`d outright.** The surface binds it in the same frame, and a
+  canvas sampling an uncreated target draws nothing.
+
 ## Drive-by corrections
 
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
@@ -516,10 +599,13 @@ now also says whether the weapon is loaded.
   plus an in-editor pass with **FrogletTools ▸ Vessels ▸ Wire Vessel Ability Row**.
 - **The scope window is a second render of the world**, and unlike the connecting panel's preview
   there is no gameplay camera to stand down — the player is flying with it. Paid for with a 512²
-  target, no post, no shadows, no AA, 30 Hz and a lifetime of exactly as long as the trigger is
-  held; `ScopePipView.RenderSize` / `RefreshHz` are the dials if a phone disagrees. **Unprofiled**,
-  and round 4 made it more expensive on both axes (2.0× the pixels of round 3's 360p 16:9 target,
-  1.5× the refresh) because it is now the picture the pilot aims with rather than a glance.
+  target, no shadows, no AA, 30 Hz and a lifetime of exactly as long as the trigger is held;
+  `ScopePipView.RenderSize` / `RefreshHz` are the dials if a phone disagrees. **Post-processing is
+  NOT one of the dials** — round 5 established that the world is unreadable without the tonemapper
+  it is authored against, so switching it off does not make the window cheaper, it makes it absent.
+  **Unprofiled**, and it is now more expensive than round 3 on all three axes (2.0× the pixels of
+  that 360p 16:9 target, 1.5× the refresh, and a post stack) because it is the picture the pilot
+  aims with rather than a glance.
 - **The scope overlay rebuilds six small UI meshes per frame while held** (≈96 segments each,
   guarded by `Mathf.Approximately` so an unchanged value costs nothing). Cheap, and unmeasured.
 - **The shot has no FMOD event.** `fireEvent` ships **empty**, which is silence — never a borrowed
@@ -564,11 +650,12 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
 8. **Pierce:** raise Charge to 5 and fire down a line of 3+ prisms — expect 3 destroyed, not 1.
 9. **The contextual trigger:** unscoped, press RT — the **cloak** should engage exactly as it does
    today. Scoped, press RT — the cloak must **not** engage.
-10. **Teardown:** while scoped, open the overview / pause (or let a turn end). The camera must
-    return to third person and the FOV to the player's setting — this exercises
-    `R_VesselActionHandler.ReleaseHeldInputs` and the executor's `OnDisable`.
-11. **Vessel swap while scoped:** scope, then swap hulls with the vessel-changer toy. The new hull
-    must arrive in third person at its own FOV, with no stranded zoom.
+10. **Teardown:** while scoped, open the overview / pause (or let a turn end). The window must
+    close — this exercises `R_VesselActionHandler.ReleaseHeldInputs` and the executor's
+    `OnDisable`. The flight camera and the player's FOV were never touched, so there is nothing
+    else to check.
+11. **Vessel swap while scoped:** scope, then swap hulls with the vessel-changer toy. The window
+    must close and leave no `[SerpentScopeCamera]` or `SerpentScopeRT` behind.
 12. **MPPM, two clients:** scope and fire on client A. On client B the same prisms must die, and
     **B must see A's tracer** in A's domain colour. Then check B's own camera never moved, that B
     got no reticle and no PIP — `IsScoped` is shared, the screen is not.
@@ -591,6 +678,24 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     card is LOCKED (a dashed mark, no icon) and its **cooldown veil must now sweep clockwise over
     it** for ~12 s. Before round 4 it drew nothing. Check it works with the scope DOWN as well —
     the row is the readout a pilot who is not scoped has.
+
+18. **The picture is LIT (round 5).** This is the round-5 assertion. Scope while pointing at
+    ordinary arena mass and compare the window's picture with the same mass in the flight view
+    beside it: colours, bloom and brightness must **match**. A flat, grey, bloom-free picture means
+    the camera is not inside the gameplay volume — check `OffscreenCameraSetup.AdoptGameCameraImage`
+    ran and that `Camera.main` existed when the window was built (it warns once if it did not).
+19. **The eyepiece is visible with NOTHING in it (round 5).** Point at empty space and scope. You
+    must still plainly see a dark circular window with a bright rim — that is the backing disc, and
+    it is what makes "pointed at nothing" distinguishable from "no window". If the window is only
+    findable when something is in front of it, the backing is not drawing.
+20. **A hull with its art off (round 5, optional).** If a hull can be caught with its renderers
+    disabled, confirm the console warns *once* by name about a zero hull radius and the window still
+    shows the world rather than the inside of the ship.
+21. **The three sibling windows still draw correctly (round 5 regression).** `OffscreenCameraSetup`
+    is now shared, so check each: the **connecting panel's** arena preview during a load, the
+    **arcade card's** looking-phase preview, and a **Toy Box** card's toy picture. Each must look
+    exactly as it did before — same brightness, same bloom, same anti-aliasing. These are the sites
+    the helper was extracted FROM, so a regression here is a regression in the extraction.
 
 ## Follow-ups
 

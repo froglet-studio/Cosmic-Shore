@@ -61,7 +61,13 @@ namespace CosmicShore.UI
             set { if (!Mathf.Approximately(radius, value)) { radius = value; SetVerticesDirty(); } }
         }
 
-        public override Texture mainTexture => _source != null ? _source : s_WhiteTexture;
+        /// <summary>
+        /// The picture. <c>Graphic.whiteTexture</c> rather than the <c>s_WhiteTexture</c> FIELD as
+        /// the fallback, because that field is initialised lazily BY this property and is null
+        /// until something touches it — which for a disc drawn as a flat colour is the ordinary
+        /// case, not an edge one.
+        /// </summary>
+        public override Texture mainTexture => _source != null ? _source : whiteTexture;
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {

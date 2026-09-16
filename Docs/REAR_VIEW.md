@@ -128,12 +128,30 @@ resolves `CameraManager`'s active controller and never sees it, `ApplyCameraGrap
 `SetBackgroundColor` reach only the managed cameras, and `Camera.main` skips it twice over. That is
 the `ConnectingArenaPreview` shape, and `ScopePipView` is the second user of it.
 
-It reproduces the chase pose from `CustomCameraController.FollowOffset` — exposed read-only for
-exactly this — rather than from a constant, so the window cannot become a second opinion about
-where a hull is watched from. **It is a genuine extra render of the world** (the preview stands the
-gameplay camera down; this one cannot, since that is what the player is looking through), so it is
-paid for with a low render height, no post, no shadows, no AA, a capped refresh and a lifetime of
-exactly as long as the ability is held.
+It is posed from the vessel itself — the eye at `1.05 ×` the measured circumscribing hull radius
+past the nose, aimed along the same forward the shot is cast along — so the window cannot become a
+second opinion about where the weapon points. **It is a genuine extra render of the world** (the
+preview stands the gameplay camera down; this one cannot, since that is what the player is flying
+with), so it is paid for with a small square target, no shadows, no AA, a capped refresh and a
+lifetime of exactly as long as the ability is held.
+
+**Passing §3's four tests is NOT sufficient — the camera must also draw the way the GAME'S camera
+draws, and that is where every one of these windows has failed.** A bare
+`AddComponent<Camera>()` comes up with URP's defaults: no post-processing, no volume layer mask,
+SDR. This world is authored almost entirely HDR-emissive against the gameplay volume's tonemapper,
+so an un-adopted camera renders a flat, colourless, near-black version of it. Adopt through
+**`OffscreenCameraSetup`** (`_Scripts/Utility/`) — `AdoptGameCameraFraming` for what it sees and
+clears to, `AdoptGameCameraImage` for how it draws, with **post-processing on by default because it
+is not a quality setting here**, and clip planes deliberately derived per window rather than
+borrowed.
+
+That helper exists because the finding was rediscovered **four times** — `ModePreviewArena`,
+`ConnectingArenaPreview`, `ToyPreviewCamera` and the Serpent's scope — and each rediscovery cost a
+playtest. The general rule: **a picture that renders WRONG and a picture that does not render at
+all are the same report.** The first three framed a bright subject and read as merely low quality;
+the fourth framed open space, where the whole picture *is* the skybox and the volume, and was
+reported as the window being gone. A window whose subject can legitimately be empty also needs an
+opaque BACKING and a full-strength rim, so "showing nothing" and "not there" do not look the same.
 
 **Do not revive `Pip`/`PipCamera.prefab` for this.** Its `border` `RawImage` names a texture guid
 no asset carries, and a `RawImage` with a missing texture draws a solid quad in its own tint — a

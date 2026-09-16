@@ -39,14 +39,14 @@ namespace CosmicShore.Gameplay
     public sealed class SniperScopeOverlay : MonoBehaviour
     {
         const float ReadyFlashSeconds = 0.35f;
-        const float RimThickness = 3f;
+        const float RimThickness = 4f;
         const float ArcGapPixels = 10f;
         const float ArcThickness = 5f;
         const float RingThickness = 2f;
         const float DotRadius = 2.5f;
         const float DimAlpha = 0.3f;
         const float TrackAlpha = 0.22f;
-        const float RimAlpha = 0.55f;
+        const float RimAlpha = 0.9f;
 
         // The eyepiece's DIAMETER as a fraction of SCREEN HEIGHT, not a pixel size: this canvas
         // has no CanvasScaler (every other number in it is a real screen measurement), so a fixed
@@ -62,6 +62,7 @@ namespace CosmicShore.Gameplay
 
         Canvas _canvas;
         RectTransform _window;
+        ScopeDiscGraphic _backing;
         ScopeDiscGraphic _disc;
         ScopeRingGraphic _rim;
         ScopeRingGraphic _ring;
@@ -109,8 +110,15 @@ namespace CosmicShore.Gameplay
             _window.pivot = new Vector2(0.5f, 0.5f);
             _window.sizeDelta = Vector2.zero;
 
-            _disc = windowGo.AddComponent<ScopeDiscGraphic>();
-            _disc.raycastTarget = false;
+            // The BACKING is drawn first, is opaque, and is on from the moment the scope is
+            // raised - so the eyepiece is an OBJECT on screen even before the first render lands
+            // and even when what it is pointed at is empty space. A window showing nothing and no
+            // window at all must not look the same, which is exactly how round 4's flat picture
+            // was reported: "i no longer saw the pip".
+            _backing = MakeDisc("Backing");
+            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.92f);
+
+            _disc = MakeDisc("Picture");
             _disc.color = Color.white;   // the picture is the colour; this is a tint, not a wash
             _disc.enabled = false;
 
@@ -123,6 +131,27 @@ namespace CosmicShore.Gameplay
             _dot = MakeRing("ReticleDot", DotRadius, DotRadius * 2f);
 
             _pip = new ScopePipView(_disc);
+        }
+
+        /// <summary>
+        /// A disc filling the window's rect. Two of them: the opaque backing and the picture on
+        /// top of it. They are CHILDREN rather than a graphic on the window itself because UGUI
+        /// draws a parent before its children, which gives exactly one slot in the order - and the
+        /// eyepiece needs two before the rings.
+        /// </summary>
+        ScopeDiscGraphic MakeDisc(string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(_window, false);
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var disc = go.AddComponent<ScopeDiscGraphic>();
+            disc.raycastTarget = false;
+            return disc;
         }
 
         ScopeRingGraphic MakeRing(string name, float radius, float thickness)
@@ -236,6 +265,7 @@ namespace CosmicShore.Gameplay
             _window.anchoredPosition = new Vector2(WindowLeftMargin + outer,
                                                    -(WindowTopMargin + outer));
 
+            _backing.Radius = radius;
             _disc.Radius = radius;
             return radius;
         }
