@@ -40,7 +40,7 @@ Measured off the shipped prefabs and assets (2026-09-15; re-measure before trust
 |---|---|---|---|---|
 | Manta | 180 → 720 (×1.3 Time 10) | Soar (free; costs yaw) | YES (`MantaAnalogTurnBoostExecutor` drive) | ram = slow |
 | Dolphin | 68 → 347 | drift-charge → discharge; skims for seed energy | no | ram = slow + half charge |
-| Rhino | 60 → 1210 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
+| Rhino | 50 → 1200 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
 | Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | rides (aim it down the rail) | rides the shell's envelope |
 | Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | no | ram **resets** the boost |
 | Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | no | no slow wired |

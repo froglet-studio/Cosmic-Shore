@@ -185,15 +185,15 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Maelstrom: seed the AI roster once (first game) and reuse it for every later
-            // game, so name-keyed bot standings attribute correctly across the lineup. The
-            // names match profile names, so downstream avatar resolution still works.
+            // Maelstrom: the AI roster is dealt ONCE and replayed into every later round, so the
+            // party races the same named, same-coloured opponents all tournament instead of a
+            // fresh anonymous set each time. The deal itself happens in the HUB
+            // (MaelstromController.ApplyRoster), before any game scene exists - a party readying
+            // up should know who it is about to race - so in practice the loop below always finds
+            // a seat already dealt. The fallback deal is kept for the degraded case where a round
+            // launches without a hub tick, and uses the same GetBalancedDomain against the same
+            // two dictionaries, so it cannot disagree with the hub's answer.
             bool tournament = gameData.IsMaelstromMode && tournamentData != null;
-            if (tournament && tournamentData.MaelstromAINames.Count == 0 && profiles != null)
-            {
-                for (int p = 0; p < profiles.Count; p++)
-                    tournamentData.MaelstromAINames.Add(profiles[p].Name);
-            }
 
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
             // high player counts. The span makes that cost (and its scaling) visible.
@@ -238,32 +238,53 @@ namespace CosmicShore.Gameplay
                 // game authors no Vessels list.
                 aiVesselType = gameData.ClampVesselToGame(aiVesselType);
 
-                var aiName = tournament && i < tournamentData.MaelstromAINames.Count
-                    ? tournamentData.MaelstromAINames[i]
-                    : profiles != null && i < profiles.Count
-                        ? profiles[i].Name
-                        : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+                // A seat already dealt this tournament is replayed verbatim - same bot, same team,
+                // every round. It still bumps the placement counts, so any bot WITHOUT a seat yet
+                // is balanced against the ones already placed rather than against an empty board.
+                var seat = tournament && i < tournamentData.MaelstromAISeats.Count
+                    ? tournamentData.MaelstromAISeats[i]
+                    : null;
 
-                // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
-                // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
-                // widening the match, and re-balancing it away silently is exactly the "cannot
-                // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
-                // A placed domain is never written into a count dict that lacks its key:
-                // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
-                // minTotal no listed domain can then match, starving the pick to its error path.
+                string aiName;
                 Domains aiDomain;
-                var placed = i < gameData.RequestedAIDomains.Count
-                    ? gameData.RequestedAIDomains[i]
-                    : Domains.Blue;
-                if (placed != Domains.Blue)
+
+                if (seat != null)
                 {
-                    aiDomain = placed;
+                    aiName = seat.Name;
+                    aiDomain = seat.Domain;
                     if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
                 }
                 else
                 {
-                    aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                    totalCounts[aiDomain]++;
+                    aiName = profiles != null && i < profiles.Count
+                        ? profiles[i].Name
+                        : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+
+                    // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
+                    // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
+                    // widening the match, and re-balancing it away silently is exactly the "cannot
+                    // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
+                    // A placed domain is never written into a count dict that lacks its key:
+                    // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
+                    // minTotal no listed domain can then match, starving the pick to its error path.
+                    var placed = i < gameData.RequestedAIDomains.Count
+                        ? gameData.RequestedAIDomains[i]
+                        : Domains.Blue;
+                    if (placed != Domains.Blue)
+                    {
+                        aiDomain = placed;
+                        if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
+                    }
+                    else
+                    {
+                        aiDomain = GetBalancedDomain(totalCounts, humanCounts);
+                        totalCounts[aiDomain]++;
+                    }
+
+                    // Deal the seat so every later round of this tournament replays it. Appended
+                    // in loop order, which is the order it is read back in.
+                    if (tournament)
+                        tournamentData.MaelstromAISeats.Add(new MaelstromAISeat { Name = aiName, Domain = aiDomain });
                 }
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;

@@ -11,7 +11,7 @@
 
 > **What is your hull FOR, on a course everyone shares?**
 
-A Rhino ramps to 1210 u/s on a straight and pays five seconds of wind-up for every corner it
+A Rhino ramps to 1200 u/s on a straight and pays five seconds of wind-up for every corner it
 cannot hold. A Manta trades Soar for yaw one trigger at a time. A Scarab's ceiling is its Time
 level. An Urchin latches onto the rail in its colour and lets the cable drive at 300 u/s
 through corners that cost it nothing. A Squirrel skims the same rail for the boost energy that
@@ -36,7 +36,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Urchin** | grinds its OWN colour at 300 u/s (`FriendlyTerrainSpeed`); a rival's at 20 (Time-5 Slipstream: 300) | riding, no resource | nothing; corners are the rail's |
 | **Squirrel** | skims any colour: +0.1 boost per contact to ×5 → 300 u/s | skim energy, decays 0.3/s | ramming a rail prism **resets the boost** (`VesselResetBoostPrismEffect`) |
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
-| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 1210 u/s | none — no speed effect wired |
+| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 1200 u/s | none — no speed effect wired |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
 | **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
@@ -73,9 +73,9 @@ line, intensity 1):
 | Serpent | Time → boost ×1.6, duration ×1.6 | 101 s | 58 s | Time 10 |
 | Sparrow | Time → boost ×1.5 | 108 s | 74 s | Time 10 |
 
-**Spread 8.8× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
+**Spread 8.7× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
 a rounding: an element spans ~1.5× on the hulls it reaches and nothing at all on the Rhino, while
-the fleet's straight-line speeds span 35×. Tighter corners compress it a little (the fast hulls
+the fleet's straight-line speeds span 34×. Tighter corners compress it a little (the fast hulls
 pay them; a rider pays nothing), which is why the ladder tightens the floors. What would close
 the rest is recorded in §8 rather than faked here. The comeback system is the second balancer
 in play: six gates behind buys 2.1 levels of every element, and Time is speed on five hulls.
@@ -89,7 +89,7 @@ C# so a course edit cannot ship on stale numbers.
 The circuit is `HeadlongCircuit`, shared, cut for **nobody in particular** (`RegattaCourse`):
 Redline's corner profiles (the solver's proven reach at each rung), absolute corner floors set
 where the fastest hull that cannot slow instantly — the Scarab at 216 u/s, ~102 u — still makes
-the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1210 u/s.
+the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1200 u/s.
 
 | intensity | turn profile (deg) | floor | mouth | measured tightest corner | spine | prisms |
 |---|---|---|---|---|---|---|
@@ -121,7 +121,7 @@ a multiple of eight races to the course's honest length and warns.
 
 Everyone spawns on a ring **behind gate 0, pointed through it** (`IPlayerSpawnLine`, 260 u
 standoff, 120 u ring), not on the platform's equatorial ring 1120 u out facing the centre with
-gate 0 on the pole above — a grid of hulls whose cruise speeds span 35× does not want a first
+gate 0 on the pole above — a grid of hulls whose cruise speeds span 34× does not want a first
 corner it did not ask for.
 
 ## 6. AI

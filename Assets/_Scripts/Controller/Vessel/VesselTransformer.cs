@@ -63,6 +63,15 @@ public class VesselTransformer : MonoBehaviour
              "whose racing drift is throttle-modulated).")]
     [SerializeField] bool holdSpeedWhileDrifting = false;
 
+    [Tooltip("Seconds the brake takes to shed one full unboosted cruise's worth of speed once " +
+             "the pilot's throttle target reaches ZERO, so \"throttle at minimum\" ends in a real " +
+             "stop instead of an exponential tail that never lands. Only ever engages when the " +
+             "commanded target is 0 — a vessel with a non-zero MinimumSpeed (the one-thumb hulls' " +
+             "10) is untouched, as is any deceleration toward a lower-but-nonzero cruise, and so " +
+             "is the whole of the fall above rate / LERP_AMOUNT. 0 disables it " +
+             "and restores the legacy tail. See MinimumThrottleBrake.")]
+    [SerializeField, Min(0f)] float minimumThrottleBrakeSeconds = MinimumThrottleBrake.DefaultBrakeSeconds;
+
     #region Flight model
     /// <summary>What the throttle is allowed to do while the vessel is drifting. Only consulted
     /// by the VECTOR flight model — on the scalar path the throttle is always live.</summary>
@@ -766,7 +775,15 @@ public class VesselTransformer : MonoBehaviour
                     _speedTrackingRate = 0f;
                 return next;
             }
-            return Mathf.Lerp(current, target, LERP_AMOUNT * dt);
+
+            // The exponential owns the whole fall except its last stretch, where it stops
+            // arriving. A zero target is the pilot asking for a STOP, so that stretch gets a
+            // constant rate that actually lands on 0 - see MinimumThrottleBrake for why this is
+            // in the shared step rather than a third per-vessel copy of the same idea.
+            float stepped = Mathf.Lerp(current, target, LERP_AMOUNT * dt);
+            return MinimumThrottleBrake.Apply(
+                stepped, current, target,
+                MinimumThrottleBrake.RateFor(ThrottleScaler, minimumThrottleBrakeSeconds), dt);
         }
 
         /// <summary>Advance the smoothed cruise speed one frame toward

@@ -230,6 +230,50 @@ General rule: **when two peers must agree on a number, one of them owns it and t
 it** — a second derivation is a second answer, and the disagreement surfaces as UI nobody can
 trace to a count.
 
+### 3.2 A card re-opens on what it was last LAUNCHED with
+
+The panel used to open every card the same way - minimum intensity, no bots, everyone on Jade -
+so a player who plays Scarab Scramble at intensity 3 against two Ruby bots re-authored that
+setup on every visit. It now re-seeds itself from `LaunchPreferenceStore`
+(`_Scripts/System/Preferences/`), one `LaunchPreference` record per `GameModes`, on local disk
+through the same `DataAccessor` file store `FavoriteSystem` uses. The arena grid is the same
+modal pointed at a different roster, so the one key serves both.
+
+**Written on a LAUNCH, never on a ready press.** `HandleAllPlayersReady` writes the record
+before it resets the config - a pilot who readied and whose party then dismissed the card has
+not launched anything, and remembering that would restore a setup that never flew. The record
+has two halves written by two authorities: the **host terms** (intensity, domain count, the
+placed AI in placement order) are written only by the launch authority (`SaveHostTerms`), and
+the **pilot choice** (own domain, own hull) by every instance, host and guest alike
+(`SavePilotChoice`) - so a guest readying on a card this machine once hosted cannot clobber
+the host terms it last launched with. The weekly challenge writes nothing: pinned terms are
+not a preference.
+
+**Read as a WISH, re-validated at every seam** (`LaunchPreferenceRules`, pure and held by
+`HomeHubPreferenceTests`):
+
+| field | restored where | clamped against |
+|---|---|---|
+| intensity | `InitializeConfigFromGameDefaults`, so the row, the preview and the commit all see it | the card's range AND the player's unlocks - a saved 4 on a mode whose 3 and 4 are still locked opens on 2, never on a dimmed button drawn selected |
+| placed AI + domain count | `RestoreRememberedRoster`, AFTER `CommitConfiguration` | Blue dropped; cut to the seats free above the humans present (a party that grew gets fewer bots back); the domain count covers every placement's prefix and stays inside the card's window, through the same `HandlePlayerCountSelected` clamp a live placement takes |
+| own domain | `RestoreRememberedDomain`, AFTER the commit on the host, and on a guest's first draw of a NEW lobby generation | only inside `ActiveDomains[0..DC-1]` - a Gold pick on a two-domain lobby falls back to Jade, because lighting a dimmed tile is a promise the spawn would break; routed through `HandleDomainSelected` so it is a real server request, never a lit tile the server never heard about |
+| own hull | `InitializeDefaultShipFromAvailable`, step 0 (ahead of the session's last hull and the legacy loadout file) | must be one the card lists; the arena's per-session confirmation gate is untouched - the carousel opens ON the hull, the pilot still presses SELECT VESSEL |
+
+Two orderings are load-bearing. The roster and domain restores run **after** the commit,
+because the commit is what opens the replicated lobby (`NotifyRosterChanged` refuses a closed
+one, so placements restored earlier would never reach a guest) and what resets every human to
+Jade (so a domain restored earlier would be undone). And a guest restores its domain only on a
+lobby GENERATION it has not drawn before: the guest path re-runs when a guest taps the card to
+get back into the lobby it dismissed, and re-picking there would override a pick they made
+since.
+
+What it does not do: it does not remember the Add AI toggle's armed state (a mode, not a
+setup), it does not auto-confirm an arena hull, and it does not write to the cloud - a launch
+setup is a convenience of THIS machine, made with the party and the unlocks it has. The
+legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superseded for the
+hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
+kept as a fallback below this store.
+
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
 `VesselControlsPanel` draws two kinds of row.
@@ -636,7 +680,7 @@ an un-authored asset is never left unable to draw, which would be a mode that ca
 panel's list all still read it, and the list draws locked modes *greyed rather than hidden*,
 because a list that only grows tells the player nothing about what they are missing.
 
-`MaelstromController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
+`MaelstromController.DrawNextRound` draws from the filtered list. Repeat-avoidance maps
 `CurrentGameIndex` (a `GameQueue` index) **into** that list first — at low intensity the two
 index spaces are not the same, and treating them as one would avoid the wrong mode.
 
@@ -774,3 +818,39 @@ layout is redesigned.
 **Left alone as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The channel is
 raised and nothing subscribes to it, in code or in any scene — a removal candidate, but a SOAP
 integration point rather than part of the two-screen path.
+
+## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+`MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
+grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of
+`Docs/HomeHub/ARCHITECTURE.md` records for the toy cards and `Docs/GAME_MODE_TOPBAR.md` for the goal
+stack (a low-resolution plate upscaled on every display: the pixelated bent corners), squashed to
+3.25:1 on top of it. And it said only the mode's NAME, so sixteen rows of a ladder whose entire
+subject is *which rung a mode enters on* told the player nothing about the ladder.
+
+It is now the Toy Box's **variant row**: the same two chamfered sprites (`Group 1585.png` body,
+`Rectangle 1127 (2).png` rim) drawn **Sliced** at `pixelsPerUnitMultiplier = referencePixelsPerUnit
+/ 100`, the mode's name bottom-left and one detail line above it — `TIER 2  ·  SPARROW`. Cell
+310×88 against the variant row's 275×88, two columns in a ~713-wide viewport.
+
+**It deliberately does not use the big 400×250 toy CARD, and it deliberately does not fill that
+card's portrait slot.** The card's upper two thirds are a baked portrait; a mode's nearest field is
+`SO_ArcadeGame.IconActive`, which is the ARCADE GRID's card art and is legacy — **Salvo carries
+Rampage's picture and Joust carries Duel for the Cell's**. Filling a portrait slot from a field that
+does not mean what the slot wants is the same mistake as the earlier pass that wrote that sprite
+over the row's BACKGROUND and turned every row into a cyan slab (`MaelstromPoolEntry.icon` is still
+left empty for exactly that reason). The Toy Box's own answer to "this thing has no portrait" is the
+accent fill, and a mode has no authored accent either — so the row states facts instead of inventing
+art. General rule: **a card slot is a promise about what the data means, not a place to put the
+nearest sprite the asset happens to carry.**
+
+The scroll content also gained a `ContentSizeFitter`. Its height was AUTHORED at 1351.7 for a grid
+whose rows add up to 903, so the list has always ended in a screenful of nothing, and any cell-size
+change makes that worse. A fitter rather than a re-measured literal, because the pool is sixteen
+modes today and the whole point of the asset is that adding a seventeenth is one edit.
+
+Authored by `Tools/Build/author_maelstrom_pool_cards.py` (`--check`), which reads the slice
+multiplier off the canvas rather than writing it down, and **asserts that the fitter landed on the
+pool list's own Content object** — the first cut of that insert anchored on the `m_Layer` line after
+the matched body and put the component on whatever object was serialized next (`AvatarSpace`), which
+Unity accepts in silence.

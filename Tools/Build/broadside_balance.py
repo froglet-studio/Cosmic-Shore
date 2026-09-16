@@ -204,6 +204,21 @@ def elemental_multiplier(level, at_full, at_floor):
     return 1.0 + (1.0 - at_floor) * (level / 0.5)
 
 
+def _rhino_ramp_constants():
+    """(cruise, top, base acceleration) for the Rhino, read off the shipped assets.
+
+    Shares REGATTA's reader rather than re-parsing: that model already resolves every hull's
+    throttle scaler, minimum speed and the ramp asset by key, and two readers of one prefab is
+    two places a retune has to land.
+    """
+    import regatta_balance as _rb
+    c = _rb.read_constants()
+    v = c["vessels"]["Rhino"]
+    cruise = v["ts"] + v["ms"]                       # plain cruise, ramp disengaged
+    top = v["ts"] * c["rhino_max_boost"] + v["ms"]   # ramp held at full straightness
+    return cruise, top, c["rhino_accel"]
+
+
 def rhino_speed_multiplier(level):
     """
     Converts the Rhino's ACCELERATION endpoint into the SPEED multiplier the rest of the model
@@ -219,11 +234,18 @@ def rhino_speed_multiplier(level):
     and what Time buys is the ratio of that mean to the mean at rest. It saturates: once the
     hull tops out inside the straight, more acceleration buys nothing further, which is exactly
     the shape the ceiling implies and exactly what a raw 2.5x acceleration ratio would have
-    claimed instead. At the shipped numbers (cruise 60, top 1210, a 220/s, T 2 s) the resting
-    mean is 280 u/s and +1 Time buys 610 - a 2.18x speed ratio rather than the 2.5x the
+    claimed instead. At the shipped numbers (cruise 50, top 1200, a 220/s, T 2 s) the resting
+    mean is 270 u/s and +1 Time buys 600 - a 2.22x speed ratio rather than the 2.5x the
     acceleration row reads.
+
+    **Every one of the three constants is READ off the shipped assets**, and that is not
+    tidiness - the first cut hardcoded `cruise 60 / top 1210` and was stale within the week,
+    because a parallel branch zeroed `Rhino.prefab`'s `DefaultMinimumSpeed` (the one-thumb
+    hulls' floor, retired so a two-thumb flier can actually STOP) and moved both numbers by
+    10 u/s. Nothing failed; the model simply went on describing a vessel the project no longer
+    ships. A constant copied out of an asset is true on the day it is copied.
     """
-    cruise, top, base_accel = 60.0, 1210.0, 220.0
+    cruise, top, base_accel = _rhino_ramp_constants()
     T = BRAWL_STRAIGHT_SECONDS
 
     def mean_speed(a):

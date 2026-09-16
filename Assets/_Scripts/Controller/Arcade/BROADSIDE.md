@@ -165,21 +165,26 @@ scaled `accelerationPerSecond` by it — and `ElementalAbilityMaps/Rhino.asset`'
 `(open design slot)` authored `1.0 / 1.0`. **The hook was live and the asset behind it was flat**,
 which is why three separate documents (this one, CLAUDE.md, and the balance model) recorded "Time
 reaches nothing on the Rhino" as a measurement. It is now a real ability, **Ramp Spool** (2.5 /
-0.5), and Broadside's card starts the Rhino at **+0.6**. This is a fleet change and was accepted
+0.5), and Broadside's card starts the Rhino at **+0.5**. This is a fleet change and was accepted
 as one: Headlong's Rhino spools faster too. There is deliberately **no L5 upgrade** — the slot is
 filled, not designed.
 
 > **A capability that is live in code and flat in data reads exactly like a capability that does
 > not exist**, and it will be written down as one. The Rhino's ramp took 5.2 s to climb from
-> ~60 u/s cruise to ~1210 against a 300/s bleed — which a brawl's short straights simply do not
+> ~50 u/s cruise to ~1200 against a 300/s bleed — which a brawl's short straights simply do not
 > contain — so at Time rest the hull was *structurally* never fast. Before recording "element X
 > reaches nothing on hull Y", check the executor, not the map.
 
 The model converts that endpoint honestly: Time is the ramp's **wind-up rate**, not its ceiling
 (`maxBoostMultiplier` stays 24), so `rhino_speed_multiplier` integrates
-`min(top, cruise + a·t)` over a 2-second brawl straight and takes the ratio of the means — **2.18×
+`min(top, cruise + a·t)` over a 2-second brawl straight and takes the ratio of the means — **2.22×
 at full**, not the 2.5× the acceleration row reads, and it **saturates** once the hull tops out
-inside the straight. Feeding the raw acceleration ratio in overpays the hull badly.
+inside the straight. Feeding the raw acceleration ratio in overpays the hull badly. All three
+constants (`cruise 50`, `top 1200`, `a 220/s`) are **read off `Rhino.prefab`** rather than copied
+into the model, and that is not tidiness: the first cut hardcoded `60 / 1210` and went stale
+inside the week, when a parallel branch zeroed the prefab's `DefaultMinimumSpeed` and moved both
+numbers by 10 u/s. Nothing failed — the model simply went on describing a vessel the project no
+longer ships. **A constant copied out of an asset is true on the day it is copied.**
 
 That in turn exposed the level picker as a **coin toss with two faces**: it sorted the hulls around
 the median and handed the lower half +1 and the upper half −0.5, so the moment the Rhino gained a
@@ -187,9 +192,10 @@ real endpoint it flipped from slowest scorer straight past every other hull to f
 +1 was the only thing the bucket had to offer. `solve_levels` now moves each hull to the level
 whose tuned rate is nearest the **anchor** — the median rate of the hulls Time *cannot* reach,
 which is the part of the roster no handicap can move and therefore the only honest thing to
-converge on. The Rhino lands on **+0.6**, just above the **playability floor** of +0.5 that
-`TIME_FLOOR` pins: its Time level is answering a playability question, not a scoring one, so the
-balance pass is allowed to raise it and never to spend it.
+converge on. On scoring alone the solver puts the Rhino at **+0.4**; `TIME_FLOOR` clamps it UP
+to the **playability floor** of **+0.5**, because its Time level is answering a playability
+question, not a scoring one — the balance pass is allowed to raise that level and never to spend
+it.
 
 ## The drain follows the price — a fleet-wide correction
 
