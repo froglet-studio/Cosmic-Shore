@@ -271,13 +271,6 @@ namespace CosmicShore.Gameplay
 
         static float PhaseForBucket(int bucket) => bucket / (float)PhaseVariantCount * Mathf.PI * 2f;
 
-        /// <summary>The sway this limb is actually running, for anything BOLTED to it to
-        /// ride (Docs/ECOSYSTEM.md §47). Amplitude and frequency are read off the material
-        /// the spindle draws with — the phase variant is a clone of the base, so both carry
-        /// the authored values either way — and the phase is the bucket that variant was
-        /// minted from. Returns false until Start has resolved the bucket, and false for a
-        /// material that authors no sway, which is the honest answer: a prism bolted to a
-        /// motionless limb must not move.</summary>
         /// <summary>The transform whose OBJECT SPACE the sway actually happens in. This is
         /// the RENDERER's, not the spindle root's: `SpindleSway` shears `PositionOS`, and
         /// PositionOS is the rendered mesh's own space. The two coincide on a spindle whose
@@ -293,6 +286,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>The sway this limb is actually running, for anything BOLTED to it to
+        /// ride (Docs/ECOSYSTEM.md §47). Amplitude and frequency are read off the material
+        /// the spindle draws with — the phase variant is a clone of the base, so both carry
+        /// the authored values either way — and the phase is the bucket that variant was
+        /// minted from. Returns false until Start has resolved the bucket, and false for a
+        /// material that authors no sway, which is the honest answer: a prism bolted to a
+        /// motionless limb must not move.</summary>
         internal bool TryGetSwayConstants(out float amplitude, out float frequency, out float phase)
         {
             amplitude = frequency = phase = 0f;
