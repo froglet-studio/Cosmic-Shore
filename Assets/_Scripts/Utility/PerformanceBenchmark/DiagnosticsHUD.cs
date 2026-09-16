@@ -197,12 +197,72 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _instance = this;
             StartRecorders();
             BuildUI();
+            RegisterCommand(FrameCapCommand, HandleFrameCapCommand);
         }
 
         void OnDestroy()
         {
+            RestoreFrameCap();
+            UnregisterCommand(FrameCapCommand);
             DisposeRecorders();
             if (_instance == this) _instance = null;
+        }
+
+        // ── frame cap ─────────────────────────────────────────────────────
+        // A capped frame cannot MEASURE: idle time absorbs any change smaller than itself,
+        // so an A/B run under a cap reports "no difference" from a test that could not have
+        // shown one. This is the one knob that has to be reachable without leaving play mode.
+        const string FrameCapCommand = "fps";
+        bool _frameCapOverridden;
+        int _savedVSync, _savedTargetFrameRate;
+
+        string HandleFrameCapCommand(string[] args)
+        {
+            string mode = args.Length > 0 ? args[0].ToLowerInvariant() : "";
+            switch (mode)
+            {
+                case "uncap":
+                    if (!_frameCapOverridden)
+                    {
+                        // Captured at OVERRIDE time, not at Awake: DisplayGraphicsSettings
+                        // applies the player's saved settings at AfterSceneLoad, which can be
+                        // after this component exists, so an Awake snapshot is the wrong value.
+                        _savedVSync = QualitySettings.vSyncCount;
+                        _savedTargetFrameRate = Application.targetFrameRate;
+                        _frameCapOverridden = true;
+                    }
+                    QualitySettings.vSyncCount = 0;
+                    Application.targetFrameRate = -1;
+                    return $"frame cap removed (was vsync {_savedVSync}, target " +
+                           $"{(_savedTargetFrameRate > 0 ? _savedTargetFrameRate.ToString() : "uncapped")}) " +
+                           "— `fps restore` puts it back";
+
+                case "restore":
+                    if (!_frameCapOverridden) return "frame cap was never overridden here";
+                    RestoreFrameCap();
+                    return $"frame cap restored: vsync {QualitySettings.vSyncCount}, target " +
+                           $"{(Application.targetFrameRate > 0 ? Application.targetFrameRate.ToString() : "uncapped")}";
+
+                case "":
+                    return $"vsync {QualitySettings.vSyncCount}, target " +
+                           $"{(Application.targetFrameRate > 0 ? Application.targetFrameRate.ToString() : "uncapped")}" +
+                           $"{(_frameCapOverridden ? " (overridden by `fps uncap`)" : "")} " +
+                           $"| usage: {FrameCapCommand} uncap | restore";
+
+                default:
+                    return $"usage: {FrameCapCommand} uncap | restore";
+            }
+        }
+
+        // Restoring on teardown matters because both of these are PROCESS-wide and survive a
+        // scene load: an override left behind would silently uncap the next scene the player
+        // entered, which is a measurement setting escaping into the game.
+        void RestoreFrameCap()
+        {
+            if (!_frameCapOverridden) return;
+            QualitySettings.vSyncCount = _savedVSync;
+            Application.targetFrameRate = _savedTargetFrameRate;
+            _frameCapOverridden = false;
         }
 
         // ── recorders ─────────────────────────────────────────────────────
@@ -350,6 +410,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
             Row(la, va, "GPU", MsValue(_smGpuMs));
             Row(la, va, "Bound", BoundValue(busyCpuMs));
+            Row(la, va, "Frame cap", FrameCapValue());
 
             // External sections published via SetStat (stress harness, probes, injectors).
             foreach (var section in s_statSectionOrder)
@@ -448,9 +509,36 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             string verdict = FrameBoundness.Classify(busyCpuMs, _smGpuMs);
             if (verdict == FrameBoundness.Unknown) return Col(Dim, "n/a");
+
+            // A known cap names its rate.
             if (FrameBoundness.IsAtCap(_displayFps, out float cap))
                 return Col(Good, "Capped @" + cap.ToString("F0"));
+
+            // A cap the platform will not name still has to be reported, or the row says
+            // CPU-bound about a frame that is mostly idle — and a capped frame cannot
+            // measure, so this outranks naming a processor. Warn, not Good: under a cap the
+            // numbers below are not a reading of anything.
+            if (FrameBoundness.IsLimitedByPresent(_displayMs, busyCpuMs, _smGpuMs, out float idleMs))
+                return Col(Warn, $"Capped — {idleMs:F1} ms idle");
+
             return Col(FpsColor(_displayFps), verdict);
+        }
+
+        /// <summary>
+        /// The live frame-rate cap, always on the overlay so it can never be the invisible
+        /// reason an A/B showed no difference. Reads QualitySettings/Application directly
+        /// rather than any cached setting: DisplayGraphicsSettings re-applies the player's
+        /// saved graphics settings at AfterSceneLoad, AFTER AppManager.ConfigurePlatform has
+        /// set BootstrapConfig's values, so the config asset does not say what is in force.
+        /// </summary>
+        static string FrameCapValue()
+        {
+            int vsync = QualitySettings.vSyncCount;
+            int target = Application.targetFrameRate;
+            bool capped = vsync > 0 || target > 0;
+            string text = vsync > 0 ? $"vsync {vsync}" : "vsync off";
+            text += target > 0 ? $" · target {target}" : " · target uncapped";
+            return Col(capped ? Warn : Good, text);
         }
 
         static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";

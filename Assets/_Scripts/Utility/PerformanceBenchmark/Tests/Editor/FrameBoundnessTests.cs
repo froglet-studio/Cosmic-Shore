@@ -105,5 +105,46 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             // still reads GPU-bound, so the filter has not simply disabled the verdict.
             Assert.AreEqual(FrameBoundness.GpuBound, FrameBoundness.Classify(24.5f, 40f));
         }
+
+        // --- Cap detection ----------------------------------------------------
+        // Live regression: 8.4 ms frames at 120 FPS holding 3.2 ms CPU and 0.4 ms GPU —
+        // 57% of every frame idle — reported as "CPU-bound", because IsAtCap asks the
+        // platform for the refresh rate and the EDITOR does not report one.
+
+        [Test]
+        public void IsLimitedByPresent_CatchesTheVsyncCappedEditorFrame()
+        {
+            Assert.IsTrue(FrameBoundness.IsLimitedByPresent(8.4f, 3.2f, 0.4f, out float idle));
+            Assert.AreEqual(5.2f, idle, 0.001f);
+        }
+
+        [Test]
+        public void IsLimitedByPresent_LeavesGenuinelyBoundFramesAlone()
+        {
+            // NEGATIVE CONTROLS: work fills the frame, so nothing is waiting.
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(16.7f, 16.2f, 4f, out _), "CPU-bound");
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(16.7f, 4f, 16.2f, out _), "GPU-bound");
+        }
+
+        [Test]
+        public void IsLimitedByPresent_NeedsBothBars()
+        {
+            // 1.4 ms slack: over neither. Ordinary jitter must not read as a cap.
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(8.4f, 7.0f, 0.4f, out _));
+            // 10 ms slack but only 16.7% of a 60 ms frame: over the floor, under the ratio.
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(60f, 50f, 1f, out _));
+            // 2.1 ms AND 26%: both cleared.
+            Assert.IsTrue(FrameBoundness.IsLimitedByPresent(8.0f, 5.9f, 0.1f, out _));
+        }
+
+        [Test]
+        public void IsLimitedByPresent_SaysNothingWithoutData()
+        {
+            // No timing at all must not read as "capped" — an absent sensor is not evidence.
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(8.4f, 0f, 0f, out _), "no work data");
+            Assert.IsFalse(FrameBoundness.IsLimitedByPresent(0f, 3f, 1f, out _), "no frame time");
+            // A garbage GPU reading must not be able to fake "work fills the frame" either.
+            Assert.IsTrue(FrameBoundness.IsLimitedByPresent(8.4f, 3.2f, 77_028_560_000f, out _));
+        }
     }
 }

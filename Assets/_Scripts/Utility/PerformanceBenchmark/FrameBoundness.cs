@@ -99,6 +99,50 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
+        /// A frame must exceed the work in it by at least this FRACTION, and by at least
+        /// <see cref="PresentIdleFloorMs"/>, before it counts as limited by something other
+        /// than work. Both bars together, so ordinary jitter and measurement skew between the
+        /// frame clock and FrameTimingManager cannot trip it.
+        /// </summary>
+        const float PresentIdleRatio = 0.25f;
+        const float PresentIdleFloorMs = 2f;
+
+        /// <summary>
+        /// True when the frame is limited by something OTHER than the work in it — vsync, a
+        /// target frame rate, or any other present wait — with <paramref name="idleMs"/> set
+        /// to how much of the frame was spent waiting.
+        ///
+        /// WHY THIS EXISTS RATHER THAN <see cref="IsAtCap"/>. IsAtCap asks the platform what
+        /// the cap IS, via <see cref="TargetFpsCap"/> → <c>Screen.currentResolution
+        /// .refreshRateRatio</c>, which in the EDITOR does not report a real refresh rate. So
+        /// a vsync-locked editor frame reads "no cap", falls through to
+        /// <see cref="Classify"/>, and is confidently named CPU-bound. Measured live: 8.4 ms
+        /// frames at 120 FPS containing 3.2 ms CPU and 0.4 ms GPU — 57% of every frame idle —
+        /// reported as "CPU-bound".
+        ///
+        /// This asks a different question, of two numbers that are always available: is the
+        /// frame much longer than the work in it? That needs no refresh rate, holds when
+        /// vsync is applied by something the game never told (a compositor, a driver
+        /// override, the editor itself), and degrades to "not capped" rather than to a wrong
+        /// processor when the inputs are missing.
+        ///
+        /// It matters because a capped frame cannot MEASURE: with 4.8 ms of idle per frame,
+        /// any change costing less than that moves neither FPS nor frame time, and an A/B run
+        /// under a cap reports "no difference" from a test that could not have shown one.
+        /// </summary>
+        public static bool IsLimitedByPresent(float frameMs, float busyCpuMs, float gpuMs, out float idleMs)
+        {
+            idleMs = 0f;
+            if (frameMs <= 0.001f) return false;
+
+            float work = Mathf.Max(busyCpuMs, SanitizeGpuMs(gpuMs));
+            if (work <= 0.001f) return false;   // no timing data — say nothing rather than guess
+
+            idleMs = frameMs - work;
+            return idleMs >= PresentIdleFloorMs && idleMs >= frameMs * PresentIdleRatio;
+        }
+
+        /// <summary>
         /// True when the measured fps sits at the active cap - the limiter is the cap
         /// itself, so neither processor verdict applies.
         /// </summary>
