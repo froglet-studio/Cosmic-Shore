@@ -188,7 +188,30 @@ Cruise is 70 u/s at neutral sticks (125 flat out), and a good swing should clear
 On a **keyboard** the charge is a timed wind-up instead (Left/Right Shift, ~0.9 s to full reach),
 because only a gamepad reports real trigger travel. Touch is unbound.
 
-## 10. Not done / open
+## 10. Netcode registration — the two things a copied prefab silently breaks
+
+Cloning a vessel prefab on disk breaks two Netcode contracts that nothing else checks and that
+look completely fine in the YAML:
+
+1. **`GlobalObjectIdHash` comes along with the copy.** Netcode keys its prefab table on that hash
+   alone, so `Gibbon.prefab` arrived carrying Squirrel's `2256742461` and only one of the two could
+   ever have spawned. Unity derives it as
+   `XXHash32("GlobalObjectId_V1-1-<prefab guid>-<NetworkObject fileID>-0")` and only regenerates it
+   in `NetworkObject.OnValidate`, so a file copy never fixes itself until someone opens the prefab.
+   It is computed here instead — the formula was **verified by reproducing the shipped hashes of
+   Squirrel, Dolphin, Sparrow and Manta exactly** — giving `549773436`.
+   `InScenePlacedSourceGlobalObjectIdHash` was zeroed for the same reason (every vessel never
+   placed in a scene carries 0).
+2. **The prefab must be listed in `Assets/DefaultNetworkPrefabs.asset`**, keyed by the root
+   **GameObject** fileID (not the Transform, which is what `Vessel Prefab Container` uses).
+
+`Tools/Build/check_network_prefab_hashes.py` is the standing gate, with a `--self-test` negative
+control. **It must read the anchored field name**: `InScenePlacedSourceGlobalObjectIdHash` ends
+with the same identifier and IS legitimately shared between copied prefabs (Scarab and Sparrow both
+carry `1299232740`), so an unanchored match invents a collision that does not exist — a mistake
+made and caught while writing that gate.
+
+## 11. Not done / open
 
 - **No HUD, no audio, no real VFX.** The lines are runtime `LineRenderer`s built by the executor —
   enough to read the mechanic, explicitly not art. Nothing here has been opened in Unity.
