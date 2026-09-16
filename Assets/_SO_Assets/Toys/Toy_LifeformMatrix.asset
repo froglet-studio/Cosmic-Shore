@@ -106,6 +106,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 0abdfac5a80d40789934b73f4e838046, type: 2}
     - {fileID: 11400000, guid: 951335f3d27448a3a496ab8ec29279a0, type: 2}
     - {fileID: 11400000, guid: 801c826e68b0477e89de35fae8ff128e, type: 2}
+  - Name: Mandelbulb
+    ElementConfigs:
+    - {fileID: 11400000, guid: 6e2b8d41f09c4a17b3d5e08c71a4f962, type: 2}
+    - {fileID: 11400000, guid: 1a7c40d9e5b3486f92c1d70eb38a5c4d, type: 2}
+    - {fileID: 11400000, guid: 84f13b6ac2de49518a0b7e3d5c96124f, type: 2}
+    - {fileID: 11400000, guid: d09e5a24c73b41f6b81c3ae07d52964b, type: 2}
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

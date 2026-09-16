@@ -159,6 +159,7 @@ FLORA_PREFABS = {
     "Frond":        "Assets/_Prefabs/FloraAndFauna/FrondFlora.prefab",
     "Gyroid":       "Assets/_Prefabs/FloraAndFauna/GyroidFlora.prefab",
     "Lantern":      "Assets/_Prefabs/FloraAndFauna/LanternFlora.prefab",
+    "Mandelbulb":   "Assets/_Prefabs/FloraAndFauna/MandelbulbFlora.prefab",
     "Nerve":        "Assets/_Prefabs/FloraAndFauna/NerveFlora.prefab",
     "Pine":         "Assets/_Prefabs/FloraAndFauna/PineFlora.prefab",
     "Quasicrystal": "Assets/_Prefabs/FloraAndFauna/QuasicrystalFlora.prefab",

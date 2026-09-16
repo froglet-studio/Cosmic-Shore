@@ -165,6 +165,12 @@ EXCLUDE = set()
 # them back to the Blob caps.
 OWNED_ELSEWHERE = {
     "Lattice ": "Tools/Build/author_lattice_cell.py",
+    # Forward declaration: this script only reaches _SO_Assets/Lifeforms configs whose
+    # prefab is in LATTICE_PREFABS, and MandelbulbFlora is not one (it reproduces on the
+    # per-plant growth quota, not a colony cycle), so these are not enumerated today.
+    # The row is here so that if the enumeration ever widens, the hand-off is already
+    # stated rather than being discovered as a silent double-owner.
+    "Mandelbulb Flora ": "Tools/Build/author_mandelbulb_flora_assets.py",
 }
 
 

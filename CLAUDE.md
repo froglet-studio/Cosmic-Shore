@@ -13,7 +13,9 @@ credible **artificial life**. North star + roadmap: `Docs/ECOSYSTEM_MASTERPLAN.m
 log: `Docs/ECOSYSTEM.md`. These invariants are **locked** — do not relitigate or re-derive them.
 They are a direct application of "Favor Emergent Systems / Don't cheat emergence" (below) and —
 not by accident — they are also what makes the system credible as artificial life (a scripted
-outcome is optimization, not life). Use the `/ecology` skill for any change here.
+outcome is optimization, not life). Use the `/ecology` skill for any change here, and the **`/flora` skill on top of it for ANY new
+plant species** (which growth family, who owns which authored field, the measure/author/verify tool
+trio, and the traps).
 
 - **Continuity of existence — nothing pops in or out (PLATFORM-WIDE LAW, all of Cosmic Shore).**
   Nothing may *instantly* appear or disappear. Every entity — prisms, crystals, flora, fauna,
@@ -425,6 +427,39 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
   always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
+- **A species' shape may be a FUNCTION, and then it is addressed in the AMBIENT lattice.**
+  `MandelbulbFlora` is the fourth growth family: it grows over the surface of the **Mandelbulb**
+  (the escape-time fractal of `v -> v^n + c` in triplex coordinates), one prism per surface site,
+  spreading from a seed at its footing until it has covered the form. **§34's "grow on the surface's
+  OWN tile, never a fitted grid" is a rule about surfaces that HAVE an exact tiling** — a fractal
+  boundary has none (not periodic, not quasiperiodic, no repeat unit, not a smooth manifold), so
+  inventing one would BE the fitted grid §34 forbids. It addresses in the ambient `Vector3Int`
+  lattice instead, which keeps the property that rule actually protects: **sameness is an integer
+  address**, membership a pure function of three integers, so occupancy is exact, no tolerance can
+  drift, fronts meeting from opposite sides agree by construction, and nothing is baked — membership
+  IS the closed form. Reproduction is therefore the ordinary per-plant growth quota, not a colony
+  cycle: one plant is one whole bulb in its own frame. **The element is the fractal ORDER** (Charge
+  8 — the classic bulb — Mass 5, Space 3, Time 12), authored on the PREFAB because the config's
+  element is ROLLED, and resolved at `LifeForm.Initialize` like every other elemental law. Two
+  things it measured rather than assumed, and the first INVERTS §34: **the analytic distance
+  estimator's gradient is unusable as a prism orientation at voxel scale on a fractal boundary**
+  (neighbouring sites get wildly different normals and the plant renders as confetti), so
+  orientation comes from the EXPOSED-FACE census — the same exact integer occupancy the address is;
+  and **growth adjacency must be 26, not 6** (a negative control measures a 6-connected walk
+  reaching only 414 of 589 sites, i.e. a plant that can never complete itself). Its CHARGE variant
+  is fitted against its ARMOUR, not its box: the plate the other three clear at fuses 1,639 of
+  2,810 neighbour pairs once the shield's octahedron engages (§35), so Charge's plates are ~2.2x
+  smaller and read as a sparse skeleton its octahedra fill in — the outcome the gyroid and Schwarz P
+  Charge variants already shipped with. **Measured, that inverts with the shield rather than just
+  shrinking**: a Charge plate covers **0.326** of the pitch bare and **0.978** armoured against the
+  other three elements' bare **0.710**, so a Charge bulb is the DENSEST of the four while shielded
+  and the sparsest once stripped — which is the two-pass grazing cost made visible, and `--check`
+  fails the build if that ordering ever flips. It is in **no `SpawnProfile`** (opt-in from the Lifeform
+  Matrix toy, the worm colony's posture), so it costs no shipped cell anything until somebody puts
+  it in one. The species ships the tool trio a new flora is expected to: a MODEL
+  (`measure_mandelbulb_flora.py`), an ASSET generator, and a verifier that **compiles and RUNS the
+  shipped C#** against a fresh reference walk with a self-test that mutates the file and asserts the
+  gate trips. `Docs/ECOSYSTEM.md §44`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
