@@ -554,6 +554,15 @@ current — update them if not:
   run Unity and cannot compile (§0.05), so the human is the ONLY gate: hand them the exact
   steps and knobs, and never imply a check you did not perform.
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
+- **A MEASUREMENT quoted into a doc is a derived value, and nothing recomputes it.** A `file:line`
+  reference at least fails visibly when you go and look; a number does not — `1.16 → 4.60`,
+  `5.75% of the limb`, `~42,840 prisms at cap` all read as facts forever, and the tool that
+  produced them is one retune away from disagreeing. Before shipping, RE-RUN the tool that
+  measured every number the branch's docs state and diff the output against the prose, and where
+  the number will keep moving, say which tool owns it ("authored by
+  `Tools/Build/author_lattice_spindle_materials.py` (`--check`)") so the next reader re-derives
+  instead of trusting. A measurement with no named producer is the doc equivalent of a magic
+  constant.
 
 - **A class RENAME is invisible to every gate this project has, so the docs that name it go
   stale silently.** A `git mv` keeps the file's guid, so every scene, prefab and asset

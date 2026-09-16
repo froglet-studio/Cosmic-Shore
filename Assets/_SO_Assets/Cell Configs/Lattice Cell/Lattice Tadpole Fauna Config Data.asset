@@ -24,7 +24,7 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.563
+    HeartWorldScale: 1.737
     BaseBodyScale: 0.4
     BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
     StarvationSeconds: 90

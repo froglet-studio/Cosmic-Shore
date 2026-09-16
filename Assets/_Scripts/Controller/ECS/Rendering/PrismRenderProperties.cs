@@ -307,4 +307,52 @@ namespace CosmicShore.ECS
     {
         public float3 Value;
     }
+
+    // ----------------------------------------------------------------------
+    // Living-mass sway (Docs/ECOSYSTEM.md §47). A health prism bolted to a swaying
+    // spindle reads the LIMB'S OWN shear field, evaluated at its own vertices, so the
+    // two move together exactly and the lockup that reads as one creature holds.
+    //
+    // All four are constants of the prism's ATTACHMENT, baked once when it is bound:
+    // a prism does not move relative to the limb it is part of, so nothing here is
+    // ever re-computed. A zero span is an exact no-op and is the default, which is
+    // why a vessel's trail, an authored environment and a dead lifeform's skeleton
+    // are bit-identical to before — living mass is the mass that moves.
+    // ----------------------------------------------------------------------
+
+    /// The limb's +x axis expressed in THIS prism's object space, premultiplied by the
+    /// limb's sway amplitude. The change of basis is what makes a rib pitched off the
+    /// fin bend WITH the fin rather than across it, and it carries the prism's own
+    /// (often non-uniform) leaf scale for free.
+    [MaterialProperty("_SwaySpanX")]
+    public struct PrismSwaySpanXOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// The limb's +y axis, same basis and same amplitude — the secondary wave's axis.
+    [MaterialProperty("_SwaySpanY")]
+    public struct PrismSwaySpanYOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// The limb's +z as a linear FUNCTIONAL on this prism's object space, so
+    /// dot(PositionOS, Axis) is a vertex's height up the limb measured from the prism's
+    /// own origin. Not a direction — a row of the basis change, so it is correct under
+    /// non-uniform scale where a normalized axis would not be.
+    [MaterialProperty("_SwayAxis")]
+    public struct PrismSwayAxisOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    /// (Frequency rad/s, Phase rad, Z0 = the prism ORIGIN's height up the limb). Three
+    /// scalars in one float3 for the reason _JiggleParams records: the prism graphs
+    /// carry Vector1 and Vector3 property donors and no Vector4 one.
+    [MaterialProperty("_SwayTiming")]
+    public struct PrismSwayTimingOverride : IComponentData
+    {
+        public float3 Value;
+    }
 }

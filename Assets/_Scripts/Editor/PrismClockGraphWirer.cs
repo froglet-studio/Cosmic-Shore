@@ -107,6 +107,12 @@ namespace CosmicShore.Editor
                     // identity, which is every prism that has never deflected anything.
                     F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
                     V3("_JiggleParams", 0f, 0f, 0f),
+                    // Living-mass sway (Docs/ECOSYSTEM.md §47): a health prism rides the
+                    // shear field of the limb it is bolted to. A ZERO span is the exact
+                    // no-op, which is every prism that is not part of a living lifeform —
+                    // every trail, every authored environment, every dead one's skeleton.
+                    V3("_SwaySpanX", 0f, 0f, 0f), V3("_SwaySpanY", 0f, 0f, 0f),
+                    V3("_SwayAxis", 0f, 0f, 0f), V3("_SwayTiming", 0f, 0f, 0f),
                     // Shield engage/shatter morph (Docs/PRISM_ANIMATION.md §4.8):
                     // Duration 0 = unstamped identity. The CF + edges stay python-owned
                     // (Tools/Shaders/wire_prism_shield_morph.py); these properties close
@@ -149,6 +155,12 @@ namespace CosmicShore.Editor
                     // identity, which is every prism that has never deflected anything.
                     F("_JiggleStartTime", 0f), F("_JiggleDuration", 0f),
                     V3("_JiggleParams", 0f, 0f, 0f),
+                    // Living-mass sway (Docs/ECOSYSTEM.md §47): a health prism rides the
+                    // shear field of the limb it is bolted to. A ZERO span is the exact
+                    // no-op, which is every prism that is not part of a living lifeform —
+                    // every trail, every authored environment, every dead one's skeleton.
+                    V3("_SwaySpanX", 0f, 0f, 0f), V3("_SwaySpanY", 0f, 0f, 0f),
+                    V3("_SwayAxis", 0f, 0f, 0f), V3("_SwayTiming", 0f, 0f, 0f),
                     // Shield engage/shatter morph (Docs/PRISM_ANIMATION.md §4.8):
                     // Duration 0 = unstamped identity. The CF + edges stay python-owned
                     // (Tools/Shaders/wire_prism_shield_morph.py); these properties close
