@@ -180,19 +180,41 @@ controllers rather than by a cell config), and those rounds show the honest "pre
 with the mode's name and description still on screen. A scene with no vessel still gets the orbiting
 look at the arena; only the tap-in is lost, and it says so once with the fix attached.
 
-### 1.6 The AI roster is dealt ONCE
+### 1.6 The AI roster is dealt ONCE — and the FIELD is fixed at four
 
-`MaelstromDataSO.MaelstromAISeats` (name **+ domain**) is seeded on the first round that backfills
-and replayed into every round after it, so the party races the same named, same-coloured, same-faced
-opponents all tournament.
+**A Maelstrom seats `MaelstromDataSO.SeatCount` pilots every round — four by default — and the AI
+that fill the empty seats are dealt at HUB ENTRY, before the first round.**
 
-It used to be a list of NAMES only. That half worked — and because the summary resolves an AI's face
-by name, the faces worked too — while the DOMAIN was recomputed every round by the balanced
-placement pick, which reads the live human distribution. The moment a pilot changed domain between
-rounds the bots re-balanced around them, and across a tournament scored per DOMAIN that is worse than
-cosmetic: the opponent you were racing is now a team-mate. What deliberately does NOT persist is the
-bot's HULL — fifteen of the sixteen pool modes lock to one vessel, so the ship has to change with the
-round. *A bot is its name, its face and its colours, exactly like a human pilot.*
+Two things follow from "a tournament is scored across sixteen matches, not one".
+
+**The field size is not the launch modal's stepper.** That stepper is a preference for ONE match.
+Here the placement table (`PointsByPlace`) is per DOMAIN, so the shape of the teams IS the shape of
+the scoring, and a round played three-up is not comparable with a round played four-up. Four is the
+Maelstrom card's own `MaxPlayersAllowed`, so **a full party of four brings no AI at all and a solo
+player brings three**. `MaelstromController.ApplyRoster` writes it through
+`GameDataSO.ConfigurePlayerCounts`, from the hub tick and again at launch — the second call is what
+covers a degraded `BeginNextRound` that never went through a hub tick, rather than trusting that it
+did. It runs AFTER `SyncFromArcadeGame`, which republishes the drawn card's own player range.
+
+**The roster is dealt in the hub, not by the first round that happens to backfill.** It used to be
+the latter, which made the intro hub honest about nothing: the party readied up against a field
+that did not exist yet, and the bots they would race were decided by whichever mode loaded. A seat
+(`MaelstromAISeat`) carries a NAME and a DOMAIN, and both are dealt once and replayed verbatim into
+every later round — the domain because it used to be recomputed each round by the balanced
+placement pick, so the moment a pilot changed domain the bots re-balanced around them and the
+opponent you were racing became a team-mate, across a tournament scored per domain.
+
+The deal uses the spawner's own algorithm — `ServerPlayerVesselInitializerWithAI.GetBalancedDomain`
+against the same two count dictionaries — deliberately rather than a second copy, so **moving WHEN
+the deal happens cannot change WHAT it deals**. `ServerPlayerVesselInitializerWithAI.SpawnAIs` keeps
+its own fallback deal for the degraded case and now always finds the seats already dealt. Names come
+from `MaelstromDataSO.AIProfileList`, held on the tournament asset rather than read off a game
+scene's spawner, because the deal happens before any game scene exists and the summary resolves a
+bot's face BY NAME.
+
+What deliberately does NOT persist is the bot's HULL: fifteen of the sixteen pool modes lock to one
+vessel, so the ship has to change with the round. A bot is its name, its face and its colours,
+exactly like a human pilot.
 
 ### 1.1 The intensity ladder — which modes a run can draw
 

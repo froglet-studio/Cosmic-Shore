@@ -108,7 +108,8 @@ namespace CosmicShore.Utility
         menuName = "ScriptableObjects/Data Containers/" + nameof(MaelstromDataSO))]
     /// <summary>
     /// One AI opponent's identity for the whole tournament: who they are and which team they play
-    /// for. Dealt once, on the first round that backfills, and replayed into every later round.
+    /// for. Dealt once, in the hub before the first round (<c>MaelstromController.ApplyRoster</c>),
+    /// and replayed into every later round.
     /// </summary>
     [System.Serializable]
     public class MaelstromAISeat
@@ -258,6 +259,29 @@ namespace CosmicShore.Utility
         /// its face and its colours, exactly like a human pilot.</para>
         /// </summary>
         [System.NonSerialized] public List<MaelstromAISeat> MaelstromAISeats = new();
+
+        [Header("Roster")]
+        [SerializeField, Range(1, 4), Tooltip(
+            "How many pilots a Maelstrom round seats, ALWAYS. A tournament is a fixed field: the " +
+            "same faces for every round, with AI filling whatever the party does not. A party of " +
+            "four brings no AI at all; a solo player brings three. This is deliberately NOT the " +
+            "launch modal's player stepper - that number is a lobby preference for one match, and " +
+            "a tournament whose field size changed between rounds would be scoring a different " +
+            "game each time.")]
+        int seatCount = 4;
+
+        /// <summary>The fixed number of pilots every round of a Maelstrom seats (humans + AI).</summary>
+        public int SeatCount => Mathf.Clamp(seatCount, 1, 4);
+
+        [SerializeField, Tooltip(
+            "The profile list AI seats are named and faced from. Held HERE rather than read off " +
+            "the game scene's spawner because the roster is dealt in the HUB, before any game " +
+            "scene exists - and the summary resolves a bot's face by name, so the name has to be " +
+            "one this list can answer for.")]
+        SO_AIProfileList aiProfileList;
+
+        /// <summary>The profile list <see cref="MaelstromAISeats"/> are dealt from. May be null.</summary>
+        public SO_AIProfileList AIProfileList => aiProfileList;
 
         /// <summary>Cumulative standings, keyed by domain (team).</summary>
         [System.NonSerialized] public List<MaelstromDomainStanding> Standings = new();

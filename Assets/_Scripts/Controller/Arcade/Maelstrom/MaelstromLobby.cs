@@ -178,6 +178,14 @@ namespace CosmicShore.Gameplay
                 // showing an empty preview frame for a game that had in fact been chosen.
                 tc.PrepareNextRound();
 
+                // Fix the field before anything reads it: SeatCount pilots, the party's humans
+                // plus AI for the rest, and the AI roster DEALT here rather than by whichever
+                // round happens to backfill first. The hub is where a player decides whether to
+                // ready up, so it is the last place that should be vague about who they are
+                // racing.
+                RefreshHumans();
+                tc.ApplyRoster(_humans);
+
                 _authoritative = new MaelstromRoundTicket
                 {
                     GameIndex = (short)Mathf.Clamp(tournamentData != null ? tournamentData.PendingGameIndex : -1,

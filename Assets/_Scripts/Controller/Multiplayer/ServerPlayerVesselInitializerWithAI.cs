@@ -185,11 +185,14 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Maelstrom: the AI roster is dealt ONCE, on the first round that backfills, and
-            // replayed into every later round - so the party races the same named, same-coloured
-            // opponents all tournament instead of a fresh anonymous set each time. Seeded inside
-            // the loop below rather than here, because a seat is a name AND a domain and the
-            // domain is only decided down there.
+            // Maelstrom: the AI roster is dealt ONCE and replayed into every later round, so the
+            // party races the same named, same-coloured opponents all tournament instead of a
+            // fresh anonymous set each time. The deal itself happens in the HUB
+            // (MaelstromController.ApplyRoster), before any game scene exists - a party readying
+            // up should know who it is about to race - so in practice the loop below always finds
+            // a seat already dealt. The fallback deal is kept for the degraded case where a round
+            // launches without a hub tick, and uses the same GetBalancedDomain against the same
+            // two dictionaries, so it cannot disagree with the hub's answer.
             bool tournament = gameData.IsMaelstromMode && tournamentData != null;
 
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at

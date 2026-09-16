@@ -774,3 +774,39 @@ layout is redesigned.
 **Left alone as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The channel is
 raised and nothing subscribes to it, in code or in any scene — a removal candidate, but a SOAP
 integration point rather than part of the two-screen path.
+
+## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+`MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
+grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of
+`Docs/HomeHub/ARCHITECTURE.md` records for the toy cards and `Docs/GAME_MODE_TOPBAR.md` for the goal
+stack (a low-resolution plate upscaled on every display: the pixelated bent corners), squashed to
+3.25:1 on top of it. And it said only the mode's NAME, so sixteen rows of a ladder whose entire
+subject is *which rung a mode enters on* told the player nothing about the ladder.
+
+It is now the Toy Box's **variant row**: the same two chamfered sprites (`Group 1585.png` body,
+`Rectangle 1127 (2).png` rim) drawn **Sliced** at `pixelsPerUnitMultiplier = referencePixelsPerUnit
+/ 100`, the mode's name bottom-left and one detail line above it — `TIER 2  ·  SPARROW`. Cell
+310×88 against the variant row's 275×88, two columns in a ~713-wide viewport.
+
+**It deliberately does not use the big 400×250 toy CARD, and it deliberately does not fill that
+card's portrait slot.** The card's upper two thirds are a baked portrait; a mode's nearest field is
+`SO_ArcadeGame.IconActive`, which is the ARCADE GRID's card art and is legacy — **Salvo carries
+Rampage's picture and Joust carries Duel for the Cell's**. Filling a portrait slot from a field that
+does not mean what the slot wants is the same mistake as the earlier pass that wrote that sprite
+over the row's BACKGROUND and turned every row into a cyan slab (`MaelstromPoolEntry.icon` is still
+left empty for exactly that reason). The Toy Box's own answer to "this thing has no portrait" is the
+accent fill, and a mode has no authored accent either — so the row states facts instead of inventing
+art. General rule: **a card slot is a promise about what the data means, not a place to put the
+nearest sprite the asset happens to carry.**
+
+The scroll content also gained a `ContentSizeFitter`. Its height was AUTHORED at 1351.7 for a grid
+whose rows add up to 903, so the list has always ended in a screenful of nothing, and any cell-size
+change makes that worse. A fitter rather than a re-measured literal, because the pool is sixteen
+modes today and the whole point of the asset is that adding a seventeenth is one edit.
+
+Authored by `Tools/Build/author_maelstrom_pool_cards.py` (`--check`), which reads the slice
+multiplier off the canvas rather than writing it down, and **asserts that the fitter landed on the
+pool list's own Content object** — the first cut of that insert anchored on the `m_Layer` line after
+the matched body and put the component on whatever object was serialized next (`AvatarSpace`), which
+Unity accepts in silence.

@@ -329,6 +329,99 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Fix the tournament's FIELD: <see cref="MaelstromDataSO.SeatCount"/> pilots every round,
+        /// the party's humans plus AI for the rest - and deal those AI once, here in the hub,
+        /// rather than lazily in the first round that happens to backfill.
+        ///
+        /// <para><b>Why the seat count is not the launch modal's number.</b> The stepper on the
+        /// arcade card is a preference for ONE match. A tournament is scored across sixteen of
+        /// them, so a field that changed size between rounds would be scoring a different game
+        /// each time - a three-player round and a four-player round are not comparable, and the
+        /// placement table (<see cref="MaelstromDataSO.PointsByPlace"/>) is per DOMAIN, so the
+        /// shape of the teams is the shape of the scoring. Four is the card's own maximum, so a
+        /// full party of four brings no AI at all and a solo player brings three.</para>
+        ///
+        /// <para><b>Why the roster is dealt HERE.</b> It used to be dealt by the first round's
+        /// spawner, which made the intro hub honest about nothing: the party readied up against a
+        /// field that did not exist yet, and the bots they would race were decided by whichever
+        /// game happened to load. Dealing at hub entry makes the roster a property of the
+        /// TOURNAMENT, which is what "the same bot across all game modes" actually means. The
+        /// spawner still owns the spawn - it simply replays a seat it now always finds already
+        /// dealt (<c>ServerPlayerVesselInitializerWithAI.SpawnAIs</c>).</para>
+        ///
+        /// <para>The placement algorithm is the spawner's own
+        /// (<c>ServerPlayerVesselInitializerWithAI.GetBalancedDomain</c>, called against the same
+        /// two count dictionaries), deliberately rather than a second copy: identical inputs give
+        /// identical seats, so moving WHEN the deal happens cannot change WHAT it deals.</para>
+        ///
+        /// <para>Host-only, and idempotent: seats already dealt are never re-dealt or re-balanced.
+        /// That is the whole point - a bot that changed domain between rounds turned an opponent
+        /// into a team-mate mid-tournament.</para>
+        /// </summary>
+        public void ApplyRoster(IReadOnlyList<IPlayer> humans)
+        {
+            if (!IsHost || _tournament == null || _gameData == null) return;
+
+            // The caller's list is already human-only (the hub waits on people, not bots), but
+            // BuildHumanCounts wants the concrete Player to read NetDomain off, and a null or an
+            // AI slipping in would be counted as a seat nobody is sitting in.
+            _rosterHumans.Clear();
+            if (humans != null)
+                for (int i = 0; i < humans.Count; i++)
+                    if (humans[i] is Player pl && pl.IsSpawned && !pl.NetIsAI.Value)
+                        _rosterHumans.Add(pl);
+
+            int seats = _tournament.SeatCount;
+            _gameData.ConfigurePlayerCounts(seats, _rosterHumans.Count);
+
+            DealAISeats(Mathf.Max(0, seats - _rosterHumans.Count), _rosterHumans);
+        }
+
+        /// <summary>Scratch list for <see cref="ApplyRoster"/> - it runs on a host tick.</summary>
+        readonly List<Player> _rosterHumans = new();
+
+        /// <summary>
+        /// Append seats until the roster holds <paramref name="aiWanted"/>. Existing seats are read
+        /// back untouched and still bump the placement counts, so a bot dealt now is balanced
+        /// against the ones already sitting rather than against an empty board.
+        /// </summary>
+        void DealAISeats(int aiWanted, List<Player> humans)
+        {
+            var seats = _tournament.MaelstromAISeats;
+            if (seats.Count >= aiWanted) return;
+
+            var activeDomains = ServerPlayerVesselInitializerWithAI.BuildActiveDomains(
+                _gameData.RequestedDomainCount);
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
+
+            for (int i = 0; i < seats.Count; i++)
+                if (totalCounts.ContainsKey(seats[i].Domain)) totalCounts[seats[i].Domain]++;
+
+            // Drawn for the seats still to fill, so a re-deal after a player leaves does not
+            // re-roll the names already sitting.
+            var profiles = _tournament.AIProfileList != null
+                ? _tournament.AIProfileList.PickRandom(aiWanted - seats.Count)
+                : null;
+
+            for (int drawn = 0; seats.Count < aiWanted; drawn++)
+            {
+                string name = profiles != null && drawn < profiles.Count
+                    ? profiles[drawn].Name
+                    : $"AI {seats.Count + 1}";
+
+                var domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                totalCounts[domain]++;
+
+                seats.Add(new MaelstromAISeat { Name = name, Domain = domain });
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                $"[Maelstrom] Roster: {aiWanted} AI seat(s) - " +
+                string.Join(", ", seats.ConvertAll(s => $"{s.Name}/{s.Domain}")));
+        }
+
+        /// <summary>
         /// Host launches the round the hub has been previewing. Draws one first if nothing is
         /// pending, so a degraded hub (no preview, no draw) still starts a game rather than
         /// stalling. The party follows the Single load.
@@ -479,6 +572,12 @@ namespace CosmicShore.Gameplay
 
             _gameData.SyncFromArcadeGame(game);        // scene / mode / multiplayer
             _gameData.IsMaelstromMode = true;         // SyncFromArcadeGame doesn't set it; keep it on.
+
+            // AFTER SyncFromArcadeGame, which republishes the card's own player range - the
+            // tournament's field is fixed at SeatCount and does not take a per-mode preference.
+            // The hub already applied this; re-applying is what covers a degraded launch (a
+            // BeginNextRound that never went through a hub tick) rather than trusting it.
+            ApplyRoster(_gameData.Players);
             _gameData.InvokeGameLaunch();              // → SceneLoader.LaunchGame (host loads; clients follow)
         }
 
