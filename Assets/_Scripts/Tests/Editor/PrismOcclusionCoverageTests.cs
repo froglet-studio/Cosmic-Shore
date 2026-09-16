@@ -188,6 +188,9 @@ namespace CosmicShore.Tests
                 "PrismOcclusionConfig is enabled but outerRadiusScale <= 0, which the shader reads as 'corridor off'.");
             Assert.LessOrEqual(config.InnerRadiusScale, config.OuterRadiusScale,
                 "PrismOcclusionConfig innerRadiusScale must not exceed outerRadiusScale (the feather would invert).");
+            Assert.LessOrEqual(config.NearRadiusScale, config.OuterRadiusScale,
+                "PrismOcclusionConfig nearRadiusScale must not exceed outerRadiusScale (the corridor would narrow toward the ship).");
+            Assert.GreaterOrEqual(config.NearRadiusScale, 0f, "nearRadiusScale must not be negative.");
             Assert.Greater(config.FallbackVesselRadius, 0f,
                 "fallbackVesselRadius must be positive — a vessel whose hull cannot be measured would otherwise " +
                 "switch the corridor off silently, which is the platform law failing quietly.");

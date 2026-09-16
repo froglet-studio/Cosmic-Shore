@@ -1297,6 +1297,43 @@ per task; it is cheap.
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
 
+### Technique: SOLVE a UI rect in canvas pixels offline (and prove two widgets are disjoint)
+
+"Does this button sit on top of that one?" is answerable from the scene YAML alone, and it is
+the question a rendered-frame report ("a strange button over the play button, it goes away when
+clicked") reduces to. Walk the `RectTransform` chain from the canvas root, taking the root's size
+from the scene's `CanvasScaler.m_ReferenceResolution` (never from the root's own anchors — a
+canvas root is `(0,0)-(0,0)` with zero `m_SizeDelta` and measures 0×0 walked naively), and for
+each level compute `size = (amax − amin) ⊗ parentSize + sizeDelta`, the anchor reference point
+`amin ⊗ parentSize + pivot ⊗ (amax − amin) ⊗ parentSize`, then
+`left/bottom = ref + anchoredPosition − pivot ⊗ size`. `Tools/Build/author_arena_launch_panel_layout.py`
+carries the worked version (`solve_rect`, `overlaps`) and uses it as a GATE: it places the widget
+AND asserts the two rects are disjoint, so the clone-and-forget below cannot pass `--check` again.
+Watch the assert fire once on a negative control (an oversized `size`) before trusting it.
+
+### Trap: a widget CLONED from a sibling inherits the sibling's PLACE
+
+Duplicating a button to make a second one copies its `RectTransform` verbatim — same parent, same
+anchors, same pivot, same offset — and the copy renders exactly on top of the original until
+someone moves it. Nothing fails: both draw, both raycast, the top one wins the press. The arena
+launch panel shipped its SELECT VESSEL button as a byte-for-byte clone of the Play button's rect,
+hidden on confirm, so it read as "a button over Play that vanishes when pressed" and survived every
+static check because a rect is not a reference. When a report is about what is ON SCREEN and the
+scene shows two siblings with identical `m_AnchorMin/Max`, `m_AnchoredPosition`, `m_SizeDelta` and
+`m_Father`, that IS the finding — solve the rects (above) rather than reading the component fields,
+which will all look correct.
+
+### Trap: a sprite guid no `.meta` owns draws a SOLID WHITE QUAD, not nothing
+
+A `UnityEngine.UI.Image` whose `m_Sprite` guid resolves to no asset keeps drawing — its quad, in
+its tint, at its rect. The Urchin's class asset pointed `IconActive`/`IconInactive` at art deleted
+before the clone's history begins, and the arena carousel showed a white square and called it the
+Urchin. Same family as the `RawImage` frame trap in CLAUDE.md, and the same invisibility: a
+reference check by guid is the only offline test (`Tools/Build/check_vessel_class_icons.py`
+resolves every `SO_Class_*` icon against the `.meta` set; `--self-test` fires on a dangling and an
+empty guid). When a surface reads as a blank rectangle, grep the guid it names BEFORE reading the
+component — the component is correct.
+
 ### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
 
 "How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
@@ -2208,6 +2245,23 @@ derivation attached, and re-running the harness after any shader edit re-checks 
 ratio in the harness, so a later change to the motion that widens the envelope fails there
 rather than as prisms popping at the screen edge.
 
+**Reuse an existing harness's shim for a DIFFERENT function in the same file — do not write a
+second one.** `Tools/Shaders/verify_prism_shard3d.py` exposes `SHIM`, `translate()` and
+`clang_cmd()` as module members, so a scratch script can `import verify_prism_shard3d as H`,
+write its own three-line `extern "C"` ABI around any function in `PrismOcclusionCorridor.hlsl`
+(the 2026-09-15 near-circle change did this for `PrismOcclusionFade_float`) and set a file-scope
+global directly (`_PrismOcclusionNearRadius = n`) — no copy of the substitution list, so a fix to
+the harness reaches both. Then diff the compiled function against a Python reference over random
+samples; 40k samples at 2.8e-6 max deviation is a real proof, "I read the lerp" is not.
+
+**A new per-frame scalar for a Custom Function node is cheaper as a FILE-SCOPE HLSL global than as
+a new node input.** Widening `float3 Params` to `float4` costs a `.shadergraph` edit on every graph
+the function is spliced into (two here), a property retype and a re-run of the wiring script; a
+`float _Foo;` declared beside the file's other globals and driven by `Shader.SetGlobalFloat` costs
+none of that, reaches every graph the file is included in, and reads 0 until published — which is
+the old behaviour by construction. The corridor's `_PrismOcclusionNearRadius` and the Lab's dither
+dials are the shape.
+
 ## 4.5c-r Technique: RASTERIZE the shipped shader — the rung above compiling it
 
 §4.5c proves a shader *computes* what you think. It cannot tell you the effect is **invisible**,
@@ -2523,6 +2577,53 @@ in different faces, and flattening welds it shut.
 remove every `Connections` record whose src OR dst is a doomed id, then fix the `Definitions`
 `ObjectType → Count` rows. Assert afterwards that no connection references a missing object —
 that one check is worth more than re-reading the diff.
+
+**Repairing geometry the IMPORTER discards, and the one technique that makes it safe.**
+Unity's `"A polygon of Mesh 'X' ... is self-intersecting and has been discarded"` is not a
+quality warning — it names an action the importer TOOK, so it is a report of missing faces in
+the shipped mesh. **Measure the action a warning names, not the ratio**: "one face out of
+11,113, 0.009%, pre-existing art" is entirely true and answers the wrong question, and it is
+how twelve missing hull faces survived a first pass. (The mesh name in the message is the
+**Model** node, not the Geometry node — they differ, and searching the wrong one finds nothing.)
+
+The usual offender is a **zero-length edge**: two adjacent corners indexing different vertices
+at the identical position. Repair by dropping the redundant CORNER, not by moving or merging a
+vertex — and check first whether the two corners carry the same UV (if so the edit is lossless;
+if not you are about to weld a seam). Where they differ only in normal, pick which to keep by
+MEASURING — the corner whose normal sits farther from the polygon's own Newell normal is the
+one to drop. Scope the repair to exactly what the importer discards: a zero-area triangle is
+degenerate too and Unity KEEPS it, so repairing one both exceeds the report and would leave a
+2-gon.
+
+Removing one corner touches five parallel arrays with three different domains —
+`PolygonVertexIndex` (corner), normals (ByPolygonVertex), UV indices (ByPolygonVertex +
+IndexToDirect), materials (**ByPolygon — unchanged**, the polygon count does not move), and
+`Edges` + smoothing (ByEdge). Getting the domain wrong is silent.
+
+**The generalizable technique: PROVE A REBUILD RULE AGAINST THE SHIPPED ARTIFACT BEFORE YOU
+RELY ON IT.** `Edges` stores one corner position per unique undirected edge, so removing a
+corner shifts every later entry and patching it by hand is guesswork. Instead, guess the rule
+that BUILT it — emit the first occurrence of each undirected vertex pair in polygon-corner
+order — and compare against what is already in the file. When that reproduces the shipped array
+exactly (same length, same order, same values), "I think this is how it was built" becomes a
+fact and rebuilding it is safe; when it does not, you have learned that cheaply and can refuse
+to write. This applies to any derived array you must regenerate rather than patch. Sanity-check
+the *direction* of the result too: here the edge count RISES by one per repaired polygon, and a
+model that predicted a fall would have been wrong about the topology.
+
+Then verify in layers, cheapest first: round-trip the writer on the untouched file (node count
+and every property value, plus an independent reader); diff the node tree and assert that ONLY
+the arrays you meant to touch differ; assert the invariants that must hold (vertex positions
+byte-identical, blend shapes byte-identical, polygon count unchanged, each layer's length
+matching its domain); then `assimp` the before and after and diff the reports.
+
+**A path with a space silently truncates a shell sweep.** `for f in $(git diff --name-only …)`
+and `… | xargs grep` both word-split, so `Assets/_Models/Vessel Models/Thing.fbx.meta` becomes
+two nonexistent paths — and the loop does not fail, it just processes the files that happen to
+have no spaces. A deleted-asset guid sweep reported "1 file, 0 references" for a change that
+deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
+`while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
+clean result.
 
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
@@ -3296,6 +3397,31 @@ never fold it into a fix for something else.
   the next person re-adds it. The mirror also holds: before REMOVING a `using`, enumerate the
   types that namespace declares and grep the file's body for all of them — checking only the
   one symbol you deleted misses a sibling type that was riding the same import.
+- **"Referenced by nothing" is measured against whatever you grepped, and an ANIMATOR references
+  CLIPS by the model's guid.** A liveness sweep over prefabs and scenes is the obvious one and it
+  misses the case that costs you: a model with ZERO prefab references can still be supplying
+  animation clips to a shipped object, because the reference lives in an `AnimatorController`'s
+  `m_Motion` entries and points at the model's guid, not at the model as an object. Two Cosmic
+  Shore vessel models sat on a delete list that way — one supplying 7 clips to NINE vessels — and
+  the documentation that cleared them was written from a prefab-and-scene sweep. Resolve liveness
+  in TWO steps and never one: grep the guid across `*.controller`/`*.overrideController` as well,
+  then **resolve each referring controller to the prefabs that use IT**, because a controller can
+  itself be dead (this project had two same-named `MantaAnimatorController`s, and the one five
+  vessels use is not the one in `_Animations/`). A reference count is not a liveness measurement
+  until every referrer is itself resolved.
+- **An overlap score is meaningless when the baseline overlap is already ~0 — run the control
+  against the SHIPPED asset before reading a low score as a regression.** Validating "does the new
+  geometry still sit inside the collider that was authored for it" by scoring containment gives a
+  number that looks decisive and is not: if the collider never bounded its own geometry in the
+  first place, the score is ~0 either way and reads as "my change broke it". Measured on the
+  Urchin: 3.58% for the shipped hull against 3.54% for the replacement, i.e. the swap was exactly
+  neutral and the colliders were already loose — a real but SEPARATE pre-existing defect, and not
+  a reason to hold the change. Always compute the same score for the asset you are replacing.
+  Its companion: **a weak discriminator collapses onto the dominant element.** Matching a part to
+  "the nearest bone" by centroid, and then by nearest skinned vertex, both picked the body bone
+  for every appendage on a radially symmetric hull and flagged a correct mapping as wrong twice.
+  Score by something DIRECTIONAL and size-aware (what fraction of each bone's geometry falls
+  inside this part's own volume), and treat two cheap metrics agreeing as one metric.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report
@@ -3319,6 +3445,35 @@ never fold it into a fix for something else.
   unchanged at 0.825, because `z = 20` still won the `max`. Compute it and assert it rather
   than assuming either way — the identical geometry that once made a collider 8× too big is
   what makes this edit free, and only arithmetic tells you which case you are in.
+- **A shader parameter documented as "unit-free" is unit-free only under a UNIFORM scale, and a
+  header claiming otherwise will name its own counter-examples.** `SpindleSway.hlsl` bends a limb
+  with a first-order shear, `offset.x = Amplitude * PositionOS.z * sin(...)`, so `Amplitude` is a
+  dimensionless SLOPE and the header said it therefore "transfers across meshes that disagree
+  about scale by three orders of magnitude". It does not: the shear is evaluated in OBJECT space,
+  so a renderer carrying `localScale (sx, sy, sz)` deflects its tip by `atan(Amplitude * sx / sz)`
+  in WORLD terms — a mesh stretched along its own bend axis bends that much LESS. At the shared
+  0.08 the uniformly-scaled creature spindles leaned 4.57° and every branch-family spindle
+  0.64–1.48°, i.e. the lattice species read as dead while wearing the material that made the fish
+  wave. The reassuring clause in the header (*"every shipped spindle prefab is scaled on z to
+  match (Branch 6.2, TadpoleSpindle 3.0)"*) named the two prefabs that DISAGREE — **a sentence
+  offered as evidence for a claim is the first place to check the claim**, because whoever wrote
+  it had the numbers in front of them and drew the wrong conclusion. Two general rules: any
+  normalized/unit-free/"scale-free" parameter consumed in OBJECT space is a claim about the
+  transform above it, so measure the tip deflection per prefab before sharing one material; and
+  when the fix is per-mesh, prefer **per-mesh MATERIALS with a solved constant** over a per-mesh
+  shader branch — the solve is offline arithmetic (`author_lattice_spindle_materials.py` reads
+  each prefab's own stretch and back-solves the amplitude for one authored angle), and the shader
+  stays one expression. Target the ANGLE, not the offset: equal angle is equal FRACTION OF THE
+  LIMB, so one number serves a family whose limbs span 3–24 world units and survives a later
+  uniform rescale of the whole family.
+- **An asset re-pointer is idempotent only if it asserts the END STATE, never a swap COUNT.** The
+  natural shape for "swap every renderer on this prefab onto the new material" is to count the
+  `guid:` substitutions and `assert swapped == len(renderers)` — which passes on the first run and
+  FAILS on the second with `expected 2 references to swap, swapped 0`, because the work is already
+  done. That makes the tool un-re-runnable and makes `--check` impossible, which is the whole
+  contract (§1.2). Assert instead that every named renderer now carries the new guid, and give the
+  "carries neither the old nor the new one" case its own error message — that is the only genuine
+  failure, and it is a hand-edit somebody else made, not your re-run.
 - **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
   The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
   effective number was 12, three assets had been tuned to match it, a config default and a

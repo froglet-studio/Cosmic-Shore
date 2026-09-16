@@ -9,11 +9,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6455206541193087393}
-  - component: {fileID: 1012464960520922387}
   - component: {fileID: 4652232322436628206}
   - component: {fileID: 841515063310731916}
   - component: {fileID: 669295539538228929}
   - component: {fileID: 20858429316227928}
+  - component: {fileID: 680405309579507621}
   m_Layer: 0
   m_Name: QuadFish
   m_TagString: Untagged
@@ -38,23 +38,6 @@ Transform:
   - {fileID: 6589823528699324667}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!111 &1012464960520922387
-Animation:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6455206541193087406}
-  m_Enabled: 1
-  serializedVersion: 4
-  m_Animation: {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
-  m_Animations:
-  - {fileID: 7400000, guid: b7f376d6832cae44c81e0327ca7d2291, type: 2}
-  m_WrapMode: 0
-  m_PlayAutomatically: 1
-  m_AnimatePhysics: 0
-  m_UpdateMode: 0
-  m_CullingType: 0
 --- !u!114 &4652232322436628206
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,7 +132,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
+  - {fileID: 2100000, guid: 2485e71c5c37c9127979fbd781577d27, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -272,6 +255,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   fauna: {fileID: 0}
   despawnGraceSeconds: 0.5
+--- !u!114 &680405309579507621
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6455206541193087406}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2db8c1ad4a7b6d604ed076a31807ebc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  idleStrokeDegrees: 6
+  fastStrokeDegrees: 26
+  idleStrokeHz: 0.5
+  fastStrokeHz: 2.2
+  speedForFullStroke: 14
+  bankDegreesPerHundredTurnRate: 34
+  maxBankDegrees: 28
+  bankResponse: 3.5
 --- !u!1001 &8182856232501990
 PrefabInstance:
   m_ObjectHideFlags: 0

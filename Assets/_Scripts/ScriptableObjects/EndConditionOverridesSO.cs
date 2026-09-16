@@ -67,6 +67,16 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
         public const int DefaultTollwayTollTarget = 4;
 
+        /// <summary>Wrecking Ball hostile-prism target used when <see cref="wreckingBallPrismTarget"/>
+        /// is 0. Lower than Rampage's 2000 because the court forest is smaller than Rampage's
+        /// (35-59 plants against 59-295) and a match should end with forest still standing.</summary>
+        public const int DefaultWreckingBallPrismTarget = 1500;
+
+        /// <summary>Undertow point target used when <see cref="undertowPointTarget"/> is 0. A bend
+        /// (an opposing pilot caught in the plate) is 3 and a creature killed by it is 1
+        /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
+        public const int DefaultUndertowPointTarget = 12;
+
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
@@ -108,6 +118,13 @@ namespace CosmicShore.ScriptableObjects
         /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
         /// <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
         public const int DefaultRedlineGateTarget = 24;
+
+        /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
+        /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
+        /// through them), so the controller derives its lap count as target / rings and the
+        /// target must be a whole number of laps; the generator asserts it.</summary>
+        public const int DefaultRegattaGateTarget = 24;
 
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
@@ -205,12 +222,28 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int redlineGateTarget = 24;
 
+        [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "arena lays eight rings a lap with the rails threaded through them, so this " +
+                 "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
+                 "three laps. 0 uses the default.")]
+        [Min(0)] public int regattaGateTarget = 24;
+
         [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
                  "goal race: a ring must be planted, survive, and be threaded, which is " +
                  "slower than shooting at a net and faster than tearing down a wreck.")]
         [Min(0)] public int tollwayTollTarget = 8;
+
+        [Tooltip("Wrecking Ball: hostile prisms (the court forest, rival trails, fauna bodies) a " +
+                 "DOMAIN must destroy between them to win (race to N) - with the ball OR the " +
+                 "cavitation plate; your own team's mass never counts. 0 = default (1500).")]
+        [Min(0)] public int wreckingBallPrismTarget = 1500;
+
+        [Tooltip("Undertow: POINTS a DOMAIN needs to win (race to N). A bend - an opposing pilot " +
+                 "caught in your cavitation plate - is 3 points and a creature the plate kills is " +
+                 "1, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int undertowPointTarget = 12;
 
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
@@ -233,8 +266,11 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int redlineGateTargetBuild = 24;
+        [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
+        [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
+        [Min(0)] public int undertowPointTargetBuild = 12;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -400,6 +436,14 @@ namespace CosmicShore.ScriptableObjects
             redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget;
 
         /// <summary>
+        /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
+        /// <c>RegattaController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetRegattaGateTarget() =>
+            regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget;
+
+        /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
         /// steal count, so teammates pool.
@@ -414,6 +458,22 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetTollwayTollTarget() =>
             tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
+
+        /// <summary>
+        /// Wrecking Ball prism target ("race to N" hostile prisms destroyed): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWreckingBallPrismTarget"/>. Compared against a
+        /// DOMAIN's summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetWreckingBallPrismTarget() =>
+            wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget;
+
+        /// <summary>
+        /// Undertow point target ("first domain to N points"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultUndertowPointTarget"/>. Compared against a DOMAIN's bends
+        /// (CombatPoints) plus kills (LifeformsKilled), folded by UndertowScoringRuleSO.DomainValue.
+        /// </summary>
+        public int GetUndertowPointTarget() =>
+            undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
@@ -440,8 +500,11 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
+                GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
+                GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
+                GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
                 _                                   => 0,
             };
 
@@ -468,8 +531,11 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
             redlineGateTarget == redlineGateTargetBuild &&
+            regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
-            tollwayTollTarget == tollwayTollTargetBuild;
+            tollwayTollTarget == tollwayTollTargetBuild &&
+            wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
+            undertowPointTarget == undertowPointTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -492,8 +558,11 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
             redlineGateTarget = redlineGateTargetBuild;
+            regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
+            wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
+            undertowPointTarget = undertowPointTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -517,8 +586,11 @@ namespace CosmicShore.ScriptableObjects
             skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
             redlineGateTargetBuild = redlineGateTarget;
+            regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
+            wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
+            undertowPointTargetBuild = undertowPointTarget;
         }
     }
 }

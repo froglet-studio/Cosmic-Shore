@@ -9,13 +9,15 @@ namespace CosmicShore.Utility
     /// the player's camera and the player's vessel dissolve so the ship is never hidden
     /// (Docs/PRISM_ANIMATION.md §4.7).
     ///
-    /// The corridor is a BARE CONE, and it is SHIP-SIZED: a point at the lens, widening to
-    /// the circle that circumscribes the bound vessel's hull, ending flat at the vessel's
-    /// plane with no cap at either end. Both radii are measured from the vessel itself at
-    /// bind time, so nothing about the size is authored per vessel.
+    /// The corridor is a BARE FRUSTUM, and it is SHIP-SIZED: a circle at the lens (so mass
+    /// right in front of the camera never blacks out the screen — a pure cone is thinnest
+    /// exactly there), widening linearly to the circle that circumscribes the bound vessel's
+    /// hull, ending flat at the vessel's plane with no cap at either end. Every radius is a
+    /// multiple of the vessel's own measured hull radius, so nothing about the size is
+    /// authored per vessel.
     ///
-    /// It publishes exactly TWO global shader uniforms once per frame and does nothing
-    /// else. There is no per-prism work of any kind — no trigger volumes, no material
+    /// It publishes exactly THREE global shader uniforms once per frame (target, params,
+    /// near radius) and does nothing else. There is no per-prism work of any kind — no trigger volumes, no material
     /// swaps, no per-instance overrides, no tracking dictionary. The corridor test runs
     /// per fragment in <c>PrismOcclusionCorridor.hlsl</c>, wired into BlockGraph.
     ///
@@ -51,6 +53,7 @@ namespace CosmicShore.Utility
     {
         static readonly int TargetId = Shader.PropertyToID("_PrismOcclusionTarget");
         static readonly int ParamsId = Shader.PropertyToID("_PrismOcclusionParams");
+        static readonly int NearRadiusId = Shader.PropertyToID("_PrismOcclusionNearRadius");
 
         const string ConfigResourcePath = "PrismOcclusionConfig";
 
@@ -69,9 +72,9 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The bound vessel's circumscribing radius in world units — the sphere that encloses
-        /// its hull, measured once at bind. This is the corridor cone's radius AT THE VESSEL
-        /// (times the config's outer scale); it tapers to zero at the camera, so the corridor
-        /// is ship-sized rather than world-sized.
+        /// its hull, measured once at bind. This is the corridor's radius AT THE VESSEL
+        /// (times the config's outer scale); it tapers toward the config's near circle at the
+        /// camera, so the corridor is ship-sized rather than world-sized.
         /// </summary>
         public static float TargetRadius => _targetRadius;
 
@@ -251,6 +254,7 @@ namespace CosmicShore.Utility
         {
             Shader.SetGlobalVector(TargetId, Vector4.zero);
             Shader.SetGlobalVector(ParamsId, Vector4.zero); // x <= 0 is the shader's "off" sentinel
+            Shader.SetGlobalFloat(NearRadiusId, 0f);
             _publishedActive = false;
         }
 
@@ -295,6 +299,7 @@ namespace CosmicShore.Utility
             Vector3 p = _target.position;
             Shader.SetGlobalVector(TargetId, new Vector4(p.x, p.y, p.z, 0f));
             Shader.SetGlobalVector(ParamsId, packed);
+            Shader.SetGlobalFloat(NearRadiusId, config.NearRadius(radius));
             _publishedActive = true;
         }
 

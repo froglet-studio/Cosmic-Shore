@@ -2506,7 +2506,7 @@ MonoBehaviour:
   boostChanged: {fileID: 0}
   MinimumSpeed: 0
   ThrottleScaler: 0
-  DefaultMinimumSpeed: 10
+  DefaultMinimumSpeed: 0
   DefaultThrottleScaler: 50
   ThrottleScalerMultiplier:
     Enabled: 0

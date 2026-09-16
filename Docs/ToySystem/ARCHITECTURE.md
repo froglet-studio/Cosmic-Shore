@@ -549,7 +549,12 @@ primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominate
 and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
 has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
 vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
-always false on a prefab asset). Vessels whose body isn't statically extractable fall back to the
+always false on a prefab asset). **Disabled AT RUNTIME is not disabled on the asset**: the Scarab
+hides its wrapped Sparrow model in `Awake` and builds its real hull there too, so the asset shows
+an enabled Sparrow and an empty MeshFilter — the mini Scarab was a Sparrow. `ToyModelBuilder` now
+skips `IProceduralElementMorphSource.HiddenLegacyModelRoot` and harvests `IProceduralHullSource`
+pieces (minted meshes owned by a `ToyMintedMeshes` on the model), so a mini hull is the ship the
+player will fly. Vessels whose body isn't statically extractable fall back to the
 labelled tinted sphere.
 
 **A station shows the ACTUAL ship; a glyph stays flat.** The mini hulls used to be painted with

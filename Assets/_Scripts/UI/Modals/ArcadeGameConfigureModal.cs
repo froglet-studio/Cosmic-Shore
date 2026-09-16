@@ -1339,13 +1339,22 @@ namespace CosmicShore.UI
         int ComputeDefaultDomainCount() =>
             Mathf.Clamp(DefaultDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
+        /// <summary>
+        /// The hulls the carousel offers: EVERY hull the card lists. A card's <c>Vessels</c> list
+        /// is the authority on what a mode admits - an arcade card pins its one hull whether or
+        /// not the pilot has bought it in the Hangar (<see cref="ResolveModeVessel"/> never asks),
+        /// so an arena card that consulted <see cref="SO_Vessel.IsLocked"/> made the same hull
+        /// flyable on a Rampage card and hidden on the Regatta card. With six of the eight class
+        /// assets authored locked and the commerce surfaces de-scoped, that filter left exactly
+        /// Squirrel and Scarab in every arena carousel. The hangar lock gates the HANGAR.
+        /// </summary>
         void BuildAvailableShips(SO_ArcadeGame game)
         {
             _availableShips.Clear();
 
             if (!game || game.Vessels == null) return;
 
-            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
+            _availableShips.AddRange(game.Vessels.Where(s => s != null));
         }
 
         void InitializeDefaultShipFromAvailable()
