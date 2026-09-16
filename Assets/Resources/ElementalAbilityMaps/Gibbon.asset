@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Gibbon
+  m_EditorClassIdentifier:
+  vesselClass: 13
+  entries:
+  - Element: 1
+    AbilityLabel: Port Line
+    AbilityDescription: 'The LEFT trigger. Hold it and a beam winds up along the hull''s
+      own left-hand axis - the analog depth IS the distance, drawn ahead of you as you
+      squeeze. Let go and the beam fires: it cuts every hostile prism on its path and
+      plants an anchor prism of your own domain at its endpoint, which the line then
+      swings you around. Press again to drop the line and start winding the next shot
+      in the same motion - one squeeze per arm is the whole rhythm. Charge scales the
+      beam''s CUT: reach is Space''s job, this is how much the beam can sever on the way
+      out. Authored on GibbonTetherConfigSO.BeamCutRadius, so the generic map multiplier
+      stays 1.0 (no double-dip). NOTE the two arms are mechanically IDENTICAL - the beam
+      direction is the only difference - so this entry and Mass''s differ in side and in
+      nothing else.'
+    Input: 2
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: 'OPEN DESIGN SLOT - not authored, deliberately. The two arms are
+      symmetric, so an upgrade here has to be either arm-agnostic (in which case it
+      belongs on whichever element owns the mechanic, not on one arm) or an asymmetry
+      between left and right that nobody has designed yet. Left empty so the ability row
+      reports it LOCKED rather than green.'
+  - Element: 2
+    AbilityLabel: Starboard Line
+    AbilityDescription: 'The RIGHT trigger. Identical to Port Line but fired along the
+      hull''s right-hand axis. Because the beams are locked to the HULL''S lateral axis
+      and never to a reticle, ROLL is this vessel''s aiming control: bank ninety degrees
+      and the right trigger fires straight up. Two sticks fly the ship and the ship aims
+      the beams, which is what makes this a two-thumb flyer rather than a cursor game.
+      Mass scales the ANCHOR the beam plants (GibbonTetherConfigSO.AnchorScale) - a bigger
+      anchor is more conserved mass left in the arena and a wider thing to swing on.'
+    Input: 1
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: 'OPEN DESIGN SLOT - see Port Line. Not authored.'
+  - Element: 3
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. The natural home, once the vessel has been flown,
+      is REACH - MaxBeamLength and BeamTravelSpeed - which is exactly the fleet''s Space
+      convention and is also the strategically loaded number here: beam length sets the
+      angular momentum you bank when the line goes taut, and the swing tops out near
+      sqrt(L*w), so a longer beam literally pays out more speed. Recorded as a proposal
+      in Docs/ElementalAbilitySystem/FLEET_MAPS.md, not implemented, pending sign-off.'
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''
+  - Element: 4
+    AbilityLabel: (open design slot)
+    AbilityDescription: 'NOT AUTHORED. The natural home is the SWING''s rate - ReelRate
+      and MaxSwingRate - which is the fleet''s Time convention (rate/mobility) and is the
+      vessel''s only accelerator. Recorded as a proposal in FLEET_MAPS.md, not
+      implemented, pending sign-off.'
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: ''
+    UpgradeDescription: ''

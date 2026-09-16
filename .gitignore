@@ -110,3 +110,7 @@ Assets/_Recovery.meta
 mono_crash.*
 unity-editmode-*.log
 Tools/tmp_*.cs
+
+# dotnet harness build artifacts (Tools/Build/*_harness)
+Tools/Build/**/bin/
+Tools/Build/**/obj/

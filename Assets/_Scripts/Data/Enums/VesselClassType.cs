@@ -22,5 +22,14 @@ namespace CosmicShore.Data
         Shrike = 10,
         Sparrow = 11,
         Scarab = 12,
+
+        /// <summary>
+        /// The two-thumb tether flyer: both triggers fire lateral beams that plant their own
+        /// anchor prism and become a swing line. Id 13 is deliberately the SAME id and name the
+        /// superseded claude/spider-momentum-physics branch allocated for this vessel concept, so
+        /// the two can never collide on a merge and nothing has to be renumbered if anything from
+        /// that branch is ever revived.
+        /// </summary>
+        Gibbon = 13,
     }
 }

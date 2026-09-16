@@ -54,6 +54,13 @@ public class VesselTransformer : MonoBehaviour
              "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
     [SerializeField] bool singleTriggerDrift = false;
 
+    [Tooltip("Do this vessel's TRIGGERS drive the fleet drift at all? Off for a vessel that " +
+             "spends both triggers on something else (the Gibbon's two tether lines), where an " +
+             "analog squeeze must not also arm a drift. Off makes GetTriggerSum return 0, so no " +
+             "drift tier ever arms, DriftBlend01 stays 0 and the nose convergence stays 1 - i.e. " +
+             "exactly the no-drift path, not a new one. Leave ON for every existing vessel.")]
+    [SerializeField] bool analogTriggerDrift = true;
+
     [Tooltip("Hold the cruise speed the vessel carried INTO a drift for the drift's whole " +
              "duration: the throttle stops feeding speed the moment the drift starts, and the " +
              "latched value is flown until it ends. Combined with the course lock (drift damping " +
@@ -596,9 +603,15 @@ public class VesselTransformer : MonoBehaviour
         /// no-drift → single → sharp. For non-gamepad input, returns a binary value based on
         /// which drift level is active.
         /// </summary>
+        /// <summary>Whether this vessel's triggers arm the fleet drift. Serialized by default so
+        /// it stays an authoring decision, but VIRTUAL so a vessel that structurally cannot drift
+        /// — because both triggers are spent on something else — can state that in CODE rather
+        /// than depend on a prefab bool a later edit could silently flip back on.</summary>
+        protected virtual bool AnalogTriggerDrift => analogTriggerDrift;
+
         private float GetTriggerSum()
         {
-            if (InputStatus == null)
+            if (InputStatus == null || !AnalogTriggerDrift)
                 return 0f;
 
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
@@ -839,6 +852,47 @@ public class VesselTransformer : MonoBehaviour
             return Mathf.Min(speedNow, ceiling);
         }
 
+        /// <summary>
+        /// World-space velocity change applied this frame by a force that is NOT along the nose —
+        /// a tether, a tractor beam, a current. ALREADY MULTIPLIED BY dt, exactly like
+        /// <see cref="ComputeNoseAcceleration"/>, so the two read the same way at the call site.
+        ///
+        /// It exists because the vector model had no door for a lateral force: grip only ever
+        /// rotates momentum TOWARD the nose, thrust only ever pushes ALONG it, and
+        /// <see cref="ShapeSpeed"/> can change only the magnitude. Anything that has to bend the
+        /// path from outside the hull had no seam and would have had to fork <c>MoveShip</c> — the
+        /// mistake that already gives the fleet four transformers and is why a fix written into
+        /// one of them reaches only the vessels running that class.
+        ///
+        /// Default is exactly <see cref="Vector3.zero"/>, and adding a float zero is an identity
+        /// on every component, so every existing vessel is BIT-IDENTICAL.
+        ///
+        /// <b>A force applied here is rotated back toward the nose by the NEXT frame's grip.</b>
+        /// A vessel that needs momentum to persist off-nose must also lower
+        /// <see cref="NoseConvergence"/>, or grip erases the force as fast as it is applied.
+        /// </summary>
+        /// <param name="velocity">Momentum after grip and nose thrust this frame — what a damper
+        /// has to measure against.</param>
+        protected virtual Vector3 ComputeExternalAcceleration(Vector3 velocity, float dt)
+            => Vector3.zero;
+
+        /// <summary>
+        /// How much of the remaining angle between momentum and the NOSE is closed this frame:
+        /// 1 snaps momentum onto the nose outright (the fleet default — you fly where you point),
+        /// 0 lets momentum keep whatever direction it has (a pure slide).
+        ///
+        /// The default body is the drift expression this method was extracted from, unchanged, so
+        /// every existing vessel is bit-identical: outside a drift it returns 1, and inside one it
+        /// blends toward the active tier's authored grip.
+        /// </summary>
+        protected virtual float NoseConvergence(float dt)
+        {
+            float driftAmount = DriftBlend01();
+            return driftAmount > 0f
+                ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
+                : 1f;
+        }
+
         /// <summary>Fraction of the remaining nose-ward angle that grip closes this frame.
         /// Frame-rate independent (<c>1 − e^(−k·dt)</c>) rather than the scalar path's raw
         /// <c>k·dt</c>: at 60 fps the two differ by ~0.4% at the Squirrel's authored grip, so this
@@ -936,10 +990,7 @@ public class VesselTransformer : MonoBehaviour
             float speedNow = _velocity.magnitude;
             if (speedNow > 1e-4f)
             {
-                float driftAmount = DriftBlend01();
-                float convergence = driftAmount > 0f
-                    ? Mathf.Clamp01(Mathf.Lerp(1f, GripFraction(dt), driftAmount))
-                    : 1f;
+                float convergence = NoseConvergence(dt);
                 _velocity = Vector3.Slerp(_velocity / speedNow, transform.forward, convergence) * speedNow;
             }
             else
@@ -951,6 +1002,11 @@ public class VesselTransformer : MonoBehaviour
             //    whole point of the model: mid-drift the engine pushes where you POINT, so aiming
             //    out of a slide and squeezing is how you recover.
             _velocity += transform.forward * ComputeNoseAcceleration(dt);
+
+            // 2b) EXTERNAL FORCE — the one thing thrust and grip together cannot express: a pull
+            //     that is not along the nose. Zero for every vessel but the Gibbon, and adding an
+            //     exact zero leaves _velocity bit-identical.
+            _velocity += ComputeExternalAcceleration(_velocity, dt);
 
             // 3) Magnitude policy (drift overshoot ceiling; the Scarab replaces this entirely).
             //    speedNow is still the pre-thrust magnitude here — grip preserves magnitude — and
