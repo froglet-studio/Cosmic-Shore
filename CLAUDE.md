@@ -120,6 +120,38 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   component with a NON-legacy clip is a feature that has never run and looks exactly like one
   that works** — both fish carried one (`m_PlayAutomatically: 1` on `QuadFishSwim.anim`,
   `m_Legacy: 0`), excised. `Docs/ECOSYSTEM.md §44`.
+- **A CREATURE'S SKIN IS NOT A PLANT'S — fauna wear `FaunaSpindleGraph`, flora keep
+  `SpindleGraph`.** `SpindleGraph` is on twelve prefabs and only six are creatures, so the
+  three things that say *alive* rather than *limb* live on a FORK: an additive fresnel **rim**,
+  a slow brightness **breath**, and a **flow** that walks the Voronoi pattern across the body.
+  All three came off `CreatureTextureGraph`, the one-off the Clawfish wore and nothing else
+  did — a graph that is 80% dead nodes (an unconnected colour pair, an unconnected gradient,
+  an unconnected wave subgraph) and was still carrying the one idea worth keeping, which is
+  why you **read a bespoke asset's EDGES before deciding it is empty**. The math is two
+  Custom Functions (`FaunaSkin.hlsl`) on `_PrismClock` — never Unity's `Sine Time`, which is
+  what made the original the one thing in the cell that kept breathing while the game was
+  paused — and **every dial defaults to a provable no-op** (`_RimStrength` 0, `_Pulse` (1,1),
+  `_FlowSpeed` (0,0)), so the fork is bit-identical to its parent until a material authors it
+  (`verify_fauna_skin.py`, negative-controlled). **The rim is an ADD, never a multiply**: a
+  multiply drives an alpha-clipped creature's interior to black and leaves it readable only at
+  grazing angles, and it would move ALPHA, which is the shape the Voronoi cut. Its two colours
+  are **UNEXPOSED globals** — `_FaunaNeutralBright` / `_FaunaNeutralDull`, published once by
+  `FaunaNeutralPalette` from the palette's **Blue SHIELDED pair** (white (1.113,1.127,1.260)
+  over blue (0,0,0.549) — Blue is the neutral sentinel and SHIELDED is the row every flora and
+  fauna HEALTH PRISM already wears, so soft tissue and conserved mass come out of one row),
+  resolved through `SO_ColorSet.GetPrismKindColors` so a palette edit moves creatures and
+  prisms together. **Globals rather than painted materials is not a preference**: `Spindle`
+  mints EIGHT phase-variant materials per base material at runtime, which COPIES the colour at
+  mint time, so painting the base is correct only while `ThemeManager.Awake` beats the first
+  spindle — an unenforced ordering with a silent failure. An unset global is ZERO, so the
+  class carries a literal fallback and `Tools/Build/check_fauna_neutral_palette.py` fails the
+  build if it drifts from the asset OR if that asset stops being the wired one. The **Clawfish**
+  is the worked example of a species this reaches: it had no prisms (so it could not be shot),
+  no Spindle, and a heart floating in front of its own open mouth; its body is a nested FBX
+  whose renderer fileID cannot be authored from outside, which is why `Spindle.CacheRenderers`
+  now RESOLVES an unauthored `RenderedObject` from its own children, skipping anything under a
+  `Prism` or a `Crystal` — *when a serialized reference cannot be authored headlessly, ask
+  whether it needs to be authored at all*. `Docs/ECOSYSTEM.md §46`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
   **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the

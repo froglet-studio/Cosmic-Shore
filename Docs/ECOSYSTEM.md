@@ -7837,7 +7837,7 @@ separation / consume, 18–32 u/s, `rotationLerpSpeed` 7). `QuadFish.cs` is **de
 only user in the project was the Clawfish, so the class's whole existence was a
 misassignment.
 
-### 45.3 The heart seat, and the gate it now has
+### 45.3 The heart seat, and the gate it now has (the SEAT is superseded by §46.2)
 
 `Docs/ECOSYSTEM.md §23.9` says a heart *"is seated at the FRONT of its member's own prisms
 with the body trailing (the tadpole arrangement …), never buried inside them."* That rule
@@ -7856,8 +7856,13 @@ heart     z −4.07 → 1.32
 ```
 
 Which end is the nose is not a guess: `LightFauna` steers with `LookRotation`, so a creature
-travels along **+z**, and the body's own silhouette agrees — the `+z` end is a dense,
-spiked, solid mass (the claws) and the `−z` end tapers away.
+travels along **+z**. **The reading of the silhouette in this paragraph was WRONG and §46.2
+corrects it** — the `+z` end is not "a dense, spiked, solid mass (the claws)", it is the OPEN
+MOUTH of a hollow horn, and the "claws" are two horizontal tail FLUKES at the `−z` end. The
+conclusion about which end is the front survives; the reason given for it did not. *A
+silhouette read off a bounding box is a guess wearing a measurement's clothes* — the shape
+only came out when the mesh was split into connected components and its interior ray-cast
+(§46.2).
 
 **A heart has TWO sizes and a seat must clear both.** The prefab's authored `localScale` is
 what the prefab view shows; the runtime size is whatever `LifeFormCrystal.ApplyHeartSize`
@@ -7910,25 +7915,33 @@ against the LARGEST lifeform (the Shark, assembled from prisms). The four
 1.48 — correctly, because a heart hung that far off the snout really does make the creature
 bigger. Every legal seat is far inside that.)
 
-### 45.4 What is still open on it, stated plainly
+### 45.4 What was still open on it — BOTH CLOSED in §46
 
-- **It has ZERO body prisms.** Every other creature in the game carries `HealthPrism`
-  children; `Fauna._bodyPrisms` is `GetComponentsInChildren<HealthPrism>(true)`, which on
-  the Clawfish returns an empty array. So `OnBodyPrismExploded` can never fire and **the
-  Clawfish cannot be killed by shooting it** — it only ever dies to starvation or
-  predation. It also carries no conserved mass in its body and leaves no §26 skeleton.
-  This was NOT fixed here because placing gameplay colliders on a hull by inference is the
-  exact mistake `Docs/VESSEL_CONSTRUCTION.md` records twice over (two passes of Rhino jets
-  landed on a placeholder hull a fifth of the ship's height); it wants an editor session,
-  not a measurement. The recipe is four `HealthBlock.prefab` instances the way the QuadFish
-  carries four, which is 4 extra colliders per live creature against a cap of 6.
-- **It still does not sway.** Its body is a nested `ClawfishTest.fbx` instance wearing
-  `CreatureMaterial` on `CreatureTextureGraph` — a graph used by *nothing else*, so the
-  §44 splice would have a blast radius of exactly this species. Two things stop it being a
-  headless change: without a `Spindle` the graph's `_Phase` is a material constant, so all
-  six live Clawfish would undulate in perfect lockstep (the desync the phase-variant
-  machinery exists to provide); and binding `Spindle.RenderedObject` needs the renderer's
-  fileID *inside* the FBX, which cannot be derived outside Unity.
+Two things were left for an editor session and both landed headlessly instead:
+
+- **It had ZERO body prisms**, so `Fauna._bodyPrisms` was empty, `OnBodyPrismExploded`
+  could never fire, and **the Clawfish could not be killed by shooting it**. It now carries
+  four `HealthBlock` instances on its tail flukes (§46.2).
+- **It did not sway.** It now has a `Spindle` and wears `FaunaSpindleMaterial` (§46).
+
+The reason given for deferring the prisms — *"placing gameplay colliders on a hull by
+inference is the exact mistake `Docs/VESSEL_CONSTRUCTION.md` records twice over"* — was
+right about the hazard and wrong about the only way out of it. The answer is not an editor
+session, it is a **measurement**: the poses come from the fluke's own vertices at two z
+stations and its own local slope between them, and `Tools/Build/verify_fauna_heart_seat.py`
+re-reads them out of the shipped prefab. Inference is the mistake; measurement is not
+inference.
+
+The reason given for deferring the sway was **half right and half a limitation worth
+removing**. The lockstep half was real (without a `Spindle`, `_Phase` is a material constant
+and every live Clawfish undulates together) and is answered by the creature now having a
+real `Spindle`. The other half — *"binding `Spindle.RenderedObject` needs the renderer's
+fileID inside the FBX, which cannot be derived outside Unity"* — was a true statement about
+Unity's `fileIdsGeneration: 2` hashes and the **wrong conclusion**: if a component cannot be
+wired from outside, the fix is to make the component wire ITSELF, not to leave a species
+un-animated. `Spindle.CacheRenderers` now resolves an unauthored `RenderedObject` from its
+own children (§46.3). *When a serialized reference cannot be authored headlessly, ask whether
+it needs to be authored at all.*
 
 ### 45.5 The rules worth carrying
 
@@ -7953,3 +7966,210 @@ bigger. Every legal seat is far inside that.)
 - **Fixing one number can move another that has no business depending on it.** Re-run the
   authoring gates after a placement change, and if one fails, ask whether the change
   revealed a loop rather than caused one.
+
+---
+
+## 46. A creature's skin is not a plant's — the fauna spindle graph (Sep 2026)
+
+`SpindleGraph` is worn by twelve prefabs and only six of them are creatures. §44 gave every
+one of them a GPU sway, which is a statement about *limbs*; this adds the three things that
+are a statement about *being alive*, on a forked graph, so a fern is byte-for-byte unchanged.
+
+The three came from `CreatureTextureGraph` — the one-off shader the **Clawfish** wore and
+nothing else did. Traced edge by edge, most of that graph is dead: an unconnected
+`Color1`/`Color2` pair, an unconnected gradient, an unconnected `Smooth Wave` subgraph, an
+unconnected `_Transparency_Color` authored at HDR (1024, 1024, 1024). What it actually
+rendered was three things, and they are why the creature read as alive rather than as a prop:
+
+| what it did | how |
+|---|---|
+| a **fresnel rim** | `BaseColor = Fresnel(power 3) × texture × …` |
+| a **slow brightness breath** | `… × Remap(SineTime, −1..1 → 0.5..1.2)` |
+| a **scrolling surface** | the alpha texture's UV offset ← `Time × _Direction`, authored `(0, −0.01)` |
+
+*A graph that is 80% dead nodes can still be carrying the one idea worth keeping.* Read the
+edges before deciding a bespoke asset has nothing in it.
+
+### 46.1 What FaunaSpindleGraph is
+
+`Tools/Shaders/wire_fauna_spindle_graph.py` forks `SpindleGraph` and makes four changes.
+Three are new dials, all of which **default to a provable no-op**, so the fork is
+bit-identical to its parent until a material authors it — the same blast-radius argument
+`_SwayAmplitude` makes in §44.4, and the reason this is reviewable at all.
+
+| property | default | what it does |
+|---|---|---|
+| `_RimStrength` | **0** | additive fresnel rim, in the neutral BRIGHT colour |
+| `_Pulse` | **(1, 1)** | `(min, max)` brightness of the breath |
+| `_FlowSpeed` | **(0, 0)** | UV per second the Voronoi pattern drifts |
+
+The math is `Assets/_Graphics/Materials/Graphs/FaunaSkin.hlsl` — two Custom Functions rather
+than a dozen nodes, because the splice is then two edges instead of fifteen and the math is
+readable. `Tools/Shaders/verify_fauna_skin.py` compiles the SHIPPED file with clang and
+proves eight claims, of which the two that matter are claims about code that does nothing
+(T2: the default shade is a **bit-identical** passthrough; T3: the default flow likewise),
+each with a negative control, because *a passthrough test passes just as quietly against a
+function that was never called*.
+
+Three decisions inside it are worth stating:
+
+- **The rim is ADDITIVE, never a multiply.** `CreatureTextureGraph` multiplied its fresnel
+  into the base colour, which works on a transparent shell — the Clawfish is a hollow horn
+  you see straight through — and is wrong on a spindle: a multiply drives the whole interior
+  to black and leaves a creature readable only at grazing angles, on meshes that are already
+  alpha-clipped into lace. Adding can only ever brighten, needs no sort order, and leaves
+  **alpha** alone, so the silhouette stays exactly the shape the Voronoi cut.
+- **The clock is `_PrismClock`, not `_Time`.** `Docs/PRISM_ANIMATION.md`'s clock-material
+  law: the Clawfish's original rode Unity's own `Sine Time` and was therefore the one thing
+  in the cell that kept breathing while the game was paused.
+- **The breath RATE is a platform constant and the sway FREQUENCY is per-material.** A
+  species has no reason to disagree about "a creature is breathing"; it has every reason to
+  disagree about how agitated its limbs are.
+
+### 46.2 The colours come from the palette, and they are the NEUTRAL row
+
+The fourth change: `_BrightColor` / `_DullColor` are re-pointed at two **unexposed** globals,
+`_FaunaNeutralBright` / `_FaunaNeutralDull`, published by `FaunaNeutralPalette` from the live
+`SO_ColorSet`. The shipped spindle materials carried a hand-authored
+`(0.370, 0.397, 0.956)` over `(0, 0.028, 1)` — an eyeballed approximation of the palette's
+blue that nothing could keep in step with it, on a material a species has no business owning
+a colour decision in.
+
+**The palette's own answer is the BLUE domain's SHIELDED pair**: rim
+`(1.113, 1.127, 1.260)` ≈ white over base `(0, 0, 0.549)` = blue. Three reasons, and the
+third is the one that makes it more than a taste:
+
+1. `Domains.Blue` is the platform's neutral sentinel — never in `ActiveDomains`, never a team.
+2. It is literally white-to-blue, which is the read the Voronoi mix produces across a cell.
+3. **The SHIELDED tier is the row every flora and fauna HEALTH PRISM already wears**
+   (`Docs/PALETTE.md §2`), so a creature's soft tissue and its conserved mass now come out of
+   ONE row of the palette instead of two.
+
+It resolves through `SO_ColorSet.GetPrismKindColors` — THE single definition of a tier's pair
+— so a palette edit moves the creatures with the prisms and no second opinion can exist.
+
+**Why GLOBALS rather than painted materials, and this is not a style preference.**
+`Spindle.cs` mints EIGHT phase-variant materials per base material at runtime
+(`new Material(baseMat)`), which COPIES whatever colour the base carried **at mint time**.
+Painting the base would therefore be correct only while `ThemeManager.Awake` is guaranteed to
+run before the first spindle — an ordering dependency with no enforcement and a silent
+failure mode (stale colours on some creatures and not others). A global has no ordering to
+get wrong, costs two `SetGlobalColor` calls for the whole fleet, and is the same declaration
+`_PrismClock` already uses in that graph.
+
+An unexposed property is a plain shader global and an **unset global is zero**, so a scene
+with no ThemeManager would render every creature BLACK — which reads as "the shader is
+broken", not as "the palette has not loaded". `FaunaNeutralPalette` therefore carries a
+literal copy of the pair and publishes it at `BeforeSceneLoad`, with an `Editor/` bootstrap
+doing the same in edit mode so a material preview is not a black sphere. A literal copy of an
+authored value is a **second source of truth**, and the one thing that keeps it honest is a
+check that reads both: `Tools/Build/check_fauna_neutral_palette.py` fails the build if they
+drift, and additionally asserts that `OriginalColorSetSO` is still the palette
+`ThemeManagerDataContainer` is wired to — *a fallback measured off an unwired asset is worse
+than no fallback*.
+
+### 46.3 The Clawfish: what it actually is, and what it now has
+
+The shape only came out of splitting the mesh into **connected components** and ray-casting
+its interior. §45.3's reading off the bounding box was wrong:
+
+```
+horn    739 verts   z [−11.61, −0.42]   a HOLLOW open-mouthed cone, pinching shut at z −9.4
+fluke   170 verts   z [−17.78,  −5.08]  thin in y, broad in x — a whale's tail, ×2 mirrored
+```
+
+Largest sphere that fits inside the horn on its own axis: **r 2.21 at z −1.42**, staying over
+r 1.28 all the way back to z −7.4. So there really is a back cavity, and the heart belongs in
+it — it had been sitting at `z +1.32`, **1.6 units in FRONT of the open mouth**, which is
+exactly what "the crystal is in its mouth" describes.
+
+**The seat rule is now derivable rather than chosen**: the horn narrows going back, so how far
+the heart shows through the hull grows monotonically with depth — therefore the **shallowest
+seat that puts the whole heart behind the mouth plane** is also the most enclosed one. That is
+`z −2.66` (prefab space), front face `−0.372` against a mouth plane at `−0.279`.
+
+**It does not fully enclose, and asserting that it did would be asserting a fiction.** At the
+runtime `HeartWorldScale` of 2.18 the crystal is a faceted ball of radius **2.29** — as wide
+as the fish. That is the shipped norm, not an outlier: the QuadFish is the same size (17.5
+world units) and carries a 1.98 heart at its own origin. So the gate MEASURES how far the
+heart shows through the hull (**0.42 units, 14% of the body's widest radius**) and reports it
+without gating on it.
+
+`Tools/Build/verify_fauna_heart_seat.py` was rewritten around that and holds three rules —
+the heart is behind the mouth, no deeper than it has to be, and ahead of its own prisms
+(§23.9, satisfied: it leads them by 10.6 units). It carries **two** negative controls, each
+naming the rule it must break, because the two seats this species has shipped failed
+*differently* and a control that fires for the wrong reason proves nothing about the right
+one.
+
+The prisms are **four `HealthBlock` instances, two per fluke**, matching the QuadFish because
+the two fish are the same size. Their poses are measured, not eyeballed: each sits at the
+blade's own centroid at its z station and is pitched by the blade's own local slope between
+the two stations (`atan(0.83 / 2.6)` = 17.7°). They go on the flukes because §26's ordered
+wither runs farthest-from-the-heart first, so a starving Clawfish should lose its tail before
+its core.
+
+Its body is a nested FBX instance, so `Spindle.RenderedObject` cannot be authored from
+outside the model — Unity's `fileIdsGeneration: 2` fileIDs are importer hashes. Rather than
+let that keep a species un-animated, `Spindle.CacheRenderers` resolves an unauthored
+`RenderedObject` from its own children, **excluding anything under a `Prism` or a `Crystal`**
+— and that exclusion is the whole reason it is not a bare `GetComponentsInChildren` sweep,
+because flora parents its HEALTH PRISM under the spindle root and adopting it would fade
+conserved mass with the branch. Measured: **all 25 shipped `Spindle` components author a
+`RenderedObject`**, so the fallback is dead code for everything that existed before this.
+
+The FBX's material is re-pointed through the importer's own `externalObjects` remap
+(`CreatureMaterial` → `FaunaSpindleMaterial`), which is the sanctioned way to say it and has
+a blast radius of one creature, because `ClawfishTest.fbx` has exactly one user.
+
+### 46.4 Who moved, and who did not
+
+`Tools/Build/author_fauna_spindle_materials.py` owns the split and asserts the classification
+against a live repo sweep, so a referrer it has never classified fails the build.
+
+| moved to `FaunaSpindleMaterial` | stayed on `SpindleMaterial` |
+|---|---|
+| Shark ×3, Brittlestar ×11, Worm head/body/tail ×4, TadpoleSpindle ×1 | every flora branch (AssemblyBranch, Branch, GyroidBranch ×2, QuasicrystalBranch ×2) |
+| Clawfish (via the FBX remap) | `CapsuleMembrane` — not a lifeform at all |
+| QuadFish keeps `QuadFishSpindleMaterial`, re-pointed to the new graph | `Blue`/`FireProjectileMaterial` — material VARIANTS (`m_Parent`), which must keep inheriting |
+
+The QuadFish keeps its own material because it keeps its own **sway**: amplitude transfers
+across meshes and frequency does not (§44.3), so a shark at 1.4 rad/s and a small fish at 5.2
+get different materials rather than a compromise. Everything else about the two is identical,
+which is the point — flow, breath and rim are properties of being a creature.
+
+### 46.5 Collider budget
+
+**Zero change for every species except the Clawfish, which gains four.**
+
+Everything in §46.1/§46.2 is photons: a shader fork, two Custom Functions, two
+`SetGlobalColor` calls per scene and three per-material constants. No collider, no spawn, no
+consumption, no per-frame CPU — the graph runs on `_PrismClock` exactly as its parent does.
+
+The Clawfish's four `HealthBlock` instances are `PrismKind.Plain` with a LOD-cullable
+`BoxCollider` (`IsShielded: 0` on the shipped prefab), i.e. the same four the QuadFish has
+carried since it shipped. Against `Fauna`'s per-creature body budget that is 4 of 6, and at
+the Clawfish's authored populations it is the smallest fauna line item in any cell that
+carries it.
+
+### 46.6 Open, stated rather than hidden
+
+- **Nothing here has been run in the editor.** The HLSL is compiled and proven by clang, the
+  graph is validated structurally before writing and re-proven by `--check`, the prefab's
+  local references are audited against `HEAD`, and every asset generator is idempotent. None
+  of that is a frame.
+- **`author_lifeform_heart_sizes.py` has a measurement bug this branch did NOT fix.** A
+  nested `PrefabInstance`'s `m_LocalScale` override **replaces** the source root's scale; the
+  walk measures the source *including* that root scale and then multiplies by the override,
+  applying it twice. Measured effect on 24 of 41 lifeform prefabs — Shark 195.06 → 133.81,
+  WormBodySegment **113.76 → 19.21**, QuadFish 27.70 → 17.46, every `BranchingFlora` 9.43 →
+  6.29. It is left alone deliberately: `K` is solved against the largest lifeform, so fixing
+  it re-authors the RELATIVE reward of all 123 lifeform variants (and, measured, would make
+  the Clawfish's heart *larger*, 2.18 → 2.35, so it does not even help the case that found
+  it). It wants its own pass and a playtest.
+- **`CreatureTextureGraph` and `CreatureMaterial` are now referenced by nothing.** They are
+  left in the tree as the evidence behind §46, per the salvage-before-delete rule; deleting
+  them is a separate, deliberate act.
+- **The Clawfish's sway is the shared 0.08 / 1.4**, i.e. the shark's, not the QuadFish's
+  faster 0.13 / 5.2 — a horn-shaped drifter reads as a slow undulator, but the two fish are
+  the same size and this is a look call nobody has seen yet.

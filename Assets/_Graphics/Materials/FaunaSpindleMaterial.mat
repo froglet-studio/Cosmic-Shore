@@ -20,7 +20,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: QuadFishSpindleMaterial
+  m_Name: FaunaSpindleMaterial
   m_Shader: {fileID: -6465566751694194690, guid: 3f7c1a9e5b2d4c08a6e1d7b4c9f30215,
     type: 3}
   m_Parent: {fileID: 0}
@@ -134,8 +134,8 @@ Material:
     - _SrcBlend: 5
     - _SrcBlendAlpha: 1
     - _Surface: 1
-    - _SwayAmplitude: 0.13
-    - _SwayFrequency: 5.2
+    - _SwayAmplitude: 0.08
+    - _SwayFrequency: 1.4
     - _WorkflowMode: 1
     - _ZTest: 4
     - _ZWrite: 1

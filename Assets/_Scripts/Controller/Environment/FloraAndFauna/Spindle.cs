@@ -108,6 +108,19 @@ namespace CosmicShore.Gameplay
         {
             if (_renderers != null) return;
 
+            // A creature whose BODY is an imported model cannot author this reference from
+            // outside: the renderer lives inside a nested FBX PrefabInstance, so pointing at it
+            // needs an fbx-internal fileID that only the importer knows. Rather than make that a
+            // reason a species stays un-animated (the Clawfish was, for two years — see
+            // Docs/ECOSYSTEM.md §45), resolve it from the spindle's own children.
+            //
+            // PRISMS ARE EXCLUDED, and that exclusion is the whole reason this is not just a
+            // GetComponentsInChildren sweep: flora parents its HEALTH PRISM under the spindle
+            // root, so adopting the first renderer found would hand conserved mass to the branch
+            // animation and fade it with the branch. An authored RenderedObject always wins, so
+            // every shipped spindle is bit-for-bit unchanged.
+            if (RenderedObject == null) RenderedObject = ResolveRenderedObject();
+
             int extra = 0;
             if (additionalRenderedObjects != null)
                 for (int i = 0; i < additionalRenderedObjects.Length; i++)
@@ -125,6 +138,28 @@ namespace CosmicShore.Gameplay
 
             _phaseBaseMaterials = new Material[_renderers.Length];
             _phaseVariants = new Material[_renderers.Length];
+        }
+
+        /// <summary>
+        /// The first non-prism renderer under this spindle, or null. See
+        /// <see cref="CacheRenderers"/> for why a prism can never be the answer.
+        /// </summary>
+        Renderer ResolveRenderedObject()
+        {
+            var candidates = GetComponentsInChildren<Renderer>(true);
+            for (int i = 0; i < candidates.Length; i++)
+            {
+                var candidate = candidates[i];
+                if (!candidate || candidate.sharedMaterial == null) continue;
+                if (candidate.GetComponentInParent<Prism>(true)) continue;
+                // ... and a HEART is not branch geometry either. A lifeform's crystal is drawn
+                // by a SkinnedMeshRenderer under its own root, so a spindle that happened to
+                // parent one would otherwise adopt it and fade the collectable with the limb.
+                if (candidate.GetComponentInParent<Crystal>(true)) continue;
+                return candidate;
+            }
+
+            return null;
         }
 
         void SetRenderersEnabled(bool value)
@@ -151,6 +186,11 @@ namespace CosmicShore.Gameplay
             if (isPermanentlyWithered)
                 return;
 
+            // Before the guard, not after: CacheRenderers is what resolves an unauthored
+            // RenderedObject, and it is idempotent, so calling it here costs nothing on the
+            // ordinary Awake-first path and makes the guard correct on every other.
+            CacheRenderers();
+
             if (RenderedObject == null || RenderedObject.sharedMaterial == null)
             {
                 CSDebug.LogError($"{gameObject.name}: RenderedObject does not have a valid material at Start.");
@@ -161,7 +201,6 @@ namespace CosmicShore.Gameplay
             // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture each
             // base material once so pooled reuse never layers variants-on-variants, and bucket
             // EVERY part off the spindle root's position so a multi-part spindle sways as one.
-            CacheRenderers();
             for (int i = 0; i < _renderers.Length; i++)
             {
                 var partRenderer = _renderers[i];

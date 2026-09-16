@@ -1,6 +1,6 @@
 ---
 name: fauna
-description: Use for ANY work on a CREATURE — adding a fauna species, reviving or repairing one, changing how a creature moves/looks/eats/dies, wiring a FaunaConfigurationSO or LightFaunaDataSO, seating a heart, placing body prisms, or answering "why does this creature look stiff / do nothing / not die". Loads the fauna anatomy contract, the five things a creature needs to be ALIVE, the four motion tiers, the heart-seat rule and its gate, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/** (Fauna, LightFauna, Boid, WormFauna, Spindle, HealthPrism, LifeFormCrystal), any Assets/_Prefabs/FloraAndFauna/*.prefab or Assets/_Models/Fauna/**, any `* Fauna *` config asset, or Docs/ECOSYSTEM.md §§23-26, 40, 44-45.
+description: Use for ANY work on a CREATURE — adding a fauna species, reviving or repairing one, changing how a creature moves/looks/eats/dies, wiring a FaunaConfigurationSO or LightFaunaDataSO, seating a heart, placing body prisms, or answering "why does this creature look stiff / do nothing / not die". Loads the fauna anatomy contract, the five things a creature needs to be ALIVE, the four motion tiers, the heart-seat rule and its gate, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/** (Fauna, LightFauna, Boid, WormFauna, Spindle, HealthPrism, LifeFormCrystal), any Assets/_Prefabs/FloraAndFauna/*.prefab or Assets/_Models/Fauna/**, any `* Fauna *` config asset, or Docs/ECOSYSTEM.md §§23-26, 40, 44-46.
 ---
 
 # Fauna: the per-creature contract
@@ -27,7 +27,7 @@ fin / a heart / a prism" has a different answer per species.
 | Brittlestar | `_Models/Fauna/MassBrittlestarFauna.prefab` | `LightFauna` | HealthPrism children + 11 Spindles + an ARMATURE | Animator + `DampedTransform` chains (the dangling arms) | 12 |
 | Tadpole | `_Prefabs/FloraAndFauna/TadPoleFauna.prefab` | `Boid` | one HealthPrism + nested crystal | flocking | 12 |
 | QuadFish | `_Prefabs/FloraAndFauna/QuadFish.prefab` | `LightFauna` | a **Spindle** wrapping one mediumfish submesh + 4 HealthPrism fins | GPU sway + `QuadFishSwimDriver` (fin stroke + body bank) | 12 |
-| Clawfish | `_Prefabs/FloraAndFauna/Clawfish.prefab` | `LightFauna` | a nested **FBX model instance** (`ClawfishTest.fbx`) — **no prisms, no Spindle** | steering only (see §7) | 4 |
+| Clawfish | `_Prefabs/FloraAndFauna/Clawfish.prefab` | `LightFauna` | a **Spindle** over a nested FBX model instance (`ClawfishTest.fbx`) + 4 HealthPrism fluke ribs | GPU sway | 4 |
 | Worm colony | `_Prefabs/FloraAndFauna/WormColony.prefab` | `WormFauna` | **its MEMBERS** — head/body/tail are each their own fauna | follow-the-leader slither | 9 |
 
 The authoritative set is *"every distinct `FaunaPrefab` guid across `_SO_Assets/**/*.asset`"*
@@ -57,7 +57,10 @@ by measurement, before you conclude a creature is fine.
 5. **Body prisms.** `Fauna._bodyPrisms` is `GetComponentsInChildren<HealthPrism>(true)`.
    With **zero**, `OnBodyPrismExploded` can never fire, so the creature **cannot be killed
    by shooting it**, carries no conserved mass in its body, and leaves no §26 skeleton.
-   (The Clawfish is in this state today — `Docs/ECOSYSTEM.md §45.4`.)
+   (The Clawfish was in that state for two years; `Docs/ECOSYSTEM.md §46.3` is the fix, and
+   the recipe is measured poses on the creature's own extremities, not eyeballed ones —
+   §26's ordered wither runs farthest-from-the-heart first, so the extremities are where
+   body prisms belong.)
 
 ---
 
@@ -108,8 +111,27 @@ Consequences to hold on to:
 - **No `Spindle` ⇒ one `_Phase` for the whole species**, i.e. every live individual
   undulates in lockstep. That is the failure mode to check for before adding sway to a
   species whose body is a raw model instance.
+- **A body that is a nested FBX instance can still have a Spindle.** Its renderer's fileID
+  lives inside the model (Unity's `fileIdsGeneration: 2` hashes), so `RenderedObject` cannot
+  be authored from outside — and does not need to be: `Spindle.CacheRenderers` resolves an
+  unauthored one from its own children, **skipping anything under a `Prism` or a `Crystal`**.
+  Put the `Spindle` on a plain GameObject and parent the model under it. All 25 shipped
+  Spindles author a `RenderedObject`, so the fallback is dead code for everything older.
 - `Tools/Shaders/verify_spindle_sway.py` proves the shipped HLSL (compiles it with clang,
   8 properties, negative-controlled). `Tools/Shaders/wire_spindle_sway.py` does the splice.
+
+**FAUNA DO NOT WEAR `SpindleGraph` — they wear `FaunaSpindleGraph`** (`Docs/ECOSYSTEM.md
+§46`). Same Voronoi, same death clock, same sway, plus three things that are a statement
+about being alive rather than about being a limb: an additive fresnel **rim**, a slow
+brightness **breath**, and a **flow** that walks the cell pattern across the body — all on
+`_PrismClock`, all defaulting to a provable no-op
+(`Tools/Shaders/verify_fauna_skin.py`). Its two colours are **unexposed globals** published
+from the palette's Blue SHIELDED pair (white → blue, the same row every health prism wears)
+by `FaunaNeutralPalette`, because `Spindle` mints eight phase-variant materials at runtime
+and a painted base material would be copied stale. A new creature gets
+`FaunaSpindleMaterial` (slow, 0.08 / 1.4) or its own material if its frequency differs —
+`Tools/Build/author_fauna_spindle_materials.py --check` owns the split and fails on a
+referrer it has never classified.
 
 ---
 
@@ -117,9 +139,19 @@ Consequences to hold on to:
 
 Two separate rules, two separate authorities. Do not conflate them.
 
-**WHERE — `Docs/ECOSYSTEM.md §23.9`:** *a heart is seated at the FRONT of its member's own
-prisms with the body trailing (the tadpole arrangement — that prefab puts its crystal at
-the origin and its body at z −5.81), never buried inside them.*
+**WHERE — `Docs/ECOSYSTEM.md §23.9` + `§46.2`:** *a heart is seated at the FRONT of its
+member's own prisms with the body trailing (the tadpole arrangement — that prefab puts its
+crystal at the origin and its body at z −5.81), never buried inside them* — **and never
+ahead of the body's own front, either.** §23.9 never had to say the second half because no
+species had a hollow body; the Clawfish shipped both failures in turn, five units deep
+inside its head and then 1.6 units in front of its open mouth. For a creature with a cavity
+the rule is derivable: the cavity narrows going back, so **the shallowest seat that puts the
+whole heart behind the body's front plane is also the most enclosed one**.
+
+- **Do not expect it to fully enclose.** On this fleet a heart is about as wide as its
+  creature (the QuadFish's is 1.98 world scale inside a 17.5-unit fish), so "encloses with
+  clearance" is a standard nothing shipped would pass. Measure how far it shows through and
+  report it; gate on the front plane and the depth.
 
 - **Forward is +z.** `LightFauna` steers with `LookRotation`, so the creature travels along
   +z and the leading end is the max-z end of the body, whichever way the artist modelled it.
@@ -167,11 +199,21 @@ mediumfish, bonita, worm, wormbody, wormhead declare **1**; SwordFish_A declares
 Use `Tools/Build/fbx_binary.py` to read vertices, and copy the normalisation from
 `Tools/Build/author_lifeform_heart_sizes.py::_fbx_mesh_extent` rather than re-deriving it.
 
-**Reading a body's shape without Unity:** dump the vertex cloud and plot z-vs-y and z-vs-x
-as ASCII. It is crude and it answers the only question that matters — which end is the
-head. (On the Clawfish the +z end came out as a dense spiked mass and the −z end tapered
-away; that agreed with the `LookRotation` argument, which is how the heart seat was
-settled.)
+**Reading a body's shape without Unity — and a bounding box is NOT reading it.** The first
+pass on the Clawfish read its extents and concluded the +z end was "a dense spiked mass
+(the claws)" and the −z end tapered away. Both halves were wrong: +z is the OPEN MOUTH of a
+hollow horn and the "claws" are two horizontal tail flukes at −z (`Docs/ECOSYSTEM.md §46.3`).
+*A silhouette read off a bounding box is a guess wearing a measurement's clothes.* What
+actually answers the question, in order of cost:
+
+1. **Split the mesh into CONNECTED COMPONENTS** (weld coincident vertices, union-find over
+   polygons). One call told the Clawfish apart into a horn and two mirrored flukes, which no
+   amount of slicing had.
+2. **Per-z-slice radii**, and look at the MINIMUM as well as the maximum — a bimodal set is
+   a shell, and 8 inward-facing polygons per ring is a tube.
+3. **Ray-cast the interior** from the axis to find the cavity: the largest sphere that fits
+   at each z is what decides whether a heart can sit there.
+4. Only then, the `LookRotation` argument (a creature travels along +z) to name the front.
 
 ---
 

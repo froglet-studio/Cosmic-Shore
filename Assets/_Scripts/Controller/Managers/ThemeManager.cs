@@ -28,6 +28,10 @@ namespace CosmicShore.Gameplay
             // Hand the ColorSet to the static game-toast API so it colors domain names
             // from the same single source the vessels and prisms use (R5).
             GameToastAPI.ColorSet = _dataContainer.ColorSet;
+
+            // Every creature's spindle is painted from the same palette, off the same
+            // GetPrismKindColors composition the prisms above are (Docs/ECOSYSTEM.md §46).
+            FaunaNeutralPalette.PublishFrom(_dataContainer.ColorSet);
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
