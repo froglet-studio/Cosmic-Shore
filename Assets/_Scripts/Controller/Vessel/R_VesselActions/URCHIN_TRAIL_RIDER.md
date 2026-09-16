@@ -999,6 +999,47 @@ unconditionally, *above* any pilot gate, because `Initialize` re-runs on a live 
 vessel changes hands (a swap, a Cellular Duel ownership change) and a ghost left running would
 restore the previous pilot's colliders onto the new one at an arbitrary moment.
 
+## The cradle (round 23): the mass wraps the hull while you ride
+
+While the Urchin is **riding** — `GunVesselTransformer.IsRiding`: attached with a live ride kernel
+under it, which is false the moment a launch, a Slip or a cleared trail lets go — every prism FACE
+within 15 u of the hull swings so that its normal points at the hull's centre and its centroid sits
+on the hull's surface, on the line from where the face was to that centre. The amount ramps from
+nothing at 15 u to everything at 10 u (measured at the face centroid), so as the hull slides from
+one face to the next the two faces meet at the seam, both touching the sphere, and hand off with
+nothing snapping. It reads as being cradled by the mass you are grinding. In free flight, and in
+the glide after a launch, nothing moves.
+
+It is a **§4.7 global-uniform effect** (`Docs/PRISM_ANIMATION.md §4.7.2`), which is the whole
+reason it is affordable on a 42,000-prism cell: `PrismCradleSource` — ensured on the hull by
+`GunVesselTransformer.Initialize`, so no prefab wiring can omit it — reports the hull's transform,
+its radius and an eased strength every frame it is riding; `PrismCradle` packs up to four riding
+hulls into three shader globals in `LateUpdate` (sampling the position there, after the
+transformer has moved the vessel, so a 300 u/s grind is never published a frame stale); and
+`PrismCradle.hlsl` does every bit of the geometry in the prism VERTEX stage, spliced last on both
+live-prism graphs. There is no per-prism CPU work, no query, no material swap and no collider.
+
+Three things to know when it looks wrong:
+
+- **The radius is a CONSTANT of the vessel, not a tuning of the feel.** `PrismCradleSource.
+  hullRadius` is 0 by default, which measures the hull's circumscribing radius once (the same
+  measurement the occlusion corridor sizes itself with) on the first ride and caches it. Author a
+  number there if the measured sphere reads too big — the cradled faces settle exactly on it.
+- **Faces that point AWAY from the hull do not wrap, on purpose.** The far side of the prism you are
+  standing on would have to flip 180° about an axis that does not exist, and because the hull rides
+  the centreline that axis would swing through every direction as you pass. Those faces are behind
+  the ones that do wrap, so nothing is lost on screen. The gate is the two `PRISM_CRADLE_FACING_*`
+  dials at the top of the HLSL.
+- **The ride state is local to the simulating machine.** A remote Urchin's transformer is inactive
+  on your machine and never attaches, so you see no cradle around another pilot's hull. The host
+  sees it around every AI's.
+
+`Tools/Shaders/verify_prism_cradle.py` compiles the shipped HLSL with clang++ and proves the
+contract (centroid on the surface, normal at the centre, rigid under a (3, 1, 6) prism scale, the
+two-face hand-off at an edge, continuity of ≤ 0.03 u per 0.01 u hull step, the facing gate and its
+negative control). `Tools/Shaders/wire_prism_cradle.py --check` proves the splice. Nothing has been
+run in the editor yet.
+
 ## Files
 
 | Role | File |
@@ -1017,6 +1058,10 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | Vessel impact container | `_SO_Assets/Effects/Effect Containers/VesselContainers/UrchinImpactorDataContainer.asset` — `[Haptics, Attach, Damage, ElementalDebuffByDanger]` |
 | Element map | `Assets/Resources/ElementalAbilityMaps/Urchin.asset` |
 | Prefab wiring | `_Prefabs/Spacevessels/Urchin.prefab`: `GunVesselTransformer` + `TrailFollower` (1D) + `BlockscapeFollower` (2D) |
+| The cradle — vessel half | `Controller/Vessel/PrismCradleSource.cs` (ensured by `GunVesselTransformer.Initialize`; reads `IsRiding`; eases strength; measures the radius once) |
+| The cradle — publisher | `Utility/PrismCradle.cs` (4-slot frame-stamped bank → `_PrismCradleCentre[]`, `_PrismCradleWeight[]`, `_PrismCradleParams`; flushed in LateUpdate) |
+| The cradle — shader | `_Graphics/Materials/Graphs/PrismCradle.hlsl` (`PrismCradleDeform`), spliced LAST on BlockGraph + ExplodingBlockGraph by `Tools/Shaders/wire_prism_cradle.py`; proven by `Tools/Shaders/verify_prism_cradle.py` |
+| The cradle — tuning | `ScriptableObjects/PrismCradleConfigSO.cs` → `Assets/Resources/PrismCradleConfig.asset` |
 
 ## Tuning knobs
 
@@ -1047,6 +1092,10 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
+| `outerRange` / `innerRange` | `Resources/PrismCradleConfig.asset` | **15 / 10** u from the hull centre to a face centroid: zero effect at the outer, full at the inner. The gradient between them is the seam hand-off — narrow it and adjacent faces read as one popping to the surface. |
+| `engageSeconds` / `releaseSeconds` | `Resources/PrismCradleConfig.asset` | **0.25 / 0.4** s ease of the cradle's strength on attach / detach. Never 0: that is the one-frame snap the ease exists to remove. |
+| `hullRadius` | `PrismCradleSource` (C# default **0** = measured once from the hull) | The sphere the cradled faces settle on. A constant of the vessel, not of the feel. |
+| `PRISM_CRADLE_FACING_LO` / `_HI` | `PrismCradle.hlsl` (`#define -0.5 / 0.0`) | The facing gate: dot(face normal, direction to hull) at which a face starts (LO) and fully (HI) participates. Raise LO toward 0 only with the far-face flip in mind. |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
 
 The two `GunVesselTransformer` fields marked "C# default" are **not serialized on
@@ -1068,6 +1117,10 @@ lookup over a few blocks' radius, allocation-free via a shared scratch list). Pe
 honest price of continuous ground tracking: the smoothed plane must know the nearest prism every
 frame to turn facets into arcs. It is bounded by the search radius (~2.5 ground extents), runs
 only while attached to a surface, and at most a handful of vessels can ever be rolling at once.
+
+The cradle adds **nothing**: three global shader writes per frame while an Urchin rides, whatever
+the prism count, and the deformation is vertex-stage work on a 24-vertex mesh inside the same
+instanced batch.
 
 The one budget-adjacent effect is indirect and belongs to the ecology rather than to physics:
 `FinalBlockSlideEffects` calls `Prism.Restore()` on a destroyed prism and `Prism.Grow()` on a

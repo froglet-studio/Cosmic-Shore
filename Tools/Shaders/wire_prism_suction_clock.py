@@ -370,8 +370,13 @@ def validate(docs, expect_wired):
     pos_block = find_block(docs, VERTEX_POSITION_BLOCK)
     assert pos_block, "VertexDescription.Position block missing"
     pos_src = sources.get((pos_block["m_ObjectId"], 0))
+    # §4.7.2 splices PrismCradleDeform LAST on Position, after this converge. Walk through
+    # it: the position it hands the block is the converged position it was given.
+    cradle = find_cf(docs, "PrismCradleDeform")
+    if cradle is not None and pos_src == (cradle["m_ObjectId"], 2):
+        pos_src = sources.get((cradle["m_ObjectId"], 0))
     assert pos_src == (converge["m_ObjectId"], 3), \
-        "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition"
+        "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition (directly, or through PrismCradleDeform)"
     pos_in = sources.get((converge["m_ObjectId"], 2))
     assert pos_in is not None, \
         "PrismSuctionConverge.Position is unconnected — the original vertex source was dropped"

@@ -348,6 +348,14 @@ def validate(docs, expect_wired):
 
     pos_src = sources.get((pos_block["m_ObjectId"], 0))
     assert pos_src is not None, "VertexDescription.Position is unconnected"
+    # §4.7.2 splices PrismCradleDeform LAST of all on Position (after the suction converge
+    # below). Walk through it: the chain it wraps is the one these assertions are about.
+    cradle = find_cf(docs, "PrismCradleDeform")
+    if cradle is not None and pos_src[0] == cradle["m_ObjectId"]:
+        assert pos_src[1] == 2, \
+            "VertexDescription.Position is not fed by PrismCradleDeform.OutPosition"
+        pos_src = sources.get((cradle["m_ObjectId"], 0))
+        assert pos_src is not None, "PrismCradleDeform.Position is unconnected"
     feeder = idx[pos_src[0]]
     # C9 splices PrismSuctionConverge LAST on Position (after this Add). Accept
     # either the pre-suction topology or the post-suction one; the Add.A / Add.B

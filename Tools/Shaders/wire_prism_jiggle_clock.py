@@ -395,8 +395,13 @@ def validate(docs, expect_wired):
     nrm_block = find_block(docs, VERTEX_NORMAL_BLOCK)
     assert nrm_block, "VertexDescription.Normal block missing"
     nrm_src = sources.get((nrm_block["m_ObjectId"], 0))
+    # §4.7.2 splices PrismCradleDeform LAST on both vertex blocks. Walk through it: the
+    # normal it hands the block is the jiggled normal it was given.
+    cradle = find_cf(docs, "PrismCradleDeform")
+    if cradle is not None and nrm_src == (cradle["m_ObjectId"], 3):
+        nrm_src = sources.get((cradle["m_ObjectId"], 1))
     assert nrm_src == (cf["m_ObjectId"], 7), \
-        "VertexDescription.Normal is not fed by PrismJiggleClock.OutNormal"
+        "VertexDescription.Normal is not fed by PrismJiggleClock.OutNormal (directly, or through PrismCradleDeform)"
     nrm_in = sources.get((cf["m_ObjectId"], 5))
     assert nrm_in is not None, "PrismJiggleClock.Normal is unconnected"
     assert nrm_in[0] != cf["m_ObjectId"], "PrismJiggleClock.Normal is fed by the splice itself"
