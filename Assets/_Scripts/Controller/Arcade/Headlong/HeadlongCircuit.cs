@@ -79,7 +79,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
-        /// top speed WITHOUT dropping the ramp boost. ~410 u.
+        /// top speed WITHOUT dropping the ramp boost. <b>355.9 u</b> — `MinTurnRadius(1200)` 99.6
+        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (This said "~410 u"
+        /// from the commit that authored the mode; it was never that, at either top speed — 355.9
+        /// now, 356.3 while the Rhino authored a 10 u/s floor.)
         ///
         /// <para>Turn rate is linear in stick, so a pilot holding the boost turns at
         /// <c>BoostStickBudget x omega(v)</c> and therefore flies a circle
