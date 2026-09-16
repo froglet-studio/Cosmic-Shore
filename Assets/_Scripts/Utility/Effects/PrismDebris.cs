@@ -23,9 +23,19 @@ namespace CosmicShore.Utility
     /// misses, and PrismExplosion.OnDisable alone cost 1,863 ms of that frame.
     /// This path spawns a whole frame's deaths as ONE prototype-instantiate
     /// batch per family (PrismRenderService.Spawn*DebrisBatch), lets the GPU
-    /// fly/shatter/fade or suck every piece in off the shader clock at FULL
-    /// duration (no pressure shortening — nothing here costs per-frame CPU),
-    /// and retires expired batches with ONE batched DestroyEntity per frame.
+    /// fly/shatter/fade or suck every piece in off the shader clock, and retires
+    /// expired batches with ONE batched DestroyEntity per frame.
+    ///
+    /// EXPLOSION LENGTH IS STILL PRESSURE-SHORTENED (restored 2026-09-16). This
+    /// class briefly ran every explosion at full length on the reasoning that an
+    /// entity costs no per-frame CPU — true, and the wrong half of what
+    /// PrismExplosion.PressuredDuration is for. Its other half is legibility:
+    /// duration × concurrency is how much full-opacity debris a mass death stacks
+    /// in front of the camera, and the erosion wipe is coverage-preserving in AREA
+    /// rather than a dither, so a surviving sliver is SOLID until its front eats
+    /// it. Suctions are deliberately left at their authored length — they come
+    /// from fauna grazing one prism at a time, converge on a point, and have never
+    /// arrived in the volumes an AOE blast does.
     ///
     /// The ONE piece of live state that survives the migration is the suction's
     /// MOVING convergence target: a fauna swims a long way during the ~2s
@@ -116,11 +126,13 @@ namespace CosmicShore.Utility
         static readonly List<Transform> s_pendingImplosionTargets = new(256);
         static readonly List<PrismRenderService.ImplosionDebrisRefresh> s_refreshScratch = new(256);
 
-        // Live records in append order. Durations are uniform (DefaultDuration /
-        // the authored implosion duration), so append order IS expiry order and the
-        // sweep only ever inspects the head. If per-spawn durations ever vary, a
-        // shorter-lived entry behind a longer one is destroyed late — harmless (its
-        // opacity is already 0), bounded by the duration spread.
+        // Live records in append order. The sweep only ever inspects the head, so it
+        // retires in APPEND order, not expiry order. Implosions are uniform (the
+        // authored duration) and so the two coincide there; explosions are
+        // pressure-shortened per spawn (see TryRequestExplosion), so a shorter-lived
+        // entry behind a longer one is destroyed late — harmless, because its opacity
+        // reached 0 on time and a clipped fragment draws nothing, and bounded by the
+        // duration spread (at most DefaultDuration).
         static readonly List<Record> s_live = new(1024);
         static int s_liveHead;
         static int s_liveEpoch = -1;
@@ -290,10 +302,35 @@ namespace CosmicShore.Utility
             velocity = GeometryUtils.ClampMagnitude(velocity, s_minSpeed * gain, ceiling, out float speed);
             if (hasOverride) speed = velocity.magnitude;
 
-            // Full length, always: on the entity path a live effect costs zero
-            // per-frame CPU, so the retired pooled path's pressure model (which
-            // bounded pool size and per-instance churn) has nothing to protect.
-            float duration = PrismExplosion.DefaultDuration;
+            // Pressure-shortened, exactly as the pooled carrier always was
+            // (PrismExplosion.PressuredDuration — full length below half the ceiling,
+            // eased to the pressured minimum at it). The migration dropped this on a
+            // COST argument that is true and answers the wrong question: an entity
+            // costs no per-frame CPU, but duration × concurrency is also how much
+            // full-opacity debris a mass death piles in front of the camera, and at
+            // 7.5s × every prism killed that is the "blinding when I destroy lots of
+            // prisms" report. The valve is the one that already existed for it.
+            //
+            // The count is what is ALREADY FLYING plus what this frame has queued so
+            // far, so a single huge frame (2,408 deaths was the profiled worst case)
+            // shortens as it fills rather than committing every piece to full length
+            // on the strength of a count taken before any of them existed. It spans
+            // BOTH debris producers (shield shatter too), because a blast that pops
+            // shields is usually the same blast destroying prisms and the player sees
+            // one debris field, not two.
+            //
+            // Two consequences, both already sanctioned by the s_live comment above:
+            // durations now vary, so append order is no longer exactly expiry order
+            // and a short entry behind a long one is destroyed late (harmless — its
+            // opacity reached 0 on time, which is the whole of what the player sees);
+            // and because the head cannot walk past a full-length entry, the live
+            // count stays elevated for up to DefaultDuration after a burst, so deaths
+            // in that window stay squeezed. That is the intended reading of the valve
+            // rather than a defect: MinPressuredDuration is authored to still read as
+            // a death, and the squeeze releases on its own.
+            float duration = PrismExplosion.PressuredDuration(
+                LiveDebrisCount + s_pending.Count +
+                PrismShieldShatter.LiveShatterCount + PrismShieldShatter.PendingSpawnCount);
 
             // Culling envelope: object-space end-of-flight offset (the entity
             // matrix never moves). Equivalent to InverseTransformVector for the

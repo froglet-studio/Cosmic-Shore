@@ -141,7 +141,14 @@ namespace CosmicShore.Utility
             velocity = GeometryUtils.ClampMagnitude(velocity, minSpeed, ceiling, out float speed);
             if (hasOverride) speed = velocity.magnitude;
 
-            float duration = PrismExplosion.DefaultDuration;
+            // Pressure-shortened, still verbatim (PrismDebris.TryRequestExplosion,
+            // restored 2026-09-16). The count spans BOTH producers, because a blast
+            // that pops shields is usually the same blast destroying prisms and the
+            // player sees one debris field, not two — so shed against what is
+            // actually on screen rather than against this class's own share of it.
+            float duration = PrismExplosion.PressuredDuration(
+                PrismDebris.LiveDebrisCount + PrismDebris.PendingSpawnCount +
+                LiveShatterCount + s_pendingCount);
 
             Vector3 position = host.position;
             Quaternion rotation = host.rotation;

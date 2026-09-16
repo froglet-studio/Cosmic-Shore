@@ -749,8 +749,9 @@ the prompter's direction.** `ClockAnimationEnabled` is constant `true`; the form
   frame at LateUpdate, spawns the whole burst via `PrismRenderService.
   SpawnExplosionDebrisBatch` — ONE `em.Instantiate(prototype, N)`, ONE batched
   `DisableRendering` strip, per-entity `SetComponentData` stamps (pose, colors,
-  explode clock, flight-envelope `RenderBounds`), all at **full `DefaultDuration`**
-  (no pressure shortening — a live entity effect costs zero per-frame CPU).
+  explode clock, flight-envelope `RenderBounds`), each **pressure-shortened by
+  `PrismExplosion.PressuredDuration`** exactly as the pooled carrier always was (see
+  the bullet below).
   Retirement is a flat time-ordered sweep (`PrismDebris.Sweep`) ending in ONE
   batched `DestroyEntity` — never a per-effect timer entry. Why: profiled on a 30³
   lattice with throttles lifted, 2,408 deaths in one frame were 2,408 pool misses
@@ -969,9 +970,45 @@ Rules for anything added to this carrier:
   dropping the next requests. There is no pooled death fallback (D4) — the hold
   just stops queuing visuals that would be dropped. Grow is a separate pooled
   consumer (`StartGrow`) and is not this path.
-- **No pressure shortening.** The pooled path squeezes effect duration under load to
-  bound pool size and per-instance churn; an entity has neither, so batched effects
-  always animate at full length. Continuity of existence is *stronger* here, not weaker.
+- **Explosion length IS pressure-shortened** (restored 2026-09-16; the migration had
+  dropped it). `PrismExplosion.PressuredDuration` was read as a COST bound — the pooled
+  path squeezes duration to bound pool size and per-instance churn, an entity has
+  neither, so batched effects ran at full length. That is true and answers the wrong
+  question. The valve's other half is **legibility**: its own docstring says a dense
+  blast's effects must "COMPLETE as smaller, quicker puffs instead of piling up", which
+  is a statement about the SCREEN and is true whoever carries the animation. At
+  `DefaultDuration` 7.5 s × every prism a blast kills, nothing bounded how much debris
+  a mass death stacks in front of the camera — and a surviving fragment is **solid**,
+  because the erosion wipe is coverage-preserving in AREA rather than a dither
+  (`PRISM_EROSION_FRINGE` ships at 0, deliberately, so the debris edge does not read in
+  the corridor's visual language). That is the "blinding when I destroy lots of prisms"
+  report. Measured over the pressure ramp, with the count taken as *what is already
+  flying + what this frame has queued so far*:
+
+  | deaths in one frame | debris-seconds, full length | pressured | still animating 0.5 s later |
+  |---|---|---|---|
+  | 128 | 960 | 960 (**identical**) | 128 |
+  | 256 | 1,920 | 1,465 | 253 |
+  | 1,000 | 7,500 | 1,710 | 253 |
+  | 2,408 (the profiled worst case) | 18,060 | 2,175 | **253** |
+
+  The shape to keep: **below half the ceiling nothing changes at all**, so an ordinary
+  fight is bit-identical, and above it the concurrency ceiling is flat — half a second
+  after any frame, ~253 pieces are still animating however many prisms died. Both
+  batched producers (`PrismDebris`, `PrismShieldShatter`) shed against ONE shared count,
+  because a blast that pops shields is usually the same blast destroying prisms and the
+  player sees one debris field. **Suctions are deliberately left at their authored
+  length** — fauna graze one prism at a time and converge on a point, so they have never
+  arrived in an AOE blast's volumes; decide that on purpose if it ever changes, not by
+  symmetry. Continuity of existence is untouched: `MinPressuredDuration` 0.33 s is
+  ~20 frames, authored to still read as a death.
+- **Varying durations make the sweep retire in APPEND order, not expiry order.** A
+  short entry behind a long one is destroyed late — harmless, because its opacity
+  reached 0 on time and a clipped fragment draws nothing — bounded by the duration
+  spread (at most `DefaultDuration`). Its second-order consequence is that the live
+  count stays elevated for up to `DefaultDuration` after a burst, so deaths in that
+  window stay squeezed; that is the intended reading of the valve, and it releases on
+  its own.
 - **`PrismType.Grow` has a live producer** (2026-08-09): the Sparrow turret's
   `ReverseSuction` visual (`FullAutoBlockShootActionExecutor.cs:476` →
   `PrismFactory.SpawnGrow`). The batched implosion carrier still carries no

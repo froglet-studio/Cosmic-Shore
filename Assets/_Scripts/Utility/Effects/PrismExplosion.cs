@@ -81,13 +81,23 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Animation length for an effect starting while <paramref name="activeCount"/>
-        /// are already running (the EnabledInstances registry — the live set). Full
-        /// length until half the ceiling, then eased down to the pressured minimum.
-        /// Expansion and drift are speed·elapsed, so a pressured effect is a SMALLER,
-        /// quicker puff rather than the same bloom fast-forwarded — deliberate
-        /// (scaling speed to compensate would fling debris at up to 22x).
+        /// are already running (the live set — the EnabledInstances registry for this
+        /// pooled carrier, PrismDebris.LiveDebrisCount + this frame's queue for the
+        /// batched entity path). Full length until half the ceiling, then eased down to
+        /// the pressured minimum. Expansion and drift are speed·elapsed, so a pressured
+        /// effect is a SMALLER, quicker puff rather than the same bloom fast-forwarded —
+        /// deliberate (scaling speed to compensate would fling debris at up to 22x).
+        ///
+        /// SHARED WITH THE BATCHED PATH ON PURPOSE (2026-09-16). This is a LEGIBILITY
+        /// valve as much as a cost one — "a dense blast's effects COMPLETE as smaller,
+        /// quicker puffs instead of piling up" is a statement about the screen, and it
+        /// is true whoever carries the animation. The entity migration read it as a CPU
+        /// bound, found the entity path had no per-frame CPU to protect, and dropped it;
+        /// what that actually removed was the only thing bounding how much full-opacity
+        /// debris a mass death can stack in front of the camera at once (7.5s × every
+        /// prism killed), which is what "blinding when I destroy lots of prisms" is.
         /// </summary>
-        static float PressuredDuration(int activeCount)
+        internal static float PressuredDuration(int activeCount)
         {
             // Benchmark/diagnostic lift (PrismFactory.EffectPressureScalingDisabled):
             // every death animates at full length no matter how many effects are
