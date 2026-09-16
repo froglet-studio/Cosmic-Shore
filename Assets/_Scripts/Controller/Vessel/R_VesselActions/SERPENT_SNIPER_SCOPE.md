@@ -275,7 +275,8 @@ The long-term fix is to author that vessel's four icons (`FLEET_MAPS.md` §2). W
   view at speed. Anything inside the ring is inside the shot;
 - a **recharge arc** around it, filling clockwise from the top — the same direction as the fleet's
   cooldown veil, because an arc that filled the other way would read as the opposite of every other
-  recharge in the game;
+  recharge in the game — **drawn on a dim full-ring BED**, and at READY drawn as a complete bright
+  ring rather than as nothing (see §"Round 3");
 - a **ready flash** when the weapon comes back, so a pilot watching the target rather than the arc
   still sees it arrive.
 
@@ -309,8 +310,12 @@ branch does not close.
 
 ### 4. The PIP
 
-`ScopePipView` shows the ordinary chase shot of your own vessel in the bottom-right corner while
-the cockpit view has the middle of the screen. The scope takes away every cue a pilot flies by —
+`ScopePipView` shows the ordinary chase shot of your own vessel in the **top-left**, under the goal
+stack, while the cockpit view has the middle of the screen. It is **half the screen's height**
+(16:9), sized as a FRACTION rather than in pixels because this canvas deliberately carries no
+`CanvasScaler` — every other number in it is a real screen measurement derived from the camera — so
+a fixed rect would be a different fraction of the display on every device and would not survive a
+resize. The scope takes away every cue a pilot flies by —
 where the hull is, how it is banked, what is beside it — so without it a scoped Serpent could line
 up a shot or fly, not both.
 
@@ -335,6 +340,52 @@ render of the world**, because the first one is what the player is looking throu
 the only way left: 216p, no post-processing, no shadows, no anti-aliasing, a 20 Hz refresh, and a
 lifetime of exactly as long as the trigger is held. If it proves too expensive on a phone,
 `RenderHeight` and `RefreshHz` are the dials, and switching it off costs the ability nothing.
+
+## Round 3 — "I still saw no cooldown"
+
+Two reports. The layout one was a layout one; the first was a real defect I shipped in round 2.
+
+### The recharge readout drew NOTHING for the two states that matter
+
+The arc was a bare fill. `ScopeRingGraphic.OnPopulateMesh` returns early at `sweep01 <= 0`, so:
+
+| state | `cooldown01` | `Sweep01` | what was on screen |
+|---|---|---|---|
+| the frame you fire | 1.0 | **0.0** | nothing |
+| a second later | 0.92 | 0.08 | a 29° tick |
+| ready | 0.0 | (flash only) | nothing, once the 0.35 s flash ended |
+
+So the readout was invisible at the instant the weapon went away, invisible once it came back, and
+a thin slice in between — which is indistinguishable from not having one. The only other cue was
+the reticle dimming, which reads as a reticle, not as a timer.
+
+The fix is the rule the goal stack already records (`Docs/GAME_MODE_TOPBAR.md`): **a progress bar
+needs a BED.** A dim full ring is always drawn at the arc's radius and the fill runs over it, so
+"recharging" is a ring FILLING rather than one appearing out of nowhere; and **READY is a complete
+bright ring**, not the absence of one, with the flash now an expansion on top of it rather than the
+only thing that ever draws. Three states, three distinct pictures: dim ring alone (just fired),
+part-filled (recharging), solid bright (armed).
+
+*General shape: an indicator whose only rendering is its VALUE has no rendering at its extremes,
+and its extremes are usually the two readings the player actually needs.*
+
+**What this does NOT fix, stated plainly:** the readout lives on the scope overlay, so it is only
+on screen while the left trigger is held. The fleet's own ability row would carry it everywhere,
+and the Serpent binds no icons for it to sit on — that is still the icon-authoring follow-up below,
+and the `SerpentVesselHUDController` push into it is still live and still waiting for one.
+
+### The PIP moved and grew
+
+Top-left under the goal stack, at **half the screen's height** (was a sixth, bottom-right). Sized
+as a fraction rather than in pixels, for the reason the class note gives — this canvas has no
+`CanvasScaler`. Its render height went 216p → **360p** with it: a 216p texture upscaled into 540
+screen pixels is visibly soft, and a picture of your own hull you cannot read is the same as no
+picture. Still no post, no shadows, no AA, still 20 Hz, still only while the trigger is held; the
+extra cost is 2.8× the pixels of a window that was already the cheapest render in the frame.
+
+Its top margin (220) clears the goal stack's three authored rows
+(`Tools/Build/author_goal_stack.py`: anchored `(16, -52)`, `48` per row), not the one row that is
+populated today — a mode that authors secondary goals must not land one behind this window.
 
 ## Drive-by corrections
 

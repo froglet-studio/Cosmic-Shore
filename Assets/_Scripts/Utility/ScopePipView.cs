@@ -45,8 +45,13 @@ namespace CosmicShore.Utility
         RenderTexture _texture;
         float _nextRenderTime;
 
-        /// <summary>Render height in pixels. Small on purpose — see the class note on cost.</summary>
-        public int RenderHeight = 216;
+        /// <summary>
+        /// Render height in pixels. Small on purpose — see the class note on cost — but it has to
+        /// track the WINDOW: the surface is half the screen's height, so a 216p texture upscaled
+        /// into 540 screen pixels is visibly soft, and a picture of your own hull that cannot be
+        /// read is the same as no picture.
+        /// </summary>
+        public int RenderHeight = 360;
 
         /// <summary>How often the window refreshes, in Hz. Capped for the same reason.</summary>
         public float RefreshHz = 20f;

@@ -36,16 +36,30 @@ namespace CosmicShore.Gameplay
     {
         const float ReadyFlashSeconds = 0.35f;
         const float ArcGapPixels = 18f;
-        const float ArcThickness = 3f;
+        const float ArcThickness = 4f;
         const float RingThickness = 2f;
         const float DotRadius = 2.5f;
         const float DimAlpha = 0.3f;
+        const float TrackAlpha = 0.22f;
+
+        // The PIP as a fraction of SCREEN HEIGHT, not a pixel size: this canvas has no
+        // CanvasScaler (every other number in it is a real screen measurement), so a fixed
+        // 320x180 window is a quarter of a phone screen and a postage stamp on a monitor.
+        const float PipHeightFraction = 0.5f;
+
+        // Clearance for the goal stack, which anchors at (16, -52) and runs up to three
+        // 48-unit rows (Tools/Build/author_goal_stack.py). Sized for the full three so a mode
+        // that authors secondary goals cannot land one behind this window.
+        const float PipTopMargin = 220f;
+        const float PipLeftMargin = 16f;
 
         Canvas _canvas;
         ScopeRingGraphic _ring;
         ScopeRingGraphic _dot;
+        ScopeRingGraphic _track;
         ScopeRingGraphic _arc;
         RawImage _pipSurface;
+        RectTransform _pipRect;
         ScopePipView _pip;
 
         bool _wasReady = true;
@@ -79,17 +93,22 @@ namespace CosmicShore.Gameplay
 
             _ring = MakeRing("Reticle", 40f, RingThickness);
             _dot = MakeRing("ReticleDot", DotRadius, DotRadius * 2f);
+            // The TRACK is drawn BEFORE the arc so the arc sits on top of it, and it is the
+            // whole reason the recharge is legible: a bare fill draws NOTHING at 0%, so the
+            // instant the shot fires the indicator vanished and only faded back in over
+            // several seconds - which reads as no indicator at all. Same rule the goal stack's
+            // progress bar records (Docs/GAME_MODE_TOPBAR.md): a progress bar needs a bed.
+            _track = MakeRing("ChargeTrack", 58f, ArcThickness);
             _arc = MakeRing("ChargeArc", 58f, ArcThickness);
 
             var pipGo = new GameObject("Pip", typeof(RectTransform));
             pipGo.transform.SetParent(transform, false);
-            var pipRect = pipGo.GetComponent<RectTransform>();
-            // Bottom-right, out of the reticle's way and out of the goal stack's (top-left).
-            pipRect.anchorMin = new Vector2(1f, 0f);
-            pipRect.anchorMax = new Vector2(1f, 0f);
-            pipRect.pivot = new Vector2(1f, 0f);
-            pipRect.anchoredPosition = new Vector2(-24f, 24f);
-            pipRect.sizeDelta = new Vector2(320f, 180f);
+            _pipRect = pipGo.GetComponent<RectTransform>();
+            // TOP-LEFT, under the goal stack. Sized and placed by LayOutPip every frame, because
+            // this canvas measures in real screen pixels and the window is a fraction of them.
+            _pipRect.anchorMin = new Vector2(0f, 1f);
+            _pipRect.anchorMax = new Vector2(0f, 1f);
+            _pipRect.pivot = new Vector2(0f, 1f);
             _pipSurface = pipGo.AddComponent<RawImage>();
             _pipSurface.raycastTarget = false;
             _pipSurface.enabled = false;
@@ -144,23 +163,50 @@ namespace CosmicShore.Gameplay
             _dot.Sweep01 = 1f;
             _dot.color = WithAlpha(colour, ready ? 1f : DimAlpha * 0.7f);
 
-            _arc.Radius = radius + ArcGapPixels;
+            float arcRadius = radius + ArcGapPixels;
+
+            // The BED: always drawn, always a full ring, so "recharging" reads as a ring
+            // FILLING rather than as one appearing out of nowhere - and so the readout is
+            // present on screen at 0%, which is the frame the pilot most wants it.
+            _track.Radius = arcRadius;
+            _track.Thickness = ArcThickness;
+            _track.Sweep01 = 1f;
+            _track.color = WithAlpha(colour, TrackAlpha);
+
             _arc.Thickness = ArcThickness;
             if (ready)
             {
-                // Once ready the arc's job is done; it only reappears as the flash, expanding and
-                // fading, so "ready" is an event and not another permanent ring to read.
+                // READY is a COMPLETE bright ring, not the absence of one. The flash is an
+                // expansion on top of it, so the arrival is an event and the state is a state.
                 _arc.Sweep01 = 1f;
-                _arc.Radius = radius + ArcGapPixels + (1f - flash01) * 10f;
-                _arc.color = WithAlpha(colour, flash01 * 0.9f);
+                _arc.Radius = arcRadius + (1f - flash01) * 10f;
+                _arc.color = WithAlpha(colour, Mathf.Lerp(0.95f, 1f, flash01));
             }
             else
             {
+                _arc.Radius = arcRadius;
                 _arc.Sweep01 = 1f - cooldown01;
-                _arc.color = WithAlpha(colour, 0.85f);
+                _arc.color = WithAlpha(colour, 0.9f);
             }
 
+            LayOutPip();
+
             _pip.Tick();
+        }
+
+        /// <summary>
+        /// Size and place the PIP against the LIVE screen, every frame. It is a fraction of
+        /// screen height rather than an authored pixel size because this canvas deliberately has
+        /// no <c>CanvasScaler</c> - every other number in it is a real screen measurement derived
+        /// from the camera - so a fixed rect would be a different fraction of the display on every
+        /// device, and would not follow a resize.
+        /// </summary>
+        void LayOutPip()
+        {
+            if (_pipRect == null) return;
+            float height = Mathf.Max(90f, Screen.height * PipHeightFraction);
+            _pipRect.sizeDelta = new Vector2(height * 16f / 9f, height);
+            _pipRect.anchoredPosition = new Vector2(PipLeftMargin, -PipTopMargin);
         }
 
         /// <summary>
