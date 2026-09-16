@@ -62,12 +62,13 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The picture. <c>Graphic.whiteTexture</c> rather than the <c>s_WhiteTexture</c> FIELD as
-        /// the fallback, because that field is initialised lazily BY this property and is null
-        /// until something touches it — which for a disc drawn as a flat colour is the ordinary
-        /// case, not an edge one.
+        /// The picture. <c>Texture2D.whiteTexture</c> is the fallback rather than
+        /// <c>Graphic.s_WhiteTexture</c>: this UGUI version exposes no <c>whiteTexture</c> property
+        /// on <see cref="Graphic"/> at all, and the engine static is unconditionally valid — which
+        /// matters because a disc drawn as a flat colour (the BACKING) never carries a source, so
+        /// the fallback is the ordinary case here rather than an edge one.
         /// </summary>
-        public override Texture mainTexture => _source != null ? _source : whiteTexture;
+        public override Texture mainTexture => _source != null ? _source : Texture2D.whiteTexture;
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
