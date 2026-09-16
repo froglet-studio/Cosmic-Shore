@@ -199,12 +199,44 @@ namespace CosmicShore.Gameplay
 
             MaybeSnapToAllReady(nm);
             PublishTicket();
+            EnsureHubBots();
 
             if (!_started && nm.ServerTime.Time >= _authoritative.StartServerTime)
             {
                 _started = true;
+
+                // The round's own scene spawns these same seats from RequestedAIBackfillCount, so
+                // the hub's bodies come down FIRST or every bot is fielded twice. Before
+                // BeginNextRound, which loads the scene.
+                ResolveHubInitializer()?.DespawnHubBots();
+
                 tc.BeginNextRound();
             }
+        }
+
+        MaelstromHubVesselInitializer _hubInitializer;
+
+        /// <summary>
+        /// The hub's spawner, found once. Null in a hub scene that carries no spawn pair, which is
+        /// a survivable state - the arena is then look-only, and this simply fields no bots.
+        /// </summary>
+        MaelstromHubVesselInitializer ResolveHubInitializer()
+        {
+            if (_hubInitializer) return _hubInitializer;
+            _hubInitializer = FindFirstObjectByType<MaelstromHubVesselInitializer>(FindObjectsInactive.Exclude);
+            return _hubInitializer;
+        }
+
+        /// <summary>
+        /// Put the tournament's AI in the sky beside the party. Called every host tick because the
+        /// seats can be re-dealt while the hub is open (a player joining or leaving changes how
+        /// many are needed); the spawner itself is idempotent per seat NAME, so a tick that finds
+        /// nothing new costs one loop over three entries.
+        /// </summary>
+        void EnsureHubBots()
+        {
+            if (tournamentData == null) return;
+            ResolveHubInitializer()?.EnsureHubBots(tournamentData.MaelstromAISeats, PendingGame);
         }
 
         /// <summary>

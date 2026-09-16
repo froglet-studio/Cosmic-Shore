@@ -232,6 +232,31 @@ against three opponents:
   signature changes (a signature rather than a list reference, because both the deal and the
   client-side mirror mutate that list in place).
 
+**The bots FLY the hub.** `MaelstromHubVesselInitializer.EnsureHubBots` gives every dealt seat a
+body in the hub arena, in the drawn round's hull and its own team colour, on autopilot with
+`shouldSeekPlayers: false` — so the field a player is about to race is on screen rather than only
+in a list, and the bots do what a bot does in a cell: seek crystals and mass. It is deliberately
+the SAME chain as the menu's AI companion and a game scene's backfill bot (spawn the Player
+NetworkObject, claim it in the same frame, stamp its NetworkVariables, spawn its vessel, initialize
+the pair, configure the pilot, `StartPlayer`), so a hub bot is an ordinary networked AI player and
+not a third kind. Three details are load-bearing and each is a trap already recorded elsewhere:
+
+* **`DespawnHubBots` runs immediately before the launch.** The round's own scene spawns these same
+  seats from `RequestedAIBackfillCount`, so a hub body that survived the load would field every bot
+  twice. It despawns and then prunes the roster BY NAME (`GameDataSO.RemovePlayerData`), because
+  `Players` and `RoundStatsList` are name-keyed and a destroyed entry shadows the live one.
+* **A bot is released UNDER WAY** (`botLaunchSpeed`, 60). The pair-init hands every vessel a dead
+  stop, a vessel under `VesselPrismController`'s 3 u/s gate lays no trail, and the AI's own drift
+  PINS cruise speed at whatever the vessel carried in — so a bot that drifts before it has
+  accelerated stays pinned near zero and reads as broken rather than slow.
+* **`StartPlayer`, never `StartPlayer` + `ActivateAutopilot`.** For a player whose `NetIsAI` is set,
+  `StartPlayer` already takes the autopilot branch; doing both starts the AI pilot twice, which
+  duplicates every ability coroutine and cannot be cleaned up.
+
+The spawner is idempotent per seat NAME and is driven from the host tick, because the deal re-runs
+whenever a player joins or leaves the hub and a re-deal must add a body without re-bodying the ones
+already flying.
+
 What deliberately does NOT persist is the bot's HULL: fifteen of the sixteen pool modes lock to one
 vessel, so the ship has to change with the round. A bot is its name, its face and its colours,
 exactly like a human pilot.
