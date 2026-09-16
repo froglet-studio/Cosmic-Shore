@@ -12,6 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c2e449f647cc48e9be66d67fbc166a33, type: 3}
   m_Name: MissileWarheadDebuffByExplosionEffect
   m_EditorClassIdentifier:
-  debuffMagnitude: -0.5
+  debuffMagnitude: -0.4167
   debuffDuration: 4
   cooldown: 1

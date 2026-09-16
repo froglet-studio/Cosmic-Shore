@@ -105,6 +105,72 @@ its reasoning in the source so a playtest can correct it by argument. **Time rea
 the Urchin, the Rhino or the Squirrel**, so those three get no handicap row — the residual is
 structural, reported rather than faked.
 
+## The drain follows the price — a fleet-wide correction
+
+Broadside priced each verb by how hard it is to land. The **elemental drain** those same attacks
+deliver was derived from nothing: every shipped drain asset carried a flat **−0.5** on every
+element it touched, whatever the attack. So a Manta bloom and a Dolphin cone were both priced 12
+and the bloom bit **half as deep** (it drains two elements, not four), and a warhead grazing a
+pilot for 10 drained exactly as hard as a cone worth 12. The price list said one thing and the
+weapons did another.
+
+**A hit's bite now tracks its price**, derived by
+`Tools/Build/author_combat_debuff_magnitudes.py` (`--check`):
+
+```
+total drain (levels, summed over the elements it touches) = points × (2.0 / 12)
+per-element magnitude                                     = total / element count
+```
+
+| attack | verb | pts | elems | per-element | was | sustained¹ |
+|---|---|---|---|---|---|---|
+| Dolphin crystal cone + Scarab cavitation plate *(shared asset)* | Debuff | 12 | 4 | **−0.5000** | −0.5 | −1.00 |
+| Manta Kabloom bloom *(Mass + Space)* | Debuff | 12 | 2 | **−1.0000** | −0.5 | −2.00 |
+| Sparrow skyburst warhead shockwave | MissileShockwave | 10 | 4 | **−0.4167** | −0.5 | −0.83 |
+| Squirrel joust overtake *(ally buff mirrors)* | Strike | 8 | 4 | **−0.3333** | −0.5 | −0.50 |
+
+¹ levels held on each element by a **saturating** attacker: `|M| × duration / (2 × cooldown)`.
+Temporary effects **stack** (`ResourceSystem.ApplyElementalEffect` adds an entry per call), so
+this — not the per-hit magnitude — is what bounds a drain. The generator fails above 3.0 levels,
+well clear of the −5 floor.
+
+Three things make this the right shape rather than a spreadsheet exercise.
+
+**TOTAL is what is proportional, not per-element.** A 12-point hit is worth 12 points of bite
+however it spreads them, so the Manta's two-element bloom bites twice as deep per element and
+lands the same total as the Dolphin's four. Per-element proportionality would have left the Manta
+permanently under-delivering for its price — which is the defect, not a rounding of it.
+
+**The drain inherits the balance the price already has.** The balance pass flattened *points per
+second* across seven hulls to a 1.33× spread by tuning the latch windows. Drain-per-second is
+`hits/s × magnitude × duration/2`, and magnitude is now `k × points`, so drain-per-second carries
+that same 1.33× spread for free. Tying the two together is what makes the drain balanced without a
+second balance pass — and it is why the per-hit magnitude, not the sustained pressure, is the
+right thing to make proportional.
+
+**The anchor is a play-tested number and does not move.** The Debuff class keeps the shipped
+−0.5 × 4 exactly, so `ScarabCavitationDebuffByExplosionEffect` — the asset the Dolphin's cone and
+the Scarab's plate **share** — is untouched. That matters most of all: **The Bends and Undertow
+are scored entirely on that drain** (`requireDebuffableVictim`), so the two modes whose whole
+objective is a debuff are unaffected *by construction*. The generator FAILS if the anchor drifts.
+
+**Blast radius, stated.** These are weapon properties, not mode opinions, so each change reaches
+every mode that hull flies. The Manta's bloom bites harder in **Bloomrush** (which scores volume
+and fuses, not debuffs — so no scoring changes, a tag just matters more). The warhead softens 17%
+in **Dog Fight, Salvo, Breakwater, Wildlife Liberation**. The Squirrel's joust softens 33% in
+**Joust** and **Brood Rush**, debuff and ally buff together — a consequence change, not a scoring
+one, since Joust scores the collision. Two of the three move *downward*, which is the safe
+direction.
+
+**What this pass deliberately did not do.** Three scoring verbs carry **no drain path at all** —
+a Sparrow/Urchin round (Bullet, would be −0.167 total), the Rhino's sword (Strike, −1.333), and
+the skyburst's **blast** and **direct** tiers (−3.333 and −5.000), which fold onto the shockwave's
+drain and add nothing of their own. So a centre-punch worth 30 currently drains exactly as hard as
+the graze worth 10. Arming any of them is giving a weapon a new property in five shipped modes —
+a design change, not a tune — so the generator **reports** the magnitude each would take instead
+of authoring it. The −5.000 on a direct strike is itself the argument for not arming it blind:
+that is the whole progression band in one hit.
+
 ## AI
 
 **Every AI hunts through the platform; only the trigger is per hull.** Broadside joins Joust and
@@ -135,16 +201,29 @@ crystals. Its intensity ladder and its `noNucleusSpawnRadius` come with it.
 Everything is authored by `Tools/Build/author_broadside_assets.py` (`--check`). Never hand-edit a
 generated asset; re-run the generator.
 
+The fleet's **elemental drain magnitudes** are a second, separate generator —
+`Tools/Build/author_combat_debuff_magnitudes.py` (`--check`) — because they are *fleet-wide weapon
+properties* that happen to be derived from this mode's price list, not Broadside assets. It reads
+`BroadsideScoringRule.asset` for the prices and each drain asset for its own element count, so
+neither side can drift from the other without the check naming the file and the field.
+
 **Gotcha:** the generator `import`s the balance model, so a fast edit→run cycle can read a stale
 `Tools/Build/__pycache__` copy. `rm -rf Tools/Build/__pycache__` if a mutation seems not to take.
 
 ## Verification status
 
 **Authored headless. Nothing has been run in the Unity editor.** All eight offline gates pass
-(`author_broadside_assets.py --check`, switch-label collisions, enum references, conditional
-compilation, self-referential locals, console logging, using directives, gamelist scenes,
-`author_preview_spawns.py --check`), and the generator's asserts were negative-controlled — the
-price-ordering, spread and time-to-target gates were each watched to fail and restored.
+(`author_broadside_assets.py --check`, `author_combat_debuff_magnitudes.py --check`,
+switch-label collisions, enum references, conditional compilation, self-referential locals,
+console logging, using directives, gamelist scenes, `author_preview_spawns.py --check`), and both
+generators' asserts were negative-controlled — the price-ordering, spread and time-to-target gates
+were each watched to fail and restored, and so were the drain table's four: a moved anchor, a
+per-element ceiling, a saturated-pressure ceiling, and a renamed field in the price list.
+
+One assert was **deleted** because its negative control came back green: *"a dearer hit must bite
+harder"* is true **by construction** (`total = points × k` is monotone in points), so it could
+never fire. A check nobody has watched fail is a check nobody should trust — the removal is noted
+in the script so it is not re-added.
 
 What stays editor-only: whether each hull's weapon actually reaches a rival at the ranges the model
 assumed, whether the three newly-wired containers fire in play, whether the AI's spike tap reads as
@@ -156,6 +235,9 @@ a volley, and everything about feel.
 - **The Dolphin is the weakest seat** at 4.8 min to target: its cone is gated on a crystal run
   rather than on the fight. Its Time row already buys it the maximum the platform allows.
 - **No Serpent.**
+- **Three scoring verbs carry no elemental drain** (bullet, the Rhino's sword, the skyburst's
+  blast and direct tiers), so a centre-punch worth 30 drains exactly as hard as a graze worth 10.
+  Reported with its magnitude rather than armed — see *The drain follows the price*.
 - The **milestone toasts and the objective arrow** are shared with Dog Fight's; the arrow
   deliberately does not try to name a weapon, because seven hulls answer *"what do I do when I get
   there"* differently.

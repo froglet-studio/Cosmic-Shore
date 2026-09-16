@@ -23,6 +23,7 @@ The Bloomrush mode set lives in author_bloomrush_assets.py, not here.
 """
 import hashlib
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -137,9 +138,30 @@ def build_bloom_prefab() -> str:
 FILES["Assets/_Prefabs/Projectile/AOEMantaBloom.prefab"] = (build_bloom_prefab(), PREFAB_META.format(guid=BLOOM_PREFAB_GUID))
 
 # ── Effect + container assets ────────────────────────────────────────────────
-FILES["Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"] = (
+# OWNED ELSEWHERE: `debuffMagnitude` belongs to the fleet's combat drain table
+# (Tools/Build/author_combat_debuff_magnitudes.py), which derives every drain from the price
+# Broadside puts on its verb - a bloom is a 12-point Debuff over TWO elements, so it is -1.0 per
+# element where the four-element cone is -0.5. This generator authors the whole file, so it must
+# READ that value back rather than restating it: two generators owning one field means whichever
+# ran last wins, and the loser's --check reports a drift belonging to nobody's change. The
+# consequence, stated: this generator's --check can no longer catch a hand-edit of that one
+# field - the drain table's --check is what does, which is where the value comes from. The
+# fallback is the derived value itself, so a first author (no file on disk) still lands right.
+_BOMB_DEBUFF_ASSET = "Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"
+
+
+def _live_bomb_debuff_magnitude(default="-1"):
+    try:
+        with open(os.path.join(ROOT, _BOMB_DEBUFF_ASSET), "r", encoding="utf-8") as fh:
+            m = re.search(r"^\s*debuffMagnitude:\s*(-?[\d.]+)\s*$", fh.read(), re.M)
+        return m.group(1) if m else default
+    except OSError:
+        return default
+
+
+FILES[_BOMB_DEBUFF_ASSET] = (
     so_asset("VesselElementalDebuffByExplosionEffectSO", "MantaBombDebuffByExplosionEffect",
-             "  debuffMagnitude: -0.5\n"
+             "  debuffMagnitude: %s\n" % _live_bomb_debuff_magnitude() +
              "  debuffDuration: 4\n"
              "  cooldown: 1\n"
              "  elements:\n"
