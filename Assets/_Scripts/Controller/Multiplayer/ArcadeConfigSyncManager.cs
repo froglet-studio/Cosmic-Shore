@@ -252,9 +252,16 @@ namespace CosmicShore.Gameplay
             _gamePicks ??= new NetworkList<ArcadeGamePick>();
         }
 
-        void OnDestroy()
+        // OVERRIDE, never a new method. NetworkBehaviour.OnDestroy is what disposes the
+        // NetworkVariables and NetworkLists this class collected - and this class owns a
+        // NetworkList<ArcadeGamePick>, whose backing storage is a PERSISTENT native allocation.
+        // Declared without `override` it HID the base (CS0114), so that teardown never ran and
+        // the list's native memory leaked once per manager - which is what Unity's
+        // "Persistent allocates N individual allocations" leak report is made of.
+        public override void OnDestroy()
         {
             if (Instance == this) Instance = null;
+            base.OnDestroy();
         }
 
         public override void OnNetworkSpawn()

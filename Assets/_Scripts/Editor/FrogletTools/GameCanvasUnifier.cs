@@ -693,7 +693,7 @@ namespace CosmicShore.Editor.Froglet
         {
             // Same instanceID, possibly a new managed wrapper type after the m_Script swap.
             var id = before.GetInstanceID();
-            return EditorUtility.InstanceIDToObject(id) as Component;
+            return EditorUtility.EntityIdToObject(id) as Component;
         }
 
         // ── Field copying ────────────────────────────────────────────────────────
