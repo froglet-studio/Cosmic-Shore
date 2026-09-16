@@ -313,6 +313,17 @@ owned guid, because a dangling sprite reference fails as a white rectangle and n
 error. `ArenaRosterTests` already asserted the icons non-null — in the editor, where a missing
 sprite loads as null, so it would have caught this the first time the suite ran on this card.
 
+### 3.6 The carousel re-opens on the hull you last flew
+
+An arena card remembers the hull each pilot last pressed ready with, per card, and the
+carousel opens ON it - `InitializeDefaultShipFromAvailable`'s step 0, ahead of the session's
+last hull and the legacy loadout file. The per-session confirmation (§3.2) is untouched: the
+hull is selected, SELECT VESSEL is still the pilot's press, because a Start that could fire on
+a hull nobody chose this session is the gate that section exists to keep shut. The whole
+record (intensity, placed AI, domain count, own domain, own hull) and the rules that
+re-validate it are `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2 - the arena is the arcade pointed
+at another roster, so it inherits the memory with the modal.
+
 ## 4. The Toy Box drives the LIVE toys
 
 `ToyboxModal` (`_Scripts/UI/Modals/ToyboxModal.cs`) is the app-shell face of the freestyle
@@ -633,6 +644,29 @@ that actually passed rather than a fixed step per render (a slow frame costs a b
 stall); and the render rate is 30 rather than 20 because each render is now small enough to
 afford. General rule, the connecting panel's again: **a preview camera's cost is decided by what it
 is allowed to SEE, not by how often it looks.**
+
+### 4.1.7a The window re-opens on the variant you last committed
+
+Opening a toy from the grid re-descends to the variant the player last pressed Switch / Spawn
+/ Start on - the Lifeform Matrix opens on Fauna > Shark > Charge with SPAWN lit, the cell
+selector on the world last switched to. `ToyPreferenceStore` (`_Scripts/System/Preferences/`)
+keeps, per toy, the PATH to that option: the labels of the branches opened below the top layer
+and the leaf's own. A toy's options are built at runtime and carry no ids, so the label IS the
+identity - it is the station's own name, and a variant whose name changed is a different
+variant to the player too. The key is the definition ASSET's name, the one thing about a toy
+that survives the cell swaps that rebuild the toybox.
+
+Three rules keep it from doing anything a window open should not do. **It selects, never
+applies**: a row that applies on select (a domain, a world you are not in) is not re-applied
+because a window opened - the walk expands branches and ends on `Select`, and stops at a leaf
+that would apply. **It walks only from the grid**: the registry's re-bind after a cell swap
+(`HandleRegistryChanged` -> `BindInternal(restore: false)`) does not restore, since the press
+that caused the swap has just been applied and lighting the button on it again would ask the
+player to re-arm what they just did. **It stops silently at the first label that no longer
+matches** - a species retired, a painting renamed - and the window opens where it would have
+opened anyway. The close-time reset to the top layer (§4.2) stands; what changed is that the
+next open from the grid re-descends only to the variant last COMMITTED, not to wherever the
+player was browsing.
 
 ## 4.1.7 The type scale, the cards and the plates (second pass)
 

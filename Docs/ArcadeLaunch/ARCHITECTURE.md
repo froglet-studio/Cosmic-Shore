@@ -230,6 +230,50 @@ General rule: **when two peers must agree on a number, one of them owns it and t
 it** — a second derivation is a second answer, and the disagreement surfaces as UI nobody can
 trace to a count.
 
+### 3.2 A card re-opens on what it was last LAUNCHED with
+
+The panel used to open every card the same way - minimum intensity, no bots, everyone on Jade -
+so a player who plays Scarab Scramble at intensity 3 against two Ruby bots re-authored that
+setup on every visit. It now re-seeds itself from `LaunchPreferenceStore`
+(`_Scripts/System/Preferences/`), one `LaunchPreference` record per `GameModes`, on local disk
+through the same `DataAccessor` file store `FavoriteSystem` uses. The arena grid is the same
+modal pointed at a different roster, so the one key serves both.
+
+**Written on a LAUNCH, never on a ready press.** `HandleAllPlayersReady` writes the record
+before it resets the config - a pilot who readied and whose party then dismissed the card has
+not launched anything, and remembering that would restore a setup that never flew. The record
+has two halves written by two authorities: the **host terms** (intensity, domain count, the
+placed AI in placement order) are written only by the launch authority (`SaveHostTerms`), and
+the **pilot choice** (own domain, own hull) by every instance, host and guest alike
+(`SavePilotChoice`) - so a guest readying on a card this machine once hosted cannot clobber
+the host terms it last launched with. The weekly challenge writes nothing: pinned terms are
+not a preference.
+
+**Read as a WISH, re-validated at every seam** (`LaunchPreferenceRules`, pure and held by
+`HomeHubPreferenceTests`):
+
+| field | restored where | clamped against |
+|---|---|---|
+| intensity | `InitializeConfigFromGameDefaults`, so the row, the preview and the commit all see it | the card's range AND the player's unlocks - a saved 4 on a mode whose 3 and 4 are still locked opens on 2, never on a dimmed button drawn selected |
+| placed AI + domain count | `RestoreRememberedRoster`, AFTER `CommitConfiguration` | Blue dropped; cut to the seats free above the humans present (a party that grew gets fewer bots back); the domain count covers every placement's prefix and stays inside the card's window, through the same `HandlePlayerCountSelected` clamp a live placement takes |
+| own domain | `RestoreRememberedDomain`, AFTER the commit on the host, and on a guest's first draw of a NEW lobby generation | only inside `ActiveDomains[0..DC-1]` - a Gold pick on a two-domain lobby falls back to Jade, because lighting a dimmed tile is a promise the spawn would break; routed through `HandleDomainSelected` so it is a real server request, never a lit tile the server never heard about |
+| own hull | `InitializeDefaultShipFromAvailable`, step 0 (ahead of the session's last hull and the legacy loadout file) | must be one the card lists; the arena's per-session confirmation gate is untouched - the carousel opens ON the hull, the pilot still presses SELECT VESSEL |
+
+Two orderings are load-bearing. The roster and domain restores run **after** the commit,
+because the commit is what opens the replicated lobby (`NotifyRosterChanged` refuses a closed
+one, so placements restored earlier would never reach a guest) and what resets every human to
+Jade (so a domain restored earlier would be undone). And a guest restores its domain only on a
+lobby GENERATION it has not drawn before: the guest path re-runs when a guest taps the card to
+get back into the lobby it dismissed, and re-picking there would override a pick they made
+since.
+
+What it does not do: it does not remember the Add AI toggle's armed state (a mode, not a
+setup), it does not auto-confirm an arena hull, and it does not write to the cloud - a launch
+setup is a convenience of THIS machine, made with the party and the unlocks it has. The
+legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superseded for the
+hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
+kept as a fallback below this store.
+
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
 `VesselControlsPanel` draws two kinds of row.
