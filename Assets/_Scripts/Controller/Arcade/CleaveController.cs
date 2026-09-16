@@ -23,9 +23,10 @@ namespace CosmicShore.Gameplay
     /// generators - <see cref="SpawnablePanes"/> (angled slabs),
     /// <see cref="SpawnableSwell"/> (corrugated sheets), <see cref="SpawnableRibcage"/> (the
     /// nested cage) and <see cref="SpawnableTwistbands"/> (Möbius ribbons). All four are built
-    /// to the shared envelope in <see cref="SliceArenaGeometry"/>, which is what lets this
-    /// controller aim its AI without knowing which arena is running. This controller adds only
-    /// two things over Rampage:
+    /// to a PER-INTENSITY envelope in <see cref="SliceArenaGeometry"/>, which is what lets this
+    /// controller aim its AI without knowing which arena is running - it asks the table for the
+    /// running intensity's radius rather than for one shared number, because intensities 1 and 2
+    /// are three times the size of 3 and 4. This controller adds only two things over Rampage:
     ///
     ///   1. PROGRESS MILESTONES. At a quarter and a half of the win target the leading domain
     ///      crosses a rung, which fires a toast and the alert haptic on every peer. These are
@@ -76,8 +77,9 @@ namespace CosmicShore.Gameplay
                  "picks a fresh stretch of bone to ram.")]
         [SerializeField, Min(0.25f)] float aiRetargetSeconds = 2f;
 
-        [Tooltip("Arena radius the AI aims at. 0 = use SliceArenaGeometry.OuterRadius, the " +
-                 "envelope all four arenas are built to. Override only for a resized arena.")]
+        [Tooltip("Arena radius the AI aims at. 0 = use SliceArenaGeometry.OuterRadiusFor(the " +
+                 "running intensity), the envelope that intensity's arena is built to. Override " +
+                 "only for a resized arena, and note an override is intensity-BLIND.")]
         [SerializeField, Min(0f)] float aiArenaRadiusOverride = 0f;
 
         // Where the AI's stations sit, as a multiple of the arena radius. Both numbers live on
@@ -271,8 +273,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ArmCageBreakers()
         {
+            // Per INTENSITY, because the four arenas are no longer one size: a station parked at
+            // the cage's 720 would sit deep inside the panes' 2,160 of mass, which is the
+            // orbit-from-within defect AiStationStandoff exists to prevent. SelectedIntensity is
+            // set server-side before the scene loads and this runs on the server, so there is no
+            // config-sync race to lose (the one CellTypeChoiceOptions.IntensityWise CLIENTS lose).
+            int intensity = gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1;
             float arena = aiArenaRadiusOverride > 0f
-                ? aiArenaRadiusOverride : SliceArenaGeometry.OuterRadius;
+                ? aiArenaRadiusOverride : SliceArenaGeometry.OuterRadiusFor(intensity);
             Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
 
             int seat = 0;

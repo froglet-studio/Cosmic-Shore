@@ -68,6 +68,15 @@ namespace CosmicShore.Gameplay
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
         [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
 
+        [Tooltip("Per-INTENSITY override of Spawn Ring Radius Floor - element 0 is intensity 1. " +
+                 "Empty (or a 0 entry, or an intensity past the end) falls back to the scalar " +
+                 "above, so every existing scene is unchanged. It exists because the floor is one " +
+                 "serialized number and a mode whose intensities are different PLACES needs " +
+                 "several: Cleave's intensity-1 and -2 arenas are 2,160 units of radius against " +
+                 "720 for its 3 and 4, so one ring either spawns a pilot inside the big arenas or " +
+                 "parks them 3,000 units away from a speck.")]
+        [SerializeField] protected List<float> spawnRingRadiusFloorByIntensity = new();
+
         [Tooltip("How the computed ring distributes players. Symmetric spreads them over a SPHERE " +
                  "(4 tetrahedral, 3 triangle, 2 antipodal). Equatorial Ring puts everyone on one " +
                  "horizontal circle, evenly spaced, the way Joust authors its points by hand - use " +
@@ -479,13 +488,39 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
+            float floor = ResolveSpawnRingRadiusFloor();
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, floor);
             gameData.SetSpawnPoses(
                 CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
-                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
+                        $"floor {floor:0.#}) around {cell.name}, {spawnFormation}.");
+        }
+
+        /// <summary>
+        /// The spawn-ring floor for the intensity this match is running, falling back to the
+        /// scalar <see cref="spawnRingRadiusFloor"/>.
+        ///
+        /// <para>Reading <c>SelectedIntensity</c> here is safe where <c>Cell.AssignConfig</c>'s
+        /// is not: this runs SERVER-side, and the intensity is set before the scene loads. The
+        /// race that bites the cell (Docs/ECOSYSTEM.md §28) is a CLIENT computing a value it
+        /// should have received.</para>
+        ///
+        /// <para>A missing or 0 entry means "this rung has nothing to say", not "no floor" — an
+        /// author who sizes rung 1 and leaves rung 2 blank gets the scalar, never the centre of
+        /// the cell.</para>
+        /// </summary>
+        float ResolveSpawnRingRadiusFloor()
+        {
+            if (spawnRingRadiusFloorByIntensity == null || spawnRingRadiusFloorByIntensity.Count == 0)
+                return spawnRingRadiusFloor;
+
+            int intensity = gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1;
+            int i = Mathf.Clamp(intensity - 1, 0, spawnRingRadiusFloorByIntensity.Count - 1);
+            float v = spawnRingRadiusFloorByIntensity[i];
+            return v > 0f ? v : spawnRingRadiusFloor;
         }
 
         /// <summary>Latched once the scene is known to have NO start-line provider, so the

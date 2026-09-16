@@ -49,14 +49,21 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SpawnablePanes : CellEnvironmentSpawnableBase
     {
-        const float R = SliceArenaGeometry.OuterRadius;
+        /// <summary>This arena IS intensity 1, so it carries that rung's dials as constants.</summary>
+        const float R = SliceArenaGeometry.OuterRadiusI1;
 
         /// <summary>Authored-units -> world-units. Every LENGTH below is a number that was tuned
         /// against <c>SliceArenaGeometry.AuthoredRadius</c> and is multiplied by this; the noise
         /// frequency is divided by it so the void pattern keeps the same size RELATIVE to the
         /// arena. Counts, angles and fractions-of-R are deliberately left bare - writing every
         /// scaled value as `x * S` is what makes an unscaled one visible in review.</summary>
-        const float S = SliceArenaGeometry.LengthScale;
+        const float S = SliceArenaGeometry.LengthScaleI1;
+
+        /// <summary>Extra ACROSS-grain spacing, and the ONLY dial here that moves a prism count.
+        /// It multiplies <see cref="RibStep"/> alone: ribs sit G times further apart while each rib
+        /// is still a line of overlapping planks, so a pane thins out without breaking into beads.
+        /// Rib count falls by G; planks per rib, mullions and rims are untouched.</summary>
+        const float G = SliceArenaGeometry.GapScaleI1;
 
         // ── The weave ────────────────────────────────────────────────────────
         /// <summary>Spacing ALONG a rib. Under <see cref="PlankLength"/> on purpose: consecutive
@@ -66,7 +73,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Spacing ACROSS the grain, i.e. rib to rib. Deliberately much wider than
         /// <see cref="PlankStep"/> - that ratio IS the corduroy, and it is what lets a pilot see
         /// (and fly) through a pane instead of meeting a wall.</summary>
-        const float RibStep = 21f * S;
+        const float RibStep = 21f * S * G;
 
         /// <summary>Value-noise threshold below which a plank is skipped. Breaks each pane into
         /// weathered patches and open windows so the arena is porous rather than nine barricades.</summary>
@@ -136,7 +143,7 @@ namespace CosmicShore.Gameplay
             return h;
         }
 
-        protected override int LayCapacity => 14000;
+        protected override int LayCapacity => 6400;
 
         /// <summary>A pane resolved into the three directions and two scalars every builder needs,
         /// so no Build* method re-derives a frame.</summary>
@@ -176,6 +183,12 @@ namespace CosmicShore.Gameplay
         }
 
         Pane[] _panes;
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
+        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
+        /// continuous bar. The Panes state plank/rim/mullion lengths of 102/108/132 at 6 x — the last two clear
+        /// the shared prefab's max of 100, and a clamped mullion is a gap in a wall.</summary>
+        protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
         {

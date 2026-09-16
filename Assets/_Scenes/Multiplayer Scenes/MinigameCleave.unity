@@ -846,7 +846,12 @@ MonoBehaviour:
   - {fileID: 1564881929}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
-  spawnRingRadiusFloor: 1050
+  spawnRingRadiusFloor: 3150
+  spawnRingRadiusFloorByIntensity:
+  - 3150
+  - 3150
+  - 1050
+  - 1050
   spawnFormation: 1
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   preSpawnDelayMs: 200

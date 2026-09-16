@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -155,6 +156,14 @@ namespace CosmicShore.ScriptableObjects
                  "escalation ladder with it. 0 = default (2000).")]
         [Min(0)] public int cleavePrismTarget = 2000;
 
+        [Tooltip("Cleave: per-INTENSITY override of the target above - element 0 is intensity 1. " +
+                 "Empty, a 0 entry, or an intensity past the end falls back to the scalar. It " +
+                 "exists because this mode's intensities are four different PLACES rather than " +
+                 "four sizes of one: 1 and 2 are 2,160-radius arenas at triple rib spacing, so " +
+                 "they hold roughly a third of the mass of 3 and 4 and a shared target would make " +
+                 "the open arenas the longest matches in the mode.")]
+        public List<int> cleavePrismTargetByIntensity = new() { 500, 500, 2000, 2000 };
+
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
                  "here. 0 = default (30).")]
@@ -254,6 +263,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
         [Min(0)] public int cleavePrismTargetBuild = 2000;
+        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 500, 500, 2000, 2000 };
         [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
@@ -336,6 +346,29 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetCleavePrismTarget() =>
             cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget;
+
+        /// <summary>
+        /// Cleave target for a given INTENSITY (1-based), falling back to
+        /// <see cref="GetCleavePrismTarget"/> when that rung authors nothing.
+        ///
+        /// <para>The fallback chain is deliberate: a missing or 0 entry means "this rung has
+        /// nothing to say", never "no target" — an author who sizes rung 1 and leaves rung 2
+        /// blank gets the mode's scalar, not a match that ends on the first prism.</para>
+        ///
+        /// <para>Safe to read the intensity at the call site because
+        /// <c>CleavePrismTurnMonitor</c> resolves the target SERVER-side and replicates the
+        /// result; a client receives the number rather than computing it (the distinction
+        /// Docs/ECOSYSTEM.md §28 records for <c>CellTypeChoiceOptions.IntensityWise</c>).</para>
+        /// </summary>
+        public int GetCleavePrismTarget(int intensity)
+        {
+            if (cleavePrismTargetByIntensity == null || cleavePrismTargetByIntensity.Count == 0)
+                return GetCleavePrismTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, cleavePrismTargetByIntensity.Count - 1);
+            int v = cleavePrismTargetByIntensity[i];
+            return v > 0 ? v : GetCleavePrismTarget();
+        }
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
@@ -489,6 +522,10 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
                 GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
                 GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
+                // Scalar only: this reader answers "what does a match of this mode race to" for
+                // editor tooling, and Cleave's real answer is per-intensity (see
+                // GetCleavePrismTarget(int)). Reporting rung 1 here would read as the mode's
+                // target and be wrong for three quarters of its ladder.
                 GameModes.Cleave                   => cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget,
                 GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
@@ -511,6 +548,20 @@ namespace CosmicShore.ScriptableObjects
             return target > 0;
         }
 
+        /// <summary>Element-wise equality for a per-intensity ladder, treating null and empty as
+        /// the same thing (both mean "this mode authors no ladder").</summary>
+        static bool SameInts(List<int> a, List<int> b)
+        {
+            int na = a?.Count ?? 0, nb = b?.Count ?? 0;
+            if (na != nb) return false;
+            for (int i = 0; i < na; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
+        /// <summary>A COPY, never the same list: build and live must not alias, or capturing the
+        /// baseline would make every later live edit silently edit the baseline too.</summary>
+        static List<int> CopyInts(List<int> src) => src == null ? new List<int>() : new List<int>(src);
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
@@ -520,6 +571,7 @@ namespace CosmicShore.ScriptableObjects
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
             rampagePrismTarget == rampagePrismTargetBuild &&
             cleavePrismTarget == cleavePrismTargetBuild &&
+            SameInts(cleavePrismTargetByIntensity, cleavePrismTargetByIntensityBuild) &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
@@ -547,6 +599,7 @@ namespace CosmicShore.ScriptableObjects
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
             cleavePrismTarget = cleavePrismTargetBuild;
+            cleavePrismTargetByIntensity = CopyInts(cleavePrismTargetByIntensityBuild);
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
@@ -575,6 +628,7 @@ namespace CosmicShore.ScriptableObjects
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
             cleavePrismTargetBuild = cleavePrismTarget;
+            cleavePrismTargetByIntensityBuild = CopyInts(cleavePrismTargetByIntensity);
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;

@@ -281,10 +281,11 @@ in · a non-Sparrow vessel spawning on either machine.
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
 merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR),
 then the **four-arena rework** (three of the four nested-shell intensities replaced with
-unrelated arenas) and the **2× scale-up** of all four. Whole game mode
-(`GameModes.Cleave = 39`), authored headless and never run. Reference:
-`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification (26 steps; this is the
-short form).
+unrelated arenas), the **2× scale-up** of all four, and then a **3× further spread of
+intensities 1 and 2** (envelope 720 → 2160, triple rib spacing, target 2000 → **500**,
+their own 3600-radius membrane). Whole game mode (`GameModes.Cleave = 39`), authored
+headless and never run. Reference: `_Scripts/Controller/Arcade/CLEAVE.md` § In-editor
+verification (28 steps; this is the short form).
 
 1. Open `MinigameCleave.unity`. Confirm no `Missing (Mono Script)`, the controller
    shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5 and a field named
@@ -292,31 +293,40 @@ short form).
    and the Cell lists **four** configs with **Cell Type Choice = Intensity Wise**.
 2. Launch each of intensities **1 → 4** in turn and look at the arena, not the score.
 3. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
-   **11,021 / 13,738 / 14,731 / 16,423** prisms for intensities 1–4.
+   **5,107 / 4,587 / 14,731 / 16,423** prisms for intensities 1–4.
 4. **Scale:** from the spawn ring, does the arena fill the view? Time a boosted
-   straight-line run across the whole thing.
+   straight-line run across the whole thing, at intensity 1 AND at intensity 4.
 5. Sight-check the arena's far side against the membrane shell — nothing may poke through.
-6. Look closely at a pane rib / a swell trough / a twistband deck plate.
+   At intensities 1–2 the shell must be the big one (3600), well outside the mass.
+6. Look closely at a pane rib / a swell trough / a twistband deck plate. **Intensity 1–2
+   are the ones to scrutinise** — their ribs are 3× further apart than anything yet seen.
 7. Select one laid arena prism at intensity 1 and read its transform scale.
 8. Ram a plain prism. Then find a **danger** prism (distinct material) and ram it.
 9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4.
-10. Play a full round to the target and watch the scoreboard.
+10. Play a full round to the target at intensity **1** and again at **4**, and watch the
+    goal row and the scoreboard count.
 
 **PASS:** four arenas that look nothing like each other — angled **slabs**, corrugated
 **sheets**, three nested **shells**, twisted **ribbons** · baselines within a few hundred
-of 11,021 / 13,738 / 14,731 / 16,423 · the arena spans most of the view from spawn and a
-boosted crossing takes **~1.2 s** · the far side sits well inside the membrane · ribs,
-troughs and deck plates read as **continuous surfaces**, not as beads · a pane rib prism
-measures roughly **6.8 × 6.8 × 34** · a plain prism shatters on **one** hit with no shield
-to shed · the danger prism also one-hits but full-stops you, debuffs all four elements
-~4 s and resets boost · the AI orbits **outside** and cuts on transits · **no fauna hatch
-at any point** · the round ends on prisms destroyed and the scoreboard counts prisms.
+of 5,107 / 4,587 / 14,731 / 16,423 · the arena spans most of the view from spawn, and a
+boosted crossing takes **~3.6 s** at intensities 1–2 and **~1.2 s** at 3–4 · the far side
+sits well inside the membrane at every rung · ribs, troughs and deck plates read as
+**continuous surfaces**, not as beads · a pane rib prism at intensity 1 measures roughly
+**20 × 20 × 102** and a mullion **31 × 31 × 132** · a plain prism shatters on **one** hit
+with no shield to shed · the danger prism also one-hits but full-stops you, debuffs all
+four elements ~4 s and resets boost · the AI orbits **outside** and cuts on transits at
+both rungs · **no fauna hatch at any point** · the goal row counts to **500** at
+intensities 1–2 and **2,000** at 3–4, and the round ends there.
 **FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out of
 order) · baselines off by thousands · the arena reading as a small ball in the middle of an
-empty cell, or a crossing taking ~0.6 s (the scale did not land) · mass outside the
-membrane · any surface reading as a dotted line of separated prisms, or a prism whose long
-axis measures exactly **10** (a prism dimension was left unscaled, or `PrismScaleAnimator`
-clamped it) · two-hit/shielded prisms · an AI that settles inside the arena · any fauna.
+empty cell, or an intensity-1 crossing taking ~1.2 s (the 3× did not land) · spawning
+INSIDE the arena at intensity 1–2 (`spawnRingRadiusFloorByIntensity` is stale) · mass
+outside the membrane, or the small 1200 membrane cutting through a big arena · any surface
+reading as a dotted line of separated prisms · a prism whose long axis measures exactly
+**100** (`AdmitsAuthoredPrismScale` is not reaching the lay) or exactly **10** (the arena
+is laying through the wrong prefab) · a goal row reading 2,000 at intensity 1 (the
+per-intensity target did not replicate) · two-hit/shielded prisms · an AI that settles
+inside the arena, or one parked 936u out in a 2160 arena · any fauna.
 
 ### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
 **Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger

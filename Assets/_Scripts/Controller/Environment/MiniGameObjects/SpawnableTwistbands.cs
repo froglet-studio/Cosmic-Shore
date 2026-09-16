@@ -54,19 +54,26 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SpawnableTwistbands : CellEnvironmentSpawnableBase
     {
-        const float R = SliceArenaGeometry.OuterRadius;
+        /// <summary>This arena IS intensity 4, so it carries that rung's dials as constants.</summary>
+        const float R = SliceArenaGeometry.OuterRadiusI4;
 
-        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
-        /// LENGTH here is multiplied by it and the noise frequency divided by it. A band's radius
-        /// and half-width are lengths too, and are scaled inside <see cref="BandSpec"/>'s
-        /// constructor so that EVERY reader of them - the deck, the cornice and the envelope guard
-        /// alike - gets the scaled value without each having to remember to ask.</summary>
-        const float S = SliceArenaGeometry.LengthScale;
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry</c>. Every LENGTH here
+        /// is multiplied by it and the noise frequency divided by it. A band's radius and half-width
+        /// are lengths too, and are scaled inside <see cref="BandSpec"/>'s constructor so that EVERY
+        /// reader of them - the deck, the cornice and the envelope guard alike - gets the scaled
+        /// value without each having to remember to ask.</summary>
+        const float S = SliceArenaGeometry.LengthScaleI4;
+
+        /// <summary>Extra ACROSS-ribbon plate spacing. Authored at 1 for this rung: the deck is a
+        /// continuous plated ROAD a blade is held against, so opening its lanes up is not "sparser",
+        /// it is a lattice the sword rattles through. Kept as a named dial so the table reads the
+        /// same on all four rungs.</summary>
+        const float G = SliceArenaGeometry.GapScaleI4;
 
         // ── The deck ─────────────────────────────────────────────────────────
         const float PlateStepAlong = 7f * S;
         const float PlateLength = 10f * S;     // long axis, along the direction of travel
-        const float PlateStepAcross = 7.5f * S;
+        const float PlateStepAcross = 7.5f * S * G;
         const float PlateWidth = 10f * S;      // cross axis, across the ribbon
         const float PlateThickness = 3f * S;
 
@@ -189,6 +196,12 @@ namespace CosmicShore.Gameplay
         }
 
         Band[] _bands;
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
+        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
+        /// continuous bar. The Twistbands sit inside the shared prefab's window at 2 x, so this changes nothing they
+        /// lay today; it is on so all four rungs of one mode answer the question the same way.</summary>
+        protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
         {

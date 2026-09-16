@@ -17,29 +17,39 @@ act.
 **Intensity is WHICH PLACE you cut, not how much of it there is.** The four intensities are four
 unrelated arenas with four different verbs, built by four different generators:
 
-| i | arena | the verb | prisms | volume | danger | far reach |
-|---|---|---|---:|---:|---:|---:|
-| 1 | **The Panes** | commit to a line | 11,021 | 22,454,037 | 170 | 744 |
-| 2 | **The Swell** | read the grain | 13,738 | 19,467,760 | 461 | 698 |
-| 3 | **The Cage** | peel inward | 14,731 | 23,357,561 | 428 | 749 |
-| 4 | **The Twistbands** | roll the blade | 16,423 | 32,466,038 | 228 | 715 |
+| i | arena | the verb | radius | prisms | volume | danger | far reach | target |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| 1 | **The Panes** | commit to a line | 2,160 | 5,107 | 345,120,416 | 170 | 2,230 | 500 |
+| 2 | **The Swell** | read the grain | 2,160 | 4,587 | 174,700,630 | 128 | 2,066 | 500 |
+| 3 | **The Cage** | peel inward | 720 | 14,731 | 23,357,561 | 428 | 749 | 2,000 |
+| 4 | **The Twistbands** | roll the blade | 720 | 16,423 | 32,466,038 | 228 | 715 | 2,000 |
 
 This replaced a ladder that was **2 / 3 / 4 / 5 nested shells** — the same arena four times, and
 the reason the mode was renamed. The three-rind cage is the only rung kept, and its GEOMETRY is
 unchanged: same generator, same seed, same 14,731 prisms, same count thresholds.
 
-**All four are twice the size they were first authored at.** The envelope went 360 → **720** after
-a playtest read the arena as a little ball in the middle of the cell — a uniform 2× similarity of
-the whole family, counts and topology untouched. Everything a player sees is twice as far apart and
-twice as big; see "The arena is bigger than a nucleus" below for why that is a scale rather than a
-re-author, and what it cost.
+**Intensity is now SPACE as well as place.** Two scale-ups happened, and they answer different
+complaints. The first made all four arenas **twice** the size they were authored at — 360 → 720 —
+after a playtest read the arena as a little ball in the middle of the cell. The second, on
+request, took rungs **1 and 2 three times further out again**: 720 → **2,160**, at **triple** the
+rib spacing, so the two easy rungs are vast open places you cross rather than dense objects you
+peel. Their destruction target came down to **500** to match (four times less mass, four times
+less to destroy), and they carry their own **3,600**-radius membrane — the standard 1,200 one
+would be *inside* their arena.
+
+So the ladder reads as two pairs: open-and-far at 1–2, dense-and-tight at 3–4. Every rung still
+holds **5.6×–7.4×** its own target in hostile mass, which is what `cleave_budget.py` asserts in
+place of the monotone prism-count check it retired — raw count stopped meaning anything about
+match length the moment the target became per-intensity, and the counts are deliberately NOT
+monotone (the Panes hold more than the Swell, because tripling a rib step takes more from a sheet
+than from a slab).
 
 > **Player-facing unit is PRISMS, never "bars" or "plates".** Every number a player reads counts
 > PRISMS — the scoreboard, the reveal, and any toast copy. Two words for one counter reads as two
 > counters.
 
 **One axis.** Destruction is the race: `HostilePrismsDestroyed`, the same platform stat Rampage
-runs on and the same 2,000 target. Scoring mass is everything that is not your own team's laid
+runs on, at a PER-INTENSITY target (500 on the two open arenas, 2,000 on the two dense ones). Scoring mass is everything that is not your own team's laid
 trail — the arena (environment mass, non-roster owner ⇒ hostile whatever colour it wears) and
 rival trails. Your own and your teammates' trails never score, so there is no lay-and-smash
 farming loop.
@@ -52,8 +62,11 @@ farming loop.
   `RampageController` (1 round / 1 turn, `HasEndGame=false`, server winner detection in
   `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`), plus progress milestones and the AI
 - **Scoring**: `CleaveScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`; golf-timed)
-- **Turn monitor**: `CleavePrismTurnMonitor` → `EndConditionOverridesSO.GetCleavePrismTarget()`
-  (default **2000**, FrogletTools ▸ Game Modes ▸ End Game Conditions — never a per-scene field)
+- **Turn monitor**: `CleavePrismTurnMonitor` → `EndConditionOverridesSO.GetCleavePrismTarget(intensity)`
+  (**500 / 500 / 2000 / 2000**, FrogletTools ▸ Game Modes ▸ End Game Conditions — never a
+  per-scene field). Resolved SERVER-side and replicated through `_netPrismTarget`, so a client
+  receives the number rather than deriving it from an intensity it may not have yet. A rung
+  authored 0 falls back to the mode scalar
 - **Domains**: `MinDomainsAllowed = 2`, `MaxDomainsAllowed = 3`; players **2–4** with AI backfill
 - **Vessels**: **Rhino only**, enforced in two places (see "Vessel lock")
 
@@ -174,24 +187,35 @@ This is asserted, not just documented: `cleave_budget.verify` fails the build if
 shielded prism of either tier. If the mode ever wants hardened mass, it needs an AI that can
 energize first.
 
-## The shared envelope
+## The envelope, per intensity
 
-All four arenas are built to one radius — `SliceArenaGeometry.OuterRadius` (**720**) — because
-three systems are sized against it and none of them can be told which intensity is running:
+Each arena is built to its own radius from `SliceArenaGeometry`'s table, and three systems are
+sized against it:
 
 ```
-arena 720  <  AI station 936 (720 × 1.3)  <  spawn ring 1050  <  membrane 1200
+i1/i2   arena 2160  <  AI station 2808 (2160 × 1.3)  <  spawn ring 3150  <  membrane 3600
+i3/i4   arena  720  <  AI station  936 ( 720 × 1.3)  <  spawn ring 1050  <  membrane 1200
 ```
 
-- `CleaveController` parks its AI stations at `OuterRadius × AiStationStandoff`. `AIPilot` has no
-  arrive-and-stop behaviour, so a station *inside* the mass is a point the AI orbits from within
-  forever — the "the AI just stays inside" defect, twice.
-- The scene's `spawnRingRadiusFloor` puts players outside all of it (this cell has **no nucleus**,
-  so the computed ring would otherwise collapse to the cell centre).
+- `CleaveController` parks its AI stations at `OuterRadiusFor(intensity) × AiStationStandoff`.
+  `AIPilot` has no arrive-and-stop behaviour, so a station *inside* the mass is a point the AI
+  orbits from within forever — the "the AI just stays inside" defect, twice.
+- The scene's `spawnRingRadiusFloorByIntensity` puts players outside all of it (this cell has **no
+  nucleus**, so the computed ring would otherwise collapse to the cell centre).
+- Each intensity's `CellConfigDataSO` names its own `MembranePrefab`.
 
-The ordering is asserted in `cleave_budget.verify`, and it is asserted on the prism's **far corner**
-rather than on its lay point: a lay at exactly 720 still puts geometry outside 720. The measured
-worst case is **749** (the cage's rim), comfortably inside the 936 station radius.
+**It became a TABLE rather than one number the moment the rungs stopped being one size**, and each
+of those three consumers is why: one shared radius across a 2,160-vs-720 spread either parks every
+AI inside the two big arenas or 3,000 units away from the two small ones, and one shared spawn ring
+does the same to the players. `SliceArenaGeometry` therefore owns `OuterRadiusI1..I4` +
+`OuterRadiusFor(intensity)`, every consumer asks for the running intensity — server-side in all
+three cases, so there is no config-sync race to lose — and `MaxOuterRadius` is there for anything
+that genuinely has to bound every rung at once.
+
+The ordering is asserted per rung in `cleave_budget.verify`, and it is asserted on the prism's
+**far corner** rather than on its lay point: a lay at exactly 2,160 still puts geometry outside
+2,160. The measured worst cases are **2,230** (the Panes) and **749** (the cage's rim), both
+comfortably inside their own station radius.
 
 ### The arena is bigger than a nucleus, and that is the requirement
 
@@ -202,12 +226,13 @@ boosted Rhino (1,210 u/s off the ramp) crossing the whole of it in **0.6 s**. Th
 **720**: a 1,440-unit play space, 1.8× a nucleus radius and 60% of the membrane's own diameter, so
 the arena *is* the cell rather than an ornament inside it.
 
-**The scale-up is a SIMILARITY, not a re-author.** `SliceArenaGeometry.LengthScale`
-(= `OuterRadius / AuthoredRadius` = **2**) multiplies every authored LENGTH in all four
-generators — steps, prism dimensions, shell gaps, band radii, wave amplitudes — and *divides*
-every noise FREQUENCY, so the void pattern keeps the same size relative to the arena. Counts,
-angles and fractions-of-the-radius are left bare. Three things fall out of doing it that way, and
-each is why it was done that way:
+**The scale-up is a SIMILARITY, not a re-author.** `SliceArenaGeometry.LengthScaleFor(intensity)`
+(= that rung's `OuterRadius / AuthoredRadius` — **6** on rungs 1 and 2, **2** on 3 and 4)
+multiplies every authored LENGTH in all four generators — steps, prism dimensions, shell gaps,
+band radii, wave amplitudes — and *divides* every noise FREQUENCY, so the void pattern keeps the
+same size relative to the arena. Counts, angles and fractions-of-the-radius are left bare. Each
+arena class is used by exactly ONE intensity, so each carries its rung's dials as `const`s. Three
+things fall out of doing it that way, and each is why it was done that way:
 
 - **Prism counts do not move, so the collider budget is untouched.** Every count in these
   generators is a ratio of two lengths that both carry the scale — `floor(radius / step)`,
@@ -215,30 +240,95 @@ each is why it was done that way:
 - **Growing the prisms with the spacing is what keeps the geometry readable.** A rib at twice the
   spacing with the same plank is a dotted line, not a bar. Prism SIZE is free in colliders (only
   COUNT costs one), and `SpawnablePrism.prefab` — the prefab every Cleave arena lays through —
-  authors `maxScale` **100**, so the doubled dimensions clear `PrismScaleAnimator`'s silent
-  per-axis clamp. (363 of 404 prism prefabs inherit a `maxScale` of 10; an arena laying through one
-  of those would have had its planks silently truncated with nothing reporting it. See CLAUDE.md.)
-- **The scale is an exact power of two**, so every scaled constant is bit-exact and no `floor`
-  boundary or noise sample can land on the other side of itself. That is not a hope — the harness
-  re-measured after the change and every arena came back with an **identical prism count, identical
-  danger count, identical per-domain split, and a volume exactly 8×**.
+  authors `maxScale` **100**. At 2× the doubled dimensions cleared `PrismScaleAnimator`'s silent
+  per-axis clamp outright; at **6×** they no longer do — the Panes state rim and mullion lengths of
+  108 and 132 — so the four arenas opt into `CellEnvironmentSpawnableBase.AdmitsAuthoredPrismScale`,
+  which routes their lay through `Prism.AdmitTargetScale` (see "Admitting an authored prism size"
+  below). (363 of 404 prism prefabs inherit a `maxScale` of 10; an arena laying through one of those
+  would have had its planks silently truncated with nothing reporting it. See CLAUDE.md.)
+- **The scale is an exact power of two where it can be**, so every scaled constant is bit-exact and
+  no `floor` boundary or noise sample can land on the other side of itself. That is not a hope — at
+  2× the harness re-measured and every arena came back with an **identical prism count, identical
+  danger count, identical per-domain split, and a volume exactly 8×**. At **6** (= 2 × 3) that no
+  longer holds exactly, which is why rungs 1 and 2 are re-MEASURED rather than assumed — and the
+  measurement is what says the Panes' rib count fell by exactly the gap factor rather than by a
+  rounding accident.
 
 **Identical counts is also the proof that no constant was left unscaled**, and the negative control
-says how much that is worth: reverting just `SpawnablePanes.RibStep` to its unscaled `21f` and
-re-measuring takes the Panes from **11,021 prisms to 19,890** — an 80% collider-budget blowout from
-one missed `* S`, and one that looks perfectly reasonable in a diff. Every scaled length is written
-`x * S` at its declaration for exactly that reason: it is what makes an unscaled one visible.
+says how much that is worth: at 2×, reverting just `SpawnablePanes.RibStep` to its unscaled `21f`
+and re-measuring took the Panes from **11,021 prisms to 19,890** — an 80% collider-budget blowout
+from one missed `* S`, and one that looks perfectly reasonable in a diff. Every scaled length is
+written `x * S` at its declaration for exactly that reason: it is what makes an unscaled one
+visible.
 
-The **one number that is not a pure scale is the spawn ring**, because the membrane did not scale:
-576 × 2 would put players 48 units off the membrane wall. It is authored at **1050** (station 936 →
-ring 1050 → membrane 1200), which keeps the same absolute clearance above the stations that the
-pre-scale ring had.
+### The second dial: GAP
 
-⚠ **Stated cost:** the phase ladder's deltas above each arena's baseline are absolute (the standard
-Blob deltas, a trail band), so Restless and Frenzy still fire after the same absolute *volume* of
-trail — but a lap of a 2× arena lays roughly 2× the trail, so both fire sooner in laps than they
-did. Nothing in this cell reads phase today (no fauna, no flora), so it is a note for whoever adds
-either, not a defect.
+`LengthScale` answers *how big is this place*. **`GapScale` answers *how much of it is mass*** — it
+multiplies the ACROSS-grain step alone, so a pane's ribs (or a sheet's) sit G times further apart
+while each rib stays a continuous bar. It is the one dial that moves a prism count, and only ever
+down: rib count falls by G. Rungs 1 and 2 run **G = 3**; 3 and 4 run 1.
+
+**The two dials are provably orthogonal, and the control is exact.** Setting `GapScaleI1/I2` back
+to 1 and re-measuring reproduces the pre-change counts **to the prism** — 11,021 and 13,738, the
+numbers those arenas had at 2× — which says two things at once: the 6× `LengthScale` moved
+**zero** prisms (it really is a similarity), and the whole ~60% reduction is attributable to the
+gap dial alone. Nothing else in either generator changed a count.
+
+**A gap scale above 1 is only definable for an arena whose across-grain density is a STEP.** The
+Panes and the Swell sample ribs at a spacing, so tripling it is one constant. The **Cage has no
+such step at all** — its density is a rib/hoop COUNT on a sphere compounded inward — so a gap scale
+authored for it would be silently INERT, which is why `SpawnableRibcage.AssertNoGapScale` says so
+loudly instead of leaving a comment in a file nobody edits when they change the table. The
+Twistbands *do* have a step and carry the dial at 1: their deck is a continuous plated road, and
+opening its lanes is a lattice the sword rattles through rather than a sparser road.
+
+The **spawn ring and membrane are not pure scales of the arena either**, for a reason worth
+carrying: at the 2× pass the MEMBRANE did not scale, so `576 × 2` would have put players 48 units
+off the membrane wall, and the ring was authored at **1050** to keep the pre-scale absolute
+clearance. At 6× the membrane *does* scale (`CleaveMembrane.prefab`, radius 3,600), so there the
+ring is a clean **×3** of that play-tested pair. *When only part of a system scales, the interfaces
+between the scaled and unscaled halves are what has to be re-derived by hand.*
+
+### ⚠ Stated cost: at 6× the volume ladder cannot move
+
+`Cell.liveVolumeTotal` is a **float32 running accumulator**, so its resolution is the ulp at the
+value it holds. Scaling an arena 6× makes every prism **216×**, and rungs 1 and 2 reach baselines
+of **345M** and **175M**, where float32's ulp is **32** and **16** — against a Rhino trail prism's
+whole volume of **4.5** (`BaseScale` 3 × 3 × 0.5). Adding one is a no-op: round-to-nearest hands
+back the same total. **So on the two open arenas the cell stays in Calm for the whole match, no
+matter how much trail is laid.**
+
+That is harmless today and only because this cell grows nothing — `SupportedFloras` and
+`SupportedFaunas` are both empty, so nothing reads the phase — which is exactly why it is a
+**gate** rather than a paragraph: `cleave_budget` check 7 computes the ulp at each baseline, reads
+the spawn profile, and fails the moment somebody gives Cleave a food web. There is no fix inside
+the thresholds; the resolution is a property of the BASELINE, so the answers are a smaller arena,
+smaller prisms, or a double accumulator.
+
+General rule for the next mode that scales an arena up: **a uniform k× similarity is a k³ change in
+the numbers a float32 volume accumulator has to hold, and past ~10⁸ it stops being able to see a
+trail prism at all.**
+
+### Admitting an authored prism size
+
+At 6× three of the Panes' authored lengths (plank 102, rim 108, mullion 132) clear
+`SpawnablePrism.prefab`'s serialized `maxScale` of 100. `PrismScaleAnimator.SetTargetScale` clamps
+**per axis, inside the setter, with no log and no return value**, so the arena would have built with
+100-long mullions — gaps in a wall — and nothing anywhere would have said so.
+
+The four arenas therefore override `CellEnvironmentSpawnableBase.AdmitsAuthoredPrismScale`, which
+`SpawnLeafObjects` passes to `PrismTrailBuilder`, which calls `Prism.AdmitTargetScale` before
+re-stating the size. Three things about that are load-bearing:
+
+- **It is opt-in, not global.** `SpawnablePrism.prefab` is shared by ~30 spawnables, and admitting
+  a size one of them is *relying* on the clamp to cut is a behaviour change for that spawnable, not
+  for this one. A caller that does not ask lays byte-for-byte as before.
+- **It runs AFTER `Initialize`, and that ordering is the trap `ScarabSwitch.TryLay` already
+  records**: `Initialize` → `ResetState` → `RestoreAuthoredScaleWindow()` undoes any widening and
+  then re-clamps the target against the restored window, so a size stated before `Initialize` is
+  silently trimmed twice over.
+- **The widening only ever widens, and pool reuse restores the authored window**, so a prism that
+  once carried a 132-long mullion cannot keep that ceiling into its next life as a trail prism.
 
 ## How the numbers are measured
 
@@ -299,18 +389,24 @@ Cell.AssignConfig                                     [Cell.cs]
 ```
 
 Each intensity needs its OWN `CellConfigDataSO` because `PhaseThresholds` must ride its own
-baseline — the arenas run 11,021…16,423 prisms and 19.5M…32.5M volume, so one shared threshold
-block would put three of the four cells in the wrong phase from frame one.
+baseline — and the spread is now enormous: the arenas run ~4.6k…16.4k prisms and **23M…345M**
+volume (rungs 1 and 2 are 6× the authored radius, so each of their prisms is 216× in volume), so
+one shared threshold block would put three of the four cells in the wrong phase from frame one. It
+is also where each rung's `MembranePrefab` lives, which is how intensities 1 and 2 get their
+3,600-radius shell without any code branching on intensity.
 
-**Prism count is monotone across the ladder** (asserted). Nothing about four unrelated arenas forces
-that, but a ladder whose size wandered up and down would make "intensity" mean nothing to a player
-choosing a rung. **Volume is deliberately NOT monotone** — the swell's planks are smaller than the
-panes' — and that is fine precisely because every cell carries its own thresholds.
+**Neither prism count nor volume is monotone across the ladder, deliberately.** A monotone-count
+assertion used to stand here as a proxy for "intensity reads as more to destroy"; it was retired
+when the destruction target became per-intensity, because raw count then says nothing about how
+long a match runs. What `cleave_budget` asserts in its place is the thing that actually has to
+hold: **every rung's arena holds 4×–12× its own target in hostile mass** (measured 5.6×–7.4×), so
+a domain can reach its target off the arena alone without the arena being mostly scenery.
 
 ## Collider budget
 
-One box collider per prism, so the arena *is* the collider count: **11,021 at intensity 1 rising to
-16,423 at intensity 4**, plus nothing else (no fauna, no flora in this cell).
+One box collider per prism, so the arena *is* the collider count: **5,107 / 4,587 / 14,731 /
+16,423**, plus nothing else (no fauna, no flora in this cell). Tripling the rib spacing took the
+two open arenas down by ~60% each; the two dense ones are untouched.
 
 **The whole ladder got lighter at the top**: the heaviest arena was 20,153 prisms and is now 16,423,
 an **18.5% cut** to the worst case. `cleave_budget` asserts the heaviest arena never exceeds the
@@ -393,10 +489,18 @@ densest at its poles, so a tetrahedral spread would drop two of four players ont
 it remains the right default for the other three, none of which is uniform about its poles either.
 
 The ring normally measures off the cell's nucleus radius, and this cell deliberately has none — so
-it would collapse to the cell centre. `spawnRingRadiusFloor` (**1050**) gives the ring a floor for
-exactly this case: a cell whose "core" is a structure rather than a nucleus. The number is owned by
-`cleave_budget.SPAWN_RING`, which asserts it sits outside the AI stations and inside the membrane,
-and the generator writes it into the scene from there.
+it would collapse to the cell centre. `spawnRingRadiusFloorByIntensity` (**3150 / 3150 / 1050 /
+1050**) gives the ring a floor for exactly this case: a cell whose "core" is a structure rather
+than a nucleus. The numbers are owned by `cleave_budget.SPAWN_RING`, which asserts each sits
+outside its own rung's AI stations and inside its own membrane, and the generator writes them into
+the scene from there.
+
+The per-intensity list is a **platform** addition (`ServerPlayerVesselInitializer`), and the scalar
+`spawnRingRadiusFloor` stays as the fallback for a rung the list does not cover — a missing or 0
+entry means "this rung has nothing to say", never "no floor", so an author who sizes one rung and
+leaves another blank gets the scalar rather than the centre of the cell. It is resolved SERVER-side
+from `GameDataSO.SelectedIntensity`, which is set before the scene loads, so it does not meet the
+config-sync race that bites a CLIENT computing an intensity-derived value.
 
 ## AI
 
@@ -404,7 +508,9 @@ and the generator writes it into the scene from there.
 behaviour — it steers at `_targetPosition` forever and flies through on arrival — so *any* target
 inside the arena becomes a point the AI loops around from within.
 
-One station per strike, always at `SliceArenaGeometry.OuterRadius × 1.3`. Stations walk a
+One station per strike, always at `SliceArenaGeometry.OuterRadiusFor(intensity) × 1.3` — **per
+intensity**, because a station at the cage's 936 would sit deep inside the Panes' 2,160 of mass,
+which is the orbit-from-within defect the standoff exists to prevent. Stations walk a
 golden-angle spiral, so successive stations are ~137° apart and **the chord between them passes
 close to the centre** — a full crossing of the ball. The loitering happens outside; the damage
 happens on the transit.
@@ -424,20 +530,33 @@ a preference. See above.
 ## End condition
 
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.cleavePrismTarget`, 0 = default **2000**) — the number of hostile prisms a
-domain must DESTROY to win, the same target Rampage races to. The field was `ribcagePrismTarget`
-until this branch; both it and its Build twin were renamed with the mode.
+(`EndConditionOverridesSO.cleavePrismTargetByIntensity` — **500 / 500 / 2000 / 2000**, with
+`cleavePrismTarget` as the scalar fallback for a rung authored 0) — the number of hostile prisms a
+domain must DESTROY to win. The field was `ribcagePrismTarget` until this branch; both it and its
+Build twin were renamed with the mode, and both gained a per-intensity twin.
 
-> **⚠ Pacing flag — 2,000 is inherited, and it is now inherited across an arena change as well as a
-> prism-kind change.** It was set when every bar was a two-hit shielded prism in a 14,977-prism
-> cage. The bars are one-hit now, and three of the four arenas are new geometry nobody has flown.
-> 2,000 is **18%** of intensity 1's 11,021 prisms and **12%** of intensity 4's 16,423. Expect
-> matches to run short. This has not been playtested. It is one editor field, and the milestones
-> follow it automatically; a per-intensity target would need a small change to
-> `CleavePrismTurnMonitor`.
+**Why it is per-intensity:** rungs 1 and 2 are vast open arenas holding about a third of the mass
+of 3 and 4, so a shared 2,000 would make the two EASIEST rungs the longest matches in the mode —
+the exact inversion the intensity ladder is supposed to express. At 500/500/2000/2000 every rung
+asks for the same *fraction* of its own arena, which `cleave_budget` check 1 asserts as a band
+rather than leaving to inspection.
 
-Comeback rate is `0.01`, so a quarter-of-target deficit (500) buys 5 element levels — comfortably
-over the one-whole-level floor the arcade recipe requires.
+`CleavePrismTurnMonitor` resolves it SERVER-side and replicates the result through
+`_netPrismTarget`, so a client receives the number rather than deriving it from an intensity it may
+not have yet — the distinction `Docs/ECOSYSTEM.md §28` records for `IntensityWise`.
+
+> **⚠ Pacing flag — none of this has been playtested.** The old 2,000 was set when every bar was a
+> two-hit shielded prism in a 14,977-prism cage; the bars are one-hit now, three of the four arenas
+> are new geometry nobody has flown, and two of them have been scaled up twice. 500 is **13%** of
+> the Panes' 5,107 prisms and 2,000 is **12%** of the Twistbands' 16,423 — comparable fractions by
+> construction, which is what the per-intensity split bought, but the absolute match LENGTH is
+> still a guess. It is four editor fields, and the milestones follow whichever applies.
+
+Comeback rate is `0.01`, so a quarter-of-target deficit buys **1.25** element levels at the 500
+target (5 at 2,000) — still over the one-whole-level floor the arcade recipe requires, but only
+just. ⚠ A further cut to the 500 rungs must raise the rate with it: `bonusLevels = deficit × rate`,
+so the rate is a function of the TARGET, and that trap has now been recorded by Dog Fight, The
+Bends, Wildlife Liberation and Tollway.
 
 ## The fauna removal (2026-08)
 
@@ -465,12 +584,14 @@ kept: churning a shared, serialized surface twice costs more than an unused-but-
 | `GameToastSituation` | `CleaveQuarterCut = 50`, `CleaveHalfCut = 51`, `CleaveLeaderChanged = 52` |
 | `SliceArenaGeometry` | **new** — the one envelope all four arenas and the AI are built to |
 | `SpawnablePanes` / `SpawnableSwell` / `SpawnableTwistbands` | **new** arena generators |
-| `SpawnableRibcage` | reads `SliceArenaGeometry.OuterRadius`; its `ShellRadius` const is retired (the controller now reads the shared envelope) |
+| `SpawnableRibcage` | reads `SliceArenaGeometry.OuterRadiusI3`; its `ShellRadius` const is retired (the controller now reads the envelope table), and it asserts its rung authors no gap scale |
 | `Cell` | `SetModeControlOverride` (+ live-swarm re-colour), `ModePhaseFloor`, `FaunaReleaseTier`, fauna containment, `NotifyBlockShieldStateChanged`, shielded mass excluded from the targeting grids |
 | `HapticController` | `PlayAlert()` — the third feel, gate extended per `Docs/HAPTICS.md` |
 | `GameDataSO` | `SyncFromArcadeGame` clamps `selectedVesselClass` into `SO_ArcadeGame.Vessels` |
-| `ServerPlayerVesselInitializer` | `spawnRingRadiusFloor` — lets the computed ring serve a cell whose core is a STRUCTURE rather than a nucleus |
-| `EndConditionOverridesSO` (+ window + asset) | `cleavePrismTarget` live/build/getter, default 2000 |
+| `ServerPlayerVesselInitializer` | `spawnRingRadiusFloor` — lets the computed ring serve a cell whose core is a STRUCTURE rather than a nucleus; **`spawnRingRadiusFloorByIntensity`** — a per-rung override for a mode whose intensities are different PLACES |
+| `EndConditionOverridesSO` (+ window + asset) | `cleavePrismTarget` live/build/getter; **`cleavePrismTargetByIntensity`** live/build + `GetCleavePrismTarget(int)` |
+| `CellEnvironmentSpawnableBase` | **`AdmitsAuthoredPrismScale`** — opt-in widening of `PrismScaleAnimator`'s per-axis clamp for an environment that STATES a prism size outside the shared prefab's window |
+| `PrismTrailBuilder` | `admitAuthoredScale` threaded through `LayOne` / `LaySync` / `LayBudgetedAsync` / `ConfigureLaid`, applied AFTER `Initialize` |
 | `ElementalComebackSystem` | `GameModes.Cleave` shares Rampage's `ScoreDifferenceSource.PrismsDestroyed` case |
 
 ### The one cross-mode behaviour change: shielded mass leaves the targeting grids
@@ -497,7 +618,8 @@ is kept because it is a genuine platform fix.
 | Spawn profile | `_SO_Assets/Cell Configs/Cleave Cell/Cleave Spawn Profile.asset` |
 | Arena prefabs (4) | `_Prefabs/Spawnables/Spawnable{Panes,Swell,Ribcage,Twistbands}.prefab` |
 | Scene | `_Scenes/Multiplayer Scenes/MinigameCleave.unity` (in `EditorBuildSettings`) |
-| End conditions | `Assets/Resources/EndConditionOverrides.asset` (`cleavePrismTarget`) |
+| End conditions | `Assets/Resources/EndConditionOverrides.asset` (`cleavePrismTarget` + `cleavePrismTargetByIntensity`) |
+| Membrane (rungs 1–2) | `_Prefabs/Environment/CleaveMembrane.prefab` — a ×3 similarity of `CapsuleMembrane.prefab` (radius 3,600) |
 | Measurements | `Tools/Build/cleave_arena_measurements.json` (generated; hash-guarded) |
 
 Every asset above is authored by `Tools/Build/author_cleave_assets.py` — deterministic GUIDs,
@@ -537,7 +659,7 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
    nothing like each other. *This is the headline check*: if two intensities look alike, the Cell is
    not on `IntensityWise` or the configs are listed out of order.
 3. **Baseline confirm.** FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines should report
-   **11,021 / 13,738 / 14,731 / 16,423** prisms. If it disagrees, the harness and the editor have
+   **5,107 / 4,587 / 14,731 / 16,423** prisms. If it disagrees, the harness and the editor have
    drifted — re-run the harness and investigate before shipping.
 4. **Panes — the mullions.** Find a pane-pair intersection: it should be a straight, visibly denser
    beam. Flying one end to the other should be the best single cut in the arena.
@@ -546,9 +668,10 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
    first is worth several times the second.
 6. **Swell — crests punish.** Clipping a ridge should full-stop you, debuff all four elements for
    4 s and reset boost. Troughs should be clean.
-7. **Cage — unchanged apart from the scale.** Three rinds at 720 / 590 / 460, triangular openings,
-   tightening inward, each inner rind tilted onto its own axis, no free radial corridor. This rung
-   is supposed to be the same arena it was, at twice the size.
+7. **Cage — unchanged, full stop.** Three rinds at 720 / 590 / 460, triangular openings, tightening
+   inward, each inner rind tilted onto its own axis, no free radial corridor. Rungs 3 and 4 were
+   NOT touched by the 3× pass, so anything that differs from the previous build here is a
+   regression, not a tuning.
 8. **Twistbands — the roll.** Fly a band holding the blade against the deck: keeping contact should
    require continuously rolling the sword. Fly a full lap and confirm you arrive back at your start
    inverted, and that the lane colours have mirrored.
@@ -563,43 +686,60 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
     in the menu (vessel-changer toy), then have the host launch Cleave. The client must spawn a
     **Rhino**, with a `does not allow Dolphin; spawning Rhino instead` warning on the host. Then
     return to the menu and confirm the client can pick a Dolphin again.
-14. **Spawn outside, on the equator.** All four players start on ONE horizontal circle ~1050u out,
-    90° apart, facing the arena, with the whole thing visible ahead. Also check Crystal Capture
+14. **Spawn outside, on the equator — at the RIGHT radius for the rung.** All four players start on
+    ONE horizontal circle, 90° apart, facing the arena, with the whole thing visible ahead: **~3150u
+    out at intensities 1–2** and **~1050u at 3–4**. If a big arena spawns you at 1050 you are
+    INSIDE it, which is the whole reason the floor became per-intensity. Also check Crystal Capture
     still spawns on its sphere (tetrahedral) — that scene must be unchanged.
 15. **Everyone starts at 0.** In a real lobby, check every score panel reads 0 the instant the
     countdown ends — including after a rematch and after a previous game in the same session.
 16. **Smashing scores; laying does not.** The HUD domain sum should rise as you cut and not at all
     from laying trail. Shatter one of your OWN team's trail prisms — the sum must not move; a
     rival's trail must.
-17. **Milestones.** At **500** destroyed by the leading domain the device should shake hard for
-    ~1.2 s; again at **1,000**.
-18. **Win + scoreboard.** First domain to **2,000** ends the turn; winners show a time, losers
-    "N Prisms Left". Replay (scene reload) resets the milestones.
+17. **Milestones follow the rung's own target.** At intensity 4 the leading domain should shake
+    hard for ~1.2 s at **500** destroyed and again at **1,000**; at intensity **1** those rungs are
+    **125** and **250**, because the milestones are fractions of whichever target applies.
+18. **Win + scoreboard.** First domain to its rung's target (**500** at 1–2, **2,000** at 3–4) ends
+    the turn; winners show a time, losers "N Prisms Left". Confirm the goal row counts to the right
+    number on intensity 1 — if it says 2,000 there, the per-intensity target did not replicate.
+    Replay (scene reload) resets the milestones.
 19. **Pacing.** Time each intensity end to end — see the pacing flag. Most likely thing to need a
-    change.
+    change, and the two open arenas are the least known quantity in the mode.
 20. **AI stays outside, in every arena.** Watch an AI Rhino for a minute at intensity 1 AND at
-    intensity 4: it should orbit outside and cut on transits. If it settles inside, the standoff
-    has been set ≤ 1.
-21. **Cloud save survives the rename.** Sign in with an account that has Cleave progress from
+    intensity 4: it should orbit outside and cut on transits. If it settles inside, either the
+    standoff has been set ≤ 1 or the controller is reading the wrong rung's radius — at intensity 1
+    a station must be ~2,808u out, not 936.
+21. **The big arenas' prisms are the size they were authored.** At intensity 1, a pane's rib must
+    read as a continuous BAR and a pane-pair beam must be unbroken. A visibly DOTTED rib is
+    `PrismScaleAnimator`'s silent 100-unit clamp, i.e. `AdmitsAuthoredPrismScale` not reaching the
+    lay — it fails as geometry, never as an error.
+22. **The big membrane is there.** At intensities 1 and 2 the membrane shell must sit outside the
+    arena (3,600), not cut through it. A membrane inside the mass means the cell config is still
+    pointing at `CapsuleMembrane.prefab`.
+23. **Cloud save survives the rename.** Sign in with an account that has Cleave progress from
     before this branch: unlocks, quest completion, max unlocked intensity and bests must all still
     be there. This is what `GameModeRenameMigration` exists for, and the failure mode is silent.
-22. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
+24. **Regression — the grid change.** Play **Skim Race** (intensity 3) and **Astro League**: fauna
     should behave normally and should no longer park against the super-shielded track / edge lining.
-23. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4.
-24. **THE SCALE — the check this branch exists for.** At every intensity, the arena must fill the
+25. **Collider telemetry** on device via DiagnosticsHUD / the Benchmark tool, at intensity 4.
+26. **THE SCALE — the check this branch exists for.** At every intensity, the arena must fill the
     cell rather than sit in the middle of it: from the spawn ring the mass should span most of the
-    view, and a boosted straight-line run across the whole thing should take **~1.2 s**, not ~0.6.
-    Sight-check that the arena's far side is still comfortably inside the membrane (the far corner
-    measures 749 against a 1200 membrane) and that nothing pokes through it.
-25. **The prisms grew with the spacing.** A pane's rib must still read as a continuous BAR at the
+    view. A boosted straight-line run across the whole thing should take **~1.2 s** at intensities
+    3–4 and **~3.6 s** at 1–2. Sight-check that each arena's far side is comfortably inside its own
+    membrane (far corner 2,230 against 3,600 on the big rungs, 749 against 1,200 on the small ones)
+    and that nothing pokes through it.
+27. **The prisms grew with the spacing.** A pane's rib must still read as a continuous BAR at the
     new spacing, not as a dotted line — same for a swell trough and a twistband deck plate. If any
     of them reads as beads, a prism dimension was left unscaled while its step was not (and the
     prism counts would be unchanged, so no offline check can see it — this is the one thing on the
-    list the harness structurally cannot prove).
-26. **Nothing was silently clamped.** Select one laid arena prism at intensity 1 and read its
-    transform scale: the pane ribs should be **~6.8 × 6.8 × 34**, not capped at 10 on the long axis.
-    A truncated long axis means the arena is laying through a prism prefab whose
-    `PrismScaleAnimator.maxScale` is the default 10 rather than `SpawnablePrism.prefab`'s 100.
+    list the harness structurally cannot prove). **Intensity 1 and 2 are the ones to look at**:
+    their ribs are three times further apart than anything that has been seen on screen.
+28. **Nothing was silently clamped.** Select one laid arena prism at intensity 1 and read its
+    transform scale: a pane rib should be **~20 × 20 × 102**, not capped at 100 on the long axis,
+    and a mullion should be **~31 × 31 × 132**. A long axis pinned at exactly 100 means
+    `AdmitsAuthoredPrismScale` is not reaching the lay; one pinned at 10 means the arena is laying
+    through a prefab whose `PrismScaleAnimator.maxScale` is the default rather than
+    `SpawnablePrism.prefab`'s 100.
 
 ## Known limitations / follow-ups
 
@@ -607,7 +747,18 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
   they LOOK — that the mullions read as beams, that the swell's banding is legible at range, that
   the twistbands' roll is a manageable ask rather than an infuriating one — is a design intention
   awaiting a playtest.
-- **The 2,000 target is unmeasured for all four arenas** — see the pacing flag.
+- **The 500 / 500 / 2,000 / 2,000 targets are unmeasured for all four arenas** — see the pacing
+  flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
+  improvement over one shared number, but nothing here says what the resulting match LENGTH is.
+- **⚠ Intensities 1 and 2 are the least-known thing in the mode.** They were scaled up twice
+  (2× then 3× again) and had their rib spacing tripled, so almost nothing about how they read has
+  been seen: a 4,320-unit-wide arena with ribs three times further apart may be open and dramatic
+  or may be sparse and unreadable. `SliceArenaGeometry.LengthScaleI1/I2` and `GapScaleI1/I2` are
+  the two dials, and re-running the harness plus `cleave_budget.py` is the whole re-tune loop.
+- **The volume phase ladder is frozen on intensities 1 and 2** — float32 cannot register a trail
+  prism against a 345M baseline. Harmless while the cell grows nothing, and gated by
+  `cleave_budget` check 7 so it fails loudly the day it stops being harmless. See "Stated cost"
+  above.
 - **Toast copy is unauthored.** The three `GameToastSituation` values exist but no
   `GameToastConfigSO` authors a definition, so they are silently skipped (which is how a mode opts
   out). Author `GameToastConfig_Cleave.asset` with `{0}`=domain, `{1}`=prisms destroyed,

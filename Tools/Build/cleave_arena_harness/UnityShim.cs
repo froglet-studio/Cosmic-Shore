@@ -128,6 +128,8 @@ namespace UnityEngine
         public static int CeilToInt(float f) => (int)Math.Ceiling((double)f);
         public static float Atan2(float y, float x) => (float)Math.Atan2(y, x);
         public static float Acos(float f) => (float)Math.Acos(f);
+        public static bool Approximately(float a, float b) =>
+            Math.Abs(b - a) < Math.Max(1e-6f * Math.Max(Math.Abs(a), Math.Abs(b)), float.Epsilon * 8);
     }
 
     public static class Debug
@@ -145,4 +147,18 @@ namespace UnityEngine
     [AttributeUsage(AttributeTargets.All)] public class RangeAttribute : Attribute { public RangeAttribute(float a, float b) { } }
 
     public static class Harness { public static int Faults; }
+}
+
+namespace CosmicShore.Utility
+{
+    /// <summary>Shim for the project logger. An arena's authoring guard firing (e.g.
+    /// SpawnableRibcage.AssertNoGapScale) is a FAILURE of the ladder, not a note, so an error
+    /// here counts a fault and Program.cs exits non-zero - a table that has drifted past what a
+    /// generator can honour cannot be measured and shipped.</summary>
+    public static class CSDebug
+    {
+        public static void Log(object o) => Console.Error.WriteLine($"[log] {o}");
+        public static void LogWarning(object o) => Console.Error.WriteLine($"[warn] {o}");
+        public static void LogError(object o) { Console.Error.WriteLine($"[error] {o}"); UnityEngine.Harness.Faults++; }
+    }
 }

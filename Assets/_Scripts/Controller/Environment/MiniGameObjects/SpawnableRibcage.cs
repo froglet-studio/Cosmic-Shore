@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -60,14 +61,20 @@ namespace CosmicShore.Gameplay
         // The radius itself belongs to SliceArenaGeometry, not to this file: all four Cleave
         // arenas are built to one envelope, and the AI's stations and the player spawn ring are
         // both derived from it. A local copy of the number is how one of them drifts.
-        const float CageR = SliceArenaGeometry.OuterRadius;
+        /// <summary>This arena IS intensity 3, so it carries that rung's scale as a constant.</summary>
+        const float CageR = SliceArenaGeometry.OuterRadiusI3;
 
-        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
-        /// LENGTH here is multiplied by it. Counts (ribs, hoops, crowns, the danger stride) and
-        /// ANGLES (latitudes, tilts) are deliberately bare: a shell's bar count is
-        /// <c>arc / BarStep</c> and both halves scale together, so the weave is identical and only
-        /// its size changes.</summary>
-        const float S = SliceArenaGeometry.LengthScale;
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry</c>. Every LENGTH here
+        /// is multiplied by it. Counts (ribs, hoops, crowns, the danger stride) and ANGLES
+        /// (latitudes, tilts) are deliberately bare: a shell's bar count is <c>arc / BarStep</c> and
+        /// both halves scale together, so the weave is identical and only its size changes.
+        ///
+        /// <para>There is deliberately no GAP dial here. This arena's across-grain density is a
+        /// rib/hoop COUNT on a sphere (<see cref="BaseRibCount"/> / <see cref="BaseHoopCount"/>,
+        /// compounded inward by <see cref="DensityStep"/>), not a step a factor can multiply — the
+        /// weave IS the arena, and thinning it is a different cage rather than a sparser one. The
+        /// table authors 1 for this rung and <see cref="AssertNoGapScale"/> holds it.</para></summary>
+        const float S = SliceArenaGeometry.LengthScaleI3;
 
         /// <summary>Radial spacing between rinds. In authored units the shells land at
         /// 360 / 295 / 230 / 165 / 100; at the shipped <c>LengthScale</c> of 2 that is
@@ -235,8 +242,37 @@ namespace CosmicShore.Gameplay
         // and never over-allocates by more than a shell's worth.
         protected override int LayCapacity => 5800 * Shells;
 
+        /// <summary>
+        /// The Cage carries no gap dial, so this asserts the table has not grown one for it.
+        ///
+        /// A gap scale multiplies an ACROSS-grain STEP, which the Panes and the Swell both have
+        /// (a rib spacing). This arena's across-grain density is a rib/hoop COUNT on a sphere
+        /// compounded inward by <see cref="DensityStep"/> — there is no step to multiply, so a
+        /// gap factor authored here would silently do NOTHING while the table said it was
+        /// spacing the arena out. That is worse than either outcome: it reads as tuned and is
+        /// inert. The guard is loud rather than a comment because the table lives in another
+        /// file and the next person to open up a rung will edit that one.
+        /// </summary>
+        static void AssertNoGapScale()
+        {
+            if (Mathf.Approximately(SliceArenaGeometry.GapScaleI3, 1f)) return;
+            CSDebug.LogError(
+                $"{nameof(SpawnableRibcage)}: SliceArenaGeometry.GapScaleI3 is " +
+                $"{SliceArenaGeometry.GapScaleI3}, but this arena has no across-grain STEP for a " +
+                "gap scale to multiply — its density is a rib/hoop COUNT. The value is being " +
+                "IGNORED. Either lower BaseRibCount/BaseHoopCount, or set GapScaleI3 back to 1.");
+        }
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
+        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
+        /// continuous bar. The Cage sits inside the shared prefab's window at 2 x, so this changes nothing it lays
+        /// today; it is on so all four rungs of one mode answer the question the same way.</summary>
+        protected override bool AdmitsAuthoredPrismScale => true;
+
         protected override void BuildEnvironment()
         {
+            AssertNoGapScale();
+
             for (int shell = 0; shell < Shells; shell++)
             {
                 var spec = new ShellSpec(shell);

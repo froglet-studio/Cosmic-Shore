@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using CosmicShore.Gameplay;
@@ -7,31 +8,39 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The one envelope every Cleave arena is built to, and the ordering that makes it load-bearing.
+    /// The envelope every Cleave arena is built to - ONE PER INTENSITY - and the ordering that
+    /// makes it load-bearing.
     ///
-    /// These are not tidiness checks. Three systems are sized against
-    /// <see cref="SliceArenaGeometry.OuterRadius"/> and none of them can be told which of the four
-    /// arenas is running, so an arena that quietly grew past it would break the AI and the player
-    /// spawn without failing anything at edit time or at run time.
+    /// These are not tidiness checks. Three systems are sized against an arena's radius (the AI's
+    /// stations, the player spawn ring, the cell membrane), so an arena that quietly grew past its
+    /// own rung's envelope would break the AI and the player spawn without failing anything at
+    /// edit time or at run time.
     ///
     /// The prism COUNTS are proved elsewhere and on purpose: three of the four arenas cull with
     /// value noise, so they are measured by compiling and RUNNING the shipped generators
     /// (<c>Tools/Build/cleave_arena_harness</c>), and <c>Tools/Build/cleave_budget.py</c> asserts
     /// the envelope against that measurement with the prism's far CORNER rather than its lay point.
     /// What is left for this suite is the part a C# test can own: that the constants themselves are
-    /// sane, and that the offline model has not drifted from them.
+    /// sane, that the TABLE is self-consistent, and that the offline model has not drifted from it.
     /// </summary>
     public class SliceArenaGeometryTests
     {
-        /// <summary>The spawn ring the scene authors, restated from <c>cleave_budget.SPAWN_RING</c>.</summary>
-        const float SpawnRing = 1050f;
-        /// <summary>The cell's membrane, from the Cleave cell configs' MembranePrefab
-        /// (<c>CapsuleMembrane.prefab</c>, radius 1200).</summary>
-        const float MembraneRadius = 1200f;
+        /// <summary>Per-intensity spawn ring, restated from <c>cleave_budget.SPAWN_RING</c> and
+        /// authored onto the scene's
+        /// <c>ServerPlayerVesselInitializer.spawnRingRadiusFloorByIntensity</c>.</summary>
+        static readonly float[] SpawnRing = { 3150f, 3150f, 1050f, 1050f };
+
+        /// <summary>Per-intensity membrane radius, from each Cleave cell config's MembranePrefab -
+        /// <c>CleaveMembrane.prefab</c> (3600) on rungs 1 and 2, the standard
+        /// <c>CapsuleMembrane.prefab</c> (1200) on 3 and 4.</summary>
+        static readonly float[] MembraneRadius = { 3600f, 3600f, 1200f, 1200f };
+
         /// <summary>A standard nucleus in world units: <c>Node2.fbx</c>'s half-extent 0.9798 x
         /// <c>Nucleus.prefab</c>'s scale 400. Cleave's cell authors NO nucleus, so this is a
-        /// yardstick rather than a thing in the arena - see <see cref="ArenaIsBiggerThanANucleus"/>.</summary>
+        /// yardstick rather than a thing in the arena - see <see cref="EveryArenaIsBiggerThanANucleus"/>.</summary>
         const float StandardNucleusRadius = 392f;
+
+        const int Intensities = 4;
 
         [Test]
         public void AiStationSitsOutsideTheArena()
@@ -43,17 +52,30 @@ namespace CosmicShore.Tests
                 "AiStationStandoff must exceed 1 or every AI parks inside the arena.");
         }
 
+        /// <summary>
+        /// The ordering holds PER RUNG, which is the whole reason the envelope became a table.
+        ///
+        /// One shared radius was fine while the four arenas were one size. Intensities 1 and 2 are
+        /// now 2,160 against 720 for 3 and 4, and a single spawn ring across that spread either
+        /// spawns a pilot inside the big arenas or parks them 3,000 units from a speck - so each
+        /// rung carries its own station, ring and membrane, and each has to be checked.
+        /// </summary>
         [Test]
-        public void EnvelopeOrderingHolds()
+        public void EnvelopeOrderingHoldsForEveryIntensity()
         {
-            float station = SliceArenaGeometry.OuterRadius * SliceArenaGeometry.AiStationStandoff;
+            for (int i = 1; i <= Intensities; i++)
+            {
+                float arena = SliceArenaGeometry.OuterRadiusFor(i);
+                float station = SliceArenaGeometry.AiStationRadiusFor(i);
 
-            Assert.Less(SliceArenaGeometry.OuterRadius, station,
-                "The AI's stations must sit outside the arena.");
-            Assert.Less(station, SpawnRing,
-                "Players must spawn outside the AI's stations, with the whole arena ahead of them.");
-            Assert.Less(SpawnRing, MembraneRadius,
-                "The spawn ring must sit inside the cell membrane.");
+                Assert.Less(arena, station,
+                    $"intensity {i}: the AI's stations must sit outside the arena.");
+                Assert.Less(station, SpawnRing[i - 1],
+                    $"intensity {i}: players must spawn outside the AI's stations, with the whole "
+                    + "arena ahead of them.");
+                Assert.Less(SpawnRing[i - 1], MembraneRadius[i - 1],
+                    $"intensity {i}: the spawn ring must sit inside the cell membrane.");
+            }
         }
 
         /// <summary>
@@ -61,55 +83,100 @@ namespace CosmicShore.Tests
         ///
         /// Cleave first shipped at radius 360 - smaller than a standard nucleus - and read exactly
         /// that way: four hand-built arenas, all of them a small ball parked at the centre of a
-        /// 1200-radius membrane, with a boosted Rhino crossing the whole thing in 0.6 s. The fix
-        /// was a uniform 2x similarity of the whole family
-        /// (<see cref="SliceArenaGeometry.LengthScale"/>), and this is the promise it was made to
-        /// keep. It is asserted rather than documented because the failure is a FEELING - nothing
-        /// breaks, nothing logs, the arena is simply small - so nothing else would catch a future
-        /// edit that quietly pulled the envelope back in.
+        /// 1200-radius membrane, with a boosted Rhino crossing the whole thing in 0.6 s. It is
+        /// asserted rather than documented because the failure is a FEELING - nothing breaks,
+        /// nothing logs, the arena is simply small - so nothing else would catch a future edit that
+        /// quietly pulled an envelope back in.
         /// </summary>
         [Test]
-        public void ArenaIsBiggerThanANucleus()
+        public void EveryArenaIsBiggerThanANucleus()
         {
-            Assert.Greater(SliceArenaGeometry.OuterRadius, StandardNucleusRadius,
-                "The Cleave arena must be larger than a standard nucleus, or it reads as a little "
-                + "ball in the middle of the cell rather than as the place the match happens.");
+            for (int i = 1; i <= Intensities; i++)
+                Assert.Greater(SliceArenaGeometry.OuterRadiusFor(i), StandardNucleusRadius,
+                    $"intensity {i}'s arena must be larger than a standard nucleus, or it reads as "
+                    + "a little ball in the middle of the cell rather than as the place the match "
+                    + "happens.");
         }
 
         /// <summary>
-        /// The scale is a SIMILARITY of geometry that was tuned at
-        /// <see cref="SliceArenaGeometry.AuthoredRadius"/>, and every count in the four generators
-        /// is a ratio of two lengths that both carry it - so prism counts, and therefore the
-        /// collider budget, do not move. Keeping it an exact power of two is what makes that
-        /// bit-exact rather than approximately true: no <c>floor</c> boundary and no noise sample
-        /// can land on the other side of itself. (Proved empirically too - the harness re-measured
-        /// identical counts and exactly 8x volumes after the 2x.)
+        /// A rung's radius IS its authored radius times its own length scale - no rung may carry a
+        /// radius that is not a similarity of the geometry the four generators were tuned against.
+        ///
+        /// This is the invariant the whole scaling approach rests on: every count in the four
+        /// generators is a ratio of two lengths that both carry the scale, so a similarity moves no
+        /// prism count and therefore no collider budget. A hand-written radius would break that
+        /// silently - the arena would still build, just at a size its spacings were never fitted
+        /// for.
         /// </summary>
         [Test]
-        public void LengthScaleIsAnExactPowerOfTwo()
+        public void EveryRadiusIsItsOwnScaleTimesTheAuthoredRadius()
         {
-            Assert.AreEqual(SliceArenaGeometry.OuterRadius / SliceArenaGeometry.AuthoredRadius,
-                SliceArenaGeometry.LengthScale, 0f);
-            Assert.Greater(SliceArenaGeometry.LengthScale, 0f);
-
-            float log2 = Mathf.Log(SliceArenaGeometry.LengthScale, 2f);
-            Assert.AreEqual(Mathf.Round(log2), log2, 1e-5f,
-                "LengthScale must stay an exact power of two - see SliceArenaGeometry.");
+            for (int i = 1; i <= Intensities; i++)
+            {
+                Assert.Greater(SliceArenaGeometry.LengthScaleFor(i), 0f, $"intensity {i}");
+                Assert.AreEqual(
+                    SliceArenaGeometry.AuthoredRadius * SliceArenaGeometry.LengthScaleFor(i),
+                    SliceArenaGeometry.OuterRadiusFor(i), 1e-3f,
+                    $"intensity {i}'s OuterRadius is not AuthoredRadius x its LengthScale.");
+            }
         }
 
+        /// <summary>
+        /// A gap scale is a MULTIPLIER on an across-grain step, so 1 is "no extra spacing" and
+        /// anything under 1 would crowd an arena tighter than the geometry was fitted for.
+        ///
+        /// It is the one dial that moves a prism count (down, by G), which is also why it may not
+        /// go below 1 without a fresh collider decision rather than a re-run.
+        /// </summary>
         [Test]
-        public void OuterRadiusIsPositiveAndInsideTheMembrane()
+        public void GapScalesNeverCrowdAnArena()
         {
-            Assert.Greater(SliceArenaGeometry.OuterRadius, 0f);
-            Assert.Less(SliceArenaGeometry.OuterRadius, MembraneRadius);
+            for (int i = 1; i <= Intensities; i++)
+                Assert.GreaterOrEqual(SliceArenaGeometry.GapScaleFor(i), 1f,
+                    $"intensity {i}'s GapScale is below 1, which packs its ribs tighter than they "
+                    + "were fitted for and RAISES the prism count.");
+        }
+
+        /// <summary>
+        /// Intensity is clamped at both ends rather than throwing or reading off the end.
+        ///
+        /// <c>GameDataSO.SelectedIntensity</c> is an int a mode can in principle be launched with
+        /// out of range (a Maelstrom draw, a hand-set config, a 0 before the server has published
+        /// one), and every consumer here runs during the spawn chain. Falling back to a real rung
+        /// is the difference between "the first arena" and an exception inside cell bring-up.
+        /// </summary>
+        [Test]
+        public void OutOfRangeIntensityClampsToARealRung()
+        {
+            Assert.AreEqual(SliceArenaGeometry.OuterRadiusI1, SliceArenaGeometry.OuterRadiusFor(0));
+            Assert.AreEqual(SliceArenaGeometry.OuterRadiusI1, SliceArenaGeometry.OuterRadiusFor(-3));
+            Assert.AreEqual(SliceArenaGeometry.OuterRadiusI4, SliceArenaGeometry.OuterRadiusFor(9));
+            Assert.AreEqual(SliceArenaGeometry.GapScaleI1, SliceArenaGeometry.GapScaleFor(0));
+            Assert.AreEqual(SliceArenaGeometry.GapScaleI4, SliceArenaGeometry.GapScaleFor(9));
+            Assert.AreEqual(SliceArenaGeometry.LengthScaleI1, SliceArenaGeometry.LengthScaleFor(0));
+            Assert.AreEqual(SliceArenaGeometry.LengthScaleI4, SliceArenaGeometry.LengthScaleFor(9));
+        }
+
+        /// <summary>The widest rung, for anything that has to bound every intensity at once.</summary>
+        [Test]
+        public void MaxOuterRadiusBoundsEveryRung()
+        {
+            for (int i = 1; i <= Intensities; i++)
+                Assert.LessOrEqual(SliceArenaGeometry.OuterRadiusFor(i),
+                    SliceArenaGeometry.MaxOuterRadius, $"intensity {i}");
         }
 
         /// <summary>
         /// The offline harness COMPILES these constants, so the model can never disagree with them.
-        /// What can still rot is the prose: CLEAVE.md, this suite and the generator all quote 720,
-        /// 360 and 1.3 as readable numbers. This asserts they remain simple literals AND that the
-        /// literal a human reads is the value the code uses - so a move to a computed expression
-        /// fails here rather than quietly making every stated figure a guess.
+        /// What can still rot is the prose: CLEAVE.md, this suite and the generators all quote
+        /// 2160, 720, 360, 6, 3 and 1.3 as readable numbers. This asserts they remain simple
+        /// literals AND that the literal a human reads is the value the code uses - so a move to a
+        /// computed expression fails here rather than quietly making every stated figure a guess.
+        ///
+        /// The per-rung radii are deliberately NOT in this set: they are authored as
+        /// <c>AuthoredRadius * LengthScaleIn</c>, which is the expression
+        /// <see cref="EveryRadiusIsItsOwnScaleTimesTheAuthoredRadius"/> exists to hold, and
+        /// re-stating them as literals is exactly the drift surface that removes.
         /// </summary>
         [Test]
         public void ConstantsAreParseableByTheOfflineModel()
@@ -120,22 +187,22 @@ namespace CosmicShore.Tests
 
             string src = File.ReadAllText(path);
 
-            var outer = Regex.Match(src, @"public const float OuterRadius\s*=\s*([0-9.]+)f\s*;");
-            Assert.IsTrue(outer.Success,
-                "OuterRadius is no longer a literal `public const float ... = N f;`.");
-            Assert.AreEqual(SliceArenaGeometry.OuterRadius, float.Parse(outer.Groups[1].Value), 1e-4f);
+            AssertLiteral(src, "AuthoredRadius", SliceArenaGeometry.AuthoredRadius);
+            AssertLiteral(src, "AiStationStandoff", SliceArenaGeometry.AiStationStandoff);
+            for (int i = 1; i <= Intensities; i++)
+            {
+                AssertLiteral(src, $"LengthScaleI{i}", SliceArenaGeometry.LengthScaleFor(i));
+                AssertLiteral(src, $"GapScaleI{i}", SliceArenaGeometry.GapScaleFor(i));
+            }
+        }
 
-            var authored = Regex.Match(src, @"public const float AuthoredRadius\s*=\s*([0-9.]+)f\s*;");
-            Assert.IsTrue(authored.Success,
-                "AuthoredRadius is no longer a literal `public const float ... = N f;`.");
-            Assert.AreEqual(SliceArenaGeometry.AuthoredRadius,
-                float.Parse(authored.Groups[1].Value), 1e-4f);
-
-            var standoff = Regex.Match(src, @"public const float AiStationStandoff\s*=\s*([0-9.]+)f\s*;");
-            Assert.IsTrue(standoff.Success,
-                "AiStationStandoff is no longer a literal `public const float ... = N f;`.");
-            Assert.AreEqual(SliceArenaGeometry.AiStationStandoff,
-                float.Parse(standoff.Groups[1].Value), 1e-4f);
+        static void AssertLiteral(string src, string name, float expected)
+        {
+            var m = Regex.Match(src, $@"public const float {name}\s*=\s*([0-9.]+)f\s*;");
+            Assert.IsTrue(m.Success,
+                $"{name} is no longer a literal `public const float ... = N f;`.");
+            Assert.AreEqual(expected,
+                float.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture), 1e-4f, name);
         }
     }
 }

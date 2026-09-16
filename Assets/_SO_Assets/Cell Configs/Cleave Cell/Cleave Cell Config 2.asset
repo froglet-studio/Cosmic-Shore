@@ -14,13 +14,13 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Cleave
   Description: 'The Swell - intensity 2 of Cleave: seven great corrugated sheets on wavelengths from 78 to 240, crests painted gold and troughs jade so the grain reads across the arena.
-    13738 prisms, 461 of them danger traps. NO NUCLEUS by design,
+    4587 prisms, 128 of them danger traps. NO NUCLEUS by design,
     and no fauna. PhaseThresholds ride THIS arena''s own MEASURED baseline; regenerate with
     Tools/Build/author_cleave_assets.py after any geometry change rather than hand-editing.'
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
-  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  MembranePrefab: {fileID: 346633111830028674, guid: 6eb45784f9024cbb879f94c23ae46bd9, type: 3}
   NucleusPrefab: {fileID: 0}
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers: []
@@ -29,11 +29,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 0
   PhaseThresholds:
-    RestlessEnter: 14438
-    RestlessExit: 14238
-    FrenzyEnter: 17338
-    FrenzyExit: 16738
-    RestlessEnterVolume: 19478960
-    RestlessExitVolume: 19475760
-    FrenzyEnterVolume: 19525360
-    FrenzyExitVolume: 19515760
+    RestlessEnter: 5287
+    RestlessExit: 5087
+    FrenzyEnter: 8187
+    FrenzyExit: 7587
+    RestlessEnterVolume: 174711830
+    RestlessExitVolume: 174708630
+    FrenzyEnterVolume: 174758230
+    FrenzyExitVolume: 174748630

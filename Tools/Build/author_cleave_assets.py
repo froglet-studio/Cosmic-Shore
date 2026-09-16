@@ -144,6 +144,12 @@ EXISTING = {
     # shared content
     "Prism_prefab":       "ed9defc56162b4b4588e61c20984b6d9",
     "Membrane_prefab":    "6e330f85972faf843b8a128e7166f7b5",
+    # A x3 similarity of the above (radius 3600, capsuleScale (24,180,15)), for the two rungs
+    # whose arena is 2,160 - the standard 1,200 membrane would be INSIDE their mass. Only the
+    # two WORLD-UNIT fields differ: subdivisions is a capsule COUNT, the jitters are fractions
+    # of the radius, noiseFrequency samples a UNIT direction and noiseAmplitude is in DEGREES,
+    # so scaling any of those would change how the membrane LOOKS rather than how big it is.
+    "CleaveMembrane_prefab": "6eb45784f9024cbb879f94c23ae46bd9",
     "Cytoplasm_prefab":   "9cacd903fcf4643459f5f14ac811bb20",
     "CellIcon":           "6aa1c06e11b265744a5f9fa8858ac72a",
     "Vessel_Rhino":       "ec97e344adb08f847a8f7649ab79088e",
@@ -162,10 +168,27 @@ SPAWNABLE_GO_FILEID = 5260000000000201
 SPAWNABLE_TR_FILEID = 5260000000000202
 SPAWNABLE_MB_FILEID = 5260000000000203
 
-SPAWN_RING_RADIUS = round(budget.SPAWN_RING)
-# Destruction target - the race metric. The 25%/50% milestone rungs are fractions of this,
-# so moving it moves the whole progress ladder. Matches Rampage's 2000.
-CLEAVE_PRISM_TARGET = 2000
+# PER INTENSITY, from the budget model, which asserts each rung's
+# arena < AI station < spawn ring < membrane ordering. Intensity 1 is element 0.
+SPAWN_RING_BY_INTENSITY = [round(budget.SPAWN_RING[i]) for i in (1, 2, 3, 4)]
+# The scalar fallback stays authored for a rung the list does not cover; the widest is the safe
+# one, since a ring that is too big only parks a pilot further out while one that is too small
+# spawns them inside the mass.
+SPAWN_RING_RADIUS = max(SPAWN_RING_BY_INTENSITY)
+
+# Which membrane each rung wears. The 2,160-radius arenas need the x3 shell; the 720 ones keep
+# the standard 1,200 one every other cell uses.
+MEMBRANE_GUID_BY_INTENSITY = {
+    i: EXISTING["CleaveMembrane_prefab"] if budget.MEMBRANE_RADIUS[i] > 1200 else EXISTING["Membrane_prefab"]
+    for i in (1, 2, 3, 4)
+}
+
+# Destruction target - the race metric, PER INTENSITY. The 25%/50% milestone rungs are fractions
+# of whichever applies. Rungs 1 and 2 are vast open arenas holding about a third of the mass of
+# 3 and 4, so a shared 2000 would make them the longest matches in the mode. Owned by the budget
+# model, which asserts each rung's arena holds a comparable multiple of its own target.
+CLEAVE_PRISM_TARGET_BY_INTENSITY = [budget.TARGET_BY_INTENSITY[i] for i in (1, 2, 3, 4)]
+CLEAVE_PRISM_TARGET = max(CLEAVE_PRISM_TARGET_BY_INTENSITY)
 
 _HEADER_TMPL = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -359,7 +382,7 @@ for a in ARENAS:
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: {i}
   CellEndGameScore: 0
-  MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {EXISTING['Membrane_prefab']}, type: 3}}
+  MembranePrefab: {{fileID: {MEMBRANE_FILEID}, guid: {MEMBRANE_GUID_BY_INTENSITY[i]}, type: 3}}
   NucleusPrefab: {{fileID: 0}}
   CytoplasmPrefab: {{fileID: {CYTOPLASM_FILEID}, guid: {EXISTING['Cytoplasm_prefab']}, type: 3}}
   CellModifiers: []
@@ -465,12 +488,25 @@ assert n == 1, "scene Cell config list not found"
 for _old_key, _new_key in (("aiCageRadiusOverride", "aiArenaRadiusOverride"),):
     scene = scene.replace(f"  {_old_key}: ", f"  {_new_key}: ")
 
-# 6b. The spawn ring. This cell has NO nucleus, so the computed ring would collapse to the cell
-# centre without a floor; the floor is owned by cleave_budget, which asserts it sits outside the
-# AI's stations and inside the membrane.
+# 6b. The spawn ring, PER INTENSITY. This cell has NO nucleus, so the computed ring would
+# collapse to the cell centre without a floor; the floors are owned by cleave_budget, which
+# asserts each sits outside its own rung's AI stations and inside its own membrane. The scalar
+# stays authored as the fallback for a rung the list does not cover.
 scene, n = re.subn(r"  spawnRingRadiusFloor: \d+\n",
                    f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n", scene, count=1)
 assert n == 1, "scene spawnRingRadiusFloor not found"
+
+_ring_list = "".join(f"  - {r}\n" for r in SPAWN_RING_BY_INTENSITY)
+scene, n = re.subn(
+    r"  spawnRingRadiusFloorByIntensity:(?: \[\]\n|\n(?:  - \d+\n)+)",
+    f"  spawnRingRadiusFloorByIntensity:\n{_ring_list}", scene, count=1)
+if n == 0:
+    # First run after the field was added: Unity has not written the key yet, so append it
+    # directly under the scalar it overrides.
+    scene, n = re.subn(rf"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n",
+                       f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n"
+                       f"  spawnRingRadiusFloorByIntensity:\n{_ring_list}", scene, count=1)
+assert n == 1, "scene spawnRingRadiusFloorByIntensity could not be written"
 
 emit(SCENE_PATH, scene)
 emit(SCENE_PATH + ".meta", scene_meta(G_ASSET["MinigameCleave.unity"]))
@@ -511,8 +547,14 @@ emit(BUILD_PATH, build)
 
 # ── 10. End-game condition target ────────────────────────────────────────────
 # The shared overrides asset is what FrogletTools > Game Modes > End Game Conditions edits.
-# A missing key would silently fall back to the C# field initializer, so author both the live
-# and the build-baseline value explicitly, next to Rampage's (same 2000 destruction target).
+# A missing key would silently fall back to the C# field initializer, so author the live and the
+# build-baseline value explicitly, next to Rampage's.
+#
+# The scalar is authored AND the per-intensity ladder over it, because the ladder is what the
+# mode actually races to and the scalar is only the fallback for a rung the list does not cover.
+# The ladder is REWRITTEN every run rather than only-if-missing: it is owned by cleave_budget,
+# which asserts each rung's arena holds a comparable multiple of its own target, so a hand-edit
+# here is a number nothing proved.
 END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for live_key, new_key in (("rampagePrismTarget", "cleavePrismTarget"),
@@ -522,6 +564,16 @@ for live_key, new_key in (("rampagePrismTarget", "cleavePrismTarget"),
     m = re.search(rf"^  {live_key}: (\d+)\n", endcond, re.M)
     assert m, f"{live_key} not found in {END_PATH}"
     endcond = endcond.replace(m.group(0), m.group(0) + f"  {new_key}: {CLEAVE_PRISM_TARGET}\n", 1)
+
+_target_list = "".join(f"  - {t}\n" for t in CLEAVE_PRISM_TARGET_BY_INTENSITY)
+for scalar_key, list_key in (("cleavePrismTarget", "cleavePrismTargetByIntensity"),
+                             ("cleavePrismTargetBuild", "cleavePrismTargetByIntensityBuild")):
+    endcond, n = re.subn(rf"  {list_key}:(?: \[\]\n|\n(?:  - \d+\n)+)",
+                         f"  {list_key}:\n{_target_list}", endcond, count=1)
+    if n == 0:
+        m = re.search(rf"^  {scalar_key}: \d+\n", endcond, re.M)
+        assert m, f"{scalar_key} not found in {END_PATH}"
+        endcond = endcond.replace(m.group(0), m.group(0) + f"  {list_key}:\n{_target_list}", 1)
 emit(END_PATH, endcond)
 
 
@@ -588,6 +640,9 @@ if "  cellTypeChoiceOptions: 1\n" not in sc:
                   "the per-intensity configs would never be selected")
 if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
     errors.append(f"scene spawn ring floor is not {SPAWN_RING_RADIUS}")
+_want_rings = "  spawnRingRadiusFloorByIntensity:\n" + "".join(f"  - {r}\n" for r in SPAWN_RING_BY_INTENSITY)
+if _want_rings not in sc:
+    errors.append(f"scene per-intensity spawn ring floors are not {SPAWN_RING_BY_INTENSITY}")
 # Every serialized key on the controller must still exist on the class - a renamed field is
 # dropped silently by Unity, which reads as "the override stopped working" and nothing else.
 _ctrl_fields = cs_fields("Assets/_Scripts/Controller/Arcade/CleaveController.cs")

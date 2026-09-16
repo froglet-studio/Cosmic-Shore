@@ -50,14 +50,21 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SpawnableSwell : CellEnvironmentSpawnableBase
     {
-        const float R = SliceArenaGeometry.OuterRadius;
+        /// <summary>This arena IS intensity 2, so it carries that rung's dials as constants.</summary>
+        const float R = SliceArenaGeometry.OuterRadiusI2;
 
-        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry.LengthScale</c>. Every
-        /// LENGTH here is multiplied by it and the noise frequency divided by it. The wave terms in
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry</c>. Every LENGTH here
+        /// is multiplied by it and the noise frequency divided by it. The wave terms in
         /// <see cref="SheetSpecs"/> are lengths too, and are scaled in <see cref="Sheet"/>'s
         /// constructor - the one place an authored number becomes a world distance - so the table
         /// keeps the readable wavelengths it was tuned with.</summary>
-        const float S = SliceArenaGeometry.LengthScale;
+        const float S = SliceArenaGeometry.LengthScaleI2;
+
+        /// <summary>Extra ACROSS-grain spacing, and the ONLY dial here that moves a prism count. It
+        /// multiplies <see cref="RibStep"/> alone, so the corrugation is SAMPLED G times more
+        /// coarsely: a third as many ridge lines, each still a continuous run of overlapping
+        /// planks. The wave itself is untouched - the grain a pilot reads is the same grain.</summary>
+        const float G = SliceArenaGeometry.GapScaleI2;
 
         // ── The deck ─────────────────────────────────────────────────────────
         /// <summary>Spacing ALONG a ridge - under <see cref="PlankLength"/>, so a trough line is
@@ -65,7 +72,7 @@ namespace CosmicShore.Gameplay
         const float PlankStep = 12f * S;
         const float PlankLength = 16f * S;
         /// <summary>Spacing ACROSS the grain, i.e. ridge to ridge sampling.</summary>
-        const float RibStep = 15f * S;
+        const float RibStep = 15f * S * G;
 
         /// <summary>The reef: a half-density layer this far below the deck along its own normal,
         /// laid crosswise.</summary>
@@ -146,7 +153,7 @@ namespace CosmicShore.Gameplay
             return h;
         }
 
-        protected override int LayCapacity => 16000;
+        protected override int LayCapacity => 5800;
 
         /// <summary>A sheet's resolved frame plus its wave terms. <c>Along</c> is the direction
         /// ridges RUN (and therefore the flyable line); <c>Across</c> is the direction the
@@ -216,6 +223,13 @@ namespace CosmicShore.Gameplay
             public Vector3 SurfaceNormal(float along, float across) =>
                 Vector3.Cross(TangentAlong(along), TangentAcross(across)).normalized;
         }
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
+        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
+        /// continuous bar. The Swell states plank lengths of 96 at 6 x, under the prefab's max of 100 today — but its
+        /// jitter reaches 115 and its ribs share the dial, so it opts in with its sibling rather
+        /// than sitting one tuning pass away from a silent clamp.</summary>
+        protected override bool AdmitsAuthoredPrismScale => true;
 
         protected override void BuildEnvironment()
         {

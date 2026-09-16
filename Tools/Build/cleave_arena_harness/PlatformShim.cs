@@ -107,6 +107,11 @@ namespace CosmicShore.Gameplay
         protected virtual int LayCapacity => 40000;
         protected abstract void BuildEnvironment();
         protected abstract int BuildParameterHash();
+        // Opt-in widening of PrismScaleAnimator's per-axis clamp for an AUTHORED prism size.
+        // Shimmed because the Cleave arenas override it; it has no effect on a MEASUREMENT (the
+        // lay list carries the authored scale either way), which is exactly the point - the
+        // harness measures what the generator STATES and the engine is what can trim it.
+        protected virtual bool AdmitsAuthoredPrismScale => false;
 
         protected float RangeF(float min, float max) => (float)(_r.NextDouble() * (max - min) + min);
 

@@ -47,14 +47,20 @@ namespace CosmicShore.Gameplay
             if (IsServer)
             {
                 var overrides = EndConditionOverridesSO.Instance;
+                // Per INTENSITY: this mode's four rungs are four different PLACES, and 1 and 2
+                // are open arenas holding roughly a third of the mass of 3 and 4. Resolved HERE,
+                // on the server, and replicated through _netPrismTarget - a client receives the
+                // number rather than deriving it from an intensity it may not have yet.
+                int intensity = gameData != null && gameData.SelectedIntensity != null
+                    ? gameData.SelectedIntensity.Value : 1;
                 int target = overrides != null
-                    ? overrides.GetCleavePrismTarget()
+                    ? overrides.GetCleavePrismTarget(intensity)
                     : EndConditionOverridesSO.DefaultCleavePrismTarget;
 
                 _netPrismTarget.Value = target;
                 gameData.PrismTargetCount = target;
 
-                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[CleavePrismMonitor] Server set cage target: {target}");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[CleavePrismMonitor] Server set arena target: {target} (intensity {intensity})");
             }
             else if (_netPrismTarget.Value > 0)
             {
