@@ -335,11 +335,18 @@ def _instance_transforms(text: str, docs: dict):
     block's `m_TransformParent` (/asset-surgery: an instance is reachable that way ALWAYS,
     and through the parent's `m_Children` only when the parent is a plain Transform).
 
-    Returns {fileID: (parent, localPos, localScale, sourceGuid)}. The guid matters as much
-    as the pose: a nested instance contributes its SOURCE prefab's whole body, and that
-    body is not in this file at all. Skipping either half is not a small loss — the
-    Tadpole's entire body and the Clawfish's entire model are nested instances, so a walk
-    that ignores them measures those two species at a seventh of their real size (§4.9).
+    Returns {fileID: (parent, localPos, localScale, sourceGuid, scaleOverridden)}. The guid
+    matters as much as the pose: a nested instance contributes its SOURCE prefab's whole
+    body, and that body is not in this file at all. Skipping either half is not a small
+    loss — the Tadpole's entire body and the Clawfish's entire model are nested instances,
+    so a walk that ignores them measures those two species at a seventh of their real size
+    (§4.9).
+
+    `scaleOverridden` says whether the instance authored `m_LocalScale.*` rows. That is the
+    difference between a pose that MULTIPLIES the source root's own scale and one that
+    REPLACES it: Unity stores an override as the final serialized value of that field, so
+    an overridden instance scale is the whole answer and re-applying the source root's
+    scale underneath it squares the number (see `_measure_reach`).
     """
     out = {}
     for fid, (cls, body) in docs.items():
@@ -350,6 +357,7 @@ def _instance_transforms(text: str, docs: dict):
         src = re.search(r"m_SourcePrefab: \{fileID: \d+, guid: (\w+)", body)
         pos = [0.0, 0.0, 0.0]
         scale = [1.0, 1.0, 1.0]
+        scale_overridden = False
         # propertyPath / value rows WRAP, so walk the lines. A one-line regex over an
         # m_Modifications list matches zero entries and reads as "no overrides".
         lines = body.split("\n")
@@ -361,8 +369,13 @@ def _instance_transforms(text: str, docs: dict):
             if not vm:
                 continue
             axis = "xyz".index(pm.group(2))
-            (pos if pm.group(1) == "Position" else scale)[axis] = float(vm.group(1))
-        out[fid] = (parent, tuple(pos), tuple(scale), src.group(1) if src else None)
+            if pm.group(1) == "Position":
+                pos[axis] = float(vm.group(1))
+            else:
+                scale[axis] = float(vm.group(1))
+                scale_overridden = True
+        out[fid] = (parent, tuple(pos), tuple(scale),
+                    src.group(1) if src else None, scale_overridden)
     return out
 
 
@@ -397,6 +410,7 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
     nodes = {}                         # fileID -> (parent, localPos, localScale)
     nested = {}                        # fileID -> source prefab path
     nested_fbx = {}                    # fileID -> source MODEL's mesh extent
+    nested_replaces_root_scale = set() # fileIDs whose pose OVERRODE m_LocalScale
     for fid, (cls, body) in docs.items():
         if cls != "4":
             continue
@@ -404,13 +418,16 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
         nodes[fid] = (m.group(1) if m else "0",
                       vec3(body, "m_LocalPosition") or (0.0, 0.0, 0.0),
                       vec3(body, "m_LocalScale") or (1.0, 1.0, 1.0))
-    for fid, (parent, pos, scale, guid) in _instance_transforms(text, docs).items():
+    for fid, (parent, pos, scale, guid, scale_overridden) in \
+            _instance_transforms(text, docs).items():
         nodes[fid] = (parent, pos, scale)
         src = _meta_index().get(guid) if guid else None
         if not src:
             continue
         if src.suffix.lower() == ".prefab":
             nested[fid] = src
+            if scale_overridden:
+                nested_replaces_root_scale.add(fid)
         elif src.suffix.lower() == ".fbx":
             # A nested MODEL instance has no MeshFilter document in this file to find
             # (_node_mesh_extents only sees `!u!33` docs), and it is not a .prefab to
@@ -447,6 +464,12 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
         _, lp, ls = nodes[fid]
 
         if is_root and not include_root_scale:
+            # The root contributes its FRAME only, never its own extent. Widening this to
+            # also count the root's mesh/scale was tried and reverted: it took every
+            # BranchingFlora from 3.00 to 6.29 and the Tadpole from 5.00 to 56.30, because
+            # a species whose root carries a placeholder prism scale then measures that
+            # placeholder rather than its body. The §40 band is calibrated against this
+            # rule; changing it is a separate, wider re-authoring.
             wpos, wscale = (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)
         else:
             wpos = tuple(ppos[i] + pscale[i] * lp[i] for i in range(3))
@@ -455,7 +478,14 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
             own = max(biggest, mesh_extent.get(fid, 0.0) * biggest)
             if fid in nested:
                 # The instance's whole source body, scaled by the pose it is placed at.
-                own = max(own, 2.0 * _measure_reach(nested[fid], True, seen) * biggest)
+                # An instance that OVERRODE `m_LocalScale` has already replaced the source
+                # root's own scale - Unity serializes the final value of the field, not a
+                # factor on top of it - so measuring that source WITH its root scale and
+                # then multiplying by `biggest` applies the same number twice. Recursing
+                # with `include_root_scale=False` is what makes the composition match what
+                # the engine builds.
+                own = max(own, 2.0 * _measure_reach(
+                    nested[fid], fid not in nested_replaces_root_scale, seen) * biggest)
             if fid in nested_fbx:
                 own = max(own, nested_fbx[fid] * biggest)
             reach = max(reach, math.dist(wpos, (0.0, 0.0, 0.0)) + 0.5 * own)

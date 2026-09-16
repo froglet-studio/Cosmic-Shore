@@ -21,7 +21,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: QuadFishSpindleMaterial
-  m_Shader: {fileID: -6465566751694194690, guid: 3f7c1a9e5b2d4c08a6e1d7b4c9f30215,
+  m_Shader: {fileID: -6465566751694194690, guid: 545a7b2ee58b90744bdb1c9e265a09f4,
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -127,7 +127,6 @@ Material:
     - _QueueControl: 0
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _RimStrength: 0.45
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -142,10 +141,12 @@ Material:
     - _ZWriteControl: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
+    - _BrightColor: {r: 0.36976376, g: 0.39671606, b: 0.9559748, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color1: {r: 0.12177405, g: 0.09870085, b: 1.4946162, a: 0.9411765}
+    - _Color2: {r: 0, g: 0, b: 1.3019608, a: 1}
+    - _DullColor: {r: 0, g: 0.027586222, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _FlowSpeed: {r: 0, g: -0.01, b: 0, a: 0}
-    - _Pulse: {r: 0.8, g: 1.2, b: 0, a: 0}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

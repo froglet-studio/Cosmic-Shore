@@ -67,7 +67,7 @@ HEALTH_GUID = "1488a2ac58b2b4c43b14f84206bd9195"
 HEALTH_SRC_T = "5222650486365209692"
 HEALTH_SRC_GO = "5776304996075792891"
 
-FAUNA_MAT_GUID = "7b2e4f1a9c6d40518e3a5c7d2b8f4160"
+SPINDLE_MAT_GUID = "4f44fa5c7514a2c45b5af7f45bc51acd"
 CREATURE_MAT_GUID = "50b00b0267c900544856c0d3a2a3d54c"
 
 # A fileID is a SIGNED int64; a random 19-digit decimal overflows it ~16% of the time and
@@ -246,16 +246,22 @@ def build(src):
 
 
 def build_meta(src):
-    """Point the FBX's material remap at FaunaSpindleMaterial.
+    """Point the FBX's material remap at the shared SpindleMaterial.
 
     The renderer lives inside a nested FBX PrefabInstance, so a material override from the
     prefab would need an fbx-internal fileID that only the importer knows. The importer's own
     externalObjects remap is the sanctioned way to say it, and ClawfishTest.fbx has exactly
     one user, so the blast radius is this creature.
+
+    It is the SHARED fauna material rather than the Clawfish's own `CreatureMaterial`
+    because the body is now a Spindle: `SpindleMaterial` is the one every other creature
+    wears, it is the graph `SpindleSway.hlsl` lives in, and it already authors the shared
+    0.08 / 1.4 sway. `CreatureMaterial` is on a different graph entirely and would leave
+    this fish the only creature in the cell that does not move.
     """
-    assert CREATURE_MAT_GUID in src or FAUNA_MAT_GUID in src, \
+    assert CREATURE_MAT_GUID in src or SPINDLE_MAT_GUID in src, \
         "ClawfishTest.fbx.meta does not remap its material at all"
-    return src.replace(CREATURE_MAT_GUID, FAUNA_MAT_GUID)
+    return src.replace(CREATURE_MAT_GUID, SPINDLE_MAT_GUID)
 
 
 def validate(prefab, meta):
@@ -313,8 +319,8 @@ def validate(prefab, meta):
 
     if CREATURE_MAT_GUID in meta:
         problems.append("ClawfishTest.fbx.meta still remaps to CreatureMaterial")
-    if FAUNA_MAT_GUID not in meta:
-        problems.append("ClawfishTest.fbx.meta does not remap to FaunaSpindleMaterial")
+    if SPINDLE_MAT_GUID not in meta:
+        problems.append("ClawfishTest.fbx.meta does not remap to SpindleMaterial")
 
     return problems
 

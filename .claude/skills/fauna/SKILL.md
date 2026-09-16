@@ -57,7 +57,7 @@ by measurement, before you conclude a creature is fine.
 5. **Body prisms.** `Fauna._bodyPrisms` is `GetComponentsInChildren<HealthPrism>(true)`.
    With **zero**, `OnBodyPrismExploded` can never fire, so the creature **cannot be killed
    by shooting it**, carries no conserved mass in its body, and leaves no §26 skeleton.
-   (The Clawfish was in that state for two years; `Docs/ECOSYSTEM.md §46.3` is the fix, and
+   (The Clawfish was in that state for two years; `Docs/ECOSYSTEM.md §46.2` is the fix, and
    the recipe is measured poses on the creature's own extremities, not eyeballed ones —
    §26's ordered wither runs farthest-from-the-heart first, so the extremities are where
    body prisms belong.)
@@ -120,18 +120,16 @@ Consequences to hold on to:
 - `Tools/Shaders/verify_spindle_sway.py` proves the shipped HLSL (compiles it with clang,
   8 properties, negative-controlled). `Tools/Shaders/wire_spindle_sway.py` does the splice.
 
-**FAUNA DO NOT WEAR `SpindleGraph` — they wear `FaunaSpindleGraph`** (`Docs/ECOSYSTEM.md
-§46`). Same Voronoi, same death clock, same sway, plus three things that are a statement
-about being alive rather than about being a limb: an additive fresnel **rim**, a slow
-brightness **breath**, and a **flow** that walks the cell pattern across the body — all on
-`_PrismClock`, all defaulting to a provable no-op
-(`Tools/Shaders/verify_fauna_skin.py`). Its two colours are **unexposed globals** published
-from the palette's Blue SHIELDED pair (white → blue, the same row every health prism wears)
-by `FaunaNeutralPalette`, because `Spindle` mints eight phase-variant materials at runtime
-and a painted base material would be copied stale. A new creature gets
-`FaunaSpindleMaterial` (slow, 0.08 / 1.4) or its own material if its frequency differs —
-`Tools/Build/author_fauna_spindle_materials.py --check` owns the split and fails on a
-referrer it has never classified.
+**EVERY SPINDLE IS `SpindleGraph`** — fauna and flora alike. A creature-only fork
+(`FaunaSpindleGraph`: fresnel rim, brightness breath, pattern flow) was built and **walked
+back on a look call**; do not rebuild it without being asked (`Docs/ECOSYSTEM.md §46.1`).
+What it leaves behind is the material rule: **a shared material is a claim that everything
+wearing it moves alike**, and amplitude transfers across meshes while FREQUENCY does not —
+so a new creature takes the shared `SpindleMaterial` (0.08 / 1.4) unless its frequency
+genuinely differs, in which case it gets its own material on the same graph, the way
+`QuadFishSpindleMaterial` does (0.13 / 5.2). Never paint a fleet-wide colour onto the base
+material: `Spindle` mints eight phase-variant clones at runtime, copying the colour at mint
+time, so the paint is only correct if `ThemeManager.Awake` happens to beat the first spindle.
 
 ---
 
@@ -202,7 +200,7 @@ Use `Tools/Build/fbx_binary.py` to read vertices, and copy the normalisation fro
 **Reading a body's shape without Unity — and a bounding box is NOT reading it.** The first
 pass on the Clawfish read its extents and concluded the +z end was "a dense spiked mass
 (the claws)" and the −z end tapered away. Both halves were wrong: +z is the OPEN MOUTH of a
-hollow horn and the "claws" are two horizontal tail flukes at −z (`Docs/ECOSYSTEM.md §46.3`).
+hollow horn and the "claws" are two horizontal tail flukes at −z (`Docs/ECOSYSTEM.md §46.2`).
 *A silhouette read off a bounding box is a guess wearing a measurement's clothes.* What
 actually answers the question, in order of cost:
 
