@@ -41,7 +41,7 @@ mode enum, so a third kind of card is a new subclass and one entry in the modal'
 
 ### 1.1 The third panel: the Arena's
 
-`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush) can be flown in
+`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush, Regatta) can be flown in
 more than one hull, so the panel carries a vessel carousel and a SELECT VESSEL button, and
 **Start is dead until a hull is confirmed** — the modal's `RefreshStartAvailability` is the one
 place Start's availability is decided, so this gate and the weekly-challenge lock cannot disagree.

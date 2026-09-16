@@ -32,6 +32,7 @@ MonoBehaviour:
   breakwaterLaps: 2
   headlongGateTarget: 24
   redlineGateTarget: 24
+  regattaGateTarget: 24
   hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
@@ -53,5 +54,6 @@ MonoBehaviour:
   breakwaterLapsBuild: 2
   headlongGateTargetBuild: 24
   redlineGateTargetBuild: 24
+  regattaGateTargetBuild: 24
   hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

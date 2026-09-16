@@ -33,6 +33,7 @@ CHECK_ONLY = "--check" in sys.argv
 # ── Well-known asset paths every mode registers into ────────────────────────
 GAME_LIST = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"   # the master roster
 ARCADE_GRID = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset"         # what the Arcade screen draws
+ARENA_GRID = "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset"           # what the Arena screen draws
 PROGRESSION = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 BUILD_SETTINGS = "ProjectSettings/EditorBuildSettings.asset"
 END_CONDITIONS = "Assets/Resources/EndConditionOverrides.asset"
@@ -64,10 +65,26 @@ CELL_VISUALS = {
 }
 MEMBRANE_RADIUS = 1200.0
 
-# ── Vessel data assets, by class ────────────────────────────────────────────
+# ── Vessel data assets (SO_Class_*), by class - every PLAYABLE hull ─────────
+# An ARENA card lists several of these in its Vessels; an arcade card exactly one. Grizzly,
+# Termite, Falcon and Shrike are not here because they are not shipped playable kits
+# (Grizzly's prefab carries no R_VesselActions and a disabled AI).
 VESSELS = {
-    "Dolphin": "c0f30e9f09616874780edc0a375ce686",
-    "Scarab":  "b136d82d275e0f8ea1feef29f0d416a4",
+    "Manta":    "b0e6ec5495dbfb6419332830d585f364",
+    "Dolphin":  "c0f30e9f09616874780edc0a375ce686",
+    "Rhino":    "ec97e344adb08f847a8f7649ab79088e",
+    "Urchin":   "bde48fa4833b6364b93111a55ba90958",
+    "Squirrel": "6fbeef29c9430b94aabea2934640dc5a",
+    "Serpent":  "8a288448ab55edc46ac841a5f2e53d83",
+    "Sparrow":  "7b7053dd065edb54baa3b831b90f4985",
+    "Scarab":   "b136d82d275e0f8ea1feef29f0d416a4",
+}
+
+# VesselClassType enum ids (Assets/_Scripts/Data/Enums/VesselClassType.cs) - a card's
+# StartingElements rows and a scene's aiInitializeDatas name hulls by these.
+VESSEL_CLASS_ID = {
+    "Manta": 1, "Dolphin": 2, "Rhino": 3, "Urchin": 4, "Grizzly": 5, "Squirrel": 6,
+    "Serpent": 7, "Termite": 8, "Falcon": 9, "Shrike": 10, "Sparrow": 11, "Scarab": 12,
 }
 
 # ── Arcade card art shared by the pure-aggression party games (Rampage, Dog Fight, Bends) ──
@@ -123,6 +140,11 @@ def script_meta_text(g: str) -> str:
 def asset_meta_text(g: str) -> str:
     return (f"fileFormatVersion: 2\nguid: {g}\nNativeFormatImporter:\n  externalObjects: {{}}\n"
             f"  mainObjectFileID: 11400000\n  userData:\n  assetBundleName:\n  assetBundleVariant:\n")
+
+
+def prefab_meta_text(g: str) -> str:
+    return (f"fileFormatVersion: 2\nguid: {g}\nPrefabImporter:\n  externalObjects: {{}}\n"
+            f"  userData:\n  assetBundleName:\n  assetBundleVariant:\n")
 
 
 def scene_meta_text(g: str) -> str:
@@ -214,6 +236,12 @@ class Generator:
                   f"fileFormatVersion: 2\nguid: {guid('text/' + rel)}\nTextScriptImporter:\n"
                   f"  externalObjects: {{}}\n  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
 
+    def emit_prefab(self, rel: str, g: str, content: str):
+        """A generator-authored prefab (an arena's environment spawnable variant, one per
+        intensity) plus its PrefabImporter meta."""
+        self.emit(rel, content)
+        self.emit(rel + ".meta", prefab_meta_text(g))
+
     def emit_scene(self, name: str, g: str, content: str):
         rel = f"{SCENES_DIR}/{name}.unity"
         self.emit(rel, content)
@@ -236,6 +264,15 @@ class Generator:
         """The master roster plus the Arcade grid - where every shipped party game lives."""
         self.register_game_list(card_guid, GAME_LIST)
         self.register_game_list(card_guid, ARCADE_GRID)
+
+    def register_arena_card(self, card_guid: str):
+        """The master roster plus the ARENA grid - where a card that seats several hulls lives.
+        Docs/HomeHub/ARCHITECTURE.md 3.1: ArcadeGames is "the master minus the arena cards", so
+        an arena card goes in the master (the guest's by-mode lookup) and ArenaGames (the Arena
+        screen's rosterOverride, which is also what routes it to the ArenaLaunchPanel and its
+        vessel carousel) and NOT in ArcadeGames."""
+        self.register_game_list(card_guid, GAME_LIST)
+        self.register_game_list(card_guid, ARENA_GRID)
 
     def register_always_unlocked(self):
         prog = self.read_current(PROGRESSION)

@@ -64,6 +64,7 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `WreckingBallForgeHint` (93) / `WreckingBallDashHint` (94) | controller config (idle hints) | — |
 | `UndertowQuarter` (95) / `UndertowHalf` (96) / `UndertowLeadChanged` (97) | `UndertowController` | `{0}` domain, `{1}` points, `{2}` target |
 | `UndertowDashHint` (98) | controller config (idle hint) | — |
+| `RegattaRailHint` (110) / `RegattaLaneHint` (111) | controller config (idle hints) | — |
 
 The Dog Fight (57-59), Bends (60-62), Peel the Cage (50-52) and Wildlife Liberation (53-56)
 milestone situations are posted by their controllers; only Dog Fight and The Bends author them
@@ -84,6 +85,7 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | `GameToastConfig_Bends` | Bends (42) | `{0} bent a rival! ({1}/{3})` (every debuff landed), the quarter / half / lead-change milestones, `Comeback system is on` |
 | `GameToastConfig_BroodRush` | BroodRush (38) | `{0} brood hatched - {1}/{2}` |
 | `GameToastConfig_WreckingBall` | WreckingBall (54) | `{0} has wrecked {1} prisms` (`everyN` 250), the lead-change beat, two idle hints (forge a ball / dash beside the forest), `Comeback system is on` — authored by `author_wrecking_ball_assets.py` |
+| `GameToastConfig_Regatta` | Regatta (56) | two idle hints (the rail in your colour is the racing line; ride it / skim it / fly beside it), `Comeback system is on` — authored by `author_regatta_assets.py` |
 | `GameToastConfig_Undertow` | Undertow (55) | `{0} dragged a rival through the undertow!` (every bend), `{0} has drowned {1} creatures` (`everyN` 3), the quarter / half / lead-change milestones, an idle dash hint, `Comeback system is on` — authored by `author_undertow_assets.py` |
 | `GameToastLibrary` | — | shared + the seven mode configs |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |
