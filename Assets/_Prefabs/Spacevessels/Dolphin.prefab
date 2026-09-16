@@ -1610,6 +1610,9 @@ MonoBehaviour:
   driftJetBackwardTotal: 1.25
   wingAuthoredPivot: {x: 0, y: 0, z: 0.1}
   wingFlightPivot: {x: 0, y: 0, z: 0}
+  wingStationForward: 0.5811
+  wingThrottleNeutral: 0.5
+  wingThrottleSweep: 66
   thrusterAuthoredPivot: {x: 0, y: 0.14725685, z: -2.0470345}
   thrusterFlightPivot: {x: 0, y: 0.15, z: -1.7}
   thrusterAnimationScaler: 75

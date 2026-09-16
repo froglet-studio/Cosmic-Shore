@@ -154,6 +154,36 @@ namespace CosmicShore.Gameplay
                  "game drew it at -0.403.")]
         [SerializeField] Vector3 wingFlightPivot = Vector3.zero;
 
+        [Tooltip("How far FORWARD of that measured station the wings are DRAWN, world units " +
+                 "along +z. 0 is bleeding-edge's station verbatim; the shipped 0.5811 is the " +
+                 "measurement that lands the wings' drawn centroid at CRUISE throttle on the " +
+                 "drawn ship's own midpoint (+0.1781 in vessel space - the mean of the hull's " +
+                 "-2.471 tail and +2.827 nose, taken over every cluster of the shipped rig). " +
+                 "Applied through the one station BOTH the flight path and the resting layout " +
+                 "read, so the two still cannot describe two different ships. The drift cage is " +
+                 "independent of it by construction: its station is restPos + driftWingForward, " +
+                 "absolute from rest, so flight 12's signed-off clearance is unchanged.")]
+        [SerializeField] float wingStationForward = 0.5811f;
+
+        [Tooltip("The throttle at which the wings sit UNSWEPT. Throttle here is " +
+                 "InputStatus.XDiff, which runs 0..1 with 0.5 at neutral cruise - so " +
+                 "bleeding-edge's bare `throttle` term holds the wings 37.5 degrees swept while " +
+                 "the stick is centred, which is already 4 degrees past the measured 33.41 " +
+                 "degrees at which their roots enter the fuselage. 0 reproduces bleeding-edge " +
+                 "exactly. 0.5 is cruise - and it is also the pose ApplyRestingLayout has always " +
+                 "drawn, so the live puppetry and the resting layout now agree at a centred stick " +
+                 "instead of disagreeing by 37.5 degrees.")]
+        [SerializeField] float wingThrottleNeutral = 0.5f;
+
+        [Tooltip("Degrees of wing BACK-SWEEP per unit of throttle above the neutral above. 75 " +
+                 "(with neutral 0) is bleeding-edge's exaggeratedAnimationScaler verbatim. The " +
+                 "shipped 66 is measured against the shipped geometry: at the station above, the " +
+                 "wing roots first touch a body cluster at 67.86 degrees per unit, so 66 is the " +
+                 "largest whole value that keeps every wing vertex outside every body cluster " +
+                 "across the whole throttle range. The YAW-stick term is untouched and still runs " +
+                 "at exaggeratedAnimationScaler.")]
+        [SerializeField] float wingThrottleSweep = 66f;
+
         [Tooltip("Where the legacy engine-case transforms were AUTHORED: all six at " +
                  "(0, 0.14725685, -2.0470345) in bleeding-edge's Dolphin.prefab. ONE shared " +
                  "point - the boosters radiate from it, so their own turn swings each about that " +
@@ -195,6 +225,20 @@ namespace CosmicShore.Gameplay
             Mathf.Clamp(worldUnits, -MaxOffsetWorldUnits, MaxOffsetWorldUnits);
 
         Vector3 ForwardWingOffset => new(0, 0, Sane(driftWingForward));
+
+        // The wings' station: bleeding-edge's measured flight pivot plus the forward offset
+        // flight 18 solved. ONE expression, read by the flight path and by the resting layout.
+        Vector3 WingStation => wingFlightPivot + new Vector3(0, 0, Sane(wingStationForward));
+
+        // Brake()'s exact mirror, and the wings' half of the same idea. Brake() answers "how far
+        // BELOW its threshold is the throttle"; this answers "how far ABOVE cruise". Bleeding-edge
+        // fed the wings the bare throttle, which never reaches zero because XDiff rests at 0.5 -
+        // so the wings were swept into the hull at a centred stick and only got deeper from there.
+        // Clamped at zero rather than signed: below cruise the wings belong to Brake()'s pitch,
+        // and a signed term rakes them 33 degrees FORWARD at full brake, carrying the tips to
+        // z +2.03 against jaws that start at +0.832.
+        float SweepAboveCruise(float throttle)
+            => throttle > wingThrottleNeutral ? throttle - wingThrottleNeutral : 0f;
         Vector3 BackwardThrusterOffset => new(0, 0, -Sane(driftJetBackwardTotal));
 
         // The point the chassis turns about, in the vessel frame: the Chassis part's own rest
@@ -384,8 +428,8 @@ namespace CosmicShore.Gameplay
         {
             Quaternion frame = transform.rotation;
             MovePartFromRest(Chassis, Vector3.zero, frame);
-            SeatPartOnChassis(RightWing, wingAuthoredPivot, wingFlightPivot, frame);
-            SeatPartOnChassis(LeftWing, wingAuthoredPivot, wingFlightPivot, frame);
+            SeatPartOnChassis(RightWing, wingAuthoredPivot, WingStation, frame);
+            SeatPartOnChassis(LeftWing, wingAuthoredPivot, WingStation, frame);
             if (animationTransforms == null) return;
             for (int i = 0; i < animationTransforms.Count; i++)
                 SeatPartOnChassis(animationTransforms[i], thrusterAuthoredPivot, thrusterFlightPivot, frame);
@@ -520,12 +564,22 @@ namespace CosmicShore.Gameplay
             // flight model.
             float rollSign = mirrorAppendageRoll ? -1f : 1f;
 
+            // THE WINGS' THROTTLE TERM IS THE ONE THING HERE THAT IS NOT BLEEDING-EDGE'S, and
+            // both of flight 18's asks come off it. Measured on the shipped rig: throttle is
+            // InputStatus.XDiff, which RESTS AT 0.5, so bleeding-edge's `(yaw +- throttle) * 75`
+            // holds the wings 37.5 degrees swept at a centred stick - past the 33.41-degree onset
+            // at which a wing root enters the fuselage - and buries them 0.1808 wu at full
+            // throttle. Unsweeping them at cruise moves the drawn wing 0.52 wu FORWARD for free
+            // (a swept wing draws further aft than its pivot), and wingStationForward carries the
+            // remaining 0.58 to the ship's midpoint. The yaw-stick half is untouched.
+            float wingSweep = SweepAboveCruise(throttle) * wingThrottleSweep;
+
             Quaternion rightWingTurn = Quaternion.Euler(Brake(throttle) * animationScaler,
-                                                        (yaw + throttle) * exaggeratedAnimationScaler,
+                                                        yaw * exaggeratedAnimationScaler + wingSweep,
                                                         (rollSign * roll + pitch) * animationScaler);
 
             Quaternion leftWingTurn = Quaternion.Euler(Brake(throttle) * animationScaler,
-                                                       (yaw - throttle) * exaggeratedAnimationScaler,
+                                                       yaw * exaggeratedAnimationScaler - wingSweep,
                                                        (rollSign * roll - pitch) * animationScaler);
 
             Quaternion thrusterTurn = Quaternion.Euler(pitch * thrusterAnimationScaler,
@@ -543,8 +597,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            PlacePartOnChassis(RightWing, chassisTurn, rightWingTurn, wingAuthoredPivot, wingFlightPivot, appendageFrame);
-            PlacePartOnChassis(LeftWing, chassisTurn, leftWingTurn, wingAuthoredPivot, wingFlightPivot, appendageFrame);
+            PlacePartOnChassis(RightWing, chassisTurn, rightWingTurn, wingAuthoredPivot, WingStation, appendageFrame);
+            PlacePartOnChassis(LeftWing, chassisTurn, leftWingTurn, wingAuthoredPivot, WingStation, appendageFrame);
 
             // All six boosters share one turn and one pair of pivots, exactly as they shared one
             // Euler and one defaultThrusterPosition on bleeding-edge; what fans them out is each

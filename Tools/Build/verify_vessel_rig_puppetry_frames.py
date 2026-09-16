@@ -473,6 +473,9 @@ def main():
     shipped = {
         "wingAuthoredPivot":     (cs_vec3(src, "wingAuthoredPivot"),     yaml_vec3(blk, "wingAuthoredPivot")),
         "wingFlightPivot":       (cs_vec3(src, "wingFlightPivot"),       yaml_vec3(blk, "wingFlightPivot")),
+        "wingStationForward":    (cs_float(src, "wingStationForward"),    yaml_scalar(blk, "wingStationForward")),
+        "wingThrottleNeutral":   (cs_float(src, "wingThrottleNeutral"),   yaml_scalar(blk, "wingThrottleNeutral")),
+        "wingThrottleSweep":     (cs_float(src, "wingThrottleSweep"),     yaml_scalar(blk, "wingThrottleSweep")),
         "thrusterAuthoredPivot": (cs_vec3(src, "thrusterAuthoredPivot"), yaml_vec3(blk, "thrusterAuthoredPivot")),
         "thrusterFlightPivot":   (cs_vec3(src, "thrusterFlightPivot"),   yaml_vec3(blk, "thrusterFlightPivot")),
         "thrusterAnimationScaler": (cs_float(src, "thrusterAnimationScaler"), yaml_scalar(blk, "thrusterAnimationScaler")),
@@ -493,9 +496,21 @@ def main():
         "thrusterAnimationScaler": 75.0,
         "mirrorAppendageRoll":   False,
     }
+    # FLIGHT 18's THREE DELIBERATE DEVIATIONS. Everything above is bleeding-edge verbatim and is
+    # asserted against it; these three are not, and are asserted against their own measurements in
+    # 8f below. Each carries a LEGACY IDENTITY - the value at which it reproduces bleeding-edge
+    # exactly - so the deviation is a dial and not a fork: station 0, neutral 0, sweep 75 gives
+    # back `(yaw +- throttle) * exaggeratedAnimationScaler` at bleeding-edge's own station, which
+    # 8f proves quaternion-for-quaternion over every pose.
+    FLIGHT18 = {
+        "wingStationForward":  0.5811,   # lands the drawn wing centroid on the drawn ship midpoint
+        "wingThrottleNeutral": 0.5,      # XDiff's cruise - the throttle at which the wings are unswept
+        "wingThrottleSweep":   66.0,     # deg per unit throttle above cruise; onset is 33.93 x 2
+    }
+    LEGACY_IDENTITY = {"wingStationForward": 0.0, "wingThrottleNeutral": 0.0, "wingThrottleSweep": 75.0}
     print("   shipped chain constants (C# default | Dolphin.prefab | bleeding-edge):")
     for name, (cs_v, yaml_v) in shipped.items():
-        ref = REFERENCE.get(name)
+        ref = REFERENCE.get(name, FLIGHT18.get(name))
         def fmt(v):
             if isinstance(v, bool): return "off" if not v else "ON"
             if isinstance(v, tuple): return "(%g, %g, %g)" % v
@@ -513,8 +528,16 @@ def main():
             failures.append("%s: C# default %s disagrees with the prefab's %s - the prefab wins in the "
                             "engine, so the documented number is not the shipped one" % (name, fmt(cs_v), fmt(yaml_v)))
         if not matches:
-            failures.append("%s: shipped %s is not bleeding-edge's %s" % (name, fmt(yaml_v), fmt(ref)))
-    A_W, F_W = shipped["wingAuthoredPivot"][1], shipped["wingFlightPivot"][1]
+            where = "flight 18's measured" if name in FLIGHT18 else "bleeding-edge's"
+            failures.append("%s: shipped %s is not %s %s" % (name, fmt(yaml_v), where, fmt(ref)))
+    A_W = shipped["wingAuthoredPivot"][1]
+    # RiptideAnimation.WingStation: bleeding-edge's measured flight pivot plus flight 18's forward
+    # offset. The chain reads this, not the bare pivot - 8b keeps the bare pivot's own assertion.
+    BE_WING_PIVOT = shipped["wingFlightPivot"][1]
+    WING_STATION_FWD = shipped["wingStationForward"][1]
+    WING_NEUTRAL = shipped["wingThrottleNeutral"][1]
+    WING_SWEEP = shipped["wingThrottleSweep"][1]
+    F_W = (BE_WING_PIVOT[0], BE_WING_PIVOT[1], BE_WING_PIVOT[2] + WING_STATION_FWD)
     A_T, F_T = shipped["thrusterAuthoredPivot"][1], shipped["thrusterFlightPivot"][1]
     THRUSTER_AMP = shipped["thrusterAnimationScaler"][1]
     DRIFT_TOTAL = shipped["driftJetBackwardTotal"][1]
@@ -547,10 +570,15 @@ def main():
         return rot(chassis_turn, v_add(flight, rot(own_turn, v_sub(x_rest, authored))))
 
     S_C, E_W = 25.0, 75.0
-    def wing_own(side, p, y, r, th, mirror):
+    def wing_own(side, p, y, r, th, mirror, neutral=None, sweep=None):
+        """RiptideAnimation's wing turn. The yaw-STICK half is bleeding-edge's untouched; the
+        THROTTLE half is SweepAboveCruise(th) * wingThrottleSweep - Brake()'s exact mirror."""
         rs = -1.0 if mirror else 1.0
         brake = th - 0.65 if th < 0.65 else 0.0
-        return euler(brake * S_C, (y + side * th) * E_W, (rs * r + side * p) * S_C)
+        n = WING_NEUTRAL if neutral is None else neutral
+        a = WING_SWEEP if sweep is None else sweep
+        above = th - n if th > n else 0.0
+        return euler(brake * S_C, y * E_W + side * above * a, (rs * r + side * p) * S_C)
     def jet_own(p, y, r, mirror, amp):
         rs = -1.0 if mirror else 1.0
         return euler(p * amp, y * amp, rs * r * amp)
@@ -611,12 +639,20 @@ def main():
     if abs(lead - BE_REST_LEAD) > 0.01:
         failures.append("the boosters' leading edge %.3f is off bleeding-edge's %.3f" % (lead, BE_REST_LEAD))
     RIG_WING_REST_Z, BE_WING_DRAWN_Z = -0.3038, -0.4032   # wing geometry, vessel z (check 8's forensic)
-    wing_z = RIG_WING_REST_Z + drag_w[2]
+    # The BARE pivot still has to be bleeding-edge's - flight 18 moves the wings through a separate
+    # offset, so if these two ever disagree the legacy measurement itself has drifted.
+    be_wing_z = RIG_WING_REST_Z + (BE_WING_PIVOT[2] - A_W[2])
     print("      wing geometry z %.4f vs bleeding-edge's drawn %.4f (delta %+.4f)"
-          % (wing_z, BE_WING_DRAWN_Z, wing_z - BE_WING_DRAWN_Z))
-    if abs(wing_z - BE_WING_DRAWN_Z) > 0.002:
-        failures.append("the wings' rest station %.4f is off bleeding-edge's %.4f" % (wing_z, BE_WING_DRAWN_Z))
-    WING_TRAIL = -0.617
+          % (be_wing_z, BE_WING_DRAWN_Z, be_wing_z - BE_WING_DRAWN_Z))
+    if abs(be_wing_z - BE_WING_DRAWN_Z) > 0.002:
+        failures.append("the wings' legacy station %.4f is off bleeding-edge's %.4f" % (be_wing_z, BE_WING_DRAWN_Z))
+    shipped_wing_z = RIG_WING_REST_Z + drag_w[2]
+    print("      wings SHIPPED at z %.4f - %+.4f forward of that, flight 18's station (8f)"
+          % (shipped_wing_z, WING_STATION_FWD))
+    # The boosters must stay behind the wings' trailing edge. -0.617 is the wings' unswept drawn
+    # trail at BLEEDING-EDGE's station, so the shipped trail carries the forward offset with it.
+    WING_TRAIL_AT_BE_STATION = -0.617
+    WING_TRAIL = WING_TRAIL_AT_BE_STATION + WING_STATION_FWD
     if lead > WING_TRAIL:
         failures.append("the boosters lead at %.3f, forward of the wings' trailing edge %.3f" % (lead, WING_TRAIL))
 
@@ -684,6 +720,114 @@ def main():
                  for (p, y, r, th) in POSES for B in JETS.values())
     print("      booster pivot travel at full stick on the chain: %.3f wu (bleeding-edge's, by 8a); "
           "shared jethold origin %s" % (travel, "(%g, %g, %g)" % JETHOLD_PIVOT))
+
+    # 8f. THE WINGS' THROTTLE TERM AND STATION (flight 18) - the only thing here that is NOT
+    #     bleeding-edge's, and the one playtest asked for: "move the wings forward closer to the
+    #     middle, and lessen how much they clip into the body when you increase the throttle".
+    #
+    #     Both come off ONE fact. The throttle the puppetry is handed is InputStatus.XDiff, which
+    #     runs 0..1 with 0.5 AT NEUTRAL CRUISE (`xDiff = (right.x - left.x + 2) / 4`), so
+    #     bleeding-edge's `(yaw +- throttle) * 75` holds the wings 37.5 degrees swept while the
+    #     pilot is doing nothing, and 75 at full throttle. A swept wing also DRAWS further aft
+    #     than its pivot, so that resting sweep is most of why the wings read as sitting at the
+    #     back: measured, the drawn centroid at cruise is z -0.9250 against a drawn ship whose
+    #     midpoint is +0.1781 - 1.1032 wu aft of the middle.
+    #
+    #     Measured on the shipped rig, both wings' 588 skinned vertices against the convex
+    #     cross-section of every body cluster, sliced 90 ways in z (the same vertex clouds
+    #     check 8a proves the chain carries):
+    #
+    #       wing yaw at which a root first enters the body   33.42 deg at bleeding-edge's station
+    #                                                        33.93 deg at flight 18's
+    #       deepest penetration, throttle axis, stick centred
+    #                       bleeding-edge  0.1874 wu at full throttle, 0.0454 wu at CRUISE
+    #                       flight 18      0.0000 wu at every throttle
+    #
+    #     The residual over the full input cube is NOT zero and is not claimed to be: 0.2745 ->
+    #     0.2401 wu. What is left is the chassis ORBIT (25 deg on three axes) and the YAW-STICK
+    #     term (75 deg), both legacy and both deliberately untouched by flight 17 and by this.
+    WING_CLIP_ONSET_BE = 33.42            # deg of wing yaw, at wingFlightPivot alone
+    WING_CLIP_ONSET_SHIPPED = 33.93       # deg, at wingFlightPivot + wingStationForward
+    WING_BINDING_VERT = (0.7162, 0.0518, -0.5326)   # wing.r vertex 109, rest, vessel frame
+    SHIP_MID_Z = 0.1781                   # mean of the drawn hull's -2.4707 tail and +2.8270 nose
+    WING_REST_CENTROID_Z = RIG_WING_REST_Z          # 588 wing verts; the same -0.3038
+
+    cruise_sweep = (0.5 - WING_NEUTRAL) * WING_SWEEP if 0.5 > WING_NEUTRAL else 0.0
+    peak_sweep = (1.0 - WING_NEUTRAL) * WING_SWEEP
+    be_cruise_sweep, be_peak_sweep = 0.5 * 75.0, 1.0 * 75.0
+    print("   8f wings: sweep at CRUISE %.1f deg (bleeding-edge %.1f), at FULL throttle %.1f "
+          "(bleeding-edge %.1f); the body is entered at %.2f deg"
+          % (cruise_sweep, be_cruise_sweep, peak_sweep, be_peak_sweep, WING_CLIP_ONSET_SHIPPED))
+    if cruise_sweep > 1e-9:
+        failures.append("the wings are swept %.1f deg at a centred stick; cruise must leave them "
+                        "unswept, which is the pose ApplyRestingLayout already draws" % cruise_sweep)
+    if peak_sweep > WING_CLIP_ONSET_SHIPPED:
+        failures.append("the wings sweep %.2f deg at full throttle, past the %.2f deg at which a "
+                        "root enters the body" % (peak_sweep, WING_CLIP_ONSET_SHIPPED))
+
+    #     THE STATION is solved, not chosen: the drawn wing centroid at cruise is
+    #     restCentroid + (station - authoredPivot.z), and it is asked to land on the ship's own
+    #     midpoint. The closed form ignores Brake(0.5)'s -3.75 deg of wing pitch, which moves the
+    #     centroid 0.0008 wu - hence the same 0.002 tolerance 8b uses for the wing station.
+    want_station = SHIP_MID_Z - (WING_REST_CENTROID_Z - A_W[2])
+    drawn_centroid = WING_REST_CENTROID_Z + (WING_STATION_FWD - A_W[2])
+    print("      station %.4f draws the wing centroid at z %+.4f against the ship midpoint %+.4f "
+          "(solved %.4f, delta %+.4f)"
+          % (WING_STATION_FWD, drawn_centroid, SHIP_MID_Z, want_station, WING_STATION_FWD - want_station))
+    if abs(WING_STATION_FWD - want_station) > 0.002:
+        failures.append("wingStationForward %.4f does not land the wing centroid on the ship "
+                        "midpoint (%.4f would)" % (WING_STATION_FWD, want_station))
+
+    #     THE LEGACY IDENTITY. At (station 0, neutral 0, sweep 75) the shipped expression must be
+    #     bleeding-edge's `(yaw +- throttle) * exaggeratedAnimationScaler`, quaternion for
+    #     quaternion. This is what makes the three fields a DIAL rather than a fork.
+    def be_wing_own(side, p, y, r, th, mirror):
+        rs = -1.0 if mirror else 1.0
+        brake = th - 0.65 if th < 0.65 else 0.0
+        return euler(brake * S_C, (y + side * th) * E_W, (rs * r + side * p) * S_C)
+    #     Swept over the throttle range the ENGINE can actually produce. POSES carries throttle -1
+    #     because it was written as a stick axis, and that is the very assumption this check
+    #     exists to unpick: throttle is XDiff, `(right.x - left.x + 2) / 4`, so it is 0..1 and
+    #     never negative. Below 0 the clamp has nothing to reproduce and the two terms differ by
+    #     construction - asserting there would be asserting about an input no pilot can send.
+    worst_identity, checked = 0.0, 0
+    for (p, y, r, _ignored_throttle) in POSES:
+        for k in range(21):
+            th = k / 20.0
+            for side in (1.0, -1.0):
+                a = wing_own(side, p, y, r, th, MIRROR,
+                             neutral=LEGACY_IDENTITY["wingThrottleNeutral"],
+                             sweep=LEGACY_IDENTITY["wingThrottleSweep"])
+                b = be_wing_own(side, p, y, r, th, MIRROR)
+                worst_identity = max(worst_identity, max(abs(u - v) for u, v in zip(a, b)))
+                checked += 1
+    print("      legacy identity at (neutral %g, sweep %g) over %d poses x throttle 0..1: worst "
+          "quaternion component delta %.3e%s"
+          % (LEGACY_IDENTITY["wingThrottleNeutral"], LEGACY_IDENTITY["wingThrottleSweep"],
+             checked, worst_identity, "" if worst_identity <= 1e-15 else "   <-- FAIL"))
+    if worst_identity > 1e-15:
+        failures.append("the wing term does not reduce to bleeding-edge's at its legacy identity "
+                        "(%.3e)" % worst_identity)
+
+    #     THE NEGATIVE CONTROL. Bleeding-edge's own numbers must FAIL the two assertions above, or
+    #     they are asserting nothing: it sweeps 37.5 deg at a centred stick (past the 33.42 deg
+    #     onset at ITS station) and draws its wing centroid 1.1 wu aft of the ship's middle.
+    ctrl_cruise_clears = be_cruise_sweep <= WING_CLIP_ONSET_BE
+    ctrl_station = LEGACY_IDENTITY["wingStationForward"]
+    ctrl_centroid = WING_REST_CENTROID_Z + (ctrl_station - A_W[2])
+    ctrl_on_mid = abs(ctrl_station - want_station) <= 0.002
+    print("      control - bleeding-edge's own: cruise sweep %.1f deg vs a %.2f deg onset (%s), "
+          "wing centroid %+.4f vs midpoint %+.4f (%s)"
+          % (be_cruise_sweep, WING_CLIP_ONSET_BE, "clears" if ctrl_cruise_clears else "INSIDE the body",
+             ctrl_centroid, SHIP_MID_Z, "on it" if ctrl_on_mid else "%.4f aft" % (SHIP_MID_Z - ctrl_centroid)))
+    if ctrl_cruise_clears or ctrl_on_mid:
+        failures.append("the flight-18 wing control did not reproduce the reported defect")
+
+    #     And the binding vertex, for the record: the wing.r vertex that first meets the body.
+    bvx, bvy, bvz = WING_BINDING_VERT
+    turned = rot(euler(0.0, peak_sweep, 0.0), (bvx - A_W[0], bvy - A_W[1], bvz - A_W[2]))
+    print("      binding vert %s sweeps to |xy| %.4f at full throttle"
+          % ("(%.4f, %.4f, %.4f)" % WING_BINDING_VERT, math.hypot(turned[0], turned[1])))
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")
