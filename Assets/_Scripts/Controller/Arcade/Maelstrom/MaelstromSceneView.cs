@@ -201,8 +201,39 @@ namespace CosmicShore.Gameplay
             if (lobby == null) return;
 
             RefreshPendingRound();
+            RefreshRoster();
             RefreshReadyState();
             RefreshCountdown();
+        }
+
+        string _shownRoster;
+
+        /// <summary>
+        /// Rebuild the field list when the roster changes.
+        ///
+        /// <para>It has to be here rather than at screen entry, and that was the bug: the view's
+        /// <c>Start</c> builds the card, and <see cref="MaelstromLobby"/> deals the AI seats on its
+        /// first <c>Update</c> - which is AFTER every <c>Start</c> in the frame. So the intro hub
+        /// drew a field of one on the host as well as on every client, and a solo player readied
+        /// up against three opponents the screen had never mentioned. A client has the same
+        /// problem one step further out, waiting on the replicated roster.</para>
+        ///
+        /// <para>Keyed on a rendered signature rather than a list reference: the list is mutated in
+        /// place by both the deal and the client-side mirror, so comparing the reference would
+        /// never fire.</para>
+        /// </summary>
+        void RefreshRoster()
+        {
+            var roster = BuildActiveRoster();
+            var key = new System.Text.StringBuilder();
+            for (int i = 0; i < roster.Count; i++)
+                key.Append(roster[i].Name).Append('/').Append((int)roster[i].Domain).Append(';');
+
+            string signature = key.ToString();
+            if (signature == _shownRoster) return;
+
+            _shownRoster = signature;
+            PopulateRoundCards(includePreviewWhenEmpty: true);
         }
 
         /// <summary>
@@ -324,6 +355,7 @@ namespace CosmicShore.Gameplay
                     : $"First domain to {tournamentData.EffectiveWinTarget} points wins";
             RenderLeadingDomain();
 
+            _shownRoster = null;          // a re-entry rebuilds; see RefreshRoster
             PopulateRoundCards(includePreviewWhenEmpty: !stats);
             AutoScrollToCurrent();
 
@@ -673,6 +705,22 @@ namespace CosmicShore.Gameplay
         /// The roster for the round-0 preview - the connected human players (every peer sees all
         /// Player NetworkObjects via the spawn manager). Between rounds the cards come from History.
         /// </summary>
+        /// <summary>
+        /// Who is in this tournament: the live human pilots, plus the AI SEATS the hub dealt.
+        ///
+        /// <para>The seats have to be added by hand because the hub is not a match and spawns no
+        /// AI - the bots exist as a dealt roster and get <c>Player</c> objects only once a round's
+        /// scene loads. Reading the spawn list alone therefore showed a solo player a field of
+        /// one, on the very screen where they decide whether to ready up against three opponents
+        /// they could not see. The seats reach a client over
+        /// <c>Player.NetMaelstromRoster</c>, mirrored into the asset by
+        /// <see cref="MaelstromLobby"/>, so this reads the same list on every peer.</para>
+        ///
+        /// <para>An AI that IS live (the stats screen after a round, where the game scene's bots
+        /// may still be spawned) is taken from the spawn list and its seat skipped, matched by
+        /// name - the seat and the Player are the same pilot, and listing both would double the
+        /// field.</para>
+        /// </summary>
         List<MaelstromPlayerSnapshot> BuildActiveRoster()
         {
             var list = new List<MaelstromPlayerSnapshot>();
@@ -688,6 +736,26 @@ namespace CosmicShore.Gameplay
                         });
                 }
             }
+
+            var seats = tournamentData != null ? tournamentData.MaelstromAISeats : null;
+            if (seats != null)
+            {
+                for (int i = 0; i < seats.Count; i++)
+                {
+                    var seat = seats[i];
+                    if (seat == null || string.IsNullOrEmpty(seat.Name)) continue;
+                    if (list.Exists(s => s.IsAI && s.Name == seat.Name)) continue;
+
+                    // AvatarId -1: an AI's face is resolved from the AI profile list BY NAME
+                    // (ResolveAvatar), never from SO_ProfileIconList, so an id here would send the
+                    // lookup to the humans' list and draw somebody else's portrait.
+                    list.Add(new MaelstromPlayerSnapshot
+                    {
+                        Name = seat.Name, Domain = seat.Domain, AvatarId = -1, IsAI = true,
+                    });
+                }
+            }
+
             return list;
         }
 

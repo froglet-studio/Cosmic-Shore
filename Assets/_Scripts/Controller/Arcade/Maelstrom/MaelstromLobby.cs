@@ -238,11 +238,15 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return;
 
+            var roster = MaelstromRosterTicket.From(
+                tournamentData != null ? tournamentData.MaelstromAISeats : null);
+
             var spawned = nm.SpawnManager.SpawnedObjectsList;
             foreach (var no in spawned)
             {
-                if (no != null && no.TryGetComponent<Player>(out var p))
-                    p.SetMaelstromRoundServer(_authoritative);
+                if (no == null || !no.TryGetComponent<Player>(out var p)) continue;
+                p.SetMaelstromRoundServer(_authoritative);
+                p.SetMaelstromRosterServer(roster);
             }
         }
 
@@ -268,6 +272,8 @@ namespace CosmicShore.Gameplay
 
             if (tournamentData == null) return;
 
+            ReadRoster();
+
             // The HOST owns PendingGameIndex outright (it drew it); overwriting it from a ticket
             // that has not been published yet this frame would blank the draw it just made.
             if (IsHost) return;
@@ -286,6 +292,57 @@ namespace CosmicShore.Gameplay
                 tournamentData.NextGameName = game.DisplayName;
                 tournamentData.NextGameIntensity = ticket.Intensity;
             }
+        }
+
+        /// <summary>
+        /// Mirror the replicated AI roster into <see cref="MaelstromDataSO.MaelstromAISeats"/> on
+        /// a CLIENT, so the hub's field list, the round cards and anything else that asks for the
+        /// roster read the same asset the host does.
+        ///
+        /// <para>Host-skipped for the reason <see cref="ReadTicket"/> skips the pending round: the
+        /// host DEALT these seats, so copying a ticket back over them would, on the frame before
+        /// the first publish, blank the deal it had just made.</para>
+        ///
+        /// <para>An EMPTY ticket is ignored rather than applied. A client that reaches the hub
+        /// before the host's first publish holds the default, and treating that as "no AI" would
+        /// clear a roster the client had legitimately received a moment earlier - the same
+        /// not-yet-versus-none distinction the round ticket draws with <c>HasGame</c>.</para>
+        /// </summary>
+        void ReadRoster()
+        {
+            if (IsHost) return;
+
+            var roster = ResolveRoster();
+            if (!roster.HasSeats) return;
+            if (_appliedRoster.Equals(roster)) return;
+
+            _appliedRoster = roster;
+            roster.CopyInto(tournamentData.MaelstromAISeats);
+        }
+
+        MaelstromRosterTicket _appliedRoster;
+
+        MaelstromRosterTicket ResolveRoster()
+        {
+            var local = LocalPlayer() as Player;
+            if (local != null && local.IsSpawned)
+            {
+                var r = local.NetMaelstromRoster.Value;
+                if (r.HasSeats) return r;
+            }
+
+            var nm = NetworkManager.Singleton;
+            if (nm != null && nm.SpawnManager != null)
+            {
+                foreach (var no in nm.SpawnManager.SpawnedObjectsList)
+                {
+                    if (no == null || !no.TryGetComponent<Player>(out var p) || !p.IsSpawned) continue;
+                    var r = p.NetMaelstromRoster.Value;
+                    if (r.HasSeats) return r;
+                }
+            }
+
+            return MaelstromRosterTicket.None;
         }
 
         MaelstromRoundTicket ResolveTicket()

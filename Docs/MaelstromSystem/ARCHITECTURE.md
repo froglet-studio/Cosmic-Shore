@@ -212,6 +212,26 @@ from `MaelstromDataSO.AIProfileList`, held on the tournament asset rather than r
 scene's spawner, because the deal happens before any game scene exists and the summary resolves a
 bot's face BY NAME.
 
+**The roster has to TRAVEL, and it has to be drawn AFTER it lands.** Two separate misses, both of
+which showed a solo player a field of one on the very screen where they decide whether to ready up
+against three opponents:
+
+* The hub spawns no AI (it is not a match — the bots get `Player` objects only when a round's scene
+  loads), and `MaelstromAISeats` is per-peer runtime state the host alone deals, so a client had no
+  way to know they existed. The seats now ride `Player.NetMaelstromRoster`
+  (`MaelstromRosterTicket`) over the same channel and for the same reason as the round ticket —
+  replicated STATE, not an announcement, because a peer still inside scene synchronization when the
+  host deals would have an RPC deferred and dropped. It carries four fixed slots because a
+  `NetworkVariable` takes an unmanaged struct and `SeatCount` is clamped to 4; a session always has
+  the local human, so three is the true maximum. The roster deliberately survives
+  `Player.PrepareForNewScene` (it belongs to the tournament, not the round) and is cleared with the
+  tournament by `ResetRuntime`.
+* `MaelstromSceneView.Start` builds the field list, and `MaelstromLobby` deals on its first
+  `Update` — which is after every `Start` in the frame — so the list was built before the roster
+  existed, **on the host as well**. `RefreshRoster` rebuilds it when the roster's rendered
+  signature changes (a signature rather than a list reference, because both the deal and the
+  client-side mirror mutate that list in place).
+
 What deliberately does NOT persist is the bot's HULL: fifteen of the sixteen pool modes lock to one
 vessel, so the ship has to change with the round. A bot is its name, its face and its colours,
 exactly like a human pilot.

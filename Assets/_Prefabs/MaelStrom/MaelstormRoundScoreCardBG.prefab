@@ -370,8 +370,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MaelstromRoundCard
   roundNumberText: {fileID: 1245805498213227095}
-  roundNameText: {fileID: 0}
-  winningDomainText: {fileID: 0}
+  roundNameText: {fileID: 1862486146783982067}
+  winningDomainText: {fileID: 2656770151912480511}
   currentRoundHighlight: {fileID: 0}
   cardBackground: {fileID: 9180720385522023811}
   playerCardPrefab: {fileID: -6938534531381848714, guid: cd63e74244ceca240a435734402e496f,

@@ -111,6 +111,16 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<MaelstromRoundTicket> NetMaelstromRound =
             new(MaelstromRoundTicket.None, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+        /// <summary>
+        /// The tournament's AI roster - who the bots are and which team each plays for - written
+        /// identically onto every player by the host, for the same reason and over the same
+        /// channel as <see cref="NetMaelstromRound"/>. The hub spawns no AI (it is not a match),
+        /// so without this a client's roster list shows only the humans and a solo player is told
+        /// the field is one pilot when it is four.
+        /// </summary>
+        public NetworkVariable<MaelstromRosterTicket> NetMaelstromRoster =
+            new(MaelstromRosterTicket.None, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
@@ -271,6 +281,13 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || !IsSpawned) return;
             if (!NetMaelstromRound.Value.Equals(ticket)) NetMaelstromRound.Value = ticket;
+        }
+
+        /// <summary>Server-only write of <see cref="NetMaelstromRoster"/>. No-op off the server.</summary>
+        public void SetMaelstromRosterServer(MaelstromRosterTicket roster)
+        {
+            if (!IsServer || !IsSpawned) return;
+            if (!NetMaelstromRoster.Value.Equals(roster)) NetMaelstromRoster.Value = roster;
         }
 
         [ServerRpc]
@@ -840,6 +857,10 @@ namespace CosmicShore.Gameplay
                 // reads it again it is a stale answer to a question about the NEXT round.
                 NetMaelstromReady.Value = false;
                 NetMaelstromRound.Value = MaelstromRoundTicket.None;
+                // The ROSTER deliberately survives: it is the tournament's, not the round's, and
+                // clearing it here would blank every client's field list on the way into a game
+                // and again on the way back out - which is the bug this channel exists to fix.
+                // It is cleared with the tournament, by MaelstromDataSO.ResetRuntime.
             }
 
             // Force-sync local properties from NetworkVariables.
