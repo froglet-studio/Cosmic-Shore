@@ -29,6 +29,11 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Radius of the cut the beam makes along its path, and of the live line's cut.")]
         public float BeamCutRadius = 4.5f;
 
+        [Tooltip("On devices with NO analog trigger (keyboard, both mouse schemes, touch) the " +
+                 "charge is a timed wind-up instead: seconds of hold to reach full beam length. " +
+                 "Ignored on a gamepad, which reports real trigger travel.")]
+        public float ChargeRampSeconds = 0.9f;
+
         [Header("Line — the spring")]
         [Tooltip("Spring constant on the stretch past the rest length (1/s^2). Higher reads as a " +
                  "steel cable, lower as bungee. The acceleration this can produce is bounded by " +

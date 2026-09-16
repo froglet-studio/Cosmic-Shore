@@ -150,6 +150,8 @@ work rather than braking a pilot who earned their speed.
 | `R_VesselActions/Data Containers/GibbonTetherConfigSO.cs` | Every number, one asset, shared by both arms. |
 | `VesselTransformer.cs` | The three seams (default-identical). |
 | `Tools/Build/gibbon_tether_harness/` | 12 assertions + the feel ladder. Exits non-zero on failure. |
+| `_Prefabs/Spacevessels/Gibbon.prefab` | The hull. A **clone of `Squirrel.prefab`** (the only dual-stick hull already on the vector flight model) with the transformer swapped, the tether executor added to its `ShipActions` object, both triggers rebound to the arms, and `vesselType: 13`. |
+| `_SO_Assets/VesselActions/Gibbon/` | `GibbonTetherConfig` + the two arm actions. |
 
 ## 8. Tuning knobs
 
@@ -165,10 +167,35 @@ work rather than braking a pilot who earned their speed.
 | `TetheredNoseConvergence` | 1.4 /s | How connected the sticks feel mid-swing |
 | `LiveCutInterval` | 0.05 s | Live-line cut sampling rate |
 
-## 9. Not done / open
+## 9. How to test it
 
-- **No prefab, no HUD, no line visuals, no audio.** Nothing here has been opened in Unity. The
-  mechanic and its physics are complete and proven; the vessel is not yet flyable.
+It is in the freestyle **Toy Box → Vessel Changer**. `ToyVesselRoster.Default` carries it and
+`Toy_VesselChanger.asset` authors no list of its own, so it appears with no further wiring; the
+prefab is registered in `Vessel Prefab Container.asset` so the swap resolves.
+
+1. Menu_Main → freestyle → fly the **Vessel Changer** toy → pick the Gibbon.
+2. **Squeeze and hold a trigger.** A thin cyan aiming line draws out to the side, and its length
+   tracks the trigger. **Release** — the beam fires, a prism appears at the endpoint, anything
+   hostile on the path dies, and the line goes taut and thickens as it loads.
+3. **Bank.** The beams follow the hull's lateral axis, so rolling 90° fires the right trigger
+   straight up. This is the whole aiming system.
+4. **Hold the swing** and watch the speed climb; **press the same trigger again** to drop the line
+   and start winding the next shot in one motion.
+5. **Fire both.** Two lines is where the handling gets strange in the intended way.
+
+Cruise is 70 u/s at neutral sticks (125 flat out), and a good swing should clear 150.
+
+On a **keyboard** the charge is a timed wind-up instead (Left/Right Shift, ~0.9 s to full reach),
+because only a gamepad reports real trigger travel. Touch is unbound.
+
+## 10. Not done / open
+
+- **No HUD, no audio, no real VFX.** The lines are runtime `LineRenderer`s built by the executor —
+  enough to read the mechanic, explicitly not art. Nothing here has been opened in Unity.
+- **It wears the Squirrel's hull, HUD and telemetry**, because it is a clone. Its two inert
+  Squirrel executors (`DriftTrailActionExecutor`, `SquirrelTubeActionExecutor`) are still on the
+  prefab but are unbound and dropped from the registry — they only subscribe to events, so they do
+  nothing. Both are cleanup, not blockers.
 - **Space and Time are explicit open design slots** in `Resources/ElementalAbilityMaps/Gibbon.asset`
   (`Input: 0`, empty `UpgradeLabel`), per the design gate — so the ability-row auditor reports them
   LOCKED rather than green. Proposals recorded in the asset: Space → reach, Time → the swing's rate.

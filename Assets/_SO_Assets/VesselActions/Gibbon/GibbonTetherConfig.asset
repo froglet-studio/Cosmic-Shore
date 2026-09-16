@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f276f342fdac327a932fd9f59f31fdb, type: 3}
+  m_Name: GibbonTetherConfig
+  m_EditorClassIdentifier: 
+  MinBeamLength: 45
+  MaxBeamLength: 320
+  BeamTravelSpeed: 1400
+  BeamCutRadius: 4.5
+  ChargeRampSeconds: 0.9
+  Stiffness: 9
+  RadialDamping: 3.2
+  MaxStretch: 26
+  BreakStretch: 70
+  ReelRate: 34
+  SpeedCap: 260
+  OverspeedDrag: 26
+  MaxSwingRate: 3.2
+  HullRadius: 6
+  AnchorRadius: 3
+  Clearance: 4
+  TetheredNoseConvergence: 1.4
+  LiveCutInterval: 0.05
+  LiveLineCuts: 1
+  AnchorScale: {x: 6, y: 6, z: 6}

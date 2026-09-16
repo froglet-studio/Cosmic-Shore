@@ -40,13 +40,10 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] GibbonTetherConfigSO config;
 
-        [Tooltip("Optional: the trail the planted anchors are filed under, so the constellation " +
-                 "reads as ONE prismscape to the topology rather than as loose singletons.")]
-        [SerializeField] Trail anchorTrail;
-
         struct Line
         {
             public bool Charging;
+            public float ChargeHeldFor;   // seconds, for devices with no analog trigger
             public bool Live;
             public float ChargedLength;   // what the preview is drawing, and what will fire
             public Vector3 Anchor;
@@ -56,6 +53,8 @@ namespace CosmicShore.Gameplay
         }
 
         readonly Line[] _lines = new Line[2];
+        readonly LineRenderer[] _visuals = new LineRenderer[2];
+        static Material _sharedLineMaterial;
         readonly List<Prism> _cutBuffer = new List<Prism>(64);
 
         IVesselStatus _status;
@@ -82,6 +81,7 @@ namespace CosmicShore.Gameplay
             int i = (int)arm;
             if (_lines[i].Live) Drop(arm);
             _lines[i].Charging = true;
+            _lines[i].ChargeHeldFor = 0f;
             _lines[i].ChargedLength = config != null ? config.MinBeamLength : 45f;
         }
 
@@ -135,7 +135,13 @@ namespace CosmicShore.Gameplay
             Drop(Arm.Right);
         }
 
-        void OnDisable() => DropAll();
+        void OnDisable()
+        {
+            DropAll();
+            for (int i = 0; i < 2; i++) if (_visuals[i]) _visuals[i].enabled = false;
+        }
+
+        void OnDestroy() => DestroyVisuals();
 
         // ------------------------------------------------------------------ per frame
 
@@ -145,14 +151,41 @@ namespace CosmicShore.Gameplay
             TrackCharge(Arm.Left, LeftDepth());
             TrackCharge(Arm.Right, RightDepth());
             if (config.LiveLineCuts) CutWithLiveLines();
+            UpdateVisuals();
         }
 
         void TrackCharge(Arm arm, float depth01)
         {
             int i = (int)arm;
             if (!_lines[i].Charging) return;
+            _lines[i].ChargeHeldFor += Time.deltaTime;
             _lines[i].ChargedLength =
-                TetherSolver.BeamLength(depth01, config.MinBeamLength, config.MaxBeamLength);
+                TetherSolver.BeamLength(Depth01(depth01, _lines[i].ChargeHeldFor),
+                                        config.MinBeamLength, config.MaxBeamLength);
+        }
+
+        /// <summary>
+        /// The charge, 0-1 — analog where the device HAS an analog trigger, a timed wind-up where
+        /// it does not.
+        ///
+        /// Only the gamepad reports real trigger travel; the keyboard and both mouse schemes write
+        /// a BINARY 0/1 into the same fields and touch never writes them at all. Reading those raw
+        /// would make every keyboard shot a maximum-length shot and every touch shot a minimum one
+        /// — in both cases the analog charge, which is half the mechanic, simply would not exist.
+        /// A hold-time ramp gives those devices the same verb (hold longer = reach further) at the
+        /// cost of its immediacy, which is a real difference in feel and is recorded rather than
+        /// hidden. Autopilot writes no trigger at all, so it takes a fixed mid-range shot.
+        /// </summary>
+        float Depth01(float rawAnalog, float heldSeconds)
+        {
+            if (_status.AutoPilotEnabled) return AutopilotDepth;
+            bool hasAnalogTriggers =
+                _status.InputStatus != null &&
+                _status.InputStatus.ActiveInputDevice == InputDeviceType.Gamepad;
+            if (hasAnalogTriggers) return Mathf.Clamp01(rawAnalog);
+            return config.ChargeRampSeconds > 0f
+                ? Mathf.Clamp01(heldSeconds / config.ChargeRampSeconds)
+                : 1f;
         }
 
         /// <summary>
@@ -203,6 +236,13 @@ namespace CosmicShore.Gameplay
         /// rideable, and it counts for every mode that scores prisms. This vessel's trail is a
         /// CONSTELLATION: the arena it leaves behind is the record of where it swung.
         ///
+        /// Anchors are deliberately filed under NO <c>Trail</c>, so the prismscape topology reads
+        /// them as 0D singletons rather than a 1D ribbon. That is what they are: discrete points
+        /// you swing from, not a line you ride. (They are still ordinary prisms, so skimming,
+        /// grazing and stealing all work on them — only the RIDE needs a trail.) Note <c>Trail</c>
+        /// is a plain [Serializable] class rather than a MonoBehaviour, so a serialized field for
+        /// one would have written an inline copy rather than a reference to the vessel's own.
+        ///
         /// <see cref="PrismType.Boost"/> is the right pool by its own description — "fast-growing,
         /// collider-live-on-spawn prisms: a surface a skimmer can boost off, usually flown past
         /// rather than hit". An anchor has to be real the instant the beam lands, which rules out
@@ -219,7 +259,7 @@ namespace CosmicShore.Gameplay
             BoostRingBuilder.LayOne(
                 channel, position, rotation, config.AnchorScale, PrismKind.Plain,
                 _status.Domain, _status.PlayerName,
-                $"{_status.PlayerName}::gibbon-anchor", anchorTrail);
+                $"{_status.PlayerName}::gibbon-anchor");
         }
 
         // ------------------------------------------------------------------ cutting
@@ -264,6 +304,91 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ------------------------------------------------------------------ visuals
+
+        /// <summary>
+        /// The line you can see, built at runtime so a vessel needs no authoring to have one.
+        ///
+        /// Deliberately minimal and deliberately NOT art: a single additive LineRenderer per arm,
+        /// drawn hull-to-anchor while live and hull-to-preview-endpoint while charging. It exists
+        /// because the mechanic is unreadable without it — the anchor prism and the swing are
+        /// visible, but "where is my line and how loaded is it" is the thing a pilot is actually
+        /// steering by. Width carries TENSION, so the line visibly thickens as it loads and thins
+        /// as it goes slack, which is the one piece of state the physics has and the hull does not
+        /// show. Replace wholesale when the real VFX lands.
+        /// </summary>
+        void UpdateVisuals()
+        {
+            for (int i = 0; i < 2; i++)
+            {
+                bool charging = _lines[i].Charging;
+                bool live = _lines[i].Live;
+                if (!charging && !live)
+                {
+                    if (_visuals[i]) _visuals[i].enabled = false;
+                    continue;
+                }
+
+                var lr = EnsureVisual(i);
+                Vector3 from = _status.Transform.position;
+                Vector3 to = live
+                    ? _lines[i].Anchor
+                    : from + LateralDirection((Arm)i) * _lines[i].ChargedLength;
+
+                lr.enabled = true;
+                lr.SetPosition(0, from);
+                lr.SetPosition(1, to);
+
+                // A charging beam is a thin aiming line; a live one carries its load in its width.
+                float w = live
+                    ? Mathf.Lerp(0.6f, 3.2f, _lines[i].Tension01)
+                    : 0.35f;
+                lr.startWidth = w;
+                lr.endWidth = w;
+                lr.startColor = lr.endColor = LineColour(live, _lines[i].Tension01);
+            }
+        }
+
+        LineRenderer EnsureVisual(int i)
+        {
+            if (_visuals[i]) return _visuals[i];
+            var go = new GameObject($"GibbonLine{i}");
+            go.transform.SetParent(transform, false);
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.positionCount = 2;
+            lr.numCapVertices = 2;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.sharedMaterial = SharedLineMaterial();
+            _visuals[i] = lr;
+            return lr;
+        }
+
+        /// <summary>One material for every Gibbon in the scene — a per-line material would leak
+        /// an instance per arm per vessel.</summary>
+        static Material SharedLineMaterial()
+        {
+            if (_sharedLineMaterial) return _sharedLineMaterial;
+            Shader sh = Shader.Find("Universal Render Pipeline/Unlit")
+                     ?? Shader.Find("Sprites/Default")
+                     ?? Shader.Find("Unlit/Color");
+            _sharedLineMaterial = new Material(sh) { name = "GibbonLine (runtime)" };
+            return _sharedLineMaterial;
+        }
+
+        /// <summary>Cyan while it is only an aim, heating toward white as the line loads — the
+        /// same "grey is idle, white is engaged" reading the HUD's petal ladder uses.</summary>
+        static Color LineColour(bool live, float tension01)
+            => live ? Color.Lerp(new Color(0.15f, 0.85f, 1f), Color.white, tension01)
+                    : new Color(0.15f, 0.85f, 1f, 0.5f);
+
+        void DestroyVisuals()
+        {
+            for (int i = 0; i < 2; i++)
+                if (_visuals[i]) { Destroy(_visuals[i].gameObject); _visuals[i] = null; }
+        }
+
         // ------------------------------------------------------------------ geometry / input
 
         /// <summary>
@@ -278,19 +403,11 @@ namespace CosmicShore.Gameplay
             return arm == Arm.Left ? -t.right : t.right;
         }
 
-        float LeftDepth() => Depth(_status.InputStatus?.LeftTriggerAnalog ?? 0f);
-        float RightDepth() => Depth(_status.InputStatus?.RightTriggerAnalog ?? 0f);
+        float LeftDepth() => _status.InputStatus?.LeftTriggerAnalog ?? 0f;
+        float RightDepth() => _status.InputStatus?.RightTriggerAnalog ?? 0f;
 
-        /// <summary>
-        /// Analog depth, with the non-analog devices handled honestly rather than worked around.
-        /// The keyboard and both mouse schemes write a BINARY 0/1 into these fields, so on those
-        /// devices every shot is a maximum-length shot and the charge is not a control — that is a
-        /// real limitation of the scheme on those devices, recorded rather than faked.
-        /// </summary>
-        static float Depth(float raw) => Mathf.Clamp01(raw);
-
-        /// <summary>Autopilot writes no trigger at all, so an AI Gibbon charges to a fixed,
-        /// mid-range shot rather than reading zero and firing every line at minimum.</summary>
+        /// <summary>Autopilot writes no trigger at all, so an AI Gibbon takes a fixed mid-range
+        /// shot rather than reading zero and firing every line at minimum.</summary>
         public float AutopilotDepth => 0.6f;
     }
 }
