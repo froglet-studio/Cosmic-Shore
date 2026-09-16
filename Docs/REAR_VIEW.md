@@ -84,6 +84,27 @@ the ship and dissolves whatever the pilot is flying *into* while they are lookin
 
 ---
 
+## 3.1 It now has a sibling — and they share every rule in §3 and §4
+
+`VesselFirstPersonView` (2026-09-16, the Serpent's scope —
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`) seats the camera IN the
+cockpit instead of ahead of the ship. It is deliberately built to this file's shape: the same
+static-plus-`LateUpdate`-`Driver`, the same `GetCloseCamera` identity test so a death or replay
+camera is never re-posed, the same identity-guarded bind at the four `IsLocalPilot` sites in
+`VesselController`, and the same "apply at the point of use" rule — it sets
+`CustomCameraController.FirstPerson` rather than writing `_followOffset`, for the reason §4 gives.
+
+Two things differ, and both are worth knowing before a third vantage is added:
+
+- **First person BEATS rear view** in `EffectiveOffset` rather than composing with it. The z-mirror
+  of a cockpit offset is another point inside the same hull, so "look behind from the cockpit" is
+  not a vantage the mirror can express. A pilot who scopes while looking back gets the scope, and
+  gets the look-back again on release.
+- **It also changes the FIELD OF VIEW, which the rear view never touches.** That is not free: the
+  speed tunnel owns FOV fleet-wide, so the zoom goes through
+  `VesselSpeedTunnel.SetHomeFieldOfViewOverride` (`Docs/SPEED_TUNNEL.md §2.1`) and never through
+  the camera. A vantage that only moves the camera, as this one does, needs none of that.
+
 ## 4. The mirror is applied at the point of use, never written into the offset
 
 `CustomCameraController.RearView` is a **flag**; `_followOffset` is never touched. This is the

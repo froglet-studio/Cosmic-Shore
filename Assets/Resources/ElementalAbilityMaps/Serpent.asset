@@ -15,16 +15,23 @@ MonoBehaviour:
   vesselClass: 7
   entries:
   - Element: 1
-    AbilityLabel: (open design slot)
-    AbilityDescription: Charge mapping not yet designed for the Serpent.
-    Input: 0
+    AbilityLabel: Sniper Shot
+    AbilityDescription: 'Scoped, the right trigger fires a single hitscan round down the scope''s
+      own line that destroys what it hits - including SUPER-SHIELDED mass, which only the
+      Rhino''s energised blade could touch before. Charge sets the RECOVERY: the wait between
+      shots, 12s at rest down to 5.4s at Charge 10. The shot spends no resource and carries no
+      ammunition, so the cooldown IS its whole cost.'
+    Input: 1
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Pierce
+    UpgradeDescription: 'The round no longer stops at the first prism - it carries through up
+      to three, super-shielded or not, in one shot. Gated on the REPLICATED unlock bit rather
+      than a local level read, because it decides how much mass dies and every peer has to
+      agree.'
   - Element: 2
     AbilityLabel: (open design slot)
     AbilityDescription: Mass mapping not yet designed for the Serpent.
@@ -37,20 +44,27 @@ MonoBehaviour:
     UpgradeLabel: 
     UpgradeDescription: 
   - Element: 3
-    AbilityLabel: (open design slot)
-    AbilityDescription: Space mapping not yet designed for the Serpent.
-    Input: 0
+    AbilityLabel: Scope
+    AbilityDescription: 'Hold the left trigger and the view drops into the cockpit and magnifies
+      with the trigger''s own depth - an analog dial, not a toggle - while the right trigger
+      becomes the Sniper Shot. Space sets the MAGNIFICATION: 22 degrees of field of view at full
+      zoom at rest, narrowing to 11 at Space 10, floored at 8 so the scope can never become a
+      soda straw. Reach is Space''s job fleet-wide and a scope''s whole claim is reach.'
+    Input: 2
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Steady Eye
+    UpgradeDescription: 'Below the upgrade the zoom BLEEDS OFF as the pilot turns - hauling the
+      stick over eases the magnification back out, so a scoped Serpent is committed to a line and
+      has to settle before it can take a long shot. At Space 5 the bleed is gone and the scope
+      holds through any manoeuvre.'
   - Element: 4
     AbilityLabel: Boost Duration
     AbilityDescription: Time extends the boost duration.
-    Input: 0
+    Input: 6
     MultiplierAtFullLevel: 1.6
     MinMultiplier: 0.25
     UnlockLevel: 5

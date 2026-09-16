@@ -5,8 +5,9 @@
 implemented — **Sparrow, Dolphin, Squirrel, Urchin, Manta** (the Manta via the 2026-08 spec
 remake; its superseded "Reaper Ray" table is kept below as history); their rows below are the
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
-them. The level-5 upgrades for **Rhino and Serpent** are still **PROPOSALS for Garrett to mark
-up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
+re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
+are still **PROPOSALS for Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -39,7 +40,7 @@ fundamentals).
 | Manta | **All four LIVE (approved + shipped 2026-08-26 spec remake, see §2 Manta)**: Charge→bomb-bay capacity + skim-charge rate (authored on `MantaStingConfig.asset`; map pinned 1) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`; the Yastri turn rate is deliberately unscaled, `turnRateElement: None`; map pinned 1) · Space→bomb bloom scale (authored `blastScaleAtFullSpace` 1.6 on `MantaStingConfig.asset`; map pinned 1) · Time→max soaring speed (map 1.3 IS the authoring home, read by `VesselTransformer.CurrentBoostAmount`) |
 | Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
-| Serpent | Time→boost duration (1.6) |
+| Serpent | **Charge→sniper-shot cooldown** (authored `cooldownSeconds` 12 s → `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`; map pinned 1) · **Space→scope magnification** (authored `fieldOfViewAtFullZoom` 22° / `zoomDepthAtFullSpace` 2 on `SniperScopeAction.asset`; map pinned 1) · Time→boost duration (1.6) · Mass *(open)* — see §2 Serpent |
 | Urchin | **All four LIVE (approved + shipped 2026-08-15, re-cut 2026-08-18, see §2 Urchin)**: Charge→the whole spike weapon — cascade DEPTH (`UrchinSpikeActionSO.ResolveGenerations` reads `GetLevel(Element.Charge)` directly) × spike REACH (map 2.5, carried down every generation via `Projectile.ChainRangeScale`) · Space→projected track LENGTH (authored `lengthMultiplierAtFullSpace` 2 on `UrchinTrackActionSO`; map multiplier pinned 1.0) · Mass→volume grown per prism ridden (authored `growthAmount` ElementalFloat 0.6→1.2 on `GunVesselTransformer`) · Time→Slip ghost duration (authored `ghostSecondsAtRestingTime/AtFullTime` 0.6→1.6 on `UrchinSlipActionSO`) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
 
@@ -287,14 +288,43 @@ Time→charge fill rate / "Instant Draw".
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | *(open)* → propose: slab growth rate | **Fast Pour** — slab growth continues while boosting |
 
-### Serpent — "Wall-Weaver" (boost + wall)
+### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+Garrett's markup, 2026-09-16: *"when the serpent hold the left trigger it should take on a first
+person perspective. the analog control should allow it to zoom in. while in first person mode the
+right stick should fire a sniper shot that can destroy supershielded prisms on a long cooldown."*
+Element assignment and the right-trigger resolution were confirmed in the same session.
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | *(open)* → propose: boost stack potency | **Venom Wake** — boost trail becomes a danger trail for the boost duration (reuses `VesselPrismController.EnableDangerMode`, now caller-less since the Sparrow's overheat was removed; dangerous to everyone incl. self, per the locked law) |
-| Mass | *(open)* → propose: wall prism scale | **Fortified Wall** — woven wall prisms arrive shielded |
-| Space | *(open)* → propose: skimmer scale | **Coil Reach** — skim energy from own wall at double rate |
-| Time | boost duration | **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+| Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`, map pinned 1) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
+| Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
+| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`, map pinned 1) | **Steady Eye** — the zoom no longer bleeds off while the pilot turns (`SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
+| Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+
+Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
+proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still
+caller-less and still worth keeping for a future ability.
+
+**The right trigger is CONTEXTUAL.** It already carried `CloakSeedWallAction`; both actions are now
+bound to it and each asks `SniperScopeActionExecutor.IsScoped` whether the context is its own —
+scoped fires the rifle, unscoped still cloaks. Neither ability learns about the other's wiring.
+
+**Two platform surfaces came with it**, both documented in
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`: `VesselFirstPersonView` (a
+sibling of `VesselRearView`; the cockpit pose applied at the point of use, the eye MEASURED off the
+hull radius) and `VesselSpeedTunnel.SetHomeFieldOfViewOverride` — the sanctioned way an ability
+magnifies the view, because the tunnel owns FOV fleet-wide and a direct write is BAKED IN as the
+home the next time the tunnel engages. This is the case rule 21 anticipates: the Dolphin's Echo
+Sight wanted a zoom, worked without one, and its surface was reverted; a scope without
+magnification is not a scope.
+
+**It is also the fleet's SECOND force that can break a super-shield**, after the Rhino's energised
+blade, using the same sanctioned `DeactivateShields` → `Damage(devastate: true)` sequence.
+
+Drive-by: the Time entry's `Input` was `0` (`FullSpeedStraightAction`) while `ConsumeBoostAction`
+rides `Button1Action`. The ability lockup DRAWS each card's control chip from that field, so it was
+a wrong glyph, not a stale comment. Corrected to `6`.
 
 ### Squirrel — racer (drift + tube) — APPROVED + SHIPPED
 

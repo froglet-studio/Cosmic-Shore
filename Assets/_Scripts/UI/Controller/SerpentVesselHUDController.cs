@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 namespace CosmicShore.UI
@@ -13,6 +14,11 @@ namespace CosmicShore.UI
 
         [Header("Shields")]
         [SerializeField] private int shieldResourceIndex;
+
+        [Header("Sniper")]
+        [Tooltip("Drives the CHARGE card's cooldown veil. Resolved from the registry when left " +
+                 "empty; a Serpent without the ability simply shows no veil.")]
+        [SerializeField] private SniperShotActionExecutor sniperShotExecutor;
 
         IVesselStatus  _status;
         ResourceSystem _rs;
@@ -35,14 +41,19 @@ namespace CosmicShore.UI
         {
             if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
             
-            if (consumeBoostExecutor == null)
+            if (consumeBoostExecutor == null || sniperShotExecutor == null)
             {
                 var registry = _status?.ShipTransform
                     ? _status.ShipTransform.GetComponentInChildren<ActionExecutorRegistry>(true)
                     : null;
 
                 if (registry != null)
-                    consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
+                {
+                    if (consumeBoostExecutor == null)
+                        consumeBoostExecutor = registry.Get<ConsumeBoostActionExecutor>();
+                    if (sniperShotExecutor == null)
+                        sniperShotExecutor = registry.Get<SniperShotActionExecutor>();
+                }
             }
 
             _rs = _status?.ResourceSystem;
@@ -113,6 +124,28 @@ namespace CosmicShore.UI
         {
             if (!view) return;
             view.AnimateBoostChargeConsumed(pipIndex, duration);
+        }
+
+        // ---------- Sniper cooldown ----------
+
+        /// <summary>
+        /// Push the sniper's recovery onto the CHARGE card's veil.
+        ///
+        /// <para>Polled rather than event-driven, deliberately: the cooldown is a CLOCK, not a
+        /// resource, so there is no per-change event to subscribe to and a meter that only moved
+        /// when something was raised would sit still for twelve seconds and then jump. It is a
+        /// VALUE the vessel pushes (<c>VesselHUDView.SetAbilityCooldown</c>) rather than an Image
+        /// the HUD binds, so there is no per-vessel artwork to author and nothing to wire.</para>
+        ///
+        /// <para>Gated the way <see cref="Subscribe"/> is — a HUD belongs to the pilot looking at
+        /// it, and an AI's or a remote replica's cooldown is not this screen's business.</para>
+        /// </summary>
+        void Update()
+        {
+            if (!view || sniperShotExecutor == null || _status == null) return;
+            if (_status.IsInitializedAsAI || !_status.IsLocalUser) return;
+
+            view.SetAbilityCooldown(Element.Charge, sniperShotExecutor.CooldownRemaining01);
         }
     }
 }

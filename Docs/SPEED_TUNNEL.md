@@ -80,6 +80,45 @@ early return: a replay can finish a frame after its scene tore down, and returni
 lift would latch both platform laws off for the rest of the session (these statics are otherwise
 reset only by their `RuntimeInitializeOnLoadMethod` installers, once per app launch).
 
+## §2.1 The one sanctioned way an ability may MAGNIFY the view
+
+Suppression above is how a camera opts OUT of the law. There is a second surface, added
+2026-09-16, for an ability whose whole mechanic is magnification — and it does the opposite: it
+keeps the law engaged and moves the value it narrows **from**.
+
+```csharp
+VesselSpeedTunnel.SetHomeFieldOfViewOverride(float fov, Transform key);
+VesselSpeedTunnel.ClearHomeFieldOfViewOverride(Transform key);   // swap-guarded, like ClearTarget
+VesselSpeedTunnel.HasHomeFieldOfViewOverride;
+VesselSpeedTunnel.HomeFieldOfView;                               // the PLAYER's own value
+```
+
+The one caller today is `VesselFirstPersonView` (the Serpent's scope,
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`).
+
+**Why an ability may not just write `Camera.fieldOfView`.** It fails two ways, both silent: while
+the tunnel is engaged the write is overwritten every frame, and when the tunnel *engages* it
+captures whatever FOV it finds as `_homeFov` — so a live zoom is **baked in permanently** and the
+player never gets their setting back.
+
+Four properties make the override safe, and each is a test:
+
+1. **One writer survives.** The tunnel still narrows for speed, it just narrows from the scoped
+   base (`Apply` reads `EffectiveHomeFov`), so a scoped pilot who accelerates reads their speed in
+   the optics instead of two effects fighting over one number.
+2. **`RestoreFov` deliberately does NOT read the override.** Releasing always hands the camera back
+   the player's own value, so a dropped scope can never leave a zoom behind.
+3. **An active override ENGAGES the law on its own.** `Tick`'s condition is
+   `_effect01 > 0.001f || _homeFovOverrideActive`, because a scope has to hold at a standstill —
+   where the speed term is zero and nothing else would be writing FOV at all.
+4. **It is keyed on the owning `Transform`**, exactly like `ClearTarget(Transform)`, so a late
+   release from an outgoing vessel cannot cancel the incoming one's zoom during a swap.
+
+**The bar for adding a second caller is the one §2 already sets, plus one more:** the ability must
+still be worth shipping *without* the zoom before it may have it. The Dolphin's Echo Sight wanted a
+zoom, was measured to work without one, and its surface was reverted (`/vessel` rule 21). A scope
+without magnification is not a scope, which is why the Serpent's earns it.
+
 ## §3 Tuning
 
 `Assets/Resources/SpeedTunnelConfig.asset` (`SpeedTunnelConfigSO`) is the **only** tuning

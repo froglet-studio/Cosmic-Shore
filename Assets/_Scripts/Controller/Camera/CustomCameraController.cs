@@ -42,15 +42,46 @@ namespace CosmicShore.Gameplay
         public bool RearView { get; set; }
 
         /// <summary>
-        /// The offset actually used to pose the camera this frame: the authored one, or its
-        /// z-mirror while <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is
+        /// First person: pose the camera AT the vessel — the cockpit — and aim it where the ship
+        /// is pointing rather than back at the hull. Driven only by <c>VesselFirstPersonView</c>
+        /// (the Serpent's scope, R_VesselActions/SERPENT_SNIPER_SCOPE.md); nothing else may
+        /// write it.
+        ///
+        /// <para>A FLAG for exactly the reason <see cref="RearView"/> is one: the pose is applied
+        /// at the point of use and <see cref="_followOffset"/> is left alone, so the four systems
+        /// that legitimately write that field while a pilot flies — the zoom-out abilities,
+        /// adaptive zoom, the skimmer's camera-scaling prism effect, and a vessel swap
+        /// re-applying its own <c>CameraSettingsSO</c> — keep working, and the first of them to
+        /// fire cannot silently drop the pilot out of the cockpit.</para>
+        ///
+        /// <para>It BEATS <see cref="RearView"/> rather than composing with it: the z-mirror of a
+        /// cockpit offset is another point inside the same hull, so "look behind from the
+        /// cockpit" is not a vantage the mirror can express. A pilot who scopes while looking
+        /// back gets the scope, and gets the look-back again on release.</para>
+        /// </summary>
+        public bool FirstPerson { get; set; }
+
+        /// <summary>
+        /// The cockpit offset in the vessel's own local space, used while
+        /// <see cref="FirstPerson"/> is set. Published by <c>VesselFirstPersonView</c> from the
+        /// vessel's MEASURED hull radius, so the eye sits just past the nose on a hull of any
+        /// size rather than at a constant that is inside one ship and far ahead of another.
+        /// </summary>
+        public Vector3 FirstPersonOffset { get; set; }
+
+        /// <summary>
+        /// The offset actually used to pose the camera this frame: the cockpit while
+        /// <see cref="FirstPerson"/> is set, else the authored one, or its z-mirror while
+        /// <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is
         /// what puts the camera directly ahead at the same distance and the same height, rather
         /// than at some reflected vantage the vessel's settings never described.
         /// </summary>
         private Vector3 EffectiveOffset =>
-            RearView
-                ? new Vector3(_followOffset.x, _followOffset.y, -_followOffset.z)
-                : _followOffset;
+            FirstPerson
+                ? FirstPersonOffset
+                : RearView
+                    ? new Vector3(_followOffset.x, _followOffset.y, -_followOffset.z)
+                    : _followOffset;
 
         // --- Camera Shake ---
         private float _shakeTimeRemaining;
@@ -78,6 +109,29 @@ namespace CosmicShore.Gameplay
 
             Vector3 desiredPos = _followTarget.position + _followTarget.rotation * EffectiveOffset;
             Vector3 shipDelta = _followTarget.position - _lastTargetPos;
+
+            // FIRST PERSON IS A RIGID ATTACHMENT, AND BOTH HALVES OF THAT ARE LOAD-BEARING.
+            //
+            // The look vector below is target-position-minus-camera-position, which in the
+            // cockpit is very nearly ZERO — SafeLookRotation would decline it and the camera
+            // would hold whatever rotation it last had, i.e. the view would stop turning with
+            // the ship. So first person aims along the TARGET'S OWN forward instead: the pilot
+            // looks where the nose points, which is also what makes the shot land where the
+            // reticle is.
+            //
+            // And it does not SmoothDamp. A lagging chase camera is a feature at 250 units back
+            // and a defect at zero: any lag at all puts the camera inside the hull it is trying
+            // to see past, so the eye is written outright every frame.
+            if (FirstPerson)
+            {
+                transform.position = desiredPos;
+                transform.rotation = _followTarget.rotation;
+                _velocity = Vector3.zero;
+                _lateralDominance = 0f;
+                _lastTargetPos = _followTarget.position;
+                ApplyShake();
+                return;
+            }
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
@@ -140,20 +194,27 @@ namespace CosmicShore.Gameplay
 
             _lastTargetPos = _followTarget.position;
 
-            // Apply camera shake offset (decaying random displacement)
-            if (_shakeTimeRemaining > 0f)
-            {
-                _shakeTimeRemaining -= Time.unscaledDeltaTime;
-                float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
-                // Perlin-based shake for smoother motion than pure random. ~10 Hz reads as a weighty
-                // "thud" rather than the ~25 Hz buzz that looked like high-frequency jitter.
-                const float shakeFreq = 10f;
-                float t = Time.unscaledTime * shakeFreq;
-                float x = (Mathf.PerlinNoise(t, 0f) - 0.5f) * 2f;
-                float y = (Mathf.PerlinNoise(0f, t) - 0.5f) * 2f;
-                float z = (Mathf.PerlinNoise(t, t) - 0.5f) * 2f;
-                transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
-            }
+            ApplyShake();
+        }
+
+        /// <summary>
+        /// Decaying random displacement, applied after the pose is settled. Factored out so the
+        /// first-person path — which writes its own pose and returns early — still recoils.
+        /// </summary>
+        private void ApplyShake()
+        {
+            if (_shakeTimeRemaining <= 0f) return;
+
+            _shakeTimeRemaining -= Time.unscaledDeltaTime;
+            float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
+            // Perlin-based shake for smoother motion than pure random. ~10 Hz reads as a weighty
+            // "thud" rather than the ~25 Hz buzz that looked like high-frequency jitter.
+            const float shakeFreq = 10f;
+            float t = Time.unscaledTime * shakeFreq;
+            float x = (Mathf.PerlinNoise(t, 0f) - 0.5f) * 2f;
+            float y = (Mathf.PerlinNoise(0f, t) - 0.5f) * 2f;
+            float z = (Mathf.PerlinNoise(t, t) - 0.5f) * 2f;
+            transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
         }
 
         public void ApplySettings(CameraSettingsSO settings)
@@ -203,7 +264,11 @@ namespace CosmicShore.Gameplay
 
             transform.position = _followTarget.position + _followTarget.rotation * EffectiveOffset;
 
-            if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            // Same degenerate look vector as UpdateCamera's first-person branch — aim along the
+            // ship rather than at it, or the snap leaves the cockpit facing wherever it was.
+            if (FirstPerson)
+                transform.rotation = _followTarget.rotation;
+            else if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 transform.rotation = targetRot;
 
             _lastTargetPos = _followTarget.position;
