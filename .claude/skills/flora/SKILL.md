@@ -28,7 +28,7 @@ needs a bond table.
 | `BranchingFlora` | stochastic branch walk toward a goal | per-plant growth quota | authored `leafSize`, uniform | nothing |
 | `PhyllotacticFlora` | growing TIPS + golden-angle whorls | per-plant growth quota | per ROLE (stem spans its segment, leaf its reach) | nothing |
 | `AssembledFlora` | crystallise a LATTICE from a measured bond table | **colony cycle** — one birth per `Cell.CurrentFaunaSpawnPeriod` for the whole population | fixed by the lattice, absolute units | an exact tile, a measured bond table, a claim book, a frontier |
-| `MandelbulbFlora` | discover a SURFACE defined by a function, on the ambient integer lattice | per-plant growth quota | fixed by the lattice pitch | a membership predicate, nothing baked |
+| `MandelbulbFlora` | discover a SURFACE defined by a function, on the ambient integer lattice | per-plant growth quota | **measured per prism** from the patch of cells it stands for — the species authors no leaf at all | a membership predicate, nothing baked |
 
 **The question that picks the family: where does the shape come from?**
 
@@ -44,6 +44,22 @@ needs a bond table.
   membership by a pure function of three integers. This keeps the property §34 actually cares about
   — **sameness is an integer address** — without inventing the fitted grid §34 forbids. Say so
   explicitly in the class doc, or the next reader will file it as the mistake.
+
+**A SURFACE SPECIES MUST DECIDE WHETHER IT IS A SKIN, AND THE ANSWER IS USUALLY NO.** Plating every
+surface cell gives you a closed crust, and a closed crust of a solid form reads as *that solid*,
+however fine the lattice and however clever the prisms. Raising the resolution makes it a finer
+lumpy sphere; it does not make it interesting. Before you tune anything, decide what the form's
+structure actually IS and plate only that — the Mandelbulb's is its TERRACING, so it grows on the
+terrace risers and leaves the treads open, which is what lets you see into the object at all
+(`Docs/ECOSYSTEM.md §44.2`, which lists the four closed-surface candidates that were built and
+rejected first). Its sibling finding: **a solid form has no interior structure to reveal**, so
+cutting nested shells inside one just gives you spheres — all the information is on the boundary.
+
+**Judge a growth rule by RENDERING it, at the size it will be judged.** An offline model can report
+a prism count, a size spread and an aspect distribution that all look excellent for a form that
+reads as gravel. Render oriented boxes with a depth buffer and a light, not screen-aligned squares
+— squares cannot show the one thing a multi-scale rule is for, which is that no two prisms share a
+frame. `measure_mandelbulb_flora.py --render` is the worked example.
 
 **Prefer extension to addition.** A fifth family must earn its place: state the three things the
 existing four cannot express, and what it composes with (see CLAUDE.md's fundamentals-curation
@@ -114,6 +130,20 @@ file so this is possible** — `MandelbulbLattice.cs` holds membership, adjacenc
 knows nothing about plants; `MandelbulbFlora.cs` holds the Unity wiring. That split is what turns
 "I think this is right" into a proof, and it costs nothing.
 
+**Put the WHOLE rule in the pure file, not just the membership test.** Anything the verifier
+cannot run is a thing nobody proved: the Mandelbulb's plating — selection, merging, the fitted
+frames, the containment drop — lives in `MandelbulbLattice` for exactly that reason, and the flora
+subclass only consumes the list. It is also what lets the verifier compare two implementations by
+an INTEGER identity (which patch each prism stands for) rather than by position.
+
+**A harness's stdout is a DATA channel — nothing else may write to it.** `csc` prints its
+diagnostics to stdout, so one warning from a rebuild lands in front of the JSON and the caller's
+parse fails naming nothing (`Expecting value: line 1 column 1`), which reads exactly like drift in
+the file under test. Redirect the build to stderr, where `set -e` still fails on it. Measured: a
+self-test control that made a method return early produced CS0162 and cost two full self-test runs
+to attribute. And treat an EMPTY result as a harness failure with its own message rather than
+feeding it to the parser.
+
 Then run the standing gates, which DO cover the wiring half:
 `check_conditional_compilation.py`, `check_using_directives.py`, `check_enum_member_references.py`,
 `check_switch_label_collisions.py`, `check_self_referential_locals.py`, `check_console_logging.py`.
@@ -133,6 +163,12 @@ s* = max over candidate axes of  |d·u| / (rA(u) + rB(u))
 with candidates = the separating-axis set (15 axes for two boxes; 8+8 face normals plus 36
 edge-edge crosses for two octahedra). `s* >= 1` means the pair is clear as authored.
 
+**A regular lattice can claim ZERO overlapping pairs and must be fitted to it.** A species whose
+prisms are fitted to IRREGULAR patches cannot — two patches meeting along a ridge have bounding
+boxes that must overlap, so it states BOUNDS and gates both of them: how MANY pairs may
+interpenetrate at all, and how DEEP (refuse to lay a prism that would sit essentially inside one
+already laid). A zero you cannot have is worse than a bound you can measure.
+
 **Then do it again for Charge.** `Flora.ResolveShieldPeriod` makes every Charge plant's leaves
 shielded *by law*, and `PrismStateManager.ActivateShield` replaces the box with the octahedron that
 CIRCUMSCRIBES it — `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (3) on the HALF-extents, reaching
@@ -143,7 +179,13 @@ pairs into one solid. Both shipped lattice species had the same defect (`Docs/EC
 Two legitimate answers, and you must pick one out loud:
 - **Fit Charge's own prism** (uniformly, so the leaf ASPECT — the species' identity — is exact).
   Its plates then read as a sparse skeleton and its octahedra fill the lattice in. This is what the
-  gyroid, Schwarz P and Mandelbulb do.
+  gyroid, Schwarz P and Mandelbulb do. **The bar to clear is its SIBLINGS, not an invented number:**
+  *a Charge plant wearing its shields must be no more fused than an ordinary plant is bare.* That
+  moves if the species is ever retuned, which an invented constant does not. And check the read
+  INVERTS rather than merely shrinking — armouring multiplies a plant's own silhouette by exactly
+  `0.5 × CIRCUMSCRIBING_SCALE²` = 4.5, so a Charge plant should end up the DENSEST of the four
+  shielded and the sparsest stripped. Gate that ordering; it is the two-pass grazing cost made
+  visible.
 - **Accept the fusion and state it**, when one authored leaf serves all four rolled elements and
   there is no per-element field to reach (the Hesperides topiaries). *An accepted graze must be a
   stated number, never something a later reader discovers.*
@@ -232,6 +274,35 @@ asset's GUID across `_SO_Assets` rather than inheriting the claim.
   `LifeForm`, or every creature inherits a rule written about plants.
 - **A shared species asset is why per-cell tuning belongs on the PROFILE.** Grep who else references
   a config before tuning it; Rampage's species are referenced straight out of `Blob Cell/`.
+- **A PCA frame is arbitrary when the point set has rank under 2.** If a species orients a prism by
+  fitting a patch of cells, a two-cell patch (there are always some) has one non-zero eigenvalue, so
+  the two smallest eigenvectors are interchangeable and the frame can flip on a rounding difference
+  between two machines. Test the MINOR eigenvalue against a tolerance and fall back to a
+  well-defined normal. Measured: 12 of 2,596 prisms disagreed between the offline model and the
+  shipped C# until that test landed; then 0 of 2,615.
+- **An orientation decided by the SIGN of a quantity that can be zero is not decided at all.**
+  "Flip the fitted normal outward if `n · census < 0`" is a coin toss whenever the two are nearly
+  perpendicular, which a real patch does reach — it flips between two machines and between the
+  shipped code and the offline model, and on a centrally-symmetric prism it is **invisible on
+  screen**, so nothing but a cross-check finds it. Answer it in order by things that are each
+  either a real answer or explicitly not one (census normal → radial → a sign convention on the
+  first significant component), with a stated tolerance. Measured: 8 of 1,848 plates.
+- **A prism thickness stated as a FRACTION of the prism is a cubic volume term.** A rule that makes
+  long plates then makes long *slabs*, and a slab's volume lands on the cell's Frenzy ladder as the
+  cube of its length. State thickness in absolute lattice cells; the plant's volume is then linear
+  in its plated area, which is a number you can reason about.
+- **A species whose prisms are fitted to irregular patches cannot claim zero interpenetration.** Two
+  patches meeting along a ridge have bounding boxes that MUST overlap — it is geometry, not a
+  defect. State BOUNDS instead and gate both: how MANY pairs may interpenetrate at all, and how DEEP
+  (refuse to lay a prism that would sit essentially inside one already laid — hidden mass buys
+  nothing, and the same rule bounds the interleaving). A zero you cannot have is worse than a bound
+  you can measure. The regular lattice species CAN claim zero and must still be fitted to it.
+- **A tool that MODELS a body size can be wrong by an order of magnitude for a new family.**
+  `author_lifeform_heart_sizes.py` sizes a flora body as the disc `N` prisms of footprint `A` settle
+  into, from the prefab's `leafSize` and a budget capped at 400. Both inputs are meaningless for a
+  species that measures a size per prism and grows thousands of them, and the error is silent
+  because the tool's `--check` compares its own model against itself. Check a new family's body
+  measurement against the species' own model before trusting the heart it authors.
 - **A static registry/frontier survives every cell teardown.** If your species keeps population
   state, key it by `(Cell, species)` and drop it at all three Cell reset sites. A cache of a *pure
   function* is exempt — say so, or the next reader files it as the bug.

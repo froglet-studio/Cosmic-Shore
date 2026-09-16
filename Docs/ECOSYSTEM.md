@@ -7621,14 +7621,14 @@ Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four i
 
 The fourth flora growth family, and the first whose form is not a property of the plant's own walk.
 `MandelbulbFlora` grows over the surface of the **Mandelbulb** — the escape-time fractal of
-`v → v^n + c` in triplex coordinates — one prism per surface site, spreading from a single seed at
-its footing until it has covered the whole form or run out of budget. A partly-grown plant is a
-patch of bulb creeping up over itself; a mature one is the whole solid.
+`v → v^n + c` in triplex coordinates — spreading from a single seed at its footing until it has
+covered the whole form or run out of budget. A mature plant is ~2,600 prisms and ~250 units across:
+an open, terraced cage of plates at a dozen different sizes, every one on its own frame.
 
-Nothing in the code describes a bulb. A site is laid iff it is inside the set and has an exposed
-face, and a plant expands to its neighbours. The lobes, the polar cup and the fractal terracing are
-what that rule leaves behind — the same claim, and the same *kind* of claim, the gyroid octagon
-colony makes (§32.7).
+Nothing in the code describes a bulb. A cell is inside iff its orbit stays bounded; a cell is plated
+iff its exposed faces point sideways; a prism is a patch of cells whose normals agree. The lobes,
+the polar cup and the fractal terracing are what those rules leave behind — the same claim, and the
+same *kind* of claim, the gyroid octagon colony makes (§32.7).
 
 ### 44.1 Why it is not `AssembledFlora`
 
@@ -7642,28 +7642,95 @@ intrinsic tile to find, and inventing one would be exactly the fitted grid §34 
 
 So this species addresses in the **ambient** integer lattice instead — the same `Vector3Int`
 bookkeeping `SchwarzPTileData` uses, one level out. That keeps the property §34 actually cares
-about: **sameness is an integer address**. A site either is or is not a shell site, decided by a
-pure function of three integers, so occupancy is exact, there is no tolerance to drift, two growth
-fronts meeting from opposite sides agree by construction, and nothing has to be baked — membership
-*is* the closed form, evaluated on demand for ~60 transcendentals and memoised.
+about: **sameness is an integer address**. A cell either is or is not a shell cell, decided by a
+pure function of three integers; a patch is a set of those cells; a prism's identity is the integer
+cell its patch grew from. So occupancy is exact, there is no tolerance to drift, two growth fronts
+meeting from opposite sides agree by construction, and nothing has to be baked — membership *is*
+the closed form, evaluated on demand and memoised.
 
 Reproduction is consequently the **per-plant growth quota** (`Flora.TryReproduce`), not the lattice
 colony cycle: one plant is one whole bulb in its own local frame, so there is no shared surface for
 a colony to tile and no claim book to keep. Two plants never interact except through the ordinary
 `PrismSpatialIndex` reservation.
 
-### 44.2 The element is the fractal ORDER
+### 44.2 A VOXEL SHELL OF A BLOB IS A BLOB — the finding the species is built on
+
+The first cut plated **every** surface cell with **one** prism size. It was correct, it was cheap,
+it passed every gate, and it read as *a lumpy sphere*. Three things were wrong with it and only the
+third is interesting:
+
+1. **Resolution.** At the shipped pitch a plant was ~9 cells of radius. A sphere approximated by 9
+   voxels per radius is a lumpy sphere, and no cleverness above that fixes it.
+2. **One prism size.** A Mandelbulb has structure at every scale; a single leaf size can express
+   exactly one of them.
+3. **It was a CLOSED SKIN, and that is the part that generalises.** A Mandelbulb's form *is* its
+   terracing, and a closed skin hides terracing by definition — from outside you see the tread
+   tops, which are the featureless part. Raising the resolution made it a *finer* lumpy sphere
+   (measured: 13,035 cells at pitch 0.035, and it read as gravel). **Every candidate that kept the
+   surface closed failed, whatever else it varied**, and four were built and rejected before this
+   was believed: an adaptive octree of coplanar blocks, radial struts from the core, concentric
+   geometric shells, and surface-following depth layers. Concentric shells failed for a reason
+   worth writing down on its own — **the Mandelbulb's interior is a solid blob, so a shell cut
+   inside it is just a sphere**; all of the fractal's information lives on its boundary.
+
+The rule that works is the inverse of the first cut, and both halves of it are measurements:
+
+- **Selection — the plant grows on the terrace RISERS.** A cell is plated iff
+  `1 − |n · r̂| ≥ riserBias` (0.30), i.e. its surface faces *sideways* relative to the radial. That
+  keeps the crease walls and the terrace risers — which is the whole of what the form actually is —
+  and leaves the treads open, so you see *into* the object and the lobes read as lobes. Measured,
+  it keeps 55–63% of the shell by element.
+- **Merging — a prism is a PATCH, not a cell.** Adjacent selected cells whose normals agree
+  (`coplanarCos` 0.86) and which stay flat (`planarTau` 0.62 cells RMS from their own fitted plane)
+  region-grow into one patch of up to `maxPatchCells` 22, and one prism stands for the whole patch.
+  Its centre, its two in-plane axes and its normal are the patch's own principal frame; its two
+  in-plane extents are the patch's own measured spread. So a long flat riser is one long strut and
+  a twisting seam is a scatter of chips, and **prism size, aspect and orientation are all
+  measurements — there is no authored leaf anywhere in this species.**
+
+Shipped, that gives a 13–16× spread of prism long-side within a single plant (1.5 u to 24.0 u at
+the shipped world pitch of 2.025), aspect from square to 4.5:1, and a distinct frame per prism.
+
+Three implementation details are load-bearing, and two of the three were found by a cross-check
+between the model and the shipped C# — which is the whole argument for keeping the two independent:
+
+- **Thickness is ABSOLUTE (0.38 cells), not a fraction of the plate.** A proportional thickness
+  makes a long plate a slab, and a slab's volume lands on the cell's Frenzy ladder as the *cube* of
+  its length. With a constant thickness a plant's volume is linear in its plated area.
+- **A patch with rank under 2 must not take a principal-axis frame.** A two-cell patch (there are
+  always some) has one non-zero eigenvalue, so the two smallest eigenvectors are interchangeable
+  and the frame a PCA hands back is *arbitrary* — it can flip on a rounding difference between two
+  machines. Below `PlanarRankTolerance` (0.02 cells², far under the 0.25 a two-cell-wide strip
+  measures and far over the exact 0 a line measures) the normal comes from the cell's own
+  exposed-face census and the long axis from the patch's one real principal direction, which also
+  makes a row of cells an honest strut. Before that rule 12 of 2,596 plates disagreed between the
+  model and the C#; after it, **0 of 2,615**.
+- **"Flip it outward if the dot is negative" is a COIN TOSS when the dot is near zero.** A patch's
+  fitted normal can come out very nearly *perpendicular* to the cell's own census normal — three
+  cells arranged edge-on to the surface do exactly that — and then the sign is decided by float
+  noise: it differs between two machines, and it differed between this file and the offline model
+  on **8 of 1,848** Space plates. The orientation is now answered in order by three things, each a
+  real answer or explicitly not one (`MandelbulbLattice.PointsInward`): the census normal while it
+  is outside `OrientationTolerance`; otherwise the RADIAL, which is always meaningful for a set
+  defined about the origin and is a pure function of the patch's own integer cells; otherwise a
+  sign convention on the vector's first significant component. **The general rule: an orientation
+  decided by the sign of a quantity that can be zero is not decided at all** — and because a box is
+  centrally symmetric the flip is *invisible on screen*, so nothing but a cross-check finds it.
+
+### 44.3 The element is the fractal ORDER
 
 §40: a lifeform is its species and its element and nothing else, and everything an element states
 about itself it states exactly once. Here an element states its **power**, and the four are visibly
 different solids rather than four tints of one:
 
-| element | power | prisms (full form) | diameter | vol/prism | plant volume |
-|---|---|---|---|---|---|
-| Charge | 8 (the classic Mandelbulb) | 589 | 72.9 u | 1.05 | 616 |
-| Mass | 5 | 558 | 72.4 u | 10.80 | 6,024 |
-| Space | 3 | 458 | 75.0 u | 10.80 | 4,944 |
-| Time | 12 | 628 | 71.3 u | 10.80 | 6,779 |
+| element | power | surface cells | plated | prisms | radius | plant volume |
+|---|---|---|---|---|---|---|
+| Charge | 8 (the classic Mandelbulb) | 24,075 | 14,606 | 2,615 | 82 u | 5,898 |
+| Mass | 5 | 22,814 | 13,536 | 2,625 | 86 u | 46,185 |
+| Space | 3 | 18,250 | 9,984 | 1,848 | 95 u | 33,965 |
+| Time | 12 | 25,597 | 16,210 | 2,715 | 77 u | 53,573 |
+
+(Charge's volume is an eighth of its siblings' because its prisms are scaled to half — see §44.5.)
 
 That is authored on the **prefab** (`formByElement`), not on the four element configs, for §38's
 reason applied to shape instead of tempo: the config's element is ROLLED per plant, so no
@@ -7671,96 +7738,131 @@ per-element asset field can reach a config that rolls. It resolves in `Initializ
 `base.Initialize` — the one point where the prefab, the rolled variant, the cell overrides and the
 crystal carrying the element have all landed, the same choke point `Flora.ResolveShieldPeriod` uses.
 
-Each element's per-plant budget (`Variant.MaxTotalSpawnedObjects`) is its **own measured site
+Each element's per-plant budget (`Variant.MaxTotalSpawnedObjects`) is its **own measured prism
 count**, so a mature plant is a complete bulb and grazing frees exactly the budget regrowth needs.
 
-### 44.3 Orientation comes from the EXPOSED FACES, not the gradient — and that inverts §34
+### 44.4 Orientation comes from the EXPOSED FACES, not the gradient — and that inverts §34
 
 §34's rule for the smooth lattice species is *"never bake a rotation — derive orientation from the
 closed-form gradient"*. It inverts here, and it was **measured rather than assumed**: the
 Mandelbulb's analytic distance estimator (`0.5·log(r)·r/dr`) has a gradient that is **noisy at voxel
-scale on a fractal boundary** — neighbouring sites get wildly different directions, and prisms
-oriented by it render as confetti. The exposed-face census (the sum of unit directions to a site's
+scale on a fractal boundary** — neighbouring cells get wildly different directions, and prisms
+oriented by it render as confetti. The exposed-face census (the sum of unit directions to a cell's
 empty neighbours over the 26-neighbourhood) is derived from the same exact integer occupancy the
 address is, so it is stable, cheap, consistent between neighbours, and it is the honest normal for
-what is being drawn: a face of a voxel shell. Both renders are in the measure script.
+what is being drawn. It is also what the merge rule compares, so the whole plating rests on it.
 
-The half of §34 that does NOT invert: the rotation is still never stored. `PlateRotation` is a pure
-function of the site's normal, recomputed on demand.
+The half of §34 that does NOT invert: a rotation is still never stored. The plating hands over three
+basis **vectors** and `MandelbulbFlora.PlateRotation` composes the quaternion on demand — because
+half the frames on a surface are reflections and a baked quaternion carried through one is silently
+wrong.
 
-### 44.4 Two measurements the code cites
+### 44.5 The plate fit, and why CHARGE is a different question
 
-- **Sealed voids: 0 of 589 at the shipped pitch** (6 of 1602 at a pitch nearly twice as fine). The
-  strictly correct "visible surface" excludes the walls of sealed internal cavities, which needs a
-  global flood fill from outside and is therefore something a growing plant could not evaluate for
-  one site. Measured, the Mandelbulb has essentially no sealed voids at prism scale, so growth uses
-  the purely LOCAL test. Re-run by `measure_mandelbulb_flora.py --cavities`.
-- **Growth adjacency must be 26, not 6.** A voxelised fractal shell is 26-connected but not always
-  6-connected. Measured as a negative control in `verify_mandelbulb_flora_tables.py --self-test`:
-  reducing the adjacency to the six faces reaches only **414 of the 589** sites of the Charge form,
-  i.e. a plant that could never complete itself.
+**This species cannot claim zero interpenetration and does not try.** Two patches that meet along a
+ridge have bounding boxes that *must* overlap near the seam — that is geometry, not a defect, and it
+reads as a joint. So the species states two BOUNDS instead, and both are gates:
 
-### 44.5 The plate is FITTED, and CHARGE is a different question
+- **How MANY.** At most 25% of touching plate pairs may interpenetrate at all. Shipped: 17.2–17.9%.
+- **How DEEP.** `containDrop` (0.62): a candidate plate whose separating-axis scale against one
+  already laid falls below it is **not laid at all** — hidden mass buys nothing, and the same rule
+  bounds how far any two prisms in a plant interleave. `--check` asserts that no surviving pair is
+  deeper than the drop, i.e. that the drop is bounding what it claims to.
 
-A prism's size is a geometric claim about a specific point set, so it is fitted exactly rather than
-eyeballed — an exact separating-axis test over this species' own measured sites with its own
-normals. Both bodies are centrally symmetric about the prism centre, so the touching scale is closed
-form: `s* = max over candidate axes of |d·u| / (rA(u) + rB(u))`.
+The touching scale is closed form, because both bodies are centrally symmetric about the prism
+centre: `s* = max over candidate axes of |d·u| / (rA(u) + rB(u))`.
 
 Then it is done **again for Charge**, because `Flora.ResolveShieldPeriod` shields every Charge
 plant's leaves by law and a shield replaces the box with the octahedron circumscribing it (§35 —
-`CIRCUMSCRIBING_SCALE` 3 on the half-extents, reaching `1.5 × leafSize`). Measured: the plate the
-other three elements clear at **fuses 1,639 of Charge's 2,810 neighbour pairs** into one solid. So
-Charge is fitted against its ARMOUR and comes out ~2.2× smaller — its plates read as a sparse
-skeleton and its octahedra fill the lattice in, exactly the outcome the gyroid and Schwarz P Charge
-variants shipped with.
+`CIRCUMSCRIBING_SCALE` 3 on the half-extents, reaching `1.5 × leafSize`). Charge is therefore fitted
+against its ARMOUR, at a uniform **0.50** on every prism, and the bar it has to clear is its
+SIBLINGS rather than an invented number: **a Charge plant wearing its shields must be no more fused
+than an ordinary plant is bare.** Measured, 11.9% of its octahedron pairs interpenetrate against the
+worst bare element's 17.9%.
 
-Shipped: default plate `0.71 × 0.71 × 0.248` of the world pitch, Charge `0.326 × 0.326 × 0.114`.
-All four elements clear with **zero overlapping pairs** and 1.8–6.0% headroom, asserted by
-`measure_mandelbulb_flora.py --check`.
+The gameplay read is the point and it is measured rather than hoped for. Armouring multiplies a
+plant's own silhouette by exactly **4.5** (a box's shadow is `4·h0·h1`, its circumscribing
+octahedron's rhombus is `18·h0·h1`), so Charge covers **3,738** cells² bare and **16,822** armoured,
+against the other three elements' bare **14,126**. A Charge bulb is the *densest* of the four while
+it is shielded and much the *sparsest* once it is stripped — strip the armour and there is visibly a
+skeleton left to graze, which is exactly what the two-pass grazing cost is supposed to feel like.
+`--check` fails the build if the armoured footprint ever stops exceeding the other elements' bare
+plate, because that would silently invert the element.
 
-The half of that worth keeping is the GAMEPLAY read, and it is measured rather than hoped for: a
-Charge plate is **0.326** of the pitch bare and **0.978 armoured**, against the other three
-elements' bare **0.710**. So a Charge bulb is the *densest* of the four while it is shielded and the
-*sparsest* once it is stripped — strip the armour and there is visibly a skeleton left to graze,
-which is exactly what the two-pass grazing cost is supposed to feel like. `--check` fails the build
-if the armoured footprint ever stops exceeding the other elements' bare plate, because that would
-silently invert the element.
+### 44.6 Two measurements the code cites
 
-### 44.6 Collider budget
+- **Growth adjacency must be 26, not 6.** A voxelised fractal shell is 26-connected but not always
+  6-connected. It is a negative control in `verify_mandelbulb_flora_tables.py --self-test`.
+- **A finely resolved fractal shell has ISLANDS, and the gate says so.** At the shipped pitch the
+  26-neighbour walk from the seed reaches 24,075 of the Charge form's 24,172 locally-shell cells —
+  **0.4%** are detached specks and sealed-void walls no walk can reach (0.08% at power 12, 0.7% at
+  power 3). The first cut's coarse lattice had none and the verifier asserted *full* reachability;
+  at this resolution that assertion is simply false, so the gate is a stated fraction (2%) instead.
+  It still trips the 6-connected control, which strands an order of magnitude more.
 
-`MaxLivePopulation 10` per cell, so **10 always-on heart colliders** — the only flora number that is
+### 44.7 Collider budget
+
+`MaxLivePopulation 3` per cell, so **3 always-on heart colliders** — the only flora number that is
 never free (prisms are LOD-cullable by phase, hearts are not). Against the shipped references that
-is a small fraction of Rampage's 440 and the Lattice cell's 1,080. Prisms at cap: 10 × ≤628 =
-≤6,280, LOD-cullable; volume at cap ≤67,800, against the Blob cell's `FrenzyEnterVolume` 288,000.
+is nothing beside Rampage's 440 and the Lattice cell's 1,080. Prisms at cap: 3 × ≤2,715 = **≤8,145**,
+LOD-cullable. **Volume at cap ≤160,719**, which is 4.9% of the boot world's (`Lattice Cell Config`)
+`FrenzyEnterVolume` of 3,295,000 and 56% of the lightest shipped cell's (Blob, 288,000).
+
+**`shellRadius` is 75 and not 100 because of that last number.** At 100 a plant was 207–254 u across
+and the cap was 381k of volume — *more than the Blob cell's entire Frenzy ladder*, from one species.
+§36's ordering is that **no single species' own volume ceiling may reach the cell's
+`FrenzyEnterVolume`**, and at 75 it clears every shipped cell. The cost is stated: a plant is
+155–190 u across instead of 207–254. It is still by a wide margin the largest plant in the game —
+the next biggest flora body is the quasicrystal Mass at 79 u — and the prism COUNT, which is what
+the form is made of, does not move at all: `shellRadius` scales the world pitch and nothing else.
 
 The species is **in NO `SpawnProfileSO`** — it is reachable only from the **Lifeform Matrix** toy
 (`Toy_LifeformMatrix.asset`, row `Mandelbulb`), the worm colony's "a boss is opt-in" posture. So it
 costs no shipped cell anything until somebody deliberately puts it in one, and *that* is the point
 at which the ladder above has to be re-checked against the receiving cell.
 
-### 44.7 Files
+One runtime cost is stated plainly: **the plating is built in one pass on first demand**, not
+incrementally, because merging is not a local decision — which patch a cell belongs to depends on
+the whole patch, so no prefix of the answer can be computed without the walk. It is the walk plus a
+linear sweep, cached on the shared lattice, and therefore paid once per (element, rule set) per
+session rather than per plant.
+
+### 44.8 Files
 
 | file | role |
 |---|---|
-| `MandelbulbLattice.cs` | the PURE math — membership, adjacency, orientation, seed. No Unity beyond `Vector3`/`Vector3Int`, which is what makes it compilable and runnable offline. |
-| `MandelbulbFlora.cs` | the growth family — frontier walk, budget and Frenzy gates, spawn drain, preview. |
-| `Tools/Build/measure_mandelbulb_flora.py` | the MODEL: counts, volumes, the plate fit, the cavity audit, PNG renders. `--check`. |
-| `Tools/Build/verify_mandelbulb_flora_tables.py` | compiles and RUNS the shipped `MandelbulbLattice.cs` and proves it against a fresh reference walk — sites, order, normals. `--self-test` mutates the shipped file and asserts the gate trips. |
-| `Tools/Build/mandelbulb_lattice_harness/` | the dotnet harness (stubs + driver + run.sh), after the Regatta precedent. |
+| `MandelbulbLattice.cs` | the PURE math — membership, adjacency, orientation, seed, and the whole plating rule. No Unity beyond `Vector3`/`Vector3Int`, which is what makes it compilable and runnable offline. |
+| `MandelbulbFlora.cs` | the growth family — budget and Frenzy gates, spawn drain, regrowth after grazing, preview. |
+| `Tools/Build/measure_mandelbulb_flora.py` | the MODEL: counts, volumes, the plate fit and both interpenetration bounds, oriented-box PNG renders. `--check`. |
+| `Tools/Build/verify_mandelbulb_flora_tables.py` | compiles and RUNS the shipped `MandelbulbLattice.cs` and proves it against a fresh reference walk — sites, order, normals, and the plating patch for patch. `--self-test` mutates the shipped file six ways and asserts each trips the gate. |
+| `Tools/Build/mandelbulb_lattice_harness/` | the dotnet harness (stubs + driver + run.sh), after the Regatta precedent. Its build writes to **stderr**: `csc` prints diagnostics to stdout, and this script's stdout is the JSON the verifier parses — one warning from a rebuild lands in front of it and the parse fails naming nothing, which reads exactly like drift in the file under test. *A harness's stdout is a data channel; nothing else may write to it.* |
 | `Tools/Build/author_mandelbulb_flora_assets.py` | prefab, the four element configs, the script `.meta` guids, the toy roster row. `--check`, idempotent. |
 
 `author_lifeform_heart_sizes.py` owns `HeartWorldScale` (the species is registered in its
-`FLORA_PREFABS`; measured body 70.8 u → heart 2.772, which lands inside the existing band and moved
-no other asset). The asset generator **carries that field through** rather than re-authoring or
+`FLORA_PREFABS`). The asset generator **carries that field through** rather than re-authoring or
 dropping it — two tools must never own one field, and dropping it is worse than fighting over it.
+Note the body measurement it solves against moved with this pass (a plant is now ~250 u rather than
+~73 u), so that tool has to be re-run and its band re-checked.
 
-### 44.8 Open
+### 44.9 Open
 
 - **Nothing has been run in the editor.** Every number here is offline: the counts, the fit and the
-  cavity audit are exact, and the C# is proved against them by execution, but no plant has been
-  grown in Unity. The handoff is `/flora` §9.
-- The shipped `Docs/ECOSYSTEM.md §35` tool `fit_shield_clearance.py` does not know this species (it
-  is not a bond-table lattice); the octahedron fit lives in this species' own measure script, which
-  says so, and the separating-axis maths is a stdlib transcription of that tool's numpy one with
-  closed-form self-tests.
+  bounds are exact, and the C# is proved against them by execution, but no plant has been grown in
+  Unity. The handoff is `/flora` §9.
+- **Its HEART is sized off a body measurement that does not describe this species.**
+  `author_lifeform_heart_sizes.py` models a flora body as the disc `N` prisms of footprint `A`
+  settle into, reading `A` from the prefab's `leafSize` and capping `N` at `FLORA_BUDGET_CEILING`
+  400. Both inputs are meaningless here: `leafSize` is now only the *seed* prism (every prism the
+  plant lays carries a size measured from its own patch), and 2,615 is a real per-plant target
+  rather than the unbounded sentinel that ceiling exists to defuse. It reports a body of **45.7 u**
+  where the plant is **155–190 u across**, and authors `HeartWorldScale 2.227` rather than the ~4.6
+  the band's own rule would give the largest lifeform in the game. It is not silently wrong — this
+  is the note — but it is wrong, and the fix is a tool change with a fleet-wide blast radius (a
+  bigger largest lifeform re-solves `K` and shrinks every other heart ~12%), so it is deliberately
+  NOT bundled with a new species. Carried as its own task.
+- **The renders are untextured oriented boxes under one directional light.** They are the right
+  tool for judging a *structure* — which prisms, what size, what frame — and they say nothing about
+  how the species will read with the game's domain palette, emissive fresnel rims and bloom.
+- `fit_shield_clearance.py` does not know this species (it is not a bond-table lattice); the
+  octahedron fit lives in this species' own measure script, which says so, and the separating-axis
+  maths is a stdlib transcription of that tool's numpy one with closed-form self-tests.

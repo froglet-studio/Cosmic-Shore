@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 3.138, y: 3.138, z: 1.096}
+  leafSize: {x: 2.025, y: 2.025, z: 0.7695}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -65,23 +65,29 @@ MonoBehaviour:
   formByElement:
   - Element: 1
     Power: 8
-    Plate: {x: 0.326, y: 0.326, z: 0.114}
+    PlateScale: 0.5
   - Element: 2
     Power: 5
-    Plate: {x: 0, y: 0, z: 0}
+    PlateScale: 0
   - Element: 3
     Power: 3
-    Plate: {x: 0, y: 0, z: 0}
+    PlateScale: 0
   - Element: 4
     Power: 12
-    Plate: {x: 0, y: 0, z: 0}
+    PlateScale: 0
   power: 8
   escapeIterations: 10
   bailout: 2
-  latticePitch: 0.13
-  shellRadius: 34
-  plateScale: {x: 0.71, y: 0.71, z: 0.248}
-  maxTotalSpawnedObjects: 660
+  latticePitch: 0.027
+  shellRadius: 75
+  riserBias: 0.3
+  coplanarCos: 0.86
+  planarTau: 0.62
+  maxPatchCells: 22
+  platePad: 0.74
+  plateThickness: 0.38
+  containDrop: 0.62
+  maxTotalSpawnedObjects: 2800
   growthsPerTick: 6
   maxSpawnsPerFrame: 2
   plantRadius: 150

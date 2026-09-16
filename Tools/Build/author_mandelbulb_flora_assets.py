@@ -105,13 +105,16 @@ def plan():
     for elem in ("Charge", "Mass", "Space", "Time"):
         power = a["powers"][elem]
         bulb = model.Bulb(power, a["pitch"], a["iterations"], a["bailout"])
-        sites = bulb.walk(bound)
-        plate = model.plate_for(a, elem)
+        order, selected, plates = model.plating(bulb, a["rules"], bound)
+        scale = a["scales"].get(elem, 1.0)
+        volume = sum(q["size"][0] * q["size"][1] * q["size"][2]
+                     for q in plates) * (world_pitch * scale) ** 3
         out["elements"][elem] = {
             "power": power,
-            "sites": len(sites),
-            "plate": plate,
-            "prism_volume": world_pitch ** 3 * plate[0] * plate[1] * plate[2],
+            "cells": len(order),
+            "prisms": len(plates),
+            "scale": scale,
+            "volume": volume,
         }
     return out
 
@@ -119,15 +122,14 @@ def plan():
 def flora_component_block(p):
     a = p["authored"]
     wp = p["world_pitch"]
-    plate = a["plate"]
+    rules = a["rules"]
     forms = []
     for elem in ("Charge", "Mass", "Space", "Time"):
         e = p["elements"][elem]
-        own = a["plates"].get(elem)
-        px, py, pz = own if own else (0.0, 0.0, 0.0)
+        own = a["scales"].get(elem, 0.0)
         forms.append(f"  - Element: {ELEMENT_ID[elem]}\n"
                      f"    Power: {e['power']}\n"
-                     f"    Plate: {{x: {px:g}, y: {py:g}, z: {pz:g}}}")
+                     f"    PlateScale: {own:g}")
     return (
         "  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
         "  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}\n"
@@ -140,7 +142,10 @@ def flora_component_block(p):
         "  domain: 0\n"
         "  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}\n"
         "  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}\n"
-        f"  leafSize: {{x: {wp*plate[0]:.4g}, y: {wp*plate[1]:.4g}, z: {wp*plate[2]:.4g}}}\n"
+        # The prefab's own seed prism is the ONLY prism that reads this - every prism the plant
+        # lays carries a size measured from its own patch (MandelbulbFlora.AddHealthBlock). One
+        # lattice cell, so the seed reads as the smallest thing the plant can grow.
+        f"  leafSize: {{x: {wp:.4g}, y: {wp:.4g}, z: {wp*rules['thickness']:.4g}}}\n"
         "  growPeriod: 0.5\n"
         "  PlantPeriod: 15\n"
         "  stunDuration: 1\n"
@@ -152,7 +157,13 @@ def flora_component_block(p):
         f"  bailout: {a['bailout']:g}\n"
         f"  latticePitch: {a['pitch']:g}\n"
         f"  shellRadius: {a['shell_radius']:g}\n"
-        f"  plateScale: {{x: {plate[0]:g}, y: {plate[1]:g}, z: {plate[2]:g}}}\n"
+        f"  riserBias: {rules['riser']:g}\n"
+        f"  coplanarCos: {rules['coplanar']:g}\n"
+        f"  planarTau: {rules['tau']:g}\n"
+        f"  maxPatchCells: {rules['max_cells']}\n"
+        f"  platePad: {rules['pad']:g}\n"
+        f"  plateThickness: {rules['thickness']:g}\n"
+        f"  containDrop: {rules['drop']:g}\n"
         f"  maxTotalSpawnedObjects: {a['budget']}\n"
         "  growthsPerTick: 6\n"
         "  maxSpawnsPerFrame: 2\n"
@@ -207,9 +218,14 @@ def config_text(p, elem):
         "  InitialSpawnCount: 1",
         "  OverrideDefaultPlantPeriod: 0",
         "  NewPlantPeriod: 9999999",
-        "  PopulationSize: 2",
-        "  MaxLivePopulation: 10",
-        "  GrowthPerOffspring: 600",
+        # A plant of this species is ~2,600 prisms and ~110,000 volume, an order of magnitude
+        # past any other flora, so the population is deliberately tiny. It is in no SpawnProfile
+        # either (opt-in from the Lifeform Matrix toy), so the cost lands only where a player
+        # asked for it - but a cap of 3 still has to be affordable in the cell they ask in.
+        "  PopulationSize: 1",
+        "  MaxLivePopulation: 3",
+        # One whole form per child: a plant funds a daughter only once it has grown itself.
+        f"  GrowthPerOffspring: {p['elements'][elem]['prisms']}",
         "  OffspringPerBirth: 1",
         "  ReproductionCooldownSeconds: 5",
         "  MaturityFraction: 0.5",
@@ -220,7 +236,7 @@ def config_text(p, elem):
         "    GrowPeriod: 0.5",
         # The budget IS the form: this element's own measured site count, so a mature plant is a
         # complete bulb and grazing frees exactly the budget regrowth needs.
-        f"    MaxTotalSpawnedObjects: {e['sites']}",
+        f"    MaxTotalSpawnedObjects: {e['prisms']}",
         "    PlantRadiusCellFraction: 0.6",
         "    PlantRadiusCellFractionMin: 0.25",
     ]
@@ -311,9 +327,9 @@ def main():
           f"fileID {COMPONENT_FILEID})")
     for elem in ("Charge", "Mass", "Space", "Time"):
         e = p["elements"][elem]
-        print(f"  config   Mandelbulb Flora {elem:<7} power {e['power']:>2}  budget "
-              f"{e['sites']:>4} prisms  plate {e['plate']}  volume "
-              f"{e['sites']*e['prism_volume']:,.0f}")
+        print(f"  config   Mandelbulb Flora {elem:<7} power {e['power']:>2}  "
+              f"{e['cells']:>6} surface cells -> {e['prisms']:>5} prisms  "
+              f"prism scale {e['scale']:g}  volume {e['volume']:>9,.0f}")
     print(f"  reachable from Toy_LifeformMatrix (row 'Mandelbulb'); in NO SpawnProfile - opt-in.")
 
     if changed:

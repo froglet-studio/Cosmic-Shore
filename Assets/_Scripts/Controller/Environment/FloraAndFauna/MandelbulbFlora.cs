@@ -8,8 +8,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// A plant that grows over the surface of a <b>Mandelbulb</b> - the escape-time fractal of
-    /// <c>v -> v^n + c</c> in triplex coordinates - one prism per surface site, spreading from a
-    /// single seed at its footing until it has covered the whole form or run out of budget.
+    /// <c>v -> v^n + c</c> in triplex coordinates - spreading from a single seed at its footing
+    /// until it has covered the form or run out of budget.
     ///
     /// <b>Why a fourth flora growth family.</b> The three we had each answer a different question
     /// about shape, and none of them can answer this one. <see cref="AssembledFlora"/> crystallises
@@ -17,27 +17,37 @@ namespace CosmicShore.Gameplay
     /// and cannot be given (see <see cref="MandelbulbLattice"/>). <see cref="BranchingFlora"/> and
     /// <see cref="PhyllotacticFlora"/> grow by advancing headings through open space, so the shape
     /// they make is a property of their own walk; here the shape is a property of a FUNCTION, and
-    /// the plant's job is only to discover it. That is a genuinely different growth rule, and it
-    /// is the one that makes self-similarity available to the ecology: a Mandelbulb has structure
-    /// at every scale, so the same species reads as a different object as its prisms get smaller.
+    /// the plant's job is only to discover it.
+    ///
+    /// <para><b>The plant is not a skin, and that is the whole design.</b> A voxel shell of a
+    /// blobby solid IS a blobby solid: plating every surface cell with one prism size produced a
+    /// closed crust that read as a lumpy sphere no matter how fine the lattice got, because a
+    /// Mandelbulb's form is its TERRACING and a closed skin hides terracing by definition. So two
+    /// things changed and both are measurements rather than authored shapes. The plant grows on
+    /// the terrace RISERS only - a cell whose surface faces sideways relative to the radial - so
+    /// the treads are open and you see into the object. And a plate is not a cell: adjacent
+    /// riser cells with agreeing normals MERGE into one coplanar patch, and one prism stands for
+    /// the whole patch, sized, elongated and oriented by fitting that patch. A long flat riser
+    /// becomes one long plate; a twisting seam stays a scatter of chips. Prism size therefore
+    /// spans about 16x within a single plant, its aspect runs from square to a 4:1 strut, and
+    /// every prism carries its own frame - the layers of texture at different scales the form
+    /// needs, none of which is a number anybody typed. The rule lives in
+    /// <see cref="MandelbulbLattice.Plating"/>, which is pure and provable outside Unity.</para>
     ///
     /// <para><b>What emerges and what is written down.</b> Nothing in this file describes a bulb.
-    /// A site is laid iff it is inside the set and has an exposed face; a plant expands to its
-    /// neighbours. The lobes, the polar cup and the terracing are what that rule leaves behind -
-    /// the same claim, and the same kind of claim, the gyroid octagon colony makes
-    /// (Docs/ECOSYSTEM.md §32.7).</para>
+    /// A cell is inside iff the orbit stays bounded; a cell is plated iff its exposed faces point
+    /// sideways; plates are patches of agreeing cells. The lobes, the polar cup and the terracing
+    /// are what those rules leave behind - the same claim, and the same kind of claim, the gyroid
+    /// octagon colony makes (Docs/ECOSYSTEM.md §32.7).</para>
     ///
     /// <para><b>The element is the fractal ORDER.</b> Docs/ECOSYSTEM.md §40: a lifeform is its
     /// species and its element and nothing else, and everything an element states about itself it
     /// states exactly once. Here an element states its <i>power</i> - Charge grows the classic
-    /// 8th-order bulb, the others grow genuinely different solids - which is a far stronger
-    /// expression of identity than a leaf aspect would be, and it is why this species does NOT
-    /// vary its prism shape per element: the leaf has to tile the lattice, and the element has
-    /// already changed the whole object. Resolved in <see cref="Initialize"/> AFTER
-    /// <c>base.Initialize</c>, the one point where the prefab, the rolled variant, the cell
-    /// overrides and the crystal carrying the element have all landed - the same choke point
-    /// <c>Flora.ResolveShieldPeriod</c> uses, and for the same reason: the cadence is authored per
-    /// CONFIG while the element is ROLLED per plant.</para>
+    /// 8th-order bulb, the others grow genuinely different solids. Resolved in
+    /// <see cref="Initialize"/> AFTER <c>base.Initialize</c>, the one point where the prefab, the
+    /// rolled variant, the cell overrides and the crystal carrying the element have all landed -
+    /// the same choke point <c>Flora.ResolveShieldPeriod</c> uses, and for the same reason: the
+    /// cadence is authored per CONFIG while the element is ROLLED per plant.</para>
     ///
     /// <para>Everything else is inherited and unchanged: prisms are conserved mass laid through
     /// the ordinary health-prism path, growth is gated on <c>Cell.FloraGrowingEnabled</c>, the
@@ -47,38 +57,37 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class MandelbulbFlora : Flora
     {
-        /// <summary>One element's FORM: the fractal order it grows, and the plate it grows it
-        /// out of. Authored on the PREFAB rather than on the four element configs because the
-        /// config's element is rolled per plant, so no per-element asset field can reach a config
-        /// that rolls (Docs/ECOSYSTEM.md §38's argument, applied to shape instead of tempo).
+        /// <summary>One element's FORM: the fractal order it grows, and a scale on the prisms it
+        /// grows it out of. Authored on the PREFAB rather than on the four element configs because
+        /// the config's element is rolled per plant, so no per-element asset field can reach a
+        /// config that rolls (Docs/ECOSYSTEM.md §38's argument, applied to shape instead of tempo).
         ///
-        /// <para>The plate is per-element for exactly one reason and it is a geometric one:
+        /// <para>The scale is per-element for exactly one reason and it is a geometric one:
         /// <b>a CHARGE plant's leaves are shielded by law</b> (<c>Flora.ResolveShieldPeriod</c>),
         /// and a shield replaces the box with the octahedron CIRCUMSCRIBING it - 3x the
-        /// half-extents, reaching 1.5 x leafSize (Docs/ECOSYSTEM.md §35). Measured on this
-        /// species' own sites, the plate the other three elements clear at fuses 1639 of Charge's
-        /// 2810 neighbour pairs into one solid. So Charge is fitted against its ARMOUR and comes
-        /// out ~2.2x smaller: its plates read as a sparse skeleton and its octahedra fill the
-        /// lattice in, which is exactly the outcome the gyroid and Schwarz P Charge variants
-        /// shipped with. A zero plate falls back to <see cref="plateScale"/>.</para></summary>
+        /// half-extents, reaching 1.5 x leafSize (Docs/ECOSYSTEM.md §35). So Charge is fitted
+        /// against its ARMOUR and comes out smaller: its plates read as a sparse skeleton and its
+        /// octahedra fill the form in, which is exactly the outcome the gyroid and Schwarz P
+        /// Charge variants shipped with. Zero means 1.</para></summary>
         [Serializable]
         public struct ElementalForm
         {
             public Element Element;
             [Range(2, 16)] public int Power;
-            [Tooltip("Prism size as a multiple of the WORLD pitch; leave zero to use plateScale.")]
-            public Vector3 Plate;
+            [Tooltip("Uniform scale on every prism of this element. 0 = 1. Below 1 only for an " +
+                     "element fitted against its ARMOUR - see the struct remarks.")]
+            public float PlateScale;
         }
 
         [Header("Form - the set")]
-        [Tooltip("Per-element FORM - the exponent in v -> v^n + c, and the plate. 8 is the " +
-                 "classic Mandelbulb. An element not listed here falls back to the values below.")]
+        [Tooltip("Per-element FORM - the exponent in v -> v^n + c. 8 is the classic Mandelbulb. " +
+                 "An element not listed here falls back to the values below.")]
         [SerializeField] ElementalForm[] formByElement =
         {
-            new() { Element = Element.Charge, Power = 8,  Plate = new(0.326f, 0.326f, 0.114f) },
-            new() { Element = Element.Mass,   Power = 5,  Plate = new(0f, 0f, 0f) },
-            new() { Element = Element.Space,  Power = 3,  Plate = new(0f, 0f, 0f) },
-            new() { Element = Element.Time,   Power = 12, Plate = new(0f, 0f, 0f) },
+            new() { Element = Element.Charge, Power = 8,  PlateScale = 0.5f },
+            new() { Element = Element.Mass,   Power = 5,  PlateScale = 0f },
+            new() { Element = Element.Space,  Power = 3,  PlateScale = 0f },
+            new() { Element = Element.Time,   Power = 12, PlateScale = 0f },
         };
 
         [Tooltip("Fallback order for a plant with no element (a toy clone, a microscene release).")]
@@ -94,34 +103,59 @@ namespace CosmicShore.Gameplay
 
         [Header("Form - the lattice")]
         [Tooltip("Voxel pitch in the set's OWN unit space. This is the species' resolution dial: " +
-                 "prism count grows as 1/pitch^2, because the plant is a SURFACE. Measured at " +
-                 "power 8 - 0.20 -> 204 prisms, 0.16 -> 362, 0.13 -> 589, 0.115 -> 793.")]
-        [SerializeField, Range(0.06f, 0.30f)] float latticePitch = 0.13f;
+                 "surface cells grow as 1/pitch^2, because the plant is a SURFACE. It is NOT the " +
+                 "prism size - prisms are fitted to merged patches of these cells, so a finer " +
+                 "pitch buys DETAIL rather than more prisms one-for-one.")]
+        [SerializeField, Range(0.012f, 0.30f)] float latticePitch = 0.027f;
 
-        [Tooltip("World radius of the set's unit sphere - how big one plant is. World prism " +
-                 "spacing is latticePitch x this.")]
-        [SerializeField, Min(1f)] float shellRadius = 34f;
+        [Tooltip("World radius of the set's unit sphere - how big one plant is. World cell " +
+                 "spacing is latticePitch x this, and every prism dimension is a multiple of it.")]
+        [SerializeField, Min(1f)] float shellRadius = 75f;
 
-        [Tooltip("Prism size as a multiple of the WORLD pitch, for an element that authors no " +
-                 "plate of its own. x,y span the surface (1 = plates meeting edge to edge before " +
-                 "rotation), z is the thin axis into the surface. FITTED, not eyeballed: an exact " +
-                 "separating-axis test over this species' own measured sites and its own " +
-                 "normals - Tools/Build/measure_mandelbulb_flora.py --fit, which fails the build " +
-                 "if any neighbour pair interpenetrates.")]
-        [SerializeField] Vector3 plateScale = new(0.71f, 0.71f, 0.248f);
+        [Header("Form - the plating")]
+        [Tooltip("A cell is plated iff 1 - |normal . radial| reaches this, i.e. its surface faces " +
+                 "SIDEWAYS - a terrace riser or a crease wall. Lower closes the plant into a " +
+                 "skin, which reads as a ball; higher opens it until the silhouette goes.")]
+        [SerializeField, Range(0f, 0.9f)] float riserBias = 0.30f;
+
+        [Tooltip("Merge admits a neighbouring cell whose normal is within this cosine of the " +
+                 "patch's running mean. This is the dial that makes flat risers into long plates.")]
+        [SerializeField, Range(0.3f, 0.999f)] float coplanarCos = 0.86f;
+
+        [Tooltip("Largest RMS deviation of a patch from its own fitted plane, in CELLS. One plate " +
+                 "cannot stand for a patch that is not flat, whatever its normals say.")]
+        [SerializeField, Min(0.05f)] float planarTau = 0.62f;
+
+        [Tooltip("The largest patch one plate may stand for, in cells - the only ceiling on prism " +
+                 "size. Everything under it is decided by the surface.")]
+        [SerializeField, Min(1)] int maxPatchCells = 22;
+
+        [Tooltip("Plate size as a fraction of its patch's own measured span. Below 1 by design: " +
+                 "the gaps it opens are what you see the inner structure through.")]
+        [SerializeField, Range(0.2f, 1.2f)] float platePad = 0.74f;
+
+        [Tooltip("Plate thickness in CELLS - absolute, not a fraction of the plate. A " +
+                 "proportional thickness makes a long plate a slab, and a slab's volume lands on " +
+                 "the cell's Frenzy ladder as the cube of its length.")]
+        [SerializeField, Min(0.05f)] float plateThickness = 0.38f;
+
+        [Tooltip("A candidate plate whose separating-axis scale against one already laid falls " +
+                 "below this is not laid at all - hidden mass buys nothing, and this is also the " +
+                 "bound on how deeply any two prisms in a plant interleave. 0 disables it.")]
+        [SerializeField, Range(0f, 1f)] float containDrop = 0.62f;
 
         [Header("Growth")]
         [Tooltip("Maximum LIVE prisms this plant can hold. Consumption frees budget - a grazed " +
                  "plant regrows toward this cap instead of staying a permanent fragment. At the " +
-                 "shipped pitch the largest element's bulb is 628 sites, so the default covers a " +
-                 "complete form of every element with headroom.")]
-        [SerializeField, Min(1)] int maxTotalSpawnedObjects = 660;
+                 "shipped constants the largest element's form is 2715 plates, so the default " +
+                 "covers a complete form of every element with headroom.")]
+        [SerializeField, Min(1)] int maxTotalSpawnedObjects = 2800;
 
         /// <summary>The live-prism budget this individual resolved to - the base reads it for
         /// the reproduction maturity gate (see <see cref="Flora.PrismBudget"/>).</summary>
         protected override int PrismBudget => maxTotalSpawnedObjects;
 
-        [Tooltip("Surface sites decided per grow tick.")]
+        [Tooltip("Plates decided per grow tick.")]
         [SerializeField, Min(1)] int growthsPerTick = 6;
 
         [Tooltip("Instantiations executed per frame. The tick DECIDES (and claims sites); the " +
@@ -132,57 +166,66 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float plantRadius = 150f;
 
         /// <summary>
-        /// This species' prism size is its LATTICE PITCH, so no per-individual or per-cell scale
-        /// curve may touch it - <c>Flora.ApplyCellPrismScale</c> reads this and stands down.
-        /// Scaling the leaf without scaling the lattice would tear the surface open; scaling both
-        /// is what <see cref="FloraVariantTuning.LatticeScale"/> does, below.
+        /// This species' prism size is a measurement of its own lattice, so no per-individual or
+        /// per-cell scale curve may touch it - <c>Flora.ApplyCellPrismScale</c> reads this and
+        /// stands down. Scaling the prisms without scaling the lattice would tear the surface
+        /// open; scaling both is what <see cref="FloraVariantTuning.LatticeScale"/> does, below.
         /// </summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
 
         // ── State ─────────────────────────────────────────────────────────────
 
         MandelbulbLattice _lattice;
+        IReadOnlyList<MandelbulbLattice.Plate> _plates;
         Vector3 _axis = Vector3.up;
+        float _plateScale = 1f;
 
-        /// <summary>Sites already laid, queued to be laid, or refused - the integer occupancy that
-        /// makes a duplicate structurally impossible. No tolerance, no spatial hash, no float key.</summary>
-        readonly HashSet<Vector3Int> _claimed = new();
+        /// <summary>How far down <see cref="_plates"/> the plant has grown. The plating is one
+        /// deterministic list in growth order, so this index IS the front - there is no frontier
+        /// to keep and a duplicate is structurally impossible.</summary>
+        int _next;
 
-        /// <summary>Shell sites discovered but not yet decided - the growth front.</summary>
-        readonly Queue<Vector3Int> _frontier = new();
+        /// <summary>Plates whose prism was grazed away and which are open to regrow.</summary>
+        readonly Queue<int> _regrow = new();
 
-        /// <summary>What was actually laid where, so a grazed site can be freed and regrown.</summary>
-        readonly Dictionary<Vector3Int, HealthPrism> _laid = new();
+        /// <summary>What was actually laid where, so a grazed plate can be freed and regrown.</summary>
+        readonly Dictionary<int, HealthPrism> _laid = new();
 
         struct SpawnOrder
         {
-            public Vector3Int Site;
+            public int Index;
             public Vector3 LocalPosition;
             public Quaternion LocalRotation;
+            public Vector3 Size;
             public float DecidedAt;
         }
 
         readonly Queue<SpawnOrder> _pending = new();
 
         // A Frenzy hold can outlive a spatial-index reservation; an order whose claim lapsed could
-        // overlap another grower. Dropped at drain - the site is freed and simply re-decided.
+        // overlap another grower. Dropped at drain - the plate is freed and simply re-decided.
         const float MaxOrderAgeSeconds = PrismSpatialIndex.ReservationTtlSeconds - 1f;
 
-        /// <summary>World units between adjacent sites.</summary>
+        /// <summary>World units between adjacent lattice cells, and the unit every prism
+        /// dimension is quoted in.</summary>
         float WorldPitch => latticePitch * shellRadius;
 
         /// <summary>Site index at which the march in <see cref="MandelbulbLattice.SeedSite"/> and
-        /// the growth walk are bounded. The set is contained in radius ~1.33 at every power we
+        /// the plating walk are bounded. The set is contained in radius ~1.33 at every power we
         /// author; the margin is insurance, not tuning.</summary>
-        int MaxSiteRadius => Mathf.CeilToInt(1.45f / Mathf.Max(0.01f, latticePitch));
+        int MaxSiteRadius => Mathf.CeilToInt(1.45f / Mathf.Max(0.005f, latticePitch));
+
+        MandelbulbLattice.PlatingRules Rules => new(
+            riserBias, coplanarCos, planarTau, maxPatchCells,
+            platePad, plateThickness, containDrop, MaxSiteRadius);
 
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
         public override void Initialize(Cell cell)
         {
             // Base plants us (honoring an authored site), seats the crystal and starts the grow
-            // cadence. The first tick finds an empty frontier and no prisms, so it no-ops - the
-            // same ordering BranchingFlora and PhyllotacticFlora rely on.
+            // cadence. The first tick runs before the plating exists and no-ops - the same
+            // ordering BranchingFlora and PhyllotacticFlora rely on.
             base.Initialize(cell);
 
             _axis = GrowthUp;
@@ -191,10 +234,9 @@ namespace CosmicShore.Gameplay
             // AFTER base.Initialize: this is the first point at which Element is final (prefab ->
             // rolled variant -> cell overrides -> the crystal that carries it).
             _lattice = MandelbulbLattice.For(ResolvePower(), latticePitch, escapeIterations, bailout);
-
-            var seed = _lattice.SeedSite(MaxSiteRadius);
-            _claimed.Add(seed);
-            _frontier.Enqueue(seed);
+            _plateScale = ResolvePlateScale();
+            _plates = _lattice.Plating(Rules);
+            _next = 0;
         }
 
         /// <summary>The fractal order this plant's element grows, falling back to the prefab's own
@@ -208,17 +250,29 @@ namespace CosmicShore.Gameplay
             return power;
         }
 
+        /// <summary>This element's uniform prism scale - 1 unless the element was fitted against
+        /// something other than its own box (today, Charge against its shield octahedron).</summary>
+        float ResolvePlateScale()
+        {
+            if (formByElement != null)
+                foreach (var entry in formByElement)
+                    if (entry.Element == Element && entry.PlateScale > 0f)
+                        return entry.PlateScale;
+            return 1f;
+        }
+
         /// <summary>
         /// Mandelbulb layer of the variant expression: the live-prism budget (the field every
         /// flora family reads) and <see cref="FloraVariantTuning.LatticeScale"/>, which here scales
-        /// the whole plant - <see cref="shellRadius"/>, and therefore the world pitch and the
-        /// prism with it - while leaving the integer lattice, the topology and the prism COUNT
+        /// the whole plant - <see cref="shellRadius"/>, and therefore the world pitch and every
+        /// prism with it - while leaving the integer lattice, the plating and the prism COUNT
         /// exactly unchanged. That is the field's documented meaning and it is safe here in a way
         /// it was not for the gyroid (Docs/ECOSYSTEM.md §34.8): this species has no
-        /// absolute-distance coherence tolerances to drag out from under - occupancy is an integer
-        /// test and the spatial claim radius is derived from the pitch, so both scale with it by
-        /// construction. Note the cubic-volume consequence §34.8 records still applies: a uniform
-        /// k-times scale is a k^3 volume change and lands on the cell's Frenzy ladder.
+        /// absolute-distance coherence tolerances to drag out from under - the plating rule is
+        /// stated entirely in CELLS and the spatial claim radius is derived from the pitch, so
+        /// both scale with it by construction. Note the cubic-volume consequence §34.8 records
+        /// still applies: a uniform k-times scale is a k^3 volume change and lands on the cell's
+        /// Frenzy ladder.
         /// </summary>
         public override void ApplyVariantTuning(FloraVariantTuning tuning)
         {
@@ -260,122 +314,98 @@ namespace CosmicShore.Gameplay
             // active force brings the mass back down. Cell.FloraGrowingEnabled is the only gate.
             if (cell && !cell.FloraGrowingEnabled) return;
 
-            if (_lattice == null) return;
+            if (_plates == null || _plates.Count == 0) return;
 
-            if (_frontier.Count == 0)
+            for (int i = 0; i < growthsPerTick; i++)
             {
-                // Reawakening: the plant has covered everything it could reach, or its front was
-                // grazed off. Free the sites whose prisms are gone and re-open them - that is how
-                // a cropped Mandelbulb heals back over itself instead of sitting inert.
-                ReopenGrazedSites();
-                return;
+                if (_regrow.Count > 0) { Decide(_regrow.Dequeue()); continue; }
+                if (_next >= _plates.Count)
+                {
+                    // Covered everything it could, or its front was grazed off. Free the plates
+                    // whose prisms are gone and re-open them - that is how a cropped Mandelbulb
+                    // heals back over itself instead of sitting inert.
+                    ReopenGrazedPlates();
+                    return;
+                }
+                Decide(_next++);
             }
-
-            int decisions = Mathf.Min(growthsPerTick, _frontier.Count);
-            for (int i = 0; i < decisions; i++)
-                DecideSite(_frontier.Dequeue());
         }
 
-        void DecideSite(Vector3Int site)
+        void Decide(int index)
         {
-            // Expand FIRST and unconditionally. Expansion is pure integer bookkeeping, so the
-            // sweep must not be able to stall on a site whose prism could not be placed - a
-            // region blocked by a neighbouring plant would otherwise cut this plant's surface in
-            // two and leave the far side permanently unreachable.
-            foreach (var d in MandelbulbLattice.Neighbour26)
-            {
-                var next = site + d;
-                if (Mathf.Abs(next.x) > MaxSiteRadius || Mathf.Abs(next.y) > MaxSiteRadius ||
-                    Mathf.Abs(next.z) > MaxSiteRadius) continue;
-                if (_claimed.Contains(next)) continue;
-                if (!_lattice.IsShellSite(next)) continue;
-                _claimed.Add(next);
-                _frontier.Enqueue(next);
-            }
+            if (_laid.ContainsKey(index)) return;
 
-            if (_laid.ContainsKey(site)) return;
-
-            Vector3 local = (Vector3)site * WorldPitch;
+            var plate = _plates[index];
+            float pitch = WorldPitch;
+            Vector3 local = plate.Centre * pitch;
             Vector3 world = transform.TransformPoint(local);
 
             // Cross-PLANT occupancy. Within one plant a duplicate is already impossible (the
-            // integer claim above); this is the only thing that can refuse a site, and a refusal
-            // costs the site and nothing else.
+            // plating is a list and the index is the claim); this is the only thing that can
+            // refuse a plate, and a refusal costs the plate and nothing else.
             if (!Claim(world)) return;
 
-            Vector3 normal = _lattice.Normal(site);
             _pending.Enqueue(new SpawnOrder
             {
-                Site = site,
+                Index = index,
                 LocalPosition = local,
-                LocalRotation = PlateRotation(normal),
+                LocalRotation = PlateRotation(plate),
+                Size = PlateSize(plate, pitch),
                 DecidedAt = Time.time,
             });
         }
 
         /// <summary>
         /// A plate lies FLAT on the surface: its thin axis (local +z, the flora convention every
-        /// lattice species uses) along the normal, its long axes spanning the surface. The tangent
-        /// is derived from the site's own normal against the plant axis, with a fallback basis for
-        /// the poles, so it is a pure function of the address - never a stored rotation
-        /// (Docs/ECOSYSTEM.md §34: half the transforms on a lattice are reflections and a baked
-        /// quaternion carried through one is silently wrong).
+        /// lattice species uses) along the patch's normal, its long axes along the patch's own
+        /// principal directions. Composed from the basis the plating measured rather than stored
+        /// as a rotation, because half the frames on a surface are reflections and a baked
+        /// quaternion carried through one is silently wrong (Docs/ECOSYSTEM.md §34).
         /// </summary>
-        static Quaternion PlateRotation(Vector3 normal)
+        static Quaternion PlateRotation(in MandelbulbLattice.Plate plate)
         {
-            Vector3 reference = Mathf.Abs(normal.z) > 0.95f ? Vector3.right : Vector3.forward;
-            Vector3 tangent = Vector3.Cross(normal, reference);
-            if (tangent.sqrMagnitude < 1e-6f) tangent = Vector3.Cross(normal, Vector3.up);
-            if (tangent.sqrMagnitude < 1e-6f) return Quaternion.identity;
-            return Quaternion.LookRotation(normal, tangent.normalized);
+            if (plate.Forward.sqrMagnitude < 1e-6f || plate.Up.sqrMagnitude < 1e-6f)
+                return Quaternion.identity;
+            // LookRotation(forward, up) puts local +z on Forward and local +y on Up, which leaves
+            // local +x on Up x Forward - the plate's own Right, by construction of the basis.
+            return Quaternion.LookRotation(plate.Forward, plate.Up);
         }
 
-        /// <summary>The plate's world size. Uniform across a plant and across its element - see
-        /// the class remarks on why the element is expressed as the ORDER, not the leaf.</summary>
-        Vector3 PlateSize()
+        /// <summary>The plate's world size: what the plating measured, in world units, scaled by
+        /// whatever this element was fitted at.</summary>
+        Vector3 PlateSize(in MandelbulbLattice.Plate plate, float pitch)
         {
-            Vector3 mult = plateScale;
-            if (formByElement != null)
-                foreach (var entry in formByElement)
-                    if (entry.Element == Element && entry.Plate != Vector3.zero)
-                    {
-                        mult = entry.Plate;
-                        break;
-                    }
-
-            float p = WorldPitch;
+            float k = pitch * _plateScale;
             return new Vector3(
-                Mathf.Max(0.01f, p * mult.x),
-                Mathf.Max(0.01f, p * mult.y),
-                Mathf.Max(0.01f, p * mult.z));
+                Mathf.Max(0.01f, plate.Size.x * k),
+                Mathf.Max(0.01f, plate.Size.y * k),
+                Mathf.Max(0.01f, plate.Size.z * k));
         }
 
         bool Claim(Vector3 world)
         {
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return true;
-            // Half the pitch: a legitimate NEIGHBOUR site is a full pitch away and must never be
-            // blocked, a genuine duplicate is at zero distance and always must be.
-            return index.TryReserve(world, Mathf.Max(1.5f, 0.45f * WorldPitch));
+            // Deliberately well under a cell: two plates on opposite walls of a thin fin sit
+            // barely more than one cell apart, and refusing one of those would punch a hole in
+            // the plant's own surface. A genuine duplicate is at zero distance either way.
+            return index.TryReserve(world, Mathf.Max(1.5f, 0.3f * WorldPitch));
         }
 
-        void ReopenGrazedSites()
+        void ReopenGrazedPlates()
         {
             if (_laid.Count == 0) return;
 
-            List<Vector3Int> freed = null;
+            List<int> freed = null;
             foreach (var pair in _laid)
                 if (!pair.Value)
-                    (freed ??= new List<Vector3Int>()).Add(pair.Key);
+                    (freed ??= new List<int>()).Add(pair.Key);
 
             if (freed == null) return;
-            // Still in _claimed (it was claimed when first laid), so only the _laid record has to
-            // go: DecideSite re-lays a site it does not find there, and re-expanding its already
-            // claimed neighbours is a no-op.
-            foreach (var site in freed)
+            foreach (int index in freed)
             {
-                _laid.Remove(site);
-                _frontier.Enqueue(site);
+                _laid.Remove(index);
+                _regrow.Enqueue(index);
             }
         }
 
@@ -386,8 +416,8 @@ namespace CosmicShore.Gameplay
             if (_pending.Count == 0) return;
             // Parity with the WaitForSeconds grow loop: frozen at timeScale 0 (menu pause).
             if (Time.timeScale <= 0f) return;
-            // Orders decided just before Frenzy WAIT here (sites stay claimed) and execute when
-            // growing re-enables - the same freeze-and-resume the tick gate gives.
+            // Orders decided just before Frenzy WAIT here and execute when growing re-enables -
+            // the same freeze-and-resume the tick gate gives.
             if (cell && !cell.FloraGrowingEnabled) return;
 
             int spawned = 0;
@@ -396,9 +426,9 @@ namespace CosmicShore.Gameplay
                 var order = _pending.Dequeue();
                 if (Time.time - order.DecidedAt > MaxOrderAgeSeconds)
                 {
-                    // The spatial reservation lapsed. Free the site so a later tick re-decides it
-                    // rather than leaving a permanent hole in the surface.
-                    _claimed.Remove(order.Site);
+                    // The spatial reservation lapsed. Re-open the plate so a later tick re-decides
+                    // it rather than leaving a permanent hole in the surface.
+                    _regrow.Enqueue(order.Index);
                     continue;
                 }
                 Execute(order);
@@ -408,12 +438,12 @@ namespace CosmicShore.Gameplay
 
         void Execute(SpawnOrder order)
         {
-            // A spindle per site, parented to the plant root - NOT to a prism. A prism carries its
-            // authored leaf as its localScale, and a non-uniform scale above a rotated child is a
-            // shear (Docs/ECOSYSTEM.md §37.9). Flat rather than chained because this plant has no
-            // chain: sites are addresses on a shell, not a descent, so there is no parent spindle
-            // for a site to belong to and a chained hierarchy would invent a lineage the growth
-            // rule does not have.
+            // A spindle per plate, parented to the plant root - NOT to a prism. A prism carries
+            // its measured plate as its localScale, and a non-uniform scale above a rotated child
+            // is a shear (Docs/ECOSYSTEM.md §37.9). Flat rather than chained because this plant
+            // has no chain: plates are patches on a shell, not a descent, so there is no parent
+            // spindle for one to belong to and a chained hierarchy would invent a lineage the
+            // growth rule does not have.
             var newSpindle = Instantiate(spindle, transform);
             newSpindle.LifeForm = this;
             newSpindle.transform.localPosition = order.LocalPosition;
@@ -424,7 +454,7 @@ namespace CosmicShore.Gameplay
                 newSpindle.transform.position, newSpindle.transform.rotation);
             if (!leaf)
             {
-                _claimed.Remove(order.Site);
+                _regrow.Enqueue(order.Index);
                 return;
             }
 
@@ -434,19 +464,19 @@ namespace CosmicShore.Gameplay
             leaf.LifeForm = this;
             leaf.ChangeTeam(domain);
 
-            _pendingPrismScale = PlateSize();
+            _pendingPrismScale = order.Size;
             AddHealthBlock(leaf);
             leaf.Initialize("flora");
 
-            _laid[order.Site] = leaf;
+            _laid[order.Index] = leaf;
 
             // Growth is this plant's feeding - see Flora.NotifyGrew.
             NotifyGrew();
         }
 
         // The scale the next AddHealthBlock should apply. Flora.AddHealthBlock stamps every prism
-        // with the one authored leafSize; this species' prism size IS its world pitch, so it
-        // overrides that stamp for the prism it is currently placing.
+        // with the one authored leafSize; this species measures a size per prism, so it overrides
+        // that stamp for the prism it is currently placing.
         Vector3? _pendingPrismScale;
 
         public override void AddHealthBlock(HealthPrism healthPrism)
@@ -454,10 +484,11 @@ namespace CosmicShore.Gameplay
             base.AddHealthBlock(healthPrism);
             if (healthPrism && _pendingPrismScale.HasValue)
             {
-                // AdmitTargetScale first: the plate is STATED (derived from the pitch), not grown
+                // AdmitTargetScale first: the plate is STATED (measured from the patch), not grown
                 // into, so it has to survive PrismScaleAnimator's silent per-axis [0.5, 10] clamp
-                // - a thin plate's z axis sits under that floor at every pitch we author, and the
-                // clamp has no log and no return value (Docs/ECOSYSTEM.md §34.9).
+                // - this species' plates run from a couple of units to thirty, i.e. over the
+                // ceiling at one end, and the clamp has no log and no return value
+                // (Docs/ECOSYSTEM.md §34.9).
                 healthPrism.AdmitTargetScale(_pendingPrismScale.Value);
                 healthPrism.TargetScale = _pendingPrismScale.Value;
             }
@@ -467,10 +498,10 @@ namespace CosmicShore.Gameplay
         // ── Preview ───────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Pure preview of the surface walk - see <see cref="Flora.TryPreviewGrowth"/>. Mirrors
+        /// Pure preview of the plating - see <see cref="Flora.TryPreviewGrowth"/>. Mirrors
         /// <see cref="Grow"/> exactly, and unlike the other families it is EXACT rather than
         /// merely representative: this growth rule contains no randomness at all, so the icon a
-        /// player sees is the plant they will meet, site for site. The seed is consumed only to
+        /// player sees is the plant they will meet, prism for prism. The seed is consumed only to
         /// satisfy the contract.
         /// </summary>
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
@@ -478,32 +509,17 @@ namespace CosmicShore.Gameplay
             if (into == null || budget <= 0) return false;
 
             var lattice = MandelbulbLattice.For(ResolvePower(), latticePitch, escapeIterations, bailout);
-            var size = PlateSize();
+            var plates = lattice.Plating(Rules);
             float pitch = WorldPitch;
-            int bound = MaxSiteRadius;
+            float scale = ResolvePlateScale();
 
-            var claimed = new HashSet<Vector3Int>();
-            var frontier = new Queue<Vector3Int>();
-            var start = lattice.SeedSite(bound);
-            claimed.Add(start);
-            frontier.Enqueue(start);
-
-            while (frontier.Count > 0 && into.Count < budget)
+            int count = Mathf.Min(budget, plates.Count);
+            for (int i = 0; i < count; i++)
             {
-                var site = frontier.Dequeue();
-                into.Add(new SpawnPoint((Vector3)site * pitch, PlateRotation(lattice.Normal(site)), size));
-
-                foreach (var d in MandelbulbLattice.Neighbour26)
-                {
-                    var next = site + d;
-                    if (Mathf.Abs(next.x) > bound || Mathf.Abs(next.y) > bound ||
-                        Mathf.Abs(next.z) > bound) continue;
-                    if (!claimed.Add(next)) continue;
-                    if (!lattice.IsShellSite(next)) continue;
-                    frontier.Enqueue(next);
-                }
+                var plate = plates[i];
+                into.Add(new SpawnPoint(plate.Centre * pitch, PlateRotation(plate),
+                                        plate.Size * (pitch * scale)));
             }
-
             return into.Count > 0;
         }
     }

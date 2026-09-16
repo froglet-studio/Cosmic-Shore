@@ -22,9 +22,14 @@ if [ ! -f "$OUT/lattice.exe" ] || \
   printf '%s\n' "$HERE/Stubs.cs" "$HERE/Driver.cs" \
     "$ROOT/Assets/_Scripts/Controller/Environment/FloraAndFauna/MandelbulbLattice.cs" \
     | sed 's/^/"/;s/$/"/' > "$OUT/files.rsp"
+  # csc writes its diagnostics to STDOUT, and this script's stdout is a DATA channel - the JSON
+  # the driver prints. One warning from a rebuild would be prepended to it and the caller's JSON
+  # parse would fail naming nothing (it did: a self-test control that made a method return early
+  # produced CS0162 and the verifier reported "Expecting value: line 1 column 1"). Diagnostics go
+  # to stderr, where they are still visible and still fail the build via set -e.
   "$DOTNET" "$CSC" -nologo -langversion:9.0 -nostdlib -noconfig "@$OUT/refs.rsp" \
     -nowarn:CS1591,CS0067,CS0649,CS0414,CS1574,CS0169,CS8632,CS0660,CS0661 \
-    -target:exe -main:Driver -out:"$OUT/lattice.exe" "@$OUT/files.rsp"
+    -target:exe -main:Driver -out:"$OUT/lattice.exe" "@$OUT/files.rsp" 1>&2
   V=$(ls "$DOTNET_ROOT"/shared/Microsoft.NETCore.App | head -1)
   printf '{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"%s"}}}' "$V" \
     > "$OUT/lattice.runtimeconfig.json"
