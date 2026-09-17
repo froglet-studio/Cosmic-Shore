@@ -1,70 +1,83 @@
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Serpent scope's on-screen instrument: a <b>round eyepiece</b> carrying the magnified
-    /// view, a <b>reticle drawn at the sniper cone's true angular size</b> inside it, and the
-    /// <b>recharge ring</b> around its rim.
+    /// The Serpent scope's on-screen instrument: a <b>panel in the top left carrying the magnified
+    /// view</b>, a <b>reticle drawn at the sniper cone's true angular size</b> inside it, and the
+    /// <b>recharge ring</b> around that reticle.
     ///
-    /// <para><b>It is ONE object, and that is the point.</b> Round 3 drew the reticle over the
-    /// middle of the screen and the picture in a corner, because the middle of the screen WAS the
-    /// scope. Now the magnification lives in the window (<see cref="ScopePipView"/>) and the
-    /// flight view is left alone, so the reticle has to live where the magnified picture is or it
-    /// would be a measurement of a view nobody is looking through. Everything the scope says is
-    /// therefore said in one place the pilot is already looking at.</para>
+    /// <para><b>The surface is round 3's, verbatim, and that is the whole of round 7.</b> A
+    /// <c>RawImage</c> in a 16:9 rect at the top left — same component, same 16:9, same
+    /// half-screen-height size, same 16/220 margins — because that is the window the pilot was
+    /// actually seeing for three rounds. Round 4 was right to move the magnification into the
+    /// window and wrong to rebuild the window in the same pass: the surface it substituted (a
+    /// generated circular graphic) had never rendered, and rounds 5 and 6 were spent adopting URP
+    /// settings and hardening lifetimes on a panel that was not on screen to benefit from either.
+    /// <b>When one change both replaces a surface and re-points it, the pilot's report cannot say
+    /// which half broke</b> — and here it did not: all three rounds came back as the same four
+    /// words. <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 7.</para>
+    ///
+    /// <para><b>The reticle moved INTO the panel and stays there.</b> Round 3 drew it over the
+    /// middle of the screen because the middle of the screen was the scope. It is not any more, so
+    /// a reticle there would be a measurement of a view nobody is looking through. Everything the
+    /// scope says is therefore said inside the one rect the pilot is aiming with — which is also
+    /// what a real scope's reticle furniture looks like.</para>
     ///
     /// <para><b>The reticle is a MEASUREMENT, not decoration.</b> Its radius is the cone's own
     /// half-angle projected through the WINDOW's live vertical field of view
-    /// (<c>r = R · tan(halfAngle) / tan(fov/2)</c>, where <c>R</c> is the eyepiece's own radius) —
-    /// so it tracks the zoom exactly. Anything inside the ring is inside the shot. An authored
-    /// reticle sprite would be a claim about the weapon that stops being true the first time
-    /// either number moves.</para>
+    /// (<c>r = H · tan(halfAngle) / tan(fov/2)</c>, where <c>H</c> is half the panel's HEIGHT,
+    /// because a vertical field of view is what the panel's vertical extent subtends) — so it
+    /// tracks the zoom exactly. Anything inside the ring is inside the shot. An authored reticle
+    /// sprite would be a claim about the weapon that stops being true the first time either number
+    /// moves.</para>
     ///
     /// <para><b>The recharge ring is duplicated here on purpose.</b> The fleet's ability lockup
     /// carries it too — its clockwise veil now draws on a LOCKED card, which is what finally put
-    /// the Serpent's recharge on the HUD row at all — but a pilot reading the eyepiece is not
-    /// reading the bottom-right of the screen, and a sight that cannot say whether it is loaded is
-    /// not a sight.</para>
+    /// the Serpent's recharge on the HUD row at all — but a pilot reading the panel is not reading
+    /// the bottom-right of the screen, and a sight that cannot say whether it is loaded is not a
+    /// sight.</para>
     ///
-    /// <para><b>Generated, not authored.</b> One runtime canvas, four
-    /// <see cref="ScopeRingGraphic"/>s and one <see cref="ScopeDiscGraphic"/>; no sprites, no
-    /// prefab, no per-vessel wiring. It is built on first use by
-    /// <see cref="SniperScopeActionExecutor"/> for the LOCAL PILOT only and torn down with the
-    /// vessel.</para>
+    /// <para><b>Generated, not authored.</b> One runtime canvas, an opaque backing, a
+    /// <c>RawImage</c> and four <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no
+    /// per-vessel wiring. It is built on first use by <see cref="SniperScopeActionExecutor"/> for
+    /// the LOCAL PILOT only and torn down with the vessel.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SniperScopeOverlay : MonoBehaviour
     {
         const float ReadyFlashSeconds = 0.35f;
-        const float RimThickness = 4f;
-        const float ArcGapPixels = 10f;
         const float ArcThickness = 5f;
         const float RingThickness = 2f;
         const float DotRadius = 2.5f;
         const float DimAlpha = 0.3f;
         const float TrackAlpha = 0.22f;
-        const float RimAlpha = 0.9f;
 
-        // The eyepiece's DIAMETER as a fraction of SCREEN HEIGHT, not a pixel size: this canvas
-        // has no CanvasScaler (every other number in it is a real screen measurement), so a fixed
-        // window is a quarter of a phone screen and a postage stamp on a monitor.
-        const float WindowHeightFraction = 0.5f;
+        // The dark backing shows through as a FRAME around the picture, which is what makes the
+        // panel read as an instrument rather than as a hole in the screen.
+        const float BorderPixels = 3f;
 
-        // Clearance for the goal stack, which anchors at (16, -52) and runs up to three
-        // 48-unit rows (Tools/Build/author_goal_stack.py). Sized for the full three so a mode
-        // that authors secondary goals cannot land one behind this window. Plus the recharge
-        // ring, which stands outside the rim.
-        const float WindowTopMargin = 220f;
-        const float WindowLeftMargin = 16f;
+        // How far inside the picture's top and bottom edges the recharge ring sits.
+        const float ArcInsetPixels = 8f;
+
+        // The panel's HEIGHT as a fraction of SCREEN HEIGHT, not a pixel size: this canvas has no
+        // CanvasScaler (every other number in it is a real screen measurement), so a fixed panel is
+        // half a phone screen and a postage stamp on a monitor. Round 3's value.
+        const float PipHeightFraction = 0.5f;
+
+        // Clearance for the goal stack, which anchors at (16, -52) and runs up to three 48-unit
+        // rows (Tools/Build/author_goal_stack.py). Sized for the full three so a mode that authors
+        // secondary goals cannot land one behind this panel. Round 3's values.
+        const float PipTopMargin = 220f;
+        const float PipLeftMargin = 16f;
 
         Canvas _canvas;
-        RectTransform _window;
-        ScopeDiscGraphic _backing;
-        ScopeDiscGraphic _disc;
-        ScopeRingGraphic _rim;
+        RectTransform _pipRect;
+        Image _backing;
+        RawImage _pipSurface;
         ScopeRingGraphic _ring;
         ScopeRingGraphic _dot;
         ScopeRingGraphic _track;
@@ -85,7 +98,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("[SerpentScopeOverlay]");
             var overlay = go.AddComponent<SniperScopeOverlay>();
             overlay.Build();
-            // Hidden by the WINDOW, never by the canvas - see SetVisible.
+            // Hidden by the PANEL, never by the canvas - see SetVisible.
             overlay.SetVisible(false);
             return overlay;
         }
@@ -103,64 +116,62 @@ namespace CosmicShore.Gameplay
             // Deliberately NO GraphicRaycaster either - a hit target over the flight view would
             // eat presses meant for the world.
 
-            var windowGo = new GameObject("ScopeWindow", typeof(RectTransform));
-            windowGo.transform.SetParent(transform, false);
-            _window = windowGo.GetComponent<RectTransform>();
-            // TOP-LEFT, under the goal stack. Its PIVOT is the eyepiece's CENTRE, so every ring
-            // below is centred at zero in its frame and the whole instrument moves as one.
-            _window.anchorMin = new Vector2(0f, 1f);
-            _window.anchorMax = new Vector2(0f, 1f);
-            _window.pivot = new Vector2(0.5f, 0.5f);
-            _window.sizeDelta = Vector2.zero;
+            var pipGo = new GameObject("Pip", typeof(RectTransform));
+            pipGo.transform.SetParent(transform, false);
+            _pipRect = pipGo.GetComponent<RectTransform>();
+            // TOP-LEFT, pivoted on its own top-left corner, so the margins below are read straight
+            // off the screen edges with no size arithmetic in them. Round 3's rect exactly.
+            _pipRect.anchorMin = new Vector2(0f, 1f);
+            _pipRect.anchorMax = new Vector2(0f, 1f);
+            _pipRect.pivot = new Vector2(0f, 1f);
 
-            // The BACKING is drawn first, is opaque, and is on from the moment the scope is
-            // raised - so the eyepiece is an OBJECT on screen even before the first render lands
-            // and even when what it is pointed at is empty space. A window showing nothing and no
-            // window at all must not look the same, which is exactly how round 4's flat picture
-            // was reported: "i no longer saw the pip".
-            _backing = MakeDisc("Backing");
-            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.92f);
+            // The BACKING is opaque, is drawn first, and is on from the moment the scope is raised
+            // - so the panel is an OBJECT on screen before the first render lands and even when
+            // what it is pointed at is empty space. A window showing nothing and no window at all
+            // must not look the same. An Image with no sprite draws a solid quad in its colour,
+            // which is exactly what is wanted here (it is also the trap PipUI records, read the
+            // other way round).
+            var backingGo = new GameObject("Backing", typeof(RectTransform));
+            backingGo.transform.SetParent(_pipRect, false);
+            Stretch(backingGo.GetComponent<RectTransform>(), 0f);
+            _backing = backingGo.AddComponent<Image>();
+            _backing.raycastTarget = false;
+            _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.95f);
 
-            _disc = MakeDisc("Picture");
-            _disc.color = Color.white;   // the picture is the colour; this is a tint, not a wash
-            _disc.enabled = false;
+            var pictureGo = new GameObject("Picture", typeof(RectTransform));
+            pictureGo.transform.SetParent(_pipRect, false);
+            Stretch(pictureGo.GetComponent<RectTransform>(), BorderPixels);
+            _pipSurface = pictureGo.AddComponent<RawImage>();
+            _pipSurface.raycastTarget = false;
+            _pipSurface.enabled = false;
 
-            // Order matters: rim, then the recharge bed, then the arc, then the reticle on top -
-            // UGUI draws siblings in order and the reticle is the thing being aimed with.
-            _rim = MakeRing("Rim", 120f, RimThickness);
+            // Order matters: the recharge bed, then the arc, then the reticle on top - UGUI draws
+            // siblings in order and the reticle is the thing being aimed with.
             _track = MakeRing("ChargeTrack", 130f, ArcThickness);
             _arc = MakeRing("ChargeArc", 130f, ArcThickness);
             _ring = MakeRing("Reticle", 40f, RingThickness);
             _dot = MakeRing("ReticleDot", DotRadius, DotRadius * 2f);
 
-            _pip = new ScopePipView(_disc);
+            _pip = new ScopePipView(_pipSurface);
+        }
+
+        /// <summary>Fill the parent's rect, inset by <paramref name="inset"/> on every side.</summary>
+        static void Stretch(RectTransform rect, float inset)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = new Vector2(inset, inset);
+            rect.offsetMax = new Vector2(-inset, -inset);
         }
 
         /// <summary>
-        /// A disc filling the window's rect. Two of them: the opaque backing and the picture on
-        /// top of it. They are CHILDREN rather than a graphic on the window itself because UGUI
-        /// draws a parent before its children, which gives exactly one slot in the order - and the
-        /// eyepiece needs two before the rings.
+        /// A ring centred on the PANEL. Anchored at the middle of the parent rect, which is a
+        /// fraction of that rect and so is independent of the panel's own top-left pivot.
         /// </summary>
-        ScopeDiscGraphic MakeDisc(string name)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(_window, false);
-            var rect = go.GetComponent<RectTransform>();
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-
-            var disc = go.AddComponent<ScopeDiscGraphic>();
-            disc.raycastTarget = false;
-            return disc;
-        }
-
         ScopeRingGraphic MakeRing(string name, float radius, float thickness)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(_window, false);
+            go.transform.SetParent(_pipRect, false);
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -191,8 +202,8 @@ namespace CosmicShore.Gameplay
         {
             SetVisible(true);
 
-            float windowRadius = LayOutWindow();
-            float radius = ReticleRadiusPixels(coneHalfAngleDegrees, fieldOfView, windowRadius);
+            float halfHeight = LayOutPip();
+            float radius = ReticleRadiusPixels(coneHalfAngleDegrees, fieldOfView, halfHeight);
             bool ready = cooldown01 <= 0.0001f;
 
             // The instant it comes back: a one-shot flash, so a pilot watching the target rather
@@ -201,11 +212,6 @@ namespace CosmicShore.Gameplay
             _wasReady = ready;
 
             float flash01 = Mathf.Clamp01((_readyFlashUntil - Time.unscaledTime) / ReadyFlashSeconds);
-
-            _rim.Radius = windowRadius;
-            _rim.Thickness = RimThickness;
-            _rim.Sweep01 = 1f;
-            _rim.color = WithAlpha(colour, RimAlpha);
 
             _ring.Radius = radius;
             _ring.Thickness = RingThickness;
@@ -217,13 +223,16 @@ namespace CosmicShore.Gameplay
             _dot.Sweep01 = 1f;
             _dot.color = WithAlpha(colour, ready ? 1f : DimAlpha * 0.7f);
 
-            float arcRadius = windowRadius + ArcGapPixels;
+            // Inside the picture's top and bottom edges: the panel is wider than it is tall, so a
+            // ring that cleared its full extent would be a circle around a wide rect and most of
+            // it would be off in the flight view.
+            float arcRadius = Mathf.Max(radius + ArcThickness * 2f,
+                                        halfHeight - BorderPixels - ArcInsetPixels);
 
-            // The BED: always drawn, always a full ring, so "recharging" reads as a ring
-            // FILLING rather than as one appearing out of nowhere - and so the readout is
-            // present on screen at 0%, which is the frame the pilot most wants it. Same rule the
-            // goal stack's progress bar records (Docs/GAME_MODE_TOPBAR.md): a progress bar needs
-            // a bed.
+            // The BED: always drawn, always a full ring, so "recharging" reads as a ring FILLING
+            // rather than as one appearing out of nowhere - and so the readout is present on screen
+            // at 0%, which is the frame the pilot most wants it. Same rule the goal stack's
+            // progress bar records (Docs/GAME_MODE_TOPBAR.md): a progress bar needs a bed.
             _track.Radius = arcRadius;
             _track.Thickness = ArcThickness;
             _track.Sweep01 = 1f;
@@ -247,49 +256,39 @@ namespace CosmicShore.Gameplay
 
             _pip.Tick(vessel, fieldOfView);
 
-            SelfCheck(windowRadius);
+            SelfCheck(halfHeight);
         }
 
         /// <summary>
-        /// Size and place the eyepiece against the LIVE screen, every frame, and hand back its
-        /// radius. It is a fraction of screen height rather than an authored pixel size because
-        /// this canvas deliberately has no <c>CanvasScaler</c> - every other number in it is a
-        /// real screen measurement - so a fixed rect would be a different fraction of the display
-        /// on every device and would not follow a resize.
+        /// Size and place the panel against the LIVE screen, every frame, and hand back half its
+        /// height. It is a fraction of screen height rather than an authored pixel size because
+        /// this canvas deliberately has no <c>CanvasScaler</c> - every other number in it is a real
+        /// screen measurement - so a fixed rect would be a different fraction of the display on
+        /// every device and would not follow a resize. Round 3's arithmetic exactly.
         /// </summary>
-        float LayOutWindow()
+        float LayOutPip()
         {
-            float diameter = Mathf.Max(120f, Screen.height * WindowHeightFraction);
-            float radius = diameter * 0.5f;
-
-            // The rect is the window's own square; its pivot is the centre, so the anchored
-            // position is the centre too and the margins have to clear the radius plus whatever
-            // the recharge ring stands outside it by.
-            float outer = radius + ArcGapPixels + ArcThickness;
-            _window.sizeDelta = new Vector2(diameter, diameter);
-            _window.anchoredPosition = new Vector2(WindowLeftMargin + outer,
-                                                   -(WindowTopMargin + outer));
-
-            _backing.Radius = radius;
-            _disc.Radius = radius;
-            return radius;
+            float height = Mathf.Max(90f, Screen.height * PipHeightFraction);
+            _pipRect.sizeDelta = new Vector2(height * 16f / 9f, height);
+            _pipRect.anchoredPosition = new Vector2(PipLeftMargin, -PipTopMargin);
+            return height * 0.5f;
         }
 
         /// <summary>
-        /// The cone's half-angle in pixels INSIDE the eyepiece: the same projection the screen
-        /// version used, with the window's radius standing in for half the screen height and the
+        /// The cone's half-angle in pixels INSIDE the panel: the same projection the screen version
+        /// used, with half the panel's HEIGHT standing in for half the screen height and the
         /// window's own field of view standing in for the camera's.
         /// </summary>
         static float ReticleRadiusPixels(float coneHalfAngleDegrees, float fieldOfView,
-                                         float windowRadius)
+                                         float halfHeight)
         {
             float halfFov = Mathf.Clamp(fieldOfView * 0.5f, 0.5f, 89f) * Mathf.Deg2Rad;
             float half = Mathf.Max(0.01f, coneHalfAngleDegrees) * Mathf.Deg2Rad;
 
-            float pixels = windowRadius * Mathf.Tan(half) / Mathf.Tan(halfFov);
+            float pixels = halfHeight * Mathf.Tan(half) / Mathf.Tan(halfFov);
             // Floored so the ring is still a ring at the wide end of the dial, and capped so a
-            // badly-authored cone cannot draw a reticle that fills the eyepiece.
-            return Mathf.Clamp(pixels, 6f, windowRadius * 0.8f);
+            // badly-authored cone cannot draw a reticle that fills the panel.
+            return Mathf.Clamp(pixels, 6f, halfHeight * 0.7f);
         }
 
         static Color WithAlpha(Color c, float a) { c.a = a; return c; }
@@ -301,7 +300,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Show or hide the instrument by toggling the WINDOW GameObject, and never by toggling
+        /// Show or hide the instrument by toggling the PANEL GameObject, and never by toggling
         /// <c>Canvas.enabled</c>.
         ///
         /// <para><b>The two are not interchangeable, and only one of them recovers.</b> A UGUI
@@ -322,26 +321,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void SetVisible(bool visible)
         {
-            if (_window != null) _window.gameObject.SetActive(visible);
+            if (_pipRect != null) _pipRect.gameObject.SetActive(visible);
         }
 
         /// <summary>
-        /// Check ONCE, a couple of frames in, that the instrument this class just drew can
-        /// actually be seen — and warn if not.
+        /// Check ONCE, a couple of frames in, that the instrument this class just drew can actually
+        /// be seen — and warn if not.
         ///
         /// <para>It exists because everything below is silent when it fails. A disabled canvas, a
-        /// graphic with no cached canvas, a zero radius, a transparent backing and a window parked
-        /// off the edge of the screen all produce the identical report from a pilot: nothing is
-        /// there. None of them throws, and none of them is visible in a prefab or a scene, because
-        /// the whole instrument is generated at runtime.</para>
+        /// graphic with no cached canvas, a zero size, a transparent backing and a panel parked off
+        /// the edge of the screen all produce the identical report from a pilot: nothing is there.
+        /// None of them throws, and none of them is visible in a prefab or a scene, because the
+        /// whole instrument is generated at runtime.</para>
         ///
-        /// <para>It runs on the second tick rather than the first so the canvas update pass has
-        /// had a frame to build the meshes, and it never runs again: these are construction facts,
-        /// not per-frame ones, so a repeat check would be per-frame work in exchange for nothing.
-        /// If it passes, the one line it emits goes on a channel — the fault cases are the loud
+        /// <para>It runs on the second tick rather than the first so the canvas update pass has had
+        /// a frame to build the meshes, and it never runs again: these are construction facts, not
+        /// per-frame ones, so a repeat check would be per-frame work in exchange for nothing. If it
+        /// passes, the one line it emits goes on a channel — the fault cases are the loud
         /// ones.</para>
         /// </summary>
-        void SelfCheck(float radius)
+        void SelfCheck(float halfHeight)
         {
             if (_selfChecked) return;
             if (++_ticks < 2) return;
@@ -360,44 +359,46 @@ namespace CosmicShore.Gameplay
             // build-time size. Deliberately IsActive() and not the `canvas` PROPERTY: that getter
             // re-caches on read, so asking it would heal the very thing being tested and report
             // clean. A standing guard against the visibility toggle regressing to Canvas.enabled.
-            if (_rim != null && !_rim.IsActive())
+            if (_backing != null && !_backing.IsActive())
             {
                 SniperScopeDiagnostics.Unusable(
-                    "its graphics report IsActive() false with the window up, so Graphic.m_Canvas " +
+                    "its graphics report IsActive() false with the panel up, so Graphic.m_Canvas " +
                     "is stale and every mesh rebuild is a silent no-op - the rings are frozen at " +
                     "whatever size they were built with. Something is toggling Canvas.enabled " +
                     "under them; see SniperScopeOverlay.SetVisible.");
                 return;
             }
 
-            if (radius <= 1f)
+            if (halfHeight <= 1f)
             {
                 SniperScopeDiagnostics.Unusable(
-                    $"its eyepiece radius resolved to {radius:0.##} px. Screen.height reads " +
+                    $"its panel resolved to {halfHeight * 2f:0.##} px tall. Screen.height reads " +
                     $"{Screen.height}.");
                 return;
             }
 
             if (_backing != null && _backing.color.a <= 0.01f)
             {
-                SniperScopeDiagnostics.Unusable("its backing disc is fully transparent.");
+                SniperScopeDiagnostics.Unusable("its backing is fully transparent.");
                 return;
             }
 
-            // The window's pivot is the eyepiece's CENTRE, so this is the centre in screen
+            // The panel's pivot is its TOP-LEFT corner, so this is that corner in screen
             // coordinates measured from the bottom-left - which is what the reporter tool prints.
-            Vector2 centre = new(_window.anchoredPosition.x,
-                                 Screen.height + _window.anchoredPosition.y);
-            if (centre.x + radius < 0f || centre.x - radius > Screen.width ||
-                centre.y + radius < 0f || centre.y - radius > Screen.height)
+            Vector2 size = _pipRect.sizeDelta;
+            Vector2 topLeft = new(_pipRect.anchoredPosition.x,
+                                  Screen.height + _pipRect.anchoredPosition.y);
+            Vector2 centre = new(topLeft.x + size.x * 0.5f, topLeft.y - size.y * 0.5f);
+            if (topLeft.x > Screen.width || topLeft.x + size.x < 0f ||
+                topLeft.y < 0f || topLeft.y - size.y > Screen.height)
             {
                 SniperScopeDiagnostics.Unusable(
-                    $"its eyepiece is off screen: centre {centre}, radius {radius:0.#}, screen " +
+                    $"its panel is off screen: top-left {topLeft}, size {size}, screen " +
                     $"{Screen.width}x{Screen.height}.");
                 return;
             }
 
-            SniperScopeDiagnostics.Drawing(centre, radius, new Vector2(Screen.width, Screen.height));
+            SniperScopeDiagnostics.Drawing(centre, halfHeight, new Vector2(Screen.width, Screen.height));
         }
 
         void OnDestroy() => _pip?.Dispose();

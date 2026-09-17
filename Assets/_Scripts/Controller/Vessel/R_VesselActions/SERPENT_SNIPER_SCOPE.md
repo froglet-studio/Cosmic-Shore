@@ -77,9 +77,10 @@ aimed with.
   not serve both a Serpent and a Squirrel.
 - **It aims down the same vector the shot is cast along** (`vessel.forward`), so the reticle is a
   promise rather than a decoration — by construction, not by tuning.
-- **The picture is SQUARE** (1:1 render target, camera aspect 1) because the window is round, so
-  `ScopeDiscGraphic` samples the unit circle straight onto `[0,1]²` with nothing squashed and
-  nothing cropped away.
+- **The picture is 16:9**, matching the panel it is drawn into, so nothing is squashed and nothing
+  is cropped away. A camera targeting a RenderTexture takes its aspect from that texture, so there
+  is nothing else to keep in step. (Round 4 made it square for a round window and round 7 put it
+  back — see round 7 for why the surface returned to round 3's.)
 - **It draws the way the GAME'S camera draws**, adopted through `OffscreenCameraSetup` — HDR, the
   volume layer mask and the post-processing stack. That is not a quality setting here: the world is
   authored HDR-emissive against the gameplay volume's tonemapper, so a camera on URP's defaults
@@ -226,7 +227,7 @@ deflection **before** Space 5.
 | `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen |
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
 | `_Scripts/Utility/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
-| `_Scripts/UI/View/ScopeDiscGraphic.cs` | **new** (round 4) — the generated circular picture |
+| `_Scripts/UI/View/ScopeDiscGraphic.cs` | **added round 4, DELETED round 7** — the generated circular picture. Replaced round 3's `RawImage` and was never seen on screen; retired so two windows cannot compete for the next report |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
 | `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image |
 | `_Scripts/Utility/OffscreenCameraSetup.cs` | **new** (round 5) — the ONE place a runtime off-screen camera adopts the game camera's framing and image. Extracted after the same finding had been written down at three other windows |
@@ -441,9 +442,16 @@ magnified picture.
 existed to switch off a bleed that no longer exists, and re-pointing it at more magnification keeps
 Space owning exactly one thing on this hull.
 
-### 3. The window is circular
+### 3. The window is circular — **RETIRED in round 7**
 
-`ScopeDiscGraphic` is a new generated `MaskableGraphic`: a triangle-fan disc that samples a texture,
+> This subsection is kept as the record of a change that was reverted. The circular surface below
+> replaced round 3's `RawImage` in the same pass that re-pointed the camera, and **it never rendered**
+> — which is what rounds 4, 5 and 6 were all reporting. Round 7 restored round 3's surface verbatim
+> and kept only the camera. The panel is a 16:9 `RawImage` again and `ScopeDiscGraphic` is deleted.
+> The reticle-projection formula at the end of this subsection survives, with half the panel's
+> HEIGHT standing in for `R`.
+
+`ScopeDiscGraphic` was a new generated `MaskableGraphic`: a triangle-fan disc that samples a texture,
 with UVs taken from the unit circle straight onto `[0,1]²` and a zero-alpha feather ring for
 antialiasing.
 
@@ -669,6 +677,91 @@ Instead of four words, one of these:
 - or nothing at all in either place, which now means `Update` itself is not running and the
   question moves to the input binding.
 
+## Round 7 — "you were showing the pip fine ... there has been no pip since we tried to swap those"
+
+> *"i still don't see the pip. you were showing the pip fine when you had the vessel view in the pip
+> and the zoom covering the whole screen, but there has been no pip since we have tried to swap
+> those. this state should be easier since it is just the same pip of the same size in the same
+> place showing the zoomed in camera."*
+
+That is the answer, and it came from the pilot rather than from any of the three rounds spent
+looking for it. **The window was on screen for rounds 1–3 and has not been on screen since round 4**
+— and round 4 did not re-point it, it *replaced* it.
+
+### The finding
+
+Round 4 was one change that did two things:
+
+| | round 3 (seen) | round 4–6 (never seen) |
+|---|---|---|
+| surface | `RawImage` | generated `ScopeDiscGraphic` (a circular `MaskableGraphic`) |
+| rect | `Pip`, a direct child, pivot `(0, 1)`, 16:9 | `ScopeWindow` → `Backing` + `Picture`, pivot `(0.5, 0.5)`, square |
+| render target | 16:9 | square, `Create()`d |
+| camera subject | the chase shot, self-resolved | the eye past the nose, trigger FOV |
+
+Only the last row was the design. The other three were incidental, and one of them was the window.
+
+**The general rule: when one change replaces a surface AND re-points it, the report cannot tell you
+which half broke.** The pilot's report is the same either way — *"I don't see it"* — so the
+inversion and the rebuild had to be separable to be testable, and they were not. Rounds 5 and 6 each
+found a real defect (URP camera defaults; a `Canvas.enabled` visibility toggle that freezes UGUI
+mesh rebuilds, plus two lifetime hardenings), each shipped it, and each changed nothing on screen,
+because none of them was about the surface. **Three correct fixes that buy no part of the complaint
+is the signal that the thing being fixed is not the thing that is broken** — the same rule
+`SCARAB.md §3.7` records from the other direction, where successive correct fixes each bought a
+*diminishing* amount of one complaint.
+
+### What round 7 does
+
+Restores round 3's surface **verbatim** and keeps round 4's camera. Nothing else moves:
+
+- `ScopePipView` takes a `RawImage` again and renders 16:9 (`RenderHeight` 540, up from round 3's
+  360 — the same panel now carries a *magnified* picture, and one that cannot be read is the same as
+  no picture). A camera targeting a RenderTexture takes its aspect from that texture, so there is
+  nothing else to keep in step.
+- `SniperScopeOverlay`'s panel is round 3's rect exactly: a child named `Pip`, anchors and pivot
+  `(0, 1)`, `sizeDelta = (h · 16/9, h)` with `h = max(90, Screen.height × 0.5)`, at
+  `(16, −220)`.
+- The eye, the trigger-driven field of view, the hull measurement, the URP adoption, the
+  GameObject-based visibility toggle and the diagnostics all stay — they are rounds 4–6's, they are
+  correct, and now they are attached to a surface that draws.
+
+Two things kept from round 4 because they answer real problems rather than being part of the
+substitution:
+
+- **The reticle stays INSIDE the panel.** Round 3 drew it at screen centre because the middle of the
+  screen *was* the scope. It is not any more, so a reticle there would measure a view nobody is
+  looking through. It is projected against **half the panel's HEIGHT**, because a vertical field of
+  view is what the panel's vertical extent subtends.
+- **The backing stays.** A plain `Image` with no sprite draws a solid quad in its colour — the exact
+  behaviour `PipUI.SilenceUntexturedGraphics` exists to *suppress* elsewhere, wanted here — so the
+  panel is an object on screen before the first render lands and when it is pointed at empty space.
+  It is inset by 3 px behind the picture, so it also reads as the panel's frame.
+
+The recharge ring moved with the reticle: concentric with it, just inside the picture's top and
+bottom edges. A ring clearing the panel's *full* extent would be a circle around a 16:9 rect with
+most of itself out in the flight view.
+
+### What was retired
+
+`ScopeDiscGraphic` is **deleted**, with its `.meta`. It was referenced by nothing but this scope (no
+prefab, scene or asset carries its guid — checked), and CLAUDE.md's rule is explicit: an
+unreferenced subsystem is eventually mistaken for a live feature. **It is not deleted because it was
+proved wrong** — reading it produced no defect, and the round-4 hierarchy above it has candidate
+faults of its own — it is deleted because the surface it replaced is the one the pilot has seen, and
+carrying two windows would leave the next round asking the same unanswerable question. `ScopeRingGraphic`
+stays: it is the rings, and the rings drew in round 3.
+
+### What is still not known
+
+**Why the disc did not render.** The geometry, the winding (UGUI draws `Cull Off`), the UV
+mapping, the white-texture fallback and the rect arithmetic all read as correct, and the round-6
+self-check would have named a disabled canvas, a stale `m_Canvas`, a zero radius, a transparent
+backing or an off-screen window. So either the fault is in something none of those cover, or the
+self-check never ran (which is itself reported, now, on the `[SerpentScope]` channel). That is
+recorded rather than resolved: the pilot asked for the window back, not for a diagnosis, and the
+restored surface is the one that has been on screen.
+
 ## Drive-by corrections
 
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
@@ -779,11 +872,11 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     Fire at mass — expect the beam to stop at the kill and a flare there. Fire twice in quick
     succession (Charge 10) and confirm the second beam does not start from where the first ended,
     which is the pooled-instance reset.
-16. **The window:** confirm it is a **circle**, not a rounded rectangle and not a squashed one —
-    a straight edge anywhere means the disc's UVs or the render target's aspect drifted. Confirm
-    **no UI is drawn inside it** and no navy rectangle anywhere. Release and it must disappear.
-    Swap hulls while scoped and confirm no stray camera or render texture is left behind (check the
-    hierarchy for `[SerpentScopeCamera]`).
+16. **The window:** confirm it is a **16:9 panel in the top left** with a thin dark frame, and
+    that the picture inside it is not squashed or stretched — round mass must read round. (Round 4
+    made this a circle; round 7 put the panel back.) Release and it must disappear. Swap hulls while
+    scoped and confirm no stray camera or render texture is left behind (check the hierarchy for
+    `[SerpentScopeCamera]`).
 17. **The ability card (round 4).** Fire, then look at the bottom-right ability row: the **Charge**
     card is LOCKED (a dashed mark, no icon) and its **cooldown veil must now sweep clockwise over
     it** for ~12 s. Before round 4 it drew nothing. Check it works with the scope DOWN as well —
@@ -794,10 +887,10 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     beside it: colours, bloom and brightness must **match**. A flat, grey, bloom-free picture means
     the camera is not inside the gameplay volume — check `OffscreenCameraSetup.AdoptGameCameraImage`
     ran and that `Camera.main` existed when the window was built (it warns once if it did not).
-19. **The eyepiece is visible with NOTHING in it (round 5).** Point at empty space and scope. You
-    must still plainly see a dark circular window with a bright rim — that is the backing disc, and
-    it is what makes "pointed at nothing" distinguishable from "no window". If the window is only
-    findable when something is in front of it, the backing is not drawing.
+19. **The panel is visible with NOTHING in it (round 5).** Point at empty space and scope. You must
+    still plainly see a dark panel with its frame — that is the backing, and it is what makes
+    "pointed at nothing" distinguishable from "no window". If the panel is only findable when
+    something is in front of it, the backing is not drawing.
 20. **A hull with its art off (round 5, optional).** If a hull can be caught with its renderers
     disabled, confirm the console warns *once* by name about a zero hull radius and the window still
     shows the world rather than the inside of the ship.
@@ -829,6 +922,19 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     just-past-the-deadzone to fully down. The inner ring must **shrink continuously**, and the
     recharge arc must fill smoothly after a shot. Both were frozen at their first-frame values by
     the `Canvas.enabled` hazard, which looks like a working instrument until you watch it move.
+27. **START HERE (round 7): the panel is on screen at all.** Fly a Serpent, hold LT. A dark 16:9
+    panel roughly half the screen tall must appear in the top left, under the goal stack, whether or
+    not anything is in front of the ship. This is the whole of round 7 — if it is still absent, the
+    fault is NOT the surface (this one shipped and was seen for three rounds) and steps 22–25 are the
+    order to work in.
+28. **The picture is the MAGNIFIED forward view (round 7).** Roll the trigger down: the panel must
+    zoom, and it must show what is **ahead of the nose**, not the ship from behind. Seeing your own
+    hull from behind means `ScopePipView.PoseCamera` regressed to round 3's chase pose. Your flight
+    view must not zoom at all.
+29. **The reticle and recharge ring are INSIDE the panel (round 7).** Nothing at screen centre; the
+    reticle ring, its dot, and the recharge bed and arc all concentric inside the picture. Roll the
+    trigger and the reticle must shrink; fire and the arc must fill. If any of them is at screen
+    centre, `MakeRing`'s parent regressed.
 
 ## Follow-ups
 

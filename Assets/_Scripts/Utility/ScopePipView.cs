@@ -1,20 +1,24 @@
-using CosmicShore.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The Serpent scope's <b>window</b>: a magnified view down the vessel's own nose, drawn into
-    /// a round eyepiece in the corner of the screen while the pilot keeps flying with their
-    /// ordinary chase view.
+    /// The Serpent scope's <b>window</b>: a magnified view down the vessel's own nose, drawn into a
+    /// panel in the corner of the screen while the pilot keeps flying with their ordinary chase
+    /// view.
     ///
-    /// <para><b>The inversion is the whole design.</b> The first cut did the obvious thing — take
-    /// the gameplay camera into the cockpit and narrow its field of view — and it read as
-    /// nauseating, because a magnified view is a lever on every motion that reaches it: a 22°
-    /// scope multiplies the pilot's own turn, the vessel's roll and the camera's own settle by the
-    /// same ~4× it multiplies the target. Putting the magnification in a WINDOW leaves the flight
-    /// view at 1× where the pilot reads their motion, and confines the lever to the picture they
-    /// are aiming with. <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4.</para>
+    /// <para><b>The inversion is the design; the SURFACE is not part of it.</b> Round 4 moved the
+    /// magnification out of the flight camera and into this window — which was right, and read as
+    /// right — and in the same pass it replaced the window's <c>RawImage</c> with a generated
+    /// circular <c>MaskableGraphic</c>. Rounds 4, 5 and 6 were then spent debugging a surface that
+    /// had never rendered, while the one that had was sitting in the history: the pilot's report
+    /// across all three was the same four words, <i>"i no longer saw the pip"</i>, and the answer
+    /// was that the window they had been seeing for three rounds was a `RawImage` in a 16:9 rect.
+    /// So the surface, its size and its place are round 3's verbatim and only the CAMERA is round
+    /// 4's. <b>When a change replaces a working surface and re-points it in the same pass, the
+    /// report cannot tell you which half broke — so change one.</b>
+    /// <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 7.</para>
     ///
     /// <para><b>It is NOT a second gameplay camera</b>, which the platform forbids for four
     /// concrete reasons (Docs/REAR_VIEW.md §3): the speed tunnel resolves <c>CameraManager</c>'s
@@ -31,38 +35,37 @@ namespace CosmicShore.Utility
     /// <para><b>It draws the way the GAME'S camera draws, and that is not a quality setting.</b>
     /// A bare <c>AddComponent&lt;Camera&gt;</c> comes up with URP's defaults — no post-processing,
     /// no volume layer mask, SDR — and this world is authored HDR-emissive against the gameplay
-    /// volume's tonemapper, so an un-adopted camera renders a flat, near-black picture. That is
-    /// exactly how this window shipped and exactly how it was reported: <i>"I no longer saw the
-    /// pip."</i> It only surfaced at round 5 because round 3's window framed the pilot's own lit
-    /// HULL, which is unmistakable even rendered wrong, while this one frames open space, where
-    /// the whole picture IS the skybox and the volume. Adopted through
-    /// <see cref="OffscreenCameraSetup"/>, which exists because the same finding had already been
-    /// written down at three other windows. <b>A picture that renders wrong and a picture that
-    /// does not render are the same report.</b></para>
+    /// volume's tonemapper, so an un-adopted camera renders a flat, near-black picture. Round 3's
+    /// window declined post-processing and got away with it because it framed the pilot's own lit
+    /// HULL, which is unmistakable even rendered wrong; this one frames open space, where the whole
+    /// picture IS the skybox and the volume. Adopted through <see cref="OffscreenCameraSetup"/>,
+    /// which exists because the same finding had already been written down at three other windows.
+    /// <b>A picture that renders wrong and a picture that does not render are the same
+    /// report.</b></para>
     ///
     /// <para><b>The cost is real and is stated rather than hidden.</b> Unlike the connecting
     /// panel's preview — which stands the gameplay camera DOWN because the panel covers the screen
-    /// — this one is a genuine SECOND render of the world, because the first one is what the
-    /// player is flying with. So it is paid everywhere EXCEPT the tonemapper: a small square
-    /// render target, no shadows, no anti-aliasing, a capped refresh rate, and a lifetime of
-    /// exactly as long as the trigger is held. It is off the moment the scope drops.</para>
+    /// — this one is a genuine SECOND render of the world, because the first one is what the player
+    /// is flying with. So it is paid everywhere EXCEPT the tonemapper: a modest render target, no
+    /// shadows, no anti-aliasing, a capped refresh rate, and a lifetime of exactly as long as the
+    /// trigger is held. It is off the moment the scope drops.</para>
     ///
     /// <para><b>The eye is MEASURED, not authored</b> — a multiple of the vessel's own
     /// circumscribing hull radius (<see cref="PrismOcclusionCorridor.MeasureCircumscribedRadius"/>,
-    /// the same rotation-invariant hull-only measurement the occlusion corridor sizes itself
-    /// from), so the camera sits just clear of its own geometry on a hull of any size rather than
-    /// at a constant that is inside one ship and far ahead of another. It aims along the vessel's
-    /// own forward, which is <b>the same vector the sniper's cone is cast along</b>
+    /// the same rotation-invariant hull-only measurement the occlusion corridor sizes itself from),
+    /// so the camera sits just clear of its own geometry on a hull of any size rather than at a
+    /// constant that is inside one ship and far ahead of another. It aims along the vessel's own
+    /// forward, which is <b>the same vector the sniper's cone is cast along</b>
     /// (<c>SniperShotActionExecutor.ResolveShot</c>) — so the shot lands where the reticle is by
     /// construction rather than by tuning.</para>
     ///
-    /// <para><b>The picture is SQUARE</b>, because the window is round: the render target is 1:1
-    /// and the camera therefore renders at aspect 1, so <see cref="ScopeDiscGraphic"/> can sample
-    /// the unit circle straight onto [0,1]² with nothing squashed and nothing thrown away.</para>
+    /// <para><b>The picture is 16:9</b>, matching the panel it is drawn into, so nothing is
+    /// squashed and nothing is thrown away. A camera targeting a RenderTexture takes its aspect
+    /// from that texture, so there is nothing else to keep in step.</para>
     /// </summary>
     public sealed class ScopePipView
     {
-        readonly ScopeDiscGraphic _surface;
+        readonly RawImage _surface;
 
         Camera _camera;
         RenderTexture _texture;
@@ -85,17 +88,17 @@ namespace CosmicShore.Utility
         const float MinimumEyeForward = 2f;
 
         /// <summary>
-        /// Render size in pixels, square. Small on purpose — see the class note on cost — but it
-        /// has to track the WINDOW: an eyepiece that is a quarter of the screen tall and is fed a
-        /// 216px texture is visibly soft, and a magnified picture that cannot be read is the same
-        /// as no picture.
+        /// Render HEIGHT in pixels; the width follows at 16:9. Round 3 ran 360 and read fine for a
+        /// chase shot, but this window is magnified and half the screen tall, and a magnified
+        /// picture that cannot be read is the same as no picture — so it is raised rather than
+        /// left at a value chosen for a different subject.
         /// </summary>
-        public int RenderSize = 512;
+        public int RenderHeight = 540;
 
         /// <summary>How often the window refreshes, in Hz. Capped for the same reason.</summary>
         public float RefreshHz = 30f;
 
-        public ScopePipView(ScopeDiscGraphic surface) => _surface = surface;
+        public ScopePipView(RawImage surface) => _surface = surface;
 
         public bool Visible => _surface != null && _surface.enabled;
 
@@ -112,11 +115,8 @@ namespace CosmicShore.Utility
             if (vessel == null) { Hide(); return; }
             if (!EnsureCamera()) { Hide(); return; }
 
-            // ENABLED first, then bound: SetMaterialDirty no-ops on an inactive Graphic, so a
-            // texture written while the disc is off would rely on OnEnable's SetAllDirty to pick
-            // it up. It does — and depending on that ordering is a hazard with no upside.
+            _surface.texture = _texture;
             _surface.enabled = true;
-            _surface.Source = _texture;
 
             PoseCamera(vessel, fieldOfView);
 
@@ -206,8 +206,8 @@ namespace CosmicShore.Utility
 
             if (_texture == null)
             {
-                int size = Mathf.Clamp(RenderSize, 128, 1024);
-                _texture = new RenderTexture(size, size, 16)
+                int height = Mathf.Clamp(RenderHeight, 180, 1080);
+                _texture = new RenderTexture(Mathf.RoundToInt(height * 16f / 9f), height, 16)
                 {
                     name = "SerpentScopeRT",
                     antiAliasing = 1,
@@ -215,7 +215,7 @@ namespace CosmicShore.Utility
                     useMipMap = false,
                 };
                 // Created outright rather than left to first use: the surface binds this texture
-                // in the same frame, and a canvas sampling an uncreated target draws nothing.
+                // in the same frame, and a RawImage sampling an uncreated target draws nothing.
                 _texture.Create();
             }
 

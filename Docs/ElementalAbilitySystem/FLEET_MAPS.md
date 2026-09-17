@@ -318,8 +318,8 @@ use, the eye MEASURED off the hull radius — is **deleted**, and
 feature. The reason is one finding: *a magnified view is a lever on every motion that reaches it*,
 so magnifying the camera the pilot FLIES with multiplies their own turn, the hull's roll and the
 speed tunnel's narrowing by the same factor it multiplies the target, and it read as nauseating.
-The magnification now lives in a round window beside the flight view (`ScopePipView` +
-`ScopeDiscGraphic`, the `ConnectingArenaPreview` shape), and the zoom is a pure function of the
+The magnification now lives in a panel beside the flight view (`ScopePipView`, the
+`ConnectingArenaPreview` shape), and the zoom is a pure function of the
 trigger's own depth — which is also why **Space 5 was re-cut from Steady Eye to Deep Focus**: the
 old upgrade existed to switch off a stick-driven zoom bleed that no longer exists. Rule 21's test
 sharpens with it: an ability earns the FOV surface only when magnifying the FLIGHT VIEW is the
