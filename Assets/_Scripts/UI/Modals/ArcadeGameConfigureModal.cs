@@ -565,14 +565,24 @@ namespace CosmicShore.UI
         /// <summary>
         /// Re-place the bots the host launched this card with last time, and re-widen the domain
         /// count to what they launched with - the host half of <see cref="LaunchPreference"/>.
-        /// Host only, never for the weekly challenge (its terms are pinned), and every value is
+        /// Host only, never for the weekly challenge (its terms are pinned), never while the
+        /// FTUE quest funnel is shaping this card (same reason - see below), and every value is
         /// re-clamped against the card and the party on the ground: a party that grew since
         /// gets fewer of its bots back, a prefix the seat count cannot stretch to is clamped the
         /// way a live placement is.
+        ///
+        /// <para>The funnel guard is not optional. This runs AFTER the card-open pin that
+        /// <see cref="QuestArcadeConstraints"/> applies to the seat and domain counts, so without
+        /// it a remembered roster silently re-places bots and re-widens the domain count over an
+        /// authored tutorial's terms - one authority accepting an input and a later one
+        /// overriding it. <see cref="QuestArcadeConstraints.AppliesTo"/> resolves through
+        /// <c>Active</c>, so the master developer unlock lifts this with the rest of the
+        /// funnel.</para>
         /// </summary>
         void RestoreRememberedRoster()
         {
             if (IsClientMode || _weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
             if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
             if (!remembered.HasHostTerms) return;
 
@@ -626,11 +636,15 @@ namespace CosmicShore.UI
         /// launch on every instance: the launch authority writes the host terms (intensity, domain
         /// count, placed AI) and its own pilot choice; a guest writes only its own domain and
         /// hull, so the host terms this machine last launched with are not clobbered by a match
-        /// it merely joined. Never for the weekly challenge - pinned terms are not a preference.
+        /// it merely joined. Never for the weekly challenge, and never for a card the FTUE quest
+        /// funnel is pinning - in both cases the terms on screen were authored rather than
+        /// chosen, and writing them would hand the next free launch of that mode the tutorial's
+        /// setup as if the host had picked it.
         /// </summary>
         void RememberLaunchPreference(bool launchAuthority)
         {
             if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
 
             var vessel = config.SelectedShip ? config.SelectedShip.Class : VesselClassType.Random;
             var domain = config.SelectedDomain;
