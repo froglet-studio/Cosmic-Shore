@@ -15,10 +15,12 @@ namespace CosmicShore.Utility
     /// had never rendered, while the one that had was sitting in the history: the pilot's report
     /// across all three was the same four words, <i>"i no longer saw the pip"</i>, and the answer
     /// was that the window they had been seeing for three rounds was a `RawImage` in a 16:9 rect.
-    /// So the surface, its size and its place are round 3's verbatim and only the CAMERA is round
-    /// 4's. <b>When a change replaces a working surface and re-points it in the same pass, the
-    /// report cannot tell you which half broke — so change one.</b>
-    /// <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 7.</para>
+    /// So the surface, its size and its place went back to round 3's verbatim and only the CAMERA
+    /// stayed round 4's. <b>When a change replaces a working surface and re-points it in the same
+    /// pass, the report cannot tell you which half broke — so change one.</b> Round 8 re-shaped
+    /// that surface into the CHARGE petal by SUBCLASSING the component that renders
+    /// (<see cref="ScopePetalImage"/>) rather than writing a new one, for the same reason.
+    /// <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> rounds 7–8.</para>
     ///
     /// <para><b>It is NOT a second gameplay camera</b>, which the platform forbids for four
     /// concrete reasons (Docs/REAR_VIEW.md §3): the speed tunnel resolves <c>CameraManager</c>'s
@@ -59,9 +61,12 @@ namespace CosmicShore.Utility
     /// (<c>SniperShotActionExecutor.ResolveShot</c>) — so the shot lands where the reticle is by
     /// construction rather than by tuning.</para>
     ///
-    /// <para><b>The picture is 16:9</b>, matching the panel it is drawn into, so nothing is
-    /// squashed and nothing is thrown away. A camera targeting a RenderTexture takes its aspect
-    /// from that texture, so there is nothing else to keep in step.</para>
+    /// <para><b>The picture is SQUARE</b>, matching the petal-shaped eyepiece it is drawn into
+    /// (<see cref="ScopePetalGeometry"/>'s bounding box is square to within 0.5%), so nothing is
+    /// squashed and nothing is thrown away — the shape is the crop. A camera targeting a
+    /// RenderTexture takes its aspect from that texture, so there is nothing else to keep in step,
+    /// and Unity's <c>fieldOfView</c> is VERTICAL either way, which is what the reticle's own
+    /// projection reads.</para>
     /// </summary>
     public sealed class ScopePipView
     {
@@ -88,12 +93,12 @@ namespace CosmicShore.Utility
         const float MinimumEyeForward = 2f;
 
         /// <summary>
-        /// Render HEIGHT in pixels; the width follows at 16:9. Round 3 ran 360 and read fine for a
-        /// chase shot, but this window is magnified and half the screen tall, and a magnified
-        /// picture that cannot be read is the same as no picture — so it is raised rather than
-        /// left at a value chosen for a different subject.
+        /// Render size in pixels, SQUARE. Round 3 ran 360×202 for a chase shot; this window is
+        /// magnified and half the screen tall, and a magnified picture that cannot be read is the
+        /// same as no picture — so it is raised rather than left at a value chosen for a different
+        /// subject.
         /// </summary>
-        public int RenderHeight = 540;
+        public int RenderSize = 540;
 
         /// <summary>How often the window refreshes, in Hz. Capped for the same reason.</summary>
         public float RefreshHz = 30f;
@@ -206,8 +211,8 @@ namespace CosmicShore.Utility
 
             if (_texture == null)
             {
-                int height = Mathf.Clamp(RenderHeight, 180, 1080);
-                _texture = new RenderTexture(Mathf.RoundToInt(height * 16f / 9f), height, 16)
+                int size = Mathf.Clamp(RenderSize, 180, 1080);
+                _texture = new RenderTexture(size, size, 16)
                 {
                     name = "SerpentScopeRT",
                     antiAliasing = 1,

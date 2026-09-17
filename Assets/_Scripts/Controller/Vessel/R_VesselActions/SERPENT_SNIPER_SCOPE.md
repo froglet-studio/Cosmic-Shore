@@ -77,10 +77,14 @@ aimed with.
   not serve both a Serpent and a Squirrel.
 - **It aims down the same vector the shot is cast along** (`vessel.forward`), so the reticle is a
   promise rather than a decoration — by construction, not by tuning.
-- **The picture is 16:9**, matching the panel it is drawn into, so nothing is squashed and nothing
-  is cropped away. A camera targeting a RenderTexture takes its aspect from that texture, so there
-  is nothing else to keep in step. (Round 4 made it square for a round window and round 7 put it
-  back — see round 7 for why the surface returned to round 3's.)
+- **The picture is SQUARE**, matching the petal-shaped eyepiece it is drawn into
+  (`ScopePetalGeometry`'s bounding box is square to within 0.5%), and the petal's own coordinates
+  ARE the UVs — so nothing is squashed and nothing is cropped away: the shape is the crop. A camera
+  targeting a RenderTexture takes its aspect from that texture, so there is nothing else to keep in
+  step, and `fieldOfView` is vertical either way, which is what the reticle's projection reads.
+  (Round 4 made it square for a round window, round 7 put it back to 16:9 with the `RawImage`, and
+  round 8 squared it again for the petal — see those rounds for why the surface itself never moved
+  after round 7.)
 - **It draws the way the GAME'S camera draws**, adopted through `OffscreenCameraSetup` — HDR, the
   volume layer mask and the post-processing stack. That is not a quality setting here: the world is
   authored HDR-emissive against the gameplay volume's tonemapper, so a camera on URP's defaults
@@ -226,10 +230,12 @@ deflection **before** Space 5.
 | `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it |
 | `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen |
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
+| `_Scripts/UI/View/ScopePetalGeometry.cs` | **new** (round 8) — the CHARGE petal's outline, traced off the shipped sprite, plus the inradius/circumradius/area derived from it |
+| `_Scripts/UI/View/ScopePetalImage.cs` | **new** (round 8) — the eyepiece. A `RawImage` SUBCLASS overriding only `OnPopulateMesh`, so every part of the surface that renders is inherited |
 | `_Scripts/Utility/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
 | `_Scripts/UI/View/ScopeDiscGraphic.cs` | **added round 4, DELETED round 7** — the generated circular picture. Replaced round 3's `RawImage` and was never seen on screen; retired so two windows cannot compete for the next report |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
-| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image |
+| `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image, round 7 put its surface back to a `RawImage`, round 8 made its target SQUARE for the petal |
 | `_Scripts/Utility/OffscreenCameraSetup.cs` | **new** (round 5) — the ONE place a runtime off-screen camera adopts the game camera's framing and image. Extracted after the same finding had been written down at three other windows |
 | `_Scripts/Controller/Arcade/Preview/ModePreviewArena.cs` | **+** (round 5) `AdoptGameCameraSettings` routes through the helper |
 | `_Scripts/UI/Elements/ConnectingArenaPreview.cs` | **+** (round 5) `AdoptUrpSettings` routes through the helper |
@@ -762,6 +768,100 @@ self-check never ran (which is itself reported, now, on the `[SerpentScope]` cha
 recorded rather than resolved: the pilot asked for the window back, not for a diagnosis, and the
 restored surface is the one that has been on screen.
 
+## Round 8 — "the pip is working. it is great. Now make the shape the Charge pentagon"
+
+The eyepiece is now **one petal of the CHARGE element flower** — the element that owns this
+weapon — so the window says which element is firing without a label.
+
+### The shape is MEASURED, not drawn
+
+`ScopePetalGeometry` carries the outline traced off the alpha of the shipped
+`Resources/ElementPetals/charge_petal.png` (256², opaque bounding box x 81..174, y 23.5..117).
+Every row's span walks a straight line to within a pixel, so the sprite really is a pentagon and
+these really are its corners:
+
+| corner | pixel | normalised (x right, y UP) |
+|---|---|---|
+| apex (points at the flower's centre) | (127.5, 117.0) | (0.500000, 0.000000) |
+| right shoulder (the widest row) | (174, 53) | (1.000000, 0.684356) |
+| top-right | (157, 23.5) | (0.817204, 1.000000) |
+| top-left | (98, 23.5) | (0.182796, 1.000000) |
+| left shoulder | (81, 53) | (0.000000, 0.684356) |
+
+**Two facts fall out of the trace and confirm it rather than being assumed.** The two lower edges
+meet at **72.30°** — the same 72° the five-petal flower is built from, which is what this document
+and CLAUDE.md already say about every element petal ("all sharing an inward-pointing 72° apex").
+And the shape is symmetric about its own centre line to half a pixel. Neither was put in; both came
+out.
+
+Everything derived from the outline is **computed in a static constructor rather than transcribed**,
+so re-tracing the sprite moves all of it at once:
+
+| derived | value | why it is load-bearing |
+|---|---|---|
+| area fraction of its bbox | 0.600 | — |
+| **inradius** | 0.2950 of the side = **0.59 × half-side** | the cap on anything drawn as a circle inside the shape |
+| **circumradius** | 0.5921 = **1.18 × half-side** | why the recharge ring is drawn INSIDE (below) |
+| convex, CCW, centre interior | ✓ | what makes a triangle fan from the centre a legal tessellation |
+
+### The surface is SUBCLASSED, and that is round 7's rule applied to a re-shape
+
+`ScopePetalImage : RawImage` overrides **only `OnPopulateMesh`**. Nothing else about the surface is
+rebuilt: the texture property, the `mainTexture` white fallback, the material handling and the whole
+rebuild path are `RawImage`'s, unchanged.
+
+That is deliberate and it is the whole risk story. Round 4 replaced this window's `RawImage` with a
+generated `MaskableGraphic` **and** re-pointed its camera in one change; the replacement never
+rendered, the fault was never diagnosed, and three playtest rounds came back as the same four words.
+Re-shaping the window is a second chance to make exactly that mistake. **When a component renders
+and its shape is wrong, subclass it and override the geometry — do not write a new one.** A broken
+emit then reads as a wrong SHAPE, which a pilot can report, rather than as an absence, which they
+cannot.
+
+The **backing is the same component with no texture assigned** — `RawImage` falls back to a white
+texture, so a textureless instance is a flat shape in its own colour. That is what makes the frame
+the petal's own outline rather than a rectangle behind it, and it means there is no second outline to
+keep in step. The frame is produced by insetting the *rect* by 3 px, which shrinks the petal about
+its own centre and so follows every edge including the apex.
+
+### Positions ARE the UVs, which is why the render target went square
+
+`ScopePetalGeometry`'s coordinates are normalised over the petal's own bounding box, so the same
+numbers are the vertex positions in a square rect and the UVs into a square picture. The bounding box
+is square to within 0.5%, so:
+
+- the rect went **16:9 → square** (the half-screen height and the 16/220 margins are round 3's,
+  untouched — the height and the place the pilot already reads do not move, only the width);
+- `ScopePipView.RenderSize` renders a **square** target.
+
+Nothing is squashed and nothing is cropped away: **the shape IS the crop.** Unity's `fieldOfView` is
+vertical either way, so the reticle's own projection — half the eyepiece's height against the
+window's vertical FOV — is unchanged.
+
+### A shaped window cannot bound its furniture by its bounding box
+
+The reticle and the recharge ring are still `ScopeRingGraphic` circles at the optical centre (which
+is the bbox centre, UV 0.5/0.5 — verified interior). Their radii are now capped by the petal's
+**inradius**, not by a fraction of the half-height, and the binding constraint is the pair of long
+edges running down to the apex rather than the top edge — so the cap is meaningfully tighter than a
+half-width. At 1080p: side 540, inradius 159.3, recharge ring 148.3, reticle budget 139.3, and
+ring + band (153.3) fits inside inradius − border (156.3).
+
+**The recharge ring is inside the petal rather than around it, and that is a measurement not a
+preference.** A circumscribing ring needs 1.18 × the half-side plus its gap and band, which at this
+window's authored 16 px left margin puts the instrument ~49 px off the left edge of the screen. The
+alternative — a band that sweeps the petal's own perimeter, which is the prettier answer and would
+cost no footprint — is a **second** new generated graphic, and round 7's lesson is that this window
+gets one change at a time. Recorded as a follow-up.
+
+### Feather, and the one place a bisector would not do
+
+Antialiasing is the family's zero-alpha feather ring, offset along each corner's **miter** rather
+than its bisector. That matters here rather than being pedantry: the apex is a 72° corner, where the
+miter is `1/sin 36° = 1.70` and a plain bisector offset would produce a feather 41% too thin, making
+the point read as harder-edged than the rest of the outline. Verified numerically — a 1.5 unit offset
+moves **both** adjacent edges out by exactly 1.5 at every corner, apex included.
+
 ## Drive-by corrections
 
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
@@ -922,19 +1022,31 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     just-past-the-deadzone to fully down. The inner ring must **shrink continuously**, and the
     recharge arc must fill smoothly after a shot. Both were frozen at their first-frame values by
     the `Canvas.enabled` hazard, which looks like a working instrument until you watch it move.
-27. **START HERE (round 7): the panel is on screen at all.** Fly a Serpent, hold LT. A dark 16:9
-    panel roughly half the screen tall must appear in the top left, under the goal stack, whether or
-    not anything is in front of the ship. This is the whole of round 7 — if it is still absent, the
-    fault is NOT the surface (this one shipped and was seen for three rounds) and steps 22–25 are the
-    order to work in.
+27. **START HERE (rounds 7–8): the eyepiece is on screen at all.** Fly a Serpent, hold LT. A dark
+    shape roughly half the screen tall must appear in the top left, under the goal stack, whether or
+    not anything is in front of the ship. If it is absent, the fault is NOT the surface (a `RawImage`
+    shipped and was seen for three rounds, and round 8 only changed its vertex list) and steps 22–25
+    are the order to work in. If a dark RECTANGLE appears, the petal emit is degenerate and the shape
+    fell back to its bounding box — check `ScopePetalGeometry.Outline`.
 28. **The picture is the MAGNIFIED forward view (round 7).** Roll the trigger down: the panel must
     zoom, and it must show what is **ahead of the nose**, not the ship from behind. Seeing your own
     hull from behind means `ScopePipView.PoseCamera` regressed to round 3's chase pose. Your flight
     view must not zoom at all.
-29. **The reticle and recharge ring are INSIDE the panel (round 7).** Nothing at screen centre; the
-    reticle ring, its dot, and the recharge bed and arc all concentric inside the picture. Roll the
-    trigger and the reticle must shrink; fire and the arc must fill. If any of them is at screen
+29. **The reticle and recharge ring are INSIDE the eyepiece (round 7).** Nothing at screen centre;
+    the reticle ring, its dot, and the recharge bed and arc all concentric inside the picture. Roll
+    the trigger and the reticle must shrink; fire and the arc must fill. If any of them is at screen
     centre, `MakeRing`'s parent regressed.
+30. **The shape is the CHARGE petal (round 8).** It must be a pentagon: a wide blunt top, two
+    shoulders at its widest point, and a **point at the BOTTOM** — the same petal the Charge flower
+    in the element bars is built from, upright and unrotated. Compare it against the Charge flower
+    on any vessel's HUD row: one petal of that flower, at this size. Its edges must be straight and
+    its sides symmetric.
+31. **Nothing is squashed, and the furniture stays inside the shape (round 8).** Point at round
+    arena mass and confirm it reads round, not oval — the render target and the rect are both square
+    now, and a stretched picture means one of them regressed. Then roll the trigger to its widest and
+    fire: neither the reticle nor the recharge ring may cross the petal's sloped lower edges at any
+    point in the sweep. If either does, `ReticleBudgetPixels` is no longer reading
+    `ScopePetalGeometry.Inradius01`.
 
 ## Follow-ups
 

@@ -1,50 +1,63 @@
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Serpent scope's on-screen instrument: a <b>panel in the top left carrying the magnified
-    /// view</b>, a <b>reticle drawn at the sniper cone's true angular size</b> inside it, and the
-    /// <b>recharge ring</b> around that reticle.
+    /// The Serpent scope's on-screen instrument: an eyepiece in the top left <b>shaped like the
+    /// CHARGE petal</b> carrying the magnified view, a <b>reticle drawn at the sniper cone's true
+    /// angular size</b> inside it, and the <b>recharge ring</b> around that reticle.
     ///
-    /// <para><b>The surface is round 3's, verbatim, and that is the whole of round 7.</b> A
-    /// <c>RawImage</c> in a 16:9 rect at the top left — same component, same 16:9, same
-    /// half-screen-height size, same 16/220 margins — because that is the window the pilot was
-    /// actually seeing for three rounds. Round 4 was right to move the magnification into the
-    /// window and wrong to rebuild the window in the same pass: the surface it substituted (a
-    /// generated circular graphic) had never rendered, and rounds 5 and 6 were spent adopting URP
-    /// settings and hardening lifetimes on a panel that was not on screen to benefit from either.
-    /// <b>When one change both replaces a surface and re-points it, the pilot's report cannot say
-    /// which half broke</b> — and here it did not: all three rounds came back as the same four
-    /// words. <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 7.</para>
+    /// <para><b>The shape is one petal of the element flower</b>
+    /// (<see cref="ScopePetalGeometry"/>), traced off the shipped <c>charge_petal</c> sprite — which
+    /// is the element that owns this weapon, so the window says which element is firing without a
+    /// label. Its 72° apex is the same 72° the five-petal flower is built from; that is not a
+    /// coincidence the code relies on, but it is how the measurement was confirmed.</para>
     ///
-    /// <para><b>The reticle moved INTO the panel and stays there.</b> Round 3 drew it over the
+    /// <para><b>The surface is still the one that renders, and that is round 7's rule carried
+    /// into round 8.</b> Round 4 was right to move the magnification into the window and wrong to
+    /// rebuild the window in the same pass: the surface it substituted (a generated circular
+    /// graphic) had never rendered, and rounds 5 and 6 were spent adopting URP settings and
+    /// hardening lifetimes on a panel that was not on screen to benefit from either. <b>When one
+    /// change both replaces a surface and re-points it, the pilot's report cannot say which half
+    /// broke</b> — and here it did not: all three rounds came back as the same four words. Round 7
+    /// therefore put round 3's <c>RawImage</c> back verbatim, and round 8 re-shaped it into the
+    /// petal by <b>subclassing that component</b> (<see cref="ScopePetalImage"/>) rather than
+    /// writing a new one — so the only thing that changed is the vertex list, and a bad emit reads
+    /// as a wrong SHAPE rather than as an absence. The half-screen height and the 16/220 margins
+    /// are round 3's, untouched; the rect went 16:9 → SQUARE with the shape.
+    /// <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> rounds 7–8.</para>
+    ///
+    /// <para><b>The reticle moved INTO the eyepiece and stays there.</b> Round 3 drew it over the
     /// middle of the screen because the middle of the screen was the scope. It is not any more, so
     /// a reticle there would be a measurement of a view nobody is looking through. Everything the
-    /// scope says is therefore said inside the one rect the pilot is aiming with — which is also
-    /// what a real scope's reticle furniture looks like.</para>
+    /// scope says is therefore said inside the one shape the pilot is aiming with — which is also
+    /// what a real scope's reticle furniture looks like. <b>A shaped window cannot bound its own
+    /// furniture by its bounding box</b>, so every radius drawn inside it is capped by the petal's
+    /// measured INRADIUS (<see cref="ScopePetalGeometry.Inradius01"/>, 0.59× the half-side, set by
+    /// the two long edges running down to the apex) rather than by a fraction of the height.</para>
     ///
     /// <para><b>The reticle is a MEASUREMENT, not decoration.</b> Its radius is the cone's own
     /// half-angle projected through the WINDOW's live vertical field of view
-    /// (<c>r = H · tan(halfAngle) / tan(fov/2)</c>, where <c>H</c> is half the panel's HEIGHT,
-    /// because a vertical field of view is what the panel's vertical extent subtends) — so it
+    /// (<c>r = H · tan(halfAngle) / tan(fov/2)</c>, where <c>H</c> is half the eyepiece's HEIGHT,
+    /// because a vertical field of view is what its vertical extent subtends) — so it
     /// tracks the zoom exactly. Anything inside the ring is inside the shot. An authored reticle
     /// sprite would be a claim about the weapon that stops being true the first time either number
     /// moves.</para>
     ///
     /// <para><b>The recharge ring is duplicated here on purpose.</b> The fleet's ability lockup
     /// carries it too — its clockwise veil now draws on a LOCKED card, which is what finally put
-    /// the Serpent's recharge on the HUD row at all — but a pilot reading the panel is not reading
-    /// the bottom-right of the screen, and a sight that cannot say whether it is loaded is not a
-    /// sight.</para>
+    /// the Serpent's recharge on the HUD row at all — but a pilot reading the eyepiece is not
+    /// reading the bottom-right of the screen, and a sight that cannot say whether it is loaded is
+    /// not a sight.</para>
     ///
-    /// <para><b>Generated, not authored.</b> One runtime canvas, an opaque backing, a
-    /// <c>RawImage</c> and four <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no
-    /// per-vessel wiring. It is built on first use by <see cref="SniperScopeActionExecutor"/> for
-    /// the LOCAL PILOT only and torn down with the vessel.</para>
+    /// <para><b>Generated, not authored.</b> One runtime canvas, two <see cref="ScopePetalImage"/>s
+    /// (the opaque backing and the picture, the same component so the frame is the petal's own
+    /// outline) and four <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no per-vessel
+    /// wiring — the petal is traced geometry, not the <c>charge_petal</c> PNG, so it is exact at
+    /// any size. It is built on first use by <see cref="SniperScopeActionExecutor"/> for the LOCAL
+    /// PILOT only and torn down with the vessel.</para>
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SniperScopeOverlay : MonoBehaviour
@@ -60,12 +73,16 @@ namespace CosmicShore.Gameplay
         // panel read as an instrument rather than as a hole in the screen.
         const float BorderPixels = 3f;
 
-        // How far inside the picture's top and bottom edges the recharge ring sits.
+        // How far inside the petal's own edges the recharge ring sits.
         const float ArcInsetPixels = 8f;
 
-        // The panel's HEIGHT as a fraction of SCREEN HEIGHT, not a pixel size: this canvas has no
+        // Clearance between the recharge ring and the largest reticle it may have to sit outside.
+        const float ReticleClearancePixels = 4f;
+
+        // The eyepiece's SIDE as a fraction of SCREEN HEIGHT, not a pixel size: this canvas has no
         // CanvasScaler (every other number in it is a real screen measurement), so a fixed panel is
-        // half a phone screen and a postage stamp on a monitor. Round 3's value.
+        // half a phone screen and a postage stamp on a monitor. Round 3's value, and the petal is
+        // square to within 0.5% so it keeps the height the pilot already reads.
         const float PipHeightFraction = 0.5f;
 
         // Clearance for the goal stack, which anchors at (16, -52) and runs up to three 48-unit
@@ -76,8 +93,8 @@ namespace CosmicShore.Gameplay
 
         Canvas _canvas;
         RectTransform _pipRect;
-        Image _backing;
-        RawImage _pipSurface;
+        ScopePetalImage _backing;
+        ScopePetalImage _pipSurface;
         ScopeRingGraphic _ring;
         ScopeRingGraphic _dot;
         ScopeRingGraphic _track;
@@ -120,29 +137,23 @@ namespace CosmicShore.Gameplay
             pipGo.transform.SetParent(transform, false);
             _pipRect = pipGo.GetComponent<RectTransform>();
             // TOP-LEFT, pivoted on its own top-left corner, so the margins below are read straight
-            // off the screen edges with no size arithmetic in them. Round 3's rect exactly.
+            // off the screen edges with no size arithmetic in them. Round 3's anchors and margins
+            // exactly; only the rect's WIDTH changed, when the window became a petal.
             _pipRect.anchorMin = new Vector2(0f, 1f);
             _pipRect.anchorMax = new Vector2(0f, 1f);
             _pipRect.pivot = new Vector2(0f, 1f);
 
             // The BACKING is opaque, is drawn first, and is on from the moment the scope is raised
-            // - so the panel is an OBJECT on screen before the first render lands and even when
+            // - so the eyepiece is an OBJECT on screen before the first render lands and even when
             // what it is pointed at is empty space. A window showing nothing and no window at all
-            // must not look the same. An Image with no sprite draws a solid quad in its colour,
-            // which is exactly what is wanted here (it is also the trap PipUI records, read the
-            // other way round).
-            var backingGo = new GameObject("Backing", typeof(RectTransform));
-            backingGo.transform.SetParent(_pipRect, false);
-            Stretch(backingGo.GetComponent<RectTransform>(), 0f);
-            _backing = backingGo.AddComponent<Image>();
-            _backing.raycastTarget = false;
+            // must not look the same. It is the SAME component as the picture with no texture
+            // assigned, which is what makes the frame the petal's own outline rather than a
+            // rectangle behind it: RawImage falls back to a white texture, so a textureless
+            // instance is a flat shape in its own colour.
+            _backing = MakePetal("Backing", 0f);
             _backing.color = new Color(0.02f, 0.03f, 0.05f, 0.95f);
 
-            var pictureGo = new GameObject("Picture", typeof(RectTransform));
-            pictureGo.transform.SetParent(_pipRect, false);
-            Stretch(pictureGo.GetComponent<RectTransform>(), BorderPixels);
-            _pipSurface = pictureGo.AddComponent<RawImage>();
-            _pipSurface.raycastTarget = false;
+            _pipSurface = MakePetal("Picture", BorderPixels);
             _pipSurface.enabled = false;
 
             // Order matters: the recharge bed, then the arc, then the reticle on top - UGUI draws
@@ -155,18 +166,31 @@ namespace CosmicShore.Gameplay
             _pip = new ScopePipView(_pipSurface);
         }
 
-        /// <summary>Fill the parent's rect, inset by <paramref name="inset"/> on every side.</summary>
-        static void Stretch(RectTransform rect, float inset)
+        /// <summary>
+        /// One petal-shaped layer filling the eyepiece's rect, inset by <paramref name="inset"/> on
+        /// every side. Insetting the RECT rather than the outline is deliberate: it shrinks the
+        /// petal about its own centre, so the backing shows through as a frame that follows every
+        /// edge including the apex, with no second outline to keep in step.
+        /// </summary>
+        ScopePetalImage MakePetal(string name, float inset)
         {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(_pipRect, false);
+
+            var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = Vector2.zero;
             rect.anchorMax = Vector2.one;
             rect.offsetMin = new Vector2(inset, inset);
             rect.offsetMax = new Vector2(-inset, -inset);
+
+            var petal = go.AddComponent<ScopePetalImage>();
+            petal.raycastTarget = false;
+            return petal;
         }
 
         /// <summary>
-        /// A ring centred on the PANEL. Anchored at the middle of the parent rect, which is a
-        /// fraction of that rect and so is independent of the panel's own top-left pivot.
+        /// A ring centred on the EYEPIECE. Anchored at the middle of the parent rect, which is a
+        /// fraction of that rect and so is independent of the eyepiece's own top-left pivot.
         /// </summary>
         ScopeRingGraphic MakeRing(string name, float radius, float thickness)
         {
@@ -204,6 +228,7 @@ namespace CosmicShore.Gameplay
 
             float halfHeight = LayOutPip();
             float radius = ReticleRadiusPixels(coneHalfAngleDegrees, fieldOfView, halfHeight);
+            radius = Mathf.Min(radius, ReticleBudgetPixels(halfHeight));
             bool ready = cooldown01 <= 0.0001f;
 
             // The instant it comes back: a one-shot flash, so a pilot watching the target rather
@@ -223,11 +248,14 @@ namespace CosmicShore.Gameplay
             _dot.Sweep01 = 1f;
             _dot.color = WithAlpha(colour, ready ? 1f : DimAlpha * 0.7f);
 
-            // Inside the picture's top and bottom edges: the panel is wider than it is tall, so a
-            // ring that cleared its full extent would be a circle around a wide rect and most of
-            // it would be off in the flight view.
+            // INSIDE the petal, against its own tightest edges - which are the two long ones
+            // running down to the apex, not the top edge, so this is meaningfully smaller than the
+            // half-height (measured 0.59x it). A circle drawn at the half-height would poke out
+            // through the taper, and one drawn OUTSIDE the shape needs 1.18x the half-height, which
+            // at this window's authored margins pushes the instrument off the left of the screen.
             float arcRadius = Mathf.Max(radius + ArcThickness * 2f,
-                                        halfHeight - BorderPixels - ArcInsetPixels);
+                                        ReticleBudgetPixels(halfHeight) + ArcThickness
+                                            + ReticleClearancePixels);
 
             // The BED: always drawn, always a full ring, so "recharging" reads as a ring FILLING
             // rather than as one appearing out of nowhere - and so the readout is present on screen
@@ -260,24 +288,43 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Size and place the panel against the LIVE screen, every frame, and hand back half its
-        /// height. It is a fraction of screen height rather than an authored pixel size because
-        /// this canvas deliberately has no <c>CanvasScaler</c> - every other number in it is a real
+        /// Size and place the eyepiece against the LIVE screen, every frame, and hand back half its
+        /// side. It is a fraction of screen height rather than an authored pixel size because this
+        /// canvas deliberately has no <c>CanvasScaler</c> - every other number in it is a real
         /// screen measurement - so a fixed rect would be a different fraction of the display on
-        /// every device and would not follow a resize. Round 3's arithmetic exactly.
+        /// every device and would not follow a resize.
+        ///
+        /// <para>The rect is SQUARE where round 7's was 16:9, because the petal's own bounding box
+        /// is square to within 0.5% and its coordinates double as the picture's UVs - so a square
+        /// rect against a square render target samples the view with nothing squashed and nothing
+        /// thrown away. The HEIGHT and the margins are round 3's, unchanged, which is what keeps the
+        /// eyepiece the size and in the place the pilot already reads.</para>
         /// </summary>
         float LayOutPip()
         {
-            float height = Mathf.Max(90f, Screen.height * PipHeightFraction);
-            _pipRect.sizeDelta = new Vector2(height * 16f / 9f, height);
+            float side = Mathf.Max(120f, Screen.height * PipHeightFraction);
+            _pipRect.sizeDelta = new Vector2(side, side);
             _pipRect.anchoredPosition = new Vector2(PipLeftMargin, -PipTopMargin);
-            return height * 0.5f;
+            return side * 0.5f;
         }
 
         /// <summary>
-        /// The cone's half-angle in pixels INSIDE the panel: the same projection the screen version
-        /// used, with half the panel's HEIGHT standing in for half the screen height and the
-        /// window's own field of view standing in for the camera's.
+        /// The largest radius anything drawn as a circle at the eyepiece's optical centre may take
+        /// and still sit inside the petal, with the recharge ring's own band and clearance taken
+        /// out. DERIVED from the outline rather than authored, so re-tracing the sprite moves it.
+        /// </summary>
+        static float ReticleBudgetPixels(float halfSide)
+        {
+            // Inradius01 is a fraction of the SIDE; halfSide is half of it.
+            float inradius = ScopePetalGeometry.Inradius01 * halfSide * 2f;
+            return Mathf.Max(8f, inradius - BorderPixels - ArcInsetPixels
+                                 - ArcThickness - ReticleClearancePixels);
+        }
+
+        /// <summary>
+        /// The cone's half-angle in pixels INSIDE the eyepiece: the same projection the screen
+        /// version used, with half the eyepiece's HEIGHT standing in for half the screen height and
+        /// the window's own field of view standing in for the camera's.
         /// </summary>
         static float ReticleRadiusPixels(float coneHalfAngleDegrees, float fieldOfView,
                                          float halfHeight)
@@ -286,9 +333,10 @@ namespace CosmicShore.Gameplay
             float half = Mathf.Max(0.01f, coneHalfAngleDegrees) * Mathf.Deg2Rad;
 
             float pixels = halfHeight * Mathf.Tan(half) / Mathf.Tan(halfFov);
-            // Floored so the ring is still a ring at the wide end of the dial, and capped so a
-            // badly-authored cone cannot draw a reticle that fills the panel.
-            return Mathf.Clamp(pixels, 6f, halfHeight * 0.7f);
+            // Floored so the ring is still a ring at the wide end of the dial. The CEILING is the
+            // petal's own (see ReticleBudgetPixels, applied by the caller), not a fraction of the
+            // half-height - a shaped window cannot be capped by its bounding box.
+            return Mathf.Max(6f, pixels);
         }
 
         static Color WithAlpha(Color c, float a) { c.a = a; return c; }
@@ -362,7 +410,7 @@ namespace CosmicShore.Gameplay
             if (_backing != null && !_backing.IsActive())
             {
                 SniperScopeDiagnostics.Unusable(
-                    "its graphics report IsActive() false with the panel up, so Graphic.m_Canvas " +
+                    "its graphics report IsActive() false with the eyepiece up, so Graphic.m_Canvas " +
                     "is stale and every mesh rebuild is a silent no-op - the rings are frozen at " +
                     "whatever size they were built with. Something is toggling Canvas.enabled " +
                     "under them; see SniperScopeOverlay.SetVisible.");
@@ -372,7 +420,7 @@ namespace CosmicShore.Gameplay
             if (halfHeight <= 1f)
             {
                 SniperScopeDiagnostics.Unusable(
-                    $"its panel resolved to {halfHeight * 2f:0.##} px tall. Screen.height reads " +
+                    $"its eyepiece resolved to {halfHeight * 2f:0.##} px across. Screen.height reads " +
                     $"{Screen.height}.");
                 return;
             }
@@ -383,7 +431,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // The panel's pivot is its TOP-LEFT corner, so this is that corner in screen
+            // The eyepiece's pivot is its TOP-LEFT corner, so this is that corner in screen
             // coordinates measured from the bottom-left - which is what the reporter tool prints.
             Vector2 size = _pipRect.sizeDelta;
             Vector2 topLeft = new(_pipRect.anchoredPosition.x,
@@ -393,7 +441,7 @@ namespace CosmicShore.Gameplay
                 topLeft.y < 0f || topLeft.y - size.y > Screen.height)
             {
                 SniperScopeDiagnostics.Unusable(
-                    $"its panel is off screen: top-left {topLeft}, size {size}, screen " +
+                    $"its eyepiece is off screen: top-left {topLeft}, size {size}, screen " +
                     $"{Screen.width}x{Screen.height}.");
                 return;
             }
