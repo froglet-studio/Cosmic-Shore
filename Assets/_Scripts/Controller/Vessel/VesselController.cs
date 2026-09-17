@@ -65,6 +65,12 @@ namespace CosmicShore.Gameplay
             VesselSpeedTunnel.ClearTarget(transform);
             VesselRearView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
+
+            // The base is what tears down this behaviour's NetworkVariables. An override that
+            // never calls it suppresses that teardown exactly as a hiding method would - and
+            // without the CS0114 that catches the hiding case, which is why this one survived
+            // while ArcadeConfigSyncManager's was reported.
+            base.OnDestroy();
         }
 
         public override void OnNetworkSpawn()

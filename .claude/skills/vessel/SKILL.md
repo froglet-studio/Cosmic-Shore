@@ -211,15 +211,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
     closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
     four-icon upgrade tint/badge (rule 9).
-16. **Intervene in the flight model at `VesselTransformer.AdvanceSpeed`, not at
+16. **Intervene in the flight model at `VesselTransformer.StepTowardTarget`, not at
     `ComputeThrottleTarget`.** Four transformers exist (`VesselTransformer`,
     `SingleStickVesselTransformer` — what the Sparrow and Serpent actually run —
     `GunVesselTransformer`, `CommandVesselTransformer`) and the first two carry their own
     `MoveShip` AND their own `ComputeThrottleTarget`, so a change written into the target reaches
     only the vessels running the class you edited (the single-stick override ignores `XDiff` and
-    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call
-    — the choke point where anything that must hold for EVERY vessel belongs, and where the
-    Dolphin's drift speed hold sits. Two companions of `speed` need the same treatment when you
+    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call, but it is NOT the bottom any
+    more: since the vector model landed, `AdvanceSpeed` is a one-line wrapper over
+    **`StepTowardTarget`**, the shared pure step BOTH models run through (the vector path reaches
+    it from `ComputeNoseAcceleration`, never from `AdvanceSpeed`). So a rule written into
+    `AdvanceSpeed` today silently misses every `vectorFlightModel` hull — the Squirrel and the
+    Scarab. `StepTowardTarget` is the real choke point, and it is where the Dolphin's drift speed
+    hold and `MinimumThrottleBrake` (the terminal approach that makes a zero throttle target land
+    on an actual stop — `R_VesselActions/SQUIRREL_DRIFT.md` §3.5) both sit. Note the two hulls
+    that escape it ENTIRELY, for different reasons: the Scarab overrides
+    `ComputeNoseAcceleration` wholesale (it integrates rather than tracking a target), and every
+    one-thumb hull's `ComputeThrottleTarget` has no throttle axis in it at all, so it can never
+    command zero. Two companions of `speed` need the same treatment when you
     touch it: the `toggleManualThrottle` lerp is a SECOND throttle channel living in each
     `MoveShip` (no shipped prefab enables it — check before assuming your change covered it), and
     `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
@@ -550,8 +559,10 @@ on actually walks, and compare it against everything the prefab draws. Full reco
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
-  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal
-  Bars** (or **Bake Elemental Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap**
+  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
+  not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·
+  duplicate coincident hull renderers), plus **Wire Elemental Petal Bars** (or **Bake Elemental
+  Petal Bars Into All Vessel HUDs**), **Plan Vessel Rig Swap** and its writer **Swap Vessel Rig**
   where relevant. Vessel-impactor container wiring still has no in-editor auditor, but do NOT
   hand that half back as play-mode-only: run the rule-22 sweep yourself first (GUID → name over
   `*.asset.meta`, then cross-reference the six `VesselContainers/*.asset` arrays) and print the

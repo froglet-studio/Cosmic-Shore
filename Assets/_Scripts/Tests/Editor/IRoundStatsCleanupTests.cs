@@ -55,6 +55,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnBulletHitsLandedChanged;
             public event Action<IRoundStats> OnMissileHitsLandedChanged;
             public event Action<IRoundStats> OnDebuffHitsLandedChanged;
+            public event Action<IRoundStats> OnStrikeHitsLandedChanged;
             public event Action<IRoundStats> OnCombatPointsChanged;
             public event Action<IRoundStats> OnSwitchesThreadedChanged;
             public event Action<IRoundStats> OnFusesBeatenChanged;
@@ -98,6 +99,7 @@ namespace CosmicShore.Tests
             public int BulletHitsLanded { get; set; }
             public int MissileHitsLanded { get; set; }
             public int DebuffHitsLanded { get; set; }
+            public int StrikeHitsLanded { get; set; }
             public int CombatPoints { get; set; }
             public int SwitchesThreaded { get; set; }
             public int FusesBeaten { get; set; }
@@ -148,6 +150,7 @@ namespace CosmicShore.Tests
                 BulletHitsLanded = 64,
                 MissileHitsLanded = 9,
                 DebuffHitsLanded = 27,
+                StrikeHitsLanded = 33,
                 CombatPoints = 514,
                 SwitchesThreaded = 17,
                 FusesBeaten = 11,
@@ -230,6 +233,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _stats.BulletHitsLanded);
             Assert.AreEqual(0, _stats.MissileHitsLanded);
             Assert.AreEqual(0, _stats.DebuffHitsLanded);
+            Assert.AreEqual(0, _stats.StrikeHitsLanded);
             Assert.AreEqual(0, _stats.CombatPoints);
             Assert.AreEqual(0, _stats.SwitchesThreaded);
             Assert.AreEqual(0, _stats.FusesBeaten);

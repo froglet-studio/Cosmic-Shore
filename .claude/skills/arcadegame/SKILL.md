@@ -71,6 +71,11 @@ Then the platform rows, in this order:
   the same question (Salvo/Bloomrush -> Rampage's, Undertow -> Bends', Wrecking Ball -> Scramble's).
 - `GameToastSituation` - new per-mode situations at the next free block (100+ is the lobby).
 - `Tools/Build/author_preview_spawns.py` `SCENE_FOR_MODE`.
+  **Every playable card MUST have a `ModePreview_<Mode>.asset` registered in
+  `Resources/ModePreviewLibrary`** - a card without one falls back to its static background and
+  offers no Test Flight, silently. Eight modes shipped that way because their generators pre-dated
+  `register_preview`; `Tools/Build/author_mode_previews.py --check` now holds those eight, and a
+  new mode registers its own through the library.
 
 ## 3. The generator (`Tools/Build/author_<mode>_assets.py`)
 

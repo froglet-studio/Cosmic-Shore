@@ -121,6 +121,16 @@ namespace CosmicShore.Data
         RegattaRailHint = 110,          // idle hint: the rail in your colour is the racing line
         RegattaLaneHint = 111,          // idle hint: ride it, skim it, or fly beside it - by hull
 
+        // Broadside. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        // The hints take no args and are per-VERB rather than per-hull, because seven hulls
+        // share four ways of landing a hit and a hint per hull would be seven hints nobody
+        // reads.
+        BroadsideQuarter = 112,         // the leading domain is a quarter of the way to the target
+        BroadsideHalf = 113,            // the leading domain is halfway
+        BroadsideLeadChanged = 114,     // the lead changes hands after a milestone
+        BroadsideVerbHint = 115,        // idle hint: your hull already has a weapon - use it
+        BroadsideCloseHint = 116,       // idle hint: a contact strike pays more than a round
+
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many
         // humans are in the match.

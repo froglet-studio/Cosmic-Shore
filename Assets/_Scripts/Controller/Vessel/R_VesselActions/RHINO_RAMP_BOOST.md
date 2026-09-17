@@ -36,19 +36,35 @@ runs with and drop below them proportionally to live speed.
 
 `ComputeThrottleTarget` is `XDiff × ThrottleScaler × ThrottleScalerMultiplier ×
 CurrentBoostAmount() + MinimumSpeed`, and the Rhino authors `DefaultThrottleScaler 50` /
-`DefaultMinimumSpeed 10` on its prefab. The minimum is added **after** the multiply, so:
+`DefaultMinimumSpeed` **0** on its prefab. The minimum is added **after** the multiply, so:
 
 | quantity | expression | value |
 |---|---|---|
-| cruise (full throttle, no boost) | `50 × 1 + 10` | **60 u/s** |
-| top (ramp engaged, dead straight) | `50 × 24 + 10` | **1210 u/s** |
-| build time cruise → top | `(1210 − 60) / 220` | **5.2 s** |
-| coast time top → cruise (disengaged) | `(1210 − 60) / 120` | **9.6 s** |
+| cruise (full throttle, no boost) | `50 × 1 + 0` | **50 u/s** |
+| top (ramp engaged, dead straight) | `50 × 24 + 0` | **1200 u/s** |
+| build time cruise → top | `(1200 − 50) / 220` | **5.2 s** |
+| coast time top → cruise (disengaged) | `(1200 − 50) / 120` | **9.6 s** |
 | bleed while still steering | `bleedPerSecond` | **300 u/s** |
 
-`ThrottleScalerMultiplier` is disabled on the Rhino and its map's Time entry is an open design
-slot pinned to 1, so `CurrentBoostAmount()` is exactly `maxBoostMultiplier` — no elemental
-factor and no squaring (the Dolphin's `IsChargedBoostDischarging` path does not apply here).
+> **`DefaultMinimumSpeed` was 10 until the minimum-throttle brake** (`MinimumThrottleBrake`,
+> `SQUIRREL_DRIFT.md` §3.5). A floor is a speed the pilot cannot give back, so a two-thumb flier
+> that is meant to be able to STOP cannot author one — and all that 10 ever did here was pad both
+> ends of the ladder by 10 u/s. Measured over 1,600 generated circuits (400 seeds × 4 intensities)
+> the Headlong courses are **bit-identical** before and after, because the corner safety floor it
+> feeds (`CornerRadiusFactor × FlatOutRadius`, 356.3 → 355.9) never binds. What moved is 10 u/s
+> off every speed in the tables below.
+
+`ThrottleScalerMultiplier` is disabled on the Rhino, so `CurrentBoostAmount()` is exactly
+`maxBoostMultiplier` — no elemental factor and no squaring (the Dolphin's
+`IsChargedBoostDischarging` path does not apply here). **TIME does not touch that ceiling; it
+scales `accelerationPerSecond`**, so the build times above are the resting ones — at Time 10 the
+ramp climbs at 550/s and reaches top in **2.1 s**, at Time −5 it climbs at 110/s and takes
+**10.5 s**. The executor has always read `Multiplier(Element.Time)` here; the map entry behind it
+was an `(open design slot)` authored 1.0/1.0 until Broadside's first playtest filled it
+(**Ramp Spool**, 2.5 / 0.5 — `Assets/_Scripts/Controller/Arcade/BROADSIDE.md`). *A capability
+live in code and flat in data reads exactly like a capability that does not exist* — three
+separate documents recorded "Time reaches nothing on the Rhino" as a measurement while this line
+sat above the multiply.
 `VesselTransformer.MaxBoostMultiplier` (5) does **not** clamp this: it is read only by the
 `boostChanged` payload and by `DecayBoost`, and the Rhino authors `decayBoost: 0`.
 
@@ -68,12 +84,12 @@ The Rhino now authors `RotationThrottleScaler: 0.5` (against the Manta's 0.2 and
 
 | speed | ω | min turn radius |
 |---|---|---|
-| 60 (cruise) | 120 °/s | 29 u |
+| 50 (cruise) | 115 °/s | 25 u |
 | 310 (the original ×6 top) | 245 °/s | 73 u |
-| 1210 (the new top) | 695 °/s | **100 u** |
+| 1200 (the new top) | 690 °/s | **100 u** |
 | ∞ | — | **115 u** (asymptote) |
 
-So the Rhino at 1210 u/s turns inside a tighter circle than it used to at 310, and tripling its
+So the Rhino at 1200 u/s turns inside a tighter circle than it used to at 310, and tripling its
 speed again would cost it only another 15 %. **It is the one vessel in the fleet whose agility
 grows with speed**, and that — not the top speed on its own — is the identity
 `GameModes.Headlong` is built to showcase.
@@ -85,7 +101,7 @@ The gesture that engages the ramp requires `(1 − XDiff) + |YDiff| + |YSum| + |
 most ~0.3 of total stick deflection. Turn rate is linear in stick, so the tightest circle they
 can fly **without giving any of it up** is
 
-    R_flat-out(v) = R(v) / stickBudget      ≈ 100 / 0.28 = **356 u** at top speed
+    R_flat-out(v) = R(v) / stickBudget      ≈ 99.6 / 0.28 = **356 u** at top speed
                                             (409 u at the asymptote)
 
 That is still the anchor the course ladder is stated in — but since the ramp became graded it is
@@ -110,14 +126,14 @@ so the composition is exact:
 
 | stick | sustained speed | radius it holds | ×flat-out |
 |---|---|---|---|
-| 0.30 (plateau edge) | 1210 u/s | 332 u | 0.93 |
-| 0.40 | 1046 | 244 | 0.69 |
-| 0.50 | 881 | 190 | 0.53 |
-| 0.60 | 717 | 153 | 0.43 |
-| 0.70 | 553 | 124 | 0.35 |
-| 0.80 | 389 | 98 | 0.27 |
-| 0.90 | 224 | 71 | 0.20 |
-| 1.00 (hard over) | 60 (cruise) | 29 | 0.08 |
+| 0.30 (plateau edge) | 1200 u/s | 332 u | 0.93 |
+| 0.40 | 1036 | 244 | 0.69 |
+| 0.50 | 871 | 190 | 0.53 |
+| 0.60 | 707 | 152 | 0.43 |
+| 0.70 | 543 | 123 | 0.35 |
+| 0.80 | 379 | 97 | 0.27 |
+| 0.90 | 214 | 69 | 0.19 |
+| 1.00 (hard over) | 50 (cruise) | 25 | 0.07 |
 
 A corner is now a continuous optimisation with a real optimum: **the largest speed whose radius
 fits**, which differs per corner and per entry speed, and trades against how long the following
@@ -169,8 +185,8 @@ fleet, which is the point of it being a law.
 
 | Knob | Where | Shipped value |
 |---|---|---|
-| `maxBoostMultiplier` | `_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset` | **24** (1210 top speed) |
-| `accelerationPerSecond` | same asset | **220** (cruise → top in 5.2 s) |
+| `maxBoostMultiplier` | `_SO_Assets/VesselActions/Rhino/RhinoRampBoostAction.asset` | **24** (1200 top speed) |
+| `accelerationPerSecond` | same asset | **220** at Time rest (cruise → top in 5.2 s); ×`Multiplier(Element.Time)`, **2.5 at Time 10 / 0.5 at Time −5** |
 | `straightnessGraceBand` | same asset | **1.0** — hard-over stick = plain cruise; `0.3` restores the binary latch |
 | `bleedPerSecond` | same asset | **300** — tracking down to the target a steering pilot chose |
 | `returnPerSecond` | same asset | **120** (9.6 s coast back to cruise once disengaged) |
@@ -207,11 +223,11 @@ how a platform law starts reading like a vessel feature again.
 
 1. Launch any game mode as the Rhino (or menu freestyle) with a gamepad, touch, or
    keyboard+mouse. Fly full throttle and straight.
-2. Speed should climb **linearly** (no ease-in curve) toward **1210** over **~5.2s**; one
+2. Speed should climb **linearly** (no ease-in curve) toward **1200** over **~5.2s**; one
    BoostActivate SFX on engage; the view should progressively narrow (zoom-in) while the
    fisheye-ish Panini compression relaxes — tunnel vision proportional to speed. **The tunnel
    saturates at 280 u/s** (`Resources/SpeedTunnelConfig`, `maxEffectSpeed`), so everything above
-   that looks optically identical — 1210 does not read as four times 310 through the lens, only
+   that looks optically identical — 1200 does not read as four times 310 through the lens, only
    through the world going past. That is a fleet-wide absolute law and is deliberately NOT
    retuned for this vessel; four other hulls already exceed the ceiling.
 3. Break the line HARD (stick to the stop): the ramp disengages and speed **coasts** back to
@@ -224,8 +240,8 @@ how a platform law starts reading like a vessel feature again.
    than collapsing — roughly 1046 u/s at a quarter stick, 881 at a half, 553 at 0.7 — and the
    vessel should carve a correspondingly tighter arc. Sweeping the stick slowly from centre to
    the stop should read as one continuous trade, with no step anywhere, and hard-over should
-   land on plain cruise (60 u/s) exactly as disengaging does.
-3b. **Steer at top speed.** At 1210 u/s full stick should sweep the nose at ~695 °/s and put the
+   land on plain cruise (50 u/s) exactly as disengaging does.
+3b. **Steer at top speed.** At 1200 u/s full stick should sweep the nose at ~690 °/s and put the
    vessel through a ~100-unit circle. Compare against the same manoeuvre at cruise: the CIRCLE
    should be bigger, but only ~3.5x for a 20x speed increase. If it feels twitchy rather than
    authoritative, `RotationThrottleScaler` is the dial (and it moves the asymptote with it).
@@ -245,7 +261,7 @@ Rhino is the required hull in **Astro League (37)**, **Cleave (39)** and now
 **Headlong (49)**. Both existing modes want a playtest against this pass, and neither was
 retuned here:
 
-- **Astro League** — the court IS the cell's nucleus, and a pilot who can cross it at 1210 u/s
+- **Astro League** — the court IS the cell's nucleus, and a pilot who can cross it at 1200 u/s
   arrives at the ball far faster than the mode was tuned for. `SkimmerSwingKinematics` composes
   the vessel's velocity AND its angular rate into the blade's strike speed, and this pass raised
   BOTH (`RotationThrottleScaler` 0.4 → 0.5 is +25% on the tip's swing rate at a given speed), so
@@ -274,12 +290,13 @@ with the rest of the law.
 - **`MinimumSpeedStraightAction` is raised by all six strategies and bound by nothing.** It is
   the mirror of the gesture this ability rides and would be the natural home for a Rhino
   brake/anchor if one is ever wanted.
-- **Three of the four element slots are still open design** (`Resources/ElementalAbilityMaps/Rhino.asset`
-  authors only Mass → trail slab size), so three of the Rhino's four HUD cards render LOCKED and
-  nothing in this pass scales with an element. Proposals are in
-  `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 "Rhino — Bulldozer"; none of them touch speed or
-  handling, so a future pass may want a Time → acceleration / Space → turn-authority re-cut
-  instead. Deliberately out of scope here.
+- **Two of the four element slots are still open design** (`Resources/ElementalAbilityMaps/Rhino.asset`
+  authors Mass → trail slab size and, since Broadside's playtest, **Time → this ability's
+  wind-up rate**), so two of the Rhino's four HUD cards render LOCKED and no L5 upgrade is
+  authored on any row. Proposals for Charge and Space are in
+  `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 "Rhino — Bulldozer"; neither touches speed or
+  handling, so a Space → turn-authority re-cut is still the obvious shape. The Time row's own
+  `Input` is deliberately **0**: the ramp engages on a full-throttle straight, not a button.
 - **The graded ramp is not yet reflected on the HUD.** `RampBoostActionExecutor.Straightness01`
   is published for exactly this and is read by nothing: the Rhino renders four LOCKED ability
   cards, so there is no gauge to bind it to. When the Rhino's map is authored, that value is the

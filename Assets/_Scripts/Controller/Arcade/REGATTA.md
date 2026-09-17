@@ -11,7 +11,7 @@
 
 > **What is your hull FOR, on a course everyone shares?**
 
-A Rhino ramps to 1210 u/s on a straight and pays five seconds of wind-up for every corner it
+A Rhino ramps to 1200 u/s on a straight and pays five seconds of wind-up for every corner it
 cannot hold. A Manta trades Soar for yaw one trigger at a time. A Scarab's ceiling is its Time
 level. An Urchin latches onto the rail in its colour and lets the cable drive at 300 u/s
 through corners that cost it nothing. A Squirrel skims the same rail for the boost energy that
@@ -36,7 +36,7 @@ Measured off the shipped code and assets (the vessel-numbers pass that preceded 
 | **Urchin** | grinds its OWN colour at 300 u/s (`FriendlyTerrainSpeed`); a rival's at 20 (Time-5 Slipstream: 300) | riding, no resource | nothing; corners are the rail's |
 | **Squirrel** | skims any colour: +0.1 boost per contact to ×5 → 300 u/s | skim energy, decays 0.3/s | ramming a rail prism **resets the boost** (`VesselResetBoostPrismEffect`) |
 | **Manta** | flies beside it | Soar (free; costs yaw) 720 u/s | ram = slow (`VesselChangeSpeedByPrism`) |
-| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 1210 u/s | none — no speed effect wired |
+| **Rhino** | flies beside it; an **energised** sword pops a rail prism | ramp (straightness) 1200 u/s | none — no speed effect wired |
 | **Dolphin** | skims for seed energy, not speed | charge (drift) → discharge 347 u/s | ram = slow + half the charge |
 | **Serpent** | flies beside it | 4 charges × 3 s at 160 u/s, regen 3.6 s/charge | none wired |
 | **Sparrow** | flies beside it | indefinite boost 135 u/s | ram = slow |
@@ -73,9 +73,9 @@ line, intensity 1):
 | Serpent | Time → boost ×1.6, duration ×1.6 | 101 s | 58 s | Time 10 |
 | Sparrow | Time → boost ×1.5 | 108 s | 74 s | Time 10 |
 
-**Spread 8.8× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
+**Spread 8.7× at rest → 6.0× tuned (5.3× at intensity 4).** That residual is the finding, not
 a rounding: an element spans ~1.5× on the hulls it reaches and nothing at all on the Rhino, while
-the fleet's straight-line speeds span 35×. Tighter corners compress it a little (the fast hulls
+the fleet's straight-line speeds span 34×. Tighter corners compress it a little (the fast hulls
 pay them; a rider pays nothing), which is why the ladder tightens the floors. What would close
 the rest is recorded in §8 rather than faked here. The comeback system is the second balancer
 in play: six gates behind buys 2.1 levels of every element, and Time is speed on five hulls.
@@ -89,7 +89,7 @@ C# so a course edit cannot ship on stale numbers.
 The circuit is `HeadlongCircuit`, shared, cut for **nobody in particular** (`RegattaCourse`):
 Redline's corner profiles (the solver's proven reach at each rung), absolute corner floors set
 where the fastest hull that cannot slow instantly — the Scarab at 216 u/s, ~102 u — still makes
-the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1210 u/s.
+the corner, and mouths a step wider than Headlong's because a Rhino crosses one at 1200 u/s.
 
 | intensity | turn profile (deg) | floor | mouth | measured tightest corner | spine | prisms |
 |---|---|---|---|---|---|---|
@@ -121,7 +121,7 @@ a multiple of eight races to the course's honest length and warns.
 
 Everyone spawns on a ring **behind gate 0, pointed through it** (`IPlayerSpawnLine`, 260 u
 standoff, 120 u ring), not on the platform's equatorial ring 1120 u out facing the centre with
-gate 0 on the pole above — a grid of hulls whose cruise speeds span 35× does not want a first
+gate 0 on the pole above — a grid of hulls whose cruise speeds span 34× does not want a first
 corner it did not ask for.
 
 ## 6. AI
@@ -174,12 +174,22 @@ on a Sparrow), and a guest's own hull carries the same levels as the host's repl
   `Urchin_Square.png` plus a derived `Urchin_Inactive.png`, and `check_vessel_class_icons.py` gates
   every class asset's icons. `Docs/HomeHub/ARCHITECTURE.md` §3.5.
 - **The residual 5–6× spread is real.** The lever the user named — starting elements — reaches
-  five hulls by ~1.5× and the Rhino not at all. The honest next steps, in order of how much
-  they respect the fundamentals: (1) give the Rhino's ramp a Time endpoint (a `/vessel` change:
-  `RampBoostActionSO.maxBoostMultiplier` as an `ElementalFloat`), which is also the only thing
-  that makes the comeback reach a Rhino; (2) a **pursuit start** — the regatta's own answer to
-  mixed boats, a per-hull start release derived from this model, first through the last ring
-  wins outright; (3) a playtest before either, because this model is arithmetic.
+  five hulls by ~1.5×. **This used to read "and the Rhino not at all", which was half wrong and
+  is now wholly stale.** `RampBoostActionExecutor` has always read `Multiplier(Element.Time)` and
+  scaled `accelerationPerSecond` by it; the Rhino's map entry was simply an `(open design slot)`
+  authored 1.0/1.0, and Broadside's first playtest filled it (**Ramp Spool**, 2.5 / 0.5 — see
+  `BROADSIDE.md` § "What the first playtest changed"). So Time now reaches the Rhino's **wind-up
+  rate**, fleet-wide. What it still does **not** reach is the ramp's **ceiling**
+  (`maxBoostMultiplier` 24), which over a lap is most of what a race is bounded by — so this
+  model's numbers stand and its Rhino row is **unchanged and now stale in one respect**:
+  `rhino_model` returns its acceleration as a constant and does not scale it by level. The honest
+  next steps, in order of how much they respect the fundamentals: (1) teach `rhino_model` the new
+  endpoint and re-solve, then decide whether a Rhino Time row buys a Regatta lap anything (this
+  file claims nothing until it is measured); (2) make `maxBoostMultiplier` an `ElementalFloat`
+  too, if (1) is not enough — that is the ceiling, and it is a `/vessel` change; (3) a **pursuit
+  start** — the regatta's own answer to mixed boats, a per-hull start release derived from this
+  model, first through the last ring wins outright; (4) a playtest before any of them, because
+  this model is arithmetic.
 - The Dolphin's Time lever is inert here (the first charge cycle of every leg dominates), and
   its 347 peak is `BoostMultiplier × ChargedBoostCharge` — a squaring the vessel pass flagged
   as a possible defect. The model follows the code.

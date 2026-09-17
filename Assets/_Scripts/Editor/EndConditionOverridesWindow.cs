@@ -99,6 +99,9 @@ namespace CosmicShore.Editor
                 "cavitation plate (race to N), default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget + ".\n" +
                 "  • Undertow: points a DOMAIN needs - a bend (a rival caught in your plate) is 3, " +
                 "a creature the plate kills is 1, default " + EndConditionOverridesSO.DefaultUndertowPointTarget + ".\n" +
+                "  • Broadside: points a DOMAIN needs in the mixed-fleet brawl - a hit is priced by " +
+                "its VERB (round 1, contact strike 8, area debuff 12, rocket 10/20/30), default " +
+                EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " PER PILOT (the race target scales with team size: x1 / x1.6 / x2.2 / x2.8).\n" +
                 "  • Scarab Scramble: goals a DOMAIN needs to win (race to N) - a forged ball " +
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
                 "  • Salvo: hostile prisms destroyed to win (race to N), default " +
@@ -164,6 +167,7 @@ namespace CosmicShore.Editor
             int rg  = Mathf.Max(0, EditorGUILayout.IntField("Regatta - Gate Target (laps x 8 rings)", _config.regattaGateTarget));
             int wb  = Mathf.Max(0, EditorGUILayout.IntField("Wrecking Ball - Prism Target", _config.wreckingBallPrismTarget));
             int ut  = Mathf.Max(0, EditorGUILayout.IntField("Undertow - Point Target", _config.undertowPointTarget));
+            int bs  = Mathf.Max(0, EditorGUILayout.IntField("Broadside - Points PER PILOT", _config.broadsidePointsPerPilot));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
@@ -188,6 +192,7 @@ namespace CosmicShore.Editor
                     _config.regattaGateTarget = rg;
                     _config.wreckingBallPrismTarget = wb;
                     _config.undertowPointTarget = ut;
+                    _config.broadsidePointsPerPilot = bs;
                 });
 
             EditorGUILayout.Space();
@@ -216,6 +221,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Regatta", rg > 0 ? rg.ToString() : EndConditionOverridesSO.DefaultRegattaGateTarget + " (default)");
             EditorGUILayout.LabelField("Wrecking Ball", wb > 0 ? wb.ToString() : EndConditionOverridesSO.DefaultWreckingBallPrismTarget + " (default)");
             EditorGUILayout.LabelField("Undertow", ut > 0 ? ut.ToString() : EndConditionOverridesSO.DefaultUndertowPointTarget + " (default)");
+            EditorGUILayout.LabelField("Broadside (per pilot)", bs > 0 ? bs.ToString() : EndConditionOverridesSO.DefaultBroadsidePointsPerPilot + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -264,7 +270,8 @@ namespace CosmicShore.Editor
                    "Redline: " + Fmt(_config.redlineGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRedlineGateTarget) + "\n" +
                    "Regatta: " + Fmt(_config.regattaGateTargetBuild, "default " + EndConditionOverridesSO.DefaultRegattaGateTarget) + "\n" +
                    "Wrecking Ball: " + Fmt(_config.wreckingBallPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultWreckingBallPrismTarget) + "\n" +
-                   "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget);
+                   "Undertow: " + Fmt(_config.undertowPointTargetBuild, "default " + EndConditionOverridesSO.DefaultUndertowPointTarget) + "\n" +
+                   "Broadside (per pilot): " + Fmt(_config.broadsidePointsPerPilotBuild, "default " + EndConditionOverridesSO.DefaultBroadsidePointsPerPilot);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }
