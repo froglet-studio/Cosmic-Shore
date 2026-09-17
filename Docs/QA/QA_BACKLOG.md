@@ -319,6 +319,10 @@ form).
 9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4.
 10. Play a full round to the target at intensity **1** and again at **4**, and watch the
     goal row and the scoreboard count.
+11. **Arcade card preview (new):** open the Cleave card in the Arcade screen WITHOUT
+    launching, and step the intensity row 1 → 4. The preview vessel must open OUTSIDE the
+    arena on every rung, and the arena in the window must visibly CHANGE between rungs
+    (panes → roads → shells → ribbons), not just resize.
 
 **PASS:** four arenas that look nothing like each other — angled **slabs**, wide wavy
 **roads**, three nested **shells**, twisted **ribbons** · baselines within a few hundred
@@ -336,7 +340,9 @@ orbits **outside** and cuts on transits at both rungs · **no fauna hatch at any
 the goal row counts to **1,200** at intensities 1–2 and **1,500** at 3–4, and the round ends
 there.
 **FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out of
-order) · baselines off by thousands · the arena reading as a small ball in the middle of an
+order) · the card preview opening the vessel INSIDE the arena, or showing the same arena on
+all four rungs, or throwing on a missing cell config (`PreviewCellsByIntensity` must hold
+exactly FOUR entries) · baselines off by thousands · the arena reading as a small ball in the middle of an
 empty cell, or an intensity-1 crossing taking ~1.2 s (the 3× did not land) · spawning
 INSIDE the arena at intensity 1–2 (`spawnRingRadiusFloorByIntensity` is stale) · mass
 outside the membrane, or the small 1200 membrane cutting through a big arena · intensity 1

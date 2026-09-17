@@ -903,8 +903,12 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 - **Nothing has been run in the editor.** The arenas are measured, not seen. Every claim about how
   they LOOK — that the mullions read as beams, that a Swell ribbon reads as a carriageway at
   range, that the twistbands' roll is a manageable ask rather than an infuriating one — is a design
-  intention awaiting a playtest. **Intensity 1 is the one exception: it has been flown and
-  approved**, which is why it was not touched in the pass that re-authored rung 2.
+  intention awaiting a playtest. **Intensity 1's LAYOUT is the one exception: it was flown and
+  approved at the 6x envelope**, which is why the pass that re-authored rung 2 left its geometry
+  alone — but the prism pass after it re-cut rung 1 into 15,380 pieces from 5,107, so what was
+  approved is where the surfaces ARE, not what they are made of. The one thing to look at first is
+  whether a rib at 34 units long still reads as a continuous beam at the 2,160 spacing it is laid
+  at; the approval does not cover that, because the arena it was given to had 102-unit planks.
 - **The 1,200 / 1,200 / 1,500 / 1,500 targets are unmeasured for all four arenas** — see the pacing
   flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
   improvement over one shared number, but nothing here says what the resulting match LENGTH is.
