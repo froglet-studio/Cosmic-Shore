@@ -2,7 +2,7 @@
 
 **Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
 plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
-improvements, PeelTheCage scoring, game-data JSON schema, profile/ads, quit button,
+improvements, Cleave scoring, game-data JSON schema, profile/ads, quit button,
 menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
@@ -82,7 +82,7 @@ camera losing the vessel (framing empty space) · a camera left stuck in the gam
 pose after returning to the menu · any exception from the camera controller.
 
 ### QA-SCORING-CLIENT-MIRROR ⬜ — non-host players no longer start with the last game's score
-**Source:** PeelTheCage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
+**Source:** Cleave second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
 **B17**. **Why P0:** this was reproduced *every time* by the reporter and it corrupts
 the scoreboard of **every multiplayer mode** — so any score you read while testing
 another item is untrustworthy until this passes. Fix is
@@ -277,37 +277,85 @@ a counter ticking per prism · score moving for a starvation or a shark kill · 
 clumped at the arena centre or wandering between rooms · a flat population three minutes
 in · a non-Sparrow vessel spawning on either machine.
 
-### QA-RIBCAGE-MODE ⬜ — "Peel the Cage" has never been opened
+### QA-CLEAVE-MODE ⬜ — "Cleave" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
-merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
-Whole new game mode (`GameModes.PeelTheCage = 39`), authored headless. Reference:
-`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md` § In-editor verification.
+merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR),
+then the **four-arena rework** (three of the four nested-shell intensities replaced with
+unrelated arenas), the **2× scale-up** of all four, then a **3× further spread of
+intensities 1 and 2** (envelope 720 → 2160, the Panes at triple rib spacing, their own
+3600-radius membrane), and finally a **re-author of intensity 2** from corrugated wave
+SHEETS into five wide wavy ROADS, and finally a **PRISM-SIZE pass**: prism size came off the
+envelope scale onto its own dial pinned at 2 on all four rungs, so the two 6× arenas are now
+built from small pieces (a pane plank 34 long, not 102; a road plate 44, not 132) and their
+counts tripled to **15,380 / 14,277**, with the Swell's five roads also re-spread across the
+whole shell (spines 780…1,728). The ladder is targeted **1200 / 1200 / 1500 / 1500** and the
+comeback rate is **0.0125**. Whole game mode (`GameModes.Cleave = 39`), authored headless and
+never run. **Intensity 1 was flown and approved BEFORE the prism pass**, so how it reads has
+deliberately changed — same arena, finer grain. Reference:
+`_Scripts/Controller/Arcade/CLEAVE.md` § In-editor verification (29 steps; this is the short
+form).
 
-1. Open `MinigamePeelTheCage.unity`. Confirm no `Missing (Mono Script)`, the controller
-   shows `rule = PeelTheCageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
-   lists **four** configs with **Cell Type Choice = Intensity Wise**.
-2. Launch at intensity 1 → count the shells. Relaunch at intensity 4 → count again.
-3. Inspect the weave: are the openings **triangles** (each cell crossed by a diagonal,
-   lean alternating)?
-4. Compare outer vs innermost rind spacing.
-5. Orbit the whole cage: do the inner rinds' dense polar caps point different ways?
-6. Line up on the centre from outside and fly straight in.
-7. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
-   **10,620 / 14,731 / 17,992 / 20,153** prisms for intensities 1–4.
-8. Ram a plain rib. Then find a **danger** bar (distinct material) and ram it.
-9. Play a full round to the target and watch the scoreboard.
+1. Open `MinigameCleave.unity`. Confirm no `Missing (Mono Script)`, the controller
+   shows `rule = CleaveScoringRule` with milestone fractions 0.25 / 0.5 and a field named
+   **`aiArenaRadiusOverride`** (a stray `aiCageRadiusOverride` means the scene is stale),
+   and the Cell lists **four** configs with **Cell Type Choice = Intensity Wise**.
+2. Launch each of intensities **1 → 4** in turn and look at the arena, not the score.
+3. Run **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines**; expect
+   **15,380 / 14,277 / 14,731 / 16,423** prisms for intensities 1–4.
+4. **Scale:** from the spawn ring, does the arena fill the view? Time a boosted
+   straight-line run across the whole thing, at intensity 1 AND at intensity 4.
+5. Sight-check the arena's far side against the membrane shell — nothing may poke through.
+   At intensities 1–2 the shell must be the big one (3600), well outside the mass.
+6. Look closely at a pane rib / a Swell road deck / a twistband deck plate. **Do intensities
+   1 and 2 read as LOTS OF SMALL PRISMS rather than a few big slabs?** That is what the
+   prism pass exists for. **Intensity 2 is the one to scrutinise** — it is brand-new geometry
+   nobody has flown, twice over.
+6a. **Swell only:** find a road from the spawn ring (can you even see one?), put the blade
+   on its deck and follow it through a full lap. Then deliberately run wide on a tight
+   corner, and separately fly the INSIDE verge of the tightest corner on each of the five
+   roads.
+7. Select one laid arena prism at intensity 1 and read its transform scale.
+8. Ram a plain prism. Then find a **danger** prism (distinct material) and ram it.
+9. Watch an AI Rhino for a minute at intensity 1 AND at intensity 4.
+10. Play a full round to the target at intensity **1** and again at **4**, and watch the
+    goal row and the scoreboard count.
+11. **Arcade card preview (new):** open the Cleave card in the Arcade screen WITHOUT
+    launching, and step the intensity row 1 → 4. The preview vessel must open OUTSIDE the
+    arena on every rung, and the arena in the window must visibly CHANGE between rungs
+    (panes → roads → shells → ribbons), not just resize.
 
-**PASS:** 2 shells at intensity 1 and 5 at intensity 4 (nested at 360/295/230/165/100);
-triangular openings; the innermost rind is visibly the tightest; the cage visibly twists
-as you orbit; no free corridor to the centre; baselines within a few hundred of the
-expected counts; a plain bar shatters on **one** hit with no shield to shed; the danger
-bar also one-hits but full-stops you, debuffs all four elements ~4 s and resets boost;
-**no fauna hatch at any point**; the round ends on prisms destroyed and the scoreboard
-counts prisms.
-**FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs
-out of order) · bubble-shaped openings · uniform spacing core-to-surface · rinds all
-aligned at the poles · a clean corridor to the centre · two-hit/shielded bars ·
-any fauna · baselines off by thousands.
+**PASS:** four arenas that look nothing like each other — angled **slabs**, wide wavy
+**roads**, three nested **shells**, twisted **ribbons** · baselines within a few hundred
+of 15,380 / 14,277 / 14,731 / 16,423 · the arena spans most of the view from spawn, and a
+boosted crossing takes **~3.6 s** at intensities 1–2 and **~1.2 s** at 3–4 · the far side
+sits well inside the membrane at every rung · ribs, troughs and deck plates read as
+**continuous surfaces**, not as beads, and every rung reads as MANY SMALL pieces rather than
+a handful of slabs · a pane rib prism at intensity 1 measures roughly **6.8 × 6.8 × 34**, a
+mullion **10.4 × 10.4 × 44** and a Swell deck plate **44 × 5.2 × 44** · a Swell road reads as a carriageway
+(gold crown, blue shoulders, jade verges), holds an unbroken cut through a whole lap, bites
+only on the OUTER verge of tight corners, and never doubles back over itself on the inside
+of one · a plain prism shatters on **one** hit with no shield to shed · the danger prism
+also one-hits but full-stops you, debuffs all four elements ~4 s and resets boost · the AI
+orbits **outside** and cuts on transits at both rungs · **no fauna hatch at any point** ·
+the goal row counts to **1,200** at intensities 1–2 and **1,500** at 3–4, and the round ends
+there.
+**FAIL:** every intensity looking the same (Cell not on `IntensityWise`, or configs out of
+order) · the card preview opening the vessel INSIDE the arena, or showing the same arena on
+all four rungs, or throwing on a missing cell config (`PreviewCellsByIntensity` must hold
+exactly FOUR entries) · baselines off by thousands · the arena reading as a small ball in the middle of an
+empty cell, or an intensity-1 crossing taking ~1.2 s (the 3× did not land) · spawning
+INSIDE the arena at intensity 1–2 (`spawnRingRadiusFloorByIntensity` is stale) · mass
+outside the membrane, or the small 1200 membrane cutting through a big arena · intensity 1
+or 2 still reading as a few enormous slabs (a prism dimension is still on `LengthScale`) ·
+any surface reading as a dotted line of separated prisms (an along-grain STEP went to the
+prism dial while its prism LENGTH did not, or the reverse) · a prism whose long axis measures
+exactly **10** (the arena is laying through the wrong prefab) · a goal row reading 1,500 at intensity 1 (the
+per-intensity target did not replicate) · two-hit/shielded prisms · an AI that settles
+inside the arena, or one parked 936u out in a 2160 arena · any fauna · **intensity 2
+specific:** a road you cannot find from spawn, a cut that keeps dropping while you follow
+one, a road that ROLLS about its own travel direction (that is the Twistbands' job, not
+this rung's), danger on an inside verge or on a straight, or a road folding through itself
+at the inside of a bend.
 
 ### QA-DOLPHIN-SKIM ⬜ — nobody has ever seen a Dolphin skim work
 **Source:** PR #660 + #695 (15× skim-energy nerf → exactly **150 skims / 50 danger
@@ -429,7 +477,7 @@ any of it. Reference: `Docs/PALETTE.md` §6.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
    **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
-3. **Danger prisms** — PeelTheCage ("Peel the Cage") ships the same trap in all three
+3. **Danger prisms** — Cleave ships the same trap in all three
    domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
    Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
    not a dark edge.

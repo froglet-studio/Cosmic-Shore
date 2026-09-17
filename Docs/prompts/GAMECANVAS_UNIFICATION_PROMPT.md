@@ -20,7 +20,7 @@ Parsed from scene YAML, so treat as a starting point, not gospel.
 
 **Scope has grown since `Docs/GAMECANVAS.md` was written — it says 6 scenes, it is now 15.**
 Every mode added since (Drumfire, Hijack, Switchback, Salvo, Scarab Scramble, Dog Fight, Bends,
-Wildlife Liberation, Peel the Cage, Rampage, Brood Rush, Astro League…) was cloned from a
+Wildlife Liberation, Cleave, Rampage, Brood Rush, Astro League…) was cloned from a
 fork scene and inherited the whole override blob.
 
 | | |

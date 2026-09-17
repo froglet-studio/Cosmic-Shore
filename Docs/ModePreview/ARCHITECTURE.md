@@ -76,7 +76,7 @@ against one that does not exist.
 ### 1.1.2 A GROWN world shows its PLANTING
 
 Only **three** of the seventeen preview cells author an `EnvironmentPrefab` — the Boneyard, the
-PeelTheCage and the Wildlife cages. The other fourteen have no generator at all: their arenas are
+Cleave and the Wildlife cages. The other fourteen have no generator at all: their arenas are
 **planted by the spawn profile once a match starts**, so at the instant a card is opened there is
 literally nothing built to sample. That is data, not a defect, and it is why "the environment does
 not show up" was true of almost every card while the model path was working perfectly.
@@ -152,7 +152,7 @@ Measured coverage after this (per preview definition, at every authored intensit
 
 | What the card shows | Modes |
 |---|---|
-| Full scale model of an authored environment | Dog Fight, Peel the Cage, Wildlife Liberation |
+| Full scale model of an authored environment | Dog Fight, Cleave, Wildlife Liberation |
 | Track model + shell (per-intensity) | Joust, Scurry, Skim Race |
 | Planting model + shell | Rampage, The Bends (59 markers / 5 species), Wildlife Blitz ×2 (4 / 1) |
 | Shell alone | Astro League, Brood Rush, Scarab Scramble, Freestyle, Cellular Duel ×2, 2v2 Co-Op |
@@ -176,7 +176,7 @@ and the two disagreed badly — measured against the scenes:
 | Wildlife Liberation | ring floor **1150**, EquatorialRing | 70 u, Symmetric |
 | Scarab Scramble | ring floor **760** | 70 u |
 | Dog Fight | ring floor **700** | 70 u |
-| Peel the Cage | ring floor **576**, EquatorialRing | 70 u, Symmetric |
+| Cleave | ring floor **576**, EquatorialRing | 70 u, Symmetric |
 | Joust / Astro League / Brood Rush | hand-placed on a 70.7 u ring, each facing the core | 70 u ring |
 
 So a card opened you inside the arena the mode starts you outside of, and the two modes whose scenes
@@ -237,7 +237,7 @@ invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card tha
 species without being kill-scored.
 
 **PrismLayDecimation applies at BOTH lay paths.** `SpawnableBase.SpawnPrismTrail` covers track
-structures — but every `CellEnvironmentSpawnableBase` world (the PeelTheCage cage, Atlantis, the
+structures — but every `CellEnvironmentSpawnableBase` world (the Cleave cage, Atlantis, the
 freestyle seven) lays through `PrismTrailBuilder` with its own `_cachedLays` list and never calls
 `SpawnPrismTrail`, so authored-environment previews silently built at FULL density while the
 stride only thinned tracks. `SpawnLeafObjects` now hands the builder
@@ -539,7 +539,7 @@ Joust(34), Scurry = Scurry(35)**.
 
 | Group | Modes | Arena source |
 |---|---|---|
-| Full arenas | Rampage, PeelTheCage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
+| Full arenas | Rampage, Cleave, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
 | Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
 | Later arcade modes | Tollway, Wrecking Ball, Undertow, Regatta, Salvo, Hijack, Skein, Bloomrush | The mode's own cell configs, four per intensity where the scene is IntensityWise (Hijack's Switchyard and Skein's knot are authored `EnvironmentPrefab`s, so their scale models show the rails; Salvo and Bloomrush reference the Boneyard and the Rampage forest exactly as the modes do) |
 | Shell-only gate races | Switchback, Headlong, Redline, Breakwater | Controller-built courses (rings solved at match start, Breakwater's stations) on a single cell, so the preview shows the cell and the hull and the Notes say OPEN-ENDED — the same honesty Tollway and Regatta already record. A `StructurePrefab` of a few standing rings is the recorded gap |

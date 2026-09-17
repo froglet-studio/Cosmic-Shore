@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
                 case GameModes.BroodRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
-                case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
+                case GameModes.Cleave: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
                 case GameModes.WreckingBall: // same: the Scarab demolition race (ball + plate)
                     return ScoreDifferenceSource.PrismsDestroyed;

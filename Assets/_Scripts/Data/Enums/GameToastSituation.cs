@@ -31,15 +31,17 @@ namespace CosmicShore.Data
         // Brood Rush (BroodRush)
         BroodWaveScored = 40,
 
-        // PeelTheCage ("Peel the Cage")
+        // Cleave
         // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
-        // Values 50/51 were PeelTheCageBroodReleased/PeelTheCagePackReleased when the mode ran a fauna
-        // ladder; the fauna were removed from the level and the same two rungs now mark pure
-        // race progress. Renamed rather than retired because no GameToastConfigSO authors them
-        // yet, so nothing serialized points at the old names.
-        PeelTheCageQuarterPeeled = 50,   // leader is a quarter of the way to the target
-        PeelTheCageHalfPeeled = 51,      // leader is halfway
-        PeelTheCageLeaderChanged = 52,   // the lead changes hands after a milestone
+        // Values 50/51 have now been renamed TWICE and both renames were free for the same
+        // reason: no GameToastConfigSO authors these situations yet, so nothing serialized
+        // points at any of the old names. They were CleaveBroodReleased/CleavePackReleased when
+        // the mode ran a fauna ladder, then ...QuarterPeeled/...HalfPeeled while the mode was
+        // called Peel the Cage. "Peeled" described ONE of the four arenas the mode now ships -
+        // you do not peel a wave sheet - so the rungs are named for what they actually measure.
+        CleaveQuarterCut = 50,      // leader is a quarter of the way to the target
+        CleaveHalfCut = 51,         // leader is halfway
+        CleaveLeaderChanged = 52,   // the lead changes hands after a milestone
 
         // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
         WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target

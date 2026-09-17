@@ -2,9 +2,12 @@
 
 > **Naming.** `GameModes.WildlifeLiberation = 40` is the code/data/enum identity. The
 > player-facing `DisplayName` on `ArcadeGameWildlifeLiberation.asset` is **"Wildlife
-> Liberation"** too — no split today, but if one is ever wanted, change the DisplayName only
-> (the Maelstrom/"Maelstrom" and PeelTheCage/"Peel the Cage" precedent). Do not rename the enum,
-> the controller, the scene, or this file.
+> Liberation"** too — no split today, and note that **both** modes
+> that ever ran a display-name-only split have since had the split closed by a FULL code rename
+> (Tournament → Maelstrom; Ribcage → PeelTheCage → Cleave). Treat a split as a temporary state
+> rather than a design: if the display name is going to stick, rename the code with
+> `Tools/Build/rename_game_modes.py` + `rename_game_mode_files.py` and add the hop to
+> `GameModeRenameMigration`, which is what keeps players' cloud saves.
 
 ## Overview
 
@@ -19,7 +22,7 @@ to the summed kill target (default **30**) wins.
 crystals. A creature that starves, or that a shark eats, credits **nobody**.
 
 **It is a domain race, like every other multiplayer mode here** (Skim Race, Joust, Scurry,
-Rampage, PeelTheCage, Brood Rush, Astro League): the winning domain is the one whose players'
+Rampage, Cleave, Brood Rush, Astro League): the winning domain is the one whose players'
 kills sum to the target first.
 
 > **A FREE-FOR-ALL variant (first player to the target) shipped here briefly and was reverted.
@@ -39,7 +42,7 @@ kills sum to the target first.
   a party of one + AI backfill)
 - **GameMode enum**: `GameModes.WildlifeLiberation = 40`
 - **Controller**: `WildlifeLiberationController : MultiplayerDomainGamesController` — a
-  structural sibling of `RampageController` / `PeelTheCageController` (1 round / 1 turn,
+  structural sibling of `RampageController` / `CleaveController` (1 round / 1 turn,
   `HasEndGame=false`, server winner detection in `OnTurnEndedCustom`, snapshot
   `SyncFinalScores_ClientRpc`), plus progress milestones and the AI hunters
 - **Scoring**: `WildlifeLiberationScoringRuleSO` (`metric = ScoringMetric.LifeformsKilled`;
@@ -89,7 +92,7 @@ ecology, not the scoring.**
 Every other stat in the game originates from something that exists identically on every peer. A
 prism sits at the same world position on the host and on every client, so when a client rams
 one, the server's own physics sees the same collision with the same attribution and
-`StatsManager` records it server-side — which is why Rampage and PeelTheCage need no RPC at all.
+`StatsManager` records it server-side — which is why Rampage and Cleave need no RPC at all.
 
 **Fauna are not like that.** They have no `NetworkObject`; every peer simulates its own swarm
 and the populations diverge (`Docs/ECOSYSTEM.md` §7 caveat 4). A creature a client just shot may
@@ -166,7 +169,7 @@ colony-initiated deaths (`WitherAway`, a split's shed) the base guard cannot see
 
 ## The roam band (one band, every species)
 
-`Cell.FaunaContainmentRadius` — PeelTheCage's brood pen — is **one radius, whole cell**.
+`Cell.FaunaContainmentRadius` — Cleave's brood pen — is **one radius, whole cell**.
 `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius` generalizes it to an **annulus
 authored per species**. This mode used that to stack three pens, one tier of wildlife per room;
 it now authors **one band, shared by every species**: **0 .. 1180** — the whole arena, core to
@@ -276,7 +279,7 @@ fails to reach past the outer cage into the water the players spawn in.
 ## The jail
 
 `SpawnableWildlifeCage : CellEnvironmentSpawnableBase`, seed 40, deterministic per seed like
-every cell environment. **This is not PeelTheCage.** PeelTheCage is a layered orange whose bone *is* the
+every cell environment. **This is not Cleave.** Cleave is a layered orange whose bone *is* the
 score — dense, tight, five rinds. This is a sparse lattice of long bars with big triangular
 openings, so the arena reads as mostly empty space: here the prisms are only the walls.
 
@@ -287,7 +290,7 @@ openings, so the arena reads as mostly empty space: here the prisms are only the
 - **Enormous radial gaps** — 450u between the outer and middle cages, 400u between the middle
   and the core. Each room is a place you fly *into*, not a rind you pass through.
 - **The openings are TRIANGLES, from a GEODESIC** (subdivided icosahedron), not latitude hoops.
-  That is a fairness property: a latitude sphere is densest at its poles, which is why PeelTheCage
+  That is a fairness property: a latitude sphere is densest at its poles, which is why Cleave
   must tilt every rind onto its own axis so nobody drills the top. A geodesic has no poles —
   every approach meets the same weave — so this cage needs no tilt table at all.
 - **Intensity ramps the SHAPE and the WEAVE — and nothing else.** The wildlife roster is
@@ -413,7 +416,7 @@ is untouched, so the saving is 741 movers per intensity. The cage half will now 
 during a match*, because the roam band made the bars grazeable; do not treat the cage column as
 a floor.
 
-Comparable to PeelTheCage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
+Comparable to Cleave (14,277 → 16,423) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
@@ -439,7 +442,7 @@ expensive per collider than the cage half**, and that is this branch's headline 
 `ActiveDomains` order so every machine agrees), `Remaining` (the domain's deficit) and
 `ResolvePlacementOrder` are all used unchanged. Only `IsObjectiveReached`, `AssignScores` and
 the two presentation methods are its own, and each has the same shape as
-`PeelTheCageScoringRuleSO`'s.
+`CleaveScoringRuleSO`'s.
 
 | member | behaviour |
 |---|---|
@@ -455,7 +458,7 @@ every other source — a player's deficit is their team's deficit against the le
 ## Sparrow-only
 
 Enforced in **three** places, all reading the single `Vessels` entry on
-`ArcadeGameWildlifeLiberation.asset`. This is not belt-and-braces for its own sake — PeelTheCage
+`ArcadeGameWildlifeLiberation.asset`. This is not belt-and-braces for its own sake — Cleave
 shipped with two of these and a client still flew a Dolphin:
 
 1. **`GameDataSO.SyncFromArcadeGame`** clamps `selectedVesselClass` on the machine that pressed
@@ -474,7 +477,7 @@ shipped with two of these and a client still flew a Dolphin:
 
 ## Everyone starts at zero
 
-PeelTheCage shipped a bug where some players began a match with a non-zero score.
+Cleave shipped a bug where some players began a match with a non-zero score.
 `RoundStats` lives on the **persistent** Player NetworkObject and survives every scene load, so
 a missed reset carries the previous game's stats straight in. Three layers here:
 
@@ -492,8 +495,8 @@ a missed reset carries the previous game's stats straight in. Three layers here:
 ## AI hunters
 
 **Every AI waypoint is INSIDE a room. That is the whole rule, and it is the exact inverse of
-PeelTheCage's.** `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and
-flies through on arrival — so a target's placement decides where the AI *lives*. PeelTheCage wants
+Cleave's.** `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and
+flies through on arrival — so a target's placement decides where the AI *lives*. Cleave wants
 its AI outside the bone (damage happens on the transit), so its stations sit beyond the shell.
 Here the prey is inside the rooms, so a waypoint on a wall would make the AI orbit the wall and
 never hunt: every patrol waypoint is placed at the **middle of a room's radial band**.
@@ -517,7 +520,7 @@ point in the race rather than at a point a busy lobby reaches several times fast
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a
 toast, never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone
-feedback** (same state as PeelTheCage).
+feedback** (same state as Cleave).
 
 ## End condition
 
@@ -555,7 +558,7 @@ Fight's curve (90 × 0.12 = 2.7), which is the nearest sibling by structure — 
 
 | mode | target | rate | levels at ¼-target deficit |
 |---|---:|---:|---:|
-| Rampage / PeelTheCage | 2000 | 0.01 | 5.0 |
+| Rampage / Cleave | 2000 | 0.01 | 5.0 |
 | Bends | 3 | 4.0 | 3.0 |
 | **Wildlife Liberation** | **30** | **0.35** | **2.6** |
 | Dog Fight | 90 | 0.12 | 2.7 |
@@ -641,7 +644,7 @@ the band and the PhaseThresholds cannot drift apart.
    generator and `wildlife_cage_budget.py` have drifted — fix both.
 6. **Spawn outside, on the equator.** All players start on ONE horizontal circle ~1150u out,
    facing the jail, with the whole thing visible ahead. Nobody starts inside it. Also check
-   Crystal Capture still spawns on its sphere (tetrahedral) and PeelTheCage on its own ring — those
+   Crystal Capture still spawns on its sphere (tetrahedral) and Cleave on its own ring — those
    scenes must be unchanged.
 7. **THE KILL PATH — the load-bearing check.** Shoot a tadpole (1 body prism, so one hit): it
    should **die** — wither/suction out and drop an elemental crystal — not keep swimming. Then a
@@ -669,7 +672,7 @@ the band and the PhaseThresholds cannot drift apart.
    shield on the bars**, which would fuse the lattice and cost the one-hit break-in.
 10. **Sparrow only — SOLO.** Pick a different vessel in an earlier game, then launch this: you
     should spawn a Sparrow, with a `clamping selected vessel` line in the log.
-11. **Sparrow only — MULTIPLAYER (the PeelTheCage regression).** Have the CLIENT fly a Dolphin in the
+11. **Sparrow only — MULTIPLAYER (the Cleave regression).** Have the CLIENT fly a Dolphin in the
     menu (vessel-changer toy), then have the host launch. The client must spawn a **Sparrow**,
     with a `does not allow Dolphin; spawning Sparrow instead` warning on the host, and every AI
     must be a Sparrow too. Then return to the menu and confirm the client can pick a Dolphin
@@ -678,7 +681,7 @@ the band and the PhaseThresholds cannot drift apart.
     do all the killing for 30 s. Their counter — and their DOMAIN's panel — must rise on **both**
     machines. If it rises only on the client, the `ReportFaunaKill_ServerRpc` path is broken —
     and note the reverse test is not equivalent, because the host records directly.
-13. **Everyone starts at 0 (the other PeelTheCage regression).** In a real multiplayer lobby (host +
+13. **Everyone starts at 0 (the other Cleave regression).** In a real multiplayer lobby (host +
     at least one client), check every score panel reads 0 at the countdown — **including after a
     rematch and after playing a previous game in the same session.**
 14. **Win + scoreboard.** First player to the target ends the turn; the winner shows a time,
@@ -718,10 +721,10 @@ the band and the PhaseThresholds cannot drift apart.
   reserved for a "somebody got into the core" callout.
 - **Cage radii do not vary with intensity.** "Bigger cages at later intensities" was interpreted
   as *denser and boxier*, because the outer radius is what the spawn ring, the AI aim points and
-  the arena silhouette are all defined against (the same reason PeelTheCage fixes its outer radius).
+  the arena silhouette are all defined against (the same reason Cleave fixes its outer radius).
   Growing the inner two shells at high intensity is a one-line change to `SHELL_RADII` if the
   tighter rooms are wanted.
-- **No objective-arrow provider**: like Rampage and PeelTheCage,
+- **No objective-arrow provider**: like Rampage and Cleave,
   `MiniGameHUD.CreateObjectiveProviderForGameMode` has no case — the wildlife is all around you,
   so there is no single point to aim at.
 - **No UGS stats reporter yet** (a "most creatures killed" leaderboard is a clean follow-up), and

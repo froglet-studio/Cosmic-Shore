@@ -278,7 +278,7 @@ lineup rather than a random sample of the whole roster.
 | | Salvo | Sparrow | Shoot the wreckage. The quarry is static and the guns are free; the reload economy is optional depth. |
 | | Switchback | Dolphin | Follow the arrow through the rings — Skim Race's shape with rings for crystals. |
 | **2** | Rampage | Dolphin | Skim → catch a crystal → fire the cone: a three-step chain. |
-| | Peel the Cage | Rhino | Break inward through the shells. |
+| | Cleave | Rhino | Break inward through the shells. |
 | | Dog Fight | Sparrow | Shoot the animals, except now they shoot back and evade. |
 | | Headlong | Rhino | A lapped circuit — you must brake for corners *and* know you are running laps. |
 | **3** | Scarab Scramble | Scarab | Forge a ball, then get it through a hoop. |

@@ -57,13 +57,19 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/BROODRUSH.md.
         BroodRush = 38,
-        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
-        // pens the cell's brood; domains race to smash the destruction target, and the
-        // leader IS the cell's controlling domain - so the fauna wave hatches in the
-        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
-        // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
-        PeelTheCage = 39,
+        // Cleave (39): the Rhino-only SLICING race. Domains race to cut a per-INTENSITY
+        // target of hostile prisms out of the arena (1200 / 1200 / 1500 / 1500 - a target is
+        // a fraction of the arena, so it is re-priced whenever the arena is re-cut), and the
+        // arena IS the score. Intensity picks WHICH PLACE you cut rather than how much of it
+        // there is - four unrelated arenas, one CellConfigDataSO each: angled panes, wide
+        // wavy roads, a three-rind cage, and interlocked one-sided Mobius ribbons. Every
+        // arena is built from the same SMALL prisms (SliceArenaGeometry.PrismScaleI1..I4, all
+        // 2): destroying lots of little prisms is the fun, one big prism reads as low
+        // poly. Every prism is plain or danger; nothing is shielded,
+        // because an AI never pulls the triggers that energize a blade and hardened mass
+        // would be mass an all-AI domain could never score against. See
+        // _Scripts/Controller/Arcade/CLEAVE.md.
+        Cleave = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in

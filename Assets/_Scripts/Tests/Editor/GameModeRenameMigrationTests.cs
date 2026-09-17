@@ -85,11 +85,21 @@ namespace CosmicShore.Tests
         [Test]
         public void MigrateNames_MovesUnlocksAndKeepsTheRest()
         {
+            // "Ribcage" and "PeelTheCage" are TWO generations of one mode and BOTH must land on
+            // "Cleave" in a single pass - Resolve is one dictionary lookup, not a fixed point, so
+            // a chained map would leave the older save on a name nothing reads.
             var unlocked = new List<string> { "HexRace", "Rampage", "Ribcage" };
             GameModeRenameMigration.MigrateNames(unlocked);
 
             CollectionAssert.AreEquivalent(
-                new[] { "SkimRace", "Rampage", "PeelTheCage" }, unlocked);
+                new[] { "SkimRace", "Rampage", "Cleave" }, unlocked);
+
+            var twoGenerations = new List<string> { "Ribcage", "PeelTheCage" };
+            GameModeRenameMigration.MigrateNames(twoGenerations);
+
+            Assert.AreEqual(1, twoGenerations.Count,
+                "Both historical names resolve to the same current name, and the list is a set.");
+            Assert.AreEqual("Cleave", twoGenerations[0]);
         }
 
         [Test]
@@ -135,7 +145,7 @@ namespace CosmicShore.Tests
             GameModeRenameMigration.Migrate(data);
 
             CollectionAssert.AreEquivalent(new[] { "SkimRace", "Maelstrom" }, data.UnlockedModes);
-            CollectionAssert.AreEquivalent(new[] { "PeelTheCage" }, data.CompletedQuests);
+            CollectionAssert.AreEquivalent(new[] { "Cleave" }, data.CompletedQuests);
             Assert.AreEqual(12f, data.BestStats["BroodRush"]);
             Assert.AreEqual(4, data.MaxUnlockedIntensity["Joust"]);
             Assert.AreEqual(7, data.IntensityPlayCounts["DuelForTheCell:2"]);

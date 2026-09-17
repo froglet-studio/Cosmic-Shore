@@ -68,7 +68,7 @@ config entry's `everyN` says how often the total must cross a multiple before th
 | `BroadsideVerbHint` (115) / `BroadsideCloseHint` (116) | controller config (idle hints) | — |
 | `RegattaRailHint` (110) / `RegattaLaneHint` (111) | controller config (idle hints) | — |
 
-The Dog Fight (57-59), Bends (60-62), Peel the Cage (50-52) and Wildlife Liberation (53-56)
+The Dog Fight (57-59), Bends (60-62), Cleave (50-52) and Wildlife Liberation (53-56)
 milestone situations are posted by their controllers; only Dog Fight and The Bends author them
 today (the other two modes post into nothing until a config is added).
 

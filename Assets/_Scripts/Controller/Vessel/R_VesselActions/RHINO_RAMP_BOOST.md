@@ -257,7 +257,7 @@ how a platform law starts reading like a vessel feature again.
 ## Blast radius — the Rhino is MANDATORY in three modes
 
 Every number above is a property of the VESSEL, so it lands in every mode that flies it, and the
-Rhino is the required hull in **Astro League (37)**, **Peel the Cage (39)** and now
+Rhino is the required hull in **Astro League (37)**, **Cleave (39)** and now
 **Headlong (49)**. Both existing modes want a playtest against this pass, and neither was
 retuned here:
 
@@ -268,7 +268,7 @@ retuned here:
   a boosted swing hits very much harder than before. Watch for the ball leaving the court in one
   touch. The graded ramp cuts the other way — a pilot turning toward the ball no longer carries
   full ramp into the strike — so this needs a play test rather than a prediction.
-- **Peel the Cage** — the cage's outer radius is 360 u and its innermost shell is 100 u. The
+- **Cleave** — the cage's outer radius is 360 u and its innermost shell is 100 u. The
   Rhino's boosted turn radius (100 u) now matches the core, but the ramp needs ~5,200 u of
   straight line to reach top speed and the arena is 720 u across, so in practice the boost cannot
   wind past roughly ×5 in there. That is a self-limiting arena rather than a fix.
