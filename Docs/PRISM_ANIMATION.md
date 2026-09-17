@@ -1212,6 +1212,51 @@ volume whose extent is a property of the CAMERA, is a different fraction on ever
 and the fleet's camera distances are the thing that varies most. State such a constant as a
 share of what it is taken from, or measure it on the closest-camera hull.
 
+**And the cap was still only half the answer, because the clearance is paid by mass that
+cannot use it (2026-09-17).** Capped or not, roughly the closest half of the tunnel is
+solid-or-grading on the two closest-camera flying hulls — and **explosion debris is born
+exactly there**, at the point of destruction, which in a fight is at or near the hull. So a
+burst went on occluding the vessel while every fragment was nominally inside the corridor,
+which is the symptom this whole pass started from. What the clearance buys is stated in the
+file and is a claim about **collision**: a prism the ship is about to *hit* must read solid
+so the impact lands visibly. **Debris has no collider.** It is photons from the frame it is
+born, so the clearance's argument has nothing to buy on the debris graph while its cost is
+paid in the one place it hurts most.
+
+The fix is a second **entry point**, not a second corridor. `PrismOcclusionFadeImpl` is the
+one body; `PrismOcclusionFade_float` passes `PRISM_OCCLUSION_NOSE_CLEARANCE` (1.0) and
+`PrismOcclusionFadeDebris_float` passes `PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE` (**0.0**).
+`BlockGraph` binds the first and is **untouched**, so live — collidable — mass keeps the
+full clearance and no impact read is lost; `ExplodingBlockGraph` binds the second, so
+debris dissolves flush to the vessel's plane:
+
+| ρ | 1.25 | 1.75 | 2.83 | 3.5 | 5.0 | 11.7 | 41.7 |
+|---|---|---|---|---|---|---|---|
+| clear fraction, live mass | 0.500 | 0.500 | 0.500 | 0.500 | 0.650 | 0.851 | 0.958 |
+| clear fraction, debris | 0.502 | 0.573 | **0.736** | 0.786 | 0.851 | 0.936 | 0.982 |
+
+**The cost, stated:** a burst visibly THINS where it crosses the ship. That is the corridor
+doing its job on mass that has no other job, and it was chosen deliberately over the
+alternatives — nothing collidable changes. The base-share cap goes *mostly* inert for
+debris as a consequence rather than as a second decision (with `clearanceT = 0` the share
+is the grade alone, `0.75/ρ`, under 0.5 for every ρ ≥ 1.5); it still bites on the Urchin at
+ρ ≈ 1.12, where it is doing exactly the job it was written for.
+
+**Two entry points rather than a new node input, and that is not a style call.** A
+ShaderGraph file-mode Custom Function node builds its call as **all input slots, then all
+output slots** — slot IDs do not decide it — so a parameter declared after an `out` makes
+the graph fail to compile and *every material drawn with it renders unmaterialed*, with
+nothing in the console naming the file. That is a shipped incident, not a hypothetical;
+`Tools/Build/check_shadergraph_custom_function_signatures.py` holds the rule now, and both
+wrappers keep the identical four-in/two-out shape so the debris graph needed only its
+`m_FunctionName` string changed.
+
+**The general rule**: *a clearance is bought for a reason, and mass that cannot use that
+reason should not pay for it.* Both entry points are compiled from the one shipped body by
+`verify_prism_corridor_base.py` **T4**, which asserts the debris corridor is wider at every
+ρ and reaches the grade, with the live clearance as the negative control — so "the same
+corridor, one argument apart" stays a measurement rather than a claim in a comment.
+
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
 world radius subtends a *huge* solid angle near the camera, so a capsule massively

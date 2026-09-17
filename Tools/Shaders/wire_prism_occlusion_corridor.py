@@ -49,7 +49,9 @@ What it adds to each graph:
   nodes:
       Position (World)                       -> fragment world position
       Property x2                            -> the two globals
-      PrismOcclusionFade (Custom Function)    -> PrismOcclusionCorridor.hlsl
+      <entry point> (Custom Function)        -> PrismOcclusionCorridor.hlsl
+        BlockGraph          PrismOcclusionFade        (full nose clearance)
+        ExplodingBlockGraph PrismOcclusionFadeDebris  (none — debris has no collider)
 
   edges (the splice - whatever fed SurfaceDescription.Alpha is RETARGETED into the
   custom function's BaseAlpha input, so the graph's own alpha still applies and the
@@ -84,7 +86,24 @@ POSITION_DONOR = "Assets/_Graphics/Materials/Graphs/CageGraph.shadergraph"
 # GUID of Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl, pinned by its
 # committed .meta so this reference can never drift.
 HLSL_GUID = "bf8e2c1fa76142c89ba03b2e1ae46201"
+# The entry point each graph binds to. Live mass and its debris run the SAME corridor
+# body (PrismOcclusionFadeImpl) and differ in ONE argument — the nose clearance, which
+# debris gets none of because it has no collider and therefore nothing to buy with one
+# (PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE in the HLSL). Two thin _float wrappers rather
+# than a new input slot: the slot list below IS the call's parameter order, so adding
+# one is the edit class that renders every prism material magenta.
 FUNCTION_NAME = "PrismOcclusionFade"
+DEBRIS_FUNCTION_NAME = "PrismOcclusionFadeDebris"
+FUNCTION_NAME_BY_GRAPH = {
+    "BlockGraph.shadergraph": FUNCTION_NAME,
+    "ExplodingBlockGraph.shadergraph": DEBRIS_FUNCTION_NAME,
+}
+
+
+def function_name_for(rel_path):
+    base = os.path.basename(rel_path)
+    assert base in FUNCTION_NAME_BY_GRAPH, f"no corridor entry point declared for {base}"
+    return FUNCTION_NAME_BY_GRAPH[base]
 
 TARGET_PROP = ("PrismOcclusionTarget", "_PrismOcclusionTarget")
 PARAMS_PROP = ("PrismOcclusionParams", "_PrismOcclusionParams")
@@ -214,11 +233,11 @@ def make_position_node(donor_position_node, donor_slot, x, y):
     return node, [slot]
 
 
-def make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3, x, y):
+def make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3, x, y, fn_name):
     node = json.loads(json.dumps(donor_cf))
     node["m_ObjectId"] = new_oid()
-    node["m_Name"] = f"{FUNCTION_NAME} (Custom Function)"
-    node["m_FunctionName"] = FUNCTION_NAME
+    node["m_Name"] = f"{fn_name} (Custom Function)"
+    node["m_FunctionName"] = fn_name
     node["m_FunctionSource"] = HLSL_GUID
     node["m_SourceType"] = 0
     node["m_DrawState"]["m_Position"].update({"x": x, "y": y, "width": 232.0, "height": 350.0})
@@ -241,7 +260,7 @@ def edge(out_node, out_slot, in_node, in_slot):
 # validation
 # ---------------------------------------------------------------------------
 
-def validate(docs, expect_wired):
+def validate(docs, expect_wired, fn_name):
     """Rebuild the object model and assert every invariant. Raises on failure."""
     idx = index(docs)
     graph = find_graph(docs)
@@ -302,8 +321,8 @@ def validate(docs, expect_wired):
         ), f"{name} not in any blackboard category"
 
     cf = next((idx[r["m_Id"]] for r in graph["m_Nodes"]
-               if idx[r["m_Id"]].get("m_FunctionName") == FUNCTION_NAME), None)
-    assert cf is not None, "PrismOcclusionFade custom function node missing"
+               if idx[r["m_Id"]].get("m_FunctionName") == fn_name), None)
+    assert cf is not None, f"{fn_name} custom function node missing"
     assert cf["m_FunctionSource"] == HLSL_GUID, "custom function points at the wrong HLSL asset"
     cf_slots = {idx[s["m_Id"]]["m_Id"]: idx[s["m_Id"]] for s in cf["m_Slots"]}
     assert set(cf_slots) == {s[0] for s in CF_SLOTS}, "custom function slot ids do not match the HLSL signature"
@@ -362,16 +381,17 @@ def validate(docs, expect_wired):
 def wire_graph(rel_path, check_only):
     """Returns (changed, message). Raises on any invariant failure (before writing)."""
     path = os.path.join(REPO, rel_path)
+    fn_name = function_name_for(rel_path)
     docs = load_docs(path)
     graph = find_graph(docs)
 
     if find_property(docs, TARGET_PROP[0]) is not None:
-        validate(docs, expect_wired=True)
+        validate(docs, expect_wired=True, fn_name=fn_name)
         return False, f"{os.path.basename(rel_path)}: already wired (validated)."
     if check_only:
         return False, None  # signals NOT wired
 
-    validate(docs, expect_wired=False)  # the file we are about to edit must be sane
+    validate(docs, expect_wired=False, fn_name=fn_name)  # the file we are about to edit must be sane
     idx = index(docs)
 
     # ---- donors (all same-file except the Position node, which these graphs lack) ----
@@ -413,7 +433,7 @@ def wire_graph(rel_path, check_only):
     params_node, s2 = make_property_node(donor_prop_node, donor_slot_v3,
                                          params_prop["m_ObjectId"], PARAMS_PROP[0], -1500.0, 1990.0)
     position_node, s3 = make_position_node(donor_pos, donor_pos_slot, -1500.0, 1560.0)
-    cf_node, s4 = make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3, -1180.0, 1620.0)
+    cf_node, s4 = make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3, -1180.0, 1620.0, fn_name)
 
     for node, slots in ((target_node, s1), (params_node, s2), (position_node, s3), (cf_node, s4)):
         new_docs.append(node)
@@ -448,10 +468,10 @@ def wire_graph(rel_path, check_only):
     ]
 
     docs += new_docs
-    validate(docs, expect_wired=True)  # nothing has been written yet
+    validate(docs, expect_wired=True, fn_name=fn_name)  # nothing has been written yet
 
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
-    validate(load_docs(path), expect_wired=True)  # re-read from disk and re-check
+    validate(load_docs(path), expect_wired=True, fn_name=fn_name)  # re-read from disk and re-check
     return True, (f"{os.path.basename(rel_path)}: wired and validated "
                   f"(+2 globals, +4 nodes, +{len(new_docs) - 6} slots, 5 new edges, 1 retargeted).")
 

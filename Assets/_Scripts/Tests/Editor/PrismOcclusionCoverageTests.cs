@@ -34,6 +34,7 @@ namespace CosmicShore.Tests
         static readonly string[] WiredGraphPaths = PrismOcclusionWiringValidator.GraphPaths;
         const string HlslPath = PrismOcclusionWiringValidator.CorridorHlslPath;
         const string FunctionName = PrismOcclusionWiringValidator.CorridorFunctionName;
+        const string DebrisFunctionName = PrismOcclusionWiringValidator.DebrisCorridorFunctionName;
         static readonly string[] GlobalProps = PrismOcclusionWiringValidator.CorridorGlobalProps;
         static readonly HashSet<string> KnownLegacyPrismPrefabs =
             new HashSet<string>(PrismOcclusionWiringValidator.KnownLegacyPrismPrefabs);
@@ -61,9 +62,20 @@ namespace CosmicShore.Tests
         {
             Assert.IsTrue(File.Exists(HlslPath), $"{HlslPath} is missing — the corridor has no GPU half.");
             string hlsl = File.ReadAllText(HlslPath);
-            Assert.IsTrue(hlsl.Contains($"void {FunctionName}_float("),
-                $"{HlslPath} does not declare {FunctionName}_float — ShaderGraph appends the precision suffix, " +
-                "so the function name must match exactly or every prism graph fails to compile.");
+            foreach (var fn in new[] { FunctionName, DebrisFunctionName })
+                Assert.IsTrue(hlsl.Contains($"void {fn}_float("),
+                    $"{HlslPath} does not declare {fn}_float — ShaderGraph appends the precision suffix, " +
+                    "so the function name must match exactly or every prism graph fails to compile.");
+
+            // Both entry points must be thin wrappers over ONE body: live mass and its
+            // debris differ only in the nose clearance they pass, and the day that stops
+            // being true the corridor's SHAPE can drift between them with nothing on
+            // screen to say which half is wrong.
+            Assert.IsTrue(hlsl.Contains("void PrismOcclusionFadeImpl("),
+                $"{HlslPath} has no PrismOcclusionFadeImpl — the two entry points are no longer one body.");
+            Assert.IsTrue(hlsl.Contains("PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE"),
+                $"{HlslPath} has no debris nose clearance — explosion debris is back on the live one, " +
+                "which keeps a solid zone in front of the ship that debris has no collider to justify.");
         }
 
         [Test]
@@ -93,8 +105,9 @@ namespace CosmicShore.Tests
                         $"{graphPath}: {prop} is Hybrid Per Instance — it is a frame global, not per-prism data.");
                 }
 
-                Assert.IsTrue(text.Contains($"\"m_FunctionName\": \"{FunctionName}\""),
-                    $"{graphPath} has no {FunctionName} Custom Function node — prisms on it can never fade.");
+                string expectedFunction = PrismOcclusionWiringValidator.CorridorFunctionFor(graphPath);
+                Assert.IsTrue(text.Contains($"\"m_FunctionName\": \"{expectedFunction}\""),
+                    $"{graphPath} has no {expectedFunction} Custom Function node — prisms on it can never fade.");
             }
         }
 

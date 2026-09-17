@@ -27,6 +27,10 @@ Asserts, each with a negative control that must fail:
   T1  every rho > 1 keeps a non-empty fully-clear corridor          (the file's own claim)
   T2  the clearance + its grade never take more than MAX_BASE_SHARE
   T3  BIT-IDENTICAL to the pre-shrink formula wherever it does not bite (rho >= 3.5)
+  T4  the DEBRIS entry point clears further than the live one, all the way to the grade
+
+Both entry points are compiled from the one shipped body (PrismOcclusionFadeImpl), which
+is what makes "the same corridor, one argument apart" a measurement rather than a claim.
 
 Exit 0 on pass. Needs clang++; nothing else, and no Unity.
 Usage: [--check] is accepted and is the same thing (this tool only ever reads).
@@ -92,23 +96,25 @@ int main()
         float3 target(0.0f, 0.0f, (float)D);
         float3 p(0.0f, 0.0f, (float)(t * D));
         float3 params((float)R, (float)(0.25 * R), 0.0f);
-        float a, thr;
+        float a, thr, ad, thrd;
         PrismOcclusionFade_float(p, target, params, 1.0f, a, thr);
-        printf("%.9g\n", a);
+        PrismOcclusionFadeDebris_float(p, target, params, 1.0f, ad, thrd);
+        printf("%.9g %.9g\n", a, ad);
     }
     return 0;
 }
 """
 
 MAX_BASE_SHARE_NAME = "PRISM_OCCLUSION_MAX_BASE_SHARE"
+DEBRIS_CLEARANCE_NAME = "PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE"
 
 
 def extract_slice(text, legacy=False):
     """The shipped corridor's stage 1, verbatim, plus what it calls."""
     parts = ["float _PrismOcclusionNearRadius;"]
-    for const in ("PRISM_OCCLUSION_NOSE_CLEARANCE", MAX_BASE_SHARE_NAME):
+    for const in ("PRISM_OCCLUSION_NOSE_CLEARANCE", DEBRIS_CLEARANCE_NAME, MAX_BASE_SHARE_NAME):
         m = re.search(rf"^static const float {const} = [-\d.]+;", text, re.M)
-        if const == MAX_BASE_SHARE_NAME and m is None:
+        if const in (MAX_BASE_SHARE_NAME, DEBRIS_CLEARANCE_NAME) and m is None:
             continue  # pre-fix tree; the legacy control below is then the shipped shape
         assert m, f"{const} not found in the shipped HLSL"
         parts.append(m.group(0))
@@ -120,7 +126,11 @@ def extract_slice(text, legacy=False):
         return text[i:k + 3]
 
     parts.append(body("float PrismOcclusionSmootherStep(float t)"))
-    fn = body("void PrismOcclusionFade_float(")
+    # The shared body plus BOTH entry points. They differ only in the nose clearance
+    # they pass (live mass keeps it, debris gets none), so compiling both from the one
+    # source is what makes "same corridor, one argument apart" a measurement rather
+    # than a claim in a comment.
+    fn = body("void PrismOcclusionFadeImpl(")
     assert fn.count("out float Alpha, out float ClipThreshold") == 1, \
         "corridor out-parameter shape drifted"
     fn = fn.replace("out float Alpha, out float ClipThreshold",
@@ -133,6 +143,12 @@ def extract_slice(text, legacy=False):
         fn = fn.replace("float shrink = min(1.0, " + MAX_BASE_SHARE_NAME +
                         " / max(baseShare, 1e-4));", "float shrink = 1.0;")
     parts.append(fn)
+    for entry in ("void PrismOcclusionFade_float(", "void PrismOcclusionFadeDebris_float("):
+        w = body(entry)
+        assert w.count("out float Alpha, out float ClipThreshold") == 1, \
+            f"{entry} out-parameter shape drifted"
+        parts.append(w.replace("out float Alpha, out float ClipThreshold",
+                               "float &Alpha, float &ClipThreshold"))
     return "#pragma once\n" + "\n".join(parts) + "\n"
 
 
@@ -154,20 +170,26 @@ def run(exe, queries):
     assert p.returncode == 0, p.stderr
     out = p.stdout.strip().splitlines()
     assert len(out) == len(queries), f"{len(out)} results for {len(queries)} queries"
-    return [float(v) for v in out]
+    # (live-mass alpha, debris alpha) per query — the two entry points differ ONLY in
+    # the nose clearance, so sampling both from one run is free and keeps them honest.
+    return [tuple(float(v) for v in line.split()) for line in out]
 
 
 STEPS = 2001
 
 
-def clear_fraction(exe, rho, R=6.0):
-    """The largest t at which the corridor is FULLY clear on its own axis, /1."""
+def clear_fraction(exe, rho, R=6.0, column=0):
+    """The largest t at which the corridor is FULLY clear on its own axis, /1.
+
+    column 0 = the live-mass entry point (full nose clearance), 1 = the debris one
+    (no clearance — PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE).
+    """
     D = rho * R
     ts = [i / (STEPS - 1.0) for i in range(STEPS)]
     a = run(exe, [(D, R, t) for t in ts])
     last = -1
     for i, v in enumerate(a):
-        if v <= 1e-6:
+        if v[column] <= 1e-6:
             last = i
     return (last / (STEPS - 1.0)) if last >= 0 else 0.0
 
@@ -184,12 +206,15 @@ def main():
 
         rhos = [1.25, 1.5, 1.75, 2.0, 2.5, 2.833, 3.0, 3.5, 4.0, 5.0, 6.0, 8.5, 11.7, 41.7]
         print("rho = camera distance in hull radii | fully-clear fraction of the corridor")
+        print("  live   = BlockGraph's entry point (full nose clearance)")
+        print("  debris = ExplodingBlockGraph's (no clearance — debris has no collider)")
         bad = []
         for rho in rhos:
             s = clear_fraction(shipped, rho)
+            d = clear_fraction(shipped, rho, column=1)
             l = clear_fraction(legacy, rho) if legacy else s
             mark = "" if s > 0.0 else "   <-- NO see-through corridor at all"
-            print(f"  rho {rho:6.3f}   shipped {s:5.3f}   pre-fix {l:5.3f}{mark}")
+            print(f"  rho {rho:6.3f}   live {s:5.3f}   debris {d:5.3f}   pre-fix {l:5.3f}{mark}")
             if rho > 1.0 and s <= 0.0:
                 bad.append(rho)
 
@@ -247,6 +272,36 @@ def main():
             far = run(shipped, [(1.5 * 6.0, 6.0, i / 400.0) for i in range(401)])
             assert any(x != y for x, y in zip(near, far)), \
                 "the negative control did not differ where the shrink DOES bite"
+
+        # T4 — the debris entry point clears MORE of the corridor than the live one at
+        # every rho, and its clear region reaches the vessel plane. Explosion debris is
+        # born AT the point of destruction, which in a fight is at or near the hull —
+        # i.e. inside exactly the zone the live clearance keeps solid — so a burst kept
+        # occluding the ship while every fragment was nominally inside the corridor.
+        # Debris has no collider, so the clearance's whole argument (the impact read)
+        # has nothing to buy there. Asserted at rho, not eyeballed, because "the same
+        # corridor one argument apart" is only true if nothing else drifted with it.
+        debris = [(r, clear_fraction(shipped, r), clear_fraction(shipped, r, column=1))
+                  for r in rhos]
+        worse = [r for r, live, deb in debris if deb <= live + 1e-9]
+        # The shipped debris clearance is 0, so its clear region must run to the axial
+        # grade's own start and no further short of the plane than that grade is thick:
+        # 1 - (outer - inner)/axisLen = 1 - 0.75/rho.
+        short = [(r, deb) for r, _live, deb in debris if deb < 1.0 - 0.75 / r - 2e-3]
+        if worse or short:
+            print("T4 debris clears past the nose clearance : FAIL "
+                  f"(not wider at rho {worse}; short of the grade at {short})")
+            ok = False
+        else:
+            tightest = min(deb for _r, _l, deb in debris)
+            print("T4 debris clears past the nose clearance : PASS "
+                  f"(clear fraction {tightest:.3f}..{max(d for _r, _l, d in debris):.3f}, "
+                  "wider than live at every rho)")
+            # Negative control: the live entry point is the pre-fix shape for debris,
+            # and it must fail the same bound somewhere in the fleet's rho range.
+            live_short = [r for r, live, _d in debris if live < 1.0 - 0.75 / r - 2e-3]
+            assert live_short, ("the negative control did not reproduce the defect — "
+                               "the live clearance is not costing debris anything")
 
         return 0 if ok else 1
 

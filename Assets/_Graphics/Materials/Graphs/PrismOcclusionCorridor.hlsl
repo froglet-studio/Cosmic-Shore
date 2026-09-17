@@ -1097,6 +1097,45 @@ static const float PRISM_OCCLUSION_NOSE_CLEARANCE = 1.0;
 // -----------------------------------------------------------------------------
 static const float PRISM_OCCLUSION_MAX_BASE_SHARE = 0.5;
 
+// -----------------------------------------------------------------------------
+// THE DEBRIS CLEARANCE (2026-09-17) — the nose clearance that EXPLOSION DEBRIS gets,
+// which is none.
+//
+// The clearance above buys ONE thing and says so: a prism the ship is about to HIT
+// reads as solid at the moment of impact, so the hit registers visually instead of
+// landing on something already half-dissolved. That argument is about COLLISION, and
+// explosion debris has no collider — a fragment is photons from the instant it is
+// born. So the trade the clearance makes (a sliver of see-through given up for the
+// impact read) has nothing to buy on the debris graph, while the cost is paid in the
+// one place it hurts most: debris is born AT the point of destruction, which in a
+// fight is at or near the hull, i.e. inside exactly the zone the clearance keeps
+// solid. That is why a burst still occluded the vessel while every fragment was
+// nominally inside the corridor.
+//
+// So ExplodingBlockGraph calls PrismOcclusionFadeDebris_float, which is this same
+// corridor with the clearance set to 0: the cone runs flush to the vessel's plane and
+// debris dissolves right up to the hull. BlockGraph's call is untouched, so live mass
+// — the only mass that can be collided with — keeps the full clearance and the impact
+// read is unchanged.
+//
+// THE COST, STATED. A burst visibly THINS where it crosses the ship. That is the
+// corridor doing its job on mass that has no other job, and it is the trade that was
+// chosen deliberately: nothing collidable changes, so no impact read is lost.
+//
+// The cap above (PRISM_OCCLUSION_MAX_BASE_SHARE) mostly goes inert for debris as a
+// consequence rather than as a second decision: with clearanceT = 0 the base share is
+// the grade alone, 0.75/rho, which is under 0.5 for every rho >= 1.5 — so on all but
+// the closest-camera hull shrink is exactly 1 and the grade keeps the full thickness
+// its isotropy argument was derived from. It still bites below that (the Urchin sits
+// at rho ~1.12, where the grade alone would be 0.67 of the corridor), and there it is
+// doing exactly the job it was written for. Measured per rho, both entry points, by
+// Tools/Shaders/verify_prism_corridor_base.py T4.
+//
+// Raise this toward the live value if debris ever needs to read solid against the
+// hull; it is the same dial, on its own graph.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE = 0.0;
+
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
 // zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
 // crease where the band begins and ends. That crease is what you notice when the band
@@ -1130,14 +1169,19 @@ float PrismOcclusionSmootherStep(float t)
 //               _Alpha, ExplodingBlockGraph's clock Opacity). Multiplying rather than
 //               replacing is what makes the graph's own alpha a first-class dither
 //               input: authored sub-1 alpha and clock fades render as coverage.
+// NoseClearance — how much of the corridor's far end stays solid, in hull radii.
+//                 Supplied by the entry point at the bottom of this function, not
+//                 read from a constant here, because live mass and its debris want
+//                 different answers and everything else about the shape must stay
+//                 identical between them. See PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE.
 //
 // Alpha         — BaseAlpha scaled by the corridor fade.
 // ClipThreshold — 0 when the final alpha is >= 1 (never discards); the kernel's
 //                 threshold otherwise, so the material dissolves as a screen door
 //                 instead of popping — in the corridor, mid-explosion, or cloaked.
 // -----------------------------------------------------------------------------
-void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
-    out float Alpha, out float ClipThreshold)
+void PrismOcclusionFadeImpl(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    float NoseClearance, out float Alpha, out float ClipThreshold)
 {
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
@@ -1208,7 +1252,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
             // 3.5 hull radii back is unchanged sample for sample.
             float axisLen = sqrt(axisLenSq);
             float innerRadius = min(Params.y, outerRadius);
-            float clearanceT = (outerRadius * PRISM_OCCLUSION_NOSE_CLEARANCE) / axisLen;
+            float clearanceT = (outerRadius * NoseClearance) / axisLen;
             float bandT = (outerRadius - innerRadius) / axisLen;
             float baseShare = clearanceT + bandT;
             float shrink = min(1.0, PRISM_OCCLUSION_MAX_BASE_SHARE / max(baseShare, 1e-4));
@@ -1371,6 +1415,40 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor,
                                                   PositionWS, angularScale, viewDepth, time);
 #endif
+}
+
+// -----------------------------------------------------------------------------
+// THE TWO ENTRY POINTS. Shader Graph's file-mode Custom Function node calls
+// <FunctionName>_float, so these are the names the two prism graphs bind to. They
+// differ in ONE argument — the nose clearance — and share every other line, because
+// the corridor's shape must not be able to drift between live mass and its debris.
+//
+// SIGNATURE CONTRACT (paid for once, 2026-09-16): a file-mode node builds its call as
+// ALL INPUT SLOTS, THEN ALL OUTPUT SLOTS, in slot order within each group. Slot IDs
+// do not decide it. So every input must be declared before both `out` parameters —
+// declare one after them and the graph passes an input where an output is expected,
+// the graph fails to compile, and every material drawn with it renders unmaterialed
+// (magenta) with nothing in the console tying it to this file.
+// Tools/Build/check_shadergraph_custom_function_signatures.py holds it.
+// -----------------------------------------------------------------------------
+
+// BlockGraph — live, collidable prism mass. Keeps the full nose clearance so a prism
+// the ship is about to hit still reads solid at impact.
+void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    out float Alpha, out float ClipThreshold)
+{
+    PrismOcclusionFadeImpl(PositionWS, Target, Params, BaseAlpha,
+        PRISM_OCCLUSION_NOSE_CLEARANCE, Alpha, ClipThreshold);
+}
+
+// ExplodingBlockGraph — debris, which has no collider and therefore nothing to buy
+// with a clearance. Runs the corridor flush to the vessel's plane so a burst cannot
+// occlude the ship it was born on. See PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE.
+void PrismOcclusionFadeDebris_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    out float Alpha, out float ClipThreshold)
+{
+    PrismOcclusionFadeImpl(PositionWS, Target, Params, BaseAlpha,
+        PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE, Alpha, ClipThreshold);
 }
 
 // -----------------------------------------------------------------------------
