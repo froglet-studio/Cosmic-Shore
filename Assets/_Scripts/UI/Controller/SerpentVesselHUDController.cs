@@ -116,15 +116,34 @@ namespace CosmicShore.UI
 
         void HandleBoostSnapshot(int available, int max)
         {
-            if (!view) return;
+            if (!view || !DrivesThisHud) return;
             view.ApplyBoostSnapshot(available, max);
         }
 
         void HandleBoostChargeConsumed(int pipIndex, float duration)
         {
-            if (!view) return;
+            if (!view || !DrivesThisHud) return;
             view.AnimateBoostChargeConsumed(pipIndex, duration);
         }
+
+        /// <summary>
+        /// Whether this HUD should be driven at all — <see cref="Subscribe"/>'s gate, re-asked
+        /// at the POINT OF USE.
+        ///
+        /// <para>The subscribe-time check is necessary and not sufficient, and the reason is a
+        /// documented property of the spawn chain: on the host a server-owned AI Player carries
+        /// the HOST's <c>OwnerClientId</c>, so <c>IsLocalUser</c> answers TRUE for it, and the
+        /// only thing separating the two — <c>IsInitializedAsAI</c> — is written LATER than the
+        /// HUD is built. An AI Serpent therefore subscribes, and then drives an inactive HUD for
+        /// the rest of the match.</para>
+        ///
+        /// <para>Re-asking costs two field reads per boost charge and is correct whenever the
+        /// answer arrives, however late. The view settles rather than animates for anything that
+        /// still gets through, so the two guards cover different halves: this one stops the work,
+        /// that one stops the error.</para>
+        /// </summary>
+        bool DrivesThisHud =>
+            _status != null && !_status.IsInitializedAsAI && _status.IsLocalUser;
 
         // ---------- Sniper cooldown ----------
 
