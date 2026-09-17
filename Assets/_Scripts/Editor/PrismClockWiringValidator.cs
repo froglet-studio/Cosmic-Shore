@@ -138,7 +138,7 @@ namespace CosmicShore.Editor
             },
             new GraphEdgeCheck
             {
-                InputFunction = "PrismOcclusionFade", InputSlot = 6,
+                InputFunction = "PrismOcclusionFade", InputSlot = 4,
                 OutputFunction = "PrismErosionFade", OutputSlot = 4,
                 Description = "corridor ErosionThreshold fed by erosion Threshold",
             },

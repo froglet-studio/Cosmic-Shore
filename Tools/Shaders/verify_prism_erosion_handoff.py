@@ -149,7 +149,7 @@ int main()
                                  : (float)(0.98 * 0.75 * R);
         float3 p(radius, 0.0f, (float)(0.5 * D));
         float a, thr;
-        PrismOcclusionFade_float(p, target, params, (float)op, a, thr, (float)ero);
+        PrismOcclusionFade_float(p, target, params, (float)op, (float)ero, a, thr);
         // and the erosion field itself, for the coverage law
         float e;
         PrismErosionFade_float(float3((float)u, (float)v, 0.0f),
@@ -191,10 +191,13 @@ def extract_slice(text, control=None):
     parts.append(ero.replace("out float Threshold", "float &Threshold"))
 
     fn = body(text, "void PrismOcclusionFade_float(")
-    assert fn.count("out float Alpha, out float ClipThreshold, float ErosionThreshold") == 1, \
+    assert fn.count("float ErosionThreshold, out float Alpha, out float ClipThreshold") == 1, \
         "corridor parameter shape drifted — the erosion input is not where this expects it"
     fn = fn.replace("out float Alpha, out float ClipThreshold",
                     "float &Alpha, float &ClipThreshold")
+    # The parameter ORDER is what a file-mode Custom Function node actually depends on
+    # (all inputs, then all outputs) and it is invisible to a compile of this file alone,
+    # so it is asserted above rather than merely compiled here.
 
     # The dither kernel is preprocessed away here, so mark the line it would occupy.
     # "reached the dither" then has a value, instead of being inferred from an absence.

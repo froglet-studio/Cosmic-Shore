@@ -88,9 +88,10 @@ CF_SLOTS = [
 # migration from an older signature must take them with it (see strip_old_erosion).
 EROSION_BASEOPACITY_SLOT = 3
 EROSION_THRESHOLD_SLOT = 4
-# The corridor's erosion input (appended after its two outs — see
-# wire_prism_erosion_handoff.py, which OWNS that slot and the edge into it).
-CORRIDOR_EROSION_SLOT = 6
+# The corridor's erosion input — its LAST INPUT, before both outs (which are 5 and 6).
+# See wire_prism_erosion_handoff.py, which OWNS that slot and the edge into it: appending
+# it after the outs is what made both prism graphs fail to compile on 2026-09-17.
+CORRIDOR_EROSION_SLOT = 4
 
 
 def load_docs(path):

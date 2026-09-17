@@ -1743,9 +1743,10 @@ Four properties of the design worth preserving if it is ever touched:
   clip at the end of the chain decides — outside the corridor the front is the whole story
   and no kernel runs (bit-identical to the retired verdict, since `clip(Opacity −
   Threshold)` IS `Opacity >= Threshold`); inside it the tunnel is the whole story and the
-  front stands down. It costs one in-parameter, appended AFTER the two outs so every
-  existing slot id on the Custom Function node survives untouched in both graphs
-  (`Tools/Shaders/wire_prism_erosion_handoff.py`). Three properties make it exact:
+  front stands down. It costs one in-parameter on the Custom Function node
+  (`Tools/Shaders/wire_prism_erosion_handoff.py`), and **the way that parameter was first
+  added turned every prism in the game into an unmaterialed magenta box** — the entry
+  below. Three properties make it exact:
   * **The gate is `ErosionThreshold > 0`**, not a flag — 0 is outside the live range by
     construction (a real threshold is compressed above `END_MARGIN`), so BlockGraph, which
     wires nothing into it, is unchanged sample for sample, and a **cloaked** prism — also
@@ -1762,6 +1763,38 @@ Four properties of the design worth preserving if it is ever touched:
     gives coverage `alpha²`; a lerp of their thresholds is trapezoidal and off by 2× at
     `a = 0.25`. A select changes only the PATTERN, so a piece entering the tunnel stops
     peeling and starts breaking up — the correct story rather than a pop.
+  **THE SIGNATURE IS THE CONTRACT — EVERY INPUT BEFORE EITHER `out` (2026-09-17).**
+  A file-mode Custom Function node does not GENERATE its function, it CALLS the one in the
+  `.hlsl`, and it builds that call as **all its input slots and then all its output
+  slots**. The first cut of the wirer appended `ErosionThreshold` as the node's highest
+  slot id and declared it LAST in the HLSL, after `out float Alpha, out float
+  ClipThreshold` — legal HLSL, and it left every existing slot id and every existing edge
+  untouched, which is exactly why it read as free. The node then emitted
+  `(PositionWS, Target, Params, BaseAlpha, ErosionThreshold, Alpha, ClipThreshold)`
+  against a signature whose fifth parameter is `out float Alpha`, so **both prism graphs
+  failed to compile and every prism in the game rendered with no material.** Nothing
+  off-editor could report it: a verifier compiles the `.hlsl` and never reads the call the
+  node writes, and all three shader verifiers passed on the broken tree.
+  **The rule is the PARAMETER ORDER, not the slot ids**, and the difference matters
+  because the first diagnosis got it wrong: the twelve other Custom Function nodes in
+  these two graphs all number their inputs below their outputs, which looks like proof
+  that interleaved ids break the call. They do not — TextMesh Pro ships file-mode nodes
+  that interleave and compile (`Composite` is wired in [0, 3] / out [2] against
+  `Composite_float(float4, float4, out float4)`), and a gate asserting the id rule flagged
+  40 shipping TMP nodes. What the node actually keys on is the slot TYPE. The wirer still
+  renumbers the erosion input to slot 4 and the outputs to 5 and 6 — matching the other
+  twelve costs one edge rewrite and keeps the file readable — but that is a house
+  convention in these graphs, not a requirement.
+  The gate is `Tools/Build/check_shadergraph_custom_function_signatures.py`: it resolves
+  every file-mode node's `m_FunctionSource` guid to its `.hlsl`, parses the named
+  function, and asserts the signature's `out` pattern equals
+  `[in] × inputSlots + [out] × outputSlots`. Pure Python, no Unity, 56 graphs, and its
+  `--self-test` is negative-controlled on the exact `(in, out, out, in)` shape that caused
+  this. General rule: **a gate that compiles a shared HLSL file proves nothing about the
+  call sites the engine generates for it** — and when the first explanation for a failure
+  is a rule you inferred from your own corner of the tree, look for a counter-example
+  elsewhere in it before writing that rule down.
+
   The honest residual: the erosion's coverage tracks its design ramp to **0.025** at worst
   — a smooth S-bend, the limit of fitting one `smoothstep` to the wipe coordinate's true
   CDF, and a TIME-domain lean in the fade curve rather than a spatial artefact. It bounds

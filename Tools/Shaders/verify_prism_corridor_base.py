@@ -93,7 +93,7 @@ int main()
         float3 p(0.0f, 0.0f, (float)(t * D));
         float3 params((float)R, (float)(0.25 * R), 0.0f);
         float a, thr;
-        PrismOcclusionFade_float(p, target, params, 1.0f, a, thr, 0.0f);
+        PrismOcclusionFade_float(p, target, params, 1.0f, 0.0f, a, thr);
         printf("%.9g\n", a);
     }
     return 0;

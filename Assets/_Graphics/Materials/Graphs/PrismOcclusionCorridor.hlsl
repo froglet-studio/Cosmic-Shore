@@ -1163,13 +1163,31 @@ float PrismOcclusionSmootherStep(float t)
 //                 threshold otherwise, so the material dissolves as a screen door
 //                 instead of popping — in the corridor, mid-explosion, or cloaked.
 // -----------------------------------------------------------------------------
-// `ErosionThreshold` is declared LAST, after the two outs, on purpose: HLSL allows an
-// in parameter anywhere, and appending it leaves every existing slot id on the Custom
-// Function node untouched in both prism graphs. A graph that wires nothing into it
-// passes 0, which is the documented "no erosion here" value (a live erosion threshold
-// is always >= PRISM_EROSION_END_MARGIN), so BlockGraph is unchanged sample for sample.
+// THE PARAMETER ORDER IS THE CONTRACT — EVERY INPUT BEFORE EITHER `out` (2026-09-17).
+// A file-mode Custom Function node does not GENERATE this function, it CALLS the one in
+// this file, and it builds that call as ALL ITS INPUT SLOTS AND THEN ALL ITS OUTPUT
+// SLOTS. So the signature must declare every input before either `out`, whatever the
+// slot ids are. `ErosionThreshold` was first appended AFTER the two outs — legal HLSL,
+// and it left every existing slot id untouched, which is why it looked free — and the
+// node then passed it where `out float Alpha` is declared, so BOTH prism graphs failed
+// to compile and EVERY PRISM IN THE GAME rendered with no material. Nothing off-editor
+// could see it: a verifier compiles this file and never reads the call the node writes.
+// The gate that does is Tools/Build/check_shadergraph_custom_function_signatures.py, which
+// resolves each file-mode node's function and asserts the signature's out-pattern
+// against that node's own input/output counts.
+//
+// The SLOT IDS are a separate question and they are FREE — TextMesh Pro ships file-mode
+// nodes whose ids interleave (`Composite` is in [0,3] / out [2]) and they compile fine.
+// The prism graphs number every input below every output anyway, which is why the
+// erosion input is slot 4 and Alpha/ClipThreshold renumbered to 5 and 6
+// (Tools/Shaders/wire_prism_erosion_handoff.py owns that numbering). That is a house
+// convention in these two graphs, not a requirement, and it is not what was broken.
+//
+// A graph that wires nothing into ErosionThreshold passes 0, which is the documented
+// "no erosion here" value (a live erosion threshold is always
+// >= PRISM_EROSION_END_MARGIN), so BlockGraph is unchanged sample for sample.
 void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
-    out float Alpha, out float ClipThreshold, float ErosionThreshold)
+    float ErosionThreshold, out float Alpha, out float ClipThreshold)
 {
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
