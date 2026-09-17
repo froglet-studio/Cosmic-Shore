@@ -416,7 +416,7 @@ is untouched, so the saving is 741 movers per intensity. The cage half will now 
 during a match*, because the roam band made the bars grazeable; do not treat the cage column as
 a floor.
 
-Comparable to Cleave (10,620 → 20,153) in raw collider count — but **the fauna half is far more
+Comparable to Cleave (14,277 → 16,423) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature

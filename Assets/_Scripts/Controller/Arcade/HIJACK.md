@@ -289,7 +289,8 @@ It is AI-only, so it changes nothing for a human pilot in any mode.
 ## 7. Budget and collider impact
 
 `Tools/Build/hijack_budget.py` is the mirror, and `author_hijack_assets.py` imports it — the same
-discipline as `boneyard_budget.py` and `ribcage_budget.py`. Running it prints the table above and
+discipline as `boneyard_budget.py` and `cleave_budget.py` (which replaced the deleted
+`ribcage_budget.py`). Running it prints the table above and
 runs six proofs: the launch aim, the launch gap, rail separation, burr clearance, the arena
 extent against the spawn ring and membrane, and the painting balance.
 

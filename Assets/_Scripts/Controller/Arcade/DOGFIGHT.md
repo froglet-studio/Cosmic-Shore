@@ -405,7 +405,7 @@ estimate; confirm with FrogletTools ▸ Ecology ▸ Measure Cell Environment Bas
 The top end is the same order as the freestyle cell environments (34–41k), and **half** of
 Atlantis (~69k, itself flagged as un-profiled and ~2.8× the largest profiled cohort). That
 headroom is deliberate: this arena carries four Sparrows' worth of projectile and AOE traffic on
-top of the structure, which no other mode does. Cleave runs 10,620 → 20,153 and Wildlife
+top of the structure, which no other mode does. Cleave runs 14,277 → 16,423 and Wildlife
 Liberation 9,206 → 13,956 of cage, so intensity 4 is now the heaviest party-game arena — **soak it
 on device**, and if it will not hold, the scavenger cap (`SCAVENGER_CAP[3]`) is the cheapest thing
 to pull before the structure counts.

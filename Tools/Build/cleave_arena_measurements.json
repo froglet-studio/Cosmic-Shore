@@ -6,7 +6,7 @@
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SliceArenaGeometry.cs": "ab2d6ea8bbdbf11d",
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnablePanes.cs": "7576fd331f4f9331",
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSwell.cs": "1789fb30519a5a3f",
-    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs": "5bb335de3f4d32f6",
+    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs": "7c68f43bcc5f9434",
     "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableTwistbands.cs": "c4a8db723a912791",
     "Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs": "0af5d3b0148e8fe1",
     "Tools/Build/cleave_arena_harness/PlatformShim.cs": "c227ee9344bee197",

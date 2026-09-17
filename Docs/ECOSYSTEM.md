@@ -3958,8 +3958,9 @@ applies to the world the same rule trails always had — **your own colour is wo
 with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
 still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
 a real targeting decision instead of decoration. Cleave rides the same metric and is
-unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
-can still reach a 2,000 target out of ~10,620 prisms.
+unaffected in practice: every one of its four arenas is painted across the full triad plus Blue
+joints, and `Tools/Build/cleave_budget.py` check 1 asserts it rather than estimating it - the
+worst-off domain's share of each rung is 4x-12x that rung's own target (measured 7.4x-9.3x).
 
 ### 27.9 Corollary — the collecting pilot must run their own crystal effects
 

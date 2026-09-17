@@ -512,8 +512,11 @@ mixed-domain forest wearing the destroying pilot's own colour. Domain was decora
 `StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
 own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
 everyone so neutral structure still scores. Cleave rides the same metric and is unaffected in
-practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
-2,000 target out of ~10,620 prisms.
+practice: every one of its four arenas is painted across the full triad plus Blue joints, and it
+no longer rests on an estimate — `Tools/Build/cleave_budget.py` check 1 subtracts the LARGEST
+per-domain share from each rung's measured prism count and asserts the remainder is 4x-12x that
+rung's own target. Measured 7.4x-9.3x on the shipped arenas (targets 1,200 / 1,200 / 1,500 /
+1,500 against 15,380 / 14,277 / 14,731 / 16,423 prisms).
 
 **Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
 (MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).

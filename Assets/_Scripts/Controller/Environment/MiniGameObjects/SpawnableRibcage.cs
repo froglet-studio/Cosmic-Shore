@@ -48,10 +48,16 @@ namespace CosmicShore.Gameplay
     /// colour). Deterministic per seed like every cell environment - clients build locally with
     /// no seed sync.
     ///
-    /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
-    /// Baselines): 10,620 / 14,731 / 17,992 / 20,153 prisms at intensity 1..4 (2..5 shells). See
-    /// CLEAVE.md for the per-shell table and the collider-budget statement, and
-    /// Tools/Build/ribcage_budget.py for the model.
+    /// Budget: this class now serves exactly ONE rung - Cleave's intensity 3, The Cage, three
+    /// rinds at 14,731 prisms / 23,357,561 volume. The old 2..5-shell ladder (10,620 / 14,731 /
+    /// 17,992 / 20,153) is retired: intensity stopped meaning "how many shells" and started
+    /// meaning WHICH PLACE, so the other three rungs are unrelated arenas. The numbers are
+    /// MEASURED by running this file - Tools/Build/cleave_arena_harness compiles it against a
+    /// Unity shim and counts what it emits - and gated by Tools/Build/cleave_budget.py.
+    /// Tools/Build/ribcage_budget.py, the analytic model this doc used to cite, is deleted: its
+    /// jitter factor was wrong by exactly 2x and every volume threshold it produced described a
+    /// cell twice as heavy as the one that exists (CLEAVE.md, "The predecessor model was wrong").
+    /// See CLEAVE.md for the ladder and the collider-budget statement.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
     {
@@ -96,10 +102,12 @@ namespace CosmicShore.Gameplay
         public const int MaxShells = 5;
 
         [Header("Cleave")]
-        [Tooltip("How many concentric rinds to build, from the outer shell inward. THE INTENSITY " +
-                 "DIAL: author one prefab variant per shell count and point each intensity's " +
-                 "CellConfigDataSO at the matching variant (Cell picks by IntensityWise). Each " +
-                 "config's PhaseThresholds must ride ITS OWN baseline - see ribcage_budget.py.")]
+        [Tooltip("How many concentric rinds to build, from the outer shell inward. It is NO " +
+                 "LONGER an intensity dial - Cleave's intensity picks WHICH ARENA, and this class " +
+                 "is one of four, wired to intensity 3 alone at three rinds. Changing it re-cuts " +
+                 "that rung: re-run Tools/Build/cleave_arena_harness (which MEASURES what this " +
+                 "file emits) and Tools/Build/cleave_budget.py --check, which gates the cell's " +
+                 "PhaseThresholds and the destruction target against the new count.")]
         [SerializeField, Range(1, MaxShells)] int shellCount = 1;
 
         // Rib/hoop counts of the OUTERMOST shell. Every shell inward multiplies both by
