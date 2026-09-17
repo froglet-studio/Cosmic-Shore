@@ -36,7 +36,7 @@ any vessel without a swinging skimmer.
   card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
   the human path (`ResolveSpawnVesselType`) and the AI path
   (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
-  pattern as PeelTheCage. Do not add a mode-local vessel check.
+  pattern as Cleave. Do not add a mode-local vessel check.
 
 ## Class Inventory (`_Scripts/Controller/Arcade/AstroLeague/`)
 

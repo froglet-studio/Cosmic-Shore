@@ -211,7 +211,7 @@ what a "single-player fallback" is in this architecture. Confirmed playable offl
 fixed:
 
 - All 15 multiplayer scenes (SkimRace, Joust, Crystal Capture, Astro League, Brood Rush, Rampage,
-  Peel the Cage, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
+  Cleave, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
 - Menu_Main lava-lamp / freestyle, all toys (cell selector, painting, Wanderway, vessel/domain changers)
 - Maelstrom / Maelstrom — sequential `Single` scene loads, all local
 - The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) use the

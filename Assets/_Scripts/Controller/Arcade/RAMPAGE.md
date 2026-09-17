@@ -86,7 +86,7 @@ economy itself; this file only arranges around it.
 
 `ArcadeGameRampage.Vessels` holds ONE entry (`SO_Class_Dolphin`). The restriction is
 **not** implemented in this mode — it is the platform's two-place clamp, exactly as in
-PeelTheCage / Dog Fight / Wildlife Liberation:
+Cleave / Dog Fight / Wildlife Liberation:
 
 1. `GameDataSO.SyncFromArcadeGame` clamps `selectedVesselClass` into the game's allowed
    set. This covers the machine that pressed Start, on every route (modal, rematch,
@@ -186,7 +186,7 @@ their own crystal effects so the blast exists on their machine at all. Full reco
 
 ## Four intensities — bigger and easier at 1, the shipped arena at 4
 
-PeelTheCage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
+Cleave's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
 forest, then for a while touched it not at all, and now thickens it again — five-fold — alongside
 everything else. It moves **five** things, all in the same direction, around a fixed point:
 **intensity 4 IS the shipped, play-tested arena and nothing about it changes.** Intensity 1 is
@@ -834,7 +834,7 @@ Authored headless; every item below needs a play-mode pass.
 - **No UGS stats reporter yet**: Scurry has `ScurryStatsReporter`; a
   `RampageStatsReporter` (most-prisms-smashed leaderboard) is a clean follow-up.
 - **No Rampage `GameToastConfigSO`** — no mode-specific toast copy for "crystal taken",
-  "forest regrowing", or milestone rungs. PeelTheCage's progress-milestone pattern would port
+  "forest regrowing", or milestone rungs. Cleave's progress-milestone pattern would port
   cleanly if the race wants more mid-match texture.
 - **Density is even, not clumped.** The band draw is volume-uniform, so plants are spread
   evenly rather than gathered into thickets with clear lanes between them. Clustering

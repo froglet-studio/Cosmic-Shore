@@ -495,7 +495,7 @@ namespace CosmicShore.Utility
         /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
         /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
         /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
-        /// game persisted into a mode that does not permit it - a Dolphin flew PeelTheCage, which is
+        /// game persisted into a mode that does not permit it - a Dolphin flew Cleave, which is
         /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
         /// the scene's own aiInitializeDatas).
         ///
@@ -769,7 +769,7 @@ namespace CosmicShore.Utility
         ///
         /// This is needed because scoring is live from the moment the scene's StatsManager
         /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
-        /// between that and the first turn is long: the arena builds (PeelTheCage lays 10-20k prisms),
+        /// between that and the first turn is long: the arena builds (Cleave lays 10-20k prisms),
         /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
         /// in a player's score, so a match could visibly start with someone above zero.
         ///
