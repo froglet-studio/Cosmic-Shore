@@ -111,6 +111,21 @@ nobody has watched fail is a gate nobody should trust.
 exact text is right today and is the `author_dogfight_assets.py` trap the day the donor moves;
 when the scene is committed and the donor drifts, guard the clone and keep the checks below it live.
 
+**The PREVIEW definition is a COPY of scene values, so it goes stale on a scene edit, not only at
+bring-up.** `ModePreview_<Mode>.asset` mirrors the scene's `ServerPlayerVesselInitializer` spawn
+block, and nothing re-runs `author_preview_spawns.py` for you: Cleave moved its spawn-ring floor
+576 -> 1050 -> 3150 across two envelope passes and the preview kept saying 576, which would have
+opened the card's preview INSIDE the arena the floor exists to keep pilots out of. **Re-run
+`author_preview_spawns.py --check` whenever a mode's spawn ring, formation or distance moves** -
+it reports every definition that would change, so it costs nothing to run and is invisible if you
+do not. Its blind spot is worth stating too: it mirrors the SCALAR floor, so a mode with a
+per-intensity ring gets its scalar on every rung.
+
+**And `PreviewCellsByIntensity` outlives a deleted cell config as a DANGLING guid.** Shortening a
+ladder means pruning that list by hand - Unity keeps an unresolvable reference silently, and the
+list is one of the few places a retired intensity can still be pointed at. When a ladder's length
+changes, diff the list's entry count against the mode's intensity count.
+
 ## 4. Gates (no Unity needed; run them all)
 
 ```
