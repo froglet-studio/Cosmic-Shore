@@ -130,14 +130,18 @@ MAIN = r"""#include "shim.h"
 #include <cstdio>
 #include <cstdlib>
 
-// The fragment's DEATH OPACITY is now the function's own output: since 2026-09-16 it
-// emits the THRESHOLD its opacity is compared against rather than a verdict, so there is
-// nothing to bisect. Any live BaseOpacity in (0,1) selects the same field; 0.5 is used.
+// Recover the fragment's DEATH OPACITY — the threshold the shipped function compares
+// BaseOpacity against — by bisecting its own binary output. Nothing is re-derived: the
+// only thing measured is where the shipped function flips.
 static float DeathOpacity(float3 uv, float3 tangent, float3 velocity)
 {
-    float t;
-    PrismErosionFade_float(uv, tangent, velocity, 0.5f, t);
-    return t;
+    float lo = 0.0f, hi = 1.0f, s;
+    for (int i = 0; i < 40; ++i) {
+        float mid = 0.5f * (lo + hi);
+        PrismErosionFade_float(uv, tangent, velocity, mid, s);
+        if (s > 0.0f) hi = mid; else lo = mid;
+    }
+    return 0.5f * (lo + hi);
 }
 
 int main(int argc, char **argv)
@@ -151,7 +155,6 @@ int main(int argc, char **argv)
         float ends1, ends0;
         PrismErosionFade_float(uvv, tan, vel, 1.0f, ends1);
         PrismErosionFade_float(uvv, tan, vel, 0.0f, ends0);
-        // Both ends must report the 0 sentinel = "no erosion on this fragment".
         printf("%.9f %.1f %.1f\n", DeathOpacity(uvv, tan, vel), ends1, ends0);
     }
     return 0;
@@ -163,7 +166,7 @@ def extract_slice(text, legacy=False):
     """The shipped erosion, verbatim, plus the constants and hashes it calls."""
     parts = []
     for const in ("PRISM_EROSION_WIGGLE", "PRISM_EROSION_WIGGLE_FREQ", "PRISM_EROSION_END_MARGIN",
-                  "PRISM_EROSION_CDF_LO", "PRISM_EROSION_CDF_HI"):
+                  "PRISM_EROSION_FRINGE", "PRISM_EROSION_CDF_LO", "PRISM_EROSION_CDF_HI"):
         m = re.search(rf"^static const float {const} = [-\d.]+;", text, re.M)
         assert m, f"{const} not found in the shipped HLSL"
         parts.append(m.group(0))
@@ -181,8 +184,8 @@ def extract_slice(text, legacy=False):
         parts.append(body(sig))
 
     src = "#pragma once\n" + "\n".join(parts) + "\n"
-    assert src.count("out float Threshold") == 1, "erosion out-parameter shape drifted"
-    src = src.replace("out float Threshold", "float &Threshold")
+    assert src.count("out float Survival") == 1, "erosion out-parameter shape drifted"
+    src = src.replace("out float Survival", "float &Survival")
     if legacy:
         # NEGATIVE CONTROL: the 2026-08-11 shape — no per-piece identity, and `w01`
         # normalized against the UV SQUARE rather than the piece's own support. Both
@@ -389,10 +392,9 @@ def main():
             fails.append("T2")
 
         # ---- T3: exact ends (the live-material pass-throughs) ----
-        ok = all(r[1] == 0.0 and r[2] == 0.0 for f in ship_fields for r in f)
+        ok = all(r[1] == 1.0 and r[2] == 0.0 for f in ship_fields for r in f)
         print(f"T3 exact ends (live prisms)     : {'PASS' if ok else 'FAIL'} "
-              f"(Opacity 1 and Opacity 0 both -> Threshold 0, the no-erosion sentinel the "
-              f"corridor gates on)")
+              f"(Opacity 1 -> Survival 1, Opacity 0 -> Survival 0)")
         if not ok:
             fails.append("T3")
 
@@ -407,7 +409,7 @@ def main():
     # ---- T5: the anchor is structurally view- and time-independent ----
     sig = re.search(r"void PrismErosionFade_float\(([^)]*)\)", text).group(1)
     params = [p.strip().split()[-1] for p in sig.split(",")]
-    ok = params == ["UV", "Tangent", "Velocity", "BaseOpacity", "Threshold"]
+    ok = params == ["UV", "Tangent", "Velocity", "BaseOpacity", "Survival"]
     print(f"T5 no view/time input            : {'PASS' if ok else 'FAIL'} ({params})")
     if not ok:
         fails.append("T5")

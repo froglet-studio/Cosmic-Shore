@@ -730,7 +730,7 @@
                 "m_Node": {
                     "m_Id": "a0d8b47105e34d6c8de6317d38d948ae"
                 },
-                "m_SlotId": 5
+                "m_SlotId": 4
             },
             "m_InputSlot": {
                 "m_Node": {
@@ -744,7 +744,7 @@
                 "m_Node": {
                     "m_Id": "a0d8b47105e34d6c8de6317d38d948ae"
                 },
-                "m_SlotId": 6
+                "m_SlotId": 5
             },
             "m_InputSlot": {
                 "m_Node": {
@@ -4409,9 +4409,6 @@
             "m_Id": "5295731a8aea42a9974adfb2d46acaaf"
         },
         {
-            "m_Id": "2e7855bec78743d2990e34e28bcd7f4c"
-        },
-        {
             "m_Id": "34874431a48549c581e712b65206e473"
         },
         {
@@ -4520,7 +4517,7 @@
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
     "m_ObjectId": "34874431a48549c581e712b65206e473",
-    "m_Id": 5,
+    "m_Id": 4,
     "m_DisplayName": "Alpha",
     "m_SlotType": 1,
     "m_Hidden": false,
@@ -4535,7 +4532,7 @@
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
     "m_ObjectId": "7f65004a2b344cf7b66f8882b04a8202",
-    "m_Id": 6,
+    "m_Id": 5,
     "m_DisplayName": "ClipThreshold",
     "m_SlotType": 1,
     "m_Hidden": false,
@@ -9172,20 +9169,5 @@
         "y": 0.0,
         "z": 0.0
     },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
-    "m_ObjectId": "2e7855bec78743d2990e34e28bcd7f4c",
-    "m_Id": 4,
-    "m_DisplayName": "ErosionThreshold",
-    "m_SlotType": 0,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "ErosionThreshold",
-    "m_StageCapability": 3,
-    "m_Value": 0.0,
-    "m_DefaultValue": 0.0,
     "m_Labels": []
 }

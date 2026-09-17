@@ -279,33 +279,6 @@ float PrismOcclusionSafeThreshold(float n)
     return n * 0.998 + 0.001;
 }
 
-// The wipe completes by alpha = this — 15% of the fade before the entity retires, so
-// retirement can never beat it (see THE WIPE FINISHES EARLY BY DESIGN, further down with
-// the rest of the erosion's constants). It is declared HERE rather than there because
-// PrismOcclusionFade_float reads it, and that function comes first in this file.
-static const float PRISM_EROSION_END_MARGIN = 0.15;
-
-// HOW MUCH OF A PIECE THE EROSION FRONT HAS LEFT, at a given clock opacity.
-//
-// The front's thresholds are uniform on [END_MARGIN, 1] — the CDF linearisation in
-// PrismErosionFade_float exists for exactly that — so the surviving SHARE of a piece's
-// surface is this affine map of opacity, and deliberately NOT the opacity itself: the
-// margin finishes the wipe early, which is 15% of coverage the front has already taken
-// that the raw clock value knows nothing about.
-//
-// It is what makes the handoff in ONE FIELD DECIDES continuous rather than merely
-// correct on each side. The dither consumes an ALPHA and reproduces it as coverage, so a
-// piece crossing into the corridor has to arrive carrying the coverage the front would
-// have left it. Hand the dither the raw opacity instead and the two laws disagree by
-// 0.176 * (1 - opacity) — up to 15 points of surface, appearing as a brightness STEP
-// along the corridor wall, and in the wrong direction: a nearly-dead chunk would show
-// MORE surface inside the tunnel than outside it, which is the one thing the corridor
-// must never do.
-float PrismErosionCoverage(float opacity)
-{
-    return saturate((opacity - PRISM_EROSION_END_MARGIN) / (1.0 - PRISM_EROSION_END_MARGIN));
-}
-
 // -----------------------------------------------------------------------------
 // Kernel A — the corridor-relative SPIRAL.
 //
@@ -1163,31 +1136,8 @@ float PrismOcclusionSmootherStep(float t)
 //                 threshold otherwise, so the material dissolves as a screen door
 //                 instead of popping — in the corridor, mid-explosion, or cloaked.
 // -----------------------------------------------------------------------------
-// THE PARAMETER ORDER IS THE CONTRACT — EVERY INPUT BEFORE EITHER `out` (2026-09-17).
-// A file-mode Custom Function node does not GENERATE this function, it CALLS the one in
-// this file, and it builds that call as ALL ITS INPUT SLOTS AND THEN ALL ITS OUTPUT
-// SLOTS. So the signature must declare every input before either `out`, whatever the
-// slot ids are. `ErosionThreshold` was first appended AFTER the two outs — legal HLSL,
-// and it left every existing slot id untouched, which is why it looked free — and the
-// node then passed it where `out float Alpha` is declared, so BOTH prism graphs failed
-// to compile and EVERY PRISM IN THE GAME rendered with no material. Nothing off-editor
-// could see it: a verifier compiles this file and never reads the call the node writes.
-// The gate that does is Tools/Build/check_shadergraph_custom_function_signatures.py, which
-// resolves each file-mode node's function and asserts the signature's out-pattern
-// against that node's own input/output counts.
-//
-// The SLOT IDS are a separate question and they are FREE — TextMesh Pro ships file-mode
-// nodes whose ids interleave (`Composite` is in [0,3] / out [2]) and they compile fine.
-// The prism graphs number every input below every output anyway, which is why the
-// erosion input is slot 4 and Alpha/ClipThreshold renumbered to 5 and 6
-// (Tools/Shaders/wire_prism_erosion_handoff.py owns that numbering). That is a house
-// convention in these two graphs, not a requirement, and it is not what was broken.
-//
-// A graph that wires nothing into ErosionThreshold passes 0, which is the documented
-// "no erosion here" value (a live erosion threshold is always
-// >= PRISM_EROSION_END_MARGIN), so BlockGraph is unchanged sample for sample.
 void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
-    float ErosionThreshold, out float Alpha, out float ClipThreshold)
+    out float Alpha, out float ClipThreshold)
 {
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
@@ -1211,19 +1161,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     float outerRadius = Params.x;
     bool insideCorridor = false;
     float radialRatio = 0.0;
-    // The corridor's own multiplier, hoisted so stage 2 can ask whether the tunnel is
-    // acting on this fragment AT ALL. Every path that leaves stage 1 without touching it
-    // — corridor off, behind the camera, past the base, outside the cone — leaves it at
-    // exactly 1, which is the honest answer for all of them.
-    float corridorFade = 1.0;
     float3 perp = float3(0.0, 0.0, 0.0);
-
-    // What the DITHER is asked to reproduce as coverage. For a piece the erosion is
-    // carving, that is the surface the front has left it, not the clock's raw opacity —
-    // see PrismErosionCoverage. For everything else (a live prism, a cloak, an authored
-    // sub-1 alpha) it is BaseAlpha untouched, so BlockGraph is unchanged sample for
-    // sample: nothing wires ErosionThreshold there, so the branch is a compile-time 0.
-    float ditherBase = ErosionThreshold > 0.0 ? PrismErosionCoverage(BaseAlpha) : BaseAlpha;
 
     // _WorldSpaceCameraPos (UnityInput.hlsl, included by every URP pass) rather than a
     // published uniform: the near end of the corridor is then ALWAYS exactly the camera
@@ -1362,8 +1300,7 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // artefact this pass exists to remove.
                     float fade = lerp(1.0, Params.z, clearRadial * clearAxial);
 
-                    corridorFade = fade;
-                    Alpha = ditherBase * fade;
+                    Alpha = BaseAlpha * fade;
 
                     // Corridor-relative radial ratio: 0 on the axis, 1 at the corridor
                     // wall — it tracks the taper, so the spiral's bands are nested frustums
@@ -1374,58 +1311,12 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
         }
     }
 
-    // ---- Stage 2: the CLIP. One gate for every transparency source: a fragment whose
+    // ---- Stage 2: the dither. One gate for every transparency source: a fragment whose
     // final alpha is fractional dissolves through the screen door; a fully opaque one
     // exits here with threshold 0 (`clip(alpha - 0)` with alpha >= 1 never discards), so
     // solid mass outside the corridor pays no kernel — the same cost contract as ever.
     if (Alpha >= 1.0)
         return;
-
-    // ONE FIELD DECIDES, NEVER TWO (2026-09-16).
-    //
-    // A fragment is carved by at most one threshold field at any moment. Before this,
-    // exploding debris was carved TWICE and independently: the erosion resolved its own
-    // hard front into a 0/1 verdict and handed this function a `BaseAlpha` of exactly 1,
-    // so the corridor was told a 10%-opacity chunk was brand new — it then dithered that
-    // lie with its own screen-anchored lattice while the erosion front went on carving
-    // the same surface in UV space. Two patterns at similar mid-band values on one
-    // surface is the definition of the layered beat this file already attacks from the
-    // other side (see THE BACK-FACE SEPARATION), and it is what made debris read as
-    // solid at every range: outside the corridor an alpha of 1 took the gate above and
-    // no dither was ever applied, however far the fade had actually run.
-    //
-    // The erosion now emits a THRESHOLD instead of a verdict, and this function receives
-    // the TRUE opacity as `BaseAlpha`. That makes the two interchangeable — both are
-    // uniform-marginal threshold fields over [0,1] (the erosion's is CDF-linearised for
-    // exactly that reason), so either one alone reproduces coverage == alpha — and lets
-    // the decision be a SELECT rather than a combination:
-    //
-    //   outside the corridor  -> the erosion front is the whole story, no kernel
-    //   inside  the corridor  -> the tunnel is the whole story, the front stands down
-    //
-    // Coverage is continuous across the handoff, so only the PATTERN changes — a piece
-    // entering the tunnel stops peeling and starts breaking up, which is the correct
-    // story rather than a pop. That continuity is not free and is the subtle half of
-    // this: both fields are uniform-marginal, but they are uniform over DIFFERENT
-    // ranges, because the erosion's end margin has already taken 15% of the surface the
-    // clock opacity does not account for. The tunnel is therefore handed
-    // PrismErosionCoverage(BaseAlpha) rather than BaseAlpha (see `ditherBase` above),
-    // which is the one line that makes "coverage == alpha" mean the same amount of
-    // surface on both sides of the wall.
-    //
-    // Combining the two instead (max, or a lerp of thresholds) is what does NOT work:
-    // max gives coverage alpha^2 and a lerp of two independent uniforms is trapezoidal,
-    // off by 2x at a = 0.25.
-    //
-    // The gate is `ErosionThreshold > 0` rather than a flag because 0 is outside the live
-    // range by construction (a real threshold is compressed above PRISM_EROSION_END_MARGIN),
-    // and it must be tested: a CLOAKED prism is also a fractional alpha outside the
-    // corridor, and it has no erosion, so it has to keep falling through to the dither.
-    if (ErosionThreshold > 0.0 && corridorFade >= 1.0)
-    {
-        ClipThreshold = ErosionThreshold;
-        return;
-    }
 
 #if !defined(SHADERGRAPH_PREVIEW)
     // `_Time.y` (UnityInput.hlsl) — seconds since level load. Drives the morph for the
@@ -1495,25 +1386,22 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 // to the prism. Each of the box's six faces gets ONE erosion front — a wipe in a
 // hashed direction with a gently jagged edge — that sweeps across the face as the
 // clock Opacity runs 1 -> 0. Rotate the camera, tumble the prism: nothing about the
-// wipe changes. One front per face: a hard, irregular line — not confetti and not a
-// bare cut.
+// wipe changes. One front per face, a hard jagged line with a dithered dissolve
+// fringe ahead of it — soft-hard-soft, not confetti and not a bare cut.
 //
-// WHERE IT SITS (re-cut 2026-09-16). ExplodingBlockGraph runs it BESIDE the corridor
-// rather than in front of it. The explosion clock's Opacity goes to BOTH — straight to
-// PrismOcclusionFade.BaseAlpha (the true fade, as it did before this function existed)
-// and to this function's BaseOpacity — and this function's THRESHOLD goes to the
-// corridor's ErosionThreshold input. So the erosion owns the SHAPE of the fade
-// (angle-free, body-anchored) and the corridor owns OCCLUSION (a view effect by
-// definition) and the single clip, which SELECTS between them: see ONE FIELD DECIDES in
-// PrismOcclusionFade_float. A dead fragment still takes the corridor's alpha<=0 fast out
-// (threshold 1, no kernel).
+// WHERE IT SITS. ExplodingBlockGraph splices this between the explosion clock and the
+// corridor node: Opacity -> EROSION -> Survival (0..1; fractional only in the narrow
+// front fringe) -> PrismOcclusionFade.BaseAlpha. So the erosion owns the FADE
+// (angle-free, body-anchored) while the corridor keeps owning OCCLUSION (a view
+// effect by definition), and when a fading prism is also inside the corridor the two
+// screen doors compose in coverage. A dead fragment takes the corridor function's
+// alpha<=0 fast out (threshold 1, no kernel).
 //
 // LIVE PRISMS ON THIS GRAPH ARE EXACT PASS-THROUGHS. With no explosion stamped, the
 // clock's legacy fallback hands _Opacity through: MazeDangerBlockMateral rests at 1
-// (Threshold 0 = no erosion, and BaseAlpha 1 takes the corridor's own solid fast out)
-// and TransparentPrismMaterial rests at 0 (Threshold 0 again, and the cloak's fractional
-// alpha keeps falling through to the corridor's dither exactly as on BlockGraph). The
-// early outs make both cases exact, not approximate.
+// (Survival 1 everywhere — fully solid, no pattern, no cost beyond one compare) and
+// TransparentPrismMaterial rests at 0 (Survival 0 — cloak-invisible). The early outs
+// make both cases exact, not approximate.
 //
 // THE ANCHOR IS UV0, and that choice is what makes the wipe spin-proof. The first cut
 // anchored to the body POSITION and classified faces by dominant axis — but the
@@ -1561,16 +1449,15 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 // exactly the old behaviour — the same meshes `RotateFacesAlongAxis` already needs
 // tangents from, so there is no new authoring requirement.
 //
-// THE EDGE IS HARD (2026-08-11; made structural 2026-09-16). It briefly carried a
-// dithered FRINGE — fractional survival just ahead of the front, rendered by the corridor
-// stage as screen-door speckle — on the reading that soft-hard-soft wanted a soft
-// trailing component. In motion that was wrong: the debris edge then dissolved in the
-// SAME visual language as the corridor it flies through, and the two effects read as one
-// confused surface rather than as "a prism breaking up" inside "the world going
-// see-through". The motif's soft component here is the unbroken face the front eats into
-// and the irregular JAG of the front itself. The constant that used to hold it at 0 is
-// deleted: this function emits a THRESHOLD now, so there is no fractional survival for a
-// fringe to occupy and re-adding one would mean spending the corridor's single clip.
+// THE EDGE IS HARD (2026-08-11). It briefly carried a dithered FRINGE — fractional
+// survival just ahead of the front, rendered by the corridor stage as screen-door
+// speckle — on the reading that soft-hard-soft wanted a soft trailing component. In
+// motion that was wrong: the debris edge then dissolved in the SAME visual language as
+// the corridor it flies through, and the two effects read as one confused surface
+// rather than as "a prism breaking up" inside "the world going see-through". The
+// motif's soft component here is the unbroken face the front eats into and the
+// irregular JAG of the front itself; the front line stays hard so the event stays
+// legible as its own. See PRISM_EROSION_FRINGE.
 //
 // THE WIPE FINISHES EARLY BY DESIGN. Thresholds are compressed above END_MARGIN, so
 // every fragment is gone by alpha = END_MARGIN — 15% of the fade before the entity
@@ -1587,40 +1474,35 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
 // -----------------------------------------------------------------------------
 static const float PRISM_EROSION_WIGGLE = 0.12;      // jagged-front amplitude, in wipe units
 static const float PRISM_EROSION_WIGGLE_FREQ = 2.5;  // jags across one face width
-// PRISM_EROSION_END_MARGIN is declared ABOVE PrismOcclusionFade_float, which reads it
-// through PrismErosionCoverage — see that function.
+static const float PRISM_EROSION_END_MARGIN = 0.15;  // wipe completes by alpha = this (15% early)
+// Dithered dissolve band leading the front, in alpha units. SHIPPED AT 0 = HARD EDGE.
+//
+// A fringe returns FRACTIONAL survival just ahead of the wipe, which the corridor stage
+// then renders as screen-door speckle — and that is precisely the problem: the debris
+// edge dissolved in the same visual language as the tunnel it flies through, so the two
+// effects read as one confused surface instead of "a prism breaking up" plus "the world
+// going see-through". The erosion's job is to be legible as its own event, and the
+// motif's hard component is what carries that: a hard jagged front, whose organic
+// quality comes from the value-noise JAG rather than from a gradient.
+//
+// So the fade now reads solid face -> hard irregular front -> gone, with the only dither
+// on debris being the corridor's own when a chunk flies through the cone — which is
+// correct, because there it IS the tunnel acting on it.
+//
+// Non-zero re-enables the graded edge; the branch below is on a compile-time constant,
+// so the unused side folds away and the hard path costs one compare.
+static const float PRISM_EROSION_FRINGE = 0.0;
 static const float PRISM_EROSION_CDF_LO = -0.030;     // fitted to the measured raw-threshold CDF
 static const float PRISM_EROSION_CDF_HI = 1.030;      // (Monte-Carlo over the UV square) — see
                                                      // fit_prism_erosion_cdf.py
 
-// IT EMITS A THRESHOLD, NOT A VERDICT (2026-09-16). This used to resolve its own front
-// into 0/1 and hand that to the corridor as `BaseAlpha`, which meant the corridor was
-// told every surviving chunk was fully opaque and then dithered that lie with a second,
-// independent pattern — see ONE FIELD DECIDES in PrismOcclusionFade_float. What comes out
-// now is the field itself: a uniform-marginal threshold over [0,1] (which is what the CDF
-// linearisation below was always for), compared against the real opacity by the single
-// clip at the end of the chain. Outside the corridor that reproduces this function's old
-// decision exactly — `clip(Opacity - Threshold)` IS `Opacity >= Threshold` — and inside it
-// the corridor can stand the front down instead of fighting it.
-//
-// ZERO MEANS "NO EROSION HERE" and is outside the live range by construction: a real
-// threshold is compressed above PRISM_EROSION_END_MARGIN, so the corridor can gate on
-// `> 0` with no extra flag and an unwired graph (BlockGraph) is unchanged.
-//
-// THE FRINGE IS GONE FOR GOOD, and now structurally rather than by a constant set to 0.
-// It returned fractional survival in a band ahead of the front, which the corridor
-// rendered as screen-door speckle — the debris edge dissolving in the same visual
-// language as the tunnel it flies through, so the two read as one confused surface. A
-// threshold has no room for it: softness would have to come from the one clip, which is
-// the corridor's to spend. The motif's soft half stays the unbroken face and the JAG.
 void PrismErosionFade_float(float3 UV, float3 Tangent, float3 Velocity, float BaseOpacity,
-    out float Threshold)
+    out float Survival)
 {
     // Exact ends — these are what make the live-material pass-throughs exact and the
-    // debris fade's first frame clean. Both are "no erosion": a live prism has none, and
-    // a dead one is already clipped by its own alpha of 0.
-    if (BaseOpacity >= 1.0) { Threshold = 0.0; return; }
-    if (BaseOpacity <= 0.0) { Threshold = 0.0; return; }
+    // debris fade's first frame clean.
+    if (BaseOpacity >= 1.0) { Survival = 1.0; return; }
+    if (BaseOpacity <= 0.0) { Survival = 0.0; return; }
 
     // Piece-local frame from UV0, centred: the canonical face triangle's corners land
     // on (-1,-1) (1,-1) (0,1).
@@ -1668,13 +1550,22 @@ void PrismErosionFade_float(float3 UV, float3 Tangent, float3 Velocity, float Ba
 
     // CDF-linearised, then compressed above END_MARGIN so the whole wipe lands inside
     // the fade with room to spare. As Opacity falls, the highest thresholds die
-    // first — the front enters from one edge and crosses to the other. The compression
-    // is also what keeps every live value clear of the 0 sentinel above.
-    Threshold = PrismOcclusionSafeThreshold(
+    // first — the front enters from one edge and crosses to the other.
+    float threshold = PrismOcclusionSafeThreshold(
         PRISM_EROSION_END_MARGIN +
         smoothstep(PRISM_EROSION_CDF_LO, PRISM_EROSION_CDF_HI, w01) * (1.0 - PRISM_EROSION_END_MARGIN));
-}
 
+    // The fringe: fractional survival in a narrow band ahead of the front. The
+    // corridor stage renders any fractional alpha as screen-door coverage, so this
+    // costs nothing extra and reads as the face dissolving at the front line.
+    // Hard edge by default. The guard is not decoration: a zero fringe in the divide
+    // would be inf for a survivor, -inf for a dead fragment and NaN exactly ON the
+    // front — and saturate(NaN) is undefined, so the front line itself would be the
+    // one place with unspecified behaviour.
+    Survival = PRISM_EROSION_FRINGE > 0.0
+        ? saturate((BaseOpacity - threshold) / PRISM_EROSION_FRINGE)
+        : (BaseOpacity >= threshold ? 1.0 : 0.0);
+}
 
 // -----------------------------------------------------------------------------
 // THE BACK-FACE SEPARATION — attack the beat's OTHER precondition (2026-08-11).
