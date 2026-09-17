@@ -567,8 +567,8 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
      creation, and the skimmer overcharge effect.
 2b. Get **danger** prisms on screen (§4 "The danger tier borrows the shielded base").
    Verified producers, easiest first:
-   - **PeelTheCage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
-     and the mode ships the same prism in all three domains.
+   - **Cleave** — every one of its four arenas salts `PrismKind.Danger` traps through its
+     own structure (pane rims, wave crests, cage ribs, ribbon cornices), in all three domains.
    - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
      capital segments carry danger prisms (`WormSegmentFauna`).
    - **Dangerous flora** (`AssembledFlora`, `growthInfo.IsDangerous`) and the AOE danger

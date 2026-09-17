@@ -1,10 +1,12 @@
 # Dog Fight — Technical Documentation
 
 > **Naming.** `GameModes.DogFight = 41` is the code/data/enum identity. The player-facing
-> `DisplayName` on `ArcadeGameDogFight.asset` is **"Dog Fight"** too — no split today, but if
-> one is ever wanted, change the DisplayName only (the Maelstrom/"Maelstrom" and
-> PeelTheCage/"Peel the Cage" precedent). Do not rename the enum, the controller, the scene, or
-> this file.
+> `DisplayName` on `ArcadeGameDogFight.asset` is **"Dog Fight"** too — no split today, and note
+> that **both** modes that ever ran a display-name-only split have since had the split closed
+> by a FULL code rename (Tournament → Maelstrom; Ribcage → PeelTheCage → Cleave). Treat a split
+> as a temporary state rather than a design: if the display name is going to stick, rename the
+> code with `Tools/Build/rename_game_modes.py` + `rename_game_mode_files.py` and add the hop to
+> `GameModeRenameMigration`, which is what keeps players' cloud saves.
 
 ## Overview
 
@@ -27,7 +29,7 @@ wildlife. **A pilot who spends the match demolishing scenery loses to one who sp
 shooting people**, and that is the whole design.
 
 **It is the platform's first mode whose score comes from vessel-vs-vessel combat.** Every other
-multiplayer mode races prisms (Rampage, PeelTheCage), crystals (Skim Race, Scurry), goals (Astro
+multiplayer mode races prisms (Rampage, Cleave), crystals (Skim Race, Scurry), goals (Astro
 League), fauna waves (Brood Rush) or fauna kills (Wildlife Liberation) — every one of them a
 per-DOMAIN sum, and this mode is no exception. Landing a shot on another *pilot* had no
 scoreboard anywhere before this.
@@ -162,7 +164,7 @@ PROJECTILES, not the scoring.**
 
 A prism sits at the same world position on the host and on every client, so when a client rams
 one the server's own physics sees the same collision with the same attribution and
-`StatsManager` records it server-side — which is why Rampage and PeelTheCage need no RPC at all.
+`StatsManager` records it server-side — which is why Rampage and Cleave need no RPC at all.
 
 **Projectiles are not like that.** A bullet or a skyburst is a pooled **local** object spawned by
 whichever machine's gun fired it: no `NetworkObject`, no RPCs, no replication. A shot a client
@@ -373,7 +375,7 @@ this; it falls out of the geometry.
 
 **Intensity ramps the DENSITY OF COVER and nothing else** — more wrecks, tighter warrens, shorter
 sightlines — through the four prefab variants' structure counts plus the base `density` knob. The
-arena **radius is fixed at 520 at every intensity**, for the same reason PeelTheCage and the wildlife
+arena **radius is fixed at 520 at every intensity**, for the same reason Cleave and the wildlife
 cages fix theirs: it is what the spawn shell, the AI's fallback aim point and the silhouette are
 all defined against.
 
@@ -403,7 +405,7 @@ estimate; confirm with FrogletTools ▸ Ecology ▸ Measure Cell Environment Bas
 The top end is the same order as the freestyle cell environments (34–41k), and **half** of
 Atlantis (~69k, itself flagged as un-profiled and ~2.8× the largest profiled cohort). That
 headroom is deliberate: this arena carries four Sparrows' worth of projectile and AOE traffic on
-top of the structure, which no other mode does. PeelTheCage runs 10,620 → 20,153 and Wildlife
+top of the structure, which no other mode does. Cleave runs 14,277 → 16,423 and Wildlife
 Liberation 9,206 → 13,956 of cage, so intensity 4 is now the heaviest party-game arena — **soak it
 on device**, and if it will not hold, the scavenger cap (`SCAVENGER_CAP[3]`) is the cheapest thing
 to pull before the structure counts.
@@ -458,7 +460,7 @@ Players spawn on a **sphere at r = 700** (`CellSpawnFormation.Formation.Symmetri
 wreck field (520) and inside the membrane (1200), all facing the cell — so every pilot's opening
 move is to fly in.
 
-Symmetric rather than PeelTheCage's `EquatorialRing` because **a dogfight arena has no meaningful
+Symmetric rather than Cleave's `EquatorialRing` because **a dogfight arena has no meaningful
 "up"**: the crust is a bowl, not a floor with a ceiling, so there is no pole to be unfair about,
 and a spherical spread means the opening merge comes from every direction instead of everyone
 converging on one plane.
@@ -675,11 +677,11 @@ posts `DogFightLeadChanged`.
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a toast,
 never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone feedback**
-(same state as PeelTheCage and Wildlife Liberation).
+(same state as Cleave and Wildlife Liberation).
 
 ## Everyone starts at zero
 
-PeelTheCage shipped a bug where some players began a match on a non-zero score. `RoundStats` lives on
+Cleave shipped a bug where some players began a match on a non-zero score. `RoundStats` lives on
 the **persistent** Player NetworkObject and survives every scene load, so a missed reset carries
 the previous game's stats straight in. Four layers here:
 
@@ -699,7 +701,7 @@ there and asserted there.**
 ## Sparrow-only
 
 Enforced in **three** places, all reading the single `Vessels` entry on
-`ArcadeGameDogFight.asset`. This is not belt-and-braces for its own sake — PeelTheCage shipped with
+`ArcadeGameDogFight.asset`. This is not belt-and-braces for its own sake — Cleave shipped with
 two of these and a client still flew a Dolphin:
 
 1. **`GameDataSO.SyncFromArcadeGame`** clamps `selectedVesselClass` on the machine that pressed
@@ -813,7 +815,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
    generator and `boneyard_budget.py` have drifted — fix both.
 6. **Spawn outside, on a sphere.** All players start ~700 u out, spread over a sphere, facing the
    arena with the whole thing visible ahead. Nobody starts inside it. Also check Crystal Capture
-   still spawns on its sphere and PeelTheCage on its own ring — those scenes must be unchanged.
+   still spawns on its sphere and Cleave on its own ring — those scenes must be unchanged.
 7. **BULLETS SCORE — the load-bearing check.** Shoot an opponent with the full-auto: your score
    should tick **+1 per hit**, and shooting a hulk, the crust, or a scavenger should move it by
    **nothing**. **This one regressed and was fixed in 2026-09** — the effects were always wired

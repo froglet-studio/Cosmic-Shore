@@ -87,6 +87,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool HasVotedRematch { get; }
         /// <summary>
+        /// True once this pilot has tapped READY in the Maelstrom hub. Replicated state rather
+        /// than an event, for the same reason as <see cref="HasVotedRematch"/>: the hub draws a
+        /// face per ready press on every peer, and a peer that loaded the hub late still has to
+        /// be able to read who was already waiting. Always false for a player that is not
+        /// network-spawned.
+        /// </summary>
+        bool IsMaelstromReady { get; }
+        /// <summary>
+        /// Announce this pilot's own READY press. Owner-side; the server writes through, a client
+        /// asks on its own player object, which is what establishes whose press it was.
+        /// </summary>
+        void SetMaelstromReady(bool ready);
+        /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>
         ulong PlayerNetId { get; }

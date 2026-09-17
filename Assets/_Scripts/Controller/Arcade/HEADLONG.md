@@ -295,6 +295,18 @@ leaving them as an absence.
   compensate; whether that is enough is a play-test question, and widening it further is the
   lever. Aiming the gate at the inbound line instead was considered and rejected: it only moves
   the problem to the exit, since no single axis can be within 50° of both legs of a hairpin.
+- **The Rhino's ramp gained a Time endpoint after this mode shipped, and the corner table was
+  not re-derived.** Broadside's first playtest filled the Rhino's `(open design slot)` Time row
+  with **Ramp Spool** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — the multiply was
+  already in `RampBoostActionExecutor`, only the asset was flat). It does **not** move
+  `maxBoostMultiplier`, so **every speed and every corner radius in §4 and §6 is unchanged** —
+  `HeadlongCircuitSettings` is cut against `SpeedAtStick`/`CornerRadiusAtStick`, which read the
+  ceiling, not the wind-up. What *does* change is how much of a straight a pilot converts: at
+  Time 10 the ramp reaches top in 2.1 s instead of 5.2, which makes this mode's short legs pay
+  more than the circuit was tuned against. Headlong's card authors no Time row, so nothing moves
+  at rest today — but the comeback system can hand a trailing Rhino element levels, and it now
+  reaches this ability where it previously reached nothing. Worth a play-test before anyone
+  authors a Time row here.
 - **The mode does not read the boost state anywhere.** The whole design rests on the pilot
   choosing to hold it, and nothing on the HUD says whether they still have it beyond the speed
   itself. A "boost held" streak readout is the obvious next thing and is deliberately not here.

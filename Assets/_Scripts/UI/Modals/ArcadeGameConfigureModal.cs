@@ -553,7 +553,93 @@ namespace CosmicShore.UI
             // every human to Jade, spawns the chips and opens the same panel on the clients.
             // Deferring it would leave the domain tiles inert on a panel already showing them.
             CommitConfiguration();
+
+            // AFTER the commit, deliberately: the commit publishes the lobby (so the placements
+            // can be broadcast at all - NotifyRosterChanged refuses a closed lobby) and resets
+            // every human to Jade (so a restored domain pick has to land after it, not before).
+            RestoreRememberedRoster();
+            RestoreRememberedDomain();
             RefreshRoster();
+        }
+
+        /// <summary>
+        /// Re-place the bots the host launched this card with last time, and re-widen the domain
+        /// count to what they launched with - the host half of <see cref="LaunchPreference"/>.
+        /// Host only, never for the weekly challenge (its terms are pinned), and every value is
+        /// re-clamped against the card and the party on the ground: a party that grew since
+        /// gets fewer of its bots back, a prefix the seat count cannot stretch to is clamped the
+        /// way a live placement is.
+        /// </summary>
+        void RestoreRememberedRoster()
+        {
+            if (IsClientMode || _weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasHostTerms) return;
+
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+                                    MaxMatchSeats);
+            var placements = LaunchPreferenceRules.ResolveAiPlacements(
+                remembered.AIDomains, ceiling - BaseSeats);
+
+            config.AIDomains.Clear();
+            config.AIDomains.AddRange(placements);
+
+            // Seat count first (it bounds the domain count), then the domain count against the
+            // new bound - the same order a live placement takes through AddAiToDomain.
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            config.DomainCount = LaunchPreferenceRules.ResolveDomainCount(
+                remembered.DomainCount, config.DomainCount, MinDomainsForGame,
+                ComputeMaxDomainCount(), placements);
+            if (dcStepper)
+                dcStepper.Initialize(MinDomainsForGame, ComputeMaxDomainCount(), config.DomainCount);
+
+            RefreshTileVisibility();
+            BroadcastRosterToClients();
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] Restored {_selectedGame.Mode}: {placements.Count} placed AI, " +
+                $"domains={config.DomainCount}, seats={config.PlayerCount}.");
+        }
+
+        /// <summary>
+        /// Re-pick the domain this pilot pressed ready with on this card last time - the pilot
+        /// half of <see cref="LaunchPreference"/>, and the one restore both the host and a guest
+        /// perform, since each pilot's colour is their own. Routed through
+        /// <see cref="HandleDomainSelected"/> so it is a real server request: a tile lit without
+        /// the round trip is the "UI claims a domain the server never got" case that method
+        /// exists to refuse. Jade is skipped because the commit already put everyone there.
+        /// </summary>
+        void RestoreRememberedDomain()
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasPilotChoice) return;
+
+            var domain = LaunchPreferenceRules.ResolvePilotDomain(remembered.Domain, config.DomainCount);
+            if (domain == Domains.Jade) return;
+
+            HandleDomainSelected(domain);
+        }
+
+        /// <summary>
+        /// Write this card's launch setup to <see cref="LaunchPreferenceStore"/>. Called once per
+        /// launch on every instance: the launch authority writes the host terms (intensity, domain
+        /// count, placed AI) and its own pilot choice; a guest writes only its own domain and
+        /// hull, so the host terms this machine last launched with are not clobbered by a match
+        /// it merely joined. Never for the weekly challenge - pinned terms are not a preference.
+        /// </summary>
+        void RememberLaunchPreference(bool launchAuthority)
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+
+            var vessel = config.SelectedShip ? config.SelectedShip.Class : VesselClassType.Random;
+            var domain = config.SelectedDomain;
+
+            if (launchAuthority)
+                LaunchPreferenceStore.SaveHostTerms(_selectedGame.Mode, config.Intensity,
+                                                    config.DomainCount, config.AIDomains, domain, vessel);
+            else
+                LaunchPreferenceStore.SavePilotChoice(_selectedGame.Mode, domain, vessel);
         }
 
         #endregion
@@ -1207,13 +1293,20 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
+            // The card re-opens on the intensity it was last LAUNCHED at from this machine
+            // (LaunchPreferenceStore), clamped to the card's range and to what this player has
+            // unlocked - a never-launched card opens on its minimum exactly as before.
+            LaunchPreferenceStore.TryGet(game.Mode, out var remembered);
+            int rememberedIntensity = remembered.HasHostTerms ? remembered.Intensity : 0;
+
             config.Intensity   = _weeklyChallengeLocked
                 // The challenge's intensity is the same ask for every player, so it is NOT
                 // clamped to what this player has unlocked - the weekly challenge is a curated
                 // invitation into a mode, and an unlock gate would make two players in the same
                 // week face different objectives.
                 ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
-                : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+                : LaunchPreferenceRules.ResolveIntensity(
+                    rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
             // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
             // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
@@ -1372,7 +1465,15 @@ namespace CosmicShore.UI
 
             SO_Vessel chosen = null;
 
-            if (gameData && gameData.selectedVesselClass)
+            // 0) the hull this pilot last pressed ready with ON THIS CARD - the arena's carousel
+            //    re-opens on it (still to be confirmed; the per-session gate is the design).
+            //    A single-hull card resolves to its one hull either way.
+            if (_selectedGame && LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)
+                && remembered.HasPilotChoice && remembered.Vessel != VesselClassType.Random)
+                chosen = _availableShips.FirstOrDefault(s => s.Class == remembered.Vessel);
+
+            // 1) the hull last selected anywhere this session
+            if (!chosen && gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
                 if (prevType != VesselClassType.Any && prevType != VesselClassType.Random)
@@ -2242,6 +2343,11 @@ namespace CosmicShore.UI
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
+            // The setup that is about to fly is the one to remember - written here, before the
+            // config below is reset, and never on a mere ready press (a pilot who readies and
+            // whose party then dismisses the card has not launched anything).
+            RememberLaunchPreference(shouldLaunch);
+
             if (shouldLaunch)
             {
                 audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
@@ -2553,7 +2659,12 @@ namespace CosmicShore.UI
 
             _isClientMode = true;
             _launching = false;
+            // A generation this guest has never drawn is a NEW lobby: the one moment its own
+            // remembered domain should be re-picked. A re-draw of the same lobby (the guest
+            // tapping the card to get back in) must not override a pick made since.
+            int previousGeneration = _appliedLobbyGeneration;
             _appliedLobbyGeneration = arcadeConfigSyncManager ? arcadeConfigSyncManager.CurrentLobby.Generation : 0;
+            bool freshLobby = _appliedLobbyGeneration != previousGeneration;
 
             // Re-arm the commit guard. Clients never commit - CommitConfiguration runs on the
             // host's card open - but a player who was previously the party host might carry a
@@ -2620,6 +2731,7 @@ namespace CosmicShore.UI
             // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
+            if (freshLobby) RestoreRememberedDomain();
             RefreshRoster();
         }
 

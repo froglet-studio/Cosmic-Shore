@@ -27,7 +27,7 @@ Vessel mechanics: `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOO
   in `OnNetworkDespawn` so freestyle bombs go back to the authored 25 s.
 - Team scoring folds through the standard `ScoringRuleSO` surfaces (`ResolveWinner`,
   `ResolvePlacementOrder`, team-major `BuildResults`), so the mode is **Maelstrom-admissible**
-  on the scoring axis (not added to the Tournament pool here — that is a design call).
+  on the scoring axis (not added to the Maelstrom pool here — that is a design call).
 
 ## The arena
 
