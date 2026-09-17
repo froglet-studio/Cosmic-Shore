@@ -65,6 +65,7 @@ namespace CosmicShore.Gameplay
 
         bool _engaged;
         float _zoom01;   // the APPLIED zoom, chasing the trigger
+        Transform _hull; // resolved once by ResolveHull; see why it is not ShipTransform
 
         /// <summary>
         /// True while the pilot is holding the scope. Maintained on every peer — see the class
@@ -86,7 +87,9 @@ namespace CosmicShore.Gameplay
             if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
 
             // A re-init hands this component to a different pilot (the vessel swap, the Cellular
-            // Duel ownership swap). Whatever the last pilot was holding is not this one's.
+            // Duel ownership swap). Whatever the last pilot was holding is not this one's, and
+            // the hull it was seated on may not be either.
+            _hull = null;
             ReleaseInternal();
         }
 
@@ -161,12 +164,31 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void DrawOverlay()
         {
-            if (_status?.Player == null || !_status.Player.IsLocalPilot) return;
-            if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
-            if (_shot == null) return;
+            if (_status?.Player == null)
+            {
+                SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoPlayer);
+                return;
+            }
 
-            var ship = _status.ShipTransform;
-            if (ship == null) return;
+            if (!_status.Player.IsLocalPilot)
+            {
+                SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NotLocalPilot);
+                return;
+            }
+
+            if (_shot == null && _registry != null) _shot = _registry.Get<SniperShotActionExecutor>();
+            if (_shot == null)
+            {
+                SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoShotExecutor);
+                return;
+            }
+
+            var ship = ResolveHull();
+            if (ship == null)
+            {
+                SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoHull);
+                return;
+            }
 
             // An explicit == null, NOT ??=: the null-coalescing operators compare by REFERENCE
             // and so cannot see a destroyed UnityEngine.Object, which would leave this holding a
@@ -175,6 +197,30 @@ namespace CosmicShore.Gameplay
 
             _overlay.Tick(ship, ResolveScopeFieldOfView(), _shot.ConeHalfAngleDegrees,
                           _shot.CooldownRemaining01, _shot.TracerColour);
+        }
+
+        /// <summary>
+        /// The hull the scope's eye sits in front of, resolved ONCE and cached.
+        ///
+        /// <para>It does not read <c>IVesselStatus.ShipTransform</c>, which is
+        /// <c>Vessel.Transform</c> with no guard: on a vessel whose <c>_shipInstance</c> is
+        /// unreferenced, <c>VesselStatus.Vessel</c> logs an error and returns null, so that
+        /// property THROWS rather than answering null — and a throw here takes the whole
+        /// instrument with it, not just the window, because <c>Tick</c> is downstream of this
+        /// line. The fallback to this executor's own root is deliberate for the same reason: the
+        /// eye's pose only needs a hull-shaped transform, and a scope that is slightly
+        /// mis-seated is worth far more than one that does not exist.</para>
+        ///
+        /// <para>Cached because <c>VesselStatus.Vessel</c>'s null path logs an ERROR, which on a
+        /// per-frame read is the console spam the logging convention exists to prevent. Re-resolved
+        /// only while the answer is still null, so a vessel that wires up late is picked up.</para>
+        /// </summary>
+        Transform ResolveHull()
+        {
+            if (_hull != null) return _hull;
+            _hull = _status?.Vessel?.Transform;
+            if (_hull == null) _hull = transform.root;
+            return _hull;
         }
 
         SniperScopeActionSO ResolvedConfig => _activeSo != null ? _activeSo : config;

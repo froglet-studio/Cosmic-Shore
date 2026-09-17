@@ -223,7 +223,9 @@ deflection **before** Space 5.
 | `…/R_VesselActions/Executors/SniperShotActionExecutor.cs` | **new** — hitscan, cooldown, super-shield teardown, tracer |
 | `…/R_VesselActions/Executors/SniperBeam.cs` | **new** — the pooled domain-coloured tracer + impact flare |
 | `…/R_VesselActions/Executors/SniperScopeOverlay.cs` | **new** — the eyepiece, the reticle inside it and the recharge ring around it |
+| `…/R_VesselActions/Executors/SniperScopeDiagnostics.cs` | **new** (round 6) — warn-once reporting for a system whose failure mode is a blank screen |
 | `_Scripts/UI/View/ScopeRingGraphic.cs` | **new** — the generated ring/arc |
+| `_Scripts/Utility/CSDebug.cs` | **+** (round 6) `CSLogChannel.SerpentScope` |
 | `_Scripts/UI/View/ScopeDiscGraphic.cs` | **new** (round 4) — the generated circular picture |
 | `_Scripts/UI/View/AbilityLockupView.cs` | **+** (round 4) a LOCKED card draws its cooldown |
 | `_Scripts/Utility/ScopePipView.cs` | **new** — the runtime RenderTexture camera; round 4 re-pointed it at the SCOPE, round 5 made it adopt the game's image |
@@ -559,6 +561,114 @@ would have been permanent:
 - **The render target is `Create()`d outright.** The surface binds it in the same frame, and a
   canvas sampling an uncreated target draws nothing.
 
+## Round 6 — "the pip was not there anymore at all"
+
+The same four words as round 5, after a round-5 fix that was specifically designed to make those
+four words impossible: the eyepiece gained an **opaque backing disc** and a **full-strength rim**
+precisely so that *showing nothing* and *not being there* could not look the same. It still read as
+nothing. That is a different fault from round 5's, and round 5's diagnosis (URP camera defaults →
+a flat near-black picture) is now known to be **incomplete rather than wrong** — it was a real
+defect in a real code path, and it was not the whole story.
+
+### The finding is about the process, not the code
+
+**Three rounds were spent guessing at a blank screen, and a blank screen is one report for at
+least four unrelated faults.** Since round 4 retired the main-camera cockpit, the eyepiece is the
+ability's **only** visible output, so the pilot cannot distinguish:
+
+1. the scope never engaged (no input, no executor, no `Player`);
+2. it engaged but `DrawOverlay` returned at one of its four gates;
+3. the overlay ticked but its own geometry or canvas made it invisible;
+4. it drew correctly and something opaque is on top of it.
+
+Nothing in the console separated those. So this round adds no feature and changes no look: it
+makes the instrument **answer the question itself**, in the house shape
+(`MouseFlightDiagnostics`, `PrismOcclusionDiagnostics`, `VesselVisionDiagnostics`) —
+`SniperScopeDiagnostics`, warn-once per reason for the lifetime of the process.
+
+The split is the house one and it is the point: **a refusal is an unconditional warning naming the
+gate**, because a system whose failure mode is silence has to be loud when it fails; **the happy
+path is one line on `CSLogChannel.SerpentScope`**, off by default, because bring-up telemetry for a
+working system is console spam. Enabling that one channel (FrogletTools ▸ Toolbox ▸ Logging) is
+therefore the whole procedure for separating case 1/2 from case 3/4.
+
+There is deliberately **no rung for "it is being covered"**. Case 4 is not decidable from source —
+only a rendered frame can name what is on top — and an unconditional warning saying "everything
+checks out, look elsewhere" would be a permanent false positive the day the real defect is fixed.
+The guidance rides the happy-path line instead and names the tool that answers it: **FrogletTools
+▸ Diagnostics ▸ Report On-Screen UI, in play mode**, which names every enabled `Graphic` covering
+≥2% of the display, biggest first, with its path and its effective alpha. CLAUDE.md already records
+why: *a rendered frame is the one thing static analysis of scenes and prefabs cannot see*, and the
+`Pip.prefab` navy-quad bug was found that way after three confident wrong answers were read out of
+the YAML.
+
+### What was ruled out, and how
+
+Everything below was **measured off the shipped assets**, not assumed, and every one of them came
+back clean — which is itself the finding, because each was a plausible total-blackout cause:
+
+| Hypothesis | Check | Result |
+|---|---|---|
+| The scope executor is not on the hull | guid `dcc95f…ef88` in `Serpent.prefab` | present |
+| It is not in the registry's serialized list, so `Initialize` never runs and `_registry` stays null (which would gate the **whole** overlay behind `_shot`) | `ActionExecutorRegistry._executors` contains both executor fileIDs | both present |
+| `VesselStatus._shipInstance` is unreferenced, so `ShipTransform` **throws** (it is `Vessel.Transform` with no guard, and `VesselStatus.Vessel` logs an error and returns null) | `_shipInstance` on the Serpent's `VesselStatus` | wired |
+| Round 4 broke the LT binding | `Serpent.asset` Space entry `Input` | `2`, unchanged by round 4 |
+| The rings are painted black on a near-black backing | `SniperShotActionExecutor.ResolveTracerColour` | a domain signal colour, falling back to `Color.white` — never black |
+
+The registry check is worth keeping because of how *nearly* it was the answer: `Get<T>()` falls
+back to `GetComponentInChildren<T>(true)`, so an executor missing from `_executors` would still
+receive `Engage` (and `_status` from its argument) and would still zoom — while `_registry`, which
+is only ever assigned in `Initialize`, stayed null, taking `_shot` and therefore the entire overlay
+with it. **An ability that half-works is not evidence that its wiring is complete.**
+
+### Two real defects fixed on the way
+
+Neither is provably the round-6 report; both are genuine faults found while reading for it, and
+both are the kind that produce exactly this symptom.
+
+- **Hiding the instrument by `Canvas.enabled` can permanently freeze every graphic under it.** A
+  UGUI `Graphic` caches its canvas in `m_Canvas`, and `Graphic.IsActive()` is
+  `base.IsActive() && m_Canvas != null` — so every `SetVerticesDirty` / `SetMaterialDirty` is a
+  **silent no-op** while that cache is null. When a canvas is disabled beneath them,
+  `OnCanvasHierarchyChanged` nulls the cache and *then* tests `IsActive()`, which is false **because
+  it just nulled it**, so it returns without re-caching — and it does the same on the way back up.
+  `Create()` built the graphics and immediately disabled the canvas, so from that moment the rings
+  could never rebuild: they went on drawing whatever mesh they had, at whatever size, for the whole
+  session. Measured consequence: the **rim and backing happen to survive** (the field assignment in
+  the setter still lands, and the pending `SetAllDirty` from `OnEnable` rebuilds once at the end of
+  that first frame), while the **reticle is frozen at the round-1 zoom and the recharge arc at the
+  round-1 sweep** — i.e. the cone-sized reticle stops being a measurement, which is the one thing it
+  exists to be. `SetVisible` now toggles the **window GameObject**, which runs `Graphic.OnEnable` →
+  `CacheCanvas()` + `SetAllDirty()` and therefore recovers by construction. That makes `Tick`'s
+  existing "`SetVisible(true)` **first**, then write the radii" ordering load-bearing rather than
+  incidental, and `SelfCheck` now asserts it — via `IsActive()`, **not** the `canvas` property,
+  whose getter re-caches on read and would heal the very thing being tested.
+
+  General rule: **`Canvas.enabled` and `GameObject.SetActive` are not interchangeable ways to hide
+  a generated UI — only one of them lets its graphics rebuild afterwards.**
+
+- **`IVesselStatus.ShipTransform` is `Vessel.Transform` with no guard**, and `VesselStatus.Vessel`
+  logs an error and returns `null` when `_shipInstance` is unreferenced — so that property
+  **throws** rather than answering null, and a throw in `DrawOverlay` takes the whole instrument
+  with it rather than just the window. It is now `SniperScopeActionExecutor.ResolveHull`, which
+  prefers `Vessel.Transform` and falls back to this executor's own root, caches the answer (because
+  the null path logs an *error*, which per-frame is the spam the logging convention exists to
+  prevent), re-resolves only while the answer is still null, and is cleared on re-init. A scope
+  that is slightly mis-seated is worth more than one that does not exist.
+
+### What the next playtest should produce
+
+Instead of four words, one of these:
+
+- a **warning** naming the gate (`no Player`, `not the local pilot`, `no SniperShotActionExecutor`,
+  `no hull`) — case 1 or 2;
+- a **warning** naming the unusable state (canvas disabled, stale `m_Canvas`, zero radius,
+  transparent backing, eyepiece off screen) — case 3;
+- with `[SerpentScope]` enabled, **one line** giving the eyepiece's centre, radius and the screen
+  size — which means it *is* being drawn, and the next step is the on-screen UI reporter — case 4;
+- or nothing at all in either place, which now means `Update` itself is not running and the
+  question moves to the input binding.
+
 ## Drive-by corrections
 
 - **`Serpent.asset`'s Time entry had `Input: 0`** (`FullSpeedStraightAction`) while
@@ -696,6 +806,29 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     **arcade card's** looking-phase preview, and a **Toy Box** card's toy picture. Each must look
     exactly as it did before — same brightness, same bloom, same anti-aliasing. These are the sites
     the helper was extracted FROM, so a regression here is a regression in the extraction.
+22. **START HERE (round 6): read the console before looking at the screen.** Fly a Serpent, hold
+    LT for a second, and read the console. A **warning** starting `[SerpentScope] The scope window
+    is NOT being drawn:` names the gate or the unusable state outright — fix that and stop. No
+    warning means every gate and every self-check passed.
+23. **Then enable the channel (round 6).** FrogletTools ▸ Toolbox ▸ Logging, tick **`[SerpentScope]`
+    scope eyepiece placement**, hold LT again. Exactly one line should appear giving the eyepiece's
+    centre, radius and the screen size — e.g. `centre (301.0, 575.0) radius 270 px on a 1920x1080
+    screen`. That line means the instrument *is* being submitted at those coordinates.
+24. **If step 23 printed and you still see nothing, it is occlusion (round 6).** Run **FrogletTools ▸
+    Diagnostics ▸ Report On-Screen UI IN PLAY MODE** while holding LT. It names every enabled
+    `Graphic` covering ≥2% of the display, biggest first, with its path, its effective alpha and
+    which `CanvasGroup` set it — plus any camera or VideoPlayer drawing over the game without
+    appearing in a UI hierarchy. Whatever it names at the top-left is the answer. (The Serpent
+    carries a `Pip`, whose `border` RawImage draws a 780×400 navy quad when its texture is missing;
+    `PipUI.SilenceUntexturedGraphics` is supposed to have silenced it, and this is how you confirm.)
+25. **If NEITHER step 22 nor step 23 printed anything (round 6), `Update` is not running.** The
+    scope never engaged: check that LT is reaching `SniperScopeActionSO.StartAction` at all, and
+    that the executor's own GameObject is active. Every path inside `DrawOverlay` now speaks, so
+    silence in both places can only mean it was never called.
+26. **The reticle tracks the zoom again (round 6 regression).** Hold LT and roll the trigger from
+    just-past-the-deadzone to fully down. The inner ring must **shrink continuously**, and the
+    recharge arc must fill smoothly after a shot. Both were frozen at their first-frame values by
+    the `Canvas.enabled` hazard, which looks like a working instrument until you watch it move.
 
 ## Follow-ups
 

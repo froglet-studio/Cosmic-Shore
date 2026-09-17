@@ -73,6 +73,8 @@ namespace CosmicShore.Gameplay
 
         bool _wasReady = true;
         float _readyFlashUntil;
+        int _ticks;
+        bool _selfChecked;
 
         /// <summary>
         /// Build the overlay on a new GameObject. Local pilot only — the caller owns that gate,
@@ -83,6 +85,7 @@ namespace CosmicShore.Gameplay
             var go = new GameObject("[SerpentScopeOverlay]");
             var overlay = go.AddComponent<SniperScopeOverlay>();
             overlay.Build();
+            // Hidden by the WINDOW, never by the canvas - see SetVisible.
             overlay.SetVisible(false);
             return overlay;
         }
@@ -243,6 +246,8 @@ namespace CosmicShore.Gameplay
             }
 
             _pip.Tick(vessel, fieldOfView);
+
+            SelfCheck(windowRadius);
         }
 
         /// <summary>
@@ -295,9 +300,104 @@ namespace CosmicShore.Gameplay
             _pip?.Hide();
         }
 
+        /// <summary>
+        /// Show or hide the instrument by toggling the WINDOW GameObject, and never by toggling
+        /// <c>Canvas.enabled</c>.
+        ///
+        /// <para><b>The two are not interchangeable, and only one of them recovers.</b> A UGUI
+        /// <c>Graphic</c> caches its canvas in <c>m_Canvas</c>, and <c>Graphic.IsActive()</c> is
+        /// <c>base.IsActive() &amp;&amp; m_Canvas != null</c> — so every <c>SetVerticesDirty</c> /
+        /// <c>SetMaterialDirty</c> is a no-op while that cache is null. When a canvas is disabled
+        /// underneath them, <c>OnCanvasHierarchyChanged</c> nulls the cache and then tests
+        /// <c>IsActive()</c>, which is false BECAUSE it just nulled it, so it returns without
+        /// re-caching — and it does the same thing on the way back up. The graphics are then
+        /// permanently unable to rebuild: they go on drawing whatever mesh they happened to have
+        /// when the canvas went down, at whatever size that was, for the rest of the session.
+        /// Toggling the GameObject instead runs <c>Graphic.OnEnable</c>, which calls
+        /// <c>CacheCanvas()</c> and <c>SetAllDirty()</c> — so it recovers by construction.</para>
+        ///
+        /// <para>Which is why <see cref="Tick"/> calls this FIRST, before it writes a single
+        /// radius: a graphic still has to be active at the moment it is told its geometry changed.
+        /// That ordering is part of the contract, not incidental.</para>
+        /// </summary>
         void SetVisible(bool visible)
         {
-            if (_canvas != null) _canvas.enabled = visible;
+            if (_window != null) _window.gameObject.SetActive(visible);
+        }
+
+        /// <summary>
+        /// Check ONCE, a couple of frames in, that the instrument this class just drew can
+        /// actually be seen — and warn if not.
+        ///
+        /// <para>It exists because everything below is silent when it fails. A disabled canvas, a
+        /// graphic with no cached canvas, a zero radius, a transparent backing and a window parked
+        /// off the edge of the screen all produce the identical report from a pilot: nothing is
+        /// there. None of them throws, and none of them is visible in a prefab or a scene, because
+        /// the whole instrument is generated at runtime.</para>
+        ///
+        /// <para>It runs on the second tick rather than the first so the canvas update pass has
+        /// had a frame to build the meshes, and it never runs again: these are construction facts,
+        /// not per-frame ones, so a repeat check would be per-frame work in exchange for nothing.
+        /// If it passes, the one line it emits goes on a channel — the fault cases are the loud
+        /// ones.</para>
+        /// </summary>
+        void SelfCheck(float radius)
+        {
+            if (_selfChecked) return;
+            if (++_ticks < 2) return;
+            _selfChecked = true;
+
+            if (_canvas == null || !_canvas.isActiveAndEnabled)
+            {
+                SniperScopeDiagnostics.Unusable(
+                    "its Canvas is null or disabled, so nothing under it is submitted at all.");
+                return;
+            }
+
+            // The exact hazard SetVisible's doc comment is about. Graphic.IsActive() reads the
+            // m_Canvas FIELD, so it is false while that cache is stale - which is the state in
+            // which every mesh rebuild silently does nothing and the rings stay frozen at their
+            // build-time size. Deliberately IsActive() and not the `canvas` PROPERTY: that getter
+            // re-caches on read, so asking it would heal the very thing being tested and report
+            // clean. A standing guard against the visibility toggle regressing to Canvas.enabled.
+            if (_rim != null && !_rim.IsActive())
+            {
+                SniperScopeDiagnostics.Unusable(
+                    "its graphics report IsActive() false with the window up, so Graphic.m_Canvas " +
+                    "is stale and every mesh rebuild is a silent no-op - the rings are frozen at " +
+                    "whatever size they were built with. Something is toggling Canvas.enabled " +
+                    "under them; see SniperScopeOverlay.SetVisible.");
+                return;
+            }
+
+            if (radius <= 1f)
+            {
+                SniperScopeDiagnostics.Unusable(
+                    $"its eyepiece radius resolved to {radius:0.##} px. Screen.height reads " +
+                    $"{Screen.height}.");
+                return;
+            }
+
+            if (_backing != null && _backing.color.a <= 0.01f)
+            {
+                SniperScopeDiagnostics.Unusable("its backing disc is fully transparent.");
+                return;
+            }
+
+            // The window's pivot is the eyepiece's CENTRE, so this is the centre in screen
+            // coordinates measured from the bottom-left - which is what the reporter tool prints.
+            Vector2 centre = new(_window.anchoredPosition.x,
+                                 Screen.height + _window.anchoredPosition.y);
+            if (centre.x + radius < 0f || centre.x - radius > Screen.width ||
+                centre.y + radius < 0f || centre.y - radius > Screen.height)
+            {
+                SniperScopeDiagnostics.Unusable(
+                    $"its eyepiece is off screen: centre {centre}, radius {radius:0.#}, screen " +
+                    $"{Screen.width}x{Screen.height}.");
+                return;
+            }
+
+            SniperScopeDiagnostics.Drawing(centre, radius, new Vector2(Screen.width, Screen.height));
         }
 
         void OnDestroy() => _pip?.Dispose();
