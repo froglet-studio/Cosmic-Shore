@@ -41,12 +41,16 @@ namespace CosmicShore.ScriptableObjects
         [Header("Starting elements (arena cards)")]
         [Tooltip("Element levels each HULL starts this card's match at - the platform's " +
                  "handicap dial for a card that seats several vessels. One row per hull " +
-                 "(Intensity 0 = every intensity; 1-4 = that intensity only, winning over the 0 " +
-                 "row). A hull with no row starts at rest (every element level 0), which is " +
-                 "also what every single-hull card gets by leaving this empty. Published to " +
-                 "every peer by the config sync and applied in VesselController.Initialize, so " +
-                 "a guest's own vessel is seeded exactly as the host's replica of it. Authored " +
-                 "by the card's generator from its balance model, never by hand.")]
+                 "(Class Any = every hull; Intensity 0 = every intensity; a row naming a hull " +
+                 "or an intensity wins over a wildcard one). LEAVE THIS EMPTY unless the card " +
+                 "is solving its own balance: an empty table is published with the platform " +
+                 "baseline instead - every hull at level 5 in all four elements on intensity 1, " +
+                 "and at rest on 2-4. A card that authors ANY row owns its whole table and gets " +
+                 "no baseline, so a partial table silently opts every other hull out of it. " +
+                 "Published to every peer by the config sync and applied in " +
+                 "VesselController.Initialize, so a guest's own vessel is seeded exactly as the " +
+                 "host's replica of it. Authored by the card's generator from its balance " +
+                 "model, never by hand.")]
         public List<VesselStartingElements> StartingElements = new();
 
         [Header("Elemental Comeback (required for every party game)")]

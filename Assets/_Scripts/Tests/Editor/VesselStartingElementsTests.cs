@@ -6,9 +6,10 @@ using NUnit.Framework;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The per-hull starting-element table's two contracts: resolution (an intensity row wins
-    /// over the every-intensity row, and a hull with no row is NOT seeded) and the wire round
-    /// trip (what the config RPC packs is exactly what a client unpacks).
+    /// The per-hull starting-element table's three contracts: resolution (a row naming a hull
+    /// beats an Any wildcard, an intensity row beats an every-intensity row, and a hull no row
+    /// reaches is NOT seeded), the intensity-1 baseline a card without its own table is published
+    /// with, and the wire round trip (what the config RPC packs is exactly what a client unpacks).
     /// </summary>
     public class VesselStartingElementsTests
     {
@@ -43,6 +44,86 @@ namespace CosmicShore.Tests
             Assert.IsFalse(VesselStartingElements.TryResolve(reversed, VesselClassType.Rhino, 2, out _),
                 "a hull with no row must be left at rest, never handed zeros");
             Assert.IsFalse(VesselStartingElements.TryResolve(null, VesselClassType.Rhino, 2, out _));
+        }
+
+        [Test]
+        public void Baseline_SeedsEveryHullAtLevelFive_OnIntensityOneOnly()
+        {
+            var published = new List<VesselStartingElements>();
+            VesselStartingElements.BuildPublishedTable(new List<VesselStartingElements>(), published);
+
+            foreach (var hull in new[]
+                     {
+                         VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
+                         VesselClassType.Urchin, VesselClassType.Grizzly, VesselClassType.Squirrel,
+                         VesselClassType.Serpent, VesselClassType.Termite, VesselClassType.Falcon,
+                         VesselClassType.Shrike, VesselClassType.Sparrow, VesselClassType.Scarab,
+                     })
+            {
+                Assert.IsTrue(VesselStartingElements.TryResolve(published, hull, 1, out var at1),
+                    $"{hull} must be seeded on intensity 1");
+                Assert.AreEqual(0.5f, at1.Mass, 1e-6f);
+                Assert.AreEqual(0.5f, at1.Charge, 1e-6f);
+                Assert.AreEqual(0.5f, at1.Space, 1e-6f);
+                Assert.AreEqual(0.5f, at1.Time, 1e-6f);
+
+                for (int intensity = 2; intensity <= 4; intensity++)
+                    Assert.IsFalse(VesselStartingElements.TryResolve(published, hull, intensity, out _),
+                        $"{hull} must stay at rest on intensity {intensity}");
+            }
+        }
+
+        [Test]
+        public void Baseline_IsNotAddedToACardThatAuthorsItsOwnTable()
+        {
+            // Regatta/Broadside shape: a handicap row for ONE hull, every other hull deliberately
+            // left at rest. A per-hull baseline would seed exactly those anchor hulls and destroy
+            // the spread the balance model solved for, so an authored table gets no baseline.
+            var authored = new List<VesselStartingElements>
+            {
+                new(VesselClassType.Manta, 1, Levels(0f, 0f, 0f, -0.5f)),
+            };
+            var published = new List<VesselStartingElements>();
+            VesselStartingElements.BuildPublishedTable(authored, published);
+
+            Assert.AreEqual(1, published.Count, "an authored table is published verbatim");
+            Assert.IsTrue(VesselStartingElements.TryResolve(published, VesselClassType.Manta, 1, out var manta));
+            Assert.AreEqual(-0.5f, manta.Time, 1e-6f);
+            Assert.IsFalse(VesselStartingElements.TryResolve(published, VesselClassType.Rhino, 1, out _),
+                "an anchor hull keeps its authored rest levels");
+        }
+
+        [Test]
+        public void Resolve_NamingAHullBeatsTheAnyWildcard()
+        {
+            var table = new List<VesselStartingElements>
+            {
+                new(VesselClassType.Any, 1, Levels(0.5f, 0.5f, 0.5f, 0.5f)),
+                new(VesselClassType.Sparrow, 1, Levels(0f, 0f, 0f, 1f)),
+                new(VesselClassType.Scarab, 0, Levels(0f, 0f, 0f, 0.25f)),
+            };
+
+            Assert.IsTrue(VesselStartingElements.TryResolve(table, VesselClassType.Sparrow, 1, out var sparrow));
+            Assert.AreEqual(1f, sparrow.Time, 1e-6f, "the hull row wins over the wildcard");
+
+            Assert.IsTrue(VesselStartingElements.TryResolve(table, VesselClassType.Scarab, 1, out var scarab));
+            Assert.AreEqual(0.25f, scarab.Time, 1e-6f,
+                "class specificity dominates intensity specificity");
+
+            Assert.IsTrue(VesselStartingElements.TryResolve(table, VesselClassType.Rhino, 1, out var rhino));
+            Assert.AreEqual(0.5f, rhino.Time, 1e-6f, "an unnamed hull falls through to the wildcard");
+
+            Assert.IsFalse(VesselStartingElements.TryResolve(table, VesselClassType.Rhino, 2, out _),
+                "the wildcard row names intensity 1 and must not reach intensity 2");
+        }
+
+        [Test]
+        public void Resolve_RandomIsNotAWildcard()
+        {
+            // Random (0) is the default-constructed Class. A row nobody authored must not seed
+            // every hull in the match.
+            var table = new List<VesselStartingElements> { new(VesselClassType.Random, 1, Levels(1f, 1f, 1f, 1f)) };
+            Assert.IsFalse(VesselStartingElements.TryResolve(table, VesselClassType.Manta, 1, out _));
         }
 
         [Test]

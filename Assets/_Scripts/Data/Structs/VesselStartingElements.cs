@@ -20,10 +20,24 @@ namespace CosmicShore.Data
     /// is where a handicap belongs, because it is a fact about the race and not about the
     /// vessel.</para>
     ///
-    /// <para><b>Resolution.</b> A row with <see cref="Intensity"/> 0 applies at every intensity;
-    /// a row naming an intensity wins over it for that intensity only, so a card can author a
-    /// baseline plus per-rung corrections. A hull with no row keeps the platform default (every
-    /// element at rest, level 0). See <see cref="TryResolve"/>.</para>
+    /// <para><b>Resolution.</b> Two axes, each of which can be a wildcard. A row with
+    /// <see cref="Intensity"/> 0 applies at every intensity; a row naming an intensity wins over
+    /// it for that intensity only. A row whose <see cref="Class"/> is
+    /// <see cref="VesselClassType.Any"/> applies to every hull; a row naming a hull wins over it.
+    /// CLASS specificity dominates intensity specificity, because naming a hull is the more
+    /// deliberate statement about that hull. A hull no row reaches at all keeps the platform
+    /// default (every element at rest, level 0). See <see cref="TryResolve"/>.</para>
+    ///
+    /// <para><b>The intensity-1 baseline.</b> Intensity 1 is the most forgiving rung of every
+    /// arcade ladder, and level 5 is exactly where the fleet's level-5 ability upgrades unlock -
+    /// so a card that authors NO table is published with one wildcard row seeding every hull at
+    /// level 5 in all four elements at intensity 1 (<see cref="ArcadeIntensityOneLevel"/>,
+    /// <see cref="BuildPublishedTable"/>). It is ONE rule rather than a row copied into fifty
+    /// card assets, because six <c>Tools/Build/author_*_assets.py</c> generators re-author those
+    /// assets and would drop hand-added rows. A card that DOES author a table owns it outright
+    /// and gets no baseline: the two that do (Regatta, Broadside) are arena balance tables solved
+    /// by their own models, and they deliberately leave their anchor hulls at rest - a per-hull
+    /// baseline would seed exactly those hulls and destroy the handicap it was solving for.</para>
     ///
     /// <para>Levels are NORMALIZED (<c>ResourceCollection</c>: 0 = rest, 1 = level 10, the
     /// -0.5..1.5 band the resource system clamps to). The sustained ceiling still applies -
@@ -36,7 +50,7 @@ namespace CosmicShore.Data
     [Serializable]
     public struct VesselStartingElements
     {
-        [Tooltip("The hull this row seeds. A hull the card does not list is never asked.")]
+        [Tooltip("The hull this row seeds. Any (-1) is a wildcard: it seeds every hull, and a row naming a hull wins over it.")]
         public VesselClassType Class;
 
         [Tooltip("0 = every intensity. 1-4 = this intensity only, and wins over a 0 row for it.")]
@@ -53,9 +67,42 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
-        /// The row that applies to <paramref name="vesselClass"/> at <paramref name="intensity"/>:
-        /// the intensity-specific row when the table has one, else the intensity-0 row, else
-        /// nothing. Pure and allocation-free, so it is safe on a spawn path.
+        /// The normalized element level every hull starts an arcade match at on intensity 1 when
+        /// its card authors no starting-element table of its own: 0.5 = integer level 5, which is
+        /// the fleet's ability-upgrade unlock level (<c>R_VesselElementalAbilityHandler</c>).
+        /// Under the sustained ceiling (level 10 / 1.0), so nothing here is a transient.
+        /// </summary>
+        public const float ArcadeIntensityOneLevel = 0.5f;
+
+        /// <summary>
+        /// The table a card actually publishes: its authored rows verbatim, or - when it authors
+        /// none - the single intensity-1 wildcard baseline described on this type. Called on the
+        /// LAUNCHING machine only (<c>GameDataSO.SyncFromArcadeGame</c>); a guest takes the
+        /// result off the wire verbatim and never re-derives it, so the two cannot disagree.
+        /// </summary>
+        public static void BuildPublishedTable(IList<VesselStartingElements> authored,
+                                               List<VesselStartingElements> into)
+        {
+            into.Clear();
+            int n = authored?.Count ?? 0;
+            for (int i = 0; i < n; i++)
+                into.Add(authored[i]);
+
+            // A card that authored anything owns its whole table - see the type doc.
+            if (n > 0) return;
+
+            into.Add(new VesselStartingElements(
+                VesselClassType.Any, 1,
+                new ResourceCollection(ArcadeIntensityOneLevel, ArcadeIntensityOneLevel,
+                                       ArcadeIntensityOneLevel, ArcadeIntensityOneLevel)));
+        }
+
+        /// <summary>
+        /// The most specific row that reaches <paramref name="vesselClass"/> at
+        /// <paramref name="intensity"/>. Specificity is <c>(names this hull ? 2 : 0) +
+        /// (names this intensity ? 1 : 0)</c>, so an exact hull+intensity row beats a hull row,
+        /// which beats an <see cref="VesselClassType.Any"/> wildcard row. Nothing matching leaves
+        /// the hull at rest. Pure and allocation-free, so it is safe on a spawn path.
         /// </summary>
         public static bool TryResolve(IList<VesselStartingElements> table, VesselClassType vesselClass,
                                       int intensity, out ResourceCollection levels)
@@ -68,10 +115,13 @@ namespace CosmicShore.Data
             for (int i = 0; i < table.Count; i++)
             {
                 var row = table[i];
-                if (row.Class != vesselClass) continue;
+                bool namesHull = row.Class == vesselClass;
+                // Any (-1) is the wildcard; Random (0) is NOT, so a default-constructed row
+                // cannot silently become one.
+                if (!namesHull && row.Class != VesselClassType.Any) continue;
                 if (row.Intensity != 0 && row.Intensity != intensity) continue;
 
-                int specificity = row.Intensity == 0 ? 0 : 1;
+                int specificity = (namesHull ? 2 : 0) + (row.Intensity != 0 ? 1 : 0);
                 if (specificity <= bestSpecificity) continue;
 
                 bestSpecificity = specificity;

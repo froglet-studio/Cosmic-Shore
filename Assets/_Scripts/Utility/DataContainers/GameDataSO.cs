@@ -412,7 +412,15 @@ namespace CosmicShore.Utility
             // hull list and shipped to every client by the config sync RPC: element levels are
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
             // vessel has to be seeded from the same table the host seeds its replica from.
-            PublishStartingElements(game.StartingElements);
+            // BuildPublishedTable adds the intensity-1 baseline (every hull at level 5 in all four
+            // elements) for a card that authors no table of its own - resolved HERE, on the
+            // launching machine, rather than at read time, so it rides the existing wire and a
+            // guest can never derive a different answer. Deliberately not in
+            // PublishStartingElements: its other two callers are the config RPC (which must take
+            // the host's table verbatim) and the menu's reset (whose lava-lamp vessel is not in
+            // an arcade match and starts at rest).
+            VesselStartingElements.BuildPublishedTable(game.StartingElements, _startingElementsBuild);
+            PublishStartingElements(_startingElementsBuild);
 
             ClampSelectedVesselToGame(game);
         }
@@ -420,13 +428,19 @@ namespace CosmicShore.Utility
         /// <summary>
         /// The CURRENT card's per-hull starting element levels
         /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
-        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
-        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client,
+        /// including the intensity-1 baseline a card without its own table gets
+        /// (<see cref="VesselStartingElements.BuildPublishedTable"/>). Empty means every hull
+        /// starts at rest, which is the menu - never a launched card.
         /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
         /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
         /// the vessels that read it spawn.
         /// </summary>
         public readonly List<VesselStartingElements> StartingElements = new();
+
+        /// <summary>Scratch for <see cref="SyncFromArcadeGame"/>'s table build. Never read
+        /// outside it - <see cref="StartingElements"/> is the published table.</summary>
+        readonly List<VesselStartingElements> _startingElementsBuild = new();
 
         /// <summary>Replace the published starting-element table. Single writers: the card sync
         /// on the host, the config RPC on a client, the menu's reset.</summary>
@@ -440,8 +454,10 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The element levels a hull of <paramref name="vesselClass"/> starts THIS match at, at
-        /// the selected intensity. False when the card authors no row for it - the caller then
+        /// the selected intensity. False when no published row reaches it - the caller then
         /// leaves the vessel at rest rather than writing zeros over a seed some other path made.
+        /// In the menu the table is empty, so this is always false and the lava-lamp vessel keeps
+        /// the freestyle rest levels.
         /// </summary>
         public bool TryGetStartingElements(VesselClassType vesselClass, out ResourceCollection levels)
         {
