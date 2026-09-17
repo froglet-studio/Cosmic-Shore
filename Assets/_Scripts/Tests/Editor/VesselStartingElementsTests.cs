@@ -8,8 +8,8 @@ namespace CosmicShore.Tests
     /// <summary>
     /// The per-hull starting-element table's three contracts: resolution (a row naming a hull
     /// beats an Any wildcard, an intensity row beats an every-intensity row, and a hull no row
-    /// reaches is NOT seeded), the intensity-1 baseline a card without its own table is published
-    /// with, and the wire round trip (what the config RPC packs is exactly what a client unpacks).
+    /// reaches is NOT seeded), the intensity-1 baseline every ARCADE card is published with, and
+    /// the wire round trip (what the config RPC packs is exactly what a client unpacks).
     /// </summary>
     public class VesselStartingElementsTests
     {
@@ -50,7 +50,8 @@ namespace CosmicShore.Tests
         public void Baseline_SeedsEveryHullAtLevelFive_OnIntensityOneOnly()
         {
             var published = new List<VesselStartingElements>();
-            VesselStartingElements.BuildPublishedTable(new List<VesselStartingElements>(), published);
+            VesselStartingElements.BuildPublishedTable(new List<VesselStartingElements>(), published,
+                                                      addBaseline: true);
 
             foreach (var hull in new[]
                      {
@@ -74,23 +75,42 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Baseline_IsNotAddedToACardThatAuthorsItsOwnTable()
+        public void Baseline_IsWithheldFromAnArenaCard_LeavingItsAnchorHullsAtRest()
         {
             // Regatta/Broadside shape: a handicap row for ONE hull, every other hull deliberately
-            // left at rest. A per-hull baseline would seed exactly those anchor hulls and destroy
-            // the spread the balance model solved for, so an authored table gets no baseline.
+            // left at rest. A baseline would seed exactly those anchor hulls and destroy the
+            // spread the balance model solved for, so an arena card gets none.
             var authored = new List<VesselStartingElements>
             {
                 new(VesselClassType.Manta, 1, Levels(0f, 0f, 0f, -0.5f)),
             };
             var published = new List<VesselStartingElements>();
-            VesselStartingElements.BuildPublishedTable(authored, published);
+            VesselStartingElements.BuildPublishedTable(authored, published, addBaseline: false);
 
-            Assert.AreEqual(1, published.Count, "an authored table is published verbatim");
+            Assert.AreEqual(1, published.Count, "an arena card's table is published verbatim");
             Assert.IsTrue(VesselStartingElements.TryResolve(published, VesselClassType.Manta, 1, out var manta));
             Assert.AreEqual(-0.5f, manta.Time, 1e-6f);
             Assert.IsFalse(VesselStartingElements.TryResolve(published, VesselClassType.Rhino, 1, out _),
                 "an anchor hull keeps its authored rest levels");
+        }
+
+        [Test]
+        public void Baseline_CoexistsWithAnAuthoredRow_OnAnArcadeCard()
+        {
+            // An arcade card is never opted out, so an authored per-hull correction has to sit
+            // UNDER the baseline rather than replace it: the named hull takes its own row, every
+            // other hull takes the level-5 baseline.
+            var authored = new List<VesselStartingElements>
+            {
+                new(VesselClassType.Dolphin, 1, Levels(0f, 0f, 0f, 1f)),
+            };
+            var published = new List<VesselStartingElements>();
+            VesselStartingElements.BuildPublishedTable(authored, published, addBaseline: true);
+
+            Assert.IsTrue(VesselStartingElements.TryResolve(published, VesselClassType.Dolphin, 1, out var dolphin));
+            Assert.AreEqual(1f, dolphin.Time, 1e-6f, "the authored row still wins for the hull it names");
+            Assert.IsTrue(VesselStartingElements.TryResolve(published, VesselClassType.Rhino, 1, out var rhino));
+            Assert.AreEqual(0.5f, rhino.Time, 1e-6f, "every other hull takes the baseline");
         }
 
         [Test]

@@ -30,14 +30,23 @@ namespace CosmicShore.Data
     ///
     /// <para><b>The intensity-1 baseline.</b> Intensity 1 is the most forgiving rung of every
     /// arcade ladder, and level 5 is exactly where the fleet's level-5 ability upgrades unlock -
-    /// so a card that authors NO table is published with one wildcard row seeding every hull at
-    /// level 5 in all four elements at intensity 1 (<see cref="ArcadeIntensityOneLevel"/>,
+    /// so every ARCADE card is published with one wildcard row seeding every hull at level 5 in
+    /// all four elements at intensity 1 (<see cref="ArcadeIntensityOneLevel"/>,
     /// <see cref="BuildPublishedTable"/>). It is ONE rule rather than a row copied into fifty
     /// card assets, because six <c>Tools/Build/author_*_assets.py</c> generators re-author those
-    /// assets and would drop hand-added rows. A card that DOES author a table owns it outright
-    /// and gets no baseline: the two that do (Regatta, Broadside) are arena balance tables solved
-    /// by their own models, and they deliberately leave their anchor hulls at rest - a per-hull
-    /// baseline would seed exactly those hulls and destroy the handicap it was solving for.</para>
+    /// assets and would drop hand-added rows.</para>
+    ///
+    /// <para><b>An ARENA card is excluded, and the ARENA ROSTER is what decides that</b>
+    /// (<c>GameDataSO.ArenaGames</c> - the same <c>SO_GameList</c> the Arena screen draws from,
+    /// so the two can never disagree). It is deliberately NOT inferred from the card: neither
+    /// "lists several hulls" (Scurry, Maelstrom and Multiplayer Freestyle list several and are
+    /// arcade; Astro League and Brood Rush list several and are arena) nor "authors a table"
+    /// (two of the four arena cards author none) separates the sets. An arena card's grid is
+    /// balanced BY its starting elements, and two of the four solve that spread by leaving their
+    /// ANCHOR hulls at rest - a baseline would seed exactly those hulls and delete the handicap.
+    /// An authored row still wins over the baseline wherever both reach a hull, by the ordinary
+    /// specificity ladder below, so an arcade card that ever needs a per-hull correction can
+    /// author one without opting out of anything.</para>
     ///
     /// <para>Levels are NORMALIZED (<c>ResourceCollection</c>: 0 = rest, 1 = level 10, the
     /// -0.5..1.5 band the resource system clamps to). The sustained ceiling still applies -
@@ -67,30 +76,37 @@ namespace CosmicShore.Data
         }
 
         /// <summary>
-        /// The normalized element level every hull starts an arcade match at on intensity 1 when
-        /// its card authors no starting-element table of its own: 0.5 = integer level 5, which is
-        /// the fleet's ability-upgrade unlock level (<c>R_VesselElementalAbilityHandler</c>).
-        /// Under the sustained ceiling (level 10 / 1.0), so nothing here is a transient.
+        /// The normalized element level every hull starts an ARCADE match at on intensity 1:
+        /// 0.5 = integer level 5, which is the fleet's ability-upgrade unlock level
+        /// (<c>R_VesselElementalAbilityHandler</c>). Under the sustained ceiling (level 10 / 1.0),
+        /// so nothing here is a transient.
         /// </summary>
         public const float ArcadeIntensityOneLevel = 0.5f;
 
         /// <summary>
-        /// The table a card actually publishes: its authored rows verbatim, or - when it authors
-        /// none - the single intensity-1 wildcard baseline described on this type. Called on the
+        /// The table a card actually publishes: its authored rows verbatim, plus - for an ARCADE
+        /// card - the intensity-1 wildcard baseline described on this type. Called on the
         /// LAUNCHING machine only (<c>GameDataSO.SyncFromArcadeGame</c>); a guest takes the
         /// result off the wire verbatim and never re-derives it, so the two cannot disagree.
         /// </summary>
+        /// <param name="addBaseline">
+        /// False for an ARENA card, and for the one state where the caller cannot tell (no arena
+        /// roster wired) - the baseline is then withheld rather than guessed at, because applying
+        /// it to an arena card deletes a solved handicap while withholding it only leaves hulls
+        /// at the rest levels they had before this rule existed.
+        /// </param>
         public static void BuildPublishedTable(IList<VesselStartingElements> authored,
-                                               List<VesselStartingElements> into)
+                                               List<VesselStartingElements> into,
+                                               bool addBaseline)
         {
             into.Clear();
             int n = authored?.Count ?? 0;
             for (int i = 0; i < n; i++)
                 into.Add(authored[i]);
 
-            // A card that authored anything owns its whole table - see the type doc.
-            if (n > 0) return;
+            if (!addBaseline) return;
 
+            // Lowest specificity, so any authored row naming a hull still wins for that hull.
             into.Add(new VesselStartingElements(
                 VesselClassType.Any, 1,
                 new ResourceCollection(ArcadeIntensityOneLevel, ArcadeIntensityOneLevel,

@@ -43,11 +43,12 @@ namespace CosmicShore.ScriptableObjects
                  "handicap dial for a card that seats several vessels. One row per hull " +
                  "(Class Any = every hull; Intensity 0 = every intensity; a row naming a hull " +
                  "or an intensity wins over a wildcard one). LEAVE THIS EMPTY unless the card " +
-                 "is solving its own balance: an empty table is published with the platform " +
-                 "baseline instead - every hull at level 5 in all four elements on intensity 1, " +
-                 "and at rest on 2-4. A card that authors ANY row owns its whole table and gets " +
-                 "no baseline, so a partial table silently opts every other hull out of it. " +
-                 "Published to every peer by the config sync and applied in " +
+                 "is solving its own balance. Every ARCADE card is also published with the " +
+                 "platform baseline - every hull at level 5 in all four elements on intensity 1, " +
+                 "and at rest on 2-4 - which a row here still wins over for the hull it names. " +
+                 "An ARENA card (one on ArenaGames.asset) gets no baseline at all, because its " +
+                 "grid is balanced by this table. Published to every peer by the config sync " +
+                 "and applied in " +
                  "VesselController.Initialize, so a guest's own vessel is seeded exactly as the " +
                  "host's replica of it. Authored by the card's generator from its balance " +
                  "model, never by hand.")]

@@ -76,6 +76,16 @@ namespace CosmicShore.Utility
         public IntVariable SelectedIntensity;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
+
+        [Header("Arena roster")]
+        [Tooltip("The Arena screen's own card list (ArenaGames). Read by SyncFromArcadeGame for " +
+                 "ONE question: is the launching card an ARENA card? An arena card's grid is " +
+                 "balanced BY its per-hull StartingElements, so it is excluded from the " +
+                 "intensity-1 baseline every arcade card gets. Wired to the SAME asset the Arena " +
+                 "screen draws from, so the roster and the rule cannot disagree - never a bool " +
+                 "on the card, which would be a second opinion about which screen a mode is on. " +
+                 "Unwired, the baseline is withheld from EVERY card and an error says so.")]
+        public SO_GameList ArenaGames;
         
         
         // Game Config / State
@@ -413,13 +423,13 @@ namespace CosmicShore.Utility
             // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
             // vessel has to be seeded from the same table the host seeds its replica from.
             // BuildPublishedTable adds the intensity-1 baseline (every hull at level 5 in all four
-            // elements) for a card that authors no table of its own - resolved HERE, on the
-            // launching machine, rather than at read time, so it rides the existing wire and a
-            // guest can never derive a different answer. Deliberately not in
-            // PublishStartingElements: its other two callers are the config RPC (which must take
-            // the host's table verbatim) and the menu's reset (whose lava-lamp vessel is not in
-            // an arcade match and starts at rest).
-            VesselStartingElements.BuildPublishedTable(game.StartingElements, _startingElementsBuild);
+            // elements) for an ARCADE card - resolved HERE, on the launching machine, rather than
+            // at read time, so it rides the existing wire and a guest can never derive a
+            // different answer. Deliberately not in PublishStartingElements: its other two
+            // callers are the config RPC (which must take the host's table verbatim) and the
+            // menu's reset (whose lava-lamp vessel is not in an arcade match and starts at rest).
+            VesselStartingElements.BuildPublishedTable(
+                game.StartingElements, _startingElementsBuild, addBaseline: !IsArenaCard(game));
             PublishStartingElements(_startingElementsBuild);
 
             ClampSelectedVesselToGame(game);
@@ -429,9 +439,9 @@ namespace CosmicShore.Utility
         /// The CURRENT card's per-hull starting element levels
         /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
         /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client,
-        /// including the intensity-1 baseline a card without its own table gets
+        /// including the intensity-1 baseline every ARCADE card gets
         /// (<see cref="VesselStartingElements.BuildPublishedTable"/>). Empty means every hull
-        /// starts at rest, which is the menu - never a launched card.
+        /// starts at rest, which is the menu, and an arena card that authors no table.
         /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
         /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
         /// the vessels that read it spawn.
@@ -441,6 +451,40 @@ namespace CosmicShore.Utility
         /// <summary>Scratch for <see cref="SyncFromArcadeGame"/>'s table build. Never read
         /// outside it - <see cref="StartingElements"/> is the published table.</summary>
         readonly List<VesselStartingElements> _startingElementsBuild = new();
+
+        /// <summary>Warn-once latch for <see cref="IsArenaCard"/>. <c>[NonSerialized]</c> and
+        /// cleared by <see cref="ResetRuntimeData"/>, because this is an SO asset: a latch left
+        /// true would survive play-mode exit and swallow the error on every later run in the same
+        /// Editor session, which is exactly the failure the error exists to prevent.</summary>
+        [NonSerialized] bool _warnedNoArenaRoster;
+
+        /// <summary>
+        /// Is <paramref name="game"/> an ARENA card - one the Arena screen offers, whose grid is
+        /// balanced by its own per-hull <see cref="SO_ArcadeGame.StartingElements"/> table? Asked
+        /// of the roster asset rather than of the card, because nothing ON a card separates the
+        /// two sets (see <see cref="VesselStartingElements"/>).
+        ///
+        /// With no roster wired the answer is TRUE for every card: the baseline is then withheld
+        /// everywhere and an error names the fix, rather than being applied to the four cards it
+        /// would do real damage to.
+        /// </summary>
+        bool IsArenaCard(SO_ArcadeGame game)
+        {
+            if (ArenaGames != null && ArenaGames.Games != null)
+                return ArenaGames.Games.Contains(game);
+
+            if (!_warnedNoArenaRoster)
+            {
+                _warnedNoArenaRoster = true;
+                CSDebug.LogError(
+                    $"[GameDataSO] '{name}' has no ArenaGames roster wired, so an arena card " +
+                    "cannot be told from an arcade one. The intensity-1 starting-element " +
+                    "baseline is withheld from EVERY card until it is. Fix: assign " +
+                    "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset to this asset's " +
+                    "ArenaGames field.");
+            }
+            return true;
+        }
 
         /// <summary>Replace the published starting-element table. Single writers: the card sync
         /// on the host, the config RPC on a client, the menu's reset.</summary>
@@ -690,6 +734,7 @@ namespace CosmicShore.Utility
         {
             IsTurnRunning = false;
             GameConfigSynced = false;
+            _warnedNoArenaRoster = false;
 
             // Scene teardown / mid-game exit: abandon the flight clock without publishing a
             // time, so an abandoned game cannot leak its seconds into the next one.

@@ -1928,27 +1928,35 @@ optionally per-intensity) starting element levels (`VesselStartingElements` in D
 config-sync RPC (element levels are simulated on the OWNING machine and never replicate), and
 cleared by the menu so no handicap follows a pilot home. Before it, `SO_Vessel.InitialResourceLevels`
 was read only on the legacy single-player launch path and every hull started every multiplayer
-match at rest. **That table now also carries the platform's INTENSITY-1 BASELINE, and the two
-compose by a whole-table switch rather than per hull**: a card that authors NO rows is published
-with one `Class = Any` wildcard row seeding every hull at **level 5 in all four elements on
-intensity 1** — the rung every arcade ladder calls its most forgiving, and exactly where the
-fleet's level-5 ability upgrades unlock, so intensity 1 is now the setting where a new player
-arrives with their hull's whole kit. It is ONE rule in `VesselStartingElements.BuildPublishedTable`
-rather than a row copied into fifty card assets, because six `Tools/Build/author_*_assets.py`
-generators re-author those assets and would drop hand-added rows — the same argument the Charge
-shield period and the Time reproduction rate are laws rather than authored fields. It is resolved
-on the LAUNCHING machine, inside `SyncFromArcadeGame` and deliberately not inside
-`PublishStartingElements`, so it rides the existing config-sync arrays with no DTO field added, a
-guest can never derive a different answer, and the menu's `PublishStartingElements(null)` still
-leaves the lava-lamp vessel at rest. **A card that authors ANY row owns its whole table and gets
-no baseline**, which is what keeps the two arena cards intact: Regatta and Broadside are the only
-two that author one, their models solve a spread by leaving the ANCHOR hulls at rest, and a
-per-hull baseline would seed exactly those hulls and destroy the handicap it was solving for —
-so a PARTIAL table silently opts every unnamed hull out of the baseline, which is the trap to
-state when authoring one. `TryResolve`'s ladder is correspondingly two-axis now — `(names this
+match at rest. **That table now also carries the platform's INTENSITY-1 BASELINE, which every
+ARCADE card gets and no ARENA card does**: an arcade card is published with one `Class = Any`
+wildcard row seeding every hull at **level 5 in all four elements on intensity 1** — the rung
+every arcade ladder calls its most forgiving, and exactly where the fleet's level-5 ability
+upgrades unlock, so intensity 1 is now the setting where a new player arrives with their hull's
+whole kit. It is ONE rule in `VesselStartingElements.BuildPublishedTable` rather than a row copied
+into fifty card assets, because six `Tools/Build/author_*_assets.py` generators re-author those
+assets and would drop hand-added rows — the same argument the Charge shield period and the Time
+reproduction rate are laws rather than authored fields. It is resolved on the LAUNCHING machine,
+inside `SyncFromArcadeGame` and deliberately not inside `PublishStartingElements`, so it rides the
+existing config-sync arrays with no DTO field added, a guest can never derive a different answer,
+and the menu's `PublishStartingElements(null)` still leaves the lava-lamp vessel at rest.
+**Which cards are arena cards is asked of the ARENA ROSTER** (`GameDataSO.ArenaGames`, wired to
+the same `ArenaGames.asset` the Arena screen draws from, so the two can never disagree), because
+**nothing on a CARD separates the two sets**: "lists several hulls" does not (Scurry, Maelstrom
+and Multiplayer Freestyle list several and are arcade; Astro League and Brood Rush list several
+and are arena) and neither does "authors a `StartingElements` table" (two of the four arena cards
+author none) — an earlier cut used exactly that second test and would have handed Astro League and
+Brood Rush the baseline. An arena grid is balanced BY its starting elements and two of the four
+solve that spread by leaving their ANCHOR hulls at rest, so a baseline would seed exactly those
+hulls and delete the handicap; with no roster wired the baseline is withheld from EVERY card and
+an error names the fix, because mis-applying it costs a solved balance model while withholding it
+only restores the pre-existing rest levels. An authored row still wins over the baseline wherever
+both reach a hull, so an arcade card that needs a per-hull correction can author one without
+opting out of anything. `TryResolve`'s ladder is correspondingly two-axis now — `(names this
 hull ? 2 : 0) + (names this intensity ? 1 : 0)`, class dominating intensity — and `Random (0)`,
 the default-constructed `Class`, is deliberately NOT the wildcard, so a row nobody authored cannot
-seed the whole match. The table is authored by `Tools/Build/regatta_balance.py`, an offline lap-time
+seed the whole match. General rule: **when a rule divides a set of assets, divide them by the
+LIST that already defines the division, not by a property that happens to correlate with it.** The table is authored by `Tools/Build/regatta_balance.py`, an offline lap-time
 model over the MEASURED circuits (constants read off the prefabs by key), and **the honest result
 is a residual spread of 6.0× at intensity 1 (8.7× at rest) and 5.3× at intensity 4**: an element
 spans ~1.5× on the five hulls it reaches (Time = Soar / afterburner / Serpent boost / Scarab

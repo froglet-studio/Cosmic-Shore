@@ -58,13 +58,14 @@ simulated on the owning machine and never replicate. See `VesselStartingElements
 `GameDataSO.TryGetStartingElements`. The menu clears the table so no handicap follows a pilot
 home.
 
-Because this card authors a table, it opts out of the platform's intensity-1 baseline — the
-`Class = Any` wildcard row that seeds every hull at level 5 in all four elements on intensity 1
-for a card that authors nothing (`VesselStartingElements.BuildPublishedTable`). That is
-deliberate and load-bearing: the model below solves its spread by leaving the ANCHOR hulls at
-rest, so a per-hull baseline would seed exactly those hulls and delete the handicap. The
-consequence to state plainly is that **intensity 1 here is NOT the fully-upgraded setting every
-other arcade card's intensity 1 now is** — this grid races on solved levels at every rung.
+Because this is an ARENA card — it is on `ArenaGames.asset`, which is the only thing that
+decides it — it is excluded from the platform's intensity-1 baseline, the `Class = Any` wildcard
+row that seeds every hull at level 5 in all four elements on intensity 1 of every ARCADE card
+(`VesselStartingElements.BuildPublishedTable`, `GameDataSO.IsArenaCard`). That is deliberate and
+load-bearing: the model below solves its spread by leaving the ANCHOR hulls at rest, so a baseline
+would seed exactly those hulls and delete the handicap. The consequence to state plainly is that
+**intensity 1 here is NOT the fully-upgraded setting every arcade card's intensity 1 now is** —
+this grid races on solved levels at every rung.
 
 The table is authored by `Tools/Build/regatta_balance.py`, an offline lap-time model over the
 **measured** circuits, and the honest result is this (three laps, competent pilot on the best

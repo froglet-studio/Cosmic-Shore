@@ -51,6 +51,7 @@ MonoBehaviour:
     Space: 0.5
     Time: 0.5
   ThemeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+  ArenaGames: {fileID: 11400000, guid: 45f4a55e49b44cc7ac47e0bf96411234, type: 2}
   SceneName: MinigameSkimRace
   GameMode: 0
   LocalPlayerDisplayName: 

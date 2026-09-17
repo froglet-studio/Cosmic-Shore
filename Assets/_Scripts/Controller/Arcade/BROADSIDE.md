@@ -105,14 +105,14 @@ the Urchin or the Squirrel**, so those two get no handicap row — the residual 
 reported rather than faked. *(An earlier version of this line named the Rhino too and was simply
 wrong — see "What the first playtest changed" below.)*
 
-Because this card authors a `SO_ArcadeGame.StartingElements` table at all, it opts out of the
-platform's intensity-1 baseline — the `Class = Any` wildcard row that seeds every hull at level 5
-in all four elements on intensity 1 for a card that authors nothing
-(`VesselStartingElements.BuildPublishedTable`). That is the correct side of the switch here: the
-two hulls above deliberately carry no row, and a per-hull baseline would seed exactly them and
-invert the handicap. The consequence to state is that **intensity 1 on this card is not the
-fully-upgraded setting it is on every single-hull arcade card** — this roster brawls on solved
-levels at every rung.
+Because this is an ARENA card — it is on `ArenaGames.asset`, which is the only thing that decides
+it — it is excluded from the platform's intensity-1 baseline, the `Class = Any` wildcard row that
+seeds every hull at level 5 in all four elements on intensity 1 of every ARCADE card
+(`VesselStartingElements.BuildPublishedTable`, `GameDataSO.IsArenaCard`). That is the correct side
+of the line here: the two hulls above deliberately carry no row, and a baseline would seed exactly
+them and invert the handicap. The consequence to state is that **intensity 1 on this card is not
+the fully-upgraded setting it is on every arcade card** — this roster brawls on solved levels at
+every rung.
 
 The model's **minutes are a floor, not a prediction**, and the first playtest is what established
 that. Its points/min is a rate against a victim you are **already engaged with**; it does not

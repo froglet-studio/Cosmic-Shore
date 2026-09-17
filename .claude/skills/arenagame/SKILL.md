@@ -131,12 +131,13 @@ reach for:
 
 - `VesselStartingElements` (Data) / `GameDataSO.StartingElements` / `TryGetStartingElements` -
   the handicap table. Do not add a second way to seed a hull.
-  **Authoring ANY row opts the whole card out of the platform's intensity-1 baseline** (every
-  hull at level 5 in all four elements, added by `BuildPublishedTable` to a card that authors
-  nothing). That is deliberate - your model solves a spread by leaving ANCHOR hulls at rest, and
-  a per-hull baseline would seed exactly those - but it means a PARTIAL table is a decision about
-  every hull you did not name, not only the ones you did. Say so in the mode's doc, and state
-  what intensity 1 looks like on your card against every other card's.
+  **An ARENA card is excluded from the platform's intensity-1 baseline** (every hull at level 5
+  in all four elements, added by `BuildPublishedTable` to every ARCADE card). Membership of
+  `ArenaGames.asset` is what decides that - nothing on the card, because neither "lists several
+  hulls" nor "authors a table" separates the two rosters. So your card IS opted out the moment it
+  is on the arena roster, whether or not it authors a table, and your model owns intensity 1
+  outright. Say so in the mode's doc, and state what intensity 1 looks like on your card against
+  every arcade card's.
 - `IPlayerSpawnLine` - a mode that lines everyone up (a start line behind gate 0) rather than
   spreading them round the cell; fair by symmetry (`CellSpawnFormation.BuildFacingRing`).
 

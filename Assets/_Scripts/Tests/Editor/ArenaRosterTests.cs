@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
@@ -28,6 +29,8 @@ namespace CosmicShore.Tests
     public class ArenaRosterTests
     {
         const string ArenaGamesPath = "Assets/_SO_Assets/Games/GameLists/ArenaGames.asset";
+        const string ArcadeGamesPath = "Assets/_SO_Assets/Games/GameLists/ArcadeGames.asset";
+        const string RuntimeGameDataPath = "Assets/_SO_Assets/Game Data/Runtime GameData.asset";
         const string ModalPath = "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs";
 
         static List<SO_ArcadeGame> ArenaCards()
@@ -37,6 +40,37 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(list.Games);
             Assert.IsNotEmpty(list.Games, "the arena roster is empty");
             return list.Games.Where(g => g).ToList();
+        }
+
+        [Test]
+        public void RuntimeGameData_WiresThisRoster_SoTheStartingElementBaselineCanSkipArenaCards()
+        {
+            // GameDataSO.SyncFromArcadeGame asks THIS asset whether the launching card is an
+            // arena one, and withholds the intensity-1 level-5 baseline when it is - an arena
+            // grid is balanced BY its own StartingElements table, and two of the four cards
+            // solve that spread by leaving their anchor hulls at rest. Unwired, the baseline is
+            // withheld from every card in the game, which is a silent loss of the whole rule on
+            // ~46 arcade cards. Nothing on a card separates the two sets, so the roster is the
+            // only authority there is.
+            var gameData = AssetDatabase.LoadAssetAtPath<GameDataSO>(RuntimeGameDataPath);
+            Assert.IsNotNull(gameData, $"{RuntimeGameDataPath} is missing");
+            Assert.IsNotNull(gameData.ArenaGames,
+                $"{RuntimeGameDataPath}: ArenaGames is unwired - assign {ArenaGamesPath}");
+            Assert.AreEqual(AssetDatabase.GetAssetPath(gameData.ArenaGames), ArenaGamesPath,
+                "the runtime game data must read the SAME roster the Arena screen draws, or the " +
+                "two can disagree about which cards are arena cards");
+        }
+
+        [Test]
+        public void NoArenaCard_IsAlsoAnArcadeCard()
+        {
+            // The two rosters are what the baseline rule divides the fleet by, so a card in both
+            // would be an arena card that the rule treats as arcade on whichever list is asked.
+            var arcade = AssetDatabase.LoadAssetAtPath<SO_GameList>(ArcadeGamesPath);
+            Assert.IsNotNull(arcade, $"{ArcadeGamesPath} is missing");
+            foreach (var card in ArenaCards())
+                Assert.IsFalse(arcade.Games != null && arcade.Games.Contains(card),
+                    $"{card.name} is on BOTH the arena and arcade rosters");
         }
 
         [Test]
