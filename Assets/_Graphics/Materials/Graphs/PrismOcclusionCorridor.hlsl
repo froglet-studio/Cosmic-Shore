@@ -1492,41 +1492,6 @@ void PrismOcclusionFadeDebris_float(float3 PositionWS, float3 Target, float3 Par
 // direction and phase, but each face's UV frame is ORIENTED differently on the box,
 // so in world space the fronts still run in different directions per face.
 //
-// THE PIECE IS THE TANGENT (2026-09-16), and UV0 alone could not name it. The claim
-// above — "the built-in Cube maps every face to UV [0,1]" — is FALSE of the mesh this
-// actually renders. The debris mesh is `Assets/_Models/Testing/Prism.asset`: 72
-// vertices, 24 triangles, a FOUR-WEDGE FAN per side, and all 24 wedges carry the
-// BIT-IDENTICAL UV triangle (0,0) (1,0) (0.5,1). The wedge is also the piece that
-// MOVES — `RotateFacesAlongAxis` hinges each one about its OWN mesh tangent and slides
-// it out along that tangent — so "one wipe per face" was silently collapsing to ONE
-// wipe for the whole prism, replicated 24 times in the PRE-EXPLOSION body frame. Every
-// wedge then started and finished its front at the same instant, from the same relative
-// corner, and once the wedges had hinged open and flown apart that pattern no longer
-// described where any of them WAS — it described where they had been. Reported as the
-// dither being "applied first and then they are rotated and repositioned".
-//
-// The fix is an IDENTITY, not a new anchor: the UV frame is still what the front sweeps
-// across, so the wipe stays glued to the piece and stays spin-proof. The identity is the
-// OBJECT-SPACE TANGENT, and it is the right one for three reasons. It IS the wedge's
-// hinge axis, so "one wipe per piece" and "one rotation per piece" are keyed on the same
-// fact and cannot drift apart. It separates the pieces a viewer reads as ONE former face:
-// the cube's tangent set has exactly SIX members (+/-X, +/-Y, +/-Z) and each is carried by
-// four wedges, but those four sit on four DIFFERENT sides flying four ways, while the four
-// wedges OF ONE SIDE always hold four different tangents — so the coherence that produced
-// the report is gone, and `verify_prism_erosion_anchor.py` T1 asserts exactly that rather
-// than an unearned "24 of 24". (The shield generators author `t = (v1 - v0)` per face, so
-// they get the same property from the same line.) And it is the ONE per-vertex attribute
-// here that no vertex animation can move: the NORMAL cannot
-// do this job, because `VertexDescription.Normal` IS written (the jiggle clock), so the
-// fragment's normal is the ANIMATED one and hashing it would make the front's direction
-// a function of time — the crawl this whole design exists to avoid.
-// `VertexDescription.Tangent` is deliberately left UNCONNECTED, which makes that block an
-// identity pass-through of the mesh attribute; `wire_prism_explosion_erosion.py` asserts
-// it, because wiring it is the one edit that would quietly turn this anchor back into a
-// crawl with nothing else changing. A mesh with no tangents hands 0 here and degrades to
-// exactly the old behaviour — the same meshes `RotateFacesAlongAxis` already needs
-// tangents from, so there is no new authoring requirement.
-//
 // THE EDGE IS HARD (2026-08-11). It briefly carried a dithered FRINGE — fractional
 // survival just ahead of the front, rendered by the corridor stage as screen-door
 // speckle — on the reading that soft-hard-soft wanted a soft trailing component. In
@@ -1570,11 +1535,11 @@ static const float PRISM_EROSION_END_MARGIN = 0.15;  // wipe completes by alpha 
 // Non-zero re-enables the graded edge; the branch below is on a compile-time constant,
 // so the unused side folds away and the hard path costs one compare.
 static const float PRISM_EROSION_FRINGE = 0.0;
-static const float PRISM_EROSION_CDF_LO = -0.030;     // fitted to the measured raw-threshold CDF
-static const float PRISM_EROSION_CDF_HI = 1.030;      // (Monte-Carlo over the UV square) — see
+static const float PRISM_EROSION_CDF_LO = -0.02;     // fitted to the measured raw-threshold CDF
+static const float PRISM_EROSION_CDF_HI = 1.02;      // (Monte-Carlo over the UV square) — see
                                                      // fit_prism_erosion_cdf.py
 
-void PrismErosionFade_float(float3 UV, float3 Tangent, float3 Velocity, float BaseOpacity,
+void PrismErosionFade_float(float3 UV, float3 Velocity, float BaseOpacity,
     out float Survival)
 {
     // Exact ends — these are what make the live-material pass-throughs exact and the
@@ -1582,39 +1547,19 @@ void PrismErosionFade_float(float3 UV, float3 Tangent, float3 Velocity, float Ba
     if (BaseOpacity >= 1.0) { Survival = 1.0; return; }
     if (BaseOpacity <= 0.0) { Survival = 0.0; return; }
 
-    // Piece-local frame from UV0, centred: the canonical face triangle's corners land
-    // on (-1,-1) (1,-1) (0,1).
+    // Face-local frame from UV0, centred: [-1, 1] across the face.
     float2 uv = UV.xy * 2.0 - 1.0;
 
-    // Identity: per PRISM off the stamped flight vector, per PIECE off the object-space
-    // TANGENT (see THE PIECE IS THE TANGENT above). Together they give wipe direction
-    // (h.x) and jag seed (h.z) — no new property, no CPU, no mesh channel.
-    float3 e = PrismOcclusionHash3(Velocity + Tangent * 17.0);
+    // Per-prism identity off the stamped flight vector: wipe direction (h.x) and jag
+    // seed (h.z) — every debris chunk peels its own way, no new property, no CPU.
+    float3 e = PrismOcclusionHash3(Velocity);
     float3 h = PrismOcclusionHash3(e * 64.0 + 17.0);
     float ang = 6.28318530718 * h.x;
     float2 dir = float2(cos(ang), sin(ang));
 
-    // The wipe coordinate, normalized so it spans EXACTLY [0, 1] over the PIECE. The
-    // normalizer is the piece's own support along `dir`, evaluated at the three corners
-    // of the canonical face triangle — which is (0,0) (1,0) (0.5,1) in UV, i.e.
-    // (-1,-1) (1,-1) (0,1) centred, on every debris mesh the game ships (the two shield
-    // generators author it; `verify_prism_erosion_anchor.py` T0 asserts all three agree).
-    //
-    // It used to normalize against the UV SQUARE — `dot / (|dx| + |dy|) * 0.5 + 0.5`,
-    // whose bound is the square's support, not a triangle's. A triangle is half the
-    // square's area and is not centrally symmetric, so for most directions `w01` could
-    // not reach both ends and the thresholds bunched into the middle of the fade: the
-    // wipe started late, finished a third early, and the header's promise above that every
-    // fragment is gone by END_MARGIN was false (measured worst case: gone by 0.30, and
-    // on the pre-2026-09-16 half-height cube UVs the wipe used as little as 38% of the
-    // fade). Supporting the real domain costs three subtracts and two min/max and makes
-    // the promise exact for every direction.
-    float s0 = -dir.x - dir.y;   // corner (-1, -1)
-    float s1 = dir.x - dir.y;    // corner ( 1, -1)
-    float s2 = dir.y;            // corner ( 0,  1)
-    float sLo = min(s0, min(s1, s2));
-    float sHi = max(s0, max(s1, s2));
-    float w01 = (dot(uv, dir) - sLo) / max(sHi - sLo, 1e-5);
+    // The wipe coordinate, normalized so it spans EXACTLY [0, 1] over the face
+    // regardless of direction (max |dot(uv, dir)| over the square is |dx| + |dy|).
+    float w01 = dot(uv, dir) / (abs(dir.x) + abs(dir.y)) * 0.5 + 0.5;
 
     // The jagged edge: cheap 1D value noise along the cross-front coordinate, so the
     // front reads as an erosion line rather than a ruler cut.

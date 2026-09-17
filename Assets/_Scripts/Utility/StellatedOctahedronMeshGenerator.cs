@@ -216,14 +216,9 @@ namespace CosmicShore.Utility
             // (PrismOcclusionCorridor.hlsl). Each triangle gets the same isoceles
             // mapping into the unit square, which is all the erosion needs: it centres
             // UV to [-1,1] and sweeps one front across it. The wipe's DIRECTION and jag
-            // are hashed per entity from the stamped velocity AND from the per-face
-            // TANGENT below, which is what makes the wipe per-PIECE rather than per-prism:
-            // UV0 says where ON a face a fragment sits and nothing about WHICH face, so
-            // this shared triangle cannot be the identity (PrismOcclusionCorridor.hlsl,
-            // "THE PIECE IS THE TANGENT"). The triangle itself is a CONTRACT — the wipe
-            // coordinate is normalized against its support — and
-            // Tools/Shaders/verify_prism_erosion_anchor.py asserts every debris mesh
-            // authors exactly this one.
+            // are hashed per entity from the stamped velocity, and each face's UV frame
+            // is ORIENTED differently in object space, so the fronts still run in
+            // different world directions per face — the same mechanism as the cube.
             uvs.Add(new Vector2(0f, 0f));
             uvs.Add(new Vector2(1f, 0f));
             uvs.Add(new Vector2(0.5f, 1f));

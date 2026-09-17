@@ -1133,7 +1133,6 @@ view-dependent prism effect in §3.7 (`SkimFxRunner`'s live ship end, the retire
 | Material opaque+clip contract (idempotent fixer) | `Tools/Shaders/enable_prism_alpha_clip.py` |
 | Debris erosion splice (idempotent) | `Tools/Shaders/wire_prism_explosion_erosion.py` |
 | Erosion CDF re-fit (after lattice retune) | `Tools/Shaders/fit_prism_erosion_cdf.py` |
-| Erosion per-piece anchor + fade span (compiles the shipped HLSL) | `Tools/Shaders/verify_prism_erosion_anchor.py` |
 | Interactive gate | FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** |
 
 The two globals are `_PrismOcclusionTarget` (the vessel's world position) and
@@ -1256,6 +1255,48 @@ reason should not pay for it.* Both entry points are compiled from the one shipp
 `verify_prism_corridor_base.py` **T4**, which asserts the debris corridor is wider at every
 ρ and reaches the grade, with the live clearance as the negative control — so "the same
 corridor, one argument apart" stays a measurement rather than a claim in a comment.
+
+#### The erosion rework this replaced, and why it was reverted (2026-09-17)
+
+The report that started this was *"the dithering effect does not behave as intended for the
+rotating pieces of the exploding prism's faces — as if the dither is applied first and then
+they are rotated and repositioned, dithering based on their previous position not their
+actual position."* That was read as a defect in the **erosion** (the debris's own
+body-anchored wipe) and answered with a rework of it: the wipe direction was re-seeded
+per-WEDGE off the object-space tangent instead of per-PRISM off the stamped velocity, the
+wipe coordinate was re-normalized against the face triangle's support instead of the UV
+square's, the CDF was refitted, the cube's UV0 apexes were edited, and a clang-backed gate
+was written for the lot. Every measurement in it was correct. **It was the wrong system**,
+and the whole commit is reverted.
+
+The report was about the **corridor**: fragments inside the cone that still occluded the
+ship. The nose clearance above is what was actually holding them solid, and that is what
+this section fixes. What the erosion rework produced instead was 24 independent wipe
+fronts per prism — one per wedge, each crossing its own tiny triangle in its own hashed
+direction — so at any instant the debris was a jumble of partially-eaten triangles
+receding in twenty-four directions. Play-tested verdict: *"flickering out with overlapping
+dusty surfaces instead of the clean wipe."*
+
+**The mechanism is worth keeping even though the change is gone.** A debris prism's 24
+wedges are read by the player as ONE object coming apart, and an erosion front is only
+legible while it is COHERENT across that object. The shared UV triangle — the very thing
+the rework called a defect, since UV0 names where on a piece a fragment sits and never
+which piece — is what makes all 24 fronts parallel and in step, and that lockstep IS the
+clean wipe. Per-piece identity is not a free improvement on it; it is the thing that
+destroys it.
+
+Two rules come out of it:
+
+- **Diagnose which system the report is about before rebuilding one.** Prisms carry two
+  independent dithers — the corridor (a view effect: am I between the camera and the ship)
+  and the erosion (a body effect: how does this chunk peel) — and both present as "the
+  dither is wrong on the exploding pieces". The tell was in the report's own second
+  sentence, *inside the dither cone and still getting occluded*; it named the corridor.
+- **A per-instance identity is not automatically an improvement.** Ask what the player
+  reads as one object first. Where several pieces are read as one, shared phase is the
+  feature and independence is noise — the same argument the charge shell records from the
+  other end (`SPARROW_SPRAY_ACCURACY.md` § Round 5: the tuning surface is the SUM over N
+  instances, never one instance).
 
 **Why not the capsule it replaced:** the constant radius was an artefact of the retired
 `ClearPrisms` `CapsuleCollider`, carried into the first shader version unexamined. A fixed
@@ -1696,39 +1737,15 @@ Four properties of the design worth preserving if it is ever touched:
   dominant-axis face classification, which the per-face shatter SPIN breaks:
   fragments migrate across dominance boundaries as pieces rotate, so wipes jumped
   face frames mid-tumble — reported as "the normals stop updating as the pieces
-  spin"; **re-anchored a THIRD time 2026-09-16 — see below**).** `PrismErosionFade`
-  (same HLSL file) sweeps ONE jagged erosion front
+  spin").** `PrismErosionFade` (same HLSL file) sweeps ONE jagged erosion front
   across each face as the clock Opacity runs 1 → 0. **UVs are mesh attributes — no
   vertex animation (flight, spin, scale) can move them** — so the front is glued to
   the face under any motion and any camera, and the whole flight-undo matrix ride
   was deleted with the problem (the function is three hashes, a projection, and a
-  1D value noise — simpler AND cheaper).
-  **UV0 SAYS WHERE ON A PIECE, NEVER WHICH PIECE, and the premise that it did was
-  false about the shipped mesh (2026-09-16).** The docstring claimed "the built-in Cube
-  maps every face to UV [0,1]"; the debris mesh is `Assets/_Models/Testing/Prism.asset`
-  — 72 vertices, **24 triangles, a four-wedge FAN per side**, every wedge carrying the
-  BIT-IDENTICAL UV triangle. The wedge is also the piece that MOVES
-  (`RotateFacesAlongAxis` hinges each about its OWN mesh tangent and slides it out along
-  it), so "one wipe per face" was collapsing to ONE wipe for the whole prism, replicated
-  24 times in the PRE-EXPLOSION body frame: every piece started and finished its front at
-  the same instant from the same relative corner, and once the wedges had hinged open and
-  flown apart that pattern described where they had BEEN. Reported as the dither being
-  "applied first and then they are rotated and repositioned". The fix is an IDENTITY, not
-  a new anchor — the UV frame is still what the front sweeps across, so the wipe is still
-  glued to the piece and still spin-proof — and the identity is the **object-space
-  TANGENT**: it IS the wedge's hinge axis (so "one wipe per piece" and "one rotation per
-  piece" are keyed on the same fact), the four wedges of any one side always hold four
-  different tangents, and it is the one per-vertex attribute here that no vertex animation
-  can move. The NORMAL cannot do the job — `VertexDescription.Normal` IS written (the
-  jiggle clock), so the fragment normal is the ANIMATED one and hashing it would make the
-  front's direction a function of time, which is the crawl this design exists to avoid.
-  `VertexDescription.Tangent` is deliberately left UNCONNECTED (an identity pass-through of
-  the mesh attribute) and the wirer ASSERTS it, because wiring it is the one edit that
-  would turn the anchor back into a crawl with nothing else looking different. A mesh with
-  no tangents degrades to the old shared wipe — the same meshes `RotateFacesAlongAxis`
-  already needs tangents from, so no new authoring requirement.
-  The stamped `_Velocity` still seeds the per-PRISM half of that identity so no two
-  prisms peel alike. **Soft-hard-soft**: Survival is
+  1D value noise — simpler AND cheaper). Faces share the wipe's UV-space direction,
+  but each face's UV frame is oriented differently on the box, so world-space
+  fronts still differ per face; the stamped `_Velocity` seeds each prism's
+  direction and jag so no two chunks peel alike. **Soft-hard-soft**: Survival is
   a HARD edge (`PRISM_EROSION_FRINGE` 0, 2026-08-11). It briefly led the front with
   a dithered fringe, on the reading that soft-hard-soft wanted a soft trailing
   component; in motion that was wrong, because the debris edge then dissolved in the
@@ -1746,30 +1763,12 @@ Four properties of the design worth preserving if it is ever touched:
   Spliced by `Tools/Shaders/wire_prism_explosion_erosion.py` (which MIGRATES the
   old position-anchored wiring in place) between the explosion clock and the
   corridor node; live prisms stay exact pass-throughs via the ≥1/≤0 early-outs,
-  and a wiped-away fragment takes the corridor's alpha≤0 fast out.
-  **THE WIPE COORDINATE IS NORMALIZED OVER THE PIECE, NOT OVER THE UV SQUARE
-  (2026-09-16).** `w01` divided by the SQUARE's support (`|dx| + |dy|`) while what renders
-  is a TRIANGLE — half the area, and not centrally symmetric — so for most hashed
-  directions it could not reach both ends and the thresholds bunched into the middle of
-  the fade: measured over 200 directions the wipe used **71.9–99.3% (mean 87.8%)** of the
-  fade and in the worst case was **gone by opacity 0.366** against an END_MARGIN of 0.15,
-  i.e. the promise two sentences up was false. (On the mesh as it shipped it was worse:
-  its wedge UVs put the apex at 0.5 rather than 1.0, covering only HALF the square, for
-  **62% mean / 38% worst**.) The normalizer is now the piece's own support along `dir`,
-  evaluated at the three corners of the canonical face triangle — three subtracts and two
-  min/max — which every debris mesh in the game now maps a piece onto: the two shield
-  generators author `(0,0) (1,0) (0.5,1)` and the cube mesh's 24 wedge apexes were
-  corrected to match (a 24-byte UV0 edit; UV0 has exactly ONE reader in either prism graph,
-  verified, so nothing else moved). Measured after: **97.3–99.3%** of the fade, all gone by
-  **0.167**. The CDF remap is refitted over that same triangle
-  (`Tools/Shaders/fit_prism_erosion_cdf.py`, which mirrors the normalizer; re-run if
-  `WIGGLE`/`WIGGLE_FREQ` move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and
-  tune freely) and the fit got markedly better for the same reason the wipe did:
-  mean |coverage − alpha| **0.0363 → 0.00128**.
-  The gates are `Tools/Shaders/verify_prism_erosion_anchor.py` — which compiles the shipped
-  file's own erosion slice with clang++ and runs it over the per-wedge UV and tangent data
-  decoded out of the shipped mesh, with a negative control that restores the legacy shape
-  and must fail — the wirer's `--check`, and
+  and a wiped-away fragment takes the corridor's alpha≤0 fast out. The wipe
+  coordinate carries a CDF remap fitted over the uniform UV square
+  (`Tools/Shaders/fit_prism_erosion_cdf.py`; re-run if `WIGGLE`/`WIGGLE_FREQ`
+  move — `END_MARGIN`/`FRINGE` sit outside the fitted quantity and tune freely),
+  validated against a clang build of the file itself; the ASCII render of the
+  compiled function shows one connected hard front per face at every alpha. The guard is
   `PrismOcclusionCoverageTests.ExplodingGraph_CarriesTheObjectAnchoredErosion`.
 
 **Cost, stated:** per fragment, for solid mass outside the corridor — one compare against
@@ -1991,13 +1990,9 @@ scheduled swap.
 and fade are pure per-vertex functions of mesh attributes, so making a new shape explode
 correctly means authoring the attributes the cube has:
 
-- **UV0** — the face-local frame `PrismErosionFade` wipes across: the canonical isoceles
-  triangle `(0,0) (1,0) (0.5,1)` per face, which since 2026-09-16 is a CONTRACT rather than
-  a convention (the wipe's normalizer is that triangle's own support, and
-  `verify_prism_erosion_anchor.py` T0 asserts the cube mesh and both generators agree —
-  the cube's apex was authored at 0.5 and had to be corrected). Note UV0 gives the frame
-  and NOT the identity: every piece of every debris mesh carries the same triangle, so
-  which piece a fragment belongs to comes from the tangent below;
+- **UV0** — the face-local frame `PrismErosionFade` wipes across (our isoceles unit-square
+  triangle per face; each face's frame is oriented differently in object space, so the
+  fronts run in different world directions per face — the cube's own mechanism);
 - **flat per-face normals** — one of `RotateFacesAlongAxis`' two rotation axes via
   `cross(velocity, n)`;
 - **flat per-face TANGENTS** (`dP/dU` of the UV frame, `normalize(v1−v0)`) — the
@@ -2374,7 +2369,6 @@ and the Phase 5 protocol; do not fall back to CPU animation.
   `wire_prism_destruction_sight.py`, `enable_prism_alpha_clip.py`,
   `wire_prism_occlusion_corridor.py`, `wire_prism_shield_morph.py`,
   `wire_prism_flight_clock.py`, `wire_prism_explosion_erosion.py`,
-  `verify_prism_erosion_anchor.py`,
   `wire_prism_jiggle_clock.py`, `wire_prism_suction_clock.py`,
   `wire_prism_spindle_death_clock.py`. These cover
   the *node splices* that stay python-owned (Auto-Wire stamps Hybrid-Per-Instance
