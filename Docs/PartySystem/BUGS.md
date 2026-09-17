@@ -13,7 +13,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 |----|-------|-----------|--------|
 | B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | Root-caused & fixed | 🟢 |
 | B3 | TC4 bounce leaves 2 vessels + dead controls | Fixed-by-construction | 🟢 |
-| B5 | TC2/TC4 second joiner fails to join | Every named cause fixed; repro is stale | 🟡 |
+| B5 | TC2/TC4 second joiner fails to join | Root-caused 2026-09-16: a leaked fauna `NetworkObject` (B16 via **six** producers that skipped `FaunaNetworkSync.ServerSpawn` — three found by reading, three by the new gate). Seams moved to the funnels, sweep added at connection approval, gate added. Wants a multi-machine pass | 🟢 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B8 | Host-side phantom-rejoin loop after a client leaves (stale `joined_party`) | Fixed & MPPM-verified | 🟢 |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
@@ -23,7 +23,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B13 | Open-lobby ClientRpc dropped on a syncing / late-joining client | Fixed & live-verified | 🟢 |
 | B14 | A host whose NetworkManager was restarted in-process cannot get a new guest through synchronization | Root cause = B16; fixed & live-verified | 🟢 |
 | B15 | Nobody is ever shown "in game"; friends list only moves on return to menu | Fixed; live retest pending | 🟢 |
-| B16 | Un-spawned fauna NetworkObjects break synchronization for every guest | Root cause; fixed & live-verified | 🟢 |
+| B16 | Un-spawned fauna NetworkObjects break synchronization for every guest | Root cause; fixed & live-verified. **Recurred 2026-09-16 via three producers that skipped the seam — see B5** | 🟢 |
 | B17 | Boot parks forever on a blank Authentication panel when the sign-in loses the race to the splash timer | Root-caused & fixed | 🟢 |
 | B18 | A client cannot leave a match at all, and cannot leave a Maelstrom tournament until it ends | Root-caused & fixed | 🟡 |
 | B19 | Nothing watches a client's scene transition, so a lost one is a permanent black screen | Root-caused & fixed | 🟡 |
@@ -400,7 +400,125 @@ ordering) is the sole root cause** — fixed below.
 
 ---
 
-## B5 — TC2/TC4: the second joiner fails to join 🟡 (every named cause is fixed; the repro is stale — needs a retest, not more code)
+## B5 — TC2/TC4: the second joiner fails to join 🟢 (ROOT-CAUSED 2026-09-16 — a leaked fauna `NetworkObject`; fixed at the producer + a sweep at approval)
+
+**The retest below happened, and it failed.** Reported 2026-09-16 after several
+days of play: *"Multiplayer with 4 players does not work"* → **"not everyone gets
+in"**, and **"3 fails too"**. Per this entry's own instruction, that is a NEW root
+cause and was hunted as one rather than re-walking the table further down.
+
+### Root cause — B16, through a door nobody had swept
+
+`FaunaNetworkSync.ServerSpawn` is what strips the `NetworkObject` from any fauna
+that will never be network-spawned. It had exactly **two** callers: the banded
+spawner and reproduction. **Three other producers** instantiate fauna through
+`CellLifeSpawnerBase.SpawnFaunaWithDomain` directly and therefore skipped it:
+
+| Producer | What it releases |
+|---|---|
+| `ModePreviewArena` | `PreviewFaunaCount` (**4**) copies of one prefab, every time an arcade card is selected |
+| `LifeformMatrixToy` | the freestyle release bench |
+| `Microscene` | the Wanderway conveyor |
+
+Only **`QuadFish.prefab`** and **`TadPoleFauna.prefab`** carry a `NetworkObject`
+— and those are exactly the menu's fauna. So browsing the arcade in Menu_Main
+planted four un-spawned `NetworkObject`s **of one prefab**, i.e. four identical
+`GlobalObjectIdHash` entries in one scene. Netcode adopts an un-spawned
+`NetworkObject` as an IN-SCENE PLACED object keyed `(GlobalObjectIdHash,
+sceneHandle)`, so the second one makes `NetworkSceneManager.PopulateScenePlacedObjects`
+**throw** — *the moment a host starts **or a client synchronizes***.
+
+That matches the report in every detail:
+
+* **host + 1 works** — nobody had synchronized since the strays appeared, or no
+  card had been browsed yet;
+* **the next joiner fails** — the throw lands during *their* synchronization;
+* **the host stays broken** for the rest of the session;
+* **3 fails too**, and it is **intermittent** — it depends on whether anyone
+  opened an arcade card before the next guest knocked.
+
+The 2026-09-11 audit was right about everything it examined and was looking in
+the wrong place: it swept the JOIN path, and the defect was planted by the MENU
+long before anyone knocked.
+
+### Three MORE producers, found by the gate rather than by reading
+
+The fix above came with a gate (`Tools/Build/check_fauna_replication_seam.py`).
+Running it named three producers nobody had looked for — they do not go through
+`CellLifeSpawnerBase` at all, they call `Instantiate` themselves, and **none of
+them names a fauna**, so no amount of grepping for "fauna" would have produced
+them:
+
+| Producer | What it releases | Live? |
+|---|---|---|
+| `BoidManager.SpawnBoids` | **100–150** `TadPoleFauna` — one of the two prefabs that CARRY a `NetworkObject` | **yes** — `MinigameDuelForTheCell` and two tool scenes |
+| `LightFaunaManager.SpawnGroup` | a school of `QuadFish` — the other one | dormant: no shipped multiplayer cell wires one |
+| `WormFauna` (×5) | four segment producers plus the split colony | dormant: no worm prefab carries a `NetworkObject` |
+
+`BoidManager` is the one that matters. `MassTadpolePopulation.prefab` and
+`SpaceTadpolePopulation.prefab` both wire `boidPrefab` to `TadPoleFauna.prefab`
+and spawn **150** and **100** of them, so one of those populations is a hundred
+identical-hash un-spawned `NetworkObject`s in a single scene. The other two are
+dormant rather than absent and were closed for exactly that reason — *a defect
+fenced behind an unused prefab is one consumer away from shipping.*
+
+### Fix
+
+1. **At the producer, in three places** — the same move each time: put the seam
+   at the one `Instantiate` a family of producers all reach.
+   **`CellLifeSpawnerBase.SpawnFaunaWithDomain`** takes the lineage bind and the
+   seam down out of `SpawnFaunaBanded` (covering the mode preview, the Lifeform
+   Matrix toy and the Wanderway conveyor);
+   **`WormFauna.AddSegmentToChain`** absorbs the `Instantiate` its four segment
+   producers each did for themselves, so the colony has ONE; and
+   `BoidManager` / `LightFaunaManager` / the worm split each seam their own single
+   site. `SpawnFaunaBanded` collapses to placement, which is all it was
+   ever about. The unused `SpawnFauna` overload gets the seam too, rather than
+   leaving the hazard parked in an entry point that has no callers today.
+   Ordering is preserved: `AssignLineage` first (the bind rolls the element that
+   *is* the replicated identity), `ServerSpawn` after.
+2. **A backstop at approval.** `MultiplayerSetup.OnConnectionApprovalCallback`
+   now calls `NetworkSceneObjectGuard.Sweep` before the guest synchronizes.
+   Every other sweep runs at a session's **start**, so it covers what existed
+   then and nothing created since — while a host sitting in Menu_Main keeps
+   creating objects for as long as it is up. Approval is the last server-side
+   moment before synchronization, runs exactly once per join, and `Sweep` is
+   non-destructive (skips spawned objects; strips only the *duplicates* of a
+   hash, keeping one). This is what makes the NEXT leak survivable instead of
+   session-ending.
+
+3. **A gate at the door.** `Tools/Build/check_fauna_replication_seam.py`
+   (`--self-test`) requires every runtime `Instantiate` of a creature prefab to
+   reach `FaunaNetworkSync.ServerSpawn` in the same method. It is what found the
+   three producers in the second table — none of which a human reading the diff
+   had thought to look for.
+
+**The general rule, which is the platform's own arriving from a new direction:**
+*a rule enforced at one PRODUCER can only ever see that producer.* The old
+`SpawnFaunaBanded` comment asked the next author not to add a spawn site that
+skipped the seam. Three sites did anyway — not carelessly, but because they
+needed placement that method already did and had no reason to suspect a seam
+lived in a sibling.
+
+**Verification.** All seven out-of-editor gates pass. A standalone dotnet repro
+compiles every changed call shape — the new 6-parameter `SpawnFaunaWithDomain`
+plus its four updated callers and two legacy shapes, and the re-signatured
+`AddSegmentToChain` with all four of its callers including the one that uses the
+return value — with a negative control on the old signature that fails with
+`CS1501`, since arity and overload errors are otherwise editor-only.
+**Nothing has been run in a Unity editor.** This still wants a real
+multi-machine pass: host + 2 guests, **with an arcade card selected before the
+second guest joins**, which is the condition that made the old build fail.
+A second, independent reproduction now exists thanks to `BoidManager`: **play a
+round of Cellular Duel (`MinigameDuelForTheCell`) and come back**, which loads
+`SpaceTadpolePopulation` and its 100 strays into the host's session. Either
+precondition alone should be enough; neither is optional to the test, because
+without one the pre-fix build passes too.
+
+*The 2026-09-11 source audit and the original diagnosis follow, kept because the
+table of closed causes is still the record for each of them.*
+
+### Source audit, 2026-09-11 (superseded by the root cause above)
 
 **Status after a source audit, 2026-09-11.** This entry is still open on the
 strength of a repro from before the fixes that were written to close it. Nothing
@@ -1144,6 +1262,15 @@ follows `sceneLoaded` into In Game / In Party / In Menu.
 
 ## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed + LIVE-VERIFIED 2026-09-02)
 
+> **It came back on 2026-09-16 through three producers this fix never reached** —
+> the arcade mode preview, the Lifeform Matrix toy and the Wanderway conveyor all
+> call `CellLifeSpawnerBase.SpawnFaunaWithDomain` directly and so skipped
+> `FaunaNetworkSync.ServerSpawn`. Same mechanism, same prefabs, a different door.
+> See **B5** for the second root-cause pass and for where the seam lives now (in
+> `SpawnFaunaWithDomain`, the one `Instantiate` every producer reaches) plus the
+> sweep at connection approval that makes the next leak survivable. *This entry
+> stays 🟢: what it fixed is fixed. Read the pair together.*
+
 **Symptom.** A guest accepts an invite, sits on the splash for 30s and is bounced
 ("Couldn't join"). The guest's log shows `[Netcode] [Deferred OnSpawn] Messages were received
 for a trigger of type NetworkVariableDeltaMessage / ClientRpcMessage associated with id (1/3/4),
@@ -1492,15 +1619,22 @@ Watch that the host's roster does not double-count them.
 ## How we work bugs
 
 Method: see `../README.md` § "How we work bugs". Party-side priority order as of
-2026-09-11: **B5 RETEST → B7**. Everything above B5 is closed; B7 stays deferred as
-verified-mostly-benign.
+2026-09-16: **B5 multi-machine confirmation → B7**. Everything above B5 is closed;
+B7 stays deferred as verified-mostly-benign.
 
-**The one thing to get right here is that B5's next step is a TEST, not a code
-change.** Its every named cause traces closed in source (see the table in its entry),
-and its last observation predates all of them *and* the MPPM unique-tag prerequisite.
-Reading the code again will re-derive that table; only a tagged three-player MPPM run
-can tell "fixed" from "broken for a reason nobody has named". Same for Presence B4,
-which now carries a fix nobody has executed.
+**B5's retest happened on 2026-09-16 and it failed**, which was exactly what that
+step was for. The 2026-09-11 note below said its next step was a TEST rather than a
+code change — that was right, and the test bought a new root cause (a leaked fauna
+`NetworkObject`, planted by the MENU, not by the join path) that no amount of
+re-reading the join path would have produced. It now carries a fix and needs the
+confirmation run described in its entry — host + 2 guests, **with an arcade card
+selected before the second guest joins**. Presence B4 likewise carries a fix nobody
+has executed.
+
+**The lesson worth keeping:** an audit that traces every named cause closed has
+established that the NAMED causes are closed, and nothing else. It is evidence about
+where you looked, not about where the bug is — so a stale repro is a reason to run
+the test, never a reason to close the entry.
 
 Three bugs are 🟢 but carry an unrun retest in their entry — B3 (its dedicated TC4
 bounce repro), B10 (the host-loss MPPM sweep) and B15 (the in-game presence retest).

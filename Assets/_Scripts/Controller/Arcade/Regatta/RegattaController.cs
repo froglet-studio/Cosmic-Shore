@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// pilot flies LAPS of it in order; the first DOMAIN whose LEAD RUNNER threads the last gate
     /// of the last lap wins.
     ///
-    /// <para><b>The mode is a question about what your hull is FOR.</b> A Rhino ramps to 1210 u/s
+    /// <para><b>The mode is a question about what your hull is FOR.</b> A Rhino ramps to 1200 u/s
     /// on a straight and pays five seconds for every corner it cannot hold; a Manta trades Soar
     /// for yaw one trigger at a time; a Scarab's ceiling is its Time level; an Urchin latches onto
     /// the rail in its colour and lets the cable drive at 300 u/s through corners that cost it
@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// resource cannot be shot out from under them (<see cref="SpawnableRegattaRails"/>).</para>
     ///
     /// <para><b>The grid is balanced by the CARD, not by the mode.</b> A 35 u/s Sparrow and a
-    /// 1210 u/s Rhino cannot be equalised by any course, so the card authors per-hull STARTING
+    /// 1200 u/s Rhino cannot be equalised by any course, so the card authors per-hull STARTING
     /// ELEMENT levels (<c>SO_ArcadeGame.StartingElements</c>, a platform capability this mode
     /// introduced) from an offline lap-time model (<c>Tools/Build/regatta_balance.py</c>), and
     /// the comeback system does the rest during the race. Nothing here reads a hull, scales a

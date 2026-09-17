@@ -40,7 +40,7 @@ Measured off the shipped prefabs and assets (2026-09-15; re-measure before trust
 |---|---|---|---|---|
 | Manta | 180 → 720 (×1.3 Time 10) | Soar (free; costs yaw) | YES (`MantaAnalogTurnBoostExecutor` drive) | ram = slow |
 | Dolphin | 68 → 347 | drift-charge → discharge; skims for seed energy | no | ram = slow + half charge |
-| Rhino | 60 → 1210 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
+| Rhino | 50 → 1200 | ramp on a straight stick | yes, by the gesture | **energised sword pops super-shield**; no slow wired |
 | Urchin | 65 → 300 on its OWN-colour rail (20 on a rival's; Time-5 Slipstream 300) | riding, no resource | rides (aim it down the rail) | rides the shell's envelope |
 | Squirrel | 60 → 300 | skim energy (+0.1/contact, decays 0.3/s) | no | ram **resets** the boost |
 | Serpent | 60 → 160 (×1.6 Time 10, duration too) | 4 charges × 3 s, regen 3.6 s | no | no slow wired |
@@ -69,7 +69,7 @@ much they respect the fundamentals:
 
 | lever | reaches | does not reach | where |
 |---|---|---|---|
-| **Starting elements** (`SO_ArcadeGame.StartingElements`, per hull, optionally per intensity) | Time on Manta (×0.7-1.3), Sparrow (×0.5-1.5), Serpent (×0.25-1.6), Scarab (×0.75-1.5); Dolphin fill rate | the Rhino's ramp, the Urchin's grind, the Squirrel's skim | the card; applied in `VesselController.Initialize` on every spawn path, shipped to clients in the config-sync RPC, cleared by the menu |
+| **Starting elements** (`SO_ArcadeGame.StartingElements`, per hull, optionally per intensity) | Time on Manta (×0.7-1.3), Sparrow (×0.5-1.5), Serpent (×0.25-1.6), Scarab (×0.75-1.5), **Rhino ramp ACCELERATION (×0.5-2.5, "Ramp Spool" - filled by Broadside's playtest; `RampBoostActionExecutor` had always read `Multiplier(Element.Time)` against a flat map entry)**; Dolphin fill rate | the Rhino's ramp CEILING (`maxBoostMultiplier`), the Urchin's grind, the Squirrel's skim | the card; applied in `VesselController.Initialize` on every spawn path, shipped to clients in the config-sync RPC, cleared by the menu |
 | **The course** (corner mix, mouths, floors) | every hull that turns to a radius - the fast straight-line hulls most | riders on a rail (a corner is the rail's) | `HeadlongCircuit` settings per intensity |
 | **The environment** (what the arena is MADE of) | riders and skimmers, by giving them terrain; four hulls, by putting an obstacle in the line | the ram-immune hulls | a `CellEnvironmentSpawnableBase` per intensity, laid by the Cell |
 | **The comeback** (`ComebackRatePerScoreDeficit`) | every element the trailing domain has, up to 10 - i.e. the same set as the first lever | the same holes | the card; a function of the TARGET |
@@ -89,6 +89,28 @@ per-hull levels, and print the spread at rest and tuned. The generator imports i
 tuned spread under the number the doc states. State plainly what the model is not (a frame time,
 a playtest, the AI).
 
+Three things the Rhino cost Broadside, each of which a future model will meet again:
+
+- **"Read it by key" has no gate behind it, so the day you copy one number in is the day the
+  model starts going stale.** `broadside_balance.py` hardcoded `cruise 60 / top 1210` and was
+  wrong within the week, because a parallel branch zeroed `Rhino.prefab`'s `DefaultMinimumSpeed`
+  and moved both by 10 u/s. Nothing failed: the `--check` passed, the spread printed, the doc
+  quoted it, and the model was describing a vessel the project no longer ships. **A constant
+  copied out of an asset is true only on the day it is copied.** Import the reader
+  (`regatta_balance.read_constants()`) rather than the value.
+- **An endpoint moves a PARAMETER, not the quantity you are pricing.** Time on the Rhino is the
+  ramp's ACCELERATION, and feeding its 2.5x ratio in as a speed ratio overpaid the hull into
+  first place. Integrate what the parameter actually produces over the window the mode gives it
+  (`min(top, cruise + a.t)` over a brawl straight = **2.22x**, saturating once the hull tops out).
+  Before writing "element X reaches nothing on hull Y", **check the executor, not the map** - a
+  capability live in code and flat in data reads exactly like one that does not exist.
+- **A level picker with two buckets is a coin toss.** Sorting hulls around the median and handing
+  the lower half +1 flips a hull that gains a real endpoint from slowest straight past everyone
+  to fastest, because +1 is the only thing on offer. Move each hull to the level nearest the
+  **anchor** - the median rate of the hulls the lever CANNOT reach, the part of the roster no
+  handicap can move. Where a level is answering a playability question rather than a scoring one,
+  pin a floor and clamp UP to it afterwards: the balance pass may raise that level, never spend it.
+
 ## 3. What an arena card owns beyond an arcade card
 
 | Decision | The rule |
@@ -96,7 +118,7 @@ a playtest, the AI).
 | **Vessels** | Every hull in the list must be able to finish AND win in a human's hands; every hull's kit has been read (§0). Grizzly, Termite, Falcon and Shrike are not shipped playable kits - `arcade_mode_lib.VESSELS` is the roster. **The list IS the gate**: the carousel offers every hull on it and never consults the Hangar's purchase lock (`SO_Vessel.IsLocked` - six of eight class assets author it, and honouring it left two hulls in every arena carousel; `Docs/HomeHub/ARCHITECTURE.md` §3.3). Every listed hull needs `IconActive` + `IconInactive` that are ITS OWN art AND that RESOLVE (`ArenaRosterTests` compares file bytes - the Scarab shipped wearing the Sparrow's bake; `check_vessel_class_icons.py` resolves the guids - the Urchin shipped pointing at deleted art, which draws as a white square). |
 | **Roster** | `g.register_arena_card(card)` - master + `ArenaGames`, never `ArcadeGames`. `check_gamelist_scenes.py` reports the arena grid's coverage. |
 | **Domains** | 2..3 unless the mode has a fixed team shape; a fixed shape (`MaxDomainsAllowed = 2`) excludes the card from the Maelstrom. |
-| **AI templates** | `vesselClass: 0` (Random) in the scene's `aiInitializeDatas`, so `PickAIVesselType` draws the bot's hull from the card and a bot grid is a mixed grid too. |
+| **AI templates** | `vesselClass: 0` (Random) in the scene's `aiInitializeDatas`, so `PickAIVesselType` draws the bot's hull from the card and a bot grid is a mixed grid too. **That was true of the templates and FALSE of the draw until 2026-09**: `PickAIVesselType` read the roster through `gameList`, a per-scene `[SerializeField]` that Regatta, Broadside and Dog Fight all leave null, so it fell through to a hardcoded Sparrow and both arena grids were eight identical hulls. It now reads `GameDataSO.AllowedVesselClasses` (published by `SyncFromArcadeGame`, deliberately not cleared by `ResetRuntimeData()`), with unbuilt hulls skipped rather than drawn-and-failed. *A per-scene serialized reference is a per-scene chance to forget - when the fact is already published on a shared runtime object, read it there.* |
 | **Starting elements** | One row per (hull, intensity) the model moves off rest; a hull at rest gets NO row (the platform default is rest; a row of zeros says the card decided it). `Intensity 0` = every rung; a rung-specific row wins. Levels are normalized (`-0.5..1`, since nothing above 10 is held). |
 | **Preview** | `Vessel: -1` - the carousel's pick flies the preview. |
 | **Toasts** | The tutorial is "what does MY hull do here"; an idle hint per verb family, not per hull. |

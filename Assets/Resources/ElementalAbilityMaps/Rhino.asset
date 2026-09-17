@@ -48,11 +48,15 @@ MonoBehaviour:
     UpgradeLabel: 
     UpgradeDescription: 
   - Element: 4
-    AbilityLabel: (open design slot)
-    AbilityDescription: Time mapping not yet designed for the Rhino.
+    AbilityLabel: Ramp Spool
+    AbilityDescription: Time raises how fast the ramp boost winds the Rhino up to its
+      top speed - the same 220/s the executor already scales, from 110/s at rest to
+      550/s at full. It does not raise the ceiling, only how long the run-up to it
+      takes, so a Rhino that keeps the stick straight arrives sooner rather than
+      faster.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
+    MultiplierAtFullLevel: 2.5
+    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

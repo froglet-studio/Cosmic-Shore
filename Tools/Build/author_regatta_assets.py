@@ -373,7 +373,7 @@ OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RedlineScoringRule
 # The lap count is DERIVED (target / rings) so `laps` goes; the start line and the rail aim
 # are this mode's own. Everything else is the platform's, verbatim: the AI numbers are sized to
 # a Manta's full-boost circle, which is the tightest line any hull here holds at speed, and the
-# 1400 speed clamp clears a Rhino's 1210 u/s (40 u per 30 fps step against a 98 u line).
+# 1400 speed clamp clears a Rhino's 1200 u/s (40 u per 30 fps step against a 98 u line).
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RegattaScoringRule']}, type: 2}}
   cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
   courseOuterRadius: 1080
