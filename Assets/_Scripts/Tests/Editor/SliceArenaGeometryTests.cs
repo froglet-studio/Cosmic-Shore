@@ -155,6 +155,8 @@ namespace CosmicShore.Tests
             Assert.AreEqual(SliceArenaGeometry.GapScaleI4, SliceArenaGeometry.GapScaleFor(9));
             Assert.AreEqual(SliceArenaGeometry.LengthScaleI1, SliceArenaGeometry.LengthScaleFor(0));
             Assert.AreEqual(SliceArenaGeometry.LengthScaleI4, SliceArenaGeometry.LengthScaleFor(9));
+            Assert.AreEqual(SliceArenaGeometry.PrismScaleI1, SliceArenaGeometry.PrismScaleFor(0));
+            Assert.AreEqual(SliceArenaGeometry.PrismScaleI4, SliceArenaGeometry.PrismScaleFor(9));
         }
 
         /// <summary>The widest rung, for anything that has to bound every intensity at once.</summary>
@@ -193,7 +195,23 @@ namespace CosmicShore.Tests
             {
                 AssertLiteral(src, $"LengthScaleI{i}", SliceArenaGeometry.LengthScaleFor(i));
                 AssertLiteral(src, $"GapScaleI{i}", SliceArenaGeometry.GapScaleFor(i));
+                AssertLiteral(src, $"PrismScaleI{i}", SliceArenaGeometry.PrismScaleFor(i));
             }
+        }
+
+        /// <summary>
+        /// Prism size is NOT part of the similarity, and the whole ladder states one number for it.
+        /// A rung that quietly drifted off 2 would re-cut that arena into a different number of
+        /// pieces - which re-prices its destruction target, since a target is a fraction of the
+        /// arena - so the fleet-wide value is asserted rather than left to four independent
+        /// literals. Raising it on ONE rung is a deliberate act that should fail here first.
+        /// </summary>
+        [Test]
+        public void EveryRungIsBuiltFromTheSameSmallPrisms()
+        {
+            for (int i = 1; i <= Intensities; i++)
+                Assert.AreEqual(SliceArenaGeometry.PrismScaleI1, SliceArenaGeometry.PrismScaleFor(i),
+                    1e-4f, $"intensity {i}");
         }
 
         static void AssertLiteral(string src, string name, float expected)

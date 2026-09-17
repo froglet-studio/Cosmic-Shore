@@ -79,10 +79,13 @@ namespace CosmicShore.Gameplay
         /// The clamp lives INSIDE the setter with no log and no return value, so an over-range
         /// axis is not an error, it is a different arena that looks authored (see
         /// <c>Docs/PRISM_ANIMATION.md</c> — the fitted-flora passes that measured and shipped
-        /// sizes the engine never used). Cleave's four arenas set it because scaling an arena is
-        /// a SIMILARITY: prism size is free in colliders and growing the prisms with the spacing
-        /// is what keeps a rib reading as a continuous bar rather than a dotted line, and at
-        /// 6 x three of the Panes' lengths clear the prefab's max of 100.</para>
+        /// sizes the engine never used). Cleave's four arenas set it as a standing GUARD rather
+        /// than as a fix: every size they state today is well inside the window (longest 44), but
+        /// the window is a property of a prefab ~30 spawnables share, and an arena whose sizes are
+        /// computed from a dial is one edit away from stating one outside it. At the 6x envelope
+        /// pass, before prism size became its own dial, three of the Panes' lengths (102 / 108 /
+        /// 132) cleared even <c>SpawnablePrism.prefab</c>'s widened max of 100 and nothing said
+        /// so.</para>
         ///
         /// <para>It is a per-ENVIRONMENT opt-in rather than a widened prefab because
         /// <c>SpawnablePrism.prefab</c> is shared by ~30 spawnables, and admitting a size one of

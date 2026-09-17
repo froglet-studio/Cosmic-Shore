@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -238,12 +239,12 @@ namespace CosmicShore.Gameplay
                 // Authoring guards, not runtime fixes - both failures are invisible in-editor.
                 float reach = spec.Radius + spec.HalfWidth + KeelDrop;
                 if (reach > R)
-                    Debug.LogError($"[Twistbands] Band {b} reaches r={reach:F0}, outside the " +
+                    CSDebug.LogError($"[Twistbands] Band {b} reaches r={reach:F0}, outside the " +
                                    $"shared arena envelope {R}. The AI's stations and the player " +
                                    "spawn ring are both derived from that number - narrow the " +
                                    "band or pull its radius in.");
                 if (spec.HalfTwists % 2 == 0)
-                    Debug.LogError($"[Twistbands] Band {b} has {spec.HalfTwists} half twists - an " +
+                    CSDebug.LogError($"[Twistbands] Band {b} has {spec.HalfTwists} half twists - an " +
                                    "EVEN count makes an ordinary two-sided annulus, and the whole " +
                                    "arena is built on the band having one side and one edge.");
 

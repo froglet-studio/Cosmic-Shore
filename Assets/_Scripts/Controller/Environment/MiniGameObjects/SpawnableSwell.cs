@@ -1,5 +1,6 @@
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
@@ -309,12 +310,12 @@ namespace CosmicShore.Gameplay
 
                 // Authoring guards, not runtime fixes - both failures are invisible in-editor.
                 if (spec.Reach > R)
-                    Debug.LogError($"[Swell] Ribbon {i} reaches r={spec.Reach:F0}, outside the " +
+                    CSDebug.LogError($"[Swell] Ribbon {i} reaches r={spec.Reach:F0}, outside the " +
                                    $"arena envelope {R}. The AI's stations and the player spawn " +
                                    "ring are both derived from that number - narrow the road or " +
                                    "pull its radius in.");
                 if (spec.HalfWidth > spec.NarrowestRadius * MaxWidthOfNarrowestRadius)
-                    Debug.LogError($"[Swell] Ribbon {i} is {spec.HalfWidth:F0} half-wide against a " +
+                    CSDebug.LogError($"[Swell] Ribbon {i} is {spec.HalfWidth:F0} half-wide against a " +
                                    $"narrowest spine radius of {spec.NarrowestRadius:F0} - the " +
                                    "inner verge folds through itself at the inside of a bend.");
 

@@ -633,6 +633,18 @@ leaves another blank gets the scalar rather than the centre of the cell. It is r
 from `GameDataSO.SelectedIntensity`, which is set before the scene loads, so it does not meet the
 config-sync race that bites a CLIENT computing an intensity-derived value.
 
+**The arcade card's PREVIEW mirrors the scalar, and only the scalar.**
+`ModePreview_Cleave.asset` carries its own copy of the spawn block, written by
+`Tools/Build/author_preview_spawns.py` straight off the scene's
+`ServerPlayerVesselInitializer` — so the preview satellite opens a pilot where the match would.
+That tool reads the SCALAR field, which this scene sizes for its two big rungs, so the preview
+stands a pilot at **3150** on all four intensities where rungs 3 and 4 spawn at 1050 in a real
+match: further out than it needs to be, never inside the arena, which is the safe direction.
+It went stale once already — the preview still said **576** after two envelope passes had moved
+the scene to 1050 and then 3150, which would have opened the preview *inside* the intensity-1 and
+-2 arenas — so **re-run `author_preview_spawns.py --check` whenever the scene's spawn ring moves**;
+it is the one place this mode's geometry is written down outside the scene and the generator.
+
 ## AI
 
 **Every AI station is OUTSIDE the arena. That is the whole fix.** `AIPilot` has no arrive-and-stop
@@ -896,6 +908,14 @@ generators, which proves what they EMIT; it proves nothing about how any of it l
 - **The 1,200 / 1,200 / 1,500 / 1,500 targets are unmeasured for all four arenas** — see the pacing
   flag. The split makes every rung ask for a comparable FRACTION of its own arena, which is a real
   improvement over one shared number, but nothing here says what the resulting match LENGTH is.
+- **The arcade card's preview opens at 3,150 on every rung**, because
+  `author_preview_spawns.py` mirrors the scene's SCALAR spawn-ring floor and this mode's is sized
+  for its two big arenas. Rungs 3 and 4 spawn at 1,050 in a real match, so the preview stands the
+  pilot three times further out than the arena needs — further away, never inside, which is the
+  safe direction, but it makes the two small arenas read as specks on the card. The honest fix is
+  a per-intensity floor on `ModePreviewDefinitionSO` mirroring the one
+  `ServerPlayerVesselInitializer` now has; out of scope here, and it is the only mode in the
+  project whose rungs differ in envelope by 3x, so nothing else is waiting on it.
 - **⚠ Intensity 2 is the least-known thing in the mode.** It is brand-new geometry at a scale
   nobody has flown, and unlike its three siblings it is not a variation on anything that has been:
   five closed meandering roads is a different proposition from a stack of surfaces, and whether a
