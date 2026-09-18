@@ -281,6 +281,22 @@ draw behind it. The clip is parented to the host and pushed to the end of the si
 sweep is sized to the plate's **diagonal**, not its width — a disc inscribed in the rect would leave
 the corners permanently lit.
 
+**It is also the ONE state a LOCKED card draws** (2026-09-16), and it is the only exception in this
+file. Locked means *this vessel has not authored an icon for this slot* — a fact about the ART —
+while a slot that is being **driven** is an ability that exists, whatever the row can draw of it.
+The veil never needed the icon anyway: it sizes itself on the ability **plate**, which a locked card
+has. The Serpent is the case that proved it. Its sniper's recharge was pushed correctly from
+`SerpentVesselHUDController` from the day the ability shipped and landed **nowhere** for three
+rounds of playtest, because that vessel binds 0/4 icons and `SetAbilityCooldown` early-returned on
+`slot.Locked`; the report each time was *"no cooldown indication"*, against a completely correct
+driver.
+
+> **An indicator that refuses to draw because its decoration is missing is indistinguishable from
+> an indicator nobody is driving.**
+
+`SetUpgraded` is deliberately **not** changed by the same argument read the other way: an upgrade is
+a statement about an ability the player can see, and on a locked card there is nothing to light.
+
 The Squirrel's Boost Ring is the first user, and it **replaced a per-vessel reload animation**: the
 icon sank to a seat and rose back as it loaded, breathed on a looping yoyo, wiped a radial fill on
 *itself*, and slammed home with a colour flash. Four channels saying one thing, all on the icon, on
@@ -459,8 +475,9 @@ ever arrived and (2) meant the answer would have been wrong if one had.
 
 `AbilityDisplayOrder` is four elements, so the row is four cards, always. A slot the vessel binds no
 icon for renders **locked**: both plates quieter, a hairline mark where the icon would be, no gauge
-track, no chip. Deliberately **not a padlock** — the ability is not locked to the *player*, it does not exist
-yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
+track, no chip — but, since 2026-09-16, **the cooldown veil if something is driving one** (see
+"The cooldown" above; it is the only state a locked card draws). Deliberately **not a padlock** —
+the ability is not locked to the *player*, it does not exist yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
 today instead of leaving it on the old one until design lands, and its element flowers dock into the
 locked cards exactly as they would into live ones.
 

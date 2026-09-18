@@ -556,6 +556,63 @@ the object.* Before tuning any per-vessel FX number, enumerate what the componen
 on actually walks, and compare it against everything the prefab draws. Full record:
 `Docs/VESSEL_TAIL_AND_JETS.md` §3.
 
+### 4.aa Building a HUD instrument so its FAILURE is diagnostic
+
+A vessel instrument is verified by a human at the editor, so the only thing you ever get back is a
+sentence. Design the change so that sentence can only mean one thing. The Serpent's scope eyepiece
+cost **eight** rounds and five of them bought nothing, because the report was the same four words
+every time: *"I don't see the pip."*
+
+- **Never replace a surface and re-point it in one change.** Round 4 swapped the window's component
+  (`RawImage` -> a generated circular `MaskableGraphic`), its aspect, its pivot and its hierarchy
+  AND re-pointed its camera. It stopped rendering, and *"I don't see it"* is the identical report
+  whether the surface broke or the camera did. Rounds 5 and 6 each found a REAL defect (URP camera
+  defaults; a `Canvas.enabled` toggle that freezes UGUI rebuilds) and neither changed anything on
+  screen, because neither was about the half that broke. The pilot resolved it in one sentence the
+  source could not: *"you were showing the pip fine when you had the vessel view in it."* Round 7
+  restored the working surface verbatim and kept only the new camera. **If you must do both, do them
+  in two commits so the next report can name one.**
+- **When a component renders and only its SHAPE is wrong, subclass it and override the geometry.**
+  `ScopePetalImage : RawImage` overrides `OnPopulateMesh` and nothing else, inheriting the texture
+  property, the white-texture fallback, material handling and the whole canvas rebuild path — so
+  the only thing that can be wrong is the vertex list, and a bad emit reads as a **wrong shape**,
+  which a pilot can report, instead of an **absence**, which they cannot. Writing a fresh
+  `MaskableGraphic` puts every one of those back on the table; the one that was written that way
+  never rendered and the reason was never diagnosed.
+- **Hide a generated graphic by its GameObject, never by `Canvas.enabled`.** A `Graphic` caches its
+  canvas in `m_Canvas`, and `IsActive()` is `base.IsActive() && m_Canvas != null` — so every
+  `SetVerticesDirty` is a silent no-op while that cache is null, and `OnCanvasHierarchyChanged`
+  nulls the cache and THEN tests `IsActive()`, which is false *because it just nulled it*, so it
+  never re-caches in either direction. The instrument freezes at its first-frame values and keeps
+  drawing them, which looks like a working instrument until you watch it move. Assert it through
+  `IsActive()`, never through the `canvas` PROPERTY, whose getter re-caches on read and heals the
+  thing you were testing.
+- **Three mechanics for a generated, non-rectangular instrument**, each of which fails as a
+  plausible wrong picture rather than as an error:
+  - **Positions ARE the UVs** when the outline is normalised over its own bounding box — that is
+    what lets a shaped window sample a render target with nothing squashed and nothing cropped
+    (the shape IS the crop), and it is why such a window wants a SQUARE target.
+  - **A shaped window cannot bound its own furniture by its bounding box.** Every radius drawn
+    inside it clamps to the shape's measured **inradius**; half the rect puts a reticle or a ring
+    outside the glass wherever the outline tapers.
+  - **A corner sharper than a right angle needs a MITER, not a bisector.** An antialiasing feather
+    offset along the bisector is `sin(theta/2)` too thin at the point — at a 72-degree apex that is
+    41% — and the apex is exactly where the eye lands first.
+- **Derive a shape's constants from its outline, never transcribe them.** `ScopePetalGeometry`
+  computes inradius, circumradius and area in a static constructor by walking its own edges, so
+  re-tracing the sprite moves the picture, the frame, the reticle cap and the recharge ring
+  together. Cite the RATIOS in prose (`0.59x the half-side`) and leave the raw values in the code
+  where they recompute.
+- **An instrument whose only rendering is its VALUE has no rendering at its extremes** — and the
+  extremes are the two readings the player needs. A bare recharge fill draws nothing on the frame
+  the shot fires and nothing once it is ready, which is indistinguishable from an instrument nobody
+  drives. Give it a bed (a dim full ring the fill runs over) and draw READY as a complete bright
+  ring rather than as the absence of one.
+
+**The general shape:** *an instrument's failure mode is the vocabulary of the bug report you will
+get.* Before you change one, ask what a pilot could say if it went wrong, and whether that sentence
+would point at one thing. If it would not, split the change.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

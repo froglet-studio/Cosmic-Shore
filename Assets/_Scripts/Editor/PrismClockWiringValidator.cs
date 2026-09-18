@@ -75,12 +75,17 @@ namespace CosmicShore.Editor
             "_PrismSightParams", "_PrismSightStrength",
         };
 
-        static readonly GraphEdgeCheck[] BackFaceEdges =
+        // The corridor's entry point is PER GRAPH — BlockGraph binds PrismOcclusionFade
+        // (full nose clearance), ExplodingBlockGraph binds PrismOcclusionFadeDebris (no
+        // clearance; debris has no collider, so it has nothing to buy with one). Same
+        // body, same slots — only the wrapper name differs, which is why this is an
+        // argument and not a second edge set.
+        static GraphEdgeCheck[] BackFaceEdges(string corridorFunction) => new[]
         {
             new GraphEdgeCheck
             {
                 InputFunction = "PrismBackFaceFade", InputSlot = 2,
-                OutputFunction = "PrismOcclusionFade", OutputSlot = 4,
+                OutputFunction = corridorFunction, OutputSlot = 4,
                 Description = "back-face BaseAlpha sits AFTER the corridor Alpha",
             },
             new GraphEdgeCheck
@@ -115,7 +120,7 @@ namespace CosmicShore.Editor
             },
             new GraphEdgeCheck
             {
-                InputFunction = "PrismOcclusionFade", InputSlot = 3,
+                InputFunction = "PrismOcclusionFadeDebris", InputSlot = 3,
                 OutputFunction = "PrismErosionFade", OutputSlot = 3,
                 Description = "corridor BaseAlpha fed by erosion Survival",
             },
@@ -208,7 +213,7 @@ namespace CosmicShore.Editor
                     "PrismSuctionClock", "PrismSuctionConverge",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(BackFaceEdges, LiveSuctionEdges), SwayEdges),
+                EdgeChecks = Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges),
                 Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + back-face fade + destruction sight",
             },
             new GraphSpec
@@ -243,7 +248,7 @@ namespace CosmicShore.Editor
                     "PrismSuctionClock", "PrismSuctionConverge",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges), LiveSuctionEdges), SwayEdges),
+                EdgeChecks = Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges),
                 Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + UV0 erosion + back-face fade + destruction sight",
             },
             new GraphSpec
@@ -407,6 +412,7 @@ namespace CosmicShore.Editor
                 case "PrismErosionFade":
                 case "PrismBackFaceFade":
                 case "PrismOcclusionFade":
+                case "PrismOcclusionFadeDebris":
                     return "PrismOcclusionCorridor.hlsl";
                 case "PrismDestructionSight":
                     return "PrismDestructionSight.hlsl";
@@ -424,6 +430,7 @@ namespace CosmicShore.Editor
                 case "PrismErosionFade":
                 case "PrismBackFaceFade":
                 case "PrismOcclusionFade":
+                case "PrismOcclusionFadeDebris":
                     return PrismOcclusionWiringValidator.CorridorHlslGuid;
                 case "PrismDestructionSight":
                     return SightHlslGuid;

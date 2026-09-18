@@ -54,7 +54,23 @@ namespace CosmicShore.Utility
         /// Deliberate exclusion: SuctionGraph. It is live (batched implosion debris draws
         /// ImplodingPrismMaterial, read off PrismImplosion.prefab in
         /// <c>PrismDebris.ConfigureImplosion</c>) but it renders a prism DURING consumption —
-        /// a sub-second implode of mass being removed — never standing mass that can occlude.
+        /// an implode of mass being removed — rather than standing mass.
+        ///
+        /// KNOWN HOLE, stated rather than implied (2026-09-16). That exclusion used to say
+        /// "a SUB-SECOND implode ... never standing mass that can occlude", and neither half
+        /// of it is true as shipped: <c>PrismImplosion.prefab</c> authors
+        /// <c>implosionDuration: 2</c>, and every implosion comes from <c>Prism.Consume</c>
+        /// with a LIVE creature Transform as its convergence target (the moving-target
+        /// exception, Docs/PRISM_ANIMATION.md §1), so a consumed prism's faces cross whatever
+        /// distance separates the prism from the mouth eating it, over two full seconds,
+        /// UNABLE TO DITHER AT ALL. It is the only prism-shaped geometry in the game that
+        /// cannot. Closing it is not a census edit: SuctionGraph has no
+        /// SurfaceDescription.Alpha or AlphaClipThreshold block at all (its only surface
+        /// output is BaseColor), so it needs both blocks created, the corridor spliced, and
+        /// ImplodingPrismMaterial converted to opaque + alpha clip
+        /// (enable_prism_alpha_clip.py). Do not add SuctionGraph to this list before that
+        /// work lands — <see cref="IsCorridorCapable"/> would then fail every suction
+        /// material at runtime.
         /// Named here the same way KnownLegacyPrismPrefabs is named in the validator, so the
         /// exclusion cannot look like an omission. Do not add SuctionGraph to this list
         /// without wiring PrismOcclusionFade into it — <see cref="IsCorridorCapable"/> would
