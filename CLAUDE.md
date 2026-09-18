@@ -4897,7 +4897,22 @@ ones.
   is this sentence for*, and *is it on all the time*. It composes rather than
   duplicating: **Domain** (a light says whose), **Mass/Prisms** (a predicate over conserved mass
   that stores nothing on it), **Elementals** (every volume is already elementally scaled),
-  **Vessels** (who lights), **Cells** (lit mass is ordinary mass). `LitVolume.Contains` is the ONE
+  **Vessels** (who lights), **Cells** (lit mass is ordinary mass). **A light may be restricted to ONE domain's mass, and the
+  restriction belongs to the LIGHT** — only the passthrough uses it, because only its sentence
+  ("that blast went through here and SPARED this") is about mass its owner owns, and lighting the
+  opposing prisms it was busy destroying said the opposite of what was happening. The two AIM
+  producers stay ungated on purpose: their sentence is about mass their owner does NOT own, so a
+  blanket rule would have deleted both. The prism's own domain arrives as a **per-material float**
+  (`_PrismLitDomain`, stamped by `ThemeManager.PaintPrismTier` on the clones it already makes one
+  per domain), so a prism's MATERIAL is its domain, a stolen prism carries its new one the instant
+  the swap lands, and the gate costs no per-instance override and nothing per frame. **Zero is safe
+  at both ends** — `Domains` has no zero member, so an unset gate means *no gate* and an unset
+  prism domain means *this has no domain*, which is what excludes a dying prism's **debris** for
+  free (fragments draw with the pooled debris material nobody stamps; they are not mass any more,
+  and the blast never touched them). And **a graph named for one thing draws another**:
+  `ExplodingBlockGraph` is also the material a LIVE prism's plain transparent tier wears, so the
+  property had to go into BOTH prism graphs or every such prism would silently fall outside every
+  gated light. `LitVolume.Contains` is the ONE
   CPU transcription of the three Burst sweeps and of the GPU half — `BlastVolume.Contains` now
   DELEGATES to it rather than keeping a fourth copy of the cone arm. Cost is **zero per-prism CPU
   and zero colliders**: five uniforms plus five `float4[8]` arrays written once per frame, with

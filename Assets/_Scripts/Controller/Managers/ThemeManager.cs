@@ -14,10 +14,10 @@ namespace CosmicShore.Gameplay
 
         void Awake()
         {
-            var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, "Green");
-            var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, "Red");
-            var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, "Gold");
-            var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, "Blue");
+            var GreenTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.JadeColors, Domains.Jade, "Green");
+            var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, Domains.Ruby, "Red");
+            var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, Domains.Gold, "Gold");
+            var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, Domains.Blue, "Blue");
 
             _dataContainer.TeamMaterialSets = new() {
                 { Domains.Jade, GreenTeamMaterialSet },
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
             PrismLit.ColorSet = _dataContainer.ColorSet;
         }
 
-        SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
+        SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, Domains domain, string domainName)
         {
             SO_MaterialSet materialSet = ScriptableObject.CreateInstance<SO_MaterialSet>();
             materialSet.name = $"{domainName}TeamMaterialSet";
@@ -69,13 +69,13 @@ namespace CosmicShore.Gameplay
             // (a danger prism exploding into plain-domain-coloured debris was exactly that
             // disagreement). Do not re-inline a tier's colour pair here.
             PaintPrismTier(materialSet.BlockMaterial, materialSet.TransparentBlockMaterial,
-                           colorSet, PrismKind.Plain);
+                           colorSet, domain, PrismKind.Plain);
             PaintPrismTier(materialSet.DangerousBlockMaterial, materialSet.TransparentDangerousBlockMaterial,
-                           colorSet, PrismKind.Danger);
+                           colorSet, domain, PrismKind.Danger);
             PaintPrismTier(materialSet.ShieldedBlockMaterial, materialSet.TransparentShieldedBlockMaterial,
-                           colorSet, PrismKind.Shielded);
+                           colorSet, domain, PrismKind.Shielded);
             PaintPrismTier(materialSet.SuperShieldedBlockMaterial, materialSet.TransparentSuperShieldedBlockMaterial,
-                           colorSet, PrismKind.SuperShielded);
+                           colorSet, domain, PrismKind.SuperShielded);
 
             materialSet.CrystalMaterial.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
@@ -112,16 +112,30 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Paints one prism tier's opaque + transparent material pair from the shared
-        /// <see cref="SO_ColorSet.GetPrismKindColors"/> composition.
+        /// <see cref="SO_ColorSet.GetPrismKindColors"/> composition, and stamps the pair with the
+        /// DOMAIN it belongs to.
+        ///
+        /// <c>_PrismLitDomain</c> is how the LIT fundamental's domain gate knows whose mass a
+        /// prism is (<see cref="PrismLit"/>, <c>PrismDestructionSight.hlsl</c>). It lives on the
+        /// MATERIAL because these clones already exist one per domain — so a prism's material IS
+        /// its domain, a stolen prism carries its new one the instant the swap lands, and the gate
+        /// costs no per-instance override and nothing per frame. Anything drawn with a material
+        /// nobody stamps (the pooled debris material, a tool-scene prism) reads 0, which the
+        /// shader treats as "this has no domain" and no gated light reaches.
         /// </summary>
-        void PaintPrismTier(Material opaque, Material transparent, DomainColorSet colorSet, PrismKind kind)
+        void PaintPrismTier(Material opaque, Material transparent, DomainColorSet colorSet,
+                            Domains domain, PrismKind kind)
         {
             _dataContainer.ColorSet.GetPrismKindColors(colorSet, kind, out var bright, out var dark);
 
             opaque.SetColor("_BrightColor", bright);
             opaque.SetColor("_DarkColor", dark);
+            opaque.SetFloat(PrismLitDomainId, (int)domain);
             transparent.SetColor("_BrightColor", bright);
             transparent.SetColor("_DarkColor", dark);
+            transparent.SetFloat(PrismLitDomainId, (int)domain);
         }
+
+        static readonly int PrismLitDomainId = Shader.PropertyToID("_PrismLitDomain");
     }
 }

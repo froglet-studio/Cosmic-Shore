@@ -232,11 +232,20 @@ namespace CosmicShore.Gameplay
         /// frames it sweeps, and the bank fades it out by itself once the blast is destroyed —
         /// which matters here more than anywhere, because an explosion cannot fade anything
         /// itself: it is <c>Destroy</c>ed the frame its sweep ends.
+        ///
+        /// It is the one producer that publishes OWN-DOMAIN ONLY, and that is the whole sentence
+        /// rather than a tuning: what this light says is "that blast went through here and SPARED
+        /// this", which is only true of mass the blast declined to touch. Everything else inside
+        /// the volume is being destroyed, so lighting it says the opposite of what is happening —
+        /// and a dying prism's debris, which carries no domain at all, falls outside every gated
+        /// light for free. The two AIM producers stay ungated on purpose: their sentence is about
+        /// mass their owner does NOT own.
         /// </summary>
         void PublishLit(in LitVolume volume)
         {
             if (!SparesWhatItTouches) return;
-            PrismLit.PublishLight(GetInstanceID(), volume, 1f, explosion.Domain);
+            PrismLit.PublishLight(GetInstanceID(), volume, 1f, explosion.Domain,
+                                  ownDomainOnly: true);
         }
 
         public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, in ExplosionImpulse impulse)

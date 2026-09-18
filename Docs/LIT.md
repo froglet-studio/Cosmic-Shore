@@ -19,11 +19,11 @@ Several systems independently wanted to say the same sentence — *my force is r
 and it is mine* — and each was about to say it its own way. They differ only in **when** the force
 lands, which is a property of the producer, not of the state:
 
-| Producer | Volume | Moment | Owner |
-|---|---|---|---|
-| Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep | `EchoSightActionExecutor` |
-| Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | `Projectile.PublishFuzeLit` |
-| Explosion passthrough | any | **resolved** — the blast arrived and spared this | `ExplosionImpactor.PublishLit` |
+| Producer | Volume | Moment | Lights | Owner |
+|---|---|---|---|---|
+| Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep | everything | `EchoSightActionExecutor` |
+| Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | everything | `Projectile.PublishFuzeLit` |
+| Explosion passthrough | any | **resolved** — the blast arrived and spared this | **own domain only** | `ExplosionImpactor.PublishLit` |
 
 Three producers, and the third one is a **replacement rather than an addition**: it is what the
 2-second temporary shield used to do (see below), so it is the only one of the three that removes
@@ -87,6 +87,57 @@ Composition with the other fundamentals is what earns it the weight: **Domain** 
    property on every prism graph for a shape no producer needs.
 6. **Overflow evicts the weakest**, never whichever the dictionary enumerated last — an arbitrary
    drop would be an invisible, machine-dependent difference in what each player sees.
+7. **A restriction to one domain's mass belongs to the LIGHT, not to the fundamental** — see the
+   next section.
+
+## The domain gate — who a light is allowed to reach
+
+A light may be restricted to **one domain's mass**, and the restriction is a property of the
+light rather than of the state. `PrismLit.PublishLight(..., ownDomainOnly: true)` sets it; the
+default lights every prism the volume reaches.
+
+**Only the passthrough uses it, and the reason is what the sentence says.** The passthrough's
+sentence is *"that blast went through here and **spared** this"*, which is only true of mass the
+blast declined to touch — everything else inside the volume is being destroyed, so lighting it
+says the opposite of what is happening. That was the report: an own-domain blast lit the
+opposing-domain prisms it was in the middle of removing. The two **aim** producers stay ungated on
+purpose, because their sentence is the mirror image: *"that rival is about to take **your**
+mass"*. A blanket own-domain rule would have deleted both.
+
+**How the prism's own domain reaches the shader: its MATERIAL.** `ThemeManager.Awake` already
+clones every prism material once per domain, so a prism's material *is* its domain, and
+`PaintPrismTier` stamps `_PrismLitDomain` on the same pair it paints the tier colours on. That
+buys three things a per-instance override would not: no per-frame CPU, no new override component,
+and a **stolen** prism carries its new domain the instant its material is swapped — the swap is
+already the mechanism by which a domain change becomes visible. It costs one float in
+`UnityPerMaterial`. The gate itself rides `_PrismSightPeerShape[i].y`, a channel the bank slot was
+already carrying unused.
+
+**Zero is safe at both ends, and that is what makes it cheap.** `Domains` has no zero member (Jade
+1, Ruby 2, Blue 3, Gold 4), so an unset gate reads as *no gate* and an unset prism domain reads as
+*this thing has no domain*.
+
+**The second half of that is what excludes DEBRIS**, which was the other half of the report. A
+dying prism's fragments draw with the pooled debris material (`PrismDebris` reads mesh and
+material off the pool prefab; the per-domain `ExplodingBlockMaterial` copies are never consumed),
+which nothing stamps — so fragments read 0 and no gated light reaches them. That is the honest
+answer rather than a special case: **fragments are not mass any more**, and a blast that spared
+the prism they came from did not spare *them*, it never touched them. Note the aim producers still
+light debris, and still should — a chunk in a rival's cone is a chunk that rival's blast is about
+to be in among.
+
+**Both prism graphs carry the property, and that is not redundancy.**
+`ExplodingBlockGraph` is not the debris graph: it is also the material the **plain transparent
+tier** of a live prism wears (`TransparentPrismMaterial`), while the shielded, super-shielded and
+danger transparent variants are on `BlockGraph`. *A graph named for one thing draws another* — so
+a gate added to only one of the two would have silently excluded every plain transparent prism in
+the game from every gated light.
+
+**Measured, not assumed.** `Tools/Shaders/verify_prism_sight_composition.py` compiles the shipped
+HLSL and runs it: test 3c proves a gated light reaches its own domain, not a foreign domain and
+not a domain-less fragment, with the **same light, gate cleared** as its negative control (it must
+light all three again). Test 1 still proves the own-aim arm bit-identical over ~200k samples, so
+the gate cannot have moved the instrument a pilot aims with.
 
 ## Nothing reads it to decide an outcome — deliberately
 
@@ -146,6 +197,11 @@ blast in the game looks exactly as it did.
    bit-identical. Run `Tools/Shaders/verify_prism_sight_composition.py` to prove it.
 2. **Dolphin, The Bends / Rampage.** Fly a crystal into your own trail. The spared prisms should
    glow in your domain and fade over ~0.35 s. **No shield octahedra, no pops, no shield SFX.**
+2a. **Same blast, with OPPOSING mass in the cone.** The prisms being destroyed must **not** light,
+   and neither must their debris — that is the domain gate. Do it in a mixed-colour stand of flora
+   or over a rival's trail, where both colours are inside one cone at once.
+2b. **Fly the cone over a prism you STEAL mid-blast.** Its material swaps to your domain, so it
+   should start lighting — that is the gate reading the material rather than a snapshot.
 3. **Same, with fauna present.** Graze the blast's footprint immediately after. Fauna should be
    able to eat it — previously they could not for 2 s.
 4. **Sparrow, Dog Fight.** Fire a skyburst past a wreck. The fuze sphere should light mass as it
@@ -155,5 +211,11 @@ blast in the game looks exactly as it did.
    including the half **behind** you. This is the cylinder arm of one producer, not a producer of
    its own.
 6. **Any vessel, freestyle.** Skim. **Nothing should light** — the skim-field producer was cut.
-7. **Editor validators:** FrogletTools ▸ Ecology ▸ Prism Animation (the Custom Function name and
-   file are unchanged, so no graph should need rewiring) and `PrismLitTests`.
+7. **Editor validators:** FrogletTools ▸ Ecology ▸ Prism Animation, plus `PrismLitTests`,
+   `Tools/Build/check_shadergraph_custom_function_signatures.py` and
+   `Tools/Shaders/verify_prism_sight_composition.py`.
+8. **Open both prism graphs once** (`BlockGraph`, `ExplodingBlockGraph`). The sight node gained a
+   **Domain** input fed by a new `PrismLitDomain` float property — the graph JSON was authored
+   headlessly, so the editor opening them without complaint, and every prism still rendering
+   materialed, is the check that could not be run here. The Custom Function's **name and file are
+   unchanged**, so nothing else about either graph needed rewiring.

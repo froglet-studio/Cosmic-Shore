@@ -45,7 +45,9 @@
 // One known imprecision, on DEBRIS only: a flying chunk's visual position is integrated in the
 // VERTEX stage off its stamped velocity (PrismFlightClock), so its object origin is where it
 // SPAWNED rather than where it currently is. A chunk therefore lights according to the prism it came
-// from, which is transient, already fading, and arguably the more meaningful answer anyway.
+// from, which is transient, already fading, and arguably the more meaningful answer anyway. It
+// applies to the UNGATED lights only — a debris fragment carries no domain, so a domain-gated
+// light (see THE DOMAIN GATE below) does not reach it at all.
 //
 // THE VOLUME. Not a circular cone: the blast opens the way the jaws open. At axial depth s the
 // cross-section is a 2D STADIUM — a disc of radius (_PrismSightParams.y · s) dragged along the
@@ -212,6 +214,32 @@
 #define PRISM_SIGHT_PEER_GAIN 0.55
 #endif
 
+// -----------------------------------------------------------------------------
+// THE DOMAIN GATE — a light may be restricted to ONE domain's mass.
+// -----------------------------------------------------------------------------
+//
+// _PrismSightPeerShape[i].y carries the Domains value a light is gated to, or 0 for "light
+// everything". The prism's own domain arrives as the Domain parameter, which is a PER-MATERIAL
+// value: ThemeManager clones every prism material once per domain at Awake, so a prism's
+// MATERIAL is its domain and _PrismLitDomain is the cheapest honest place to read it from — no
+// per-instance override, no per-frame CPU, and a stolen prism carries its new domain the instant
+// its material is swapped. It costs one float in UnityPerMaterial and nothing per frame.
+//
+// WHY THE GATE IS PER-LIGHT AND OFF BY DEFAULT. The two AIM producers exist precisely to light
+// mass their owner does NOT own — "that rival is about to take YOUR trail" is the whole sentence
+// the Echo Sight and the proximity fuze say. Only the PASSTHROUGH is own-domain by nature,
+// because what IT says is "that blast went through here and spared this". A blanket own-domain
+// rule would silently delete the other two producers, so the restriction belongs to the light,
+// not to the fundamental.
+//
+// ZERO IS SAFE AT BOTH ENDS, and that is what makes this cheap. Domains has no zero member (Jade
+// 1, Ruby 2, Blue 3, Gold 4), so an unset gate reads as "no gate" and an unset prism domain reads
+// as "this thing has no domain". The second half excludes DEBRIS for free: a dying prism's
+// fragments draw with the pooled debris material, which nothing paints per domain, so they read 0
+// and no gated light can reach them. That is the honest answer rather than a special case —
+// fragments are not mass any more, and a blast that spared the prism they came from did not spare
+// THEM, it never touched them.
+
 // Bound with Shader.SetGlobalVectorArray / SetGlobalFloat once per frame. Declared at file scope
 // because Shader Graph has no array property type, and OUTSIDE every CBUFFER because these are
 // per-frame globals rather than per-material properties (an array inside UnityPerMaterial is what
@@ -223,7 +251,7 @@
 //   PeerAxis[i]  = (axis.xyz,   params.y)   cone: tanCore  sphere: -       cylinder: radius
 //   PeerGape[i]  = (gape.xyz,   params.z)   cone: tanGape  sphere: -       cylinder: mirrored
 //   PeerTint[i]  = (tint.rgb,   strength)
-//   PeerShape[i] = (shape, -, -, -)         one of PRISM_LIT_SHAPE_*
+//   PeerShape[i] = (shape, gate, -, -)      shape: PRISM_LIT_SHAPE_*; gate: a Domains value, 0 = none
 //
 // _PrismSightPeerCount is the master sentinel: unpublished globals read as zero (a player build
 // before any producer lights anything, or the editor between play sessions), the loop below does
@@ -353,6 +381,7 @@ void PrismDestructionSight_float(
     float3 Params,      // OWN sight: (height, core radius per unit depth, half-length per unit depth)
     float  Strength,    // OWN sight: highlight fade, 0-1
     float3 BaseColor,
+    float  Domain,      // THIS PRISM's domain (a Domains value; 0 = it has none). Per-material.
     out float3 Color)
 {
     // Composes rather than overwrites: a fragment outside every volume, with no sight held
@@ -409,7 +438,16 @@ void PrismDestructionSight_float(
         float4 axis = _PrismSightPeerAxis[i];
         float4 gape = _PrismSightPeerGape[i];
         float4 tint = _PrismSightPeerTint[i];
-        float  shape = _PrismSightPeerShape[i].x;
+        float4 tag  = _PrismSightPeerShape[i];
+        float  shape = tag.x;
+
+        // The domain gate, tested BEFORE any geometry: a light restricted to one domain's mass
+        // rejects a foreign prism (and every fragment, which carries no domain at all) for one
+        // compare. Both sides are small integers held exactly in float, so this is an exact test
+        // rather than a tolerance, and it is uniform across the whole prism — Domain is a material
+        // constant and the slot is a global, so the branch can never diverge.
+        if (tag.y > 0.0 && tag.y != Domain)
+            continue;
 
         float w = PrismLitFill(samplePos, apex.xyz, axis.xyz, gape.xyz,
                                float3(apex.w, axis.w, gape.w), shape) * tint.a;

@@ -62,6 +62,19 @@ namespace CosmicShore.Utility
     /// covers — the instrument you are aiming with is never recoloured by a rival sweeping past.
     /// </para>
     ///
+    /// <para><b>A light may be restricted to ONE domain's mass, and the restriction belongs to the
+    /// LIGHT.</b> The two AIM producers exist precisely to light mass their owner does not own —
+    /// "that rival is about to take YOUR trail" is the whole sentence they say — so a blanket
+    /// own-domain rule would delete them. Only the PASSTHROUGH is own-domain by nature, because
+    /// what it says is "that blast went through here and spared this", and it passes
+    /// <c>ownDomainOnly</c>. The gate rides the bank slot's spare channel and the prism's own
+    /// domain arrives as a per-material float (<c>_PrismLitDomain</c>, stamped once per domain by
+    /// <c>ThemeManager</c>), so it costs nothing per frame and nothing per prism.
+    /// <c>Domains</c> has no zero member, which makes zero mean "no gate" at one end and "this
+    /// thing has no domain" at the other — and that second half is what excludes a dying prism's
+    /// DEBRIS for free, since fragments draw with the pooled debris material that nothing paints
+    /// per domain.</para>
+    ///
     /// <para><b>Continuity of existence is structural here, not per-producer.</b> A slot that
     /// stops being reported FADES rather than dropping (see <see cref="Flush"/>), so no light can
     /// pop out of existence and no producer has to remember to fade its own. That matters most
@@ -129,6 +142,7 @@ namespace CosmicShore.Utility
             public Color Tint;
             public float Afterglow;     // seconds to fade over once abandoned
             public float Fade;          // 1 while reported, decaying once not
+            public Domains RestrictTo;  // 0 = light every prism; otherwise only this domain's
             public int Frame;
         }
 
@@ -245,9 +259,15 @@ namespace CosmicShore.Utility
         /// Call it every frame the light is up. A slot that stops being reported fades over
         /// <paramref name="afterglowSeconds"/> and is then dropped, so a producer that simply
         /// stops — or is destroyed — still leaves continuously.
+        ///
+        /// <paramref name="restrictTo"/> gates the light to one domain's mass; the default lights
+        /// every prism it reaches. Pass it only when the light's SENTENCE is about mass its owner
+        /// owns — see the class doc. Anything with no domain (a dying prism's debris) is outside
+        /// every gated light.
         /// </summary>
         public static void PublishLight(int sourceId, in LitVolume volume, float strength01,
-            Color tint, float afterglowSeconds = DefaultAfterglowSeconds)
+            Color tint, float afterglowSeconds = DefaultAfterglowSeconds,
+            Domains restrictTo = default)
         {
             strength01 = Mathf.Clamp01(strength01);
             if (!volume.IsValid || volume.Reach <= 0f || strength01 <= 0.001f)
@@ -263,6 +283,7 @@ namespace CosmicShore.Utility
                 Tint = tint,
                 Afterglow = Mathf.Max(0f, afterglowSeconds),
                 Fade = 1f,
+                RestrictTo = restrictTo,
                 Frame = Time.frameCount,
             };
         }
@@ -272,11 +293,14 @@ namespace CosmicShore.Utility
         /// <see cref="DomainTint"/>. The overload every producer should reach for: it is one
         /// fewer thing to get wrong, and it is the only form available to a producer that cannot
         /// reach the palette itself (a pooled explosion injects nothing — see
-        /// <see cref="ColorSet"/>).
+        /// <see cref="ColorSet"/>). <paramref name="ownDomainOnly"/> is the domain gate expressed
+        /// the way a producer thinks about it: light only the mass this force belongs to.
         /// </summary>
         public static void PublishLight(int sourceId, in LitVolume volume, float strength01,
-            Domains domain, float afterglowSeconds = DefaultAfterglowSeconds)
-            => PublishLight(sourceId, volume, strength01, DomainTint(domain), afterglowSeconds);
+            Domains domain, float afterglowSeconds = DefaultAfterglowSeconds,
+            bool ownDomainOnly = false)
+            => PublishLight(sourceId, volume, strength01, DomainTint(domain), afterglowSeconds,
+                            ownDomainOnly ? domain : default(Domains));
 
         /// <summary>
         /// Stop reporting a light, beginning its fade. Idempotent, and not strictly required —
@@ -389,10 +413,10 @@ namespace CosmicShore.Utility
             _bankGape[slot] = new Vector4(v.GapeAxis.x, v.GapeAxis.y, v.GapeAxis.z, v.Params.z);
             _bankTint[slot] = new Vector4(light.Tint.r, light.Tint.g, light.Tint.b,
                                           light.Strength * light.Fade);
-            // Only .x is read. The spare channels are left zero rather than packed with anything
-            // else, so the next shape parameter has somewhere to go that cannot be confused with
-            // a geometry field.
-            _bankShape[slot] = new Vector4((int)v.Shape, 0f, 0f, 0f);
+            // .x is the shape tag, .y the DOMAIN GATE (0 = light everything). The two spare
+            // channels are left zero rather than packed with anything else, so the next shape
+            // parameter has somewhere to go that cannot be confused with a geometry field.
+            _bankShape[slot] = new Vector4((int)v.Shape, (int)light.RestrictTo, 0f, 0f);
         }
 
         // ---------------- Lifecycle ----------------

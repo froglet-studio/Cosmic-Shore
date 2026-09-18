@@ -86,7 +86,7 @@ namespace CosmicShore.Tests
             // Names, not values: the C# binds these by string through Shader.PropertyToID, so a
             // typo on either side fails SILENTLY - the write goes nowhere and the sight simply
             // never appears for anyone but its holder.
-            string[] arrays = { "_PrismSightPeerApex", "_PrismSightPeerAxis", "_PrismSightPeerGape", "_PrismSightPeerTint" };
+            string[] arrays = { "_PrismSightPeerApex", "_PrismSightPeerAxis", "_PrismSightPeerGape", "_PrismSightPeerTint", "_PrismSightPeerShape" };
             foreach (var name in arrays)
                 Assert.IsTrue(Regex.IsMatch(hlsl, $@"^float4 {Regex.Escape(name)}\[PRISM_SIGHT_PEER_SLOTS\];\s*$",
                                             RegexOptions.Multiline),
@@ -126,6 +126,131 @@ namespace CosmicShore.Tests
             Assert.Greater(loop, own.Index,
                 "The own-sight branch now runs after the peer loop. It must run first: the peers' " +
                 "contribution is what the early return exists to skip.");
+        }
+
+        // ------------------------------------------------------------------
+        // THE DOMAIN GATE
+        // ------------------------------------------------------------------
+        //
+        // A gated light reaches one domain's mass. Three separate things have to agree for that
+        // to be true and all three fail SILENTLY on their own: the shader has to read the gate,
+        // both prism graphs have to feed the prism's own domain into the node, and ThemeManager
+        // has to stamp it. Any one of them missing leaves a gated light reaching NOTHING, which
+        // looks exactly like a producer nobody wired.
+
+        const string ThemeManagerPath = "Assets/_Scripts/Controller/Managers/ThemeManager.cs";
+        static readonly string[] PrismGraphs =
+        {
+            "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
+            // NOT the debris graph, despite the name: this is also the material the PLAIN
+            // TRANSPARENT tier of a LIVE prism wears (TransparentPrismMaterial), while the
+            // shielded/super-shielded/danger transparent variants are on BlockGraph. A gate wired
+            // into only one of the two would silently exclude every plain transparent prism.
+            "Assets/_Graphics/Materials/Graphs/ExplodingBlockGraph.shadergraph",
+        };
+
+        static string ReadText(string path)
+        {
+            Assert.IsTrue(File.Exists(path), $"{path} is missing.");
+            return File.ReadAllText(path).Replace("\r\n", "\n");
+        }
+
+        /// <summary>The one concatenated JSON document in a .shadergraph that contains a needle.</summary>
+        static string GraphBlock(string graph, string needle)
+        {
+            foreach (var block in graph.Split(new[] { "\n\n" }, System.StringSplitOptions.None))
+                if (block.Contains(needle))
+                    return block;
+            return null;
+        }
+
+        [Test]
+        public void ShaderReadsTheDomainGateBeforeAnyGeometry()
+        {
+            string hlsl = ReadHlsl();
+
+            Assert.IsTrue(Regex.IsMatch(hlsl, @"float\s+Domain,\s*//[^\n]*\n\s*out float3 Color\)"),
+                "The sight's entry point no longer takes `float Domain` as its LAST INPUT, immediately " +
+                "before `out float3 Color`. A file-mode Custom Function node builds its call as all " +
+                "inputs then all outputs, so a parameter declared after the `out` makes every prism " +
+                "material render UNMATERIALED with nothing in the console " +
+                "(Tools/Build/check_shadergraph_custom_function_signatures.py is the gate).");
+
+            var gate = Regex.Match(hlsl, @"if \(tag\.y > 0\.0 && tag\.y != Domain\)\s*\n\s*continue;");
+            Assert.IsTrue(gate.Success,
+                "The per-light domain gate is gone from " + HlslPath + ". _PrismSightPeerShape[i].y " +
+                "carries the domain a light is restricted to (0 = no gate) and the prism's own " +
+                "domain arrives as the Domain parameter; without the test, the explosion passthrough " +
+                "lights the opposing-domain mass it is in the middle of destroying.");
+
+            int fill = hlsl.IndexOf("float w = PrismLitFill(", System.StringComparison.Ordinal);
+            Assert.Greater(fill, gate.Index,
+                "The domain gate now runs after the volume test. It must run first: rejecting a foreign " +
+                "prism for one compare is the whole reason the gate is cheap.");
+        }
+
+        [Test]
+        public void BothPrismGraphsFeedTheirOwnDomainIntoTheSight()
+        {
+            foreach (var path in PrismGraphs)
+            {
+                string graph = ReadText(path);
+
+                // 1. the property exists and is PER-MATERIAL (m_GeneratePropertyBlock), which is
+                //    what puts it in UnityPerMaterial where material.SetFloat can reach it. A
+                //    non-generated property is a Shader.SetGlobal uniform instead - one value for
+                //    every domain at once, which is no gate at all.
+                string prop = GraphBlock(graph, "\"_PrismLitDomain\"");
+                Assert.IsNotNull(prop, $"{path} declares no _PrismLitDomain property. ThemeManager stamps " +
+                    "it per domain and the sight reads it as the prism's own domain.");
+                Assert.IsTrue(prop.Contains("\"m_GeneratePropertyBlock\": true"),
+                    $"{path}'s _PrismLitDomain is not a generated (per-material) property, so it lands " +
+                    "outside UnityPerMaterial and material.SetFloat cannot reach it — the gate would " +
+                    "read one global value for every domain at once.");
+
+                // 2. the node has a Domain input slot, and 3. something is WIRED to it. An
+                //    unwired Custom Function slot is legal and falls back to its default 0, which
+                //    the shader reads as "this prism has no domain" - so every gated light would
+                //    silently reach nothing at all.
+                string node = GraphBlock(graph, "\"m_FunctionName\": \"PrismDestructionSight\"");
+                Assert.IsNotNull(node, $"{path} no longer carries the PrismDestructionSight node.");
+                string nodeId = Regex.Match(node, @"""m_ObjectId"": ""([0-9a-f]{32})""").Groups[1].Value;
+                Assert.IsNotEmpty(nodeId, $"could not read the sight node's object id in {path}.");
+
+                string slot = GraphBlock(graph, "\"m_ShaderOutputName\": \"Domain\"");
+                Assert.IsNotNull(slot, $"{path}'s sight node has no Domain input slot.");
+                string slotId = Regex.Match(slot, @"""m_Id"": (\d+)").Groups[1].Value;
+                Assert.IsNotEmpty(slotId, $"could not read the Domain slot's id in {path}.");
+
+                Assert.IsTrue(Regex.IsMatch(graph,
+                        @"""m_InputSlot"":\s*\{\s*""m_Node"":\s*\{\s*""m_Id"":\s*""" + nodeId +
+                        @"""\s*\},\s*""m_SlotId"":\s*" + slotId + @"\s*\}"),
+                    $"{path} has a Domain slot on the sight node with NOTHING wired into it. An unwired " +
+                    "Custom Function slot falls back to its default 0, which the shader reads as \"this " +
+                    "prism has no domain\" — so every domain-gated light would reach nothing and the " +
+                    "explosion passthrough would look like a producer nobody wired.");
+            }
+        }
+
+        [Test]
+        public void ThemeManagerStampsEveryPrismTierWithItsDomain()
+        {
+            string theme = ReadText(ThemeManagerPath);
+
+            Assert.IsTrue(theme.Contains("_PrismLitDomain"),
+                ThemeManagerPath + " no longer stamps _PrismLitDomain. The per-domain material clones " +
+                "are the ONLY place a prism's domain reaches the shader, so without the stamp every " +
+                "prism reads 0 and no domain-gated light reaches anything.");
+
+            // It has to be on the TIER pair, not on one material: PrismStateManager swaps a prism
+            // between the opaque and transparent variants of its tier, so a stamp on only one of
+            // them makes a prism drop out of every gated light for half its states.
+            Assert.IsTrue(Regex.IsMatch(theme,
+                    @"opaque\.SetFloat\(PrismLitDomainId[\s\S]{0,400}?transparent\.SetFloat\(PrismLitDomainId"),
+                "ThemeManager.PaintPrismTier stamps _PrismLitDomain on only one of the tier's two " +
+                "materials. PrismStateManager swaps a prism between the opaque and transparent variant " +
+                "of its tier, so both have to carry the domain or a prism falls out of every gated " +
+                "light in half its states.");
         }
     }
 }
