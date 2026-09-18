@@ -534,6 +534,60 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
   always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
+- **A COMPACT form needs none of the lattice machinery — the Borromean membrane.**
+  `BorromeanFlora` grows the **minimal-genus Seifert surface of the Borromean rings**: the three
+  golden ellipses (semi-axes 1 and φ, the boundaries of three golden rectangles whose twelve
+  corners are an icosahedron's vertices — and a FORCED realization, since by Freedman–Skora the
+  link admits no three round CIRCLES), spanned by the level set `Ω ≡ 2π` of their summed
+  solid-angle potential and relaxed to zero discrete mean curvature. Measured **χ = −3 over three
+  boundary loops ⇒ genus 1**, area **11.955** against **15.250** for three flat discs — and three
+  flat discs are not an alternative, because they intersect and three DISJOINT ones would split a
+  link that is not split, so a CONNECTED spanning surface is forced. **The symmetry is order 6
+  (C3ᵢ) and that is the MAXIMUM available, not a shortfall**: the unoriented rings carry the
+  order-24 pyritohedral group, but half of those elements reverse some rings' orientations and
+  carry this level set to a different one — measured for every orientation assignment. The site
+  table is **EXACTLY** invariant (residual `0.00e+00`) because it is a union of whole ORBITS, and
+  growth lays **one whole orbit per tick outward from the heart**, so a half-grown plant is
+  exactly as symmetric as a finished one. Three things generalise. **A centroidal Voronoi
+  tessellation can be made exactly symmetric** by running Lloyd's on the orbit set and pulling
+  each centroid back through the group — averaging over the orbit is what keeps a representative
+  a representative, so there is no symmetrisation pass and therefore no drift for one to mask.
+  **Half the group is IMPROPER**, and a right-handed frame mapped by a reflection is not a
+  rotation, so `y` is re-derived as `z × x` after the map — a plate is a BOX and is invariant
+  under a flip of any one axis, so the geometry is carried exactly and only the quaternion table
+  is equivariant up to a symmetry of the box. And **the plate lies on the surface's ASYMPTOTIC
+  directions**: on a minimal surface the principal curvatures are equal and opposite, so normal
+  curvature vanishes on the two directions bisecting them AND those two are orthogonal — a
+  property minimal surfaces alone have, and the reason a flat rectangle sits flush on a saddle
+  (measured 0.247/0.251 of the local shear along the plate's two axes, against a mean curvature
+  of 0.165 of it; a sphere scores 1.00). **It is NOT a lattice species and deliberately has none
+  of their machinery**: a lattice tiles a periodic surface indefinitely and reproduces as a
+  COLONY because its growth rule has an opinion about where the next PLANT belongs, while a
+  Borromean surface is COMPACT — it closes on itself and is finished — so this plant completes
+  and funds an ordinary per-plant offspring out of its growth quota (§32). No frontier, no claim
+  book, no mate-snap, no `LatticeScale` family of absolute tolerances (§34.8); *a species whose
+  form is bounded does not need them*. It keeps `PrismSizeFixedByGrowthRule` because its offsets
+  are a measured table in absolute units, and resizes through `surfaceScale`, which moves the
+  sites and the leaf together. **The plate aspect is a LOOK call and the rendering is the
+  evidence** — every structural check passes at any aspect, so the choice was made by rendering
+  four: at `1.40 × 0.73` the plates lap 61% and the membrane reads as one smooth blob, at
+  `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; shipped `1.15 × 0.68 ×
+  0.115` of the measured site spacing (30% lap). **360 prisms, radius 55.6, 7,499 volume, cap 8
+  per element = 32 always-on heart colliders**, and a CHARGE plant takes a uniform **×0.2493**
+  shrink so its shield octahedra clear (§35) — which also halves its heart (1.97 against 3.946),
+  consistently with every other shield-fitted species, and moves the fleet's heart anchor not at
+  all. Authored by `Tools/Build/measure_borromean_minimal_surface.py` + `author_borromean_flora_assets.py`,
+  re-proved from the shipped table alone by `Tools/Build/verify_borromean_surface_tables.py`
+  (seven negative controls). **In NO SpawnProfile** — reachable through the freestyle Lifeform
+  Matrix toy, the worm colony's precedent, because adopting it into a cell means re-deriving that
+  cell's volume ladder. Two traps worth more than the species: **a `ROOT` one `dirname` too
+  shallow wrote the whole asset tree into `Tools/Assets/` and the verifier, sharing the bug, read
+  it back and passed** — *consistent wrongness reads exactly like correctness*, so the definition
+  now carries an `assert` that `Assets/` is under it; and **a Jacobi sweep on a cotangent system
+  fails by being slightly WRONG rather than by failing** (1,200 sweeps were still 3% above what
+  five sparse solves reach in under a second, i.e. an inflated membrane that passes every
+  structural check), which is why the tool asserts the AREA — a property of the surface rather
+  than of the solver. `Docs/ECOSYSTEM.md §48`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside

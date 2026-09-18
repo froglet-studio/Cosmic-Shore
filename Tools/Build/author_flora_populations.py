@@ -165,6 +165,7 @@ EXCLUDE = set()
 # them back to the Blob caps.
 OWNED_ELSEWHERE = {
     "Lattice ": "Tools/Build/author_lattice_cell.py",
+    "Borromean ": "Tools/Build/author_borromean_flora_assets.py",
 }
 
 

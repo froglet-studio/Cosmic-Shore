@@ -8409,3 +8409,179 @@ zero colliders.
 1.4 rad/s deliberately — a crystal arguably wants to be slower than a fern, but that is a
 second unrequested look change and the amplitude is what "barely perceptible" is about.
 `TARGET_TIP_DEGREES` in the authoring tool is the one number to move after the first playtest.
+
+---
+
+## 48. A flora grown on the MINIMAL SURFACE SPANNING THE BORROMEAN RINGS (Sep 2026)
+
+**The ask:** *"make a flora out of a visually pleasant and symmetric minimal surface on the
+borromean rings."* What shipped is `BorromeanFlora` — a plant whose body is the
+minimal-genus Seifert surface of the Borromean rings, relaxed to zero discrete mean
+curvature, tiled with 360 conserved prisms laid one symmetry ORBIT per grow tick.
+
+Every number is measured offline by `Tools/Build/measure_borromean_minimal_surface.py`,
+lands in the generated `BorromeanSurfaceData.cs`, and is re-proved from the shipped file
+alone by `Tools/Build/verify_borromean_surface_tables.py` (the cheap gate, seven negative
+controls). **Nothing in the C# describes the shape**; the flora reads a table.
+
+### 48.1 What the object is, and why nothing simpler would do
+
+The rings are the canonical realization: three congruent ellipses of semi-axes 1 and **φ**
+in mutually perpendicular planes — the boundaries of three golden rectangles whose twelve
+corners are an icosahedron's vertices. That is not a stylistic choice. By the
+**Freedman–Skora theorem** the Borromean rings cannot be built from three round CIRCLES at
+all, so an ellipse is the simplest curve the link admits, and the golden one is the
+symmetric realization.
+
+**Three flat discs are not an alternative, and the reason is topological rather than
+aesthetic:** three discs spanning the three rings intersect each other, and three
+*disjoint* spanning discs would split the link — which the Borromean rings, being
+non-split, are not. A **connected** spanning surface is forced. The one this ships is the
+level set `Ω ≡ 2π (mod 4π)` of the rings' summed **solid-angle potential**, which is an
+embedded Seifert surface for any level by construction, relaxed until its cotangent mean
+curvature vanishes. Measured: **χ = −3 over three boundary loops ⇒ genus 1**, the
+minimal-genus Seifert surface of the link, area **11.955** against **15.250** for three
+flat discs.
+
+A symmetric **quartic** was tried first — `r = (p−1)(φ²−p)` contains all three rings to
+1e-15 — and abandoned: its zero set is six tangent spheres, not a spanning surface. *An
+implicit surface that CONTAINS a curve is not thereby a surface BOUNDED by it.*
+
+### 48.2 The symmetry is order 6, and that is a MEASUREMENT
+
+As an unoriented set the three rings carry the **pyritohedral group, order 24**. The level
+set does not: half of those elements reverse some rings' orientations and leave others
+alone, which carries `Ω` to a different potential and the level set to a different surface.
+The tool computes the stabiliser of the ORIENTED link for **every** assignment of
+orientations and gets **6** each time (C3ᵢ — a 3-fold rotation about a body diagonal, times
+inversion). So 6 is the maximum available, not a shortfall, and the doc says so because the
+next reader will otherwise try to "fix" it.
+
+**The site table is EXACTLY invariant because it is a union of whole ORBITS.** A site is
+stored as an orbit representative and expanded by the six group elements, so G-invariance
+is a property of the construction rather than a tolerance that could drift — measured
+residual **0.00e+00**, and the verifier's first negative control (nudge one site by 0.5)
+fires on it.
+
+Two consequences worth carrying past this species:
+
+* **A centroidal Voronoi relaxation can be made exactly symmetric** by running Lloyd's
+  algorithm on the ORBIT set and pulling each cell's centroid back through the group
+  (`borromean_surface.symmetric_cvt`). Averaging over the orbit is what keeps a
+  representative a representative; there is no symmetrisation pass afterwards, so there is
+  no drift for one to mask.
+* **Half the group is IMPROPER, and a right-handed frame mapped by an improper element is
+  not a rotation.** `expand_frames` therefore carries x and z and re-derives `y = z × x`,
+  which flips y under a reflection — and a plate is a BOX, invariant under a flip of any one
+  axis. The plate geometry is carried exactly by the whole group; only the quaternion table
+  is equivariant up to a symmetry of the box.
+
+### 48.3 The plate lies on the surface's ASYMPTOTIC directions
+
+A long flat plate belongs where the surface does not bend along it, and **on a minimal
+surface that direction exists and is free**: the principal curvatures are equal and
+opposite, so normal curvature vanishes on the two directions bisecting the principal ones —
+and those two are orthogonal to each other, which is a property minimal surfaces alone
+have. So **both** in-plane axes of every plate lie on a zero-normal-curvature direction,
+which is why a flat rectangle sits flush on a saddle at all.
+
+Measured on the shipped table, from the sites alone with no mesh: normal curvature along
+the long axis is **0.247** and along the short axis **0.251** of the local shear, while
+mean curvature is **0.165** of it. A sphere scores **1.00** on that last ratio, and the
+verifier's sphere control reproduces exactly that.
+
+### 48.4 Two design calls, both made by LOOKING
+
+**The plate aspect is a look call, and the rendering is the evidence.** Every structural
+check passes at any aspect; what the ask turns on is which one reads well. Rendered at four
+aspects: at `1.40 × 0.73` the plates lap **61%** of near pairs and the membrane reads as one
+smooth blob; at `0.85 × 0.55` they lap not at all and it reads as a perforated mesh rather
+than a surface. Shipped **`1.15 × 0.68 × 0.115`** of the measured site spacing — 30% lap,
+still unmistakably a membrane, with the individual plates legible inside it.
+
+**Growth runs one whole ORBIT per tick, outward from the heart**, which makes a half-grown
+plant *exactly* as symmetric as a finished one: six plates at the core, blooming out to the
+rings over 60 ticks. That is a property of the ORDERING (orbit-major, sorted by radius), not
+of an animation, and the verifier asserts both halves — every contiguous block of six is one
+orbit, and the blocks' radii are non-decreasing. Grazing frees a site, so a plant eaten at
+its rim regrows from the inside out.
+
+### 48.5 What it is NOT — and why it needs none of the lattice machinery
+
+**It is not a lattice species.** The three `AssembledFlora` families tile a periodic surface
+indefinitely and reproduce as a COLONY — one daughter per fauna-wave period — because their
+growth rule has an opinion about where the *next plant* belongs. **A Borromean surface is
+COMPACT**: it closes on itself and is finished. So this plant completes, stops growing, and
+funds an ordinary per-plant offspring out of its growth quota like every branching and
+phyllotactic species (§32). There is no frontier, no claim book, no mate-snap and no
+`LatticeScale` family of absolute tolerances (§34.8) — and there is deliberately nothing to
+add: *a species whose form is bounded does not need them.*
+
+It does keep `PrismSizeFixedByGrowthRule = true` (§40's standing guard): the site offsets are
+a measured table in absolute local units, so a per-cell leaf scale would lay prisms the table
+no longer describes. Resizing goes through `surfaceScale`, which moves the sites and the leaf
+together — the §34.8 rule, met from the other side.
+
+### 48.6 Budget, and the CHARGE plant
+
+| | |
+|---|---|
+| Prisms per plant | **360** (60 orbits × 6) |
+| Plant radius | **55.6** local units (111 across) |
+| Leaf | `7.063 × 4.176 × 0.706`, volume **20.83**/prism, **7,499** per plant |
+| CHARGE leaf | `1.760 × 1.041 × 0.176` — a uniform **×0.2493** shrink |
+| Seed floor / cap | 1 / **8 per element** — **32 always-on heart colliders** across the four |
+| Heart | 3.946 (Charge **1.97**), measured by `author_lifeform_heart_sizes.py` |
+
+**Charge armours its mass by law** (§35), and a shield swaps in the CIRCUMSCRIBING
+octahedron reaching `1.5 × leafSize` — so a Charge plant is a different geometry problem
+from its three siblings. Fitted here by bisection over the exact OBB separating-axis test to
+the largest uniform shrink whose octahedra still clear one another. Its plates read as a
+sparse skeleton and the octahedra fill the membrane in, exactly as the gyroid and Schwarz P
+do.
+
+Its heart is correspondingly **half** its siblings' (1.97 against 3.946), because the
+fleet's heart law sizes a flora from its leaf footprint and its budget and therefore reads
+the shrunken leaf as a smaller plant. That is **consistent with every other shield-fitted
+species in the band** — SchwarzP Charge sits at the band's floor for the same reason — so it
+is recorded rather than special-cased. The anchor does not move: adding this species leaves
+`K = 0.36599` and the band `1.16 → 4.60` byte-for-byte unchanged, which is the only safe
+case for touching that tool at all.
+
+### 48.7 Deployment, stated plainly because the claim rots
+
+As of this commit the species is in **no `SpawnProfileSO`**, and is reachable through the
+freestyle **Lifeform Matrix** toy. That is the worm colony's precedent (§23) — an opt-in
+species — and it is deliberate: adopting it into a cell means re-deriving that cell's volume
+ladder against a 111-unit, 360-prism, 7,499-volume plant, which is a tuning pass this branch
+has not done. **Re-prove the claim by grepping the four config GUIDs across `_SO_Assets`
+before inheriting it** (§ the ecology skill's "an 'it is wired nowhere' claim is true only on
+the date it was written").
+
+### 48.8 Four traps this cost, each of which generalises
+
+1. **A `ROOT` computed with one `dirname` too few writes a whole asset tree into the wrong
+   place, and every tool that shares the bug agrees with it.** `Tools/Build/x.py` needs
+   **three** `dirname`s to reach the repo root; two land on `Tools/`. All three new scripts
+   carried it, so the table was written to `Tools/Assets/...`, and the verifier — sharing the
+   bug — read it back and passed. *Consistent wrongness reads exactly like correctness.* The
+   fix is an `assert os.path.isdir(ROOT/'Assets')` beside the definition, which would have
+   caught it on the first run.
+2. **A nested prefab instance carries its NAME as a modification, not as an `m_Name:` key.**
+   The donor clone's `m_Name: SchwarzPCrystal` replace matched nothing and the object kept
+   the donor's name silently — the file loads, nothing dangles, and only a grep for the
+   donor's name finds it. The generator now asserts no donor name survives the clone.
+3. **A Jacobi sweep on a cotangent system does not converge at mesh scale, and it fails by
+   being slightly wrong rather than by failing.** 1,200 sweeps on an 89k-face mesh were still
+   3% above the answer five sparse SOLVES reach in under a second — an inflated membrane that
+   passes every structural check. Same fixed point, two orders of magnitude cheaper, no
+   tuning constant. The tool now asserts the AREA, because area is a property of the surface
+   rather than of the solver, and it is the one number an under-converged run cannot fake.
+4. **Two fitters must not own one asset** (§35, again). `HeartWorldScale` belongs to
+   `author_lifeform_heart_sizes.py`, so `author_borromean_flora_assets.py` READS it back
+   instead of authoring it — otherwise the two tools revert each other forever with both
+   `--check`s passing in between.
+
+**Open:** nothing here has been run in the Unity editor. The geometry, the symmetry, the
+minimality, the plate fit and the shield clearance are all proved offline and the C# is
+Roslyn-compiled against transcribed stubs, but nobody has watched this plant grow.
