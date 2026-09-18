@@ -1272,23 +1272,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Is there anything within the fuze radius worth detonating on?
-        ///
-        /// <para>An explicit overlap rather than a second trigger collider, for three reasons.
-        /// A 150-unit trigger dragged through a cell would mint thousands of PhysX pairs per
-        /// frame that all get discarded (the problem <c>AOEExplosion.ApplyPrismExclusion</c>
-        /// exists to solve). A trigger would arrive through <c>AcceptImpactee</c> and run the
-        /// round's DIRECT-hit effect list - spinning a pilot and scoring a missile strike on a
-        /// near miss. And the overlap ignores the collision matrix, which is what lets one query
-        /// see both vessels and crystals. It is the same reasoning
-        /// <c>ExplosionImpactor.SweepCrystals</c> records.</para>
-        ///
-        /// <para><b>Own-domain things never trip it</b>, vessels and creatures alike. Detonating
-        /// on a teammate is pure grief, and detonating on your own domain's wildlife wastes the
-        /// rocket - so the rule is one rule, and it does not depend on an upgrade state that
-        /// would make the fuze behave differently at different element levels.</para>
-        /// </summary>
-        /// <summary>
         /// Publish this round's armed fuze volume as a LIT sphere. A no-op on every round in the
         /// game but the skyburst: <c>proximityFuzeRadiusMultiplier</c> is 0 elsewhere, so there
         /// is no fuze to draw and nothing is published.
@@ -1310,6 +1293,23 @@ namespace CosmicShore.Gameplay
             PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(position, radius), 1f, domain);
         }
 
+        /// <summary>
+        /// Is there anything within the fuze radius worth detonating on?
+        ///
+        /// <para>An explicit overlap rather than a second trigger collider, for three reasons.
+        /// A 150-unit trigger dragged through a cell would mint thousands of PhysX pairs per
+        /// frame that all get discarded (the problem <c>AOEExplosion.ApplyPrismExclusion</c>
+        /// exists to solve). A trigger would arrive through <c>AcceptImpactee</c> and run the
+        /// round's DIRECT-hit effect list - spinning a pilot and scoring a missile strike on a
+        /// near miss. And the overlap ignores the collision matrix, which is what lets one query
+        /// see both vessels and crystals. It is the same reasoning
+        /// <c>ExplosionImpactor.SweepCrystals</c> records.</para>
+        ///
+        /// <para><b>Own-domain things never trip it</b>, vessels and creatures alike. Detonating
+        /// on a teammate is pure grief, and detonating on your own domain's wildlife wastes the
+        /// rocket - so the rule is one rule, and it does not depend on an upgrade state that
+        /// would make the fuze behave differently at different element levels.</para>
+        /// </summary>
         bool ProximityFuzeTripped(Vector3 position)
         {
             float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;

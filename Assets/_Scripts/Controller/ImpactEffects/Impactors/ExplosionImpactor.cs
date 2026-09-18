@@ -194,16 +194,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
-        /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
-        /// center/radius describe this frame's blast sphere (stationary centre,
-        /// growing radius - so each frame's volume strictly contains the last);
-        /// blastOrigin is the emission point all impact vectors radiate from.
-        /// The conic explosion uses <see cref="ProcessBatchConeFrame"/> instead.
-        /// Returns true if the explosion should continue, false if it should be destroyed
-        /// (e.g. hit a super-shielded enemy prism).
-        /// </summary>
-        /// <summary>
         /// Does this blast SPARE anything it touches? If so it has a passthrough to express, and
         /// every frame of its sweep publishes a LIT volume so the mass it spares is visibly
         /// acknowledged rather than looking clipped through.
@@ -248,6 +238,16 @@ namespace CosmicShore.Gameplay
                                   ownDomainOnly: true);
         }
 
+        /// <summary>
+        /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
+        /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
+        /// center/radius describe this frame's blast sphere (stationary centre,
+        /// growing radius - so each frame's volume strictly contains the last);
+        /// blastOrigin is the emission point all impact vectors radiate from.
+        /// The conic explosion uses <see cref="ProcessBatchConeFrame"/> instead.
+        /// Returns true if the explosion should continue, false if it should be destroyed
+        /// (e.g. hit a super-shielded enemy prism).
+        /// </summary>
         public bool ProcessBatchFrame(Vector3 center, float radius, Vector3 blastOrigin, in ExplosionImpulse impulse)
         {
             using (s_processBatch.Auto())

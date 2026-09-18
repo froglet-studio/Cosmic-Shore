@@ -30,20 +30,6 @@ namespace CosmicShore.Gameplay
         public bool IsValid;
 
         /// <summary>
-        /// Is <paramref name="worldPoint"/> standing inside this blast, and how deep?
-        ///
-        /// This is the CPU transcription of the volume test three other places already run:
-        /// <c>AOEConicSweepQueryJob.Execute</c> (the damage sweep), <c>PrismDestructionSight.hlsl</c>
-        /// (the prism highlight) and the capsule trigger. Clamp onto the cross-section's segment
-        /// first, then measure distance to that point — that ordering is what makes the ends round,
-        /// and copying it rather than approximating with a cone is why a vessel lights up exactly
-        /// when the blast would actually reach it.
-        ///
-        /// <paramref name="fill01"/> comes back on the same edge-weighted curve the shader uses, so
-        /// a highlighted VESSEL and the highlighted PRISMS around it brighten together instead of
-        /// reading as two separate effects that happen to share a trigger.
-        /// </summary>
-        /// <summary>
         /// The LIT volume this blast is, for publishing into <c>PrismLit</c> and for
         /// <see cref="Contains"/>. A blast's cone IS a <see cref="LitShape.Cone"/>, so this is a
         /// field rename rather than a conversion.

@@ -30,7 +30,8 @@ a graph revert to repair the wiring.
 What it adds to each graph:
 
   properties (all UNEXPOSED -> declared as globals, driven by Shader.SetGlobalVector from
-  PrismDestructionSight.cs; same shape as the existing _PrismClock / _PrismOcclusion* globals):
+  PrismLit.cs (_Scripts/Utility/Lit/, named PrismDestructionSight.cs until the LIT
+  fundamental promoted it); same shape as the existing _PrismClock / _PrismOcclusion* globals):
       _PrismSightApex     float3  blast apex, world space
       _PrismSightAxis     float3  sweep axis (unit)
       _PrismSightGape     float3  gape axis (unit, perpendicular to the sweep axis)

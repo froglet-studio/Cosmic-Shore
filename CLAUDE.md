@@ -1424,7 +1424,7 @@ merely inherits: it passively seeds balls of its domain **embedded in the nucleu
 can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
 or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
 Bank one too many inside and the core OVERLOADS, detonating every ball in a domain-coloured blast
-(own-domain prisms take a temporary shield, other domains are destroyed). **A HELD BUTTON turns the Scarab's HULL from a wall into a HAND, and the DRIFT is just the drift**
+(own-domain prisms are drawn LIT in the blast's domain colour — `Docs/LIT.md`, a temporary shield until 2026-09 — other domains are destroyed). **A HELD BUTTON turns the Scarab's HULL from a wall into a HAND, and the DRIFT is just the drift**
 (`SCARAB.md §3.7`, `§3.8`, `§3.9`). The juke is **analog** — deflection is the dash's
 strength, and only a perimeter push spins, steals or blasts, so a pilot can trim their line beside a
 ball without touching it; **one push is one GESTURE**, begun immediately at whatever it has reached

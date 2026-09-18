@@ -301,7 +301,7 @@ namespace CosmicShore.ECS
     /// float3 because the prism graphs carry Vector1 and Vector3 property donors and no
     /// Vector4 one — synthesising a property type neither graph contains is exactly the
     /// hand-authored schema the asset-surgery protocol forbids (same ruling as
-    /// PrismDestructionSight's five globals).
+    /// PrismLit's five globals).
     [MaterialProperty("_JiggleParams")]
     public struct PrismJiggleParamsOverride : IComponentData
     {
