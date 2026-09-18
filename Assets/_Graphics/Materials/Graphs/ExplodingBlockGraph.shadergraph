@@ -6452,7 +6452,7 @@
     "m_Group": {
         "m_Id": ""
     },
-    "m_Name": "PrismOcclusionFade (Custom Function)",
+    "m_Name": "PrismOcclusionFadeDebris (Custom Function)",
     "m_DrawState": {
         "m_Expanded": true,
         "m_Position": {
@@ -6492,7 +6492,7 @@
         "m_SerializableColors": []
     },
     "m_SourceType": 0,
-    "m_FunctionName": "PrismOcclusionFade",
+    "m_FunctionName": "PrismOcclusionFadeDebris",
     "m_FunctionSource": "bf8e2c1fa76142c89ba03b2e1ae46201",
     "m_FunctionBody": "Enter function body here..."
 }

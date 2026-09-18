@@ -533,23 +533,13 @@ namespace CosmicShore.Gameplay
             var source = Camera.main;
             if (!source) return;
 
-            target.clearFlags = source.clearFlags;
-            target.backgroundColor = source.backgroundColor;
+            // Routed through the shared helper rather than copied a fourth time: the same finding
+            // had been written down here, at the connecting panel's preview and at the toy preview
+            // before the Serpent's scope window rediscovered it. See OffscreenCameraSetup.
+            OffscreenCameraSetup.AdoptGameCameraFraming(target, excludeUiLayer: false);
             target.fieldOfView = source.fieldOfView;
-            target.cullingMask = source.cullingMask;
-            target.allowHDR = source.allowHDR;
-            target.allowMSAA = source.allowMSAA;
-
-            if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
-
-            var to = target.GetUniversalAdditionalCameraData();
-            if (!to) return;
-
-            to.renderPostProcessing = from.renderPostProcessing;
-            to.antialiasing = from.antialiasing;
-            to.antialiasingQuality = from.antialiasingQuality;
-            to.renderShadows = from.renderShadows;
-            to.volumeLayerMask = from.volumeLayerMask;
+            OffscreenCameraSetup.AdoptGameCameraImage(target, postProcessing: true,
+                                                     antiAliasing: true, shadows: true);
 
             // The scriptable RENDERER index is deliberately not copied: URP exposes SetRenderer
             // but no public getter for the index in this version, so there is nothing to copy it

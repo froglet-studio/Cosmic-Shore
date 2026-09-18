@@ -105,6 +105,25 @@ namespace CosmicShore.Gameplay
                 _onPrismSpawnedEventChannel.OnEventReturn += OnPrismSpawnedEventRaised;
             
             mpb = new MaterialPropertyBlock();
+
+            // Configure the debris pipelines HERE rather than leaving it to the first
+            // death that needs one.
+            //
+            // The per-request calls in SpawnExplosion / SpawnImplosion are how the config
+            // TRACKS a pool swap, and they were also the only thing that ever established
+            // it — so until the first prism exploded, PrismDebris.TryGetExplosionConfig
+            // answered false. That is invisible on the death path itself (the first
+            // explosion configures and then proceeds) and NOT invisible to the OTHER
+            // producer of explosion debris: a shield disengaging before any prism has died
+            // was refused outright, and the strict-mode diagnostic is warn-once, so one
+            // early shatter could silence the report for the whole session.
+            //
+            // General shape: a lazily-established shared config is established by whichever
+            // consumer happens to run first, so a SECOND consumer inherits that ordering as
+            // a hidden precondition. Establish it where the thing that owns the pools comes
+            // up, and let the lazy calls go on tracking changes.
+            CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null);
+            CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null);
         }
 
         private void OnDisable()

@@ -1071,6 +1071,71 @@ float PrismOcclusionDitherThreshold(float2 pixel, float radialRatio, float angle
 // -----------------------------------------------------------------------------
 static const float PRISM_OCCLUSION_NOSE_CLEARANCE = 1.0;
 
+// -----------------------------------------------------------------------------
+// THE BASE SHARE (2026-09-16) — the most of the corridor's LENGTH that the nose
+// clearance and its axial grade may take between them.
+//
+// Both of those are written in HULL RADII and both eat the same end of a corridor
+// whose length is the CAMERA DISTANCE, so what they cost is one ratio and nothing
+// else: rho = cameraDistance / hullRadius. The fleet spans rho by a factor of ~37
+// (the Urchin's camera sits 6.72 units back, the Serpent's 250), so an unbounded
+// pair is a sliver on one hull and most of the tunnel on another. Measured against
+// this very function (Tools/Shaders/verify_prism_corridor_base.py), the fully-clear
+// corridor was EMPTY at rho <= 1.75, 0.127 of the length at rho = 2 and 0.384 at
+// rho = 2.83 — while the clearance constant's own degenerate-case note above
+// reasons about tSolid alone and concludes the corridor is only lost at rho <= 1.
+// That note was right about tSolid and blind to the grade, which subtracts a second
+// (outer - inner)/axisLen from the same end.
+//
+// 0.5 is not a taste call: the clearance is described above as "trading a SLIVER of
+// see-through for the impact reading", and a sliver that takes more than half the
+// tunnel is not a sliver. At 0.5 every vessel keeps at least half its corridor fully
+// see-through, and the cap is a BIT-EXACT no-op for rho >= 1.75 / 0.5 = 3.5 — so no
+// long-camera hull changes by a single sample. Raise it toward 1 to give the
+// clearance more of a short corridor (at 1.0 the corridor can vanish again); lower
+// it to guarantee more see-through on the close-camera hulls.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_MAX_BASE_SHARE = 0.5;
+
+// -----------------------------------------------------------------------------
+// THE DEBRIS CLEARANCE (2026-09-17) — the nose clearance that EXPLOSION DEBRIS gets,
+// which is none.
+//
+// The clearance above buys ONE thing and says so: a prism the ship is about to HIT
+// reads as solid at the moment of impact, so the hit registers visually instead of
+// landing on something already half-dissolved. That argument is about COLLISION, and
+// explosion debris has no collider — a fragment is photons from the instant it is
+// born. So the trade the clearance makes (a sliver of see-through given up for the
+// impact read) has nothing to buy on the debris graph, while the cost is paid in the
+// one place it hurts most: debris is born AT the point of destruction, which in a
+// fight is at or near the hull, i.e. inside exactly the zone the clearance keeps
+// solid. That is why a burst still occluded the vessel while every fragment was
+// nominally inside the corridor.
+//
+// So ExplodingBlockGraph calls PrismOcclusionFadeDebris_float, which is this same
+// corridor with the clearance set to 0: the cone runs flush to the vessel's plane and
+// debris dissolves right up to the hull. BlockGraph's call is untouched, so live mass
+// — the only mass that can be collided with — keeps the full clearance and the impact
+// read is unchanged.
+//
+// THE COST, STATED. A burst visibly THINS where it crosses the ship. That is the
+// corridor doing its job on mass that has no other job, and it is the trade that was
+// chosen deliberately: nothing collidable changes, so no impact read is lost.
+//
+// The cap above (PRISM_OCCLUSION_MAX_BASE_SHARE) mostly goes inert for debris as a
+// consequence rather than as a second decision: with clearanceT = 0 the base share is
+// the grade alone, 0.75/rho, which is under 0.5 for every rho >= 1.5 — so on all but
+// the closest-camera hull shrink is exactly 1 and the grade keeps the full thickness
+// its isotropy argument was derived from. It still bites below that (the Urchin sits
+// at rho ~1.12, where the grade alone would be 0.67 of the corridor), and there it is
+// doing exactly the job it was written for. Measured per rho, both entry points, by
+// Tools/Shaders/verify_prism_corridor_base.py T4.
+//
+// Raise this toward the live value if debris ever needs to read solid against the
+// hull; it is the same dial, on its own graph.
+// -----------------------------------------------------------------------------
+static const float PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE = 0.0;
+
 // Quintic smootherstep — C2 continuous: value, FIRST and SECOND derivatives are all
 // zero at both ends. smoothstep (cubic) only zeroes the first, which leaves a faint
 // crease where the band begins and ends. That crease is what you notice when the band
@@ -1104,14 +1169,19 @@ float PrismOcclusionSmootherStep(float t)
 //               _Alpha, ExplodingBlockGraph's clock Opacity). Multiplying rather than
 //               replacing is what makes the graph's own alpha a first-class dither
 //               input: authored sub-1 alpha and clock fades render as coverage.
+// NoseClearance — how much of the corridor's far end stays solid, in hull radii.
+//                 Supplied by the entry point at the bottom of this function, not
+//                 read from a constant here, because live mass and its debris want
+//                 different answers and everything else about the shape must stay
+//                 identical between them. See PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE.
 //
 // Alpha         — BaseAlpha scaled by the corridor fade.
 // ClipThreshold — 0 when the final alpha is >= 1 (never discards); the kernel's
 //                 threshold otherwise, so the material dissolves as a screen door
 //                 instead of popping — in the corridor, mid-explosion, or cloaked.
 // -----------------------------------------------------------------------------
-void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
-    out float Alpha, out float ClipThreshold)
+void PrismOcclusionFadeImpl(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    float NoseClearance, out float Alpha, out float ClipThreshold)
 {
     Alpha = BaseAlpha;
     ClipThreshold = 0.0;
@@ -1172,8 +1242,23 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
             // clearance, so the ship and the mass it is about to hit sit in solid air.
             // saturate: a camera inside the clearance yields 0 and switches the corridor
             // off, which is the correct degenerate behaviour (see the constant's note).
+            // Both ends of the base — the solid clearance and the grade that leads into
+            // it — are scaled by ONE factor so that together they never take more than
+            // PRISM_OCCLUSION_MAX_BASE_SHARE of the corridor (see that constant). One
+            // factor rather than two clamps is what keeps the grade's isotropy argument
+            // below intact: it stays exactly the fraction of the clearance it was
+            // derived as. shrink is exactly 1 wherever the cap does not bite, and
+            // multiplying by 1 is bit-exact, so every hull with a camera at least
+            // 3.5 hull radii back is unchanged sample for sample.
             float axisLen = sqrt(axisLenSq);
-            float tSolid = saturate(1.0 - (outerRadius * PRISM_OCCLUSION_NOSE_CLEARANCE) / axisLen);
+            float innerRadius = min(Params.y, outerRadius);
+            float clearanceT = (outerRadius * NoseClearance) / axisLen;
+            float bandT = (outerRadius - innerRadius) / axisLen;
+            float baseShare = clearanceT + bandT;
+            float shrink = min(1.0, PRISM_OCCLUSION_MAX_BASE_SHARE / max(baseShare, 1e-4));
+            clearanceT = clearanceT * shrink;
+            bandT = bandT * shrink;
+            float tSolid = saturate(1.0 - clearanceT);
 
             if (t > 0.0 && t < tSolid)
             {
@@ -1224,7 +1309,6 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // Short and smooth are in tension, which is why the easing is quintic
                     // and the dither is low-discrepancy: both exist to keep a narrow band
                     // from reading as an edge.
-                    float innerRadius = min(Params.y, outerRadius);
                     // Same fraction of the outer profile at every depth (innerRadius * t
                     // before the near circle existed — identical when near = 0).
                     float innerAtT = outerAtT * (innerRadius / outerRadius);
@@ -1245,10 +1329,13 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
                     // thickness across the base as around the sides — so the corridor's
                     // whole boundary fades at one rate and there is no seam anywhere on
                     // it. It also self-scales: a long corridor gets a proportionally short
-                    // axial band, a short one a longer band, with nothing to tune. Clamped
-                    // to 1 for the degenerate case where the camera is closer to the ship
-                    // than the shell is thick.
-                    float baseBand = clamp((outerRadius - innerRadius) / axisLen, 1e-4, 1.0);
+                    // axial band, a short one a longer band, with nothing to tune. It
+                    // is capped WITH the clearance above (PRISM_OCCLUSION_MAX_BASE_SHARE)
+                    // rather than on its own, which is what preserves that self-scaling on
+                    // a short corridor instead of letting the two eat the whole tunnel.
+                    // Clamped to 1 for the degenerate case where the camera is closer to
+                    // the ship than the shell is thick.
+                    float baseBand = clamp(bandT, 1e-4, 1.0);
                     float clearAxial = 1.0 - PrismOcclusionSmootherStep((t - (tSolid - baseBand)) / baseBand);
 
                     // PRODUCT, not min(): a fragment is cleared only where it is inside
@@ -1328,6 +1415,40 @@ void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, f
     ClipThreshold = PrismOcclusionDitherThreshold(pixel, radialRatio, angleTurns, insideCorridor,
                                                   PositionWS, angularScale, viewDepth, time);
 #endif
+}
+
+// -----------------------------------------------------------------------------
+// THE TWO ENTRY POINTS. Shader Graph's file-mode Custom Function node calls
+// <FunctionName>_float, so these are the names the two prism graphs bind to. They
+// differ in ONE argument — the nose clearance — and share every other line, because
+// the corridor's shape must not be able to drift between live mass and its debris.
+//
+// SIGNATURE CONTRACT (paid for once, 2026-09-16): a file-mode node builds its call as
+// ALL INPUT SLOTS, THEN ALL OUTPUT SLOTS, in slot order within each group. Slot IDs
+// do not decide it. So every input must be declared before both `out` parameters —
+// declare one after them and the graph passes an input where an output is expected,
+// the graph fails to compile, and every material drawn with it renders unmaterialed
+// (magenta) with nothing in the console tying it to this file.
+// Tools/Build/check_shadergraph_custom_function_signatures.py holds it.
+// -----------------------------------------------------------------------------
+
+// BlockGraph — live, collidable prism mass. Keeps the full nose clearance so a prism
+// the ship is about to hit still reads solid at impact.
+void PrismOcclusionFade_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    out float Alpha, out float ClipThreshold)
+{
+    PrismOcclusionFadeImpl(PositionWS, Target, Params, BaseAlpha,
+        PRISM_OCCLUSION_NOSE_CLEARANCE, Alpha, ClipThreshold);
+}
+
+// ExplodingBlockGraph — debris, which has no collider and therefore nothing to buy
+// with a clearance. Runs the corridor flush to the vessel's plane so a burst cannot
+// occlude the ship it was born on. See PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE.
+void PrismOcclusionFadeDebris_float(float3 PositionWS, float3 Target, float3 Params, float BaseAlpha,
+    out float Alpha, out float ClipThreshold)
+{
+    PrismOcclusionFadeImpl(PositionWS, Target, Params, BaseAlpha,
+        PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE, Alpha, ClipThreshold);
 }
 
 // -----------------------------------------------------------------------------
