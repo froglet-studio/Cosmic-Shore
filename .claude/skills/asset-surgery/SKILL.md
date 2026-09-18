@@ -1482,6 +1482,35 @@ Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
 Both checks are cheap to run over the parsed JSON and are now standing assertions in
 `PrismClockWiringValidator` + `PrismShieldMorphTests` — copy that shape into any new wirer.
 
+### Trap: a file-mode Custom Function's call is ALL INPUTS, THEN ALL OUTPUTS
+
+Slot IDs do **not** decide the argument order. ShaderGraph emits a file-mode Custom
+Function node's call as every INPUT slot in slot order, then every OUTPUT slot in slot
+order — so an HLSL signature whose parameter list interleaves them, or that declares a
+new input **after** an existing `out`, is called with an input where an output is
+expected. The graph then fails to compile and **every material drawn with it renders
+unmaterialed**, with nothing in the console naming the HLSL file or the node.
+
+That shipped (2026-09, prism corridor branch): adding an `ErosionThreshold` input to
+`PrismOcclusionFade_float` after its two `out` parameters took BOTH prism graphs down, and
+the report was the maximally unhelpful *"all prisms had no materials."* It is the same
+failure surface as the cycle trap above — whole-graph, silent about its cause — and it is
+reached by an edit that looks purely additive.
+
+Two consequences worth carrying:
+
+- **Declare every input before the first `out`.** When a variant needs a different value
+  for one argument, prefer TWO THIN WRAPPERS over one shared body (`…Impl`) to adding a
+  slot: the wrappers keep the node's slot shape byte-identical, so the graph edit is a
+  `m_FunctionName` string swap with no slot or edge churn at all, and the two variants
+  provably cannot drift in shape. `PrismOcclusionFade_float` /
+  `PrismOcclusionFadeDebris_float` over `PrismOcclusionFadeImpl` is the worked example.
+- **Gate it.** `Tools/Build/check_shadergraph_custom_function_signatures.py` parses every
+  `.shadergraph`'s custom-function nodes, resolves each to its HLSL by guid, and asserts
+  the declared parameter order matches the node's slot groups. It carries a `--self-test`
+  that reproduces the shipped failure as a negative control — write that control, because
+  a gate for a whole-graph failure is one nobody will otherwise watch fail.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
