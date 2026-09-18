@@ -1092,7 +1092,7 @@ was not**.
    `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
 6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
    2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
-   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   the map's generic multiplier, retired 2026-09-18, was pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
    `ChainRangeFalloff` → 1. Mass and Time unchanged.
 7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
    replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by

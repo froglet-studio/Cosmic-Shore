@@ -59,8 +59,10 @@ prisms, mass conservation, and continuity-of-existence constraints are addressed
 ## 2. Architectural constraints (derived from the codebase — see AUDIT §1–2)
 
 - **(a) `ShipActionSO` assets are shared and must stay stateless.** No unlock state, no bound
-  ElementalFloats, no subscriptions on SOs. (The dead `ElementalFloatBinder` path is *not*
-  resurrected; the shared-asset state bugs in AUDIT §2#4 are the cautionary tale.)
+  ElementalFloats, no subscriptions on SOs. (`ElementalFloatBinder` — the dead, and separately
+  broken, path this rule used to point at — was **deleted on 2026-09-18**; the shared-asset state
+  bugs in AUDIT §2#4 remain the cautionary tale, and the rule now has no reachable counter-example
+  to resurrect. A `ShipActionSO`'s `ElementalFloat` is read live through `EvaluateLive(status)`.)
 - **(b) Per-vessel state lives in executors / vessel-root MonoBehaviours.**
 - **(c) The observation channel is `ResourceSystem.OnElementLevelChange`** — a per-vessel C# event
   (the ElementalBarsController/ElementalBars precedent). Not SOAP: the signal is vessel-internal, and

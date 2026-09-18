@@ -63,8 +63,11 @@ falls back to Jade — the wrong paint plus a console error).
 - **`ShipActionSO` assets are shared and stateless** (declared in
   `R_VesselActions/Data Containers/VesselActionSO.cs`): `StartAction/StopAction(registry,
   status)` per call; no unlock state, no bound ElementalFloats, no subscriptions on SOs
-  (last-initializer-wins in multiplayer is the shipped cautionary tale; the
-  `ElementalFloatBinder` call is deliberately commented dead).
+  (last-initializer-wins in multiplayer is the shipped cautionary tale). The
+  `ElementalFloatBinder` this line used to cite as "deliberately commented dead" was **deleted
+  2026-09-18** — it was dead AND broken (it set a nonexistent `"Ship"` property, and its "clone"
+  dropped `Min`/`Max`/`element`/`Enabled`). Read an SO's `ElementalFloat` through
+  `EvaluateLive(status)` at the point of use.
 - **State lives in executors**: `ShipActionExecutorBase` subclasses in
   `R_VesselActions/Executors/`, listed in the prefab's `ActionExecutorRegistry._executors`,
   resolved by `execs.Get<T>()`.
