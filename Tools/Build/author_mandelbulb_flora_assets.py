@@ -33,7 +33,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-import measure_mandelbulb_flora as model  # noqa: E402
+import mandelbulb_flora_model as M  # noqa: E402
+import measure_mandelbulb_flora as measure  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 PREFABS = ROOT / "Assets/_Prefabs/FloraAndFauna"
@@ -45,7 +46,8 @@ POPULATIONS = ROOT / "Tools/Build/author_flora_populations.py"
 
 # Stable guids. Generated once and then FIXED - regenerating them dangles every reference.
 GUID_FLORA_CS = "3d1f6c0ab8a74f5e9c2d47e1b60f8a31"
-GUID_LATTICE_CS = "9b47e2d05c1a4f38a6e09d3b7c815f24"
+GUID_SURFACE_CS = "ae15a77fd141196624e55b833545b01c"
+GUID_TABLES_CS = "4278eea1ad9158a0be0113fde4146748"
 GUID_PREFAB = "c5a90e73b1284d6fa73e8c14d9026bf7"
 GUID_CONFIG = {
     "Charge": "6e2b8d41f09c4a17b3d5e08c71a4f962",
@@ -97,39 +99,57 @@ NativeFormatImporter:
 
 
 def plan():
-    """Everything the assets say, derived from the model - never typed twice."""
-    a = model.authored()
-    bound = model.bound_for(a["pitch"])
-    world_pitch = a["pitch"] * a["shell_radius"]
-    out = {"authored": a, "world_pitch": world_pitch, "elements": {}}
-    for elem in ("Charge", "Mass", "Space", "Time"):
-        power = a["powers"][elem]
-        bulb = model.Bulb(power, a["pitch"], a["iterations"], a["bailout"])
-        order, selected, plates = model.plating(bulb, a["rules"], bound)
-        scale = a["scales"].get(elem, 1.0)
-        volume = sum(q["size"][0] * q["size"][1] * q["size"][2]
-                     for q in plates) * (world_pitch * scale) ** 3
+    """Everything the assets say, measured rather than typed twice."""
+    out = {"elements": {}}
+    for elem in ELEMENT_ID:
+        r = measure.element_report(elem)
         out["elements"][elem] = {
-            "power": power,
-            "cells": len(order),
-            "prisms": len(plates),
-            "scale": scale,
-            "volume": volume,
+            "prisms": r["prisms"],
+            "curves": r["curves"],
+            "volume": r["volume"],
+            "dims": r["dims"],
         }
     return out
 
 
+def rules_block(elem, indent):
+    """MandelbulbSurface.GrowthRules as Unity serialises a nested [Serializable] struct."""
+    r = M.rules_for(elem)
+    pad = " " * indent
+    return "\n".join([
+        pad + "Field: %d" % r.field,
+        pad + "SwirlDegrees: %g" % r.swirl,
+        pad + "FieldMix: %g" % r.field_mix,
+        pad + "Momentum: %g" % r.momentum,
+        pad + "StepSize: %g" % r.step,
+        pad + "MaxSteps: %d" % r.max_steps,
+        pad + "LanesPerSeed: %d" % r.lanes,
+        pad + "LaneGap: %g" % r.lane_gap,
+        pad + "HopSeek: %g" % r.hop_seek,
+        pad + "HopJitter: %g" % r.hop_jitter,
+        pad + "SeedCount: %d" % r.seeds,
+        pad + "SeedSpreadDegrees: %g" % r.seed_spread,
+        pad + "MaxTurnDegrees: %g" % r.max_turn,
+        pad + "RadiusMin: %g" % r.r_min,
+        pad + "RadiusMax: %g" % r.r_max,
+        pad + "MinRun: %d" % r.min_run,
+        pad + "LengthFactor: %g" % r.length_factor,
+        pad + "GirthTaper: %g" % r.girth_taper,
+    ])
+
+
 def flora_component_block(p):
-    a = p["authored"]
-    wp = p["world_pitch"]
-    rules = a["rules"]
     forms = []
-    for elem in ("Charge", "Mass", "Space", "Time"):
-        e = p["elements"][elem]
-        own = a["scales"].get(elem, 0.0)
-        forms.append(f"  - Element: {ELEMENT_ID[elem]}\n"
-                     f"    Power: {e['power']}\n"
-                     f"    PlateScale: {own:g}")
+    for elem in ELEMENT_ID:
+        cx, cy = M.CROSS_SECTION[elem]
+        forms.append("  - Element: %d\n" % ELEMENT_ID[elem]
+                     + "    CrossSection: {x: %g, y: %g}\n" % (cx, cy)
+                     + "    Rules:\n" + rules_block(elem, 6))
+    # The prefab's own seed prism is the ONLY prism that reads leafSize - every prism the
+    # plant lays carries a size measured from its own curve (MandelbulbFlora.AddHealthBlock).
+    sc = M.CROSS_SECTION["Space"]
+    seed = (sc[0] * M.SHELL_RADIUS, sc[1] * M.SHELL_RADIUS,
+            M.RULES["Space"][4] * M.SHELL_RADIUS)
     return (
         "  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
         "  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}\n"
@@ -142,32 +162,21 @@ def flora_component_block(p):
         "  domain: 0\n"
         "  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}\n"
         "  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}\n"
-        # The prefab's own seed prism is the ONLY prism that reads this - every prism the plant
-        # lays carries a size measured from its own patch (MandelbulbFlora.AddHealthBlock). One
-        # lattice cell, so the seed reads as the smallest thing the plant can grow.
-        f"  leafSize: {{x: {wp:.4g}, y: {wp:.4g}, z: {wp*rules['thickness']:.4g}}}\n"
+        "  leafSize: {x: %.4g, y: %.4g, z: %.4g}\n" % seed +
         "  growPeriod: 0.5\n"
         "  PlantPeriod: 15\n"
         "  stunDuration: 1\n"
         "  plantRadiusCellFraction: 0.6\n"
         "  plantRadiusCellFractionMin: 0.25\n"
         "  formByElement:\n" + "\n".join(forms) + "\n"
-        f"  power: {a['power_fallback']}\n"
-        f"  escapeIterations: {a['iterations']}\n"
-        f"  bailout: {a['bailout']:g}\n"
-        f"  latticePitch: {a['pitch']:g}\n"
-        f"  shellRadius: {a['shell_radius']:g}\n"
-        f"  riserBias: {rules['riser']:g}\n"
-        f"  coplanarCos: {rules['coplanar']:g}\n"
-        f"  planarTau: {rules['tau']:g}\n"
-        f"  maxPatchCells: {rules['max_cells']}\n"
-        f"  platePad: {rules['pad']:g}\n"
-        f"  plateThickness: {rules['thickness']:g}\n"
-        f"  containDrop: {rules['drop']:g}\n"
-        f"  maxTotalSpawnedObjects: {a['budget']}\n"
-        "  growthsPerTick: 6\n"
-        "  maxSpawnsPerFrame: 2\n"
-        "  plantRadius: 150\n")
+        + "  shellRadius: %g\n" % M.SHELL_RADIUS
+        + "  fieldWidth: %d\n" % M.FIELD_WIDTH
+        + "  weightSpread: %g\n" % M.WEIGHT_SPREAD
+        + "  weightSteps: %d\n" % M.WEIGHT_STEPS
+        + "  maxTotalSpawnedObjects: %d\n" % M.PRISM_BUDGET
+        + "  growthsPerTick: 8\n"
+        + "  maxSpawnsPerFrame: 3\n"
+        + "  plantRadius: 150\n")
 
 
 def build_prefab(p):
@@ -222,8 +231,8 @@ def config_text(p, elem):
         # past any other flora, so the population is deliberately tiny. It is in no SpawnProfile
         # either (opt-in from the Lifeform Matrix toy), so the cost lands only where a player
         # asked for it - but a cap of 3 still has to be affordable in the cell they ask in.
-        "  PopulationSize: 1",
-        "  MaxLivePopulation: 3",
+        "  PopulationSize: %d" % M.POPULATION_SIZE,
+        "  MaxLivePopulation: %d" % M.MAX_LIVE_POPULATION,
         # One whole form per child: a plant funds a daughter only once it has grown itself.
         f"  GrowthPerOffspring: {p['elements'][elem]['prisms']}",
         "  OffspringPerBirth: 1",
@@ -236,7 +245,7 @@ def config_text(p, elem):
         "    GrowPeriod: 0.5",
         # The budget IS the form: this element's own measured site count, so a mature plant is a
         # complete bulb and grazing frees exactly the budget regrowth needs.
-        f"    MaxTotalSpawnedObjects: {e['prisms']}",
+        "    MaxTotalSpawnedObjects: %d" % M.PRISM_BUDGET,
         "    PlantRadiusCellFraction: 0.6",
         "    PlantRadiusCellFractionMin: 0.25",
     ]
@@ -285,7 +294,8 @@ def main():
     changed = []
 
     write(SCRIPTS / "MandelbulbFlora.cs.meta", SCRIPT_META.format(guid=GUID_FLORA_CS), changed, args.check)
-    write(SCRIPTS / "MandelbulbLattice.cs.meta", SCRIPT_META.format(guid=GUID_LATTICE_CS), changed, args.check)
+    write(SCRIPTS / "MandelbulbSurface.cs.meta", SCRIPT_META.format(guid=GUID_SURFACE_CS), changed, args.check)
+    write(SCRIPTS / "MandelbulbSurfaceTables.cs.meta", SCRIPT_META.format(guid=GUID_TABLES_CS), changed, args.check)
     write(PREFABS / "MandelbulbFlora.prefab", build_prefab(p), changed, args.check)
     write(PREFABS / "MandelbulbFlora.prefab.meta", PREFAB_META.format(guid=GUID_PREFAB), changed, args.check)
 
@@ -327,9 +337,9 @@ def main():
           f"fileID {COMPONENT_FILEID})")
     for elem in ("Charge", "Mass", "Space", "Time"):
         e = p["elements"][elem]
-        print(f"  config   Mandelbulb Flora {elem:<7} power {e['power']:>2}  "
-              f"{e['cells']:>6} surface cells -> {e['prisms']:>5} prisms  "
-              f"prism scale {e['scale']:g}  volume {e['volume']:>9,.0f}")
+        print(f"  config   Mandelbulb Flora {elem:<7} {e['prisms']:>5} prisms over "
+              f"{e['curves']:>4} curves  dims {e['dims'][0]:.2f}..{e['dims'][1]:.2f}  "
+              f"volume {e['volume']:>9,.0f}")
     print(f"  reachable from Toy_LifeformMatrix (row 'Mandelbulb'); in NO SpawnProfile - opt-in.")
 
     if changed:

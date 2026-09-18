@@ -1,746 +1,430 @@
 #!/usr/bin/env python3
+"""Measure the Mandelbulb flora — the MODEL half of the species' tool trio.
+
+Everything this species claims about itself is a number from here: prism counts, per-prism
+and per-plant volume, the size spread, how evenly a plant covers its own surface, how
+deeply two prisms may interleave, and the Charge shield fit. The growth rule itself lives
+in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic table.
+
+    measure_mandelbulb_flora.py                 # the report
+    measure_mandelbulb_flora.py --check         # fail the build on a broken bound
+    measure_mandelbulb_flora.py --render DIR    # PNGs — you cannot judge a plant you have
+                                                # not looked at, and an offline model can
+                                                # report a perfect size distribution for a
+                                                # form that reads as gravel
+    measure_mandelbulb_flora.py --shields       # re-solve Charge's cross-section
+
+THE TWO BOUNDS, and why they are bounds rather than a zero. A lattice species can claim
+zero overlapping pairs because its prisms sit on a regular lattice. This one cannot and
+does not try: prisms are laid along CURVES that cross each other, so two ribbons meeting at
+an angle have bounding boxes that must overlap. It states instead (1) what fraction of
+TOUCHING pairs interpenetrate at all and (2) how deeply the worst of them does — a zero you
+cannot have is worse than a bound you can measure.
+
+THE CHARGE ORDERING. Armouring multiplies a plant's own silhouette by exactly
+0.5 * CIRCUMSCRIBING_SCALE^2 = 4.5, so a correctly fitted Charge plant is the DENSEST of
+the four while shielded and the sparsest once stripped. That ordering is the two-pass
+grazing cost made visible, and --check fails if it ever flips.
 """
-The offline MODEL for the Mandelbulb flora species - the authority for its prism counts, its
-volume ladder, its per-element plate scale and the measurements its C# cites in comments.
-
-This is a FRESH transcription of the growth rule, deliberately independent of
-Assets/_Scripts/Controller/Environment/FloraAndFauna/MandelbulbLattice.cs. It is the
-"measurement" half of the pair; verify_mandelbulb_flora_tables.py is the "the shipped file really
-does this" half, and the two are separate scripts on purpose - the transcription from a proven
-measurement into the asset is the step neither the measurement nor code review can see
-(Docs/ECOSYSTEM.md §34, the Schwarz P precedent).
-
-Usage
-    measure_mandelbulb_flora.py                 table + the authored-constant audit
-    measure_mandelbulb_flora.py --check         fail (exit 1) on any drift from the shipped C#
-    measure_mandelbulb_flora.py --render DIR    write oriented-box PNGs of each element's plant
-    measure_mandelbulb_flora.py --fit           report the plate fit and its headroom
-"""
-from __future__ import annotations
-
 import argparse
 import math
 import os
-import re
-import struct
 import sys
-import zlib
-from collections import deque
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-FLORA_CS = ROOT / "Assets/_Scripts/Controller/Environment/FloraAndFauna/MandelbulbFlora.cs"
-OCTAHEDRON_CS = ROOT / "Assets/_Scripts/Utility/OctahedronMeshGenerator.cs"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import mandelbulb_flora_model as M                                    # noqa: E402
 
-FACE6 = [(1, 0, 0), (-1, 0, 0), (0, 1, 0), (0, -1, 0), (0, 0, 1), (0, 0, -1)]
-N26 = [(a, b, c) for a in (-1, 0, 1) for b in (-1, 0, 1) for c in (-1, 0, 1) if (a, b, c) != (0, 0, 0)]
+# PrismStateManager.ActivateShield engages the octahedron CIRCUMSCRIBING the prism:
+# OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE on the box HALF-extents.
+CIRCUMSCRIBING_SCALE = 3.0
 
-# The largest FRACTION of touching plate pairs allowed to interpenetrate at all. Two patches that
-# meet along a ridge have bounding boxes that must overlap near the seam - it is geometry, not a
-# defect, and it reads as a joint - so this species states a BOUND instead of claiming a zero it
-# cannot have. ContainDrop is the other half of the same statement: it bounds how DEEP any
-# overlap goes. Both are gates; neither is slack to spend.
-MAX_INTERPENETRATING_FRACTION = 0.25
+# PrismScaleAnimator.SetTargetScale clamps per axis inside the setter, with no log and no
+# return value. Flora.AddHealthBlock calls AdmitTargetScale first, which widens it — but a
+# size under the FLOOR is still worth reporting, because it is the shape of a fitted size
+# that does not read on screen (Docs/ECOSYSTEM.md §34.9).
+CLAMP_FLOOR, CLAMP_CEILING = 0.5, 10.0
 
 
-# ── the set ───────────────────────────────────────────────────────────────────
+# ── geometry ───────────────────────────────────────────────────────────────────
 
-def inside(px, py, pz, power, iterations, bailout):
-    """The Mandelbulb membership test: v <- v^power + c from v = 0, c = the point.
-
-    The triplex power is the standard White/Nylander form, (r, th, ph)^n = (r^n, n*th, n*ph).
-    Nothing here describes a bulb.
-    """
-    x = y = z = 0.0
-    for _ in range(iterations):
-        r = math.sqrt(x * x + y * y + z * z)
-        if r > bailout:
-            return False
-        if r < 1e-12:
-            x, y, z = px, py, pz
-            continue
-        theta = math.acos(max(-1.0, min(1.0, z / r)))
-        phi = math.atan2(y, x)
-        rn = r ** power
-        st = math.sin(power * theta)
-        x = rn * st * math.cos(power * phi) + px
-        y = rn * st * math.sin(power * phi) + py
-        z = rn * math.cos(power * theta) + pz
-    return True
+def obb(surface, prism, shell, cross):
+    """World OBB: centre, the three axes, the three half-extents — exactly what
+    MandelbulbFlora.Decide lays (Pose, scaled by the shell radius)."""
+    p, fwd, up = M.pose(surface, prism)
+    p = M._mul(p, shell)
+    right = M._norm(M._cross(up, fwd))
+    up = M._cross(fwd, right)
+    girth = max(0.05, prism.girth) * shell
+    return (p, (right, up, fwd),
+            (max(0.005, cross[0] * girth) * 0.5,
+             max(0.005, cross[1] * girth) * 0.5,
+             max(0.005, prism.length * shell) * 0.5))
 
 
-class Bulb:
-    """Membership, shell and normals on the ambient integer lattice, memoised."""
-
-    def __init__(self, power, pitch, iterations=10, bailout=2.0):
-        self.power, self.pitch = power, pitch
-        self.iterations, self.bailout = iterations, bailout
-        self._in, self._shell = {}, {}
-
-    def inside(self, site):
-        v = self._in.get(site)
-        if v is None:
-            v = inside(site[0] * self.pitch, site[1] * self.pitch, site[2] * self.pitch,
-                       self.power, self.iterations, self.bailout)
-            self._in[site] = v
-        return v
-
-    def is_shell(self, site):
-        v = self._shell.get(site)
-        if v is None:
-            v = self.inside(site) and any(
-                not self.inside((site[0] + a, site[1] + b, site[2] + c)) for a, b, c in FACE6)
-            self._shell[site] = v
-        return v
-
-    def normal(self, site):
-        """The EXPOSED-FACE census. Docs/ECOSYSTEM.md §44 records why this and not the analytic
-        distance estimator's gradient: on a fractal boundary at voxel scale the gradient gives
-        neighbouring sites wildly different normals and the plant renders as confetti."""
-        nx = ny = nz = 0.0
-        for a, b, c in N26:
-            if self.inside((site[0] + a, site[1] + b, site[2] + c)):
-                continue
-            w = 1.0 / math.sqrt(a * a + b * b + c * c)
-            nx += a * w; ny += b * w; nz += c * w
-        m = math.sqrt(nx * nx + ny * ny + nz * nz)
-        if m < 1e-9:
-            r = math.sqrt(sum(t * t for t in site)) or 1.0
-            return (site[0] / r, site[1] / r, site[2] / r)
-        return (nx / m, ny / m, nz / m)
-
-    def seed(self, bound):
-        """The plant's starting site: march -z from the origin to the last site still inside."""
-        last = (0, 0, 0)
-        for s in range(1, bound + 1):
-            probe = (0, 0, -s)
-            if not self.inside(probe):
-                break
-            last = probe
-        return last
-
-    def walk(self, bound):
-        """The reachable shell in GROWTH ORDER: the 26-neighbour walk the plant spreads with."""
-        start = self.seed(bound)
-        seen, order = {start}, []
-        q = deque([start])
-        while q:
-            site = q.popleft()
-            order.append(site)
-            for a, b, c in N26:
-                nxt = (site[0] + a, site[1] + b, site[2] + c)
-                if max(abs(t) for t in nxt) > bound or nxt in seen:
-                    continue
-                seen.add(nxt)
-                if self.is_shell(nxt):
-                    q.append(nxt)
-        return start, order
+def support(axes, half, u):
+    return (abs(M._dot(axes[0], u)) * half[0]
+            + abs(M._dot(axes[1], u)) * half[1]
+            + abs(M._dot(axes[2], u)) * half[2])
 
 
-def bound_for(pitch):
-    return math.ceil(1.45 / pitch)
+def box_axes(a, b):
+    """The 15 separating-axis candidates for two boxes: six face normals and nine edge
+    crosses. A cross of two near-parallel axes is degenerate and is dropped rather than
+    normalised — a zero axis reports every pair as touching."""
+    out = list(a[1]) + list(b[1])
+    for u in a[1]:
+        for v in b[1]:
+            c = M._cross(u, v)
+            if M._dot(c, c) > 1e-12:
+                out.append(M._norm(c))
+    return out
 
 
-# ── small vector / eigen helpers ──────────────────────────────────────────────
-
-def cross(a, b):
-    return (a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0])
-
-
-def dot(a, b):
-    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+def octa_support(axes, half, u):
+    """An octahedron with semi-axes `half` along `axes`: its vertices are the six
+    +-half[i]*axes[i], so the support is the max rather than the sum."""
+    return max(abs(M._dot(axes[0], u)) * half[0],
+               abs(M._dot(axes[1], u)) * half[1],
+               abs(M._dot(axes[2], u)) * half[2])
 
 
-def unit(v):
-    m = math.sqrt(dot(v, v))
-    return (v[0] / m, v[1] / m, v[2] / m) if m > 1e-12 else (0.0, 0.0, 1.0)
+def octa_axes(a, b):
+    """Face normals (the eight octant planes, one per sign triple) plus edge crosses."""
+    def faces(o):
+        ax, h = o[1], o[2]
+        inv = [1.0 / max(h[i], 1e-9) for i in range(3)]
+        out = []
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                n = M._add(M._add(M._mul(ax[0], sx * inv[0]), M._mul(ax[1], sy * inv[1])),
+                           M._mul(ax[2], inv[2]))
+                out.append(M._norm(n))
+                n = M._add(M._add(M._mul(ax[0], sx * inv[0]), M._mul(ax[1], sy * inv[1])),
+                           M._mul(ax[2], -inv[2]))
+                out.append(M._norm(n))
+        return out
+
+    def edges(o):
+        ax, h = o[1], o[2]
+        v = [M._mul(ax[i], h[i] * s) for i in range(3) for s in (-1, 1)]
+        out = []
+        for i in range(6):
+            for j in range(i + 1, 6):
+                d = M._sub(v[i], v[j])
+                if M._dot(d, d) > 1e-12:
+                    out.append(M._norm(d))
+        return out
+
+    out = faces(a) + faces(b)
+    for u in edges(a):
+        for w in edges(b):
+            c = M._cross(u, w)
+            if M._dot(c, c) > 1e-12:
+                out.append(M._norm(c))
+    return out
 
 
-def jacobi3(a):
-    """Symmetric 3x3 eigen-decomposition by cyclic Jacobi rotations, eigenvalues descending."""
-    A = [row[:] for row in a]
-    V = [[1.0 if i == j else 0.0 for j in range(3)] for i in range(3)]
-    for _ in range(60):
-        if abs(A[0][1]) + abs(A[0][2]) + abs(A[1][2]) < 1e-14:
-            break
-        for p, q in ((0, 1), (0, 2), (1, 2)):
-            if abs(A[p][q]) < 1e-18:
-                continue
-            theta = (A[q][q] - A[p][p]) / (2.0 * A[p][q])
-            t = (1.0 if theta >= 0 else -1.0) / (abs(theta) + math.sqrt(theta * theta + 1.0))
-            c = 1.0 / math.sqrt(t * t + 1.0)
-            s = t * c
-            for k in range(3):
-                akp, akq = A[k][p], A[k][q]
-                A[k][p] = c * akp - s * akq
-                A[k][q] = s * akp + c * akq
-            for k in range(3):
-                apk, aqk = A[p][k], A[q][k]
-                A[p][k] = c * apk - s * aqk
-                A[q][k] = s * apk + c * aqk
-            for k in range(3):
-                vkp, vkq = V[k][p], V[k][q]
-                V[k][p] = c * vkp - s * vkq
-                V[k][q] = s * vkp + c * vkq
-    vals = [A[0][0], A[1][1], A[2][2]]
-    order = sorted(range(3), key=lambda i: -vals[i])
-    return [vals[i] for i in order], [[V[0][i], V[1][i], V[2][i]] for i in order]
-
-
-def fit_points(points):
-    n = len(points)
-    c = [sum(p[k] for p in points) / n for k in range(3)]
-    m = [[0.0] * 3 for _ in range(3)]
-    for p in points:
-        v = (p[0] - c[0], p[1] - c[1], p[2] - c[2])
-        for i in range(3):
-            for j in range(3):
-                m[i][j] += v[i] * v[j]
-    for i in range(3):
-        for j in range(3):
-            m[i][j] /= n
-    vals, vecs = jacobi3(m)
-    return c, vals, vecs
-
-
-# Smallest MINOR in-plane variance, in cells squared, at which a patch counts as genuinely
-# two-dimensional. Below it the covariance has rank under 2, the two smallest eigenvectors are
-# interchangeable, and the frame a principal-axis fit hands back can flip on a rounding
-# difference. Mirrors MandelbulbLattice.PlanarRankTolerance, which documents the choice.
-PLANAR_RANK_TOLERANCE = 0.02
-
-# Below this a dot product is not evidence about which way a plate faces: a patch's fitted normal
-# can come out very nearly PERPENDICULAR to the cell's own census normal, and then "flip it if the
-# dot is negative" is a coin toss decided by float noise. Mirrors
-# MandelbulbLattice.OrientationTolerance, which documents the choice.
-ORIENTATION_TOLERANCE = 1e-3
-
-
-def points_inward(normal, census, centroid):
-    """Whether a fitted normal points INTO the plant, deterministically: the census normal when
-    it is a real answer, else the radial, else a sign convention."""
-    d = dot(normal, census)
-    if abs(d) > ORIENTATION_TOLERANCE:
-        return d < 0.0
-    d = dot(normal, centroid)
-    if abs(d) > ORIENTATION_TOLERANCE:
-        return d < 0.0
-    for t in normal:
-        if abs(t) > ORIENTATION_TOLERANCE:
-            return t < 0.0
-    return False
-
-
-# ── the plating ───────────────────────────────────────────────────────────────
-
-def touching_scale(a, b):
-    """The uniform scale at which two centrally symmetric convex bodies first touch, exactly:
-
-        s* = max over the candidate axes of  |d.u| / (rA(u) + rB(u))
-
-    Below s* some axis separates them; above it none does, so s* >= 1 means the pair is clear as
-    it stands. Same closed form Tools/Build/fit_shield_clearance.py uses; pure stdlib here
-    because nothing else in this tool needs numpy. Self-tested in self_test().
-    """
-    axes, ra, rb = a["axes"], a["support"], b["support"]
-    cand = list(axes) + list(b["axes"])
-    for u in axes:
-        for v in b["axes"]:
-            c = cross(u, v)
-            if dot(c, c) > 1e-12:
-                cand.append(unit(c))
-    d = tuple(b["c"][k] - a["c"][k] for k in range(3))
+def touching_scale(a, b, shield=False):
+    """s* = max over the candidate axes of |d.u| / (rA(u) + rB(u)). Both bodies are
+    centrally symmetric about the prism centre, so this is closed form rather than a
+    bisection. s* >= 1 means the pair is clear as authored."""
+    d = M._sub(b[0], a[0])
+    if shield:
+        ha = tuple(h * CIRCUMSCRIBING_SCALE for h in a[2])
+        hb = tuple(h * CIRCUMSCRIBING_SCALE for h in b[2])
+        axes = octa_axes((a[0], a[1], ha), (b[0], b[1], hb))
+        sup = octa_support
+    else:
+        ha, hb, axes, sup = a[2], b[2], box_axes(a, b), support
     best = 0.0
-    for u in cand:
-        den = ra(u) + rb(u)
-        if den <= 1e-12:
+    for u in axes:
+        den = sup(a[1], ha, u) + sup(b[1], hb, u)
+        if den < 1e-12:
             continue
-        best = max(best, abs(dot(d, u)) / den)
+        s = abs(M._dot(d, u)) / den
+        if s > best:
+            best = s
     return best
 
 
-def as_box(plate, scale=1.0):
-    e, s = plate["e"], plate["size"]
-    half = tuple(0.5 * s[k] * scale for k in range(3))
-    return {"c": plate["c"], "axes": tuple(e),
-            "support": lambda u, e=e, h=half: sum(h[i] * abs(dot(u, e[i])) for i in range(3)),
-            "radius": math.sqrt(sum(h * h for h in half))}
+def near_pairs(boxes, reach, scale=1.0):
+    """Pairs whose bounding spheres meet, via a uniform hash grid keyed on `reach`.
 
-
-def as_octahedron(plate, circumscribing, scale=1.0):
-    """What a SHIELDED prism draws: the octahedron conv{+-S0, +-S1, +-S2} circumscribing the box,
-    reaching circumscribing/2 x size along each of its own axes (Docs/ECOSYSTEM.md §35)."""
-    e, s = plate["e"], plate["size"]
-    semi = [tuple(e[i][k] * 0.5 * s[i] * circumscribing * scale for k in range(3)) for i in range(3)]
-    axes = []
-    for sx in (1, -1):
-        for sy in (1, -1):
-            for sz in (1, -1):
-                a = tuple(sx * t for t in semi[0])
-                b = tuple(sy * t for t in semi[1])
-                c = tuple(sz * t for t in semi[2])
-                n = cross((b[0] - a[0], b[1] - a[1], b[2] - a[2]),
-                          (c[0] - a[0], c[1] - a[1], c[2] - a[2]))
-                if dot(n, n) > 1e-18:
-                    axes.append(unit(n))
-    return {"c": plate["c"], "axes": tuple(axes),
-            "support": lambda u, S=semi: max(abs(dot(u, s)) for s in S),
-            "radius": max(math.sqrt(dot(s, s)) for s in semi)}
-
-
-def plating(bulb, rules, bound):
-    """The prisms one plant lays, in growth order. Independent transcription of the rule in
-    MandelbulbLattice.Plating - see this module's docstring for why that is deliberate."""
-    riser, coplanar, tau = rules["riser"], rules["coplanar"], rules["tau"]
-    max_cells, pad, thickness, drop = rules["max_cells"], rules["pad"], rules["thickness"], rules["drop"]
-
-    _, order = bulb.walk(bound)
-
-    normal, selected = {}, set()
-    for s in order:
-        n = bulb.normal(s)
-        normal[s] = n
-        rm = math.sqrt(sum(t * t for t in s)) or 1.0
-        if 1.0 - abs(dot(s, n) / rm) >= riser:
-            selected.add(s)
-
-    claimed, plates, bucket = set(), [], {}
-    bucket_size = max(4.0, float(max_cells))
-
-    def near(centre):
-        key = tuple(int(math.floor(centre[k] / bucket_size)) for k in range(3))
-        out = []
-        for dx in (-1, 0, 1):
-            for dy in (-1, 0, 1):
-                for dz in (-1, 0, 1):
-                    out += bucket.get((key[0] + dx, key[1] + dy, key[2] + dz), [])
-        return out
-
-    for start in order:
-        if start not in selected or start in claimed:
-            continue
-        patch = [start]
-        claimed.add(start)
-        mean = list(normal[start])
-        q = deque([start])
-        while q and len(patch) < max_cells:
-            cur = q.popleft()
-            for a, b, c in N26:
-                nxt = (cur[0] + a, cur[1] + b, cur[2] + c)
-                if nxt not in selected or nxt in claimed:
-                    continue
-                nn = normal[nxt]
-                mm = math.sqrt(dot(mean, mean)) or 1.0
-                if dot(mean, nn) / mm < coplanar:
-                    continue
-                patch.append(nxt)
-                if len(patch) >= 4:
-                    _, vals, _ = fit_points(patch)
-                    if math.sqrt(max(0.0, vals[2])) > tau:
-                        patch.pop()
-                        continue
-                claimed.add(nxt)
-                q.append(nxt)
-                for k in range(3):
-                    mean[k] += nn[k]
-                if len(patch) >= max_cells:
-                    break
-
-        c, vals, vecs = fit_points(patch)
-        seed_normal = normal[start]
-        if len(patch) >= 3 and vals[1] > PLANAR_RANK_TOLERANCE:
-            e0, e1, e2 = vecs[0], vecs[1], vecs[2]
-            if points_inward(e2, seed_normal, c):
-                e2 = tuple(-t for t in e2)
-                e0 = tuple(-t for t in e0)
-        else:
-            e2 = unit(seed_normal)
-            axis = vecs[0] if vals[0] > PLANAR_RANK_TOLERANCE else (
-                (1.0, 0.0, 0.0) if abs(e2[2]) > 0.95 else (0.0, 0.0, 1.0))
-            along = dot(axis, e2)
-            e0 = tuple(axis[k] - along * e2[k] for k in range(3))
-            if dot(e0, e0) < 1e-12:
-                e0 = cross(e2, (0.0, 1.0, 0.0))
-            if dot(e0, e0) < 1e-12:
-                e0 = cross(e2, (1.0, 0.0, 0.0))
-            e0 = unit(e0)
-            e1 = cross(e2, e0)
-
-        h0 = h1 = 0.0
-        for p in patch:
-            v = (p[0] - c[0], p[1] - c[1], p[2] - c[2])
-            h0 = max(h0, abs(dot(v, e0)))
-            h1 = max(h1, abs(dot(v, e1)))
-        plate = {"seed": start, "c": tuple(c), "e": (tuple(e0), tuple(e1), tuple(e2)),
-                 "size": ((2 * h0 + 1.0) * pad, (2 * h1 + 1.0) * pad, thickness),
-                 "cells": len(patch)}
-
-        if drop > 0.0:
-            box = as_box(plate)
-            if any(touching_scale(box, as_box(o)) < drop for o in near(plate["c"])):
-                continue    # a hidden plate is a decision, not a retry: its cells stay claimed
-
-        key = tuple(int(math.floor(plate["c"][k] / bucket_size)) for k in range(3))
-        bucket.setdefault(key, []).append(plate)
-        plates.append(plate)
-
-    return order, selected, plates
-
-
-def pair_report(plates, body, radius_mult=1.05):
-    """Broadphase by bounding sphere, then the exact test. Returns (pairs, interpenetrating,
-    smallest s*)."""
-    bodies = [body(p) for p in plates]
-    cell = max(b["radius"] for b in bodies) * 2.0 or 1.0
+    `scale` inflates the radii the acceptance test uses — the armoured pass has to find the
+    pairs whose OCTAHEDRA meet, and testing the bare boxes' spheres there returns only pairs
+    that were already touching, which reports 100% fused whatever the fit is."""
+    cell = max(reach, 1e-6)
     grid = {}
-    for i, b in enumerate(bodies):
-        grid.setdefault(tuple(int(math.floor(b["c"][k] / cell)) for k in range(3)), []).append(i)
-    pairs = over = 0
-    worst = float("inf")
-    for key, idxs in grid.items():
-        near = []
+    for i, b in enumerate(boxes):
+        k = tuple(int(math.floor(b[0][a] / cell)) for a in range(3))
+        grid.setdefault(k, []).append(i)
+    seen = set()
+    for k, members in grid.items():
+        neigh = []
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 for dz in (-1, 0, 1):
-                    near += grid.get((key[0] + dx, key[1] + dy, key[2] + dz), [])
-        for i in idxs:
-            for j in near:
+                    neigh.extend(grid.get((k[0] + dx, k[1] + dy, k[2] + dz), ()))
+        for i in members:
+            for j in neigh:
                 if j <= i:
                     continue
-                a, b = bodies[i], bodies[j]
-                if math.dist(a["c"], b["c"]) > (a["radius"] + b["radius"]) * radius_mult:
+                if (i, j) in seen:
                     continue
-                pairs += 1
-                s = touching_scale(a, b)
-                worst = min(worst, s)
-                if s < 1.0:
-                    over += 1
-    return pairs, over, worst
+                seen.add((i, j))
+                d = M._sub(boxes[j][0], boxes[i][0])
+                ri = math.sqrt(sum(h * h for h in boxes[i][2]))
+                rj = math.sqrt(sum(h * h for h in boxes[j][2]))
+                if M._dot(d, d) <= ((ri + rj) * scale) ** 2:
+                    yield i, j
 
 
-# ── what the C# actually says ─────────────────────────────────────────────────
+# ── the report ─────────────────────────────────────────────────────────────────
 
-def authored():
-    """Parse the shipped MandelbulbFlora.cs so this tool cannot drift from the asset."""
-    src = FLORA_CS.read_text()
+_GROWN = {}
 
-    def num(field, cast=float):
-        m = re.search(rf"\b{field}\s*=\s*(-?[\d.]+)f?\s*;", src)
-        if not m:
-            sys.exit(f"measure_mandelbulb_flora: could not read '{field}' from {FLORA_CS.name}")
-        return cast(m.group(1))
 
-    powers, scales = {}, {}
-    for block in re.findall(r"new\(\)\s*\{([^}]*)\}", src):
-        elem = re.search(r"Element\s*=\s*Element\.(\w+)", block)
-        pw = re.search(r"Power\s*=\s*(\d+)", block)
-        if not elem or not pw:
+CANDIDATE_FACTOR = 4   # MandelbulbFlora.AddressCandidateFactor
+
+
+def grow_element(element, budget=None):
+    """The plant the game LAYS: the walk, then the claim (MandelbulbFlora.Claim), then the
+    budget. Measuring the raw walk would describe candidates rather than prisms."""
+    budget = budget or M.PRISM_BUDGET
+    key = (element, budget)
+    if key in _GROWN:
+        return _GROWN[key]
+    degree, tables = M.load_tables()
+    surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
+    rules = M.rules_for(element)
+    raw, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
+    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    kept = M.claim_filter(raw, centres)[:budget]
+    curves = len({p.curve for p in kept})
+    _GROWN[key] = (surface, rules, kept, curves)
+    return _GROWN[key]
+
+
+def element_report(element, shell=None, cross=None, budget=None):
+    shell = shell or M.SHELL_RADIUS
+    cross = cross or M.CROSS_SECTION[element]
+    surface, rules, prisms, curves = grow_element(element, budget)
+    boxes = [obb(surface, p, shell, cross) for p in prisms]
+
+    vols = [8 * b[2][0] * b[2][1] * b[2][2] for b in boxes]
+    dims = [d * 2 for b in boxes for d in b[2]]
+    reach = 2 * max(math.sqrt(sum(h * h for h in b[2])) for b in boxes)
+
+    # Consecutive prisms of one CURVE are a chain — they are laid end to end by
+    # construction and a curve that bends brings their boxes together, exactly as a
+    # lattice species' bonded neighbours touch. They are measured separately: the
+    # interpenetration BOUND is about ribbons that cross, which is the thing a growth rule
+    # can get wrong.
+    pairs = []
+    chain_worst = 1e9
+    for i, j in near_pairs(boxes, reach):
+        if prisms[i].curve == prisms[j].curve and abs(i - j) == 1:
+            chain_worst = min(chain_worst, touching_scale(boxes[i], boxes[j]))
             continue
-        powers[elem.group(1)] = int(pw.group(1))
-        sc = re.search(r"PlateScale\s*=\s*([\d.]+)f", block)
-        if sc and float(sc.group(1)) > 0.0:
-            scales[elem.group(1)] = float(sc.group(1))
-    if not powers:
-        sys.exit("measure_mandelbulb_flora: no formByElement entries found")
+        pairs.append((i, j))
+    inter = deep = 0
+    worst = 1e9
+    for i, j in pairs:
+        s = touching_scale(boxes[i], boxes[j])
+        if s < 1.0:
+            inter += 1
+        if s < 0.5:
+            deep += 1
+        worst = min(worst, s)
+
+    # The same statistic with the chain kept, which is what the armour has to be compared
+    # against (see shield_report).
+    all_touching = all_inter = 0
+    for i, j in near_pairs(boxes, reach):
+        all_touching += 1
+        if touching_scale(boxes[i], boxes[j]) < 1.0:
+            all_inter += 1
+
+    bins = [0] * 8
+    for p in prisms:
+        bins[min(7, int((1 - math.cos(p.theta)) / 2 * 8))] += 1
+
+    # Silhouette: how much of its own bounding sphere the plant's prisms cover, bare and
+    # armoured. The ratio of the two is a fact about the shield, not about the fit.
+    area = sum(2 * (b[2][0] * b[2][1] + b[2][1] * b[2][2] + b[2][2] * b[2][0]) * 4
+               for b in boxes)
 
     return {
-        "powers": powers,
-        "scales": scales,
-        "power_fallback": num("power", int),
-        "pitch": num("latticePitch"),
-        "iterations": num("escapeIterations", int),
-        "bailout": num("bailout"),
-        "shell_radius": num("shellRadius"),
-        "budget": num("maxTotalSpawnedObjects", int),
-        "rules": {
-            "riser": num("riserBias"),
-            "coplanar": num("coplanarCos"),
-            "tau": num("planarTau"),
-            "max_cells": num("maxPatchCells", int),
-            "pad": num("platePad"),
-            "thickness": num("plateThickness"),
-            "drop": num("containDrop"),
-        },
+        "element": element,
+        "prisms": len(prisms),
+        "curves": curves,
+        "volume": sum(vols),
+        "prism_volume": (min(vols), sum(vols) / len(vols), max(vols)),
+        "dims": (min(dims), max(dims)),
+        "size_span": max(vols) / max(min(vols), 1e-9),
+        "coverage": bins,
+        "pairs": len(pairs),
+        "interpenetrating": inter,
+        "interpenetrating_fraction": inter / max(1, len(pairs)),
+        "deep": deep,
+        "deep_fraction": deep / max(1, len(pairs)),
+        "all_pairs": all_touching,
+        "all_fraction": all_inter / max(1, all_touching),
+        "worst_scale": worst,
+        "chain_worst": chain_worst,
+        "prisms_list": prisms,
+        "area": area,
+        "boxes": boxes,
     }
 
 
-def circumscribing_scale():
-    """OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE - read, never assumed, because it is the
-    factor that turns a fitted prism into a fused plant if it ever moves."""
-    m = re.search(r"CIRCUMSCRIBING_SCALE\s*=\s*([\d.]+)f", OCTAHEDRON_CS.read_text())
-    if not m:
-        sys.exit("measure_mandelbulb_flora: could not read CIRCUMSCRIBING_SCALE")
-    return float(m.group(1))
+SHIELD_SAMPLE = 3000     # octahedron SAT is 88 axes; the estimate is sampled, seed fixed
 
 
-def self_test():
-    """Closed-form controls for touching_scale - a fitter nobody has watched fail is not a gate."""
-    e = ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
-
-    def octa(centre):
-        return {"c": centre, "axes": tuple(unit((sx, sy, sz)) for sx in (1, -1)
-                                           for sy in (1, -1) for sz in (1, -1)),
-                "support": lambda u: max(abs(dot(u, s)) for s in e), "radius": 1.0}
-
-    got = touching_scale(octa((0.0, 0.0, 0.0)), octa((3.0, 0.0, 0.0)))
-    assert abs(got - 1.5) < 1e-9, f"octahedron axis control: expected 1.5, got {got}"
-
-    def box(centre):
-        return {"c": centre, "axes": e,
-                "support": lambda u: sum(0.5 * abs(dot(u, e[i])) for i in range(3)), "radius": 0.87}
-
-    got = touching_scale(box((0.0, 0.0, 0.0)), box((3.0, 0.0, 0.0)))
-    assert abs(got - 3.0) < 1e-9, f"box control: expected 3.0, got {got}"
-    return True
+def sample(pairs, n=SHIELD_SAMPLE, seed=1):
+    """A fixed-seed sample. The armoured test is 88 separating axes per pair and a plant has
+    tens of thousands of armoured pairs, so the fraction is ESTIMATED — stated rather than
+    disguised, and at n=3000 the standard error on a fraction is under 1%."""
+    if len(pairs) <= n:
+        return pairs
+    import random as _r
+    return _r.Random(seed).sample(pairs, n)
 
 
-# ── render ────────────────────────────────────────────────────────────────────
-
-def encode_png(w, h, rgb):
-    raw = bytearray()
-    for y in range(h):
-        raw.append(0)
-        raw += rgb[y * w * 3:(y + 1) * w * 3]
-
-    def chunk(tag, data):
-        return (struct.pack(">I", len(data)) + tag + data
-                + struct.pack(">I", zlib.crc32(tag + data) & 0xffffffff))
-
-    return (b"\x89PNG\r\n\x1a\n"
-            + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(bytes(raw), 6)) + chunk(b"IEND", b""))
-
-
-CORNERS = [(-1, -1, -1), (1, -1, -1), (1, 1, -1), (-1, 1, -1),
-           (-1, -1, 1), (1, -1, 1), (1, 1, 1), (-1, 1, 1)]
-BOX_FACES = [([0, 3, 2, 1], 2, -1), ([4, 5, 6, 7], 2, 1), ([0, 1, 5, 4], 1, -1),
-             ([3, 7, 6, 2], 1, 1), ([0, 4, 7, 3], 0, -1), ([1, 2, 6, 5], 0, 1)]
-
-
-def render(plates, path, w=560, eye=(0.75, 0.45, 1.0), light=(0.45, 0.85, 0.40)):
-    """An ORIENTED-BOX z-buffer render. Screen-aligned squares cannot show what this species is
-    for - a prism's own frame, and the fact that no two of them share one."""
-    fwd = unit(eye)
-    right = unit(cross((0, 1, 0), fwd))
-    up = cross(fwd, right)
-    key = unit(light)
-
-    verts = []
-    for p in plates:
-        c, e, s = p["c"], p["e"], p["size"]
-        h = (s[0] * 0.5, s[1] * 0.5, s[2] * 0.5)
-        vs = []
-        for sx, sy, sz in CORNERS:
-            world = tuple(c[k] + e[0][k] * sx * h[0] + e[1][k] * sy * h[1] + e[2][k] * sz * h[2]
-                          for k in range(3))
-            vs.append((dot(world, right), dot(world, up), dot(world, fwd)))
-        verts.append(vs)
-    if not verts:
-        return
-
-    xs = [v[0] for vs in verts for v in vs]
-    ys = [v[1] for vs in verts for v in vs]
-    cx, cy = (min(xs) + max(xs)) * 0.5, (min(ys) + max(ys)) * 0.5
-    ext = max(max(xs) - min(xs), max(ys) - min(ys)) * 0.53 or 1.0
-    sc = w * 0.5 / ext
-
-    fb = bytearray(b"\x0b\x0c\x12" * (w * w))
-    zb = [1e30] * (w * w)
-
-    def tri(p0, p1, p2, col):
-        minx = max(0, int(math.floor(min(p0[0], p1[0], p2[0]))))
-        maxx = min(w - 1, int(math.ceil(max(p0[0], p1[0], p2[0]))))
-        miny = max(0, int(math.floor(min(p0[1], p1[1], p2[1]))))
-        maxy = min(w - 1, int(math.ceil(max(p0[1], p1[1], p2[1]))))
-        den = (p1[1] - p2[1]) * (p0[0] - p2[0]) + (p2[0] - p1[0]) * (p0[1] - p2[1])
-        if abs(den) < 1e-9 or minx > maxx:
-            return
-        inv = 1.0 / den
-        r, g, b = col
-        for py in range(miny, maxy + 1):
-            fy = py + 0.5
-            row = py * w
-            for px in range(minx, maxx + 1):
-                fx = px + 0.5
-                w0 = ((p1[1] - p2[1]) * (fx - p2[0]) + (p2[0] - p1[0]) * (fy - p2[1])) * inv
-                if w0 < 0.0 or w0 > 1.0:
-                    continue
-                w1 = ((p2[1] - p0[1]) * (fx - p2[0]) + (p0[0] - p2[0]) * (fy - p2[1])) * inv
-                if w1 < 0.0 or w1 > 1.0:
-                    continue
-                w2 = 1.0 - w0 - w1
-                if w2 < 0.0:
-                    continue
-                z = w0 * p0[2] + w1 * p1[2] + w2 * p2[2]
-                i = row + px
-                if z >= zb[i]:
-                    continue
-                zb[i] = z
-                o = i * 3
-                fb[o] = r; fb[o + 1] = g; fb[o + 2] = b
-
-    for pi, p in enumerate(plates):
-        e = p["e"]
-        for idx, axis, sign in BOX_FACES:
-            n = tuple(e[axis][k] * sign for k in range(3))
-            if dot(n, fwd) <= 0.0:
-                continue
-            lam = max(0.0, dot(n, key))
-            k = 0.20 + 0.80 * (lam ** 0.75)
-            col = tuple(min(255, int(c * k)) for c in (208, 214, 226))
-            q = [((verts[pi][i][0] - cx) * sc + w * 0.5,
-                  w * 0.5 - (verts[pi][i][1] - cy) * sc, -verts[pi][i][2]) for i in idx]
-            tri(q[0], q[1], q[2], col)
-            tri(q[0], q[2], q[3], col)
-
-    with open(path, "wb") as fh:
-        fh.write(encode_png(w, w, bytes(fb)))
-
-
-# ── report ────────────────────────────────────────────────────────────────────
-
-def pct(sorted_values, q):
-    return sorted_values[min(len(sorted_values) - 1, int(q * len(sorted_values)))]
+def shield_report(reports):
+    """Charge armoured against its siblings bare — the bar this species has to clear."""
+    out = {}
+    charge = reports["Charge"]
+    # The armour measurement keeps the CHAIN, unlike the bare one. A shield reaches
+    # 1.5 x leafSize, and a prism's leafSize includes its LENGTH, so a ribbon laid end to end
+    # fuses into a solid tube along its own curve unless something is done about it — which is
+    # exactly the Skein rail's finding (a rail's armour meets its neighbour's and "which rail am
+    # I on" loses its answer). Excluding the chain here would measure everything except the one
+    # thing that goes wrong. What is done about it is that Charge's ribbon is DASHED
+    # (LengthFactor 0.45): its prisms are shorter than the step that spaces them, so the armour
+    # has room to close and the dashes are what the octahedra fill in.
+    reach = 2 * CIRCUMSCRIBING_SCALE * max(
+        math.sqrt(sum(h * h for h in b[2])) for b in charge["boxes"])
+    pairs = sample(list(near_pairs(charge["boxes"], reach, CIRCUMSCRIBING_SCALE)))
+    inter = sum(1 for i, j in pairs
+                if touching_scale(charge["boxes"][i], charge["boxes"][j], shield=True) < 1.0)
+    out["armoured_pairs"] = len(pairs)
+    out["armoured_interpenetrating"] = inter
+    out["armoured_fraction"] = inter / max(1, len(pairs))
+    # The bar is measured the same way: ALL touching pairs, chain included.
+    out["sibling_bare"] = max(reports[e]["all_fraction"] for e in ("Mass", "Space", "Time"))
+    out["charge_bare_area"] = charge["area"]
+    out["armoured_area"] = charge["area"] * 0.5 * CIRCUMSCRIBING_SCALE ** 2
+    out["sibling_bare_area"] = sum(reports[e]["area"] for e in ("Mass", "Space", "Time")) / 3
+    return out
 
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--check", action="store_true", help="exit 1 on drift from the shipped C#")
+    ap.add_argument("--check", action="store_true")
     ap.add_argument("--render", metavar="DIR")
-    ap.add_argument("--fit", action="store_true")
+    ap.add_argument("--shields", action="store_true",
+                    help="solve Charge's cross-section against its armour and print it")
     args = ap.parse_args()
 
-    self_test()
-    a = authored()
-    pitch, rules = a["pitch"], a["rules"]
-    radius, budget = a["shell_radius"], a["budget"]
-    world_pitch = pitch * radius
-    bound = bound_for(pitch)
-    shield = circumscribing_scale()
-    failures = []
+    if args.shields:
+        return solve_charge()
 
-    print(f"Mandelbulb flora - offline model   (pitch {pitch}, iters {a['iterations']}, "
-          f"bailout {a['bailout']:g}, shellRadius {radius:g})")
-    print(f"  world cell {world_pitch:.3f}u   plating: riser {rules['riser']:g}, coplanar "
-          f"{rules['coplanar']:g}, tau {rules['tau']:g} cells, patch <= {rules['max_cells']} cells, "
-          f"pad {rules['pad']:g}, thickness {rules['thickness']:g} cells, drop {rules['drop']:g}")
-    print(f"  authored per-plant budget {budget}\n")
+    reports = {}
+    print("Mandelbulb flora — measured from the shipped surface table\n")
+    print(f"  {'element':8s} {'prisms':>6} {'curves':>6} {'volume':>10} {'per prism':>22} "
+          f"{'dims':>16} {'touching / deep':>28}")
+    for element in M.ELEMENTS:
+        r = element_report(element)
+        reports[element] = r
+        lo, mean, hi = r["prism_volume"]
+        print(f"  {element:8s} {r['prisms']:>6} {r['curves']:>6} {r['volume']:>10,.0f} "
+              f"{lo:>6.2f}/{mean:>6.2f}/{hi:>6.2f} "
+              f"{r['dims'][0]:>6.2f}..{r['dims'][1]:>6.2f} "
+              f"{r['interpenetrating']:>5}/{r['pairs']:<5} "
+              f"{r['interpenetrating_fraction']:>5.1%}  deep {r['deep_fraction']:>5.1%}")
 
-    print(f"  {'element':<8} {'power':>5} {'cells':>7} {'plated':>7} {'prisms':>7} {'radius':>7} "
-          f"{'long side p10/50/90/max (u)':>30} {'aspect p50/p90':>15} {'volume':>10} {'%budget':>8}")
-    grown = {}
-    total_volume = 0.0
-    for elem in ("Charge", "Mass", "Space", "Time"):
-        power = a["powers"].get(elem)
-        if power is None:
-            failures.append(f"{elem} has no authored power")
-            continue
-        bulb = Bulb(power, pitch, a["iterations"], a["bailout"])
-        order, selected, plates = plating(bulb, rules, bound)
-        scale = a["scales"].get(elem, 1.0)
-        grown[elem] = (bulb, plates, scale)
+    print("\n  coverage (equal-AREA bands in cos theta, pole to pole):")
+    for element in M.ELEMENTS:
+        print(f"    {element:8s} {reports[element]['coverage']}")
 
-        k = world_pitch * scale
-        longs = sorted(max(p["size"][0], p["size"][1]) * k for p in plates)
-        asp = sorted(max(p["size"][0], p["size"][1]) / max(1e-9, min(p["size"][0], p["size"][1]))
-                     for p in plates)
-        maxr = max(math.sqrt(dot(p["c"], p["c"])) for p in plates) * world_pitch
-        volume = sum(p["size"][0] * p["size"][1] * p["size"][2] for p in plates) * k ** 3
-        total_volume += volume
-        span = (f"{pct(longs,.1):.1f}/{pct(longs,.5):.1f}/{pct(longs,.9):.1f}/{longs[-1]:.1f}")
-        print(f"  {elem:<8} {power:>5} {len(order):>7} {len(selected):>7} {len(plates):>7} "
-              f"{maxr:>6.0f}u {span:>30} "
-              f"{pct(asp,.5):>7.2f}/{pct(asp,.9):<7.2f} {volume:>10,.0f} "
-              f"{100.0*len(plates)/budget:>7.0f}%")
+    s = shield_report(reports)
+    print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
+          f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
+    print(f"  silhouette: Charge bare {s['charge_bare_area']:,.0f}, armoured "
+          f"{s['armoured_area']:,.0f}, siblings bare {s['sibling_bare_area']:,.0f}")
 
-        if len(plates) > budget:
-            failures.append(
-                f"{elem} (power {power}) needs {len(plates)} prisms but the authored budget is "
-                f"{budget} - a plant of this element can never complete its form")
-
-    print(f"\n  a full set of all four = {sum(len(p) for _, p, _ in grown.values()):,} prisms, "
-          f"{total_volume:,.0f} volume")
-
-    if args.fit or args.check:
-        print(f"\n  plate fit - exact separating-axis over each element's own measured plates")
-        print(f"  (a CHARGE plant's leaves are SHIELDED by law, and a shield replaces the box with "
-              f"the\n   octahedron circumscribing it - {shield:g}x the HALF-extents, "
-              f"Docs/ECOSYSTEM.md §35 - so Charge is\n   fitted against its ARMOUR and the other "
-              f"three against the box they draw):\n")
-        print(f"    {'element':<8} {'body':<11} {'interpenetrating':>18} {'deepest s*':>11} "
-              f"{'scale':>7}")
-
-        bare_fraction = {}
-        armoured_fraction = {}
-        for elem, (bulb, plates, scale) in grown.items():
-            pairs, over, worst = pair_report(plates, lambda p, s=scale: as_box(p, s))
-            frac = over / max(1, pairs)
-            bare_fraction[elem] = frac
-            print(f"    {elem:<8} {'box':<11} {over:>7} of {pairs:<7} {worst:>11.3f} {scale:>7.3f}")
-            if frac > MAX_INTERPENETRATING_FRACTION:
-                failures.append(
-                    f"{elem}: {100*frac:.1f}% of touching plate pairs interpenetrate, over the "
-                    f"stated {100*MAX_INTERPENETRATING_FRACTION:.0f}% bound - the plant is fusing")
-            if worst < rules["drop"] - 1e-3:
-                failures.append(
-                    f"{elem}: two plates interleave to s* {worst:.3f}, deeper than containDrop "
-                    f"{rules['drop']:g} - the drop is not bounding what it claims to")
-
-        for elem, (bulb, plates, scale) in grown.items():
-            if elem not in a["scales"]:
-                continue
-            pairs, over, worst = pair_report(plates, lambda p, s=scale: as_octahedron(p, shield, s))
-            armoured_fraction[elem] = over / max(1, pairs)
-            print(f"    {elem:<8} {'octahedron':<11} {over:>7} of {pairs:<7} {worst:>11.3f} "
-                  f"{scale:>7.3f}")
-
-        # An armoured element's bar is its SIBLINGS: a Charge plant wearing its shields must be no
-        # more fused than an ordinary plant is bare. That is a measured bar rather than an
-        # invented one, and it moves if the species is ever retuned.
-        peer_worst = max((f for e, f in bare_fraction.items() if e not in a["scales"]), default=0.0)
-        for elem, frac in armoured_fraction.items():
-            if frac > peer_worst:
-                failures.append(
-                    f"{elem} armoured: {100*frac:.1f}% of its octahedron pairs interpenetrate, "
-                    f"worse than the worst BARE element ({100*peer_worst:.1f}%) - a shielded "
-                    f"{elem} plant would read more solid than an ordinary one")
-
-        # Charge's density inversion: sparse bare, DENSEST armoured. Measured as the silhouette a
-        # plant's prisms present - the box's is 4 x h0 h1, the circumscribing octahedron's rhombus
-        # is 18 x h0 h1, so armouring multiplies a plant's own coverage by exactly 4.5.
-        octahedron_gain = 0.5 * shield ** 2
-        for elem, (bulb, plates, scale) in grown.items():
-            if elem not in a["scales"]:
-                continue
-            bare = sum(p["size"][0] * p["size"][1] for p in plates) * scale ** 2
-            armoured = bare * octahedron_gain
-            peers = [sum(q["size"][0] * q["size"][1] for q in pl) * sc ** 2
-                     for e2, (_, pl, sc) in grown.items() if e2 not in a["scales"]]
-            peer = sum(peers) / len(peers) if peers else 0.0
-            print(f"\n    {elem} covers {bare:,.0f} cells^2 bare and {armoured:,.0f} armoured "
-                  f"({octahedron_gain:g}x), against the other elements' bare {peer:,.0f} "
-                  f"({armoured/max(peer,1e-9):.2f}x)")
-            if armoured <= peer:
-                failures.append(
-                    f"{elem}'s armoured footprint ({armoured:,.0f}) no longer exceeds the other "
-                    f"elements' bare plate ({peer:,.0f}) - the shielded plant would read SPARSER "
-                    f"than its siblings, which inverts the element")
+    cap = M.MAX_LIVE_POPULATION
+    heaviest = max(r["volume"] for r in reports.values())
+    print(f"\n  budget: {M.PRISM_BUDGET} live prisms/plant, cap {cap} plants "
+          f"-> {cap * heaviest:,.0f} volume and {cap} always-on heart colliders")
+    print("  in NO SpawnProfile — opt-in from the Lifeform Matrix toy, so it costs no "
+          "shipped cell anything until somebody puts it in one.")
 
     if args.render:
-        os.makedirs(args.render, exist_ok=True)
-        for elem, (bulb, plates, scale) in grown.items():
-            path = os.path.join(args.render, f"mandelbulb_{elem.lower()}.png")
-            render(plates, path)
-            print(f"  wrote {path}")
+        render_all(reports, args.render)
 
-    if failures:
-        print("\nFAIL")
-        for f in failures:
-            print(f"  - {f}")
-        return 1
     if args.check:
-        print("\nOK - the shipped constants are self-consistent and every element can complete.")
+        bad = []
+        for element, r in reports.items():
+            if r["deep_fraction"] > 0.05:
+                bad.append(f"{element}: {r['deep_fraction']:.1%} of touching pairs are DEEPLY "
+                           f"interleaved (s* < 0.5; bound 5%) — the claim rule is not holding")
+            if r["worst_scale"] < 0.35:
+                bad.append(f"{element}: two prisms interleave to s* {r['worst_scale']:.3f} "
+                           f"(bound 0.35) — one is essentially inside the other")
+            if r["size_span"] < 3.0:
+                bad.append(f"{element}: prism volume spans only {r['size_span']:.1f}x — the "
+                           f"girth taper is what stops a plant reading as one material at "
+                           f"one scale")
+            filled = sum(1 for b in r["coverage"] if b > 0.02 * r["prisms"])
+            if filled < 6:
+                bad.append(f"{element}: only {filled}/8 equal-area bands carry 2% of the "
+                           f"plant — it has grown a cap, not a bulb")
+        if s["armoured_fraction"] > s["sibling_bare"]:
+            bad.append(f"Charge wearing its shields is MORE fused ({s['armoured_fraction']:.1%}) "
+                       f"than a sibling is bare ({s['sibling_bare']:.1%})")
+        if not s["armoured_area"] > s["sibling_bare_area"] > s["charge_bare_area"]:
+            bad.append("the Charge ordering flipped: armoured must be the DENSEST of the four "
+                       "and bare the sparsest — that ordering IS the two-pass grazing cost")
+        if bad:
+            print("\nFAIL")
+            for b in bad:
+                print("  " + b, file=sys.stderr)
+            return 1
+        print("\nOK: every bound holds.")
     return 0
+
+
+def solve_charge():
+    """Shrink Charge's ribbon uniformly (its ASPECT is its identity, so uniformly) until
+    its armour is no more fused than a sibling is bare."""
+    reports = {e: element_report(e) for e in ("Mass", "Space", "Time")}
+    bar = max(r["interpenetrating_fraction"] for r in reports.values())
+    print(f"bar: a sibling's bare interpenetration is {bar:.1%}")
+    base = M.CROSS_SECTION["Space"]
+    for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
+        cross = (base[0] * k, base[1] * k)
+        r = element_report("Charge", cross=cross)
+        reach = 2 * CIRCUMSCRIBING_SCALE * max(
+            math.sqrt(sum(h * h for h in b[2])) for b in r["boxes"])
+        pairs = sample(list(near_pairs(r["boxes"], reach, CIRCUMSCRIBING_SCALE)))
+        inter = sum(1 for i, j in pairs
+                    if touching_scale(r["boxes"][i], r["boxes"][j], shield=True) < 1.0)
+        frac = inter / max(1, len(pairs))
+        mark = "  <= clears" if frac <= bar else ""
+        print(f"  k={k:.2f}  cross=({cross[0]:.4f}, {cross[1]:.4f})  "
+              f"armoured {inter}/{len(pairs)} = {frac:.1%}{mark}")
+    return 0
+
+
+def render_all(reports, out_dir):
+    import mandelbulb_flora_render as R
+    os.makedirs(out_dir, exist_ok=True)
+    for element, r in reports.items():
+        path = os.path.join(out_dir, f"mandelbulb_{element.lower()}.png")
+        R.render(r["boxes"], path)
+        print(f"  rendered {path}")
 
 
 if __name__ == "__main__":

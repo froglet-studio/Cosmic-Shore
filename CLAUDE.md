@@ -427,69 +427,70 @@ trio, and the traps).
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
   always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
-- **A species' shape may be a FUNCTION, and then it is addressed in the AMBIENT lattice — and a
-  VOXEL SHELL OF A BLOB IS A BLOB.** `MandelbulbFlora` is the fourth growth family: it grows over
+- **A species' shape may be a FUNCTION, and then the plant's job is only to DISCOVER it — as a cage
+  of curves, never as a skin.** `MandelbulbFlora` is the fourth growth family: it traces curves over
   the surface of the **Mandelbulb** (the escape-time fractal of `v -> v^n + c` in triplex
-  coordinates), spreading from a seed at its footing until it has covered the form. **§34's "grow on
-  the surface's OWN tile, never a fitted grid" is a rule about surfaces that HAVE an exact tiling**
-  — a fractal boundary has none (not periodic, not quasiperiodic, no repeat unit, not a smooth
-  manifold), so inventing one would BE the fitted grid §34 forbids. It addresses in the ambient
-  `Vector3Int` lattice instead, which keeps the property that rule actually protects: **sameness is
-  an integer address**, membership a pure function of three integers, so occupancy is exact, no
-  tolerance can drift, fronts meeting from opposite sides agree by construction, and nothing is
-  baked — membership IS the closed form. Reproduction is therefore the ordinary per-plant growth
-  quota, not a colony cycle: one plant is one whole bulb in its own frame. **The element is the
-  fractal ORDER** (Charge 8 — the classic bulb — Mass 5, Space 3, Time 12), authored on the PREFAB
-  because the config's element is ROLLED, and resolved at `LifeForm.Initialize` like every other
-  elemental law. **Its first cut plated every surface cell with one prism size and read as a lumpy
-  sphere**, and the reason generalises past this species: a Mandelbulb's form IS its TERRACING, and
-  a closed skin hides terracing by definition — from outside you only see the tread tops. Raising
-  the resolution made it a FINER lumpy sphere, and four candidates that kept the surface closed were
-  built and rejected (an adaptive octree of coplanar blocks, radial struts, concentric geometric
-  shells, surface-following depth layers); concentric shells fail for a reason worth carrying on its
-  own — **the interior is a solid blob, so a shell cut inside it is just a sphere**, and all of a
-  fractal's information lives on its boundary. The rule that works is the inverse and both halves
-  are MEASUREMENTS, so this species authors no leaf at all: the plant grows on the terrace **RISERS**
-  (a cell is plated iff `1 - |n·r̂| >= riserBias`, which leaves the treads open so you see into the
-  object), and a prism is a **PATCH** rather than a cell (adjacent riser cells whose normals agree
-  and which stay flat region-grow into one patch, and one prism takes the patch's own principal
-  frame and measured extents) — so a long flat riser is one long strut, a twisting seam a scatter of
-  chips, and prism size spans **16x** inside one plant with a distinct frame on every prism. Two
-  implementation details are load-bearing: **thickness is ABSOLUTE, not a fraction of the plate**
-  (a proportional thickness makes a long plate a slab, whose volume lands on the Frenzy ladder as
-  the CUBE of its length), and **a patch of rank under 2 must not take a principal-axis frame** —
-  a two-cell patch has one non-zero eigenvalue, so the two smallest eigenvectors are interchangeable
-  and the frame is arbitrary, flipping on a rounding difference between machines (12 of 2,596 plates
-  disagreed between the model and the C# until the rank test landed), and **an orientation decided
-  by the SIGN of a quantity that can be zero is not decided at all** — "flip the fitted normal
-  outward if `n·census < 0`" is a coin toss when the two are nearly perpendicular, which 8 of 1,848
-  Space plates reached, and on a centrally-symmetric prism the flip is INVISIBLE on screen so only
-  a cross-check finds it (answered in order by census normal → radial → a sign convention). Two more
-  things it measured rather than assumed, and the first INVERTS §34: **the analytic distance
-  estimator's gradient is unusable as a prism orientation at voxel scale on a fractal boundary**
-  (neighbouring cells get wildly different normals and the plant renders as confetti), so
-  orientation comes from the EXPOSED-FACE census — the same exact integer occupancy the address is;
-  and **growth adjacency must be 26, not 6** (a negative control strands a 6-connected walk). It
-  also **cannot claim zero interpenetration and does not try** — two patches meeting along a ridge
-  have bounding boxes that must overlap — so it states two BOUNDS and gates both: at most 25% of
-  touching pairs may interpenetrate at all (shipped 17.2–17.9%), and `containDrop` refuses to lay a
-  plate that would sit essentially inside one already laid, which is simultaneously how deeply any
-  two prisms may interleave. Its CHARGE variant is fitted against its ARMOUR, not its box (§35), at
-  a uniform 0.50, and the bar it clears is its SIBLINGS rather than an invented number: **a Charge
-  plant wearing its shields must be no more fused than an ordinary plant is bare** (11.9% against
-  17.9%). **Measured, it inverts with the shield rather than just shrinking**: armouring multiplies
-  a plant's silhouette by exactly 4.5, so Charge covers **3,738** cells² bare and **16,822**
-  armoured against the other three elements' bare **14,126** — the DENSEST of the four while
-  shielded and much the sparsest once stripped, which is the two-pass grazing cost made visible, and
-  `--check` fails the build if that ordering ever flips. It is in **no `SpawnProfile`** (opt-in from
-  the Lifeform Matrix toy, the worm colony's posture), so it costs no shipped cell anything until
-  somebody puts it in one — which matters here, because at `MaxLivePopulation` 3 its volume ceiling
-  is 381k, 11.6% of the boot world's Frenzy ladder and MORE than the Blob cell's whole one. The
-  species ships the tool trio a new flora is expected to: a MODEL
-  (`measure_mandelbulb_flora.py`), an ASSET generator, and a verifier that **compiles and RUNS the
-  shipped C#** against a fresh reference walk — sites, order, normals AND the plating patch for
-  patch — with a self-test that mutates the file six ways and asserts each trips the gate.
-  `Docs/ECOSYSTEM.md §44`.
+  coordinates), dense ALONG each curve and sparse ACROSS it, so a plant is an open lattice of
+  ribbons you see the fractal through. **§34's "grow on the surface's OWN tile, never a fitted grid"
+  is a rule about surfaces that HAVE an exact tiling** — a fractal boundary has none (not periodic,
+  not quasiperiodic, no repeat unit, not a smooth manifold), so inventing one would BE the fitted
+  grid §34 forbids. It addresses on the SPHERE instead, which keeps the property that rule actually
+  protects: a prism is stamped ONCE with `(theta, phi)`, its heading in that point's own tangent
+  basis, its radial lift and its size, and its pose is then a pure function of that address and the
+  surface — nothing baked, no bond table, no tolerance that can drift. **Its first cut plated every
+  surface cell and read as a lumpy sphere, and the reason generalises: a Mandelbulb's form IS its
+  TERRACING, and a closed crust hides terracing by definition** (raising the resolution makes it a
+  FINER lumpy sphere; four closed-surface candidates were built and rejected, and concentric shells
+  fail for a reason worth carrying alone — **the interior is a solid blob, so a shell cut inside it
+  is just a sphere**). A riser-and-patch PLATING was the second cut and is also retired: it was
+  still a sampling of an AREA, and what works is anisotropy. **The fractal is evaluated EXACTLY
+  ONCE, offline**: its outer surface is ray-marched into a spherical height field `R(theta, phi)`
+  and fitted to spherical harmonics, and the shipped table is those coefficients. Three measurements
+  force that representation — **the distance estimator's GRADIENT is unusable as an orientation at
+  this scale** (48 degrees of swing between surface points 0.013 apart, so every curve dies on the
+  turn gate; the first build of this rule rendered a black screen for that reason alone); **the fit
+  does not converge and does not need to** (degree 16 lands at R^2 0.90-0.97, degree 12 lands at
+  **0.11** for the power-12 bulb because its structure sits exactly at `l = 12` and aliases, and the
+  plant needs the bulb's CHARACTER rather than the bulb); and **three modes explain the family**,
+  because the surface's response to the Julia constant is linear over a useful basin — they ARE
+  `dR/dc`, so **four ray-marches recover the same 3-space that fifty-six do** and **a whole plant is
+  the shared basis plus THREE FLOATS**. Addressing by emission INDEX instead does not work and was
+  measured: nudging `c` by 0.0002 moves the median prism 23% of the bulb, because tracing is
+  sequential and every discrete decision reshuffles; the same nudge moves a `(theta, phi)` address
+  by 0.00002. Two more rules come out of the address: **the lift is RADIAL** (along the ray the
+  prism and its surface point share — storing it along the NORMAL leaves the tangential difference
+  behind, measured at 2.4 prism lengths), and **LENGTH is AUTHORED, never derived** (deriving it
+  welds the chain and lets prisms stretch 20x under a morph, and a prism whose length is a function
+  of the morph has a VOLUME that is too, which lands straight on the cell's Frenzy ladder). **Three
+  defects it found are one class of mistake and all three generalise.** A **well-spread generator is
+  only well-spread over its whole output**: the Fibonacci sphere walks z monotonically, so an NMS
+  that stops at `want` seeds yields a polar CAP — measured, 78% of a plant in the top eighth of the
+  sphere by area and nothing below the equator. A **budget-limited walk must be breadth-first**:
+  seed-major traversal spent 6,000 prisms on two seeds and grew a belt. And **a dial whose reference
+  is a ceiling nothing reaches is a dial that does nothing** — the girth taper keyed on the lane
+  index, spread over `LanesPerSeed` generations a plant never reaches, and the measured prism-volume
+  span was 1.4x; keyed on the RUN LENGTH it is 3.2-8.7x. **It states BOUNDS rather than a zero**,
+  because curves CROSS — that is what a cage is — so two ribbons meeting at an angle have bounding
+  boxes that must overlap: at most 5% of touching pairs deeply interleaved (shipped 0.0-3.1%) and no
+  pair below separating scale 0.35, held by `MandelbulbFlora.Claim`, which refuses a prism within
+  **0.70 x its own length** of one already laid — under 1 for a structural reason rather than a
+  tuned one, since consecutive prisms sit exactly one length apart so the chain clears BY
+  CONSTRUCTION. Its CHARGE variant is fitted against its ARMOUR (§35), and **the lever is the
+  LENGTH, not the width**: a prism's `leafSize` includes its length, so a ribbon laid end to end
+  fuses into a solid tube along its own curve — the Skein rail's finding — and shrinking the
+  cross-section cannot reach it (measured, still 84% fused at a quarter width). **Charge's ribbon is
+  DASHED** instead, its prisms shorter than the step that spaces them, and measured it inverts with
+  the shield exactly as it should: 34.6% fused armoured against its siblings' bare 94.9%, and a
+  silhouette of 22,690 bare / 102,107 armoured against the siblings' 79,962 — the DENSEST of the
+  four while shielded and much the sparsest once stripped, with `--check` failing the build if that
+  ordering flips. It is in **no `SpawnProfile`** (opt-in from the Lifeform Matrix toy), so it costs
+  no shipped cell anything until somebody puts it in one — which matters, because at
+  `MaxLivePopulation` 3 its Space variant's ceiling alone is more than the Blob cell's whole Frenzy
+  ladder. The species ships the tool trio a new flora is expected to plus a BAKE, and the verifier
+  **compiles and RUNS the shipped C#** with seven negative controls — while stating plainly what it
+  does NOT prove: the walk is held by its statistics and not prism for prism, because a sequential
+  recurrence with a turn gate is chaotic in its last bits and the C# runs in float32 where the model
+  runs in float64. `Docs/ECOSYSTEM.md §44`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside

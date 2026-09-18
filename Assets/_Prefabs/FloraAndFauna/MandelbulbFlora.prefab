@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 2.025, y: 2.025, z: 0.7695}
+  leafSize: {x: 4.125, y: 1.5, z: 3.75}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -64,32 +64,96 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    Power: 8
-    PlateScale: 0.5
+    CrossSection: {x: 0.0275, y: 0.01}
+    Rules:
+      Field: 0
+      SwirlDegrees: 25
+      FieldMix: 0.9
+      Momentum: 0.35
+      StepSize: 0.04
+      MaxSteps: 130
+      LanesPerSeed: 60
+      LaneGap: 0.3
+      HopSeek: 0.3
+      HopJitter: 0.3
+      SeedCount: 70
+      SeedSpreadDegrees: 10
+      MaxTurnDegrees: 30
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 8
+      LengthFactor: 0.45
+      GirthTaper: 0.4
   - Element: 2
-    Power: 5
-    PlateScale: 0
+    CrossSection: {x: 0.05, y: 0.018}
+    Rules:
+      Field: 0
+      SwirlDegrees: 55
+      FieldMix: 0.85
+      Momentum: 0.35
+      StepSize: 0.038
+      MaxSteps: 140
+      LanesPerSeed: 70
+      LaneGap: 0.34
+      HopSeek: 0.4
+      HopJitter: 0.25
+      SeedCount: 80
+      SeedSpreadDegrees: 9
+      MaxTurnDegrees: 30
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 8
+      LengthFactor: 1
+      GirthTaper: 0.4
   - Element: 3
-    Power: 3
-    PlateScale: 0
+    CrossSection: {x: 0.055, y: 0.02}
+    Rules:
+      Field: 5
+      SwirlDegrees: 0
+      FieldMix: 0
+      Momentum: 0.55
+      StepSize: 0.05
+      MaxSteps: 150
+      LanesPerSeed: 55
+      LaneGap: 0.34
+      HopSeek: 0.2
+      HopJitter: 0.4
+      SeedCount: 65
+      SeedSpreadDegrees: 11
+      MaxTurnDegrees: 26
+      RadiusMin: 0.3
+      RadiusMax: 2.1
+      MinRun: 10
+      LengthFactor: 1
+      GirthTaper: 0.45
   - Element: 4
-    Power: 12
-    PlateScale: 0
-  power: 8
-  escapeIterations: 10
-  bailout: 2
-  latticePitch: 0.027
+    CrossSection: {x: 0.045, y: 0.017}
+    Rules:
+      Field: 1
+      SwirlDegrees: 0
+      FieldMix: 0.95
+      Momentum: 0.25
+      StepSize: 0.03
+      MaxSteps: 110
+      LanesPerSeed: 80
+      LaneGap: 0.26
+      HopSeek: 0
+      HopJitter: 0.3
+      SeedCount: 90
+      SeedSpreadDegrees: 8
+      MaxTurnDegrees: 60
+      RadiusMin: 0.3
+      RadiusMax: 2
+      MinRun: 5
+      LengthFactor: 1
+      GirthTaper: 0.35
   shellRadius: 75
-  riserBias: 0.3
-  coplanarCos: 0.86
-  planarTau: 0.62
-  maxPatchCells: 22
-  platePad: 0.74
-  plateThickness: 0.38
-  containDrop: 0.62
+  fieldWidth: 192
+  weightSpread: 1
+  weightSteps: 3
   maxTotalSpawnedObjects: 2800
-  growthsPerTick: 6
-  maxSpawnsPerFrame: 2
+  growthsPerTick: 8
+  maxSpawnsPerFrame: 3
   plantRadius: 150
 --- !u!1001 &5588088495769702632
 PrefabInstance:

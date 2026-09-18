@@ -28,7 +28,7 @@ needs a bond table.
 | `BranchingFlora` | stochastic branch walk toward a goal | per-plant growth quota | authored `leafSize`, uniform | nothing |
 | `PhyllotacticFlora` | growing TIPS + golden-angle whorls | per-plant growth quota | per ROLE (stem spans its segment, leaf its reach) | nothing |
 | `AssembledFlora` | crystallise a LATTICE from a measured bond table | **colony cycle** — one birth per `Cell.CurrentFaunaSpawnPeriod` for the whole population | fixed by the lattice, absolute units | an exact tile, a measured bond table, a claim book, a frontier |
-| `MandelbulbFlora` | discover a SURFACE defined by a function, on the ambient integer lattice | per-plant growth quota | **measured per prism** from the patch of cells it stands for — the species authors no leaf at all | a membership predicate, nothing baked |
+| `MandelbulbFlora` | trace CURVES over a surface defined by a function | per-plant growth quota | authored cross-section x a per-curve GIRTH, length from the curve | a baked height field, nothing else |
 
 **The question that picks the family: where does the shape come from?**
 
@@ -40,8 +40,8 @@ needs a bond table.
   occupancy key degrades to a quantized float. Gyroid, Schwarz P and the icosahedral quasicrystal
   each have their own tile and use it.
 - From a *function* with no intrinsic tile at all (a fractal boundary, an implicit surface, a level
-  set) → the `MandelbulbFlora` shape: address in the **ambient** `Vector3Int` lattice, decide
-  membership by a pure function of three integers. This keeps the property §34 actually cares about
+  set) → the `MandelbulbFlora` shape: bake the surface once, offline, and address a prism by
+  where it sits ON it — `(theta, phi)` plus a heading in that point's own tangent basis. This keeps the property §34 actually cares about
   — **sameness is an integer address** — without inventing the fitted grid §34 forbids. Say so
   explicitly in the class doc, or the next reader will file it as the mistake.
 
@@ -120,20 +120,21 @@ CLAUDE.md on why Roslyn abandons class-body binding when the base type is unreso
 `Vector3`/`Vector3Int` — and a pure file can be compiled against a stub and executed:
 
 ```
-Tools/Build/mandelbulb_lattice_harness/{Stubs.cs,Driver.cs,run.sh}     # copy this
+Tools/Build/mandelbulb_surface_harness/{Stubs.cs,Bulb.cs,Driver.cs,run.sh}   # copy this
 Tools/Build/regatta_course_harness/                                    # the original precedent
 ```
 
 `run.sh` needs a per-user dotnet 8 SDK (`bash <(curl -fsSL https://dot.net/v1/dotnet-install.sh)
 --channel 8.0 --install-dir $HOME/.dotnet --no-path`, ~40 s). **Split the pure math into its own
-file so this is possible** — `MandelbulbLattice.cs` holds membership, adjacency and orientation and
-knows nothing about plants; `MandelbulbFlora.cs` holds the Unity wiring. That split is what turns
+file so this is possible** — `MandelbulbSurface.cs` holds the whole growth rule and knows nothing
+about plants; `MandelbulbFlora.cs` holds the Unity wiring. That split is what turns
 "I think this is right" into a proof, and it costs nothing.
 
 **Put the WHOLE rule in the pure file, not just the membership test.** Anything the verifier
-cannot run is a thing nobody proved: the Mandelbulb's plating — selection, merging, the fitted
-frames, the containment drop — lives in `MandelbulbLattice` for exactly that reason, and the flora
-subclass only consumes the list. It is also what lets the verifier compare two implementations by
+cannot run is a thing nobody proved: the Mandelbulb's reconstruction, frame, steering fields, seed
+set, hop and emission all live in `MandelbulbSurface` for exactly that reason, and the flora
+subclass only consumes the addresses. Its harness also compiles the SHIPPED table and the real
+`Element` enum, so what runs is the game rather than a copy of it. It is also what lets the verifier compare two implementations by
 an INTEGER identity (which patch each prism stands for) rather than by position.
 
 **A harness's stdout is a DATA channel — nothing else may write to it.** `csc` prints its
@@ -173,13 +174,17 @@ already laid). A zero you cannot have is worse than a bound you can measure.
 shielded *by law*, and `PrismStateManager.ActivateShield` replaces the box with the octahedron that
 CIRCUMSCRIBES it — `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (3) on the HALF-extents, reaching
 `1.5 × leafSize`. A species fitted for the box it draws is **not** fitted for its armour: measured
-on the Mandelbulb, the plate the other three elements clear at fuses 1639 of Charge's 2810 neighbour
-pairs into one solid. Both shipped lattice species had the same defect (`Docs/ECOSYSTEM.md §35`).
+on the Mandelbulb, the ribbon the other three elements clear at fused EVERY armoured pair it had. Both shipped lattice species had the same defect (`Docs/ECOSYSTEM.md §35`).
 
 Two legitimate answers, and you must pick one out loud:
 - **Fit Charge's own prism** (uniformly, so the leaf ASPECT — the species' identity — is exact).
   Its plates then read as a sparse skeleton and its octahedra fill the lattice in. This is what the
-  gyroid, Schwarz P and Mandelbulb do. **The bar to clear is its SIBLINGS, not an invented number:**
+  gyroid, Schwarz P and Mandelbulb do — and **check WHICH dimension is doing the fusing before you
+  shrink the cross-section**: a prism's `leafSize` includes its LENGTH, so a species that lays
+  prisms end to end along a curve or a rail fuses along its OWN chain, and no cross-section shrink
+  reaches that (measured on the Mandelbulb at a quarter width: still 84% fused). The lever there is
+  the length — its Charge ribbon is DASHED, its prisms shorter than the step that spaces them, and
+  the octahedra fill the dashes in. **The bar to clear is its SIBLINGS, not an invented number:**
   *a Charge plant wearing its shields must be no more fused than an ordinary plant is bare.* That
   moves if the species is ever retuned, which an invented constant does not. And check the read
   INVERTS rather than merely shrinking — armouring multiplies a plant's own silhouette by exactly
