@@ -514,12 +514,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (FrameBoundness.IsAtCap(_displayFps, out float cap))
                 return Col(Good, "Capped @" + cap.ToString("F0"));
 
-            // A cap the platform will not name still has to be reported, or the row says
-            // CPU-bound about a frame that is mostly idle — and a capped frame cannot
-            // measure, so this outranks naming a processor. Warn, not Good: under a cap the
-            // numbers below are not a reading of anything.
+            // The frame is longer than the work in it. That outranks naming a processor,
+            // because a frame with idle in it cannot measure a change smaller than the idle.
+            // But say WHICH it is: a cap the platform would not name, or slack with no cap
+            // set at all — in the editor the frame clock (Time.unscaledDeltaTime) carries
+            // editor-only work that FrameTimingManager never attributes, so an uncapped
+            // editor frame still shows a couple of ms. Calling that "Capped" names a cause
+            // that is not there.
             if (FrameBoundness.IsLimitedByPresent(_displayMs, busyCpuMs, _smGpuMs, out float idleMs))
-                return Col(Warn, $"Capped — {idleMs:F1} ms idle");
+                return FrameBoundness.IsFrameCapConfigured()
+                    ? Col(Warn, $"Capped — {idleMs:F1} ms idle")
+                    : Col(Dim, $"Idle {idleMs:F1} ms — no cap set");
 
             return Col(FpsColor(_displayFps), verdict);
         }
@@ -535,7 +540,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             int vsync = QualitySettings.vSyncCount;
             int target = Application.targetFrameRate;
-            bool capped = vsync > 0 || target > 0;
+            bool capped = FrameBoundness.IsFrameCapConfigured(vsync, target);
             string text = vsync > 0 ? $"vsync {vsync}" : "vsync off";
             text += target > 0 ? $" · target {target}" : " · target uncapped";
             return Col(capped ? Warn : Good, text);

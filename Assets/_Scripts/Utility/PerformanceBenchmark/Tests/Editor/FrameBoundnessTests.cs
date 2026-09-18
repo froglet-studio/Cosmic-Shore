@@ -146,5 +146,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             // A garbage GPU reading must not be able to fake "work fills the frame" either.
             Assert.IsTrue(FrameBoundness.IsLimitedByPresent(8.4f, 3.2f, 77_028_560_000f, out _));
         }
+
+        [Test]
+        public void IsFrameCapConfigured_SeparatesARealCapFromUnattributedSlack()
+        {
+            // Screenshot 2: vsync 1 -> a cap really is set, so "Capped" is the honest label.
+            Assert.IsTrue(FrameBoundness.IsFrameCapConfigured(vSyncCount: 1, targetFrameRate: 120));
+            Assert.IsTrue(FrameBoundness.IsFrameCapConfigured(vSyncCount: 0, targetFrameRate: 60));
+            Assert.IsTrue(FrameBoundness.IsFrameCapConfigured(vSyncCount: 1, targetFrameRate: -1));
+
+            // Screenshot 3: `fps uncap` applied, yet 2.8 ms of slack remained. Nothing is
+            // capping it — that is editor overhead the frame clock carries and
+            // FrameTimingManager does not attribute, and calling it "Capped" names a cause
+            // that is not there.
+            Assert.IsFalse(FrameBoundness.IsFrameCapConfigured(vSyncCount: 0, targetFrameRate: -1));
+            Assert.IsFalse(FrameBoundness.IsFrameCapConfigured(vSyncCount: 0, targetFrameRate: 0));
+
+            // The two predicates are independent: slack can exist with no cap, and a cap can
+            // exist on a frame with no slack (work happens to fill it).
+            Assert.IsTrue(FrameBoundness.IsLimitedByPresent(7.5f, 4.7f, 2.3f, out _));
+            Assert.IsFalse(FrameBoundness.IsFrameCapConfigured(0, -1));
+        }
     }
 }

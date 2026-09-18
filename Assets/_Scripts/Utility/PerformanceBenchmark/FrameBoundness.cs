@@ -143,6 +143,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
+        /// True when a frame-rate cap is CONFIGURED at all — distinct from
+        /// <see cref="TargetFpsCap"/>, which additionally has to NAME the rate and cannot in
+        /// the editor. Pure overload so the decision is testable without a live QualitySettings.
+        ///
+        /// It exists because <see cref="IsLimitedByPresent"/> answers "is the frame longer
+        /// than the work in it", which a cap causes but does not exclusively cause: in the
+        /// editor <c>Time.unscaledDeltaTime</c> (the frame clock) also carries editor-only
+        /// work that FrameTimingManager's <c>cpuMainThreadFrameTime</c> never attributes, so
+        /// an UNCAPPED editor frame still measures a couple of ms of slack. Reporting that as
+        /// "Capped" names a cause that is not there — measured live at
+        /// <c>vsync off · target uncapped</c> still reading "Capped — 2.8 ms idle".
+        /// </summary>
+        public static bool IsFrameCapConfigured(int vSyncCount, int targetFrameRate) =>
+            vSyncCount > 0 || targetFrameRate > 0;
+
+        /// <summary>Live reading of <see cref="IsFrameCapConfigured(int,int)"/>.</summary>
+        public static bool IsFrameCapConfigured() =>
+            IsFrameCapConfigured(QualitySettings.vSyncCount, Application.targetFrameRate);
+
+        /// <summary>
         /// True when the measured fps sits at the active cap - the limiter is the cap
         /// itself, so neither processor verdict applies.
         /// </summary>

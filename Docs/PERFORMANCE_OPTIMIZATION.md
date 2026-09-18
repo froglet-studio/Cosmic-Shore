@@ -244,6 +244,74 @@ culling/draw-command path, UGUI layout, or the render path — and the 14k draw
 calls are the prime suspect precisely because that number is so large. The next
 step is attribution, not another scan.
 
+### 0.10 THE A/B RAN — the instanced path beats legacy by 12.9× on CPU (2026-09-16)
+
+First controlled A/B this project has had. `PrismGridExplosionTest.unity`, detached from
+Bootstrap, `grid` 47³ = **103,823 REAL prisms** (laid, indexed, `phase ready`), camera
+untouched between arms:
+
+| | `prismpath OFF` (legacy MeshRenderer) | `prismpath ON` (instanced BRG) | |
+|---|---:|---:|---|
+| **CPU (busy)** | **61.9 ms** | **4.8 ms** | **12.9×** |
+| GPU | 4.2 ms | 2.1 ms | 2.0× |
+| Frame | 71.4 ms | 8.2 ms | |
+| FPS | 14 | 122 | |
+
+**0.60 µs per prism per frame legacy against 0.045 µs instanced** — the MeshRenderer path
+costs ~0.55 µs per prism per frame that the instanced path does not pay. Exactly the
+failure this document's Phase R predicted ("N live prisms ≈ N draw calls + N SetPass"),
+now measured rather than asserted. **Do not regress `PrismRenderConfig` to OFF.**
+
+#### ⚠ The caveat that bounds what this proves
+
+The ON arm reported **`ents=103823 meshes=1 mats=1`**. One mesh, one material — `grid`
+lays one prefab, in one domain, at one tier, which is the most batchable population that
+can exist. The boot world reads **`meshes=3 mats=10`**, and §0.9 attributes its
+14,244-draw-call reading to MATERIAL INTERLEAVING INSIDE CHUNKS.
+
+**So this run proves the instanced path is excellent in the HOMOGENEOUS case and says
+nothing about the heterogeneous one.** §0.9's prototype-keying finding is neither
+confirmed nor refuted by it. Reproducing the real game's condition here needs a mixed
+population (several tiers × several domains → several materials); until that exists, no
+number from this lab speaks to the interleaving problem.
+
+Correction to §0.9 while it is in view: it said fixing draw calls "buys at most
+single-digit milliseconds", reasoning from a 2.8 ms render thread. That was about
+draw-call SUBMISSION and remains true; it undersold the PATH, which is worth 57 ms of
+main thread at 100k prisms. Submission cost and path cost are different quantities.
+
+#### Still unanswered: GC
+
+All three runs were in **basic** HUD mode, so Draw Calls / Batches / SetPass / **GC per
+frame** were never on screen. The draw-call ratio is unconfirmed and the GC question —
+the other half of the brief — has no data at all. Press **Advanced**.
+
+### 0.10.1 The cap verdict, and the label that overclaimed
+
+The same session proved §0.9's cap fix and then found its label too strong.
+
+- **Working:** the ON arm read `Capped — 3.4 ms idle` with `vsync 1 · target 120`, where
+  the pre-fix code said `CPU-bound` about a frame holding 4.8 CPU + 2.1 GPU in 8.2 ms.
+- **Overclaiming:** after `fps uncap` (`vsync off · target uncapped`) it still read
+  `Capped — 2.8 ms idle` with nothing capping it.
+
+That residue is real but is not a cap. `_displayMs` is smoothed
+`Time.unscaledDeltaTime` — the wall clock, which in the editor carries editor-only
+per-frame work — while `busyCpu` is FrameTimingManager's `cpuMainThreadFrameTime`. **Two
+different clocks**, legitimately disagreeing by a couple of ms in the editor. The frame
+genuinely is longer than the measured work; the cause is unattributed overhead.
+
+`FrameBoundness.IsFrameCapConfigured(vSyncCount, targetFrameRate)` now splits the label:
+`Capped — N ms idle` when a cap is actually set, `Idle N ms — no cap set` when it is not.
+Same predicate, honest attribution, and `FrameCapValue` shares the same helper so the two
+rows cannot disagree.
+
+**The rule, third instance:** *a derived verdict must name only the cause it can actually
+establish.* GPU-bound on an idle GPU; CPU-bound on a mostly-idle frame; Capped with no cap.
+Each was a correct mechanism attached to an unverified cause.
+
+---
+
 #### How to attribute it — the A/B, using the toggle added in this pass
 
 `prismpath` (`PrismStressInjector`) was added on 2026-09-14 because
