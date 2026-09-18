@@ -305,3 +305,35 @@ reads `FloorToInt` and reasons in double.
 out-of-editor checks, `check_elemental_floats.py --self-test` plus a live negative control, a
 Roslyn syntax compile of the eight changed C# files (zero non-missing-type errors), and a REAL
 Roslyn type check of `ElementalFloat.cs` + the test file against a stub harness (clean).
+
+---
+
+## Verification status (ship-deep, 2026-09-18)
+
+**Nothing on this branch has been run in the Unity editor, and there is no compiler and no CI in
+the environment it was written in.** No row below says "compiles". The human at the editor is the
+only gate for everything marked *not compiled*, and the QA rows named in the last column are
+already written up in `Docs/QA/QA_BACKLOG.md` (`QA-P1-RHINO-RAMP-CEILING`,
+`QA-P1-SERPENT-BOOST-SPEED`, `QA-P1-MANTA-SOAR-SPARROW-AFTERBURNER`,
+`QA-P2-ELEMENT-SCALING-REGRESSION`).
+
+| System changed | Verified how | Still needs a human |
+|---|---|---|
+| The ten migrated multipliers (endpoints + floors) | **Measured off the shipped assets** at ship time, not transcribed — one had drifted (the Urchin's Charge reach is 2.5; a doc said 2.0) | Spot-check four in play — `QA-P2` |
+| `VesselTransformer.CurrentBoostAmount` (the fleet-wide read removed) | Read-and-grep: the two hulls that used it author `BoostSpeedMultiplier` on their own prefab (Manta ×1.3/floor 0.7, Sparrow ×1.5/floor 0.5, both verified in prefab YAML in `ElementalFloat`'s exact declaration order); the other six author nothing and take the C# initializer, which is disabled → ×1. `EvaluateLive(null)` returns `Value`, so a pre-initialization read cannot divide by anything | `QA-P1-MANTA-SOAR-SPARROW-AFTERBURNER` — this is the one part that had to be hand-authored into prefab YAML, so "did it deserialize" is a real question |
+| Rhino ramp ceiling ÷2.5, Serpent boost speed ÷1.6 (the two undeclared second applications removed) | Arithmetic only. Both were real behaviour changes and are **deliberately flagged, not preserved** — the user's call | `QA-P1-RHINO-RAMP-CEILING`, `QA-P1-SERPENT-BOOST-SPEED` — **balance, playtest required** |
+| Three `ElementalFloat`s flipped `Enabled: 1 → 0` | **Proved a runtime no-op by reading every reader**: all are `.Value` (a plain field), and nothing outside `ElementalFloat` itself reads `.Enabled`. Turning any of them ON is a balance change and stays a design question | nothing — but see BACKLOG 5.3 before enabling one |
+| `ElementalFloatBinder` deleted | Zero code references; its guid (`11e66081df874b8089f6de47d0c4efc3`) appears nowhere under `Assets/`; its one call site was already commented out | nothing |
+| `Skimmer`'s bind call removed | `Scale` is the only `ElementalFloat` on `Skimmer` and **both** readers use `EvaluateLive` — re-verified after merging the base, in case it had added a `.Value` reader | nothing |
+| `AOERadialBlocks.depthScale` deleted | It had no `[SerializeField]`, so it was unserializable and permanently 1 — the two `*= 1f` lines were no-ops. The compounding hazard is real and now proven: both targets are `[SerializeField]` INSTANCE fields on a pooled component that `Initialize` mutated with `*=`, and nothing resets them | nothing |
+| `ResourceSystem.GetLevel` (reported off-by-one) | **REFUTED by running real C#** — float32, not double: `0.7f × 10` rounds to exactly `7f`, and `+= 0.1f` drifts upward. 26/26 cases land on their integer, locked as a standing test | nothing |
+| `element_ability_table.py` (7 false gaps fixed) | Run over the whole fleet; disagreements 12 → 5 → **3** after the merge, and every remaining one is an open design slot | nothing |
+| `check_elemental_floats.py` (the new gate) | `--self-test` PASS with **four** negative controls, plus a live negative control run in both directions on the real tree (3 findings/exit 1 dirty, OK/exit 0 restored). Reports how many blocks it scanned, because its first version computed `ROOT` one level too high and reported OK over nothing | nothing |
+| Doc + asset claims about the retired channel | Blast-radius sweep: 19 sites outside `Docs/ElementalAbilitySystem/` corrected; every surviving mention is a record of the removal. `Docs/prompts/RHINO_ABILITY_MAP_PROMPT.md` instructed a future session to author the deleted field | nothing |
+| Everything else on the merged tree | Six out-of-editor gates green (`check_conditional_compilation`, `check_enum_member_references`, `check_switch_label_collisions`, `check_using_directives`, `check_self_referential_locals --all`, `check_elemental_floats`); `regatta_balance.py --check` exit 0 with the intensity-1 spread at **5.99×** under its asserted 6.1×, unchanged by the merge; `author_manta_kit_assets.py --check` clean and idempotent | a player build — none of the above is a compile |
+
+**Topology note (it matters for the two prefab rows):** element levels are simulated on the OWNING
+machine and never replicate, so `BoostSpeedMultiplier` is read per-machine for its own vessel. There
+is nothing here that behaves differently across two real machines than it does in one process, so
+MPPM is not a weaker test for this branch than a two-machine session would be — the untested axis is
+the editor, not the network.

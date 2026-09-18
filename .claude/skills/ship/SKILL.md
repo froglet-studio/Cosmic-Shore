@@ -47,6 +47,15 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
 - **Say so plainly instead.** The verification line in the PR body and the ship report reads
   "not compiled — no editor or compiler in this environment", followed by what a human must
   do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+- **These gates do not share a command line, and a wrong flag exits 2 — which reads as a
+  FAILURE.** `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py` and `check_elemental_floats.py` take `--check`;
+  `check_conditional_compilation.py` takes none (it just runs) and
+  `check_self_referential_locals.py` wants `--all` or a path list. Passing `--check` to either of
+  the last two gets `error: unrecognized arguments: --check` and exit 2, which in a sweep is
+  indistinguishable from the gate finding something — the sibling of this file's own "a gate that
+  ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
+  reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
 
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
@@ -214,6 +223,20 @@ run the `/reorient` skill first and act on its verdict before shipping.
   as done, it survives review, and the rows are still there. Anything of the form *"the table
   below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
   `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
+
+- **A removal's doc sweep is not finished at the system's own `Docs/` folder — the per-feature
+  doc beside the code is where a reader looks FIRST, and it is the last place anyone edits.** A
+  branch that retires a channel naturally documents the retirement where it is defined and where
+  the architecture is written down, then stops. One session did exactly that, and a D2 sweep for
+  the two removed field names found **nineteen** live sites outside that folder still describing
+  the channel as the place a number lives — six per-ability docs, a verification checklist, and,
+  worst, a `Docs/prompts/*.md` that INSTRUCTS a future session to author the deleted field into an
+  asset (the stale-instruction hazard §2 names, in the one file class written to be executed).
+  Two of the nineteen were in a doc the same branch had already rewritten: it said *"nothing in
+  this document should ever again say 'map pinned to 1'"* fourteen lines above four more of them.
+  So: grep the removed IDENTIFIER, not the system, across `Assets/**/*.md`, `Docs/`, `.claude/`
+  and CLAUDE.md, and classify every hit as **describing the removal** (keep) or **describing it as
+  live** (fix). Include `Docs/prompts/` explicitly — a prompt is code somebody will run.
 
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge

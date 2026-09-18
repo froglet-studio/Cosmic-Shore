@@ -134,6 +134,16 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
+   **"Stateless" includes not WRITING your own serialized field for a while** — the shape that
+   slips through is a temporary effect implemented as save-multiply-await-restore, because each
+   step reads as correct in isolation and the asset is back to normal when it finishes.
+   `GrowSkimmerActionSO.ApplyMaxSizeDebuff` does this (`maxSize.Value = original * mul`, await,
+   write it back) on an asset every Rhino shares, so two debuffed pilots race and the second
+   restore stores the FIRST one's already-multiplied value as "original" — the effect then never
+   fully lifts. `_isMaxSizeDebuffed` is an early-out on the SO, which guards one caller and is
+   itself shared state. A temporary per-vessel modifier belongs in the executor and is applied at
+   use time; the SO's number is the baseline and never moves. (BACKLOG 5.11 — found by a ship
+   pass, not by a gate: nothing in this project can see a shared-asset write.)
 2. **Read element scaling at use time** (`ElementalFloat.EvaluateLive(status)`), never cache at
    init. **Scaling is PARAMETER-addressed: one `ElementalFloat` on the asset or component that owns
    the number.** There is no generic per-element multiplier — `handler.Multiplier(element)` and the
