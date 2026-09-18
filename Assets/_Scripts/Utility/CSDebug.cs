@@ -270,6 +270,17 @@ namespace CosmicShore.Utility
         [CSLogChannelLabel("[Prism] render service, pools, effect census")]
         PrismRuntime = 1 << 25,
         /// <summary>
+        /// <c>[SerpentScope]</c> — the Serpent scope's instrument: the frame the eyepiece first
+        /// draws, and where on screen it landed. Off by default like every channel.
+        ///
+        /// It exists because that instrument's failure mode is a BLANK SCREEN, and a blank screen
+        /// is the same report whether the overlay never ticked, ticked and drew nothing, or drew
+        /// correctly under something opaque. This channel separates the first case from the other
+        /// two in one line; the overlay's own self-checks cover the second and stay warnings.
+        /// </summary>
+        [CSLogChannelLabel("[SerpentScope] scope eyepiece placement")]
+        SerpentScope = 1 << 26,
+        /// <summary>
         /// <c>[FTUE]</c> — the first-time-user tutorial flow: step advance, skip, outro and
         /// completion.
         /// </summary>
