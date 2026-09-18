@@ -5136,7 +5136,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   config: {fileID: 11400000, guid: 61ed65f53a2640e184637bb67a1d3397, type: 2}
-  steadyZoomFloor: 0.35
 --- !u!1 &8528907185540110264
 GameObject:
   m_ObjectHideFlags: 0

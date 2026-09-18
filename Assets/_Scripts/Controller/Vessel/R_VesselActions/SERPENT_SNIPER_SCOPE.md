@@ -195,8 +195,10 @@ lining are super-shielded for exactly that reason — should be re-checked again
 | `zoomResponse` | 12 /s | how fast the applied zoom chases the trigger — its ONLY job is ramping a BINARY trigger (mouse/keyboard). High enough to be a pass-through on a pad |
 | `zoomDeadzone` | 0.08 | dead travel at the top of the trigger, so a resting pad cannot creep the view in |
 
-`SniperScopeActionExecutor.steadyZoomFloor` (0.35) — fraction of the zoom surviving at full stick
-deflection **before** Space 5.
+`SniperScopeActionExecutor` authors NO tuning of its own — every number above lives on the SO,
+which is what "the zoom composes with nothing but its own trigger" costs: the executor has no
+second input to weigh, so it has no field to weigh it with. (It carried one, `steadyZoomFloor`,
+for the retired Steady Eye bleed; round 4 removed the bleed and the field with it.)
 
 `Assets/_SO_Assets/VesselActions/Serpent/SniperShotAction.asset`
 
@@ -336,7 +338,21 @@ slot is a visible TODO and a borrowed event is an invisible one. The shot will s
 somebody authors an FMOD event for it — that is the one piece of "I didn't notice the shot" this
 branch does not close.
 
-### 4. The PIP
+### 4. The PIP — **round 2's arrangement; rounds 4-8 inverted and re-cut it**
+
+> Kept because two of its paragraphs are still live doctrine (the four reasons this is not a second
+> gameplay camera, and why the retired `Pip` prefab was not revived). **Four claims below were
+> superseded and are left as written rather than silently patched**, because which round changed
+> each one is the useful part:
+>
+> | Claim here (round 2) | Superseded by | Ships as |
+> |---|---|---|
+> | the PIP shows the chase shot, the **cockpit** has the screen | round 4 (the magnification was nauseating on the flight view) | the flight view is the ordinary chase; the WINDOW carries the magnified picture |
+> | the panel is **16:9** | round 8 (positions are the UVs, so the petal's square bbox sets the rect) | `PipHeightFraction` 0.5 on **both** axes — square |
+> | **216p**, 20 Hz, **no post-processing** | round 5 (an un-adopted camera renders this HDR world near-black) | `RenderSize` 540, `RefreshHz` 30, post-processing **ON**, AA and shadows off |
+> | `RenderHeight` is the dial | round 8 renamed it | **`RenderSize`** |
+>
+> The current window is described in **round 7** (the surface) and **round 8** (its shape).
 
 `ScopePipView` shows the ordinary chase shot of your own vessel in the **top-left**, under the goal
 stack, while the cockpit view has the middle of the screen. It is **half the screen's height**
@@ -721,7 +737,8 @@ is the signal that the thing being fixed is not the thing that is broken** — t
 
 Restores round 3's surface **verbatim** and keeps round 4's camera. Nothing else moves:
 
-- `ScopePipView` takes a `RawImage` again and renders 16:9 (`RenderHeight` 540, up from round 3's
+- `ScopePipView` takes a `RawImage` again and renders 16:9 (`RenderHeight` — renamed `RenderSize`
+  in round 8, when the target went square — 540, up from round 3's
   360 — the same panel now carries a *magnified* picture, and one that cannot be read is the same as
   no picture). A camera targeting a RenderTexture takes its aspect from that texture, so there is
   nothing else to keep in step.
@@ -927,7 +944,8 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
 1. **Scene:** any Serpent-capable scene (Menu_Main freestyle is enough; swap to the Serpent with
    the vessel-changer toy). Confirm no console errors on spawn.
 2. **Scope:** hold **LT** (or **Left Shift** on keyboard, **LMB** on the one-thumb mouse scheme).
-   Expect: a **round** window in the top-left showing a view down your own nose, and **the flight
+   Expect: a **petal-shaped** window in the top-left (step 30 is where its shape is checked in
+   detail) showing a view down your own nose, and **the flight
    view completely unchanged** — the camera must not move by a pixel. Ease the trigger: the picture
    inside the window magnifies and the reticle grows with it; on mouse/keyboard it should ramp in
    over ~1/12 s rather than snapping.
@@ -972,11 +990,13 @@ against a Roslyn stub harness whose 34 stub signatures were each grepped out of 
     Fire at mass — expect the beam to stop at the kill and a flare there. Fire twice in quick
     succession (Charge 10) and confirm the second beam does not start from where the first ended,
     which is the pooled-instance reset.
-16. **The window:** confirm it is a **16:9 panel in the top left** with a thin dark frame, and
-    that the picture inside it is not squashed or stretched — round mass must read round. (Round 4
-    made this a circle; round 7 put the panel back.) Release and it must disappear. Swap hulls while
-    scoped and confirm no stray camera or render texture is left behind (check the hierarchy for
-    `[SerpentScopeCamera]`).
+16. **The window:** confirm it sits in the **top left** with a thin dark frame, and that the
+    picture inside it is not squashed or stretched — round mass must read round. (This step has
+    outlived three shapes: round 4 made it a circle, round 7 restored the 16:9 panel, round 8
+    re-cut it as the SQUARE Charge petal. The shape itself is step 30's job; what this step
+    checks is the aspect of the PICTURE, which must hold whatever the frame is.) Release and it
+    must disappear. Swap hulls while scoped and confirm no stray camera or render texture is
+    left behind (check the hierarchy for `[SerpentScopeCamera]`).
 17. **The ability card (round 4).** Fire, then look at the bottom-right ability row: the **Charge**
     card is LOCKED (a dashed mark, no icon) and its **cooldown veil must now sweep clockwise over
     it** for ~12 s. Before round 4 it drew nothing. Check it works with the scope DOWN as well —
