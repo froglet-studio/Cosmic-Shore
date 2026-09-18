@@ -7,6 +7,15 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "GrowTrailAction", menuName = "ScriptableObjects/Vessel Actions/Grow Trail")]
     public class GrowTrailActionSO : ShipActionSO
     {
+        /// <summary>The trail slab's authored size ceiling. Read as a RAW number
+        /// (<see cref="MaxSize"/> returns <c>.Value</c>) and this is a ScriptableObject, so
+        /// nothing ever evaluates it — it is authored <c>Enabled: 0</c> for that reason.
+        /// MASS reaches this ceiling through <see cref="massMaxSizeMultiplier"/> instead.
+        /// <para>It was authored Enabled with a 4 -> 8 Mass ramp that had never run once:
+        /// an ElementalFloat on an SO can only scale through <c>EvaluateLive</c>, and an
+        /// authored-but-unevaluated one is a declaration the build silently contradicts.
+        /// Turning that ramp on is a BALANCE change (it would stack with the multiplier);
+        /// logged in Docs/ElementalAbilitySystem/BACKLOG.md.</para></summary>
         [Header("General")]
         [SerializeField] ElementalFloat maxSize = new(3f);
 
@@ -18,11 +27,8 @@ namespace CosmicShore.Gameplay
         /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
         /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
         /// </summary>
-        /// <para>NOTE: <c>maxSize</c> above is itself an ElementalFloat authored Enabled with
-        /// Min 4 / Max 8 on Mass, but <see cref="MaxSize"/> reads its raw <c>.Value</c> and this
-        /// is a ScriptableObject, so nothing ever evaluates it — that 4->8 ramp has never run.
-        /// The shipped Mass scaling is this multiplier (4->6). Folding the two is a balance
-        /// change, not a refactor; logged in Docs/ElementalAbilitySystem/BACKLOG.md.</para>
+        /// <para>This is the ONE live Mass channel on the slab ceiling; see the note on
+        /// <c>maxSize</c> for the dead ramp it replaced.</para>
         [SerializeField] ElementalFloat massMaxSizeMultiplier =
             ElementalFloat.Multiplier(1f, 1.5f, Element.Mass, 0.25f);
         [SerializeField] float growRate = 1f;

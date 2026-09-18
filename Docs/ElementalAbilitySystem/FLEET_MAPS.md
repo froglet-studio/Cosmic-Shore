@@ -28,20 +28,45 @@ fundamentals).
   (`ResourceSystem.ComebackCeiling`) — earned progression alone reaches the overcharge band.
   The old per-vessel/per-element profile weights are retired; the profile only seeds
   optional initial levels.
-- **Quantitative scaling (map-driven):** every executor call site now reads
-  `ElementalAbilityHandler.Multiplier(element)`, tuned by the vessel's
-  `Resources/ElementalAbilityMaps/{Vessel}.asset`. The former hardcoded `atFull` literals
-  moved into the maps at identical values — feel unchanged.
+- **Quantitative scaling (PARAMETER-addressed):** every element→number mapping is an
+  `ElementalFloat` serialized on whatever asset or component owns that number, read through
+  `EvaluateLive(status)`. The map asset carries the QUALITATIVE half only — the ability's name
+  and description, its input binding, and the level-5 unlock/relock thresholds. The generic
+  `ElementalAbilityMapSO.MultiplierAtFullLevel` / `handler.Multiplier(element)` channel was
+  **removed on 2026-09-18** (`ELEMENT_SCALING_UNIFICATION.md`), so nothing in this document
+  should ever again say "map pinned to 1" — there is no longer a generic multiplier to defend
+  against.
 
-| Vessel | Live quantitative entries (map value) |
-|---|---|
-| Sparrow | Space→gun range (9.0) · Time→boost speed (1.5, now on an **indefinite** boost — see §2 Sparrow) · Mass→turret prism stretch (2.5) **+ in-flight round growth (3× at rest → 6× at Mass 10, authored on `FullAutoAction.asset`)** · Charge→skyburst blast (asset range 100→170) |
-| Manta | **All four LIVE (approved + shipped 2026-08-26 spec remake, see §2 Manta)**: Charge→bomb-bay capacity + skim-charge rate (authored on `MantaStingConfig.asset`; map pinned 1) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`; the Yastri turn rate is deliberately unscaled, `turnRateElement: None`; map pinned 1) · Space→bomb bloom scale (authored `blastScaleAtFullSpace` 1.6 on `MantaStingConfig.asset`; map pinned 1) · Time→max soaring speed (map 1.3 IS the authoring home, read by `VesselTransformer.CurrentBoostAmount`) |
-| Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
-| Rhino | Mass→trail slab max size (1.5) · **Time→ramp WIND-UP RATE (2.5 / 0.5, "Ramp Spool")** — `RampBoostActionExecutor` has always read `Multiplier(Element.Time)` and scaled `accelerationPerSecond` by it; the map's Time entry was an `(open design slot)` authored 1.0/1.0, so *the hook was live and the asset behind it was flat*. Filled by Broadside's first playtest (`BROADSIDE.md`). It does **not** move the ceiling (`maxBoostMultiplier` 24) — it moves how long the run-up takes, which is what a brawl's short straights bound. No L5 upgrade: the slot is filled, not designed |
-| Serpent | Time→boost duration (1.6) |
-| Urchin | **All four LIVE (approved + shipped 2026-08-15, re-cut 2026-08-18, see §2 Urchin)**: Charge→the whole spike weapon — cascade DEPTH (`UrchinSpikeActionSO.ResolveGenerations` reads `GetLevel(Element.Charge)` directly) × spike REACH (map 2.5, carried down every generation via `Projectile.ChainRangeScale`) · Space→projected track LENGTH (authored `lengthMultiplierAtFullSpace` 2 on `UrchinTrackActionSO`; map multiplier pinned 1.0) · Mass→volume grown per prism ridden (authored `growthAmount` ElementalFloat 0.6→1.2 on `GunVesselTransformer`) · Time→Slip ghost duration (authored `ghostSecondsAtRestingTime/AtFullTime` 0.6→1.6 on `UrchinSlipActionSO`) |
-| Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
+**Do not hand-maintain a table of who scales what here.** Ask the tool, which reads the assets
+and the code the prefab reaches:
+
+```
+/element-ability-table                 # the whole fleet
+python3 Tools/Build/element_ability_table.py Squirrel --verbose
+python3 Tools/Build/element_ability_table.py --gaps      # only the disagreements
+```
+
+It prints, per element: the ability label and its input, every live scaling channel **named by
+its field and host asset**, and the level-5 upgrade **with the source line that gates it**. A
+hand-written copy of that drifts — this section carried "map pinned 1" for four vessels for a
+day after the channel it referred to had been deleted.
+
+### Coverage, 2026-09-18 (measured, `element_ability_table.py`)
+
+| Vessel | abilities | scaling wired | L5 gates wired |
+|---|---|---|---|
+| Dolphin | 4/4 | 4/4 | 4/4 |
+| Sparrow | 4/4 | 4/4 | 4/4 |
+| Squirrel | 4/4 | 4/4 | 4/4 |
+| Urchin | 4/4 | 4/4 | 4/4 |
+| Manta | 4/4 | 4/4 | 3/4 |
+| Scarab | 4/4 | 4/4 | 2/4 |
+| Rhino | 2/4 | 3/4 | 0/4 |
+| Serpent | 1/4 | 1/4 | 0/4 |
+
+Everything the tool still flags is a **design gap, not a wiring bug** — the open slots on the
+Rhino and the Serpent. The full list, with what each one would cost to fill, is
+**`FLEET_GAPS.md`**.
 
 ### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
 

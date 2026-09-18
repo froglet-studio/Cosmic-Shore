@@ -2,6 +2,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -108,6 +109,36 @@ namespace CosmicShore.Tests
             for (int i = -5; i <= 15; i++)
                 Assert.AreEqual(1f, off.EvaluateAtNormalizedLevel(i / 10f), 1e-6f,
                     $"disabled ElementalFloat moved at level {i}");
+        }
+
+        [Test]
+        public void CrystalProgressionLandsOnEveryIntegerLevel()
+        {
+            // A STANDING REFUTATION, not a guard against a fix.
+            //
+            // `ResourceSystem.GetLevel` is `FloorToInt(effective * 10)`, and the obvious worry
+            // is the classic one: 0.7 * 10 is 6.999999999999999, so the floor is 6 and a pilot
+            // sitting on level 7 reads as 6 — which would move the level-5 unlock test and the
+            // HUD petals together. It was written down as a defect and it is NOT one, because
+            // the arithmetic is float32, not double: 0.7f is 0.699999988, times 10 rounds to
+            // EXACTLY 7f (the error is under half an ulp at that magnitude). Crystal
+            // progression also accumulates `+= 0.1f`, which drifts UPWARD, i.e. away from the
+            // boundary.
+            //
+            // Locked here so the hypothesis is refuted once rather than re-derived by the next
+            // person who looks at `FloorToInt` and reasons in double.
+            float accumulated = 0f;
+            for (int expected = 1; expected <= 15; expected++)
+            {
+                accumulated += 0.1f;                       // ResourceSystem.IncrementLevel
+                Assert.AreEqual(expected, Mathf.FloorToInt(accumulated * 10),
+                    $"crystal step {expected} did not read as level {expected}");
+            }
+
+            // And the direct form, which is what an authored or replicated level looks like.
+            for (int expected = 0; expected <= 10; expected++)
+                Assert.AreEqual(expected, Mathf.FloorToInt(0.1f * expected * 10),
+                    $"a level authored as 0.1f x {expected} did not read as {expected}");
         }
 
         [Test]

@@ -29,7 +29,7 @@ MonoBehaviour:
   firingPattern: 0
   energy: 0
   speedValue:
-    Enabled: 1
+    Enabled: 0
     Value: 375
     Min: 375
     Max: 4875

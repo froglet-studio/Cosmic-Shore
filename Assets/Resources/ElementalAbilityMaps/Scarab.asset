@@ -41,19 +41,23 @@ MonoBehaviour:
       no sanctioned breaker.
   - Element: 2
     AbilityLabel: Switch
-    AbilityDescription: Mass grows the switch structure - ring aperture and the span
-      of the prism fill across its mouth (authored on
-      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10).
+    AbilityDescription: 'Mass grows the switch''s RING RADIUS - the mouth a ball has
+      to thread (PlaceSwitchActionExecutor multiplies RingRadius by the
+      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10, read
+      live at placement). It used to grow the prism fill across that mouth as well;
+      the fill was retired on 2026-08-24 and the switch now blooms in as a bare ring.'
     Input: 6
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Armored Switch
-    UpgradeDescription: The switch is built from SHIELDED prisms (the sanctioned
-      shield tier - never SuperShield), snapshotted at placement so a switch keeps
-      the armour it was born with. An opposing ball now caroms off it and sheds one
-      shield per prism instead of eating straight through, which is what turns a
-      switch placed in front of someone else's shot into real defence.
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The previous upgrade, "Armored Switch",
+      built the switch''s mouth from SHIELDED prisms. It was retired on 2026-08-24
+      together with the prism fill it armoured (ScarabSwitch.cs, "Superseded" note in
+      SCARAB.md section 5.1) and nothing replaced it, so the Scarab has no live Mass 5.
+      This entry claimed the retired one until 2026-09-18, which read as a wired
+      upgrade on every surface that asks the map. Do not invent a replacement without
+      sign-off.'
   - Element: 3
     AbilityLabel: Ball Forge
     AbilityDescription: 'Space scales the ball you mint: x1 at rest, x4 at level 10.

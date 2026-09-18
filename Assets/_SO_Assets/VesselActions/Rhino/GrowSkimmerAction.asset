@@ -20,7 +20,7 @@ MonoBehaviour:
     element: 3
   growRate: 12
   shrinkRate:
-    Enabled: 1
+    Enabled: 0
     Value: 6
     Min: 6
     Max: 2

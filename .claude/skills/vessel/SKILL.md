@@ -355,9 +355,11 @@ applies to new abilities, new resources on the meter list, and anything that add
     `UpgradeDescription`: either FUSE them when they are two halves of one idea (the Urchin's
     "Overcharge" became +1 cascade generation **and** no reach falloff, absorbing the retired
     SPACE-5 "Deep Cascade") or drop one on the record. Also move every element READ with the
-    ability — `Multiplier(Element.X)` calls inside the SO are the half that silently keeps
-    pointing at the old element, and the map multiplier has to move with them (the Urchin's
-    Charge entry went 2.0 → 2.5 to inherit the reach behaviour Space had authored).
+    ability — the `ElementalFloat`'s own `element` field, and any `ElementalScaling` /
+    `GetLevel(Element.X)` read inside the SO, are the half that silently keeps pointing at the
+    old element (the Urchin's Charge reach multiplier went 2.0 → 2.5 to inherit what Space had
+    authored). Run `element_ability_table.py {Vessel}` after the move: the ability's row must
+    name the NEW element and the old element's row must go back to `NO SCALING`.
     (Urchin trigger merge, 2026-08-18.)
 
 29. **Clearing a state flag mid-routine: check what the REST of that frame still reads off it.**

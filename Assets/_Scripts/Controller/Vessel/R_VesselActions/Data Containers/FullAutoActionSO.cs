@@ -24,6 +24,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileTime = 3f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
+        /// <summary>The authored muzzle speed. Read as a RAW number on a ScriptableObject, so
+        /// nothing evaluates it — authored <c>Enabled: 0</c> to say so. SPACE reaches muzzle
+        /// speed through <see cref="spaceSpeedMultiplier"/> instead. The Sparrow's asset
+        /// carried an enabled 375 -> 4875 SPACE ramp (x13) that had never run, beside the live
+        /// x9 multiplier; turning it on is a balance change, not a cleanup.</summary>
         [SerializeField] ElementalFloat speedValue;
 
         /// <summary>SPACE -> muzzle speed: x1 at the resting level, x9 at level 10, floored at x0.4.
@@ -71,7 +76,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The live muzzle speed of one shot: the authored base scaled by the vessel's SPACE
-        /// multiplier from its <c>ElementalAbilityMapSO</c>. Read per volley at fire time —
+        /// multiplier, authored on this asset beside the speed it scales. Read per volley at fire time —
         /// never cached across a hold, and never bound as an ElementalFloat on this shared
         /// asset (per-vessel state on a shared SO is last-initializer-wins in multiplayer).
         /// </summary>

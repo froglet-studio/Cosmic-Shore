@@ -21,7 +21,7 @@ MonoBehaviour:
     UseFloor: 1
     Floor: 0.25
   maxSize:
-    Enabled: 1
+    Enabled: 0
     Value: 4
     Min: 4
     Max: 8

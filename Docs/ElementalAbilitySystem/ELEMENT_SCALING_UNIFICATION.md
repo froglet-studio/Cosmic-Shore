@@ -202,3 +202,106 @@ here because this branch depends on those gates.
 3. **`ResourceSystem.GetLevel` floors a float product**: `FloorToInt(0.7f * 10)` is 6, not 7, because
    `0.7f` is below 0.7. It feeds the HUD petals and the level-5 unlock test, so touching it moves
    unlock thresholds — out of scope, worth a deliberate look.
+
+---
+
+# Second pass — 2026-09-18, same day
+
+The first pass removed the element-addressed channel. Asked to finish with "no straggling
+issues", the audit ran `element_ability_table.py --gaps` and found **12** disagreements. Seven
+were the tools and the data misreporting working code; three were data that claimed a mechanic
+the code did not have; two were genuine. Result: **12 → 5, and all 5 remaining are open design
+slots** (Rhino Charge + Space, Serpent Charge + Mass + Space). Report: **`FLEET_GAPS.md`**.
+
+## What was actually wrong with the code or the data
+
+1. **Three `ElementalFloat`s authored `Enabled` had never run.** `GrowTrailActionSO.maxSize`
+   (Mass 4 → 8), `GrowSkimmerActionSO.shrinkRate` (Charge 6 → 2) and
+   `FullAutoActionSO.speedValue` (Space 375 → 4875) are declared on **ScriptableObjects** and
+   read as `.Value`. The binder that keeps `.Value` in step reflects over **MonoBehaviour**
+   fields only, so an SO-hosted float can scale in exactly one way — `EvaluateLive` — and these
+   three never call it. Authored `Enabled: 0`; runtime behaviour is byte-identical. Turning any
+   of them on is a balance change (each would stack with a live multiplier on the same element),
+   so it is a design call, not a cleanup.
+
+2. **`ElementalFloatBinder` was dead AND actively wrong.** It set a property named `"Ship"` that
+   does not exist on `ElementalFloat` — `?.SetValue` on a null `PropertyInfo`, a silent no-op —
+   and the "clone" it installed was `new ElementalFloat(original.Value)`, which drops `Min`,
+   `Max`, `element` and `Enabled`. Reviving it would have silently flattened every float it
+   touched. Its one reference was a commented-out call. Deleted.
+
+3. **`AOERadialBlocks.depthScale` was a constant wearing a scaling channel's clothes** —
+   `private`, no `[SerializeField]`, so unserializable and permanently 1 — and it multiplied
+   *instance* fields on a **pooled** component, so any value but 1 would have compounded on
+   every reuse. Deleted.
+
+4. **`Skimmer` bound a float it reads live.** Both readers of `Skimmer.Scale` go through
+   `EvaluateLive`, so `BindElementalFloats` only subscribed a handler that maintains a `.Value`
+   nobody reads. Removed.
+
+5. **The Scarab's map declared an upgrade the code retired.** "Armored Switch" went with the
+   switch's prism fill on 2026-08-24; the map named it for three weeks afterwards, so the HUD
+   lockup, the launch panel and this documentation set all reported a wired Mass 5. Corrected to
+   an `(open design slot)` entry that records the retirement.
+
+> **Retiring a MECHANIC is not finished until the DECLARATION that names it is retired too.** A
+> map entry is not documentation — it is data that several live surfaces read.
+
+## The standing gate
+
+`Tools/Build/check_elemental_floats.py` (`--check`, `--self-test`) fails the build on any
+ElementalFloat authored `Enabled` with `Min != Max`, declared on a ScriptableObject, that
+nothing evaluates. Three things about it generalise:
+
+- **It is keyed on the asset's own `m_Script` guid, because a field NAME is not an identity.**
+  `maxSize` is declared on two ScriptableObjects *and* on the MonoBehaviour `GrowActionBase`; a
+  name-keyed first cut skipped any field with a MonoBehaviour host anywhere in the tree, which
+  silently exempted both SOs — the exact defect it was written to catch.
+- **It states how many blocks it scanned.** Its first version computed `ROOT` one directory too
+  high, walked an empty tree and reported OK. A live negative control caught it; the self-test
+  could not, because the self-test supplies its own paths. *A `--check` that never reads the
+  disk is not a check* — so it now refuses to pass on an empty scan.
+- **A gate nobody has watched fail is a gate nobody should trust.** Both directions were proven
+  against the real tree: re-enable the three floats → 3 findings, exit 1; restore → OK, exit 0.
+
+## What was wrong with the TOOL (seven of the twelve)
+
+`element_ability_table.py` is the answer to "show me this vessel's map", so a false gap there
+reads as a vessel nobody finished. Five fixes:
+
+| Fix | What it was reporting |
+|---|---|
+| Blank comments **and string literals** in `follow_static_calls` | One doc comment in `VesselTransformer` and two `[Tooltip]` strings in `ScarabAnimation` name `ScarabVesselTransformer.…`, which hung that hull's Snap Dash gate on the **Manta, Rhino and Squirrel** |
+| Accept a namespace-qualified `Element.X` argument | `MantaStingActionExecutor` writes `IsUpgradeActive(CosmicShore.Data.Element.Charge)`. A pattern anchored on the bare spelling read `"Charge"` as a serialized FIELD name and dropped the gate, so **both** of the Manta's implemented L5 upgrades reported as prose |
+| Parse nested-prefab-instance `m_Modifications` | An ElementalFloat authored as a prefab override is scattered, one entry per key, not a contiguous block. **Six of twelve vessel prefabs** author one; all six were invisible, which is why the Squirrel's Space slot reported `NO SCALING` while `Skimmer.Scale` sat right there at 15 → 30 |
+| Read C# field initializers | A `static` class can hold no serialized field, so `ScarabBallForge.BallSizeScale` — the Scarab's entire Space scaling — exists only in C#. Also covers rule 4-i: an asset written before a field existed ships the initializer |
+| `guard_state` reads a serialized bool's **C# default** | `turnUpgradeShieldsTrail` is absent from ten of twelve vessel prefabs and initialized `false`. Reading only authored YAML called that branch LIVE on all ten — which is how the Scarab's retired upgrade read as wired |
+
+Two of those are the same mistake from different directions: **a pattern anchored on one
+spelling of a thing that has several** (bare vs. qualified `Element.X`; a contiguous YAML block
+vs. scattered override entries). And the comment-blanking fix **recurred inside the new gate
+within the hour**: `check_elemental_floats.py` scanned raw C#, and the comment recording fix 3's
+deletion quotes the deleted declaration verbatim, so the removed field came back into the
+inventory *from its own obituary*.
+
+> **A tool that matches code by pattern must not read prose — and prose quotes code constantly,
+> including the prose you write to explain a deletion.**
+
+## One reported defect that was refuted
+
+`BACKLOG 5.5` recorded that `ResourceSystem.GetLevel` floors a float product: `0.7 * 10` is
+`6.999999999999999`, so a pilot on level 7 would read as 6 and the level-5 unlock would move.
+**Measured in real C#: it does not happen.** The arithmetic is float32 — `0.7f` is
+`0.699999988`, `× 10` rounds to exactly `7f` — and crystal progression accumulates `+= 0.1f`,
+which drifts *upward*, away from the boundary. All 26 cases land on their integer. Locked as
+`ElementalScalingUnificationTests.CrystalProgressionLandsOnEveryIntegerLevel`, as a **standing
+refutation** rather than a guard, so the hypothesis is not re-derived by the next person who
+reads `FloorToInt` and reasons in double.
+
+> **When a model and a build disagree, find out which one is wrong before recording it as a
+> defect.**
+
+**Nothing in this pass has been run in the Unity editor.** The gates that did run: all six
+out-of-editor checks, `check_elemental_floats.py --self-test` plus a live negative control, a
+Roslyn syntax compile of the eight changed C# files (zero non-missing-type errors), and a REAL
+Roslyn type check of `ElementalFloat.cs` + the test file against a stub harness (clean).

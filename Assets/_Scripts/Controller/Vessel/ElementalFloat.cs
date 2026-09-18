@@ -36,8 +36,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Off = this parameter does not scale with any element; Value is used verbatim.")]
         [SerializeField] public bool Enabled;
 
-        [Tooltip("The authored base. Returned verbatim when disabled or off-vessel, and kept in " +
-                 "step with the live level by the legacy bound path.")]
+        [Tooltip("The authored base. Returned verbatim when disabled or off-vessel. The legacy " +
+                 "bound path keeps it in step with the live level, but ONLY on a MonoBehaviour " +
+                 "host — on a ScriptableObject this is always exactly what was authored.")]
         [SerializeField] public float Value;
 
         [Tooltip("Value at the RESTING element level (normalized 0). For a multiplier this is " +
@@ -164,11 +165,21 @@ namespace CosmicShore.Gameplay
         /// integer, and this path reads the continuous level through <see cref="Evaluate"/> so the
         /// bound and live paths return the same number for the same state.</para>
         ///
-        /// <para>KNOWN ISSUE, not fixed here: this mutates a serialized field, and several
-        /// ElementalFloats live on SHARED ScriptableObject assets — which is the vessel contract's
-        /// rule 1 ("never bind state to an SO asset") and dirties the asset in the editor.
-        /// Retiring this path in favour of <see cref="EvaluateLive"/> at every consumer is its own
-        /// change with its own blast radius (<c>Skimmer</c>, <c>VesselAction</c>); logged in
+        /// <para>It mutates a serialized field, which sounds like the vessel contract's rule 1
+        /// ("never bind state to an SO asset") and is NOT: the only caller of the
+        /// <see cref="Vessel"/> setter is <c>ElementalShipComponent.BindElementalFloats</c>,
+        /// which reflects over <b>MonoBehaviour</b> fields only. So no ScriptableObject-hosted
+        /// ElementalFloat is ever bound, and none can be dirtied by this. Measured 2026-09-18.</para>
+        ///
+        /// <para>The real hazard is the MIRROR of that: an ElementalFloat on a ScriptableObject
+        /// read as <c>.Value</c> can never scale at all, whatever its asset authors. Three
+        /// shipped that way and had never run once (Rhino trail ceiling, Rhino skimmer shrink,
+        /// Sparrow muzzle speed). <c>Tools/Build/check_elemental_floats.py</c> is the gate.</para>
+        ///
+        /// <para>What remains of this path is legacy rather than broken: five MonoBehaviour
+        /// actions under <c>VesselActions/</c> (the pre-<c>R_</c> generation, still on the
+        /// Falcon, Shrike and Urchin) read <c>.Value</c> and rely on it. Converting them to
+        /// <see cref="EvaluateLive"/> is behaviour-neutral and needs the editor; logged in
         /// Docs/ElementalAbilitySystem/BACKLOG.md.</para>
         /// </summary>
         void ScaleValueWithLevel(Element changed, int level)
