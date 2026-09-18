@@ -177,13 +177,24 @@
 // PEER SIGHTS — the other pilots' cones, tinted by their domain.
 // -----------------------------------------------------------------------------
 
-// How many peer sights can be shown at once. Four is the roster of both Dolphin-only modes
-// (Rampage and The Bends, MaxPlayersAllowed 4), so in practice this is "everyone else" plus a
-// spare, so overflow cannot happen with any roster the game ships. PrismDestructionSight.cs keeps
-// the STRONGEST sights if it ever does, and mirrors this constant — change both together.
+// How many LIGHTS other than the viewer's own aim can be shown at once. Eight covers the widest
+// roster the game ships (the ARENA cards seat up to 8 hulls) with one light each; arcade modes
+// lock to one hull, so the realistic case is far smaller. PrismLit.Slots mirrors this constant —
+// change both together, since the arrays below are declared at this length — and PrismLit.Flush
+// keeps the STRONGEST lights if it ever overflows.
+//
+// The per-slot cost when a prism is OUTSIDE a light is each shape's own first test: one dot and
+// two compares. That is why there is no separate bounding sphere to maintain, and why raising
+// this bound is cheap.
 #ifndef PRISM_SIGHT_PEER_SLOTS
-#define PRISM_SIGHT_PEER_SLOTS 4
+#define PRISM_SIGHT_PEER_SLOTS 8
 #endif
+
+// Mirrors CosmicShore.Data.LitShape — the numeric values ARE the wire format, since PrismLit
+// packs the enum member straight into _PrismSightPeerShape[i].x. Change both together.
+#define PRISM_LIT_SHAPE_CONE     0
+#define PRISM_LIT_SHAPE_SPHERE   1
+#define PRISM_LIT_SHAPE_CYLINDER 2
 
 // How far a peer's domain colour is pulled toward white before it is added. 0 = the raw saturated
 // domain signal colour, which reads as the prism having changed team and lands squarely in the
@@ -206,18 +217,27 @@
 // per-frame globals rather than per-material properties (an array inside UnityPerMaterial is what
 // breaks SRP batching). Same mechanism PrismOcclusionCorridor.hlsl uses for its tuning dials.
 //
-//   PeerApex[i] = (apex.xyz,  height)
-//   PeerAxis[i] = (axis.xyz,  coreRadiusPerUnitDepth)
-//   PeerGape[i] = (gape.xyz,  halfLengthPerUnitDepth)
-//   PeerTint[i] = (tint.rgb,  strength)
+// The three geometry vectors carry the shape's three params in their w channels, so every shape
+// fits the same four float4s and only the TAG is extra:
+//   PeerApex[i]  = (origin.xyz, params.x)   cone: height   sphere: radius  cylinder: reach
+//   PeerAxis[i]  = (axis.xyz,   params.y)   cone: tanCore  sphere: -       cylinder: radius
+//   PeerGape[i]  = (gape.xyz,   params.z)   cone: tanGape  sphere: -       cylinder: mirrored
+//   PeerTint[i]  = (tint.rgb,   strength)
+//   PeerShape[i] = (shape, -, -, -)         one of PRISM_LIT_SHAPE_*
 //
 // _PrismSightPeerCount is the master sentinel: unpublished globals read as zero (a player build
-// before any Dolphin holds a trigger, or the editor between play sessions), the loop below does
+// before any producer lights anything, or the editor between play sessions), the loop below does
 // not execute, and this file behaves exactly as it did when the sight was local-only.
+//
+// The names are historical — this file, its guid and its entry point predate the LIT fundamental
+// and are deliberately unchanged, because renaming the entry point means editing every prism
+// graph's m_FunctionName for no functional gain, and a Custom Function node that cannot resolve
+// its function renders the material UNMATERIALED with nothing in the console.
 float4 _PrismSightPeerApex[PRISM_SIGHT_PEER_SLOTS];
 float4 _PrismSightPeerAxis[PRISM_SIGHT_PEER_SLOTS];
 float4 _PrismSightPeerGape[PRISM_SIGHT_PEER_SLOTS];
 float4 _PrismSightPeerTint[PRISM_SIGHT_PEER_SLOTS];
+float4 _PrismSightPeerShape[PRISM_SIGHT_PEER_SLOTS];
 float  _PrismSightPeerCount;
 
 // How deep inside one blast volume a point stands, on the edge-weighted curve, or 0 if outside.
@@ -260,6 +280,69 @@ float PrismSightFill(float3 samplePos, float3 apex, float3 axis, float3 gape, fl
     // than flooding it, with a floor so deep mass still reads as marked.
     float edge = saturate(d / coreRadius);
     return lerp(PRISM_SIGHT_CORE_FILL, 1.0, pow(edge, PRISM_SIGHT_EDGE_POWER));
+}
+
+// The SPHERE arm — an ordinary AOE blast, and the Sparrow warhead's proximity fuze. Mirrors
+// AOESpatialQueryJob: one dot against the squared radius, and the root is taken only on a hit.
+float PrismLitFillSphere(float3 rel, float radius)
+{
+    if (radius <= 0.0)
+        return 0.0;
+
+    float dSq = dot(rel, rel);
+    float rSq = radius * radius;
+    if (dSq > rSq)
+        return 0.0;
+
+    float edge = saturate(sqrt(dSq) / radius);
+    return lerp(PRISM_SIGHT_CORE_FILL, 1.0, pow(edge, PRISM_SIGHT_EDGE_POWER));
+}
+
+// The CYLINDER arm — the Scarab's cavitation plate: swept along its own face normal, flat end
+// caps, radius CONSTANT along the sweep. Mirrors AOECylinderSweepQueryJob, including the mirror:
+// a non-zero `mirrored` tests |axial|, so one volume claims the slabs either side of the start
+// plane together. Note the radial arm is taken from the SIGNED projection, never the mirrored
+// one, or a reflected point's distance to the axis is measured from the wrong side.
+float PrismLitFillCylinder(float3 rel, float3 axis, float reach, float radius, float mirrored)
+{
+    if (radius <= 0.0)
+        return 0.0;
+
+    float s = dot(rel, axis);
+    float axial = (mirrored > 0.0) ? abs(s) : s;
+    if (axial < 0.0 || axial > reach)
+        return 0.0;
+
+    float3 radial = rel - axis * s;
+    float d = length(radial);
+    if (d > radius)
+        return 0.0;
+
+    float edge = saturate(d / radius);
+    return lerp(PRISM_SIGHT_CORE_FILL, 1.0, pow(edge, PRISM_SIGHT_EDGE_POWER));
+}
+
+// Dispatch on the shape tag. The CONE arm still calls PrismSightFill above, unchanged and
+// uninlined here, so the viewer's own aim and every cone light are bit-identical to what this
+// file computed before the bank carried shapes at all — which is what keeps
+// Tools/Shaders/verify_prism_sight_composition.py meaningful as a regression proof rather than
+// merely a fresh measurement.
+//
+// The branch is UNIFORM across a wave: every prism in a draw reads the same bank, so the shape
+// switch costs a scalar compare and diverges never.
+float PrismLitFill(float3 samplePos, float3 origin, float3 axis, float3 gape, float3 params,
+                   float shape)
+{
+    if (params.x <= 0.0)
+        return 0.0;
+
+    if (shape >= PRISM_LIT_SHAPE_CYLINDER)
+        return PrismLitFillCylinder(samplePos - origin, axis, params.x, params.y, params.z);
+
+    if (shape >= PRISM_LIT_SHAPE_SPHERE)
+        return PrismLitFillSphere(samplePos - origin, params.x);
+
+    return PrismSightFill(samplePos, origin, axis, gape, params);
 }
 
 void PrismDestructionSight_float(
@@ -326,9 +409,10 @@ void PrismDestructionSight_float(
         float4 axis = _PrismSightPeerAxis[i];
         float4 gape = _PrismSightPeerGape[i];
         float4 tint = _PrismSightPeerTint[i];
+        float  shape = _PrismSightPeerShape[i].x;
 
-        float w = PrismSightFill(samplePos, apex.xyz, axis.xyz, gape.xyz,
-                                 float3(apex.w, axis.w, gape.w)) * tint.a;
+        float w = PrismLitFill(samplePos, apex.xyz, axis.xyz, gape.xyz,
+                               float3(apex.w, axis.w, gape.w), shape) * tint.a;
         if (w <= 0.0)
             continue;
 

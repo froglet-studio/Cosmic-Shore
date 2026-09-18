@@ -18,7 +18,7 @@ namespace CosmicShore.Tests
     /// (an edit-mode test cannot execute HLSL), so it lives beside the shader and these tests
     /// cover what a C# assembly CAN see: that the two sides still agree about their contract.
     /// </summary>
-    public class PrismDestructionSightTests
+    public class PrismLitTests
     {
         const string HlslPath = "Assets/_Graphics/Materials/Graphs/PrismDestructionSight.hlsl";
 
@@ -39,8 +39,8 @@ namespace CosmicShore.Tests
                 "that length, so it must exist and must be a literal.");
 
             int shaderSlots = int.Parse(m.Groups[1].Value);
-            Assert.AreEqual(shaderSlots, PrismDestructionSight.PeerSlots,
-                $"PrismDestructionSight.PeerSlots ({PrismDestructionSight.PeerSlots}) and the shader's " +
+            Assert.AreEqual(shaderSlots, PrismLit.Slots,
+                $"PrismLit.Slots ({PrismLit.Slots}) and the shader's " +
                 $"PRISM_SIGHT_PEER_SLOTS ({shaderSlots}) have drifted. The C# writes fixed-length arrays " +
                 "into globals the shader declares at its own length: too few and the tail of the bank is " +
                 "whatever the previous frame left there, too many and Unity rejects the write. They are " +
@@ -70,10 +70,10 @@ namespace CosmicShore.Tests
                 worstRoster = System.Math.Max(worstRoster, int.Parse(m.Groups[1].Value));
             }
 
-            Assert.GreaterOrEqual(PrismDestructionSight.PeerSlots, worstRoster - 1,
+            Assert.GreaterOrEqual(PrismLit.Slots, worstRoster - 1,
                 $"A Dolphin-only mode seats {worstRoster} pilots, so up to {worstRoster - 1} rivals can hold " +
-                $"a sight at once, but the peer bank holds {PrismDestructionSight.PeerSlots}. Raise " +
-                "PrismDestructionSight.PeerSlots AND PRISM_SIGHT_PEER_SLOTS together, or the extra pilots' " +
+                $"a sight at once, but the peer bank holds {PrismLit.Slots}. Raise " +
+                "PrismLit.Slots AND PRISM_SIGHT_PEER_SLOTS together, or the extra pilots' " +
                 "marks are silently dropped — and which ones get dropped depends on dictionary order, so " +
                 "different players would see different arenas.");
         }

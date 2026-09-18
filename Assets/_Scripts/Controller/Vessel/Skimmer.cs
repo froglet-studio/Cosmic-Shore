@@ -95,13 +95,64 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!IsInitialized) return;
-            ApplyScaleIfChanged();   
+            ApplyScaleIfChanged();
+            PublishLit();
         }
-        
+
+        /// <summary>
+        /// LIT: every prism inside this skim field is drawn lit in the pilot's domain colour, so
+        /// the mass a skimmer is actually working is visible rather than inferred from a gauge
+        /// twitching. One sphere per frame; see <see cref="PrismLit"/>.
+        ///
+        /// <para><b>LOCAL PILOT only, and that is a design call rather than a saving.</b> A skim
+        /// field is an INSTRUMENT — feedback about your own energy intake — where every other
+        /// producer says something a rival needs to read (a pending blast, an armed warhead, a
+        /// dash claiming space). Nobody needs to see where somebody else is farming. It also
+        /// keeps the bank honest: skimmers are the only always-on producer in the game, and an
+        /// ARENA card seats up to eight hulls with two skimmers each, which would fill
+        /// <see cref="PrismLit.Slots"/> twice over with ambient light and evict every light that
+        /// actually carries information.</para>
+        ///
+        /// The radius is read from the LIVE transform rather than the authored shape because the
+        /// field is elementally scaled every frame (<see cref="ApplyScaleIfChanged"/>), and the
+        /// Squirrel's spans 15-30 units across its range - a light fitted to the authored size
+        /// would stop describing the volume that is doing the skimming.
+        /// </summary>
+        void PublishLit()
+        {
+            var player = VesselStatus?.Player;
+            if (player == null || !player.IsLocalPilot)
+            {
+                PrismLit.ClearLight(LitSourceId);
+                return;
+            }
+
+            // The collider is a unit sphere of radius 0.5, so the world radius is half the
+            // uniform scale ApplyScaleIfChanged writes - the same relationship _sweetSpot is
+            // derived from. x rather than lossyScale so an elongateYOnly field still reports the
+            // radius of the part that skims.
+            float radius = transform.localScale.x * 0.5f;
+            if (radius <= 0f)
+            {
+                PrismLit.ClearLight(LitSourceId);
+                return;
+            }
+
+            PrismLit.PublishLight(LitSourceId,
+                LitVolume.Sphere(transform.position, radius), 1f, VesselStatus.Domain);
+        }
+
+        /// <summary>Stable bank key, so a skimmer holds one slot across a vessel swap.</summary>
+        int LitSourceId => GetInstanceID();
+
         private void OnDestroy()
         {
             // Ensures any scaling tasks for this specific transform are cancelled
             transform.CancelResize();
+
+            // The bank fades an unreported light out by itself, so this only starts that fade a
+            // frame earlier - it cannot make the mark pop.
+            PrismLit.ClearLight(LitSourceId);
         }
 
         public void Initialize(IVesselStatus vesselStatus)

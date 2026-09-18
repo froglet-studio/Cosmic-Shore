@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using Reflex.Core;
 using Reflex.Injectors;
-using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
+using UnityEngine;
+
 namespace CosmicShore.Gameplay
 {
     /// <summary>
@@ -41,36 +43,28 @@ namespace CosmicShore.Gameplay
         /// a highlighted VESSEL and the highlighted PRISMS around it brighten together instead of
         /// reading as two separate effects that happen to share a trigger.
         /// </summary>
+        /// <summary>
+        /// The LIT volume this blast is, for publishing into <c>PrismLit</c> and for
+        /// <see cref="Contains"/>. A blast's cone IS a <see cref="LitShape.Cone"/>, so this is a
+        /// field rename rather than a conversion.
+        /// </summary>
+        public readonly LitVolume AsLitVolume() => IsValid
+            ? LitVolume.Cone(Apex, Axis, GapeAxis, Height, TanCorePerUnit, TanGapePerUnit)
+            : default;
+
+        /// <summary>
+        /// Is <paramref name="worldPoint"/> standing inside this blast, and how deep?
+        ///
+        /// DELEGATES to <see cref="LitVolume.Contains"/>. This used to be a fourth hand-written
+        /// transcription of <c>AOEConicSweepQueryJob</c>'s volume test, beside the sweep itself,
+        /// <c>PrismDestructionSight.hlsl</c> and the capsule trigger - and a preview that drifts
+        /// from the damage it previews is worse than no preview, so the arm now lives in exactly
+        /// one place. <paramref name="fill01"/> is unchanged: the same edge-weighted curve, on the
+        /// same constants, so a highlighted VESSEL and the highlighted PRISMS around it still
+        /// brighten together.
+        /// </summary>
         public readonly bool Contains(Vector3 worldPoint, out float fill01)
-        {
-            const float EdgePower = 2f;   // PRISM_SIGHT_EDGE_POWER
-            const float CoreFill = 0.35f; // PRISM_SIGHT_CORE_FILL
-
-            fill01 = 0f;
-            if (!IsValid || Height <= 0f) return false;
-
-            Vector3 rel = worldPoint - Apex;
-
-            // The near clip is the apex: mass (and pilots) BEHIND the vessel are never inside,
-            // even though the axis extends backwards mathematically.
-            float s = Vector3.Dot(rel, Axis);
-            if (s <= 0f || s > Height) return false;
-
-            float coreRadius = TanCorePerUnit * s;
-            if (coreRadius <= 0f) return false;
-
-            Vector3 radial = rel - Axis * s;
-            float halfLength = TanGapePerUnit * s;
-            float along = Mathf.Clamp(Vector3.Dot(radial, GapeAxis), -halfLength, halfLength);
-            Vector3 offAxis = radial - GapeAxis * along;
-
-            float d = offAxis.magnitude;
-            if (d > coreRadius) return false;
-
-            float edge = Mathf.Clamp01(d / coreRadius);
-            fill01 = Mathf.Lerp(CoreFill, 1f, Mathf.Pow(edge, EdgePower));
-            return true;
-        }
+            => AsLitVolume().Contains(worldPoint, out fill01);
     }
 
     public static class ExplosionHelper

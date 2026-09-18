@@ -2,6 +2,7 @@ using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Gameplay
@@ -28,6 +29,11 @@ namespace CosmicShore.Gameplay
             // Hand the ColorSet to the static game-toast API so it colors domain names
             // from the same single source the vessels and prisms use (R5).
             GameToastAPI.ColorSet = _dataContainer.ColorSet;
+
+            // Same hand-off, same reason: PrismLit is a static that resolves a light's DOMAIN
+            // tint and cannot be injected. Until this line runs a light falls back to white, and
+            // this manager is a Bootstrap DI singleton, so nothing that can fire has woken yet.
+            PrismLit.ColorSet = _dataContainer.ColorSet;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)

@@ -833,6 +833,15 @@ namespace CosmicShore.Gameplay
                             return;
                     }
 
+                    // LIT: the sphere this round would detonate inside, drawn on the mass it
+                    // covers in the shooter's domain colour, so a warhead's threat volume is
+                    // something the arena can READ rather than something only the shooter knows.
+                    // Published from inside the flight loop off the same radius the fuze itself
+                    // tests, so the light and the trigger are one number - a fuze that armed at a
+                    // radius the light did not draw would be worse than no light. The bank fades
+                    // it out by itself when the round is retired or detonates.
+                    PublishFuzeLit(t.position);
+
                     // The PROXIMITY FUZE. Checked after the step so it reads the position the
                     // round actually reached this frame, and after the swept prism dispatch so a
                     // direct hit - which ends the flight from inside that call - always wins.
@@ -1279,6 +1288,28 @@ namespace CosmicShore.Gameplay
         /// rocket - so the rule is one rule, and it does not depend on an upgrade state that
         /// would make the fuze behave differently at different element levels.</para>
         /// </summary>
+        /// <summary>
+        /// Publish this round's armed fuze volume as a LIT sphere. A no-op on every round in the
+        /// game but the skyburst: <c>proximityFuzeRadiusMultiplier</c> is 0 elsewhere, so there
+        /// is no fuze to draw and nothing is published.
+        ///
+        /// The radius is <see cref="HitRadiusWorld"/> x the fuze multiplier - the exact expression
+        /// <see cref="ProximityFuzeTripped"/> tests - which means it GROWS with MASS along with
+        /// the round it belongs to, and a round still leaving the bay draws the small volume it
+        /// actually has.
+        /// </summary>
+        void PublishFuzeLit(Vector3 position)
+        {
+            float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;
+            if (radius <= 0f || IsDetonating) return;
+
+            // Domains.Blue for an unrostered round (the anonymous-explosion case) rather than a
+            // guessed team: PrismLit.DomainTint answers white for the sentinel, which reads as a
+            // neutral threat rather than as somebody else's.
+            var domain = VesselStatus?.Player != null ? VesselStatus.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(position, radius), 1f, domain);
+        }
+
         bool ProximityFuzeTripped(Vector3 position)
         {
             float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;
