@@ -1,7 +1,10 @@
 # Fleet elemental gaps — what is INCOMPLETE, and what merely looked it
 
 **Measured 2026-09-18** with `python3 Tools/Build/element_ability_table.py --gaps`, after the
-element-scaling unification (`ELEMENT_SCALING_UNIFICATION.md`) and its follow-up pass.
+element-scaling unification (`ELEMENT_SCALING_UNIFICATION.md`), its follow-up pass, and the merge
+of the Serpent scope + rifle branch — which filled two of the slots this report first listed while
+it was in review. **Re-run the tool before acting on any row here**; every count below is a
+transcription with a date on it.
 
 This is the vessel-**incompleteness** report the refactor asked for. Everything here is a
 DESIGN gap: a slot nobody has filled. Every wiring inconsistency the same pass found was fixed
@@ -9,25 +12,27 @@ rather than reported, and §3 lists those so the two are never confused again.
 
 ---
 
-## 1. The open design slots (5 rows, 2 vessels)
+## 1. The open design slots (3 rows, 2 vessels)
 
-Both vessels are `(open design slot)` in their own map asset — the entry exists, names no
-ability, binds no input, and nothing in code reads that element on that hull. Neither is a
-regression; neither has ever been filled.
+Each is `(open design slot)` in its own map asset — the entry exists, names no ability, binds no
+input, and nothing in code reads that element on that hull. None is a regression; none has ever
+been filled.
 
 | Vessel | Element | State | What filling it costs |
 |---|---|---|---|
 | **Rhino** | Charge | no ability, no scaling, no L5 | design + one `ElementalFloat` + (optionally) one `IsUpgradeActive` gate |
 | **Rhino** | Space | no ability, no scaling, no L5 | as above |
-| **Serpent** | Charge | no ability, no scaling, no L5 | as above |
 | **Serpent** | Mass | no ability, no scaling, no L5 | as above |
-| **Serpent** | Space | no ability, no scaling, no L5 | as above |
 
-`Docs/ElementalAbilitySystem/FLEET_MAPS.md §2` carries the un-approved PROPOSALS for these ten
-rows (four Rhino, four Serpent, minus the two already filled). They are proposals, not a
-backlog: **do not implement one without sign-off**, and do not invent a mapping to make the
-audit green — an invented mapping is worse than an honest hole, because the next reader cannot
-tell it from a designed one.
+This report opened at **five** such rows. The Serpent's **Charge** and **Space** were two of them
+and were filled upstream, by the scope + rifle branch, while this one was in review — see "What
+the two vessels DO have" below. That is the reason the header says to re-run the tool: a gap list
+is a snapshot, and another branch closing a gap looks exactly like this report being wrong.
+
+`Docs/ElementalAbilitySystem/FLEET_MAPS.md §2` carries the un-approved PROPOSALS for the
+still-open rows. They are proposals, not a backlog: **do not implement one without sign-off**, and
+do not invent a mapping to make the audit green — an invented mapping is worse than an honest
+hole, because the next reader cannot tell it from a designed one.
 
 ### What the two vessels DO have
 
@@ -35,7 +40,15 @@ tell it from a designed one.
 |---|---|---|---|---|
 | Rhino | Mass | Trail Slabs | `massMaxSizeMultiplier` ×1 → ×1.5, floored ×0.25 (`GrowTrailAction.asset`) | — |
 | Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`) | — |
+| Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |
+| Serpent | Space | Scope | `zoomDepthAtFullSpace` 2 on `SniperScopeAction.asset`, same channel | **Deep Focus** |
 | Serpent | Time | Boost Duration | `timeDurationMultiplier` ×1 → ×1.6, floored ×0.25 (`ConsumeBoostAction.asset`) | — |
+
+The Serpent's two new rows scale through `ElementalScaling.Multiplier(status, element, atFull,
+minMul)` — a per-executor read of an authored endpoint on the ability's own asset — rather than
+through an `ElementalFloat`. Both shapes are parameter-addressed and both are fine; the retired
+channel was the generic one keyed on the ELEMENT (`handler.Multiplier(element)`), which reached
+every reader of that element at once. Nothing on this branch needs to change for them.
 
 ⚠ The Rhino's **Time** and the Serpent's **Time** each lost an undeclared SECOND application of
 Time when the generic channel was removed (ramp ceiling ÷2.5, boost speed ÷1.6 at Time 10).
@@ -67,9 +80,9 @@ It was corrected on 2026-09-18 to a `(open design slot)` entry that records the 
 
 ## 3. What was NOT incompleteness — fixed, not reported
 
-The same audit first reported **12** disagreements. Seven of them were the tools and the data
-lying about the code, not the code being unfinished, and all seven are fixed. They are listed
-because each is a shape that will recur.
+The same audit first reported **12** disagreements: seven were the tools and the data lying
+about the code rather than the code being unfinished (all seven fixed, below), and five were the
+design gaps §1 opened with. They are listed because each is a shape that will recur.
 
 | # | Looked like | Actually was |
 |---|---|---|

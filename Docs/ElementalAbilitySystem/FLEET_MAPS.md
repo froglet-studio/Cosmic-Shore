@@ -5,8 +5,9 @@
 implemented — **Sparrow, Dolphin, Squirrel, Urchin, Manta** (the Manta via the 2026-08 spec
 remake; its superseded "Reaper Ray" table is kept below as history); their rows below are the
 record, not a proposal, and are not to be re-litigated from the superseded tables kept beside
-them. The level-5 upgrades for **Rhino and Serpent** are still **PROPOSALS for Garrett to mark
-up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
+them. The **Serpent's Charge and Space rows joined that set on 2026-09-16** (the scope + rifle
+re-cut; its Mass row and its Time L5 are still proposals). The level-5 upgrades for the **Rhino**
+are still **PROPOSALS for Garrett to mark up** — none are implemented. Approve/edit per row; implementation follows the Sparrow pattern (per-shot/per-use
 snapshot, gated on `IsUpgradeActive(element)` in the executor, replicated unlock bits, no new
 fundamentals).
 
@@ -60,13 +61,18 @@ day after the channel it referred to had been deleted.
 | Squirrel | 4/4 | 4/4 | 4/4 |
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
+| Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
-| Serpent | 1/4 | 1/4 | 0/4 |
 
-Everything the tool still flags is a **design gap, not a wiring bug** — the open slots on the
-Rhino and the Serpent. The full list, with what each one would cost to fill, is
+Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
+Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is
 **`FLEET_GAPS.md`**.
+
+**Re-run the tool rather than reading this table** — it is a transcription and it went stale
+inside one merge. The Serpent was 1/4/1/4/0/4 when the table was first written and the scope +
+rifle branch landed two abilities, two scaling channels and two L5 gates while this branch was in
+review. A count in prose describes the tree on the day it was taken.
 
 ### Flight model (not an elemental mapping, but it changes what the Time rows *feel* like)
 
@@ -313,14 +319,56 @@ Time→charge fill rate / "Instant Draw".
 | Space | *(open)* → propose: forcefield max size | **Breaker** — ramming destroys shielded prisms in one hit (devastate on ram) |
 | Time | **ramp wind-up rate** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — "Ramp Spool", LIVE since Broadside's playtest) | *(open)* — the row is FILLED, the upgrade is not. The old proposal here was "slab growth rate → **Fast Pour**"; it is retired rather than moved, because Time now owns the ramp and one element owns one parameter |
 
-### Serpent — "Wall-Weaver" (boost + wall)
+### Serpent — scope + rifle (was "Wall-Weaver") — CHARGE + SPACE APPROVED + SHIPPED
 
-| Element | Quantitative (live) | Proposed L5 upgrade |
+Garrett's markup, 2026-09-16: *"when the serpent hold the left trigger it should take on a first
+person perspective. the analog control should allow it to zoom in. while in first person mode the
+right stick should fire a sniper shot that can destroy supershielded prisms on a long cooldown."*
+Element assignment and the right-trigger resolution were confirmed in the same session.
+
+| Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | *(open)* → propose: boost stack potency | **Venom Wake** — boost trail becomes a danger trail for the boost duration (reuses `VesselPrismController.EnableDangerMode`, now caller-less since the Sparrow's overheat was removed; dangerous to everyone incl. self, per the locked law) |
-| Mass | *(open)* → propose: wall prism scale | **Fortified Wall** — woven wall prisms arrive shielded |
-| Space | *(open)* → propose: skimmer scale | **Coil Reach** — skim energy from own wall at double rate |
-| Time | boost duration | **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+| Charge | **Sniper Shot** on RT — the RECOVERY: 12 s at rest → 5.4 s at Charge 10 (`SniperShotAction.asset`, map pinned 1) | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first (`SniperShotActionExecutor`, gated on `IsUpgradeActive(Charge)`) |
+| Mass | *(open)* → proposal below still stands | **Fortified Wall** — woven wall prisms arrive shielded |
+| Space | **Scope** on LT — the MAGNIFICATION: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° (`SniperScopeAction.asset`, map pinned 1) | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it, so the extra reach is reachable (13.8° at rest, 6.9° at Space 10; `SniperScopeActionExecutor`, gated on `IsUpgradeActive(Space)`) |
+| Time | boost duration (1.6) | *(open)* → proposal: **Endless Coil** — consuming a boost charge while boosting chains without the reload pause |
+
+Retired with the re-cut: the Charge proposal *boost stack potency* / **Venom Wake**, and the Space
+proposal *skimmer scale* / **Coil Reach**. `VesselPrismController.EnableDangerMode` is still
+caller-less and still worth keeping for a future ability.
+
+**The right trigger is CONTEXTUAL.** It already carried `CloakSeedWallAction`; both actions are now
+bound to it and each asks `SniperScopeActionExecutor.IsScoped` whether the context is its own —
+scoped fires the rifle, unscoped still cloaks. Neither ability learns about the other's wiring.
+
+**Two platform surfaces came with it and BOTH were unwound on playtest**, which is the part worth
+carrying (`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md` round 4).
+`VesselFirstPersonView` — a sibling of `VesselRearView`, the cockpit pose applied at the point of
+use, the eye MEASURED off the hull radius — is **deleted**, and
+`VesselSpeedTunnel.SetHomeFieldOfViewOverride` is **kept with no caller**, as a guard rather than a
+feature. The reason is one finding: *a magnified view is a lever on every motion that reaches it*,
+so magnifying the camera the pilot FLIES with multiplies their own turn, the hull's roll and the
+speed tunnel's narrowing by the same factor it multiplies the target, and it read as nauseating.
+The magnification now lives in a panel beside the flight view (`ScopePipView`, the
+`ConnectingArenaPreview` shape), and the zoom is a pure function of the
+trigger's own depth — which is also why **Space 5 was re-cut from Steady Eye to Deep Focus**: the
+old upgrade existed to switch off a stick-driven zoom bleed that no longer exists. Rule 21's test
+sharpens with it: an ability earns the FOV surface only when magnifying the FLIGHT VIEW is the
+mechanic, not merely when magnification is.
+
+**One fleet-wide UI fix came out of the same round.** `AbilityLockupView.SetAbilityCooldown`
+refused a LOCKED card, so this vessel's recharge — pushed correctly from
+`SerpentVesselHUDController` from the day the ability shipped — landed nowhere for three rounds of
+playtest, because the Serpent binds 0/4 icons. It now draws (the veil sizes itself on the ability
+PLATE, which a locked card has). *An indicator that refuses to draw because its decoration is
+missing is indistinguishable from an indicator nobody is driving.*
+
+**It is also the fleet's SECOND force that can break a super-shield**, after the Rhino's energised
+blade, using the same sanctioned `DeactivateShields` → `Damage(devastate: true)` sequence.
+
+Drive-by: the Time entry's `Input` was `0` (`FullSpeedStraightAction`) while `ConsumeBoostAction`
+rides `Button1Action`. The ability lockup DRAWS each card's control chip from that field, so it was
+a wrong glyph, not a stale comment. Corrected to `6`.
 
 ### Squirrel — racer (drift + tube) — APPROVED + SHIPPED
 

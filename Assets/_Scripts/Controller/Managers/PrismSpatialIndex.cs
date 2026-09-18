@@ -1060,6 +1060,104 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The TAPERING counterpart of <see cref="QuerySegment"/>: gathers every LIVE prism
+        /// whose centre lies inside a cone of half-angle <paramref name="halfAngleDegrees"/>
+        /// opening from <paramref name="apex"/> along <paramref name="direction"/>, out to
+        /// <paramref name="length"/>, with a <paramref name="minRadius"/> floor near the apex.
+        ///
+        /// It exists because a hitscan weapon is aimed in ANGLE and a capsule is not. A fixed
+        /// radius is a tube: 4 u at 3,000 u subtends 0.076°, which inside a 22° scope is about
+        /// 7 px — a needle the player cannot aim, while the same 4 u at point-blank range is a
+        /// blunderbuss. A cone covers a CONSTANT on-screen area at every range, so "put the
+        /// reticle on it" means the same thing everywhere along the beam, and the reticle can
+        /// be drawn at the cone's true angular size.
+        ///
+        /// The floor is what keeps the apex honest: a pure cone has zero radius at the muzzle,
+        /// so mass the ship is about to fly into would be missed by the one weapon pointed
+        /// straight at it.
+        ///
+        /// Same conventions as <see cref="QuerySegment"/>: results are cleared first, the test
+        /// is against the prism's CENTRE, the snapshot is UNORDERED (callers that stop at the
+        /// first hit must sort along <paramref name="direction"/> themselves), entries can be
+        /// destroyed by the caller's own side effects mid-iteration, and it is main-thread only
+        /// with no allocation given a reused list.
+        ///
+        /// <paramref name="direction"/> need not be normalized; a zero direction returns 0.
+        /// </summary>
+        public int QueryCone(Vector3 apex, Vector3 direction, float length, float halfAngleDegrees,
+            float minRadius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+            if (length <= 0f) return 0;
+
+            float3 dir = direction;
+            float dirLenSq = math.lengthsq(dir);
+            if (dirLenSq < 1e-8f) return 0;
+            dir *= math.rsqrt(dirLenSq);
+
+            float3 p0 = apex;
+            float tanHalf = math.tan(math.radians(math.clamp(halfAngleDegrees, 0f, 89f)));
+            minRadius = math.max(minRadius, 0f);
+            float endRadius = math.max(minRadius, length * tanHalf);
+
+            // Conservative AABB: the capsule that circumscribes the cone. Thin across the
+            // flight for any sane half-angle, so the bucket walk stays cheap on a long shot.
+            float3 end = p0 + dir * length;
+            float3 lo = math.min(p0, end) - endRadius;
+            float3 hi = math.max(p0, end) + endRadius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (!ConeContains(s.Position, p0, dir, length, tanHalf, minRadius)) continue;
+                    var prism = _prisms[i];
+                    if (prism) results.Add(prism);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (!ConeContains(s.Position, p0, dir, length, tanHalf, minRadius)) continue;
+                    var prism = _prisms[idx];
+                    if (prism) results.Add(prism);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
+        }
+
+        /// <summary>
+        /// Is <paramref name="p"/> inside the cone from <paramref name="apex"/> along the UNIT
+        /// <paramref name="dir"/>? The allowed radius at axial distance t is
+        /// <c>max(minRadius, t · tanHalf)</c>, and the perpendicular distance falls out of the
+        /// axial projection for free because <paramref name="dir"/> is unit length.
+        /// </summary>
+        public static bool ConeContains(float3 p, float3 apex, float3 dir, float length,
+            float tanHalf, float minRadius)
+        {
+            float3 rel = p - apex;
+            float t = math.dot(rel, dir);
+            if (t < 0f || t > length) return false;
+            float allowed = math.max(minRadius, t * tanHalf);
+            float perpSq = math.max(0f, math.lengthsq(rel) - t * t);
+            return perpSq <= allowed * allowed;
+        }
+
+        /// <summary>
         /// Squared distance from <paramref name="p"/> to the segment starting at
         /// <paramref name="a"/> with direction/length <paramref name="ab"/> — the same
         /// point-to-segment metric a CapsuleCollider uses, clamped to the endpoints.
