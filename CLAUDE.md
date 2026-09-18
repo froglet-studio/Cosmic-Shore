@@ -3569,17 +3569,58 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
 - **Domain-aggregated scoring**: SkimRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` draws those sums as **one centred row divided into a column per domain** — team score over that team's player icons over a 3px team-coloured accent, local domain first, no names (`Docs/GAME_MODE_TOPBAR.md` §2). The layout is chosen by the view's wiring and needs no branch in the HUD: with `domainBarContainer` set, `AllyDomainContainer` and `OpposingDomainsContainer` both resolve to that one transform, so the existing "local first, then opposing in enum order" build lays the columns out; with only the legacy `allyDomainContainer` / `opposingDomainsContainer` pair set, the old two-groups-flanking-a-player-card layout still works; with neither, it falls back to the per-player layout in `PlayerScoreContainer`.
 
-### FTUE (First-Time User Experience)
+### FTUE (First-Time User Experience) — the QUEST GRAPH
 
-Tutorial system at `Assets/FTUE/` (25 C# files) using adapter pattern with clean interface separation:
+**The adapter/step-handler tutorial system this section used to describe is DELETED** (25 files:
+`IFlowController`, `ITutorialExecutor`, `TutorialFlowController`, `TutorialStep`,
+`TutorialSequenceSet`, `FTUEIntroAnimator`, the four step handlers, `TutorialUIView`,
+`InGameTutorialFlowView` and the rest), along with the older `Quest` / `QuestSystem` /
+`UserJourneySystem` / `SO_QuestChain` prototype beside it. Do not reintroduce any of them, and do
+not take a stale doc naming one as evidence it exists.
 
-- **Interfaces**: `IFlowController`, `ITutorialExecutor`, `ITutorialStepHandler`, `ITutorialUIView`, `IAnimator`, `IOutroHandler`, `ITutorialStepExecutor`
-- **Adapters**: `TutorialExecutorAdapter`, `FTUEIntroAnimatorAdapter`, `TutorialUIViewAdapter`
-- **Data models**: `TutorialStep`, `TutorialPhase`, `TutorialSection`, `TutorialSequenceSet`, `TutorialStepPayload`, `TutorialStepType`, `FTUEProgress`
-- **Drivers**: `FTUEIntroAnimator`, `TutorialFlowController`
-- **Step handlers**: `FreestylePromptHandler`, `IntroWelcomeHandler`, `LockModesExceptFreestyleHandler`, `OpenArcadeMenuHandler`
-- **UI**: `TutorialUIView`, `InGameTutorialFlowView`
-- **Events**: `FTUEEventManager` (SOAP-based event broadcasting)
+What replaced it is a **QUEST GRAPH** at `Assets/FTUE/` — a visually authored node graph rather
+than a hand-wired sequence, so a designer changes the onboarding by editing an asset instead of
+adding a handler class:
+
+- **Data**: `QuestSO` (an ordered sequence of phases) → `QuestPhaseGraphSO` (one graph per phase)
+  → `QuestNodeSO` subclasses joined by `QuestEdge`. The shipped chain is
+  `DataContainer/Quests/MainQuest.asset` over `DataContainer/Phases/MainQuest_Phase0..5.asset`.
+- **Nodes** (`Scripts/Graph/Nodes/`): dialogue, show-instruction, navigate, enter/exit freestyle,
+  set-arcade-constraints, lock-modes, lock-navigation, unlock-mode, and the wait family
+  (input, skim, drift, intensity, mode-unlocked, game-launch, game-played, user-action).
+- **Runtime** (`Scripts/Graph/Runtime/`): `QuestGraphRunner` (the one driver — `TryStart` is the
+  single choke point both start paths funnel through), `QuestRuntimeContext`,
+  `QuestProgressStore` (local PlayerPrefs mirror + optional cloud), `QuestArcadeConstraints`
+  (the arcade funnel, persisted so it survives a Menu → game → Menu round trip),
+  `QuestPlayRecorder`.
+- **UI** (`Scripts/UI/`): `QuestDialoguePanelView`, `QuestInstructionView`,
+  `QuestRewardRevealView`, `QuestToastNotifier`. **All four hide themselves in `Awake`**, which
+  is what makes standing the runner down safe.
+- **Editor** (`Assets/FTUE/Editor/`): `QuestGraphEditorWindow` (the graph authoring tool),
+  `QuestDefaultContentBuilder`, `QuestPhase0UIWirer`, `QuestRunnerSetup`, `QuestGraphLayout`.
+- **Events**: `FTUEEventManager` survives, narrowed to three — `InitializeFTUE` (an external
+  start trigger) plus `OnQuestPhaseCompleted` / `OnQuestCompleted`, consumed only by
+  `QuestToastNotifier`. Nothing blocks on them.
+
+**Progression is a separate system from the graph** and is the thing the graph unlocks:
+`SO_UnlockList` + `SO_UnlockData` (formerly `SO_GameModeQuestList` / `SO_GameModeQuestData`) drive
+`GameModeProgressionService`, tuned by `SO_ProgressionConfig`. There is no XP — quest completion
+is the only currency.
+
+**THE MASTER DEVELOPER UNLOCK IS ON BY DEFAULT — read this before debugging any lock.**
+`DeveloperUnlockGate.AllUnlocked` (`_Scripts/System/Progression/`) opens every entitlement at
+once — all vessels, all game modes, every intensity tier, the Vessel Hangar — **and stands the
+quest graph down entirely**, because everything the graph applies is a lock that gate exists to
+open. It defaults ON until the FTUE is designed, so *the onboarding does not run in a default
+checkout*, and a lock that appears not to work is this switch before it is a bug. Flip it in the
+Froglet Toolbox (Quest Debug or Vessel Unlock tab); it announces itself once per session as a
+warning for exactly that reason. It gates six choke points rather than teaching ~20 call sites
+about itself, and each intercepted read keeps a RAW twin for the code that MANAGES entitlement
+(`SO_Vessel.IsLockedByEntitlement` beside `SO_Vessel.IsLocked`) — because gating a read also
+reaches the write path's guards, and without the twin every vessel unlock would be a silent
+no-op. When the FTUE ships, `DefaultAllUnlocked` flips to false and it becomes an opt-in cheat.
+It is NOT `ProgressionBackendGate`, which decides whether progression is PERSISTED rather than
+whether it is ENFORCED.
 
 ### Dialogue System
 
