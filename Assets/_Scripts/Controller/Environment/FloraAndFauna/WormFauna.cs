@@ -282,7 +282,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 var prefab = i == 0 ? headPrefab : i == count - 1 ? tailPrefab : bodyPrefab;
-                AddSegmentToChain(Instantiate(prefab, pos, facing), segments.Count,
+                AddSegmentToChain(prefab, pos, facing, segments.Count,
                     Vector3.one * SegmentTargetScale(i));
                 if (i + 1 < count)
                     pos -= dir * LinkSpacing(i + 1, RoleForBuildIndex(i, count),
@@ -307,8 +307,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void AddSegmentToChain(WormSegmentFauna seg, int index, Vector3 scale)
+        /// <summary>
+        /// Creates a segment and links it in. This method OWNS the Instantiate - all four
+        /// producers (the initial chain, and the head / tail / body regrowths) route through
+        /// it - because the replication seam below has to run after the heart reprovision,
+        /// and a producer that instantiates for itself is a producer that can skip it. Same
+        /// rule as CellLifeSpawnerBase.SpawnFaunaWithDomain, one level down: enforce at the
+        /// one call they all reach.
+        /// </summary>
+        WormSegmentFauna AddSegmentToChain(WormSegmentFauna prefab, Vector3 pos, Quaternion rot,
+                                           int index, Vector3 scale)
         {
+            var seg = Instantiate(prefab, pos, rot);
             seg.transform.localScale = scale;
             seg.domain = domain;
             seg.Colony = this;
@@ -321,7 +331,17 @@ namespace CosmicShore.Gameplay
             if (_pickedHeartElement != Element.None)
                 seg.ReprovisionHeart(_pickedHeartElement, HeartWorldScale);
             if (cell) cell.RegisterSpawnedObject(seg.gameObject);
+            // The replication seam, at the one funnel every one of this colony's four segment
+            // producers reaches (grow-head / grow-tail / grow-body / initial chain). AFTER the
+            // heart reprovision above, which is this member's identity. A segment carries no
+            // config of its own - the COLONY holds it - so this resolves to NeutralizeStray,
+            // which is the correct reading of a locally-simulated colony. No worm prefab
+            // carries a NetworkObject today, so it is a no-op; it is here so that adding one
+            // cannot silently leak four producers' worth of strays
+            // (Docs/PartySystem/BUGS.md B16, B5).
+            FaunaNetworkSync.ServerSpawn(seg);
             segments.Insert(index, seg);
+            return seg;
         }
 
         // -------------------------------------------------------------------
@@ -849,8 +869,7 @@ namespace CosmicShore.Gameplay
             Transform leader = segments[0].transform;
             Vector3 pos = leader.position
                           + leader.forward * LinkSpacing(1, WormSegmentRole.Head, segments[0].Role);
-            var seg = Instantiate(headPrefab, pos, leader.rotation);
-            AddSegmentToChain(seg, 0, Vector3.zero);
+            var seg = AddSegmentToChain(headPrefab, pos, leader.rotation, 0, Vector3.zero);
             _leaderBaseRotation = seg.transform.rotation;
         }
 
@@ -861,7 +880,7 @@ namespace CosmicShore.Gameplay
             Transform last = segments[index - 1].transform;
             Vector3 pos = last.position
                           - last.forward * LinkSpacing(index, segments[index - 1].Role, WormSegmentRole.Tail);
-            AddSegmentToChain(Instantiate(tailPrefab, pos, last.rotation), index, Vector3.zero);
+            AddSegmentToChain(tailPrefab, pos, last.rotation, index, Vector3.zero);
         }
 
         /// <summary>
@@ -876,7 +895,7 @@ namespace CosmicShore.Gameplay
             Transform head = segments[0].transform;
             Vector3 pos = head.position
                           - head.forward * LinkSpacing(1, WormSegmentRole.Head, WormSegmentRole.Body);
-            AddSegmentToChain(Instantiate(bodyPrefab, pos, head.rotation), 1, Vector3.zero);
+            AddSegmentToChain(bodyPrefab, pos, head.rotation, 1, Vector3.zero);
         }
 
         void TickTailWhip()
@@ -975,6 +994,10 @@ namespace CosmicShore.Gameplay
                 colony.AssignLineage(cell, SourceConfig, VariantPick);
             if (cell)
                 cell.RegisterSpawnedObject(colony.gameObject);
+            // The replication seam, AFTER the lineage bind (which settles the element the spawn
+            // payload would carry). A split is a second population, so it is a producer like any
+            // other - see AddSegmentToChain.
+            FaunaNetworkSync.ServerSpawn(colony);
 
             // Both populations feel each other NOW (see the summary above).
             colony.TickSeparation();

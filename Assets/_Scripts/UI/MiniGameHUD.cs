@@ -405,6 +405,12 @@ namespace CosmicShore.UI
                     // nearest forge-source crystal - the ball IS the demolition tool here, and a
                     // pilot with no ball needs the crystal that makes one.
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_WreckingBall");
+                case GameModes.Broadside:
+                    // Dog Fight's provider on purpose: the nearest OPPOSING pilot. It is the
+                    // same question in a mixed fleet as in a single-hull one - which way is
+                    // the fight - and the arrow must not try to name a weapon, because seven
+                    // hulls answer "what do I do when I get there" differently.
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_Broadside");
                 case GameModes.Undertow:
                     // The Bends' provider on purpose: the nearest pilot this player may bend. The
                     // domain check is the whole point (teammates cannot be caught in your plate),

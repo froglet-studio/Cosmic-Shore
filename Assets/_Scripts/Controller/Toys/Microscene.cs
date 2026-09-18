@@ -456,9 +456,10 @@ namespace CosmicShore.Gameplay
 
                     // Canonical regulated fauna spawn: controlling-colour only (locked invariant),
                     // seeded toward the scene's fresh mass, scattered on the buildup, lineage-bound.
-                    var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab,
-                        transform.position, cell.ControllingDomain, ScatterAround(rng, 40f));
-                    if (fauna) fauna.AssignLineage(cell, cfg);
+                    // Config in - the lineage bind and the replication seam both live in
+                    // SpawnFaunaWithDomain (B5), so this site cannot leave a stray behind.
+                    CellLifeSpawnerBase.SpawnFaunaWithDomain(cell, cfg.FaunaPrefab,
+                        transform.position, cell.ControllingDomain, ScatterAround(rng, 40f), cfg);
                 }
             }
         }

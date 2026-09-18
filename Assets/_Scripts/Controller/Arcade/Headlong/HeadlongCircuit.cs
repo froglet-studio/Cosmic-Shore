@@ -34,8 +34,12 @@ namespace CosmicShore.Gameplay
         /// <summary>`DefaultThrottleScaler` on Rhino.prefab.</summary>
         public const float RhinoThrottleScaler = 50f;
 
-        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab.</summary>
-        public const float RhinoMinimumSpeed = 10f;
+        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab. **0 since the minimum-throttle brake**
+        /// (`MinimumThrottleBrake`, `SQUIRREL_DRIFT.md` §3.5): a floor is a speed the pilot cannot
+        /// give back, so a two-thumb flier that is meant to be able to STOP cannot author one.
+        /// It was 10, and the whole of what that bought this mode was 10 u/s of padding on both
+        /// ends of the speed ladder — measured, the circuits it generates are unchanged.</summary>
+        public const float RhinoMinimumSpeed = 0f;
 
         /// <summary>`maxBoostMultiplier` on RhinoRampBoostAction.asset.</summary>
         public const float RhinoMaxBoostMultiplier = 24f;
@@ -75,7 +79,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
-        /// top speed WITHOUT dropping the ramp boost. ~410 u.
+        /// top speed WITHOUT dropping the ramp boost. <b>355.9 u</b> — `MinTurnRadius(1200)` 99.6
+        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (This said "~410 u"
+        /// from the commit that authored the mode; it was never that, at either top speed — 355.9
+        /// now, 356.3 while the Rhino authored a 10 u/s floor.)
         ///
         /// <para>Turn rate is linear in stick, so a pilot holding the boost turns at
         /// <c>BoostStickBudget x omega(v)</c> and therefore flies a circle
@@ -210,7 +217,7 @@ namespace CosmicShore.Gameplay
                 AngularSpread = new[] { 1.2f, 2.0f, 2.8f, 3.6f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
                 // Wider than Switchback's ladder at every step: a Rhino arrives at up to
-                // 1210 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
+                // 1200 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
                 // time and has a quarter of the lateral authority to correct with on the way in.
                 RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],

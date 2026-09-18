@@ -550,7 +550,7 @@ def main():
     print("      so expect that diff and commit it. It is harmless in the meantime - two game")
     print("      scenes are never loaded at once, and NGO indexes in-scene objects by")
     print("      (hash, sceneHandle) - but MinigameSwitchback carries distinct values only")
-    print("      because a human opened it, and Hijack shipped with PeelTheCage's.")
+    print("      because a human opened it, and Hijack shipped with Cleave's.")
 
     print("\nphase ladder, derived from skein_budget (NEVER count x 16 - a (6,6,8) prism is 288):")
     for i in (1, 2, 3, 4):

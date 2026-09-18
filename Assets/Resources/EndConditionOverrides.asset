@@ -18,7 +18,12 @@ MonoBehaviour:
   maelstromWinTarget: 6
   nucleusRushWaveTarget: 3
   rampagePrismTarget: 2000
-  ribcagePrismTarget: 2000
+  cleavePrismTarget: 1500
+  cleavePrismTargetByIntensity:
+  - 1200
+  - 1200
+  - 1500
+  - 1500
   wildlifeKillTarget: 30
   dogFightPointTarget: 90
   bendsPointTarget: 3
@@ -26,6 +31,7 @@ MonoBehaviour:
   tollwayTollTarget: 4
   wreckingBallPrismTarget: 1500
   undertowPointTarget: 12
+  broadsidePointsPerPilot: 100
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   breakwaterStationTarget: 15
@@ -40,7 +46,12 @@ MonoBehaviour:
   maelstromWinTargetBuild: 6
   nucleusRushWaveTargetBuild: 3
   rampagePrismTargetBuild: 2000
-  ribcagePrismTargetBuild: 2000
+  cleavePrismTargetBuild: 1500
+  cleavePrismTargetByIntensityBuild:
+  - 1200
+  - 1200
+  - 1500
+  - 1500
   wildlifeKillTargetBuild: 30
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
@@ -48,6 +59,7 @@ MonoBehaviour:
   tollwayTollTargetBuild: 4
   wreckingBallPrismTargetBuild: 1500
   undertowPointTargetBuild: 12
+  broadsidePointsPerPilotBuild: 100
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   breakwaterStationTargetBuild: 15

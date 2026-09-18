@@ -457,6 +457,25 @@ namespace CosmicShore.Gameplay
         private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
                                                   NetworkManager.ConnectionApprovalResponse response)
         {
+            // Last chance to clear stray NetworkObjects before THIS guest synchronizes.
+            //
+            // The other sweeps all run at a session's START, which covers what existed then and
+            // nothing created since. But the index collision that breaks synchronization throws
+            // "the moment a host starts OR A CLIENT SYNCHRONIZES" (NetworkSceneObjectGuard's own
+            // words), and a host sitting in Menu_Main keeps creating objects for as long as it is
+            // up - so a host that took its first guest cleanly could still be poisoned by the
+            // time the second one knocked. That is Docs/PartySystem/BUGS.md B5: host + 1 worked,
+            // anything after it failed, and the host stayed broken for the rest of the session.
+            //
+            // Approval is the right hook because it is the last server-side moment before the
+            // guest synchronizes, it runs exactly once per join (never per frame), and Sweep is
+            // non-destructive to anything live: it skips spawned objects and strips only the
+            // DUPLICATES of a hash, keeping one. The producers that leaked here are fixed at
+            // source (CellLifeSpawnerBase); this is what makes the NEXT one survivable instead
+            // of session-ending.
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                NetworkSceneObjectGuard.Sweep($"before approving client {request.ClientNetworkId} (host pre-synchronize)");
+
             // A SPECTATOR announces itself in the approval payload and gets NO Player object -
             // see SpectatorSession. The host's own local connection is never a spectator, whatever
             // its payload says: a stale token could only have been armed by a spectate this machine

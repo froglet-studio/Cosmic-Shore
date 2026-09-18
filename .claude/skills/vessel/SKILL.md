@@ -211,15 +211,24 @@ applies to new abilities, new resources on the meter list, and anything that add
     plus a transition); a partial fill on a pip reads as a meter and reopens the question you just
     closed. Drive it from a sibling image, never the ability icon itself, or you collide with the
     four-icon upgrade tint/badge (rule 9).
-16. **Intervene in the flight model at `VesselTransformer.AdvanceSpeed`, not at
+16. **Intervene in the flight model at `VesselTransformer.StepTowardTarget`, not at
     `ComputeThrottleTarget`.** Four transformers exist (`VesselTransformer`,
     `SingleStickVesselTransformer` — what the Sparrow and Serpent actually run —
     `GunVesselTransformer`, `CommandVesselTransformer`) and the first two carry their own
     `MoveShip` AND their own `ComputeThrottleTarget`, so a change written into the target reaches
     only the vessels running the class you edited (the single-stick override ignores `XDiff` and
-    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call
-    — the choke point where anything that must hold for EVERY vessel belongs, and where the
-    Dolphin's drift speed hold sits. Two companions of `speed` need the same treatment when you
+    the throttle-scaler multiplier entirely). `AdvanceSpeed` is the one line both `MoveShip`s call, but it is NOT the bottom any
+    more: since the vector model landed, `AdvanceSpeed` is a one-line wrapper over
+    **`StepTowardTarget`**, the shared pure step BOTH models run through (the vector path reaches
+    it from `ComputeNoseAcceleration`, never from `AdvanceSpeed`). So a rule written into
+    `AdvanceSpeed` today silently misses every `vectorFlightModel` hull — the Squirrel and the
+    Scarab. `StepTowardTarget` is the real choke point, and it is where the Dolphin's drift speed
+    hold and `MinimumThrottleBrake` (the terminal approach that makes a zero throttle target land
+    on an actual stop — `R_VesselActions/SQUIRREL_DRIFT.md` §3.5) both sit. Note the two hulls
+    that escape it ENTIRELY, for different reasons: the Scarab overrides
+    `ComputeNoseAcceleration` wholesale (it integrates rather than tracking a target), and every
+    one-thumb hull's `ComputeThrottleTarget` has no throttle axis in it at all, so it can never
+    command zero. Two companions of `speed` need the same treatment when you
     touch it: the `toggleManualThrottle` lerp is a SECOND throttle channel living in each
     `MoveShip` (no shipped prefab enables it — check before assuming your change covered it), and
     `_speedTrackingRate` is a latched ramp state (the Rhino's ramp boost) that a naive early-return
@@ -374,7 +383,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 31. **A DEFENSIVE ability is a MODE-level rule in every mode where its vessel is mandatory — and
     the comeback system hands it to whoever is LOSING.** The fleet has mono-vessel modes (Bends +
-    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + PeelTheCage = Rhino,
+    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + Cleave = Rhino,
     Scarab Scramble = Scarab), so a ward / immunity / invulnerability authored as one vessel's
     upgrade is simultaneously a rule that every pilot in those modes holds. Ask the question the
     per-vessel view cannot: **does this ability deny the thing a mono-vessel mode SCORES on?** The

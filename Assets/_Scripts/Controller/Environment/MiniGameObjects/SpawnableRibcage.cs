@@ -1,11 +1,13 @@
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "PeelTheCage" - the cage cell environment and the arena of <see cref="GameModes.PeelTheCage"/>
-    /// (player-facing name: "Peel the Cage"). A LAYERED ORANGE: one or more concentric hollow
+    /// "The Cage" - <see cref="GameModes.Cleave"/>'s INTENSITY-3 arena, and the one rung of that
+    /// mode's ladder that predates it: Cleave was called "Peel the Cage" when all four of its
+    /// intensities were nested shells. A LAYERED ORANGE: one or more concentric hollow
     /// shells of prism bone, added INWARD from a fixed outer radius. Each shell is meridian ribs
     /// running pole to pole, latitude hoops binding them, a diagonal through every rib x hoop cell
     /// that splits it into TRIANGLES, chunky joints at each crossing, and a crown closing each pole.
@@ -16,14 +18,14 @@ namespace CosmicShore.Gameplay
     ///     <c>CellConfigDataSO</c> per intensity (<c>CellTypeChoiceOptions.IntensityWise</c>),
     ///     and each config points at a prefab variant of this component with a different shell
     ///     count - two rinds to peel at intensity 1, five at intensity 4. Shells are added
-    ///     INWARD (<see cref="ShellRadius"/> never moves) so the AI's aim point, the player spawn
+    ///     INWARD (<see cref="CageR"/> never moves) so the AI's aim point, the player spawn
     ///     ring and the arena's outer silhouette are identical at every intensity.
-    ///   • The OUTER shell's weave is open - a ~94u x ~98u cell. This is a ribcage, not a prison
+    ///   • The OUTER shell's weave is open - a ~188u x ~196u cell. This is a ribcage, not a prison
     ///     wall: you fly between the bones freely, and the gaps are what let you see the next rind
     ///     waiting behind this one.
     ///   • Each shell inward is <see cref="DensityStep"/> times denser than the one outside it, ON
     ///     TOP of the tightening that shrinking radius already gives - so the pith at the core is
-    ///     a far harder skin than the rind at the surface (~94u cells outside, ~22u at the core
+    ///     a far harder skin than the rind at the surface (~188u cells outside, ~44u at the core
     ///     - a 4.3x tightening). Successive shells are also rotated by a fraction of a rib spacing
     ///     (<see cref="ShellLonOffsets"/>) so the gaps never line up radially - there is no free
     ///     corridor straight through to the core.
@@ -46,19 +48,50 @@ namespace CosmicShore.Gameplay
     /// colour). Deterministic per seed like every cell environment - clients build locally with
     /// no seed sync.
     ///
-    /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
-    /// Baselines): 10,620 / 14,731 / 17,992 / 20,153 prisms at intensity 1..4 (2..5 shells). See
-    /// PEEL_THE_CAGE.md for the per-shell table and the collider-budget statement, and
-    /// Tools/Build/ribcage_budget.py for the model.
+    /// Budget: this class now serves exactly ONE rung - Cleave's intensity 3, The Cage, three
+    /// rinds at 14,731 prisms / 23,357,561 volume. The old 2..5-shell ladder (10,620 / 14,731 /
+    /// 17,992 / 20,153) is retired: intensity stopped meaning "how many shells" and started
+    /// meaning WHICH PLACE, so the other three rungs are unrelated arenas. The numbers are
+    /// MEASURED by running this file - Tools/Build/cleave_arena_harness compiles it against a
+    /// Unity shim and counts what it emits - and gated by Tools/Build/cleave_budget.py.
+    /// Tools/Build/ribcage_budget.py, the analytic model this doc used to cite, is deleted: its
+    /// jitter factor was wrong by exactly 2x and every volume threshold it produced described a
+    /// cell twice as heavy as the one that exists (CLEAVE.md, "The predecessor model was wrong").
+    /// See CLEAVE.md for the ladder and the collider-budget statement.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
     {
         // Outermost shell. Density is where the prism budget goes, not radius: a bigger sphere
         // would just move the arena out. The OUTER weave is deliberately open - see the summary.
-        const float CageR = 360f;
+        //
+        // The radius itself belongs to SliceArenaGeometry, not to this file: all four Cleave
+        // arenas are built to one envelope, and the AI's stations and the player spawn ring are
+        // both derived from it. A local copy of the number is how one of them drifts.
+        /// <summary>This arena IS intensity 3, so it carries that rung's scale as a constant.</summary>
+        const float CageR = SliceArenaGeometry.OuterRadiusI3;
 
-        /// <summary>Radial spacing between rinds - shells land at 360 / 295 / 230 / 165 / 100.</summary>
-        const float ShellGap = 65f;
+        /// <summary>Authored-units -> world-units; see <c>SliceArenaGeometry</c>. Every LENGTH here
+        /// is multiplied by it. Counts (ribs, hoops, crowns, the danger stride) and ANGLES
+        /// (latitudes, tilts) are deliberately bare: a shell's bar count is <c>arc / BarStep</c> and
+        /// both halves scale together, so the weave is identical and only its size changes.
+        ///
+        /// <para>There is deliberately no GAP dial here. This arena's across-grain density is a
+        /// rib/hoop COUNT on a sphere (<see cref="BaseRibCount"/> / <see cref="BaseHoopCount"/>,
+        /// compounded inward by <see cref="DensityStep"/>), not a step a factor can multiply — the
+        /// weave IS the arena, and thinning it is a different cage rather than a sparser one. The
+        /// table authors 1 for this rung and <see cref="AssertNoGapScale"/> holds it.</para></summary>
+        const float S = SliceArenaGeometry.LengthScaleI3;
+
+        /// <summary>Authored-units -> world-units for a PRISM'S OWN DIMENSIONS and for the
+        /// along-grain arc-length step that keeps a rib reading as one continuous bar. This rung's
+        /// <see cref="S"/> is already 2, so here the split changes nothing at all — it is written
+        /// out so a future envelope change cannot silently inflate this cage's prisms.</summary>
+        const float P = SliceArenaGeometry.PrismScaleI3;
+
+        /// <summary>Radial spacing between rinds. In authored units the shells land at
+        /// 360 / 295 / 230 / 165 / 100; at the shipped <c>LengthScale</c> of 2 that is
+        /// 720 / 590 / 460 / 330 / 200.</summary>
+        const float ShellGap = 65f * S;
 
         /// <summary>
         /// Ceiling on <see cref="shellCount"/>. Intensity does NOT map 1:1 onto shells: the ramp
@@ -68,18 +101,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public const int MaxShells = 5;
 
-        /// <summary>
-        /// The cage's OUTER shell radius, exposed so <c>PeelTheCageController</c> can aim its AI
-        /// cage-breakers at the bone without hard-coding a second copy of the number. Shells are
-        /// added inward, so this is intensity-independent and the AI needs no per-intensity case.
-        /// </summary>
-        public const float ShellRadius = CageR;
-
-        [Header("PeelTheCage")]
-        [Tooltip("How many concentric rinds to build, from the outer shell inward. THE INTENSITY " +
-                 "DIAL: author one prefab variant per shell count and point each intensity's " +
-                 "CellConfigDataSO at the matching variant (Cell picks by IntensityWise). Each " +
-                 "config's PhaseThresholds must ride ITS OWN baseline - see ribcage_budget.py.")]
+        [Header("Cleave")]
+        [Tooltip("How many concentric rinds to build, from the outer shell inward. It is NO " +
+                 "LONGER an intensity dial - Cleave's intensity picks WHICH ARENA, and this class " +
+                 "is one of four, wired to intensity 3 alone at three rinds. Changing it re-cuts " +
+                 "that rung: re-run Tools/Build/cleave_arena_harness (which MEASURES what this " +
+                 "file emits) and Tools/Build/cleave_budget.py --check, which gates the cell's " +
+                 "PhaseThresholds and the destruction target against the new count.")]
         [SerializeField, Range(1, MaxShells)] int shellCount = 1;
 
         // Rib/hoop counts of the OUTERMOST shell. Every shell inward multiplies both by
@@ -91,14 +119,14 @@ namespace CosmicShore.Gameplay
         /// Per-shell density multiplier, applied to BOTH rib and hoop counts: shell k has
         /// round(Base * DensityStep^k). This is what makes the core the hard part - it compounds
         /// with the tightening that shrinking radius already provides, so the four shells go from
-        /// ~94u cells at the surface to ~22u at the core. Turn this DOWN before turning shells
+        /// ~188u cells at the surface to ~44u at the core. Turn this DOWN before turning shells
         /// down if the collider budget bites; it is the second-cheapest dial after shellCount.
         /// </summary>
         const float DensityStep = 1.05f;
 
-        const float BarStep = 17f;      // arc-length spacing along every rib and hoop
-        const float StrutStep = 26f;    // arc-length spacing along a triangulating diagonal
-        const float StrutLength = 24f;  // long axis of a diagonal prism (chunkier than a bar)
+        const float BarStep = 17f * P;      // arc-length spacing along every rib and hoop
+        const float StrutStep = 26f * P;    // arc-length spacing along a triangulating diagonal
+        const float StrutLength = 24f * P;  // long axis of a diagonal prism (chunkier than a bar)
         const float CrownLat = 84f;
         const int CrownCount = 18;
         const float HoopSpanDeg = 78f;  // outermost hoop latitude; poles are closed by crowns
@@ -228,8 +256,37 @@ namespace CosmicShore.Gameplay
         // and never over-allocates by more than a shell's worth.
         protected override int LayCapacity => 5800 * Shells;
 
+        /// <summary>
+        /// The Cage carries no gap dial, so this asserts the table has not grown one for it.
+        ///
+        /// A gap scale multiplies an ACROSS-grain STEP, which the Panes and the Swell both have
+        /// (a rib spacing). This arena's across-grain density is a rib/hoop COUNT on a sphere
+        /// compounded inward by <see cref="DensityStep"/> — there is no step to multiply, so a
+        /// gap factor authored here would silently do NOTHING while the table said it was
+        /// spacing the arena out. That is worse than either outcome: it reads as tuned and is
+        /// inert. The guard is loud rather than a comment because the table lives in another
+        /// file and the next person to open up a rung will edit that one.
+        /// </summary>
+        static void AssertNoGapScale()
+        {
+            if (Mathf.Approximately(SliceArenaGeometry.GapScaleI3, 1f)) return;
+            CSDebug.LogError(
+                $"{nameof(SpawnableRibcage)}: SliceArenaGeometry.GapScaleI3 is " +
+                $"{SliceArenaGeometry.GapScaleI3}, but this arena has no across-grain STEP for a " +
+                "gap scale to multiply — its density is a rib/hoop COUNT. The value is being " +
+                "IGNORED. Either lower BaseRibCount/BaseHoopCount, or set GapScaleI3 back to 1.");
+        }
+
+        /// <summary>A Cleave arena STATES its prism sizes: scaling the arena is a
+        /// SIMILARITY, so the prisms grow with the spacing and a rib keeps reading as a
+        /// continuous bar. The Cage sits inside the shared prefab's window at 2 x, so this changes nothing it lays
+        /// today; it is on so all four rungs of one mode answer the question the same way.</summary>
+        protected override bool AdmitsAuthoredPrismScale => true;
+
         protected override void BuildEnvironment()
         {
+            AssertNoGapScale();
+
             for (int shell = 0; shell < Shells; shell++)
             {
                 var spec = new ShellSpec(shell);
@@ -281,7 +338,7 @@ namespace CosmicShore.Gameplay
                         -Mathf.Sin(theta) * Mathf.Sin(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f, 3.6f, 16f)), dom,
+                        Jit(new Vector3(3.6f * P, 3.6f * P, 16f * P)), dom,
                         danger ? PrismKind.Danger : PrismKind.Plain);
                 }
             }
@@ -303,7 +360,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.6f, 3.6f, 16f)), Domains.Blue, PrismKind.Plain);
+                        Jit(new Vector3(3.6f * P, 3.6f * P, 16f * P)), Domains.Blue, PrismKind.Plain);
                 }
             }
         }
@@ -339,7 +396,7 @@ namespace CosmicShore.Gameplay
                         // Push the strut back onto the shell - a straight chord would sag inside it.
                         var pos = Vector3.Lerp(from, to, u).normalized * s.Radius;
                         Emit(pos, SpawnPoint.LookRotation(along, pos.normalized),
-                            Jit(new Vector3(2.4f, 2.4f, StrutLength)), Domains.Blue, PrismKind.Plain);
+                            Jit(new Vector3(2.4f * P, 2.4f * P, StrutLength)), Domains.Blue, PrismKind.Plain);
                     }
                 }
             }
@@ -357,7 +414,7 @@ namespace CosmicShore.Gameplay
                 {
                     var pos = s.ToCell(Shell(lon, latDeg * Mathf.Deg2Rad, s.Radius));
                     Emit(pos, SpawnPoint.LookRotation(pos.normalized, Vector3.up),
-                        Jit(new Vector3(5.4f, 5.4f, 5.4f)), dom, PrismKind.Plain);
+                        Jit(new Vector3(5.4f * P, 5.4f * P, 5.4f * P)), dom, PrismKind.Plain);
                 }
             }
         }
@@ -379,7 +436,7 @@ namespace CosmicShore.Gameplay
                     var tangent = s.ToCell(new Vector3(-Mathf.Sin(lon), 0f, Mathf.Cos(lon)));
 
                     Emit(pos, SpawnPoint.LookRotation(tangent, pos.normalized),
-                        Jit(new Vector3(3.2f, 3.2f, 12f)), BoneDoms[i % BoneDoms.Length],
+                        Jit(new Vector3(3.2f * P, 3.2f * P, 12f * P)), BoneDoms[i % BoneDoms.Length],
                         PrismKind.Plain);
                 }
             }

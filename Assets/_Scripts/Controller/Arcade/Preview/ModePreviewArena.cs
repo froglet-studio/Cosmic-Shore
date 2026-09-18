@@ -366,10 +366,13 @@ namespace CosmicShore.Gameplay
                 Vector3 local = (dir.sqrMagnitude > 0.001f ? dir.normalized : Vector3.up)
                                 * (radius * (0.6f + 0.6f * (float)rng.NextDouble()));
 
+                // The config goes IN: SpawnFaunaWithDomain owns the lineage bind and the
+                // replication seam. Releasing PreviewFaunaCount (4) copies of one prefab and
+                // leaving each one an un-spawned NetworkObject is what broke every later
+                // joiner's synchronization - see Docs/PartySystem/BUGS.md B5.
                 var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                    Cell, clone.FaunaPrefab, Origin, Domains.Blue, Origin + local);
+                    Cell, clone.FaunaPrefab, Origin, Domains.Blue, Origin + local, clone);
                 if (!fauna) continue;
-                fauna.AssignLineage(Cell, clone);
                 spawned++;
             }
 

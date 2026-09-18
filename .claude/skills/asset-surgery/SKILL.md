@@ -218,6 +218,15 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+  **And insert the component ENTRY inside the matched GameObject's OWN body — never by searching
+  forward from where the match ended.** `re.search(r"^--- !u!1 &<go>$(.*?)(?=^--- !u!)", ...)` gives
+  you a group whose `.end()` is the END of that GameObject, so a `text[m.end(1):].replace("  m_Layer:",
+  …, 1)` lands the entry on whatever object is serialized NEXT. Unity accepts that in silence: the
+  component's own `!u!114` doc still names the right `m_GameObject`, so nothing dangles, nothing
+  errors, and the component is simply attached to the wrong object. Splice inside `m.group(1)` and
+  write it back over `[m.start(1):m.end(1)]`, then **assert afterwards** that the fileID appears in
+  the intended GameObject's component list AND that the component doc points back at that same
+  GameObject — the two-way check is what names the failure, because either one alone passes.
 - **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
   under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
   `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
