@@ -129,6 +129,39 @@ namespace CosmicShore.Utility
         /// <summary>Human-readable recipe for the HUD row, empty when uniform.</summary>
         string _mixLabel = string.Empty;
 
+        /// <summary>
+        /// SHUFFLE the lay order so a chunk's entities are scattered through space instead of
+        /// being a contiguous block of it.
+        ///
+        /// It exists because `lab mix` CONFIRMED that materials multiply draw calls (1 -> 9
+        /// materials costs 4.92x the draws at a fixed population, exactly as
+        /// PrismRenderService.GetPrototype's (layer, overrideSet) key predicts) and then showed
+        /// that effect is 15.7x too SMALL to be the boot world: scaled to 34,000 entities at
+        /// mats=9 the lab predicts ~906 draws where the boot world measures 14,244. Material
+        /// interleaving accounts for 6.4% of it.
+        ///
+        /// The remaining hypothesis is that chunk membership is TEMPORAL while culling is
+        /// SPATIAL. The lattice is laid x->y->z in one burst, so creation order IS spatial
+        /// order: a chunk's ~44 entities are a contiguous block and the frustum takes all of
+        /// them or none. In the boot world a trail snakes across the cell over minutes and
+        /// flora grow in scattered spots, so every chunk straddles the frustum and emits draw
+        /// commands covering a handful of visible entities. That predicts exactly the measured
+        /// shape — ~37 entities per draw when chunks are spatially coherent, ~2.4 when they
+        /// are not.
+        ///
+        /// Shuffling the lay order reproduces that condition and NOTHING else: the population,
+        /// the material census, the geometry and the camera are identical between arms, so a
+        /// draw-call difference can only be chunk locality.
+        /// </summary>
+        bool _scatterLayOrder;
+
+        /// <summary>
+        /// Deterministic per-run seed for <see cref="_scatterLayOrder"/>. Fixed rather than
+        /// time-based so two scatter arms shuffle IDENTICALLY — otherwise a difference between
+        /// them could be the draw of the shuffle rather than the thing under test.
+        /// </summary>
+        const int ScatterSeed = 0x5EED;
+
         // ── Safety-throttle lifts ────────────────────────────────────────────
         // The gameplay guards (per-frame AOE damage budget, per-frame VFX spawn
         // caps, live-effect pressure shortening) were sized for the CPU-per-effect
@@ -414,18 +447,39 @@ namespace CosmicShore.Utility
                 (_counts.y - 1) * 0.5f,
                 (_counts.z - 1) * 0.5f);
 
+            int siteCount = _counts.x * _counts.y * _counts.z;
+            var positions = new List<Vector3>(siteCount);
             for (int x = 0; x < _counts.x; x++)
             for (int y = 0; y < _counts.y; y++)
             for (int z = 0; z < _counts.z; z++)
             {
-                var pos = new Vector3(
+                positions.Add(new Vector3(
                     (x - half.x) * _gaps.x,
                     (y - half.y) * _gaps.y,
-                    (z - half.z) * _gaps.z);
+                    (z - half.z) * _gaps.z));
+            }
 
-                int i = lays.Count;
+            // Shuffle POSITIONS ONLY. Kind and domain stay keyed on the LAY index below, so the
+            // material census and its interleaving pattern within a chunk are byte-for-byte
+            // identical between a scattered arm and an ordered one — the single thing that
+            // differs is whether a chunk's entities are contiguous in SPACE. That is what makes
+            // a draw-call difference attributable to chunk locality and to nothing else.
+            // Fisher-Yates on System.Random: deterministic, and it does not disturb
+            // UnityEngine.Random's global state, which the lay path itself draws from.
+            if (_scatterLayOrder)
+            {
+                var rng = new System.Random(ScatterSeed);
+                for (int i = positions.Count - 1; i > 0; i--)
+                {
+                    int j = rng.Next(i + 1);
+                    (positions[i], positions[j]) = (positions[j], positions[i]);
+                }
+            }
+
+            for (int i = 0; i < positions.Count; i++)
+            {
                 lays.Add(new PrismLay(
-                    new SpawnPoint(pos, Quaternion.identity, scale),
+                    new SpawnPoint(positions[i], Quaternion.identity, scale),
                     _mixDomains != null && _mixDomains.Length > 0
                         ? _mixDomains[i % _mixDomains.Length]
                         : config.GridDomain,
@@ -811,6 +865,11 @@ namespace CosmicShore.Utility
             // draw-call number cannot be attributed later — see _mixKinds.
             DiagnosticsHUD.SetStat(StatsSection, "recipe",
                 string.IsNullOrEmpty(_mixLabel) ? $"uniform plain · {config.GridDomain}" : _mixLabel);
+            // Chunk membership follows LAY order; culling is spatial. Whether those two agree is
+            // the variable under test, so it is on screen beside the recipe rather than implied
+            // by which command was typed.
+            DiagnosticsHUD.SetStat(StatsSection, "lay order",
+                _scatterLayOrder ? "SCATTERED (chunk != space)" : "ordered x→y→z (chunk = space)");
             DiagnosticsHUD.SetStat(StatsSection, "gaps", $"{_gaps.x:F1}x{_gaps.y:F1}x{_gaps.z:F1}");
             DiagnosticsHUD.SetStat(StatsSection, "phase", _phase.ToString().ToLowerInvariant());
             DiagnosticsHUD.SetStat(StatsSection, "laid", $"{_laid:N0}/{_requested:N0}");
@@ -965,14 +1024,16 @@ namespace CosmicShore.Utility
         const int ShieldedWarnAbove = 4096;
 
         const string LabUsage =
-            "usage: lab <count> [plain|danger|shielded|super] [jade|ruby|blue|gold] | " +
-            "lab mix plain=N danger=N shielded=N super=N [domains=1|2|3] [--force] | lab clear";
+            "usage: lab <count> [plain|danger|shielded|super] [jade|ruby|blue|gold] [scatter] | " +
+            "lab mix plain=N danger=N shielded=N super=N [domains=1|2|3] [scatter] [--force] | " +
+            "lab clear";
 
         void ClearMixRecipe()
         {
             _mixKinds = null;
             _mixDomains = null;
             _mixLabel = string.Empty;
+            _scatterLayOrder = false;
         }
 
         /// <summary>Sizes the lattice to a near-cube holding at least <paramref name="total"/> sites.</summary>
@@ -1023,11 +1084,14 @@ namespace CosmicShore.Utility
                 return "lab cleared (recipe reset; grid emptied)";
             }
 
-            bool force = false;
+            bool force = false, scatter = false;
             for (int i = 0; i < args.Length; i++)
+            {
                 if (args[i].Equals("--force", StringComparison.OrdinalIgnoreCase)) force = true;
+                else if (args[i].Equals("scatter", StringComparison.OrdinalIgnoreCase)) scatter = true;
+            }
 
-            if (head == "mix") return HandleLabMix(args, force);
+            if (head == "mix") return HandleLabMix(args, force, scatter);
 
             // `lab <count> [kind] [domain]` — one tier, one domain, exact count.
             if (!int.TryParse(head, out int count) || count <= 0) return LabUsage;
@@ -1037,7 +1101,7 @@ namespace CosmicShore.Utility
             for (int i = 1; i < args.Length; i++)
             {
                 string t = args[i].ToLowerInvariant();
-                if (t == "--force") continue;
+                if (t == "--force" || t == "scatter") continue;   // already consumed above
                 if (TryParseKind(t, out var k)) { kind = k; continue; }
                 if (TryParseDomain(t, out var d)) { domain = d; continue; }
                 return $"unrecognised token '{args[i]}'. {LabUsage}";
@@ -1052,7 +1116,8 @@ namespace CosmicShore.Utility
             _mixKinds = new PrismKind[sites];
             for (int i = 0; i < sites; i++) _mixKinds[i] = kind;
             _mixDomains = new[] { domain };
-            _mixLabel = $"{kind} x{sites:N0} · {domain}";
+            _scatterLayOrder = scatter;
+            _mixLabel = $"{kind} x{sites:N0} · {domain}{(scatter ? " · SCATTERED" : "")}";
 
             SyncInputsFromState();
             Spawn();
@@ -1060,17 +1125,18 @@ namespace CosmicShore.Utility
             string note = kind == PrismKind.Shielded && sites > ShieldedWarnAbove
                 ? $" — WARNING: {sites:N0} shielded prisms mint {sites:N0} always-on convex MeshColliders"
                 : string.Empty;
-            return $"lab {sites:N0} {kind} {domain}{note}";
+            return $"lab {sites:N0} {kind} {domain}{(scatter ? " SCATTERED" : "")}{note}";
         }
 
-        string HandleLabMix(string[] args, bool force)
+        string HandleLabMix(string[] args, bool force, bool scatter)
         {
             int plain = 0, danger = 0, shielded = 0, super = 0, domainCount = 1;
 
             for (int i = 1; i < args.Length; i++)
             {
                 string raw = args[i];
-                if (raw.Equals("--force", StringComparison.OrdinalIgnoreCase)) continue;
+                if (raw.Equals("--force", StringComparison.OrdinalIgnoreCase) ||
+                    raw.Equals("scatter", StringComparison.OrdinalIgnoreCase)) continue;
 
                 int eq = raw.IndexOf('=');
                 if (eq <= 0 || eq == raw.Length - 1)
@@ -1108,8 +1174,10 @@ namespace CosmicShore.Utility
             SetCubeCountsFor(total);
             _mixKinds = InterleaveKinds(plain, danger, shielded, super);
             _mixDomains = PlayableDomainCycle(domainCount);
+            _scatterLayOrder = scatter;
             _mixLabel = $"mix p{plain:N0}/d{danger:N0}/s{shielded:N0}/S{super:N0} · " +
-                        $"{_mixDomains.Length} domain{(_mixDomains.Length == 1 ? "" : "s")}";
+                        $"{_mixDomains.Length} domain{(_mixDomains.Length == 1 ? "" : "s")}" +
+                        (scatter ? " · SCATTERED" : "");
 
             SyncInputsFromState();
             Spawn();
@@ -1119,7 +1187,8 @@ namespace CosmicShore.Utility
             string note = shielded > ShieldedWarnAbove
                 ? $" — WARNING: {shielded:N0} shielded prisms mint that many always-on convex MeshColliders"
                 : string.Empty;
-            return $"lab mix {total:N0} prisms across {_mixDomains.Length} domain(s){filler}{note}";
+            return $"lab mix {total:N0} prisms across {_mixDomains.Length} domain(s)" +
+                   $"{(scatter ? ", SCATTERED lay order" : "")}{filler}{note}";
         }
 
         /// <summary>Null when the request is allowed; the refusal text, WITH ITS REASON, when not.</summary>

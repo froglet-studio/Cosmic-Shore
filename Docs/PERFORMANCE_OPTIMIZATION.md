@@ -244,6 +244,14 @@ culling/draw-command path, UGUI layout, or the render path — and the 14k draw
 calls are the prime suspect precisely because that number is so large. The next
 step is attribution, not another scan.
 
+> **⚠ SUPERSEDED BY §0.11 (2026-09-19), on both halves.** The A/B ran: GC/frame is flat at
+> **15.2–15.9 KB across every arm** — a 2.2× entity range and a 9× material range — and the
+> LEGACY path allocates *more* (20.35 KB), so Entities Graphics is **not** the allocator and
+> the draw-call problem and the GC problem are **two separate problems**. The 197.9 KB above
+> is also the wrong statistic: it is a **single-frame HUD sample**, and measured spike
+> records range 13.7–77.8 KB, so an instantaneous read lands wherever that frame sat. Read
+> `avgGcKbPerFrame` from a `diag` report, never the live row, before reasoning about a rate.
+
 ### 0.10 THE A/B RAN — the instanced path beats legacy by 12.9× on CPU (2026-09-16)
 
 First controlled A/B this project has had. `PrismGridExplosionTest.unity`, detached from
@@ -280,11 +288,17 @@ single-digit milliseconds", reasoning from a 2.8 ms render thread. That was abou
 draw-call SUBMISSION and remains true; it undersold the PATH, which is worth 57 ms of
 main thread at 100k prisms. Submission cost and path cost are different quantities.
 
-#### Still unanswered: GC
+#### Still unanswered: GC — ANSWERED by §0.11 (2026-09-19)
 
 All three runs were in **basic** HUD mode, so Draw Calls / Batches / SetPass / **GC per
 frame** were never on screen. The draw-call ratio is unconfirmed and the GC question —
 the other half of the brief — has no data at all. Press **Advanced**.
+
+> **Both are now measured — see §0.11.** The heterogeneous population exists (`lab mix`),
+> the draw-call ratio is 155×, and GC is recorded per run. The caveat above resolved in an
+> unexpected direction: the interleaving hypothesis is **real but 15.7× too small** to be the
+> boot world's 14,244 draws, and GC turned out to have **nothing to do with the render path
+> at all**. Read §0.11 before acting on anything in §0.9 or this section.
 
 ### 0.10.1 The cap verdict, and the label that overclaimed
 
@@ -309,6 +323,109 @@ rows cannot disagree.
 **The rule, third instance:** *a derived verdict must name only the cause it can actually
 establish.* GPU-bound on an idle GPU; CPU-bound on a mostly-idle frame; Capped with no cap.
 Each was a correct mechanism attached to an unverified cause.
+
+### 0.11 BOTH TESTS RAN — and the plan's central hypothesis is DEAD (2026-09-19)
+
+Six 15-second recordings, `PrismGridExplosionTest.unity`, camera fixed, each tagged through
+the new `diag <label> <seconds>` so a report cannot misattribute its own arm. Raw JSON
+carries `avgDraws` / `avgBatches` / `avgSetPass` / `avgGcKbPerFrame` / `prismPath` /
+`prismEnts` — the first GC-per-frame figures this project has ever recorded.
+
+#### Test A — the path, at 40,460 real prisms
+
+| | `prismpath OFF` | `prismpath ON` (mean of two arms) | |
+|---|---:|---:|---|
+| CPU busy | 22.47 ms | 3.35 ms | **6.7×** |
+| Draw calls | 28,899 | 187 | **155×** |
+| GPU | 4.72 ms | 1.74 ms | 2.7× |
+| SetPass | 15.9 | 6.0 | |
+| **GC / frame** | **20.35 KB** | **15.77 KB** | legacy is WORSE |
+
+Two ON arms bracket the OFF arm and agree to 4% on CPU and 2% on GC, so the rig held.
+(§0.10's 12.9× was at 103,823 prisms; 6.7× here at 40,460. The ratio grows with population,
+as a per-prism cost must.)
+
+#### Test B — materials, at 18,252 prisms, camera and population fixed
+
+| | mats=1 | mats=3 | mats=9 |
+|---|---:|---:|---:|
+| Draw calls | 98.9 | 224.8 | **486.2** |
+| Entities per draw | 184.6 | 81.2 | **37.5** |
+| CPU busy | 2.960 | 2.947 | 2.976 |
+| GPU | 1.190 | 1.394 | 1.462 |
+| GC / frame | 15.61 | 15.37 | 15.21 |
+
+#### FINDING 1 — GC is NOT the render path. They are two separate problems.
+
+GC/frame is **15.2–15.9 KB in every ON arm**, across a 2.2× entity range (18k → 40k) and a
+9× material range, and the legacy arm is **higher** (20.35). The plan's stated decision rule
+was *"if `avgGcKbPerFrame` collapses in arm B, Entities Graphics is the allocator and the
+draw-call problem and the GC problem are one problem."* **It did not collapse; it rose.**
+Entities Graphics is not the allocator. Stop attributing the two to one cause.
+
+**And §0.9's GC numbers were the wrong statistic.** The 197.9 KB and 82.1 KB figures were
+**single-frame HUD samples**. The spike records in these runs range 13.7–77.8 KB, so an
+instantaneous read lands wherever that frame happened to sit; the 15-second average is
+~15.5 KB. *A per-frame counter read once is a sample of a distribution, not a rate* — which
+is exactly why `avgGcKbPerFrame` had to exist before any of this could be argued about.
+
+#### FINDING 2 — §0.9's material-interleaving hypothesis is CONFIRMED, and 15.7× too small
+
+Materials genuinely multiply draw calls: 1 → 9 materials costs **4.92×** the draws at a
+fixed population, which is `PrismRenderService.GetPrototype`'s `(layer, overrideSet)` key
+doing exactly what §0.9 said it does. Then scale the lab to the boot world:
+
+| | entities | mats | draw calls | entities/draw |
+|---|---:|---:|---:|---:|
+| boot world (measured) | 34,000 | 10 | **14,244** | **2.39** |
+| lab at mats=9, scaled to 34,000 | 34,000 | 9 | **906** | 37.5 |
+
+**Material interleaving accounts for 6.4% of the boot world's draw calls.** Putting mesh and
+material into the archetype key — the fix §0.9 proposed — would take 14,244 to roughly
+13,300. Something else owns the other **15.7×**, and it has not been identified.
+
+#### FINDING 3 — a draw call is nearly free on CPU and not free on GPU
+
+Holding everything but material count fixed, **+387 draws cost +0.016 ms CPU (0.042 µs/draw)
+and +0.27 ms GPU (0.70 µs/draw)**. At the boot world's 14,244 draws that GPU rate implies
+**~10 ms of GPU** — worth reclaiming, but it is not a CPU story at all, and it is not the
+60 ms story. This retires the last of §0.9's "draw calls are the prime suspect" framing:
+they are a real GPU cost and a negligible CPU one.
+
+#### The leading hypothesis for the remaining 15.7×, and the test for it
+
+**Chunk membership is TEMPORAL; culling is SPATIAL.** The lab lays its lattice x→y→z in one
+burst, so creation order *is* spatial order and a chunk's ~44 entities occupy **0.30% of the
+lattice by volume** — the frustum takes the whole chunk or none of it. In the boot world a
+trail snakes across the cell over minutes and flora grow in scattered spots, so a chunk's
+entities are scattered through the whole cell, every chunk straddles the frustum, and each
+emits draw commands covering a handful of visible entities. That predicts the measured
+shape: ~37 entities/draw when chunks are spatially coherent, 2.39 when they are not.
+
+`lab ... scatter` tests it by shuffling the LAY ORDER and nothing else. The
+`(kind, domain)` sequence stays keyed on the lay index, so the material census **and its
+per-chunk interleaving pattern are byte-identical** between arms (proven by execution: 12
+distinct (kind, domain) combinations, identical sequence, position set a pure permutation);
+the only thing that differs is whether a chunk's entities are contiguous in space —
+measured 0.30% → 96.2% of the lattice volume, a **320× change in chunk locality**.
+
+⚠ **One caveat the verification surfaced: an ordered chunk is a PENCIL, not a blob.** z is
+the innermost loop and 44 entities per chunk exceed the 27-deep z axis, so a chunk spans the
+full z extent — 0.30% of the lattice by VOLUME but 59% of it by DIAGONAL. The ordered arm is
+therefore already partially incoherent in one axis, which makes 37.5 entities/draw a
+conservative baseline rather than a best case. *A locality metric has to be the one culling
+uses (volume), not the one that is easier to compute (diagonal).*
+
+#### The `avgBatches` counter froze in one arm
+
+`pathOnB` reported `avgBatches` **exactly 17.000** across 2,196 frames while `avgDraws` read
+164; the other five runs agree to three decimals (209.87/209.83, 98.88/98.85, 224.85/224.81).
+Zero variance over 2,196 frames is a frozen value, not a measurement: `RInt` returns
+`recorder.LastValue`, which holds the last sample the counter *received*, so a counter that
+stops being fed reads stale forever. It cannot be the recorder going invalid — that path
+returns 0, not 17. **Trust `avgDraws`; treat `avgBatches` as redundant confirmation.** It
+changes no conclusion here (that arm's draws and CPU both agree with its twin), but a reader
+diffing two reports needs to know the row can stall.
 
 ---
 
