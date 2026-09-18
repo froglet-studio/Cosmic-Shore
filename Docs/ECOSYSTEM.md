@@ -7913,3 +7913,149 @@ all, what the plant costs per frame, or how it reads with the game's materials. 
    different members of the family (three quantised weights). **FAIL:** identical plants means
    `PlantSeed` is returning the same hash — it keys on the planted position, so it is the same
    number for two plants at the same place.
+
+---
+
+## 45. The four elemental identities of a PLANT — one rule, measured off what already ships (Sep 2026)
+
+Three of the four elements already stated an identity somewhere in the flora pipeline and one
+did not, so "what does Mass mean for a plant?" had no answer you could read anywhere — it had
+sixteen answers, one per species that happened to author a per-element leaf, and five species
+that authored nothing at all. This section states all four in one place, as one rule, at the one
+choke point an elemental law can live at.
+
+### 45.1 The four sentences
+
+| element | its identity | where it lives |
+|---|---|---|
+| **CHARGE** | **armours its leaves** — its mass is shielded, so grazing it costs two passes | `Flora.ResolveShieldPeriod` (§35) |
+| **MASS** | **the most cumulative prism volume, in the most CUBIC leaf** — x, y and z sit closest together | `FloraElementalForm.ShapeLeaf` |
+| **SPACE** | **the highest ASPECT RATIO** — the long axis trades that cumulative volume for the **bounding volume of the assembly** | `FloraElementalForm.ShapeLeaf` + `ReachScale` |
+| **TIME** | **the fastest clock** — it grows fastest *and* reproduces fastest | `Flora.ResolveGrowPeriod` + `ResolveGrowthPerOffspring` (§38) |
+
+Two of them are about SHAPE and two are not, and that is the shape of the law rather than an
+accident of what was easy: Charge's identity is a *state* and Time's is a *tempo*, so **Charge and
+Time take the species' own authored form** and only Mass and Space restate it. A species therefore
+authors one leaf and the four elements spend it four ways.
+
+### 45.2 The four are a REDISTRIBUTION of one species' form, never an inflation of it
+
+This is the property that makes a fleet-wide leaf law shippable at all, and it is asserted rather
+than hoped for:
+
+- `LeafVolumeScale`'s four values **average to exactly 1**.
+- The anisotropy term is **volume-exact by construction** — it raises the leaf's *unit-volume*
+  shape vector to a power, and the product of a unit-volume vector's components is 1, so 1 to any
+  power is 1.
+
+So a mixed-element forest holds exactly the mass it held before this law existed, and **no cell's
+volume phase ladder moves** (§4.6 — volume is the spine). What changes is that a Mass plant and a
+Space plant standing in the same cell are now visibly different plants. A law that gave Mass more
+material would have landed on Rampage's play-tested ladder, on Hesperides, on the Lattice cell and
+on every future cell that grows flora; this one lands on none of them.
+
+The same argument produces `ReachScale`, the assembly half of the Space law, **with no new
+constant**: it is `LeafVolumeScale^(-1/3)`, i.e. *a plant spends a fixed amount of material*, so
+thinning the leaf buys extent and thickening it costs extent. Space reaches ×1.35 where Mass draws
+in to ×0.82. Two dials that cannot drift apart, because there is only one.
+
+### 45.3 It cannot be authored, for the third time
+
+The leaf is authored per **CONFIG**; the element is **ROLLED** per plant
+(`FloraConfigurationSO.SpreadElements`). A config with an empty element palette applies its OWN
+variant block to whatever it rolled, so nothing writable on any per-element asset reaches it. This
+is exactly the argument §35 made for the Charge shield cadence and §38 made for the growth quota,
+and it lands in the same place: **resolved at `LifeForm.Initialize`**, the one point where the
+prefab, the variant block, the cell's overrides and the crystal carrying the element have all
+landed — and **scoped to `Flora`**, never `LifeForm`, or every creature inherits a rule written
+about plants.
+
+It needed one new seam. `ResolveShieldPeriod` runs *after* `BindEmbeddedParts`, which is fine for a
+cadence and wrong for a leaf: that method stamps the prefab's own seed prism with `leafSize`, so a
+form applied after it leaves the seed prism at the pre-element size while everything grown
+afterwards expresses the element — **the same ordering argument `Flora.ApplyCellPrismScale` already
+records** (§43). `LifeForm.OnElementResolved()` is that seam: after the crystal is resolved, before
+the prisms are bound.
+
+### 45.4 The constants are MEASURED, and the measurement is one vote per FAMILY
+
+Nothing here was invented. **Eleven shipped species already state this law in their own data**, and
+`Tools/Build/measure_flora_elemental_form.py` re-derives every constant from them and fails the
+build when the code stops tracking the assets.
+
+Measured per element **against TIME as the neutral form** — Time's identity is the clock, so its
+leaf is the species' own. (The original four `GyroidFlora` variants confirm it: Charge and Time
+shipped the *same* `9 × 3.4 × 1.5` leaf, and Charge only diverged later when
+`fit_shield_clearance.py` re-fitted it for its armour, which is a consequence of the Charge law
+rather than a second identity.)
+
+| | gyroid | Schwarz P | quasicrystal | the eight phyllotactics |
+|---|---|---|---|---|
+| Mass volume | ×2.40 | ×1.86 | ×6.14 | ×1.82 |
+| Space volume | ×0.87 | ×0.54 | ×0.98 | ×0.25 |
+| Mass anisotropy | 0.39 | 0.45 | 0.52 | — |
+| Space anisotropy | 2.11 | 2.20 | 1.34 | — |
+
+Three independent authoring decisions agree on the **direction** of both dials and, for the
+aspect, closely on the **magnitude** (Mass 0.39–0.52, Space 1.34–2.20). They agree far less on
+volume (Mass spans 3.3×), which is the honest reading: *the fleet agrees Mass is heaviest and
+Space lightest; it does not agree by how much.* So the law takes a median, not a mean — and
+**each FAMILY gets one vote**, because the eight Hesperides phyllotactics share ONE authored
+cross-section ladder and are therefore one decision, not eight. The law is the geometric mean of
+the two family medians, then normalised so the four average to 1. Shipped: Mass ×1.8347 / A 0.45,
+Space ×0.4097 / A 2.11, Charge and Time ×0.8778 / A 1.
+
+The phyllotactics have **no opinion on aspect** and that is a fact about them rather than a gap:
+they author a SQUARE cross-section and take their lengths from their own `segment`/`reach`, so
+their leaf vector cannot express an aspect. It is also why the anisotropy column is the lattice
+median alone.
+
+### 45.5 A species whose prism size is dictated by its growth rule is EXEMPT — and CHECKED
+
+`Flora.PrismSizeFixedByGrowthRule` — the guard §40 deliberately kept with no reader, now doing its
+third job — exempts the three lattice species and the Mandelbulb from the runtime transform. A
+lattice bonds at offsets measured in **absolute local units**, so a transformed leaf lays prisms
+the bond table no longer describes, and scaling the lattice to match drags a whole family of
+absolute-distance coherence tolerances with it (§34.8).
+
+Those species **state the law in their own fitted data instead**, and the tool checks all four
+clauses on each of them rather than transforming them: Mass is its heaviest leaf, Mass is its most
+cubic, Space is lighter than Time, Space is its most elongated. All three lattice species pass. The
+exemption is also what keeps `fit_shield_clearance.py` and this law from fighting: a Charge leaf
+re-fitted for its armour is fitted against what the species authors, and nothing transforms it
+afterwards.
+
+### 45.6 Where each family spends the law
+
+| family | leaf | reach |
+|---|---|---|
+| `BranchingFlora` | all three axes (s³) | `branchingScaleFactor` — the branch STEP, scaled with the prisms so a Space plant is a wider skeleton rather than one whose prisms outgrow their gaps |
+| `PhyllotacticFlora` | `x`/`y` only, as a CROSS-SECTION (s²) | `segmentLength` + `whorlRadius` — this family's length is not in its leaf at all, so without this Space could not reach further |
+| `AssembledFlora` (×3) | exempt | exempt |
+| `MandelbulbFlora` | exempt | exempt |
+
+### 45.7 The stated limitation
+
+`PhyllotacticFlora.AddHealthBlock` deliberately does **not** call `AdmitTargetScale` (§34.9), so
+`PrismScaleAnimator` silently clamps that family's prisms into `[0.5, 10]`. Measured after the
+transform, **no** phyllotactic cross-section lands outside that window, so the law is not trimmed
+today — but the tool reports it every run rather than assuming, because the clamp is silent and a
+future retune of either the constants or a species' leaf can walk into it.
+
+### 45.8 What was proven, and how
+
+- **The shipped C# was compiled and RUN** — `Tools/Build/flora_form_harness/` builds
+  `FloraElementalForm.cs` + `FloraReproductionRules.cs` + the real `Element` enum against a
+  UnityEngine stub and executes them, and the measurement tool compares the answers against an
+  independent transcription: worst relative disagreement **2.4e-07** over six leaves × four
+  elements. *This is why the law lives in its own pure file rather than inside `Flora`* — a
+  `MonoBehaviour` cannot be compiled out of the editor, and a rule nobody can run is a rule nobody
+  proved.
+- **Four negative controls**, all firing (`--self-test`): a drifted constant, broken volume
+  neutrality, an anisotropy term that moves volume, and an exempt species contradicting the law —
+  plus the unmutated control passing.
+- **Edit-mode tests** (`FloraElementalFormTests`) pin the neutrality property, the four identities,
+  the sentinel rule, and that Time's three clocks are one constant.
+- **Not run in the editor.** What has to be looked at: a Hesperides garden and a Rampage arena,
+  where a Space plant should now read as a wide wiry skeleton and a Mass plant as a compact block
+  of slabs, at the same total forest mass as before.

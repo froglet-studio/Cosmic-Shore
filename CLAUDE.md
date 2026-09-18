@@ -569,6 +569,41 @@ trio, and the traps).
   `0`, which `ShouldSeed` would read as the same thing. `MaxLivePopulation` is untouched, so the
   always-on heart-collider **ceiling is exactly unchanged** — only how fast a species reaches it.
   `Docs/ECOSYSTEM.md §38`.
+- **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
+  them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
+  in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —
+  its long axis trades that cumulative volume for the **bounding volume of the assembly**; **TIME
+  is the fastest clock**, growing *and* reproducing fastest (§38). Two are about SHAPE and two are
+  not, which is the design rather than an accident of what was easy: Charge's identity is a state
+  and Time's a tempo, so **Charge and Time take the species' own authored form** and only Mass and
+  Space restate it — a species authors ONE leaf and the four elements spend it four ways
+  (`FloraElementalForm`). **The four are a REDISTRIBUTION, never an inflation**, and that is what
+  makes a fleet-wide leaf law shippable at all: the four volume multipliers average to **exactly
+  1** and the aspect term is **volume-exact by construction** (a unit-volume shape vector raised to
+  any power still has volume 1), so a mixed-element forest holds the mass it held before and **no
+  cell's volume phase ladder moves** — a law that gave Mass more material would have landed on
+  Rampage's play-tested ladder, on Hesperides and on the Lattice cell. The assembly half falls out
+  of the same sentence with **no new constant**: `ReachScale = volume^(-1/3)`, i.e. a plant
+  spending a fixed amount of material, so Space reaches **1.35x** where Mass draws in to **0.82x**,
+  and the two dials cannot drift because there is only one. Like its two predecessors it **cannot
+  be authored** — the leaf is authored per CONFIG while the element is ROLLED per plant — so it is
+  resolved at `LifeForm.Initialize` and scoped to `Flora`; it needed one new seam,
+  **`LifeForm.OnElementResolved()`**, because `ResolveShieldPeriod` runs AFTER `BindEmbeddedParts`
+  and a leaf applied there leaves the SEED prism at the pre-element size (§43's ordering argument,
+  met from the other side). **The constants are MEASURED off the eleven species that already
+  shipped the law** — three lattice species authoring four fitted leaves each, plus the eight
+  Hesperides phyllotactics sharing ONE authored ladder — with **one vote per FAMILY** (eight species
+  sharing one table is one decision, not eight) and a MEDIAN rather than a mean, because the fleet
+  agrees on the DIRECTION of both dials and on the magnitude of the aspect (Mass 0.39–0.52, Space
+  1.34–2.20) while disagreeing 3.3x on Mass's volume. A species whose prism size is dictated by its
+  growth rule is **EXEMPT and CHECKED instead** (`PrismSizeFixedByGrowthRule`, the guard §40 kept
+  with no reader, now on its third job): a lattice bonds at offsets in absolute units, so it states
+  all four clauses in its own fitted data and `Tools/Build/measure_flora_elemental_form.py` verifies
+  every one — which is also what keeps this law and `fit_shield_clearance.py` from fighting over a
+  Charge leaf. The shipped C# is **compiled and RUN** offline against an independent transcription
+  (`Tools/Build/flora_form_harness/`, worst disagreement 2.4e-07) with four negative controls, which
+  is why the law lives in its own pure file rather than inside `Flora`. Use the **`/flora` skill
+  §5**. `Docs/ECOSYSTEM.md §45`.
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."

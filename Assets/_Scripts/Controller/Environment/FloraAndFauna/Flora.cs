@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -285,6 +286,64 @@ namespace CosmicShore.Gameplay
         protected int ResolveGrowthPerOffspring(int authored)
             => FloraReproductionRules.ScaleGrowthQuota(
                 authored, FloraReproductionRules.ReproductionRateFor(Element));
+
+        /// <summary>
+        /// THE MASS AND SPACE LAWS: the element redistributes this species' authored leaf -
+        /// MASS into the most cumulative prism volume in the most CUBIC leaf, SPACE into the
+        /// highest ASPECT RATIO, trading that volume for the bounding volume of the assembly.
+        /// Charge and Time take the species' own form, because their identities are armour
+        /// (<see cref="ResolveShieldPeriod"/>) and tempo (<see cref="ResolveGrowPeriod"/>).
+        /// Full statement and the measurements behind the constants:
+        /// <see cref="FloraElementalForm"/>, Docs/ECOSYSTEM.md §45.
+        ///
+        /// <para>It runs HERE - at <c>LifeForm.Initialize</c>'s element hook - for the reason
+        /// every elemental law does: the leaf is authored per CONFIG while the element is
+        /// ROLLED per plant, so no asset field could express it, and this is the one point
+        /// where the prefab, the variant block, the cell's overrides and the crystal carrying
+        /// the element have all landed. It runs BEFORE <c>BindEmbeddedParts</c>, so the seed
+        /// prism wears the element's leaf like everything grown after it.</para>
+        ///
+        /// <para><b>A species whose prism size is dictated by its growth rule is exempt</b>
+        /// (<see cref="PrismSizeFixedByGrowthRule"/>) and states the law in its own fitted
+        /// data instead - a lattice bonds at offsets measured in absolute units, so a
+        /// transformed leaf lays prisms the bond table no longer describes. Those species are
+        /// checked against the law offline by
+        /// <c>Tools/Build/measure_flora_elemental_form.py</c>, never transformed here.</para>
+        /// </summary>
+        protected override void OnElementResolved()
+        {
+            base.OnElementResolved();
+            if (PrismSizeFixedByGrowthRule) return;
+
+            leafSize = FloraElementalForm.ShapeLeaf(leafSize, Element);
+            growPeriod = ResolveGrowPeriod(growPeriod);
+        }
+
+        /// <summary>
+        /// THE TIME LAW, applied to the clock a plant runs its own body on: seconds between
+        /// growth steps. Time lays prisms faster, the other three a little slower, on the SAME
+        /// constant that scales the growth quota and the lattice colony cycle
+        /// (<see cref="FloraElementalForm.ScaleGrowPeriod"/>) - "Time grows and regenerates the
+        /// fastest" is one number, not three that can drift apart.
+        ///
+        /// <para>It scales whatever the species authored rather than replacing it, so the
+        /// eight Hesperides phyllotactics keep their own per-element tempo ladder and the
+        /// element scales it - exactly how <see cref="ResolveGrowthPerOffspring"/> treats the
+        /// number the authoring script wrote.</para>
+        /// </summary>
+        protected float ResolveGrowPeriod(float authored)
+            => FloraElementalForm.ScaleGrowPeriod(authored, Element);
+
+        /// <summary>
+        /// How far this plant REACHES relative to its species' authored extent - the assembly
+        /// half of the Mass/Space law (<see cref="FloraElementalForm.ReachScale"/>): a Space
+        /// plant spends its material as a wider skeleton, a Mass plant draws in to a compact
+        /// block. A family honours it on whatever field carries its extent; a family whose
+        /// leaf IS its strut needs nothing, because the anisotropy already lengthened it.
+        /// Returns 1 for a species exempt from the leaf law, so the exemption is total.
+        /// </summary>
+        protected float ElementalReachScale
+            => PrismSizeFixedByGrowthRule ? 1f : FloraElementalForm.ReachScale(Element);
 
         /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being

@@ -151,7 +151,66 @@ Then run the standing gates, which DO cover the wiring half:
 
 ---
 
-## 5. Fit the prism — do not eyeball it, and remember CHARGE is a different question
+## 5. THE FOUR ELEMENTAL IDENTITIES — a species does not get to invent these
+
+A plant's element is **ROLLED**, so this is a LAW in code, not a field you author. Every species
+inherits all four; what a species authors is the ONE form the four spend four ways.
+
+| element | its identity | the mechanism |
+|---|---|---|
+| **CHARGE** | **armours its leaves** — shielded mass, so grazing it costs two passes | `Flora.ResolveShieldPeriod` (§35) |
+| **MASS** | **the most cumulative prism volume, in the most CUBIC leaf** — x, y and z closest together | `FloraElementalForm.ShapeLeaf` |
+| **SPACE** | **the highest ASPECT RATIO** — the long axis trades cumulative prism volume for the **bounding volume of the assembly** | `FloraElementalForm.ShapeLeaf` + `ReachScale` |
+| **TIME** | **the fastest clock** — grows fastest *and* reproduces fastest | `Flora.ResolveGrowPeriod` + `ResolveGrowthPerOffspring` (§38) |
+
+Two are about shape and two are not, and that is the design: **Charge and Time take the species'
+own authored form** (their identities are a state and a tempo), and only Mass and Space restate it.
+
+**The four are a REDISTRIBUTION, never an inflation.** The four volume multipliers average to
+exactly 1 and the aspect term is volume-exact by construction (a unit-volume shape vector raised to
+any power still has volume 1), so a mixed-element forest holds the mass it held before and **no
+cell's volume phase ladder moves**. This is what makes a fleet-wide leaf law shippable at all — a
+law that gave Mass more material would land on Rampage's play-tested ladder, on Hesperides, and on
+every future cell that grows flora. `ReachScale` falls out of the same statement with **no new
+constant**: it is `volume^(-1/3)`, i.e. a plant spending a fixed amount of material, so Space
+reaches ×1.35 and Mass draws in to ×0.82.
+
+**What a new species has to do about it:**
+
+1. **Nothing, if your leaf is free.** Author ONE leaf that reads well and the law spends it. Do
+   not author four per-element leaves "to express the elements" — you will be expressing them
+   twice, and inconsistently with the fleet.
+2. **State it in your own data if your prism size is fixed by your growth rule**
+   (`PrismSizeFixedByGrowthRule` — a lattice, a surface species). You are EXEMPT from the runtime
+   transform, because a transformed leaf lays prisms your bond table no longer describes (§34.8) —
+   so you must satisfy all four clauses yourself, and
+   `Tools/Build/measure_flora_elemental_form.py` checks every one of them: Mass heaviest, Mass most
+   cubic, Space lighter than Time, Space most elongated.
+3. **Say where your REACH lives.** The law scales extent as well as leaf, and each family spends it
+   on its own field (`PhyllotacticFlora.segmentLength`/`whorlRadius`,
+   `BranchingFlora.branchingScaleFactor`). A family whose leaf IS its strut needs nothing — the
+   anisotropy already lengthened it. A family whose length lives elsewhere and does not wire this
+   **cannot express Space at all**, and nothing will tell you.
+
+**Two traps specific to this law:**
+
+- **A leaf whose axes are already equal has no aspect to exaggerate.** The transform is a no-op on
+  a cube, by design — the law must not invent an aspect a species never authored. If your Space
+  variant has to read as a needle, author a leaf with a long axis and let the law stretch it; do
+  not expect the law to choose one for you.
+- **Check which axis your family actually RENDERS before trusting the transform to be visible.**
+  `PhyllotacticFlora` reads only `LeafSize.x/y`, so a law that lengthens `z` does nothing there —
+  which is precisely why its reach fields are wired. Ask the same question of any new family.
+
+The constants are MEASURED off the eleven species that already shipped the law (three lattice
+species authoring four fitted leaves each, and the eight Hesperides phyllotactics sharing one
+authored ladder), **one vote per FAMILY**, geometric mean of the family medians. If you retune a
+species' per-element leaves you may move the measurement, so re-run the tool — it fails the build
+when the code stops tracking the assets, and its `--self-test` proves it can.
+
+---
+
+## 6. Fit the prism — do not eyeball it, and remember CHARGE is a different question
 
 A prism's size is a geometric claim about a specific point set (this species' own measured sites,
 with this species' own orientations), so it is **fitted**, exactly. Both bodies are centrally
@@ -200,7 +259,7 @@ absolute-distance coherence tolerances with it (§34.8), scaling the prism drags
 
 ---
 
-## 6. Budget: prisms, volume, and the one that is never free
+## 7. Budget: prisms, volume, and the one that is never free
 
 State all three before authoring, and remember `/ecology` §4.6 — **prove WHICH ceiling binds**.
 
@@ -219,7 +278,7 @@ thinning the plant. **Plant COUNT is the only lever there.**
 
 ---
 
-## 7. Where the species lives — decide it, do not leave it implied
+## 8. Where the species lives — decide it, do not leave it implied
 
 - **A `SpawnProfileSO`** makes it part of a cell's standing population. Every cell referencing that
   profile inherits the cost, so grep the profile's guid and hold the species against the *tightest*
@@ -235,7 +294,7 @@ asset's GUID across `_SO_Assets` rather than inheriting the claim.
 
 ---
 
-## 8. Traps that have actually cost passes
+## 9. Traps that have actually cost passes
 
 - **A SENTINEL IS NOT A MEASUREMENT.** `LeafSize {0,0,0}`, `MaxTotalSpawnedObjects -1`,
   `HeartWorldScale 0`, `LatticeScale -1`, `GrowPeriod -1`, `ShieldPeriod -1` all mean *keep what you
@@ -314,7 +373,7 @@ asset's GUID across `_SO_Assets` rather than inheriting the claim.
 
 ---
 
-## 9. Hand back honestly — you cannot run Unity
+## 10. Hand back honestly — you cannot run Unity
 
 State the exact in-editor steps, and never claim something works that you have not seen work.
 The minimum handoff for a new species:
