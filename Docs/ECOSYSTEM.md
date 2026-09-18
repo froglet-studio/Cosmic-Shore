@@ -7870,3 +7870,46 @@ recurrence would be claiming something no run could support.*
   octahedron fit lives in this species' own measure script, which says so, and the separating-axis
   maths is a stdlib transcription with closed-form self-tests. Its armoured pass is **sampled** at
   3,000 pairs with a fixed seed — stated rather than disguised.
+
+### 44.11 What has to be tested in the editor
+
+Nothing below has been run. The offline gates are strong about GEOMETRY and say nothing about
+Unity: whether the prefab's serialized fields deserialize into the nested `GrowthRules` struct at
+all, what the plant costs per frame, or how it reads with the game's materials. Work top-down.
+
+1. **It grows, at all.** Lifeform Matrix toy → Flora → Mandelbulb → each of the four elements in
+   turn. **PASS:** a plant appears and keeps adding prisms until it settles; its shape is visibly
+   the one in this section's renders. **FAIL, and the first thing to check:** a plant that lays
+   its single seed prism and nothing else means `formByElement` did not deserialize — the nested
+   `MandelbulbSurface.GrowthRules` is a `[Serializable]` struct inside a `[Serializable]` struct
+   inside an array, which is the shape most likely to come back empty, and `ResolveForm` then
+   falls through to its hard-coded default for EVERY element (so all four would look like Charge).
+   A plant that grows a tiny knot means the surface reconstructed but the walk did not.
+2. **The four elements differ.** Release one of each. **PASS:** four visibly different plants —
+   a dashed bead-work cage, spiralling bracts, an open wire cage, a radiant anemone. **FAIL:** two
+   or more identical, which is the `ResolveForm` fall-through above.
+3. **Frame cost while growing.** Profile a single plant from seed to settled, and then three of
+   the heaviest element (Space) at once. The grow tick decides 8 prisms and the drain instantiates
+   3 per frame; `Reconstruct` runs ONCE per plant at ~0.3 M float ops and should not be visible,
+   but it has never been timed. **Watch for:** a hitch at `Initialize` (that is the reconstruction),
+   and a sustained cost while growing (that is the claim, which hits `PrismSpatialIndex` once per
+   decided prism).
+4. **Collider count and the surface cache.** Three plants is three always-on heart colliders, and
+   the prisms are LOD-cullable by phase like any flora. Confirm both, and confirm the static
+   surface cache does not thrash: release more than 8 plants with different weights and watch for
+   a per-plant reconstruction hitch (§44.10).
+5. **Grazing and regrowth.** Let fauna crop a plant, or shoot it. **PASS:** prisms come back — the
+   live-prism budget frees and `ReopenGrazed` re-decides the freed addresses. **FAIL:** a cropped
+   plant stays a permanent fragment.
+6. **CHARGE's shields.** A Charge plant's leaves are shielded by law. **PASS:** its octahedra fill
+   the dashes in and the plant reads DENSER shielded than the other three read bare, and sparser
+   stripped. **FAIL:** its armour fuses into a solid tube along each ribbon, which would mean the
+   dash (`LengthFactor 0.45`) is not reaching the prism.
+7. **How it READS.** The renders are untextured boxes under one light. Judge it with the domain
+   palette, the fresnel rims and bloom, at flight distance and up close, in the boot world.
+8. **Reproduction.** `GrowthPerOffspring` is one whole plant, `MaxLivePopulation` 3. Leave a cell
+   running and confirm a mature plant seeds a second and that the cap holds.
+9. **A plant is a different bulb each time.** Two plants of the same element should be visibly
+   different members of the family (three quantised weights). **FAIL:** identical plants means
+   `PlantSeed` is returning the same hash — it keys on the planted position, so it is the same
+   number for two plants at the same place.
