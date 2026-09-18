@@ -163,6 +163,41 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             IsFrameCapConfigured(QualitySettings.vSyncCount, Application.targetFrameRate);
 
         /// <summary>
+        /// How much longer than the cap's own budget a frame may run and still be called
+        /// "capped". A cap holds a frame AT its budget; it cannot make a frame arbitrarily
+        /// longer. Generous (2x) because the editor's frame clock carries work
+        /// FrameTimingManager never attributes, and because a cap that is being MISSED still
+        /// reads as the cap for a frame or two.
+        /// </summary>
+        const float CapBudgetTolerance = 2f;
+
+        /// <summary>
+        /// True when the idle in a frame is CONSISTENT with the configured cap — i.e. the frame
+        /// lands at or near the cap's own budget rather than wildly past it.
+        ///
+        /// WHY THIS IS SEPARATE FROM <see cref="IsFrameCapConfigured"/>. A configured cap is
+        /// evidence that a cap COULD be binding, not that it IS. Measured live: a 90.9 ms frame
+        /// containing 4.8 ms of main-thread work and 2.2 ms of GPU, with the cap reading
+        /// <c>vsync 1 · target 120</c>. Vsync-1 on a 120 Hz display is an 8.3 ms FLOOR — it
+        /// cannot produce a 90.9 ms frame — so 86.1 ms was idle for some other reason entirely
+        /// (an unfocused editor Game view throttling, in that case). Labelling it "Capped" names
+        /// a cause that is not there, and an operator who believes it stops looking.
+        ///
+        /// <paramref name="capFps"/> is the cap's rate when it can be named
+        /// (<see cref="TargetFpsCap"/>), or &lt;= 0 when a cap is configured but unnameable — the
+        /// editor case, where <c>Screen.currentResolution.refreshRateRatio</c> reads ~0. With no
+        /// nameable rate there is no budget to compare against, so the honest answer is that the
+        /// cap is merely PLAUSIBLE, which this reports as true: a configured-but-unnameable cap
+        /// keeps the old behaviour rather than silently losing the label it earned in §1.5.
+        /// </summary>
+        public static bool IsIdleConsistentWithCap(float frameMs, float capFps)
+        {
+            if (capFps <= 0f) return true;              // cap configured but unnameable — see above
+            float budgetMs = 1000f / capFps;
+            return frameMs <= budgetMs * CapBudgetTolerance;
+        }
+
+        /// <summary>
         /// True when the measured fps sits at the active cap - the limiter is the cap
         /// itself, so neither processor verdict applies.
         /// </summary>

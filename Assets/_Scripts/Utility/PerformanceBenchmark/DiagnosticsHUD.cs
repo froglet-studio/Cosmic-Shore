@@ -172,6 +172,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         float _recStart, _recEnd, _recRunningSum;
         float _recCpuSum, _recBusyCpuSum, _recGpuSum;
         int _recFrames, _recTimedFrames;
+
+        // Render + GC accumulators. The recorders behind these have been started since
+        // StartRecorders() but were only ever read for SPIKE records and the live rows, so a
+        // saved report carried one INSTANTANEOUS draw count and no GC figure at all — which is
+        // precisely the number an A/B of the prism render path is chasing. Averaged over the
+        // whole run they are comparable between arms; a single sample is not.
+        double _recDrawSum, _recBatchSum, _recSetPassSum, _recGcKbSum;
+
+        /// <summary>Operator-supplied tag for the run in flight ("pathOn" / "pathOff").</summary>
+        string _recLabel = string.Empty;
         readonly List<float> _recFrameMs = new(8192);
         readonly List<DiagSpike> _recSpikes = new(256);
         string _lastSavedPath = "";
@@ -198,12 +208,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             StartRecorders();
             BuildUI();
             RegisterCommand(FrameCapCommand, HandleFrameCapCommand);
+            RegisterCommand(DiagCommand, HandleDiagCommand);
         }
 
         void OnDestroy()
         {
             RestoreFrameCap();
             UnregisterCommand(FrameCapCommand);
+            UnregisterCommand(DiagCommand);
             DisposeRecorders();
             if (_instance == this) _instance = null;
         }
@@ -215,6 +227,35 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         const string FrameCapCommand = "fps";
         bool _frameCapOverridden;
         int _savedVSync, _savedTargetFrameRate;
+
+        const string DiagCommand = "diag";
+
+        /// <summary>
+        /// <c>diag [label] [seconds]</c> — start a timed recording, TAGGED. The label is what
+        /// makes two saved reports diffable as an A/B; F5 leaves them anonymous, and a pair of
+        /// anonymous JSONs an hour apart is exactly how an arm gets misattributed.
+        /// </summary>
+        string HandleDiagCommand(string[] args)
+        {
+            if (_recording) return $"already recording ({_recFrames} frames so far) — wait, or press Stop";
+
+            string label = string.Empty;
+            for (int i = 0; i < args.Length; i++)
+            {
+                if (int.TryParse(args[i], out int seconds) && seconds > 0)
+                {
+                    _diagSeconds = Mathf.Clamp(seconds, 1, 600);
+                    continue;
+                }
+                label = args[i];
+            }
+
+            _recLabel = label;
+            StartDiagnostic();
+            return $"recording {_diagSeconds}s" +
+                   (string.IsNullOrEmpty(label) ? "" : $" as '{label}'") +
+                   $" · path {CosmicShore.ECS.PrismRenderService.StatusLine()}";
+        }
 
         string HandleFrameCapCommand(string[] args)
         {
@@ -522,9 +563,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // editor frame still shows a couple of ms. Calling that "Capped" names a cause
             // that is not there.
             if (FrameBoundness.IsLimitedByPresent(_displayMs, busyCpuMs, _smGpuMs, out float idleMs))
-                return FrameBoundness.IsFrameCapConfigured()
+            {
+                if (!FrameBoundness.IsFrameCapConfigured())
+                    return Col(Dim, $"Idle {idleMs:F1} ms — no cap set");
+
+                // A cap being CONFIGURED is not a cap BINDING. Measured live: a 90.9 ms frame
+                // with 4.8 ms of work under `vsync 1 · target 120` — an 8.3 ms floor cannot
+                // produce a 90.9 ms frame, so the idle was something else entirely (an
+                // unfocused editor Game view). Naming the cap there sends the operator away
+                // from the real cause, and the reading is not usable as a measurement either
+                // way — so say so instead.
+                return FrameBoundness.IsIdleConsistentWithCap(_displayMs, FrameBoundness.TargetFpsCap())
                     ? Col(Warn, $"Capped — {idleMs:F1} ms idle")
-                    : Col(Dim, $"Idle {idleMs:F1} ms — no cap set");
+                    : Col(Bad, $"Stalled — {idleMs:F1} ms unattributed");
+            }
 
             return Col(FpsColor(_displayFps), verdict);
         }
@@ -635,7 +687,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void ToggleDiagnostic()
         {
             if (_recording) FinishDiagnostic();
-            else StartDiagnostic();
+            else
+            {
+                // An F5/button run is ANONYMOUS. Clearing here rather than in StartDiagnostic
+                // is what lets `diag <label>` set the label before starting — and stops an
+                // untagged run inheriting the previous arm's label, which would put two
+                // different populations in two files that claim to be the same arm.
+                _recLabel = string.Empty;
+                StartDiagnostic();
+            }
         }
 
         void StartDiagnostic()
@@ -647,6 +707,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recTimedFrames = 0;
             _recRunningSum = 0f;
             _recCpuSum = _recBusyCpuSum = _recGpuSum = 0f;
+            _recDrawSum = _recBatchSum = _recSetPassSum = _recGcKbSum = 0;
             _recFrameMs.Clear();
             _recSpikes.Clear();
             UpdateDiagButtonLabel();
@@ -657,6 +718,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recFrames++;
             _recRunningSum += frameMs;
             _recFrameMs.Add(frameMs);
+
+            _recDrawSum += RInt(_drawCalls);
+            _recBatchSum += RInt(_batches);
+            _recSetPassSum += RInt(_setPass);
+            _recGcKbSum += RLong(_gcAlloc) / 1024.0;
 
             if (_rawCpuMs > 0.001f || _rawGpuMs > 0.001f)
             {
@@ -712,6 +778,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 draws = RInt(_drawCalls),
                 tris = RLong(_triangles),
                 rttMs = Rtt(),
+                label = _recLabel,
+                prismPath = CosmicShore.ECS.PrismRenderService.StatusLine(),
+                prismEnts = CosmicShore.ECS.PrismRenderService.LiveEntityCount,
                 spikes = new List<DiagSpike>(_recSpikes),
             };
             if (_recTimedFrames > 0)
@@ -726,6 +795,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             r.systemMB = SystemInfo.systemMemorySize;
             if (n > 0)
             {
+                r.avgDraws = (float)(_recDrawSum / n);
+                r.avgBatches = (float)(_recBatchSum / n);
+                r.avgSetPass = (float)(_recSetPassSum / n);
+                r.avgGcKbPerFrame = (float)(_recGcKbSum / n);
+
                 var sorted = new List<float>(_recFrameMs); sorted.Sort();
                 float sum = 0f; for (int i = 0; i < n; i++) sum += _recFrameMs[i];
                 r.avgFrameMs = sum / n;
@@ -761,10 +835,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string BuildTxt(DiagReport r)
         {
             var sb = new StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}");
+            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}" +
+                          (string.IsNullOrEmpty(r.label) ? "" : $"   [{r.label}]"));
             sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
                           $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
-            sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
+            sb.AppendLine($"draws avg {r.avgDraws:F0} (sample {r.draws}) · batches avg {r.avgBatches:F0} · " +
+                          $"setpass avg {r.avgSetPass:F0} · tris {r.tris:N0} · " +
+                          $"RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
+            sb.AppendLine($"GC {r.avgGcKbPerFrame:F1} KB/frame · prism path {r.prismPath}");
             sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
                           $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
@@ -1019,6 +1097,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public int frames, draws;
             public long tris;
             public double rttMs;
+
+            /// <summary>Operator tag for the arm ("pathOn" / "pathOff"), so two files can be diffed.</summary>
+            public string label;
+
+            /// <summary>
+            /// Run averages. `draws` above is a single instantaneous sample taken as the report is
+            /// built; these are the comparable numbers. `avgGcKbPerFrame` is the one this whole
+            /// exercise is chasing and was not recorded at all before.
+            /// </summary>
+            public float avgDraws, avgBatches, avgSetPass, avgGcKbPerFrame;
+
+            /// <summary>
+            /// <c>PrismRenderService.StatusLine()</c> captured with the run, so a report can never
+            /// misattribute its own arm — the failure mode of hand-labelled A/B captures.
+            /// </summary>
+            public string prismPath;
+            public int prismEnts;
+
             public List<DiagSpike> spikes;
         }
 #endif

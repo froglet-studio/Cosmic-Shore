@@ -38,6 +38,7 @@ namespace CosmicShore.Utility
     {
         const string StatsSection = "PrismGrid";
         const string CommandName = "grid";
+        const string LabCommandName = "lab";
         const string OwnerPrefix = "PrismGridTest";
         const string GridRootName = "[PrismGrid]";
 
@@ -103,6 +104,30 @@ namespace CosmicShore.Utility
         Vector3Int _counts;
         Vector3 _gaps;
         float _zoom;
+
+        /// <summary>
+        /// Per-site (kind, domain) recipe for the NEXT lay, or null for the legacy uniform
+        /// lattice (every prism Plain, in <c>config.GridDomain</c>) that <c>grid</c> produces.
+        ///
+        /// It exists because `grid` can only ever render `meshes=1 mats=1` — one prefab, one
+        /// domain, one tier — which is the most batchable population possible and therefore
+        /// says nothing about the boot world's `meshes=3 mats=10`. The measured gap is large:
+        /// 103,823 uniform prisms draw in 515 calls (~202 per draw) while the boot world's
+        /// ~34,000 draw in 14,244 (~2.4 per draw). Since
+        /// <c>PrismRenderService.GetPrototype</c> keys its archetype on (layer, overrideSet)
+        /// and NOT on mesh or material, every domain x tier lands in the same ArchetypeChunks
+        /// and each chunk fragments into one draw command per distinct (mesh, material) run
+        /// inside it. Reproducing that here is the only way to test the claim.
+        ///
+        /// Assignment is ROUND-ROBIN by site index, deliberately: a blocked layout (all plain,
+        /// then all danger) lets chunks come out homogeneous by luck and would quietly prove
+        /// nothing.
+        /// </summary>
+        PrismKind[] _mixKinds;
+        Domains[] _mixDomains;
+
+        /// <summary>Human-readable recipe for the HUD row, empty when uniform.</summary>
+        string _mixLabel = string.Empty;
 
         // ── Safety-throttle lifts ────────────────────────────────────────────
         // The gameplay guards (per-frame AOE damage budget, per-frame VFX spawn
@@ -280,6 +305,7 @@ namespace CosmicShore.Utility
                      "Re-run FrogletTools > Scene Setup > Setup Prism Grid Explosion Scene.");
 
             DiagnosticsHUD.RegisterCommand(CommandName, HandleGridCommand);
+            DiagnosticsHUD.RegisterCommand(LabCommandName, HandleLabCommand);
             // The "prisms" alias that used to live here is RETIRED. PrismStressInjector
             // auto-spawns in every scene and claims that name for its render-only ECS cloud
             // — no GameObjects, no colliders, no MonoBehaviours — which is a completely
@@ -397,12 +423,59 @@ namespace CosmicShore.Utility
                     (y - half.y) * _gaps.y,
                     (z - half.z) * _gaps.z);
 
+                int i = lays.Count;
                 lays.Add(new PrismLay(
                     new SpawnPoint(pos, Quaternion.identity, scale),
-                    config.GridDomain));
+                    _mixDomains != null && _mixDomains.Length > 0
+                        ? _mixDomains[i % _mixDomains.Length]
+                        : config.GridDomain,
+                    _mixKinds != null && i < _mixKinds.Length
+                        ? _mixKinds[i]
+                        : PrismKind.Plain));
             }
 
             return lays;
+        }
+
+        /// <summary>
+        /// Interleaves an exact per-kind census into one site-ordered array: take one from each
+        /// non-empty bucket in turn until every bucket is spent. Exact counts (no rounding, no
+        /// error diffusion) AND maximal interleaving, which is the property under test — see
+        /// <see cref="_mixKinds"/>.
+        /// </summary>
+        internal static PrismKind[] InterleaveKinds(int plain, int danger, int shielded, int super)
+        {
+            var remaining = new[]
+            {
+                Mathf.Max(0, plain),
+                Mathf.Max(0, danger),
+                Mathf.Max(0, shielded),
+                Mathf.Max(0, super),
+            };
+            int total = remaining[0] + remaining[1] + remaining[2] + remaining[3];
+            var outKinds = new PrismKind[total];
+
+            int w = 0;
+            while (w < total)
+            {
+                for (int k = 0; k < 4 && w < total; k++)
+                {
+                    if (remaining[k] <= 0) continue;
+                    remaining[k]--;
+                    outKinds[w++] = (PrismKind)k;
+                }
+            }
+            return outKinds;
+        }
+
+        /// <summary>The first <paramref name="count"/> PLAYABLE domains, in enum order.</summary>
+        internal static Domains[] PlayableDomainCycle(int count)
+        {
+            var all = new[] { Domains.Jade, Domains.Ruby, Domains.Gold };
+            int n = Mathf.Clamp(count, 1, all.Length);
+            var cycle = new Domains[n];
+            for (int i = 0; i < n; i++) cycle[i] = all[i];
+            return cycle;
         }
 
         // ── Spawn ────────────────────────────────────────────────────────────
@@ -734,6 +807,10 @@ namespace CosmicShore.Utility
         void PublishStats()
         {
             DiagnosticsHUD.SetStat(StatsSection, "counts", $"{_counts.x}x{_counts.y}x{_counts.z}");
+            // Which population is standing. A run whose recipe is not on screen is a run whose
+            // draw-call number cannot be attributed later — see _mixKinds.
+            DiagnosticsHUD.SetStat(StatsSection, "recipe",
+                string.IsNullOrEmpty(_mixLabel) ? $"uniform plain · {config.GridDomain}" : _mixLabel);
             DiagnosticsHUD.SetStat(StatsSection, "gaps", $"{_gaps.x:F1}x{_gaps.y:F1}x{_gaps.z:F1}");
             DiagnosticsHUD.SetStat(StatsSection, "phase", _phase.ToString().ToLowerInvariant());
             DiagnosticsHUD.SetStat(StatsSection, "laid", $"{_laid:N0}/{_requested:N0}");
@@ -824,6 +901,7 @@ namespace CosmicShore.Utility
                 int x1 = side, y1 = side;
                 int z1 = Mathf.Max(1, Mathf.CeilToInt(total / (float)(side * side)));
                 _counts = new Vector3Int(x1, y1, z1);
+                ClearMixRecipe();
                 SyncInputsFromState();
                 Spawn();
                 return $"spawning {x1}x{y1}x{z1} = {(long)x1 * y1 * z1:N0} prisms (requested {total:N0})";
@@ -864,9 +942,196 @@ namespace CosmicShore.Utility
             }
 
             _counts = new Vector3Int(Mathf.Max(1, x), Mathf.Max(1, y), Mathf.Max(1, z));
+            ClearMixRecipe();
             SyncInputsFromState();
             Spawn();
             return $"spawning {_counts.x}x{_counts.y}x{_counts.z} at gaps {_gaps.x:F1}/{_gaps.y:F1}/{_gaps.z:F1}";
+        }
+
+        // ── `lab` — the heterogeneous population ─────────────────────────────
+
+        /// <summary>
+        /// Super-shielded ceiling without <c>--force</c>. SuperShielded lazily AddComponents
+        /// <c>PrismStellatedOctahedronShield</c>, whose Awake GENERATES A STELLATION MESH PER
+        /// PRISM, and both shield tiers swap to an always-on convex MeshCollider that
+        /// collider-LOD cannot reclaim (see <see cref="PrismKinds"/>'s own class doc). Shipped
+        /// gameplay caps are SuperShielded 1 per microscene. A five-figure super request is a
+        /// mesh-generation storm, not a measurement — so the lab REFUSES it rather than letting
+        /// the operator discover it as a multi-minute hang.
+        /// </summary>
+        const int SuperShieldedCeiling = 256;
+
+        /// <summary>Shielded is a collider cost rather than a mesh-generation storm — warn, do not refuse.</summary>
+        const int ShieldedWarnAbove = 4096;
+
+        const string LabUsage =
+            "usage: lab <count> [plain|danger|shielded|super] [jade|ruby|blue|gold] | " +
+            "lab mix plain=N danger=N shielded=N super=N [domains=1|2|3] [--force] | lab clear";
+
+        void ClearMixRecipe()
+        {
+            _mixKinds = null;
+            _mixDomains = null;
+            _mixLabel = string.Empty;
+        }
+
+        /// <summary>Sizes the lattice to a near-cube holding at least <paramref name="total"/> sites.</summary>
+        void SetCubeCountsFor(int total)
+        {
+            int side = Mathf.Max(1, Mathf.RoundToInt(Mathf.Pow(total, 1f / 3f)));
+            int z = Mathf.Max(1, Mathf.CeilToInt(total / (float)(side * side)));
+            _counts = new Vector3Int(side, side, z);
+        }
+
+        static bool TryParseKind(string token, out PrismKind kind)
+        {
+            switch (token)
+            {
+                case "plain": kind = PrismKind.Plain; return true;
+                case "danger": kind = PrismKind.Danger; return true;
+                case "shielded": kind = PrismKind.Shielded; return true;
+                case "super":
+                case "supershielded": kind = PrismKind.SuperShielded; return true;
+            }
+            kind = PrismKind.Plain;
+            return false;
+        }
+
+        static bool TryParseDomain(string token, out Domains domain)
+        {
+            switch (token)
+            {
+                case "jade": domain = Domains.Jade; return true;
+                case "ruby": domain = Domains.Ruby; return true;
+                case "blue": domain = Domains.Blue; return true;
+                case "gold": domain = Domains.Gold; return true;
+            }
+            domain = Domains.Jade;
+            return false;
+        }
+
+        string HandleLabCommand(string[] args)
+        {
+            if (args.Length == 0) return LabUsage;
+
+            string head = args[0].ToLowerInvariant();
+
+            if (head == "clear")
+            {
+                ClearMixRecipe();
+                Clear();
+                return "lab cleared (recipe reset; grid emptied)";
+            }
+
+            bool force = false;
+            for (int i = 0; i < args.Length; i++)
+                if (args[i].Equals("--force", StringComparison.OrdinalIgnoreCase)) force = true;
+
+            if (head == "mix") return HandleLabMix(args, force);
+
+            // `lab <count> [kind] [domain]` — one tier, one domain, exact count.
+            if (!int.TryParse(head, out int count) || count <= 0) return LabUsage;
+
+            var kind = PrismKind.Plain;
+            var domain = config.GridDomain;
+            for (int i = 1; i < args.Length; i++)
+            {
+                string t = args[i].ToLowerInvariant();
+                if (t == "--force") continue;
+                if (TryParseKind(t, out var k)) { kind = k; continue; }
+                if (TryParseDomain(t, out var d)) { domain = d; continue; }
+                return $"unrecognised token '{args[i]}'. {LabUsage}";
+            }
+
+            string refusal = RefuseIfOverShieldCeiling(
+                kind == PrismKind.SuperShielded ? count : 0, force);
+            if (refusal != null) return refusal;
+
+            SetCubeCountsFor(count);
+            int sites = _counts.x * _counts.y * _counts.z;
+            _mixKinds = new PrismKind[sites];
+            for (int i = 0; i < sites; i++) _mixKinds[i] = kind;
+            _mixDomains = new[] { domain };
+            _mixLabel = $"{kind} x{sites:N0} · {domain}";
+
+            SyncInputsFromState();
+            Spawn();
+
+            string note = kind == PrismKind.Shielded && sites > ShieldedWarnAbove
+                ? $" — WARNING: {sites:N0} shielded prisms mint {sites:N0} always-on convex MeshColliders"
+                : string.Empty;
+            return $"lab {sites:N0} {kind} {domain}{note}";
+        }
+
+        string HandleLabMix(string[] args, bool force)
+        {
+            int plain = 0, danger = 0, shielded = 0, super = 0, domainCount = 1;
+
+            for (int i = 1; i < args.Length; i++)
+            {
+                string raw = args[i];
+                if (raw.Equals("--force", StringComparison.OrdinalIgnoreCase)) continue;
+
+                int eq = raw.IndexOf('=');
+                if (eq <= 0 || eq == raw.Length - 1)
+                    return $"expected key=value, got '{raw}'. {LabUsage}";
+
+                string key = raw.Substring(0, eq).ToLowerInvariant();
+                if (!int.TryParse(raw.Substring(eq + 1), out int value) || value < 0)
+                    return $"'{raw}' needs a non-negative integer. {LabUsage}";
+
+                switch (key)
+                {
+                    case "plain": plain = value; break;
+                    case "danger": danger = value; break;
+                    case "shielded": shielded = value; break;
+                    case "super":
+                    case "supershielded": super = value; break;
+                    case "domains": domainCount = value; break;
+                    default: return $"unknown key '{key}'. {LabUsage}";
+                }
+            }
+
+            int total = plain + danger + shielded + super;
+            if (total <= 0) return $"mix totals zero prisms. {LabUsage}";
+            if (total > config.MaxTotalPrisms)
+                return $"{total:N0} exceeds the {config.MaxTotalPrisms:N0} cap " +
+                       "(PrismGridTestConfig.maxTotalPrisms).";
+
+            string refusal = RefuseIfOverShieldCeiling(super, force);
+            if (refusal != null) return refusal;
+
+            // The lattice is a near-cube, so it holds AT LEAST `total` sites and usually a few
+            // more. Sites past the recipe fall back to Plain (BuildLays), which is honest: the
+            // census the operator asked for is laid exactly, and the remainder is the cheapest
+            // possible filler rather than a silent reweighting of the mix.
+            SetCubeCountsFor(total);
+            _mixKinds = InterleaveKinds(plain, danger, shielded, super);
+            _mixDomains = PlayableDomainCycle(domainCount);
+            _mixLabel = $"mix p{plain:N0}/d{danger:N0}/s{shielded:N0}/S{super:N0} · " +
+                        $"{_mixDomains.Length} domain{(_mixDomains.Length == 1 ? "" : "s")}";
+
+            SyncInputsFromState();
+            Spawn();
+
+            int sites = _counts.x * _counts.y * _counts.z;
+            string filler = sites > total ? $" (+{sites - total} plain filler sites)" : string.Empty;
+            string note = shielded > ShieldedWarnAbove
+                ? $" — WARNING: {shielded:N0} shielded prisms mint that many always-on convex MeshColliders"
+                : string.Empty;
+            return $"lab mix {total:N0} prisms across {_mixDomains.Length} domain(s){filler}{note}";
+        }
+
+        /// <summary>Null when the request is allowed; the refusal text, WITH ITS REASON, when not.</summary>
+        string RefuseIfOverShieldCeiling(int superCount, bool force)
+        {
+            if (force || superCount <= SuperShieldedCeiling) return null;
+            return $"REFUSED: {superCount:N0} super-shielded prisms exceeds the lab ceiling of " +
+                   $"{SuperShieldedCeiling:N0}. Each one lazily AddComponents " +
+                   "PrismStellatedOctahedronShield, whose Awake GENERATES A STELLATION MESH PER " +
+                   "PRISM, and swaps to an always-on convex MeshCollider collider-LOD cannot " +
+                   "reclaim (shipped gameplay caps are 1 per microscene). That is a " +
+                   "mesh-generation storm, not a measurement. Re-run with --force if you meant it.";
         }
 
         // ── UI construction (mirrors DiagnosticsHUD.BuildUI's code-built idiom) ──

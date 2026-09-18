@@ -167,5 +167,33 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.IsTrue(FrameBoundness.IsLimitedByPresent(7.5f, 4.7f, 2.3f, out _));
             Assert.IsFalse(FrameBoundness.IsFrameCapConfigured(0, -1));
         }
+
+        [Test]
+        public void IsIdleConsistentWithCap_RejectsTheStalledEditorFrame()
+        {
+            // THE CASE THIS EXISTS FOR (measured 2026-09-18): a 90.9 ms frame carrying 4.8 ms
+            // of main-thread work and 2.2 ms of GPU, with the cap reading `vsync 1 · target
+            // 120`. Vsync-1 on 120 Hz is an 8.3 ms FLOOR and cannot produce a 90.9 ms frame,
+            // so 86.1 ms was idle for a reason that is NOT the cap. A configured cap is
+            // evidence a cap could bind, never that it did.
+            Assert.IsFalse(FrameBoundness.IsIdleConsistentWithCap(frameMs: 90.9f, capFps: 120f),
+                "90.9 ms is 11x a 120 Hz budget — not the cap");
+
+            // A frame actually sitting at a 120 Hz cap, and one merely missing it slightly,
+            // both still read as capped — the label must survive ordinary overshoot.
+            Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(8.4f, 120f));
+            Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(12.0f, 120f));
+            // 60 Hz: 16.7 ms budget, so 30 ms is within tolerance and 40 ms is not.
+            Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(30f, 60f));
+            Assert.IsFalse(FrameBoundness.IsIdleConsistentWithCap(40f, 60f));
+
+            // NEGATIVE CONTROL for the editor case §1.5 was written for: vsync is ON but the
+            // platform cannot NAME the rate (refreshRateRatio reads ~0 in the editor), so
+            // there is no budget to compare against and the cap stays plausible. Returning
+            // false here would silently undo the label §1.5 earned.
+            Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(8.4f, capFps: -1f),
+                "unnameable cap must keep the capped label");
+            Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(90.9f, capFps: 0f));
+        }
     }
 }
