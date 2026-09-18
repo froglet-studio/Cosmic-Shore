@@ -355,3 +355,20 @@ the same way the model spins and that the dash still turns at full rate.
 replica's cosmetic roll passes a null transformer and never touches it), and the root bank
 advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
 owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.
+
+## Phase 5 — Element scaling unification (SHIPPED 2026-09-18)
+
+Full record: **`ELEMENT_SCALING_UNIFICATION.md`**. The generic per-element multiplier
+(`ElementalAbilityMapSO.MultiplierAtFullLevel` / `MinMultiplier` +
+`R_VesselElementalAbilityHandler.Multiplier(Element)`) is REMOVED; all ten live multipliers moved to
+an `ElementalFloat` on whatever owns the number, bit-identically. Two undeclared double-applications
+of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive `1.0` pins deleted.
+
+| # | Item | Status |
+|---|---|---|
+| 5.1 | Retire the generic channel; migrate 10 call sites; author the 9 asset-hosted floats + 2 prefab floats | **SHIPPED** |
+| 5.2 | Rhino/Serpent playtest — each loses an undeclared Time application (ramp ceiling ÷2.5, boost speed ÷1.6 at Time 10). Neither number was ever authored as a design | **NEEDS PLAYTEST** |
+| 5.3 | **Two `ElementalFloat`s are authored `Enabled` and never evaluated** — `GrowTrailActionSO.maxSize` (4→8 Mass) and `FullAutoActionSO.speedValue` (375→4875 Space), both read via `.Value` on a ScriptableObject, which nothing binds. Shipped scaling comes from the migrated multipliers instead. Folding each pair into one float is a BALANCE CHANGE, so it needs a design call, not a cleanup | **OPEN — decision** |
+| 5.4 | **Retire the legacy bound `ElementalFloat` path.** `ScaleValueWithLevel` mutates the serialized `Value`, and several floats reached through `ShipAction`/`Skimmer` live on shared SO assets — the vessel contract's rule 1. Move every consumer to `EvaluateLive(status)` and delete the `Vessel` setter, `BindElementalFloat`, and `ElementalShipComponent.BindElementalFloats` | **OPEN — own branch** |
+| 5.5 | **`ResourceSystem.GetLevel` floors a float product**: `FloorToInt(0.7f * 10)` is 6, not 7. It feeds the HUD petals AND the level-5 unlock test, so a fix moves unlock thresholds — deliberate look required | **OPEN — out of scope** |
+| 5.6 | `element_ability_table.py` cannot see `ScarabBallForge.BallSizeScale` (a C# `static readonly`, because that class is static and can hold no serialized field). Either teach the tool to read C# initializers or promote the float to a config SO | **OPEN — low** |

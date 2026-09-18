@@ -26,6 +26,17 @@ namespace CosmicShore.Gameplay
         [SerializeField] int   energy = 0;
         [SerializeField] ElementalFloat speedValue;
 
+        /// <summary>SPACE -> muzzle speed: x1 at the resting level, x9 at level 10, floored at x0.4.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 9, minMultiplier 0.4) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        [SerializeField] ElementalFloat spaceSpeedMultiplier =
+            ElementalFloat.Multiplier(1f, 9f, Element.Space, 0.4f);
+
         [Header("Round Growth (MASS)")]
         [Tooltip("How many times its launch cross-section a round swells to by the END of its " +
                  "flight, at RESTING Mass (level 0). Rounds leave the muzzle small and arrive " +
@@ -66,8 +77,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float ResolveSpeed(IVesselStatus status)
         {
-            var abilities = status?.ElementalAbilityHandler;
-            return speedValue.Value * (abilities ? abilities.Multiplier(Element.Space) : 1f);
+            return speedValue.Value * spaceSpeedMultiplier.EvaluateLive(status);
         }
 
         /// <summary>

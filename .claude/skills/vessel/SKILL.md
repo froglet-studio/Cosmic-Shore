@@ -49,8 +49,8 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    — it performs steps 1-2 for you and prints, per element: the declared ability and input,
    the L5 upgrade AND the call site that actually gates it, and every live scaling channel
    with its authored numbers. It flags an `UpgradeLabel` with no gate, a
-   `MultiplierAtFullLevel` nothing reads, and a gate a serialized bool switches off on this
-   hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
+   a RETIRED generic map multiplier still authored, and a gate a serialized bool switches off on
+   this hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
 1. Read `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` — what is actually authored?
    `(open design slot)` + `Input: 0` + empty `UpgradeLabel` = the design does not exist yet.
 2. Read the vessel prefab (`Assets/_Prefabs/Spacevessels/{Vessel}.prefab`) for the real wiring —
@@ -134,10 +134,13 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
-2. **Read element scaling at use time** (`ElementalAbilityHandler.Multiplier(element)` /
-   `ElementalFloat.EvaluateLive`), never cache at init. **No double-dipping**: if a dedicated
-   authored field on the action SO carries the scaling, pin the map's generic
-   `MultiplierAtFullLevel` to 1.
+2. **Read element scaling at use time** (`ElementalFloat.EvaluateLive(status)`), never cache at
+   init. **Scaling is PARAMETER-addressed: one `ElementalFloat` on the asset or component that owns
+   the number.** There is no generic per-element multiplier — `handler.Multiplier(element)` and the
+   map's `MultiplierAtFullLevel`/`MinMultiplier` were removed 2026-09-18, along with the
+   "pin it to 1" convention that was the only safe way to use them. A multiplier is just an
+   `ElementalFloat` whose `Min` is 1 (`ElementalFloat.Multiplier(atRest, atFull, element, floor)`),
+   and it needs a FLOOR or the deficit band inverts it. `Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`.
 3. **Outcome-affecting upgrades gate on `IsUpgradeActive(element)`** (replicated
    `NetElementUnlocks` bits on `R_VesselActionHandler`) — never a raw local level read, which
    desyncs the prismscape across peers. Per-use snapshot at fire/use time.

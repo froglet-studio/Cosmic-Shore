@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1198fdf2dad44c6b6d46cee1d7a8e87, type: 3}
   m_Name: GrowTrailAction
   m_EditorClassIdentifier: 
+  massMaxSizeMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.5
+    element: 2
+    UseFloor: 1
+    Floor: 0.25
   maxSize:
     Enabled: 1
     Value: 4

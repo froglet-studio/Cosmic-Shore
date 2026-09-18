@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1654d1e385904a699381e6932fb1be74, type: 3}
   m_Name: ConsumeBoostAction
   m_EditorClassIdentifier: 
+  timeDurationMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.6
+    element: 4
+    UseFloor: 1
+    Floor: 0.25
   boostMultiplier:
     Enabled: 0
     Value: 3

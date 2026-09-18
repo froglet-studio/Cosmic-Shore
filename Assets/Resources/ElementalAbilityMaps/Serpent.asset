@@ -18,8 +18,6 @@ MonoBehaviour:
     AbilityLabel: (open design slot)
     AbilityDescription: Charge mapping not yet designed for the Serpent.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -29,8 +27,6 @@ MonoBehaviour:
     AbilityLabel: (open design slot)
     AbilityDescription: Mass mapping not yet designed for the Serpent.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -40,8 +36,6 @@ MonoBehaviour:
     AbilityLabel: (open design slot)
     AbilityDescription: Space mapping not yet designed for the Serpent.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -49,10 +43,13 @@ MonoBehaviour:
     UpgradeDescription: 
   - Element: 4
     AbilityLabel: Boost Duration
-    AbilityDescription: Time extends the boost duration.
+    AbilityDescription: Time extends the boost duration
+      (ConsumeBoostActionSO.timeDurationMultiplier, x1 -> x1.6 at level 10 floored at
+      x0.25). It extends the DURATION only. Until the element-scaling unification the
+      fleet-wide boost read in VesselTransformer.CurrentBoostAmount applied the same
+      element to the boost's SPEED as well, which this map declared nowhere; speed is
+      now untouched by Time - BoostSpeedMultiplier is disabled on Serpent.prefab.
     Input: 0
-    MultiplierAtFullLevel: 1.6
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

@@ -1934,8 +1934,14 @@ is a residual spread of 6.0× at intensity 1 (8.7× at rest) and 5.3× at intens
 spans ~1.5× on the five hulls it reaches (Time = Soar / afterburner / Serpent boost / Scarab
 ceiling / Dolphin fill) and nothing on the Urchin or the Squirrel, while straight-line speeds
 span 34×. (It reaches the Rhino's ramp ACCELERATION since Broadside's playtest filled that slot,
-but not the ramp's CEILING, which is most of what a lap is bounded by — `regatta_balance.py`'s
-Rhino row does not yet model the endpoint and this number therefore stands.) The generator asserts that spread under 6.1× and asserts the measured course
+and deliberately not the ramp's CEILING, which is most of what a lap is bounded by. ⚠ That was
+FALSE as shipped until 2026-09-18: the fleet-wide `Multiplier(Element.Time)` read in
+`VesselTransformer.CurrentBoostAmount` applied the same element to the ceiling too, undeclared on
+the map and unmodelled here, so `regatta_balance.py`'s Rhino row was right about intent while the
+BUILD was wrong. The element-scaling unification removed that read; the model's output is
+unchanged, so no handicap was re-authored — see
+`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`. General rule: **when a model and a
+build disagree, find out which one is wrong before recording it as a modelling gap.**) The generator asserts that spread under 6.1× and asserts the measured course
 JSON's source hash against the shipped C#, so neither a vessel retune nor a course edit can ship
 on stale numbers. What would close the rest is recorded, not faked: an elemental endpoint on the
 Rhino's ramp CEILING (a `/vessel` change — its acceleration already has one), or a pursuit start. Three general rules: **a per-hull

@@ -15,8 +15,8 @@ An element's ability is authored in one place and IMPLEMENTED in two others, and
 three drift:
 
   1. Assets/Resources/ElementalAbilityMaps/{Vessel}.asset
-       the DECLARATION: ability name, input, the generic MultiplierAtFullLevel, the
-       unlock level / latch policy, and the level-5 upgrade's name and prose.
+       the DECLARATION: ability name, input, the unlock level / latch policy, and the
+       level-5 upgrade's name and prose. It carries NO numbers -- see channel 3.
        `/vessel` SKILL.md 2: this asset is a record of intent -- an `UpgradeLabel` is
        documentation until something gates on it.
 
@@ -25,14 +25,20 @@ three drift:
        it is the only thing that makes an upgrade real. A map row with an UpgradeLabel and
        no reachable gate is prose.
 
-  3. `handler.Multiplier(Element.X)` and `ElementalScaling.*` call sites
-       the SCALING, actually. Two channels: the GENERIC one (the map's own
-       MultiplierAtFullLevel, read back through the handler) and BESPOKE authored
-       endpoints on an action/effect SO (`...AtFullSpace`, `...AtRestCharge`, the
-       round-growth pair). CONTRACT 4.2 forbids double-dipping, so a vessel using the
-       bespoke channel pins its map multiplier to 1 -- which makes a map multiplier of 1
-       ambiguous on its face (deliberately inert, or never wired?) and is exactly what
-       this tool disambiguates.
+  3. ElementalFloats and `ElementalScaling.*` call sites
+       the SCALING, actually -- and it is PARAMETER-addressed. Every scaled number
+       declares an ElementalFloat (or a bespoke `...AtFullSpace` / `...AtRestCharge`
+       endpoint pair) on the asset or component that OWNS it, so it can only ever reach
+       that number.
+
+       The generic channel is GONE: the map used to carry MultiplierAtFullLevel +
+       MinMultiplier, read back through `handler.Multiplier(element)`, which addressed
+       an ELEMENT and never a parameter. Measured at removal: of eight hulls two used
+       the fleet-wide boost read as intended, FOUR pinned their map entry to 1.0 purely
+       to defend against it, and TWO were silently applying one element twice to one
+       ability. That is why a map multiplier of 1 used to be ambiguous on its face --
+       there is now no such value to disambiguate.
+       Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md.
 
 Sources 2 and 3 live in C# that a given vessel may or may not REACH, so the join is a
 reference walk from the vessel prefab through its wired action SOs, executors, and
@@ -623,15 +629,23 @@ def build_row(vessel, entry, hits):
                             if upgrade_sites else ""))
         if not upgrade_label and live_gates:
             notes.append("gate exists but the map names no upgrade")
-        if abs(at_full - 1.0) > 1e-6 and not map_live:
-            notes.append(f"DEAD MAP MULTIPLIER — x{at_full:g} authored, never read")
-        if abs(at_full - 1.0) <= 1e-6 and map_live and not live_scale:
-            notes.append("map multiplier read but pinned to x1 — scaling is inert")
-        if not live_scale and not (map_live and abs(at_full - 1.0) > 1e-6):
+        # The retired generic channel's three flags (DEAD MAP MULTIPLIER, pinned-to-x1,
+        # TWO LIVE SCALING CHANNELS) are gone with it. A leftover MultiplierAtFullLevel in
+        # an asset is now a loud finding rather than a tuning value, because nothing reads
+        # it -- so say that instead of pricing it.
+        if abs(at_full - 1.0) > 1e-6 or map_live:
+            notes.append("RETIRED CHANNEL PRESENT — this entry still carries a generic map "
+                         "multiplier, or something still calls handler.Multiplier(element). "
+                         "Scaling belongs in an ElementalFloat on whatever owns the number "
+                         "(ELEMENT_SCALING_UNIFICATION.md).")
+        if not live_scale:
             notes.append("NO SCALING — this element changes no number")
-        if abs(at_full - 1.0) > 1e-6 and live_scale and map_live:
-            notes.append("TWO LIVE SCALING CHANNELS — a genuine double-dip if the map "
-                         "multiplier and the bespoke endpoint drive the SAME parameter")
+        # There is deliberately NO multi-channel flag any more. The old one guarded a specific
+        # hazard -- the map's generic multiplier AND a bespoke endpoint landing on the SAME
+        # parameter -- which cannot exist once every channel names its own parameter. Several
+        # channels on one element is now ordinary and correct (the Sparrow's MASS scales turret
+        # prism stretch, bullet growth and missile growth: three parameters, one element), so a
+        # flag here would fire on three legitimate rows and teach readers to skip the notes.
 
     return {
         "vessel": vessel,
@@ -760,14 +774,14 @@ def print_row(row, verbose):
                 print(f"                  {s['site']}  <- {os.path.basename(s['asset'])}")
                 continue
             print(f"                  {where}  <- {os.path.basename(src)}")
-    if row["map_multiplier_is_read"]:
-        mm = row["map_multiplier_at_full"]
-        tag = "" if abs(mm - 1) > 1e-6 else "   (inert - pinned to 1)"
-        print(f"          scale   map x{mm:g} at L10, floor x{row['map_min_multiplier']:g}{tag}")
+    if row["map_multiplier_is_read"] or abs(row["map_multiplier_at_full"] - 1) > 1e-6:
+        # Retired surface. Printed loudly rather than priced, because nothing reads it.
+        print(f"          scale   RETIRED map multiplier x{row['map_multiplier_at_full']:g} "
+              f"still authored" + ("  AND STILL READ" if row["map_multiplier_is_read"] else ""))
         for site in row["map_multiplier_read_at"][:3]:
             print(f"                  read at {site}")
     elif not shown:
-        print(f"          scale   none reachable  (map authors x{row['map_multiplier_at_full']:g})")
+        print("          scale   none reachable")
 
     # upgrade
     lvl = row["unlock_level"]

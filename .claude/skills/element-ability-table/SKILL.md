@@ -26,7 +26,7 @@ prefab and the code are the record.*
 
 | Source | What it is the record of |
 |---|---|
-| `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` | the DECLARATION — ability name, input, `MultiplierAtFullLevel`, unlock/relock levels, latch policy, the L5 upgrade's name and prose |
+| `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` | the DECLARATION — ability name, input, unlock/relock levels, latch policy, the L5 upgrade's name and prose. **No numbers**: the generic multiplier was retired 2026-09-18 |
 | `IsUpgradeActive(Element.X)` call sites | the L5 UPGRADE, actually. The replicated `NetElementUnlocks` bit is the only thing that makes an upgrade real. **An `UpgradeLabel` with no reachable gate is prose.** |
 | the four scaling channels below | the SCALING, actually |
 
@@ -41,8 +41,10 @@ instance the walk actually arrived at, so the numbers printed are **that vessel'
 A row is only "no scaling" if all four are absent. This is the part that is easy to get wrong by
 grepping.
 
-1. **Generic map multiplier** — `handler.Multiplier(Element.X)` reads the map's own
-   `MultiplierAtFullLevel`. Printed as `map ×N at L10`.
+1. ~~**Generic map multiplier**~~ — **RETIRED 2026-09-18** (`ELEMENT_SCALING_UNIFICATION.md`). It
+   addressed an ELEMENT and not a parameter, so every reader of that element got it. A leftover
+   `MultiplierAtFullLevel` in an asset is now a loud finding (`RETIRED CHANNEL PRESENT`), never a
+   tuning value.
 2. **Bespoke authored endpoints** — `ElementalScaling.Multiplier` / `MultiplierFromRest` /
    `RoundGrowthFactor` with a `…AtRest<Element>` / `…AtFull<Element>` pair on an action or effect
    SO. Printed as `×a at rest → ×b at L10`.
@@ -53,9 +55,11 @@ grepping.
    `…AtResting<Element>` / `…AtFull<Element>` beside it). Printed as absolute values, not a
    multiplier. The Urchin's Slip is only this.
 
-Channels 1 and 2 on the *same parameter* are the double-dip CONTRACT §4.2 forbids; the tool flags
-the pair as **TWO LIVE SCALING CHANNELS** and leaves the same-parameter judgement to you, because
-two channels on two different parameters of one ability is legitimate.
+Several channels on ONE element is now ordinary and correct — the Sparrow's MASS scales turret
+prism stretch, bullet growth and missile growth: three parameters, one element. The old
+**TWO LIVE SCALING CHANNELS** flag is gone with the channel whose specific hazard it guarded
+(generic + bespoke landing on the same number), which cannot happen once every channel names its
+own parameter.
 
 ## Reading the flags
 
@@ -63,10 +67,10 @@ two channels on two different parameters of one ability is legitimate.
 |---|---|
 | `OPEN DESIGN SLOT` | the map authors nothing. **Blocked on design, not wiring** — see the gate below. |
 | `UPGRADE IS PROSE` | `UpgradeLabel` is authored and no live gate is reachable |
-| `DEAD MAP MULTIPLIER` | `MultiplierAtFullLevel ≠ 1` and nothing reachable reads it |
+| `RETIRED CHANNEL PRESENT` | a generic map multiplier is still authored, or something still calls `handler.Multiplier(element)` |
 | `NO SCALING` | none of the four channels is live for this element |
 | `gate exists but the map names no upgrade` | a SHARED effect SO puts a gate in this vessel's reach (every hull carries a crystal-explosion effect and a `VesselPrismController`) while the map declares no upgrade. Usually noise. |
-| `(inert - pinned to 1)` | the map multiplier is read but authored ×1 — the deliberate no-double-dip state |
+| `(inert - authored ×1)` | a bespoke endpoint pair authored ×1 → ×1, i.e. "this element does not scale me" |
 | `(inert - authored ×1)` | a bespoke endpoint pair authored ×1 → ×1, i.e. "this element does not scale me" |
 | `[OFF: field = 0]` | the code is reachable but a serialized bool in the same condition is authored **false on this hull** — the Dolphin reaches the Squirrel's Heavy Trail gate with `massUpgradeShieldsTrail: 0` |
 
