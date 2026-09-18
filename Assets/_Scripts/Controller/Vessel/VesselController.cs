@@ -207,7 +207,21 @@ namespace CosmicShore.Gameplay
         void ApplyStartingElements()
         {
             if (gameData == null || VesselStatus == null) return;
-            if (!gameData.TryGetStartingElements(VesselStatus.VesselType, out var levels)) return;
+            bool resolved = gameData.TryGetStartingElements(VesselStatus.VesselType, out var levels);
+
+            // Bring-up telemetry for the starting-element seed: the feature has never been
+            // observed working in a real match, and every link in the chain reads correct on
+            // paper - so the one thing missing is what the RUNTIME sees. Names the four values
+            // that decide the outcome, so a single match says which link broke. Verbose channel
+            // (FrogletTools > Toolbox > Logging > ArcadeMatch), so it is silent by default.
+            if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[StartingElements] hull={VesselStatus.VesselType} " +
+                    $"intensity={(gameData.SelectedIntensity ? gameData.SelectedIntensity.Value : -1)} " +
+                    $"publishedRows={gameData.StartingElements.Count} resolved={resolved} " +
+                    $"levels=(C{levels.Charge:0.##} M{levels.Mass:0.##} S{levels.Space:0.##} T{levels.Time:0.##})");
+
+            if (!resolved) return;
             SetResourceLevels(levels);
         }
         

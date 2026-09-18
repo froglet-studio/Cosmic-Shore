@@ -428,9 +428,21 @@ namespace CosmicShore.Utility
             // different answer. Deliberately not in PublishStartingElements: its other two
             // callers are the config RPC (which must take the host's table verbatim) and the
             // menu's reset (whose lava-lamp vessel is not in an arcade match and starts at rest).
+            bool isArena = IsArenaCard(game);
             VesselStartingElements.BuildPublishedTable(
-                game.StartingElements, _startingElementsBuild, addBaseline: !IsArenaCard(game));
+                game.StartingElements, _startingElementsBuild, addBaseline: !isArena);
             PublishStartingElements(_startingElementsBuild);
+
+            // Bring-up telemetry, paired with the read-side line in
+            // VesselController.ApplyStartingElements: together they say whether the table was
+            // PUBLISHED with the baseline and whether the vessel RESOLVED it, which is the whole
+            // question. Verbose channel (FrogletTools > Toolbox > Logging > ArcadeMatch).
+            if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch,
+                    $"[StartingElements] publish card='{game.name}' arena={isArena} " +
+                    $"authoredRows={(game.StartingElements != null ? game.StartingElements.Count : 0)} " +
+                    $"publishedRows={StartingElements.Count} " +
+                    $"intensityNow={(SelectedIntensity ? SelectedIntensity.Value : -1)}");
 
             ClampSelectedVesselToGame(game);
         }
