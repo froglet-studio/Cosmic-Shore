@@ -260,6 +260,21 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+- **Inserting a member ABOVE a method silently reassigns that method's doc comment.** A
+  `///` block belongs to whatever declaration follows it, so adding a helper between an
+  existing doc comment and its method hands the doc to the HELPER and leaves the method
+  undocumented — with two `<summary>` tags in one block and no compile error, in a file that
+  otherwise reads perfectly. Three landed in one branch. It is mechanically detectable: scan
+  every changed `.cs` for a line `/// </summary>` immediately followed by `/// <summary>`, and
+  split the hits against the merge base so you only own the new ones. When it fires, decide per
+  site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
+  the new member usually has its own.
+- **A rename sweep must split its hits by which THING the name means.** One identifier is
+  routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
+  the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep
+  at all, and `grep -rn <OldName>` hands you both kinds in one list. Classify every hit before
+  editing any of them, and keep the old name in a HISTORICAL change-record row with the rename
+  noted beside it rather than rewriting the record of what a past branch did.
 - **A doc that asserts a consequence is not evidence the consequence happens — find the
   PRODUCER.** When a doc (or a verification step, or CLAUDE.md) says "X still lands", "contact
   costs Y", or "the gate leaves Z alone", grep for who actually *calls* the thing that produces
