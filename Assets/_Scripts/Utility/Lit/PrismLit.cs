@@ -15,20 +15,31 @@ namespace CosmicShore.Utility
     /// <c>PrismDestructionSight.hlsl</c>, once per prism, off a handful of shader globals this
     /// class writes once per frame.
     ///
-    /// <para><b>Producers.</b> Four today, each saying the same sentence at a different moment in
-    /// a force's life — pending, armed, resolving, resolved:</para>
+    /// <para><b>Producers.</b> THREE today, each saying the same sentence at a different moment in
+    /// a force's life — pending, armed, resolved:</para>
     /// <list type="bullet">
     ///   <item><b>Echo Sight</b> (Dolphin, Charge) — the volume its next crystal blast WOULD
     ///   sweep. The pilot's own is the <see cref="PublishAimed"/> channel; rivals' ride the bank.</item>
     ///   <item><b>Proximity fuze</b> (Sparrow skyburst) — the sphere an armed warhead will
     ///   detonate inside.</item>
-    ///   <item><b>Cavitation plate</b> (Scarab juke dash) — the swept, optionally mirrored
-    ///   cylinder the dash is claiming right now.</item>
     ///   <item><b>Explosion passthrough</b> — a blast that ARRIVED and spared what it touched.
-    ///   This one REPLACED the 2-second temporary shield that used to stand in for it; see
-    ///   <c>Docs/LIT.md</c> for why that swap also removed three gameplay side effects nobody had
-    ///   designed (a food-web blackout, a targeting-grid churn, and one shield SFX per prism).</item>
+    ///   This one REPLACED the 2-second temporary shield that used to stand in for it, so it is
+    ///   the only producer that removes code rather than adding it; see <c>Docs/LIT.md</c> for why
+    ///   that swap also removed three gameplay side effects nobody had designed (a food-web
+    ///   blackout, a targeting-grid churn, and one shield SFX per prism). It covers EVERY shape,
+    ///   because every blast that spares its own domain has a passthrough to express — the
+    ///   Scarab's swept plate lights through the same call as the Dolphin's cone.</item>
     /// </list>
+    ///
+    /// <para><b>A skim field was built as a fourth and CUT on a look call</b>, and the two reasons
+    /// are the questions to ask of the next producer. It was the only ALWAYS-ON one, and an ARENA
+    /// card seats eight hulls with two skimmers each — on that card alone it would have filled
+    /// <see cref="Slots"/> twice over with ambient light and evicted every light that carries
+    /// information, because a producer that is always on competes with every producer that is only
+    /// on when it matters. And it was the only one whose sentence is addressed to its OWN pilot: a
+    /// pending blast, an armed warhead and a spared prism are all things a rival needs to read,
+    /// where "where am I farming" is feedback nobody else wants. So: WHO is this sentence for, and
+    /// is it on ALL the time.</para>
     ///
     /// <para><b>Why a global uniform and not a query.</b> "Is this prism inside that volume" is
     /// LIVE data: the answer changes every frame for every prism as a ship turns and its meters

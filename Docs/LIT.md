@@ -15,18 +15,34 @@ or stores anything on a prism.
 
 ## Why it is a fundamental
 
-Five systems independently wanted to say the same sentence — *my force is reaching that mass, and
-it is mine* — and each was about to say it its own way. They differ only in **when** the force
+Several systems independently wanted to say the same sentence — *my force is reaching that mass,
+and it is mine* — and each was about to say it its own way. They differ only in **when** the force
 lands, which is a property of the producer, not of the state:
 
 | Producer | Volume | Moment | Owner |
 |---|---|---|---|
 | Echo Sight (Dolphin, Charge) | Cone | **pending** — what the next blast would sweep | `EchoSightActionExecutor` |
 | Proximity fuze (Sparrow skyburst) | Sphere | **armed** — where this warhead will go off | `Projectile.PublishFuzeLit` |
-| Cavitation plate (Scarab dash) | Cylinder, mirrored | **resolving** — what the dash is claiming now | `ExplosionImpactor` (cylinder hook) |
 | Explosion passthrough | any | **resolved** — the blast arrived and spared this | `ExplosionImpactor.PublishLit` |
-| Skim field (every skimmer) | Sphere | **continuous** — what this field is working | `Skimmer.PublishLit` |
 
+Three producers, and the third one is a **replacement rather than an addition**: it is what the
+2-second temporary shield used to do (see below), so it is the only one of the three that removes
+code instead of adding it. It covers every shape, because every blast that spares its own domain
+has a passthrough to express — the Scarab's swept plate (`affectSelf: 0`) lights through exactly
+the same call as the Dolphin's cone and the sphere blasts.
+
+A **skim field** was built as a fourth (a sphere, `continuous` — the mass a skimmer is working)
+and was **cut on a look call** after playtest. The Scarab plate stopped being counted as a
+producer in the same pass — not because its light went away (it still lights, through the
+passthrough row above) but because calling it one implied a hook that does not exist. Two things
+the skim field leaves behind. It was the only **always-on** producer in the game, and an
+ARENA card seats eight hulls with two skimmers each, so on that card alone it would have filled
+`PrismLit.Slots` twice over with ambient light and evicted every light that carries information —
+*a producer that is always on competes with every producer that is only on when it matters.* And
+it was the only one whose sentence is addressed to its **own** pilot: a pending blast, an armed
+warhead and a spared prism are all things a rival needs to read, where "where am I farming" is
+feedback nobody else wants. Adding a producer is therefore two questions, not one — *who is this
+sentence for*, and *is it on all the time*.
 Composition with the other fundamentals is what earns it the weight: **Domain** (a light says
 *whose*), **Mass/Prisms** (a predicate over conserved mass that adds no state to it),
 **Elementals** (every volume above is elementally scaled already), **Vessels** (who lights),
@@ -69,12 +85,7 @@ Composition with the other fundamentals is what earns it the weight: **Domain** 
    is what keeps `Tools/Shaders/verify_prism_sight_composition.py` a regression proof rather than a
    fresh measurement. It is cone-only, deliberately: a shape tag there would mean a fourth `Vector3`
    property on every prism graph for a shape no producer needs.
-6. **The skim field is LOCAL-PILOT only**, and that is a design call rather than a saving. Every
-   other producer says something a rival needs to read; a skim field is feedback about your *own*
-   intake. It is also the only always-on producer, and an ARENA card seats eight hulls with two
-   skimmers each — publishing them all would fill the bank twice over with ambient light and evict
-   every light that carries information.
-7. **Overflow evicts the weakest**, never whichever the dictionary enumerated last — an arbitrary
+6. **Overflow evicts the weakest**, never whichever the dictionary enumerated last — an arbitrary
    drop would be an invisible, machine-dependent difference in what each player sees.
 
 ## Nothing reads it to decide an outcome — deliberately
@@ -139,8 +150,10 @@ blast in the game looks exactly as it did.
    able to eat it — previously they could not for 2 s.
 4. **Sparrow, Dog Fight.** Fire a skyburst past a wreck. The fuze sphere should light mass as it
    passes and grow with MASS.
-5. **Scarab, Scramble.** Juke-dash beside your own mass. Both halves of the mirrored plate should
-   light, including the half **behind** you.
-6. **Squirrel, freestyle.** Skim. Your own skim field lights; a remote Squirrel's does not.
+5. **Scarab, Scramble.** Juke-dash beside your own mass. The plate spares its own domain
+   (`affectSelf: 0`), so the passthrough light covers it — both halves of the mirrored cylinder,
+   including the half **behind** you. This is the cylinder arm of one producer, not a producer of
+   its own.
+6. **Any vessel, freestyle.** Skim. **Nothing should light** — the skim-field producer was cut.
 7. **Editor validators:** FrogletTools ▸ Ecology ▸ Prism Animation (the Custom Function name and
    file are unchanged, so no graph should need rewiring) and `PrismLitTests`.

@@ -7,13 +7,15 @@ namespace CosmicShore.Utility
     /// One LIGHT: a region of space a force is acting on, or is about to, expressed in the shape
     /// that force actually sweeps. Mass standing inside one is <b>LIT</b>.
     ///
-    /// <para><b>Why this is a fundamental and not a view effect.</b> Four systems independently
+    /// <para><b>Why this is a fundamental and not a view effect.</b> Several systems independently
     /// wanted to say the same sentence - "my force is reaching that mass, and it is mine" - and
-    /// each was about to say it its own way: the Dolphin's Echo Sight (a pending blast), the
-    /// Sparrow's proximity fuze (an armed warhead), the Scarab's cavitation plate (a resolving
-    /// sweep) and every own-domain explosion passthrough (a blast that arrived and spared it).
-    /// They differ only in WHEN the force lands, which is a property of the producer; what they
-    /// share is the volume, the owner and the light. See <c>Docs/LIT.md</c>.</para>
+    /// each was about to say it its own way. THREE ship: the Dolphin's Echo Sight (a pending
+    /// blast), the Sparrow's proximity fuze (an armed warhead) and every own-domain explosion
+    /// passthrough (a blast that arrived and spared it - which covers the Scarab's swept plate
+    /// too, since that blast spares its own domain). They differ only in WHEN the force lands,
+    /// which is a property of the producer; what they share is the volume, the owner and the
+    /// light. A skim field was built as a fourth and cut - see <c>Docs/LIT.md</c>, which records
+    /// the two questions that cut it.</para>
     ///
     /// <para><b>One predicate, three shapes.</b> <see cref="Contains"/> is the single CPU
     /// transcription of the three Burst sweeps in <c>PrismSpatialIndex</c>
