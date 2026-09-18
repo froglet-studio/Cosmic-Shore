@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5739209271613175231}
-  - component: {fileID: 4820175933061942688}
+  - component: {fileID: 498631696834916965}
   m_Layer: 0
-  m_Name: MandelbulbFlora
+  m_Name: CoralBloomFlora
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 1648936725651798773}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4820175933061942688
+--- !u!114 &498631696834916965
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 2.626, y: 0.3367, z: 1.853}
+  leafSize: {x: 1.928, y: 0.3861, z: 4.685}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -64,96 +64,96 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    CrossSection: {x: 0.0189621, y: 0.00716346}
+    CrossSection: {x: 0.0188766, y: 0.00880908}
     Rules:
       Field: 0
-      SwirlDegrees: 25
-      FieldMix: 0.9
-      Momentum: 0.35
-      StepSize: 0.03
-      MaxSteps: 130
-      LanesPerSeed: 60
-      LaneGap: 0.3
+      SwirlDegrees: 15
+      FieldMix: 0.22
+      Momentum: 0.93
+      StepSize: 0.045
+      MaxSteps: 260
+      LanesPerSeed: 26
+      LaneGap: 0.55
       HopSeek: 0.3
-      HopJitter: 0.3
-      SeedCount: 70
-      SeedSpreadDegrees: 10
-      MaxTurnDegrees: 30
+      HopJitter: 0.2
+      SeedCount: 44
+      SeedSpreadDegrees: 13
+      MaxTurnDegrees: 26
       RadiusMin: 0.3
       RadiusMax: 2
-      MinRun: 8
+      MinRun: 30
       LengthFactor: 0.45
-      GirthTaper: 0.4
-      TwistDegreesPerStep: 12
+      GirthTaper: 0.32
+      TwistDegreesPerStep: 0
   - Element: 2
-    CrossSection: {x: 0.0451346, y: 0.029125}
+    CrossSection: {x: 0.0299001, y: 0.021219}
     Rules:
       Field: 0
-      SwirlDegrees: 55
-      FieldMix: 0.85
-      Momentum: 0.35
-      StepSize: 0.0372309
-      MaxSteps: 140
-      LanesPerSeed: 70
-      LaneGap: 0.34
+      SwirlDegrees: 40
+      FieldMix: 0.2
+      Momentum: 0.94
+      StepSize: 0.0431207
+      MaxSteps: 260
+      LanesPerSeed: 28
+      LaneGap: 0.6
       HopSeek: 0.4
-      HopJitter: 0.25
-      SeedCount: 80
-      SeedSpreadDegrees: 9
-      MaxTurnDegrees: 30
+      HopJitter: 0.18
+      SeedCount: 46
+      SeedSpreadDegrees: 12
+      MaxTurnDegrees: 26
       RadiusMin: 0.3
       RadiusMax: 2
-      MinRun: 8
+      MinRun: 30
       LengthFactor: 1
-      GirthTaper: 0.4
-      TwistDegreesPerStep: 12
+      GirthTaper: 0.32
+      TwistDegreesPerStep: 0
   - Element: 3
-    CrossSection: {x: 0.0350113, y: 0.00448929}
+    CrossSection: {x: 0.0257033, y: 0.00514747}
     Rules:
       Field: 5
       SwirlDegrees: 0
       FieldMix: 0
-      Momentum: 0.55
-      StepSize: 0.0247124
-      MaxSteps: 150
-      LanesPerSeed: 55
-      LaneGap: 0.34
+      Momentum: 0.96
+      StepSize: 0.0624693
+      MaxSteps: 300
+      LanesPerSeed: 22
+      LaneGap: 0.66
       HopSeek: 0.2
-      HopJitter: 0.4
-      SeedCount: 65
-      SeedSpreadDegrees: 11
-      MaxTurnDegrees: 26
+      HopJitter: 0.22
+      SeedCount: 40
+      SeedSpreadDegrees: 14
+      MaxTurnDegrees: 22
       RadiusMin: 0.3
-      RadiusMax: 2.1
-      MinRun: 10
+      RadiusMax: 2.2
+      MinRun: 36
       LengthFactor: 1
-      GirthTaper: 0.4
-      TwistDegreesPerStep: 12
+      GirthTaper: 0.32
+      TwistDegreesPerStep: 0
   - Element: 4
-    CrossSection: {x: 0.045, y: 0.017}
+    CrossSection: {x: 0.03, y: 0.014}
     Rules:
       Field: 1
       SwirlDegrees: 0
-      FieldMix: 0.95
-      Momentum: 0.25
-      StepSize: 0.03
-      MaxSteps: 110
-      LanesPerSeed: 80
-      LaneGap: 0.26
+      FieldMix: 0.18
+      Momentum: 0.95
+      StepSize: 0.045
+      MaxSteps: 240
+      LanesPerSeed: 30
+      LaneGap: 0.52
       HopSeek: 0
-      HopJitter: 0.3
-      SeedCount: 90
-      SeedSpreadDegrees: 8
-      MaxTurnDegrees: 60
+      HopJitter: 0.2
+      SeedCount: 50
+      SeedSpreadDegrees: 11
+      MaxTurnDegrees: 30
       RadiusMin: 0.3
       RadiusMax: 2
-      MinRun: 5
+      MinRun: 14
       LengthFactor: 1
-      GirthTaper: 0.4
-      TwistDegreesPerStep: 12
+      GirthTaper: 0.32
+      TwistDegreesPerStep: 0
   shellRadius: 75
   fieldWidth: 192
-  weightSpread: 1
+  weightSpread: 0.55
   weightSteps: 3
   maxTotalSpawnedObjects: 2800
   growthsPerTick: 8

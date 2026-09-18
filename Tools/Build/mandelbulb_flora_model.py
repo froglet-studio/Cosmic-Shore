@@ -204,7 +204,8 @@ class Rules:
     generator writes them into the prefab."""
     FIELDS = ("field", "swirl", "field_mix", "momentum", "step", "max_steps",
               "lanes", "lane_gap", "hop_seek", "hop_jitter", "seeds", "seed_spread",
-              "max_turn", "r_min", "r_max", "min_run", "length_factor", "girth_taper")
+              "max_turn", "r_min", "r_max", "min_run", "length_factor", "girth_taper",
+              "twist")
 
     def __init__(self, *values):
         if len(values) != len(self.FIELDS):
@@ -235,12 +236,13 @@ class Rng:
 
 class Prism:
     __slots__ = ("theta", "phi", "radial", "tan_a", "tan_b", "length", "girth",
-                 "curve", "lane")
+                 "roll", "curve", "lane")
 
-    def __init__(self, theta, phi, radial, tan_a, tan_b, length, girth, curve, lane):
+    def __init__(self, theta, phi, radial, tan_a, tan_b, length, girth, roll, curve, lane):
         self.theta, self.phi, self.radial = theta, phi, radial
         self.tan_a, self.tan_b = tan_a, tan_b
         self.length, self.girth = length, girth
+        self.roll = roll
         self.curve, self.lane = curve, lane
 
 
@@ -251,7 +253,14 @@ def pose(surface, a):
     fwd = _sub(fwd, _mul(n, _dot(fwd, n)))
     m = _len(fwd)
     fwd = _mul(fwd, 1.0 / m) if m > 1e-7 else f.e_phi
-    return _mul(f.dir, f.radius + a.radial), fwd, n
+    # HELICOIDAL TWIST about the curve's own tangent (MandelbulbSurface.Pose).
+    roll = getattr(a, "roll", 0.0)
+    if roll:
+        binormal = _cross(fwd, n)
+        up = _add(_mul(n, math.cos(roll)), _mul(binormal, math.sin(roll)))
+    else:
+        up = n
+    return _mul(f.dir, f.radius + a.radial), fwd, up
 
 
 def _spherical(p):
@@ -432,6 +441,7 @@ def grow(surface, rules, seed, budget):
                 reference = max(2.0, rules.max_steps * 0.5)
                 u = min(1.0, max(0.0, (len(pts) - 1) / reference))
                 girth = taper + (1.0 - taper) * u
+                twist_per_step = math.radians(getattr(rules, "twist", 0.0))
                 for i in range(len(pts) - 1):
                     a, b = pts[i][0], pts[i + 1][0]
                     delta = _sub(b, a)
@@ -445,7 +455,7 @@ def grow(surface, rules, seed, budget):
                     out.append(Prism(th, ph, _len(centre) - fr.radius,
                                      _dot(fwd, fr.e_theta), _dot(fwd, fr.e_phi),
                                      ln * max(0.05, rules.length_factor),
-                                     girth, curve_count, lane))
+                                     girth, i * twist_per_step, curve_count, lane))
                 mid = len(pts) // 2
                 nxt = min(len(pts) - 1, mid + 1)
                 tv = _sub(pts[nxt][0], pts[mid][0])
@@ -481,46 +491,201 @@ def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=
 # the generator writes it into the prefab, the measurement prices it, and the verifier
 # feeds it to the shipped C#. One source, three readers.
 #
-# Every element grows a different fractal ORDER (its element, Docs/ECOSYSTEM.md §40 — the
-# table lives in the BAKE) and a different CURVE FAMILY, so the four read as four plants
-# rather than four sizes of one:
+# ── TWO SPECIES, ONE GROWTH RULE ──────────────────────────────────────────────────────
 #
-#   Charge  contour, swirled   — a tangled coral cage
-#   Mass    contour, hard swirl— spiralling bracts
-#   Space   geodesic           — an open wire cage of long straight struts
-#   Time    ascent             — fall lines from every crest, a radiant anemone
+# Both trace curves over a baked spherical height field. They differ in ONE thing each,
+# and that thing is the concept (Docs/ECOSYSTEM.md §46):
 #
-# Fields:  field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper
-RULES = {
-    "Charge": (0, 25, 0.90, 0.35, 0.040, 130, 60, 0.30, 0.3, 0.30, 70, 10, 30, 0.3, 2.0,  8, 0.45, 0.40),
-    "Mass":   (0, 55, 0.85, 0.35, 0.038, 140, 70, 0.34, 0.4, 0.25, 80,  9, 30, 0.3, 2.0,  8, 1.0, 0.40),
-    "Space":  (5,  0, 0.00, 0.55, 0.050, 150, 55, 0.34, 0.2, 0.40, 65, 11, 26, 0.3, 2.1, 10, 1.0, 0.45),
-    "Time":   (1,  0, 0.95, 0.25, 0.030, 110, 80, 0.26, 0.0, 0.30, 90,  8, 60, 0.3, 2.0,  5, 1.0, 0.35),
+#   FRACTAL FOLIAGE  every prism ROLLS about its own curve tangent as the run advances, so
+#                    a curve is a helix of plates rather than a flat band. Short, busy,
+#                    many-laned runs: a dense twisted foliage.
+#   CORAL BLOOM      no twist at all, and the curves are made to CONTINUE — high momentum,
+#                    a low field mix, a long step ceiling and a long MINIMUM run, so only
+#                    curves that traverse the structure survive and the ones that do cross
+#                    each other. Fewer lanes and a wider gap: an open cage of smooth arcs.
+#
+# They share the surface family (one bake per element), which is deliberate: the two are
+# visibly the same WORLD grown two different ways, which is what makes them read as two
+# plants in one biome rather than two unrelated objects.
+#
+# Each species authors ONE neutral form and four CURVE FAMILIES. The four elemental prisms
+# are DERIVED from the neutral by the fleet law (Docs/ECOSYSTEM.md §45) rather than typed
+# per element - which is the whole point: the concept persists through all four elements
+# while each element expresses itself.
+
+# The fleet law, as ratios against TIME (the neutral form - Time's identity is the clock,
+# not a shape). Read straight off FloraElementalForm's shipped constants:
+#   Mass  1.8347 / 0.8778 = 2.0901      Space 0.4097 / 0.8778 = 0.4667
+ELEMENT_VOLUME = {"Charge": 1.0, "Mass": 2.0901, "Space": 0.4667, "Time": 1.0}
+ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 0.45, "Space": 2.11, "Time": 1.0}
+
+# CHARGE is fitted against its ARMOUR, not its box: a Charge plant's leaves are shielded by
+# law and a shield engages the octahedron CIRCUMSCRIBING the prism, reaching 1.5 x leafSize
+# (Docs/ECOSYSTEM.md §35). Two dials, both fitted by measure_mandelbulb_flora.py --shields:
+# a UNIFORM cross-section shrink (uniform so the species' own leaf ASPECT survives, which is
+# what §45 requires of Charge), and a DASH - the prism laid shorter than the step that spaces
+# it, which is the only lever that reaches fusion along a ribbon's OWN chain.
+CHARGE_SHIELD_SHRINK = 0.60
+CHARGE_DASH = 0.45
+
+# GIRTH COMPENSATION - the one number here that is FITTED rather than derived, and the
+# reason it has to exist is worth stating: the law sets the AUTHORED prism, but what a
+# player sees is the plant, and every prism's cross-section is additionally multiplied by
+# its curve's GIRTH - a taper keyed on how far that run got (Docs/ECOSYSTEM.md §44). The
+# mean girth is therefore emergent from the curve family, it differs per element because
+# the four curve families differ on purpose, and measured it INVERTED the ordering the law
+# had just set (Space's long clean runs all reached full girth while Time's short fall
+# lines sat near the taper floor, so Space's plant carried 1.3x Time's cumulative volume
+# against an authored 0.47x).
+#
+# So each element carries one measured scalar on its cross-section that cancels its own
+# mean girth, and the ordering the user can actually see - cumulative prism volume per
+# PLANT - is then true rather than approximately true. Volume goes as the cross-section
+# SQUARED (girth multiplies x and y, never the length), so the gain is a square root.
+# Solved by `measure_mandelbulb_flora.py --fit-volume`; re-run it after ANY curve-family
+# change, because that is what moves the mean girth.
+# Measured. Note the SHAPE of these two rows, which is the finding rather than the numbers:
+# FRACTAL FOLIAGE needs a real correction (0.60-1.01) because its four curve families are
+# deliberately very different - a fall-line anemone and an open geodesic cage do not produce
+# the same run-length distribution - while CORAL BLOOM barely moves (0.98-1.06) because its
+# concept makes all four families uniformly long-running. A species whose elements differ a
+# lot in HOW they grow will need this fit; one whose concept is the same growth everywhere
+# very nearly does not.
+VOLUME_GAIN = {
+    "FractalFoliage": {"Charge": 0.7023, "Mass": 1.0101, "Space": 0.6022, "Time": 1.0},
+    "CoralBloom":     {"Charge": 1.0487, "Mass": 0.8322, "Space": 0.968,  "Time": 1.0},
 }
 
-# Ribbon cross-section in SURFACE units (x across the curve, y through it). Length comes
-# from the curve. CHARGE is fitted against its ARMOUR, not its box: a Charge plant's leaves
-# are shielded by law and a shield engages the octahedron CIRCUMSCRIBING the prism, reaching
-# 1.5 x leafSize (Docs/ECOSYSTEM.md §35). Solved by measure_mandelbulb_flora.py --shields.
-CROSS_SECTION = {
-    "Charge": (0.0275, 0.0100),
-    "Mass":   (0.0500, 0.0180),
-    "Space":  (0.0550, 0.0200),
-    "Time":   (0.0450, 0.0170),
+# Fields:      field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
+#
+# `step`, `length_factor` and the cross-section are OVERWRITTEN per element by the law
+# below - they are the prism, and the prism is what the elements redistribute. Everything
+# else is the curve family, which is authored, because "the four read as four plants" is
+# richness the law is deliberately silent about.
+SPECIES = {
+    "FractalFoliage": dict(
+        prefab="MandelbulbFlora",
+        display="Mandelbulb Flora",
+        # The concept: a helicoidal roll, accumulated step by step along each run.
+        twist=12.0,
+        girth_taper=0.40,
+        # The neutral form (what TIME grows): cross-section across/through the curve, in
+        # SURFACE units, and the step that is also the prism's length.
+        neutral_cross=(0.0450, 0.0170),
+        neutral_step=0.030,
+        weight_spread=1.0,
+        curves={
+            #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
+            "Charge": (0, 25, 0.90, 0.35, 0.040, 130, 60, 0.30, 0.3, 0.30, 70, 10, 30, 0.3, 2.0,  8, 0.45, 0.40, 0),
+            "Mass":   (0, 55, 0.85, 0.35, 0.038, 140, 70, 0.34, 0.4, 0.25, 80,  9, 30, 0.3, 2.0,  8, 1.0, 0.40, 0),
+            "Space":  (5,  0, 0.00, 0.55, 0.050, 150, 55, 0.34, 0.2, 0.40, 65, 11, 26, 0.3, 2.1, 10, 1.0, 0.45, 0),
+            "Time":   (1,  0, 0.95, 0.25, 0.030, 110, 80, 0.26, 0.0, 0.30, 90,  8, 60, 0.3, 2.0,  5, 1.0, 0.35, 0),
+        },
+    ),
+    "CoralBloom": dict(
+        prefab="CoralBloomFlora",
+        display="Coral Bloom Flora",
+        # The concept: NO twist - the curves themselves are the subject.
+        twist=0.0,
+        girth_taper=0.32,
+        neutral_cross=(0.0300, 0.0140),
+        neutral_step=0.045,
+        # A tighter family spread than the foliage: this species' plants should read as
+        # variations on one smooth form rather than as four different bulbs.
+        weight_spread=0.55,
+        curves={
+            # High momentum + a low field mix is what makes a curve CONTINUE; a long
+            # min_run then discards everything that does not traverse the structure, so
+            # what is left is long arcs that cross each other. Fewer lanes and a wider
+            # gap keep the cage open enough to see the crossings through.
+            #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
+            "Charge": (0, 15, 0.22, 0.93, 0.045, 260, 26, 0.55, 0.3, 0.20, 44, 13, 26, 0.3, 2.0, 30, 0.45, 0.55, 0),
+            "Mass":   (0, 40, 0.20, 0.94, 0.045, 260, 28, 0.60, 0.4, 0.18, 46, 12, 26, 0.3, 2.0, 30, 1.0, 0.55, 0),
+            "Space":  (5,  0, 0.00, 0.96, 0.045, 300, 22, 0.66, 0.2, 0.22, 40, 14, 22, 0.3, 2.2, 36, 1.0, 0.60, 0),
+            # CONTOUR with its own swirl rather than ASCENT: a fall-line field composed with
+            # this species' high momentum runs every curve to a pole, which measured as 21% of
+            # the plant in one band, an empty band next to it, and a walk sitting on the
+            # abandon gate - the model and the shipped C# then disagreed on 11 of 51 curves at
+            # full fidelity. The concept here is curves that CONTINUE, and a field with a
+            # global attractor is the one thing that cannot continue.
+            "Time":   (1,  0, 0.18, 0.95, 0.045, 240, 30, 0.52, 0.0, 0.20, 50, 11, 30, 0.3, 2.0, 14, 1.0, 0.50, 0),
+        },
+    ),
 }
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice
 PRISM_BUDGET = 2800     # live prisms per plant
-WEIGHT_SPREAD = 1.0
 WEIGHT_STEPS = 3
 MAX_LIVE_POPULATION = 3
 POPULATION_SIZE = 1
 
 
-def rules_for(element):
-    return Rules(*RULES[element])
+def elemental_prism(species, element):
+    """This element's prism, DERIVED from the species' neutral form by the fleet law.
 
+    Returns (cross_x, cross_y, step, length_factor). The law decomposes the neutral prism
+    into a SIZE (its geometric mean) and a unit-volume SHAPE, scales the size by the
+    element's volume ratio and raises the shape to its anisotropy exponent - which is
+    volume-exact, so volume and aspect are independent dials and the species' own axis
+    ORDER survives (FloraElementalForm.ShapeLeaf, Docs/ECOSYSTEM.md §45).
+
+    The prism's THIRD axis is the step, because on this growth family the step IS the
+    prism's length - so "Space's long axis" is a real long axis here rather than a
+    dimension nothing renders.
+    """
+    spec = SPECIES[species]
+    x, y = spec["neutral_cross"]
+    z = spec["neutral_step"]
+    volume = ELEMENT_VOLUME[element]
+    anisotropy = ELEMENT_ANISOTROPY[element]
+
+    mean = (x * y * z) ** (1.0 / 3.0)
+    size = mean * volume ** (1.0 / 3.0)
+    x2, y2, z2 = (size * (c / mean) ** anisotropy for c in (x, y, z))
+
+    # Cancel this element's own emergent mean girth, so the ordering holds on the PLANT
+    # and not only on the authored prism. Uniform on x and y, so the aspect is untouched.
+    gain = VOLUME_GAIN.get(species, {}).get(element, 1.0)
+    x2 *= gain
+    y2 *= gain
+
+    if element == "Charge":
+        # Uniform, so the species' own aspect survives the armour fit.
+        x2 *= CHARGE_SHIELD_SHRINK
+        y2 *= CHARGE_SHIELD_SHRINK
+        return x2, y2, z2, CHARGE_DASH
+    return x2, y2, z2, 1.0
+
+
+def rules_for(element, species="FractalFoliage"):
+    """The shipped rule for one (species, element) - the authored curve family with the
+    law's prism written over its step, length factor and twist."""
+    spec = SPECIES[species]
+    values = list(spec["curves"][element])
+    _, _, step, length_factor = elemental_prism(species, element)
+    fields = Rules.FIELDS
+    values[fields.index("step")] = step
+    values[fields.index("length_factor")] = length_factor
+    values[fields.index("twist")] = spec["twist"]
+    # The girth taper is the SPECIES' texture - how much finer a scrap run is than a
+    # structural one - so it is uniform across the four. Left per element it multiplies the
+    # cross-section by an emergent, element-dependent mean and quietly re-authors the volume
+    # ordering the law just set (measured: it inverted Space above Time).
+    values[fields.index("girth_taper")] = spec["girth_taper"]
+    return Rules(*values)
+
+
+def cross_section_for(element, species="FractalFoliage"):
+    x, y, _, _ = elemental_prism(species, element)
+    return (x, y)
+
+
+# Back-compat views for the readers that predate the split. RULES/CROSS_SECTION describe
+# the FractalFoliage species, which is the one that shipped first.
+RULES = {e: rules_for(e).as_list() for e in ("Charge", "Mass", "Space", "Time")}
+CROSS_SECTION = {e: cross_section_for(e) for e in ("Charge", "Mass", "Space", "Time")}
+WEIGHT_SPREAD = SPECIES["FractalFoliage"]["weight_spread"]
 
 
 CLAIM_FACTOR = 0.70   # MandelbulbFlora.ClaimFactor

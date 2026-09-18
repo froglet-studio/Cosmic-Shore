@@ -8059,3 +8059,124 @@ future retune of either the constants or a species' leaf can walk into it.
 - **Not run in the editor.** What has to be looked at: a Hesperides garden and a Rampage arena,
   where a Space plant should now read as a wide wiry skeleton and a Mass plant as a compact block
   of slabs, at the same total forest mass as before.
+
+---
+
+## 46. Two species on one growth rule — the twist and the crossing curve (Sep 2026)
+
+The Mandelbulb family (§44) traces curves over a baked spherical height field. That rule turns out
+to hold two quite different plants, and it holds them **without a second class**: one prefab each,
+one component, one bake, differing in their curve parameters and in one dial apiece — the way the
+eight Hesperides phyllotactics are eight species on one class.
+
+| | **Fractal Foliage** (`MandelbulbFlora`) | **Coral Bloom** (`CoralBloomFlora`) |
+|---|---|---|
+| the concept | every prism **ROLLS about its own curve tangent** as the run advances, so a curve is a helix of plates rather than a flat band | **no twist at all** — the curves themselves are the subject, made to CONTINUE and cross through the whole structure |
+| the dial | `GrowthRules.TwistDegreesPerStep` = **12** | high momentum (0.93–0.96), a low field mix, a long step ceiling — and only long runs survive |
+| reads as | a dense twisted foliage | an open cage of smooth arcs you see the fractal through |
+| neutral prism | `0.045 × 0.017 × 0.030` | `0.030 × 0.014 × 0.045` |
+
+They share the **surface family** (one bake per element), which is deliberate: the two are visibly
+the same WORLD grown two different ways, which is what makes them read as two plants in one biome
+rather than as two unrelated objects.
+
+### 46.1 The twist is a pure function of the address, and costs nothing
+
+`PrismAddress.Roll` carries the accumulated twist in radians, stamped once per prism at emission
+(`i × TwistDegreesPerStep`), and `Pose` applies it as a rotation of the frame's normal about the
+curve's own tangent. Two properties are why it is stored rather than recomputed: a prism's address
+is the **whole** of its identity, so a pose that had to ask "how far along its curve am I?" would
+need the curve to still exist; and roll 0 leaves `up` exactly on the normal, so a species that
+authors no twist is **bit-identical** to before this existed — which the verifier confirmed on all
+four of the original species before anything else moved.
+
+Rodrigues about a unit axis the vector is already perpendicular to reduces to one cos/sin blend
+with the binormal, so the twist costs one cross product and cannot drift off the frame.
+
+### 46.2 The elemental law is DERIVED from each species' neutral form, not typed per element
+
+Both species are EXEMPT from the runtime leaf transform (`PrismSizeFixedByGrowthRule`), so each has
+to state §45's law in its own data. It is **derived** rather than authored: each species authors ONE
+neutral prism and four curve families, and `mandelbulb_flora_model.elemental_prism` applies §45's
+measured ratios to the neutral — which is the whole point of the user's ask, *the concept persists
+through all four elements while each element expresses itself*. The prism's third axis is the
+**step**, because on this family the step IS the prism's length, so "Space's long axis" is a real
+long axis here rather than a dimension nothing renders.
+
+Measured, both species:
+
+| | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Foliage cumulative volume | 1,574 | **20,305** | 4,535 | 9,716 |
+| Foliage prism aspect | 2.65 | **1.55** | **7.80** | 2.65 |
+| Bloom cumulative volume | 1,778 | **22,942** | 5,123 | 9,925 |
+| Bloom prism aspect | 2.41 | **1.69** | **11.75** | 3.21 |
+
+### 46.3 The finding: an emergent GIRTH quietly re-authors the volume ordering
+
+The law sets the AUTHORED prism, and what the player sees is the plant — where every prism's
+cross-section is additionally multiplied by its curve's **girth**, a taper keyed on how far that
+run got (§44). The mean girth is therefore emergent from the curve family, it differs per element
+because the four curve families differ on purpose, and measured it **INVERTED the ordering the law
+had just set**: the foliage's Space, whose long clean runs all reach full girth, carried 1.3× its
+Time's cumulative volume against an authored 0.47×.
+
+Two corrections, and the second is the one that generalises:
+
+- The **girth taper is a SPECIES constant**, not a per-element one. It is the plant's texture — how
+  much finer a scrap run is than a structural one — which belongs to the concept. Left per element
+  it multiplies the cross-section by an emergent, element-dependent mean.
+- Each element carries **one measured scalar** (`VOLUME_GAIN`) that cancels its own mean girth, so
+  the ordering holds on the plant rather than only on the authored prism. Volume goes exactly as
+  the cross-section squared and nothing in the walk depends on it (the claim radius is a fraction
+  of a prism's **length**), so the fit is one iteration, not a search.
+
+**The shape of those two rows is the finding rather than the numbers.** Fractal Foliage needs a
+real correction (0.60–1.01) because its four curve families are deliberately very different — a
+fall-line anemone and an open geodesic cage do not produce the same run-length distribution — while
+Coral Bloom barely moves (0.83–1.05) because its concept makes all four families uniformly
+long-running. *A species whose elements differ a lot in HOW they grow will need this fit; one whose
+concept is the same growth everywhere very nearly does not.*
+
+### 46.4 Three gates that were coincidences, found by adding a second species
+
+The verifier compiles and RUNS the shipped C# against an independent model, and it holds the walk
+by its statistics because a sequential recurrence with a turn gate is chaotic in its last bits
+(float32 in C#, float64 in the model). Running a SECOND species through it exposed three
+constants that had been sitting on a coincidence rather than on a margin:
+
+1. **A curve-count tolerance stated as a percentage of the COUNT.** Two curves out of 210 on the
+   foliage's Mass is 1% of the plant; eleven out of 51 on the bloom's Time is 21% of it — and a
+   percentage bound on the count calls those the same size of disagreement. It is now stated in the
+   only unit that means the same thing to both species: **the fraction of the PLANT the disputed
+   curves account for.**
+2. **"The walk diverged before prism 16, so it is a transcription error."** How early two walks
+   separate is a property of how chaotic the SURFACE is — the power-12 Time bulb has 3.3× the
+   relief of the Space one — so the constant was a statement about one species. Worse, it could not
+   be repaired by measuring the SIZE of the first disagreement instead: the prism lists are
+   INDEX-ALIGNED, so the moment one flipped decision drops a curve, every later index compares two
+   different curves and a drift and a jump look identical. The transcription test is now **prism 0**,
+   which a transcription error cannot pass and float width cannot fail; where the walks separate is
+   reported and never gated.
+3. **A `phi` comparison with no seam unwrap**, which read a point either side of `phi = 0` as 2π of
+   error. It was making the original species look 50× worse than it is — the foliage's Time agrees
+   to prism **1084**, not 19 — which is exactly how the magic 16 came to look like a margin.
+
+*A gate written against one species is a gate calibrated on one species.* All three are now derived
+from the plant being checked.
+
+### 46.5 What it costs, and what has to be tested
+
+Both species are in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix toy (rows `Mandelbulb`
+and `Coral Bloom`), so neither costs a shipped cell anything until somebody puts it in one. At
+`MaxLivePopulation` 3 that is 3 always-on heart colliders and ~69,000 volume each at their heaviest
+element.
+
+**Nothing has been run in the editor.** On top of §44.11's list, the two things this pass adds:
+
+1. **The twist must READ.** A Fractal Foliage curve should be a visible helix of plates, and a
+   Coral Bloom curve a flat ribbon. **FAIL:** if the foliage looks flat, `TwistDegreesPerStep` is
+   not reaching the prefab — check the `Rules` block in `MandelbulbFlora.prefab`.
+2. **The two species must read as two plants.** Spawn one of each from the toy and look at them
+   together. **FAIL:** if they read as one species at two sizes, the concept dials are not carrying
+   and the answer is the curve families, not the prism.

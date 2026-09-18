@@ -112,6 +112,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: 1a7c40d9e5b3486f92c1d70eb38a5c4d, type: 2}
     - {fileID: 11400000, guid: 84f13b6ac2de49518a0b7e3d5c96124f, type: 2}
     - {fileID: 11400000, guid: d09e5a24c73b41f6b81c3ae07d52964b, type: 2}
+  - Name: Coral Bloom
+    ElementConfigs:
+    - {fileID: 11400000, guid: 13e434ec9c39beedb3f07d87eaf02e94, type: 2}
+    - {fileID: 11400000, guid: c24f4b1142a4522b8a5d9ae5bd6de8b6, type: 2}
+    - {fileID: 11400000, guid: 0d625e5d75948f82ecb7df85c9acd266, type: 2}
+    - {fileID: 11400000, guid: bf07113394fa63b1c9ede5b314a14f1d, type: 2}
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

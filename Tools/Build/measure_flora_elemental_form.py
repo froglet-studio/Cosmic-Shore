@@ -54,7 +54,8 @@ ELEMENT_ID = {0: "None", 1: "Charge", 2: "Mass", 3: "Space", 4: "Time", 5: "Omni
 
 # Families whose prism size is dictated by their growth rule (Flora.PrismSizeFixedByGrowthRule):
 # EXEMPT from the runtime transform, and therefore CHECKED against the law instead.
-EXEMPT_PREFABS = {"GyroidFlora", "SchwarzPFlora", "QuasicrystalFlora", "MandelbulbFlora"}
+EXEMPT_PREFABS = {"GyroidFlora", "SchwarzPFlora", "QuasicrystalFlora",
+                  "MandelbulbFlora", "CoralBloomFlora"}
 # The three that author a fitted per-element leaf and so can be measured FROM. The Mandelbulb
 # states its per-element form in code rather than in a LeafSize, so it is checked, not
 # measured (see `mandelbulb_flora_model.py`).
@@ -352,7 +353,8 @@ def main() -> int:
         m = measure_species(species.get(name, {}))
         if not m or not all(e in m for e in ELEMENTS):
             print(f"    {name:20s} states its form in CODE, not in a LeafSize - checked by "
-                  f"its own tool")
+                  f"measure_mandelbulb_flora.py --check, which gates all four clauses on "
+                  f"the measured PLANT")
             continue
         vols = {e: m[e]["volume"] for e in ELEMENTS}
         asps = {e: m[e]["aspect"] for e in ELEMENTS}

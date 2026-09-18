@@ -313,10 +313,15 @@ namespace CosmicShore.Gameplay
         protected override void OnElementResolved()
         {
             base.OnElementResolved();
-            if (PrismSizeFixedByGrowthRule) return;
 
-            leafSize = FloraElementalForm.ShapeLeaf(leafSize, Element);
+            // THE CLOCK IS NOT EXEMPT. PrismSizeFixedByGrowthRule is a statement about
+            // GEOMETRY - a lattice bonds at offsets in absolute units - and it says nothing
+            // about tempo, so a Time lattice still grows fastest. Gating the whole method on
+            // it would have made the exemption mean more than it says.
             growPeriod = ResolveGrowPeriod(growPeriod);
+
+            if (PrismSizeFixedByGrowthRule) return;
+            leafSize = FloraElementalForm.ShapeLeaf(leafSize, Element);
         }
 
         /// <summary>

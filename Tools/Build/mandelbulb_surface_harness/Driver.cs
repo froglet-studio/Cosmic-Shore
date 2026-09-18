@@ -141,7 +141,7 @@ static class Driver
     //   weights <w0> <w1> <w2>
     //   rules   <field> <swirl> <fieldMix> <momentum> <step> <maxSteps> <lanes> <laneGap>
     //           <hopSeek> <hopJitter> <seeds> <seedSpread> <maxTurn> <rMin> <rMax>
-    //           <minRun> <lengthFactor> <girthTaper>
+    //           <minRun> <lengthFactor> <girthTaper> <twistDegreesPerStep>
     //   seed    <s>
     //   budget  <n>
     static int Grow(string[] a)
@@ -193,6 +193,7 @@ static class Driver
                     rules.MinRun = (int)D(t[16]);
                     rules.LengthFactor = (float)D(t[17]);
                     rules.GirthTaper = t.Length > 18 ? (float)D(t[18]) : 1f;
+                    rules.TwistDegreesPerStep = t.Length > 19 ? (float)D(t[19]) : 0f;
                     break;
             }
         }
@@ -212,7 +213,8 @@ static class Driver
             {
                 "p",
                 F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.TanA), F(addr.TanB),
-                F(addr.Length), F(addr.Girth), addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
+                F(addr.Length), F(addr.Girth), F(addr.Roll),
+                addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z)
             }));
             laid++;
@@ -252,6 +254,7 @@ static class Driver
             MinRun = (int)D(a[23]),
             LengthFactor = (float)D(a[24]),
             GirthTaper = (float)D(a[25]),
+            TwistDegreesPerStep = a.Length > 26 ? (float)D(a[26]) : 0f,
         };
 
         var basis = MandelbulbSurfaceTables.For(element);
@@ -270,7 +273,8 @@ static class Driver
             {
                 "p",
                 F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.TanA), F(addr.TanB),
-                F(addr.Length), F(addr.Girth), addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
+                F(addr.Length), F(addr.Girth), F(addr.Roll),
+                addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z)
             }));
             laid++;
@@ -348,7 +352,7 @@ static class Driver
             float th = (float)(0.05 + rng.NextDouble() * (Math.PI - 0.1));
             float ph = (float)(rng.NextDouble() * 2 * Math.PI);
             float off = (float)(rng.NextDouble() - 0.5);
-            var addr = new MandelbulbSurface.PrismAddress(th, ph, off, 1f, 0f, 1f, 1f, 0, 0);
+            var addr = new MandelbulbSurface.PrismAddress(th, ph, off, 1f, 0f, 1f, 1f, 0f, 0, 0);
             MandelbulbSurface.Pose(surf, addr, ref fr, out var p, out var fwd, out var up);
             float r = surf.Sample(th, ph) + off;
             var want = new Vector3(

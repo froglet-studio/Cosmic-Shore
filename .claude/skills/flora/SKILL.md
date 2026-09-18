@@ -210,6 +210,43 @@ when the code stops tracking the assets, and its `--self-test` proves it can.
 
 ---
 
+### 5.1 Two species on one growth rule
+
+A new species does not always need a new FAMILY. If an existing growth rule can express your
+concept with a different parameter set plus at most one new dial, ship a **second prefab** on the
+same component — the way the eight Hesperides phyllotactics are eight species on one class, and
+the way Coral Bloom is the Mandelbulb rule with the twist off and the curves made to continue
+(`Docs/ECOSYSTEM.md §46`). You get the family's whole tool trio, its bake and its verifier for
+free, and the two plants read as the same WORLD grown two ways rather than as two unrelated
+objects.
+
+Four things to get right:
+
+1. **A new dial must be a pure function of the ADDRESS.** A prism's address is the whole of its
+   identity, so anything the pose needs has to be stored in it — never recomputed from state the
+   curve no longer has. And the dial's ZERO must be bit-identical to before it existed, which is
+   what lets you prove you broke nothing.
+2. **Give the second species its own component fileID and its own prefab guid.** A wrong fileID in
+   a `FloraPrefab` reference resolves to no component at all and the config grows nothing,
+   silently.
+3. **DERIVE the elemental law from the species' own neutral form** rather than typing four
+   per-element prisms (§5). That is what makes the CONCEPT persist through the four elements while
+   each element still expresses itself, and it means retuning the concept cannot silently break
+   the law.
+4. **Register it everywhere the first species is registered** —
+   `author_lifeform_heart_sizes.py`'s `FLORA_PREFABS`, the toy roster, the population hand-off —
+   and make every tool loop over the species table rather than defaulting to the first one.
+
+**And re-run the verifier on the NEW species specifically.** A gate written against one species is
+a gate calibrated on one species: adding a second to the Mandelbulb family exposed three
+constants in its verifier that were coincidences rather than margins (a tolerance stated in the
+wrong unit, a "how many prisms agreed first" heuristic that is really a statement about one
+element's surface roughness, and a `phi` comparison with no seam unwrap that had been making the
+first species look 50x worse than it was). Expect your second species to find the same class of
+thing, and fix the gate rather than widening it.
+
+---
+
 ## 6. Fit the prism — do not eyeball it, and remember CHARGE is a different question
 
 A prism's size is a geometric claim about a specific point set (this species' own measured sites,

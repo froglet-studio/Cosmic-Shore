@@ -569,6 +569,40 @@ trio, and the traps).
   `0`, which `ShouldSeed` would read as the same thing. `MaxLivePopulation` is untouched, so the
   always-on heart-collider **ceiling is exactly unchanged** — only how fast a species reaches it.
   `Docs/ECOSYSTEM.md §38`.
+- **ONE GROWTH RULE CAN HOLD TWO SPECIES, and the dial that separates them is the concept.** The
+  Mandelbulb family traces curves over a baked spherical height field, and that rule holds two
+  quite different plants with **no second class** — one prefab each, one component, one bake:
+  **Fractal Foliage** (`MandelbulbFlora`) rolls every prism about its OWN curve tangent as the run
+  advances (`GrowthRules.TwistDegreesPerStep` 12), so a curve is a helix of plates and the plant a
+  dense twisted foliage; **Coral Bloom** (`CoralBloomFlora`) has no twist at all and instead makes
+  its curves CONTINUE — high momentum, a low field mix, a long step ceiling, only long runs
+  surviving — so it is an open cage of smooth arcs crossing through the whole structure. They
+  SHARE the surface family deliberately, so the two read as the same WORLD grown two ways rather
+  than as two unrelated objects. The twist is a pure function of the address
+  (`PrismAddress.Roll`, stamped once at emission, applied as one cos/sin blend with the binormal),
+  and roll 0 is **bit-identical** to before it existed. Both are EXEMPT from §45's runtime leaf
+  transform, so each **DERIVES** the elemental law from its OWN neutral prism rather than typing it
+  per element — which is what makes a concept persist through four elements while each element
+  still expresses itself. **The finding is that an EMERGENT quantity quietly re-authors an
+  authored law**: every prism's cross-section is multiplied by its curve's GIRTH, a taper keyed on
+  how far that run got, so the mean girth is emergent from the curve family and measured it
+  INVERTED the volume ordering the law had just set (Space carried 1.3x Time's plant against an
+  authored 0.47x). Fixed by hoisting the taper to a SPECIES constant (it is the plant's texture,
+  which is the concept) plus one MEASURED per-element scalar that cancels its own mean girth — and
+  the SHAPE of those scalars is the reusable half: the foliage needs a real correction because its
+  four curve families are deliberately very different, while the bloom barely moves because its
+  concept makes all four uniformly long-running. **Adding a second species also exposed THREE
+  verifier constants that were coincidences rather than margins** — a curve-count tolerance stated
+  as a percentage of the COUNT (1% of one plant and 21% of another read as the same size of
+  disagreement; now stated as the fraction of the PLANT the disputed curves account for); a
+  "diverged before prism 16 = transcription error" rule that is really a statement about how rough
+  one element's SURFACE is, and which cannot be repaired by measuring the first disagreement's SIZE
+  because the prism lists are INDEX-ALIGNED, so one dropped curve makes a drift and a jump identical
+  (the transcription test is now **prism 0**, which a transcription error cannot pass and float
+  width cannot fail); and a `phi` comparison with **no seam unwrap**, which read a point either side
+  of `phi = 0` as 2*pi of error and was making the original species look 50x worse than it is. *A
+  gate written against one species is a gate calibrated on one species.* Both species are in **NO
+  SpawnProfile** (opt-in from the Lifeform Matrix toy). `Docs/ECOSYSTEM.md §46`.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
   in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —

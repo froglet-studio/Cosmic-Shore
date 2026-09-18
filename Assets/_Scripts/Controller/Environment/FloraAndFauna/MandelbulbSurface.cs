@@ -255,6 +255,10 @@ namespace CosmicShore.Gameplay
             public int MinRun;              // discard curves shorter than this
             public float LengthFactor;      // prism length as a multiple of the step
             public float GirthTaper;        // cross-section of the SHORTEST run vs the longest
+            public float TwistDegreesPerStep; // HELICOIDAL roll about the curve's own tangent,
+                                              // accumulated step by step along a run. 0 = a flat
+                                              // ribbon; the dial that separates the two species
+                                              // built on this rule (Docs/ECOSYSTEM.md §46).
         }
 
         /// <summary>
@@ -270,13 +274,21 @@ namespace CosmicShore.Gameplay
             public readonly float Length;         // AUTHORED — never derived from the surface
             public readonly float Girth;          // cross-section multiplier — the plant's
                                                   // texture scales, one per lane generation
+            public readonly float Roll;           // HELICOIDAL twist about the curve's own
+                                                  // tangent, in RADIANS, accumulated from the
+                                                  // start of this run. Stored rather than
+                                                  // recomputed because the address is the whole
+                                                  // of a prism's identity — a pose that had to
+                                                  // ask "how far along its curve am I?" would
+                                                  // need the curve to still exist.
             public readonly int Curve, Lane;
 
             public PrismAddress(float theta, float phi, float radialOffset,
-                                float tanA, float tanB, float length, float girth, int curve, int lane)
+                                float tanA, float tanB, float length, float girth, float roll,
+                                int curve, int lane)
             {
                 Theta = theta; Phi = phi; RadialOffset = radialOffset;
-                TanA = tanA; TanB = tanB; Length = length; Girth = girth;
+                TanA = tanA; TanB = tanB; Length = length; Girth = girth; Roll = roll;
                 Curve = curve; Lane = lane;
             }
         }
@@ -296,7 +308,23 @@ namespace CosmicShore.Gameplay
             f -= n * Vector3.Dot(f, n);
             float m = f.magnitude;
             forward = m > 1e-7f ? f / m : scratch.EPhi;
-            up = n;
+
+            // HELICOIDAL TWIST: roll the prism about its OWN tangent. Rodrigues about a unit
+            // axis that the vector is already perpendicular to reduces to one cos/sin blend
+            // with the binormal, so this costs no cross product beyond the one it needs and
+            // cannot drift off the frame. Roll 0 leaves `up` exactly on the normal, so a
+            // species that authors no twist is bit-identical to before this existed.
+            if (a.Roll != 0f)
+            {
+                Vector3 binormal = Vector3.Cross(forward, n);
+                float cosRoll = Mathf.Cos(a.Roll), sinRoll = Mathf.Sin(a.Roll);
+                up = n * cosRoll + binormal * sinRoll;
+            }
+            else
+            {
+                up = n;
+            }
+
             position = scratch.Dir * (scratch.Radius + a.RadialOffset);
         }
 
@@ -607,6 +635,10 @@ namespace CosmicShore.Gameplay
                 float reference = Mathf.Max(2f, _rules.MaxSteps * 0.5f);
                 float u = Mathf.Clamp01((points.Count - 1) / reference);
                 float girth = taper + (1f - taper) * u;
+                // The twist accumulates along the RUN, so a long clean curve reads as a helix
+                // and a short scrap as a single tilted plate. Converted here, once per curve,
+                // rather than per prism.
+                float twistPerStep = _rules.TwistDegreesPerStep * Mathf.Deg2Rad;
                 for (int i = 0; i + 1 < points.Count; i++)
                 {
                     Vector3 a = points[i].Position, b = points[i + 1].Position;
@@ -625,7 +657,7 @@ namespace CosmicShore.Gameplay
                         Vector3.Dot(fwd, _frame.ETheta),
                         Vector3.Dot(fwd, _frame.EPhi),
                         len * Mathf.Max(0.05f, _rules.LengthFactor),
-                        girth, _curveCount, _lane));
+                        girth, i * twistPerStep, _curveCount, _lane));
                 }
             }
         }

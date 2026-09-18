@@ -187,16 +187,19 @@ _GROWN = {}
 CANDIDATE_FACTOR = 4   # MandelbulbFlora.AddressCandidateFactor
 
 
-def grow_element(element, budget=None):
+def grow_element(element, budget=None, species="FractalFoliage"):
     """The plant the game LAYS: the walk, then the claim (MandelbulbFlora.Claim), then the
-    budget. Measuring the raw walk would describe candidates rather than prisms."""
+    budget. Measuring the raw walk would describe candidates rather than prisms.
+
+    The two species share the surface FAMILY (one bake per element) and differ in their
+    curve rules, so the surface is keyed on the element alone and the walk on both."""
     budget = budget or M.PRISM_BUDGET
-    key = (element, budget)
+    key = (species, element, budget)
     if key in _GROWN:
         return _GROWN[key]
     degree, tables = M.load_tables()
     surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
-    rules = M.rules_for(element)
+    rules = M.rules_for(element, species)
     raw, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
     kept = M.claim_filter(raw, centres)[:budget]
@@ -205,10 +208,10 @@ def grow_element(element, budget=None):
     return _GROWN[key]
 
 
-def element_report(element, shell=None, cross=None, budget=None):
+def element_report(element, shell=None, cross=None, budget=None, species="FractalFoliage"):
     shell = shell or M.SHELL_RADIUS
-    cross = cross or M.CROSS_SECTION[element]
-    surface, rules, prisms, curves = grow_element(element, budget)
+    cross = cross or M.cross_section_for(element, species)
+    surface, rules, prisms, curves = grow_element(element, budget, species)
     boxes = [obb(surface, p, shell, cross) for p in prisms]
 
     vols = [8 * b[2][0] * b[2][1] * b[2][2] for b in boxes]
@@ -256,6 +259,9 @@ def element_report(element, shell=None, cross=None, budget=None):
 
     return {
         "element": element,
+        # The plant's own BOUNDING radius - what "Space increases the bounding volume of
+        # the assembly" is measured against (Docs/ECOSYSTEM.md §45).
+        "radius": max(math.sqrt(sum(c * c for c in b[0])) for b in boxes),
         "prisms": len(prisms),
         "curves": curves,
         "volume": sum(vols),
@@ -291,7 +297,7 @@ def sample(pairs, n=SHIELD_SAMPLE, seed=1):
     return _r.Random(seed).sample(pairs, n)
 
 
-def shield_report(reports):
+def shield_report(reports, species="FractalFoliage"):
     """Charge armoured against its siblings bare — the bar this species has to clear."""
     out = {}
     charge = reports["Charge"]
@@ -325,17 +331,37 @@ def main():
     ap.add_argument("--render", metavar="DIR")
     ap.add_argument("--shields", action="store_true",
                     help="solve Charge's cross-section against its armour and print it")
+    ap.add_argument("--species", default=None,
+                    help="measure ONE species (default: every species in the model)")
+    ap.add_argument("--fit-volume", action="store_true",
+                    help="solve VOLUME_GAIN so the measured cumulative volume per PLANT "
+                         "lands on the elemental law's ratios, and print it")
     args = ap.parse_args()
 
     if args.shields:
         return solve_charge()
+    if args.fit_volume:
+        return fit_volume(args.species)
 
+    names = [args.species] if args.species else list(M.SPECIES)
+    rc = 0
+    for name in names:
+        rc |= measure_species(name, args)
+    return rc
+
+
+def measure_species(species, args):
+    spec = M.SPECIES[species]
     reports = {}
-    print("Mandelbulb flora — measured from the shipped surface table\n")
+    print("=" * 96)
+    print(f"{spec['display']}  ({species}) — measured from the shipped surface table")
+    print(f"  concept: {'HELICOIDAL twist, ' + str(spec['twist']) + ' deg/step' if spec['twist'] else 'SMOOTH CROSSING CURVES, no twist'}"
+          f"   neutral prism {spec['neutral_cross']} x {spec['neutral_step']}")
+    print("=" * 96 + "\n")
     print(f"  {'element':8s} {'prisms':>6} {'curves':>6} {'volume':>10} {'per prism':>22} "
           f"{'dims':>16} {'touching / deep':>28}")
     for element in M.ELEMENTS:
-        r = element_report(element)
+        r = element_report(element, species=species)
         reports[element] = r
         lo, mean, hi = r["prism_volume"]
         print(f"  {element:8s} {r['prisms']:>6} {r['curves']:>6} {r['volume']:>10,.0f} "
@@ -348,7 +374,7 @@ def main():
     for element in M.ELEMENTS:
         print(f"    {element:8s} {reports[element]['coverage']}")
 
-    s = shield_report(reports)
+    s = shield_report(reports, species)
     print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
           f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
     print(f"  silhouette: Charge bare {s['charge_bare_area']:,.0f}, armoured "
@@ -362,7 +388,7 @@ def main():
           "shipped cell anything until somebody puts it in one.")
 
     if args.render:
-        render_all(reports, args.render)
+        render_all(reports, os.path.join(args.render, species))
 
     if args.check:
         bad = []
@@ -387,6 +413,35 @@ def main():
         if not s["armoured_area"] > s["sibling_bare_area"] > s["charge_bare_area"]:
             bad.append("the Charge ordering flipped: armoured must be the DENSEST of the four "
                        "and bare the sparsest — that ordering IS the two-pass grazing cost")
+
+        # THE ELEMENTAL LAW (Docs/ECOSYSTEM.md §45). This species is EXEMPT from the runtime
+        # leaf transform (Flora.PrismSizeFixedByGrowthRule), so it has to state the law in its
+        # own data - and the claim the player can actually see is about the PLANT, so it is
+        # gated on measured CUMULATIVE volume rather than on the authored prism.
+        vol = {e: r["volume"] for e, r in reports.items()}
+        asp = {}
+        for e in M.ELEMENTS:
+            x, y, z, lf = M.elemental_prism(species, e)
+            axes = (x, y, z * lf)
+            asp[e] = max(axes) / min(axes)
+        if max(vol, key=vol.get) != "Mass":
+            bad.append(f"MASS must carry the most cumulative prism volume; "
+                       f"{max(vol, key=vol.get)} does ({vol})")
+        if vol["Space"] >= vol["Time"]:
+            bad.append(f"SPACE ({vol['Space']:,.0f}) must carry LESS cumulative prism volume "
+                       f"than TIME ({vol['Time']:,.0f}) - its long axis is what it trades")
+        if max(asp, key=asp.get) != "Space":
+            bad.append(f"SPACE must have the highest prism aspect ratio; "
+                       f"{max(asp, key=asp.get)} does ({ {k: round(v,2) for k,v in asp.items()} })")
+        if min(asp, key=asp.get) != "Mass":
+            bad.append(f"MASS must have the most CUBIC prism (x, y and z closest together); "
+                       f"{min(asp, key=asp.get)} does ({ {k: round(v,2) for k,v in asp.items()} })")
+        # SPACE trades that volume for the assembly's BOUNDING VOLUME.
+        reach = {e: reports[e]["dims"][1] for e in M.ELEMENTS}
+        if reports["Space"]["radius"] <= reports["Mass"]["radius"]:
+            bad.append(f"SPACE's plant ({reports['Space']['radius']:.0f}) must reach further "
+                       f"than MASS's ({reports['Mass']['radius']:.0f}) - the bounding volume "
+                       f"is what its lost prism volume buys")
         if bad:
             print("\nFAIL")
             for b in bad:
@@ -396,16 +451,49 @@ def main():
     return 0
 
 
+def fit_volume(only=None):
+    """Solve VOLUME_GAIN so the measured CUMULATIVE volume per plant lands on the elemental
+    law's ratios (Docs/ECOSYSTEM.md §45), against TIME as the neutral.
+
+    The law sets the AUTHORED prism; what the player sees is the plant, and every prism's
+    cross-section is additionally multiplied by its curve's emergent GIRTH. So a fit is the
+    honest instrument here - and it is one iteration, not a search, because volume goes
+    exactly as the cross-section SQUARED and nothing else in the walk depends on it (the
+    claim radius is a fraction of a prism's LENGTH, so the prism set is unchanged).
+    """
+    for species in ([only] if only else list(M.SPECIES)):
+        print(f"\n{species}: VOLUME_GAIN, one iteration from the current measurement")
+        reports = {e: element_report(e, species=species) for e in M.ELEMENTS}
+        ref = reports["Time"]["volume"]
+        current = M.VOLUME_GAIN.get(species, {})
+        solved = {}
+        for element in M.ELEMENTS:
+            want = M.ELEMENT_VOLUME[element]
+            if element == "Charge":
+                # Charge's armour fit deliberately takes it BELOW the neutral, so its target
+                # is the neutral scaled by the shrink it was fitted to - the law does not
+                # claim Charge's bare prism is a neutral one, only that its SHAPE is.
+                want *= M.CHARGE_SHIELD_SHRINK ** 2 * M.CHARGE_DASH
+            got = reports[element]["volume"] / ref
+            gain = current.get(element, 1.0) * math.sqrt(want / got)
+            solved[element] = round(gain, 4)
+            print(f"    {element:7s} want x{want:6.3f} of Time, measured x{got:6.3f} "
+                  f"-> gain {current.get(element, 1.0):.4f} -> {gain:.4f}")
+        print(f'    "{species}": ' + str(solved).replace("'", '"') + ",")
+    print("\nPaste into VOLUME_GAIN in mandelbulb_flora_model.py and re-run --check.")
+    return 0
+
+
 def solve_charge():
     """Shrink Charge's ribbon uniformly (its ASPECT is its identity, so uniformly) until
     its armour is no more fused than a sibling is bare."""
-    reports = {e: element_report(e) for e in ("Mass", "Space", "Time")}
+    reports = {e: element_report(e, species=species) for e in ("Mass", "Space", "Time")}
     bar = max(r["interpenetrating_fraction"] for r in reports.values())
     print(f"bar: a sibling's bare interpenetration is {bar:.1%}")
     base = M.CROSS_SECTION["Space"]
     for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
         cross = (base[0] * k, base[1] * k)
-        r = element_report("Charge", cross=cross)
+        r = element_report("Charge", cross=cross, species=species)
         reach = 2 * CIRCUMSCRIBING_SCALE * max(
             math.sqrt(sum(h * h for h in b[2])) for b in r["boxes"])
         pairs = sample(list(near_pairs(r["boxes"], reach, CIRCUMSCRIBING_SCALE)))

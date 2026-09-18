@@ -48,14 +48,43 @@ POPULATIONS = ROOT / "Tools/Build/author_flora_populations.py"
 GUID_FLORA_CS = "3d1f6c0ab8a74f5e9c2d47e1b60f8a31"
 GUID_SURFACE_CS = "ae15a77fd141196624e55b833545b01c"
 GUID_TABLES_CS = "4278eea1ad9158a0be0113fde4146748"
-GUID_PREFAB = "c5a90e73b1284d6fa73e8c14d9026bf7"
-GUID_CONFIG = {
-    "Charge": "6e2b8d41f09c4a17b3d5e08c71a4f962",
-    "Mass":   "1a7c40d9e5b3486f92c1d70eb38a5c4d",
-    "Space":  "84f13b6ac2de49518a0b7e3d5c96124f",
-    "Time":   "d09e5a24c73b41f6b81c3ae07d52964b",
-}
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
+
+# TWO SPECIES on ONE growth family (Docs/ECOSYSTEM.md §46). They share the component, the
+# surface bake and every tool; they differ in their curve rules and in one dial each - the
+# foliage TWISTS, the bloom does not - so they are two PREFABS rather than two classes, the
+# way the eight Hesperides phyllotactics are eight species on one class.
+#
+# Each needs its OWN component fileID: a wrong one in a FloraPrefab reference resolves to no
+# component at all and the config grows nothing, silently (CLAUDE.md).
+SPECIES_ASSETS = {
+    "FractalFoliage": dict(
+        prefab="MandelbulbFlora",
+        asset_prefix="Mandelbulb Flora",
+        toy_row="Mandelbulb",
+        prefab_guid="c5a90e73b1284d6fa73e8c14d9026bf7",
+        component_fileid="4820175933061942688",
+        configs={
+            "Charge": "6e2b8d41f09c4a17b3d5e08c71a4f962",
+            "Mass":   "1a7c40d9e5b3486f92c1d70eb38a5c4d",
+            "Space":  "84f13b6ac2de49518a0b7e3d5c96124f",
+            "Time":   "d09e5a24c73b41f6b81c3ae07d52964b",
+        },
+    ),
+    "CoralBloom": dict(
+        prefab="CoralBloomFlora",
+        asset_prefix="Coral Bloom Flora",
+        toy_row="Coral Bloom",
+        prefab_guid="357114a2002c2d4d4f59ec404f7f4bf6",
+        component_fileid="498631696834916965",
+        configs={
+            "Charge": "13e434ec9c39beedb3f07d87eaf02e94",
+            "Mass":   "c24f4b1142a4522b8a5d9ae5bd6de8b6",
+            "Space":  "0d625e5d75948f82ecb7df85c9acd266",
+            "Time":   "bf07113394fa63b1c9ede5b314a14f1d",
+        },
+    ),
+}
 
 FLORA_CONFIG_SCRIPT_GUID = "a32a297a7606432885f4d3e1f83bea9a"   # FloraConfigurationSO
 PHYLLOTACTIC_SCRIPT_GUID = "bcdd7421354c7d0d46befa924daa94b6"   # the donor's component
@@ -63,8 +92,6 @@ DONOR_COMPONENT_FILEID = "7514956980722975813"
 # This family's own component fileID, so a FloraPrefab reference can never be confused with the
 # phyllotactic/branching families' shared one (CLAUDE.md: a wrong fileID resolves to no component
 # at all and the config grows nothing, silently).
-COMPONENT_FILEID = "4820175933061942688"
-
 SCRIPT_META = """fileFormatVersion: 2
 guid: {guid}
 MonoImporter:
@@ -98,11 +125,11 @@ NativeFormatImporter:
 """
 
 
-def plan():
+def plan(species):
     """Everything the assets say, measured rather than typed twice."""
-    out = {"elements": {}}
+    out = {"species": species, "elements": {}}
     for elem in ELEMENT_ID:
-        r = measure.element_report(elem)
+        r = measure.element_report(elem, species=species)
         out["elements"][elem] = {
             "prisms": r["prisms"],
             "curves": r["curves"],
@@ -112,9 +139,9 @@ def plan():
     return out
 
 
-def rules_block(elem, indent):
+def rules_block(elem, indent, species):
     """MandelbulbSurface.GrowthRules as Unity serialises a nested [Serializable] struct."""
-    r = M.rules_for(elem)
+    r = M.rules_for(elem, species)
     pad = " " * indent
     return "\n".join([
         pad + "Field: %d" % r.field,
@@ -135,21 +162,23 @@ def rules_block(elem, indent):
         pad + "MinRun: %d" % r.min_run,
         pad + "LengthFactor: %g" % r.length_factor,
         pad + "GirthTaper: %g" % r.girth_taper,
+        pad + "TwistDegreesPerStep: %g" % r.twist,
     ])
 
 
 def flora_component_block(p):
+    species = p["species"]
+    spec = M.SPECIES[species]
     forms = []
     for elem in ELEMENT_ID:
-        cx, cy = M.CROSS_SECTION[elem]
+        cx, cy = M.cross_section_for(elem, species)
         forms.append("  - Element: %d\n" % ELEMENT_ID[elem]
                      + "    CrossSection: {x: %g, y: %g}\n" % (cx, cy)
-                     + "    Rules:\n" + rules_block(elem, 6))
+                     + "    Rules:\n" + rules_block(elem, 6, species))
     # The prefab's own seed prism is the ONLY prism that reads leafSize - every prism the
     # plant lays carries a size measured from its own curve (MandelbulbFlora.AddHealthBlock).
-    sc = M.CROSS_SECTION["Space"]
-    seed = (sc[0] * M.SHELL_RADIUS, sc[1] * M.SHELL_RADIUS,
-            M.RULES["Space"][4] * M.SHELL_RADIUS)
+    scx, scy, scz, _ = M.elemental_prism(species, "Space")
+    seed = (scx * M.SHELL_RADIUS, scy * M.SHELL_RADIUS, scz * M.SHELL_RADIUS)
     return (
         "  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
         "  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}\n"
@@ -171,7 +200,7 @@ def flora_component_block(p):
         "  formByElement:\n" + "\n".join(forms) + "\n"
         + "  shellRadius: %g\n" % M.SHELL_RADIUS
         + "  fieldWidth: %d\n" % M.FIELD_WIDTH
-        + "  weightSpread: %g\n" % M.WEIGHT_SPREAD
+        + "  weightSpread: %g\n" % spec["weight_spread"]
         + "  weightSteps: %d\n" % M.WEIGHT_STEPS
         + "  maxTotalSpawnedObjects: %d\n" % M.PRISM_BUDGET
         + "  growthsPerTick: 8\n"
@@ -181,10 +210,12 @@ def flora_component_block(p):
 
 def build_prefab(p):
     """Clone the donor flora, keeping its crystal child, and swap in this species' component."""
+    assets = SPECIES_ASSETS[p["species"]]
+    component_fileid = assets["component_fileid"]
     src = DONOR.read_text()
     start = src.index(f"--- !u!114 &{DONOR_COMPONENT_FILEID}")
     end = src.index("--- ", start + 10)
-    head = (f"--- !u!114 &{COMPONENT_FILEID}\n"
+    head = (f"--- !u!114 &{component_fileid}\n"
             "MonoBehaviour:\n"
             "  m_ObjectHideFlags: 0\n"
             "  m_CorrespondingSourceObject: {fileID: 0}\n"
@@ -198,14 +229,15 @@ def build_prefab(p):
             "  m_EditorClassIdentifier:\n")
     out = src[:start] + head + flora_component_block(p) + src[end:]
     out = out.replace(f"- component: {{fileID: {DONOR_COMPONENT_FILEID}}}",
-                      f"- component: {{fileID: {COMPONENT_FILEID}}}")
-    out = out.replace("m_Name: RosetteFlora", "m_Name: MandelbulbFlora")
+                      f"- component: {{fileID: {component_fileid}}}")
+    out = out.replace("m_Name: RosetteFlora", "m_Name: " + assets["prefab"])
     if PHYLLOTACTIC_SCRIPT_GUID in out:
         sys.exit("author_mandelbulb_flora_assets: the donor's component survived the swap")
     return out
 
 
 def config_text(p, elem):
+    assets = SPECIES_ASSETS[p["species"]]
     e = p["elements"][elem]
     lines = [
         "%YAML 1.1",
@@ -222,7 +254,8 @@ def config_text(p, elem):
         f"  m_Script: {{fileID: 11500000, guid: {FLORA_CONFIG_SCRIPT_GUID}, type: 3}}",
         f"  m_Name: Mandelbulb Flora {elem}",
         "  m_EditorClassIdentifier:",
-        f"  FloraPrefab: {{fileID: {COMPONENT_FILEID}, guid: {GUID_PREFAB}, type: 3}}",
+        f"  FloraPrefab: {{fileID: {assets['component_fileid']}, "
+        f"guid: {assets['prefab_guid']}, type: 3}}",
         "  SpawnProbability: 1",
         "  InitialSpawnCount: 1",
         "  OverrideDefaultPlantPeriod: 0",
@@ -267,9 +300,28 @@ def config_text(p, elem):
 
 
 def toy_row(p):
-    guids = [GUID_CONFIG[e] for e in ("Charge", "Mass", "Space", "Time")]
+    assets = SPECIES_ASSETS[p["species"]]
+    guids = [assets["configs"][e] for e in ("Charge", "Mass", "Space", "Time")]
     body = "\n".join(f"    - {{fileID: 11400000, guid: {g}, type: 2}}" for g in guids)
-    return "  - Name: Mandelbulb\n    ElementConfigs:\n" + body + "\n"
+    return f"  - Name: {assets['toy_row']}\n    ElementConfigs:\n" + body + "\n"
+
+
+def upsert_toy_row(toy, p):
+    """Replace this species' row in the Lifeform Matrix toy, or append it once."""
+    row = toy_row(p)
+    header = row.split("\n")[0] + "\n"
+    if header in toy:
+        start = toy.index(header)
+        rest = toy[start + len(header):]
+        nxt = re.search(r"^  - Name: |^  \w", rest, re.M)
+        end = start + len(header) + (nxt.start() if nxt else len(rest))
+        return toy[:start] + row + toy[end:]
+    m = re.search(r"^  floraSpecies:\n", toy, re.M)
+    if not m:
+        sys.exit("author_mandelbulb_flora_assets: floraSpecies not found in the toy asset")
+    nxt = re.search(r"^  (?!- |  )\S", toy[m.end():], re.M)
+    insert = m.end() + (nxt.start() if nxt else 0)
+    return toy[:insert] + row + toy[insert:]
 
 
 def write(path, text, changed, check):
@@ -290,57 +342,54 @@ def main():
     if not DONOR.exists():
         sys.exit(f"author_mandelbulb_flora_assets: donor prefab missing: {DONOR}")
 
-    p = plan()
     changed = []
-
     write(SCRIPTS / "MandelbulbFlora.cs.meta", SCRIPT_META.format(guid=GUID_FLORA_CS), changed, args.check)
     write(SCRIPTS / "MandelbulbSurface.cs.meta", SCRIPT_META.format(guid=GUID_SURFACE_CS), changed, args.check)
     write(SCRIPTS / "MandelbulbSurfaceTables.cs.meta", SCRIPT_META.format(guid=GUID_TABLES_CS), changed, args.check)
-    write(PREFABS / "MandelbulbFlora.prefab", build_prefab(p), changed, args.check)
-    write(PREFABS / "MandelbulbFlora.prefab.meta", PREFAB_META.format(guid=GUID_PREFAB), changed, args.check)
 
-    for elem in ("Charge", "Mass", "Space", "Time"):
-        write(LIFEFORMS / f"Mandelbulb Flora {elem}.asset", config_text(p, elem), changed, args.check)
-        write(LIFEFORMS / f"Mandelbulb Flora {elem}.asset.meta",
-              ASSET_META.format(guid=GUID_CONFIG[elem]), changed, args.check)
-
-    # The species is reachable ONLY from the Lifeform Matrix toy - see the module docstring and
-    # Docs/ECOSYSTEM.md. Idempotent: the row is replaced, never appended twice.
     toy = TOY.read_text()
-    row = toy_row(p)
-    if "  - Name: Mandelbulb\n" in toy:
-        start = toy.index("  - Name: Mandelbulb\n")
-        rest = toy[start + len(row.split("\n")[0]) + 1:]
-        nxt = re.search(r"^  - Name: |^  \w", rest, re.M)
-        end = start + len(row.split("\n")[0]) + 1 + (nxt.start() if nxt else len(rest))
-        toy = toy[:start] + row + toy[end:]
-    else:
-        m = re.search(r"^  floraSpecies:\n", toy, re.M)
-        if not m:
-            sys.exit("author_mandelbulb_flora_assets: floraSpecies not found in the toy asset")
-        nxt = re.search(r"^  (?!- |  )\S", toy[m.end():], re.M)
-        insert = m.end() + (nxt.start() if nxt else 0)
-        toy = toy[:insert] + row + toy[insert:]
+    plans = {}
+    for species, assets in SPECIES_ASSETS.items():
+        p = plan(species)
+        plans[species] = p
+        write(PREFABS / f"{assets['prefab']}.prefab", build_prefab(p), changed, args.check)
+        write(PREFABS / f"{assets['prefab']}.prefab.meta",
+              PREFAB_META.format(guid=assets["prefab_guid"]), changed, args.check)
+        for elem in ("Charge", "Mass", "Space", "Time"):
+            name = f"{assets['asset_prefix']} {elem}"
+            write(LIFEFORMS / f"{name}.asset", config_text(p, elem), changed, args.check)
+            write(LIFEFORMS / f"{name}.asset.meta",
+                  ASSET_META.format(guid=assets["configs"][elem]), changed, args.check)
+        # Both species are reachable ONLY from the Lifeform Matrix toy. Idempotent: the row is
+        # replaced, never appended twice.
+        toy = upsert_toy_row(toy, p)
     write(TOY, toy, changed, args.check)
 
     # Hand the population numbers over BY NAME rather than excluding these configs silently.
     pop = POPULATIONS.read_text()
-    marker = '    "Mandelbulb Flora ": "Tools/Build/author_mandelbulb_flora_assets.py",\n'
-    if marker not in pop:
-        anchor = '    "Lattice ": "Tools/Build/author_lattice_cell.py",\n'
-        if anchor not in pop:
-            sys.exit("author_mandelbulb_flora_assets: OWNED_ELSEWHERE anchor not found")
-        write(POPULATIONS, pop.replace(anchor, anchor + marker), changed, args.check)
+    for assets in SPECIES_ASSETS.values():
+        marker = f'    "{assets["asset_prefix"]} ": "Tools/Build/author_mandelbulb_flora_assets.py",\n'
+        if marker not in pop:
+            anchor = '    "Lattice ": "Tools/Build/author_lattice_cell.py",\n'
+            if anchor not in pop:
+                sys.exit("author_mandelbulb_flora_assets: OWNED_ELSEWHERE anchor not found")
+            pop = pop.replace(anchor, anchor + marker)
+    write(POPULATIONS, pop, changed, args.check)
 
-    print("Mandelbulb flora assets")
-    print(f"  prefab   {PREFABS.relative_to(ROOT)}/MandelbulbFlora.prefab  (component "
-          f"fileID {COMPONENT_FILEID})")
-    for elem in ("Charge", "Mass", "Space", "Time"):
-        e = p["elements"][elem]
-        print(f"  config   Mandelbulb Flora {elem:<7} {e['prisms']:>5} prisms over "
-              f"{e['curves']:>4} curves  dims {e['dims'][0]:.2f}..{e['dims'][1]:.2f}  "
-              f"volume {e['volume']:>9,.0f}")
-    print(f"  reachable from Toy_LifeformMatrix (row 'Mandelbulb'); in NO SpawnProfile - opt-in.")
+    for species, assets in SPECIES_ASSETS.items():
+        p = plans[species]
+        spec = M.SPECIES[species]
+        concept = (f"helicoidal twist {spec['twist']:g} deg/step" if spec["twist"]
+                   else "smooth crossing curves, no twist")
+        print(f"{spec['display']} ({species}) - {concept}")
+        print(f"  prefab   {PREFABS.relative_to(ROOT)}/{assets['prefab']}.prefab  "
+              f"(component fileID {assets['component_fileid']})")
+        for elem in ("Charge", "Mass", "Space", "Time"):
+            e = p["elements"][elem]
+            print(f"  config   {assets['asset_prefix']} {elem:<7} {e['prisms']:>5} prisms over "
+                  f"{e['curves']:>4} curves  dims {e['dims'][0]:.2f}..{e['dims'][1]:.2f}  "
+                  f"volume {e['volume']:>9,.0f}")
+        print(f"  toy row  '{assets['toy_row']}' in Toy_LifeformMatrix; in NO SpawnProfile - opt-in.\n")
 
     if changed:
         if args.check:

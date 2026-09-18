@@ -156,6 +156,7 @@ FLORA_PREFABS = {
     "Branching":    "Assets/_Prefabs/FloraAndFauna/BranchingFlora.prefab",
     "Cacti":        "Assets/_Prefabs/FloraAndFauna/CactiFlora.prefab",
     "Coral":        "Assets/_Prefabs/FloraAndFauna/CoralFlora.prefab",
+    "Coral Bloom":  "Assets/_Prefabs/FloraAndFauna/CoralBloomFlora.prefab",
     "Frond":        "Assets/_Prefabs/FloraAndFauna/FrondFlora.prefab",
     "Gyroid":       "Assets/_Prefabs/FloraAndFauna/GyroidFlora.prefab",
     "Lantern":      "Assets/_Prefabs/FloraAndFauna/LanternFlora.prefab",
