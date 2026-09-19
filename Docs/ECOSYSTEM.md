@@ -8409,3 +8409,185 @@ zero colliders.
 1.4 rad/s deliberately — a crystal arguably wants to be slower than a fern, but that is a
 second unrequested look change and the amplitude is what "barely perceptible" is about.
 `TARGET_TIP_DEGREES` in the authoring tool is the one number to move after the first playtest.
+
+---
+
+## 48. Garland — a cell composed for the CAMERA, at a fifth of the weight (Sep 2026)
+
+The freestyle seven are 34–41k prisms each and are all composed for a pilot who is *inside*
+them. The home screen shows none of that. `MenuCam_LavaLamp1` orbits the cell centre at **686
+units** at 2.83°/s with the autopilot flying the player's vessel through the shot, and at that
+distance a nominal 2.5-unit prism is a pixel: the seven read as haze around a big ball.
+
+**Garland** (`SpawnableGarland`, `Garland Cell Config`) is the answer, requested 2026-09 as an
+Ourobor/Yggdra hybrid held to **~5,000 prisms** so it loads in a breath and does not read as
+busy. It measures **4,502 prisms / 4,200,059 volume** — an eighth of Yggdra's count.
+
+### 48.1 The one rule the whole file follows
+
+**Spend prisms on LENGTH and SILHOUETTE, never on surface.** Every family is a curve laid ONE
+prism per step with that prism sized to close the gap behind it. A 9,377-unit knot costs 426
+prisms as a continuous 16×7×26 bough; filling the same shape as a sheet would cost forty times
+that and read, at 686 units, as exactly the same line. Yggdra's trunk is fourteen strands ×
+220 prisms stepped at 2u against a 7.8u prism — 3.8× overlap, which is how you build something
+that has to survive being flown through at ten metres and is pure waste at seven hundred.
+
+The corollary, and the reason the volume is large where the count is small: these prisms are
+**big**. Volume is the spine, so a cell laid this way must author its ladder from measurement —
+which is what §48.4 is about — but big prisms cost nothing in colliders, and colliders are what
+the budget is actually made of.
+
+### 48.2 The composition — three depth layers and one thing crossing them
+
+Depth is what a distant, nearly-still camera has instead of detail.
+
+| layer | radius | families | prisms |
+|---|---|---|---|
+| the **seed's surface** | 430 | 3 shore bands (coastlines), 16 landfall patches | 426 |
+| the **subject** | 530–870 | the BOUGH (a (2,3) torus knot), the VINE (a (3,2) knot counter-wound inside it at 470–640), 14 blossoms, 34 leaf skirts, 5 terraces | 2,630 |
+| the **far edge** | 860–1,153 | 16 crown boughlets + their tufts, 260 motes | 804 |
+| **crossing all three** | 430–870 | 16 FALLS — root strands that leave the bough, spiral a third of a turn and land on the shore | 640 |
+
+The camera orbits at 686, **inside** the bough's band (530–870) — asserted, because that is what
+makes the bough the subject rather than a shell seen from outside: its near pass looms and its
+far pass is the backdrop, and the two swap as the camera crawls. The falls are the family that
+earns its 14%: without something crossing the gap between the two things always on screen (the
+nucleus and the bough) the cell reads as two concentric shells rather than one object.
+
+The blossoms are golden-angle discs facing along the bough's own tangent, so the camera sees
+full faces on one side of the knot and edges on the other — the cheapest way to make a distant
+composition change while nothing moves.
+
+### 48.3 What it does NOT have, and why
+
+- **Zero danger prisms.** Yggdra's thorns are the environment being real for a pilot who chose
+  to fly it. This cell's normal state is an AI flying the player's vessel behind a menu, where
+  a danger prism reads as the ship being jerked about for no reason the player can see. Geode
+  and Ourobor already hold that pole.
+- **75 always-on MeshCollider prisms** (super-shielded blossom bosses and terrace keystones)
+  against Yggdra's 225 — a third, and the generator fails above 80.
+- **Nothing inside the nucleus.** Measured nearest prism CORNER **409.8** against the 392
+  control radius, a **+17.8** margin. Caldera shipped 89% of its mass inside that radius (§18.1)
+  and pre-awarded node control before anyone flew; this cell states the clearance as an
+  inequality on the knot's own parameters rather than leaving it to where the blossoms landed:
+  `Major − Minor ≥ NucleusR + BlossomRadius + a petal's half-diagonal + margin`.
+
+### 48.4 The roster — four flora, three fauna, bounded by construction
+
+The user's brief was *a few beautiful flora and fauna on a sustainably high performance
+equilibrium that never grows to bonkers counts like the Lattice cell*. Two decisions do that.
+
+**No lattice species.** Gyroid/SchwarzP/quasicrystal reproduce as a POPULATION — one birth per
+fauna-wave period, forever, up to a cap expressed in plants — which is exactly the growth curve
+the brief rules out, and it is what the shared Blob profile (which all seven other freestyle
+worlds use) runs. Garland authors its own profile with four **phyllotactic** species instead:
+each is a hand-shaped plant with a fixed per-element budget, a seed floor and a hard cap.
+
+**The cap is the ceiling, and it is small.**
+
+| species | floor | cap | budget/plant | prisms at cap | why it is here |
+|---|---|---|---|---|---|
+| Arbor | 3 | 5 | 312 | 1,560 | the hero silhouette — a ~280u tree |
+| Tendril | 4 | 6 | 144 | 864 | ~374u of dangle for 120 prisms — the best reach per prism in the fleet |
+| Lantern | 4 | 7 | 84 | 588 | the blossom pods — colour, near the camera |
+| Spire | 2 | 3 | 204 | 612 | tall thin verticals for rhythm |
+| Brittlestar (herbivore) | 3 | 6 | ~4 | 24 | the grazer that keeps the equilibrium |
+| QuadFish (herbivore) | 4 | 8 | ~4 | 32 | swim strokes — motion at distance |
+| Shark (predator) | 1 | 2 | ~4 | 8 | the majestic slow pass |
+
+**37 always-on heart colliders at cap** — one per live lifeform — against Blob's 171 and the
+Lattice cell's 1,080. The mature cell is **8,390 prisms**; the freestyle seven boot heavier than
+that before anything grows.
+
+Each species uses the canonical `Lifeforms/<Species> Flora <Element>` assets as its
+`ElementPalette`, so an element keeps its own identity (leaf shape, budget, tempo, heart size)
+and this cell only says HOW MANY and WHERE — the split `FloraConfigurationSO`'s cell-level
+overrides exist for. The per-species planting bands (0.36–0.78 of the membrane) put the garden
+in the annulus the camera actually frames.
+
+### 48.5 The ladder — Restless EARLY, Frenzy above the mature garden
+
+|  | volume | count |
+|---|---|---|
+| Restless enter / exit | 4,301,531 / 4,298,331 | 5,770 / 5,570 |
+| Frenzy enter / exit | 4,551,803 / 4,542,203 | 11,990 / 11,390 |
+
+Two rules, and they pull opposite ways. **Frenzy must sit above the MATURE cell** or planting and
+growth freeze with the garden still bare (`Cell.FloraGrowingEnabled => phase < Frenzy`) — so it
+is `env + flora at cap + a fauna/skeleton allowance + the standard freestyle trail band`.
+**Restless must sit EARLY** or the food web is dormant for the whole of the cell's growth and the
+equilibrium never starts breathing — so it is `env + 35% of the planting budget`.
+
+Note `CellPhaseRules.Compute` **never reads the Restless COUNTS** — the Restless boundary is
+volume-only, and only `FrenzyEnter`/`FrenzyExit` are a count backstop. The Restless count pair is
+authored for consistency and for the zero-volume derivation path.
+
+### 48.6 How the numbers are known rather than believed
+
+`SpawnableGarland` draws **nothing** from the base class's shared `System.Random`
+(`RangeF`/`Jit`) and nothing from value noise — every wobble is `Hash01` of the emitting index.
+That was a deliberate constraint, and it buys three things: the world is a closed form, inserting
+a family no longer re-rolls every prism after it, and an offline model can reproduce the cell
+*exactly* instead of estimating it.
+
+Three layers verify it, each negative-controlled:
+
+1. **`Tools/Build/garland_harness/run.sh`** compiles the SHIPPED `SpawnableGarland.cs` against a
+   Unity shim and RUNS it, writing `garland_measurements.json` with a hash of every source that
+   can move a number. Measured: **4,502 prisms, 4,200,059 volume** — count, kinds and per-domain
+   volume identical to the model, worst positional disagreement **0.055u** at radius ~1,050
+   (float32 vs float64 on `Mathf.PI` and `GoldenAngle` through angles up to ~200 rad), which is
+   four hundred times smaller than the nucleus margin it has to protect.
+2. **`Tools/Build/author_garland_cell.py`** holds the model, asserts it against that measurement,
+   re-reads all 29 generator constants out of the C# so the mirror cannot drift, asserts the
+   harness shim's transcriptions appear VERBATIM in the real base class (a transcription is only
+   evidence about shipped code if something pins it to its source), asserts every serialized key
+   it writes is DECLARED by the class that reads it, and then derives the ladder and emits all 21
+   files. `--check` proves the assets on disk are what the model authors.
+3. **`--self-test`** widens the vine blossoms by 90u and requires the nucleus clearance assertion
+   to fire. A check nobody has watched fail is a check nobody should trust.
+
+The one ESTIMATE is the grown flora's volume per prism (`CALIBRATION`, 80): `PhyllotacticFlora`
+sizes prisms by ROLE, so there is no authored field to read. It is deliberately high — an
+overstated forest makes Frenzy arrive LATER, the safe direction (§27.4) — and it is the least
+load-bearing number here, because the flora is ~7% of this cell's volume while its COUNT, which
+is what the Frenzy backstop reads, is exact.
+
+### 48.7 Invariants
+
+- **Continuity of existence** — every prism lays through `PrismTrailBuilder` and blooms in
+  (inherited from `CellEnvironmentSpawnableBase`; nothing bypasses it).
+- **Mass is conserved** — no decay, no timer, no despawn, no cull anywhere in the file. Flora
+  populations are bounded by a production cap; nothing is ever removed to meet one.
+- **No domain asymmetry** — the generator paints environment mass; fauna still spawn in the
+  cell's controlling colour through the ordinary spawner. With nothing laid inside the nucleus,
+  node control is **unclaimed at boot**.
+- **Volume is the spine** — the ladder is authored from measured volume, with the count fields
+  as the backstop they are.
+- **Endogenous selection / no lifeform level** — the roster authors floors, caps and element
+  palettes only.
+- **Territorial permanence** — untouched; this is a nucleus cell, so the exterior is the
+  voraciously-grazed feeding ground and the nucleus interior is the claim.
+
+### 48.8 Verification (the human is the gate — NONE of this has been run in the editor)
+
+Everything above is offline. Specifically:
+
+1. **Open Menu_Main**, fly the **Cell Selector** toy, pick Garland. Confirm the scale model looks
+   like a world (the selector samples `CachedLays`, so a broken generator shows there first), then
+   that the swap completes behind the `EnvironmentLoadVeil`.
+2. **FrogletTools > Ecology > Measure Cell Environment Baselines** — confirm 4,502 / 4,200,059.
+   Anything more than a few prisms off means the harness shim diverges from the engine and the
+   ladder needs re-deriving.
+3. **Sit on the menu for five minutes** and watch it from the lava-lamp camera. This is the one
+   thing no gate can answer: whether it reads as one composition at 686 units. The dials, in order
+   of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Motes`.
+4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
+   cell should reach Restless within the first minutes and never reach Frenzy.
+5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+
+**Known gaps, stated rather than hidden:** the cell reuses Yggdra's card icon (a Garland-specific
+one is an art task, and a placeholder that looks authored is worse than one visibly borrowed);
+the flora volume calibration is an estimate; and the cell has not been device-profiled, though at
+4,502 prisms and 75 always-on colliders it is by a wide margin the lightest authored world in the
+freestyle rotation.
