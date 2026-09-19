@@ -548,37 +548,30 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         string BoundValue(float busyCpuMs)
         {
-            string verdict = FrameBoundness.Classify(busyCpuMs, _smGpuMs);
-            if (verdict == FrameBoundness.Unknown) return Col(Dim, "n/a");
+            // ONE decision, shared with BuildReport — see FrameBoundness.ClassifyFrameLimit.
+            // The two used to walk different ladders and the saved report was the one that
+            // lied: "CPU-bound" on a 76.6%-idle empty scene.
+            float namedCap = FrameBoundness.TargetFpsCap();
+            var limit = FrameBoundness.ClassifyFrameLimit(
+                _displayMs, _displayFps, busyCpuMs, _smGpuMs,
+                FrameBoundness.IsFrameCapConfigured(), namedCap, out float idleMs);
 
-            // A known cap names its rate.
-            if (FrameBoundness.IsAtCap(_displayFps, out float cap))
-                return Col(Good, "Capped @" + cap.ToString("F0"));
-
-            // The frame is longer than the work in it. That outranks naming a processor,
-            // because a frame with idle in it cannot measure a change smaller than the idle.
-            // But say WHICH it is: a cap the platform would not name, or slack with no cap
-            // set at all — in the editor the frame clock (Time.unscaledDeltaTime) carries
-            // editor-only work that FrameTimingManager never attributes, so an uncapped
-            // editor frame still shows a couple of ms. Calling that "Capped" names a cause
-            // that is not there.
-            if (FrameBoundness.IsLimitedByPresent(_displayMs, busyCpuMs, _smGpuMs, out float idleMs))
+            switch (limit)
             {
-                if (!FrameBoundness.IsFrameCapConfigured())
+                case FrameBoundness.FrameLimit.Unknown:
+                    return Col(Dim, "n/a");
+                case FrameBoundness.FrameLimit.AtNamedCap:
+                    return Col(Good, $"Capped @{namedCap:F0}");
+                case FrameBoundness.FrameLimit.CappedByIdle:
+                    return Col(Warn, $"Capped — {idleMs:F1} ms idle");
+                case FrameBoundness.FrameLimit.Stalled:
+                    return Col(Bad, $"Stalled — {idleMs:F1} ms unattributed");
+                case FrameBoundness.FrameLimit.IdleNoCap:
                     return Col(Dim, $"Idle {idleMs:F1} ms — no cap set");
-
-                // A cap being CONFIGURED is not a cap BINDING. Measured live: a 90.9 ms frame
-                // with 4.8 ms of work under `vsync 1 · target 120` — an 8.3 ms floor cannot
-                // produce a 90.9 ms frame, so the idle was something else entirely (an
-                // unfocused editor Game view). Naming the cap there sends the operator away
-                // from the real cause, and the reading is not usable as a measurement either
-                // way — so say so instead.
-                return FrameBoundness.IsIdleConsistentWithCap(_displayMs, FrameBoundness.TargetFpsCap())
-                    ? Col(Warn, $"Capped — {idleMs:F1} ms idle")
-                    : Col(Bad, $"Stalled — {idleMs:F1} ms unattributed");
+                default:
+                    return Col(FpsColor(_displayFps),
+                        FrameBoundness.DescribeFrameLimit(limit, idleMs, namedCap));
             }
-
-            return Col(FpsColor(_displayFps), verdict);
         }
 
         /// <summary>
@@ -789,7 +782,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 r.avgCpuBusyMs = _recBusyCpuSum / _recTimedFrames;
                 r.avgGpuMs = _recGpuSum / _recTimedFrames;
             }
-            r.boundVerdict = FrameBoundness.Classify(r.avgCpuBusyMs, r.avgGpuMs);
+            // Computed AFTER avgFrameMs/avgFps are filled in below? No — they are filled in the
+            // `if (n > 0)` block further down, so the verdict is assigned there instead. See
+            // the ordering note at that site.
+            r.frameCapVSync = QualitySettings.vSyncCount;
+            r.frameCapTarget = Application.targetFrameRate;
             r.allocMB = Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024);
             r.reservedMB = Profiler.GetTotalReservedMemoryLong() / (1024 * 1024);
             r.systemMB = SystemInfo.systemMemorySize;
@@ -804,6 +801,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 float sum = 0f; for (int i = 0; i < n; i++) sum += _recFrameMs[i];
                 r.avgFrameMs = sum / n;
                 r.avgFps = r.avgFrameMs > 0.0001f ? 1000f / r.avgFrameMs : 0f;
+
+                // ORDERING: the frame-limit verdict needs avgFrameMs and avgFps, so it cannot
+                // be assigned in the object initializer above. Assigning it there against a
+                // still-zero frame time is what a bare Classify() call hid — it needed neither,
+                // and answered "CPU-bound" for a frame it had never looked at.
+                float namedCap = FrameBoundness.TargetFpsCap();
+                var limit = FrameBoundness.ClassifyFrameLimit(
+                    r.avgFrameMs, r.avgFps, r.avgCpuBusyMs, r.avgGpuMs,
+                    FrameBoundness.IsFrameCapConfigured(r.frameCapVSync, r.frameCapTarget),
+                    namedCap, out float idleMs);
+                r.idleMs = idleMs;
+                r.boundVerdict = FrameBoundness.DescribeFrameLimit(limit, idleMs, namedCap);
                 r.p99FrameMs = sorted[Mathf.Clamp(Mathf.RoundToInt(0.99f * (n - 1)), 0, n - 1)];
                 r.maxFrameMs = sorted[n - 1];
             }
@@ -843,6 +852,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                           $"setpass avg {r.avgSetPass:F0} · tris {r.tris:N0} · " +
                           $"RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
             sb.AppendLine($"GC {r.avgGcKbPerFrame:F1} KB/frame · prism path {r.prismPath}");
+            sb.AppendLine($"frame cap: vsync {r.frameCapVSync} · target " +
+                          $"{(r.frameCapTarget > 0 ? r.frameCapTarget.ToString() : "uncapped")}" +
+                          $" · idle {r.idleMs:F1} ms of {r.avgFrameMs:F1} ms");
             sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
                           $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
@@ -1114,6 +1126,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             /// </summary>
             public string prismPath;
             public int prismEnts;
+
+            /// <summary>
+            /// The frame-rate cap IN FORCE during the run, and how much of the average frame
+            /// was idle. Recorded because a capped run's frame time and fps carry no
+            /// information — three reports in one batch sat within 0.06 ms of the 120 Hz
+            /// budget while reading "CPU-bound" — and a reader a week later has no other way
+            /// to tell. `frameCapVSync > 0 || frameCapTarget > 0` means a cap was set.
+            /// </summary>
+            public int frameCapVSync, frameCapTarget;
+            public float idleMs;
 
             public List<DiagSpike> spikes;
         }

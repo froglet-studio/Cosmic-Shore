@@ -493,18 +493,94 @@ of magnitude. `lab clear` → `diag empty 15` is one command.
 > and all misdirected the work built on them. The `diag` report exists because of the second
 > one; use it before quoting the first or third.
 
+### 0.11.2 THE EMPTY BASELINE — GC is anti-correlated with prism count (2026-09-20)
+
+`lab clear` → `diag empty 15`. Zero prism entities, `ON · ents=0 meshes=0 mats=0`.
+
+| | value |
+|---|---:|
+| Draw calls | **7.0** |
+| SetPass | 5.0 |
+| CPU busy | 1.949 ms |
+| GPU | 1.395 ms |
+| Frame | 8.340 ms |
+| **GC / frame** | **41.57 KB** |
+
+#### 1. The draw floor is 7, so §0.11's table stands
+
+Every entities-per-draw ratio moves by **under 8%** once the floor is subtracted (mats=1
+goes 184.6 → 198.7, mats=9 goes 37.5 → 38.1). The control was worth taking and it changed
+no conclusion.
+
+#### 2. GC is ANTI-CORRELATED with prism count — prisms cannot be the allocator
+
+| run | prisms | GC / frame |
+|---|---:|---:|
+| **empty** | **0** | **41.57 KB** |
+| Test C ordered | 18,252 | 31.94 KB |
+| Test C scattered | 18,252 | 31.87 KB |
+| pathOff (legacy) | 40,460 | 20.35 KB |
+| pathOn | 40,460 | 15.94 KB |
+| mats10 | 18,252 | 15.21 KB |
+
+**An empty scene allocates 2.7× what 40,460 prisms allocate.** The variable is not the
+scene's content: 15.2 KB and 41.6 KB came from the same scene, the same code and the same
+command on different days. Whatever moves this row is environmental — the Editor, the
+overlay, or something per-frame that has nothing to do with prisms.
+
+**This closes §0.9's GC investigation for good.** It was never the coroutines (ruled out by
+arithmetic), never Entities Graphics (§0.11), and now demonstrably not the prisms at all.
+
+#### 3. Three of the nine runs were VSYNC-CAPPED, and the report said "CPU-bound"
+
+| run | frame | work | idle | |
+|---|---:|---:|---:|---|
+| empty | 8.340 ms | 1.949 | **6.391 (76.6%)** | ← 120 Hz budget is 8.333 |
+| C ordered | 8.388 ms | 3.232 | 5.156 (61.5%) | ← same |
+| C scattered | 8.395 ms | 3.248 | 5.147 (61.3%) | ← same |
+
+All three sit within **0.06 ms** of the 120 Hz budget. Their frame time and fps carry no
+information whatever — and all three reports recorded `boundVerdict: "CPU-bound"`.
+
+**That was a real defect in the report path, now fixed.** `BoundValue` (the live row) walked
+the cap ladder while `BuildReport` called bare `FrameBoundness.Classify`, which knows only
+CPU vs GPU and had never been given the frame time. The overlay was honest and the saved
+file was not — and the file is the artifact somebody reads a week later, with the live row
+long gone. `FrameBoundness.ClassifyFrameLimit` is now the **one** decision both call, the
+report records `frameCapVSync` / `frameCapTarget` / `idleMs`, and a capped or stalled
+verdict says **"frame time is NOT a measurement"** in its own text.
+
+> **The rule, and this is its fourth outing in this document:** *two consumers of one
+> question must call one implementation.* §0.9's `Bound` row, the speed-tunnel law's
+> `IsSane`, the one-thumb scheme's device detector — and now the overlay row against its own
+> saved report. Neither was wrong alone; the defect was that one question had two answers.
+
+**Anything already taken while capped is still usable for CPU busy, GPU, draws, batches,
+SetPass and GC** — none of those are capped quantities — and unusable for frame time and
+fps. Test C's conclusion is unaffected: it rests on draw calls, which moved 0.05%.
+
 #### What to do instead of more lab
 
-1. **`lab clear` → `diag empty 15`** — the zero-prism draw floor. Without it none of the
-   ratios above are anchored.
-2. **Re-measure the boot world with `diag`**, not the live HUD, and in a Development BUILD
-   rather than the Editor, so `ProfilerCategory.Render` cannot include the Scene view. That
-   is Capture A in `PERFORMANCE_CAPTURE_RECIPES.md`.
-3. **Read the `Bound` row first.** §0.8 measured the boot world CPU-bound at ~60 ms of main
-   thread. §0.11 Finding 3 measured a draw call at **0.042 µs of CPU**. Even 14,244 real
-   draws would be ~0.6 ms of CPU — so the draw-call thread was never going to touch the
-   frame cost that started this investigation, and continuing it is optimising the wrong
-   processor.
+1. ~~**`lab clear` → `diag empty 15`**~~ — **DONE, see §0.11.2.** Floor is 7 draws; the
+   ratios stand; GC turned out to be anti-correlated with prism count.
+2. **Attribute the GC in the EDITOR — no build required.** Unity Profiler → **Hierarchy**,
+   sort by **GC Alloc**, one frame, Deep Profile OFF. This names the calling method
+   directly and works in editor play mode. Editor-only frames (`EditorLoop`,
+   `GUIView.RepaintAll`, `PlayerLoop > … > Editor*`) at the top ARE the answer — it means
+   the row is an artifact of the editor and the game does not allocate it.
+3. **Isolate the instrument first, and it costs nothing.** `DiagnosticsHUD.Update` and
+   `SampleRecording` run regardless of visibility; only `RefreshText` is gated on
+   `_visible`. So `diag hidden 15` followed immediately by **F7** records a full run with the
+   overlay's own text rebuild switched off, and the file still lands on disk. If GC/frame
+   collapses, **the instrument has been contaminating every measurement in this document**,
+   which is worth knowing before anything else is attributed.
+4. **Use the Frame Debugger for the draw-call question** — also editor-only, no build. It
+   lists every draw call with what issued it, which settles directly whether the boot
+   world's 14,244 includes the Scene view's pass (§0.9's own undischarged caveat).
+5. **Read the `Bound` row first, and re-read §0.11 Finding 3 before spending anything on
+   draw calls.** §0.8 measured the boot world CPU-bound at ~60 ms of main thread. A draw
+   call costs **0.042 µs of CPU**, so even 14,244 real ones is ~0.6 ms — the draw-call
+   thread was never going to touch the frame cost that started this investigation.
 
 ---
 

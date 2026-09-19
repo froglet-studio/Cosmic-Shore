@@ -206,5 +206,84 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             cap = TargetFpsCap();
             return cap > 0f && measuredFps >= cap * 0.95f;
         }
+
+        /// <summary>What actually limited the frame. See <see cref="ClassifyFrameLimit"/>.</summary>
+        public enum FrameLimit
+        {
+            /// <summary>No timing data at all — say nothing rather than guess.</summary>
+            Unknown = 0,
+            Cpu = 1,
+            Gpu = 2,
+            Balanced = 3,
+            /// <summary>Measured fps sits at a cap the platform could NAME.</summary>
+            AtNamedCap = 4,
+            /// <summary>Idle consistent with a configured (but unnameable) cap.</summary>
+            CappedByIdle = 5,
+            /// <summary>Idle far past what the configured cap can explain — NOT a measurement.</summary>
+            Stalled = 6,
+            /// <summary>Idle with no cap configured — unattributed overhead.</summary>
+            IdleNoCap = 7,
+        }
+
+        /// <summary>
+        /// The ONE frame-limit decision, shared by the live overlay row and the saved
+        /// diagnostic report.
+        ///
+        /// WHY IT IS SHARED. The two used to disagree, and the report was the one that lied:
+        /// `BoundValue` walked the cap ladder (<see cref="IsAtCap"/> →
+        /// <see cref="IsLimitedByPresent"/> → <see cref="IsIdleConsistentWithCap"/>) while
+        /// `BuildReport` called bare <see cref="Classify"/>, which knows only CPU vs GPU.
+        /// Measured 2026-09-20: an EMPTY scene — zero prism entities — recorded
+        /// `boundVerdict: "CPU-bound"` on a frame that was **76.6% idle** and pinned to the
+        /// 120 Hz vsync budget to within 0.01 ms. Two more reports in the same batch did the
+        /// same at 61% idle. Those files are the artifact somebody reads a week later, with
+        /// the live row they could have cross-checked long gone.
+        ///
+        /// Platform reads stay at the CALL SITE (<paramref name="capConfigured"/>,
+        /// <paramref name="namedCapFps"/>) so the decision itself is pure and testable.
+        /// </summary>
+        public static FrameLimit ClassifyFrameLimit(
+            float frameMs, float measuredFps, float busyCpuMs, float gpuMs,
+            bool capConfigured, float namedCapFps, out float idleMs)
+        {
+            idleMs = 0f;
+
+            string verdict = Classify(busyCpuMs, gpuMs);
+            if (verdict == Unknown) return FrameLimit.Unknown;
+
+            // A cap the platform can name wins outright — it explains the frame by itself.
+            if (namedCapFps > 0f && measuredFps >= namedCapFps * 0.95f) return FrameLimit.AtNamedCap;
+
+            if (IsLimitedByPresent(frameMs, busyCpuMs, gpuMs, out idleMs))
+            {
+                if (!capConfigured) return FrameLimit.IdleNoCap;
+                return IsIdleConsistentWithCap(frameMs, namedCapFps)
+                    ? FrameLimit.CappedByIdle
+                    : FrameLimit.Stalled;
+            }
+
+            return verdict == CpuBound ? FrameLimit.Cpu
+                 : verdict == GpuBound ? FrameLimit.Gpu
+                 : FrameLimit.Balanced;
+        }
+
+        /// <summary>
+        /// One-line rendering of a <see cref="FrameLimit"/>. A verdict that is NOT a
+        /// measurement says so in the text, because a saved report is read without the
+        /// context that produced it.
+        /// </summary>
+        public static string DescribeFrameLimit(FrameLimit limit, float idleMs, float namedCapFps) =>
+            limit switch
+            {
+                FrameLimit.Unknown      => Unknown,
+                FrameLimit.Cpu          => CpuBound,
+                FrameLimit.Gpu          => GpuBound,
+                FrameLimit.Balanced     => Balanced,
+                FrameLimit.AtNamedCap   => $"Capped @{namedCapFps:F0} — frame time is NOT a measurement",
+                FrameLimit.CappedByIdle => $"Capped — {idleMs:F1} ms idle — frame time is NOT a measurement",
+                FrameLimit.Stalled      => $"Stalled — {idleMs:F1} ms unattributed — NOT a measurement",
+                FrameLimit.IdleNoCap    => $"Idle {idleMs:F1} ms — no cap set",
+                _                       => Unknown,
+            };
     }
 }

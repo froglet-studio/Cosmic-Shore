@@ -195,5 +195,66 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
                 "unnameable cap must keep the capped label");
             Assert.IsTrue(FrameBoundness.IsIdleConsistentWithCap(90.9f, capFps: 0f));
         }
+
+        [Test]
+        public void ClassifyFrameLimit_ReportAndOverlayCannotDisagree()
+        {
+            // THE BUG (measured 2026-09-20): an EMPTY scene — zero prism entities — saved
+            // `boundVerdict: "CPU-bound"` on a frame that was 76.6% idle and pinned to the
+            // 120 Hz vsync budget to within 0.01 ms. BuildReport called bare Classify, which
+            // knows only CPU vs GPU; the live row walked the cap ladder. The report was the
+            // artifact somebody reads a week later.
+            var limit = FrameBoundness.ClassifyFrameLimit(
+                frameMs: 8.340f, measuredFps: 119.90f, busyCpuMs: 1.949f, gpuMs: 1.395f,
+                capConfigured: true, namedCapFps: -1f, out float idleMs);
+            Assert.AreEqual(FrameBoundness.FrameLimit.CappedByIdle, limit);
+            Assert.AreEqual(6.391f, idleMs, 0.01f);
+            // …and the old call still answers the wrong thing, which is why it was replaced.
+            Assert.AreEqual(FrameBoundness.CpuBound, FrameBoundness.Classify(1.949f, 1.395f));
+
+            // Both Test C arms, 61% idle at the cap.
+            Assert.AreEqual(FrameBoundness.FrameLimit.CappedByIdle,
+                FrameBoundness.ClassifyFrameLimit(8.388f, 119.21f, 3.232f, 1.464f, true, -1f, out _));
+            Assert.AreEqual(FrameBoundness.FrameLimit.CappedByIdle,
+                FrameBoundness.ClassifyFrameLimit(8.395f, 119.12f, 3.248f, 1.540f, true, -1f, out _));
+
+            // NEGATIVE CONTROLS — a verdict that calls everything "capped" is worthless.
+            // pathOff: genuinely CPU-bound at 13% idle, under both bars.
+            Assert.AreEqual(FrameBoundness.FrameLimit.Cpu,
+                FrameBoundness.ClassifyFrameLimit(25.859f, 38.67f, 22.471f, 4.719f, true, -1f, out _));
+            // The 90.9 ms frame under a NAMEABLE 120 Hz cap an 8.3 ms floor cannot produce.
+            Assert.AreEqual(FrameBoundness.FrameLimit.Stalled,
+                FrameBoundness.ClassifyFrameLimit(90.9f, 11.0f, 4.8f, 2.2f, true, 120f, out _));
+            // `fps uncap` applied — editor residue, not a cap.
+            Assert.AreEqual(FrameBoundness.FrameLimit.IdleNoCap,
+                FrameBoundness.ClassifyFrameLimit(8.2f, 122f, 4.8f, 2.1f, false, -1f, out _));
+            // A cap the platform CAN name.
+            Assert.AreEqual(FrameBoundness.FrameLimit.AtNamedCap,
+                FrameBoundness.ClassifyFrameLimit(8.4f, 119f, 3.0f, 1.0f, true, 120f, out _));
+            // No timing data at all must stay silent rather than guess.
+            Assert.AreEqual(FrameBoundness.FrameLimit.Unknown,
+                FrameBoundness.ClassifyFrameLimit(8.4f, 119f, 0f, 0f, true, -1f, out _));
+            // A GPU-bound frame whose work fills it.
+            Assert.AreEqual(FrameBoundness.FrameLimit.Gpu,
+                FrameBoundness.ClassifyFrameLimit(5.0f, 200f, 1.0f, 4.5f, false, -1f, out _));
+        }
+
+        [Test]
+        public void DescribeFrameLimit_SaysWhenAVerdictIsNotAMeasurement()
+        {
+            // A saved report is read without the context that produced it, so a capped or
+            // stalled frame has to disqualify its own frame time in the text.
+            StringAssert.Contains("NOT a measurement",
+                FrameBoundness.DescribeFrameLimit(FrameBoundness.FrameLimit.CappedByIdle, 6.4f, -1f));
+            StringAssert.Contains("NOT a measurement",
+                FrameBoundness.DescribeFrameLimit(FrameBoundness.FrameLimit.AtNamedCap, 0f, 120f));
+            StringAssert.Contains("NOT a measurement",
+                FrameBoundness.DescribeFrameLimit(FrameBoundness.FrameLimit.Stalled, 86.1f, 120f));
+            // A real processor verdict must NOT carry the disclaimer.
+            Assert.AreEqual(FrameBoundness.CpuBound,
+                FrameBoundness.DescribeFrameLimit(FrameBoundness.FrameLimit.Cpu, 0f, -1f));
+            Assert.AreEqual(FrameBoundness.GpuBound,
+                FrameBoundness.DescribeFrameLimit(FrameBoundness.FrameLimit.Gpu, 0f, -1f));
+        }
     }
 }
