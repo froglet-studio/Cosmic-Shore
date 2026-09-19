@@ -190,6 +190,15 @@ coalescing, and nothing recorded that trade. Keying the prototype on
 the cost of a structural change on MATERIAL CHANGE (repaint, shield transition)
 — rare against per-frame rendering, but **measure it, do not assume it**.
 
+> **⚠ MEASURED, AND IT IS NOT THE 20× FIX — §0.11 / §0.11.1 (2026-09-19).** It was measured,
+> as this paragraph asked. Material count really does multiply draws (1 → 9 materials costs
+> **4.92×** at a fixed population, so the mechanism above is real), but the lab reproduces
+> only **6.4%** of the boot world's draw calls even with ADVERSARIAL interleaving — every
+> consecutive entity a different material — and chunk spatial locality moves them **0%**.
+> The archetype-key change would take 14,244 to roughly 13,300, not 690. And a draw call
+> costs **0.042 µs of CPU** (§0.11 Finding 3), so 14,244 of them is ~0.6 ms — this was never
+> the frame cost. **Do not pay for the prototype re-key on the strength of this paragraph.**
+
 > ⚠ **Not proven offline:** the one-draw-command-per-chunk rule could not be read
 > from the Entities Graphics 1.4.15 source (the package is not in a fresh clone).
 > The arithmetic matches to a rounding error; confirm in the **Frame Debugger**
@@ -415,6 +424,89 @@ full z extent — 0.30% of the lattice by VOLUME but 59% of it by DIAGONAL. The 
 therefore already partially incoherent in one axis, which makes 37.5 entities/draw a
 conservative baseline rather than a best case. *A locality metric has to be the one culling
 uses (volume), not the one that is easier to compute (diagonal).*
+
+### 0.11.1 TEST C — locality has no effect, and the boot world's own number does not survive (2026-09-19)
+
+`lab mix plain=8000 danger=8000 shielded=2000 super=200 domains=3`, run twice: once laid
+x→y→z, once with `scatter`. Population, material census, per-chunk interleaving pattern,
+geometry and camera all identical; the only difference is whether a chunk's entities are
+contiguous in space (measured 0.30% → 96.2% of the lattice by volume, a **320×** change).
+
+| | ordered | scattered | Δ |
+|---|---:|---:|---:|
+| Draw calls | 487.43 | 487.66 | **+0.05%** |
+| Batches | 489.44 | 489.83 | +0.08% |
+| SetPass | 6.989 | 6.989 | 0.00% |
+| CPU busy | 3.232 ms | 3.248 ms | +0.49% |
+| GC / frame | 31.94 KB | 31.87 KB | −0.22% |
+
+**A 320× change in chunk locality moved draw calls by 0.05%. The hypothesis is dead.**
+
+⚠ **What bounds this result:** the lab camera frames the whole lattice, so it is not
+established that culling rejected anything in either arm. With every chunk in frustum the
+test could not have shown a difference whatever the truth. Closing it costs one `grid zoom`
+and two more runs — but see below for why that is probably not worth doing.
+
+#### The finding that outranks it: 14,244 cannot be a prism draw count
+
+The lab's interleaving is **adversarial by construction** — round-robin over 12
+(kind, domain) combinations means *every consecutive entity carries a different material*,
+which is the worst case §0.9's mechanism can produce. At that setting:
+
+| | entities | draws | entities/draw |
+|---|---:|---:|---:|
+| lab, mats=9, adversarial interleave | 18,252 | 486 | **37.5** |
+| same, scaled to the boot world's population | 33,114 | **882** | 37.5 |
+| boot world, measured (§0.9) | 33,114 | **14,244** | **2.32** |
+
+**The lab maximises the exact mechanism §0.9 blames and still lands 16.1× short.** Combined
+with Test C, the lab has now ruled out BOTH of its own hypotheses: material interleaving
+inside chunks explains 6.4% of the boot world's draw calls, and chunk spatial locality
+explains 0%.
+
+**So the number itself is the next thing to doubt, and §0.9 already said why:**
+
+> *"`DiagnosticsHUD`'s draw/batch/tri rows are `ProfilerRecorder`s on
+> `ProfilerCategory.Render`, which in the Editor include the Scene view's own pass. Re-read
+> these in a Development build before treating 14,244 as the shipping number."*
+
+That caveat was written and never discharged. 14,244 was also a **single-frame HUD read** —
+the identical class of error that made 197.9 KB/frame wrong (§0.11 Finding 1: the averaged
+truth is ~15.5 KB). **Two of §0.9's three headline numbers have now failed to survive
+averaging; treat the third the same way until a `diag` report replaces it.**
+
+Corroborating that the live rows are environmental rather than prism-driven: **GC/frame read
+31.9 KB in both Test C arms against 15.2–15.9 KB in the earlier session** — same population,
+same render path, same material count, same command, **double the GC**. Whatever moves that
+row is not the prisms.
+
+#### The missing control, and the general rule
+
+**Nobody has measured what the scene draws with ZERO prisms.** Every entities-per-draw ratio
+in §0.11 assumes the draw count is all prisms. If an empty scene already draws ~90, then at
+mats=1 the prisms contribute ~9 draws rather than 99 and every ratio here moves by an order
+of magnitude. `lab clear` → `diag empty 15` is one command.
+
+> **The rule, and it is the third instance in this document:** *a live HUD row is a SAMPLE of
+> a distribution; a conclusion needs the average.* §0.9's GPU row (garbage on one frame),
+> §0.9's GC row (197.9 KB against a ~15.5 KB mean) and now §0.9's draw row all read plausibly
+> and all misdirected the work built on them. The `diag` report exists because of the second
+> one; use it before quoting the first or third.
+
+#### What to do instead of more lab
+
+1. **`lab clear` → `diag empty 15`** — the zero-prism draw floor. Without it none of the
+   ratios above are anchored.
+2. **Re-measure the boot world with `diag`**, not the live HUD, and in a Development BUILD
+   rather than the Editor, so `ProfilerCategory.Render` cannot include the Scene view. That
+   is Capture A in `PERFORMANCE_CAPTURE_RECIPES.md`.
+3. **Read the `Bound` row first.** §0.8 measured the boot world CPU-bound at ~60 ms of main
+   thread. §0.11 Finding 3 measured a draw call at **0.042 µs of CPU**. Even 14,244 real
+   draws would be ~0.6 ms of CPU — so the draw-call thread was never going to touch the
+   frame cost that started this investigation, and continuing it is optimising the wrong
+   processor.
+
+---
 
 #### The `avgBatches` counter froze in one arm
 
