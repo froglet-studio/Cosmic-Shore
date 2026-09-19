@@ -559,6 +559,39 @@ verdict says **"frame time is NOT a measurement"** in its own text.
 SetPass and GC** — none of those are capped quantities — and unusable for frame time and
 fps. Test C's conclusion is unaffected: it rests on draw calls, which moved 0.05%.
 
+### 0.11.3 THE INSTRUMENT IS CLEARED — and 41.8 KB/frame of nothing remains (2026-09-20)
+
+`lab clear` → `diag hidden 15` → **F7** immediately. `Update` and `SampleRecording` ignore
+visibility; only `RefreshText` is gated on `_visible`, so this records a full run with the
+overlay's text rebuild switched off and still writes the file.
+
+| | overlay VISIBLE | overlay HIDDEN | Δ |
+|---|---:|---:|---:|
+| GC / frame | 41.569 KB | 41.801 KB | **+0.56%** |
+| CPU busy | 1.949 ms | 1.861 ms | −4.5% |
+| Draw calls | 7.0 | 7.0 | 0% |
+
+**The HUD's text rebuild costs ~0.09 ms of CPU and essentially zero allocation.** The
+overlay is not the allocator, so no measurement in this document is contaminated by it —
+which was the thing worth ruling out before attributing anything else.
+
+**What is left is the hard part: 41.8 KB/frame in a scene containing ZERO prism entities,
+7 draw calls and a hidden overlay.** At 120 fps that is 5.0 MB/s. Every hypothesis with a
+mechanism has now been eliminated by measurement:
+
+| candidate | ruled out by |
+|---|---|
+| allocating coroutines (§0.8's 1,080 plants) | arithmetic — §0.9, two orders of magnitude |
+| first-party per-frame code | three scans — §0.9 |
+| Entities Graphics / the render path | legacy allocates MORE — §0.11 |
+| the prisms themselves | empty scene allocates MORE — §0.11.2 |
+| the DiagnosticsHUD overlay | this section |
+
+**Nothing left is reachable from a JSON report.** The remaining candidates — the Editor's own
+per-frame loop, uGUI, or a package — are separated only by a caller name, and only the
+Profiler's Hierarchy view produces one. That is the next measurement, and it needs no
+development build.
+
 #### What to do instead of more lab
 
 1. ~~**`lab clear` → `diag empty 15`**~~ — **DONE, see §0.11.2.** Floor is 7 draws; the
