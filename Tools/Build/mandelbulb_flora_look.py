@@ -39,7 +39,7 @@ def grow_candidate(species, element, overrides=None, cross=None, seed=12345,
             raise SystemExit(f"unknown rule field {k!r}; fields are {M.Rules.FIELDS}")
         setattr(rules, k, type(getattr(rules, k))(v))
     cross = cross or M.cross_section_for(element, species)
-    raw, _ = M.grow(surface, rules, seed, budget * X.CANDIDATE_FACTOR)
+    raw, _, _ = M.grow(surface, rules, seed, budget * X.CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
     kept = M.claim_filter(raw, centres)[:budget]
     curves = len({p.curve for p in kept})

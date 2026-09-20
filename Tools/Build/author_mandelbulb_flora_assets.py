@@ -139,31 +139,30 @@ def plan(species):
     return out
 
 
+RULE_FIELD_NAMES = (
+    ("Field", "%d"), ("SwirlDegrees", "%g"), ("FieldMix", "%g"), ("Momentum", "%g"),
+    ("StepSize", "%g"), ("MaxSteps", "%d"), ("LanesPerSeed", "%d"), ("LaneGap", "%g"),
+    ("HopSeek", "%g"), ("HopJitter", "%g"), ("SeedCount", "%d"), ("SeedSpreadDegrees", "%g"),
+    ("MaxTurnDegrees", "%g"), ("RadiusMin", "%g"), ("RadiusMax", "%g"), ("MinRun", "%d"),
+    ("LengthFactor", "%g"), ("GirthTaper", "%g"), ("TwistDegreesPerStep", "%g"),
+    ("DiveCount", "%d"), ("DiveStepFraction", "%g"), ("DiveAngleDegrees", "%g"),
+    ("DiveStopRadius", "%g"), ("DiveMaxSteps", "%d"), ("DiveSwirlDegrees", "%g"),
+    ("DiveStrideCeiling", "%g"), ("DiveGirthFloor", "%g"), ("DiveAxisAlign", "%g"),
+    ("DiveDescent", "%g"),
+    ("SkeletonSeeds", "%d"), ("WalkStep", "%g"), ("MinPersistence", "%g"),
+    ("GirthReference", "%g"),
+)
+
+
 def rules_block(elem, indent, species):
-    """MandelbulbSurface.GrowthRules as Unity serialises a nested [Serializable] struct."""
+    """MandelbulbSurface.GrowthRules as Unity serialises a nested [Serializable] struct - one
+    line per field, in DECLARATION order, which is also Rules.FIELDS' order."""
     r = M.rules_for(elem, species)
+    values = r.as_list()
+    if len(values) != len(RULE_FIELD_NAMES):
+        sys.exit("author_mandelbulb_flora_assets: RULE_FIELD_NAMES is out of step with Rules.FIELDS")
     pad = " " * indent
-    return "\n".join([
-        pad + "Field: %d" % r.field,
-        pad + "SwirlDegrees: %g" % r.swirl,
-        pad + "FieldMix: %g" % r.field_mix,
-        pad + "Momentum: %g" % r.momentum,
-        pad + "StepSize: %g" % r.step,
-        pad + "MaxSteps: %d" % r.max_steps,
-        pad + "LanesPerSeed: %d" % r.lanes,
-        pad + "LaneGap: %g" % r.lane_gap,
-        pad + "HopSeek: %g" % r.hop_seek,
-        pad + "HopJitter: %g" % r.hop_jitter,
-        pad + "SeedCount: %d" % r.seeds,
-        pad + "SeedSpreadDegrees: %g" % r.seed_spread,
-        pad + "MaxTurnDegrees: %g" % r.max_turn,
-        pad + "RadiusMin: %g" % r.r_min,
-        pad + "RadiusMax: %g" % r.r_max,
-        pad + "MinRun: %d" % r.min_run,
-        pad + "LengthFactor: %g" % r.length_factor,
-        pad + "GirthTaper: %g" % r.girth_taper,
-        pad + "TwistDegreesPerStep: %g" % r.twist,
-    ])
+    return "\n".join(pad + name + ": " + (fmt % v) for (name, fmt), v in zip(RULE_FIELD_NAMES, values))
 
 
 def flora_component_block(p):

@@ -17,6 +17,7 @@ two float widths on a chaotic recurrence would be claiming something no run coul
 import math
 import os
 import re
+import struct
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TABLE = os.path.join(ROOT, "Assets", "_Scripts", "Controller", "Environment",
@@ -121,9 +122,15 @@ def reconstruct(degree, coeffs, w, h):
 
 # ── the live surface ───────────────────────────────────────────────────────────
 
+def _f32(v):
+    """Round to the nearest float32: the game stores the reconstructed field as float[],
+    so sampling the float64 reconstruction would model a field the game never has."""
+    return struct.unpack("f", struct.pack("f", v))[0]
+
+
 class Surface:
     def __init__(self, r, w, h):
-        self.R, self.W, self.H = r, w, h
+        self.R, self.W, self.H = [_f32(v) for v in r], w, h
         self.mean_radius = sum(r) / max(1, len(r))
 
     def sample(self, theta, phi):
@@ -197,22 +204,226 @@ def build_frame(s, theta, phi):
     return f
 
 
+# ── critical points (the WATERSHED's seeds) ────────────────────────────────────
+#
+# Mirrors MandelbulbSurface.Gradient / Hessian / Eigen / FindCriticalPoints /
+# FarthestPointOrder. The one stencil constant is FROZEN, as it is in the C#.
+
+HESSIAN_STENCIL = 0.01
+DEDUPE_DOT = 1.0 - 0.5 * 0.01 * 0.01
+ORDER_SHARPNESS_TOL = 1e-6
+ORDER_DISTANCE_TOL = 1e-6
+ORDER_ANGLE_TOL = 1e-5
+
+SADDLE, PEAK, PIT = 0, 1, 2
+
+
+class CriticalPoint:
+    __slots__ = ("kind", "theta", "phi", "radius", "sharpness", "dir", "e_valley", "e_ridge")
+
+    def __init__(self, kind, theta, phi, radius, sharpness, d, e_valley, e_ridge):
+        self.kind, self.theta, self.phi = kind, theta, phi
+        self.radius, self.sharpness, self.dir = radius, sharpness, d
+        self.e_valley, self.e_ridge = e_valley, e_ridge
+
+
+def gradient(s, theta, phi):
+    hT = math.pi / s.H * 0.75
+    hP = 2.0 * math.pi / s.W * 0.75
+    sT = max(math.sin(theta), 1e-4)
+    gT = (s.sample(theta + hT, phi) - s.sample(theta - hT, phi)) / (2 * hT)
+    gP = (s.sample(theta, phi + hP) - s.sample(theta, phi - hP)) / (2 * hP) / sT
+    return gT, gP
+
+
+def hessian(s, theta, phi):
+    h = HESSIAN_STENCIL
+    a1, b1 = gradient(s, theta + h, phi)
+    a0, b0 = gradient(s, theta - h, phi)
+    _, b3 = gradient(s, theta, phi + h)
+    _, b2 = gradient(s, theta, phi - h)
+    gT, _ = gradient(s, theta, phi)
+    sT = max(math.sin(theta), 1e-4)
+    ct = math.cos(theta)
+    htt = (a1 - a0) / (2 * h)
+    htp = (b1 - b0) / (2 * h)
+    hpp = ((b3 - b2) / (2 * h)) / sT + (ct / sT) * gT
+    return htt, htp, hpp
+
+
+def _eigen_vector(htt, htp, l):
+    vx, vy = htp, -(htt - l)
+    if abs(vx) < 1e-12 and abs(vy) < 1e-12:
+        return (1.0, 0.0)
+    m = math.sqrt(vx * vx + vy * vy)
+    return (vx / m, vy / m)
+
+
+def eigen(htt, htp, hpp):
+    tr, det = htt + hpp, htt * hpp - htp * htp
+    r = math.sqrt(max(0.0, tr * tr * 0.25 - det))
+    l1, l2 = tr * 0.5 + r, tr * 0.5 - r
+    return l1, l2, _eigen_vector(htt, htp, l1), _eigen_vector(htt, htp, l2)
+
+
+def _refine_critical_point(s, th, ph):
+    for _ in range(12):
+        gT, gP = gradient(s, th, ph)
+        htt, htp, hpp = hessian(s, th, ph)
+        det = htt * hpp - htp * htp
+        if abs(det) < 1e-9:
+            break
+        dTh = -(hpp * gT - htp * gP) / det
+        dPh = -(-htp * gT + htt * gP) / det
+        n = math.sqrt(dTh * dTh + dPh * dPh)
+        if n > 0.05:
+            dTh *= 0.05 / n
+            dPh *= 0.05 / n
+        th += dTh
+        ph += dPh / max(math.sin(th), 1e-4)        # the divisor is the NEW theta
+        th = min(max(th, 1e-3), math.pi - 1e-3)
+        ph = ((ph % (2 * math.pi)) + 2 * math.pi) % (2 * math.pi)
+        if n < 1e-7:
+            break
+    fT, fP = gradient(s, th, ph)
+    ok = math.sqrt(fT * fT + fP * fP) <= 2e-3
+    return ok, th, ph
+
+
+def find_critical_points(s):
+    """Scan-ordered local minima of |grad R| on a 2x lattice (polar rows excluded),
+    Newton-refined, classified, deduplicated on a 0.01 chord."""
+    w2, h2 = 2 * s.W, 2 * s.H
+    slope = [0.0] * (w2 * h2)
+    for j in range(h2):
+        th = (j + 0.5) / h2 * math.pi
+        for i in range(w2):
+            ph = i / w2 * 2 * math.pi
+            gT, gP = gradient(s, th, ph)
+            slope[j * w2 + i] = math.sqrt(gT * gT + gP * gP)
+    found = []
+    for j in range(1, h2 - 1):
+        for i in range(w2):
+            v = slope[j * w2 + i]
+            minimum = True
+            for dj in (-1, 0, 1):
+                for di in (-1, 0, 1):
+                    if dj == 0 and di == 0:
+                        continue
+                    ii = ((i + di) % w2 + w2) % w2
+                    if slope[(j + dj) * w2 + ii] <= v:
+                        minimum = False
+                        break
+                if not minimum:
+                    break
+            if not minimum:
+                continue
+            ok, th, ph = _refine_critical_point(s, (j + 0.5) / h2 * math.pi, i / w2 * 2 * math.pi)
+            if not ok:
+                continue
+            htt, htp, hpp = hessian(s, th, ph)
+            det, tr = htt * hpp - htp * htp, htt + hpp
+            kind = SADDLE if det < 0 else (PEAK if tr < 0 else PIT)
+            st = math.sin(th)
+            d = (st * math.cos(ph), st * math.sin(ph), math.cos(th))
+            if any(_dot(d, q.dir) > DEDUPE_DOT for q in found):
+                continue
+            l1, l2, v1, v2 = eigen(htt, htp, hpp)
+            found.append(CriticalPoint(kind, th, ph, s.sample(th, ph),
+                                       min(abs(l1), abs(l2)), d, v2, v1))
+    return found
+
+
+def _compare_angles(a, b):
+    if abs(a.theta - b.theta) > ORDER_ANGLE_TOL:
+        return -1 if a.theta < b.theta else 1
+    if abs(a.phi - b.phi) > ORDER_ANGLE_TOL:
+        return -1 if a.phi < b.phi else 1
+    return 0
+
+
+def farthest_point_order(saddles):
+    order = []
+    if not saddles:
+        return order
+    top = max(c.sharpness for c in saddles)
+    s_tol = ORDER_SHARPNESS_TOL * max(top, 1e-12)
+    n = len(saddles)
+    taken = [False] * n
+    first = 0
+    for i in range(1, n):
+        ds = saddles[i].sharpness - saddles[first].sharpness
+        if ds > s_tol or (ds >= -s_tol and _compare_angles(saddles[i], saddles[first]) < 0):
+            first = i
+    taken[first] = True
+    order.append(saddles[first])
+    dmin = [1.0 - _dot(saddles[q].dir, saddles[first].dir) for q in range(n)]
+    while len(order) < n:
+        best = -1
+        for i in range(n):
+            if taken[i]:
+                continue
+            if best < 0:
+                best = i
+                continue
+            dd = dmin[i] - dmin[best]
+            if dd > ORDER_DISTANCE_TOL:
+                best = i
+                continue
+            if dd < -ORDER_DISTANCE_TOL:
+                continue
+            ds = saddles[i].sharpness - saddles[best].sharpness
+            if ds > s_tol:
+                best = i
+                continue
+            if ds < -s_tol:
+                continue
+            if _compare_angles(saddles[i], saddles[best]) < 0:
+                best = i
+        taken[best] = True
+        order.append(saddles[best])
+        for q in range(n):
+            if not taken[q]:
+                dmin[q] = min(dmin[q], 1.0 - _dot(saddles[q].dir, saddles[best].dir))
+    return order
+
+
+def critical_points(surface):
+    if getattr(surface, "_critical", None) is None:
+        surface._critical = find_critical_points(surface)
+    return surface._critical
+
+
+def saddles(surface):
+    if getattr(surface, "_saddles", None) is None:
+        surface._saddles = farthest_point_order([c for c in critical_points(surface) if c.kind == SADDLE])
+    return surface._saddles
+
+
 # ── the growth rule ────────────────────────────────────────────────────────────
 
 class Rules:
     """Mirrors MandelbulbSurface.GrowthRules field for field, in the same order the
-    generator writes them into the prefab."""
+    generator writes them into the prefab. APPEND only: the order is the wire format."""
     FIELDS = ("field", "swirl", "field_mix", "momentum", "step", "max_steps",
               "lanes", "lane_gap", "hop_seek", "hop_jitter", "seeds", "seed_spread",
               "max_turn", "r_min", "r_max", "min_run", "length_factor", "girth_taper",
-              "twist")
+              "twist",
+              # THE FALL (Docs/ECOSYSTEM.md §47)
+              "dive_count", "dive_step", "dive_angle", "dive_stop", "dive_max_steps",
+              "dive_swirl", "dive_stride_ceiling", "dive_girth_floor", "dive_axis_align",
+              "dive_descent",
+              # THE WATERSHED (§47)
+              "skeleton_seeds", "walk_step", "min_persistence", "girth_reference")
+    INTS = ("field", "max_steps", "lanes", "seeds", "min_run",
+            "dive_count", "dive_max_steps", "skeleton_seeds")
 
     def __init__(self, *values):
         if len(values) != len(self.FIELDS):
             raise ValueError(f"expected {len(self.FIELDS)} rule values, got {len(values)}")
         for k, v in zip(self.FIELDS, values):
             setattr(self, k, v)
-        for k in ("field", "max_steps", "lanes", "seeds", "min_run"):
+        for k in self.INTS:
             setattr(self, k, int(getattr(self, k)))
 
     def as_list(self):
@@ -235,12 +446,13 @@ class Rng:
 
 
 class Prism:
-    __slots__ = ("theta", "phi", "radial", "tan_a", "tan_b", "length", "girth",
-                 "roll", "curve", "lane")
+    __slots__ = ("theta", "phi", "radial", "dive", "tan_a", "tan_b", "tan_r", "length",
+                 "girth", "roll", "curve", "lane")
 
-    def __init__(self, theta, phi, radial, tan_a, tan_b, length, girth, roll, curve, lane):
-        self.theta, self.phi, self.radial = theta, phi, radial
-        self.tan_a, self.tan_b = tan_a, tan_b
+    def __init__(self, theta, phi, radial, dive, tan_a, tan_b, tan_r, length, girth, roll,
+                 curve, lane):
+        self.theta, self.phi, self.radial, self.dive = theta, phi, radial, dive
+        self.tan_a, self.tan_b, self.tan_r = tan_a, tan_b, tan_r
         self.length, self.girth = length, girth
         self.roll = roll
         self.curve, self.lane = curve, lane
@@ -250,17 +462,31 @@ def pose(surface, a):
     f = build_frame(surface, a.theta, a.phi)
     n = f.normal
     fwd = _add(_mul(f.e_theta, a.tan_a), _mul(f.e_phi, a.tan_b))
-    fwd = _sub(fwd, _mul(n, _dot(fwd, n)))
-    m = _len(fwd)
-    fwd = _mul(fwd, 1.0 / m) if m > 1e-7 else f.e_phi
-    # HELICOIDAL TWIST about the curve's own tangent (MandelbulbSurface.Pose).
-    roll = getattr(a, "roll", 0.0)
-    if roll:
-        binormal = _cross(fwd, n)
-        up = _add(_mul(n, math.cos(roll)), _mul(binormal, math.sin(roll)))
+    if a.tan_r != 0.0:
+        # A DIVE prism: free-space heading taken whole, `up` hung off the RAY.
+        fwd = _add(fwd, _mul(f.dir, a.tan_r))
+        m = _len(fwd)
+        fwd = _mul(fwd, 1.0 / m) if m > 1e-7 else f.dir
+        w = _sub(f.dir, _mul(fwd, _dot(f.dir, fwd)))
+        m2 = _len(w)
+        if m2 > 1e-5:
+            up_base = _mul(w, 1.0 / m2)
+        else:
+            w = _sub(n, _mul(fwd, _dot(n, fwd)))
+            up_base = _norm(w) if _dot(w, w) > 1e-10 else f.e_theta
     else:
-        up = n
-    return _mul(f.dir, f.radius + a.radial), fwd, up
+        fwd = _sub(fwd, _mul(n, _dot(fwd, n)))
+        m = _len(fwd)
+        fwd = _mul(fwd, 1.0 / m) if m > 1e-7 else f.e_phi
+        up_base = n
+    # HELICOIDAL TWIST about the curve's own tangent (MandelbulbSurface.Pose).
+    roll = a.roll
+    if roll:
+        binormal = _cross(fwd, up_base)
+        up = _add(_mul(up_base, math.cos(roll)), _mul(binormal, math.sin(roll)))
+    else:
+        up = up_base
+    return _mul(f.dir, f.radius * (1.0 - a.dive) + a.radial), fwd, up
 
 
 def _spherical(p):
@@ -279,6 +505,8 @@ def build_seeds(surface, rules):
     it is a polar cap -- an NMS that stopped at `want` grew 78% of one plant's prisms into
     the top eighth of the sphere by area. The NMS runs over every candidate and the result
     is STRIDED down."""
+    if rules.skeleton_seeds != 0:
+        return [build_frame(surface, c.theta, c.phi).position for c in saddles(surface)]
     min_cos = math.cos(min(179.0, max(1.0, rules.seed_spread)) * math.pi / 180.0)
     want = max(1, rules.seeds)
     probe = max(want * 4, 256)
@@ -311,8 +539,8 @@ def _is_bipolar(field):
     return field != ASCENT and field != DESCENT
 
 
-def _field_direction(rules, frame, n):
-    f = rules.field
+def _field_direction(rules, frame, n, field):
+    f = field
     if f == CONTOUR:
         v = _cross(n, frame.ascent)
     elif f == ASCENT:
@@ -338,20 +566,85 @@ def _field_direction(rules, frame, n):
     return v
 
 
+def append_dive(rules, p, t, step):
+    """THE FALL: the log spiral (MandelbulbSurface.Growth.AppendDive)."""
+    out = []
+    psi = min(85.0, max(5.0, rules.dive_angle)) * math.pi / 180.0
+    cps, sps = math.cos(psi), math.sin(psi)
+    f = min(rules.dive_step, 0.9 * 2.0 * cps)
+    stop = max(0.01, rules.dive_stop)
+    align = min(1.0, max(0.0, rules.dive_axis_align))
+    swirl = abs(rules.dive_swirl) > 0.01
+    if swirl:
+        a = rules.dive_swirl * math.pi / 180.0
+        swirl_cos, swirl_sin = math.cos(a), math.sin(a)
+    cap = max(2, rules.dive_max_steps)
+    for _ in range(cap):
+        r = _len(p)
+        if r <= stop:
+            break
+        rhat = _mul(p, 1.0 / r)
+        u = _sub(t, _mul(rhat, _dot(t, rhat)))
+        if _dot(u, u) < 1e-12:
+            u = _cross(rhat, (0.0, 0.0, 1.0))
+            if _dot(u, u) < 1e-12:
+                u = _cross(rhat, (1.0, 0.0, 0.0))
+        u = _norm(u)
+        if align > 0.0:
+            az = _cross((0.0, 0.0, 1.0), rhat)
+            if _dot(az, az) > 1e-12:
+                az = _norm(az)
+                if _dot(az, u) < -1e-3:      # dead band: see MandelbulbSurface.AppendDive
+                    az = _mul(az, -1.0)
+                blended = _add(_mul(u, 1.0 - align), _mul(az, align))
+                if _dot(blended, blended) > 1e-12:
+                    u = _norm(blended)
+        t = _add(_mul(rhat, -cps), _mul(u, sps))
+        if swirl:
+            t = _norm(_add(_add(_mul(t, swirl_cos), _mul(_cross(rhat, t), swirl_sin)),
+                           _mul(rhat, _dot(rhat, t) * (1.0 - swirl_cos))))
+        s = f * r
+        if rules.dive_stride_ceiling > 0.0:
+            s = min(s, step * rules.dive_stride_ceiling)
+        q = _add(p, _mul(t, s))
+        rq = _len(q)
+        if rq < stop:
+            q = _mul(q, stop / max(rq, 1e-9))
+            out.append(q)
+            break
+        p = q
+        out.append(p)
+    return out
+
+
 def grow(surface, rules, seed, budget):
     """Lane-MAJOR: every seed lays its lane 0 before any seed lays its lane 1, so a plant
     that stops at its budget is the whole bulb drawn thinly rather than two seeds' worth of
-    it drawn fully."""
+    it drawn fully. Under `skeleton_seeds` the seeds are the surface's saddles and lanes
+    0..3 are their four separatrices, interleaved valley+, ridge+, valley-, ridge-."""
     rng = Rng((seed * (2654435761 & 0x7FFFFFFF)) ^ 0x5bf03635)
+    skeleton = rules.skeleton_seeds != 0
     seeds = build_seeds(surface, rules)
+    sads = saddles(surface) if skeleton else None
     lane_pos = list(seeds)
     lane_tan = [None] * len(seeds)
     lane_dead = [False] * len(seeds)
     max_turn_cos = math.cos(min(179.0, max(1.0, rules.max_turn)) * math.pi / 180.0)
     r_min, r_max = min(rules.r_min, rules.r_max), max(rules.r_min, rules.r_max)
     lanes = max(1, rules.lanes)
+    walk_step = rules.walk_step if rules.walk_step > 0 else rules.step
 
-    def trace(start, seed_tangent):
+    # THE FALL's owed set: STRIDED over the seed list, never a prefix (the seed list is
+    # z-monotone, so a prefix is a polar cap).
+    n_seeds = max(1, len(seeds))
+    dive_owed = [False] * n_seeds
+    dive_quota = min(max(0, rules.dive_count), len(seeds))
+    dives_spent = 0
+    if rules.dive_step > 0 and dive_quota > 0:
+        for d in range(dive_quota):
+            dive_owed[(d * len(seeds)) // dive_quota] = True
+
+    def trace(start, seed_tangent, field, step):
         pts = []
         theta, phi = _spherical(start)
         t = None
@@ -360,7 +653,7 @@ def grow(surface, rules, seed, budget):
             if fr.radius < r_min or fr.radius > r_max:
                 break
             n = fr.normal
-            fd = _field_direction(rules, fr, n)
+            fd = _field_direction(rules, fr, n, field)
             if t is not None:
                 ahead = _sub(t, _mul(n, _dot(t, n)))
                 if _dot(ahead, ahead) < 1e-16:
@@ -368,7 +661,7 @@ def grow(surface, rules, seed, budget):
                 ahead = _norm(ahead)
                 if fd is not None:
                     d = fd
-                    if _is_bipolar(rules.field) and _dot(d, ahead) < 0:
+                    if _is_bipolar(field) and _dot(d, ahead) < 0:
                         d = _mul(d, -1.0)
                     mix = min(1.0, max(0.0, rules.field_mix))
                     want = tuple(ahead[i] + (d[i] - ahead[i]) * mix for i in range(3))
@@ -396,7 +689,7 @@ def grow(surface, rules, seed, budget):
 
             t = want
             pts.append((fr.position, n))
-            q = _add(fr.position, _mul(t, rules.step))
+            q = _add(fr.position, _mul(t, step))
             theta, phi = _spherical(q)
         return pts
 
@@ -427,35 +720,101 @@ def grow(surface, rules, seed, budget):
     curve_count = 0
     lane = 0
     taper = rules.girth_taper if rules.girth_taper > 0 else 1.0
+    reference = (max(2.0, rules.girth_reference) if rules.girth_reference > 0
+                 else max(2.0, rules.max_steps * 0.5))
+    twist_per_step = math.radians(rules.twist)
+    g_floor = rules.dive_girth_floor if rules.dive_girth_floor > 0 else 1.0
+    lg_lo = math.log(max(1e-6, max(0.01, rules.dive_stop)))
+
+    def try_dive(k, pts):
+        nonlocal dives_spent
+        if rules.dive_step <= 0 or not dive_owed[k] or dives_spent >= dive_quota:
+            return []
+        if rules.dive_descent > 0 and _len(pts[0][0]) - _len(pts[-1][0]) < rules.dive_descent:
+            return []
+        end = pts[-1][0]
+        tail = _sub(end, pts[-2][0])
+        if _dot(tail, tail) <= 1e-18:
+            return []
+        dive = append_dive(rules, end, _norm(tail), walk_step)
+        if dive:
+            dive_owed[k] = False
+            dives_spent += 1
+        return dive
+
+    def emit(pts, dive):
+        nonlocal curve_count
+        u = min(1.0, max(0.0, (len(pts) - 1) / reference))
+        girth = taper + (1.0 - taper) * u
+        n_surface = len(pts)
+        flat = [p[0] for p in pts] + list(dive)
+        lg_hi = math.log(max(1e-6, _len(pts[-1][0])))
+        dive_roll0 = 0.0
+        for i in range(len(flat) - 1):
+            a, b = flat[i], flat[i + 1]
+            delta = _sub(b, a)
+            ln = _len(delta)
+            if ln < 1e-7:
+                continue
+            fwd = _mul(delta, 1.0 / ln)
+            centre = _mul(_add(a, b), 0.5)
+            th, ph = _spherical(centre)
+            fr = build_frame(surface, th, ph)
+            cm = _len(centre)
+            is_dive = len(dive) > 0 and i >= n_surface - 1
+            g = girth
+            roll = i * twist_per_step
+            if is_dive:
+                tan_r = _dot(fwd, fr.dir)
+                dv = 1.0 - cm / max(1e-6, fr.radius)
+                off = 0.0
+                w = 1.0 if lg_hi <= lg_lo else min(1.0, max(0.0, (math.log(max(1e-6, cm)) - lg_lo) / (lg_hi - lg_lo)))
+                g = girth * (g_floor + (1.0 - g_floor) * w)
+                if i == n_surface - 1:
+                    up_ray = _sub(fr.dir, _mul(fwd, _dot(fr.dir, fwd)))
+                    up_surf = _sub(fr.normal, _mul(fwd, _dot(fr.normal, fwd)))
+                    if _dot(up_ray, up_ray) > 1e-10 and _dot(up_surf, up_surf) > 1e-10:
+                        up_ray, up_surf = _norm(up_ray), _norm(up_surf)
+                        dive_roll0 = math.atan2(_dot(_cross(up_ray, up_surf), fwd), _dot(up_ray, up_surf))
+                roll += dive_roll0
+            else:
+                tan_r, dv, off = 0.0, 0.0, cm - fr.radius
+            out.append(Prism(th, ph, off, dv,
+                             _dot(fwd, fr.e_theta), _dot(fwd, fr.e_phi), tan_r,
+                             ln * max(0.05, rules.length_factor),
+                             g, roll, curve_count, lane))
+
     while lane < lanes and len(out) < budget:
         progressed = False
         for k in range(len(seeds)):
             if len(out) >= budget:
                 break
+            if skeleton:
+                if lane >= 4:
+                    break
+                progressed = True
+                sad = sads[k]
+                ascend = (lane & 1) == 1
+                sign = 1.0 if lane < 2 else -1.0
+                field = ASCENT if ascend else DESCENT
+                fr = build_frame(surface, sad.theta, sad.phi)
+                e = sad.e_ridge if ascend else sad.e_valley
+                tan = _mul(_add(_mul(fr.e_theta, e[0]), _mul(fr.e_phi, e[1])), sign)
+                pts = trace(fr.position, tan, field, walk_step)
+                if len(pts) < max(2, rules.min_run):
+                    continue
+                if rules.min_persistence > 0 and abs(_len(pts[-1][0]) - _len(pts[0][0])) < rules.min_persistence:
+                    continue
+                curve_count += 1
+                emit(pts, try_dive(k, pts))
+                continue
             if lane_dead[k]:
                 continue
             progressed = True
-            pts = trace(lane_pos[k], lane_tan[k])
+            pts = trace(lane_pos[k], lane_tan[k], rules.field, walk_step)
             if len(pts) >= max(2, rules.min_run):
                 curve_count += 1
-                reference = max(2.0, rules.max_steps * 0.5)
-                u = min(1.0, max(0.0, (len(pts) - 1) / reference))
-                girth = taper + (1.0 - taper) * u
-                twist_per_step = math.radians(getattr(rules, "twist", 0.0))
-                for i in range(len(pts) - 1):
-                    a, b = pts[i][0], pts[i + 1][0]
-                    delta = _sub(b, a)
-                    ln = _len(delta)
-                    if ln < 1e-7:
-                        continue
-                    fwd = _mul(delta, 1.0 / ln)
-                    centre = _mul(_add(a, b), 0.5)
-                    th, ph = _spherical(centre)
-                    fr = build_frame(surface, th, ph)
-                    out.append(Prism(th, ph, _len(centre) - fr.radius,
-                                     _dot(fwd, fr.e_theta), _dot(fwd, fr.e_phi),
-                                     ln * max(0.05, rules.length_factor),
-                                     girth, i * twist_per_step, curve_count, lane))
+                emit(pts, try_dive(k, pts))
                 mid = len(pts) // 2
                 nxt = min(len(pts) - 1, mid + 1)
                 tv = _sub(pts[nxt][0], pts[mid][0])
@@ -474,7 +833,7 @@ def grow(surface, rules, seed, budget):
         lane += 1
         if not progressed:
             break
-    return out[:budget], curve_count
+    return out[:budget], curve_count, dives_spent
 
 
 def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=None):
@@ -562,6 +921,17 @@ VOLUME_GAIN = {
 # below - they are the prism, and the prism is what the elements redistribute. Everything
 # else is the curve family, which is authored, because "the four read as four plants" is
 # richness the law is deliberately silent about.
+# THE FALL's mechanism, shared by every curve family of every species (the expression axes
+# are per species: psi, the axis alignment, the swirl, the count). Docs/ECOSYSTEM.md §47.
+FALL_SHARED = {
+    "dive_step": 0.40,            # f: step as a fraction of the radius -> rho = sqrt(1 - 2f cos psi + f^2)
+    "dive_stop": 0.045,           # 3.4 world units at shell 75, against a ~1.2 u crystal half-extent
+    "dive_max_steps": 96,         # the descent needs ~45 steps under the stride ceiling
+    "dive_stride_ceiling": 2.0,   # the dive's step may not exceed 2x the walk step: measured, without
+                                  # it the prisms after the release are f*r long, 13x a surface prism
+    "dive_girth_floor": 0.70,
+}
+
 SPECIES = {
     "FractalFoliage": dict(
         prefab="MandelbulbFlora",
@@ -574,6 +944,14 @@ SPECIES = {
         neutral_cross=(0.0450, 0.0170),
         neutral_step=0.030,
         weight_spread=1.0,
+        # THE FALL (Docs/ECOSYSTEM.md §47): its dives corkscrew, doubling down on the helicoid.
+        extra={
+            "*": FALL_SHARED | {"dive_swirl": 8.0, "dive_axis_align": 1.0},
+            "Charge": {"dive_count": 8, "dive_angle": 52},
+            "Mass":   {"dive_count": 8, "dive_angle": 58},
+            "Space":  {"dive_count": 8, "dive_angle": 50},
+            "Time":   {"dive_count": 8, "dive_angle": 62},
+        },
         curves={
             #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
             "Charge": (0, 25, 0.90, 0.35, 0.040, 130, 60, 0.30, 0.3, 0.30, 70, 10, 30, 0.3, 2.0,  8, 0.45, 0.40, 0),
@@ -593,6 +971,14 @@ SPECIES = {
         # A tighter family spread than the foliage: this species' plants should read as
         # variations on one smooth form rather than as four different bulbs.
         weight_spread=0.55,
+        # THE FALL: planar log spirals, in this species' smooth-arc language.
+        extra={
+            "*": FALL_SHARED | {"dive_swirl": 0.0, "dive_axis_align": 1.0},
+            "Charge": {"dive_count": 8, "dive_angle": 56},
+            "Mass":   {"dive_count": 8, "dive_angle": 60},
+            "Space":  {"dive_count": 8, "dive_angle": 56},
+            "Time":   {"dive_count": 8, "dive_angle": 64},
+        },
         curves={
             # High momentum + a low field mix is what makes a curve CONTINUE; a long
             # min_run then discards everything that does not traverse the structure, so
@@ -612,6 +998,47 @@ SPECIES = {
         },
     ),
 }
+
+# ── THE WATERSHED — the discovery species (Docs/ECOSYSTEM.md §47) ──────────────────────────
+#
+# Every curve is a SEPARATRIX of the height field: it leaves a saddle along one of the
+# saddle's Hessian eigen-directions and runs uphill to a peak or downhill to a pit. The
+# plant is the surface's own Morse-Smale skeleton - a NET whose every face is a quadrilateral
+# by theorem - and its peaks and pits sit in latitude rings of exactly (order - 1), each ring
+# rotated half a lobe from the next: the fractal's exponent made countable. The valley arms
+# that descend far enough take the Fall to the heart.
+#
+# Under `skeleton_seeds` the curve row's field / swirl / mix / momentum / hop / seed columns
+# are UNREAD (asserted by the measure); what is authored per element is the WALK STEP (the
+# skeleton's cost is fixed by the surface: Time's 149 saddles need a coarser walk than Mass's
+# 32), the girth reference (a separatrix is short by construction, so MaxSteps/2 is a ceiling
+# nothing reaches) and the Fall's per-element count, angle and descent gate.
+SPECIES["Watershed"] = dict(
+    prefab="WatershedFlora",
+    display="Watershed Flora",
+    twist=0.0,
+    girth_taper=0.40,
+    neutral_cross=(0.0300, 0.0140),
+    neutral_step=0.045,
+    weight_spread=1.0,
+    extra={
+        "*": FALL_SHARED | {"skeleton_seeds": 1, "dive_swirl": 0.0, "dive_axis_align": 1.0},
+        "Charge": {"walk_step": 0.050, "girth_reference": 13, "dive_count": 14, "dive_angle": 56, "dive_descent": 0.18},
+        "Mass":   {"walk_step": 0.040, "girth_reference": 27, "dive_count": 12, "dive_angle": 60, "dive_descent": 0.10},
+        "Space":  {"walk_step": 0.050, "girth_reference": 22, "dive_count": 12, "dive_angle": 56, "dive_descent": 0.06},
+        "Time":   {"walk_step": 0.050, "girth_reference": 14, "dive_count": 16, "dive_angle": 62, "dive_descent": 0.30},
+    },
+    curves={
+        # Only steps/lanes/turn/radius/run/taper are read; field, swirl, mix, momentum, hop and
+        # seed columns are inert under skeleton_seeds and are authored 0/1 to say so.
+        #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
+        "Charge": (2,  0, 1.00, 0.00, 0.050, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
+        "Mass":   (2,  0, 1.00, 0.00, 0.040, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
+        "Space":  (2,  0, 1.00, 0.00, 0.050, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
+        "Time":   (2,  0, 1.00, 0.00, 0.050, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
+    },
+)
+VOLUME_GAIN["Watershed"] = {"Charge": 1.0, "Mass": 1.0, "Space": 1.0, "Time": 1.0}   # unfitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice
@@ -660,13 +1087,24 @@ def elemental_prism(species, element):
 
 def rules_for(element, species="FractalFoliage"):
     """The shipped rule for one (species, element) - the authored curve family with the
-    law's prism written over its step, length factor and twist."""
+    law's prism written over its step, length factor and twist, and the species' FALL and
+    SKELETON columns (authored by name in `SPECIES[...]["extra"]`) written over the fields
+    appended after the first release, which every curve row leaves at their default 0."""
     spec = SPECIES[species]
     values = list(spec["curves"][element])
-    _, _, step, length_factor = elemental_prism(species, element)
+    values += [0] * (len(Rules.FIELDS) - len(values))
     fields = Rules.FIELDS
+    extra = dict(spec.get("extra", {}).get("*", {}))
+    extra.update(spec.get("extra", {}).get(element, {}))
+    for k, v in extra.items():
+        values[fields.index(k)] = v
+    _, _, step, length_factor = elemental_prism(species, element)
     values[fields.index("step")] = step
-    values[fields.index("length_factor")] = length_factor
+    # A skeleton species walks at its OWN step (the surface fixes its cost) and the law's
+    # step is what a prism FILLS of it - so its LengthFactor is the ratio (Docs/ECOSYSTEM.md
+    # §47); every other species walks at the law's step and the factor is the dash alone.
+    walk = values[fields.index("walk_step")]
+    values[fields.index("length_factor")] = length_factor * (step / walk if walk > 0 else 1.0)
     values[fields.index("twist")] = spec["twist"]
     # The girth taper is the SPECIES' texture - how much finer a scrap run is than a
     # structural one - so it is uniform across the four. Left per element it multiplies the

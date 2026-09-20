@@ -200,7 +200,7 @@ def grow_element(element, budget=None, species="FractalFoliage"):
     degree, tables = M.load_tables()
     surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
     rules = M.rules_for(element, species)
-    raw, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
+    raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
     kept = M.claim_filter(raw, centres)[:budget]
     curves = len({p.curve for p in kept})

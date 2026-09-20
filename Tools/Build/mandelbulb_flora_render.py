@@ -104,10 +104,10 @@ def load(path):
     for line in open(path):
         t = line.split()
         if not t or t[0] != 'p': continue
-        length = float(t[6]); girth = float(t[7]); curve = int(t[8])
-        c = [float(t[10]), float(t[11]), float(t[12])]
-        fd = [float(t[13]), float(t[14]), float(t[15])]
-        ud = [float(t[16]), float(t[17]), float(t[18])]
+        length = float(t[8]); girth = float(t[9]); curve = int(t[11])
+        c = [float(t[13]), float(t[14]), float(t[15])]
+        fd = [float(t[16]), float(t[17]), float(t[18])]
+        ud = [float(t[19]), float(t[20]), float(t[21])]
         out.append((c, fd, ud, length, curve, girth))
     return out
 

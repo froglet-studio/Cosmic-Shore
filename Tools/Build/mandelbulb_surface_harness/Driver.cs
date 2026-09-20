@@ -25,6 +25,7 @@ static class Driver
             case "grow": return Grow(argv);
             case "shipped": return Shipped(argv);
             case "field": return Field(argv);
+            case "crit": return Crit(argv);
             case "selftest": return SelfTest();
             default: Console.Error.WriteLine("unknown command " + argv[0]); return 2;
         }
@@ -194,6 +195,20 @@ static class Driver
                     rules.LengthFactor = (float)D(t[17]);
                     rules.GirthTaper = t.Length > 18 ? (float)D(t[18]) : 1f;
                     rules.TwistDegreesPerStep = t.Length > 19 ? (float)D(t[19]) : 0f;
+                    rules.DiveCount = t.Length > 20 ? (int)D(t[20]) : 0;
+                    rules.DiveStepFraction = t.Length > 21 ? (float)D(t[21]) : 0f;
+                    rules.DiveAngleDegrees = t.Length > 22 ? (float)D(t[22]) : 0f;
+                    rules.DiveStopRadius = t.Length > 23 ? (float)D(t[23]) : 0f;
+                    rules.DiveMaxSteps = t.Length > 24 ? (int)D(t[24]) : 0;
+                    rules.DiveSwirlDegrees = t.Length > 25 ? (float)D(t[25]) : 0f;
+                    rules.DiveStrideCeiling = t.Length > 26 ? (float)D(t[26]) : 0f;
+                    rules.DiveGirthFloor = t.Length > 27 ? (float)D(t[27]) : 0f;
+                    rules.DiveAxisAlign = t.Length > 28 ? (float)D(t[28]) : 0f;
+                    rules.DiveDescent = t.Length > 29 ? (float)D(t[29]) : 0f;
+                    rules.SkeletonSeeds = t.Length > 30 ? (int)D(t[30]) : 0;
+                    rules.WalkStep = t.Length > 31 ? (float)D(t[31]) : 0f;
+                    rules.MinPersistence = t.Length > 32 ? (float)D(t[32]) : 0f;
+                    rules.GirthReference = t.Length > 33 ? (float)D(t[33]) : 0f;
                     break;
             }
         }
@@ -212,14 +227,14 @@ static class Driver
             Console.WriteLine(string.Join(" ", new[]
             {
                 "p",
-                F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.TanA), F(addr.TanB),
+                F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.Dive), F(addr.TanA), F(addr.TanB), F(addr.TanR),
                 F(addr.Length), F(addr.Girth), F(addr.Roll),
                 addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z)
             }));
             laid++;
         }
-        Console.WriteLine($"done {laid} {growth.CurvesTraced}");
+        Console.WriteLine($"done {laid} {growth.CurvesTraced} {growth.DivesSpent}");
         return 0;
     }
 
@@ -255,6 +270,20 @@ static class Driver
             LengthFactor = (float)D(a[24]),
             GirthTaper = (float)D(a[25]),
             TwistDegreesPerStep = a.Length > 26 ? (float)D(a[26]) : 0f,
+            DiveCount = a.Length > 27 ? (int)D(a[27]) : 0,
+            DiveStepFraction = a.Length > 28 ? (float)D(a[28]) : 0f,
+            DiveAngleDegrees = a.Length > 29 ? (float)D(a[29]) : 0f,
+            DiveStopRadius = a.Length > 30 ? (float)D(a[30]) : 0f,
+            DiveMaxSteps = a.Length > 31 ? (int)D(a[31]) : 0,
+            DiveSwirlDegrees = a.Length > 32 ? (float)D(a[32]) : 0f,
+            DiveStrideCeiling = a.Length > 33 ? (float)D(a[33]) : 0f,
+            DiveGirthFloor = a.Length > 34 ? (float)D(a[34]) : 0f,
+            DiveAxisAlign = a.Length > 35 ? (float)D(a[35]) : 0f,
+            DiveDescent = a.Length > 36 ? (float)D(a[36]) : 0f,
+            SkeletonSeeds = a.Length > 37 ? (int)D(a[37]) : 0,
+            WalkStep = a.Length > 38 ? (float)D(a[38]) : 0f,
+            MinPersistence = a.Length > 39 ? (float)D(a[39]) : 0f,
+            GirthReference = a.Length > 40 ? (float)D(a[40]) : 0f,
         };
 
         var basis = MandelbulbSurfaceTables.For(element);
@@ -272,14 +301,43 @@ static class Driver
             Console.WriteLine(string.Join(" ", new[]
             {
                 "p",
-                F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.TanA), F(addr.TanB),
+                F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.Dive), F(addr.TanA), F(addr.TanB), F(addr.TanR),
                 F(addr.Length), F(addr.Girth), F(addr.Roll),
                 addr.Curve.ToString(Inv), addr.Lane.ToString(Inv),
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z)
             }));
             laid++;
         }
-        Console.WriteLine($"done {laid} {growth.CurvesTraced}");
+        Console.WriteLine($"done {laid} {growth.CurvesTraced} {growth.DivesSpent}");
+        return 0;
+    }
+
+    // crit <element> <w0> <w1> <w2> <gridW>
+    // The surface's critical points as the SHIPPED detector finds them: `crit <kind> <theta>
+    // <phi> <radius> <sharpness> <ev.x> <ev.y> <er.x> <er.y>` in scan order, then `saddle <i>`
+    // rows giving the farthest-point ORDER as indices into that list.
+    static int Crit(string[] a)
+    {
+        var element = (CosmicShore.Data.Element)Enum.Parse(typeof(CosmicShore.Data.Element), a[1], true);
+        int gw = (int)D(a[5]), gh = gw / 2;
+        var basis = MandelbulbSurfaceTables.For(element);
+        var coeffs = MandelbulbSurface.Compose(basis, (float)D(a[2]), (float)D(a[3]), (float)D(a[4]));
+        var field = MandelbulbSurface.Reconstruct(MandelbulbSurfaceTables.Degree, coeffs, gw, gh);
+        var surface = new MandelbulbSurface.Surface(field, gw, gh);
+        var all = surface.CriticalPoints();
+        for (int i = 0; i < all.Count; i++)
+        {
+            var c = all[i];
+            Console.WriteLine(string.Join(" ", new[] { "crit", ((int)c.Kind).ToString(Inv), F(c.Theta), F(c.Phi),
+                F(c.Radius), F(c.Sharpness), F(c.ValleyX), F(c.ValleyY), F(c.RidgeX), F(c.RidgeY) }));
+        }
+        var order = surface.Saddles();
+        for (int i = 0; i < order.Count; i++)
+        {
+            int idx = -1;
+            for (int q = 0; q < all.Count; q++) if (ReferenceEquals(all[q], order[i])) { idx = q; break; }
+            Console.WriteLine($"saddle {idx.ToString(Inv)}");
+        }
         return 0;
     }
 
@@ -352,7 +410,7 @@ static class Driver
             float th = (float)(0.05 + rng.NextDouble() * (Math.PI - 0.1));
             float ph = (float)(rng.NextDouble() * 2 * Math.PI);
             float off = (float)(rng.NextDouble() - 0.5);
-            var addr = new MandelbulbSurface.PrismAddress(th, ph, off, 1f, 0f, 1f, 1f, 0f, 0, 0);
+            var addr = new MandelbulbSurface.PrismAddress(th, ph, off, 0f, 1f, 0f, 0f, 1f, 1f, 0f, 0, 0);
             MandelbulbSurface.Pose(surf, addr, ref fr, out var p, out var fwd, out var up);
             float r = surf.Sample(th, ph) + off;
             var want = new Vector3(

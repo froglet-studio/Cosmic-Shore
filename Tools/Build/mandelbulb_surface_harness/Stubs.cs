@@ -6,6 +6,20 @@ using System;
 
 namespace UnityEngine
 {
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public float magnitude => (float)Math.Sqrt(x * x + y * y);
+        public Vector2 normalized { get { float m = magnitude; return m > 0f ? new Vector2(x / m, y / m) : this; } }
+        public static Vector2 operator *(Vector2 a, float s) => new Vector2(a.x * s, a.y * s);
+        public static Vector2 operator *(float s, Vector2 a) => new Vector2(a.x * s, a.y * s);
+        public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
+        public static Vector2 operator -(Vector2 a, Vector2 b) => new Vector2(a.x - b.x, a.y - b.y);
+        public static Vector2 operator -(Vector2 a) => new Vector2(-a.x, -a.y);
+        public static float Dot(Vector2 a, Vector2 b) => a.x * b.x + a.y * b.y;
+    }
+
     public struct Vector3
     {
         public float x, y, z;
