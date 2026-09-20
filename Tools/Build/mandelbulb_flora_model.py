@@ -1312,82 +1312,36 @@ SPECIES["Apollonia"] = dict(
     concept="the Apollonian gasket: rings packed tangent to rings, crowning the bulb's own lobes",
     twist=0.0,
     girth_taper=1.0,              # off: the rho ladder IS the scale ladder
-    neutral_cross=(0.1120, 0.0210),
-    neutral_step=0.116,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / N
+    neutral_cross=(0.0340, 0.0150),
+    neutral_step=0.063,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / 50
     weight_spread=1.0,
     extra={
         "*": FALL_SHARED | {
             "dive_swirl": 0.0, "dive_axis_align": 1.0,
             "dive_descent": 0.0,        # structural: a closed ring starts and ends at one radius
-            "dive_stride_ceiling": 0.55,  # authored per element below: the dive's step against the
-                                          # ring chord it was released from. It is the FALL HOLE's
-                                          # one real lever (a refused dive prism leaves a gap of one
-                                          # dive step) and it is paid for in the LADDER, because a
-                                          # dive carries its ring's lane and a short dive prism
-                                          # drags that lane's MEDIAN length down.
-            "dive_girth_floor": 0.45,     # the Fall's bundle is the tightest packing in the plant,
-                                          # so this is the lever BOTH the core-armour gate and the
-                                          # worst-pair gate name: the converging dives are what the
-                                          # deepest interleaving is made of once the leaf is fat.
+            "dive_stride_ceiling": 1.0, # the largest ring's chord IS ~1 step (RingSamplesFor)
             "walk_step": 0.0,           # structural: the length factor is the dash alone
             "girth_reference": 1.0,
             "gasket_levels": 5, "disc_seeds": 13, "disc_pad": 0.60,
-            "ring_shrink": 0.84, "ring_girth_exponent": 0.30, "ring_girth_floor": 0.30,
+            "ring_shrink": 0.90, "ring_girth_exponent": 0.40, "ring_girth_floor": 0.55,
             "gasket_octave": 0.75,
         },
         # disc_min_radius is the per-element budget dial: what makes the FULL form fit.
-        # ring_flatten is the SCALLOP: 1 draws every ring at its mean radius, 0 lifts every
-        # sample onto R(theta, phi). It is a look dial AND a LENGTH dial - a lifted ring's
-        # chords are longer than a flat one's, which is what carries the small octaves over
-        # the legibility floor - and it costs ring integrity once the chord variance gets
-        # large enough for the claim to start refusing the long ones (measured: Time breaks
-        # 5 rings at 0, Charge none, because Charge's prisms are the dash's 0.45 of a chord).
-        # ring_shrink and the girth ladder are per element for one reason: the leaf the fleet
-        # law hands each element is a different WIDTH on the same tangent rings, and the width
-        # against the shrink gap between two tangent rings IS the worst-pair measurement.
-        #
-        # THE GIRTH EXPONENT IS THE ONLY DIAL THAT SURVIVES THE VOLUME FIT, because it is the
-        # only one that changes the SHAPE of the plant rather than its scale: every "make it
-        # thinner" move is answered by VOLUME_GAIN growing back to the law's ratio, and only a
-        # move that takes material from one octave and gives it to another survives that. N is
-        # derived from rho_ref - the LARGEST ring - and applied to every ring, so a ring 17x
-        # smaller gets the same samples and its chord shrinks 17x while its prism thins only
-        # (1/17)^exponent. That mismatch is what fills a small ring in until it reads as a disc
-        # and reports as an interleave, so the exponent is the small end's whole defence
-        # (Space 0.30 -> 0.45: s* 0.312 -> 0.376 with four legible octaves intact).
-        # The exponent pulls the LADDER the other way, and the two are in genuine tension: see
-        # Docs/ECOSYSTEM.md - Charge's ladder is the bound this species cannot currently reach.
-        #
-        # dive_girth_floor is authored DOWN per element from the shared 0.45 because the Fall's
-        # last prisms are the ones nearest the crystal, and the brief asks to SEE the crystal
-        # they reach for. It is free on three elements and pays on Mass (its one bad pair was
-        # the converging bundle: s* 0.391 -> 0.470). On CHARGE it inverts - the core-armour gate
-        # is a FRACTION of armoured pairs, so thinning the bundle shrinks the denominator faster
-        # than the numerator (0.30 -> 0.24 took 14.6% to 15.9% and broke the bound); Charge is
-        # therefore authored UP, to 0.36, which is what buys its 13.3% against the 15% bar.
-        "Charge": {"disc_min_radius": 0.038, "ring_flatten": 0.00, "dive_count": 13,
-                   "dive_angle": 56, "dive_stride_ceiling": 0.35, "dive_girth_floor": 0.36,
-                   "ring_shrink": 0.88, "ring_girth_exponent": 0.13, "ring_girth_floor": 0.20},
-        "Mass":   {"disc_min_radius": 0.044, "ring_flatten": 0.55, "dive_count": 5,
-                   "dive_angle": 60, "dive_stride_ceiling": 0.55, "dive_girth_floor": 0.20,
-                   "ring_girth_exponent": 0.35},
-        "Space":  {"disc_min_radius": 0.030, "ring_flatten": 0.45, "dive_count": 13,
-                   "dive_angle": 50, "dive_stride_ceiling": 0.35, "dive_girth_floor": 0.10,
-                   "ring_shrink": 0.74, "ring_girth_exponent": 0.45, "ring_girth_floor": 0.12},
-        "Time":   {"disc_min_radius": 0.042, "ring_flatten": 0.70, "dive_count": 7,
-                   "dive_angle": 52, "dive_stride_ceiling": 0.68, "dive_girth_floor": 0.15,
-                   "ring_girth_exponent": 0.35},
+        "Charge": {"disc_min_radius": 0.100, "ring_flatten": 0.55, "dive_count": 6, "dive_angle": 56},
+        "Mass":   {"disc_min_radius": 0.085, "ring_flatten": 0.55, "dive_count": 5, "dive_angle": 60},
+        "Space":  {"disc_min_radius": 0.038, "ring_flatten": 0.55, "dive_count": 8, "dive_angle": 56},
+        "Time":   {"disc_min_radius": 0.075, "ring_flatten": 0.70, "dive_count": 7, "dive_angle": 62},
     },
     curves={
         # Every walk column is inert under gasket_levels and authored 0 to say so.
         #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
-        "Charge": (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Mass":   (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Space":  (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Time":   (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Charge": (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Mass":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Space":  (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Time":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
     },
 )
-VOLUME_GAIN["Apollonia"] = {"Charge": 0.7144, "Mass": 0.9752, "Space": 1.3073, "Time": 1.0}   # fitted: --fit-volume
+VOLUME_GAIN["Apollonia"] = {"Charge": 1.0358, "Mass": 0.9953, "Space": 1.3029, "Time": 1.0}   # fitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice
