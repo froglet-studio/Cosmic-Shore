@@ -592,6 +592,78 @@ per-frame loop, uGUI, or a package — are separated only by a caller name, and 
 Profiler's Hierarchy view produces one. That is the next measurement, and it needs no
 development build.
 
+### 0.11.4 THE BOOT WORLD, MEASURED PROPERLY — ~90% of its draws are NOT prisms (2026-09-20)
+
+Menu_Main, **no stress cloud** (`prisms off`), `diag` at three ages. The measurement §0.9
+should have been built on.
+
+| | ents | mats | draws | ent/draw | SetPass | CPU busy | GPU | fps | GC/f | tris |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 min | 8,436 | 9 | 3,255 | 2.59 | 824 | 10.33 ms | 3.53 | 74.4 | 36.0 KB | 3.11 M |
+| 4 min | 31,422 | 10 | 9,509 | 3.30 | 1,157 | 20.27 ms | 5.50 | 40.1 | 61.3 KB | 7.42 M |
+| 8 min | 55,236 | 10 | 13,426 | 4.11 | 1,261 | 25.86 ms | 7.78 | 32.5 | 68.0 KB | 9.42 M |
+
+#### First, a prediction that was WRONG and is worth recording as such
+
+§0.11.1 argued 14,244 might be measurement error, and this document's author predicted B0
+would come back near 900 draws. **It did not.** §0.9's reading reproduces almost exactly
+with no stress cloud at all:
+
+| | §0.9 (with cloud) | B0 @ 4 min (no cloud) |
+|---|---:|---:|
+| entities | 33,114 | 31,422 |
+| draws | 14,244 | **13,951** (instantaneous sample in the same report) |
+| SetPass | 1,324 | 1,157 |
+| triangles | 7.21 M | 7.42 M |
+| CPU busy | 23.6 ms | 20.3 ms |
+
+The 14,244 → 9,509 gap is **instantaneous-vs-average**, not cloud-vs-no-cloud. The stress
+cloud was a red herring. §0.9's draw count stands.
+
+#### …and the target moved off prisms anyway
+
+Priced at the lab's OWN measured rate — 38.1 entities per draw at mats=9, with adversarial
+interleaving and net of the 7-draw floor (§0.11, §0.11.2):
+
+| | prisms | lab predicts | measured | **not prisms** |
+|---|---:|---:|---:|---:|
+| 1 min | 8,436 | 221 | 3,255 | **3,034 (93%)** |
+| 4 min | 31,422 | 825 | 9,509 | **8,684 (91%)** |
+| 8 min | 55,236 | 1,450 | 13,426 | **11,976 (89%)** |
+
+**SetPass is the proof, and it is not arguable.** The lab draws 18,252 prisms across 9
+materials in **7** SetPass calls; an empty scene costs **5**. The boot world costs **1,261**.
+*There is no arrangement of 10 prism materials that produces 1,261 shader state changes.*
+Something carrying ~1,250 distinct materials is drawing, and it is not on the instanced
+prism path.
+
+**Triangles agree independently.** 55,236 prism boxes ≈ 663 k triangles; the boot world
+renders **9.42 M**. **93% of the geometry is not prisms.**
+
+#### What this settles
+
+- **The instanced prism path is VINDICATED.** 55,236 prisms cost ~1,450 draws, exactly what
+  the lab predicts. §0.9's archetype re-key would move ~10% of the draw calls at best, for a
+  structural change on every shield transition. **Do not build it.**
+- **The lab is finished.** Every hypothesis it could express is dead (§0.11, §0.11.1) *and*
+  it was never modelling the population that matters.
+- **The Frame Debugger is now the critical measurement, and its QUESTION has changed** — not
+  "is the Editor's Scene view inflating this?" but **"what draws 12,000 calls and 1,261
+  SetPass that is not a prism?"** One capture names it.
+
+#### Two numbers nothing has touched
+
+**CPU is a large FIXED cost plus a per-entity cost 3–5× the lab's.** Marginal cost is
+0.433 µs/entity (1→4 min) and 0.235 µs/entity (4→8 min) against the lab's **0.081**, and
+**10.33 ms is already burnt at only 8,436 entities** — against the lab's 3.28 ms at 40,460.
+That fixed cost is the largest single quantity in this document and no work has been aimed
+at it.
+
+**The GC SPIKES are a different problem from the GC rate.** The averages grow 36 → 61 →
+68 KB/frame, but the 8-minute run contains one frame allocating **7,180 KB**, plus 445, 800,
+382 and 363 KB spikes — and they coincide with `maxFrameMs` of 108–128 ms. A multi-megabyte
+single-frame allocation is not a steady rate and will not be found by averaging.
+
 #### What to do instead of more lab
 
 1. ~~**`lab clear` → `diag empty 15`**~~ — **DONE, see §0.11.2.** Floor is 7 draws; the
