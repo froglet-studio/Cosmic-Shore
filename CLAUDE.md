@@ -745,6 +745,25 @@ elemental ability maps + level-5 upgrades, HUD rows/hints/gauges, petal bars, hu
 swaps, impact/skimmer containers. It loads the fleet-wide vessel contract, the audit tools, and
 the per-subsystem checklists so the requirements are not re-derived per vessel.
 
+**Use the `/refactor` skill for ANY refactor, cleanup, unification, vestige deletion, dead-code
+removal or type-honesty pass** — and before acting on any backlog row labelled *cleanup*,
+*hygiene* or *consistency*. Its premise is the one this project keeps paying to re-learn: **a
+refactor task arrives as a CLAIM, and the claim is a hypothesis written at the moment somebody
+stopped looking.** Measured instances, all from rows somebody had written down carefully: "six
+fields, behaviour-neutral" was ONE live field whose conversion would have silently switched off an
+ability (another system was WRITING it); "needs the editor" was wrong about which half was dangerous
+(the serialized DATA was); a documented shared-SO hazard was DEAD CODE with a live twin of the same
+method name on a different class; "five open design slots" was three; an audit's twelve
+disagreements were five. So the skill's first deliverable is a MEASUREMENT, not a plan — and it
+carries the rest of what that costs: the guid-ownership sweep (never `grep -rl | head -1`), the rule
+that **incompleteness is a REPORT and inconsistency is a FIX** and the two must never be conflated,
+the three-way grading of every "behaviour-neutral" claim (provably no-op / no-op at the authored
+numbers / a real change that gets flagged for playtest rather than buried in a cleanup), the
+salvage-before-delete gate that makes a vestige a PROPOSAL rather than a deletion, and how to prove
+a change without a compiler (the five standing gates, a Roslyn parse and what it does NOT prove, the
+enumerated-consumer grep that is the real proof for a type swap, and a verification matrix in which
+no row may say "compiles").
+
 ### Team Domains
 
 Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`. **Blue is the "no team / not yet picked / neutral entity" sentinel** and is never present in `GameDataSO.ActiveDomains` (the playable set is `{Jade, Ruby, Gold}`, indices 0..2). Code that previously used `Domains.None` or `Domains.Unassigned` (both removed) now uses `Domains.Blue` for the same "no specific team" semantic — neutral mines, uncommitted crystals, the wildcard "any team" density-grid bucket, and players who haven't yet picked a domain.
