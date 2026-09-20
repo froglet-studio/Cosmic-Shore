@@ -163,15 +163,23 @@ EXCLUDE = set()
 # of an authored plant - the cell's whole environment IS the colony - so this file's rule
 # (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
 # them back to the Blob caps.
+#
+# The two entries match DIFFERENTLY, and the difference is the point.  "Lattice " names a
+# CELL, and a cell's configs all start with its name, so a prefix is exact.  "Borromean"
+# names a SPECIES, and a species' per-cell configs are named for the CELL first ("Rampage
+# Borromean Flora Mass Config Data") - so a prefix rule would silently hand every adopting
+# cell's copy back to this script, whose model (cap = old_single_plant_budget / patch) has
+# no input to work from on a species whose budget is a MEASURED TABLE per element.  A
+# species owned by its own generator is owned by it WHEREVER the config lives.
 OWNED_ELSEWHERE = {
-    "Lattice ": "Tools/Build/author_lattice_cell.py",
-    "Borromean ": "Tools/Build/author_borromean_flora_assets.py",
+    "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
+    "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
 }
 
 
 def owner_of(name):
-    for prefix, script in OWNED_ELSEWHERE.items():
-        if name.startswith(prefix):
+    for token, (kind, script) in OWNED_ELSEWHERE.items():
+        if name.startswith(token) if kind == "prefix" else (token in name):
             return script
     return None
 

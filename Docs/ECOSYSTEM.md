@@ -8568,15 +8568,30 @@ case for touching that tool at all. SPACE's heart moved 2.661 → **3.379** when
 doubled its membrane, which is the heart law working exactly as written: the plant really
 is twice as big, and `K · d^0.5` pays it √2 of a heart for it.
 
-### 48.7 Deployment, stated plainly because the claim rots
+### 48.7 Deployment
 
-As of this commit the species is in **no `SpawnProfileSO`**, and is reachable through the
-freestyle **Lifeform Matrix** toy. That is the worm colony's precedent (§23) — an opt-in
-species — and it is deliberate: adopting it into a cell means re-deriving that cell's volume
-ladder against a ~110-unit plant of 180–360 prisms and 804–7,650 volume DEPENDING ON ITS
-ELEMENT (§48.6), which is a tuning pass this branch has not done. **Re-prove the claim by grepping the four config GUIDs across `_SO_Assets`
-before inheriting it** (§ the ecology skill's "an 'it is wired nowhere' claim is true only on
-the date it was written").
+As of this commit the species grows in **Rampage** (all four intensities, as mass to
+destroy), **Wrecking Ball** (all four) and **Wildlife Blitz cells 1 and 2** — ten spawn
+profiles — as well as being reachable through the freestyle **Lifeform Matrix** toy. §48.12
+is the adoption pass and carries the numbers. **Re-prove the claim by grepping the config
+GUIDs across `_SO_Assets` before inheriting it** (§ the ecology skill's "an 'it is wired
+nowhere' claim is true only on the date it was written") — this paragraph has already been
+wrong once, which is why it is a section of its own.
+
+**A CELL ADOPTS IT AS FOUR CONFIGS, ONE PER ELEMENT, never as one rolled config.** That is
+forced rather than tidy: a `FloraConfigurationSO` carries ONE `Variant` block, and the four
+elements differ in their prism BUDGET (180–360), their plate and their HEART (2.051–3.379),
+so a rolled config would have to author one heart size for four plants whose spans run 108
+to 222 — and `author_lifeform_heart_sizes.py` would then be sizing an average rather than a
+lifeform. It also means every adopting cell's SpawnProfile gains four entries, not one.
+
+**Every Borromean config, in every cell, is owned by
+`Tools/Build/author_borromean_flora_assets.py`.** `author_flora_populations.py`'s model is
+`cap = old_single_plant_budget / patch`, which has no input to work from on a species whose
+budget is a measured table, so it hands the whole family off — and its match for this family
+had to become a SUBSTRING rather than a prefix, because a per-cell config is named for the
+CELL first (`Rampage Borromean Flora Mass Config Data`). *A prefix rule for a species-owned
+family is correct only while every config of that species is named for the species alone.*
 
 ### 48.8 Four traps this cost, each of which generalises
 
@@ -8881,3 +8896,79 @@ similarity, so it still clears, is still symmetric and still spends no extra vol
 thing it loses is the reach, which is the whole element).
 
 **Open:** still nothing has been run in the Unity editor.
+
+### 48.12 The fifth pass: the species is adopted into four cells
+
+*"They are awesome flora. Use them everywhere we have cacti flora and more: in Rampage as
+mass to destroy. Put them in places where they fit."* Every cell that grows cacti except
+Tollway now grows Borromean too.
+
+| cell | profiles | seed / cap per element | band | seeded | at cap |
+|---|---|---|---|---|---|
+| **Rampage** | 4 | 2 / 3 | 0.25–0.85 | 8 plants, 2,088 prisms, 44,892 vol | 12 plants, 3,132 prisms |
+| **Wrecking Ball** | 4 | Rampage's, forked | its 720u court's 0.28–0.92 | as Rampage × `FloraScale` | ditto |
+| **Wildlife Blitz 1, 2** | 1 each | 1 / 2 | 0.25–0.85 | 4 plants, 1,044 prisms, 22,445 vol | 8 plants, 2,088 prisms |
+
+**RAMPAGE'S LADDER MOVED, AND THE ANSWER WAS TO RE-ANCHOR RATHER THAN TO LET THE GATES
+FLOAT.** `rampage_intensity.py` pins `REFERENCE_FOREST_VOLUME` precisely so that a forest
+retune *"shows up as a self-test failure asking for a re-author, instead of silently sliding
+all four ladders to follow the forest and calling that unchanged"* — and adopting this
+species is exactly that case. The forest goes **396,178 → 441,070** (+11%) and 9,830 →
+**11,918** prisms at intensity 4. The authored volume pair is a number a human reached by
+PLAYING the arena, so it stays where it is (`FrenzyEnterVolume 1,630,000`) and the MARGIN
+absorbs the new mass: Frenzy **4.11× → 3.70×** the mature forest, Restless 28.5% → 25.6%.
+Frenzy arriving relatively sooner is the direction that needs watching; 3.70× is still far
+enough that flora alone never freezes planting, which is the property the self-test actually
+asserts. The COUNT half is DERIVED and legitimately moves with the forest (`FrenzyEnter`
+10,000 → 12,250). *The two halves are pinned in the same dict and they are not the same kind
+of number — only one of them is a play-test result.*
+
+**A SPECIES IS EXEMPT FROM `FloraPrismScale` IF ITS LEAF IS A MEASURED TABLE, AND THE
+EXPONENT IS 0.** Rampage's ladder scales its prisms 1.60× / 1.40× / 1.20× / 1.00× and the
+per-family exponent decides what that does to the volume (`BranchingFlora` s³,
+`PhyllotacticFlora` s²). Borromean reports `PrismSizeFixedByGrowthRule`, so
+`Flora.ApplyCellPrismScale` returns early and the scale reaches it **not at all** — a new
+`TABLE_FIXED = 0` family constant, which is a statement about the CODE rather than a
+rounding. This cell's prism axis now moves five of its six species and leaves the sixth
+alone; the three lattice families would be the same.
+
+**ONE ROW FOR FOUR CONFIGS NEEDED AN ASSERT, AND THE ASSERT CAUGHT IT.** The species gets a
+single `SPECIES` row whose `plants` and `cap` are the four configs' numbers SUMMED — and
+round-half-up does not commute with a sum: at `FloraPopulationScale 3.67`, two seeds across
+four configs is **28** plants and eight seeds once is **29**. `forest()` and `flora_cap()`
+now scale **per config** (`MULTI_CONFIG`), and `assert_species_aggregation` proves the row
+divides evenly at every intensity. *A row that prices a forest the game does not grow is
+worse than no row* — and the cap side is the worse half of the two, because the cap IS the
+always-on crystal collider line.
+
+**Collider budget, the gate rather than the paragraph.** Rampage intensity 1: prisms
+49,150 → **59,590** against Atlantis' 69,000, crystals 440 → **500** against the Lattice
+cell's 1,080. Both asserted by `assert_collider_budget()`. Wrecking Ball's ladder is
+Rampage's scaled, and its two ratio constants are now **IMPORTED** from `rampage_intensity`
+rather than retyped — they were literals (`396_178` and the four gates) and went stale the
+moment Rampage grew, which is `regatta_balance.py`'s *"a constant copied out of an asset is
+true only on the day it is copied"* with the asset replaced by another tool's answer.
+
+**Wrecking Ball takes the four the same way it takes the other five: by FORKING Rampage's
+configs** and re-mapping their planting band into its 720u court. Authoring a second set
+there would have given that cell two owners for one forest — the `/ecology` skill's "two
+fitters must not own one asset", met from the deployment side.
+
+**Two cells that grow cacti are deliberately NOT adopting it, and both reasons are worth
+keeping.** **TOLLWAY** grows cacti, but its flora are its *scoring sockets*: it authors ONE
+anchor species per growth FAMILY, one per intensity, as the mode's intensity ladder (§42,
+`TOLLWAY.md`). Borromean is a genuinely new family and would be a natural fifth — which is
+the point: swapping one of four rungs is a mode-design decision, not an adoption.
+**HESPERIDES** sows typed planting SITES (`FloraSiteKind`: bed, climb, basket, water, ledge)
+and every species in it is authored to a site kind; a compact membrane is none of them.
+
+**Stated plainly as costs.** Wildlife Blitz cells 1 and 2 author **no `PhaseThresholds`**,
+so they inherit the platform's `count × 16` derivation — which understates a forest whose
+prisms run 4.47 to 72.87 volume. That is pre-existing (their cacti are already 75 per leaf)
+and is not made worse in kind by this adoption, but it is now understated by four more
+configs. And the element spread means an adopting cell grows four VERY different plants: at
+cap, Rampage's twelve Borromean plants are three Charge lattices of 804 volume and three
+Mass bricks of 15,739.
+
+**Open:** nothing has been run in the Unity editor, and Rampage's ladder is still the
+`OPEN — RE-MEASURE IN-EDITOR` it was before.

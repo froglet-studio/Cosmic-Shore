@@ -23,17 +23,22 @@ GUIDs are `md5("cosmicshore/borromean/<stable name>")`, so a re-run is idempoten
 `--check` compares CONTENT rather than identity.  Every one is asserted to be owned by
 exactly one `.meta` repo-wide before anything is written.
 
-POPULATIONS ARE AUTHORED HERE, not by `author_flora_populations.py`.  That script authors
-the species a SpawnProfile references, and this one is in none (see below) - so it lists
-this family under `OWNED_ELSEWHERE` and prints the handoff, rather than skipping it
-silently.
+POPULATIONS ARE AUTHORED HERE, not by `author_flora_populations.py` - EVERYWHERE, including
+in the cells that adopt the species.  That script's model is `cap = old_single_plant_budget
+/ patch`, which has no input to work from on a species whose budget is a MEASURED TABLE per
+element, so it lists this family under `OWNED_ELSEWHERE` and prints the handoff.  Note its
+match for this family is a SUBSTRING and not a prefix: a per-cell config is named for the
+CELL first ("Rampage Borromean Flora Mass Config Data"), and a prefix rule would have
+handed every adopting cell's copy silently back to it.
 
-DEPLOYMENT, stated plainly because the claim rots: as of this commit the species is in NO
-`SpawnProfileSO`, and is reachable through the freestyle Lifeform Matrix toy.  That is the
-worm colony's precedent - an opt-in species - and it is deliberate: adopting it into a cell
-means re-deriving that cell's volume ladder against a ~110-unit plant of 180 to 360 prisms
-DEPENDING ON ITS ELEMENT, which is a tuning pass this branch has not done.  Re-prove the claim by grepping these configs' GUIDs
-across `_SO_Assets` before inheriting it.
+DEPLOYMENT, stated plainly because the claim rots: as of this commit the species grows in
+RAMPAGE (as mass to destroy), WRECKING BALL and WILDLIFE BLITZ cells 1 and 2, as well as
+being reachable through the freestyle Lifeform Matrix toy.  `DEPLOYMENTS` below is this
+tool's half of that; the other half is each cell's own generator, which owns the
+`SupportedFloras` list and the volume ladder the adoption moves.  WRECKING BALL is
+deliberately NOT in `DEPLOYMENTS` - it FORKS Rampage's configs, so it has one owner for its
+forest.  Re-prove the claim by grepping these configs' GUIDs across `_SO_Assets` before
+inheriting it.
 """
 import hashlib, os, re, sys, argparse
 
@@ -69,6 +74,34 @@ CAP          = 8      # MaxLivePopulation - a CRYSTAL count: 8 always-on heart c
 QUOTA_FRAC   = 0.35   # GrowthPerOffspring = budget x this (the non-lattice rule)
 COOLDOWN     = 5
 MATURITY     = 0.5
+
+# ---- DEPLOYMENT: the cells that grow this species, and what each of them asks for -----
+#
+# A cell adopts the species as FOUR configs, one per element, never as one rolled config.
+# That is not a preference: a rolled config carries ONE `Variant` block, and the four
+# elements differ in their prism BUDGET (180..360), their plate and their HEART
+# (2.051..3.379) - so a rolled config would have to author one heart size for four plants
+# whose spans run 108 to 222, and `author_lifeform_heart_sizes.py` would then be sizing an
+# average rather than a lifeform.  Four configs cost four assets and say the truth.
+#
+# What a CELL authors, and all it authors, is HOW MANY and WHERE: the seed floor and the
+# live cap (per element), and the planting band.  Everything else - the budget, the plate,
+# the quota, the spread - is the species' and comes out of the measurement.
+#
+# `cap` is a CRYSTAL count: one always-on heart collider per live plant, culled by no phase
+# (Docs/ECOSYSTEM.md 32.7), and it is multiplied by that cell's `FloraPopulationScale`.  It
+# is THE dial if an adopting cell reads busy.
+#
+#   folder                                    prefix                seed cap  band
+DEPLOYMENTS = [
+    ('_SO_Assets/Cell Configs/Rampage Cell',      'Rampage',          2,  3, (0.25, 0.85)),
+    # WRECKING BALL is deliberately absent: its generator FORKS Rampage's species configs
+    # and re-maps their planting bands into its 720u court (author_wrecking_ball_assets.py
+    # step 4), so authoring a second set here would give that cell two owners for one
+    # forest. It takes the Borromean four the same way it takes the other five.
+    ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 1', 'Wildlife Cell 1', 1, 2, (0.25, 0.85)),
+    ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 2', 'Wildlife Cell 2', 1, 2, (0.25, 0.85)),
+]
 
 
 def guid(name):
@@ -229,7 +262,8 @@ def existing_heart_scale(path):
     return m.group(1) if m else '0'
 
 
-def build_config(tbl, element, value, prefab_guid, heart='0'):
+def build_config(tbl, element, value, prefab_guid, heart='0',
+                 name=None, seed=SEED_FLOOR, cap=CAP, band=None):
     # THE ELEMENT IS THE PLATE.  A lifeform is its species and its element and nothing
     # else (Docs/ECOSYSTEM.md 40), so every element states its own leaf here - Time the
     # measured optimum, Mass more volume, Space more aspect, Charge fitted to its own
@@ -239,6 +273,7 @@ def build_config(tbl, element, value, prefab_guid, heart='0'):
     # more aspect, Charge fitted to its own shielded octahedra on the coarsest of the four.
     # Every number here comes out of that element's own table; none is retyped.
     el = tbl['elements'][element]
+    name = name or f'Borromean Flora {element}'
     leaf, budget = el['leaf'], el['sites']
     quota = max(1, int(budget * QUOTA_FRAC + 0.5))
     # A plant is PlantRadius across, so an offspring belongs clear of its parent.
@@ -257,15 +292,15 @@ def build_config(tbl, element, value, prefab_guid, heart='0'):
         '  m_Enabled: 1\n'
         '  m_EditorHideFlags: 0\n'
         f'  m_Script: {{fileID: 11500000, guid: {FLORA_CONFIG_SCRIPT_GUID}, type: 3}}\n'
-        f'  m_Name: Borromean Flora {element}\n'
+        f'  m_Name: {name}\n'
         '  m_EditorClassIdentifier:\n'
         f'  FloraPrefab: {{fileID: {FLORA_COMPONENT_FILEID}, guid: {prefab_guid}, type: 3}}\n'
         '  SpawnProbability: 1\n'
-        f'  InitialSpawnCount: {SEED_FLOOR}\n'
+        f'  InitialSpawnCount: {seed}\n'
         '  OverrideDefaultPlantPeriod: 0\n'
         '  NewPlantPeriod: 9999999\n'
-        f'  PopulationSize: {POPULATION}\n'
-        f'  MaxLivePopulation: {CAP}\n'
+        f'  PopulationSize: {seed}\n'
+        f'  MaxLivePopulation: {cap}\n'
         f'  GrowthPerOffspring: {quota}\n'
         '  OffspringPerBirth: 1\n'
         f'  ReproductionCooldownSeconds: {COOLDOWN}\n'
@@ -287,7 +322,16 @@ def build_config(tbl, element, value, prefab_guid, heart='0'):
         '    MaturationSeconds: -1\n'
         '    MaxSpawnsPerFrame: -1\n'
         '    PlantRadiusCellFraction: -1\n'
-        '    PlantRadiusCellFractionMin: -1\n')
+        '    PlantRadiusCellFractionMin: -1\n'
+        # The planting band is a property of the CELL, so it goes in the cell-level
+        # override pair rather than in Variant - the mechanism FloraConfigurationSO
+        # documents as "applied AFTER the rolled variant, so it wins over both the palette
+        # sibling and the prefab", and the one every other per-cell config in the project
+        # uses. Omitted entirely where there is no cell: an absent key keeps the field
+        # initializer's -1 sentinel, which is how the four species-level configs say
+        # "wherever this cell plants things".
+        + (f'  PlantRadiusCellFractionMaxOverride: {band[1]}\n'
+           f'  PlantRadiusCellFractionMinOverride: {band[0]}\n' if band else ''))
 
 
 def serialized_fields(cs_path):
@@ -352,7 +396,25 @@ def plan():
     files[MATRIX] = register_in_matrix(prefab_guid, cfg_guids)
     gs = dict(flora=flora_guid, table=table_guid, prefab=prefab_guid)
     gs.update({f'config:{n}': g for (n, _), g in zip(ELEMENTS, cfg_guids)})
-    return tbl, files, gs
+
+    # THE CELLS THAT GROW IT.  Four configs per cell, one per element - see DEPLOYMENTS for
+    # why never one rolled config.  They are authored HERE and not by
+    # `author_flora_populations.py` for the same reason the species-level four are: this
+    # species' prism budget is a MEASURED TABLE per element, and that script's model
+    # (cap = old_single_plant_budget / patch) has no input to work from.
+    deploy = {}
+    for folder, prefix, seed, cap, band in DEPLOYMENTS:
+        for name, value in ELEMENTS:
+            asset = f'{prefix} Borromean Flora {name} Config Data'
+            path = A(folder, asset + '.asset')
+            g = guid(asset + '.asset')
+            files[path] = build_config(tbl, name, value, prefab_guid,
+                                       existing_heart_scale(path), name=asset,
+                                       seed=seed, cap=cap, band=band)
+            files[path + '.meta'] = asset_meta(g)
+            gs[f'config:{asset}'] = g
+            deploy[(prefix, name)] = g
+    return tbl, files, gs, deploy
 
 
 def check_guid_uniqueness(guids, files):
@@ -381,7 +443,7 @@ def main():
     ap.add_argument('--write', action='store_true')
     a = ap.parse_args()
 
-    tbl, files, guids = plan()
+    tbl, files, guids, deploy = plan()
     print(f'BorromeanFlora: one tessellation per ELEMENT, orbits of {tbl["orbit"]}, '
           f'largest table {tbl["max_sites"]} sites')
     for e in ('Time', 'Mass', 'Space', 'Charge'):
@@ -398,6 +460,19 @@ def main():
           f'({CAP*4} heart colliders across the four), quota '
           + ' / '.join(f'{e} {max(1,int(tbl["elements"][e]["sites"]*QUOTA_FRAC+0.5))}'
                        for e in ('Time', 'Mass', 'Space', 'Charge')))
+    sites = sum(tbl['elements'][e]['sites'] for e, _ in ELEMENTS)
+    vol = sum(tbl['elements'][e]['sites'] * tbl['elements'][e]['leaf'][0]
+              * tbl['elements'][e]['leaf'][1] * tbl['elements'][e]['leaf'][2]
+              for e, _ in ELEMENTS)
+    print('  DEPLOYED IN (four configs per cell, one per element - seeded / capped per element):')
+    for folder, prefix, seed, cap, band in DEPLOYMENTS:
+        print(f'    {prefix:<16} seed {seed}/el = {4*seed:2d} plants  cap {cap}/el = '
+              f'{4*cap:2d} heart colliders  band {band[0]:.2f}..{band[1]:.2f}  '
+              f'seeded {seed*sites:5,d} prisms / {seed*vol:9,.0f} volume, '
+              f'at cap {cap*sites:5,d} / {cap*vol:9,.0f}')
+    print(f'    (per FOUR-element set: {sites:,} prisms and {vol:,.0f} volume - and the four '
+          f'differ {max(tbl["elements"][e]["sites"]*tbl["elements"][e]["leaf"][0]*tbl["elements"][e]["leaf"][1]*tbl["elements"][e]["leaf"][2] for e,_ in ELEMENTS) / min(tbl["elements"][e]["sites"]*tbl["elements"][e]["leaf"][0]*tbl["elements"][e]["leaf"][1]*tbl["elements"][e]["leaf"][2] for e,_ in ELEMENTS):.1f}x,')
+    print('     so a cell that seeds all four is growing four VERY different plants)')
 
     dup = check_guid_uniqueness(guids, files)
     if dup:

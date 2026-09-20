@@ -649,9 +649,34 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
   was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
   on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`
-  skill**. **In NO SpawnProfile** — reachable through the freestyle Lifeform
-  Matrix toy, the worm colony's precedent, because adopting it into a cell means re-deriving that
-  cell's volume ladder. Two traps worth more than the species: **a `ROOT` one `dirname` too
+  skill**. **It grows in RAMPAGE (all four intensities, as mass to destroy), WRECKING BALL (all
+  four) and WILDLIFE BLITZ cells 1 and 2** — every cacti cell but Tollway — plus the freestyle
+  Lifeform Matrix toy. **A cell adopts it as FOUR configs, one per element, never as one rolled
+  config**: a `FloraConfigurationSO` carries ONE `Variant` block, and the four differ in budget
+  (180–360), plate and HEART (2.051–3.379), so a rolled config would author one heart size for
+  four plants whose spans run 108 to 222 and `author_lifeform_heart_sizes.py` would be sizing an
+  average rather than a lifeform. Adopting it moved Rampage's forest 396,178 → **441,070** and its
+  intensity-4 prisms 9,830 → **11,918**, and the answer was to **RE-ANCHOR rather than let the
+  gates float**: the authored volume pair is a play-test result, so it holds and the MARGIN
+  absorbs the mass (Frenzy 4.11× → **3.70×** the mature forest); the COUNT half is derived and
+  legitimately moves (10,000 → 12,250). Three things generalise. **A species whose leaf is a
+  MEASURED TABLE is exempt from `FloraPrismScale` and its volume exponent is 0** — a statement
+  about the code (`PrismSizeFixedByGrowthRule` → `Flora.ApplyCellPrismScale` returns early), not a
+  rounding, so Rampage's prism axis now moves five of its six species and leaves the sixth alone.
+  **ONE model row for FOUR configs needs an assert**, because round-half-up does not commute with
+  a sum: at `FloraPopulationScale 3.67`, two seeds across four configs is 28 plants and eight
+  seeds once is 29 — `forest()` scales per config and `assert_species_aggregation` proves the row
+  divides evenly, since *a row that prices a forest the game does not grow is worse than no row*.
+  And **a prefix rule for a species-owned family is correct only while every config of that
+  species is named for the species alone** — `author_flora_populations.py` matched `"Borromean "`
+  as a prefix, and a per-cell config is named for the CELL first (`Rampage Borromean Flora Mass
+  Config Data`), so the rule became a SUBSTRING or every adopting cell's copy would have been
+  handed silently back to a model that has no input to work from on a measured table. Collider
+  budget: Rampage intensity 1 goes 49,150 → **59,590** prisms (Atlantis 69,000) and 440 → **500**
+  crystals (the Lattice cell's 1,080), both asserted. Tollway is deliberately excluded — its flora
+  are its SCORING SOCKETS, one anchor species per growth FAMILY per intensity, so adding a genuine
+  fifth family there is a mode-design decision rather than an adoption; Hesperides too, because it
+  sows typed planting SITES and a compact membrane is none of them. Two traps worth more than the species: **a `ROOT` one `dirname` too
   shallow wrote the whole asset tree into `Tools/Assets/` and the verifier, sharing the bug, read
   it back and passed** — *consistent wrongness reads exactly like correctness*, so the definition
   now carries an `assert` that `Assets/` is under it; and **a Jacobi sweep on a cotangent system
