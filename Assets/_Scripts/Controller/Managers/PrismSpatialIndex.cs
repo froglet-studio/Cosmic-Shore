@@ -2509,17 +2509,26 @@ namespace CosmicShore.Gameplay
             // Same team (and not affectSelf) or non-destructive: shield the prism
             if ((prismDomain == expDomain && !affectSelf) || !destructive)
             {
-                // The blast is ACCEPTED, not ignored: the prism armours up instead of the
-                // explosion visibly passing through it. The blow's magnitude (Speed x
-                // Inertia - no vector built, no root taken) and its ceiling ride along so
-                // the timed pop sheds at half of it (PrismStateManager.
-                // ExecuteTimerDeactivation). Mirrors ExecuteCommonPrismCommands.
-                float impactSpeed = impulse.Speed * impulse.Inertia;
+                // The blast is ACCEPTED, not ignored - and since 2026-09 what says so is LIT:
+                // the impactor publishes its swept volume once per frame
+                // (ExplosionImpactor.PublishLit) and every prism inside it is drawn lit in the
+                // blast's domain colour, replacing the 2-second shield this used to put on each
+                // prism individually. That shield was a stand-in for a VISUAL and quietly carried
+                // three gameplay side effects with it - see ExplosionImpactor.SparesWhatItTouches
+                // and Docs/LIT.md. Mirrors ExecuteCommonPrismCommands, as this branch must.
+                //
+                // An AUTHORED shield still lands. `shielding` is a real ability (the Sparrow's
+                // CHARGE-5 "Shielded Prisms"), it is PERMANENT rather than timed, and it is a
+                // gameplay grant rather than a stand-in - so it keeps its registry sync too,
+                // which is now INSIDE the branch: writing it unconditionally would have told the
+                // index every spared prism was shielded when none of them are any more, which is
+                // the food-web blackout the swap exists to remove.
                 if (shielding && prismDomain == expDomain)
-                    prism.ActivateShieldFromImpact(impactSpeed, impulse.DebrisSpeedLimit);
-                else
-                    prism.ActivateShield(2f, impactSpeed, impulse.DebrisSpeedLimit);
-                UpdateShieldState(idx, true, false);
+                {
+                    prism.ActivateShieldFromImpact(impulse.Speed * impulse.Inertia,
+                                                   impulse.DebrisSpeedLimit);
+                    UpdateShieldState(idx, true, false);
+                }
                 return true;
             }
 
