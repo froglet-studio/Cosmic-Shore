@@ -1,23 +1,27 @@
 {
-  "count": 4502,
-  "farthest": 1152.7587963716492,
+  "clipping_pairs": 0,
+  "count": 4259,
+  "farthest": 1073.6965759662799,
   "kinds": {
-    "Plain": 4427,
-    "SuperShielded": 75
+    "Plain": 4190,
+    "SuperShielded": 69
   },
-  "max_axis": 72.23411560058594,
-  "min_axis": 1.5645116567611694,
-  "nearest": 409.83249653873753,
+  "max_axis": 25.075027465820312,
+  "min_axis": 1.6429870128631592,
+  "narrowphase_tests": 3987,
+  "nearest": 427.84557133375944,
   "per_domain": {
-    "Blue": 463696.9852388242,
-    "Gold": 756403.5123633919,
-    "Jade": 2923476.967753314,
-    "Ruby": 56481.12875579499
+    "Blue": 196690.3042752296,
+    "Gold": 392349.87375927035,
+    "Jade": 1554114.5233380254,
+    "Ruby": 34343.876554039874
   },
   "sources": {
-    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGarland.cs": "df7e89c35ec133406db26af0787c42e09cb559331c70a9caede75e12c74b62b0",
-    "Tools/Build/garland_harness/Program.cs": "c7f5b5921fd8a743c73b980289c3b9a08d95dafe45428594272615d8674d1402",
-    "Tools/Build/garland_harness/UnityShim.cs": "50b703ce8170b35cbdac51a77f04bb788f6129ce28ba387d2834f711f5f5f03a"
+    "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableGarland.cs": "9393f076a353b849f397382c882aefac8b1f1d2850969c246be09f0f0b8a1d7c",
+    "Tools/Build/garland_harness/Program.cs": "555d35699534cd5be7a4aa0e21ac903a30246e2125e98509032e054fce43a972",
+    "Tools/Build/garland_harness/UnityShim.cs": "adda01a1b8c797d126ed4d263279d43437885a42457b8ba501b65629294d3831"
   },
-  "volume": 4200058.594111335
+  "tightest_clearance": 0.43410539113779717,
+  "volume": 2177498.5779265673,
+  "worst_penetration": 0
 }

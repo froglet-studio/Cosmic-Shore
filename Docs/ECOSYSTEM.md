@@ -8430,16 +8430,18 @@ distance a nominal 2.5-unit prism is a pixel: the seven read as haze around a bi
 
 **Garland** (`SpawnableGarland`, `Garland Cell Config`) is the answer, requested 2026-09 as an
 Ourobor/Yggdra hybrid held to **~5,000 prisms** so it loads in a breath and does not read as
-busy. It measures **4,502 prisms / 4,200,059 volume** — an eighth of Yggdra's count.
+busy. It measures **4,259 prisms / 2,177,499 volume** — an eighth of Yggdra's count.
 
 ### 48.1 The one rule the whole file follows
 
 **Spend prisms on LENGTH and SILHOUETTE, never on surface.** Every family is a curve laid ONE
-prism per step with that prism sized to close the gap behind it. A 9,377-unit knot costs 426
-prisms as a continuous 16×7×26 bough; filling the same shape as a sheet would cost forty times
-that and read, at 686 units, as exactly the same line. Yggdra's trunk is fourteen strands ×
-220 prisms stepped at 2u against a 7.8u prism — 3.8× overlap, which is how you build something
-that has to survive being flown through at ten metres and is pure waste at seven hundred.
+prism per step, with that prism's LENGTH **derived from the step** rather than authored
+(`ChainFill`, 0.82 — see §48.10, where it used to be 1.08 and welded every chain shut). A
+9,377-unit knot costs 426 prisms as a continuous 16×7 bough; filling the same shape as a sheet
+would cost forty times that and read, at 686 units, as exactly the same line. Yggdra's trunk is
+fourteen strands × 220 prisms stepped at 2u against a 7.8u prism — 3.8× overlap, which is how you
+build something that has to survive being flown through at ten metres and is pure waste at seven
+hundred.
 
 The corollary, and the reason the volume is large where the count is small: these prisms are
 **big**. Volume is the spine, so a cell laid this way must author its ladder from measurement —
@@ -8452,10 +8454,10 @@ Depth is what a distant, nearly-still camera has instead of detail.
 
 | layer | radius | families | prisms |
 |---|---|---|---|
-| the **seed's surface** | 430 | 3 shore bands (coastlines), 16 landfall patches | 426 |
-| the **subject** | 530–870 | the BOUGH (a (2,3) torus knot), the VINE (a (3,2) knot counter-wound inside it at 470–640), 14 blossoms, 34 leaf skirts, 5 terraces | 2,630 |
-| the **far edge** | 860–1,153 | 16 crown boughlets + their tufts, 260 motes | 804 |
-| **crossing all three** | 430–870 | 16 FALLS — root strands that leave the bough, spiral a third of a turn and land on the shore | 640 |
+| the **seed's surface** | 436–466 | 2 shore bands (coastlines, one shell each), 8 landfall patches of 14 plates | 443 |
+| the **subject** | 480–870 | the BOUGH (a (2,3) torus knot), the VINE (a (3,2) knot counter-wound inside it at 480–650), 5 + 3 blossoms, 17 leaf skirts, 3 terraces | 2,637 |
+| the **far edge** | 690–1,074 | 8 crown boughlets + their 28-leaf tufts | 544 |
+| **crossing all three** | 436–870 | 8 FALLS — root strands that leave the bough, spiral a third of a turn and land on the shore | 635 |
 
 The camera orbits at 686, **inside** the bough's band (530–870) — asserted, because that is what
 makes the bough the subject rather than a shell seen from outside: its near pass looms and its
@@ -8463,7 +8465,7 @@ far pass is the backdrop, and the two swap as the camera crawls. The falls are t
 earns its 14%: without something crossing the gap between the two things always on screen (the
 nucleus and the bough) the cell reads as two concentric shells rather than one object.
 
-The blossoms are golden-angle discs facing along the bough's own tangent, so the camera sees
+The blossoms are ringed discs facing along the bough's own tangent, so the camera sees
 full faces on one side of the knot and edges on the other — the cheapest way to make a distant
 composition change while nothing moves.
 
@@ -8473,13 +8475,15 @@ composition change while nothing moves.
   to fly it. This cell's normal state is an AI flying the player's vessel behind a menu, where
   a danger prism reads as the ship being jerked about for no reason the player can see. Geode
   and Ourobor already hold that pole.
-- **75 always-on MeshCollider prisms** (super-shielded blossom bosses and terrace keystones)
-  against Yggdra's 225 — a third, and the generator fails above 80.
-- **Nothing inside the nucleus.** Measured nearest prism CORNER **409.8** against the 392
-  control radius, a **+17.8** margin. Caldera shipped 89% of its mass inside that radius (§18.1)
+- **69 always-on MeshCollider prisms** (super-shielded blossom bosses and terrace keystones)
+  against Yggdra's 225 — under a third, and the generator fails above 80.
+- **Nothing inside the nucleus.** Measured nearest prism CORNER **427.8** against the 392
+  control radius, a **+35.8** margin. Caldera shipped 89% of its mass inside that radius (§18.1)
   and pre-awarded node control before anyone flew; this cell states the clearance as an
   inequality on the knot's own parameters rather than leaving it to where the blossoms landed:
-  `Major − Minor ≥ NucleusR + BlossomRadius + a petal's half-diagonal + margin`.
+  `Major − Minor ≥ NucleusR + the outer ring + a petal's half-diagonal + margin`.
+- **Nothing clipping anything.** Zero interpenetrating pairs over the whole cloud, measured with
+  a 15-axis separating-axis test — see §48.10, which is also the record of it having been 4,372.
 
 ### 48.4 The roster — four flora, three fauna, bounded by construction
 
@@ -8505,7 +8509,7 @@ each is a hand-shaped plant with a fixed per-element budget, a seed floor and a 
 | Shark (predator) | 1 | 2 | ~4 | 8 | the majestic slow pass |
 
 **37 always-on heart colliders at cap** — one per live lifeform — against Blob's 171 and the
-Lattice cell's 1,080. The mature cell is **8,390 prisms**; the freestyle seven boot heavier than
+Lattice cell's 1,080. The mature cell is **8,147 prisms**; the freestyle seven boot heavier than
 that before anything grows.
 
 Each species uses the canonical `Lifeforms/<Species> Flora <Element>` assets as its
@@ -8518,8 +8522,8 @@ in the annulus the camera actually frames.
 
 |  | volume | count |
 |---|---|---|
-| Restless enter / exit | 4,301,531 / 4,298,331 | 5,770 / 5,570 |
-| Frenzy enter / exit | 4,551,803 / 4,542,203 | 11,990 / 11,390 |
+| Restless enter / exit | 2,278,970 / 2,275,770 | 5,527 / 5,327 |
+| Frenzy enter / exit | 2,529,242 / 2,519,642 | 11,747 / 11,147 |
 
 Two rules, and they pull opposite ways. **Frenzy must sit above the MATURE cell** or planting and
 growth freeze with the garden still bare (`Cell.FloraGrowingEnabled => phase < Frenzy`) — so it
@@ -8543,18 +8547,24 @@ Three layers verify it, each negative-controlled:
 
 1. **`Tools/Build/garland_harness/run.sh`** compiles the SHIPPED `SpawnableGarland.cs` against a
    Unity shim and RUNS it, writing `garland_measurements.json` with a hash of every source that
-   can move a number. Measured: **4,502 prisms, 4,200,059 volume** — count, kinds and per-domain
+   can move a number. Measured: **4,259 prisms, 2,177,499 volume, ZERO clipping pairs** — count,
+   kinds, per-domain
    volume identical to the model, worst positional disagreement **0.055u** at radius ~1,050
    (float32 vs float64 on `Mathf.PI` and `GoldenAngle` through angles up to ~200 rad), which is
    four hundred times smaller than the nucleus margin it has to protect.
 2. **`Tools/Build/author_garland_cell.py`** holds the model, asserts it against that measurement,
-   re-reads all 29 generator constants out of the C# so the mirror cannot drift, asserts the
+   re-reads all 62 generator scalars, 7 arrays and 13 vectors out of the C# so the mirror cannot
+   drift (negative-controlled), asserts the
    harness shim's transcriptions appear VERBATIM in the real base class (a transcription is only
    evidence about shipped code if something pins it to its source), asserts every serialized key
    it writes is DECLARED by the class that reads it, and then derives the ladder and emits all 21
    files. `--check` proves the assets on disk are what the model authors.
-3. **`--self-test`** widens the vine blossoms by 90u and requires the nucleus clearance assertion
-   to fire. A check nobody has watched fail is a check nobody should trust.
+3. **`--self-test`** runs TWO negative controls and requires both to fire: pushing the outer
+   blossom ring out by 90u must trip the nucleus clearance, and raising `ChainFill` to 1.06 must
+   trip the no-clipping assertion (it reports 1,250 pairs — bough × bough 417, vine × vine 403,
+   crown × crown 305). A check nobody has watched fail is a check nobody should trust, and the
+   second one matters most: "nothing clips" passes trivially the moment the measurement stops
+   seeing orientations.
 
 The one ESTIMATE is the grown flora's volume per prism (`CALIBRATION`, 80): `PhyllotacticFlora`
 sizes prisms by ROLE, so there is no authored field to read. It is deliberately high — an
@@ -8585,12 +8595,12 @@ Everything above is offline. Specifically:
 1. **Open Menu_Main**, fly the **Cell Selector** toy, pick Garland. Confirm the scale model looks
    like a world (the selector samples `CachedLays`, so a broken generator shows there first), then
    that the swap completes behind the `EnvironmentLoadVeil`.
-2. **FrogletTools > Ecology > Measure Cell Environment Baselines** — confirm 4,502 / 4,200,059.
+2. **FrogletTools > Ecology > Measure Cell Environment Baselines** — confirm 4,259 / 2,177,499.
    Anything more than a few prisms off means the harness shim diverges from the engine and the
    ladder needs re-deriving.
 3. **Sit on the menu for five minutes** and watch it from the lava-lamp camera. This is the one
    thing no gate can answer: whether it reads as one composition at 686 units. The dials, in order
-   of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Motes`.
+   of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
 4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
    cell should reach Restless within the first minutes and never reach Frenzy.
 5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
@@ -8598,7 +8608,7 @@ Everything above is offline. Specifically:
 **Known gaps, stated rather than hidden:** the cell reuses Yggdra's card icon (a Garland-specific
 one is an art task, and a placeholder that looks authored is worse than one visibly borrowed);
 the flora volume calibration is an estimate; and the cell has not been device-profiled, though at
-4,502 prisms and 75 always-on colliders it is by a wide margin the lightest authored world in the
+4,259 prisms and 69 always-on colliders it is by a wide margin the lightest authored world in the
 freestyle rotation.
 
 ### 48.9 It is the BOOT world — and the last inference in the boot path had to go (Sep 2026)
@@ -8674,3 +8684,121 @@ CLI is available in this session, so `/verify-unity` did not run** — the two e
 with zero syntax errors, and member-level resolution for a `MonoBehaviour`/`ScriptableObject` pair
 is editor-only by construction (CLAUDE.md, "a check that cannot resolve a type cannot see errors
 ABOUT that type"). The one thing to confirm in-editor is the veil length on entering Menu_Main.
+
+### 48.10 Half the rings, twice the prisms in each — and nothing clipping (Sep 2026)
+
+Requested after the boot swap: *half as many rings, twice the prisms in each, so the prism count
+stays the same — and resize the prisms so nothing clips anything across the whole scene.* Then,
+mid-pass: *remove the single prisms scattered far from the centre.* Both landed together, because
+the first cannot be checked without the measurement the second needed.
+
+**The composition halved its REPEATS and doubled each one's POPULATION.** Five blossoms of 151
+petals where there were nine of 84; three vine blossoms of 78 where there were five of 46; 17
+skirts of 18 leaves where there were 34 of 9; 8 falls of 80 steps for 16 of 40; 8 crowns of 40
+steps and 28-leaf tufts for 16 of 20 and 14; 3 terraces of 146 prisms for 5 of 88; 2 shore bands
+at a 14-unit pitch for 3 at 21. Each product is preserved, so the cell is the same weight built
+from fewer, denser objects — which at 686 units reads as a composition with fewer, stronger
+subjects instead of a scatter.
+
+**The MOTES are gone** — 260 single prisms in a halo at 860–1,150, the only family with no
+structure at all. They were bought as parallax and read as debris. The far edge is now the crown
+alone, which is what §48.2's third layer was always about.
+
+Net: **4,502 → 4,259 prisms**, and volume **4,200,059 → 2,177,499**, almost all of it from the
+chains no longer overlapping (below). The ladder is re-derived from that measurement, not scaled.
+
+#### The clipping was structural, and it was most of the cell
+
+Measured at the merge base with a 15-axis separating-axis test over the emitted cloud: **4,372
+interpenetrating pairs of 8,726 near pairs — half of everything that could touch did**, worst
+penetration 9.56u. That was not an accident; it was the file's own stated rule (*"one prism per
+step with that prism sized to close the gap behind it"*, bough 26u at a 22u step) plus every
+chain authored at `step × 1.08`. Four separate causes, each fixed by a different KIND of change,
+and the kinds are the part worth carrying:
+
+1. **A chain's length is a function of its STEP, not a constant.** `ChainFill` (0.82) replaces
+   every authored chain length. It is under 1 by enough to absorb the jitter AND the corner a
+   bend puts on the inside of a joint — at 1 the chain welds itself shut, which is exactly what
+   `--self-test` now reproduces on demand. The falls' step is a third of the bough's and the
+   crown's grows as the branch climbs, so no authored number could have served all three.
+2. **A golden-angle head cannot hold non-overlapping petals.** A sunflower packs florets at a
+   constant AREAL density, and at this cell's petal size the head's own area runs out long before
+   the count does. Blossoms became concentric RINGS, which state the two clearances separately —
+   the ring pitch against the petal's LENGTH, the ring count against its WIDTH — so each is a
+   bound you can write down: `(2R − L) tan(π/n) > W`. The same argument retired the crown tuft's
+   single-cone fan (28 leaves at one polar angle have a spacing that FALLS as the count rises) for
+   a spiral CAP, and the skirts' one wide fan for six rows of three.
+3. **Two families attached at the same knot sample are two structures at the same point**, which
+   no per-family clearance can see. Every family now attaches at its own PHASE, and the terraces
+   ride the MIDPOINT of a blossom gap rather than their own stride (3 and 5 beat against each
+   other on a closed loop; a terrace 14 samples from a blossom is a deck inside a flower).
+4. **A chain that starts at its parent's own lay point starts INSIDE it**, and no length makes
+   that pair clear. Falls and crowns start displaced — **differently**, and that asymmetry is a
+   measurement rather than a preference. A crown climbs out of the bough's band and never returns,
+   so a radial lift puts the wood behind it for the whole run. A fall does the opposite: it spends
+   three quarters of its length inside the band the bough wanders through, so a radial drop lays
+   it directly under a curve that comes back down to meet it (44 pairs, against 7 for the same
+   fall pushed out the bough's SIDE, where it leaves the knot's osculating plane at once).
+
+#### The shore YIELDS, and that is what makes "nothing clips" a property of the generator
+
+Those four got it to **three** pairs, and coordinate descent over all five attachment phases could
+not do better: the falls are the family that crosses the whole cell, so whatever phase they take
+they meet *something*. Five tuned constants standing between the cell and a defect is not a
+property, it is a coincidence with a maintenance cost.
+
+So the three SHORE families — the falls, the landfall patches and the bands — are laid **last**
+and **yield**: a prism of theirs that would land inside something already laid is simply not laid.
+Nothing is removed and nothing is moved; the root grows round the flower. It costs **five prisms**
+of 4,264, which is the number that makes it a last resort rather than a crutch (asserted: a family
+that yields more than a twentieth of itself has stopped being authored and started being carved,
+and it would thin silently).
+
+It also **replaced** a rule rather than adding one. The bands previously broke where a root came
+down, through an explicit landfall-proximity test; the yield subsumes it, so the coastline still
+breaks at an estuary and there is one mechanism instead of two.
+
+Three details of the yield are load-bearing:
+
+- **`YieldGap` is 0.75, not 0.** A fit that clears by a hair re-reads as clipping the moment
+  anything moves — and a decision taken ON its threshold is one this model (float64) and the
+  engine (float32) can disagree about, which is a one-prism difference with no visible cause.
+  The tightest decision in the shipped cell is **0.089** from the threshold, ~90× the float32
+  noise at these coordinates, and it is asserted.
+- **The grid's 27-cell neighbourhood only covers every pair that can touch while no prism's
+  bounding radius exceeds half a cell** (56 / 2 = 28 against a measured worst of 14.25). Asserted,
+  because a prism resize is exactly the kind of edit that would break it silently.
+- **`LookRotation` is undefined when up is parallel to forward, and Unity does not say so — it
+  invents a pose.** A fall's last steps are very nearly radial while its authored up IS the
+  radial. `ChainUp` projects the up off the step and falls back to a second, orthogonal candidate
+  when that projection collapses. This was found only because the offline model THROWS on the
+  degenerate pose instead of measuring one the engine made up.
+
+#### What the measurement had to gain first
+
+None of this was visible before the harness could see ORIENTATIONS. A prism is an oriented box,
+and a cloud measured as points reports a world of axis-aligned prisms and calls it clear — so the
+shim's `Quaternion` stopped being a stub and became the real basis Unity's `LookRotation` builds
+(`z` along forward, `x = up × z`, `y = z × x`), plus the one operation `SpawnableGarland` asks of
+it (`rot * Vector3.right`). The harness and the model each grew the same 15-axis test and a
+uniform hash-grid broadphase; both report **0 clipping pairs, tightest clearance 0.434u** on the
+shipped generator, and the model additionally reports the breakdown PER FAMILY PAIR, which is what
+turned four vague symptoms into the four causes above.
+
+General rule, and it is the gyroid lattice-scale finding one level up: **two prisms occupying the
+same space is a relationship between families that were each individually correct, so it cannot be
+derived from any family's own parameters and has to be measured over what the generator really
+emitted, in the orientations it really emitted them.**
+
+#### Verified offline (the editor gate is still the human's)
+
+`author_garland_cell.py --check` (21 files) and `--self-test` (both negative controls fire) pass;
+`garland_harness/run.sh --check` confirms the committed measurement is what the SHIPPED
+`SpawnableGarland.cs` emits when compiled and run — 4,259 prisms, 2,177,499 volume, 0 clipping
+pairs, identical to the model on count, kinds and per-domain volume; the six standing
+`Tools/Build/check_*.py` gates pass. The generator's constant readback now also covers the ARRAYS
+and the section/leaf VECTORS, negative-controlled. **No Unity CLI is available in this session, so
+`/verify-unity` did not run** — but the harness compiles `SpawnableGarland.cs` with Roslyn against
+the shim, which is a real type check of that file rather than a syntax parse. What only the editor
+can answer is unchanged: whether the cell reads as one composition at 686 units, and whether the
+denser-but-fewer objects are the right trade.

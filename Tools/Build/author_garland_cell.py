@@ -60,26 +60,143 @@ GOLDEN = 2.39996323
 
 NUCLEUS_R, MEMBRANE_R, CAM_R = 392.0, 1200.0, 686.0
 NUCLEUS_MARGIN = 16.0
-SHORE_R, SHORE_BAND_STEP, SHORE_BANDS = 430.0, 21.0, 3
+
+# ── Chains ──
+# Every long family is one prism per step. CHAIN_FILL is the fraction of the step that prism
+# fills; it is what makes the difference between a readable line and a welded tube, and it is
+# under 1 by enough to absorb CHAIN_JIT AND the corner a bend puts on the inside of a joint.
+CHAIN_FILL = 0.82
+CHAIN_JIT = 0.08
+
+# The yield grid. Cell size must exceed twice the largest prism's bounding radius or the 27-cell
+# neighbourhood stops covering every pair that could touch (asserted offline). YIELD_GAP is the
+# clearance a yielding prism has to leave, not zero: a fit that clears by a hair re-reads as
+# clipping the moment anything moves.
+YIELD_CELL, YIELD_GAP = 56.0, 0.75
+
+# ── The seed's crust ──
+SHORE_R = 436.0
+SHORE_BAND_STEP = 14.0
+SHORE_BANDS = 2
+SHORE_BAND_LIFT = 15.0
+SHORE_BAND_SECTION = (22.0, 3.0)
+SHORE_PATCH_PLATES = 14
+SHORE_PATCH_R = 42.0
+SHORE_PATCH_PLATE = (10.0, 3.0, 10.0)
+
+# ── The two knots ──
 BOUGH_P, BOUGH_Q, BOUGH_MAJOR, BOUGH_MINOR, BOUGH_STEP = 2, 3, 700.0, 170.0, 22.0
-VINE_P, VINE_Q, VINE_MAJOR, VINE_MINOR, VINE_STEP = 3, 2, 555.0, 85.0, 26.0
-BLOSSOMS, VINE_BLOSSOMS = 9, 5
-BLOSSOM_PETALS, VINE_BLOSSOM_PETALS = 84, 46
-BLOSSOM_RADIUS, VINE_BLOSSOM_RADIUS = 92.0, 40.0
-FALLS, CROWNS, TERRACES, SKIRTS, MOTES = 16, 16, 5, 34, 260
+BOUGH_SECTION = (16.0, 7.0)
+VINE_P, VINE_Q, VINE_MAJOR, VINE_MINOR, VINE_STEP = 3, 2, 565.0, 85.0, 26.0
+VINE_SECTION = (8.0, 4.0)
+
+# ── Blossoms: CONCENTRIC RINGS, not a golden-angle head ──
+# A sunflower head packs its florets at a constant areal density, which is exactly what a head of
+# non-overlapping petals cannot be: at this cell's petal size the head's own area runs out before
+# the count does. Rings state the two clearances separately - the ring pitch against the petal's
+# LENGTH, the ring count against its WIDTH - so each is a bound that can be checked.
+BLOSSOMS, VINE_BLOSSOMS = 5, 3
+BLOSSOM_RINGS = (11, 21, 30, 41, 48)
+BLOSSOM_RING_RADII = (30.0, 47.0, 64.0, 81.0, 98.0)
+BLOSSOM_PETAL = (8.0, 2.6, 13.0)
+BLOSSOM_BOSSES, BLOSSOM_BOSS_RADIUS, BLOSSOM_BOSS_SIZE = 9, 16.0, 6.0
+VINE_BLOSSOM_RINGS = (11, 17, 23, 27)
+VINE_BLOSSOM_RING_RADII = (18.0, 30.0, 42.0, 54.0)
+VINE_PETAL = (6.0, 2.2, 9.0)
+VINE_BLOSSOM_BOSSES, VINE_BOSS_RADIUS, VINE_BOSS_SIZE = 7, 9.0, 5.0
+
+# ── Skirts: ROWS along the bough, not one wide fan ──
+SKIRTS, SKIRT_ROWS, SKIRT_LEAVES = 17, 6, 3
+SKIRT_LEAF = (6.0, 2.0, 15.0)
+SKIRT_STANDOFF, SKIRT_ROW_PITCH, SKIRT_FAN = 11.0, 5.0, 0.78
+
+# ── Falls, crown, terraces ──
+FALLS, FALL_STEPS, FALL_SKIP = 8, 82, 2
+FALL_SECTION = (4.5, 4.5)
+FALL_STANDOFF = 10.0
+# A chain that starts at its parent's own lay point starts INSIDE it, and no length makes that
+# pair clear - so both start displaced. They are displaced DIFFERENTLY, and that asymmetry is a
+# measurement rather than a preference. A crown climbs OUT of the bough's band and never returns,
+# so lifting it radially puts the wood behind it for the whole run (a sideways lift does not: the
+# drift term swings the chain back across the bough within two steps - 7.3 units apart at step 2,
+# from a start 31 units clear). A fall does the opposite: it spends three quarters of its length
+# inside the band the bough wanders through, so dropping it radially lays it directly under a
+# curve that comes back down to meet it (44 pairs, against 7 for the same fall pushed out the
+# bough's SIDE, where it leaves the knot's own osculating plane at once).
+FALL_ROOT_OFFSET, CROWN_ROOT_OFFSET = 18.0, 22.0
+FALL_EASE = 1.4
+CROWNS, CROWN_STEPS, CROWN_SKIP = 8, 41, 1
+CROWN_SECTION = (7.0, 7.0)
+CROWN_TUFT_LEAVES = 28
+CROWN_TUFT_LEAF = (5.0, 2.2, 12.0)
+CROWN_TUFT_RADIUS, CROWN_TUFT_CONE = 24.0, 1.309
+TERRACES = 3
+# Terraces ride the MIDPOINT of a blossom gap rather than their own stride: 3 and 5 beat
+# against each other on a closed loop, and a terrace 14 samples from a blossom is a deck inside
+# a flower.
+TERRACE_GAPS = (0, 2, 4)
+TERRACE_RINGS = (10, 20, 30, 40)
+TERRACE_RING_RADII = (22.0, 39.0, 56.0, 73.0)
+TERRACE_PLATE = (9.0, 3.0, 9.0)
+TERRACE_LIFT, TERRACE_KEY_LIFT, TERRACE_KEY = 20.0, 8.0, 11.0
+TERRACE_MASTS, TERRACE_MAST_SEGMENTS = 3, 15
+TERRACE_MAST = (5.5, 5.5)
+TERRACE_MAST_RADIUS, TERRACE_MAST_PITCH = 88.0, 8.0
+
+# Where each family attaches to the bough. Distinct offsets, because two families sharing a knot
+# sample means two structures sharing a point in space, and no per-family fit can see that.
+BLOSSOM_PHASE, SKIRT_PHASE, FALL_PHASE, CROWN_PHASE, VINE_BLOSSOM_PHASE = 0, 7, 28, 11, 16
+
 KNOT_AXIS = (0.36, 0.88, 0.31)
 
 # Every constant above is read back out of the C# on --check, so the two cannot drift silently.
 MIRRORED_CONSTS = {
     "NucleusR": NUCLEUS_R, "MembraneR": MEMBRANE_R, "CamR": CAM_R,
-    "NucleusMargin": NUCLEUS_MARGIN, "ShoreR": SHORE_R, "ShoreBandStep": SHORE_BAND_STEP,
-    "ShoreBands": SHORE_BANDS, "BoughP": BOUGH_P, "BoughQ": BOUGH_Q,
-    "BoughMajor": BOUGH_MAJOR, "BoughMinor": BOUGH_MINOR, "BoughStep": BOUGH_STEP,
+    "NucleusMargin": NUCLEUS_MARGIN, "ChainFill": CHAIN_FILL, "ChainJit": CHAIN_JIT,
+    "ShoreR": SHORE_R, "ShoreBandStep": SHORE_BAND_STEP, "ShoreBands": SHORE_BANDS,
+    "ShoreBandLift": SHORE_BAND_LIFT, "ShorePatchPlates": SHORE_PATCH_PLATES,
+    "ShorePatchR": SHORE_PATCH_R,
+    "BoughP": BOUGH_P, "BoughQ": BOUGH_Q, "BoughMajor": BOUGH_MAJOR,
+    "BoughMinor": BOUGH_MINOR, "BoughStep": BOUGH_STEP,
     "VineP": VINE_P, "VineQ": VINE_Q, "VineMajor": VINE_MAJOR, "VineMinor": VINE_MINOR,
-    "VineStep": VINE_STEP, "Blossoms": BLOSSOMS, "VineBlossoms": VINE_BLOSSOMS,
-    "BlossomPetals": BLOSSOM_PETALS, "VineBlossomPetals": VINE_BLOSSOM_PETALS,
-    "BlossomRadius": BLOSSOM_RADIUS, "VineBlossomRadius": VINE_BLOSSOM_RADIUS,
-    "Falls": FALLS, "Crowns": CROWNS, "Terraces": TERRACES, "Skirts": SKIRTS, "Motes": MOTES,
+    "VineStep": VINE_STEP,
+    "Blossoms": BLOSSOMS, "VineBlossoms": VINE_BLOSSOMS,
+    "BlossomBosses": BLOSSOM_BOSSES, "BlossomBossRadius": BLOSSOM_BOSS_RADIUS,
+    "BlossomBossSize": BLOSSOM_BOSS_SIZE,
+    "VineBlossomBosses": VINE_BLOSSOM_BOSSES, "VineBossRadius": VINE_BOSS_RADIUS,
+    "VineBossSize": VINE_BOSS_SIZE,
+    "Skirts": SKIRTS, "SkirtRows": SKIRT_ROWS, "SkirtLeaves": SKIRT_LEAVES,
+    "SkirtStandoff": SKIRT_STANDOFF, "SkirtRowPitch": SKIRT_ROW_PITCH, "SkirtFan": SKIRT_FAN,
+    "Falls": FALLS, "FallSteps": FALL_STEPS, "FallSkip": FALL_SKIP,
+    "FallStandoff": FALL_STANDOFF, "FallRootOffset": FALL_ROOT_OFFSET,
+    "CrownRootOffset": CROWN_ROOT_OFFSET, "FallEase": FALL_EASE,
+    "Crowns": CROWNS, "CrownSteps": CROWN_STEPS, "CrownSkip": CROWN_SKIP,
+    "CrownTuftLeaves": CROWN_TUFT_LEAVES, "CrownTuftRadius": CROWN_TUFT_RADIUS,
+    "CrownTuftCone": CROWN_TUFT_CONE,
+    "Terraces": TERRACES, "TerraceLift": TERRACE_LIFT, "TerraceKeyLift": TERRACE_KEY_LIFT,
+    "TerraceKey": TERRACE_KEY, "TerraceMasts": TERRACE_MASTS,
+    "TerraceMastSegments": TERRACE_MAST_SEGMENTS, "TerraceMastRadius": TERRACE_MAST_RADIUS,
+    "TerraceMastPitch": TERRACE_MAST_PITCH,
+    "BlossomPhase": BLOSSOM_PHASE, "SkirtPhase": SKIRT_PHASE, "FallPhase": FALL_PHASE, "CrownPhase": CROWN_PHASE,
+    "VineBlossomPhase": VINE_BLOSSOM_PHASE,
+}
+
+# The arrays, read back the same way. They are not scalars, and a slipped digit in one of them is
+# exactly the kind of transcription error the harness would catch as a count mismatch AFTER a
+# compile - this catches it before.
+MIRRORED_ARRAYS = {
+    "BlossomRings": BLOSSOM_RINGS, "BlossomRingRadii": BLOSSOM_RING_RADII,
+    "VineBlossomRings": VINE_BLOSSOM_RINGS, "VineBlossomRingRadii": VINE_BLOSSOM_RING_RADII,
+    "TerraceGaps": TERRACE_GAPS, "TerraceRings": TERRACE_RINGS,
+    "TerraceRingRadii": TERRACE_RING_RADII,
+}
+MIRRORED_VECTORS = {
+    "BoughSection": BOUGH_SECTION, "VineSection": VINE_SECTION,
+    "ShoreBandSection": SHORE_BAND_SECTION, "FallSection": FALL_SECTION,
+    "CrownSection": CROWN_SECTION, "TerraceMast": TERRACE_MAST,
+    "ShorePatchPlate": SHORE_PATCH_PLATE, "BlossomPetal": BLOSSOM_PETAL,
+    "VinePetal": VINE_PETAL, "SkirtLeaf": SKIRT_LEAF, "CrownTuftLeaf": CROWN_TUFT_LEAF,
+    "TerracePlate": TERRACE_PLATE, "KnotAxis": KNOT_AXIS,
 }
 
 
@@ -159,131 +276,191 @@ def sample_knot(p, q, major, minor, step):
     return out, total
 
 
+def look_rotation(forward, up):
+    """Unity's Quaternion.LookRotation as the BASIS it is: z along forward, x = up x z, y = z x x.
+
+    The mirror carries orientations because the cell is checked for CLIPPING, and a prism is an
+    oriented box - measuring the cloud as points would report a world of axis-aligned prisms and
+    call it clear. SpawnPoint.LookRotation's degenerate guard is reproduced too."""
+    if dot(forward, forward) < 0.0001:
+        return (RIGHT, UP, FORWARD)
+    z = norm(forward)
+    x = cross(up, z)
+    if dot(x, x) < 1e-10:
+        raise ValueError("look_rotation: forward is parallel to up")
+    x = norm(x)
+    return (x, cross(z, x), z)
+
+
+def chain_up(step, primary, fallback):
+    """A chain prism's UP - the roll about its own length - made safe.
+
+    LookRotation is undefined when up is parallel to forward, and a fall's last steps are very
+    nearly radial while its authored up IS the radial. Unity does not report that: it invents a
+    pose. So the up is projected off the step, and a second, orthogonal candidate takes over when
+    the projection collapses. The mirror THROWS on the degenerate pose rather than measuring one
+    the engine made up, which is how this was found at all."""
+    d = norm(step)
+    perp = sub(primary, mul(d, dot(primary, d)))
+    if dot(perp, perp) < 0.02:
+        perp = sub(fallback, mul(d, dot(fallback, d)))
+    return perp
+
+
 class Build:
+    """The lay list, plus the hash grid the yielding families query.
+
+    YIELDING is what makes "nothing clips" a property of the GENERATOR rather than of five tuned
+    phase constants. Most families clear each other by an authored clearance that can be stated
+    and checked - a ring pitch against a petal's width, a chain's fill against its step. Three
+    cannot: the falls cross the whole cell from the bough to the seed, the patches land wherever a
+    root came down, and the bands ring the seed through those landfalls. Those three meet whatever
+    happens to be there, so a prism of theirs that would land inside something already laid is
+    simply NOT LAID. Nothing is removed and nothing is moved; the root grows round the flower."""
+
     def __init__(self):
         self.lays = []
         self.family = "?"
+        self.yielded = collections.Counter()
+        # How close every yield DECISION came to its threshold. The model runs in float64 and the
+        # engine in float32, so a candidate sitting on the boundary would be laid by one and
+        # dropped by the other - a one-prism disagreement with no obvious cause. Asserted.
+        self.margins = []
+        self._grid = collections.defaultdict(list)
 
-    def emit(self, pos, scale, dom, kind="Plain"):
-        self.lays.append((pos, scale, dom, kind, self.family))
+    def _key(self, p):
+        return (math.floor(p[0] / YIELD_CELL), math.floor(p[1] / YIELD_CELL),
+                math.floor(p[2] / YIELD_CELL))
+
+    def emit(self, pos, rot, scale, dom, kind="Plain"):
+        self.lays.append((pos, rot, scale, dom, kind, self.family))
+        self._grid[self._key(pos)].append(len(self.lays) - 1)
+
+    def obstructed(self, pos, rot, scale):
+        box = (pos, rot, (0.5 * scale[0], 0.5 * scale[1], 0.5 * scale[2]))
+        r = 0.5 * mag(scale)
+        k0 = self._key(pos)
+        closest = 1e18
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    for i in self._grid.get((k0[0] + dx, k0[1] + dy, k0[2] + dz), ()):
+                        op, orot, os, _d, _k, _f = self.lays[i]
+                        dd = sub(op, pos)
+                        rr = r + 0.5 * mag(os)
+                        if dot(dd, dd) > rr * rr:
+                            continue
+                        sep = sat_separation(box, (op, orot, (0.5 * os[0], 0.5 * os[1],
+                                                             0.5 * os[2])))
+                        closest = min(closest, sep)
+        if closest < 1e17:
+            self.margins.append(abs(closest - YIELD_GAP))
+        return closest < YIELD_GAP
+
+    def try_emit(self, pos, rot, scale, dom, kind="Plain"):
+        if self.obstructed(pos, rot, scale):
+            self.yielded[self.family] += 1
+            return False
+        self.emit(pos, rot, scale, dom, kind)
+        return True
 
 
-def build_environment(vine_blossom_radius=VINE_BLOSSOM_RADIUS):
-    """vine_blossom_radius is a parameter ONLY so the negative control can widen it and watch
-    the nucleus assertion fire. Every real call takes the authored value."""
+def chain_scale(cross_section, span, n, jit=CHAIN_JIT):
+    """A chain prism's size: the authored cross-section, with its LENGTH derived from the gap it
+    has to fill rather than authored.
+
+    Every long family here (bough, vine, falls, crown branches) is one prism per step, and the
+    length that makes such a chain read as a continuous line is a fraction of the step, not a
+    constant - the falls' step is a third of the bough's and the crown's grows as the branch
+    climbs. CHAIN_FILL is that fraction, and it is under 1 by enough to absorb the jitter AND the
+    corner a bend puts on the inside of the joint: at 1 the chain welds itself shut and every
+    consecutive pair interpenetrates, which is exactly what the cell used to do."""
+    return hjit((cross_section[0], cross_section[1], CHAIN_FILL * span), n, jit)
+
+
+def build_environment(blossom_ring_radii=BLOSSOM_RING_RADII):
+    """blossom_ring_radii is a parameter ONLY so the negative control can push the outer ring in
+    toward the seed and watch the nucleus assertion fire. Every real call takes the authored
+    tuple."""
     b = Build()
     bough, bough_len = sample_knot(BOUGH_P, BOUGH_Q, BOUGH_MAJOR, BOUGH_MINOR, BOUGH_STEP)
     vine, vine_len = sample_knot(VINE_P, VINE_Q, VINE_MAJOR, VINE_MINOR, VINE_STEP)
 
+    def chord(knot, i):
+        return mag(sub(knot[(i + 1) % len(knot)][0], knot[i][0]))
+
     b.family = "bough"
-    for i, (pos, _t, _o) in enumerate(bough):
-        b.emit(pos, hjit((16.0, 7.0, 26.0), i * 13 + 5, 0.12), "Gold" if i % 9 == 0 else "Jade")
+    for i, (pos, tan, out) in enumerate(bough):
+        b.emit(pos, look_rotation(tan, out),
+               chain_scale(BOUGH_SECTION, chord(bough, i), i * 13 + 5),
+               "Gold" if i % 9 == 0 else "Jade")
 
     b.family = "vine"
-    for i, (pos, _t, _o) in enumerate(vine):
-        b.emit(pos, hjit((8.0, 4.0, 30.0), i * 7 + 19, 0.12), "Gold" if i % 11 == 0 else "Jade")
+    for i, (pos, tan, out) in enumerate(vine):
+        b.emit(pos, look_rotation(tan, out),
+               chain_scale(VINE_SECTION, chord(vine, i), i * 7 + 19),
+               "Gold" if i % 11 == 0 else "Jade")
 
-    def lay_blossoms(knot, count, petals, radius, petal, salt_base, fam):
+    def lay_blossoms(knot, count, rings, radii, petal, bosses, boss_r, boss_s,
+                     salt_base, phase, fam):
         b.family = fam
+        outer = radii[-1]
         for bi in range(count):
-            pos, tan, out = knot[bi * len(knot) // count]
+            pos, tan, out = knot[(bi * len(knot) // count + phase) % len(knot)]
             axis, u_ax = tan, out
             v_ax = cross(axis, u_ax)
-            for i in range(petals):
-                salt = salt_base + bi * 131 + i
-                a = i * GOLDEN
-                rr = radius * math.sqrt((i + 0.5) / petals)
+            salt = salt_base
+            for r, (n, rr) in enumerate(zip(rings, radii)):
+                for i in range(n):
+                    salt += 1
+                    a = 2.0 * math.pi * i / n + r * 0.37
+                    outward = add(mul(u_ax, math.cos(a)), mul(v_ax, math.sin(a)))
+                    scale = hjit(petal, salt + bi * 131, 0.14)
+                    d = norm(add(outward, mul(axis, 0.34 * rr / outer)))
+                    b.emit(add(pos, mul(d, rr)), look_rotation(d, axis), scale,
+                           "Ruby" if hash01((salt + bi * 131) * 3) < 0.16 else "Gold")
+            for c in range(bosses):
+                a = 2.0 * math.pi * c / bosses
                 outward = add(mul(u_ax, math.cos(a)), mul(v_ax, math.sin(a)))
-                scale = hjit(petal, salt, 0.16)
-                d = norm(add(outward, mul(axis, 0.34 * rr / radius)))
-                b.emit(add(pos, mul(d, rr + scale[2] * 0.5)), scale,
-                       "Ruby" if hash01(salt * 3) < 0.16 else "Gold")
-            for c in range(5):
-                a = c * GOLDEN
-                outward = add(mul(u_ax, math.cos(a)), mul(v_ax, math.sin(a)))
-                b.emit(add(pos, mul(outward, 7.0)), (7.0, 7.0, 7.0), "Gold", "SuperShielded")
+                b.emit(add(pos, mul(outward, boss_r)), look_rotation(outward, axis),
+                       (boss_s, boss_s, boss_s), "Gold", "SuperShielded")
 
-    lay_blossoms(bough, BLOSSOMS, BLOSSOM_PETALS, BLOSSOM_RADIUS, (9.0, 2.6, 20.0), 1000, "blossoms")
-    lay_blossoms(vine, VINE_BLOSSOMS, VINE_BLOSSOM_PETALS, vine_blossom_radius,
-                 (6.0, 2.2, 13.0), 2000, "vine blossoms")
+    lay_blossoms(bough, BLOSSOMS, BLOSSOM_RINGS, blossom_ring_radii, BLOSSOM_PETAL,
+                 BLOSSOM_BOSSES, BLOSSOM_BOSS_RADIUS, BLOSSOM_BOSS_SIZE, 1000,
+                 BLOSSOM_PHASE, "blossoms")
+    lay_blossoms(vine, VINE_BLOSSOMS, VINE_BLOSSOM_RINGS, VINE_BLOSSOM_RING_RADII, VINE_PETAL,
+                 VINE_BLOSSOM_BOSSES, VINE_BOSS_RADIUS, VINE_BOSS_SIZE, 2000,
+                 VINE_BLOSSOM_PHASE, "vine blossoms")
 
     b.family = "skirts"
     for k in range(SKIRTS):
-        pos, tan, out = bough[k * len(bough) // SKIRTS]
+        pos, tan, out = bough[(k * len(bough) // SKIRTS + SKIRT_PHASE) % len(bough)]
         hang = mul(out, -1.0)
         side = cross(tan, hang)
-        for i in range(9):
-            salt = 3000 + k * 97 + i
-            a = (i - 4) * 0.30
-            d = norm(add(mul(hang, math.cos(a)), mul(side, math.sin(a))))
-            scale = hjit((6.0, 2.0, 15.0), salt, 0.22)
-            b.emit(add(pos, mul(d, 9.0 + scale[2] * 0.5)), scale, "Jade")
+        for row in range(SKIRT_ROWS):
+            along = mul(tan, (row - (SKIRT_ROWS - 1) * 0.5) * SKIRT_ROW_PITCH)
+            for i in range(SKIRT_LEAVES):
+                salt = 3000 + k * 97 + row * 11 + i
+                a = (i - (SKIRT_LEAVES - 1) * 0.5) * SKIRT_FAN
+                d = norm(add(mul(hang, math.cos(a)), mul(side, math.sin(a))))
+                scale = hjit(SKIRT_LEAF, salt, 0.18)
+                b.emit(add(add(pos, along), mul(d, SKIRT_STANDOFF + scale[2] * 0.5)),
+                       look_rotation(d, tan), scale, "Jade")
 
-    for f in range(FALLS):
-        pos, tan, _o = bough[f * len(bough) // FALLS]
-        r0 = mag(pos)
-        n0 = mul(pos, 1.0 / r0)
-        drift = norm(sub(tan, mul(n0, dot(tan, n0))))
-        turn = 0.30 + 0.16 * hash01(4000 + f * 17)
-        r_end = SHORE_R + 8.0
-        steps = 40
-        prev, land = pos, pos
-        b.family = "falls"
-        for i in range(1, steps + 1):
-            t = i / float(steps)
-            r = lerp(r0, r_end, t ** 1.4)
-            ang = turn * 2.0 * math.pi * t
-            d = norm(add(mul(n0, math.cos(ang)), mul(drift, math.sin(ang))))
-            p = mul(d, r)
-            stepv = sub(p, prev)
-            if dot(stepv, stepv) > 1e-4:
-                salt = 5000 + f * 211 + i
-                b.emit(add(prev, mul(stepv, 0.5)),
-                       hjit((4.5, 4.5, mag(stepv) * 1.08), salt, 0.14),
-                       "Gold" if i > steps - 6 else "Jade")
-            prev, land = p, p
-
-        b.family = "shore patches"
-        salt0 = 6000 + f * 53
-        n = norm(land)
-        u = norm(cross(n, RIGHT)) if dot(cross(n, UP), cross(n, UP)) < 1e-4 else norm(cross(n, UP))
-        v = cross(n, u)
-        for i in range(7):
-            a = i * GOLDEN
-            rr = 0.0 if i == 0 else 26.0 * math.sqrt(i / 6.0)
-            p = add(mul(n, SHORE_R), mul(add(mul(u, math.cos(a)), mul(v, math.sin(a))), rr))
-            b.emit(p, hjit((24.0, 3.0, 24.0), salt0 + i, 0.18),
-                   "Gold" if hash01(salt0 + i * 5) < 0.25 else "Jade")
-
-    b.family = "shore bands"
-    for bi in range(SHORE_BANDS):
-        tilt = bi * GOLDEN
-        axis = norm((math.cos(tilt), 0.42, math.sin(tilt)))
-        u = norm(cross(axis, FORWARD))
-        v = cross(axis, u)
-        n = max(8, math.floor(2.0 * math.pi * SHORE_R / SHORE_BAND_STEP + 0.5))
-        for i in range(n):
-            salt = 7000 + bi * 977 + i
-            if hash01(salt * 11) < 0.20:
-                continue
-            a = 2.0 * math.pi * i / n
-            d = add(mul(u, math.cos(a)), mul(v, math.sin(a)))
-            b.emit(mul(d, SHORE_R), hjit((22.0, 3.0, 26.0), salt, 0.18),
-                   "Blue" if bi == 1 else "Jade")
 
     for c in range(CROWNS):
-        idx = (c * len(bough) // CROWNS + len(bough) // (2 * CROWNS)) % len(bough)
+        idx = (c * len(bough) // CROWNS + CROWN_PHASE) % len(bough)
         pos, tan, _o = bough[idx]
+        pos = mul(norm(pos), mag(pos) + CROWN_ROOT_OFFSET)
         r0 = mag(pos)
         n0 = mul(pos, 1.0 / r0)
         drift = norm(sub(tan, mul(n0, dot(tan, n0))))
         r_end = 900.0 + 150.0 * hash01(8000 + c * 29)
         turn = 0.10 + 0.10 * hash01(8100 + c * 31)
-        steps = 20
         prev, tip_dir = pos, n0
         b.family = "crown"
-        for i in range(1, steps + 1):
-            t = i / float(steps)
+        for i in range(1, CROWN_STEPS + 1):
+            t = i / float(CROWN_STEPS)
             r = lerp(r0, r_end, t)
             ang = turn * 2.0 * math.pi * t
             d = norm(add(mul(n0, math.cos(ang)), mul(drift, math.sin(ang))))
@@ -291,61 +468,205 @@ def build_environment(vine_blossom_radius=VINE_BLOSSOM_RADIUS):
             stepv = sub(p, prev)
             salt = 8200 + c * 173 + i
             taper = lerp(1.0, 0.45, t)
-            b.emit(add(prev, mul(stepv, 0.5)),
-                   hjit((7.0 * taper, 7.0 * taper, mag(stepv) * 1.08), salt, 0.14), "Jade")
+            if i > CROWN_SKIP:
+                b.emit(add(prev, mul(stepv, 0.5)),
+                       look_rotation(stepv, chain_up(stepv, n0, drift)),
+                       chain_scale((CROWN_SECTION[0] * taper, CROWN_SECTION[1] * taper),
+                                   mag(stepv), salt), "Jade")
             prev, tip_dir = p, d
 
         b.family = "crown tufts"
         tu = (norm(cross(tip_dir, RIGHT)) if dot(cross(tip_dir, UP), cross(tip_dir, UP)) < 1e-4
               else norm(cross(tip_dir, UP)))
         tv = cross(tip_dir, tu)
-        for i in range(14):
+        cos_max = math.cos(CROWN_TUFT_CONE)
+        for i in range(CROWN_TUFT_LEAVES):
             salt = 8400 + c * 191 + i
+            # A CAP, not a ring: the old fan put every leaf at one polar angle, so a tuft was a
+            # circle of leaves whose spacing fell as the count rose - 28 of them on one ring
+            # cannot clear each other at any size worth drawing.
+            cz = 1.0 - (1.0 - cos_max) * (i + 0.5) / CROWN_TUFT_LEAVES
+            rho = math.sqrt(max(0.0, 1.0 - cz * cz))
             a = i * GOLDEN
-            outward = norm(add(add(mul(tu, math.cos(a)), mul(tv, math.sin(a))), mul(tip_dir, 0.45)))
-            scale = hjit((7.0, 2.4, 17.0), salt, 0.2)
-            b.emit(add(prev, mul(outward, 10.0 + scale[2] * 0.5)), scale,
-                   "Gold" if hash01(salt * 7) < 0.22 else "Jade")
+            outward = norm(add(mul(tip_dir, cz),
+                               add(mul(tu, rho * math.cos(a)), mul(tv, rho * math.sin(a)))))
+            scale = hjit(CROWN_TUFT_LEAF, salt, 0.18)
+            b.emit(add(prev, mul(outward, CROWN_TUFT_RADIUS)), look_rotation(outward, tip_dir),
+                   scale, "Gold" if hash01(salt * 7) < 0.22 else "Jade")
 
     b.family = "terraces"
     for k in range(TERRACES):
-        idx = (k * len(bough) // TERRACES + len(bough) // (3 * TERRACES)) % len(bough)
+        idx = (TERRACE_GAPS[k] * len(bough) // BLOSSOMS
+               + len(bough) // (2 * BLOSSOMS) + BLOSSOM_PHASE) % len(bough)
         pos, tan, out = bough[idx]
-        n, u = out, tan
+        # A terrace stands on the bough's own surface normal, FLIPPED to the side the seed is
+        # not on. The raw normal points at the seed on the knot's inner equator, so a deck built
+        # on it grows INTO the nucleus (a 219-unit mast ended up 90 units inside the control
+        # radius that way); the cell radial fixes that and breaks something else, because the
+        # deck plane then no longer contains the tangent and the bough runs out through the
+        # floor. The flip keeps both: up is never toward the seed, and the wood still lies in
+        # the deck's own plane where it can be cleared by the lift.
+        n = out if dot(out, norm(pos)) >= 0.0 else mul(out, -1.0)
+        u = tan
         v = cross(n, u)
-        c = add(pos, mul(n, 14.0))
-        ring, radius = [6, 12, 18, 24], [13.0, 26.0, 39.0, 51.0]
-        for r in range(4):
-            for i in range(ring[r]):
+        c = add(pos, mul(n, TERRACE_LIFT))
+        for r, (count, radius) in enumerate(zip(TERRACE_RINGS, TERRACE_RING_RADII)):
+            for i in range(count):
                 salt = 9000 + k * 331 + r * 37 + i
-                a = 2.0 * math.pi * i / ring[r] + r * 0.4
+                a = 2.0 * math.pi * i / count + r * 0.4
                 outward = add(mul(u, math.cos(a)), mul(v, math.sin(a)))
-                b.emit(add(c, mul(outward, radius[r])), hjit((16.0, 3.5, 15.0), salt, 0.16),
+                b.emit(add(c, mul(outward, radius)), look_rotation(outward, n),
+                       hjit(TERRACE_PLATE, salt, 0.16),
                        "Gold" if hash01(salt * 3) < 0.3 else "Blue")
-        for m in range(3):
-            a = m * 2.0944 + 0.6
+        for m in range(TERRACE_MASTS):
+            a = m * 2.0 * math.pi / TERRACE_MASTS + 0.6
             outward = add(mul(u, math.cos(a)), mul(v, math.sin(a)))
-            base = add(c, mul(outward, 34.0))
-            for i in range(9):
+            base = add(c, mul(outward, TERRACE_MAST_RADIUS))
+            for i in range(TERRACE_MAST_SEGMENTS):
                 salt = 9500 + k * 419 + m * 53 + i
-                h = 9.0 + i * 13.0
-                taper = lerp(1.0, 0.5, i / 8.0)
-                b.emit(add(base, mul(n, h)), hjit((5.5 * taper, 5.5 * taper, 13.0), salt, 0.12), "Blue")
-        b.emit(add(c, mul(n, 6.0)), (11.0, 11.0, 11.0), "Gold", "SuperShielded")
+                h = 9.0 + i * TERRACE_MAST_PITCH
+                taper = lerp(1.0, 0.5, i / float(TERRACE_MAST_SEGMENTS - 1))
+                b.emit(add(base, mul(n, h)), look_rotation(n, outward),
+                       chain_scale((TERRACE_MAST[0] * taper, TERRACE_MAST[1] * taper),
+                                   TERRACE_MAST_PITCH, salt), "Blue")
+        b.emit(add(c, mul(n, TERRACE_KEY_LIFT)), look_rotation(n, u),
+               (TERRACE_KEY, TERRACE_KEY, TERRACE_KEY), "Gold", "SuperShielded")
 
-    b.family = "motes"
-    for i in range(MOTES):
-        z = 1.0 - 2.0 * (i + 0.5) / MOTES
-        rho = math.sqrt(max(0.0, 1.0 - z * z))
-        a = i * GOLDEN
-        d = (rho * math.cos(a), z, rho * math.sin(a))
-        u = hash01(11000 + i * 61)
-        r = lerp(860.0 ** 3, 1150.0 ** 3, u) ** (1.0 / 3.0)
-        salt = 11500 + i * 71
-        b.emit(mul(d, r), hjit((6.0, 6.0, 6.0), salt, 0.35),
-               "Gold" if hash01(salt * 13) < 0.18 else "Blue")
+    # The shore is laid LAST, and it is the part of the cell that yields. Everything above
+    # clears by a clearance it states itself; these three meet whatever the rest of the
+    # world put in their way, so they give ground instead of being tuned around it.
+    for f in range(FALLS):
+        pos, tan, out = bough[(f * len(bough) // FALLS + FALL_PHASE) % len(bough)]
+        pos = add(pos, mul(norm(cross(tan, out)), FALL_ROOT_OFFSET))
+        r0 = mag(pos)
+        n0 = mul(pos, 1.0 / r0)
+        drift = norm(sub(tan, mul(n0, dot(tan, n0))))
+        turn = 0.30 + 0.16 * hash01(4000 + f * 17)
+        r_end = SHORE_R + FALL_STANDOFF
+        prev = pos
+        land = pos
+        b.family = "falls"
+        for i in range(1, FALL_STEPS + 1):
+            t = i / float(FALL_STEPS)
+            r = lerp(r0, r_end, t ** FALL_EASE)
+            ang = turn * 2.0 * math.pi * t
+            d = norm(add(mul(n0, math.cos(ang)), mul(drift, math.sin(ang))))
+            p = mul(d, r)
+            stepv = sub(p, prev)
+            # The first steps are SKIPPED, not shortened: a chain that starts at its parent's own
+            # lay point starts inside it, and no length makes that pair clear.
+            if i > FALL_SKIP and dot(stepv, stepv) > 1e-4:
+                salt = 5000 + f * 211 + i
+                b.try_emit(add(prev, mul(stepv, 0.5)),
+                           look_rotation(stepv, chain_up(stepv, n0, drift)),
+                           chain_scale(FALL_SECTION, mag(stepv), salt),
+                           "Gold" if i > FALL_STEPS - 10 else "Jade")
+            prev, land = p, p
 
+        b.family = "shore patches"
+        salt0 = 6000 + f * 53
+        n = norm(land)
+        u = norm(cross(n, RIGHT)) if dot(cross(n, UP), cross(n, UP)) < 1e-4 else norm(cross(n, UP))
+        v = cross(n, u)
+        for i in range(SHORE_PATCH_PLATES):
+            a = i * GOLDEN
+            rr = SHORE_PATCH_R * math.sqrt((i + 0.5) / SHORE_PATCH_PLATES)
+            p = add(mul(n, SHORE_R), mul(add(mul(u, math.cos(a)), mul(v, math.sin(a))), rr))
+            b.try_emit(p, look_rotation(u, n), hjit(SHORE_PATCH_PLATE, salt0 + i, 0.16),
+                       "Gold" if hash01(salt0 + i * 5) < 0.25 else "Jade")
+
+    b.family = "shore bands"
+    for bi in range(SHORE_BANDS):
+        tilt = bi * GOLDEN
+        axis = norm((math.cos(tilt), 0.42, math.sin(tilt)))
+        u = norm(cross(axis, FORWARD))
+        v = cross(axis, u)
+        band_r = SHORE_R + (bi + 1) * SHORE_BAND_LIFT
+        n = max(8, math.floor(2.0 * math.pi * band_r / SHORE_BAND_STEP + 0.5))
+        for i in range(n):
+            salt = 7000 + bi * 977 + i
+            # A coastline is not a hoop: drop a fifth of the plates so the band breaks up.
+            if hash01(salt * 11) < 0.20:
+                continue
+            a = 2.0 * math.pi * i / n
+            d = add(mul(u, math.cos(a)), mul(v, math.sin(a)))
+            tangent = norm(sub(mul(v, math.cos(a)), mul(u, math.sin(a))))
+            b.try_emit(mul(d, band_r), look_rotation(tangent, d),
+                       chain_scale(SHORE_BAND_SECTION, 2.0 * math.pi * band_r / n, salt, 0.14),
+                       "Blue" if bi == 1 else "Jade")
     return b
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 1b. Clipping - a property of the CLOUD, not of any family's own parameters
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# Two prisms occupying the same space is the one defect a per-family fit cannot see: it is a
+# relationship between families that were each individually correct, so it has to be measured
+# over what the generator actually emitted, in the orientations it emitted them. (The gyroid
+# lattice-scale finding, one level up: every constant correct, the RELATIONSHIP wrong.)
+
+def sat_separation(a, b):
+    """Signed separation of two oriented boxes over the 15 separating axes: POSITIVE is the gap,
+    NEGATIVE is how deep they interpenetrate. Signed rather than boolean because a fit that only
+    reports 'no overlaps' cannot tell a cell that clears by a hair from one that clears by a
+    prism, and the first re-reads as clipping the moment anything moves."""
+    (ac, ax, ahe), (bc, bx, bhe) = a, b
+    d = sub(bc, ac)
+    best = -1e18
+    axes = list(ax) + list(bx)
+    for i in range(3):
+        for j in range(3, 6):
+            axes.append(cross(axes[i], axes[j]))
+    for L in axes:
+        ll = math.sqrt(dot(L, L))
+        if ll < 1e-9:
+            continue
+        ra = sum(abs(dot(ax[t], L)) * ahe[t] for t in range(3))
+        rb = sum(abs(dot(bx[t], L)) * bhe[t] for t in range(3))
+        sep = (abs(dot(d, L)) - ra - rb) / ll
+        if sep > best:
+            best = sep
+    return best
+
+
+def clip_report(b):
+    boxes = []
+    for pos, rot, s, _d, _k, fam in b.lays:
+        he = (0.5 * s[0], 0.5 * s[1], 0.5 * s[2])
+        boxes.append(((pos, rot, he), 0.5 * mag(s), fam))
+    cell = max(2.0 * r for _bx, r, _f in boxes)
+    grid = collections.defaultdict(list)
+    for i, (bx, _r, _f) in enumerate(boxes):
+        p = bx[0]
+        grid[(math.floor(p[0] / cell), math.floor(p[1] / cell), math.floor(p[2] / cell))].append(i)
+
+    pairs = collections.Counter()
+    worst = 0.0
+    tightest = 1e18
+    tested = 0
+    for i, (bxi, ri, fi) in enumerate(boxes):
+        p = bxi[0]
+        k0 = (math.floor(p[0] / cell), math.floor(p[1] / cell), math.floor(p[2] / cell))
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                for dz in (-1, 0, 1):
+                    for j in grid.get((k0[0] + dx, k0[1] + dy, k0[2] + dz), ()):
+                        if j <= i:
+                            continue
+                        bxj, rj, fj = boxes[j]
+                        dd = sub(bxj[0], p)
+                        if dot(dd, dd) > (ri + rj) ** 2:
+                            continue
+                        tested += 1
+                        sep = sat_separation(bxi, bxj)
+                        if sep < 0:
+                            pairs[tuple(sorted((fi, fj)))] += 1
+                            worst = max(worst, -sep)
+                        elif sep < tightest:
+                            tightest = sep
+    return dict(pairs=pairs, total=sum(pairs.values()), worst=worst,
+                tightest=0.0 if tightest > 1e17 else tightest, tested=tested)
 
 
 def measure(b):
@@ -353,7 +674,7 @@ def measure(b):
     per_domain = collections.Counter()
     kinds = collections.Counter()
     near_min, far_max, worst = 1e9, 0.0, None
-    for pos, s, dom, kind, fam in b.lays:
+    for pos, _rot, s, dom, kind, fam in b.lays:
         vol = s[0] * s[1] * s[2]
         e = fams.setdefault(fam, [0, 0.0])
         e[0] += 1
@@ -371,9 +692,13 @@ def measure(b):
         volume=sum(v[1] for v in fams.values()),
         per_domain=per_domain, kinds=kinds,
         nearest=near_min, farthest=far_max, worst=worst,
-        max_axis=max(max(s) for _p, s, _d, _k, _f in b.lays),
-        min_axis=min(min(s) for _p, s, _d, _k, _f in b.lays),
+        max_axis=max(max(s) for _p, _r, s, _d, _k, _f in b.lays),
+        min_axis=min(min(s) for _p, _r, s, _d, _k, _f in b.lays),
+        max_bounding_radius=max(0.5 * mag(s) for _p, _r, s, _d, _k, _f in b.lays),
+        clips=clip_report(b), yielded=b.yielded,
+        yield_margin=min(b.margins) if b.margins else 1e9,
     )
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -526,10 +851,44 @@ def check_invariants(env, roster, problems):
 
     # The ORDERING the composition is built on, asserted rather than the values (the /ecology
     # skill's rule for absolute-distance tolerances).
-    need(BOUGH_MAJOR - BOUGH_MINOR >= NUCLEUS_R + BLOSSOM_RADIUS + NUCLEUS_MARGIN,
+    need(BOUGH_MAJOR - BOUGH_MINOR >= NUCLEUS_R + BLOSSOM_RING_RADII[-1] + NUCLEUS_MARGIN,
          "the bough's inner radius does not clear a blossom sitting at its closest approach.")
-    need(VINE_MAJOR - VINE_MINOR >= NUCLEUS_R + VINE_BLOSSOM_RADIUS + NUCLEUS_MARGIN,
+    need(VINE_MAJOR - VINE_MINOR >= NUCLEUS_R + VINE_BLOSSOM_RING_RADII[-1] + NUCLEUS_MARGIN,
          "the vine's inner radius does not clear a vine blossom at its closest approach.")
+
+    # NOTHING CLIPS ANYTHING. Measured over the whole emitted cloud with a 15-axis
+    # separating-axis test, because two prisms occupying the same space is the one defect a
+    # per-family fit cannot see: it is a relationship between families that were each
+    # individually correct. (The gyroid lattice-scale finding, one level up - every constant
+    # correct, the RELATIONSHIP wrong, and no static check able to see it.)
+    clips = env["clips"]
+    if clips["total"]:
+        worst = ", ".join(f"{a} x {b}: {n}" for (a, b), n in clips["pairs"].most_common(4))
+        need(False, f"{clips['total']} clipping prism pairs (deepest {clips['worst']:.2f}u) - "
+                    f"{worst}")
+    need(clips["tightest"] >= 0.1,
+         f"the tightest non-clipping pair clears by only {clips['tightest']:.3f}u - a fit that "
+         f"clears by a hair re-reads as clipping the moment anything moves.")
+
+    # The yield is a LAST RESORT, not a crutch. A family that gives up a big share of itself has
+    # stopped being authored and started being carved, and it would thin silently.
+    for fam, n in env["yielded"].items():
+        laid = env["families"].get(fam, [0])[0]
+        need(n <= 0.05 * (laid + n),
+             f"the {fam} yielded {n} of {laid + n} prisms - past a twentieth, the family is being "
+             f"carved by whatever it runs into rather than authored, and it thins silently.")
+
+    # A yield decision taken ON its threshold is one this model (float64) and the engine (float32)
+    # can disagree about, which is a one-prism difference with no obvious cause.
+    need(env["yield_margin"] >= 0.02,
+         f"a yield decision came within {env['yield_margin']:.4f}u of YIELD_GAP - too close for "
+         f"float32 and float64 to be guaranteed to agree about it.")
+
+    # The yield grid's 27-cell neighbourhood only covers every pair that could touch while no
+    # prism's bounding radius exceeds half a cell.
+    need(env["max_bounding_radius"] <= 0.5 * YIELD_CELL,
+         f"a prism's bounding radius is {env['max_bounding_radius']:.1f}, over half the yield "
+         f"grid's {YIELD_CELL} cell - the neighbourhood stops covering every pair that can touch.")
     need(VINE_MAJOR + VINE_MINOR <= BOUGH_MAJOR + BOUGH_MINOR,
          "the vine is not inside the bough's envelope - it stops being the inner runner.")
     need(BOUGH_MAJOR - BOUGH_MINOR < CAM_R < BOUGH_MAJOR + BOUGH_MINOR,
@@ -581,6 +940,22 @@ def check_source_constants(problems):
         got = float(m.group(1))
         if abs(got - float(want)) > 1e-4:
             problems.append(f"{name}: C# says {got}, the model says {want}")
+    for name, want in MIRRORED_ARRAYS.items():
+        m = re.search(r"\b%s\s*=\s*\{([^}]*)\}" % re.escape(name), src)
+        if not m:
+            problems.append(f"array {name} not found in SpawnableGarland.cs")
+            continue
+        got = tuple(float(x) for x in re.findall(r"-?[\d.]+", m.group(1)))
+        if len(got) != len(want) or any(abs(a - float(b)) > 1e-4 for a, b in zip(got, want)):
+            problems.append(f"{name}: C# says {got}, the model says {tuple(want)}")
+    for name, want in MIRRORED_VECTORS.items():
+        m = re.search(r"\b%s\s*=\s*new\(([^)]*)\)" % re.escape(name), src)
+        if not m:
+            problems.append(f"vector {name} not found in SpawnableGarland.cs")
+            continue
+        got = tuple(float(x) for x in re.findall(r"-?[\d.]+", m.group(1)))
+        if len(got) != len(want) or any(abs(a - float(b)) > 1e-4 for a, b in zip(got, want)):
+            problems.append(f"{name}: C# says {got}, the model says {tuple(want)}")
     if "AdmitsAuthoredPrismScale" in src:
         problems.append("SpawnableGarland opts into AdmitsAuthoredPrismScale - the prism scale "
                         "window no longer binds, so the max-axis check below is vacuous.")
@@ -731,18 +1106,46 @@ def check_serialized_keys(files, problems):
 
 
 def self_test():
-    """Negative control: the nucleus assertion is the one that has shipped broken before, so
-    prove it FIRES. A check nobody has watched fail is a check nobody should trust."""
-    env = measure(build_environment(vine_blossom_radius=VINE_BLOSSOM_RADIUS + 90.0))
+    """Negative controls. A check nobody has watched fail is a check nobody should trust, and
+    this file carries two that would otherwise be easy to mistake for working: the NUCLEUS
+    clearance, which has shipped broken before (Caldera laid 89% of its mass inside the seed),
+    and the NO-CLIPPING assertion, which passes trivially the moment the measurement stops
+    seeing orientations or the SAT loses an axis."""
+    global CHAIN_FILL
+    failed = []
+
+    wide = list(BLOSSOM_RING_RADII)
+    wide[-1] += 90.0
     problems = []
+    env = measure(build_environment(blossom_ring_radii=tuple(wide)))
     check_invariants(env, roster_model(env), problems)
     hit = [p for p in problems if "inside NucleusR" in p]
-    if not hit:
-        print("SELF-TEST FAILED: widening the vine blossoms by 90u did not trip the nucleus "
-              "clearance assertion.")
+    if hit:
+        print("self-test OK - nucleus clearance fires on a deliberately over-wide blossom:")
+        print("   ", hit[0].split(" (worst")[0])
+    else:
+        failed.append("widening the outer blossom ring by 90u did not trip the nucleus clearance")
+
+    # A chain that fills MORE than its own step is exactly the defect this cell shipped with
+    # (4,372 clipping pairs): every consecutive pair of every long family welded shut.
+    keep, problems = CHAIN_FILL, []
+    try:
+        CHAIN_FILL = 1.06
+        env = measure(build_environment())
+        check_invariants(env, roster_model(env), problems)
+    finally:
+        CHAIN_FILL = keep
+    hit = [p for p in problems if "clipping prism pairs" in p]
+    if hit:
+        print("self-test OK - the clipping assertion fires on a chain fill over 1:")
+        print("   ", hit[0][:140])
+    else:
+        failed.append("CHAIN_FILL 1.06 welds every chain shut and did not trip the clipping check")
+
+    if failed:
+        for f in failed:
+            print("SELF-TEST FAILED:", f)
         return 1
-    print("self-test OK - nucleus clearance assertion fires on a deliberately over-wide blossom:")
-    print("   ", hit[0].split(" (worst")[0])
     return 0
 
 

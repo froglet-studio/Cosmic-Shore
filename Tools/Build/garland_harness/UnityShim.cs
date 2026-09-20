@@ -36,14 +36,49 @@ namespace UnityEngine
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t) => a + (b - a) * t;
     }
 
-    // Inert on purpose: the harness measures POSITION, SCALE, DOMAIN and KIND. A rotation moves
-    // neither a prism's centre nor its volume, so stubbing it cannot flatter the measurement.
-    public struct Quaternion { public static Quaternion identity => default; }
+    public struct Vector2
+    {
+        public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+    }
+
+    // NOT inert. The harness measures CLIPPING as well as count and volume, and a prism's
+    // oriented box is its rotation - so this carries the real basis Unity's LookRotation builds
+    // (z along forward, x = up x z, y = z x x) rather than a stub. Transcribed, and pinned to
+    // UnityEngine's documented construction by the same claims list as everything else here:
+    // a stubbed rotation would measure a world of axis-aligned prisms and report it as clear.
+    public struct Quaternion
+    {
+        public Vector3 X, Y, Z;
+        public static Quaternion identity =>
+            new Quaternion { X = Vector3.right, Y = Vector3.up, Z = Vector3.forward };
+
+        // The basis applied to a vector. SpawnableGarland reads a prism's axes as
+        // `rot * Vector3.right/up/forward` to build its yield grid, so this is a PROJECT-facing
+        // operation rather than a convenience - a stub would hand the grid the wrong axes and the
+        // yield decisions would silently differ from the engine's.
+        public static Vector3 operator *(Quaternion q, Vector3 v) =>
+            q.X * v.x + q.Y * v.y + q.Z * v.z;
+
+        public static Quaternion LookRotation(Vector3 forward, Vector3 up)
+        {
+            Vector3 z = forward.normalized;
+            Vector3 x = Vector3.Cross(up, z);
+            // Unity falls back when up is parallel to forward; nothing in Garland emits that
+            // pose (the nearest is a polar mote at |dot| 0.996), and a silent identity here
+            // would be a prism measured in the wrong orientation, so it is made loud instead.
+            if (x.sqrMagnitude < 1e-10f)
+                throw new InvalidOperationException("LookRotation: forward is parallel to up.");
+            x = x.normalized;
+            return new Quaternion { X = x, Y = Vector3.Cross(z, x), Z = z };
+        }
+    }
 
     public static class Mathf
     {
         public const float PI = 3.14159265f;
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
+        public static float Abs(float v) => Math.Abs(v);
         public static float Cos(float v) => (float)Math.Cos(v);
         public static float Sin(float v) => (float)Math.Sin(v);
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
@@ -67,14 +102,19 @@ namespace CosmicShore.Gameplay
 
     public static class SpawnPoint
     {
-        public static Quaternion LookRotation(Vector3 forward, Vector3 up) => Quaternion.identity;
+        public static Quaternion LookRotation(Vector3 forward, Vector3 up)
+        {
+            if (forward.sqrMagnitude < 0.0001f)
+                return Quaternion.identity;
+            return Quaternion.LookRotation(forward, up);
+        }
     }
 
     public abstract class SpawnableBase { }
 
     public abstract class CellEnvironmentSpawnableBase : SpawnableBase
     {
-        public static readonly List<(Vector3 p, Vector3 s, Domains d, PrismKind k)> Recorded = new();
+        public static readonly List<(Vector3 p, Quaternion r, Vector3 s, Domains d, PrismKind k)> Recorded = new();
 
         protected const float GoldenAngle = 2.39996323f;
         protected abstract int DefaultSeed { get; }
@@ -84,7 +124,7 @@ namespace CosmicShore.Gameplay
         protected abstract int BuildParameterHash();
 
         protected void Emit(Vector3 pos, Quaternion rot, Vector3 scale, Domains dom, PrismKind kind = PrismKind.Plain)
-            => Recorded.Add((pos, scale, dom, kind));
+            => Recorded.Add((pos, rot, scale, dom, kind));
 
         protected static float Hash01(int n)
         {
