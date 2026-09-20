@@ -1103,8 +1103,8 @@ CHARGE_DASH = 0.45
 # lot in HOW they grow will need this fit; one whose concept is the same growth everywhere
 # very nearly does not.
 VOLUME_GAIN = {
-    "FractalFoliage": {"Charge": 0.7023, "Mass": 1.0101, "Space": 0.6022, "Time": 1.0},
-    "CoralBloom":     {"Charge": 1.0487, "Mass": 0.8322, "Space": 0.968,  "Time": 1.0},
+    "FractalFoliage": {"Charge": 0.7521, "Mass": 1.015,  "Space": 0.5995, "Time": 1.0},
+    "CoralBloom":     {"Charge": 0.9369, "Mass": 0.7338, "Space": 0.8659, "Time": 1.0},
 }
 
 # Fields:      field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
@@ -1140,19 +1140,65 @@ SPECIES = {
         neutral_step=0.030,
         weight_spread=1.0,
         # THE FALL (Docs/ECOSYSTEM.md §47): its dives corkscrew, doubling down on the helicoid.
+        #
+        # CHARGE authors a WALK STEP, and it is an ARMOUR fit rather than a curve-family
+        # choice. A Charge prism is laid at CHARGE_DASH x the chord that spaces it and its
+        # shield reaches 1.5 x leafSize, so an armoured chain clears along its own axis only
+        # while `3 x LengthFactor < 1` - and `rules_for` sets `LengthFactor = CHARGE_DASH x
+        # step/walk_step`, which at walk_step 0 (= the law's step) is 0.45 and fuses. The
+        # Fall is where that bites, because inside 0.15 R a dive is ALONE: measured, 59 of
+        # the 60 interpenetrating armoured pairs in the core are one dive's own consecutive
+        # prisms, so the core reads as a rod. 0.045 puts the ratio at 0.30, a clean 10%
+        # under the 1/3 cliff (measured: 0.040 -> 38.7%, 0.042 -> 1.6%), and takes the core
+        # from 45.8% to 4.2%. It is NOT reachable from the dive's own dials - the overlap
+        # condition is `3 x LengthFactor` whatever the stride, which is why DiveStopRadius,
+        # DiveGirthFloor and DiveCount all measured inert or worse (the girth floor thins
+        # the cross-section, and an octahedron pair separated along its own axis does not
+        # care about the cross-section: the count stayed at 59 while the denominator fell).
+        # The plant reads as a BIGGER-dashed bead-work cage and the octahedra still close
+        # 90% of the gap they are left.
         extra={
             "*": FALL_SHARED | {"dive_swirl": 8.0, "dive_axis_align": 1.0},
-            "Charge": {"dive_count": 8, "dive_angle": 52},
+            "Charge": {"dive_count": 8, "dive_angle": 52, "walk_step": 0.045},
             "Mass":   {"dive_count": 8, "dive_angle": 58},
             "Space":  {"dive_count": 8, "dive_angle": 50},
-            "Time":   {"dive_count": 8, "dive_angle": 62},
+            # SEVEN dives, not eight: at eight the dive share is 24.9% against a 25% ceiling,
+            # which is a pass with no margin on the one member of the family the gate sees.
+            "Time":   {"dive_count": 7, "dive_angle": 62},
         },
         curves={
             #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
             "Charge": (0, 25, 0.90, 0.35, 0.040, 130, 60, 0.30, 0.3, 0.30, 70, 10, 30, 0.3, 2.0,  8, 0.45, 0.40, 0),
             "Mass":   (0, 55, 0.85, 0.35, 0.038, 140, 70, 0.34, 0.4, 0.25, 80,  9, 30, 0.3, 2.0,  8, 1.0, 0.40, 0),
-            "Space":  (5,  0, 0.00, 0.55, 0.050, 150, 55, 0.34, 0.2, 0.40, 65, 11, 26, 0.3, 2.1, 10, 1.0, 0.45, 0),
-            "Time":   (1,  0, 0.95, 0.25, 0.030, 110, 80, 0.26, 0.0, 0.30, 90,  8, 60, 0.3, 2.0,  5, 1.0, 0.35, 0),
+            # SPACE's seed count is sized to the number of curves its budget can PAY FOR.
+            # Its struts are ~149 prisms, so 2,800 buys ~22 curves however many seeds are
+            # authored - and the Fall's owed set STRIDES the seed list, so a list three
+            # times longer than the plant degenerates into a prefix: measured, 8 dives were
+            # spent and only 3 landed inside the budget (38%, bound 60%). At 32 the stride
+            # lands inside the laid plant and 7 of 8 arrive. The count is chosen over ELEVEN
+            # members of the family rather than on the one the gate measures, because the
+            # arrival turns out to be number-theoretic in (seeds, DiveCount, curves the
+            # budget buys) rather than smooth: 32 holds 6-8 of 8 across the family, 36 drops
+            # to 5, and 28 lands EVERY member on 4 (its stride puts three owners past the
+            # last curve the budget pays for).
+            "Space":  (5,  0, 0.00, 0.55, 0.050, 150, 55, 0.34, 0.2, 0.40, 32, 11, 26, 0.3, 2.1, 10, 1.0, 0.45, 0),
+            # TIME's ascent is SWIRLED 15 deg. Pure steepest-ascent locks onto the power-12
+            # bulb's terrace risers, which are steeper than 45 deg, so 81% of its surface
+            # prisms pointed within 45 deg of the ray to the heart and the plant measured
+            # 60.6% radial against the 55% sunburst bound - a hedgehog, not a foliage. The
+            # swirl takes the walk off the cliff face without leaving the ascent field: the
+            # curves still climb every crest, now as spirals, which is this species' own
+            # helicoid statement made at the scale of the curve instead of the prism. It is
+            # a CLIFF rather than a slope (0 -> 60.6%, 10 -> 5.6%, 15 -> 1.8%, 20 -> 0.9%),
+            # because a swirled walk stops being able to climb a riser at all - so the swirl
+            # is chosen on the RENDER rather than on the number, and 15 is where the fronds
+            # read as helices while the star still reads as a star at arena distance (25 and
+            # 35 curl the fronds into hooks and the silhouette goes fuzzy). Measured over
+            # eleven members of the family it holds 1.2-2.3%, so it is not riding an edge.
+            # Mix and momentum were measured as alternatives and are worse on both counts:
+            # neither reaches the bound (58.2% at mix 0.7, 57.0% at momentum 0.5) and both
+            # empty half the sphere's bands as the runs lengthen.
+            "Time":   (1, 15, 0.95, 0.25, 0.030, 110, 80, 0.26, 0.0, 0.30, 90,  8, 60, 0.3, 2.0,  5, 1.0, 0.35, 0),
         },
     ),
     "CoralBloom": dict(
@@ -1181,14 +1227,18 @@ SPECIES = {
             # gap keep the cage open enough to see the crossings through.
             #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
             "Charge": (0, 15, 0.22, 0.93, 0.045, 260, 26, 0.55, 0.3, 0.20, 44, 13, 26, 0.3, 2.0, 30, 0.45, 0.55, 0),
-            "Mass":   (0, 40, 0.20, 0.94, 0.045, 260, 28, 0.60, 0.4, 0.18, 46, 12, 26, 0.3, 2.0, 30, 1.0, 0.55, 0),
+            "Mass":   (0, 40, 0.20, 0.94, 0.045, 260, 28, 0.60, 0.4, 0.18, 28, 12, 26, 0.3, 2.0, 30, 1.0, 0.55, 0),
             "Space":  (5,  0, 0.00, 0.96, 0.045, 300, 22, 0.66, 0.2, 0.22, 40, 14, 22, 0.3, 2.2, 36, 1.0, 0.60, 0),
-            # CONTOUR with its own swirl rather than ASCENT: a fall-line field composed with
-            # this species' high momentum runs every curve to a pole, which measured as 21% of
-            # the plant in one band, an empty band next to it, and a walk sitting on the
-            # abandon gate - the model and the shipped C# then disagreed on 11 of 51 curves at
-            # full fidelity. The concept here is curves that CONTINUE, and a field with a
-            # global attractor is the one thing that cannot continue.
+            # ASCENT (field 1), and a RETIREMENT RECORD: a CONTOUR field with its own swirl was
+            # tried here twice on the theory that a fall-line field composed with this species'
+            # high momentum runs every curve to a pole. Measured, every CONTOUR variant makes
+            # the named symptom WORSE (max band 30.4-35.3% against ASCENT's 29.8%) and kills
+            # the plant's radial spokes (15.3% -> 0.5-2.0%). A field MIX of 0.28 was also tried
+            # (it widens the thinnest band from 2.4% to 3.7% of the plant) and REVERTED: it
+            # moved the walk onto a float-width cliff where the shipped C# and the model
+            # disagreed on the mean girth by 10% (curves 110 vs 125), i.e. a look tuned on the
+            # model that the game would not lay. The mix stays 0.18 and the thinnest band's
+            # 20% margin is accepted and stated.
             "Time":   (1,  0, 0.18, 0.95, 0.045, 240, 30, 0.52, 0.0, 0.20, 50, 11, 30, 0.3, 2.0, 14, 1.0, 0.50, 0),
         },
     ),
@@ -1218,11 +1268,13 @@ SPECIES["Watershed"] = dict(
     neutral_step=0.045,
     weight_spread=1.0,
     extra={
-        "*": FALL_SHARED | {"skeleton_seeds": 1, "dive_swirl": 0.0, "dive_axis_align": 1.0},
-        "Charge": {"walk_step": 0.050, "girth_reference": 13, "dive_count": 14, "dive_angle": 56, "dive_descent": 0.18},
+        "*": FALL_SHARED | {"skeleton_seeds": 1, "dive_swirl": 0.0, "dive_axis_align": 1.0,
+                            "dive_stop": 0.060, "dive_stride_ceiling": 0.70},
+        "Charge": {"walk_step": 0.065, "girth_reference": 10, "dive_count": 14, "dive_angle": 56, "dive_descent": 0.10},
         "Mass":   {"walk_step": 0.040, "girth_reference": 27, "dive_count": 12, "dive_angle": 60, "dive_descent": 0.10},
         "Space":  {"walk_step": 0.050, "girth_reference": 22, "dive_count": 12, "dive_angle": 56, "dive_descent": 0.06},
-        "Time":   {"walk_step": 0.050, "girth_reference": 14, "dive_count": 16, "dive_angle": 62, "dive_descent": 0.30},
+        "Time":   {"walk_step": 0.050, "girth_reference": 14, "dive_count": 7, "dive_angle": 62, "dive_descent": 0.05,
+                   "dive_stride_ceiling": 0.80},
     },
     curves={
         # Only steps/lanes/turn/radius/run/taper are read; field, swirl, mix, momentum, hop and
@@ -1234,7 +1286,7 @@ SPECIES["Watershed"] = dict(
         "Time":   (2,  0, 1.00, 0.00, 0.050, 120,  4, 0.00, 0.0, 0.00,  0,  0, 60, 0.3, 2.0,  3, 1.0, 0.40, 0),
     },
 )
-VOLUME_GAIN["Watershed"] = {"Charge": 1.0, "Mass": 1.0, "Space": 1.0, "Time": 1.0}   # unfitted: --fit-volume
+VOLUME_GAIN["Watershed"] = {"Charge": 1.0369, "Mass": 1.0819, "Space": 1.3362, "Time": 1.0}   # fitted: --fit-volume
 
 # ── APOLLONIA — the self-similar species (Docs/ECOSYSTEM.md §48) ───────────────────────────
 #
@@ -1260,36 +1312,82 @@ SPECIES["Apollonia"] = dict(
     concept="the Apollonian gasket: rings packed tangent to rings, crowning the bulb's own lobes",
     twist=0.0,
     girth_taper=1.0,              # off: the rho ladder IS the scale ladder
-    neutral_cross=(0.0340, 0.0150),
-    neutral_step=0.063,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / 50
+    neutral_cross=(0.1120, 0.0210),
+    neutral_step=0.116,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / N
     weight_spread=1.0,
     extra={
         "*": FALL_SHARED | {
             "dive_swirl": 0.0, "dive_axis_align": 1.0,
             "dive_descent": 0.0,        # structural: a closed ring starts and ends at one radius
-            "dive_stride_ceiling": 1.0, # the largest ring's chord IS ~1 step (RingSamplesFor)
+            "dive_stride_ceiling": 0.55,  # authored per element below: the dive's step against the
+                                          # ring chord it was released from. It is the FALL HOLE's
+                                          # one real lever (a refused dive prism leaves a gap of one
+                                          # dive step) and it is paid for in the LADDER, because a
+                                          # dive carries its ring's lane and a short dive prism
+                                          # drags that lane's MEDIAN length down.
+            "dive_girth_floor": 0.45,     # the Fall's bundle is the tightest packing in the plant,
+                                          # so this is the lever BOTH the core-armour gate and the
+                                          # worst-pair gate name: the converging dives are what the
+                                          # deepest interleaving is made of once the leaf is fat.
             "walk_step": 0.0,           # structural: the length factor is the dash alone
             "girth_reference": 1.0,
             "gasket_levels": 5, "disc_seeds": 13, "disc_pad": 0.60,
-            "ring_shrink": 0.90, "ring_girth_exponent": 0.40, "ring_girth_floor": 0.55,
+            "ring_shrink": 0.84, "ring_girth_exponent": 0.30, "ring_girth_floor": 0.30,
             "gasket_octave": 0.75,
         },
         # disc_min_radius is the per-element budget dial: what makes the FULL form fit.
-        "Charge": {"disc_min_radius": 0.100, "ring_flatten": 0.55, "dive_count": 6, "dive_angle": 56},
-        "Mass":   {"disc_min_radius": 0.085, "ring_flatten": 0.55, "dive_count": 5, "dive_angle": 60},
-        "Space":  {"disc_min_radius": 0.038, "ring_flatten": 0.55, "dive_count": 8, "dive_angle": 56},
-        "Time":   {"disc_min_radius": 0.075, "ring_flatten": 0.70, "dive_count": 7, "dive_angle": 62},
+        # ring_flatten is the SCALLOP: 1 draws every ring at its mean radius, 0 lifts every
+        # sample onto R(theta, phi). It is a look dial AND a LENGTH dial - a lifted ring's
+        # chords are longer than a flat one's, which is what carries the small octaves over
+        # the legibility floor - and it costs ring integrity once the chord variance gets
+        # large enough for the claim to start refusing the long ones (measured: Time breaks
+        # 5 rings at 0, Charge none, because Charge's prisms are the dash's 0.45 of a chord).
+        # ring_shrink and the girth ladder are per element for one reason: the leaf the fleet
+        # law hands each element is a different WIDTH on the same tangent rings, and the width
+        # against the shrink gap between two tangent rings IS the worst-pair measurement.
+        #
+        # THE GIRTH EXPONENT IS THE ONLY DIAL THAT SURVIVES THE VOLUME FIT, because it is the
+        # only one that changes the SHAPE of the plant rather than its scale: every "make it
+        # thinner" move is answered by VOLUME_GAIN growing back to the law's ratio, and only a
+        # move that takes material from one octave and gives it to another survives that. N is
+        # derived from rho_ref - the LARGEST ring - and applied to every ring, so a ring 17x
+        # smaller gets the same samples and its chord shrinks 17x while its prism thins only
+        # (1/17)^exponent. That mismatch is what fills a small ring in until it reads as a disc
+        # and reports as an interleave, so the exponent is the small end's whole defence
+        # (Space 0.30 -> 0.45: s* 0.312 -> 0.376 with four legible octaves intact).
+        # The exponent pulls the LADDER the other way, and the two are in genuine tension: see
+        # Docs/ECOSYSTEM.md - Charge's ladder is the bound this species cannot currently reach.
+        #
+        # dive_girth_floor is authored DOWN per element from the shared 0.45 because the Fall's
+        # last prisms are the ones nearest the crystal, and the brief asks to SEE the crystal
+        # they reach for. It is free on three elements and pays on Mass (its one bad pair was
+        # the converging bundle: s* 0.391 -> 0.470). On CHARGE it inverts - the core-armour gate
+        # is a FRACTION of armoured pairs, so thinning the bundle shrinks the denominator faster
+        # than the numerator (0.30 -> 0.24 took 14.6% to 15.9% and broke the bound); Charge is
+        # therefore authored UP, to 0.36, which is what buys its 13.3% against the 15% bar.
+        "Charge": {"disc_min_radius": 0.038, "ring_flatten": 0.00, "dive_count": 13,
+                   "dive_angle": 56, "dive_stride_ceiling": 0.35, "dive_girth_floor": 0.36,
+                   "ring_shrink": 0.88, "ring_girth_exponent": 0.13, "ring_girth_floor": 0.20},
+        "Mass":   {"disc_min_radius": 0.044, "ring_flatten": 0.55, "dive_count": 5,
+                   "dive_angle": 60, "dive_stride_ceiling": 0.55, "dive_girth_floor": 0.20,
+                   "ring_girth_exponent": 0.35},
+        "Space":  {"disc_min_radius": 0.030, "ring_flatten": 0.45, "dive_count": 13,
+                   "dive_angle": 50, "dive_stride_ceiling": 0.35, "dive_girth_floor": 0.10,
+                   "ring_shrink": 0.74, "ring_girth_exponent": 0.45, "ring_girth_floor": 0.12},
+        "Time":   {"disc_min_radius": 0.042, "ring_flatten": 0.70, "dive_count": 7,
+                   "dive_angle": 52, "dive_stride_ceiling": 0.68, "dive_girth_floor": 0.15,
+                   "ring_girth_exponent": 0.35},
     },
     curves={
         # Every walk column is inert under gasket_levels and authored 0 to say so.
         #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
-        "Charge": (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Mass":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Space":  (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
-        "Time":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Charge": (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Mass":   (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Space":  (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Time":   (0,  0, 0.00, 0.00, 0.116,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
     },
 )
-VOLUME_GAIN["Apollonia"] = {"Charge": 1.0, "Mass": 1.0, "Space": 1.0, "Time": 1.0}   # unfitted: --fit-volume
+VOLUME_GAIN["Apollonia"] = {"Charge": 0.7144, "Mass": 0.9752, "Space": 1.3073, "Time": 1.0}   # fitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice
