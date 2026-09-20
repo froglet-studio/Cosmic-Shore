@@ -164,10 +164,10 @@ namespace CosmicShore.Gameplay
 
                     case CellTypeChoiceOptions.EnvironmentFree:
                     {
-                        for (int i = 0; i < CellConfigs.Count; i++)
-                            if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
-                                return CellConfigs[i];
-                        return CellConfigs[0];
+                        // ResolveBootIndex, not BootIndex: the warning belongs to the one site
+                        // that is asked once (AssignConfig), and this property can be polled.
+                        int i = ResolveBootIndex();
+                        return CellConfigs[i < 0 ? 0 : i];
                     }
 
                     default:
@@ -1714,7 +1714,7 @@ namespace CosmicShore.Gameplay
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
                 CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
-                CellTypeChoiceOptions.EnvironmentFree => FirstEnvironmentFreeIndex(),
+                CellTypeChoiceOptions.EnvironmentFree => BootIndex(),
                 _ => 0
             };
 
@@ -1767,21 +1767,51 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Index of the first config with no authored <c>EnvironmentPrefab</c>, or 0 when
-        /// every config carries one. This is what makes entry to a freestyle scene cheap:
+        /// The config a freestyle scene boots into: the first that DECLARES itself the boot
+        /// default (<see cref="CellConfigDataSO.BootDefault"/>), else the first with no authored
+        /// <c>EnvironmentPrefab</c>, else 0. This is what makes entry to a freestyle scene cheap:
         /// the heavy prepopulated worlds are still listed (the Cell Selector toy offers
         /// them), they just are not paid for until the player asks.
+        ///
+        /// <para>The authored flag outranks the scan because the scan tests what a config
+        /// CONTAINS as a proxy for the thing actually wanted — how CHEAP it is to BUILD — and a
+        /// config can be both cheap and prepopulated. Garland is the first: 4,502 prisms,
+        /// composed for the home-screen camera rather than for a pilot inside it, so it builds
+        /// in a fraction of a heavy world's veil and still boots into a world rather than into
+        /// an empty sphere. No content predicate can express that, which is the same split
+        /// <see cref="BareCanvasConfig"/> records from the other side (Docs/ECOSYSTEM.md §36.10):
+        /// a property named for what something CONTAINS will eventually be asked how it BUILDS.
+        /// The scan stays as the fallback, so a cell that authors no boot default is unchanged.</para>
         /// </summary>
-        int FirstEnvironmentFreeIndex()
+        int BootIndex()
         {
+            int index = ResolveBootIndex();
+            if (index >= 0) return index;
+
+            CSDebug.LogWarning($"[Cell {ID}] Choice mode EnvironmentFree, but no config in " +
+                               "CellConfigs sets BootDefault and every one authors an EnvironmentPrefab - " +
+                               "booting index 0 and paying its build cost. Mark a cheap config " +
+                               "BootDefault, or add an environment-free one (e.g. Barren) to the list.");
+            return 0;
+        }
+
+        /// <summary>
+        /// The boot config's index, or -1 when neither rule finds one. Pure and silent, so
+        /// <see cref="ExpectedConfig"/> — which callers may poll every frame — and
+        /// <c>AssignConfig</c> — which is asked once and owns the warning — cannot drift apart
+        /// about which world a scene boots into.
+        /// </summary>
+        int ResolveBootIndex()
+        {
+            for (int i = 0; i < CellConfigs.Count; i++)
+                if (CellConfigs[i] && CellConfigs[i].BootDefault)
+                    return i;
+
             for (int i = 0; i < CellConfigs.Count; i++)
                 if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
                     return i;
 
-            CSDebug.LogWarning($"[Cell {ID}] Choice mode EnvironmentFree, but every config in " +
-                               "CellConfigs authors an EnvironmentPrefab - booting index 0 and paying " +
-                               "its build cost. Add an environment-free config (e.g. Blob) to the list.");
-            return 0;
+            return -1;
         }
 
         void SetupDensityGrids()

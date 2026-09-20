@@ -22,6 +22,7 @@ MonoBehaviour:
   CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
   CellModifiers:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
+  BootDefault: 1
   SpawnProfile: {fileID: 11400000, guid: 9c74b2e03fa8425db61ef50a8d3c76e1, type: 2}
   EnvironmentPrefab: {fileID: 5260000000000103, guid: b21f6c8d4e9a47d3ab05e7c2f8143d6b, type: 3}
   EnvironmentIntensity: 1

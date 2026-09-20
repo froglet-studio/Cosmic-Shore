@@ -3084,7 +3084,7 @@ Time for a fresh `SpawnSegmentCount = 8` colony to reach the 16-segment cap:
 
 | cell | period | 8 → 16 | colonies | colliders at cap |
 |---|---:|---:|---|---:|
-| Lattice (the freestyle **boot world**) | 5 s | **40 s** | toy-released, ~3 | 147 |
+| Lattice (freestyle, Cell Selector) | 5 s | **40 s** | toy-released, ~3 | 147 |
 | Blob profile | 15 s | 120 s | toy-released, ~3 | 147 |
 | **Wildlife Liberation** (ambient) | 20 s | 160 s | **9** (`MaxLivePopulation`) | **441** |
 | everything else | 30 s | 240 s | toy-released, ~3 | 147 |
@@ -6263,11 +6263,19 @@ current reality, and it is the same order as the heaviest **authored** environme
 - Fauna are held deliberately light (one grazer species, floor 4 / cap 8, no predators) so the
   collider line is dominated by the thing the cell exists to show.
 
-**This cell IS the boot world as of §36.10** — it replaced Blob at `CellConfigs[0]`. That is
-affordable only because the cost accrues rather than lands: the cell opens with **twelve plants**
-and no environment build at all, so entering Menu_Main is as cheap as it was, and the collider
-line above is reached only after ~7 minutes of continuous growth. A player who launches an arcade
-game before then never pays it, and every return to the menu starts the garden over.
+**This cell WAS the boot world between §36.10 and §48** — it replaced Blob at `CellConfigs[0]`,
+and that was affordable only because the cost accrues rather than lands: the cell opens with
+**twelve plants** and no environment build at all, so entering Menu_Main was as cheap as it had
+been, and the collider line above is reached only after ~7 minutes of continuous growth. A player
+who launched an arcade game before then never paid it, and every return to the menu started the
+garden over.
+
+**Garland boots today (§48.9), and the reason is the same sentence read the other way**: accruing
+is exactly what a home screen cannot do. The lava-lamp camera orbits at 686 units from the first
+frame, so a cell that is nearly empty for its first minutes is empty in the one shot the screen
+exists to draw — and "every return to the menu starts the garden over" means it is empty again
+after every arcade game. Lattice keeps `CellConfigs[0]` and stays a Cell Selector option; nothing
+about the colony model below changes.
 
 ### 36.9 The heartbeat is the build clock
 
@@ -6299,8 +6307,8 @@ test served both only because Blob happened to satisfy both:
 | `WanderwayRun` | a world that is **EMPTY** (you wander through open space, not through a world you are leaving) |
 
 Lattice is the first config where those diverge: it authors no environment, so it boots instantly
-and is the correct boot world — and it then grows 42,840 prisms out of twelve seeds, which is the
-opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
+and was the correct boot world at the time — and it then grows 42,840 prisms out of twelve seeds,
+which is the opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
 underneath the belt's own 30,000 transported prisms.
 
 So the concept is split. `EnvironmentFreeConfig` keeps its meaning (cheap to build) and
@@ -6798,7 +6806,8 @@ and all four edited files parse without error. **Not verified in Unity** — no 
 from the session, so `/verify-unity` did not run.
 
 In-editor:
-1. **Menu_Main** (the Lattice cell is the boot world, twelve colonies, one per element). Watch the
+1. **Menu_Main**, Cell Selector -> **Lattice** (twelve colonies, one per element; Garland boots,
+   so this is one pass through the selector). Watch the
    four Time colonies out-grow their eleven neighbours over ~10 minutes — that is the law's most
    visible read, since all twelve share one cell clock and one cap.
 2. **Rampage** or **Hesperides** for the quota path: those species roll all four elements from one
@@ -7213,8 +7222,8 @@ shepherding either of them used to move a number nothing rendered.
 
 ### Verify in-editor (the human is the gate — none of this has been run)
 
-Menu_Main freestyle is the fastest read; the **Lattice** cell is the boot world and holds twelve
-flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
+Menu_Main freestyle is the fastest read; the **Lattice** cell (Cell Selector — Garland boots) holds
+twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
 
 1. **Hearts differ by species, and the difference is legible.** Kill a tadpole, a brittlestar and
    a shark in one session and compare the dropped crystals: roughly 1.6–2.1 / 2.7 / 4.6 world
@@ -8591,3 +8600,77 @@ one is an art task, and a placeholder that looks authored is worse than one visi
 the flora volume calibration is an estimate; and the cell has not been device-profiled, though at
 4,502 prisms and 75 always-on colliders it is by a wide margin the lightest authored world in the
 freestyle rotation.
+
+### 48.9 It is the BOOT world — and the last inference in the boot path had to go (Sep 2026)
+
+Garland replaces **Lattice** as the world Menu_Main opens into. It was flown for an extended
+session at the home-screen camera and stayed performant, which is the only evidence that mattered;
+Lattice keeps `CellConfigs[0]` and stays a Cell Selector option, so nothing is removed.
+
+**Why the swap, in one sentence: accruing is the one thing a home screen cannot do.** §36.10's
+argument for booting Lattice was that its cost *accrues rather than lands* — twelve seeds, no
+environment build, the collider line reached only after ~7 minutes of growth. That is a good
+property for a world you fly *into* and a bad one for a world you *look at*: `MenuCam_LavaLamp1`
+orbits at 686 units from the first frame, so a cell that is nearly empty for its first minutes is
+empty in the one shot the screen exists to draw — and "every return to the menu starts the garden
+over" (§36.10's own sentence) means it is empty again after every arcade game. Garland is
+furnished in the first frame, every time.
+
+#### The mechanism: `CellConfigDataSO.BootDefault`
+
+`CellTypeChoiceOptions.EnvironmentFree` chose the first config with **no `EnvironmentPrefab`**.
+That predicate was never the question being asked. What the boot path wants is *how cheap is this
+to BUILD*, and "authors no environment" was a **proxy** for it — exact while no config was both
+cheap and prepopulated. Garland is the first that is: 4,502 prisms build in a fraction of a heavy
+world's veil, and it boots into a world rather than into an empty sphere. No predicate over a
+config's CONTENT can express that, so the boot choice becomes an authored bit:
+
+| | rule | result today |
+|---|---|---|
+| 1 | first config with `BootDefault` | **Garland** (the only asset in the project that sets it) |
+| 2 | first config with no `EnvironmentPrefab` | Lattice — the pre-§48 behaviour, kept as the fallback |
+| 3 | index 0, with a warning naming both fixes | — |
+
+`Cell.ResolveBootIndex()` is that ladder, **pure and silent**, and both the decision
+(`AssignConfig`) and the prediction (`ExpectedConfig`) call it — they duplicated the old predicate,
+which is exactly the drift this file keeps recording. `BootIndex()` wraps it with the warning,
+because that warning belongs to the site asked *once*, not to a property callers may poll.
+
+**This is §36.10's own rule met from the other side.** There, a property named for how something is
+BUILT (`EnvironmentFreeConfig`) was read as a claim about what it CONTAINS, and the fix was a
+second predicate (`BareCanvasConfig`). Here a property named for what a config CONTAINS was being
+asked how it BUILDS — and the fix could **not** be another predicate, because the fact is not in
+the content. The general form: *when a proxy and the thing it stands for come apart, look at which
+side the truth lives on. If it is still in the data, split the predicate; if it is not, author it.*
+
+#### The cost, stated
+
+Booting Garland pays its build on **every** entry to Menu_Main — boot and every return from an
+arcade game — behind the standard `EnvironmentLoadVeil`. Lattice paid nothing there. At 4,502
+prisms it is **13%** of Yggdra's 34,340 and it is the cheapest authored environment in the
+rotation, so the veil should be brief, but it is a real cost and it is the price of a home screen
+that is furnished immediately. **§19 is unchanged**: the six heavy worlds remain opt-in through the
+Cell Selector, which is what that section is about — this changes which *cheap* world is the
+default, not whether an expensive one may be.
+
+#### What did NOT change
+
+- **`Cell.BareCanvasConfig` still resolves to Barren** (no environment AND an empty spawn profile).
+  The Wanderway and the Arkway are untouched — verified by reproducing the property over the
+  shipped scene list, not by reading it.
+- **Every other cell in every other scene is byte-identical.** `BootDefault` is new and Garland is
+  the only asset that sets it, so rule 2 answers everywhere else exactly as it did.
+- Lattice stays at `CellConfigs[0]`; the Cell Selector reads `Cell.AvailableConfigs`, so its list
+  is unchanged in content and in order.
+
+#### Verified offline (the editor gate is still the human's)
+
+`ResolveBootIndex` was reproduced over the real `Menu_Main.unity` override list plus every
+`Cell Configs/**` asset: 11 configs, Garland the sole `BootDefault`, resolver → index 10 → Garland;
+Lattice present at index 0. `author_garland_cell.py --check` fired on the drift before the asset
+was rewritten and passes after (21 files), `--self-test` still fires the nucleus assertion, the
+compile harness still matches, and the six standing `Tools/Build/check_*.py` gates pass. **No Unity
+CLI is available in this session, so `/verify-unity` did not run** — the two edited C# files parse
+with zero syntax errors, and member-level resolution for a `MonoBehaviour`/`ScriptableObject` pair
+is editor-only by construction (CLAUDE.md, "a check that cannot resolve a type cannot see errors
+ABOUT that type"). The one thing to confirm in-editor is the veil length on entering Menu_Main.

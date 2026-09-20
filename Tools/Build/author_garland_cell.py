@@ -917,6 +917,7 @@ def config_asset(ladder):
   CytoplasmPrefab: {{fileID: {cf}, guid: {cg}, type: 3}}
   CellModifiers:
   - {{fileID: {kf}, guid: {kg}, type: 3}}
+  BootDefault: 1
   SpawnProfile: {{fileID: 11400000, guid: {GUID['profile']}, type: 2}}
   EnvironmentPrefab: {{fileID: 5260000000000103, guid: {GUID['prefab']}, type: 3}}
   EnvironmentIntensity: 1

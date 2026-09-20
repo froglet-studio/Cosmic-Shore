@@ -421,11 +421,15 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   number for all twelve because it is expressed in **plants** — territory units of each species'
   own lattice; equalising prism counts instead would shrink the quasicrystal's superstructure
   below its neighbours', which is the comparison the cell exists to make. It is the largest collider budget of any cell and is opt-in
-  through the Cell Selector, and since §36.10 it is also **the boot world** — it replaced Blob at
+  through the Cell Selector. It **was** the boot world between §36.10 and §48 — it replaced Blob at
   `CellConfigs[0]` and `Blob Cell Config` is deleted (only the config; the `Blob Cell` folder's
-  SpawnProfile is still the population of all seven authored freestyle worlds). Booting into it is
+  SpawnProfile is still the population of all seven authored freestyle worlds); **Garland boots
+  today** and Lattice stays at `CellConfigs[0]` as a Cell Selector option. Booting into Lattice was
   affordable because the cost ACCRUES: the cell opens with eight plants and no environment build,
-  and reaches the collider line only after ~7 minutes of growth. That swap also split a conflated
+  and reaches the collider line only after ~7 minutes of growth — which is also the reason it was
+  replaced, since *accruing* is the one thing a home screen cannot afford: the lava-lamp camera
+  shows the cell from 686 units and a world that is nearly empty for its first minutes is empty in
+  exactly the shot the screen exists to draw. That swap also split a conflated
   property — **`Cell.EnvironmentFreeConfig` means CHEAP TO BUILD, not EMPTY**, and the two had one
   test only because Blob satisfied both. The Wanderway run wants empty, so it now reads the new
   **`Cell.BareCanvasConfig`** (no `EnvironmentPrefab` AND a `SpawnProfile` with no flora and no
@@ -466,6 +470,24 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   what lets `Tools/Build/garland_harness/` compile and RUN the shipped C# and
   `author_garland_cell.py` assert the model against it — so the thresholds are measured rather
   than believed, and `--self-test` proves the nucleus-clearance assertion fires.
+  **It is the BOOT world**, and getting it there needed the last inference in the boot path made
+  explicit. `CellTypeChoiceOptions.EnvironmentFree` picked the first config with **no**
+  `EnvironmentPrefab` — a claim about what a config CONTAINS standing in for the thing actually
+  wanted, *how cheap it is to BUILD* — and the proxy held only while no config was both. Garland
+  is the first that is: 4,502 prisms build in a fraction of a heavy world's veil, and it boots
+  into a world rather than into an empty sphere. `CellConfigDataSO.BootDefault` is that
+  declaration (`Cell.ResolveBootIndex`, authored flag first, the environment-free scan as the
+  fallback, so every other cell in every other scene is byte-identical — Garland is the only
+  asset in the project that sets it). This is **§36.10's own rule met from the other side**: there
+  a property named for how something is BUILT was read as a claim about what it CONTAINS, and the
+  answer was a second predicate (`BareCanvasConfig`); here a property named for what a config
+  CONTAINS was being asked how it BUILDS, and no predicate over content can answer that, so the
+  answer is an authored bit. The honest cost, stated: Lattice booted instantly and *accrued*,
+  while Garland pays its build on **every** entry to Menu_Main (boot and every return from an
+  arcade game) behind the standard `EnvironmentLoadVeil` — 13% of Yggdra's 34,340 prisms, and the
+  price of a home screen that is furnished in the first frame rather than in the seventh minute.
+  Lattice keeps `CellConfigs[0]` and stays a Cell Selector option; `BareCanvasConfig` still
+  resolves to Barren, so the Wanderway is untouched.
 - **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
   periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
   and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only
