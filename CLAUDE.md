@@ -603,6 +603,40 @@ trio, and the traps).
   of `phi = 0` as 2*pi of error and was making the original species look 50x worse than it is. *A
   gate written against one species is a gate calibrated on one species.* Both species are in **NO
   SpawnProfile** (opt-in from the Lifeform Matrix toy). `Docs/ECOSYSTEM.md §46`.
+- **EVERY MANDELBULB CURVE REACHES THE HEART, AND TWO OF THE FOUR SPECIES ARE THE SURFACE'S OWN
+  STRUCTURE.** The family (§44, §46) is now FOUR species on one rule and one bake — Fractal Foliage
+  (helicoids), Coral Bloom (smooth crossing arcs), **the Watershed** (the discovery species: every
+  curve a SEPARATRIX of R(θ,φ), seeded at a saddle along a Hessian eigen-direction and run to a
+  peak or pit, the surface's Morse–Smale skeleton, whose peaks and pits sit in latitude rings of
+  exactly order − 1 = 7/4/2/11) and **Apollonia** (the self-similar species: an Apollonian gasket
+  of discs packed over the surface's PEAKS, each disc drawn as a closed ring of prisms lifted
+  onto R, so a ring crossing three lobes is a scalloped star and a ring inside one lobe a circle)
+  — plus **the Fall**, the mechanism every species authors: a released curve continues as a LOG
+  SPIRAL into the heart (a constant angle off the inward radial, never a lerp; wound about ONE
+  axis so the pole is a rosette; `up` hung off the RAY; depth a SHELL FRACTION; the azimuthal sign
+  behind a dead band; the stride ceiling solved per element because a surface prism is the CHORD,
+  1.05–1.20× the step). Seven rules travel with it. **A critical-point census runs in DOUBLE on the
+  float32 field** (`Surface.SampleD`) or the shipped C# and the model disagree on which peaks
+  exist. **A column that is inert because it was authored at its no-op value is not inert** —
+  the Watershed's mix/momentum/swirl were READ and are now short-circuited under `SkeletonSeeds`;
+  the inert-column PROBE (grow twice with the column moved, assert byte-identical prisms) is what
+  catches it. **A species whose prism length is set by its own geometry must not also take a
+  `LengthFactor` that assumes a walk step** — a ring's prisms 21% longer than their chord refused
+  their own neighbours through the claim filter, and no existing gate could see it (Apollonia
+  ships a ring-integrity gate). **An element's §45 long axis is spent as SAMPLING COARSENESS**
+  (prisms per ring derived from the step: Space a 29-gon of blades, Mass a 55-gon of bricks),
+  never as a longer prism. **The lane is the size octave the EYE reads, never the recursion
+  depth** (measured non-monotone in ρ), which is what makes a budget-stopped gasket lose its
+  smallest rings and lay the Fall first. **Every ordering is a TOTAL key** — the bulb's symmetry
+  puts children in orbits sharing a ρ to the last bit and `.NET` has no stable `List` sort.
+  **Count octaves in SCREEN PIXELS, not prisms** — a ladder that satisfied the ~40-prism repeat
+  floor spent 41% of its prisms on 1% of the arena frame; the ladder gate is stated in screen
+  terms and the girth allometry carries a FLOOR. No address field changed for the gasket and
+  `Pose` is untouched; the recursion is a seed-generation concern, lazy like the saddle census
+  (never on the planting frame), Rng-free, and proven level 0 EXACT / children STATISTICAL
+  against the compiled C#. Two judged design rounds, nine rendered candidates — the runners-up
+  and why each lost are in `Docs/ECOSYSTEM.md §48`. All four are in **NO SpawnProfile** (opt-in
+  from the Lifeform Matrix toy). `Docs/ECOSYSTEM.md §47`, `§48`; the `/flora` skill §5.2.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
   in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —

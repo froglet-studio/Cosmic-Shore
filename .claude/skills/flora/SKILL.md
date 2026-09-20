@@ -245,6 +245,46 @@ element's surface roughness, and a `phi` comparison with no seam unwrap that had
 first species look 50x worse than it was). Expect your second species to find the same class of
 thing, and fix the gate rather than widening it.
 
+### 5.2 A species can be the surface's own STRUCTURE, and a mechanism can be shared by all of them
+
+The Mandelbulb family now holds FOUR species on one rule (`Docs/ECOSYSTEM.md §47`, `§48`), and the
+last two were built a different way from the first two — not by tuning a curve family but by
+seeding the walk from something the surface already CONTAINS:
+
+- **The Watershed** seeds every curve at a **saddle** of R(θ,φ) and runs it along a Hessian
+  eigen-direction to a peak or a pit — the surface's Morse–Smale skeleton, a net anchored to the
+  topology. The census is run in DOUBLE on the float32 field (`Surface.SampleD`), because a
+  float32 census disagreed with the model on which peaks existed; the seeds are in
+  **farthest-point order** so every budget prefix is spread; and the walk is **pure gradient flow
+  by construction** — the "inert" mix/momentum/swirl columns were found READ while merely authored
+  at their no-op values, and are now short-circuited under `SkeletonSeeds`. *A column that is inert
+  because it was authored at its no-op value is a column that stops being inert on the next edit;
+  the inert-column PROBE (grow twice with the column moved, assert byte-identical prisms) is the
+  gate that catches it.*
+- **Apollonia** seeds level 0 at the surface's **peaks** and packs an Apollonian gasket of discs
+  over them, each disc DRAWN as a closed ring of prisms lifted onto R — with **no address field
+  changed** and `Pose` untouched, because the recursion is a seed-generation concern. Three
+  rules it bought: a species whose prism length is set by its own geometry must not also take a
+  `LengthFactor` that assumes a walk step (a ring's prisms refused their own neighbours through
+  the claim filter); an element's §45 long axis is spent as SAMPLING COARSENESS (prisms per ring
+  derived from the step) rather than as a longer prism; and **lane = the size octave the eye
+  reads, never the recursion depth** (measured non-monotone), which is what makes a budget-stopped
+  plant lose its smallest rings. Every ordering is a TOTAL key — the bulb's symmetry puts children
+  in orbits that share a ρ to the last bit, and `.NET` has no stable `List` sort.
+- **The Fall** is the mechanism every species authors: a released curve continues as a **log
+  spiral** into the heart (constant angle from the inward radial, never a lerp), winding about ONE
+  axis so the pole reads as a rosette, its `up` hung off the RAY, its depth a SHELL FRACTION so a
+  morph scales it, its azimuthal sign carrying a DEAD BAND (a rounding residual decided the winding
+  on a meridional arm), and its step ceiling solved per element (a surface prism is the CHORD,
+  1.05–1.20× the step). It is what makes "the spindles almost connect to their crystal" literal,
+  and its price is paid at the core on the armoured element (§47.3).
+
+**Judge a self-similar species by RENDERING it at arena distance, and count OCTAVES in screen
+pixels, not prisms.** Round one's lesson ("a repeat under ~40 prisms is invisible") was satisfied
+in prism count by a design whose lower octaves were sub-pixel; the ladder gate is now stated in
+screen terms. Nine candidates were prototyped and rendered across two judged rounds before the
+gasket won; the design record (`§48`) says why each runner-up lost, and the reasons are reusable.
+
 ---
 
 ## 6. Fit the prism — do not eyeball it, and remember CHARGE is a different question
