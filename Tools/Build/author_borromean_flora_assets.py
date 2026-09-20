@@ -11,7 +11,13 @@ The generator is the source and the assets are the build (Docs/TOOLING.md).  Eve
 it writes is READ OUT OF `BorromeanSurfaceData.cs` rather than retyped, so the leaf the
 configs author and the leaf the plant grows on cannot drift: re-run
 `measure_borromean_minimal_surface.py --write` and then this, and the pair stays consistent
-by construction.
+by construction.  EVERY ELEMENT HAS ITS OWN TABLE - its own tessellation, its own prism
+budget and its own fitted plate, because no prism may interpenetrate another and a plate
+that clears is bounded by how far apart its neighbours are - so the per-element configs
+differ in more than their leaf.  At runtime `BorromeanFlora` takes both the leaf and the
+budget from its own element's table rather than from the config, which is what makes that
+a GUARANTEE rather than an authored number; the configs carry the same values so the assets
+are not silent about the plants they describe.
 
 GUIDs are `md5("cosmicshore/borromean/<stable name>")`, so a re-run is idempotent and
 `--check` compares CONTENT rather than identity.  Every one is asserted to be owned by
@@ -25,8 +31,8 @@ silently.
 DEPLOYMENT, stated plainly because the claim rots: as of this commit the species is in NO
 `SpawnProfileSO`, and is reachable through the freestyle Lifeform Matrix toy.  That is the
 worm colony's precedent - an opt-in species - and it is deliberate: adopting it into a cell
-means re-deriving that cell's volume ladder against a 116-unit, 354-prism plant, which is a
-tuning pass this branch has not done.  Re-prove the claim by grepping these configs' GUIDs
+means re-deriving that cell's volume ladder against a ~110-unit plant of 180 to 360 prisms
+DEPENDING ON ITS ELEMENT, which is a tuning pass this branch has not done.  Re-prove the claim by grepping these configs' GUIDs
 across `_SO_Assets` before inheriting it.
 """
 import hashlib, os, re, sys, argparse
@@ -70,7 +76,12 @@ def guid(name):
 
 
 def read_table():
-    """Read the numbers the measurement emitted - never retype them."""
+    """Read the numbers the measurement emitted - never retype them.
+
+    EVERY ELEMENT HAS ITS OWN TABLE, because a plate that does not interpenetrate its
+    neighbours is bounded by how far apart they are, so an element whose body is bigger
+    takes a coarser tessellation rather than a shrunken plate.  The prism BUDGET, the plant
+    RADIUS and the plate are therefore all per element here."""
     if not os.path.exists(TABLE):
         sys.exit('BorromeanSurfaceData.cs is missing - run '
                  'Tools/Build/measure_borromean_minimal_surface.py --write first')
@@ -79,14 +90,23 @@ def read_table():
         m = re.search(rf'public const {"int" if kind=="int" else "float"} {name} = ([-\d.]+)f?;', t)
         if not m: sys.exit(f'{name} not found in BorromeanSurfaceData.cs')
         return int(m.group(1)) if kind == 'int' else float(m.group(1))
-    def vec(name):
-        m = re.search(rf'{name}\s*= new\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\);', t)
-        if not m: sys.exit(f'{name} not found in BorromeanSurfaceData.cs')
-        return tuple(float(g) for g in m.groups())
-    return dict(sites=const('SiteCount'), orbit=const('OrbitSize'),
-                radius=const('PlantRadius', 'float'),
-                leaf=vec('TimeLeafSize'),
-                leaves={e: vec(f'{e}LeafSize') for e in ('Charge', 'Mass', 'Space', 'Time')})
+    def element(e):
+        # Matched WITH its own array names, so a table wired to another element's points -
+        # the one mistake four near-identical blocks invite - fails here rather than
+        # authoring a config against the wrong plant.
+        m = re.search(rf'SurfaceTable {e} = new SurfaceTable\(\s*'
+                      rf'{e}Positions, {e}Rotations, {e}Parents,\s*'
+                      rf'new Vector3\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\), '
+                      rf'([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\);', t)
+        if not m: sys.exit(f'the {e} SurfaceTable is missing from BorromeanSurfaceData.cs, '
+                           f'or is not wired to its own {e}Positions/{e}Rotations/{e}Parents')
+        g = [float(x) for x in m.groups()]
+        b = re.search(rf'{e}Positions =\s*\{{\n(.*?)\n\s*\}};', t, re.S)
+        if not b: sys.exit(f'{e}Positions not found in BorromeanSurfaceData.cs')
+        return dict(leaf=tuple(g[:3]), radius=g[3], sites=len(re.findall(r'new\(', b.group(1))))
+    els = {e: element(e) for e, _ in ELEMENTS}
+    return dict(orbit=const('OrbitSize'), max_sites=const('MaxSiteCount'),
+                anchor=els['Time'], elements=els)
 
 
 def v3(t):
@@ -146,13 +166,18 @@ def build_prefab(tbl, flora_guid):
     donor_tail = re.search(r'(  leafSize: .*?\n)(?=--- !u!1001)', out, re.S)
     if not donor_tail:
         sys.exit('donor tuning block not found - SchwarzPFlora.prefab has changed shape')
-    tail = (f'  leafSize: {v3(tbl["leaf"])}\n'
+    # The prefab carries the ANCHOR's numbers: it is the shape a plant with no element
+    # yet would grow, and it is what the inspector shows.  At runtime BorromeanFlora takes
+    # both from its own element's table (the size that clears is a function of the table and
+    # no config field can know it), so these are the same numbers rather than a second
+    # source of them.
+    tail = (f'  leafSize: {v3(tbl["anchor"]["leaf"])}\n'
             '  growPeriod: 0.8\n'
             '  PlantPeriod: 120\n'
             '  stunDuration: 2\n'
             '  plantRadiusCellFraction: 0.5\n'
             '  plantRadiusCellFractionMin: 0.25\n'
-            f'  maxTotalSpawnedObjects: {tbl["sites"]}\n'
+            f'  maxTotalSpawnedObjects: {tbl["max_sites"]}\n'
             '  surfaceScale: 1\n')
     out = out[:donor_tail.start(1)] + tail + out[donor_tail.end(1):]
 
@@ -208,11 +233,15 @@ def build_config(tbl, element, value, prefab_guid, heart='0'):
     # else (Docs/ECOSYSTEM.md 40), so every element states its own leaf here - Time the
     # measured optimum, Mass more volume, Space more aspect, Charge fitted to its own
     # shielded octahedra.  All four come out of the measurement; none is retyped.
-    leaf = tbl['leaves'][element]
-    budget = tbl['sites']
+    # THE ELEMENT IS THE PLATE - and, since no prism may interpenetrate another, the
+    # TESSELLATION as well: Time the anchor, Mass more volume on a coarser tiling, Space
+    # more aspect, Charge fitted to its own shielded octahedra on the coarsest of the four.
+    # Every number here comes out of that element's own table; none is retyped.
+    el = tbl['elements'][element]
+    leaf, budget = el['leaf'], el['sites']
     quota = max(1, int(budget * QUOTA_FRAC + 0.5))
     # A plant is PlantRadius across, so an offspring belongs clear of its parent.
-    spread = int(tbl['radius'] * 1.5 + 0.5)
+    spread = int(el['radius'] * 1.5 + 0.5)
     shield = 1 if element == 'Charge' else -1
     return (
         '%YAML 1.1\n'
@@ -352,18 +381,22 @@ def main():
     a = ap.parse_args()
 
     tbl, files, guids = plan()
-    print(f'BorromeanFlora: {tbl["sites"]} sites in orbits of {tbl["orbit"]}, '
-          f'plant radius {tbl["radius"]:.1f}')
+    print(f'BorromeanFlora: one tessellation per ELEMENT, orbits of {tbl["orbit"]}, '
+          f'largest table {tbl["max_sites"]} sites')
     for e in ('Time', 'Mass', 'Space', 'Charge'):
-        L = tbl['leaves'][e]
+        el = tbl['elements'][e]
+        L = el['leaf']
         vol = L[0] * L[1] * L[2]
-        note = {'Time': 'the anchor', 'Mass': 'more volume', 'Space': 'more aspect',
+        note = {'Time': 'the anchor - the finest membrane',
+                'Mass': 'more volume, on a coarser tiling',
+                'Space': 'more aspect at the anchor\'s volume',
                 'Charge': 'fitted to its own shielded octahedra'}[e]
-        print(f'  {e:<6} {v3(L)}  aspect {L[0]/L[1]:4.2f}  volume/prism {vol:6.2f}  '
-              f'plant {vol*tbl["sites"]:8,.0f}   ({note})')
+        print(f'  {e:<6} {el["sites"]:3d} plates  {v3(L)}  aspect {L[0]/L[1]:4.2f}  '
+              f'volume/prism {vol:6.2f}  plant {vol*el["sites"]:8,.0f}   ({note})')
     print(f'  population: floor {SEED_FLOOR}, cap {CAP} per element '
           f'({CAP*4} heart colliders across the four), quota '
-          f'{max(1,int(tbl["sites"]*QUOTA_FRAC+0.5))}')
+          + ' / '.join(f'{e} {max(1,int(tbl["elements"][e]["sites"]*QUOTA_FRAC+0.5))}'
+                       for e in ('Time', 'Mass', 'Space', 'Charge')))
 
     dup = check_guid_uniqueness(guids, files)
     if dup:

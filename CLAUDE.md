@@ -586,25 +586,46 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   book, no mate-snap, no `LatticeScale` family of absolute tolerances (§34.8); *a species whose
   form is bounded does not need them*. It keeps `PrismSizeFixedByGrowthRule` because its offsets
   are a measured table in absolute units, and resizes through `surfaceScale`, which moves the
-  sites and the leaf together. **The plate aspect is a LOOK call and the rendering is the
+  sites and the leaf together. **NO PRISM MAY INTERPENETRATE ANOTHER, so a plate's SIZE is not
+  authored: an element authors the SHAPE of its plate and the SPACING of its tiling, and the size
+  is FITTED to the largest that clears** (by 3%; 10% bigger collides). Spindles are exempt by
+  design — a limb may pass through a plate. Three measured facts carry it. **THE FOOTPRINT COSTS
+  CLEARANCE AND THE THICKNESS DOES NOT** — a plate's neighbours lie in the membrane beside it, so
+  0.1 → 0.8 of its own width in thickness costs 1.3% of the footprint and buys 7.7× the volume,
+  which is what lets the element contract survive the rule instead of being flattened by it (Mass's
+  volume and Space's equal-volume-at-higher-aspect are SOLVED on that free axis). **COVERAGE IS A
+  PROPERTY OF THE TILING, NOT OF THE COUNT** — every plate is fitted against its own neighbours, so
+  a coarser tessellation covers the same membrane with FEWER, BIGGER pieces (the fitted long axis
+  is 0.73–0.93 of the spacing at every count from 24 to 60 orbits), which makes the site count an
+  element's own decision and gives the ladder its direction: **the coarser the tessellation, the
+  bigger the body it carries** — Time 360 plates / Space 288 / Mass 216 / **Charge 180**, whose
+  real body is its SHIELD at three times its plate's reach. That ordering is ASSERTED from the
+  shipped tables, both sides measured. And **the guarantee lives in the CODE, because a guarantee
+  any asset edit can break is not one**: the plant takes its leaf from its own table
+  (`BorromeanSurfaceData.For(Element)`), resolved from its crystal at the TOP of `Initialize`
+  before the base stamps the prefab's seed prism — `Flora.ResolveShieldPeriod`'s argument one field
+  over, which also closed the gap where `surfaceScale` scaled the offsets and not the leaf. **The
+  plate aspect is still a LOOK call and the rendering is still the
   evidence** — every structural check passes at any aspect, so the choice was made by rendering
   four: at `1.40 × 0.73` the plates lap 61% and the membrane reads as one smooth blob, at
-  `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; shipped `1.15 × 0.68 ×
-  0.115` of the measured site spacing (36% lap). **360 prisms, radius 55.6, cap 8 per element =
-  32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN ANCHOR**, which is what
+  `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; the aspect shipped from that
+  pass survives and its SIZE does not (`1.15` of the spacing along the grain, 36% lap, became a
+  fitted `0.76` and zero). **Stated plainly as a cost: the membrane no longer laps, Time's plant
+  volume fell 7,499 → 3,279, and Space now reads as a frame of STRUTS rather than a skin.**
+  **8 plants per element = 32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN
+  ANCHOR**, which is what
   makes "what does this element do to the plant" one comparison rather than four independent
-  fits: **TIME** is that anchor (7,499 volume per plant), **MASS** is more VOLUME (3.89×),
-  **SPACE** is more ASPECT at the *same* volume (4.87:1 against 1.69:1) and pays for it in
-  flushness (its corners lift 0.86 of its own thickness off the membrane against Time's 0.56),
+  fits: **TIME** is that anchor (9.11 volume per plate), **MASS** is more VOLUME (3.89×),
+  **SPACE** is more ASPECT at the *same* volume (4.88:1 against 1.69:1),
   and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Both halves of that
   fit are measured: the footprint is SQUARE (the clearance is set by the tightest BOND, which
-  runs along the grain, so length there is paid for twice — square covers **24.1%** of the
-  membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is the
-  anchor's unshrunk (thickness is spent along the surface NORMAL, where the neighbours are not,
-  so it costs nothing in clearance and is worth **4.3×** the volume of the uniform shrink it
-  replaced). Authored by `Tools/Build/measure_borromean_minimal_surface.py` +
-  `author_borromean_flora_assets.py`, re-proved from the shipped table alone by
-  `Tools/Build/verify_borromean_surface_tables.py` (**15** negative controls, all firing) — whose
+  runs along the grain, so length there is paid for twice — square covers **22.5%** of the
+  membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is spent freely
+  (along the surface NORMAL, where the neighbours are not). Authored by
+  `Tools/Build/measure_borromean_minimal_surface.py` +
+  `author_borromean_flora_assets.py`, re-proved from the shipped tables alone by
+  `Tools/Build/verify_borromean_surface_tables.py` (every check run four times, **19** negative
+  controls, all firing) — whose
   one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
   was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
   on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`

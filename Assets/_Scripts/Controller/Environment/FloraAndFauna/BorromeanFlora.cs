@@ -19,8 +19,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>It grows the way a flora withers, RUN BACKWARDS: the crystal first, then
     /// limbs out of the crystal, then limbs and plates out of limbs.</b> Every site names
-    /// the site it hangs off (<see cref="BorromeanSurfaceData.Parents"/>, -1 = the heart),
-    /// a parent is always earlier in the table than its child, and a plate is never laid
+    /// the site it hangs off (<see cref="BorromeanSurfaceData.SurfaceTable.Parents"/>, -1 =
+    /// the heart), a parent is always earlier in the table than its child, and a plate is never laid
     /// on the far end of a limb that does not exist yet - so the membrane is ONE connected
     /// object from its first grow tick, expanding outward from the crystal, rather than
     /// several patches that meet up and seal later. The spindle carrying a plate is posed
@@ -48,6 +48,17 @@ namespace CosmicShore.Gameplay
     /// mate-snap here, and there is deliberately nothing to add: a species whose form is
     /// bounded does not need them.</para>
     ///
+    /// <para><b>EVERY ELEMENT GROWS ON ITS OWN TESSELLATION, AND NO PRISM INTERPENETRATES
+    /// ANOTHER.</b> A plate that does not overlap its neighbours is bounded by how far apart
+    /// the neighbours are, so an element whose body is bigger takes a COARSER tessellation
+    /// rather than a shrunken plate - and the size itself is FITTED offline to the largest
+    /// that clears (<see cref="BorromeanSurfaceData.For"/>), never authored. Charge is fitted
+    /// against its SHIELD rather than its plate, because a shield swaps the plate for its
+    /// circumscribing octahedron three times its reach. The plant therefore takes its leaf
+    /// from its own table rather than from its config: the size that fits is a function of the
+    /// table, no config field can know it, and a guarantee any asset edit can break is not
+    /// one - the same argument <c>Flora.ResolveShieldPeriod</c> makes for Charge's cadence.</para>
+    ///
     /// <para><b>A half-grown plant is exactly as symmetric as a finished one.</b> The site
     /// table is a union of whole ORBITS of the surface's order-6 symmetry group and one
     /// grow tick lays one whole orbit (<see cref="BorromeanSurfaceData.OrbitSize"/>). That
@@ -62,17 +73,19 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class BorromeanFlora : Flora
     {
-        [Tooltip("Maximum LIVE prisms this plant can hold. Clamped to the site table's own " +
-                 "SiteCount - the surface is a COMPACT object with a fixed number of places " +
-                 "to put a prism, so a larger budget would simply never be spent. Lower it " +
-                 "and the plant is a partially grown membrane: still exactly symmetric, and " +
-                 "still connected, because a site's parent is always earlier in the table.")]
-        [SerializeField] int maxTotalSpawnedObjects = BorromeanSurfaceData.SiteCount;
+        [Tooltip("Maximum LIVE prisms this plant can hold. Clamped to THIS ELEMENT's own " +
+                 "site count - the surface is a COMPACT object with a fixed number of places " +
+                 "to put a prism, so a larger budget would simply never be spent, and each " +
+                 "element tiles it at its own spacing. Lower it and the plant is a partially " +
+                 "grown membrane: still exactly symmetric, and still connected, because a " +
+                 "site's parent is always earlier in the table.")]
+        [SerializeField] int maxTotalSpawnedObjects = BorromeanSurfaceData.MaxSiteCount;
 
         [Tooltip("Uniform scale on the whole surface. Overridden per element by " +
                  "FloraVariantTuning.LatticeScale (sentinel -1 = keep this). It scales the " +
                  "site offsets AND the leaf TOGETHER - scaling either alone ships a " +
-                 "different plant (Docs/ECOSYSTEM.md 34.8).")]
+                 "different plant (Docs/ECOSYSTEM.md 34.8), and here it would also break the " +
+                 "no-interpenetration guarantee, which a UNIFORM scale preserves exactly.")]
         [SerializeField] float surfaceScale = 1f;
 
         /// <summary>The live-prism budget this individual resolved to - the base reads it for
@@ -88,7 +101,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
 
-        int Budget => Mathf.Clamp(maxTotalSpawnedObjects, 1, BorromeanSurfaceData.SiteCount);
+        int Budget => Mathf.Clamp(maxTotalSpawnedObjects, 1, _table.SiteCount);
+
+        // WHICH surface this plant grows. Seeded with the anchor so a plant that is previewed
+        // rather than initialized still has a shape, and replaced in Initialize by the one its
+        // ELEMENT authors - the four differ in their SPACING as well as their plate, which is
+        // what makes "no prism interpenetrates another" a property of the table rather than a
+        // tuning to be re-checked.
+        BorromeanSurfaceData.SurfaceTable _table = BorromeanSurfaceData.Anchor;
 
         // Which prism occupies each site, and the limb that carries it. Indexed by site, so a
         // grazed site is simply a null the next grow tick refills - and the limb survives that,
@@ -127,9 +147,32 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(Cell cell)
         {
-            _occupant = new HealthPrism[BorromeanSurfaceData.SiteCount];
-            _limb = new Spindle[BorromeanSurfaceData.SiteCount];
+            // BEFORE base.Initialize, and that ordering is load-bearing for the same reason
+            // Flora.ApplyCellPrismScale records: LifeForm.Initialize binds the prefab's own
+            // authored prisms through BindEmbeddedParts -> AddHealthBlock, which stamps
+            // leafSize onto each one. Resolve the element after it and the plant's SEED prism
+            // keeps a leaf from a different element's table while everything it grows
+            // afterwards is fitted - a discrepancy visible only on the one prism nobody looks
+            // at, and on this species a discrepancy that can interpenetrate its neighbours.
+            _table = BorromeanSurfaceData.For(ResolveElement());
+            LeafSize = _table.LeafSize * surfaceScale;
+            _occupant = new HealthPrism[_table.SiteCount];
+            _limb = new Spindle[_table.SiteCount];
             base.Initialize(cell);
+        }
+
+        /// <summary>
+        /// This plant's element, resolved from its own crystal rather than read off
+        /// <see cref="LifeForm.Element"/> - which answers None until <c>LifeForm.Initialize</c>
+        /// caches the same lookup, one step too late to choose the table the seed prism is
+        /// stamped from. The spawner has already provisioned the crystal by now
+        /// (<c>LifeForm.ApplyElement</c>, called before Initialize), so this is the identical
+        /// lookup run at the point the answer is first needed.
+        /// </summary>
+        CosmicShore.Data.Element ResolveElement()
+        {
+            Crystal heart = crystal ? crystal : GetComponentInChildren<Crystal>(true);
+            return heart ? heart.crystalProperties.Element : CosmicShore.Data.Element.None;
         }
 
         public override void Plant()
@@ -174,7 +217,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < budget && laid < BorromeanSurfaceData.OrbitSize; i++)
             {
                 if (_occupant[i]) continue;
-                int parent = BorromeanSurfaceData.Parents[i];
+                int parent = _table.Parents[i];
                 if (parent >= 0 && !_occupant[parent]) continue;
                 if (!LayAt(i, parent)) break;
                 laid++;
@@ -185,12 +228,12 @@ namespace CosmicShore.Gameplay
         }
 
         Vector3 SiteWorld(int site) =>
-            transform.TransformPoint(BorromeanSurfaceData.Positions[site] * surfaceScale);
+            transform.TransformPoint(_table.Positions[site] * surfaceScale);
 
         bool LayAt(int site, int parent)
         {
             Vector3 pos = SiteWorld(site);
-            Quaternion rot = transform.rotation * BorromeanSurfaceData.Rotations[site];
+            Quaternion rot = transform.rotation * _table.Rotations[site];
 
             // The limb runs from the parent's plate to this one - or out of the HEART, which
             // sits at the plant's own origin, for the six sites of the innermost orbit. That
@@ -342,11 +385,14 @@ namespace CosmicShore.Gameplay
         public override bool TryPreviewGrowth(int budget, int seed, List<SpawnPoint> into)
         {
             if (into == null || budget <= 0) return false;
-            Vector3 leaf = LeafSize != Vector3.zero ? LeafSize : BorromeanSurfaceData.LeafSize;
-            int n = Mathf.Min(budget, BorromeanSurfaceData.SiteCount);
+            // The table owns the leaf, so a preview cannot disagree with the plant. A preview
+            // runs on the PREFAB, whose crystal has not been seated, so an uninitialized plant
+            // previews the anchor - which is what the anchor is for.
+            Vector3 leaf = _table.LeafSize * surfaceScale;
+            int n = Mathf.Min(budget, _table.SiteCount);
             for (int i = 0; i < n; i++)
-                into.Add(new SpawnPoint(BorromeanSurfaceData.Positions[i] * surfaceScale,
-                                        BorromeanSurfaceData.Rotations[i], leaf));
+                into.Add(new SpawnPoint(_table.Positions[i] * surfaceScale,
+                                        _table.Rotations[i], leaf));
             return n > 0;
         }
     }

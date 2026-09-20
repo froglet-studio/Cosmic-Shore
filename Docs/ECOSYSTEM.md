@@ -8496,8 +8496,16 @@ verifier's sphere control reproduces exactly that.
 check passes at any aspect; what the ask turns on is which one reads well. Rendered at four
 aspects: at `1.40 × 0.73` the plates lap **61%** of near pairs and the membrane reads as one
 smooth blob; at `0.85 × 0.55` they lap not at all and it reads as a perforated mesh rather
-than a surface. Shipped **`1.15 × 0.68 × 0.115`** of the measured site spacing — 30% lap,
-still unmistakably a membrane, with the individual plates legible inside it.
+than a surface. This shipped at **`1.15 × 0.68 × 0.115`** of the measured site spacing — 30%
+lap, still unmistakably a membrane, with the individual plates legible inside it.
+
+⚠ **The LAP is spent — §48.10 replaced it with a guarantee that no prism interpenetrates
+another**, which is not a tuning of this call but the removal of the axis it was made on.
+What survives is the ASPECT (the shape of the plate, still authored, still a look call) and
+the finding that the measurement cannot make this choice for you. What is gone is the size:
+it is now FITTED to the largest that clears, so a plate's long axis runs 0.76 of the site
+spacing where this call shipped 1.15, and the membrane reads as a tiling of separated plates
+rather than as a lapped skin. Stated plainly because it is a real cost.
 
 **Growth runs one whole ORBIT per tick, and it runs OUTWARD ALONG THE SURFACE**, not
 outward in radius — see §48.9, which is where the first pass got this wrong. A half-grown
@@ -8523,16 +8531,24 @@ together — the §34.8 rule, met from the other side.
 
 ### 48.6 Budget, and the CHARGE plant
 
+**Every element grows on its OWN tessellation** (§48.10), so there is no single budget: the
+plates, the spacing, the prism count and the plant radius are all per element.
+
+| | TIME (anchor) | MASS | SPACE | CHARGE |
+|---|---|---|---|---|
+| Orbits × 6 = prisms | 60 × 6 = **360** | 36 × 6 = **216** | 48 × 6 = **288** | 30 × 6 = **180** |
+| Mean site spacing | 6.141 | 8.233 | 6.841 | 8.694 |
+| Plate | `4.668 × 2.762 × 0.706` | `6.462 × 4.136 × 1.325` | `6.097 × 1.251 × 1.194` | `2.075 × 2.075 × 1.037` |
+| Volume / prism | **9.11** | **35.42** (3.89×) | **9.11** (1.00×) | **4.47** (0.49×) |
+| Volume / plant | 3,279 | 7,650 | 2,623 | 804 |
+| Plant radius | 55.6 | 54.2 | 55.4 | 54.2 |
+| Membrane covered | 30.0% | 37.3% | 14.2% | 5.0% plates / **22.5% octahedra** |
+| Heart | 3.21 | **3.39** | 2.66 | **2.05** |
+
 | | |
 |---|---|
-| Prisms per plant | **360** (60 orbits × 6) |
-| Plant radius | **55.6** local units (111 across) |
-| TIME leaf (the anchor) | `7.063 × 4.176 × 0.706`, volume **20.83**/prism, **7,499** per plant |
-| MASS leaf | `7.677 × 4.913 × 2.150` — **3.89×** the anchor's volume, **29,186** per plant |
-| SPACE leaf | `11.976 × 2.457 × 0.706` — **4.87:1** aspect against the anchor's 1.69:1, **0.997×** its volume |
-| CHARGE leaf | `1.520 × 1.520 × 0.706` — a SQUARE footprint fitted to its own shields, at the anchor's thickness |
 | Seed floor / cap | 1 / **8 per element** — **32 always-on heart colliders** across the four |
-| Heart | Time 3.946, Mass **4.197**, Space 3.944, Charge **2.088** — `author_lifeform_heart_sizes.py` |
+| Hearts authored by | `author_lifeform_heart_sizes.py` (the band `1.16 → 4.60` is unmoved) |
 
 **Charge armours its mass by law** (§35), and a shield swaps in the CIRCUMSCRIBING
 octahedron reaching `1.5 × leafSize` — so a Charge plant is a different geometry problem
@@ -8553,8 +8569,8 @@ a bigger plant and lands at **4.197** — still inside the band's ceiling.
 As of this commit the species is in **no `SpawnProfileSO`**, and is reachable through the
 freestyle **Lifeform Matrix** toy. That is the worm colony's precedent (§23) — an opt-in
 species — and it is deliberate: adopting it into a cell means re-deriving that cell's volume
-ladder against a 111-unit, 360-prism, 7,499-volume plant, which is a tuning pass this branch
-has not done. **Re-prove the claim by grepping the four config GUIDs across `_SO_Assets`
+ladder against a ~110-unit plant of 180–360 prisms and 804–7,650 volume DEPENDING ON ITS
+ELEMENT (§48.6), which is a tuning pass this branch has not done. **Re-prove the claim by grepping the four config GUIDs across `_SO_Assets`
 before inheriting it** (§ the ecology skill's "an 'it is wired nowhere' claim is true only on
 the date it was written").
 
@@ -8689,3 +8705,94 @@ the plant grow wrong. *A green check on the wrong invariant is worse than no che
 **Open:** nothing here has been run in the Unity editor. The geometry, the symmetry, the
 minimality, the plate fit and the shield clearance are all proved offline and the C# is
 Roslyn-compiled against transcribed stubs, but nobody has watched this plant grow.
+
+### 48.10 The third pass: NO PRISM MAY INTERPENETRATE ANOTHER
+
+The second pass fitted CHARGE's plate to its shielded octahedra and left the other three
+authored — so Time's plates lapped 36% of their near pairs by design (§48.4) and Mass's and
+Space's lapped more. The ask was to remove that outright, **in the positioning and spacing
+as well as the plate**, and spindles were explicitly exempted: a limb may pass through a
+plate, a plate may not pass through a plate.
+
+**A plate's SIZE therefore stops being authored.** What an element authors is the SHAPE of
+its plate and the SPACING of its tiling; the size is FITTED offline to the largest that
+clears, because *the thing being bought is a guarantee and a guarantee cannot be authored as
+a number*. Four measured facts carry the rest.
+
+**(1) THE FOOTPRINT COSTS CLEARANCE AND THE THICKNESS DOES NOT.** A plate's neighbours lie
+in the membrane beside it, so growing it along the surface runs into them and growing it
+along the surface NORMAL runs into nothing. Measured on this surface, taking a plate from
+0.1 to 0.8 of its own width in thickness costs **1.3%** of its footprint and buys **7.7×**
+its volume. That is what lets the element contract survive the zero-overlap rule instead of
+being flattened by it: MASS's `3.89×` volume and SPACE's equal-volume-at-higher-aspect are
+both bought on the free axis, so the tool now SOLVES each element's thickness against the
+anchor's plate volume rather than authoring it (three passes of fit → solve → refit,
+converging in three and always ENDING on a fit, so the shipped plate is one that cleared at
+its own thickness). It is the same insight the second pass found for CHARGE alone —
+*thickness is spent along the normal, where the neighbours are not* — generalised to all
+four, which is the sense in which the earlier finding was under-applied rather than wrong.
+
+**(2) COVERAGE IS A PROPERTY OF THE TILING, NOT OF THE COUNT** — and that is what makes the
+site count an element's own decision. Every plate is fitted against its own neighbours, so a
+coarser tessellation does not cover more membrane; it covers the same membrane with FEWER,
+BIGGER pieces (measured: the fitted plate's long axis is 0.73–0.93 of the mean site spacing
+at every count from 24 orbits to 60). So each element tiles the surface at its own spacing,
+and the ladder runs one way: **the coarser the tessellation, the bigger the body it
+carries.** TIME takes the finest membrane; SPACE spends its area on length; MASS is a slab;
+CHARGE's real body is its SHIELD — three times the reach of the plate it replaces — so it
+needs the most room of all and takes the coarsest tiling. That ordering is **asserted from
+the shipped tables**, both sides measured (body half-diagonal against mean spacing: Time
+2.74 < Space 3.17 < Mass 3.89 < Charge 4.67, spacing 6.14 < 6.84 < 8.23 < 8.69), so a future
+retune that breaks the rule fails the verifier rather than shipping four numbers nobody can
+explain.
+
+**(3) THE GUARANTEE MOVED INTO THE CODE, because a guarantee any asset edit can break is not
+one.** The plant takes its leaf from its own table (`BorromeanSurfaceData.For(Element)`)
+rather than from `FloraVariantTuning.LeafSize`: the size that clears is a function of the
+table, no config field can know it, and an authored leaf that disagrees is not a preference
+but a defect. That is `Flora.ResolveShieldPeriod`'s argument (§35) one field over, and it
+cost `Flora.LeafSize` a protected setter, documented as belonging to a species whose
+`PrismSizeFixedByGrowthRule` is true. **It also closed a gap the class doc had already
+claimed was closed**: `surfaceScale` scaled the site offsets and NOT the leaf, which is
+exactly the §34.8 defect its own tooltip warns about — the leaf is now `table × surfaceScale`,
+and a uniform scale preserves non-overlap exactly. The element is resolved from the plant's
+own crystal at the TOP of `Initialize`, before `base.Initialize`, for the ordering
+`Flora.ApplyCellPrismScale` already records: the base binds the prefab's own authored prisms
+and stamps `leafSize` onto them, so resolving afterwards leaves the SEED prism wearing
+another element's plate.
+
+**(4) A BISECTION CONVERGES ONTO ITS OWN BOUNDARY, so asserting a fit's margin is asserting
+its tolerance.** The fit runs on a body inflated by 3% and returns the un-inflated answer, so
+the shipped plates clear by a real gap rather than by a float epsilon — but at exactly 3% the
+inflated plates are touching to within the bisection's `1e-5`, and rounding the table to five
+decimals was enough to tip **2 of 24** pairs over. The verifier caught the tool and was
+right to: it now proves a **2%** gap and that **10% bigger collides**, which is the pair of
+claims worth making, and the 3% stays the fit's target rather than its assertion. General
+rule: *prove the property, not the solver's stopping condition.*
+
+**(5) THE ESTIMATOR, NOT THE SURFACE, BOUNDS A CURVATURE CHECK.** The verifier's minimality
+and asymptotic-direction checks are a quadric fitted to 14 neighbours of a point cloud, and
+the same shipped table scores 0.17 to 0.43 as that count is varied — so a threshold tuned on
+the anchor (0.25 / 0.35) failed three of the four coarser tables without anything being
+wrong with them. The thresholds are set by the SEPARATION instead: the four land at
+0.17–0.28 and the same sites projected onto a sphere score **91–205**, so 0.5 separates by a
+factor of 180 while surviving the estimator's own ±0.2. *A tolerance tuned on one
+measurement's noise is a tolerance that fails the next measurement.*
+
+**The cost, stated plainly.** The membrane no longer laps, so a Borromean plant reads as a
+tiling of separated plates rather than as a skin — §48.4's look call is spent. TIME's plant
+volume falls **7,499 → 3,279** (0.44×) and its plates are 0.76 of the site spacing against
+the 1.15 that call shipped. SPACE, which spends its area on length, now covers 14.2% of the
+membrane and reads as a **frame of struts** rather than a skin of plates — a genuinely
+different plant from the long flat blade the second pass shipped, and the honest consequence
+of holding its volume at the anchor's while its footprint is bounded by its neighbours.
+CHARGE's bare plates cover 5.0%, which is the same number as before; its octahedra, which
+are what a Charge plant actually wears (`Flora.ResolveShieldPeriod` floors its cadence at
+1 s), cover 22.5%.
+
+The verifier runs every check four times and carries **19 negative controls**, all firing —
+including the two that describe this pass rather than the geometry: *every element on ONE
+shared tessellation* (the shape this replaced) and *the biggest body put on the finest
+tessellation* (the ordering rule, broken by swapping two tables that each still clear).
+
+**Open:** still nothing has been run in the Unity editor.

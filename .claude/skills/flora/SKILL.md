@@ -139,11 +139,38 @@ a flat rectangle can sit flush on a saddle at all. Put the plate's in-plane axes
 Measure it as **corner lift as a fraction of the plate's own thickness** (Borromean Time:
 0.56; a long Space plate: 0.86 — reported, because that is what a high aspect ratio costs).
 
-**(c) The lap is the look.** How much neighbouring plates overlap decides whether the thing
-reads as a membrane, a mesh or a blob, and it is a LOOK call made by rendering candidates —
-not by a rule. Borromean: at 1.40× the site spacing the plates lap 61% and it reads as one
-smooth blob; at 0.85 they lap not at all and it reads as perforated; shipped 1.15 → 36%.
-**Judge a candidate at the size it will be judged** (`Docs/PALETTE.md §4.3`).
+**(c) NO PRISM MAY INTERPENETRATE ANOTHER — so a plate's SIZE is FITTED, not authored.**
+Two plates of conserved mass passing through each other is a defect, not a density dial.
+What an element authors is the SHAPE of its plate; the size is fitted offline to the largest
+that clears its own neighbours (exact OBB separating-axis test, inflated by a small margin
+so the shipped gap is real rather than a float epsilon). Spindles are exempt — a LIMB may
+pass through a plate, which is what lets a limb span a bond instead of stopping short of it.
+
+Three facts follow, all measured on the Borromean surface and none of them specific to it:
+
+* **The FOOTPRINT costs clearance and the THICKNESS does not.** A plate's neighbours lie in
+  the surface beside it, so growing it along the surface runs into them and growing it along
+  the NORMAL runs into nothing: 0.1 → 0.8 of its own width in thickness cost **1.3%** of the
+  footprint and bought **7.7×** the volume. **This is the axis to spend**, and it is what
+  lets the element contract in §5 survive the zero-overlap rule.
+* **Coverage is a property of the TILING, not of the COUNT.** Every plate is fitted against
+  its own neighbours, so a coarser tessellation covers the same surface with FEWER, BIGGER
+  pieces (the fitted long axis stayed 0.73–0.93 of the mean site spacing from 24 to 60
+  orbits). So the site count is a free choice — and the one rule on it is **the coarser the
+  tessellation, the bigger the body it carries**, which is why each Borromean element tiles
+  at its own spacing and Charge, whose real body is its SHIELD, takes the coarsest.
+* **A bisection converges onto its own boundary**, so a verifier must prove the PROPERTY and
+  not the solver's stopping condition: fit to a 3% margin, assert a 2% gap and that 10%
+  bigger collides. Asserting the margin itself asserts the fit's tolerance, and rounding the
+  shipped table to five decimals was enough to tip 2 of 24 pairs over it.
+
+The lap is therefore **retired as a dial**: it was a look call made by rendering candidates
+(at 1.40× the site spacing the Borromean plates lapped 61% and read as one smooth blob; at
+0.85 they lapped not at all and read as perforated), and removing it costs real coverage —
+that plant's anchor volume fell 7,499 → 3,279 and its Space element now reads as a frame of
+struts rather than a skin. What survives is the ASPECT, which is still a look call, and the
+rule for making one: **judge a candidate at the size it will be judged**
+(`Docs/PALETTE.md §4.3`).
 
 ---
 
@@ -160,7 +187,7 @@ plant" is one comparison rather than four independent fits:
 |---|---|---|
 | **TIME** | the optimum | the plate tuned by rendering it. Everything else is measured against this. |
 | **MASS** | more VOLUME | wider and much thicker. Borromean: **3.89×** the anchor's volume. |
-| **SPACE** | more ASPECT | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size. Borromean: 4.87:1 against the anchor's 1.69:1, volume 0.997×. |
+| **SPACE** | more ASPECT | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size. Borromean: 4.88:1 against the anchor's 1.69:1, volume 1.00×. |
 | **CHARGE** | armour | FITTED, not authored — see below. |
 
 **CHARGE is a different geometry problem and must be fitted, never scaled by eye.** Charge
@@ -170,19 +197,29 @@ armours its mass by law (`Flora.ResolveShieldPeriod`), and a shield swaps the pl
 good on a Charge plant is the SHIELDED form; the plate is what shows between refreshes.
 Two measured decisions from the Borromean fit, both of which beat a uniform shrink:
 
-* **Fit the in-plane axes, keep the THICKNESS.** Thickness is spent along the surface
-  NORMAL, where the neighbours are not, so it costs nothing in clearance — and it is the
-  difference between a solid little jewel and a foil. Worth **4.3× the volume** of the
-  uniform shrink it replaced.
+* **Fit the in-plane axes and spend the THICKNESS.** Thickness is spent along the surface
+  NORMAL, where the neighbours are not, so it costs almost nothing in clearance — and it is
+  the difference between a solid little jewel and a foil. This is the same free axis §4(c)
+  records for every element; Charge is simply where it was noticed first.
 * **Square the footprint.** The clearance is set by the tightest BOND, which runs along the
   grain, so length bought along the grain is paid for twice. Sweeping the in-plane aspect at
-  the shield limit, a square footprint covered **24.1%** of the membrane with octahedra
+  the shield limit, a square footprint covered **22.5%** of the membrane with octahedra
   against **15.6%** at the anchor's aspect.
 
-Per-element plates go in each config's `FloraVariantTuning.LeafSize`. `Flora.ApplyVariantTuning`
-reads it, and it runs BEFORE `Initialize`, so the prefab's own seed prism gets it too.
-`PrismSizeFixedByGrowthRule` does NOT block it — that guard is about a per-CELL scale
-(`SpawnProfileSO.FloraPrismScale`) relaying the leaf out from under a measured bond table.
+**Where the per-element plate LIVES depends on whether it is a preference or a
+measurement.** Ordinarily it goes in each config's `FloraVariantTuning.LeafSize`, which
+`Flora.ApplyVariantTuning` reads BEFORE `Initialize`, so the prefab's own seed prism gets it
+too — and `PrismSizeFixedByGrowthRule` does NOT block it (that guard is about a per-CELL
+scale, `SpawnProfileSO.FloraPrismScale`, resizing the leaf out from under a measured bond
+table). **But where the plate is FITTED rather than chosen — §4(c) — the species must take
+it from its own table instead, through the protected `Flora.LeafSize` setter**, because a
+guarantee any asset edit can break is not a guarantee and no config field can know the size
+that clears. That is `Flora.ResolveShieldPeriod`'s argument one field over. The element then
+has to be resolved from the plant's own crystal at the TOP of `Initialize`, before
+`base.Initialize` binds and stamps the prefab's authored prisms — otherwise the SEED prism
+wears another element's plate (`BorromeanFlora.ResolveElement`; the ordering
+`Flora.ApplyCellPrismScale` already records). Author the config's `LeafSize` to the same
+number anyway, so the asset is not silent about the plant it describes.
 
 ---
 

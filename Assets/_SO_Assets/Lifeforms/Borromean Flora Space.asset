@@ -19,7 +19,7 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   PopulationSize: 1
   MaxLivePopulation: 8
-  GrowthPerOffspring: 126
+  GrowthPerOffspring: 101
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
@@ -27,13 +27,13 @@ MonoBehaviour:
   Element: 3
   Variant:
     Enabled: 1
-    HeartWorldScale: 3.944
-    LeafSize: {x: 11.97576, y: 2.45657, z: 0.70626}
+    HeartWorldScale: 2.661
+    LeafSize: {x: 6.09726, y: 1.25072, z: 1.19436}
     GrowPeriod: -1
     LatticeScale: -1
     ShieldPeriod: -1
     WitherRingInterval: -1
-    MaxTotalSpawnedObjects: 360
+    MaxTotalSpawnedObjects: 288
     MaxTotalSpawnedObjectsScale: -1
     ItemsPerGrow: -1
     RandomItems: -1

@@ -590,22 +590,34 @@ def obb_overlap_count(P, X, Y, Z, half, pairs, eps=1e-9):
         sep |= live & (np.abs(np.einsum('ij,ij->i', d, Ln)) > ra + rb + eps)
     return int((~sep).sum())
 
-def fit_shield_scale(P, X, Y, Z, leaf, pairs, tol=1e-4):
-    """The largest uniform shrink of `leaf` whose SHIELDED prisms still clear one another.
+def fit_clear_scale(P, X, Y, Z, aspect, body, hi, margin=0.0, tol=1e-5):
+    """The largest uniform scale of `aspect` whose BODIES do not interpenetrate.
 
-    A shield swaps the prism for its CIRCUMSCRIBING octahedron, which reaches 1.5 x leafSize
-    from the centre (Docs/ECOSYSTEM.md 35), so the body to clear is a box 3x the leaf.  The
-    box is the octahedron's bounding box, so a clearance found here is CONSERVATIVE - two
-    octahedra that clear their boxes certainly clear each other."""
-    leaf = np.asarray(leaf, float)
-    clear = lambda s: obb_overlap_count(P, X, Y, Z, 1.5 * leaf * s, pairs) == 0
-    if clear(1.0): return 1.0
-    lo, hi = 0.0, 1.0
+    `body` is the half-extent the scaled aspect is measured through, so one bisection
+    serves both bodies a prism can present: a PLATE (`body=0.5`, the box itself) and a
+    SHIELDED prism (`body=1.5 x CIRCUMSCRIBING_SCALE/3`, i.e. 1.5, the circumscribing
+    octahedron's own box - Docs/ECOSYSTEM.md 35).  The octahedron's bounding box is
+    conservative: two octahedra that clear their boxes certainly clear each other.
+
+    `margin` is a fractional inflation applied to the body during the fit and NOT to the
+    answer, so the returned size clears by that fraction rather than by a float epsilon -
+    "the largest that clears" and "clears by a visible gap" are different claims and the
+    second is the one worth shipping.
+
+    THE BROADPHASE IS BUILT AT `hi`, never at the candidate, because a pair dropped from
+    the candidate set reads as a pair that clears - a fit is only as sound as the pairs it
+    was allowed to see."""
+    a = np.asarray(aspect, float)
+    half = lambda s: body * (1.0 + margin) * np.array([a[0] * s, a[1] * s, a[2]])
+    pairs = candidate_pairs(P, 2.0 * float(np.linalg.norm(half(hi))))
+    clear = lambda s: obb_overlap_count(P, X, Y, Z, half(s), pairs) == 0
+    if clear(hi): return float(hi)
+    lo = 0.0
     while hi - lo > tol:
         m = 0.5 * (lo + hi)
         if clear(m): lo = m
         else: hi = m
-    return lo
+    return float(lo)
 
 # ---------------------------------------------------------------------------------
 #  Growth topology: the site graph, the growth order, and the bond tree
