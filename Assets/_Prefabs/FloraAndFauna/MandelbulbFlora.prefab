@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 2.626, y: 0.3367, z: 1.853}
+  leafSize: {x: 2.614, y: 0.3352, z: 1.853}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -64,7 +64,7 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    CrossSection: {x: 0.0189621, y: 0.00716346}
+    CrossSection: {x: 0.0203067, y: 0.00767142}
     Rules:
       Field: 0
       SwirlDegrees: 25
@@ -82,11 +82,36 @@ MonoBehaviour:
       RadiusMin: 0.3
       RadiusMax: 2
       MinRun: 8
-      LengthFactor: 0.45
+      LengthFactor: 0.3
       GirthTaper: 0.4
       TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 52
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0.045
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
   - Element: 2
-    CrossSection: {x: 0.0451346, y: 0.029125}
+    CrossSection: {x: 0.0453535, y: 0.0292663}
     Rules:
       Field: 0
       SwirlDegrees: 55
@@ -107,8 +132,33 @@ MonoBehaviour:
       LengthFactor: 1
       GirthTaper: 0.4
       TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 58
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
   - Element: 3
-    CrossSection: {x: 0.0350113, y: 0.00448929}
+    CrossSection: {x: 0.0348544, y: 0.00446916}
     Rules:
       Field: 5
       SwirlDegrees: 0
@@ -120,7 +170,7 @@ MonoBehaviour:
       LaneGap: 0.34
       HopSeek: 0.2
       HopJitter: 0.4
-      SeedCount: 65
+      SeedCount: 32
       SeedSpreadDegrees: 11
       MaxTurnDegrees: 26
       RadiusMin: 0.3
@@ -129,11 +179,36 @@ MonoBehaviour:
       LengthFactor: 1
       GirthTaper: 0.4
       TwistDegreesPerStep: 12
+      DiveCount: 8
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 50
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
   - Element: 4
     CrossSection: {x: 0.045, y: 0.017}
     Rules:
       Field: 1
-      SwirlDegrees: 0
+      SwirlDegrees: 15
       FieldMix: 0.95
       Momentum: 0.25
       StepSize: 0.03
@@ -151,6 +226,31 @@ MonoBehaviour:
       LengthFactor: 1
       GirthTaper: 0.4
       TwistDegreesPerStep: 12
+      DiveCount: 7
+      DiveStepFraction: 0.4
+      DiveAngleDegrees: 62
+      DiveStopRadius: 0.045
+      DiveMaxSteps: 160
+      DiveSwirlDegrees: 8
+      DiveStrideCeiling: 1.1
+      DiveGirthFloor: 0.7
+      DiveAxisAlign: 1
+      DiveDescent: 0
+      SkeletonSeeds: 0
+      WalkStep: 0
+      MinPersistence: 0
+      GirthReference: 0
+      GasketLevels: 0
+      DiscSeeds: 0
+      DiscPad: 0
+      DiscMinRadius: 0
+      RingShrink: 0
+      RingFlatten: 0
+      RingGirthExponent: 0
+      RingSamples: 0
+      GasketOctave: 0
+      DiscRelaxRate: 0
+      RingGirthFloor: 0
   shellRadius: 75
   fieldWidth: 192
   weightSpread: 1

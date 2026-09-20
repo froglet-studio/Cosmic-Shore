@@ -55,7 +55,7 @@ ELEMENT_ID = {0: "None", 1: "Charge", 2: "Mass", 3: "Space", 4: "Time", 5: "Omni
 # Families whose prism size is dictated by their growth rule (Flora.PrismSizeFixedByGrowthRule):
 # EXEMPT from the runtime transform, and therefore CHECKED against the law instead.
 EXEMPT_PREFABS = {"GyroidFlora", "SchwarzPFlora", "QuasicrystalFlora",
-                  "MandelbulbFlora", "CoralBloomFlora", "WatershedFlora"}
+                  "MandelbulbFlora", "CoralBloomFlora", "WatershedFlora", "ApolloniaFlora"}
 # The three that author a fitted per-element leaf and so can be measured FROM. The Mandelbulb
 # states its per-element form in code rather than in a LeafSize, so it is checked, not
 # measured (see `mandelbulb_flora_model.py`).

@@ -324,7 +324,9 @@ def config_text(p, elem):
     # DROPPING it would be worse - the asset would quietly fall back to the set default and this
     # species' heart would stop tracking its body size, which is the exact non-monotone defect
     # that tool exists to fail the build on.
-    existing = LIFEFORMS / f"Mandelbulb Flora {elem}.asset"
+    # ... from THIS species' own asset - reading the first species' file here carried the
+    # Mandelbulb's heart onto every sibling and silently undid the band tool's sizing.
+    existing = LIFEFORMS / f"{assets['asset_prefix']} {elem}.asset"
     if existing.exists():
         m = re.search(r"^\s+HeartWorldScale: (\S+)$", existing.read_text(), re.M)
         if m:

@@ -27,7 +27,7 @@ MonoBehaviour:
   Element: 2
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.517
+    HeartWorldScale: 1.514
     GrowPeriod: 0.5
     MaxTotalSpawnedObjects: 2800
     PlantRadiusCellFraction: 0.6

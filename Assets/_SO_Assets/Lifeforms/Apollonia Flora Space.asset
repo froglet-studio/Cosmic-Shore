@@ -10,24 +10,24 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
-  m_Name: Coral Bloom Flora Time
+  m_Name: Apollonia Flora Space
   m_EditorClassIdentifier:
-  FloraPrefab: {fileID: 498631696834916965, guid: 357114a2002c2d4d4f59ec404f7f4bf6, type: 3}
+  FloraPrefab: {fileID: 6193847520391746285, guid: e51788f1f8c14517ab53cd376b3237e1, type: 3}
   SpawnProbability: 1
   InitialSpawnCount: 1
   OverrideDefaultPlantPeriod: 0
   NewPlantPeriod: 9999999
   PopulationSize: 1
   MaxLivePopulation: 3
-  GrowthPerOffspring: 2800
+  GrowthPerOffspring: 2683
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
   OffspringSpread: 120
-  Element: 4
+  Element: 3
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.514
+    HeartWorldScale: 2.557
     GrowPeriod: 0.5
     MaxTotalSpawnedObjects: 2800
     PlantRadiusCellFraction: 0.6

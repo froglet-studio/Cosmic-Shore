@@ -118,6 +118,18 @@ MonoBehaviour:
     - {fileID: 11400000, guid: c24f4b1142a4522b8a5d9ae5bd6de8b6, type: 2}
     - {fileID: 11400000, guid: 0d625e5d75948f82ecb7df85c9acd266, type: 2}
     - {fileID: 11400000, guid: bf07113394fa63b1c9ede5b314a14f1d, type: 2}
+  - Name: Watershed
+    ElementConfigs:
+    - {fileID: 11400000, guid: bd9ef8307c7d4a88862834d83fda588b, type: 2}
+    - {fileID: 11400000, guid: 3a6d142ae5ce4455831e5b0573a8e360, type: 2}
+    - {fileID: 11400000, guid: 2b7b4bb40cb84e088f9595974f8d6be3, type: 2}
+    - {fileID: 11400000, guid: 4b27f684cf9b4db6bcc4b78268e185e2, type: 2}
+  - Name: Apollonia
+    ElementConfigs:
+    - {fileID: 11400000, guid: 4c7fb1015cf74d4da23d86614fd033bf, type: 2}
+    - {fileID: 11400000, guid: f030f2cceed64578930cd5c47c405595, type: 2}
+    - {fileID: 11400000, guid: 52d54f8478ac41449607e8b2f81e602f, type: 2}
+    - {fileID: 11400000, guid: e4ae88c4d7b4450a8c7b649336780938, type: 2}
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

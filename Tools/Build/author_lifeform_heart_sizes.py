@@ -152,6 +152,7 @@ FAUNA_PREFABS = {
 }
 
 FLORA_PREFABS = {
+    "Apollonia":    "Assets/_Prefabs/FloraAndFauna/ApolloniaFlora.prefab",
     "Arbor":        "Assets/_Prefabs/FloraAndFauna/ArborFlora.prefab",
     "Branching":    "Assets/_Prefabs/FloraAndFauna/BranchingFlora.prefab",
     "Cacti":        "Assets/_Prefabs/FloraAndFauna/CactiFlora.prefab",
