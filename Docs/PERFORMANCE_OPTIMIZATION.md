@@ -664,6 +664,90 @@ at it.
 382 and 363 KB spikes — and they coincide with `maxFrameMs` of 108–128 ms. A multi-megabyte
 single-frame allocation is not a steady rate and will not be found by averaging.
 
+### 0.11.5 FOUND IT — 96% of the draws are TRANSPARENT, and none of them are prisms (2026-09-20)
+
+Frame Debugger on Menu_Main, plus Profiler Hierarchy on both scenes. This ends the
+investigation §0.9 opened.
+
+#### The draw call split, from the Frame Debugger's own tree
+
+```
+UniversalRenderPipeline.RenderSingleCamera        2503
+  ExecuteRenderGraph                              2503
+    (RP 0:0) Blit Color LUT                          1
+    (RP 1:0) DrawOpaqueObjects                      23   <-- EVERY PRISM IS IN HERE
+    (RP 1:0) DrawSkybox                              1
+    (RP 1:0) DrawTransparentObjects               2401   <-- 95.9%
+```
+
+**8,436 prism entities render in 23 opaque draw calls.** Every prism material is OPAQUE +
+`_ALPHATEST_ON` with none in the transparent queue (this document's own earlier conversion),
+so the entire prism population lives in `DrawOpaqueObjects`. The instanced path is not
+merely adequate — it is an order of magnitude better than even the lab's own measured rate
+predicted (221).
+
+**The other 2,401 draws are the transparent pass**, and the tree alternates
+`RenderLoop.Draw` / `RenderLoop.DrawSRPBatcher` dozens of times (101, 85, 1, 125, 1, 11, 1,
+21, 1, 1, 73, 41, 39, …). Transparent geometry is sorted BACK-TO-FRONT by distance, so
+different shaders interleave in depth order and the SRP batcher breaks at every transition.
+The Frame Debugger states the cause itself, per node:
+
+| sampled node | shader | batch cause | blend / ZWrite |
+|---|---|---|---|
+| `RenderLoop.Draw` ×101 | `Shader Graphs/ShepardGraph` | **"Objects have different materials"** | SrcAlpha/OneMinusSrcAlpha, ZWrite **Off**, Cull Off |
+| `DrawSRPBatcher` ×125 | `Shader Graphs/SpindleGraph` | **"SRP: Node have different shaders"** | SrcAlpha/OneMinusSrcAlpha, ZWrite **On** |
+| `DrawSRPBatcher` ×85 | `Shader Graphs/SnowGraph` | **"SRP: Node have different shaders"** | **One/One** (additive), ZWrite Off |
+
+Traced to the shipped assets:
+
+- **`SnowGraph` → `SnowMaterial`** — the Cell's `CytoplasmPrefab`, the drifting atmosphere
+  motes. `SnowChanger` instantiates **one GameObject per `shardDistance`³ of the WHOLE
+  membrane sphere**: at the shipped `shardDistance: 120` and membrane radius 1200 that is
+  **4,189 separate GameObjects**, each a 12-vertex mesh, transparent queue 3000, ZWrite off,
+  **`m_EnableInstancingVariants: 0`**. Four thousand identical 12-vertex transparent objects
+  with instancing switched off is the textbook worst case.
+- **`SpindleGraph` → `SpindleMaterial` / `JadeSpindleMaterial`** — flora branch geometry
+  (`BezierCurve.001`). **`_Surface: 1` (Transparent) with `_ZWrite: 1`** — a transparent
+  material that force-writes depth, which is what an author does when they want opaque
+  sorting out of the transparent queue.
+- **`ShepardGraph` → the Mass crystal materials** — the four concentric shells, queue 2999.
+
+#### The GC answer, from the Profiler Hierarchy
+
+| scene | `EditorLoop` | `PlayerLoop` | where |
+|---|---:|---:|---|
+| lab, empty | ~0 B | **304 B** | `Update.ScriptRunDelayedTasks → GC.Alloc` |
+| Menu_Main | **0 B** | **154.5 KB** | all under `PlayerLoop → UpdateScene` |
+
+**The empty lab's PlayerLoop allocates 304 BYTES.** The HUD's 41.8 KB/frame is editor- and
+profiler-side and will not ship — which retires the last of §0.9's GC thread, and confirms
+§0.11.2's reading that the row is environmental.
+
+**Menu_Main's 154.5 KB is REAL gameplay allocation** (`EditorLoop` 0 B), inside `UpdateScene`.
+The specific caller is below the captured rows and is the one measurement still outstanding.
+
+Note the editor tax while reading any Menu_Main capture: `EditorLoop` 19.4% / 7.36 ms and
+`RenderPlayModeViewCameras` 15.3% / 5.80 ms of a 37.77 ms frame.
+
+#### What to do, in leverage order
+
+1. **`SnowMaterial` → Opaque + alpha clip, and enable GPU instancing.** This is the exact
+   conversion already performed on every prism material, and it moves ~4,189 objects out of
+   the depth-sorted pass into the batchable one. Alternatively/additionally raise
+   `shardDistance` (120 → 150 halves the count, → 200 cuts it 4.6×).
+2. **`SpindleMaterial` → Opaque**, if the graph does not genuinely need blending. `_ZWrite: 1`
+   on a transparent material suggests it does not.
+3. **Re-measure.** Both are asset edits; neither touches the prism path.
+4. **Do NOT re-key `PrismRenderService.GetPrototype`.** §0.9 proposed it as a 20× draw-call
+   win. The prisms cost **23 draws**. There is nothing there to win.
+
+> **The rule this whole arc bought:** *a measurement names a number, never a cause.* §0.9's
+> 14,244 was real (§0.11.4) and every cause attributed to it was wrong — chunk arithmetic,
+> material interleaving, spatial locality, the stress cloud. Three lab tests and six reports
+> narrowed it; **one Frame Debugger capture answered it**, because it is the only instrument
+> that reports what issued a draw rather than how many there were. Reach for the tool that
+> names the CALLER before building an experiment that infers one.
+
 #### What to do instead of more lab
 
 1. ~~**`lab clear` → `diag empty 15`**~~ — **DONE, see §0.11.2.** Floor is 7 draws; the
