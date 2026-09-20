@@ -32,6 +32,21 @@ THE CHARGE ORDERING. Armouring multiplies a plant's own silhouette by exactly
 the four while shielded and the sparsest once stripped. That ordering is the two-pass
 grazing cost made visible, and --check fails if it ever flips.
 
+CHARGE IS THEREFORE MEASURED ARMOURED WHEREVER THE QUESTION IS "WHAT IS ON SCREEN" — a
+Charge plant's leaves are shielded by law, so the bare box is a body nobody sees. That is
+the gasket LADDER (`arena_octaves(shield=True)`, measured: it is what takes the tuned
+Apollonia Charge from 1 legible octave to 3) and it is NOT the interpenetration bounds,
+which are about how the plant is BUILT. Where the armour is measured, the bare figure is
+reported beside it, because the pair IS the ordering above.
+
+A BOUND'S POPULATION IS PART OF THE BOUND. Three of the gates here were stated over a
+population wider than the one their own prose described and their own levers could reach —
+the core armour over a curve's CHAIN as well as its bundle, the sunburst over a surface
+census a gradient-flow species cannot move, the seed spread against a constant while its own
+sample is a per-element fraction. Each is now stated over the population the message names,
+with the rest MEASURED AND REPORTED beside it. A number that cannot be moved belongs in the
+report, not in the verdict.
+
 THE FALL's gates are separable by construction: a dive prism carries `TanR != 0` and a
 surface prism carries exactly 0, so every Fall statistic below is a clean partition of the
 laid plant rather than a re-derivation of which prisms were the dive.
@@ -80,9 +95,11 @@ DIVE_CENTRE_BAND = (2.0, 6.0)    # the innermost laid prism's CENTRE, world unit
 DIVE_HOLE_FACTOR = 3.0           # a hole, in multiples of the MEDIAN surface prism length
 DIVE_WINDING_PER_EFOLD = 80.0    # degrees of azimuth per e-fold of radius, median over dives
 DIVE_SHARE_BAND = (0.05, 0.25)   # dive prisms as a share of the plant
-RADIAL_FRACTION_MAX = 0.55       # the sunburst gate, over the WHOLE plant
+RADIAL_FRACTION_MAX = 0.55       # the sunburst gate, over the WHOLE plant — a WALKING species
+RADIAL_FRACTION_MAX_SKELETON = 0.80   # ...and a GRADIENT-FLOW one; see radial_bound_for
 RADIAL_COS = 0.707               # 45 degrees off the ray to the heart
 DIVE_BAND_MIN = 4                # equal-area theta bands the dive set alone must populate
+DIVE_END_STOP_FACTOR = 2.0       # a dive's LAST LAID prism, in multiples of the stop radius
 DIVE_ROLL_MEDIAN_MAX = 10.0      # degrees, transport-corrected, net of the authored twist
 DIVE_ROLL_PAIR_MAX = 60.0
 DIVE_CONDITIONING_MIN = 0.30     # |sin angle(ray, forward)| — how well-posed `up` is
@@ -92,8 +109,13 @@ NET_SADDLE_SURVIVAL = 0.65       # saddles keeping >= 3 laid arms
 NET_ARMS = 3
 NET_MEAN_ARM = 5.0               # laid SURFACE prisms per surviving arm
 LANE_SHARE_MIN = 0.15            # no lane starved by the budget
-RING_GAP = 0.08                  # radians of theta that separate two latitude rings
-SEED_SPREAD_BANDS = 6            # equal-area bands the first quarter of the order must fill
+RING_GAP = 0.08                  # the FALLBACK grouping threshold — see ring_gap_for, which
+                                 # derives one per element from that element's own histogram
+RING_GAP_RATIO_MIN = 2.0         # the ratio that makes a band in the histogram "empty"
+AREA_BANDS = 8                   # equal-area latitude bands, pole to pole (see area_band)
+SEED_SPREAD_BANDS = 6            # the CEILING on the bound; the bound itself is per element
+SEED_SPREAD_DISCOUNT = 0.80      # of the uniform expectation — see seed_spread_bound
+SEED_SPREAD_CONTROL_FACTOR = 2   # ...and at least this multiple of the negative control
 SEED_SPREAD_PREFIX = 0.25
 LENGTH_FACTOR_MIN = 0.85         # a net drawn in dashes reads as dots
 PEAKS_ON_PLANT_MIN = 0.50        # a FIRST CUT, not a measured bar — see watershed_report
@@ -108,6 +130,40 @@ BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
 # Charge's armour at the CORE. The Fall converges every dive on one point, so the tightest
 # packing in the species is the innermost bundle and the whole-plant armour figure cannot
 # see it (53 of 2800 prisms). Measured inside this fraction of the plant's own radius.
+#
+# THE BOUND IS OVER THE BUNDLE — cross-curve pairs — AND NOT OVER A CURVE'S OWN CHAIN, which
+# is the same separation the BARE bar above already makes and which this one was missing.
+# The chain is not a tuning miss, it is a CLOSED FORM: two consecutive armoured prisms sit
+# one step apart, a prism is `LengthFactor` x step long and its octahedron reaches
+# CIRCUMSCRIBING_SCALE x its half-extents, so they first touch at
+#
+#     s* = step / (2 x 0.5 x CIRCUMSCRIBING_SCALE x LengthFactor x step) = 1 / (3 x LengthFactor)
+#
+# — no dive parameter and no cross-section appears in it, which is why the three levers the
+# old message named (DiveStopRadius, DiveGirthFloor, DiveCount) are measurably inert against
+# it. The core IS the dive bundle (measured: 100% of core prisms carry TanR != 0 on every
+# element of all four species), and there the closed form is EXACT — core chain worst-pair
+# against 1/(3 x LengthFactor), to four decimal places on all four: FractalFoliage
+# 1.1111/1.1111, CoralBloom 0.7407/0.7407, Watershed 1.0700/1.0700, Apollonia 0.7407/0.7407.
+#
+# SO THE CHAIN FUSES IFF LengthFactor > 1/3, AND THAT CONDITION IS THE WHOLE STORY — do not
+# quote one species as the example, because two of the four sit on each side of the cliff.
+# Measured core chain, Charge: CoralBloom 55/55 and Apollonia 50/50 = 100% (LengthFactor
+# 0.4500, s* 0.7407 < 1), against FractalFoliage 0/46 and Watershed 0/106 = 0.0%
+# (LengthFactor 0.3000 and 0.3115, s* 1.1111 and 1.0700 > 1). Where it does fuse it is the
+# overwhelming majority of the core's offenders — CoralBloom/Charge 55 of 59, with the
+# bundle at 4 of 88 = 4.5% — and it then DOMINATES an un-split figure and drags it the wrong
+# way under --shields, because thinning the ribbon shrinks the bundle denominator while the
+# chain stays pinned at 100%: over k=1.00 -> 0.25 CoralBloom's un-split core runs 39.0% ->
+# 47.8% while its BUNDLE falls 8.3% -> 0.0%. Below the cliff there is no pathology to see —
+# FractalFoliage's un-split core runs 10.3% -> 0.0% over the same sweep — which is exactly
+# why a species-shaped claim here would be wrong half the time.
+#
+# CHARGE_DASH is 0.45 by law — fitted on the SURFACE, where that inversion (34.6% fused
+# armoured against the siblings' 94.9% bare) is the whole Docs/ECOSYSTEM.md §44 Charge
+# result. So the chain is MEASURED AND REPORTED beside the bound, with its closed form, and
+# the bound states what the gate's own prose always described: "the Fall's BUNDLE has fused
+# into a rod".
 CORE_RADIUS_FRACTION = 0.15
 CORE_ARMOURED_MAX = 0.15
 
@@ -371,11 +427,51 @@ def grow_element(element, budget=None, species="FractalFoliage"):
     return d["surface"], d["rules"], d["kept"], d["curves"]
 
 
+def seam_pairs(species, element, budget=None):
+    """A CLOSED curve's own closure seam, as (i, j) pairs of indices into the LAID plant.
+
+    The chain exclusion below is `same curve and |i - j| == 1` — the correct exclusion for a
+    WALK, where consecutive prisms are laid end to end and clear by construction. A gasket
+    species' curve is a RING, and `ring_points` closes it (the first point repeated), so its
+    LAST prism ends exactly where its FIRST begins: they are chain neighbours at an index
+    difference of N-1, and every ring's seam was being measured as an ordinary crossing pair.
+    Measured, the four Apollonia elements: 5 / 46 / 93 / 50 seam pairs reach the near-pair
+    set, and taking them out moves the worst pair on two of the four (Mass 0.717 -> 0.749,
+    Time 0.650 -> 0.709) while leaving Charge's and Space's binding pair — a genuine tangency
+    between two different rings — exactly where it was. So it was eating margin on every
+    element without yet changing a verdict.
+
+    A ring's seam is identified in the RAW walk rather than by an index arithmetic on the
+    laid plant: `emit` lays exactly `samples` prisms per complete ring, so the seam is that
+    ring's first and last EMITTED prism, and a ring the budget truncated is an ARC with no
+    seam at all. Doing it by `|i - j| == laid count - 1` instead would mis-fire on a ring
+    whose FIRST prism the claim ate, where the surviving ends are not neighbours."""
+    d = grow_detail(species, element, budget)
+    if d["gasket"] is None:
+        return frozenset()               # a walk is OPEN: it has no seam to exclude
+    samples = d["gasket"]["samples"]
+    emitted = {}
+    for wi, p in enumerate(d["raw"]):
+        if p.tan_r == 0.0:
+            emitted.setdefault(p.curve, []).append(wi)
+    walk = d["walk_index"]
+    kept_of_walk = {walk[id(p)]: i for i, p in enumerate(d["kept"])}
+    out = set()
+    for ws in emitted.values():
+        if len(ws) != samples:
+            continue
+        a, b = kept_of_walk.get(ws[0]), kept_of_walk.get(ws[-1])
+        if a is not None and b is not None and a != b:
+            out.add((min(a, b), max(a, b)))
+    return frozenset(out)
+
+
 def element_report(element, shell=None, cross=None, budget=None, species="FractalFoliage"):
     shell = shell or M.SHELL_RADIUS
     cross = cross or M.cross_section_for(element, species)
     surface, rules, prisms, curves = grow_element(element, budget, species)
     boxes = [obb(surface, p, shell, cross) for p in prisms]
+    seams = seam_pairs(species, element, budget)
 
     vols = [8 * b[2][0] * b[2][1] * b[2][2] for b in boxes]
     dims = [d * 2 for b in boxes for d in b[2]]
@@ -388,8 +484,16 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
     # can get wrong.
     pairs = []
     chain_worst = 1e9
+    seams_seen = 0
     for i, j in near_pairs(boxes, reach):
-        if prisms[i].curve == prisms[j].curve and abs(i - j) == 1:
+        same = prisms[i].curve == prisms[j].curve
+        if same and (i, j) in seams:
+            # The closure seam of a CLOSED ring — the same chain pair as `|i - j| == 1`,
+            # reached the long way round. See seam_pairs.
+            seams_seen += 1
+            chain_worst = min(chain_worst, touching_scale(boxes[i], boxes[j]))
+            continue
+        if same and abs(i - j) == 1:
             chain_worst = min(chain_worst, touching_scale(boxes[i], boxes[j]))
             continue
         pairs.append((i, j))
@@ -442,6 +546,14 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
         "all_fraction": all_inter / max(1, all_touching),
         "worst_scale": worst,
         "chain_worst": chain_worst,
+        "seam_pairs": len(seams),
+        "seam_pairs_excluded": seams_seen,
+        # The SET, not just its size, because `core_boxes` has to make the same chain/bundle
+        # split this function just made and a second derivation of "is this pair a chain
+        # pair" is a second answer to one question. Measured today: no seam lands inside any
+        # species' core (it is 100% dive prisms), so this is a latent disagreement rather
+        # than a live one — which is exactly when it is cheap to close.
+        "seams": seams,
         "prisms_list": prisms,
         "area": area,
         "boxes": boxes,
@@ -455,6 +567,82 @@ def authors_fall(rules):
     both of these are set, so a species without them would be measured at zero and
     reported as passing."""
     return rules.dive_step > 0 and rules.dive_count > 0
+
+
+def dive_owed_bands(species, element, budget=None):
+    """How many equal-area theta bands the OWED dive set's release points can occupy at all.
+
+    Mirrors `M.grow`'s gasket stride verbatim — the level-0 discs in rho-descending LAY order,
+    the owed index `top[(d * len(top)) // quota]` — so the answer is the set of rings the
+    walk will actually offer a dive to, not a re-derivation of it. 0 means "not a gasket, so
+    this cap does not apply"; see the note at `dive_band_bound`.
+
+    THE BAND IS THE RING'S RELEASE POINT, NOT THE DISC'S CENTRE, and the two are not the same
+    band. `try_dive` releases from `pts[-1]`, the ring's closing point, which sits a whole rho
+    (up to ~0.5 rad on a level-0 disc) from the axis the disc is named by. Measured on
+    Apollonia, centre against release: Charge 4 vs 3, Mass 4 vs 4, Space 3 vs 3, Time 7 vs 7 —
+    and the RELEASE count equals the laid dives' own start bands on all four. So the centre is
+    a proxy that over-states by a band on one element of four, and it over-states it in the
+    one direction that matters: it would leave Charge asking for a 4th band its rings can
+    never release into, which is the "have MORE dives" reading of this gate that the cap
+    exists to remove (measured: Charge reaches 4 centre-bands only by raising DiveCount from 6
+    to all 13 level-0 discs).
+
+    The stated cost of the cap, which is the item's own construction: on a gasket where every
+    owed dive is laid FROM the ring it was owed on, the clause is then satisfied by
+    construction. What it still catches is a dive owed and not laid, or laid from somewhere
+    other than the ring that owed it — and on the three WALKING species the cap does not
+    apply at all, so DIVE_BAND_MIN stands there unchanged."""
+    d = grow_detail(species, element, budget)
+    g, rules = d["gasket"], d["rules"]
+    if g is None or rules.dive_step <= 0:
+        return 0
+    discs, lay = g["discs"], g["lay"]
+    top = [i for i in lay if discs[i].level == 0]
+    quota = min(max(0, rules.dive_count), len(top))
+    if quota <= 0:
+        return 0
+    owed = {top[(k * len(top)) // quota] for k in range(quota)}
+    shrink = rules.ring_shrink if rules.ring_shrink > 0 else 1.0
+    bands = set()
+    for i in owed:
+        pts = M.ring_points(d["surface"], discs[i].axis, discs[i].rho * shrink,
+                            g["samples"], rules.ring_flatten)
+        bands.add(area_band(M._spherical(pts[-1])[0]))
+    return len(bands)
+
+
+def radial_bound_for(rules):
+    """THE SUNBURST BOUND IS PER GROWTH RULE, because on a GRADIENT-FLOW species this
+    statistic is not a property of the plant's design at all.
+
+    The measure splits exactly (measured, `total == surface x (1 - share)` to the digit):
+
+      * THE DIVE CAN NEVER BE RADIAL, by construction rather than by tuning. A dive heading
+        is EXACTLY psi off the inward radial (`t = -rhat cos psi + u sin psi`, and the
+        axis-alignment blend turns `u` inside the tangent plane, so it cannot move the radial
+        component), every species authors psi in 50..64 deg, and |cos psi| <= 0.64 < 0.707.
+        Measured 0.0% on every element of every species. So the dive can only ever DILUTE.
+      * THE SURFACE TERM IS THEREFORE THE WHOLE STATISTIC — and a Watershed curve is a
+        SEPARATRIX, which IS a gradient flow line, so its surface term is a CENSUS OF THE
+        BAKE'S OWN STEEPNESS. Measured: Watershed surface radial 27.9 / 41.6 / 68.7 / 75.1%
+        for Space / Mass / Charge / Time — the two that broke the 55% bound are exactly the
+        two whose bakes are steepest, and the plant is faithfully tracing them.
+
+    So 55% on a skeleton species separates FIELD TYPES rather than good plants from bad, and
+    the reachable floor (`surface x (1 - DIVE_SHARE_BAND ceiling)`) is 51.5% for Charge and
+    56.3% for Time — Time is unreachable at ANY legal dive share, and Charge is reachable
+    only by inflating dive prisms to dilute a surface census, which is tuning around a gate.
+    The bound is 0.80 there: a genuine spoke-burst still reads >= 0.95, so the gate keeps its
+    teeth against the failure it was written for.
+
+    On a WALKING species the bound stays 0.55 and it is a CLIFF rather than a slope, which is
+    the thing to know before tuning toward it: a swirled walk either can climb a terrace riser
+    or cannot, and the power-12 bulb's risers are steeper than the 45 deg this measure tests,
+    so FractalFoliage/Time measures 60.6% at swirl 0 and 1.9% at swirl 15. Every value on the
+    passing side looks identical to the gate and very different on screen — choose the swirl
+    on the render and use this only to confirm which side of the switch it landed on."""
+    return RADIAL_FRACTION_MAX_SKELETON if authors_skeleton(rules) else RADIAL_FRACTION_MAX
 
 
 def fall_report(species, element, report):
@@ -501,6 +689,30 @@ def fall_report(species, element, report):
     out["tip_min"] = min((M._len(boxes[i][0]) - kept[i].length * shell * 0.5
                           for i in dive_i), default=float("nan"))
     out["centre_min"] = min(M._len(b[0]) for b in boxes)
+
+    # (b2) AMPUTATION — where each dive actually ENDS, which is a different question from
+    # (b) and is a real hole in this file's coverage rather than a re-statement of one.
+    #
+    # `centre_min` is a MINIMUM over the whole plant, so ONE dive that arrives satisfies it
+    # for all of them. A dive whose remaining prisms the claim filter refused simply STOPS,
+    # far outside the stop sphere, and nothing above can see it: the HOLE gate measures the
+    # gap between CONSECUTIVE LAID prisms and an amputated dive has none (it ends), the
+    # TRUNCATION gate tests `emitted >= dive_max_steps` where `emitted` counts steps
+    # ATTEMPTED rather than laid (so it reads 0), and ARRIVAL counts the dive as laid because
+    # it laid something. Measured, it is not hypothetical: CoralBloom/Space has a dive that
+    # lays 5 prisms and ends at r = 84.9 u against a 3.4 u stop sphere — an arc trailing off
+    # into space that every other Fall bound calls healthy.
+    #
+    # The bound is DIVE_END_STOP_FACTOR x the stop radius rather than the stop radius itself
+    # because the dive loop tests `r <= stop` at the TOP, so the last point is legitimately
+    # below the stop sphere by up to one step and the prism's own length sits outside it.
+    ends = []
+    for lst in by_curve.values():
+        ends.append(M._len(boxes[lst[-1]][0]))
+    out["dive_end_max"] = max(ends, default=0.0)
+    out["dive_end_bound"] = DIVE_END_STOP_FACTOR * stop_world
+    out["dive_ends_over"] = sum(1 for r in ends if r > out["dive_end_bound"])
+    out["dive_ends"] = sorted(ends, reverse=True)
 
     # (c) the stride ceiling, self-calibrated: the dive's own prisms against the plant's.
     dive_len = [kept[i].length * shell for i in dive_i]
@@ -587,6 +799,8 @@ def fall_report(species, element, report):
     out["radial"] = radial_fraction(range(len(kept)))
     out["radial_surface"] = radial_fraction(surf_i)
     out["radial_dive"] = radial_fraction(dive_i)
+    out["radial_bound"] = radial_bound_for(rules)
+    out["skeleton"] = authors_skeleton(rules)
 
     # (i) the strided-not-prefix control. The seed list is z-monotone, so a dive set taken
     # as a PREFIX of it is a polar cap; `Growth.EnsureSeeds` strides instead, and this is
@@ -609,7 +823,25 @@ def fall_report(species, element, report):
     # A plant cannot occupy more bands than it laid dives, so the bound is capped by the
     # arrival — otherwise a plant that fails the ARRIVAL gate fails this one too, for the
     # same reason, and the second failure carries no information.
-    out["dive_band_bound"] = min(DIVE_BAND_MIN, out["laid"])
+    #
+    # ...and on a GASKET it is capped a third time, by the bands the OWED SET CAN REACH. The
+    # owed set STRIDES the level-0 discs in rho-descending lay order, so which bands are
+    # available to it is a function of `DiveCount` against those thirteen discs and not a
+    # free choice: measured on Apollonia, the owed set's own release points occupy 4 / 4 / 3
+    # / 7 bands on Charge / Mass / Space / Time. Against a flat bound of 4 the gate therefore
+    # stops saying "spread your dives out" and starts saying "have MORE dives" — a different
+    # claim, and one the concept (thirteen rings crowning thirteen lobes) has already
+    # answered. It cost a real reduction: a Space `dive_count` cut wanted for the converging
+    # bundle was reverted purely because it dropped the span from 4 bands to 3.
+    #
+    # It is scoped to the gasket deliberately. There, a ring IS its disc, so the disc's own
+    # axis is where its dive leaves the surface and the owed set's occupancy is knowable up
+    # front. On a walking species WHERE a dive leaves is emergent — the run decides when it
+    # is released — so the seed's position is not the release point and there is nothing to
+    # cap the bound with.
+    out["dive_bands_occupiable"] = dive_owed_bands(species, element)
+    out["dive_band_bound"] = min(DIVE_BAND_MIN, out["laid"],
+                                 out["dive_bands_occupiable"] or DIVE_BAND_MIN)
 
     # (j) the body roll, and the conditioning of the frame it is measured in. `Pose` hangs
     # a dive prism's `up` off the RAY rather than off the surface normal, which is
@@ -682,14 +914,32 @@ def fall_gates(species, element, f, heart_half):
         bad.append(f"{tag} FALL truncation: {f['truncated']} dive(s) ran out of steps "
                    f"(DiveMaxSteps {f['dive_max_steps']}, longest emitted {f['emitted_max']}) "
                    f"instead of arriving on the stop sphere (bound 0)")
-    if f["radial"] >= RADIAL_FRACTION_MAX:
+    if f["radial"] >= f["radial_bound"]:
+        kind = ("a GRADIENT-FLOW species, so the surface term is a census of the BAKE's own "
+                "steepness" if f["skeleton"] else
+                "a WALKING species, where this bound is a CLIFF and not a slope — a swirl "
+                "either clears the terrace risers or does not, so choose it on the render")
         bad.append(f"{tag} SUNBURST: {f['radial']:.1%} of the plant points within 45 deg of the "
-                   f"ray to the heart (bound {RADIAL_FRACTION_MAX:.0%}; surface "
-                   f"{f['radial_surface']:.1%}, dive {f['radial_dive']:.1%})")
+                   f"ray to the heart (bound {f['radial_bound']:.0%} — {kind}; surface "
+                   f"{f['radial_surface']:.1%}, dive {f['radial_dive']:.1%} = 0 BY "
+                   f"CONSTRUCTION, since |cos psi| <= 0.64 < {RADIAL_COS} for every authored "
+                   f"dive angle, so the dive can only ever DILUTE: total = surface x "
+                   f"(1 - share {f['share']:.1%}) = {f['radial_surface'] * (1 - f['share']):.1%})")
+    if f["dive_end_max"] > f["dive_end_bound"]:
+        bad.append(f"{tag} FALL amputation: {f['dive_ends_over']} of {f['laid']} laid dives END "
+                   f"outside {f['dive_end_bound']:.2f} u = {DIVE_END_STOP_FACTOR:.0f}x the stop "
+                   f"radius {f['stop_world']:.2f}; the worst ends at {f['dive_end_max']:.2f} u "
+                   f"(ends {[round(r, 1) for r in f['dive_ends'][:4]]}) — the claim refused the "
+                   f"rest of the spiral and it trails off into space. No other Fall bound can "
+                   f"see this: the HOLE gate measures the gap between consecutive LAID prisms "
+                   f"and an amputated dive has none, TRUNCATION counts steps ATTEMPTED, and "
+                   f"reach/clearance are MINIMA over the plant that one arriving dive satisfies")
     if f["dive_start_bands"] < f["dive_band_bound"]:
         bad.append(f"{tag} FALL spread: the {f['laid']} laid dives LEAVE THE SURFACE in "
                    f"{f['dive_start_bands']}/8 equal-area theta bands (bound "
-                   f"{f['dive_band_bound']} = min({DIVE_BAND_MIN}, dives laid); their prisms "
+                   f"{f['dive_band_bound']} = min({DIVE_BAND_MIN}, dives laid {f['laid']}"
+                   + (f", bands the OWED SET's rings RELEASE into {f['dive_bands_occupiable']}"
+                      if f["dive_bands_occupiable"] else "") + f"); their prisms "
                    f"then sweep {f['dive_bands_filled']}/8, which is why the per-prism count "
                    f"cannot see this) — the owed set strides {f['owed_from']}, and on "
                    f"this plant that stride is landing in a cap rather than over the bulb")
@@ -728,6 +978,31 @@ def authors_skeleton(rules):
     return rules.skeleton_seeds != 0
 
 
+def seed_spread_bound(prefix):
+    """(bound, uniform expectation) — the SEED SPREAD bound as a function of its OWN sample.
+
+    The bound was a constant 6 while the sample is a species-dependent FRACTION of the saddle
+    count: the prefix is 25% of the saddles, which is 8 points on Mass, 11 on Space, 21 on
+    Charge and 37 on Time. Eight uniform draws into eight equal-area bands fill an expected
+    `8(1 - (7/8)^8) = 5.25` of them, so a flat 6 was asking the SMALLEST sample in the fleet
+    for BETTER THAN UNIFORM coverage — and the gate duly failed exactly where its own sample
+    was smallest while the ordering it tests was working hard (Mass measured 4 against a
+    sharpness-major control of 1, i.e. 4x the control).
+
+    So the bound is the uniform expectation DISCOUNTED, capped at the old constant — 4 / 4 /
+    6 / 6 for Mass / Space / Charge / Time. Farthest-point ordering should beat a random
+    draw, not be held to a number a random draw usually misses.
+
+    The gate is not weakened, because the bound is a PAIR: the count must also be at least
+    SEED_SPREAD_CONTROL_FACTOR x the sharpness-major NEGATIVE CONTROL's count. That second
+    clause is the one that actually proves the property, and it needs no distribution
+    assumption at all — a genuinely un-spread ordering measures at or near its own control by
+    construction, and the control is re-measured per element rather than remembered."""
+    n = AREA_BANDS
+    uniform = n * (1.0 - ((n - 1.0) / n) ** prefix)
+    return min(SEED_SPREAD_BANDS, int(math.floor(SEED_SPREAD_DISCOUNT * uniform))), uniform
+
+
 def _prism_tuple(p):
     return (p.theta, p.phi, p.radial, p.dive, p.tan_a, p.tan_b, p.tan_r,
             p.length, p.girth, p.roll, p.curve, p.lane)
@@ -737,6 +1012,56 @@ def _lay(surface, rules, budget):
     raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
     return [_prism_tuple(p) for p in M.claim_filter(raw, centres)[:budget]]
+
+
+def census_resolution():
+    """The chord below which the critical-point census cannot tell two points apart, read
+    out of the model's own dedupe rather than typed here (`DEDUPE_DOT = 1 - chord^2 / 2`)."""
+    return math.sqrt(max(0.0, 2.0 * (1.0 - M.DEDUPE_DOT)))
+
+
+def ring_gap_for(gaps):
+    """The grouping threshold, DERIVED per element from that element's own gap histogram.
+
+    Returns (threshold, ratio, lo, hi, derived). A hand-chosen angle was deciding the answer
+    and saying so in its own failure text: Space's peaks sit `gap kept <= 0.0603 | split >=
+    0.3470` about a 0.08 threshold, so 0.08 is INSIDE the "same ring" population rather than
+    in the empty band between the two, and the element read as [4,4,4,4] (modal 4) where the
+    surface's own two-fold fold says [2,2,4,4,2,2] (modal 2). One absolute angle cannot serve
+    four bakes whose peak counts run 16..72.
+
+    THE METHOD: sort the consecutive theta gaps, find the largest RATIO between neighbouring
+    sorted gaps — the empty band in the histogram — and take its GEOMETRIC MIDPOINT.
+
+    THE ONE REPAIR, and it is necessary rather than a taste: every gap is first FLOORED at
+    the census's own resolution. A ring's peaks sit at the SAME latitude by symmetry, so
+    their gaps are EXACTLY 0.0 in double (measured: 18 of Charge's 41, 12 of Mass's 15, 10 of
+    Space's 15, 32 of Time's 71) — and a ratio against zero is infinite while a geometric
+    mean against zero is zero, so the unfloored ladder picks the bottom of the noise on all
+    four and a threshold of ~0 splits every peak into its own ring. The floor is not a tuning
+    constant: a theta gap below the chord at which `find_critical_points` DEDUPES is not a
+    measured separation at all, so it cannot be a ring boundary. Floored, the largest ratio
+    lands on the real empty band on every element — Charge 18.5x at (0.0100, 0.1854),
+    Mass 24.1x at (0.0100, 0.2414), Space 6.0x at (0.0100, 0.0603), Time 10.8x at (0.0100,
+    0.1078) — giving 0.0431 / 0.0491 / 0.0246 / 0.0328 and the modal sizes 7 / 4 / 2 / 11,
+    which are order-1 on all four.
+
+    Note what the floor also buys: Mass and Space have NO positive within-ring gaps at all,
+    so their smallest positive gap is already a ring BOUNDARY and a ladder over the positive
+    gaps alone would put the threshold above it (0.62 and 0.14 — both still modal 4). The
+    floor is what supplies the lower edge of that first band."""
+    floor = census_resolution()
+    g = sorted(max(x, floor) for x in gaps)
+    if len(g) < 3:
+        return RING_GAP, float("nan"), float("nan"), float("nan"), False
+    best, bi = 0.0, -1
+    for i in range(len(g) - 1):
+        r = g[i + 1] / max(g[i], 1e-12)
+        if r > best:
+            best, bi = r, i
+    if best <= RING_GAP_RATIO_MIN:
+        return RING_GAP, best, float("nan"), float("nan"), False
+    return math.sqrt(g[bi] * g[bi + 1]), best, g[bi], g[bi + 1], True
 
 
 def ring_census(surface, element):
@@ -763,14 +1088,23 @@ def ring_census(surface, element):
            "euler": len(peaks) - len(sads) + len(pits)}
     if not peaks:
         out.update(sizes=[], modal=0, phases=[], spectrum=[], spectrum_peak=0,
-                   gap_split_min=float("nan"), gap_kept_max=float("nan"))
+                   gap_split_min=float("nan"), gap_kept_max=float("nan"),
+                   ring_gap=RING_GAP, ring_gap_ratio=float("nan"),
+                   ring_gap_band=(float("nan"), float("nan")), ring_gap_derived=False)
         return out
 
     ordered = sorted(peaks, key=lambda c: c.theta)
+    all_gaps = [b.theta - a.theta for a, b in zip(ordered, ordered[1:])]
+    threshold, ratio, lo, hi, derived = ring_gap_for(all_gaps)
+    out["ring_gap"] = threshold
+    out["ring_gap_ratio"] = ratio
+    out["ring_gap_band"] = (lo, hi)
+    out["ring_gap_derived"] = derived
+    out["ring_gap_floor"] = census_resolution()
     rings, current, split, kept_gaps = [], [ordered[0]], [], []
     for a, b in zip(ordered, ordered[1:]):
         gap = b.theta - a.theta
-        if gap > RING_GAP:
+        if gap > threshold:
             split.append(gap)
             rings.append(current)
             current = [b]
@@ -909,6 +1243,8 @@ def watershed_report(species, element, report, inert=True):
     out["spread_bands"] = len({area_band(c.theta) for c in sads[:take]})
     control = sorted(sads, key=lambda c: (-c.sharpness, c.theta, c.phi))
     out["spread_bands_control"] = len({area_band(c.theta) for c in control[:take]})
+    out["spread_bound"], out["spread_uniform"] = seed_spread_bound(take)
+    out["spread_control_bound"] = SEED_SPREAD_CONTROL_FACTOR * out["spread_bands_control"]
 
     # (i) THE PEAKS ARE ON THE PLANT. A ridge separatrix runs uphill to a peak, so a peak
     # with two or more ridge-arm ends on it is a node of the net that a player can see.
@@ -975,21 +1311,33 @@ def watershed_gates(species, element, w):
                        f"(bound {LANE_SHARE_MIN:.0%}) — the budget ran out inside a lane, so "
                        f"one of the four separatrix families is missing from the net")
     if w["modal"] != w["want"]:
+        how = (f"DERIVED {w['ring_gap']:.4f} rad = the geometric midpoint of this element's "
+               f"own widest empty band ({w['ring_gap_band'][0]:.4f}..{w['ring_gap_band'][1]:.4f}, "
+               f"a {w['ring_gap_ratio']:.1f}x step, gaps floored at the census's "
+               f"{w['ring_gap_floor']:.4f} dedupe chord)" if w["ring_gap_derived"] else
+               f"the {RING_GAP} rad FALLBACK — no band in this element's gap histogram "
+               f"exceeds {RING_GAP_RATIO_MIN}x, so there is no empty band to derive from")
         bad.append(f"{tag} RING CENSUS: the modal peak-ring size is {w['modal']}, not "
-                   f"order-1 = {w['want']} (rings {w['sizes']}, grouped at {RING_GAP} rad; "
-                   f"gaps bracketing that threshold: kept up to {w['gap_kept_max']:.4f}, split "
-                   f"from {w['gap_split_min']:.4f}) — the plant is drawing the wrong surface, "
-                   f"or the grouping threshold is deciding the answer")
+                   f"order-1 = {w['want']} (rings {w['sizes']}, grouped at {how}; the two gap "
+                   f"populations it separates: kept up to {w['gap_kept_max']:.4f}, split from "
+                   f"{w['gap_split_min']:.4f}) — the plant is drawing the wrong surface. The "
+                   f"threshold is no longer a hand-chosen angle that could be deciding this")
     want = w["want"]
     if want > 0 and w["spectrum_peak"] % want != 0:
         bad.append(f"{tag} RING CENSUS: the azimuthal power spectrum of the peak set peaks at "
                    f"m={w['spectrum_peak']} ({w['spectrum_value']:.3f}), which is not a multiple "
                    f"of order-1 = {want} — the (n-1)-fold fold is not in the surface")
-    if w["spread_bands"] < SEED_SPREAD_BANDS:
+    if w["spread_bands"] < w["spread_bound"] or w["spread_bands"] < w["spread_control_bound"]:
         bad.append(f"{tag} SEED SPREAD: the first {w['prefix']} of {w['saddle_count']} saddles "
-                   f"occupy {w['spread_bands']}/8 equal-area bands (bound {SEED_SPREAD_BANDS}; "
-                   f"the sharpness-major control gets {w['spread_bands_control']}/8) — a budget "
-                   f"prefix of this order is not spread over the sphere")
+                   f"occupy {w['spread_bands']}/{AREA_BANDS} equal-area bands — bound "
+                   f"max({w['spread_bound']} = min({SEED_SPREAD_BANDS}, "
+                   f"{SEED_SPREAD_DISCOUNT:.0%} of the {w['spread_uniform']:.2f} bands "
+                   f"{w['prefix']} UNIFORM draws would fill), {w['spread_control_bound']} = "
+                   f"{SEED_SPREAD_CONTROL_FACTOR}x the sharpness-major control's "
+                   f"{w['spread_bands_control']}/{AREA_BANDS}) — a budget prefix of this order "
+                   f"is not spread over the sphere. The bound is a function of the PREFIX "
+                   f"because the prefix is a fraction of a per-element saddle count, and the "
+                   f"control clause is the half that needs no distribution assumption")
     if w["candidates"] >= w["candidate_cap"]:
         bad.append(f"{tag} LANES: the walk returned {w['candidates']} candidates, which is the "
                    f"cap ({w['candidate_cap']}) — at least one of the four lanes did not "
@@ -1133,14 +1481,29 @@ def _fill(mask, hull, tile):
     return painted
 
 
-def arena_octaves(boxes, lanes, axis, tile=ARENA_TILE):
+def arena_octaves(boxes, lanes, axis, tile=ARENA_TILE, shield=False):
     """Per-octave UNION coverage of the arena frame and the median projected prism LENGTH.
 
     UNION, never a sum of areas: an octave's rings overlap each other on screen and a sum
-    would report a dense small octave as covering more of the frame than it can."""
+    would report a dense small octave as covering more of the frame than it can.
+
+    `shield` RASTERISES THE ARMOUR RATHER THAN THE BOX, which is what a CHARGE plant actually
+    draws: a Charge plant's leaves are shielded by law (Flora.ResolveShieldPeriod floors every
+    Charge plant's shield period) and `PrismStateManager.ActivateShield` engages the
+    octahedron CIRCUMSCRIBING the box, reaching CIRCUMSCRIBING_SCALE x the HALF-extents — i.e.
+    1.5 x leafSize from the centre on all three axes. Measuring Charge's ladder on the bare
+    box measures a plant that never renders. An octahedron's silhouette is the hull of its six
+    VERTICES (`centre +- 3h` along each axis), which projects exactly the way the box's eight
+    corners do, so this is the same instrument pointed at the body that is on screen.
+
+    The FRAMING stays the caller's `boxes`, deliberately: bare and armoured then share one
+    ppu and one extent and the two numbers are directly comparable. A rim prism's octahedron
+    can therefore reach past the tile, where `_fill` clips it — so an armoured share is a
+    LOWER bound, which is the safe direction for a legibility floor."""
     import mandelbulb_flora_render as R
     ppu, dist, ext = R.arena_scale(boxes, tile)
     a, u, v = _basis(axis)
+    reach = CIRCUMSCRIBING_SCALE if shield else 1.0
     half, masks, lengths = tile / 2.0, {}, {}
     for b, lane in zip(boxes, lanes):
         mask = masks.get(lane)
@@ -1149,20 +1512,27 @@ def arena_octaves(boxes, lanes, axis, tile=ARENA_TILE):
             lengths[lane] = []
         c, ax, h = b
         corners = []
-        for sx in (-1, 1):
-            for sy in (-1, 1):
-                for sz in (-1, 1):
-                    p = M._add(M._add(M._add(c, M._mul(ax[0], sx * h[0])),
-                                      M._mul(ax[1], sy * h[1])), M._mul(ax[2], sz * h[2]))
+        if shield:
+            for i in range(3):
+                for s in (-1, 1):
+                    p = M._add(c, M._mul(ax[i], s * reach * h[i]))
                     corners.append((half + ppu * M._dot(p, u), half - ppu * M._dot(p, v)))
+        else:
+            for sx in (-1, 1):
+                for sy in (-1, 1):
+                    for sz in (-1, 1):
+                        p = M._add(M._add(M._add(c, M._mul(ax[0], sx * h[0])),
+                                          M._mul(ax[1], sy * h[1])), M._mul(ax[2], sz * h[2]))
+                        corners.append((half + ppu * M._dot(p, u), half - ppu * M._dot(p, v)))
         hull = _hull(corners)
         if len(hull) >= 3:
             _fill(mask, hull, tile)
         # The LENGTH the eye reads is the long axis foreshortened by the view: a prism seen
         # end-on is a dot whatever its length, and calling it long would be the same mistake
-        # as summing the areas.
+        # as summing the areas. Armoured, the body on screen is the octahedron, whose extent
+        # along that axis is the same CIRCUMSCRIBING_SCALE multiple of the box's.
         d = M._dot(ax[2], a)
-        lengths[lane].append(2 * h[2] * ppu * math.sqrt(max(0.0, 1.0 - d * d)))
+        lengths[lane].append(2 * reach * h[2] * ppu * math.sqrt(max(0.0, 1.0 - d * d)))
     out = {}
     for lane, mask in masks.items():
         out[lane] = {"frame": sum(mask) / float(tile * tile),
@@ -1293,21 +1663,41 @@ def gasket_report(species, element, report, inert=True):
     view = R.SHEET_VIEWS[0]
     cd = (math.cos(view[2]) * math.cos(view[1]), math.cos(view[2]) * math.sin(view[1]),
           math.sin(view[2]))
-    oct_cam, _, _, _ = arena_octaves(boxes, lanes, cd)
+    # The camera cross-check is measured on the SAME BODY as the gate (armoured for Charge),
+    # or it stops being a cross-check on the axis and becomes one on the armour as well.
+    oct_cam, _, _, _ = arena_octaves(boxes, lanes, cd, shield=(element == "Charge"))
     out["ppu"], out["eye"], out["extent"] = ppu, dist, ext
     out["octaves"] = oct_z
     out["octaves_camera"] = oct_cam
-    legible = [k for k, v in oct_z.items()
+    # CHARGE IS MEASURED ARMOURED, because a Charge plant ships armoured — the ladder is a
+    # claim about what is ON SCREEN and the bare box is not what renders. A shield reaches
+    # 1.5 x leafSize on all three half-extents, so the silhouette it draws is
+    # 0.5 x CIRCUMSCRIBING_SCALE^2 = 4.5x the box's, which is the whole reason a Charge plant
+    # is the DENSEST of the four shielded and the sparsest bare (Docs/ECOSYSTEM.md §44). The
+    # BARE table is kept and reported beside it: the pair is the inversion made visible, and
+    # a bound read against the wrong one of them is a bound on a plant nobody sees.
+    out["armoured"] = element == "Charge"
+    if out["armoured"]:
+        oct_arm, _, _, _ = arena_octaves(boxes, lanes, (0.0, 0.0, 1.0), shield=True)
+    else:
+        oct_arm = oct_z
+    out["octaves_ladder"] = oct_arm
+    legible = [k for k, v in oct_arm.items()
                if v["frame"] >= OCTAVE_FRAME_MIN and v["px"] >= OCTAVE_PX_MIN]
     out["legible"] = sorted(legible)
+    out["legible_bare"] = sorted(k for k, v in oct_z.items()
+                                 if v["frame"] >= OCTAVE_FRAME_MIN and v["px"] >= OCTAVE_PX_MIN)
     out["legible_camera"] = sorted(k for k, v in oct_cam.items()
                                    if v["frame"] >= OCTAVE_FRAME_MIN and v["px"] >= OCTAVE_PX_MIN)
     # A sum of per-OCTAVE unions, so two octaves overlapping on screen are counted twice.
     # Reported only, never gated (the gate is per octave); measured against the shipped
     # renderer's own arena tile it lands within 15% of the lit pixels, the difference being
     # the render's perspective spread and its heart.
-    out["frame_total"] = sum(v["frame"] for v in oct_z.values())
-    out["invisible_spend"] = sum(v["prisms"] for k, v in oct_z.items()
+    out["frame_total"] = sum(v["frame"] for v in oct_arm.values())
+    out["frame_total_bare"] = sum(v["frame"] for v in oct_z.values())
+    # Against the LADDER's own table, so "spent below both bars" names the same octaves the
+    # gate just failed rather than a second opinion measured on a different body.
+    out["invisible_spend"] = sum(v["prisms"] for k, v in oct_arm.items()
                                  if k not in legible) / max(1, len(kept))
 
     # (d) TANGENCY. A child is inscribed in a curvilinear triangle of three discs that were
@@ -1392,7 +1782,11 @@ def gasket_gates(species, element, g):
                    f"CLOSED ring. Measured before the budget, so a budget cut cannot cause it")
     if len(g["legible"]) < OCTAVE_LEGIBLE_MIN:
         shares = ", ".join(f"oct{k} {v['frame']:.2%}/{v['px']:.1f}px"
-                           for k, v in sorted(g["octaves"].items()))
+                           for k, v in sorted(g["octaves_ladder"].items()))
+        if g["armoured"]:
+            shares += ("  [ARMOURED, which is what a Charge plant draws; bare: "
+                       + ", ".join(f"oct{k} {v['frame']:.2%}/{v['px']:.1f}px"
+                                   for k, v in sorted(g["octaves"].items())) + "]")
         bad.append(f"{tag} LADDER: {len(g['legible'])} octaves paint >= "
                    f"{OCTAVE_FRAME_MIN:.1%} of the {ARENA_TILE}px arena frame AND carry a "
                    f"median prism >= {OCTAVE_PX_MIN}px (bound {OCTAVE_LEGIBLE_MIN}) — "
@@ -1490,23 +1884,88 @@ def sample(pairs, n=SHIELD_SAMPLE, seed=1):
     return _r.Random(seed).sample(pairs, n)
 
 
-def armoured_fraction(boxes):
-    """Charge's octahedra against each other over a given set of boxes."""
+def armoured_census(boxes, chain=frozenset()):
+    """Charge's octahedra against each other over a given set of boxes, SPLIT into the two
+    populations the armour has — a curve's own consecutive prisms (`chain`, given as index
+    pairs into `boxes`) and everything else (the BUNDLE: ribbons that cross).
+
+    Both are returned because they answer different questions and only one of them is a
+    tuning surface. See CORE_ARMOURED_MAX: the chain's touching scale is the closed form
+    1/(3 x LengthFactor), which contains no dive parameter and no cross-section, so it is a
+    fact about CHARGE_DASH against the 1/3 cliff rather than a number this species can move."""
+    out = {"pairs": 0, "inter": 0, "fraction": 0.0,
+           "chain_pairs": 0, "chain_inter": 0, "chain_fraction": 0.0,
+           "bundle_pairs": 0, "bundle_inter": 0, "bundle_fraction": 0.0}
     if len(boxes) < 2:
-        return 0, 0, 0.0
+        return out
     reach = 2 * CIRCUMSCRIBING_SCALE * max(
         math.sqrt(sum(h * h for h in b[2])) for b in boxes)
     pairs = sample(list(near_pairs(boxes, reach, CIRCUMSCRIBING_SCALE)))
-    inter = sum(1 for i, j in pairs if touching_scale(boxes[i], boxes[j], shield=True) < 1.0)
-    return inter, len(pairs), inter / max(1, len(pairs))
+    for i, j in pairs:
+        hit = touching_scale(boxes[i], boxes[j], shield=True) < 1.0
+        key = "chain" if (i, j) in chain else "bundle"
+        out["pairs"] += 1
+        out[key + "_pairs"] += 1
+        if hit:
+            out["inter"] += 1
+            out[key + "_inter"] += 1
+    for key in ("", "chain_", "bundle_"):
+        n = out[(key or "") + "pairs"]
+        out[key + "fraction"] = out[key + "inter"] / max(1, n)
+    return out
+
+
+def armoured_fraction(boxes):
+    """The WHOLE-PLANT figure, which deliberately keeps the chain — see shield_report."""
+    c = armoured_census(boxes)
+    return c["inter"], c["pairs"], c["fraction"]
+
+
+def chain_touching_scale(length_factor):
+    """s* for two consecutive ARMOURED prisms of one curve, closed form. They sit one step
+    apart, each is `length_factor x step` long, and a shield reaches CIRCUMSCRIBING_SCALE x
+    the half-extent — so they first touch at 1 / (3 x length_factor), independent of the
+    step, the cross-section and every dive dial.
+
+    IT IS EXACT ON THE POPULATION IT IS PRINTED AGAINST AND ONLY THERE. The core is 100%
+    DIVE prisms on all four species, a dive steps at a fixed `dive_step`, and the measured
+    core chain worst-pair matches this to four decimal places on every one (1.1111 / 0.7407
+    / 1.0700 / 0.7407 for FractalFoliage / CoralBloom / Watershed / Apollonia). The
+    WHOLE-PLANT chain is mostly SURFACE, where a traced chord is only nominally one step, so
+    there the same comparison is off by 0.3% (Apollonia 0.7377) to 2.2% (FractalFoliage
+    1.0864) — the right side of 1 in every case, but not a four-decimal match. Quote it
+    beside the core figure, never as a fact about a whole plant."""
+    return 1.0 / max(1e-9, 0.5 * CIRCUMSCRIBING_SCALE * 2.0 * length_factor)
 
 
 def core_boxes(report, fraction=CORE_RADIUS_FRACTION):
-    """The prisms inside `fraction` of the plant's own bounding radius — where the Fall
-    converges every dive it lays, and therefore the tightest packing in the species. The
-    whole-plant armour figure cannot see it: it is 53 boxes of 2800."""
+    """(boxes, limit, chain) for the prisms inside `fraction` of the plant's own bounding
+    radius — where the Fall converges every dive it lays, and therefore the tightest packing
+    in the species. The whole-plant armour figure cannot see it: it is 53 boxes of 2800.
+
+    `chain` is the pairs of those boxes that are one curve's consecutive prisms, re-indexed
+    into the returned list, so the core census can make the same chain/bundle split the bare
+    bar has always made — and it takes the CLOSURE SEAM with it (`element_report`'s `seams`),
+    because a closed ring's last prism is chain-adjacent to its first the long way round and
+    filing that pair as BUNDLE would put it in the gated population. Measured, the core is
+    100% dive prisms on all four species so no seam reaches it today; the point is that the
+    two functions now answer "is this a chain pair" the same way by construction."""
     limit = fraction * report["radius"]
-    return [b for b in report["boxes"] if M._len(b[0]) <= limit], limit
+    prisms = report["prisms_list"]
+    seams = report.get("seams", frozenset())
+    idx = [i for i, b in enumerate(report["boxes"]) if M._len(b[0]) <= limit]
+    pos = {g: k for k, g in enumerate(idx)}
+    chain = set()
+    for g in idx:
+        h = pos.get(g + 1)
+        if h is not None and prisms[g].curve == prisms[g + 1].curve:
+            k = pos[g]
+            chain.add((min(k, h), max(k, h)))
+    for a, b in seams:
+        ka, kb = pos.get(a), pos.get(b)
+        if ka is not None and kb is not None:
+            chain.add((min(ka, kb), max(ka, kb)))
+    return [report["boxes"][i] for i in idx], limit, frozenset(chain)
 
 
 def shield_report(reports, species="FractalFoliage"):
@@ -1526,14 +1985,25 @@ def shield_report(reports, species="FractalFoliage"):
     out["armoured_interpenetrating"] = inter
     out["armoured_fraction"] = frac
     # And again over the CORE alone, because the Fall converges every dive on one point and
-    # a 2% subset cannot move a whole-plant fraction.
-    cb, limit = core_boxes(charge)
-    ci, cn, cf = armoured_fraction(cb)
+    # a 2% subset cannot move a whole-plant fraction. SPLIT chain/bundle there, unlike the
+    # whole-plant figure above: at the core the chain is the MAJORITY of the pairs and it is
+    # 100% fused by the closed form, so an un-split fraction is dominated by a number no
+    # lever in this file can move. The BUNDLE is what the gate has always described in prose.
+    cb, limit, cchain = core_boxes(charge)
+    cc = armoured_census(cb, cchain)
     out["core_radius"] = limit
     out["core_prisms"] = len(cb)
-    out["core_pairs"] = cn
-    out["core_interpenetrating"] = ci
-    out["core_fraction"] = cf
+    out["core_pairs"] = cc["pairs"]
+    out["core_interpenetrating"] = cc["inter"]
+    out["core_fraction"] = cc["fraction"]
+    out["core_chain_pairs"] = cc["chain_pairs"]
+    out["core_chain_interpenetrating"] = cc["chain_inter"]
+    out["core_chain_fraction"] = cc["chain_fraction"]
+    out["core_bundle_pairs"] = cc["bundle_pairs"]
+    out["core_bundle_interpenetrating"] = cc["bundle_inter"]
+    out["core_bundle_fraction"] = cc["bundle_fraction"]
+    out["charge_length_factor"] = M.rules_for("Charge", species).length_factor
+    out["chain_touching_scale"] = chain_touching_scale(out["charge_length_factor"])
     # The bar is measured the same way: ALL touching pairs, chain included.
     out["sibling_bare"] = max(reports[e]["all_fraction"] for e in ("Mass", "Space", "Time"))
     out["charge_bare_area"] = charge["area"]
@@ -1632,8 +2102,16 @@ def measure_species(species, args):
                   f"max {f['roll_raw_max']:>6.2f} over {f['roll_pairs']:>4} walk-adjacent pairs"
                   f"   emitted {f['emitted_max']:>3}/{f['dive_max_steps']}"
                   f"   dive bands {f['dive_bands']}"
-                  f" (starts in {f['dive_start_bands']}/8, bound {f['dive_band_bound']})"
-                  f"   spent {f['spent']} of {f['requested']} owed, {f['seeds']} seeds")
+                  f" (starts in {f['dive_start_bands']}/8, bound {f['dive_band_bound']}"
+                  + (f" = min({DIVE_BAND_MIN}, laid {f['laid']}, owed rings release into "
+                     f"{f['dive_bands_occupiable']})" if f["dive_bands_occupiable"] else "")
+                  + f")   spent {f['spent']} of {f['requested']} owed, {f['seeds']} seeds")
+            print(f"               sunburst bound {f['radial_bound']:.0%} "
+                  f"({'gradient-flow' if f['skeleton'] else 'walking'} species)   "
+                  f"dive ENDS {[round(r, 1) for r in f['dive_ends'][:5]]} u, worst "
+                  f"{f['dive_end_max']:.2f} against {f['dive_end_bound']:.2f} = "
+                  f"{DIVE_END_STOP_FACTOR:.0f}x the stop sphere "
+                  f"({f['dive_ends_over']} amputated)")
 
     # ── THE WATERSHED ──────────────────────────────────────────────────────────
     sheds = {}
@@ -1669,13 +2147,23 @@ def measure_species(species, args):
                   f"walk step {w['walk_step']:.4f}")
             print(f"               ring phases (fraction of one lobe) {w['phases']}   "
                   f"gap kept <= {w['gap_kept_max']:.4f} | split >= {w['gap_split_min']:.4f} "
-                  f"about the {RING_GAP} threshold")
+                  + (f"about a DERIVED {w['ring_gap']:.4f} — the geometric midpoint of this "
+                     f"element's widest empty band "
+                     f"({w['ring_gap_band'][0]:.4f}..{w['ring_gap_band'][1]:.4f}, "
+                     f"{w['ring_gap_ratio']:.1f}x), gaps floored at the census's "
+                     f"{w['ring_gap_floor']:.4f} dedupe chord"
+                     if w["ring_gap_derived"] else
+                     f"about the {RING_GAP} FALLBACK (no band exceeds "
+                     f"{RING_GAP_RATIO_MIN}x)"))
             print(f"               spectrum |sum exp(i m phi)|/N, m=1..{2 * w['order']}: "
                   f"{[round(v, 3) for v in w['spectrum']]}")
-            print(f"               seed spread {w['spread_bands']}/8 bands over the first "
-                  f"{w['prefix']} saddles (sharpness-major control "
-                  f"{w['spread_bands_control']}/8)   arm attribution worst "
-                  f"{w['attribution_worst_deg']:.2f} deg")
+            print(f"               seed spread {w['spread_bands']}/{AREA_BANDS} bands over the "
+                  f"first {w['prefix']} saddles — bound max({w['spread_bound']} = "
+                  f"{SEED_SPREAD_DISCOUNT:.0%} of the {w['spread_uniform']:.2f} a UNIFORM draw "
+                  f"of {w['prefix']} would fill, capped at {SEED_SPREAD_BANDS}; "
+                  f"{w['spread_control_bound']} = {SEED_SPREAD_CONTROL_FACTOR}x the "
+                  f"sharpness-major control's {w['spread_bands_control']})   arm attribution "
+                  f"worst {w['attribution_worst_deg']:.2f} deg")
             print(f"               peaks carrying >= 2 ridge ends {w['peaks_on_plant_n']}/"
                   f"{w['peaks']} = {w['peaks_on_plant']:.1%} (tolerance "
                   f"{w['peak_tolerance']:.4f}, {w['ridge_ends']} ridge ends)")
@@ -1721,7 +2209,11 @@ def measure_species(species, args):
         print(f"\n    THE LADDER, IN SCREEN TERMS — share of the {ARENA_TILE}px arena frame "
               f"(the judging sheet's own tile at {arena_factor}x extent) and the median "
               f"prism's projected LENGTH. An octave is LEGIBLE at >= {OCTAVE_FRAME_MIN:.1%} "
-              f"and >= {OCTAVE_PX_MIN}px; the bound is {OCTAVE_LEGIBLE_MIN} of them.")
+              f"and >= {OCTAVE_PX_MIN}px; the bound is {OCTAVE_LEGIBLE_MIN} of them. CHARGE is "
+              f"gated ARMOURED — its leaves are shielded by law and a shield draws the "
+              f"circumscribing octahedron (0.5 x {CIRCUMSCRIBING_SCALE:.0f}^2 = "
+              f"{0.5 * CIRCUMSCRIBING_SCALE ** 2:.1f}x the silhouette), so the bare row is the "
+              f"body nobody sees; the pair IS the §44 inversion.")
         for element in M.ELEMENTS:
             g = gaskets.get(element)
             if not g:
@@ -1730,11 +2222,22 @@ def measure_species(species, args):
                 return "  ".join(
                     f"oct{k} {v['frame']:>6.2%}/{v['px']:>5.1f}px/{v['prisms']:>4}p"
                     for k, v in sorted(table.items()))
-            print(f"      {element:8s} +z        {band(g['octaves'])}")
+            print(f"      {element:8s} +z        {band(g['octaves'])}"
+                  + ("   <- BARE, reported only" if g["armoured"] else ""))
+            if g["armoured"]:
+                print(f"               ARMOURED  {band(g['octaves_ladder'])}   <- GATED")
             print(f"               camera    {band(g['octaves_camera'])}")
-            print(f"               legible {g['legible']} (camera {g['legible_camera']}), "
-                  f"frame total {g['frame_total']:.2%}, invisible spend "
-                  f"{g['invisible_spend']:.0%} of prisms   "
+            print(f"               legible {g['legible']}"
+                  + (f" armoured (bare would be {g['legible_bare']})" if g["armoured"] else "")
+                  + f" (camera {g['legible_camera']}), "
+                  # The header promises the bare figure is REPORTED beside the armoured one
+                  # wherever the armour is gated; `frame_total` follows `octaves_ladder`, so
+                  # on Charge it is the armoured number and saying only "frame total" would
+                  # have made this the one place that promise was not kept.
+                  + (f"frame total {g['frame_total']:.2%} armoured / "
+                     f"{g['frame_total_bare']:.2%} bare" if g["armoured"] else
+                     f"frame total {g['frame_total']:.2%}")
+                  + f", invisible spend {g['invisible_spend']:.0%} of prisms   "
                   f"{g['ppu']:.2f} px/u at eye {g['eye']:.0f} u, extent {g['extent']:.1f} u")
             print(f"               lay order: last prism in octave {g['last_lane']} of "
                   f"{g['max_lane']} present; discs per octave {g['by_lane']}, prisms per "
@@ -1780,9 +2283,14 @@ def measure_species(species, args):
     print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
           f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
     print(f"  Charge armour at the CORE (inside {CORE_RADIUS_FRACTION:.2f} R = "
-          f"{s['core_radius']:.1f} u, {s['core_prisms']} prisms): "
-          f"{s['core_interpenetrating']}/{s['core_pairs']} = {s['core_fraction']:.1%} "
-          f"(bound {CORE_ARMOURED_MAX:.0%})")
+          f"{s['core_radius']:.1f} u, {s['core_prisms']} prisms): BUNDLE "
+          f"{s['core_bundle_interpenetrating']}/{s['core_bundle_pairs']} = "
+          f"{s['core_bundle_fraction']:.1%} (bound {CORE_ARMOURED_MAX:.0%}) | CHAIN "
+          f"{s['core_chain_interpenetrating']}/{s['core_chain_pairs']} = "
+          f"{s['core_chain_fraction']:.1%} at the closed form s* = 1/(3 x LengthFactor "
+          f"{s['charge_length_factor']:.4f}) = {s['chain_touching_scale']:.4f}, REPORTED and "
+          f"not gated | both together {s['core_interpenetrating']}/{s['core_pairs']} = "
+          f"{s['core_fraction']:.1%}")
     print(f"  silhouette: Charge bare {s['charge_bare_area']:,.0f}, armoured "
           f"{s['armoured_area']:,.0f}, siblings bare {s['sibling_bare_area']:,.0f}")
 
@@ -1821,14 +2329,22 @@ def measure_species(species, args):
                        "and bare the sparsest — that ordering IS the two-pass grazing cost")
         # THE FALL's convergence is the tightest packing in the species, and it is 2% of the
         # plant, so the whole-plant armour figure above cannot see it.
-        if s["core_fraction"] > CORE_ARMOURED_MAX:
-            bad.append(f"Charge ARMOUR AT THE CORE: {s['core_interpenetrating']}/"
-                       f"{s['core_pairs']} = {s['core_fraction']:.1%} of armoured pairs inside "
-                       f"{CORE_RADIUS_FRACTION:.2f} R ({s['core_radius']:.1f} u, "
-                       f"{s['core_prisms']} prisms) interpenetrate (bound "
-                       f"{CORE_ARMOURED_MAX:.0%}) — the Fall's bundle has fused into a rod. "
-                       f"The levers are DiveStopRadius (pull the tips out of the tightest "
-                       f"shell), DiveGirthFloor and DiveCount, never the whole-plant fit")
+        if s["core_bundle_fraction"] > CORE_ARMOURED_MAX:
+            bad.append(f"Charge ARMOUR AT THE CORE: {s['core_bundle_interpenetrating']}/"
+                       f"{s['core_bundle_pairs']} = {s['core_bundle_fraction']:.1%} of armoured "
+                       f"BUNDLE pairs inside {CORE_RADIUS_FRACTION:.2f} R "
+                       f"({s['core_radius']:.1f} u, {s['core_prisms']} prisms) interpenetrate "
+                       f"(bound {CORE_ARMOURED_MAX:.0%}) — the Fall's bundle has fused into a "
+                       f"rod. The levers are DiveStopRadius (pull the tips out of the tightest "
+                       f"shell), DiveGirthFloor and DiveCount, never the whole-plant fit. "
+                       f"(The CHAIN — a curve's own consecutive prisms — is measured "
+                       f"separately at {s['core_chain_interpenetrating']}/"
+                       f"{s['core_chain_pairs']} = {s['core_chain_fraction']:.1%} and is NOT "
+                       f"this bound: its touching scale is the closed form 1/(3 x "
+                       f"LengthFactor {s['charge_length_factor']:.4f}) = "
+                       f"{s['chain_touching_scale']:.4f}, which no dive dial and no "
+                       f"cross-section appears in — the lever there is CHARGE_DASH or this "
+                       f"species' own Charge walk step, and both are §35/§45 decisions)")
 
         for element in M.ELEMENTS:
             if element in falls:
@@ -1925,8 +2441,13 @@ def solve_charge(only=None):
     `<= clears` mark is against BOTH bars because --check gates both.
 
     MEASURED, and it is the reason this sweep exists as a REPORT rather than as a solver:
-    the cross-section is not a lever on the core at all. Shrinking it makes the core
-    fraction monotonically WORSE (FractalFoliage 21.3% at k=1.00 -> 45.6% at k=0.25),
+    the cross-section is not a lever on the core at all. On a species whose chain has fused
+    — LengthFactor > 1/3, so CoralBloom and Apollonia and not the other two, see
+    CORE_ARMOURED_MAX — shrinking it makes the UN-SPLIT core fraction monotonically WORSE
+    (CoralBloom 39.0% at k=1.00 -> 47.8% at k=0.25, Apollonia 23.7% -> 35.8%), while the
+    BUNDLE this file actually gates falls (8.3% -> 0.0% and 14.5% -> 3.1%). Below the cliff
+    there is nothing to invert and the un-split figure simply falls with the bundle
+    (FractalFoliage 10.3% -> 0.0%, Watershed 7.5% -> 5.1%). The inversion happens
     because a shield reaches 1.5 x leafSize on all three half-extents INCLUDING the length,
     so a thinner prism keeps its armour's reach along the ribbon while the touching-pair
     denominator collapses to the pairs that were already fused. The levers that do reach it
@@ -1952,17 +2473,32 @@ def solve_charge(only=None):
         print(f"  sweep base = this species' SPACE cross {base[0]:.4f} x {base[1]:.4f}; the "
               f"SHIPPED Charge cross {shipped[0]:.4f} x {shipped[1]:.4f} sits at "
               f"k={shipped[0] / max(base[0], 1e-9):.3f}")
+        lenf = M.rules_for("Charge", species).length_factor
+        s_star = chain_touching_scale(lenf)
+        print(f"  the CORE column is the BUNDLE (cross-curve) fraction, which is what --check "
+              f"gates; the CHAIN is printed beside it and sits at the closed form "
+              f"s* = 1/(3 x LengthFactor {lenf:.4f}) = {s_star:.4f} — INVARIANT under this "
+              f"sweep by construction, which is why the cross-section is not a lever on it. "
+              + (f"s* < 1, so this species' chain is FUSED and pinned at 100%: it dominates "
+                 f"the un-split column, which therefore moves the WRONG way as k falls while "
+                 f"the bundle improves." if s_star < 1.0 else
+                 f"s* >= 1, so this species' chain is CLEAR and contributes nothing: the "
+                 f"un-split column falls with the bundle here, and the pathology that split "
+                 f"this statistic is not visible on this species at all."))
         for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
             cross = (base[0] * k, base[1] * k)
             r = element_report("Charge", cross=cross, species=species)
             _, n, frac = armoured_fraction(r["boxes"])
-            cb, limit = core_boxes(r)
-            _, cn, cfrac = armoured_fraction(cb)
+            cb, limit, cchain = core_boxes(r)
+            cc = armoured_census(cb, cchain)
+            cfrac = cc["bundle_fraction"]
             mark = "  <= clears both" if (frac <= bar and cfrac <= CORE_ARMOURED_MAX) else (
                 "  <= clears the plant only" if frac <= bar else "")
             print(f"  k={k:.2f}  cross=({cross[0]:.4f}, {cross[1]:.4f})  "
                   f"plant {frac:>6.1%} of {n:<5}  core(<= {limit:.1f} u, {len(cb):>3} prisms) "
-                  f"{cfrac:>6.1%} of {cn:<5}{mark}")
+                  f"bundle {cfrac:>6.1%} of {cc['bundle_pairs']:<5} chain "
+                  f"{cc['chain_fraction']:>6.1%} of {cc['chain_pairs']:<4} "
+                  f"both {cc['fraction']:>6.1%}{mark}")
     return 0
 
 
