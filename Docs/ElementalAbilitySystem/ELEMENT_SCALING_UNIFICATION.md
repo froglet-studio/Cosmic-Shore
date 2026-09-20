@@ -337,3 +337,92 @@ machine and never replicate, so `BoostSpeedMultiplier` is read per-machine for i
 is nothing here that behaves differently across two real machines than it does in one process, so
 MPPM is not a weaker test for this branch than a two-machine session would be — the untested axis is
 the editor, not the network.
+
+---
+
+# Third pass — 2026-09-20: the stragglers (BACKLOG 5.4b / 5.4c / 5.7 / 5.11a)
+
+The unification left four rows open. Three were closed here; all three turned out to be a
+**different shape than the row that described them**, and that is the finding worth carrying
+more than any of the individual fixes:
+
+> **A backlog row is a hypothesis written at the moment you stopped looking.** Re-measure it
+> before you plan against it. Here, one row's live surface shrank from six fields to one, one
+> row's "behaviour-neutral" claim was false for the only field that mattered, one row's
+> "needs the editor" was wrong about which half was dangerous, and one row's hazard was
+> **dead code with a live twin of the same name.**
+
+## 5.11a — the dangerous copy was uncalled, and its twin is a different class
+
+`GrowSkimmerActionSO.ApplyMaxSizeDebuff` did exactly what `ARCHITECTURE.md §2(a)` and the
+vessel contract name as their cautionary tale: save `maxSize.Value`, multiply, `await`, write
+it back — on a **shared** ScriptableObject. Measured: **nothing calls it.** The one live caller
+of a method by that name, `VesselChangeSkimmerSizeByProjectileEffectSO`, holds a
+`ShieldSkimmerScaleConfigSO` — a different class whose version writes a private runtime
+`_maxScaleMultiplier` and never touches a serialized field.
+
+**Two methods, one name, and only the uncalled one was dangerous.** Grepping the METHOD name
+found the hazard; only resolving the CALLER'S TYPE said which one was live.
+
+What survives is milder and already self-documented (*"if multiple skimmers share it, they
+share the debuff too"*) and is **5.11b**, deliberately not fixed: before moving that latch
+per-vessel, establish whether the debuff reaches anything at all — the config's `prismMaxScale`
+is tooltipped *"the driver no longer reads it"*, which is a playtest, not a read.
+
+## 5.4b — the write channel had to exist before the read could move
+
+Of six `ElementalFloat` fields on the pre-`R_` `VesselActions/` generation, **four sit on
+components nothing references** (5.4c) and one is authored `Enabled: 0` on both hulls that
+carry it. The live surface was one field: `FireGunAction.ProjectileTime`, on the Urchin's two
+guns, `Enabled: 1`, 4 → 8 on **Space**.
+
+That field was also `EnergizeAction`'s **override channel** — `ProjectileTime.Value = x` on
+start, restore on stop. Converting the read to `EvaluateLive` would have made the write a
+no-op and switched the Urchin's energize off silently. So the write got a channel of its own
+first: a FLOOR, composed as `Mathf.Max(element, floor)`.
+
+> **When a value is read by one system and WRITTEN by another, a refactor of the read is a
+> refactor of the write.** The write site does not appear in a grep for the read, and the
+> failure is a feature that stops working with nothing in the console.
+
+The floor also removed three defects the write-and-restore shape carried, none of which was
+the point of the change: a level change mid-energize made `ScaleValueWithLevel` overwrite the
+raise and drop it; the restored "default" was captured from `fireActions[0]` and written to
+**every** gun; and that default was the pre-scaling authored `Value` (5), so a restore replaced
+the element-scaled lifetime with a constant until the next level event. A floor cannot express
+any of the three.
+
+## 5.7 — a gate can catch a dishonest VALUE; only the type can fix a dishonest TYPE
+
+Nine `ElementalFloat`s on ScriptableObjects, all read as `.Value`, all therefore unable to
+scale, are now plain `float`s. `check_elemental_floats.py` already failed the build on the
+dangerous case — an authored ramp that never runs — and structurally cannot see the misleading
+type, which is what made the gate necessary in the first place.
+
+Two things the row was wrong about:
+
+- **Four of the nine exposed the whole `ElementalFloat` as a public property**, so this was an
+  API change, not a field rename. `FullAutoActionSO.SpeedValue` had zero consumers and is
+  deleted.
+- **It did not need the editor.** The hazard is the serialized DATA: changing the type turns
+  the YAML from a mapping into a scalar, and Unity applies only the keys a file carries, so a
+  botched block falls back to the C# initializer (rule 4-i). On `GrowSkimmerActionSO.maxSize`
+  that is 3 instead of 120 — a 40× blade-length change with nothing to report it. Every block
+  was rewritten in the same commit, each initializer set to its asset's **authored** value
+  rather than a tidy round number, and the migration asserted the old `Value` against the new
+  scalar before writing.
+
+## Verification status (2026-09-20)
+
+Same rule as the second pass: **there is no compiler and no CI in the environment this was
+written in**, so no row says "compiles".
+
+| System changed | Verified how | Still needs a human |
+|---|---|---|
+| `GrowSkimmerActionSO.ApplyMaxSizeDebuff` deleted | Grep of the method name across `Assets` — one declaration, zero call sites; the one caller of that name resolves to `ShieldSkimmerScaleConfigSO` by its `[SerializeField]` type | nothing |
+| `FireGunAction` output floors + `EnergizeAction` | Read-and-grep: `EnergizeAction` was the only external writer of that gun's `Speed`/`Energy`/`ProjectileTime` (`ToggleProjectileActionWrapper` writes `FullAutoAction`, a different class with plain floats). Arithmetically identical at the authored numbers — raise-to-6 against a 4 → 8 ramp is `Mathf.Max(scaled, 6)` either way, and both Urchin guns author the same Speed 80 / Energy 1 | **Fire the Urchin's guns, energize, confirm the shot lifetime lengthens and returns** — this is the only real playtest on the branch |
+| `FullAutoAction.speed` → `EvaluateLive` | Authored `Enabled: 0` on Falcon and Shrike (read out of both prefabs), and `EvaluateLive` returns `Value` verbatim when disabled — a no-op by construction | nothing |
+| Nine SO-hosted `ElementalFloat`s → `float` | The asset diff was reviewed line by line: every new scalar equals the block's old `Value`, and the other `ElementalFloat` blocks in the same assets (`massMaxSizeMultiplier`, `timeDurationMultiplier`, both live through `EvaluateLive`) are untouched. The migration script asserted the equality before writing. All four public-property consumers enumerated and migrated | Open the six assets once and confirm the inspector renders a float field with the same number |
+| Everything changed, as C# | **All 13 changed files parse** under Roslyn 9.0 (per-user SDK, `-langversion:9.0`): 0 syntax errors, and every diagnostic is an unresolved type (`CS0518`/`CS0246`/`CS0234`) because there are no Unity DLLs in this container. **This is a parse, not a type check of the assembly** | a player build |
+| The standing gates | `check_elemental_floats.py` OK, **20 blocks → 11**, `--self-test` PASS; `check_using_directives`, `check_enum_member_references`, `check_switch_label_collisions`, `check_conditional_compilation`, `check_self_referential_locals --all` all OK | nothing |
+| Five dead components (5.4c) | Guid sweep per `.meta`: zero asset referrers each; only intra-cluster C# references plus one `[Tooltip]` string | **a delete/keep verdict** — not taken here |

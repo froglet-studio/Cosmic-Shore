@@ -2911,7 +2911,7 @@ top, all data + one curve retune:
   Prisms is suppressed while danger is on. Known cosmetic seam: the stream renders domain
   colors, the revealed prism wears the danger material.
 - **Gun range re-anchored, both modes**: base speed 1500 → **750**
-  (`FullAutoAction.speedValue.Value`), SPACE curve 2.5 → **4.667**
+  (`FullAutoActionSO.speedValue`, a plain `float` since 2026-09-20), SPACE curve 2.5 → **4.667**
   (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
   Verify with a Space crystal binge that range visibly stretches toward the old reach.
 
