@@ -8180,3 +8180,243 @@ element.
 2. **The two species must read as two plants.** Spawn one of each from the toy and look at them
    together. **FAIL:** if they read as one species at two sizes, the concept dials are not carrying
    and the answer is the curve families, not the prism.
+
+## 47. The Fall and the Watershed — every curve reaches the heart, and the third species is the surface's own skeleton (Sep 2026)
+
+The brief for this pass was four flora on the Mandelbulb rule (§44) that are **visually orthogonal**,
+whose curves **move in close enough that the spindles almost connect to their crystal**, one with
+evident self-similarity, one with smooth curves, one with twisting helicoids, and one that expresses
+"a discovery … a place where people don't know what they are looking at, but they want to know
+more." Coral Bloom (§46) is the smooth one and Fractal Foliage the helicoid. This section records
+the two things built to answer the rest of the brief before the self-similar species (§48): a
+**shared radial dive** every species authors, and the **Watershed**, the discovery species.
+
+### 47.1 THE FALL — a curve the surface can no longer carry falls to the heart
+
+Every Mandelbulb species lives on ONE shell, with the heart crystal 75 world units away at the
+origin and nothing between. The ask was for the plant to reach it. The answer is not a per-species
+mechanism but one shared by every curve family: when a run is released — abandoned by its turn
+gate, or run out of steps — the curve **continues as a logarithmic spiral toward the heart**, a
+heading re-derived every step at a constant angle ψ from the inward radial and a step that is a
+fixed fraction `f` of the current radius (`GrowthRules.Dive*`, `Growth.AppendDive`).
+
+Five decisions in it were measured rather than chosen:
+
+- **The heading is re-derived at a constant angle, never lerped toward the radial.** A lerp has no
+  stable non-zero fixed point (it either escapes or degenerates into a radial stab); the constant
+  angle IS the definition of a log spiral, `ρ = sqrt(1 − 2f cos ψ + f²) < 1`, exactly stable, and it
+  terminates by construction.
+- **Every dive winds about ONE axis** (`DiveAxisAlign`): each dive's tangential heading is turned
+  toward the azimuthal direction about the surface's polar axis, so the pole view reads as a
+  rosette of spirals rather than as wisps in every plane. The sign of the azimuthal direction is
+  chosen to agree with the curve's own tangential heading, and that choice carries a **dead band**
+  (`Dot(az, u) < −1e-3`): on a meridional arm the dot product is a rounding residual, and the
+  shipped C# (float32) and the model (float64) wound the Space Watershed's second prism opposite
+  ways until the tie was made deterministic. *A sign decided by a value that can be zero is a sign
+  decided by the last bit.*
+- **The step has a ceiling in multiples of the walk step** (`DiveStrideCeiling`): without one the
+  first prisms after the release are `f·r` long — 13× a surface prism, measured — and the spiral
+  reads as a spike. At the ceiling of 2.0 this was still true in a quieter form: the longest dive
+  prism out-ran every plant's longest surface prism on all twelve (species, element) pairs,
+  because a surface prism is the frame-to-frame CHORD (1.05–1.20× the step, the walk steps in the
+  tangent plane and re-projects onto a larger radius). Solved per element the gate wants ≤ 1.14;
+  the fleet ships **1.10**, with `DiveMaxSteps` raised 96 → 160 to pay for the shorter stride.
+- **The dive's `up` hangs off the RAY, and the seam is paid once.** `Pose` hangs a surface prism's
+  face off the normal, which is meaningless for a prism floating inside the shell; a dive prism
+  (`TanR ≠ 0`) hangs its face off its own ray. The signed angle between the two `up`s about the
+  shared heading is computed ONCE at the release and added to every dive prism's `Roll`, which the
+  address already carries — so the face is continuous across the release with no new field.
+- **Depth is a SHELL FRACTION** (`PrismAddress.Dive`, `position = Dir · (R(θ,φ)·(1 − Dive) +
+  RadialOffset)`), never an absolute lift: under a surface morph a fraction moves a near-heart
+  prism by `(1 − Dive)·ΔR` and the whole spiral scales with the bulb, where an absolute lift tears
+  it off its own release point. Both new fields default 0 = bit-identical, proven against a HEAD
+  build (8 × 4,000 prisms string-identical).
+
+**Which seeds own a dive is strided, never a prefix** — the seed list is z-monotone, so a prefix
+is a polar cap (§44.5's defect for a new consumer) — and **where each dive leaves is emergent**:
+the run decides when it is released. The gates that hold it (`measure_mandelbulb_flora.py`):
+arrival (dives laid ≥ 60% of those owed), crystal clearance (the closest dive prism's tip stays
+outside the heart's half-extent + 0.5 u, and its centre inside 2–6 u), the stride gate above, no
+hole inside a dive wider than 3× the median surface prism, winding ≥ 80° per e-fold of radius,
+share 5–25% of the plant, no dive truncated on `DiveMaxSteps`, the sunburst gate (< 55% of the
+plant pointing within 45° of the ray — which turns out to be a statement about the SURFACE
+family: a dive heading is ψ off the radial and `|cos ψ| ≤ 0.64 < 0.707` for every authored ψ, so
+a dive prism can never register as radial, measured 0.0% on all twelve), per-dive band spread
+(one entry per laid dive at the band it LEFT the surface in — the per-prism count was blind, since
+one dive's own prisms sweep 3–4 of the 8 bands unaided), and body roll measured net of the
+authored twist by parallel transport (a curve that BENDS must not read as a curve that ROLLS).
+
+### 47.2 THE WATERSHED — the discovery species is the surface's Morse–Smale skeleton
+
+The discovery brief was answered by drawing something the bulb already contains and nobody can
+see: the **critical points** of its height field and the **separatrices** between them. Every
+curve of a Watershed plant leaves a **saddle** of R(θ,φ) along one of the saddle's Hessian
+eigen-directions and runs uphill to a peak or downhill to a pit — the surface's own Morse–Smale
+complex. The plant is therefore a NET anchored to the topology rather than to any sampling of it,
+and its peaks and pits sit in latitude rings of exactly **(order − 1)** — 7 / 4 / 2 / 11 for the
+power 8 / 5 / 3 / 12 bakes — each ring rotated half a lobe from the next. That is the fractal's
+exponent made countable, which is what the gyroid and the quasicrystal do with their symmetries
+and what the brief named: the mind wants to discover the depths of the symmetry, and each
+discovery is a reward.
+
+- **The census runs in DOUBLE on the float32 field** (`Surface.SampleD`, a 2× lattice scan, a
+  clamped Newton refinement, acceptance at `|∇| ≤ 2e-3`, dedupe on a 0.01 chord, a frozen
+  `HessianStencil` 0.01). It was float32 first and the shipped C# and the model disagreed on the
+  peak SET (Mass and Space) and on the saddle ORDER (Charge, positions 14/84); moving the census to
+  double and quantising the model's field to float32 made the two agree exactly, and the verifier
+  now proves count, kind, position, sharpness and the farthest-point saddle order against the
+  compiled C#. The peaks and pits are still less stable across float widths than the saddles
+  (measured, and the reason §48 takes a PREFIX of the peak order).
+- **Seeds are the saddles in FARTHEST-POINT order** with a tolerance comparator (1e-6 on sharpness
+  and distance, 1e-5 on angles), so every budget prefix of the seed list is spread over the sphere;
+  the negative control — sharpness-major order — puts Charge's first quarter in 4 of 8 bands.
+- **The four lanes are INTERLEAVED** valley+, ridge+, valley−, ridge−: with the two valley lanes
+  first, Time's budget ran out inside lane 2 and the ridge net — the part that draws the silhouette
+  — was never laid.
+- **A separatrix is PURE gradient flow BY CONSTRUCTION.** The first cut authored `FieldMix 1`,
+  `Momentum 0`, `Swirl 0` and called the columns inert; the inert-column probe (grow twice with
+  those columns at wildly different values, assert byte-identical prisms) found they MOVED the
+  plant — `Trace` and `TryFieldDirection` read them whatever the seeds are, so the claim was true
+  by coincidence of authoring. They are now short-circuited under `SkeletonSeeds` in both
+  implementations. *A column that is inert because it was authored at its no-op value is a column
+  that stops being inert on the next edit.*
+- **The walk step is the species' own** (`WalkStep`, decoupled from the §45 step) because a
+  skeleton's cost is fixed by the SURFACE — Time's 147 saddles need a coarser walk than Mass's 32 —
+  and `LengthFactor` is the ratio that makes the prism fill it; `GirthReference` replaces
+  `MaxSteps/2` because a separatrix arm is short by construction (§44's "a ceiling nothing
+  reaches"). The walk draws no random number, so the verifier holds it **prism for prism**, a
+  stronger contract than the two walking species can offer.
+
+Its gates: separatrix sign (every ridge arm ends higher than it started, every valley arm lower),
+net survival (≥ 65% of saddles keep ≥ 3 arms, mean arm ≥ 5 prisms), no lane starved by the budget
+(≥ 15% each), the **ring census** (modal peak-ring size = order − 1, AND the azimuthal power
+spectrum of the peak set peaks at a multiple of order − 1 — the grouping half has a knife-edge on
+Space, whose rings sit `gap kept ≤ 0.060 | split ≥ 0.347` about the 0.08 threshold, and the
+spectrum half has none), seed spread with its negative control, the inert probe, all four lanes
+inside the candidate cap, the `LengthFactor` band, and peaks on the plant (≥ 50% of peaks carry two
+ridge ends). The Euler characteristic `peaks − saddles + pits` is REPORTED and never gated: a
+finite grid cannot promise it found every critical point, and the shipped censuses give 0 / −8 /
+−12 / +5 against a sphere's +2, so the complex is not closed on three of four bakes — a fact about
+the bake, stated rather than hidden.
+
+### 47.3 What a heart costs when everything falls into it
+
+The Fall is what makes "the spindles almost connect to their crystal" literal — the closest dive
+prism's centre sits 3.3 u from the origin against a 0.76 u crystal half-extent — and its price is
+paid at the core: on the Charge plants, whose prisms are ARMOURED (§35), the dive bundle inside
+0.15 R fuses into a rod (20.7% of armoured pairs interpenetrate against a 15% bound, measured).
+The levers are `DiveStopRadius`, `DiveGirthFloor` and `DiveCount` — never the whole-plant shield
+fit, which is a different measurement. The tuning pass that lands the fleet's `--check` green is
+recorded in §48.5.
+
+## 48. APOLLONIA — the self-similar species is the Apollonian gasket, crowning the bulb's own lobes (Sep 2026)
+
+The self-similar species took **two design rounds** and nine prototyped candidates, every one
+rendered and read at the size it will be judged (§44.2's rule). The first round's four —
+recursive cascades, a zoom ladder of nested funnels, a vortex of equiangular spirals, a
+subdivision cage — all failed the same way: the repeated unit was under ~40 prisms and lived in
+specks, or the ladder existed only down one axis. The second round's runners-up are worth a line
+each, because each bought a rule: the **Echo Lantern** (a closed curve's orbit under a similarity,
+rung n = kⁿ·Rot(nΔ) of the mouth) rendered as the round's single most beautiful image ISOLATED —
+a rose of ten registered scalloped outlines spiralling into the crystal — and as a scalloped star
+when five lanterns were spread over the sphere, because the ladder subtends kⁿ of the mouth and
+octave 4 at k 0.62 is 15% of a silhouette that is itself 10° of the frame; **Heartwood** (a radial
+dendrite from the heart out, 4→2→1 braided strands, 7-fold from the pole) read as a spiny ball
+from every other angle and its deep twigs were below the legibility floor; the **Coastline**
+(the Watershed's ridge net redrawn at four radii, simplifying toward the heart) was the clearest
+"Mandelbrot zoom" at the pole and was **disqualified on orthogonality** — one Coastline level and
+one Watershed plant are the same lobed crest net at arena distance; and **Frostwork**
+(subdivision) never left its prototype. Two judges (one on wonder, one on engineering) and two
+refuters, all of whom had to open the sheets, put the same candidate first.
+
+### 48.1 The concept
+
+The one fractal picture everyone recognises: circles packed tangent to circles, the gap between
+three of them filled by a smaller circle, and again. **Level 0 is the bulb's OWN LOBES** — the
+surface's peaks in farthest-point order (`Surface.Peaks()`, the sibling of `Saddles()`), each
+given half the angle to its nearest neighbour, so the big rings crown the lobes and are mutually
+tangent by construction. Every later disc is the classic Apollonian step: the disc inscribed in a
+curvilinear triangle of three mutually adjacent discs, breadth-first, kept only if it overlaps
+nothing already placed and clears a visibility floor (`DiscMinRadius` — a SIZE rather than a level
+count on purpose: the ladder stops where its rings stop being visible). Each disc is then **drawn
+as a ring of prisms** around its own small circle, lifted onto R(θ,φ), so a big ring crossing three
+lobes and two valleys comes out a scalloped star while a small ring inside one lobe is a clean
+circle: *the surface deforms the shared motif by exactly how much of the bulb the motif spans*,
+which is the fractal's own statement about scale. The largest rings release the Fall (§47.1), so
+the pole view is a rosette with a log spiral winding into the crystal at its centre.
+
+**No address field changed and `Pose` is untouched.** A ring prism is verbatim the shipped surface
+branch — radial lift in `RadialOffset`, a tangential heading, `TanR 0`, `Dive 0` — and the
+recursion is entirely a SEED-GENERATION concern, resolved once per `Growth` in the same lazy place
+the Watershed's saddle extraction sits. The species draws **no random number**. It is
+`MandelbulbFlora` with a third `GrowthRules` row (`GasketLevels` the master switch; the three other
+species are bit-identical at 0 through literally the same code), one prefab (`ApolloniaFlora`) and
+no new bake.
+
+### 48.2 Four findings that generalise past the species
+
+1. **A species whose prism length is set by its own geometry must not also take a `LengthFactor`
+   that assumes a walk step.** The first prototype authored `WalkStep 0.063`, so `rules_for`'s
+   ratio gave Space prisms 21% LONGER than their chord — and `claim_filter` refuses a prism within
+   0.70× its own length of one already laid, so a ring's prisms refused their own neighbours and
+   ring integrity fell to 77%. `WalkStep` is 0 here and the factor is the Charge dash alone;
+   integrity is 0.78–1.00 with 0–1 rings of 49–89 below 80%. **No existing gate could see this**
+   — deep-interleave, worst-scale and the band census all pass while every ring is dashed — so the
+   species ships a ring-integrity gate of its own.
+2. **An element's §45 long axis is spent as SAMPLING COARSENESS, not as a longer prism.**
+   `RingSamplesFor` derives the prisms per ring from the reference ring's circumference and the
+   element's own step (`N = 2π·sin(ρ_ref)·MeanRadius / StepSize`), the same N on every ring of the
+   plant — which is the homothety the species is named for — so Space draws a **29-gon of
+   7.8-world blades** where Mass draws a **55-gon of 4.2-world bricks**: the same packing in two
+   visibly different hands, readable with no colour and no label.
+3. **Lane-major is not sufficient for a multi-scale species, and neither is "lane = recursion
+   depth".** Measured on Mass, the recursion levels' median ρ run 0.260 / 0.270 / 0.067 / 0.151 /
+   0.074 — non-monotone, because how a disc is FOUND and how big it IS are different orderings —
+   so level-major truncation dropped rings of the wrong size. The lay order is ρ-DESCENDING and
+   the lane is the **size octave** (`floor(log2(ρ_ref/ρ) / GasketOctave)`), which makes "a
+   budget-stopped plant loses the smallest rings" exactly true and puts the Fall — which rides the
+   largest rings — among the first things laid.
+4. **A tolerance that widens a SEARCH is not a tolerance that loosens a RESULT.** `DiscPad 0.6`
+   looks alarmingly loose and measures a median tangency gap of exactly 0.000; `DiscPad 0.09` finds
+   no children at all (thirteen rings and nothing else). Measure the result, not the constant
+   that names it — §44's "a named constant is an INPUT to the arithmetic" rule from a new direction.
+
+Two more came from the refutation and are folded in. **Every ordering is a TOTAL key**: the
+bulb's (n−1)-fold symmetry puts children in orbits that share a ρ to the last bit (15 of 16 level-1
+candidates on Mass), `.NET` has no stable sort for `List<T>`, and a mirror that leaned on sort
+stability would have diverged on 94% of the candidates — so candidates order on `(−ρ, enumeration
+index)` and the lay order on `(−ρ, level, index)`. And **the girth ladder has a FLOOR**
+(`RingGirthFloor`): a strict allometry `(ρ/ρ_ref)^0.8` spent 41% of Mass's prisms on 1.0% of the
+arena frame at sub-pixel prism size — the legibility lesson satisfied in PRISM COUNT (46–55 per
+ring) and violated in SCREEN SIZE, which is the quantity that mattered — so the exponent is 0.40
+with a floor of 0.55, and the ladder gate is restated in screen terms (octaves that cover ≥ 1% of
+the arena frame at a median prism ≥ 2 px).
+
+### 48.3 What holds it
+
+Level 0 (the peak prefix, the half-angle ρ, the lay order's level-0 prefix, N and ρ_ref) is proven
+EXACTLY against the compiled C#; the children are held STATISTICALLY (disc counts per octave, the
+ρ histogram, the tangency median), because `Inscribe` is a fixed-iteration relaxation behind a
+`DiscMinRadius` threshold and a near-degenerate triple can land either side of it across float
+widths — measured, Charge and Time agree with the C# prism for prism, Mass and Space to their first
+children. The species' own gates: the full form fits as a BAND (0.90–1.05× the budget — a
+one-sided ceiling let an 81% plant pass while priced at 100%), ring integrity, the screen-space
+ladder, tangency, elemental ring coarseness (N ordered Space < Charge ≤ Time < Mass), the inert
+walk columns, and the ordering promise (the last laid prism sits in the highest lane present).
+
+### 48.4 Where it lives and what it costs
+
+`ApolloniaFlora.prefab` + four `Apollonia Flora <Element>` configs, authored by
+`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix
+toy (row `Apollonia`) like its three siblings. `MaxLivePopulation` 3, `POPULATION_SIZE` 1, one
+always-on heart collider per live plant, 2,800 LOD-cullable prisms. The gasket build is O(n³) in
+triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the lazy `EnsureSeeds` —
+0.7 s in Python; **the C# build time at `MaxLivePopulation` 3 is unmeasured** and, if it hitches,
+the disc list belongs cached on the `Surface` keyed by the gasket rules, the shape `_saddles`
+already has.
+
+### 48.5 The tuning pass — TO BE RECORDED
+
+The measured tables for all four species after `--check` lands green (the Fall's stride and
+core-armour bounds, the Watershed's Space walk step and ring census, Apollonia's `--fit-volume`
+and `--shields`) are recorded here when the pass completes.
