@@ -4964,8 +4964,17 @@ ones.
   churned the grids twice; plus one `ShieldActivate` SFX, one timer, one octahedron engage and one
   shed-debris entity PER PRISM. Removing it is a move toward the conserved-mass invariant (mass
   returns to the sanctioned sink) at **zero collider cost in both directions** — a shield swaps the
-  mesh and the mass, never the collider (`shieldMeshCollider.enabled = true` appears nowhere;
-  `PrismKind`'s own doc comment still claims otherwise and is stale). The **authored** permanent
+  mesh and the mass, never the collider (`shieldMeshCollider.enabled = true` appears nowhere, and
+  both shield components' `sharedMesh` writes land on the MeshFilter, so there is not even a convex
+  cook). **That claim had regrown to 23 sites** — `PrismKind`'s own doc comment, the whole
+  Microscene palette family, and the collider-budget lines of five arenas and six `ECOSYSTEM.md`
+  sections — after being refuted three separate times in three new places instead of swept. All 23
+  are corrected and `Tools/Build/check_shield_collider_claims.py` (`--check`, `--self-test`, proven
+  on the pre-fix tree at 23 findings and 0 after) now fails the build on the next one, letting a
+  refutation or a historical narration through. The general rule is CLAUDE.md's own deleted-SDK
+  rule one level down: **a retired claim goes on looking present for as long as anything still
+  describes the project in its terms, so the refutation has to be a SWEEP and not a new
+  paragraph.** The **authored** permanent
   shield (`shielding`, the Sparrow's CHARGE-5) is kept and is unaffected; only the timed stand-in
   went away, and its registry sync moved INSIDE that branch. Stated cost: the shed-debris spray
   each pop threw is gone, and a fully destructive blast publishes no light so it looks exactly as

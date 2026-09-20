@@ -433,9 +433,14 @@ channel, wired in-scene). Long axis along the edge, inset `edgePrismInset × sca
 - **Ball + fauna ignore it.** The ball's prism scan skips super-shielded prisms entirely (never
   popped, never eaten, no drag); fauna already skip shielded prey. Vessels DO collide with the
   lining's stellated shields — the rim is physically real.
-- **Collider budget:** +240 always-on convex MeshColliders per peer (the engaged stellated shield
-  swaps off the LOD-cullable BoxCollider). Static, bounded by `edgePrismCount`; precedent: the Skim
-  Race track super-shields its entire spawned track the same way. Zero new physics queries.
+- **Collider budget:** **+0**. The lining is 240 prisms per peer and every one keeps its
+  LOD-cullable `BoxCollider`, because a shield swaps the MESH and the mass, never the collider —
+  `shieldMeshCollider.enabled = true` appears nowhere in the project (four sites, all `= false`),
+  and the shield components' `sharedMesh` writes land on the MeshFilter, so there is not even a
+  convex cook. (This line used to read "+240 always-on convex MeshColliders".) Precedent: the Skim
+  Race track super-shields its entire spawned track the same way. Zero new physics queries. What
+  the lining DOES cost is permanence — super-shielded mass is removable only by an energised
+  blade — and that is the reason to keep `edgePrismCount` bounded.
 - **Continuity/mass:** lining prisms bloom in via the pooled spawn; the only removal is the
   animated `Damage` teardown on an arena rebuild (late-arriving match config on a client).
 

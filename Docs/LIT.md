@@ -11,7 +11,20 @@ or stores anything on a prism.
 | The state | `LIT` |
 | One light | `LitVolume` (`_Scripts/Utility/Lit/`) + `LitShape` (`_Scripts/Data/Enums/`) |
 | The system | `PrismLit` (`_Scripts/Utility/Lit/`) |
-| The GPU half | `PrismDestructionSight.hlsl` (`_Graphics/Materials/Graphs/`) |
+| The GPU half | `PrismDestructionSight.hlsl` (`_Graphics/Materials/Graphs/`) - the pre-rename name, deliberately |
+
+**The rename is SPLIT on purpose, so the two halves disagree about their own name.** `PrismLit`
+is the C# system; the SHADER side kept `PrismDestructionSight` everywhere — the `.hlsl` file, the
+Custom Function node, its `FUNCTION_NAME`, `Tools/Shaders/wire_prism_destruction_sight.py`, that
+wirer's own validator case labels and `verify_prism_sight_composition.py`. That is correct rather
+than unfinished, and the reason is NOT the file reference: a graph names its HLSL by **guid**
+(`m_FunctionSource: c7d41a9e5b8f4e3ab216d0f97c4e8a52`), which a `git mv` of the `.hlsl` and its
+`.meta` would carry intact. What pins the old name is the **function**, named by an exact string —
+`m_FunctionName: "PrismDestructionSight"` in both shipped graphs, `FUNCTION_NAME` in the wirer,
+and the wirer's own `m_FunctionName ==` lookups and assertions. So finishing the rename is a
+coordinated edit across the HLSL body, two graph JSONs, the wirer, its validator and the composition
+verifier, for zero behaviour change and one chance to dangle a node the console cannot report on.
+Do not "finish" it; the ~50 hits across ~19 files are the shader half and are meant to stay.
 
 ## Why it is a fundamental
 
@@ -176,8 +189,10 @@ It was not only a visual. Measured, a 2-second shield also:
 
 **Collider impact: zero, in both directions.** A shield swaps the mesh and the mass, never the
 collider — `shieldMeshCollider.enabled = true` appears nowhere in the codebase (four sites, all
-`= false`). Note `PrismKind`'s own doc comment still claims shielded prisms carry an always-on
-convex `MeshCollider`; that is stale.
+`= false`), and both components' `sharedMesh` writes land on the MeshFilter, so there is not even a
+convex cook. An earlier version of this note flagged `PrismKind`'s own doc comment as still claiming
+otherwise; that comment — and **22 further sites** the same false claim had reached — are corrected,
+and `Tools/Build/check_shield_collider_claims.py` fails the build on the next one.
 
 **What is kept.** `shielding` — the Sparrow's CHARGE-5 *Shielded Prisms* — still lands. It is a
 real ability, it is **permanent** rather than timed, and it is a gameplay grant rather than a

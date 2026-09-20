@@ -1833,8 +1833,8 @@ one frame.
 | prisms per dais | **255** (5 pairs × 2 wings × 25 blades + 5 suns) |
 | tiers | 90 plain / 90 danger / 70 shielded / 5 super-shielded |
 | box volume | **50,773** (≈ 3,173 nominal-16 prisms) |
-| always-on convex MeshColliders | **75** (70 shielded + 5 super-shielded) |
-| LOD-cullable BoxColliders | 180 |
+| shielded / super-shielded prisms | **75** (70 + 5) — **collider-free**; a shield swaps the mesh and the mass, never the collider |
+| LOD-cullable BoxColliders | **255** (every prism on the dais) |
 | planar band | **28.5 → 155.3** (ring 20; Astro League's court radius ≈ 392) |
 | wrap per pair | **288°** around its sun (144° per wing), opened at six hinges |
 | longest / shortest blade | 70.7 / 17.3 |

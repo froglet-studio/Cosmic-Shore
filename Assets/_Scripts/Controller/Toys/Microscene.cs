@@ -244,8 +244,8 @@ namespace CosmicShore.Gameplay
                 var lay = plan.Prisms[i];
 
                 // Wipe any previous kind BACK to plain before re-init, so a shielded/supershielded/
-                // danger prism from the last arrangement can't leak its state (or its always-on
-                // convex MeshCollider) into a plain slot. Reversible by construction.
+                // danger prism from the last arrangement can't leak its state - its shield mesh, its
+                // inedibility, its danger debuff - into a plain slot. Reversible by construction.
                 PrismKinds.Clear(block);
 
                 block.ChangeTeam(lay.Domain);
