@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///
     /// This is §1 ANIMATION — a pure function of the clock and what was known at the hit — so
     /// it is a per-instance STAMP. It is deliberately NOT the §4.7 global-uniform shape used
-    /// by <c>PrismOcclusionCorridor</c> and <c>PrismDestructionSight</c>: those are
+    /// by <c>PrismOcclusionCorridor</c> and <c>PrismLit</c>: those are
     /// view-dependent (they change every frame for every prism as the camera moves), a jiggle
     /// is not.
     /// </summary>

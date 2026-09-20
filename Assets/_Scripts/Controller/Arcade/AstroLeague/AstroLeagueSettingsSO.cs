@@ -382,7 +382,8 @@ namespace CosmicShore.Gameplay
         [Header("Ball - Detonation")]
         [Tooltip("Domain explosion spawned where a ball detonates (the nucleus overload / ball-cap " +
                  "overflow). Coloured by the BALL's domain, and the standard blast rules then " +
-                 "apply: own-domain prisms take a temporary shield (no perceived clipping), other " +
+                 "apply: own-domain prisms are drawn LIT in the blast's domain colour (no " +
+                 "perceived clipping - Docs/LIT.md), other " +
                  "domains are destroyed. Leave EMPTY for a burst with no blast — an unwired slot " +
                  "is a visible TODO, never a borrowed prefab.")]
         public AOEExplosion[] detonationExplosionPrefabs;

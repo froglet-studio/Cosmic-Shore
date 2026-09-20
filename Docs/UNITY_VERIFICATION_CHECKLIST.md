@@ -1162,8 +1162,9 @@ The editor-riskiest items:
 - **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
   gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
   knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
-  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
-  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms are
+  drawn LIT in the blast's domain colour rather than being destroyed (the no-perceived-clipping
+  rule — they took a temporary shield until 2026-09, `Docs/LIT.md`). **Check both
   entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
   separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
   three loose plus any number still studded in the shell is quiet.

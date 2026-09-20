@@ -1395,7 +1395,8 @@ producer to remember to ask, and is the same count the player can see.
 **A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
 spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
 blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
-`affectSelf = false, destructive = true` flags: own-domain prisms take a temporary shield (the
+`affectSelf = false, destructive = true` flags: own-domain prisms are drawn LIT in the blast's
+domain colour (`Docs/LIT.md`; they took a temporary shield until 2026-09) (the
 no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
 because no vessel made it — which is also what keeps the damage path from dereferencing a null
 pilot.
