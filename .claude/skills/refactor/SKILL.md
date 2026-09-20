@@ -25,6 +25,17 @@ somebody had already written down carefully:
 So: **§1 classify, §2 measure, §3 check the shape against the catalogue, §4 sequence, §5 prove,
 §6 delete only behind the gate, §7 leave the trail.** Then `/ship` or `/ship-deep`.
 
+**Where the claim comes from, and why that matters.** Nothing sweeps the tree for this work;
+opportunities are noticed during OTHER work and written down for later. Three skills do that
+noticing explicitly and none of them is allowed to act on it — `/reorient` §3.5 (a resync has
+just read the upstream diff in full, which is when a supersession's leftovers and a
+role-changed system are most visible), `/ship` §3.6 and `/ship-deep` D8 (the branch has just
+been read adversarially, so the measurement is already in hand). Each hands back **rows with
+the command and its output attached**. When you pick a row up here, that evidence is the
+thing to re-run first: it was true on the day it was written, which is not today. And when
+THIS pass turns up something else — it will — the same rule applies to you (§4, never widen):
+a row, not a diff hunk.
+
 ---
 
 ## 1. Classify — five kinds of work, and only four of them are yours

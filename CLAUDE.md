@@ -762,7 +762,15 @@ numbers / a real change that gets flagged for playtest rather than buried in a c
 salvage-before-delete gate that makes a vestige a PROPOSAL rather than a deletion, and how to prove
 a change without a compiler (the five standing gates, a Roslyn parse and what it does NOT prove, the
 enumerated-consumer grep that is the real proof for a type swap, and a verification matrix in which
-no row may say "compiles").
+no row may say "compiles"). **Nothing scans the tree for this work, so the noticing is wired into
+the skills that run at the natural checkpoints**: `/reorient` §3.5 (the resync has just read the
+upstream diff in full — a supersession's leftovers and a system whose ROLE changed while its name
+survived are never more visible), `/ship` §3.6 and `/ship-deep` D8 (the branch has just been read
+adversarially, so the measurement a later `/refactor` pass would spend an hour deriving is already
+in hand). All three **log and never act** — a resync or a ship that grows a second subject cannot
+be reviewed as either one — and all three fail the same way: **a row with no measurement attached
+is worse than no row, because it becomes the next session's claim to disprove**, which is the
+exact failure this skill exists to answer.
 
 ### Team Domains
 
