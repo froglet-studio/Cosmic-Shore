@@ -70,6 +70,7 @@ namespace UnityEngine
         public static float Sqrt(float v) => (float)Math.Sqrt(v);
         public static float Pow(float a, float b) => (float)Math.Pow(a, b);
         public static float Log(float v) => (float)Math.Log(v);
+        public static float Log(float v, float p) => (float)(Math.Log(v) / Math.Log(p));
         public static float Clamp(float v, float lo, float hi) => v < lo ? lo : (v > hi ? hi : v);
         public static int Clamp(int v, int lo, int hi) => v < lo ? lo : (v > hi ? hi : v);
         public static float Clamp01(float v) => v < 0f ? 0f : (v > 1f ? 1f : v);

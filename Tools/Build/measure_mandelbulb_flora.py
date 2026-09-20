@@ -3,8 +3,9 @@
 
 Everything this species claims about itself is a number from here: prism counts, per-prism
 and per-plant volume, the size spread, how evenly a plant covers its own surface, how
-deeply two prisms may interleave, and the Charge shield fit. The growth rule itself lives
-in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic table.
+deeply two prisms may interleave, the Charge shield fit, THE FALL (the log-spiral dive to
+the heart) and THE WATERSHED (the Morse–Smale skeleton species). The growth rule itself
+lives in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic table.
 
     measure_mandelbulb_flora.py                 # the report
     measure_mandelbulb_flora.py --check         # fail the build on a broken bound
@@ -13,6 +14,11 @@ in mandelbulb_flora_model.py, which walks the SHIPPED spherical-harmonic table.
                                                 # report a perfect size distribution for a
                                                 # form that reads as gravel
     measure_mandelbulb_flora.py --shields       # re-solve Charge's cross-section
+    measure_mandelbulb_flora.py --fit-volume    # re-solve VOLUME_GAIN
+
+EVERY GATE IS A MEASUREMENT ON THE PLANT THE GAME LAYS — the walk, then the claim
+(MandelbulbFlora.Claim), then the budget. A gate on the emitted path would describe
+candidates, and the claim filter is exactly the thing that puts holes in a dive.
 
 THE TWO BOUNDS, and why they are bounds rather than a zero. A lattice species can claim
 zero overlapping pairs because its prisms sit on a regular lattice. This one cannot and
@@ -25,10 +31,20 @@ THE CHARGE ORDERING. Armouring multiplies a plant's own silhouette by exactly
 0.5 * CIRCUMSCRIBING_SCALE^2 = 4.5, so a correctly fitted Charge plant is the DENSEST of
 the four while shielded and the sparsest once stripped. That ordering is the two-pass
 grazing cost made visible, and --check fails if it ever flips.
+
+THE FALL's gates are separable by construction: a dive prism carries `TanR != 0` and a
+surface prism carries exactly 0, so every Fall statistic below is a clean partition of the
+laid plant rather than a re-derivation of which prisms were the dive.
+
+THE WATERSHED's gates only run where the species authors the mechanism
+(`SkeletonSeeds != 0`), and the Fall's only where it authors a dive
+(`DiveStepFraction > 0 && DiveCount > 0`) — a gate that runs on a species with no such
+mechanism is measuring a zero and reporting it as a pass.
 """
 import argparse
 import math
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -43,6 +59,67 @@ CIRCUMSCRIBING_SCALE = 3.0
 # size under the FLOOR is still worth reporting, because it is the shape of a fitted size
 # that does not read on screen (Docs/ECOSYSTEM.md §34.9).
 CLAMP_FLOOR, CLAMP_CEILING = 0.5, 10.0
+
+# ── THE FALL's bounds ──────────────────────────────────────────────────────────
+DIVE_ARRIVAL_MIN = 0.60          # laid dives / requested dives
+DIVE_TIP_MARGIN = 0.50           # world units of clear air between a tip and the crystal
+DIVE_CENTRE_BAND = (2.0, 6.0)    # the innermost laid prism's CENTRE, world units
+DIVE_HOLE_FACTOR = 3.0           # a hole, in multiples of the MEDIAN surface prism length
+DIVE_WINDING_PER_EFOLD = 80.0    # degrees of azimuth per e-fold of radius, median over dives
+DIVE_SHARE_BAND = (0.05, 0.25)   # dive prisms as a share of the plant
+RADIAL_FRACTION_MAX = 0.55       # the sunburst gate, over the WHOLE plant
+RADIAL_COS = 0.707               # 45 degrees off the ray to the heart
+DIVE_BAND_MIN = 4                # equal-area theta bands the dive set alone must populate
+DIVE_ROLL_MEDIAN_MAX = 10.0      # degrees, transport-corrected, net of the authored twist
+DIVE_ROLL_PAIR_MAX = 60.0
+DIVE_CONDITIONING_MIN = 0.30     # |sin angle(ray, forward)| — how well-posed `up` is
+
+# ── THE WATERSHED's bounds ─────────────────────────────────────────────────────
+NET_SADDLE_SURVIVAL = 0.65       # saddles keeping >= 3 laid arms
+NET_ARMS = 3
+NET_MEAN_ARM = 5.0               # laid SURFACE prisms per surviving arm
+LANE_SHARE_MIN = 0.15            # no lane starved by the budget
+RING_GAP = 0.08                  # radians of theta that separate two latitude rings
+SEED_SPREAD_BANDS = 6            # equal-area bands the first quarter of the order must fill
+SEED_SPREAD_PREFIX = 0.25
+LENGTH_FACTOR_MIN = 0.85         # a net drawn in dashes reads as dots
+PEAKS_ON_PLANT_MIN = 0.50        # a FIRST CUT, not a measured bar — see watershed_report
+PEAK_TOUCH_STEPS = 1.5           # walk steps within which a ridge end "reaches" its peak
+
+# The fractal's exponent per element — what the peak rings are a census OF. `order - 1` is
+# the fold of the surface's azimuthal symmetry (rotating c by delta is a symmetry of
+# v -> v^n + c only when delta*(n-1) is a whole turn), so it is the modal ring size and the
+# azimuthal spectrum's line.
+BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
+
+# Charge's armour at the CORE. The Fall converges every dive on one point, so the tightest
+# packing in the species is the innermost bundle and the whole-plant armour figure cannot
+# see it (53 of 2800 prisms). Measured inside this fraction of the plant's own radius.
+CORE_RADIUS_FRACTION = 0.15
+CORE_ARMOURED_MAX = 0.15
+
+# The heart. A lifeform's crystal size is authored PER ELEMENT in that species' own variant
+# tuning (Docs/ECOSYSTEM.md §40), so the clearance a dive has to leave is read out of the
+# shipped asset rather than typed here. A species with no asset yet falls back, and the
+# report says which it used.
+LIFEFORMS = os.path.join(M.ROOT, "Assets", "_SO_Assets", "Lifeforms")
+DEFAULT_HEART_WORLD_SCALE = 1.52
+
+
+def _asset_prefix(species):
+    """"MandelbulbFlora" -> "Mandelbulb Flora" — the shipped assets are named for the
+    prefab with its CamelCase split, so the prefix is derived rather than tabulated."""
+    return re.sub(r"(?<=[a-z0-9])(?=[A-Z])", " ", M.SPECIES[species]["prefab"])
+
+
+def heart_world_scale(species):
+    """(scale, provenance). Read from this species' TIME config asset if it exists."""
+    path = os.path.join(LIFEFORMS, f"{_asset_prefix(species)} Time.asset")
+    if os.path.exists(path):
+        m = re.search(r"HeartWorldScale:\s*([-0-9.eE+]+)", open(path).read())
+        if m:
+            return float(m.group(1)), os.path.basename(path)
+    return DEFAULT_HEART_WORLD_SCALE, f"fallback {DEFAULT_HEART_WORLD_SCALE} (no {os.path.basename(path)})"
 
 
 # ── geometry ───────────────────────────────────────────────────────────────────
@@ -179,12 +256,78 @@ def near_pairs(boxes, reach, scale=1.0):
                     yield i, j
 
 
-# ── the report ─────────────────────────────────────────────────────────────────
+def median(values):
+    v = sorted(values)
+    n = len(v)
+    if n == 0:
+        return float("nan")
+    return v[n // 2] if n % 2 else 0.5 * (v[n // 2 - 1] + v[n // 2])
+
+
+def area_band(theta):
+    """The equal-AREA latitude band, pole to pole — the same binning the coverage row
+    uses, so "populates N of 8 bands" means one thing everywhere in this file."""
+    return min(7, int((1 - math.cos(theta)) / 2 * 8))
+
+
+def transported_roll(f0, up0, f1, up1):
+    """Degrees of roll of `up` about the ribbon between two consecutive prisms, with the
+    BEND taken out: rotate up0 by the minimal rotation carrying f0 onto f1 (parallel
+    transport), then measure what is left against up1. Without the transport a curve that
+    merely turns reads as a curve that rolls."""
+    ax = M._cross(f0, f1)
+    s, c = M._len(ax), M._dot(f0, f1)
+    if s < 1e-12:
+        moved = up0 if c > 0 else M._mul(up0, -1.0)
+    else:
+        k = M._mul(ax, 1.0 / s)
+        ang = math.atan2(s, c)
+        ca, sa = math.cos(ang), math.sin(ang)
+        moved = M._add(M._add(M._mul(up0, ca), M._mul(M._cross(k, up0), sa)),
+                       M._mul(k, M._dot(k, up0) * (1.0 - ca)))
+    d = max(-1.0, min(1.0, M._dot(M._norm(moved), M._norm(up1))))
+    return math.degrees(math.acos(d))
+
+
+# ── the plant the game lays ────────────────────────────────────────────────────
 
 _GROWN = {}
 
 
 CANDIDATE_FACTOR = 4   # MandelbulbFlora.AddressCandidateFactor
+
+
+def grow_detail(species, element, budget=None):
+    """The whole growth record, cached: the surface, the rule, the RAW walk, the laid
+    plant, and the map from a laid prism back to its index in the walk.
+
+    The raw walk is kept because two Fall gates are statements about what the walk EMITTED
+    that cannot be recovered from the laid plant — whether a dive ran out of steps rather
+    than arriving, and which saddle a curve left (the claim filter can eat a curve's first
+    prisms, and the first RAW prism of a curve is half a step from its seed)."""
+    budget = budget or M.PRISM_BUDGET
+    key = (species, element, budget)
+    if key in _GROWN:
+        return _GROWN[key]
+    degree, tables = M.load_tables()
+    surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
+    rules = M.rules_for(element, species)
+    raw, raw_curves, dives_spent = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
+    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    kept = M.claim_filter(raw, centres)[:budget]
+    _GROWN[key] = {
+        "surface": surface,
+        "rules": rules,
+        "raw": raw,
+        "raw_curves": raw_curves,
+        "dives_spent": dives_spent,
+        "kept": kept,
+        "curves": len({p.curve for p in kept}),
+        "seeds": M.build_seeds(surface, rules),
+        "walk_index": {id(p): i for i, p in enumerate(raw)},
+        "candidate_cap": budget * CANDIDATE_FACTOR,
+    }
+    return _GROWN[key]
 
 
 def grow_element(element, budget=None, species="FractalFoliage"):
@@ -193,19 +336,8 @@ def grow_element(element, budget=None, species="FractalFoliage"):
 
     The two species share the surface FAMILY (one bake per element) and differ in their
     curve rules, so the surface is keyed on the element alone and the walk on both."""
-    budget = budget or M.PRISM_BUDGET
-    key = (species, element, budget)
-    if key in _GROWN:
-        return _GROWN[key]
-    degree, tables = M.load_tables()
-    surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
-    rules = M.rules_for(element, species)
-    raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
-    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
-    kept = M.claim_filter(raw, centres)[:budget]
-    curves = len({p.curve for p in kept})
-    _GROWN[key] = (surface, rules, kept, curves)
-    return _GROWN[key]
+    d = grow_detail(species, element, budget)
+    return d["surface"], d["rules"], d["kept"], d["curves"]
 
 
 def element_report(element, shell=None, cross=None, budget=None, species="FractalFoliage"):
@@ -250,7 +382,7 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
 
     bins = [0] * 8
     for p in prisms:
-        bins[min(7, int((1 - math.cos(p.theta)) / 2 * 8))] += 1
+        bins[area_band(p.theta)] += 1
 
     # Silhouette: how much of its own bounding sphere the plant's prisms cover, bare and
     # armoured. The ratio of the two is a fact about the shield, not about the fit.
@@ -259,6 +391,7 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
 
     return {
         "element": element,
+        "species": species,
         # The plant's own BOUNDING radius - what "Space increases the bounding volume of
         # the assembly" is measured against (Docs/ECOSYSTEM.md §45).
         "radius": max(math.sqrt(sum(c * c for c in b[0])) for b in boxes),
@@ -284,6 +417,568 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
     }
 
 
+# ── THE FALL ───────────────────────────────────────────────────────────────────
+
+def authors_fall(rules):
+    """The gate on the gates: MandelbulbSurface.Growth runs no dive code at all unless
+    both of these are set, so a species without them would be measured at zero and
+    reported as passing."""
+    return rules.dive_step > 0 and rules.dive_count > 0
+
+
+def fall_report(species, element, report):
+    """Every number THE FALL is gated on, measured on the LAID plant.
+
+    Dive prisms separate on `TanR != 0` — the stamp `Emit` puts on a prism whose heading is
+    absolute rather than tangential — so this is a partition of the plant, never a guess at
+    which prisms were the dive."""
+    d = grow_detail(species, element)
+    rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
+    walk = d["walk_index"]
+    shell = M.SHELL_RADIUS
+    stop_world = rules.dive_stop * shell
+    twist = abs(M.SPECIES[species]["twist"])
+
+    dive_i = [i for i, p in enumerate(kept) if p.tan_r != 0.0]
+    surf_i = [i for i, p in enumerate(kept) if p.tan_r == 0.0]
+    out = {
+        "requested": min(rules.dive_count, len(d["seeds"])),
+        "spent": d["dives_spent"],
+        "seeds": len(d["seeds"]),
+        "dive_prisms": len(dive_i),
+        "share": len(dive_i) / max(1, len(kept)),
+        "stop_world": stop_world,
+    }
+    by_curve = {}
+    for i in dive_i:
+        by_curve.setdefault(kept[i].curve, []).append(i)
+    for lst in by_curve.values():
+        lst.sort(key=lambda i: walk[id(kept[i])])
+    out["laid"] = len(by_curve)
+    out["arrival"] = len(by_curve) / max(1, out["requested"])
+
+    # (b) the crystal's clear air. The dive loop tests `r <= stop` at the TOP, so the last
+    # appended point is BELOW the stop sphere by up to one step — which is why the gate is
+    # on the laid prism's TIP and not on DiveStopRadius * shell.
+    out["tip_min"] = min((M._len(boxes[i][0]) - kept[i].length * shell * 0.5
+                          for i in dive_i), default=float("nan"))
+    out["centre_min"] = min(M._len(b[0]) for b in boxes)
+
+    # (c) the stride ceiling, self-calibrated: the dive's own prisms against the plant's.
+    dive_len = [kept[i].length * shell for i in dive_i]
+    surf_len = [kept[i].length * shell for i in surf_i]
+    out["dive_len_max"] = max(dive_len, default=0.0)
+    out["surf_len_max"] = max(surf_len, default=0.0)
+    out["surf_len_median"] = median(surf_len) if surf_len else float("nan")
+    out["hole_bound"] = DIVE_HOLE_FACTOR * out["surf_len_median"]
+
+    # (d) the largest HOLE the claim filter left in a dive. A dive is emitted end to end,
+    # so every hole here is a prism the claim refused — and a spiral with a hole in the
+    # middle still winds the full angle, which is why the winding gate cannot see this.
+    holes = []
+    for lst in by_curve.values():
+        for a, b in zip(lst, lst[1:]):
+            gap = (M._len(M._sub(boxes[b][0], boxes[a][0]))
+                   - kept[a].length * shell * 0.5 - kept[b].length * shell * 0.5)
+            holes.append(gap)
+    out["hole_max"] = max(holes, default=0.0)
+
+    # (e) winding PER E-FOLD of radius, not total: r_release is emergent (it is wherever
+    # the surface run died), so a species whose curves die low would be penalised on total
+    # winding for something that is not the dive's shape. A log spiral winds a constant
+    # angle per e-fold by definition, so this is the quantity the mechanism actually sets.
+    winds, per_efold, short = [], [], 0
+    for lst in by_curve.values():
+        if len(lst) < 2:
+            short += 1
+            continue
+        total = 0.0
+        for a, b in zip(lst, lst[1:]):
+            pa, pb = boxes[a][0], boxes[b][0]
+            step = math.atan2(pb[1], pb[0]) - math.atan2(pa[1], pa[0])
+            while step > math.pi:
+                step -= 2 * math.pi
+            while step < -math.pi:
+                step += 2 * math.pi
+            total += abs(step)
+        release = M._len(boxes[lst[0]][0])
+        efolds = math.log(max(release, stop_world * 1.0001) / max(stop_world, 1e-9))
+        winds.append(math.degrees(total))
+        per_efold.append(math.degrees(total) / max(efolds, 1e-9))
+    out["winding_median"] = median(winds) if winds else float("nan")
+    out["winding_per_efold_median"] = median(per_efold) if per_efold else float("nan")
+    out["single_prism_dives"] = short
+
+    # (f/g) truncation. A dive that stopped because it ran out of STEPS is a truncated
+    # dive: it never reached the heart and the spiral just ends in mid-air. The laid plant
+    # cannot say how many prisms were emitted (the claim eats some), so the emitted count
+    # comes from the walk.
+    emitted = {}
+    for p in d["raw"]:
+        if p.tan_r != 0.0:
+            emitted[p.curve] = emitted.get(p.curve, 0) + 1
+    out["emitted_max"] = max(emitted.values(), default=0)
+    out["dive_max_steps"] = rules.dive_max_steps
+    truncated = 0
+    for c, lst in by_curve.items():
+        inner = min(M._len(boxes[i][0]) for i in lst)
+        if inner > 1.5 * stop_world and emitted.get(c, 0) >= rules.dive_max_steps:
+            truncated += 1
+    out["truncated"] = truncated
+
+    # (h) THE SUNBURST GATE, over the WHOLE plant — and it is almost entirely a statement
+    # about the SURFACE family, which is worth knowing before reading a failure. A dive
+    # heading is EXACTLY psi off the inward radial (`t = -rhat cos psi + u sin psi`, and
+    # the axis-alignment blend turns `u` inside the tangent plane, so it cannot move the
+    # radial component), and every species authors psi in 50..64 deg, where
+    # |cos psi| <= 0.64 < RADIAL_COS. So a dive prism can NEVER register as radial here —
+    # measured 0.0% on all twelve — and a plant that reads as spokes reads that way because
+    # its surface curves are fall lines. The split is reported beside the gate for exactly
+    # that reason.
+    def radial_fraction(indices):
+        hit = 0
+        for i in indices:
+            c = boxes[i][0]
+            m = M._len(c)
+            if m < 1e-9:
+                continue
+            if abs(M._dot(M._mul(c, 1.0 / m), boxes[i][1][2])) > RADIAL_COS:
+                hit += 1
+        return hit / max(1, len(indices))
+
+    out["radial"] = radial_fraction(range(len(kept)))
+    out["radial_surface"] = radial_fraction(surf_i)
+    out["radial_dive"] = radial_fraction(dive_i)
+
+    # (i) the strided-not-prefix control. The seed list is z-monotone, so a dive set taken
+    # as a PREFIX of it is a polar cap; `Growth.EnsureSeeds` strides instead, and this is
+    # what proves the stride survived the claim filter.
+    #
+    # ONE ENTRY PER DIVE, not per dive PRISM. A dive spirals in to the origin, so its own
+    # prisms sweep 3-4 of the eight equal-area bands on their own (measured over all twelve
+    # shipped plants) — which means a per-prism count reaches the bound off a SINGLE dive
+    # and is structurally blind to the polar cap this gate exists to catch. Measured, the
+    # two disagree on three of twelve: CoralBloom/Space reads 7 bands per prism against 3
+    # dives' worth, and Watershed/Time reads 4 against 2. The band of a dive is the band of
+    # its OUTERMOST laid prism, which is where it left the surface. The per-prism histogram
+    # is kept and REPORTED, because it is the one that says where the dive MASS ended up.
+    bands = [0] * 8
+    for i in dive_i:
+        bands[area_band(kept[i].theta)] += 1
+    out["dive_bands"] = bands
+    out["dive_bands_filled"] = sum(1 for b in bands if b > 0)
+    out["dive_start_bands"] = len({area_band(kept[lst[0]].theta) for lst in by_curve.values()})
+    # A plant cannot occupy more bands than it laid dives, so the bound is capped by the
+    # arrival — otherwise a plant that fails the ARRIVAL gate fails this one too, for the
+    # same reason, and the second failure carries no information.
+    out["dive_band_bound"] = min(DIVE_BAND_MIN, out["laid"])
+
+    # (j) the body roll, and the conditioning of the frame it is measured in. `Pose` hangs
+    # a dive prism's `up` off the RAY rather than off the surface normal, which is
+    # ill-posed exactly where the heading is radial — so the roll is only meaningful while
+    # |sin angle(ray, forward)| stays off zero, and both are reported.
+    #
+    # The roll is measured NET OF THE AUTHORED TWIST: Fractal Foliage rolls every prism
+    # 12 deg/step about its own tangent BY DESIGN, so the raw figure measures the concept
+    # rather than a defect (Docs/ECOSYSTEM.md §46 — a gate written against one species is
+    # a gate calibrated on one species). A species with no twist is unaffected.
+    raw_roll, residual = [], []
+    for lst in by_curve.values():
+        for a, b in zip(lst, lst[1:]):
+            if walk[id(kept[b])] - walk[id(kept[a])] != 1:
+                continue        # not walk-adjacent: the claim took the prism between them
+            r = transported_roll(boxes[a][1][2], boxes[a][1][1],
+                                 boxes[b][1][2], boxes[b][1][1])
+            raw_roll.append(r)
+            residual.append(abs(r - twist))
+    out["roll_pairs"] = len(raw_roll)
+    out["roll_raw_median"] = median(raw_roll) if raw_roll else 0.0
+    out["roll_raw_max"] = max(raw_roll, default=0.0)
+    out["roll_median"] = median(residual) if residual else 0.0
+    out["roll_max"] = max(residual, default=0.0)
+    out["twist"] = twist
+    out["conditioning_min"] = min(
+        (M._len(M._cross(M._norm(boxes[i][0]), boxes[i][1][2])) for i in dive_i),
+        default=float("nan"))
+    return out
+
+
+def fall_gates(species, element, f, heart_half):
+    """Every Fall bound, as (ok, message) — the message states the measured number and the
+    bound on every line, passing or failing, so a reader never has to go and look one up."""
+    bad = []
+    tag = f"{species}/{element}"
+    if f["arrival"] < DIVE_ARRIVAL_MIN:
+        bad.append(f"{tag} FALL arrival: {f['laid']} dives laid of {f['requested']} requested "
+                   f"= {f['arrival']:.0%} (bound {DIVE_ARRIVAL_MIN:.0%}) — the mechanism is "
+                   f"authored and most of it is not reaching the plant")
+    if not (f["tip_min"] >= heart_half + DIVE_TIP_MARGIN):
+        bad.append(f"{tag} FALL clearance: the nearest dive TIP is {f['tip_min']:.3f} u from "
+                   f"the centre (bound {heart_half + DIVE_TIP_MARGIN:.3f} = heart half-extent "
+                   f"{heart_half:.3f} + {DIVE_TIP_MARGIN} margin) — a prism is inside the crystal")
+    lo, hi = DIVE_CENTRE_BAND
+    if not (lo <= f["centre_min"] <= hi):
+        bad.append(f"{tag} FALL reach: the innermost laid prism CENTRE is {f['centre_min']:.3f} u "
+                   f"(band [{lo}, {hi}]) — a thread that REACHES the crystal is a different, "
+                   f"worse object than one that almost does, and one that stops short is invisible")
+    if f["dive_len_max"] > f["surf_len_max"]:
+        bad.append(f"{tag} FALL stride: the longest dive prism is {f['dive_len_max']:.3f} u "
+                   f"against the plant's longest surface prism {f['surf_len_max']:.3f} u "
+                   f"(bound: no longer) — DiveStrideCeiling {f_stride(species, element):.2f} is "
+                   f"letting the spiral lay a spike")
+    if f["hole_max"] > f["hole_bound"]:
+        bad.append(f"{tag} FALL hole: the claim left a {f['hole_max']:.3f} u gap inside a dive "
+                   f"(bound {f['hole_bound']:.3f} = {DIVE_HOLE_FACTOR}x the median surface prism "
+                   f"{f['surf_len_median']:.3f}) — a spiral with a hole in it still winds the "
+                   f"full angle, so the winding gate cannot see this")
+    if not (f["winding_per_efold_median"] >= DIVE_WINDING_PER_EFOLD):
+        bad.append(f"{tag} FALL winding: {f['winding_per_efold_median']:.1f} deg per e-fold of "
+                   f"radius, median over dives (bound {DIVE_WINDING_PER_EFOLD:.0f}) — that is a "
+                   f"spoke with a bend in it, not a spiral")
+    lo, hi = DIVE_SHARE_BAND
+    if not (lo <= f["share"] <= hi):
+        bad.append(f"{tag} FALL share: dive prisms are {f['share']:.2%} of the plant "
+                   f"(band [{lo:.0%}, {hi:.0%}]) — below the floor the promise is not visible, "
+                   f"above the ceiling the plant is a sunburst")
+    if f["truncated"] > 0:
+        bad.append(f"{tag} FALL truncation: {f['truncated']} dive(s) ran out of steps "
+                   f"(DiveMaxSteps {f['dive_max_steps']}, longest emitted {f['emitted_max']}) "
+                   f"instead of arriving on the stop sphere (bound 0)")
+    if f["radial"] >= RADIAL_FRACTION_MAX:
+        bad.append(f"{tag} SUNBURST: {f['radial']:.1%} of the plant points within 45 deg of the "
+                   f"ray to the heart (bound {RADIAL_FRACTION_MAX:.0%}; surface "
+                   f"{f['radial_surface']:.1%}, dive {f['radial_dive']:.1%})")
+    if f["dive_start_bands"] < f["dive_band_bound"]:
+        bad.append(f"{tag} FALL spread: the {f['laid']} laid dives LEAVE THE SURFACE in "
+                   f"{f['dive_start_bands']}/8 equal-area theta bands (bound "
+                   f"{f['dive_band_bound']} = min({DIVE_BAND_MIN}, dives laid); their prisms "
+                   f"then sweep {f['dive_bands_filled']}/8, which is why the per-prism count "
+                   f"cannot see this) — the owed set is being taken as a PREFIX of a "
+                   f"z-monotone seed list, which is a polar cap")
+    if f["roll_median"] > DIVE_ROLL_MEDIAN_MAX:
+        bad.append(f"{tag} FALL roll: the ribbon rolls a median {f['roll_median']:.2f} deg per "
+                   f"step net of the authored twist {f['twist']:.0f} (bound "
+                   f"{DIVE_ROLL_MEDIAN_MAX:.0f}) — `up` is hung off the ray and is drifting")
+    if f["roll_max"] > DIVE_ROLL_PAIR_MAX:
+        bad.append(f"{tag} FALL roll: one pair rolls {f['roll_max']:.2f} deg net of twist "
+                   f"(bound {DIVE_ROLL_PAIR_MAX:.0f}) — that is a face flip")
+    if not (f["conditioning_min"] >= DIVE_CONDITIONING_MIN):
+        bad.append(f"{tag} FALL conditioning: |sin angle(ray, forward)| falls to "
+                   f"{f['conditioning_min']:.3f} (bound {DIVE_CONDITIONING_MIN}) — `up` is "
+                   f"hung off the ray, so at a radial heading the frame has no answer")
+    return bad
+
+
+def f_stride(species, element):
+    return grow_detail(species, element)["rules"].dive_stride_ceiling
+
+
+# ── THE WATERSHED ──────────────────────────────────────────────────────────────
+
+# Nine authored columns a skeleton species leaves at a do-nothing value, each given two
+# wildly different values. An authored value that cannot affect anything must never be
+# mistakable for one that can — and the per-field breakdown is the point, because "the
+# output changed" does not say WHICH column is still wired.
+INERT_PROBES = {
+    "field": (4, 5), "swirl": (40.0, -37.0), "field_mix": (0.13, 0.77),
+    "momentum": (0.61, 0.29), "hop_seek": (3.0, 0.9), "hop_jitter": (0.8, 0.4),
+    "seeds": (7, 133), "seed_spread": (3.0, 47.0), "lane_gap": (0.9, 0.2),
+}
+
+
+def authors_skeleton(rules):
+    return rules.skeleton_seeds != 0
+
+
+def _prism_tuple(p):
+    return (p.theta, p.phi, p.radial, p.dive, p.tan_a, p.tan_b, p.tan_r,
+            p.length, p.girth, p.roll, p.curve, p.lane)
+
+
+def _lay(surface, rules, budget):
+    raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
+    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    return [_prism_tuple(p) for p in M.claim_filter(raw, centres)[:budget]]
+
+
+def ring_census(surface, element):
+    """The census the species exists for: the surface's PEAKS, grouped into latitude rings.
+
+    The fold is `order - 1` because rotating the Julia constant by delta is a symmetry of
+    v -> v^n + c only when delta*(n-1) is a whole turn. Two independent statements of the
+    same claim are measured, because the grouping one has a threshold in it and the
+    spectral one does not:
+
+      * the MODAL ring size against `order - 1`, with the gaps either side of the grouping
+        threshold reported so a knife-edge is visible rather than inferred. It is not
+        hypothetical: at gap 0.06 Space groups as [2,2,4,2,4,2,2] and at 0.08 as [4,4,4,4],
+        so the threshold decides the answer;
+      * the azimuthal POWER SPECTRUM of the whole peak set, which needs no grouping at all
+        and is therefore the statement that cannot be moved by a tolerance.
+    """
+    order = BULB_ORDER[element]
+    peaks = [c for c in M.critical_points(surface) if c.kind == M.PEAK]
+    pits = [c for c in M.critical_points(surface) if c.kind == M.PIT]
+    sads = M.saddles(surface)
+    out = {"order": order, "want": order - 1, "peaks": len(peaks),
+           "saddles": len(sads), "pits": len(pits),
+           "euler": len(peaks) - len(sads) + len(pits)}
+    if not peaks:
+        out.update(sizes=[], modal=0, phases=[], spectrum=[], spectrum_peak=0,
+                   gap_split_min=float("nan"), gap_kept_max=float("nan"))
+        return out
+
+    ordered = sorted(peaks, key=lambda c: c.theta)
+    rings, current, split, kept_gaps = [], [ordered[0]], [], []
+    for a, b in zip(ordered, ordered[1:]):
+        gap = b.theta - a.theta
+        if gap > RING_GAP:
+            split.append(gap)
+            rings.append(current)
+            current = [b]
+        else:
+            kept_gaps.append(gap)
+            current.append(b)
+    rings.append(current)
+    sizes = [len(r) for r in rings]
+    # Ties go to the LARGER ring, so the modal size is a function of the data rather than
+    # of dictionary order.
+    out["modal"] = max(set(sizes), key=lambda s: (sizes.count(s), s))
+    out["sizes"] = sizes
+    out["gap_split_min"] = min(split) if split else float("nan")
+    out["gap_kept_max"] = max(kept_gaps) if kept_gaps else float("nan")
+
+    # Each ring's phase, as a fraction of ONE LOBE of its own fold: a ring rotated half a
+    # lobe from its neighbour reads 0, 0.5, 0, 0.5. Reported, never gated — it alternates
+    # on Charge, Mass and Time and does not on Space, which is a fact about the surface.
+    phases = []
+    for r in rings:
+        q = max(1, len(r))
+        sx = sum(math.cos(q * c.phi) for c in r)
+        sy = sum(math.sin(q * c.phi) for c in r)
+        phases.append(round((math.atan2(sy, sx) % (2 * math.pi)) / (2 * math.pi), 3))
+    out["phases"] = phases
+
+    spectrum = []
+    for m in range(1, 2 * order + 1):
+        sx = sum(math.cos(m * c.phi) for c in peaks)
+        sy = sum(math.sin(m * c.phi) for c in peaks)
+        spectrum.append(math.hypot(sx, sy) / len(peaks))
+    out["spectrum"] = spectrum
+    out["spectrum_peak"] = max(range(len(spectrum)), key=lambda i: spectrum[i]) + 1
+    out["spectrum_value"] = max(spectrum)
+    return out
+
+
+def watershed_report(species, element, report, inert=True):
+    """Every number THE WATERSHED is gated on, measured on the LAID plant."""
+    d = grow_detail(species, element)
+    rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
+    walk, surface = d["walk_index"], d["surface"]
+    shell = M.SHELL_RADIUS
+    sads = M.saddles(surface)
+    out = ring_census(surface, element)
+    out["walk_step"] = rules.walk_step if rules.walk_step > 0 else rules.step
+    out["length_factor"] = rules.length_factor
+    out["candidates"] = len(d["raw"])
+    out["candidate_cap"] = d["candidate_cap"]
+    out["lanes_authored"] = max(1, rules.lanes)
+
+    # Surface prisms per curve, in WALK order — the arm proper. A dive is a tail on an arm,
+    # not part of the net, so it is excluded from every net statistic below.
+    arm = {}
+    for i, p in enumerate(kept):
+        if p.tan_r == 0.0:
+            arm.setdefault(p.curve, []).append(i)
+    for lst in arm.values():
+        lst.sort(key=lambda i: walk[id(kept[i])])
+
+    # (a) SEPARATRIX SIGN. Lanes 1 and 3 leave along the saddle's RIDGE eigen-direction and
+    # must end HIGHER; 0 and 2 leave along the VALLEY and must end LOWER.
+    #
+    # WHAT IT PROVES, stated narrowly, because an earlier version of this comment claimed it
+    # catches "a flipped eigenvector selection" and two negative controls say otherwise.
+    # Swapping every saddle's e_ridge/e_valley, and separately inverting the fall-line sign,
+    # each lay a plant of ZERO prisms (measured, all four Watershed elements): the seed
+    # tangent then disagrees with the field by 180 deg, `Trace`'s max-turn gate closes on
+    # step 2, every run dies under MinRun, and this gate reports a clean 0 of 0. It can only
+    # ever see a mismatch between the LANE PARITY `grow` walks and the lane parity this file
+    # reads — a two-copies-of-one-convention check, which is worth its zero cost and is not
+    # a check on the geometry. What actually holds the geometry is that `field_mix` is 1.0,
+    # so the walk IS the gradient flow; if that column is ever authored below 1 the gate
+    # starts carrying real weight.
+    violations, single = [], 0
+    for c, lst in arm.items():
+        if len(lst) < 2:
+            single += 1
+            continue
+        r0 = M._len(boxes[lst[0]][0]) / shell
+        r1 = M._len(boxes[lst[-1]][0]) / shell
+        ascend = (kept[lst[0]].lane & 1) == 1
+        if (r1 > r0) != ascend:
+            violations.append((c, kept[lst[0]].lane, round(r0, 4), round(r1, 4)))
+    out["sign_violations"] = len(violations)
+    out["sign_curves"] = len(arm)
+    out["sign_single"] = single
+    out["sign_examples"] = violations[:3]
+
+    # (b) THE NET SURVIVES. Which saddle a curve left cannot be read off the laid plant
+    # (the claim can eat a curve's first prisms, and the emitted order skips dusted arms),
+    # so a curve is attributed by its FIRST RAW prism, which sits half a walk step from its
+    # own seed. The worst attribution angle is reported so the reader can see that it is
+    # not close: saddles are ~0.3 rad apart and the worst attribution is ~2 deg.
+    first_raw = {}
+    for p in d["raw"]:
+        if p.curve not in first_raw:
+            first_raw[p.curve] = p
+    owner, worst_attr = {}, 0.0
+    for c, p in first_raw.items():
+        pos = M._norm(M.pose(surface, p)[0])
+        best, best_dot = -1, -2.0
+        for si, s in enumerate(sads):
+            v = M._dot(pos, s.dir)
+            if v > best_dot:
+                best_dot, best = v, si
+        owner.setdefault(best, []).append(c)
+        worst_attr = max(worst_attr, math.degrees(math.acos(max(-1.0, min(1.0, best_dot)))))
+    keeps, lengths = 0, []
+    for si in range(len(sads)):
+        live = [c for c in owner.get(si, ()) if len(arm.get(c, ())) > 0]
+        if len(live) >= NET_ARMS:
+            keeps += 1
+        lengths += [len(arm[c]) for c in live]
+    out["saddle_count"] = len(sads)
+    out["saddles_keeping_arms"] = keeps
+    out["saddle_survival"] = keeps / max(1, len(sads))
+    out["mean_arm"] = sum(lengths) / max(1, len(lengths))
+    out["live_arms"] = len(lengths)
+    out["attribution_worst_deg"] = worst_attr
+
+    # (c) no lane starved by the budget. The lanes are INTERLEAVED valley+, ridge+,
+    # valley-, ridge-, so a budget that runs out inside lane 2 lays the falls and none of
+    # the rises — which is the half that draws the silhouette.
+    lane_count = {}
+    for p in kept:
+        lane_count[p.lane] = lane_count.get(p.lane, 0) + 1
+    out["lane_share"] = {k: lane_count.get(k, 0) / max(1, len(kept))
+                         for k in range(out["lanes_authored"])}
+
+    # (e) SEED SPREAD, and its negative control. Farthest-point ordering makes "every
+    # prefix is spatially spread" true by construction; sharpness-major, which the design
+    # shipped before it was measured, puts a plant's strongest quarter into 2 of 8 bands.
+    take = max(1, int(math.ceil(SEED_SPREAD_PREFIX * len(sads))))
+    out["prefix"] = take
+    out["spread_bands"] = len({area_band(c.theta) for c in sads[:take]})
+    control = sorted(sads, key=lambda c: (-c.sharpness, c.theta, c.phi))
+    out["spread_bands_control"] = len({area_band(c.theta) for c in control[:take]})
+
+    # (i) THE PEAKS ARE ON THE PLANT. A ridge separatrix runs uphill to a peak, so a peak
+    # with two or more ridge-arm ends on it is a node of the net that a player can see.
+    # A FIRST CUT at 50%: the true bar is a look judgement and the tolerance is one and a
+    # half walk steps, which is tight for an arm the claim filter has truncated.
+    ends = [M._mul(boxes[lst[-1]][0], 1.0 / shell)
+            for c, lst in arm.items() if (kept[lst[0]].lane & 1) == 1]
+    tol = PEAK_TOUCH_STEPS * out["walk_step"]
+    peaks = [c for c in M.critical_points(surface) if c.kind == M.PEAK]
+    on = 0
+    for c in peaks:
+        pp = M.build_frame(surface, c.theta, c.phi).position
+        if sum(1 for q in ends if M._len(M._sub(q, pp)) <= tol) >= 2:
+            on += 1
+    out["peaks_on_plant"] = on / max(1, len(peaks))
+    out["peaks_on_plant_n"] = on
+    out["ridge_ends"] = len(ends)
+    out["peak_tolerance"] = tol
+
+    # (f) the inert columns, per field. Expensive (two full walks per column) and it is
+    # what the 33 s `--check` mostly spends; `inert=False` is the opt-out, and nothing in
+    # this file takes it today — "six of these nine authored numbers do nothing and three
+    # of them do" is a fact a reader needs BEFORE they try tuning one, so the plain report
+    # pays for it too.
+    if inert:
+        base = [_prism_tuple(p) for p in kept]
+        read, drift = [], {}
+        for name, (a, b) in INERT_PROBES.items():
+            idx = M.Rules.FIELDS.index(name)
+            worst = 0
+            for value in (a, b):
+                values = rules.as_list()
+                values[idx] = value
+                got = _lay(surface, M.Rules(*values), M.PRISM_BUDGET)
+                if got != base:
+                    n = abs(len(got) - len(base)) + sum(1 for x, y in zip(got, base) if x != y)
+                    worst = max(worst, n)
+            if worst:
+                read.append(name)
+                drift[name] = worst
+        out["inert_read"] = read
+        out["inert_drift"] = drift
+        out["inert_tested"] = list(INERT_PROBES)
+    return out
+
+
+def watershed_gates(species, element, w):
+    bad = []
+    tag = f"{species}/{element}"
+    if w["sign_violations"]:
+        bad.append(f"{tag} SEPARATRIX SIGN: {w['sign_violations']} of {w['sign_curves']} laid "
+                   f"arms end on the wrong side of their saddle (bound 0) — a ridge arm must "
+                   f"end ABOVE its saddle and a valley arm BELOW; e.g. {w['sign_examples']}")
+    if w["saddle_survival"] < NET_SADDLE_SURVIVAL:
+        bad.append(f"{tag} NET: {w['saddles_keeping_arms']}/{w['saddle_count']} saddles keep "
+                   f">= {NET_ARMS} laid arms = {w['saddle_survival']:.1%} "
+                   f"(bound {NET_SADDLE_SURVIVAL:.0%}) — the net has become a starburst")
+    if w["mean_arm"] < NET_MEAN_ARM:
+        bad.append(f"{tag} NET: the mean laid arm is {w['mean_arm']:.2f} surface prisms "
+                   f"(bound {NET_MEAN_ARM}) — the X junctions are there and the edges are not")
+    for lane, share in sorted(w["lane_share"].items()):
+        if share < LANE_SHARE_MIN:
+            bad.append(f"{tag} LANE {lane} holds {share:.1%} of the plant "
+                       f"(bound {LANE_SHARE_MIN:.0%}) — the budget ran out inside a lane, so "
+                       f"one of the four separatrix families is missing from the net")
+    if w["modal"] != w["want"]:
+        bad.append(f"{tag} RING CENSUS: the modal peak-ring size is {w['modal']}, not "
+                   f"order-1 = {w['want']} (rings {w['sizes']}, grouped at {RING_GAP} rad; "
+                   f"gaps bracketing that threshold: kept up to {w['gap_kept_max']:.4f}, split "
+                   f"from {w['gap_split_min']:.4f}) — the plant is drawing the wrong surface, "
+                   f"or the grouping threshold is deciding the answer")
+    want = w["want"]
+    if want > 0 and w["spectrum_peak"] % want != 0:
+        bad.append(f"{tag} RING CENSUS: the azimuthal power spectrum of the peak set peaks at "
+                   f"m={w['spectrum_peak']} ({w['spectrum_value']:.3f}), which is not a multiple "
+                   f"of order-1 = {want} — the (n-1)-fold fold is not in the surface")
+    if w["spread_bands"] < SEED_SPREAD_BANDS:
+        bad.append(f"{tag} SEED SPREAD: the first {w['prefix']} of {w['saddle_count']} saddles "
+                   f"occupy {w['spread_bands']}/8 equal-area bands (bound {SEED_SPREAD_BANDS}; "
+                   f"the sharpness-major control gets {w['spread_bands_control']}/8) — a budget "
+                   f"prefix of this order is not spread over the sphere")
+    if w["candidates"] >= w["candidate_cap"]:
+        bad.append(f"{tag} LANES: the walk returned {w['candidates']} candidates, which is the "
+                   f"cap ({w['candidate_cap']}) — at least one of the four lanes did not "
+                   f"complete inside the address budget")
+    if any(v == 0 for v in w["lane_share"].values()):
+        bad.append(f"{tag} LANES: only {sum(1 for v in w['lane_share'].values() if v)} of "
+                   f"{w['lanes_authored']} authored lanes reached the plant at all")
+    if element != "Charge":
+        lo, hi = LENGTH_FACTOR_MIN, 1.0 / M.CLAIM_FACTOR
+        if not (lo <= w["length_factor"] < hi):
+            bad.append(f"{tag} LENGTH FACTOR {w['length_factor']:.4f} outside [{lo}, {hi:.4f}) "
+                       f"— below it a net is drawn in dashes and reads as dots; at or above "
+                       f"1/ClaimFactor a curve's own chain stops clearing by construction")
+    if w["peaks_on_plant"] < PEAKS_ON_PLANT_MIN:
+        bad.append(f"{tag} PEAKS ON THE PLANT: {w['peaks_on_plant_n']}/{w['peaks']} peaks carry "
+                   f">= 2 ridge-arm ends within {w['peak_tolerance']:.4f} "
+                   f"= {w['peaks_on_plant']:.1%} (bound {PEAKS_ON_PLANT_MIN:.0%}, a FIRST CUT)")
+    if w.get("inert_read"):
+        bad.append(f"{tag} INERT COLUMNS: {', '.join(w['inert_read'])} CHANGE the plant "
+                   f"(prism-tuple drift {w['inert_drift']}) — a skeleton species authors them "
+                   f"at a do-nothing value, but Trace/TryFieldDirection read them whatever the "
+                   f"seeds are, so an authored value that looks inert is not")
+    return bad
+
+
+# ── Charge's armour at the core ────────────────────────────────────────────────
+
 SHIELD_SAMPLE = 3000     # octahedron SAT is 88 axes; the estimate is sampled, seed fixed
 
 
@@ -295,6 +990,25 @@ def sample(pairs, n=SHIELD_SAMPLE, seed=1):
         return pairs
     import random as _r
     return _r.Random(seed).sample(pairs, n)
+
+
+def armoured_fraction(boxes):
+    """Charge's octahedra against each other over a given set of boxes."""
+    if len(boxes) < 2:
+        return 0, 0, 0.0
+    reach = 2 * CIRCUMSCRIBING_SCALE * max(
+        math.sqrt(sum(h * h for h in b[2])) for b in boxes)
+    pairs = sample(list(near_pairs(boxes, reach, CIRCUMSCRIBING_SCALE)))
+    inter = sum(1 for i, j in pairs if touching_scale(boxes[i], boxes[j], shield=True) < 1.0)
+    return inter, len(pairs), inter / max(1, len(pairs))
+
+
+def core_boxes(report, fraction=CORE_RADIUS_FRACTION):
+    """The prisms inside `fraction` of the plant's own bounding radius — where the Fall
+    converges every dive it lays, and therefore the tightest packing in the species. The
+    whole-plant armour figure cannot see it: it is 53 boxes of 2800."""
+    limit = fraction * report["radius"]
+    return [b for b in report["boxes"] if M._len(b[0]) <= limit], limit
 
 
 def shield_report(reports, species="FractalFoliage"):
@@ -309,14 +1023,19 @@ def shield_report(reports, species="FractalFoliage"):
     # thing that goes wrong. What is done about it is that Charge's ribbon is DASHED
     # (LengthFactor 0.45): its prisms are shorter than the step that spaces them, so the armour
     # has room to close and the dashes are what the octahedra fill in.
-    reach = 2 * CIRCUMSCRIBING_SCALE * max(
-        math.sqrt(sum(h * h for h in b[2])) for b in charge["boxes"])
-    pairs = sample(list(near_pairs(charge["boxes"], reach, CIRCUMSCRIBING_SCALE)))
-    inter = sum(1 for i, j in pairs
-                if touching_scale(charge["boxes"][i], charge["boxes"][j], shield=True) < 1.0)
-    out["armoured_pairs"] = len(pairs)
+    inter, n, frac = armoured_fraction(charge["boxes"])
+    out["armoured_pairs"] = n
     out["armoured_interpenetrating"] = inter
-    out["armoured_fraction"] = inter / max(1, len(pairs))
+    out["armoured_fraction"] = frac
+    # And again over the CORE alone, because the Fall converges every dive on one point and
+    # a 2% subset cannot move a whole-plant fraction.
+    cb, limit = core_boxes(charge)
+    ci, cn, cf = armoured_fraction(cb)
+    out["core_radius"] = limit
+    out["core_prisms"] = len(cb)
+    out["core_pairs"] = cn
+    out["core_interpenetrating"] = ci
+    out["core_fraction"] = cf
     # The bar is measured the same way: ALL touching pairs, chain included.
     out["sibling_bare"] = max(reports[e]["all_fraction"] for e in ("Mass", "Space", "Time"))
     out["charge_bare_area"] = charge["area"]
@@ -339,7 +1058,7 @@ def main():
     args = ap.parse_args()
 
     if args.shields:
-        return solve_charge()
+        return solve_charge(args.species)
     if args.fit_volume:
         return fit_volume(args.species)
 
@@ -353,10 +1072,13 @@ def main():
 def measure_species(species, args):
     spec = M.SPECIES[species]
     reports = {}
+    heart, heart_src = heart_world_scale(species)
+    heart_half = 0.5 * heart
     print("=" * 96)
     print(f"{spec['display']}  ({species}) — measured from the shipped surface table")
     print(f"  concept: {'HELICOIDAL twist, ' + str(spec['twist']) + ' deg/step' if spec['twist'] else 'SMOOTH CROSSING CURVES, no twist'}"
           f"   neutral prism {spec['neutral_cross']} x {spec['neutral_step']}")
+    print(f"  heart: world scale {heart:.3f} (half-extent {heart_half:.3f}) from {heart_src}")
     print("=" * 96 + "\n")
     print(f"  {'element':8s} {'prisms':>6} {'curves':>6} {'volume':>10} {'per prism':>22} "
           f"{'dims':>16} {'touching / deep':>28}")
@@ -374,9 +1096,105 @@ def measure_species(species, args):
     for element in M.ELEMENTS:
         print(f"    {element:8s} {reports[element]['coverage']}")
 
+    # ── THE FALL ───────────────────────────────────────────────────────────────
+    falls = {}
+    for element in M.ELEMENTS:
+        rules = grow_detail(species, element)["rules"]
+        if authors_fall(rules):
+            falls[element] = fall_report(species, element, reports[element])
+    if falls:
+        f0 = next(iter(falls.values()))
+        print(f"\n  THE FALL (dive prisms separate on TanR != 0; stop sphere "
+              f"{f0['stop_world']:.2f} u, crystal half-extent {heart_half:.3f} u)")
+        print(f"    {'element':8s} {'dives':>9} {'share':>7} {'tip':>7} {'centre':>7} "
+              f"{'dive/surf len':>14} {'hole/bound':>14} {'wind':>8} {'/e-fold':>8} "
+              f"{'radial':>7} {'bands':>5} {'roll med/max':>14} {'cond':>6} {'trunc':>5}")
+        for element in M.ELEMENTS:
+            f = falls.get(element)
+            if not f:
+                continue
+            print(f"    {element:8s} {f['laid']:>4}/{f['requested']:<4} {f['share']:>7.2%} "
+                  f"{f['tip_min']:>7.2f} {f['centre_min']:>7.2f} "
+                  f"{f['dive_len_max']:>6.2f}/{f['surf_len_max']:<7.2f} "
+                  f"{f['hole_max']:>6.2f}/{f['hole_bound']:<7.2f} "
+                  f"{f['winding_median']:>8.0f} {f['winding_per_efold_median']:>8.0f} "
+                  f"{f['radial']:>7.1%} {f['dive_bands_filled']:>5} "
+                  f"{f['roll_median']:>6.2f}/{f['roll_max']:<7.2f} "
+                  f"{f['conditioning_min']:>6.2f} {f['truncated']:>5}")
+        print(f"    radial split (surface / dive), raw roll before the authored "
+              f"{f0['twist']:.0f} deg twist is removed, and emitted dive steps vs the cap:")
+        for element in M.ELEMENTS:
+            f = falls.get(element)
+            if not f:
+                continue
+            print(f"      {element:8s} radial {f['radial_surface']:>6.1%} / "
+                  f"{f['radial_dive']:>6.1%}   raw roll med {f['roll_raw_median']:>5.2f} "
+                  f"max {f['roll_raw_max']:>6.2f} over {f['roll_pairs']:>4} walk-adjacent pairs"
+                  f"   emitted {f['emitted_max']:>3}/{f['dive_max_steps']}"
+                  f"   dive bands {f['dive_bands']}"
+                  f" (starts in {f['dive_start_bands']}/8, bound {f['dive_band_bound']})"
+                  f"   spent {f['spent']} of {f['requested']} owed, {f['seeds']} seeds")
+
+    # ── THE WATERSHED ──────────────────────────────────────────────────────────
+    sheds = {}
+    for element in M.ELEMENTS:
+        rules = grow_detail(species, element)["rules"]
+        if authors_skeleton(rules):
+            # The inert-column probe is two extra walks per column and it is in the plain
+            # report as well as in --check: "six of these nine authored numbers do nothing
+            # and three of them do" is a fact a reader needs BEFORE they try tuning one.
+            sheds[element] = watershed_report(species, element, reports[element], inert=True)
+    if sheds:
+        print("\n  THE WATERSHED (skeleton species: every curve is a separatrix of R(theta, phi))")
+        print(f"    {'element':8s} {'order':>5} {'peaks':>6} {'sadl':>5} {'pits':>5} {'chi':>5} "
+              f"{'rings':>26} {'modal/want':>10} {'spec m':>7} {'sign':>7} {'net':>11} "
+              f"{'survival':>8} {'mean arm':>8}")
+        for element in M.ELEMENTS:
+            w = sheds.get(element)
+            if not w:
+                continue
+            print(f"    {element:8s} {w['order']:>5} {w['peaks']:>6} {w['saddles']:>5} "
+                  f"{w['pits']:>5} {w['euler']:>5} {str(w['sizes']):>26} "
+                  f"{w['modal']:>5}/{w['want']:<4} {w['spectrum_peak']:>7} "
+                  f"{w['sign_violations']:>3}/{w['sign_curves']:<3} "
+                  f"{w['saddles_keeping_arms']:>5}/{w['saddle_count']:<5} "
+                  f"{w['saddle_survival']:>8.1%} {w['mean_arm']:>8.2f}")
+        for element in M.ELEMENTS:
+            w = sheds.get(element)
+            if not w:
+                continue
+            lanes = ", ".join(f"{k}:{v:.1%}" for k, v in sorted(w["lane_share"].items()))
+            print(f"      {element:8s} lanes [{lanes}]  candidates {w['candidates']}/"
+                  f"{w['candidate_cap']}  LengthFactor {w['length_factor']:.4f}  "
+                  f"walk step {w['walk_step']:.4f}")
+            print(f"               ring phases (fraction of one lobe) {w['phases']}   "
+                  f"gap kept <= {w['gap_kept_max']:.4f} | split >= {w['gap_split_min']:.4f} "
+                  f"about the {RING_GAP} threshold")
+            print(f"               spectrum |sum exp(i m phi)|/N, m=1..{2 * w['order']}: "
+                  f"{[round(v, 3) for v in w['spectrum']]}")
+            print(f"               seed spread {w['spread_bands']}/8 bands over the first "
+                  f"{w['prefix']} saddles (sharpness-major control "
+                  f"{w['spread_bands_control']}/8)   arm attribution worst "
+                  f"{w['attribution_worst_deg']:.2f} deg")
+            print(f"               peaks carrying >= 2 ridge ends {w['peaks_on_plant_n']}/"
+                  f"{w['peaks']} = {w['peaks_on_plant']:.1%} (tolerance "
+                  f"{w['peak_tolerance']:.4f}, {w['ridge_ends']} ridge ends)")
+            if "inert_read" in w:
+                inert = [k for k in w["inert_tested"] if k not in w["inert_read"]]
+                print(f"               inert columns: {len(inert)}/{len(w['inert_tested'])} "
+                      f"prove byte-identical ({', '.join(inert)}); READ: "
+                      f"{', '.join(w['inert_read']) or 'none'}")
+            print(f"               Euler chi = peaks - saddles + pits = {w['euler']} "
+                  f"(REPORTED, never gated: a finite grid cannot promise it found every "
+                  f"critical point)")
+
     s = shield_report(reports, species)
     print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
           f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
+    print(f"  Charge armour at the CORE (inside {CORE_RADIUS_FRACTION:.2f} R = "
+          f"{s['core_radius']:.1f} u, {s['core_prisms']} prisms): "
+          f"{s['core_interpenetrating']}/{s['core_pairs']} = {s['core_fraction']:.1%} "
+          f"(bound {CORE_ARMOURED_MAX:.0%})")
     print(f"  silhouette: Charge bare {s['charge_bare_area']:,.0f}, armoured "
           f"{s['armoured_area']:,.0f}, siblings bare {s['sibling_bare_area']:,.0f}")
 
@@ -388,7 +1206,7 @@ def measure_species(species, args):
           "shipped cell anything until somebody puts it in one.")
 
     if args.render:
-        render_all(reports, os.path.join(args.render, species))
+        render_all(reports, os.path.join(args.render, species), heart_half)
 
     if args.check:
         bad = []
@@ -413,6 +1231,22 @@ def measure_species(species, args):
         if not s["armoured_area"] > s["sibling_bare_area"] > s["charge_bare_area"]:
             bad.append("the Charge ordering flipped: armoured must be the DENSEST of the four "
                        "and bare the sparsest — that ordering IS the two-pass grazing cost")
+        # THE FALL's convergence is the tightest packing in the species, and it is 2% of the
+        # plant, so the whole-plant armour figure above cannot see it.
+        if s["core_fraction"] > CORE_ARMOURED_MAX:
+            bad.append(f"Charge ARMOUR AT THE CORE: {s['core_interpenetrating']}/"
+                       f"{s['core_pairs']} = {s['core_fraction']:.1%} of armoured pairs inside "
+                       f"{CORE_RADIUS_FRACTION:.2f} R ({s['core_radius']:.1f} u, "
+                       f"{s['core_prisms']} prisms) interpenetrate (bound "
+                       f"{CORE_ARMOURED_MAX:.0%}) — the Fall's bundle has fused into a rod. "
+                       f"The levers are DiveStopRadius (pull the tips out of the tightest "
+                       f"shell), DiveGirthFloor and DiveCount, never the whole-plant fit")
+
+        for element in M.ELEMENTS:
+            if element in falls:
+                bad += fall_gates(species, element, falls[element], heart_half)
+            if element in sheds:
+                bad += watershed_gates(species, element, sheds[element])
 
         # THE ELEMENTAL LAW (Docs/ECOSYSTEM.md §45). This species is EXEMPT from the runtime
         # leaf transform (Flora.PrismSizeFixedByGrowthRule), so it has to state the law in its
@@ -443,7 +1277,11 @@ def measure_species(species, args):
                        f"than MASS's ({reports['Mass']['radius']:.0f}) - the bounding volume "
                        f"is what its lost prism volume buys")
         if bad:
-            print("\nFAIL")
+            print(f"\nFAIL ({len(bad)} bounds broken)")
+            # The failures go to stderr and the report to stdout, so a redirect that merges
+            # them interleaves on the buffer rather than on the writes unless stdout is
+            # flushed first — a failure list printed above its own measurements is unreadable.
+            sys.stdout.flush()
             for b in bad:
                 print("  " + b, file=sys.stderr)
             return 1
@@ -484,35 +1322,83 @@ def fit_volume(only=None):
     return 0
 
 
-def solve_charge():
+def solve_charge(only=None):
     """Shrink Charge's ribbon uniformly (its ASPECT is its identity, so uniformly) until
-    its armour is no more fused than a sibling is bare."""
-    reports = {e: element_report(e, species=species) for e in ("Mass", "Space", "Time")}
-    bar = max(r["interpenetrating_fraction"] for r in reports.values())
-    print(f"bar: a sibling's bare interpenetration is {bar:.1%}")
-    base = M.CROSS_SECTION["Space"]
-    for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
-        cross = (base[0] * k, base[1] * k)
-        r = element_report("Charge", cross=cross, species=species)
-        reach = 2 * CIRCUMSCRIBING_SCALE * max(
-            math.sqrt(sum(h * h for h in b[2])) for b in r["boxes"])
-        pairs = sample(list(near_pairs(r["boxes"], reach, CIRCUMSCRIBING_SCALE)))
-        inter = sum(1 for i, j in pairs
-                    if touching_scale(r["boxes"][i], r["boxes"][j], shield=True) < 1.0)
-        frac = inter / max(1, len(pairs))
-        mark = "  <= clears" if frac <= bar else ""
-        print(f"  k={k:.2f}  cross=({cross[0]:.4f}, {cross[1]:.4f})  "
-              f"armoured {inter}/{len(pairs)} = {frac:.1%}{mark}")
+    its armour is no more fused than a sibling is bare.
+
+    TWO bars, because the Fall gave this species a second place to fuse: the WHOLE plant
+    against a sibling's bare interpenetration, and the CORE — the prisms inside
+    CORE_RADIUS_FRACTION of the plant's own radius, where every dive converges. The core is
+    2% of the plant, so the whole-plant figure is structurally blind to it, and the
+    `<= clears` mark is against BOTH bars because --check gates both.
+
+    MEASURED, and it is the reason this sweep exists as a REPORT rather than as a solver:
+    the cross-section is not a lever on the core at all. Shrinking it makes the core
+    fraction monotonically WORSE (FractalFoliage 21.3% at k=1.00 -> 45.6% at k=0.25),
+    because a shield reaches 1.5 x leafSize on all three half-extents INCLUDING the length,
+    so a thinner prism keeps its armour's reach along the ribbon while the touching-pair
+    denominator collapses to the pairs that were already fused. The levers that do reach it
+    are the Fall's own: DiveStopRadius, DiveGirthFloor and DiveCount."""
+    for species in ([only] if only else list(M.SPECIES)):
+        print(f"\n{species}: Charge cross-section against its armour")
+        reports = {e: element_report(e, species=species) for e in ("Mass", "Space", "Time")}
+        # The same statistic --check compares against: ALL touching pairs, chain included.
+        # `interpenetrating_fraction` excludes a curve's own chain and is reported beside it,
+        # because a --shields run that said "clears" on a different statistic from the one
+        # --check gates would be a tool disagreeing with its own build gate.
+        bar = max(r["all_fraction"] for r in reports.values())
+        bar_nochain = max(r["interpenetrating_fraction"] for r in reports.values())
+        print(f"  bar: a sibling's bare interpenetration is {bar:.1%} over ALL touching pairs "
+              f"({bar_nochain:.1%} with the chain excluded); the CORE bar is "
+              f"{CORE_ARMOURED_MAX:.0%}")
+        # The sweep's base is THIS species' own Space cross-section, not the module-level
+        # CROSS_SECTION view — that one is the FractalFoliage back-compat table, so a sweep
+        # keyed on it measured the wrong species' ribbon on the other two. Same class of
+        # single-species leftover as the undefined `species` this function used to carry.
+        base = M.cross_section_for("Space", species)
+        shipped = M.cross_section_for("Charge", species)
+        print(f"  sweep base = this species' SPACE cross {base[0]:.4f} x {base[1]:.4f}; the "
+              f"SHIPPED Charge cross {shipped[0]:.4f} x {shipped[1]:.4f} sits at "
+              f"k={shipped[0] / max(base[0], 1e-9):.3f}")
+        for k in (1.0, 0.8, 0.65, 0.55, 0.50, 0.45, 0.40, 0.35, 0.30, 0.25):
+            cross = (base[0] * k, base[1] * k)
+            r = element_report("Charge", cross=cross, species=species)
+            _, n, frac = armoured_fraction(r["boxes"])
+            cb, limit = core_boxes(r)
+            _, cn, cfrac = armoured_fraction(cb)
+            mark = "  <= clears both" if (frac <= bar and cfrac <= CORE_ARMOURED_MAX) else (
+                "  <= clears the plant only" if frac <= bar else "")
+            print(f"  k={k:.2f}  cross=({cross[0]:.4f}, {cross[1]:.4f})  "
+                  f"plant {frac:>6.1%} of {n:<5}  core(<= {limit:.1f} u, {len(cb):>3} prisms) "
+                  f"{cfrac:>6.1%} of {cn:<5}{mark}")
     return 0
 
 
-def render_all(reports, out_dir):
+def render_all(reports, out_dir, heart_half=0.0):
+    """Three passes per element, because they answer three different questions.
+
+    The SHEET is the plant (four framings, the heart drawn at its real size). The DIVES-ONLY
+    sheet is THE FALL alone — at 3-15% of the plant a dive is invisible in a full render,
+    and "the spiral reads as a spiral" is a look claim no statistic settles. The CLOSE-UP is
+    framed on an ABSOLUTE 30 world units around the origin rather than on the plant's own
+    extent, which is the only framing in which "the spindles almost connect to their
+    crystal" can be looked at."""
     import mandelbulb_flora_render as R
     os.makedirs(out_dir, exist_ok=True)
     for element, r in reports.items():
-        path = os.path.join(out_dir, f"mandelbulb_{element.lower()}.png")
-        R.render(r["boxes"], path)
-        print(f"  rendered {path}")
+        stem = os.path.join(out_dir, f"mandelbulb_{element.lower()}")
+        R.render_sheet(r["boxes"], stem + ".png", heart=heart_half)
+        print(f"  rendered {stem}.png")
+        dives = [b for b, p in zip(r["boxes"], r["prisms_list"]) if p.tan_r != 0.0]
+        if dives:
+            R.render_sheet(dives, stem + "_dives.png", heart=heart_half)
+            print(f"  rendered {stem}_dives.png  ({len(dives)} dive prisms)")
+        R.render_closeup(r["boxes"], stem + "_heart.png", span=CLOSEUP_SPAN,
+                         heart=heart_half)
+        print(f"  rendered {stem}_heart.png  ({CLOSEUP_SPAN:.0f} u across, heart drawn)")
+
+
+CLOSEUP_SPAN = 30.0   # world units across the frame: the Fall's arrival, at its real size
 
 
 if __name__ == "__main__":

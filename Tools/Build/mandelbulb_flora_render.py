@@ -132,14 +132,19 @@ def heart_boxes(radius):
     return out
 
 
-def _view(boxes, W, H, yaw, pitch, dist_factor, heart, bg):
-    """Rasterise one view and return (rgb, W, H). Same camera model as render()."""
+def _view(boxes, W, H, yaw, pitch, dist_factor, heart, bg, dist_abs=None):
+    """Rasterise one view and return (rgb, W, H). Same camera model as render().
+
+    `dist_abs` frames on an ABSOLUTE eye distance instead of a multiple of the plant's
+    own extent — which is what a close-up needs, because a framing expressed as a
+    fraction of the subject cannot hold a fixed world span across four elements whose
+    plants differ in size."""
     hb = heart_boxes(heart) if heart and heart > 0 else []
     allb = list(boxes) + hb
     prisms = [(b[0], b[1][2], b[1][1], b[2][2] * 2, i, 1.0) for i, b in enumerate(allb)]
     cd = norm([math.cos(pitch) * math.cos(yaw), math.cos(pitch) * math.sin(yaw), math.sin(pitch)])
     ext = max((max(abs(c) for c in p[0]) for p in prisms[:len(boxes)]), default=1.0)
-    dist = ext * dist_factor
+    dist = dist_abs if dist_abs else ext * dist_factor
     eye = [c * dist for c in cd]
     fwd = [-c for c in cd]
     upref = [0, 0, 1] if abs(cd[2]) < 0.95 else [0, 1, 0]
@@ -233,4 +238,17 @@ def render_sheet(boxes, path, heart=0.0, tile=700, bg=(8, 9, 14), views=SHEET_VI
             dst = ((oy + y) * W + ox) * 3
             out[dst:dst + tile * 3] = col[src:src + tile * 3]
     png(path, W, H, out)
+    return path
+
+
+def render_closeup(boxes, path, span=30.0, heart=0.0, W=900, H=900,
+                   yaw=0.6, pitch=0.25, bg=(8, 9, 14)):
+    """One view framed on an ABSOLUTE world SPAN centred on the origin.
+
+    The projection is `f = 1.5 * W / 2`, so a point at lateral offset X and depth z lands at
+    the frame edge when X / z = 1 / 1.5 — the half-width at the centre plane is therefore
+    `dist / 1.5`, and a frame `span` units across wants `dist = 0.75 * span`. Everything
+    outside simply falls off the sides, which is what a fly-through looks like."""
+    col = _view(boxes, W, H, yaw, pitch, 0.0, heart, bg, dist_abs=0.75 * span)
+    png(path, W, H, col)
     return path

@@ -400,6 +400,160 @@ def saddles(surface):
     return surface._saddles
 
 
+def peaks(surface):
+    """The PEAKS in farthest-point order: the gasket's level 0 (MandelbulbSurface.Surface.Peaks)."""
+    if getattr(surface, "_peaks", None) is None:
+        surface._peaks = farthest_point_order([c for c in critical_points(surface) if c.kind == PEAK])
+    return surface._peaks
+
+
+# ── APOLLONIA — the spherical Apollonian gasket (MandelbulbSurface.Growth.BuildGasket) ──
+
+GASKET_RELAX_STEPS = 24
+GASKET_OVERLAP_EPS = 1e-4
+RING_MIN_SAMPLES = 16
+RING_MAX_SAMPLES = 128
+GASKET_RELAX_RATE_DEFAULT = 0.6
+
+
+class Disc:
+    __slots__ = ("axis", "rho", "level", "lane")
+
+    def __init__(self, axis, rho, level, lane=0):
+        self.axis, self.rho, self.level, self.lane = axis, rho, level, lane
+
+
+def _angle(a, b):
+    return math.acos(min(1.0, max(-1.0, _dot(a, b))))
+
+
+def _tangent_toward(x, d):
+    g = _sub(d, _mul(x, _dot(d, x)))
+    return _norm(g) if _dot(g, g) > 1e-14 else (0.0, 0.0, 0.0)
+
+
+def inscribe(discs, ia, ib, ic, rate):
+    """The disc tangent internally to the curvilinear triangle (a, b, c): a fixed-iteration
+    relaxation equalising f_i(x) = angle(x, d_i) - rho_i. Sums in the order (a, b, c) and
+    normalises once per iteration, like the C#."""
+    a, b, c = discs[ia], discs[ib], discs[ic]
+    x = _add(_add(a.axis, b.axis), c.axis)
+    if _dot(x, x) < 1e-12:
+        return None
+    x = _norm(x)
+    for _ in range(GASKET_RELAX_STEPS):
+        fa = _angle(x, a.axis) - a.rho
+        fb = _angle(x, b.axis) - b.rho
+        fc = _angle(x, c.axis) - c.rho
+        target = (fa + fb + fc) / 3.0
+        step = (0.0, 0.0, 0.0)
+        step = _add(step, _mul(_tangent_toward(x, a.axis), -(target - fa)))
+        step = _add(step, _mul(_tangent_toward(x, b.axis), -(target - fb)))
+        step = _add(step, _mul(_tangent_toward(x, c.axis), -(target - fc)))
+        x = _add(x, _mul(step, rate))
+        if _dot(x, x) < 1e-12:
+            return None
+        x = _norm(x)
+    rho = min(_angle(x, a.axis) - a.rho, _angle(x, b.axis) - b.rho, _angle(x, c.axis) - c.rho)
+    return x, rho
+
+
+def build_gasket(surface, rules):
+    """Level 0 from the surface's peaks (half the angle to the nearest neighbour), then the
+    breadth-first Apollonian step. Returns (discs, lay_order, rho_ref) with every disc's
+    lane = its size octave. Every ordering is a TOTAL key; nothing draws the Rng."""
+    pk = peaks(surface)
+    want = min(rules.disc_seeds, len(pk)) if rules.disc_seeds > 0 else len(pk)
+    axes = [_norm(pk[i].dir) for i in range(want)]
+    discs = []
+    for i, ai in enumerate(axes):
+        nn = math.pi / 3.0
+        for j, aj in enumerate(axes):
+            if j != i:
+                nn = min(nn, _angle(ai, aj))
+        discs.append(Disc(ai, 0.5 * nn, 0))
+
+    def adjacent(a, b):
+        return _angle(discs[a].axis, discs[b].axis) <= discs[a].rho + discs[b].rho + rules.disc_pad
+
+    rate = rules.disc_relax_rate if rules.disc_relax_rate > 0 else GASKET_RELAX_RATE_DEFAULT
+    start, count = 0, len(discs)
+    levels = max(1, rules.gasket_levels)
+    for lvl in range(1, levels):
+        cand = []
+        n = count
+        for a in range(n):
+            for b in range(a + 1, n):
+                if not adjacent(a, b):
+                    continue
+                for c in range(b + 1, n):
+                    if lvl > 1 and a < start and b < start and c < start:
+                        continue
+                    if not adjacent(a, c) or not adjacent(b, c):
+                        continue
+                    r = inscribe(discs, a, b, c, rate)
+                    if r is None:
+                        continue
+                    x, rho = r
+                    if rho < rules.disc_min_radius:
+                        continue
+                    cand.append(Disc(x, rho, lvl))
+        order = sorted(range(len(cand)), key=lambda i: (-cand[i].rho, i))
+        start = count
+        for i in order:
+            x = cand[i]
+            clash = False
+            for j in range(count):
+                if _angle(x.axis, discs[j].axis) < x.rho + discs[j].rho - GASKET_OVERLAP_EPS:
+                    clash = True
+                    break
+            if clash:
+                continue
+            discs.append(x)
+            count += 1
+
+    rho_ref = 1e-6
+    for d in discs:
+        rho_ref = max(rho_ref, d.rho)
+    lay = sorted(range(len(discs)), key=lambda i: (-discs[i].rho, discs[i].level, i))
+    lanes = max(1, rules.gasket_levels)
+    octave = rules.gasket_octave if rules.gasket_octave > 0 else 1.0
+    for d in discs:
+        o = math.log(rho_ref / max(d.rho, 1e-9), 2) / octave
+        d.lane = min(lanes - 1, max(0, math.floor(o)))
+    return discs, lay, rho_ref
+
+
+def ring_samples_for(surface, rules, rho_ref):
+    if rules.ring_samples > 0:
+        return min(RING_MAX_SAMPLES, max(3, rules.ring_samples))
+    circ = 2 * math.pi * math.sin(rho_ref) * surface.mean_radius
+    n = int(round(circ / max(1e-6, rules.step)))
+    return min(RING_MAX_SAMPLES, max(RING_MIN_SAMPLES, n))
+
+
+def ring_points(surface, d, rho, samples, flatten):
+    """The ring of one disc, closed form, CLOSED (the first point repeated)."""
+    e1 = _cross(d, (0.0, 0.0, 1.0))
+    if _dot(e1, e1) < 1e-10:
+        e1 = _cross(d, (1.0, 0.0, 0.0))
+    e1 = _norm(e1)
+    e2 = _cross(d, e1)
+    cr, sr = math.cos(rho), math.sin(rho)
+    dirs, radii = [], []
+    for k in range(samples):
+        a = 2 * math.pi * k / samples
+        u = _norm(_add(_mul(d, cr), _mul(_add(_mul(e1, math.cos(a)), _mul(e2, math.sin(a))), sr)))
+        th, ph = _spherical(u)
+        dirs.append(u)
+        radii.append(surface.sample(th, ph))
+    mean = sum(radii) / samples
+    f = min(1.0, max(0.0, flatten))
+    pts = [_mul(dirs[k], radii[k] * (1 - f) + mean * f) for k in range(samples)]
+    pts.append(pts[0])
+    return pts
+
+
 # ── the growth rule ────────────────────────────────────────────────────────────
 
 class Rules:
@@ -414,9 +568,14 @@ class Rules:
               "dive_swirl", "dive_stride_ceiling", "dive_girth_floor", "dive_axis_align",
               "dive_descent",
               # THE WATERSHED (§47)
-              "skeleton_seeds", "walk_step", "min_persistence", "girth_reference")
+              "skeleton_seeds", "walk_step", "min_persistence", "girth_reference",
+              # APOLLONIA (§48)
+              "gasket_levels", "disc_seeds", "disc_pad", "disc_min_radius", "ring_shrink",
+              "ring_flatten", "ring_girth_exponent", "ring_samples", "gasket_octave",
+              "disc_relax_rate", "ring_girth_floor")
     INTS = ("field", "max_steps", "lanes", "seeds", "min_run",
-            "dive_count", "dive_max_steps", "skeleton_seeds")
+            "dive_count", "dive_max_steps", "skeleton_seeds",
+            "gasket_levels", "disc_seeds", "ring_samples")
 
     def __init__(self, *values):
         if len(values) != len(self.FIELDS):
@@ -557,7 +716,7 @@ def _field_direction(rules, frame, n, field):
     if _dot(v, v) < 1e-16:
         return None
     v = _norm(v)
-    if abs(rules.swirl) > 0.01:
+    if rules.skeleton_seeds == 0 and abs(rules.swirl) > 0.01:     # a separatrix has no swirl
         ang = rules.swirl * math.pi / 180.0
         c, s = math.cos(ang), math.sin(ang)
         v = _add(_add(_mul(v, c), _mul(_cross(n, v), s)),
@@ -624,7 +783,12 @@ def grow(surface, rules, seed, budget):
     0..3 are their four separatrices, interleaved valley+, ridge+, valley-, ridge-."""
     rng = Rng((seed * (2654435761 & 0x7FFFFFFF)) ^ 0x5bf03635)
     skeleton = rules.skeleton_seeds != 0
-    seeds = build_seeds(surface, rules)
+    gasket = rules.gasket_levels != 0
+    if gasket:
+        discs, lay, rho_ref = build_gasket(surface, rules)
+        seeds = [build_frame(surface, *_spherical(d.axis)).position for d in discs]
+    else:
+        seeds = build_seeds(surface, rules)
     sads = saddles(surface) if skeleton else None
     lane_pos = list(seeds)
     lane_tan = [None] * len(seeds)
@@ -638,11 +802,19 @@ def grow(surface, rules, seed, budget):
     # z-monotone, so a prefix is a polar cap).
     n_seeds = max(1, len(seeds))
     dive_owed = [False] * n_seeds
-    dive_quota = min(max(0, rules.dive_count), len(seeds))
     dives_spent = 0
-    if rules.dive_step > 0 and dive_quota > 0:
-        for d in range(dive_quota):
-            dive_owed[(d * len(seeds)) // dive_quota] = True
+    if gasket:
+        # The gasket strides over its LEVEL-0 discs in LAY order (the largest rings, laid first).
+        top = [i for i in lay if discs[i].level == 0]
+        dive_quota = min(max(0, rules.dive_count), len(top))
+        if rules.dive_step > 0 and dive_quota > 0:
+            for d in range(dive_quota):
+                dive_owed[top[(d * len(top)) // dive_quota]] = True
+    else:
+        dive_quota = min(max(0, rules.dive_count), len(seeds))
+        if rules.dive_step > 0 and dive_quota > 0:
+            for d in range(dive_quota):
+                dive_owed[(d * len(seeds)) // dive_quota] = True
 
     def trace(start, seed_tangent, field, step):
         pts = []
@@ -663,14 +835,15 @@ def grow(surface, rules, seed, budget):
                     d = fd
                     if _is_bipolar(field) and _dot(d, ahead) < 0:
                         d = _mul(d, -1.0)
-                    mix = min(1.0, max(0.0, rules.field_mix))
+                    # A separatrix is PURE gradient flow by construction (MandelbulbSurface.Trace).
+                    mix = 1.0 if skeleton else min(1.0, max(0.0, rules.field_mix))
                     want = tuple(ahead[i] + (d[i] - ahead[i]) * mix for i in range(3))
                 else:
                     want = ahead
                 if _dot(want, want) < 1e-16:
                     break
                 want = _norm(want)
-                mom = min(1.0, max(0.0, rules.momentum))
+                mom = 0.0 if skeleton else min(1.0, max(0.0, rules.momentum))
                 want = tuple(want[i] + (t[i] - want[i]) * mom for i in range(3))
                 want = _sub(want, _mul(n, _dot(want, n)))
                 if _dot(want, want) < 1e-16:
@@ -742,10 +915,10 @@ def grow(surface, rules, seed, budget):
             dives_spent += 1
         return dive
 
-    def emit(pts, dive):
+    def emit(pts, dive, girth_override=0.0):
         nonlocal curve_count
         u = min(1.0, max(0.0, (len(pts) - 1) / reference))
-        girth = taper + (1.0 - taper) * u
+        girth = girth_override if girth_override > 0 else taper + (1.0 - taper) * u
         n_surface = len(pts)
         flat = [p[0] for p in pts] + list(dive)
         lg_hi = math.log(max(1e-6, _len(pts[-1][0])))
@@ -783,6 +956,23 @@ def grow(surface, rules, seed, budget):
                              _dot(fwd, fr.e_theta), _dot(fwd, fr.e_phi), tan_r,
                              ln * max(0.05, rules.length_factor),
                              g, roll, curve_count, lane))
+
+    if gasket:
+        # APOLLONIA: one ring per disc in rho-descending order; the lane IS the size octave.
+        samples = ring_samples_for(surface, rules, rho_ref)
+        shrink = rules.ring_shrink if rules.ring_shrink > 0 else 1.0
+        for idx in lay:
+            if len(out) >= budget:
+                break
+            d = discs[idx]
+            lane = d.lane
+            pts = [(p, (0.0, 0.0, 0.0)) for p in
+                   ring_points(surface, d.axis, d.rho * shrink, samples, rules.ring_flatten)]
+            girth = (d.rho / rho_ref) ** rules.ring_girth_exponent if rules.ring_girth_exponent > 0 else 1.0
+            girth = max(girth, min(1.0, max(0.0, rules.ring_girth_floor)))
+            curve_count += 1
+            emit(pts, try_dive(idx, pts), girth)
+        return out[:budget], curve_count, dives_spent
 
     while lane < lanes and len(out) < budget:
         progressed = False
@@ -926,9 +1116,12 @@ VOLUME_GAIN = {
 FALL_SHARED = {
     "dive_step": 0.40,            # f: step as a fraction of the radius -> rho = sqrt(1 - 2f cos psi + f^2)
     "dive_stop": 0.045,           # 3.4 world units at shell 75, against a ~1.2 u crystal half-extent
-    "dive_max_steps": 96,         # the descent needs ~45 steps under the stride ceiling
-    "dive_stride_ceiling": 2.0,   # the dive's step may not exceed 2x the walk step: measured, without
-                                  # it the prisms after the release are f*r long, 13x a surface prism
+    "dive_max_steps": 160,        # the descent needs ~80 steps under the stride ceiling
+    "dive_stride_ceiling": 1.10,  # the dive's step may not exceed 1.1x the walk step: measured, without
+                                  # a ceiling the prisms after the release are f*r long, 13x a surface
+                                  # prism, and at 2.0 the longest dive prism out-ran every plant's longest
+                                  # surface prism (a surface prism is the frame-to-frame CHORD, ~1.05-1.20x
+                                  # the step) - the FALL stride gate, solved per element, wants <= 1.14
     "dive_girth_floor": 0.70,
 }
 
@@ -1040,6 +1233,61 @@ SPECIES["Watershed"] = dict(
     },
 )
 VOLUME_GAIN["Watershed"] = {"Charge": 1.0, "Mass": 1.0, "Space": 1.0, "Time": 1.0}   # unfitted: --fit-volume
+
+# ── APOLLONIA — the self-similar species (Docs/ECOSYSTEM.md §48) ───────────────────────────
+#
+# The one fractal picture everyone recognises: circles packed tangent to circles, the gap
+# between three of them filled by a smaller circle, and again. Level 0 is the bulb's OWN
+# LOBES (the surface's peaks, each ring half the angle to its nearest neighbour, so the big
+# rings crown the lobes and touch by construction); every later disc is inscribed in a
+# curvilinear triangle of three mutually adjacent discs. Each disc is DRAWN as a ring of
+# prisms lifted onto R(theta, phi), so a big ring crossing three lobes is a scalloped star and
+# a small ring inside one lobe a clean circle - the surface deforms the shared motif by
+# exactly how much of the bulb the motif spans. The largest rings release the Fall.
+#
+# Nothing here walks: field / swirl / mix / momentum / hop / seed / turn / radius / run are
+# all UNREAD under gasket_levels (asserted by the measure). The neutral STEP is the reference
+# ring's chord at N_ref = 50, so LengthFactor 1 means "the ring tiles exactly"; walk_step is
+# 0 so the factor stays the Charge dash alone (a ring's prism length is set by its own
+# geometry and must not also take a factor that assumes a walk step). RingSamples is
+# DERIVED from the element's step, so the element's long axis is spent as ring COARSENESS:
+# Space draws a coarse polygon of blades, Mass a fine one of bricks.
+SPECIES["Apollonia"] = dict(
+    prefab="ApolloniaFlora",
+    display="Apollonia Flora",
+    concept="the Apollonian gasket: rings packed tangent to rings, crowning the bulb's own lobes",
+    twist=0.0,
+    girth_taper=1.0,              # off: the rho ladder IS the scale ladder
+    neutral_cross=(0.0340, 0.0150),
+    neutral_step=0.063,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / 50
+    weight_spread=1.0,
+    extra={
+        "*": FALL_SHARED | {
+            "dive_swirl": 0.0, "dive_axis_align": 1.0,
+            "dive_descent": 0.0,        # structural: a closed ring starts and ends at one radius
+            "dive_stride_ceiling": 1.0, # the largest ring's chord IS ~1 step (RingSamplesFor)
+            "walk_step": 0.0,           # structural: the length factor is the dash alone
+            "girth_reference": 1.0,
+            "gasket_levels": 5, "disc_seeds": 13, "disc_pad": 0.60,
+            "ring_shrink": 0.90, "ring_girth_exponent": 0.40, "ring_girth_floor": 0.55,
+            "gasket_octave": 0.75,
+        },
+        # disc_min_radius is the per-element budget dial: what makes the FULL form fit.
+        "Charge": {"disc_min_radius": 0.100, "ring_flatten": 0.55, "dive_count": 6, "dive_angle": 56},
+        "Mass":   {"disc_min_radius": 0.085, "ring_flatten": 0.55, "dive_count": 5, "dive_angle": 60},
+        "Space":  {"disc_min_radius": 0.038, "ring_flatten": 0.55, "dive_count": 8, "dive_angle": 56},
+        "Time":   {"disc_min_radius": 0.075, "ring_flatten": 0.70, "dive_count": 7, "dive_angle": 62},
+    },
+    curves={
+        # Every walk column is inert under gasket_levels and authored 0 to say so.
+        #           field swirl mix  mom  step  steps lanes gap  seek jit seeds spread turn rmin rmax run lenf taper twist
+        "Charge": (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Mass":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Space":  (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+        "Time":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
+    },
+)
+VOLUME_GAIN["Apollonia"] = {"Charge": 1.0, "Mass": 1.0, "Space": 1.0, "Time": 1.0}   # unfitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice

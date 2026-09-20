@@ -100,6 +100,20 @@ SPECIES_ASSETS = {
             "Time":   "4b27f684cf9b4db6bcc4b78268e185e2",
         },
     ),
+    # Apollonia: the spherical Apollonian gasket of rings - the self-similar species (§48).
+    "Apollonia": dict(
+        prefab="ApolloniaFlora",
+        asset_prefix="Apollonia Flora",
+        toy_row="Apollonia",
+        prefab_guid="e51788f1f8c14517ab53cd376b3237e1",
+        component_fileid="6193847520391746285",
+        configs={
+            "Charge": "4c7fb1015cf74d4da23d86614fd033bf",
+            "Mass":   "f030f2cceed64578930cd5c47c405595",
+            "Space":  "52d54f8478ac41449607e8b2f81e602f",
+            "Time":   "e4ae88c4d7b4450a8c7b649336780938",
+        },
+    ),
 }
 
 FLORA_CONFIG_SCRIPT_GUID = "a32a297a7606432885f4d3e1f83bea9a"   # FloraConfigurationSO
@@ -167,6 +181,10 @@ RULE_FIELD_NAMES = (
     ("DiveDescent", "%g"),
     ("SkeletonSeeds", "%d"), ("WalkStep", "%g"), ("MinPersistence", "%g"),
     ("GirthReference", "%g"),
+    ("GasketLevels", "%d"), ("DiscSeeds", "%d"), ("DiscPad", "%g"), ("DiscMinRadius", "%g"),
+    ("RingShrink", "%g"), ("RingFlatten", "%g"), ("RingGirthExponent", "%g"),
+    ("RingSamples", "%d"), ("GasketOctave", "%g"), ("DiscRelaxRate", "%g"),
+    ("RingGirthFloor", "%g"),
 )
 
 

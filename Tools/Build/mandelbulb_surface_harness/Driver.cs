@@ -17,7 +17,7 @@ static class Driver
 
     static int Main(string[] argv)
     {
-        if (argv.Length == 0) { Console.Error.WriteLine("usage: probe|bake|grow|shipped|field|selftest"); return 2; }
+        if (argv.Length == 0) { Console.Error.WriteLine("usage: probe|bake|grow|shipped|field|crit|posetable|selftest"); return 2; }
         switch (argv[0])
         {
             case "probe": return Probe(argv);
@@ -26,6 +26,7 @@ static class Driver
             case "shipped": return Shipped(argv);
             case "field": return Field(argv);
             case "crit": return Crit(argv);
+            case "posetable": return PoseTable(argv);
             case "selftest": return SelfTest();
             default: Console.Error.WriteLine("unknown command " + argv[0]); return 2;
         }
@@ -209,6 +210,17 @@ static class Driver
                     rules.WalkStep = t.Length > 31 ? (float)D(t[31]) : 0f;
                     rules.MinPersistence = t.Length > 32 ? (float)D(t[32]) : 0f;
                     rules.GirthReference = t.Length > 33 ? (float)D(t[33]) : 0f;
+                    rules.GasketLevels = t.Length > 34 ? (int)D(t[34]) : 0;
+                    rules.DiscSeeds = t.Length > 35 ? (int)D(t[35]) : 0;
+                    rules.DiscPad = t.Length > 36 ? (float)D(t[36]) : 0f;
+                    rules.DiscMinRadius = t.Length > 37 ? (float)D(t[37]) : 0f;
+                    rules.RingShrink = t.Length > 38 ? (float)D(t[38]) : 0f;
+                    rules.RingFlatten = t.Length > 39 ? (float)D(t[39]) : 0f;
+                    rules.RingGirthExponent = t.Length > 40 ? (float)D(t[40]) : 0f;
+                    rules.RingSamples = t.Length > 41 ? (int)D(t[41]) : 0;
+                    rules.GasketOctave = t.Length > 42 ? (float)D(t[42]) : 0f;
+                    rules.DiscRelaxRate = t.Length > 43 ? (float)D(t[43]) : 0f;
+                    rules.RingGirthFloor = t.Length > 44 ? (float)D(t[44]) : 0f;
                     break;
             }
         }
@@ -284,6 +296,17 @@ static class Driver
             WalkStep = a.Length > 38 ? (float)D(a[38]) : 0f,
             MinPersistence = a.Length > 39 ? (float)D(a[39]) : 0f,
             GirthReference = a.Length > 40 ? (float)D(a[40]) : 0f,
+            GasketLevels = a.Length > 41 ? (int)D(a[41]) : 0,
+            DiscSeeds = a.Length > 42 ? (int)D(a[42]) : 0,
+            DiscPad = a.Length > 43 ? (float)D(a[43]) : 0f,
+            DiscMinRadius = a.Length > 44 ? (float)D(a[44]) : 0f,
+            RingShrink = a.Length > 45 ? (float)D(a[45]) : 0f,
+            RingFlatten = a.Length > 46 ? (float)D(a[46]) : 0f,
+            RingGirthExponent = a.Length > 47 ? (float)D(a[47]) : 0f,
+            RingSamples = a.Length > 48 ? (int)D(a[48]) : 0,
+            GasketOctave = a.Length > 49 ? (float)D(a[49]) : 0f,
+            DiscRelaxRate = a.Length > 50 ? (float)D(a[50]) : 0f,
+            RingGirthFloor = a.Length > 51 ? (float)D(a[51]) : 0f,
         };
 
         var basis = MandelbulbSurfaceTables.For(element);
@@ -315,7 +338,7 @@ static class Driver
     // crit <element> <w0> <w1> <w2> <gridW>
     // The surface's critical points as the SHIPPED detector finds them: `crit <kind> <theta>
     // <phi> <radius> <sharpness> <ev.x> <ev.y> <er.x> <er.y>` in scan order, then `saddle <i>`
-    // rows giving the farthest-point ORDER as indices into that list.
+    // rows giving the farthest-point ORDER as indices into that list, then `peak <i>` rows.
     static int Crit(string[] a)
     {
         var element = (CosmicShore.Data.Element)Enum.Parse(typeof(CosmicShore.Data.Element), a[1], true);
@@ -338,6 +361,83 @@ static class Driver
             for (int q = 0; q < all.Count; q++) if (ReferenceEquals(all[q], order[i])) { idx = q; break; }
             Console.WriteLine($"saddle {idx.ToString(Inv)}");
         }
+        // ... then `peak <i>` rows: the PEAKS in farthest-point order (the gasket's level 0).
+        var peaks = surface.Peaks();
+        for (int i = 0; i < peaks.Count; i++)
+        {
+            int idx = -1;
+            for (int q = 0; q < all.Count; q++) if (ReferenceEquals(all[q], peaks[i])) { idx = q; break; }
+            Console.WriteLine($"peak {idx.ToString(Inv)}");
+        }
+        return 0;
+    }
+
+    // posetable <element> <gridW>
+    //
+    // Pose is the one PURE function on a prism's own data, and the FALL is the first thing
+    // to exercise it off the surface — Dive lifts a prism off its own ray and TanR sends it
+    // through the branch that hangs `up` off the ray instead of the normal. Neither is
+    // reachable from the `shipped` verb's statistics, so they get a table of their own: a
+    // fixed sweep of addresses spanning Dive in [-0.05, 0.97] and TanR in [-0.996, 0.996],
+    // with TanA/TanB completing a unit heading and both roll states, posed against the
+    // SHIPPED surface at weights 0.
+    //
+    // Each row prints the ADDRESS IT USED as well as the pose. That is deliberate and it is
+    // the whole reason this can be held to 1e-5: the caller re-poses the identical float32
+    // inputs (the "R" format round-trips a float exactly through a double) instead of trying
+    // to reproduce this table's arithmetic in another language, where 0.996f and 0.996 are
+    // different numbers and the disagreement would be about the TABLE rather than about Pose.
+    //   pt <theta> <phi> <off> <dive> <tanA> <tanB> <tanR> <roll> <radius> <p.xyz> <f.xyz> <u.xyz>
+    static int PoseTable(string[] a)
+    {
+        var element = (CosmicShore.Data.Element)Enum.Parse(typeof(CosmicShore.Data.Element), a[1], true);
+        int gw = (int)D(a[2]), gh = gw / 2;
+        var basis = MandelbulbSurfaceTables.For(element);
+        var coeffs = MandelbulbSurface.Compose(basis, 0f, 0f, 0f);
+        var field = MandelbulbSurface.Reconstruct(MandelbulbSurfaceTables.Degree, coeffs, gw, gh);
+        var surface = new MandelbulbSurface.Surface(field, gw, gh);
+
+        // The thetas stay off the poles, where the (eTheta, ePhi) chart is singular. That is a
+        // property of the CHART and not of Pose, so sampling there would measure the frame's
+        // 1e-4 sinTheta floor rather than the thing under test.
+        float[] thetas = { 0.35f, 0.9f, 1.5707964f, 2.2f, 2.85f };
+        float[] phis = { 0.2f, 1.7f, 3.4f, 5.6f };
+        float[] dives = { -0.05f, 0f, 0.2f, 0.55f, 0.85f, 0.97f };
+        // 0 is in the list on purpose: TanR == 0 is the SURFACE branch, so one table covers
+        // both arms and a mutation that deletes either one has nowhere to hide.
+        float[] tanRs = { -0.996f, -0.55f, -0.08f, 0f, 0.08f, 0.55f, 0.996f };
+        float[] rolls = { 0f, 0.9f };
+        float[] offs = { -0.03f, 0f, 0.05f };
+
+        var frame = new MandelbulbSurface.Frame();
+        int row = 0;
+        foreach (var th in thetas)
+            foreach (var ph in phis)
+                foreach (var dv in dives)
+                    foreach (var tr in tanRs)
+                        foreach (var rl in rolls)
+                        {
+                            // The tangential part is whatever is left of a UNIT heading once
+                            // TanR has taken its share, swung around the tangent plane row by
+                            // row so the table is not four repetitions of one direction.
+                            float s = Mathf.Sqrt(Mathf.Max(0f, 1f - tr * tr));
+                            float ang = 0.37f * row;
+                            float ta = s * Mathf.Cos(ang), tb = s * Mathf.Sin(ang);
+                            float off = offs[row % offs.Length];
+                            var addr = new MandelbulbSurface.PrismAddress(th, ph, off, dv, ta, tb, tr,
+                                                                          1f, 1f, rl, 0, 0);
+                            MandelbulbSurface.Pose(surface, addr, ref frame, out var p, out var f, out var u);
+                            Console.WriteLine(string.Join(" ", new[]
+                            {
+                                "pt",
+                                F(addr.Theta), F(addr.Phi), F(addr.RadialOffset), F(addr.Dive),
+                                F(addr.TanA), F(addr.TanB), F(addr.TanR), F(addr.Roll),
+                                F(frame.Radius),
+                                F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z)
+                            }));
+                            row++;
+                        }
+        Console.WriteLine($"posetable {row}");
         return 0;
     }
 

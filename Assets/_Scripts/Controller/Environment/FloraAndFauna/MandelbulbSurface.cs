@@ -176,6 +176,7 @@ namespace CosmicShore.Gameplay
             // it, so they never pay for it.
             List<CriticalPoint> _critical;
             List<CriticalPoint> _saddles;
+            List<CriticalPoint> _peaks;
 
             /// <summary>Every converged critical point this surface's detector found, in
             /// scan order, deduplicated on a 0.01 chord. Peaks and pits are MEASUREMENTS
@@ -195,6 +196,22 @@ namespace CosmicShore.Gameplay
                     if (all[i].Kind == CriticalKind.Saddle) s.Add(all[i]);
                 _saddles = FarthestPointOrder(s);
                 return _saddles;
+            }
+
+            /// <summary>The PEAKS alone — the lobe tips — in FARTHEST-POINT order, the sibling
+            /// of <see cref="Saddles"/> and the gasket's level-0 seeds. Cached beside the saddle
+            /// list, so a species that never asks for it never pays for it. The peak SET is less
+            /// stable across float widths than the saddle set (§47), which is why the gasket
+            /// takes a PREFIX of this order: a marginal extra peak beyond K is invisible.</summary>
+            public IReadOnlyList<CriticalPoint> Peaks()
+            {
+                if (_peaks != null) return _peaks;
+                var all = CriticalPoints();
+                var p = new List<CriticalPoint>(all.Count);
+                for (int i = 0; i < all.Count; i++)
+                    if (all[i].Kind == CriticalKind.Peak) p.Add(all[i]);
+                _peaks = FarthestPointOrder(p);
+                return _peaks;
             }
 
             /// <summary>
@@ -598,6 +615,62 @@ namespace CosmicShore.Gameplay
             public float GirthReference;    // the run length that earns full girth. 0 = MaxSteps/2 —
                                             // meaningless for a skeleton whose longest arm is 29
                                             // steps (§44's "a ceiling nothing reaches" defect).
+
+            // ── APOLLONIA — the spherical Apollonian gasket of rings (Docs/ECOSYSTEM.md §48) ──
+            // Level 0 is the bulb's OWN LOBES: the surface's peaks in farthest-point order, each
+            // given half the angle to its nearest neighbour so the big rings crown the lobes and
+            // are mutually tangent by construction. Every later disc is the classic Apollonian
+            // step — the disc inscribed in a curvilinear triangle of three mutually adjacent
+            // discs, kept only if it overlaps nothing placed and clears the visibility floor.
+            // Each disc is DRAWN as a ring of prisms around its small circle, lifted onto R(θ,φ),
+            // so a big ring crossing three lobes comes out a scalloped star while a small ring
+            // inside one lobe is a clean circle: the surface deforms the shared motif by exactly
+            // how much of the bulb the motif spans. The whole block is unreachable while
+            // GasketLevels == 0, and NO address field changed: a ring prism is verbatim the
+            // shipped surface branch (radial lift in RadialOffset, tangential heading, TanR 0).
+            public int GasketLevels;        // the master switch AND the number of size-OCTAVE lanes.
+                                            // 0 = off: Growth takes the seed/trace/hop path, byte for byte.
+            public int DiscSeeds;           // level-0 discs = the first K of the surface's PEAKS in
+                                            // farthest-point order. ≤ 0 = every peak.
+            public float DiscPad;           // adjacency SEARCH slack, radians: three discs bound a
+                                            // curvilinear triangle when every pair has
+                                            // angle(d_i,d_j) ≤ ρ_i + ρ_j + DiscPad. It widens which
+                                            // TRIPLES are searched, never how tightly a child is
+                                            // inscribed (measured: tangency gap 0.000 at 0.6, and
+                                            // 0.09 finds no children at all). 0 = strict tangency.
+            public float DiscMinRadius;     // the visibility floor and the recursion's real
+                                            // terminator, radians. A SIZE rather than a level count
+                                            // on purpose: stop the ladder where its rings stop
+                                            // being visible. 0 = no floor.
+            public float RingShrink;        // draw-time multiplier on every disc's ρ (never in the
+                                            // packing), so tangent discs draw with a visible gap.
+                                            // 0 is read as 1.
+            public float RingFlatten;       // 0..1: how far a ring is pulled off the terrain onto
+                                            // the sphere of its OWN mean radius. 0 rides R exactly
+                                            // (maximum scalloping), 1 is a perfect circle (no bulb).
+            public float RingGirthExponent; // cross-section allometry: Girth = (ρ/ρ_ref)^e with
+                                            // ρ_ref the largest disc (COMPUTED, never authored).
+                                            // 1 is strict homothety (the smallest rings are threads);
+                                            // 0 = Girth 1 on every ring, which fails the volume-span
+                                            // gate — stated so nobody authors 0 by accident.
+            public int RingSamples;         // prisms per ring, the SAME at every scale (the
+                                            // homothety). 0 = DERIVE from the reference ring and
+                                            // this element's own §45 step (RingSamplesFor); > 0 =
+                                            // that literal count (an escape hatch + a verifier control).
+            public float GasketOctave;      // lane = floor(log2(ρ_ref/ρ) / GasketOctave), clamped to
+                                            // [0, GasketLevels−1]. THE LANE IS THE SIZE OCTAVE, NOT
+                                            // THE RECURSION LEVEL — measured, the recursion levels
+                                            // are not monotone in ρ (Mass: level-1 median 0.270
+                                            // against level-0's 0.260), so level-major truncation
+                                            // does NOT lose the smallest rings and octave-major does.
+                                            // 0 is read as 1.
+            public float DiscRelaxRate;     // the inscribe relaxation's step rate. 0 = the frozen
+                                            // 0.6. Exists ONLY so the verifier can perturb it as a
+                                            // negative control; never author it.
+            public float RingGirthFloor;    // floor on the allometric girth, so the finest octaves
+                                            // stay readable at arena distance (measured: without it
+                                            // Mass spent 41% of its prisms on 1% of the frame).
+                                            // 0 = no floor.
         }
 
         /// <summary>
@@ -757,26 +830,46 @@ namespace CosmicShore.Gameplay
             bool _seedsBuilt;
             IReadOnlyList<CriticalPoint> _saddles;
 
+            // Apollonia: the disc set, resolved ONCE per plant in EnsureSeeds (lazy, like the
+            // skeleton — the peak census and the O(n³) triple search must never run on the
+            // planting frame). One seed per disc, same index, so every per-seed array fits.
+            struct Disc { public Vector3 Axis; public float Rho; public int Level, Lane; }
+            readonly List<Disc> _discs = new();
+            int[] _discOrder;              // indices into _discs, ρ-DESCENDING (the lay order)
+            float _rhoRef;                 // the largest disc's ρ — computed, the girth reference
+            int _ringSamples;              // N, resolved once per plant
+            int _discCursor;               // walks _discOrder
+            readonly List<Sample> _ringBody = new(160);
+            readonly List<Vector3> _ringPts = new(160);
+            readonly List<Vector3> _ringDirs = new(160);
+            readonly List<float> _ringRadii = new(160);
+
             int _seedIndex, _lane, _pendingIndex, _curveCount;
 
             public int CurvesTraced => _curveCount;
             public int SeedCount { get { EnsureSeeds(); return _seeds.Count; } }
             public int DivesSpent => _divesSpent;
             public bool Skeleton => _rules.SkeletonSeeds != 0;
+            public bool Gasket => _rules.GasketLevels != 0;
 
             public Growth(Surface surface, in GrowthRules rules, int seed)
             {
                 _surface = surface;
                 _rules = rules;
                 _rng = new Rng(seed * 2654435761u.GetHashCode() ^ 0x5bf03635);
-                if (!Skeleton) EnsureSeeds();
+                // The two species that read the surface's critical points build their seeds
+                // LAZILY (first TryNext): the census is ~0.4 M samples and `new Growth` runs
+                // on the frame a plant is planted.
+                if (!Skeleton && !Gasket) EnsureSeeds();
             }
 
             void EnsureSeeds()
             {
                 if (_seedsBuilt) return;
                 _seedsBuilt = true;
-                if (Skeleton) BuildSkeletonSeeds(); else BuildSeeds();
+                if (Gasket) BuildGasketSeeds();
+                else if (Skeleton) BuildSkeletonSeeds();
+                else BuildSeeds();
                 int n = Mathf.Max(1, _seeds.Count);
                 _lanePosition = new Vector3[n];
                 _laneTangent = new Vector3[n];
@@ -789,10 +882,257 @@ namespace CosmicShore.Gameplay
                 // (§44.5's defect for a new consumer). Same idiom BuildSeeds uses for `want`.
                 _diveOwed = new bool[n];
                 _divesSpent = 0;
+                if (Gasket)
+                {
+                    // The gasket strides over its LEVEL-0 discs in LAY order: a stride over all
+                    // ~90 discs would put most dives on rings too small to release a readable
+                    // spiral, and the largest rings are laid first, so the heart connection is
+                    // never the thing the budget cuts.
+                    var top = new List<int>(_discs.Count);
+                    for (int i = 0; i < _discOrder.Length; i++)
+                        if (_discs[_discOrder[i]].Level == 0) top.Add(_discOrder[i]);
+                    _diveQuota = Mathf.Min(Mathf.Max(0, _rules.DiveCount), top.Count);
+                    if (_rules.DiveStepFraction > 0f && _diveQuota > 0)
+                        for (int d = 0; d < _diveQuota; d++)
+                            _diveOwed[top[(int)((long)d * top.Count / _diveQuota)]] = true;
+                    return;
+                }
                 _diveQuota = Mathf.Min(Mathf.Max(0, _rules.DiveCount), _seeds.Count);
                 if (_rules.DiveStepFraction > 0f && _diveQuota > 0)
                     for (int d = 0; d < _diveQuota; d++)
                         _diveOwed[(int)((long)d * _seeds.Count / _diveQuota)] = true;
+            }
+
+            // ── APOLLONIA ─────────────────────────────────────────────────────────────
+
+            const int GasketRelaxSteps = 24;
+            const float GasketOverlapEps = 1e-4f;
+            const int RingMinSamples = 16;      // below this a ring stops reading as a ring
+            const int RingMaxSamples = 128;     // a cost ceiling, never reached at shipped steps
+            const float GasketRelaxRateDefault = 0.6f;
+
+            /// <summary>The gasket's seeds: one per disc, in disc-index order, plus the lay
+            /// order (ρ descending), the girth reference and the ring sample count.
+            /// No Rng draw anywhere in this species.</summary>
+            void BuildGasketSeeds()
+            {
+                BuildGasket();
+                _rhoRef = 1e-6f;
+                for (int i = 0; i < _discs.Count; i++) _rhoRef = Mathf.Max(_rhoRef, _discs[i].Rho);
+
+                // LAY ORDER: ρ DESCENDING, ties broken by (Level, index) so the key is TOTAL and
+                // the result is the same under any sort algorithm. This is what makes "a
+                // budget-stopped plant loses the smallest rings" exactly true.
+                _discOrder = new int[_discs.Count];
+                for (int i = 0; i < _discs.Count; i++) _discOrder[i] = i;
+                var discs = _discs;
+                Array.Sort(_discOrder, (a, b) =>
+                {
+                    int c = discs[b].Rho.CompareTo(discs[a].Rho);
+                    if (c != 0) return c;
+                    c = discs[a].Level.CompareTo(discs[b].Level);
+                    return c != 0 ? c : a.CompareTo(b);
+                });
+
+                int lanes = Mathf.Max(1, _rules.GasketLevels);
+                float oct = _rules.GasketOctave > 0f ? _rules.GasketOctave : 1f;
+                for (int i = 0; i < _discs.Count; i++)
+                {
+                    var d = _discs[i];
+                    float o = Mathf.Log(_rhoRef / Mathf.Max(d.Rho, 1e-9f), 2f) / oct;
+                    d.Lane = Mathf.Clamp(Mathf.FloorToInt(o), 0, lanes - 1);
+                    _discs[i] = d;
+                    Spherical(d.Axis, out float th, out float ph);
+                    BuildFrame(_surface, th, ph, ref _frame);
+                    _seeds.Add(_frame.Position);
+                }
+                _ringSamples = RingSamplesFor();
+            }
+
+            /// <summary>Prisms per ring. The element's §45 step IS the prism's length on this
+            /// family, so it sets how many strokes a ring is drawn with — measured against the
+            /// REFERENCE ring so every ring of the plant shares one N, which is the homothety
+            /// the species is named for. Space's long blades give a coarse polygon, Mass's
+            /// bricks a fine one: the element's long axis spent as ring COARSENESS.</summary>
+            int RingSamplesFor()
+            {
+                if (_rules.RingSamples > 0) return Mathf.Clamp(_rules.RingSamples, 3, RingMaxSamples);
+                float circ = 2f * Mathf.PI * Mathf.Sin(_rhoRef) * _surface.MeanRadius;
+                int n = Mathf.RoundToInt(circ / Mathf.Max(1e-6f, _rules.StepSize));
+                return Mathf.Clamp(n, RingMinSamples, RingMaxSamples);
+            }
+
+            /// <summary>Level 0 from the surface's peaks, then the breadth-first Apollonian
+            /// step. Deterministic: every ordering is a TOTAL key, never a sort's stability.</summary>
+            void BuildGasket()
+            {
+                _discs.Clear();
+                var peaks = _surface.Peaks();
+                int want = _rules.DiscSeeds > 0 ? Mathf.Min(_rules.DiscSeeds, peaks.Count) : peaks.Count;
+                var axes = new List<Vector3>(want);
+                for (int i = 0; i < want; i++)
+                    axes.Add(new Vector3((float)peaks[i].DirX, (float)peaks[i].DirY, (float)peaks[i].DirZ).normalized);
+                for (int i = 0; i < axes.Count; i++)
+                {
+                    float nn = Mathf.PI / 3f;                          // lone-disc fallback
+                    for (int j = 0; j < axes.Count; j++)
+                        if (j != i) nn = Mathf.Min(nn, Angle(axes[i], axes[j]));
+                    _discs.Add(new Disc { Axis = axes[i], Rho = 0.5f * nn, Level = 0 });
+                }
+
+                int start = 0, count = _discs.Count;
+                int levels = Mathf.Max(1, _rules.GasketLevels);
+                var cand = new List<Disc>(256);
+                var candOrder = new List<int>(256);
+                for (int lvl = 1; lvl < levels; lvl++)
+                {
+                    cand.Clear();
+                    int n = count;
+                    for (int a = 0; a < n; a++)
+                    for (int b = a + 1; b < n; b++)
+                    {
+                        if (!Adjacent(a, b)) continue;
+                        for (int c = b + 1; c < n; c++)
+                        {
+                            // Past level 1 a triple must involve a disc created LAST level, or
+                            // the same triples are re-found every level for nothing.
+                            if (lvl > 1 && a < start && b < start && c < start) continue;
+                            if (!Adjacent(a, c) || !Adjacent(b, c)) continue;
+                            if (!Inscribe(a, b, c, out Vector3 x, out float rho)) continue;
+                            if (rho < _rules.DiscMinRadius) continue;
+                            cand.Add(new Disc { Axis = x, Rho = rho, Level = lvl });
+                        }
+                    }
+                    // Biggest gap first; ties fall through to the (a,b,c) enumeration index —
+                    // a TOTAL key, because the bulb's symmetry puts children in orbits that
+                    // share a ρ to the last bit, and .NET's List sort is not stable.
+                    candOrder.Clear();
+                    for (int i = 0; i < cand.Count; i++) candOrder.Add(i);
+                    var cl = cand;
+                    candOrder.Sort((p, q) =>
+                    {
+                        int c = cl[q].Rho.CompareTo(cl[p].Rho);
+                        return c != 0 ? c : p.CompareTo(q);
+                    });
+                    start = count;
+                    for (int i = 0; i < candOrder.Count; i++)
+                    {
+                        var x = cand[candOrder[i]];
+                        bool clash = false;
+                        for (int j = 0; j < count; j++)
+                            if (Angle(x.Axis, _discs[j].Axis) < x.Rho + _discs[j].Rho - GasketOverlapEps)
+                            { clash = true; break; }
+                        if (clash) continue;
+                        _discs.Add(x); count++;
+                    }
+                }
+            }
+
+            bool Adjacent(int a, int b)
+                => Angle(_discs[a].Axis, _discs[b].Axis) <= _discs[a].Rho + _discs[b].Rho + _rules.DiscPad;
+
+            static float Angle(Vector3 a, Vector3 b)
+                => Mathf.Acos(Mathf.Clamp(Vector3.Dot(a, b), -1f, 1f));
+
+            /// <summary>The disc tangent internally to the curvilinear triangle (a,b,c): a
+            /// fixed-iteration relaxation that EQUALISES f_i(x) = angle(x, d_i) − ρ_i. No Rng;
+            /// measured across all four bakes it converges to a median tangency gap of 0.000.
+            /// The three accumulations are summed in the order (a, b, c) and x is normalised
+            /// once per iteration — both transcription-load-bearing.</summary>
+            bool Inscribe(int ia, int ib, int ic, out Vector3 x, out float rho)
+            {
+                x = _discs[ia].Axis + _discs[ib].Axis + _discs[ic].Axis;
+                rho = 0f;
+                if (x.sqrMagnitude < 1e-12f) return false;
+                x = x.normalized;
+                float rate = _rules.DiscRelaxRate > 0f ? _rules.DiscRelaxRate : GasketRelaxRateDefault;
+                for (int it = 0; it < GasketRelaxSteps; it++)
+                {
+                    float fa = Angle(x, _discs[ia].Axis) - _discs[ia].Rho;
+                    float fb = Angle(x, _discs[ib].Axis) - _discs[ib].Rho;
+                    float fc = Angle(x, _discs[ic].Axis) - _discs[ic].Rho;
+                    float target = (fa + fb + fc) / 3f;
+                    Vector3 step = Vector3.zero;
+                    step += TangentToward(x, _discs[ia].Axis) * -(target - fa);   // moving AWAY from d_i raises f_i
+                    step += TangentToward(x, _discs[ib].Axis) * -(target - fb);
+                    step += TangentToward(x, _discs[ic].Axis) * -(target - fc);
+                    x = x + step * rate;
+                    if (x.sqrMagnitude < 1e-12f) return false;
+                    x = x.normalized;
+                }
+                rho = Mathf.Min(Angle(x, _discs[ia].Axis) - _discs[ia].Rho,
+                      Mathf.Min(Angle(x, _discs[ib].Axis) - _discs[ib].Rho,
+                                Angle(x, _discs[ic].Axis) - _discs[ic].Rho));
+                return true;
+            }
+
+            // the unit tangent at x pointing toward d, or zero when degenerate
+            static Vector3 TangentToward(Vector3 x, Vector3 d)
+            {
+                Vector3 g = d - x * Vector3.Dot(d, x);
+                return g.sqrMagnitude > 1e-14f ? g.normalized : Vector3.zero;
+            }
+
+            /// <summary>The ring of one disc, closed form: `samples` directions on the small
+            /// circle of angular radius ρ about the axis, each lifted onto R(θ,φ) and pulled
+            /// `flatten` of the way onto the ring's own mean radius. CLOSED — the first point
+            /// is appended again, so the seam prism is emitted.</summary>
+            void RingPoints(Vector3 d, float rho, int samples, float flatten, List<Vector3> into)
+            {
+                Vector3 e1 = Vector3.Cross(d, Vector3.forward);
+                if (e1.sqrMagnitude < 1e-10f) e1 = Vector3.Cross(d, Vector3.right);
+                e1 = e1.normalized;
+                Vector3 e2 = Vector3.Cross(d, e1);
+
+                float cr = Mathf.Cos(rho), sr = Mathf.Sin(rho);
+                _ringDirs.Clear(); _ringRadii.Clear();
+                float sum = 0f;
+                for (int k = 0; k < samples; k++)
+                {
+                    float a = 2f * Mathf.PI * k / samples;
+                    Vector3 u = (d * cr + (e1 * Mathf.Cos(a) + e2 * Mathf.Sin(a)) * sr).normalized;
+                    Spherical(u, out float th, out float ph);
+                    float r = _surface.Sample(th, ph);
+                    _ringDirs.Add(u); _ringRadii.Add(r); sum += r;
+                }
+                float mean = sum / samples;
+                float f = Mathf.Clamp01(flatten);
+                into.Clear();
+                for (int k = 0; k < samples; k++)
+                    into.Add(_ringDirs[k] * (_ringRadii[k] * (1f - f) + mean * f));
+                into.Add(into[0]);
+            }
+
+            /// <summary>One ring per call, in lay order. The lane IS the size octave.</summary>
+            bool TraceNextRing()
+            {
+                while (_discCursor < _discOrder.Length)
+                {
+                    int idx = _discOrder[_discCursor++];
+                    var disc = _discs[idx];
+                    _lane = disc.Lane;
+                    float shrink = _rules.RingShrink > 0f ? _rules.RingShrink : 1f;
+                    RingPoints(disc.Axis, disc.Rho * shrink, _ringSamples, _rules.RingFlatten, _ringPts);
+
+                    _ringBody.Clear();
+                    for (int i = 0; i < _ringPts.Count; i++)
+                        _ringBody.Add(new Sample { Position = _ringPts[i], Normal = Vector3.zero });
+
+                    // Allometric girth off the disc's own ρ — a closed figure has no run length
+                    // to taper on — floored so the finest octaves stay readable at range.
+                    float girth = _rules.RingGirthExponent > 0f
+                        ? Mathf.Pow(disc.Rho / _rhoRef, _rules.RingGirthExponent) : 1f;
+                    girth = Mathf.Max(girth, Mathf.Clamp01(_rules.RingGirthFloor));
+
+                    _curveCount++;
+                    // The dive leaves from the ring's SEAM (its last segment), deterministic.
+                    // DiveDescent must be authored 0: a closed ring starts and ends at the same
+                    // radius, so any positive value rejects every dive.
+                    Emit(_ringBody, TryDive(idx, _ringBody), girth);
+                    _pendingIndex = 0;
+                    return true;
+                }
+                return false;
             }
 
             /// <summary>
@@ -867,6 +1207,7 @@ namespace CosmicShore.Gameplay
 
             bool TraceNextCurve()
             {
+                if (Gasket) return TraceNextRing();
                 int lanes = Mathf.Max(1, _rules.LanesPerSeed);
                 int guard = 0;
                 while (_lane < lanes && guard++ < 4096)
@@ -1088,11 +1429,15 @@ namespace CosmicShore.Gameplay
                         if (haveField)
                         {
                             if (IsBipolar(field) && Vector3.Dot(fd, ahead) < 0f) fd = -fd;
-                            want = Vector3.Lerp(ahead, fd, Mathf.Clamp01(_rules.FieldMix));
+                            // A separatrix is PURE gradient flow by construction, not by the
+                            // authored mix happening to be 1 (measured: the "inert" columns
+                            // moved the Watershed until this was made structural).
+                            want = Skeleton ? fd : Vector3.Lerp(ahead, fd, Mathf.Clamp01(_rules.FieldMix));
                         }
                         else want = ahead;
                         if (want.sqrMagnitude < 1e-16f) break;
-                        want = Vector3.Lerp(want.normalized, t, Mathf.Clamp01(_rules.Momentum));
+                        want = Skeleton ? want.normalized
+                                        : Vector3.Lerp(want.normalized, t, Mathf.Clamp01(_rules.Momentum));
                         want -= n * Vector3.Dot(want, n);
                         if (want.sqrMagnitude < 1e-16f) break;
                         want = want.normalized;
@@ -1138,7 +1483,7 @@ namespace CosmicShore.Gameplay
                 v -= n * Vector3.Dot(v, n);
                 if (v.sqrMagnitude < 1e-16f) { dir = Vector3.zero; return false; }
                 v = v.normalized;
-                if (Mathf.Abs(_rules.SwirlDegrees) > 0.01f)
+                if (!Skeleton && Mathf.Abs(_rules.SwirlDegrees) > 0.01f)   // a separatrix has no swirl
                 {
                     float ang = _rules.SwirlDegrees * Mathf.Deg2Rad;
                     float c = Mathf.Cos(ang), s = Mathf.Sin(ang);
@@ -1187,7 +1532,7 @@ namespace CosmicShore.Gameplay
             /// only (a diving run is not promoted to a fatter class); the dive tapers on top
             /// of it, linearly in log r so the taper is scale-invariant like the spiral.
             /// </summary>
-            void Emit(List<Sample> points, List<Vector3> dive)
+            void Emit(List<Sample> points, List<Vector3> dive, float girthOverride = 0f)
             {
                 _pending.Clear();
                 _pendingIndex = 0;
@@ -1211,7 +1556,9 @@ namespace CosmicShore.Gameplay
                     ? Mathf.Max(2f, _rules.GirthReference)
                     : Mathf.Max(2f, _rules.MaxSteps * 0.5f);
                 float u = Mathf.Clamp01((points.Count - 1) / reference);
-                float girth = taper + (1f - taper) * u;
+                // A ring's girth is a function of its ρ, not of a run length; both walking
+                // species pass nothing and take the identical expression.
+                float girth = girthOverride > 0f ? girthOverride : taper + (1f - taper) * u;
                 // The twist accumulates along the RUN, so a long clean curve reads as a helix
                 // and a short scrap as a single tilted plate. Converted here, once per curve,
                 // rather than per prism.
