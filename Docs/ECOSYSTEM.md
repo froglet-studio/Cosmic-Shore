@@ -8532,18 +8532,21 @@ together — the §34.8 rule, met from the other side.
 ### 48.6 Budget, and the CHARGE plant
 
 **Every element grows on its OWN tessellation** (§48.10), so there is no single budget: the
-plates, the spacing, the prism count and the plant radius are all per element.
+plates, the spacing, the prism count, the MEMBRANE and the plant radius are all per element
+(§48.11 is the pass that added the membrane to that list).
 
 | | TIME (anchor) | MASS | SPACE | CHARGE |
 |---|---|---|---|---|
 | Orbits × 6 = prisms | 60 × 6 = **360** | 36 × 6 = **216** | 48 × 6 = **288** | 30 × 6 = **180** |
-| Mean site spacing | 6.141 | 8.233 | 6.841 | 8.694 |
-| Plate | `4.668 × 2.762 × 0.706` | `6.462 × 4.136 × 1.325` | `6.097 × 1.251 × 1.194` | `2.075 × 2.075 × 1.037` |
-| Volume / prism | **9.11** | **35.42** (3.89×) | **9.11** (1.00×) | **4.47** (0.49×) |
-| Volume / plant | 3,279 | 7,650 | 2,623 | 804 |
-| Plant radius | 55.6 | 54.2 | 55.4 | 54.2 |
-| Membrane covered | 30.0% | 37.3% | 14.2% | 5.0% plates / **22.5% octahedra** |
-| Heart | 3.21 | **3.39** | 2.66 | **2.05** |
+| Membrane scale | 1.0 | 1.0 | **2.0** | 1.0 |
+| Room per site (mean spacing) | 6.141 | 8.233 | **13.682** | 8.694 |
+| Plate | `4.668 × 2.762 × 0.706` | `5.606 × 4.672 × 2.782` | `12.978 × 1.527 × 0.460` | `2.075 × 2.075 × 1.037` |
+| Plate, normalised | 1 : 0.59 : 0.15 | **1 : 0.83 : 0.50** | **1 : 0.12 : 0.04** | 1 : 1.00 : 0.50 |
+| Volume / prism | **9.11** | **72.87** (8.00×) | **9.11** (1.00×) | **4.47** (0.49×) |
+| Volume / plant | 3,279 | 15,739 | 2,623 | 804 |
+| Plant span (2 × radius) | 111 | 108 | **222** | 108 |
+| Membrane covered | 30.0% | 36.5% | 9.2% | 5.0% plates / **22.5% octahedra** |
+| Heart | 3.209 | **3.372** | **3.379** | **2.051** |
 
 | | |
 |---|---|
@@ -8555,14 +8558,15 @@ octahedron reaching `1.5 × leafSize` — so a Charge plant is a different geome
 from its three siblings, and what has to look good is its SHIELDED form. See §48.9 for the
 two-part fit that replaced the uniform shrink this section first shipped.
 
-Its heart is correspondingly smaller than its siblings' (2.088 against 3.946), because the
-fleet's heart law sizes a flora from its leaf footprint and its budget and therefore reads
-the shrunken leaf as a smaller plant. That is **consistent with every other shield-fitted
+Its heart is correspondingly smaller than its siblings' (**2.051** against 3.209–3.379),
+because the fleet's heart law sizes a flora from its body diameter and therefore reads the
+shrunken leaf as a smaller plant. That is **consistent with every other shield-fitted
 species in the band** — SchwarzP Charge sits at the band's floor for the same reason — so it
 is recorded rather than special-cased. The anchor does not move: adding this species leaves
 `K = 0.36599` and the band `1.16 → 4.60` byte-for-byte unchanged, which is the only safe
-case for touching that tool at all. MASS, whose plate is 3.89× the anchor's volume, reads as
-a bigger plant and lands at **4.197** — still inside the band's ceiling.
+case for touching that tool at all. SPACE's heart moved 2.661 → **3.379** when §48.11
+doubled its membrane, which is the heart law working exactly as written: the plant really
+is twice as big, and `K · d^0.5` pays it √2 of a heart for it.
 
 ### 48.7 Deployment, stated plainly because the claim rots
 
@@ -8782,10 +8786,11 @@ measurement's noise is a tolerance that fails the next measurement.*
 **The cost, stated plainly.** The membrane no longer laps, so a Borromean plant reads as a
 tiling of separated plates rather than as a skin — §48.4's look call is spent. TIME's plant
 volume falls **7,499 → 3,279** (0.44×) and its plates are 0.76 of the site spacing against
-the 1.15 that call shipped. SPACE, which spends its area on length, now covers 14.2% of the
-membrane and reads as a **frame of struts** rather than a skin of plates — a genuinely
-different plant from the long flat blade the second pass shipped, and the honest consequence
-of holding its volume at the anchor's while its footprint is bounded by its neighbours.
+the 1.15 that call shipped. SPACE, which spends its area on length, reads as a **frame of struts**
+rather than a skin of plates — a genuinely different plant from the long flat blade the
+second pass shipped, and the honest consequence of holding its volume at the anchor's while
+its footprint is bounded by its neighbours. (Its numbers moved again in §48.11; the ones in
+this paragraph are the third pass's.)
 CHARGE's bare plates cover 5.0%, which is the same number as before; its octahedra, which
 are what a Charge plant actually wears (`Flora.ResolveShieldPeriod` floors its cadence at
 1 s), cover 22.5%.
@@ -8794,5 +8799,85 @@ The verifier runs every check four times and carries **19 negative controls**, a
 including the two that describe this pass rather than the geometry: *every element on ONE
 shared tessellation* (the shape this replaced) and *the biggest body put on the finest
 tessellation* (the ordering rule, broken by swapping two tables that each still clear).
+
+**Open:** still nothing has been run in the Unity editor.
+
+### 48.11 The fourth pass: SPACE grows the MEMBRANE, MASS goes chunky
+
+A look call on the third pass's four plants: *Charge and Time are perfect. Space could be
+scaled up such that the whole structure occupies more overall size while its prisms are
+scaled in the skinny directions to keep their cumulative volume down — make the structures
+even longer and skinnier and the space greater so the two furthest prisms are further apart.
+Mass could get even more chunkier; we don't want size to be 1,1,1 but it should be closer
+than it is.* Charge's and Time's tables come back **byte-for-byte unchanged**, which is what
+a per-element tessellation is for.
+
+**AN ELEMENT CAN BUY ROOM BY GROWING THE MEMBRANE, AND THAT IS THE ONE MOVE THAT COSTS THE
+GUARANTEE NOTHING.** §48.10 stated the ladder in ORBIT COUNT — *the coarser the
+tessellation, the bigger the body it carries* — and that was only ever a proxy. What a plate
+is actually bounded by is ROOM PER SITE, and a site's room is the membrane's area divided
+among the sites, so an element buys it two ways: by cutting the membrane into fewer pieces,
+or by growing the membrane. `SURFACE_SCALE` is the second, and it is a **SIMILARITY** —
+scaling every site and every plate by one `k` maps a clearing arrangement onto a clearing
+arrangement exactly, so the no-overlap proof survives it with nothing to re-derive. The
+ladder is now stated in room per site, and SPACE has a FINER cut than Mass or Charge (48
+orbits against 36 and 30) while having the most room of the four (13.68 against 8.23 and
+8.69) — which is exactly the case the orbit-count wording could not express.
+
+**The volume target then does the rest by itself, and this is why the ask was one number.**
+Space's contract is ASPECT AT THE ANCHOR'S VOLUME. On a fixed membrane that can only be
+bought by making the plate narrower; on a membrane `k` times as big, the fit hands it a `k`
+times bigger footprint and the volume target drives its thickness down by `k²`. Doubling the
+membrane therefore delivered every half of the ask from one dial: the plant spans **222
+against 111** (the two furthest prisms twice as far apart), the plate goes `6.098 × 1.251 ×
+1.194` → `12.978 × 1.527 × 0.460` (longer, and **2.6× thinner**), and the plant's total
+volume is **unchanged at 2,623**. Its aspect went 4.88:1 → **8.50:1** on top, because the
+ask said *longer and skinnier* and a similarity alone changes neither.
+
+**MASS is CHUNKY, and chunky is a claim about SHAPE that only THICKNESS can pay for.** The
+footprint is FITTED, so the only axis left to move a plate toward a cube is the one that
+costs no clearance — and that axis is the volume. Mass goes `1.56:1` → `1.20:1` in plan and
+`3.89×` → `8.00×` Time's plate volume, which lands its three axes on **1 : 0.83 : 0.50**
+against the third pass's 1 : 0.64 : 0.21. *It stops short of a cube on purpose* — the ask
+said so, and a cube is not a plate. Its plant volume doubles, 7,650 → **15,739**, which is
+the price of the shape and is stated rather than hidden: it is now the heaviest of the four
+by a factor of six, and comparable to a Rampage cactus (12,000).
+
+**CHARGE is the reason the chunkiness check is scoped, and the scope is the finding.** Its
+plate is `1 : 1.00 : 0.50` — squarer than Mass's — so a naive "Mass is the chunkiest plate"
+check fails on the shipped tables. It is not a counter-example: Charge's plate is a square
+slab *because the body it was fitted against is the octahedron three times it* (§48.9), so
+"how cube-like is the plate" is not a statement about what a Charge plant looks like. The
+check compares the three elements whose body IS their plate, and says so. *A check that has
+to be scoped is usually telling you something true about the thing you scoped out.*
+
+**One structural change:** the heart seat moved from a shared class constant into the
+per-element `SurfaceTable`. An element that grows the membrane grows the alcove its crystal
+sits in by the same factor, so one number would have been a floor for three elements and a
+lie about the fourth. Its consumers — the verifier's seat check and nothing in the runtime —
+now read it per element. `SurfaceArea` stays a class constant and is re-documented as the
+membrane's area **at the anchor's scale**.
+
+**Two knock-on numbers, both authored rather than hand-written:** Space's `OffspringSpread`
+goes 83 → **166** (it tracks the plant radius) and its heart 2.661 → **3.379** (the heart law
+is `K · bodyDiameter^0.5`, and the body really did double). Mass's heart barely moves,
+3.389 → 3.372, because its body diameter did not. The band `1.16 → 4.60` and `K = 0.36599`
+are untouched.
+
+**The measured cost, stated plainly.** Space's plate is **0.46 thick**, under
+`PrismScaleAnimator`'s serialized `minScale` of 0.5 — it survives only because
+`Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first, which is the same rope SchwarzP
+Charge's 0.39 hangs from (§35). Space also now covers **9.2% of its membrane** against the
+third pass's 14.2%, and its footprint is 0.95 of its site spacing against Time's 0.76 — it is
+a sparse frame of long struts, which is the plant the ask describes and is a long way from
+the skin §48.4 approved. And Mass at 15,739 volume per plant makes the element spread across
+one species **19.6×** (804 → 15,739), so any cell that rolls all four elements is pricing an
+average rather than a plant.
+
+The verifier now runs **22 negative controls**, all firing — the three new ones describe this
+pass rather than the geometry: *Mass left as a flat lozenge at the same volume*, *Mass taken
+all the way to a cube*, and *Space shrunk back onto the anchor-sized membrane* (a full
+similarity, so it still clears, is still symmetric and still spends no extra volume — the only
+thing it loses is the reach, which is the whole element).
 
 **Open:** still nothing has been run in the Unity editor.

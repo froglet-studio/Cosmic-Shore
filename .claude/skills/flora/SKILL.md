@@ -154,11 +154,21 @@ Three facts follow, all measured on the Borromean surface and none of them speci
   footprint and bought **7.7×** the volume. **This is the axis to spend**, and it is what
   lets the element contract in §5 survive the zero-overlap rule.
 * **Coverage is a property of the TILING, not of the COUNT.** Every plate is fitted against
-  its own neighbours, so a coarser tessellation covers the same surface with FEWER, BIGGER
+  its own neighbours, so a looser tessellation covers the same surface with FEWER, BIGGER
   pieces (the fitted long axis stayed 0.73–0.93 of the mean site spacing from 24 to 60
-  orbits). So the site count is a free choice — and the one rule on it is **the coarser the
-  tessellation, the bigger the body it carries**, which is why each Borromean element tiles
-  at its own spacing and Charge, whose real body is its SHIELD, takes the coarsest.
+  orbits). So the site count is a free choice — and the one rule on it is **the more ROOM PER
+  SITE, the bigger the body it carries**, which is why each Borromean element tiles at its own
+  spacing.
+* **An element buys room TWO ways: by cutting the surface into fewer pieces, or by growing
+  the SURFACE.** State the ladder in ROOM PER SITE, never in site count — the two are the
+  same thing only while every element shares one surface, and the moment one does not, a
+  count-based rule reads backwards (Borromean SPACE has a FINER cut than Mass or Charge and
+  the most room of the four). Growing the surface is a **SIMILARITY**, the one transform that
+  maps a clearing arrangement onto a clearing arrangement exactly, so it costs the no-overlap
+  proof nothing to re-derive — and if the element's contract holds its plate's VOLUME, a `k×`
+  surface pays for itself: the fit hands it a `k×` footprint and the volume target drives the
+  thickness down by `k²`. Same plant volume, same prism count, `k×` the span, `k²` thinner
+  struts, from ONE dial.
 * **A bisection converges onto its own boundary**, so a verifier must prove the PROPERTY and
   not the solver's stopping condition: fit to a 3% margin, assert a 2% gap and that 10%
   bigger collides. Asserting the margin itself asserts the fit's tolerance, and rounding the
@@ -168,7 +178,7 @@ The lap is therefore **retired as a dial**: it was a look call made by rendering
 (at 1.40× the site spacing the Borromean plates lapped 61% and read as one smooth blob; at
 0.85 they lapped not at all and read as perforated), and removing it costs real coverage —
 that plant's anchor volume fell 7,499 → 3,279 and its Space element now reads as a frame of
-struts rather than a skin. What survives is the ASPECT, which is still a look call, and the
+struts rather than a skin (9.2% of its membrane covered). What survives is the ASPECT, which is still a look call, and the
 rule for making one: **judge a candidate at the size it will be judged**
 (`Docs/PALETTE.md §4.3`).
 
@@ -186,9 +196,22 @@ plant" is one comparison rather than four independent fits:
 | element | says | how |
 |---|---|---|
 | **TIME** | the optimum | the plate tuned by rendering it. Everything else is measured against this. |
-| **MASS** | more VOLUME | wider and much thicker. Borromean: **3.89×** the anchor's volume. |
-| **SPACE** | more ASPECT | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size. Borromean: 4.88:1 against the anchor's 1.69:1, volume 1.00×. |
+| **MASS** | more VOLUME, and the CHUNKIEST plate | nearly square in plan and THICK. Borromean: **8.00×** the anchor's volume, axes **1 : 0.83 : 0.50** against the anchor's 1 : 0.59 : 0.15. |
+| **SPACE** | more ASPECT, and more ROOM | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size — and, where the species can scale its own surface, a bigger surface too. Borromean: **2× the membrane**, 8.50:1 against the anchor's 1.69:1, volume 1.00×, span 222 against 111. |
 | **CHARGE** | armour | FITTED, not authored — see below. |
+
+**Chunky is a claim about SHAPE and only THICKNESS can pay for it.** With the footprint
+FITTED (§4c), the one axis left to move a plate toward a cube is the free one — and the free
+axis IS the volume, so "make Mass chunkier" and "make Mass heavier" are the same edit. Stop
+short of a cube: a cube is not a plate, and the check that says so is worth writing down
+(Borromean asserts `min/max < 0.9`).
+
+**A chunkiness rule is asserted over the plates worn AS PLATES, and the exclusion is the
+finding.** Borromean CHARGE's plate is `1 : 1.00 : 0.50` — squarer than Mass's — and that is
+not a counter-example: its plate is a square slab *because* the body it was fitted against is
+the octahedron three times it, so how cube-like the plate is says nothing about what a Charge
+plant looks like. *A check that has to be scoped is usually telling you something true about
+the thing you scoped out.*
 
 **CHARGE is a different geometry problem and must be fitted, never scaled by eye.** Charge
 armours its mass by law (`Flora.ResolveShieldPeriod`), and a shield swaps the plate for its

@@ -97,13 +97,14 @@ def read_table():
         m = re.search(rf'SurfaceTable {e} = new SurfaceTable\(\s*'
                       rf'{e}Positions, {e}Rotations, {e}Parents,\s*'
                       rf'new Vector3\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\), '
-                      rf'([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\);', t)
+                      rf'([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f,\s*([-\d.]+)f\);', t)
         if not m: sys.exit(f'the {e} SurfaceTable is missing from BorromeanSurfaceData.cs, '
                            f'or is not wired to its own {e}Positions/{e}Rotations/{e}Parents')
         g = [float(x) for x in m.groups()]
         b = re.search(rf'{e}Positions =\s*\{{\n(.*?)\n\s*\}};', t, re.S)
         if not b: sys.exit(f'{e}Positions not found in BorromeanSurfaceData.cs')
-        return dict(leaf=tuple(g[:3]), radius=g[3], sites=len(re.findall(r'new\(', b.group(1))))
+        return dict(leaf=tuple(g[:3]), radius=g[3], seat=g[6],
+                    sites=len(re.findall(r'new\(', b.group(1))))
     els = {e: element(e) for e, _ in ELEMENTS}
     return dict(orbit=const('OrbitSize'), max_sites=const('MaxSiteCount'),
                 anchor=els['Time'], elements=els)

@@ -24,10 +24,12 @@ FOUR TABLES, ONE PER ELEMENT
 ----------------------------
 Each element grows on its own tessellation, because a plate that does not overlap its
 neighbours is bounded by how far apart the neighbours are: an element whose body is bigger
-takes a COARSER tiling rather than a shrunken plate.  Every check below therefore runs
-four times, and two more run ACROSS the four - the element contract, and the ordering that
-makes the design a rule rather than four coincidences: the coarser the tessellation, the
-bigger the body it carries.
+takes MORE ROOM PER SITE rather than a shrunken plate.  Room is bought two ways - by cutting
+the membrane into fewer pieces, or by growing the MEMBRANE - and SPACE, whose identity is
+room, does the second.  Every check below therefore runs four times, and two more run ACROSS
+the four: the element contract (MASS the chunkiest plate, SPACE the furthest span at the
+anchor's volume, CHARGE fitted to its shield), and the ordering that makes the design a rule
+rather than four coincidences - the more room per site, the bigger the body it carries.
 
 WHAT IS PROVED, AND WHAT IS NOT
 -------------------------------
@@ -119,15 +121,17 @@ def read_table(path=TABLE):
         # fails to parse rather than verifying the wrong points.
         m = re.search(rf'SurfaceTable {e} = new SurfaceTable\(\s*'
                       rf'{e}Positions, {e}Rotations, {e}Parents,\s*'
-                      rf'new Vector3\({NUM}f, {NUM}f, {NUM}f\), {NUM}f, {NUM}f, {NUM}f\);', t)
+                      rf'new Vector3\({NUM}f, {NUM}f, {NUM}f\), {NUM}f, {NUM}f, {NUM}f,\s*'
+                      rf'{NUM}f\);', t)
         if not m: sys.exit(f'FAIL: the {e} SurfaceTable is missing, or is not wired to its '
                            f'own {e}Positions / {e}Rotations / {e}Parents')
         g = [float(x) for x in m.groups()]
         tables[e] = dict(name=e, leaf=np.array(g[:3]), radius=g[3], spacing=g[4], bond=g[5],
+                         seat=g[6],
                          P=arr(f'{e}Positions', 3), Q=arr(f'{e}Rotations', 4),
                          parents=ints(f'{e}Parents'))
     return dict(orbit=ci('OrbitSize'), max_sites=ci('MaxSiteCount'),
-                area=cf('SurfaceArea'), seat=cf('HeartSeatRadius'), tables=tables)
+                area=cf('SurfaceArea'), tables=tables)
 
 
 def frames(Q):
@@ -287,9 +291,12 @@ def verify_element(d, t, G, c):
          f'{nn.mean():.3f} vs {t["spacing"]:.3f}')
     c.ok(nn.min() > 0.4 * nn.mean(), f'{name}: no two sites collapse onto one another',
          f'min/mean {nn.min()/nn.mean():.3f}')
-    c.ok(np.linalg.norm(P, axis=1).min() >= d['seat'] - 1e-3,
-         f'{name}: every site is clear of the heart seat',
-         f'closest {np.linalg.norm(P,axis=1).min():.2f} vs seat {d["seat"]:.2f}')
+    # The seat is PER ELEMENT: an element that grows the membrane grows the alcove its
+    # crystal sits in by the same factor, so one shared constant would be a floor for three
+    # elements and a lie about the fourth.
+    c.ok(np.linalg.norm(P, axis=1).min() >= t['seat'] - 1e-3,
+         f'{name}: every site is clear of its OWN heart seat',
+         f'closest {np.linalg.norm(P,axis=1).min():.2f} vs seat {t["seat"]:.2f}')
 
     print('[6] NO PRISM INTERPENETRATES ANOTHER - and the plate is the LARGEST that does not')
     # Measured through the body this element actually SHOWS: the plate for three of them,
@@ -329,6 +336,31 @@ def verify_contract(d, c):
     c.ok(abs(T['Charge']['leaf'][0] - T['Charge']['leaf'][1]) < 1e-4,
          'its footprint is SQUARE (length along the grain is paid for twice)',
          f'{T["Charge"]["leaf"][0]:.3f} x {T["Charge"]["leaf"][1]:.3f}')
+    # MASS is the element that is CHUNKY, which is a claim about the plate's SHAPE and not
+    # about its volume - the thinnest axis as a fraction of the longest.  It has to be
+    # asserted separately from the volume above, because thickness is the free axis: a plate
+    # could be given Mass's volume and still be a flat lozenge.
+    #
+    # CHARGE is excluded, and the exclusion is the point rather than a convenience: its
+    # PLATE is a square slab only because the body it was fitted against is the
+    # octahedron three times it (asserted below), so "how cube-like is the plate" is not a
+    # statement about what a Charge plant looks like.  The comparison is between the three
+    # elements whose body IS their plate.
+    worn = tuple(n for n in ELEMENTS if BODY[n] == 0.5)
+    chunk = lambda n: float(min(T[n]['leaf']) / max(T[n]['leaf']))
+    c.ok(all(chunk('Mass') > chunk(n) for n in worn if n != 'Mass'),
+         'MASS is the CHUNKIEST of the plates worn AS plates - nearest a cube, never one',
+         '  '.join(f'{n} 1:{T[n]["leaf"][1]/T[n]["leaf"][0]:.2f}:{T[n]["leaf"][2]/T[n]["leaf"][0]:.2f}'
+                   for n in worn))
+    c.ok(chunk('Mass') < 0.9, 'and it stops short of one - a cube is not a plate',
+         f'thinnest axis {chunk("Mass"):.2f} of the longest')
+    # SPACE is the element that is ROOMY, and that is a claim about the PLANT rather than
+    # the plate: it grows the membrane itself, so its two furthest prisms are further apart
+    # than any other element's - while spending no extra volume doing it (checked above).
+    span = lambda n: T[n]['radius']
+    c.ok(all(span('Space') > 1.5 * span(n) for n in ELEMENTS if n != 'Space'),
+         'SPACE spans the furthest - the element grows the MEMBRANE, not just the plate',
+         '  '.join(f'{n} {2*span(n):.0f}' for n in ELEMENTS))
 
     print('[8] every element tiles the surface at its OWN spacing, and the order is a rule')
     sp = {n: T[n]['spacing'] for n in ELEMENTS}
@@ -339,12 +371,16 @@ def verify_contract(d, c):
     # site as the body it puts there needs.  Both sides are measured off the shipped
     # tables, so a future retune that breaks the rule fails here rather than shipping four
     # numbers nobody can explain.
+    # THE DESIGN RULE.  It is stated in ROOM PER SITE rather than in orbit count, because an
+    # element buys room two ways - by cutting the membrane into fewer pieces, or by growing
+    # the membrane - and Space does the second, so it has a FINER cut than Mass or Charge
+    # and still the most room of the four.
     reach = {n: BODY[n] * float(np.linalg.norm(T[n]['leaf'])) for n in ELEMENTS}
     by_reach = sorted(ELEMENTS, key=lambda n: reach[n])
     by_space = sorted(ELEMENTS, key=lambda n: sp[n])
     c.ok(by_reach == by_space,
-         'the coarser the tessellation, the bigger the body it carries',
-         ' < '.join(f'{n}({reach[n]:.2f}, sp {sp[n]:.2f})' for n in by_reach))
+         'the more room per site, the bigger the body it carries',
+         ' < '.join(f'{n}({reach[n]:.2f}, room {sp[n]:.2f})' for n in by_reach))
     c.ok(d['max_sites'] == max(len(T[n]['P']) for n in ELEMENTS),
          'MaxSiteCount is the largest table', f'{d["max_sites"]}')
 
@@ -451,7 +487,7 @@ def self_test():
     control('quaternions denormalised', lambda e: T(e).__setitem__('Q', T(e)['Q'] * 1.3),
             'unit quaternions')
     control('a site inside the heart seat',
-            lambda e: T(e)['P'].__setitem__(0, T(e)['P'][0] * 0.05), 'clear of the heart seat')
+            lambda e: T(e)['P'].__setitem__(0, T(e)['P'][0] * 0.05), 'clear of its OWN heart seat')
 
     # ---- the guarantee this pass exists for
     control('plates left at the size they were AUTHORED at before they were fitted',
@@ -484,7 +520,7 @@ def self_test():
         # give four different bodies the room each of them needs.
         for n in ELEMENTS:
             if n == 'Time': continue
-            for key in ('P', 'Q', 'parents', 'spacing', 'radius', 'bond'):
+            for key in ('P', 'Q', 'parents', 'spacing', 'radius', 'bond', 'seat'):
                 v = T(e)[key]
                 T(e, n)[key] = v.copy() if isinstance(v, np.ndarray) else v
     control('every element on ONE shared tessellation', one_tiling,
@@ -496,10 +532,30 @@ def self_test():
         # is broken.  Charge's shield is the biggest body in the plant, so putting it on the
         # finest tiling is the mistake this check exists to catch.
         a, b = T(e, 'Charge'), T(e, 'Time')
-        for key in ('P', 'Q', 'parents', 'spacing', 'radius', 'bond'):
+        for key in ('P', 'Q', 'parents', 'spacing', 'radius', 'bond', 'seat'):
             a[key], b[key] = b[key], a[key]
-    control('the biggest body put on the finest tessellation', misordered,
-            'the coarser the tessellation, the bigger the body')
+    control('the biggest body put on the tightest tessellation', misordered,
+            'the more room per site, the bigger the body')
+
+    # ---- what THIS pass claims, each against the shape it replaced
+    control('MASS left as a flat lozenge at the same volume',
+            lambda e: T(e, 'Mass').__setitem__('leaf',
+                T(e, 'Mass')['leaf'] * np.array([2.5, 1.0, 1 / 2.5])), 'CHUNKIEST of the plates')
+    control('MASS taken all the way to a cube',
+            lambda e: T(e, 'Mass').__setitem__('leaf',
+                np.full(3, float(np.prod(T(e, 'Mass')['leaf'])) ** (1 / 3))),
+            'a cube is not a plate')
+    def anchor_sized(e):
+        # Space shrunk back onto the anchor's membrane - a full SIMILARITY, so it is still
+        # symmetric, still connected, still clears and still spends no extra volume.  The
+        # only thing it loses is the reach, which is exactly what this element is for.
+        t, k = T(e, 'Space'), T(e)['radius'] / T(e, 'Space')['radius']
+        t['P'] = t['P'] * k
+        for key in ('radius', 'spacing', 'bond', 'seat'):
+            t[key] = t[key] * k
+        t['leaf'] = t['leaf'] * k
+    control('SPACE shrunk back onto the anchor-sized membrane', anchor_sized,
+            'spans the furthest')
 
     print(f'\n{"self-test PASSED" if bad == 0 else f"self-test FAILED: {bad} control(s) did not fire"}')
     return bad

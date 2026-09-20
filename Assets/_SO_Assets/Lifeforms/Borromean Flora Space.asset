@@ -23,12 +23,12 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
-  OffspringSpread: 83
+  OffspringSpread: 166
   Element: 3
   Variant:
     Enabled: 1
-    HeartWorldScale: 2.661
-    LeafSize: {x: 6.09726, y: 1.25072, z: 1.19436}
+    HeartWorldScale: 3.379
+    LeafSize: {x: 12.97785, y: 1.52681, z: 0.45967}
     GrowPeriod: -1
     LatticeScale: -1
     ShieldPeriod: -1

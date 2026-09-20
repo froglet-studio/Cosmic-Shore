@@ -32,10 +32,12 @@ authored as a number.
 ONE TESSELLATION PER ELEMENT
 ----------------------------
 A plate that does not overlap its neighbours is bounded by how far apart the neighbours
-are, so an element whose body is bigger takes a COARSER tiling rather than a shrunken
-plate - and coverage is a property of the tiling rather than of the count, so a coarser
+are, so an element whose body is bigger takes MORE ROOM PER SITE rather than a shrunken
+plate - and coverage is a property of the tiling rather than of the count, so a looser
 one covers the same membrane with fewer, bigger pieces.  Four tables are therefore emitted,
-and the ladder runs one way: the coarser the tessellation, the bigger the body it carries.
+and the ladder runs one way: the more room per site, the bigger the body it carries.  Room
+is bought two ways, by cutting the membrane into fewer pieces and by growing the membrane,
+and SPACE - the element whose identity IS room - is the one that does the second.
 CHARGE is fitted against its SHIELD rather than its plate, because a shield swaps the plate
 for its circumscribing octahedron three times its reach, which is the body a Charge plant
 actually wears.
@@ -102,24 +104,46 @@ CLEARANCE     = 0.03    # every plate clears its neighbours by this fraction of 
 #     it covers the same membrane with FEWER, BIGGER pieces.  That is what makes the site
 #     count an element's own decision rather than a budget.
 #
-# ORBITS is therefore the element's POSITIONING AND SPACING, and it runs one way: the
-# coarser the tessellation, the bigger each piece, and an element takes as much room per
-# site as its body needs.  TIME's plate is the anchor and gets the finest membrane; SPACE
-# spends its area on length; MASS is a slab; CHARGE's real body is its SHIELD, three times
-# the reach of the plate it replaces, so it needs the most room of all.
+# So the quantity the ladder is stated in is ROOM PER SITE, and it runs one way: the more
+# room a site has, the bigger the body it carries.  An element buys that room TWO ways -
+# by cutting the membrane into fewer pieces (ORBITS) or by growing the membrane
+# (SURFACE_SCALE) - which is why SPACE can take the most room per site while having a
+# FINER cut than Mass or Charge.  TIME's plate is the anchor and gets the tightest
+# membrane; MASS is a brick; CHARGE's real body is its SHIELD, three times the reach of
+# the plate it replaces; SPACE grows the membrane itself and spends the room on length.
 ELEMENTS      = ('Charge', 'Mass', 'Space', 'Time')
 ORBITS        = dict(Time=60, Space=48, Mass=36, Charge=30)   # x6 sites, and x6 grow ticks
 
+# HOW BIG THE WHOLE SURFACE IS, per element - the second half of "positioning and spacing".
+# ORBITS says how many pieces the membrane is cut into; this says how far apart they are, so it
+# moves the plant's RADIUS, its site spacing, its bonds and (through the fit) its plates, all
+# together.  It is a SIMILARITY, which is the one transform that cannot break the no-overlap
+# guarantee: scaling every site and every plate by the same k maps a clearing arrangement onto
+# a clearing arrangement exactly.
+#
+# SPACE is the element that spends it, and it is why ROOM PER SITE rather than orbit count is
+# the quantity the ladder is stated in.  Space's identity is ASPECT at the anchor's VOLUME, and
+# on one fixed membrane that can only be bought by making the plate NARROWER - the plant stays
+# the same size and its struts get thinner until they read as wires.  On a membrane twice as
+# big it is bought by making the whole thing LONGER: the fit hands a 2x surface a 2x footprint,
+# and holding the plate's volume then drives its thickness down by 4.  Same plant volume, same
+# site count, twice the span.
+SURFACE_SCALE = dict(Time=1.0, Space=2.0, Mass=1.0, Charge=1.0)
+
 # The in-plane x:y of each element's plate - its SHAPE, and the only part of it authored.
 #   TIME   the anchor, 1.69:1 - the plate tuned by rendering it.
-#   MASS   a little squarer, and thick: the slab.
-#   SPACE  4.88:1 - it spends its area on LENGTH, so at equal volume its membrane reads as
-#          a frame of struts rather than a skin of plates.
+#   MASS   1.20:1, nearly square, and THICK: the brick.  Its three axes come out
+#          1 : 0.83 : 0.50, which is as near a cube as this contract can take it - the
+#          footprint is FITTED, so the only way to make a plate chunkier is to spend
+#          thickness, and thickness is volume.
+#   SPACE  8.50:1 on a membrane TWICE the anchor's - it spends its area on LENGTH twice
+#          over, so at equal volume its membrane reads as a frame of long thin struts
+#          rather than a skin of plates.
 #   CHARGE square.  The clearance of a SHIELDED plate is set by the tightest bond, which
 #          runs along the grain, so length there is paid for twice - a square footprint
 #          covers half again as much membrane with octahedra as Time's aspect does.  A
 #          plate whose shielded form has no grain does not need one.
-ASPECT        = dict(Time=1.69, Space=4.875, Mass=1.5625, Charge=1.0)
+ASPECT        = dict(Time=1.69, Space=8.5, Mass=1.2, Charge=1.0)
 
 # THICKNESS, the axis that is nearly free.  Time's is authored (in mean site spacings, the
 # thickness its approved plate had); Mass's and Space's are SOLVED so that their plate
@@ -129,7 +153,7 @@ ASPECT        = dict(Time=1.69, Space=4.875, Mass=1.5625, Charge=1.0)
 # footprint, so its circumscribing octahedron is a jewel lying IN the membrane rather than
 # a flat lozenge or a spike standing out of it.
 TIME_THICKNESS   = 0.115
-VOLUME_OF_TIME   = dict(Mass=3.89, Space=1.00)
+VOLUME_OF_TIME   = dict(Mass=8.00, Space=1.00)
 CHARGE_THICKNESS = 0.5
 FIT_PASSES       = 6    # fit -> solve the thickness -> refit.  Converges in 3; ends on a FIT,
                         # so the shipped plate is always one that cleared at its own thickness.
@@ -242,9 +266,12 @@ def measure(log=print, cache=None):
     # against, so what the other three get cannot depend on the order they are measured in.
     tables = {}
     for name in ('Time', 'Mass', 'Space', 'Charge'):
-        t = _cvt(name, ORBITS[name], P, N, G, P * PLANT_SCALE, log)
+        t = _cvt(name, ORBITS[name], P, N, G, log)
         _fit(t, tables['Time']['volume'] if name != 'Time' else 0.0, log)
-        t['cover'] = float(t['sites'] * t['leaf'][0] * t['leaf'][1] / area)
+        # against THIS element's own membrane: an element that grows the surface by k has
+        # k^2 of it to cover, so measuring against the anchor's area would report a bigger
+        # plant as a fuller one.
+        t['cover'] = float(t['sites'] * t['leaf'][0] * t['leaf'][1] / (area * t['surface_scale'] ** 2))
         t['plant_volume'] = float(t['volume'] * t['sites'])
         tables[name] = t
 
@@ -257,12 +284,12 @@ def measure(log=print, cache=None):
             f'membrane covered {100*t["cover"]:4.1f}%  radius {t["radius"]:.1f}')
     ch = tables['Charge']
     oc = SHIELD_BODY * ch['leaf']
+    r['charge_cover'] = float(ch['sites'] * 2 * oc[0] * oc[1] / (area * ch['surface_scale'] ** 2))
     log(f'      CHARGE is fitted to its SHIELD, not to its plate: its octahedra reach '
         f'{oc[0]:.2f} x {oc[1]:.2f} x {oc[2]:.2f} and cover '
-        f'{100*ch["sites"]*2*oc[0]*oc[1]/area:.1f}% of the membrane')
+        f'{100*r["charge_cover"]:.1f}% of the membrane')
     r['tables'] = tables
     r['ring_semi'] = (1.0 * PLANT_SCALE, B.PHI * PLANT_SCALE)
-    r['charge_cover'] = float(ch['sites'] * 2 * oc[0] * oc[1] / area)
     r['surface_area'] = area
     return r
 
@@ -301,7 +328,7 @@ def _solve(log, r):
     return V, F, a0, flat, m, loops, bset
 
 
-def _cvt(name, orbits, P, N, G, samples_w, log):
+def _cvt(name, orbits, P, N, G, log):
     """ONE ELEMENT'S TESSELLATION: its sites, its frames, its growth order and its bond
     tree - everything about WHERE a prism goes and WHEN it is laid.
 
@@ -310,6 +337,7 @@ def _cvt(name, orbits, P, N, G, samples_w, log):
     bigger takes a coarser tessellation rather than a shrunken plate."""
     from scipy.spatial import cKDTree
     k = len(G)
+    scale = PLANT_SCALE * SURFACE_SCALE[name]
     T = B.group_table(G)
     reps = B.farthest_point_reps(P, orbits, HEART_SEAT, G)
     reps = B.symmetric_cvt(P, reps, G, iters=CVT_ITERS, seat=HEART_SEAT)
@@ -379,19 +407,20 @@ def _cvt(name, orbits, P, N, G, samples_w, log):
     resid = max(cKDTree(S).query(S @ M.T)[0].max() for M in G)
     assert resid < 1e-12, 'sites are not a union of orbits'
     log(f'      {name}: {hop.max()+1} hop layers, ONE component after every grow tick; '
-        f'spacing {nn.min()*PLANT_SCALE:.2f}..{nn.max()*PLANT_SCALE:.2f} '
-        f'(mean {nn.mean()*PLANT_SCALE:.2f}); a limb runs along one of its plate\'s own axes '
+        f'spacing {nn.min()*scale:.2f}..{nn.max()*scale:.2f} '
+        f'(mean {nn.mean()*scale:.2f}); a limb runs along one of its plate\'s own axes '
         f'to within {np.degrees(np.arccos(min(al.mean(),1))):.0f} deg')
     return dict(
-        name=name, orbits=len(reps), sites=len(S), orbit_size=k,
-        S=S * PLANT_SCALE, X=SX, Y=SY, Z=SZ, parents=par, samples=samples_w,
-        spacing=(float(nn.min()*PLANT_SCALE), float(nn.mean()*PLANT_SCALE), float(nn.max()*PLANT_SCALE)),
+        name=name, orbits=len(reps), sites=len(S), orbit_size=k, surface_scale=SURFACE_SCALE[name],
+        S=S * scale, X=SX, Y=SY, Z=SZ, parents=par, samples=P * scale,
+        heart_seat=HEART_SEAT * scale,
+        spacing=(float(nn.min()*scale), float(nn.mean()*scale), float(nn.max()*scale)),
         hops=int(hop.max()) + 1, valence=(int(val.min()), float(val.mean()), int(val.max())),
         fold=float(fold), comb_before=float(before), comb_after=float(after),
         bond_align=float(al.mean()), bond_align_worst=float(al.min()),
-        bond_len=(float(bl.min()*PLANT_SCALE), float(bl.mean()*PLANT_SCALE), float(bl.max()*PLANT_SCALE)),
-        covering=float(cKDTree(S).query(P)[0].max()*PLANT_SCALE), sym_residual=float(resid),
-        radius=float(np.linalg.norm(S, axis=1).max()*PLANT_SCALE))
+        bond_len=(float(bl.min()*scale), float(bl.mean()*scale), float(bl.max()*scale)),
+        covering=float(cKDTree(S).query(P)[0].max()*scale), sym_residual=float(resid),
+        radius=float(np.linalg.norm(S, axis=1).max()*scale))
 
 
 def _fit(t, time_volume, log):
@@ -464,14 +493,23 @@ def emit(r):
                      f"other element is a perturbation of. Its thickness is the one authored "
                      f"number in the four ({f(TIME_THICKNESS)} of the site spacing); the other three "
                      f"spend theirs."),
-            'Mass': (f"VOLUME: {t['volume']/anchor['volume']:.2f}x Time's plate, bought on the axis that costs no "
-                     f"clearance. A coarser tessellation ({t['sites']} plates) gives each slab the room "
-                     f"it needs, so the membrane reads as fewer, heavier pieces."),
-            'Space': (f"ASPECT: {leaf[0]/leaf[1]:.2f}:1 against Time's {anchor['leaf'][0]/anchor['leaf'][1]:.2f}:1, at "
-                      f"{t['volume']/anchor['volume']:.2f}x its volume - the element reads as SHAPE, not size. It "
-                      f"spends its area on length, so its membrane covers {100*t['cover']:.0f}% of the "
-                      f"surface against Time's {100*anchor['cover']:.0f}% and reads as a frame of struts "
-                      f"rather than a skin of plates."),
+            'Mass': (f"VOLUME, and the CHUNKIEST plate of the four: its axes come out 1 : "
+                     f"{leaf[1]/leaf[0]:.2f} : {leaf[2]/leaf[0]:.2f}, which is as near a cube as this contract can "
+                     f"take it - the footprint is FITTED, so the only way to make a plate "
+                     f"chunkier is to spend thickness, and thickness IS the volume. "
+                     f"{t['volume']/anchor['volume']:.2f}x Time's plate, bought on the axis that costs no clearance. "
+                     f"A looser tessellation ({t['sites']} plates) gives each brick the room it needs, "
+                     f"so the membrane reads as fewer, heavier pieces."),
+            'Space': (f"ROOM, spent twice over. Its membrane is {f(t['surface_scale'])}x the anchor's, so the "
+                      f"plant spans {t['radius']/anchor['radius']:.2f}x as far ({f(2*t['radius'])} against {f(2*anchor['radius'])} "
+                      f"across) - and its plate is {leaf[0]/leaf[1]:.2f}:1 against Time's "
+                      f"{anchor['leaf'][0]/anchor['leaf'][1]:.2f}:1 at {t['volume']/anchor['volume']:.2f}x its volume, so the "
+                      f"element reads as SHAPE and REACH rather than as mass. A similarity is the "
+                      f"one transform that cannot break the no-overlap guarantee, and holding the "
+                      f"plate's VOLUME across it is what drives the thickness down by the square: "
+                      f"same plant volume, same site count, twice the span, struts {anchor['leaf'][2]/leaf[2]:.1f}x thinner. "
+                      f"Its membrane covers {100*t['cover']:.0f}% of the surface against Time's {100*anchor['cover']:.0f}% and "
+                      f"reads as a frame of struts rather than a skin of plates."),
             'Charge': (f"ARMOUR, and the only element fitted to something other than its own plate: "
                        f"a shield swaps the plate for its circumscribing octahedron, reaching 1.5 x "
                        f"leafSize from the centre (Docs/ECOSYSTEM.md 35), so what is fitted here is "
@@ -507,7 +545,8 @@ def emit(r):
         /// Fitted: zero interpenetrating pairs, and {int(100*(t['tight']-1))}% bigger collides.</summary>
         public static readonly SurfaceTable {name} = new SurfaceTable(
             {name}Positions, {name}Rotations, {name}Parents,
-            {vec(t['leaf'])}, {f(t['radius'])}f, {f(t['spacing'][1])}f, {f(t['bond_len'][2])}f);
+            {vec(t['leaf'])}, {f(t['radius'])}f, {f(t['spacing'][1])}f, {f(t['bond_len'][2])}f,
+            {f(t['heart_seat'])}f);
 ''')
 
     bodies = ''.join(table(n) for n in ELEMENTS)
@@ -515,6 +554,7 @@ def emit(r):
     rows = '\n'.join(
         f"    /// {n:<6} {T[n]['sites']:>3} plates   plate {f(T[n]['leaf'][0])} x {f(T[n]['leaf'][1])} x {f(T[n]['leaf'][2])}"
         f"   volume {T[n]['volume']:.2f} ({T[n]['volume']/anchor['volume']:.2f}x Time)"
+        f"   room per site {T[n]['spacing'][1]:.2f}   span {2*T[n]['radius']:.0f}"
         f"   membrane {100*T[n]['cover']:.0f}%" for n in ELEMENTS)
 
     return f'''// GENERATED by Tools/Build/measure_borromean_minimal_surface.py - DO NOT EDIT BY HAND.
@@ -567,10 +607,14 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>EVERY ELEMENT GROWS ON ITS OWN TESSELLATION, AND NO PRISM INTERPENETRATES
     /// ANOTHER.</b> A plate that does not overlap its neighbours is bounded by how far apart
-    /// the neighbours are, so an element whose body is bigger takes a COARSER tessellation
+    /// the neighbours are, so an element whose body is bigger takes MORE ROOM PER SITE
     /// rather than a shrunken plate - and its size is fitted offline to the largest that
-    /// clears (by {int(100*CLEARANCE)}% of itself), never authored. What an element authors is the SHAPE of
-    /// its plate and the SPACING of its tiling:</para>
+    /// clears (by {int(100*CLEARANCE)}% of itself), never authored. An element buys that room two ways:
+    /// by cutting the membrane into FEWER pieces, or by growing the MEMBRANE. Space is the
+    /// one that does the second, at {f(SURFACE_SCALE['Space'])}x - a similarity, which is the only transform that
+    /// cannot break the no-overlap guarantee - so it has a finer cut than Mass or Charge and
+    /// still the most room of the four. What an element authors is the SHAPE of its plate and
+    /// the ROOM its tiling gives one:</para>
     ///
 {rows}
     ///
@@ -591,11 +635,11 @@ namespace CosmicShore.Gameplay
         /// it is simply never spent; the plant clamps to its OWN element's site count.</summary>
         public const int MaxSiteCount = {max(T[n]['sites'] for n in ELEMENTS)};
 
-        /// <summary>Area of the minimal surface, in local units squared.</summary>
+        /// <summary>Area of the minimal surface at the ANCHOR's scale, in local units
+        /// squared. An element may grow the membrane itself - SPACE does, at {f(SURFACE_SCALE['Space'])}x -
+        /// and then carries the square of that much of it; its own
+        /// <see cref="SurfaceTable.PlantRadius"/> is what says how big its membrane is.</summary>
         public const float SurfaceArea = {f(r['surface_area'])}f;
-
-        /// <summary>Radius kept clear of prisms around the heart, in local units.</summary>
-        public const float HeartSeatRadius = {f(HEART_SEAT * PLANT_SCALE)}f;
 
         /// <summary>
         /// One element's take on the surface: where its prisms go, how they are turned, which
@@ -639,12 +683,18 @@ namespace CosmicShore.Gameplay
             /// <summary>Longest limb in the plant, in local units - the bond a spindle spans.</summary>
             public readonly float LongestBond;
 
+            /// <summary>Radius kept clear of prisms around the heart, in local units. It is
+            /// per element rather than shared because an element that grows the MEMBRANE
+            /// grows the alcove its crystal sits in by the same factor.</summary>
+            public readonly float HeartSeat;
+
             public SurfaceTable(Vector3[] positions, Quaternion[] rotations, int[] parents,
-                                Vector3 leafSize, float plantRadius, float siteSpacing, float longestBond)
+                                Vector3 leafSize, float plantRadius, float siteSpacing, float longestBond,
+                                float heartSeat)
             {{
                 Positions = positions; Rotations = rotations; Parents = parents;
                 LeafSize = leafSize; PlantRadius = plantRadius;
-                SiteSpacing = siteSpacing; LongestBond = longestBond;
+                SiteSpacing = siteSpacing; LongestBond = longestBond; HeartSeat = heartSeat;
             }}
 
             /// <summary>Prisms in a complete plant of this element.</summary>

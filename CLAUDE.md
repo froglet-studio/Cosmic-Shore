@@ -595,12 +595,17 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   which is what lets the element contract survive the rule instead of being flattened by it (Mass's
   volume and Space's equal-volume-at-higher-aspect are SOLVED on that free axis). **COVERAGE IS A
   PROPERTY OF THE TILING, NOT OF THE COUNT** — every plate is fitted against its own neighbours, so
-  a coarser tessellation covers the same membrane with FEWER, BIGGER pieces (the fitted long axis
-  is 0.73–0.93 of the spacing at every count from 24 to 60 orbits), which makes the site count an
-  element's own decision and gives the ladder its direction: **the coarser the tessellation, the
-  bigger the body it carries** — Time 360 plates / Space 288 / Mass 216 / **Charge 180**, whose
-  real body is its SHIELD at three times its plate's reach. That ordering is ASSERTED from the
-  shipped tables, both sides measured. And **the guarantee lives in the CODE, because a guarantee
+  a looser tessellation covers the same membrane with FEWER, BIGGER pieces (the fitted long axis
+  is 0.73–0.93 of the spacing at every count from 24 to 60 orbits), which makes the tiling an
+  element's own decision and gives the ladder its direction: **the more ROOM PER SITE, the bigger
+  the body it carries** — room per site 6.14 (Time) < 8.23 (Mass) < 8.69 (Charge, whose real body
+  is its SHIELD at three times its plate's reach) < **13.68 (Space)**. That ordering is ASSERTED
+  from the shipped tables, both sides measured. It is stated in ROOM and not in orbit COUNT
+  because **an element buys room two ways — by cutting the membrane into fewer pieces, or by
+  growing the MEMBRANE** — and Space does the second, so it has a FINER cut than Mass or Charge
+  (288 plates against 216 and 180) and still the most room of the four. Growing the membrane is a
+  **SIMILARITY**, the one transform that maps a clearing arrangement onto a clearing arrangement
+  exactly, so it costs the guarantee nothing to re-derive. And **the guarantee lives in the CODE, because a guarantee
   any asset edit can break is not one**: the plant takes its leaf from its own table
   (`BorromeanSurfaceData.For(Element)`), resolved from its crystal at the TOP of `Initialize`
   before the base stamps the prefab's seed prism — `Flora.ResolveShieldPeriod`'s argument one field
@@ -615,16 +620,31 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   **8 plants per element = 32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN
   ANCHOR**, which is what
   makes "what does this element do to the plant" one comparison rather than four independent
-  fits: **TIME** is that anchor (9.11 volume per plate), **MASS** is more VOLUME (3.89×),
-  **SPACE** is more ASPECT at the *same* volume (4.88:1 against 1.69:1),
-  and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Both halves of that
+  fits: **TIME** is that anchor (9.11 volume per plate, 1 : 0.59 : 0.15),
+  **MASS** is more VOLUME *and the CHUNKIEST plate* (8.00×, **1 : 0.83 : 0.50** — and it stops
+  short of a cube on purpose, because the footprint is FITTED so the only axis that can move a
+  plate toward one is the thickness, and the thickness IS the volume),
+  **SPACE** is more ROOM — its MEMBRANE is **2×** the anchor's, so its plant spans **222 against
+  111** and its plate is `12.98 × 1.53 × 0.46` at 8.50:1 and the *same* volume (a `k×` membrane
+  fits a `k×` footprint, so holding the volume drives the thickness down by `k²`: same plant
+  volume, same site count, twice the span, struts 2.6× thinner) —
+  and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Charge's plate is
+  `1 : 1.00 : 0.50`, i.e. SQUARER than Mass's, which is why the chunkiness rule is asserted over
+  the three elements whose body IS their plate: a Charge plate is a square slab *because* the body
+  it was fitted against is the octahedron three times it, so how cube-like it is says nothing
+  about what a Charge plant looks like. *A check that has to be scoped is usually telling you
+  something true about the thing you scoped out.* Both halves of that
   fit are measured: the footprint is SQUARE (the clearance is set by the tightest BOND, which
   runs along the grain, so length there is paid for twice — square covers **22.5%** of the
   membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is spent freely
-  (along the surface NORMAL, where the neighbours are not). Authored by
+  (along the surface NORMAL, where the neighbours are not). The element spread across one species
+  is consequently **19.6×** in plant volume (Charge 804 → Mass 15,739), so a cell that rolls all
+  four is pricing an AVERAGE rather than a plant; and Space's 0.46 thickness is under
+  `PrismScaleAnimator`'s serialized `minScale` 0.5, surviving only because `Flora.AddHealthBlock`
+  calls `Prism.AdmitTargetScale` first — the same rope SchwarzP Charge's 0.39 hangs from. Authored by
   `Tools/Build/measure_borromean_minimal_surface.py` +
   `author_borromean_flora_assets.py`, re-proved from the shipped tables alone by
-  `Tools/Build/verify_borromean_surface_tables.py` (every check run four times, **19** negative
+  `Tools/Build/verify_borromean_surface_tables.py` (every check run four times, **22** negative
   controls, all firing) — whose
   one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
   was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
