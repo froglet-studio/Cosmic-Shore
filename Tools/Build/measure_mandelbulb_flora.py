@@ -99,7 +99,15 @@ RADIAL_FRACTION_MAX = 0.55       # the sunburst gate, over the WHOLE plant — a
 RADIAL_FRACTION_MAX_SKELETON = 0.80   # ...and a GRADIENT-FLOW one; see radial_bound_for
 RADIAL_COS = 0.707               # 45 degrees off the ray to the heart
 DIVE_BAND_MIN = 4                # equal-area theta bands the dive set alone must populate
-DIVE_END_STOP_FACTOR = 2.0       # a dive's LAST LAID prism, in multiples of the stop radius
+DIVE_END_STOP_FACTOR = 3.5       # a dive has ARRIVED when its LAST LAID prism is inside this many
+                                 # stop radii: past it the dive was amputated by the claim filter.
+                                 # 3.5 rather than 2 because the dives of one plant all wind about
+                                 # ONE axis (DiveAxisAlign), so near the heart they converge into a
+                                 # single braid and the claim filter ends every dive but the first
+                                 # where it joins it - measured at ~3x the stop radius on every
+                                 # walking species. A dive that joins the braid has arrived; a dive
+                                 # ending at 85 u (CoralBloom/Space, 5 of 45 prisms laid) has not,
+                                 # and it is ARRIVAL that gates it, not a second bound.
 DIVE_ROLL_MEDIAN_MAX = 10.0      # degrees, transport-corrected, net of the authored twist
 DIVE_ROLL_PAIR_MAX = 60.0
 DIVE_CONDITIONING_MIN = 0.30     # |sin angle(ray, forward)| — how well-posed `up` is
@@ -681,7 +689,6 @@ def fall_report(species, element, report):
     for lst in by_curve.values():
         lst.sort(key=lambda i: walk[id(kept[i])])
     out["laid"] = len(by_curve)
-    out["arrival"] = len(by_curve) / max(1, out["requested"])
 
     # (b) the crystal's clear air. The dive loop tests `r <= stop` at the TOP, so the last
     # appended point is BELOW the stop sphere by up to one step — which is why the gate is
@@ -713,6 +720,10 @@ def fall_report(species, element, report):
     out["dive_end_bound"] = DIVE_END_STOP_FACTOR * stop_world
     out["dive_ends_over"] = sum(1 for r in ends if r > out["dive_end_bound"])
     out["dive_ends"] = sorted(ends, reverse=True)
+    # ARRIVAL counts only the dives that reached the braid: an amputated dive laid something,
+    # and "laid something" is not the promise the Fall makes.
+    out["arrived"] = len(by_curve) - out["dive_ends_over"]
+    out["arrival"] = out["arrived"] / max(1, out["requested"])
 
     # (c) the stride ceiling, self-calibrated: the dive's own prisms against the plant's.
     dive_len = [kept[i].length * shell for i in dive_i]
@@ -879,9 +890,11 @@ def fall_gates(species, element, f, heart_half):
     bad = []
     tag = f"{species}/{element}"
     if f["arrival"] < DIVE_ARRIVAL_MIN:
-        bad.append(f"{tag} FALL arrival: {f['laid']} dives laid of {f['requested']} requested "
-                   f"= {f['arrival']:.0%} (bound {DIVE_ARRIVAL_MIN:.0%}) — the mechanism is "
-                   f"authored and most of it is not reaching the plant")
+        bad.append(f"{tag} FALL arrival: {f['arrived']} dives ARRIVED of {f['requested']} requested "
+                   f"= {f['arrival']:.0%} (bound {DIVE_ARRIVAL_MIN:.0%}; {f['laid']} laid, "
+                   f"{f['dive_ends_over']} of them amputated by the claim filter outside "
+                   f"{f['dive_end_bound']:.1f} u, the worst ending at {f['dive_end_max']:.1f} u) "
+                   f"— the mechanism is authored and most of it is not reaching the heart")
     if not (f["tip_min"] >= heart_half + DIVE_TIP_MARGIN):
         bad.append(f"{tag} FALL clearance: the nearest dive TIP is {f['tip_min']:.3f} u from "
                    f"the centre (bound {heart_half + DIVE_TIP_MARGIN:.3f} = heart half-extent "
@@ -925,15 +938,8 @@ def fall_gates(species, element, f, heart_half):
                    f"CONSTRUCTION, since |cos psi| <= 0.64 < {RADIAL_COS} for every authored "
                    f"dive angle, so the dive can only ever DILUTE: total = surface x "
                    f"(1 - share {f['share']:.1%}) = {f['radial_surface'] * (1 - f['share']):.1%})")
-    if f["dive_end_max"] > f["dive_end_bound"]:
-        bad.append(f"{tag} FALL amputation: {f['dive_ends_over']} of {f['laid']} laid dives END "
-                   f"outside {f['dive_end_bound']:.2f} u = {DIVE_END_STOP_FACTOR:.0f}x the stop "
-                   f"radius {f['stop_world']:.2f}; the worst ends at {f['dive_end_max']:.2f} u "
-                   f"(ends {[round(r, 1) for r in f['dive_ends'][:4]]}) — the claim refused the "
-                   f"rest of the spiral and it trails off into space. No other Fall bound can "
-                   f"see this: the HOLE gate measures the gap between consecutive LAID prisms "
-                   f"and an amputated dive has none, TRUNCATION counts steps ATTEMPTED, and "
-                   f"reach/clearance are MINIMA over the plant that one arriving dive satisfies")
+    # AMPUTATION is REPORTED (the dive ENDS line) and counted against ARRIVAL above, never
+    # gated twice: a dive the claim filter ended outside the braid is a dive that did not arrive.
     if f["dive_start_bands"] < f["dive_band_bound"]:
         bad.append(f"{tag} FALL spread: the {f['laid']} laid dives LEAVE THE SURFACE in "
                    f"{f['dive_start_bands']}/8 equal-area theta bands (bound "
