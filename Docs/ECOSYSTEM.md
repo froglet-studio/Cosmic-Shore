@@ -8299,15 +8299,72 @@ finite grid cannot promise it found every critical point, and the shipped census
 −12 / +5 against a sphere's +2, so the complex is not closed on three of four bakes — a fact about
 the bake, stated rather than hidden.
 
-### 47.3 What a heart costs when everything falls into it
+### 47.3 What a heart costs when everything falls into it — and what the gates got wrong first
 
 The Fall is what makes "the spindles almost connect to their crystal" literal — the closest dive
 prism's centre sits 3.3 u from the origin against a 0.76 u crystal half-extent — and its price is
-paid at the core: on the Charge plants, whose prisms are ARMOURED (§35), the dive bundle inside
-0.15 R fuses into a rod (20.7% of armoured pairs interpenetrate against a 15% bound, measured).
-The levers are `DiveStopRadius`, `DiveGirthFloor` and `DiveCount` — never the whole-plant shield
-fit, which is a different measurement. The tuning pass that lands the fleet's `--check` green is
-recorded in §48.5.
+paid at the core, on the Charge plants, whose prisms are ARMOURED (§35). The first core gate
+measured "armoured pairs inside 0.15 R that interpenetrate" and read 41–46% against a 15% bound
+on three species; three tuning agents, independently, took it apart the same way: **55 of 62
+offending pairs were a curve's own consecutive prisms**, and two circumscribing octahedra one
+chord apart along their shared axis overlap iff `3 × LengthFactor ≥ 1` — a closed form with no
+dive parameter in it, a fact of `CHARGE_DASH` (0.45, above the 1/3 cliff) that §44 already accepts
+on the surface. Every dive dial the gate's own message named measured inert or WORSE (the girth
+floor thins the bundle, which shrinks the denominator faster than the numerator: 0.70 → 45.8%,
+0.15 → 75.6%, with the offending count pinned at 59 throughout). The gate now measures the
+**BUNDLE** (non-walk-adjacent pairs — what "the Fall's bundle has fused into a rod" means) and
+reports the chain beside it with its closed form; the chain fuses on Coral Bloom and Apollonia
+(LengthFactor 0.45) and not on Foliage or the Watershed (0.30 / 0.31 — both author a Charge walk
+step to sit under the cliff, which also made their cores read as beads). *A failure message that
+names the dials of the subsystem the failure was measured in is a guess about the cause, and a
+thinning dial that shrinks the denominator faster than the numerator reads as a regression.*
+
+Seven more gate defects came out of the same pass, every one found by an agent forbidden to tune
+around it. The **sunburst** bound (< 55% of the plant within 45° of the ray) is, on a
+gradient-flow species, a census of the BAKE's own steepness — the dive is 0.0% radial by
+construction, so `total = surface × (1 − share)` and Time's reachable floor was 56.3%: a
+skeleton species now carries 0.80 (a genuine spoke-burst reads ≥ 0.95), a walking species 0.55,
+where it separates a hedgehog from a foliage (Foliage/Time 60.6% → 1.9% with a 15° swirl on its
+ascent — a cliff, not a slope, because a swirled walk either can climb a terrace riser or cannot).
+The **seed-spread** bound was a constant 6 bands while its sample was 8 points on Mass (8 uniform
+draws fill an expected 5.25); it is now the discounted uniform expectation AND ≥ 2× the
+sharpness-major control. The **ring census** grouped peaks at a hand-chosen 0.08 rad that sat just
+above the "same ring" gap population on Space (kept ≤ 0.060, split ≥ 0.347); the threshold is now
+derived per element from the peak set's own gap histogram — with every gap floored at the census's
+dedupe chord, because a ring's peaks share a latitude to the last bit and the unfloored ladder was
+degenerate on all four bakes — and reads modal 7 / 4 / 2 / 11 everywhere. A dive **amputated** by
+the claim filter far outside the stop sphere (Coral Bloom/Space: 5 of 45 prisms laid, ending at
+85 u) was invisible to every bound (the hole gate measures consecutive LAID prisms, truncation
+counts steps ATTEMPTED, reach is a MINIMUM one arriving dive satisfies); it now counts against
+ARRIVAL, with the bound at 3.5× the stop radius because the dives of one plant all wind about ONE
+axis and converge into a braid the claim filter ends every dive but the first at. The worst-pair
+chain exclusion learned a closed ring's SEAM; `DIVE_BAND_MIN` is capped at the bands a gasket's
+owed set actually releases into; and the Charge **ladder** is measured ARMOURED, since the
+octahedron is what a Charge plant draws.
+
+### 47.4 The tuning pass, measured
+
+Foliage, Bloom and the Watershed are green on every bound after one render-judged pass each
+(one agent per species in its own worktree; the model as the sandbox, the shipped C# as the
+check). What moved, and why:
+
+- **Fractal Foliage** — Charge's walk step 0.045 (LengthFactor 0.30, the chain under the cliff);
+  Space's seeds 65 → 32, because its struts are ~149 prisms so 2,800 buys ~22 curves however many
+  seeds are authored, and the Fall's strided owed set over a list three times longer than the
+  plant degenerates into a prefix (arrival 38% → 88%); Time's ascent swirled 15° (the hedgehog
+  fix above); Time's dives 8 → 7 for margin on the 25% share ceiling.
+- **Coral Bloom** — Mass's seeds 46 → 28: a BUDGET cut, not a claim cut (all eight dives survived
+  the claim filter and four started past prism 2,800). A Time field-mix change 0.18 → 0.28 was
+  tried and REVERTED: it moved the walk onto a float-width cliff where the shipped C# and the
+  model disagreed on the mean girth by 10% — *a look tuned on the model that the game would not
+  lay*, which is what the verifier exists to catch.
+- **The Watershed** — dive stop 0.060 and a stride ceiling of 0.70 (its holes were
+  core-convergence claim refusals, not a missing stride), Charge's walk step 0.065, Time's dives
+  16 → 8 with the descent gate 0.30 → 0.12. Volume gains fitted: Space 1.34× (its runs sit
+  furthest down the girth taper).
+- Two thin margins, stated: the Watershed's Time is budget-bound at exactly 2,800 prisms, and
+  its lane 3 sits at 15.6% against a 15% floor on Mass and Time — anything that adds dive prisms
+  starves lane 3 first.
 
 ## 48. APOLLONIA — the self-similar species is the Apollonian gasket, crowning the bulb's own lobes (Sep 2026)
 
