@@ -17,6 +17,27 @@ namespace CosmicShore.Gameplay
     /// <c>Tools/Build/measure_borromean_minimal_surface.py</c> and lands in
     /// <see cref="BorromeanSurfaceData"/>; nothing here describes the shape.</para>
     ///
+    /// <para><b>It grows the way a flora withers, RUN BACKWARDS: the crystal first, then
+    /// limbs out of the crystal, then limbs and plates out of limbs.</b> Every site names
+    /// the site it hangs off (<see cref="BorromeanSurfaceData.Parents"/>, -1 = the heart),
+    /// a parent is always earlier in the table than its child, and a plate is never laid
+    /// on the far end of a limb that does not exist yet - so the membrane is ONE connected
+    /// object from its first grow tick, expanding outward from the crystal, rather than
+    /// several patches that meet up and seal later. The spindle carrying a plate is posed
+    /// ON that bond - rooted at the parent, aimed at the child, stretched to span the gap -
+    /// so the limbs lie IN the membrane and read as veins running through it.</para>
+    ///
+    /// <para>That is <see cref="BranchingFlora"/>'s shape, not a lattice species': there a
+    /// spindle is instantiated at the PARENT and the child is placed along its forward
+    /// axis, so the limb is the bond. A lattice species instead poses its spindle at its
+    /// own prism wearing that prism's rotation and lets the branch geometry reach out - the
+    /// gyroid covers both directions with a MIRRORED PAIR of half-branches meeting at the
+    /// prism (Docs/ECOSYSTEM.md 34.12), which is why it reads as a connected frame. Done
+    /// here, the same pose would stand every limb along the surface NORMAL and skewer its
+    /// own plate, because on this surface a plate's rotation is a frame OF the membrane
+    /// rather than of a bond. The spindle prefab follows from that: this species wires
+    /// Branch.prefab, whose branch runs forward from the spindle's origin along local +z.</para>
+    ///
     /// <para><b>It is NOT a lattice species.</b> The three <see cref="AssembledFlora"/>
     /// families tile a periodic surface indefinitely and reproduce as a COLONY, one
     /// daughter per fauna-wave period, because their growth rule has an opinion about
@@ -28,23 +49,24 @@ namespace CosmicShore.Gameplay
     /// bounded does not need them.</para>
     ///
     /// <para><b>A half-grown plant is exactly as symmetric as a finished one.</b> The site
-    /// table is a union of whole ORBITS of the surface's order-6 symmetry group, ordered
-    /// outward from the heart, and one grow tick lays one whole orbit
-    /// (<see cref="BorromeanSurfaceData.OrbitSize"/>). So the plant blooms from its centre
-    /// to its rim and reads as the same object at every size, rather than as a lopsided
-    /// fragment that eventually becomes symmetric.</para>
+    /// table is a union of whole ORBITS of the surface's order-6 symmetry group and one
+    /// grow tick lays one whole orbit (<see cref="BorromeanSurfaceData.OrbitSize"/>). That
+    /// survives the hop ordering above because the site graph is G-invariant, which makes
+    /// hop distance an ORBIT property rather than a site property.</para>
     ///
     /// <para>Grazing FREES a site, so a plant eaten back regrows into its own vacancies
     /// from the heart outward instead of staying a permanent stub - the live-prism budget
-    /// rule every flora family follows.</para>
+    /// rule every flora family follows. The LIMB is left standing when its plate is eaten
+    /// and is re-used when the plate grows back, so grazing can never mint a second
+    /// spindle on one bond.</para>
     /// </summary>
     public class BorromeanFlora : Flora
     {
         [Tooltip("Maximum LIVE prisms this plant can hold. Clamped to the site table's own " +
                  "SiteCount - the surface is a COMPACT object with a fixed number of places " +
                  "to put a prism, so a larger budget would simply never be spent. Lower it " +
-                 "and the plant is a partially grown membrane: still exactly symmetric, " +
-                 "because growth runs orbit by orbit.")]
+                 "and the plant is a partially grown membrane: still exactly symmetric, and " +
+                 "still connected, because a site's parent is always earlier in the table.")]
         [SerializeField] int maxTotalSpawnedObjects = BorromeanSurfaceData.SiteCount;
 
         [Tooltip("Uniform scale on the whole surface. Overridden per element by " +
@@ -68,18 +90,19 @@ namespace CosmicShore.Gameplay
 
         int Budget => Mathf.Clamp(maxTotalSpawnedObjects, 1, BorromeanSurfaceData.SiteCount);
 
-        // Turns a site's own frame into its spindle's: the branch points along the site's +y
-        // (the grain) instead of its +z (the surface normal). Because it is a constant offset
-        // the prism's compensating LOCAL rotation is the exact inverse - also a constant - so
-        // the prism lands on the measured site pose with no runtime LookRotation and no
-        // degenerate case to guard.
-        static readonly Quaternion SpindleAlign = Quaternion.Euler(-90f, 0f, 0f);
-        static readonly Quaternion PrismInSpindle = Quaternion.Euler(90f, 0f, 0f);
-
-        // Which prism occupies each site, and the spindle that carries it. Indexed by site,
-        // so a grazed site is simply a null the next grow tick refills.
+        // Which prism occupies each site, and the limb that carries it. Indexed by site, so a
+        // grazed site is simply a null the next grow tick refills - and the limb survives that,
+        // because a branch whose leaf was eaten is still a branch.
         HealthPrism[] _occupant;
+        Spindle[] _limb;
         readonly Dictionary<HealthPrism, int> _siteOf = new();
+
+        // How far the spindle prefab's own branch geometry reaches along its local +z, measured
+        // once per PREFAB rather than authored: the number is a property of a mesh and a
+        // transform chain, and a constant copied out of an asset is true only on the day it is
+        // copied. Keyed on the prefab so the whole species shares one measurement.
+        static readonly Dictionary<int, float> BranchReach = new();
+        static bool _warnedNoBranch;
 
         /// <summary>
         /// Borromean layer of the variant expression: the live-prism budget and the uniform
@@ -105,6 +128,7 @@ namespace CosmicShore.Gameplay
         public override void Initialize(Cell cell)
         {
             _occupant = new HealthPrism[BorromeanSurfaceData.SiteCount];
+            _limb = new Spindle[BorromeanSurfaceData.SiteCount];
             base.Initialize(cell);
         }
 
@@ -140,15 +164,19 @@ namespace CosmicShore.Gameplay
             int budget = Budget;
             if (healthTracker != null && healthTracker.Count >= budget) return;
 
-            // One whole ORBIT per tick, taken in the table's own order - which is outward
-            // from the heart - so the plant is exactly symmetric at every stage rather than
-            // only when it is finished. After a graze this refills the innermost vacancies
-            // first, so a plant eaten at its rim regrows from the inside out.
+            // One whole ORBIT per tick, taken in the table's own order - which is outward from
+            // the heart in HOP distance over the surface's own site graph - so the plant is
+            // exactly symmetric at every stage AND connected at every stage. The parent gate is
+            // what makes the second half true under regrowth as well as from seed: a plate is
+            // never laid on the far end of a limb whose own plate was eaten, and since the
+            // parent is earlier in the table it is refilled first anyway.
             int laid = 0;
             for (int i = 0; i < budget && laid < BorromeanSurfaceData.OrbitSize; i++)
             {
                 if (_occupant[i]) continue;
-                if (!LayAt(i)) break;
+                int parent = BorromeanSurfaceData.Parents[i];
+                if (parent >= 0 && !_occupant[parent]) continue;
+                if (!LayAt(i, parent)) break;
                 laid++;
             }
 
@@ -156,33 +184,45 @@ namespace CosmicShore.Gameplay
             if (laid > 0) NotifyGrew(laid);
         }
 
-        bool LayAt(int site)
+        Vector3 SiteWorld(int site) =>
+            transform.TransformPoint(BorromeanSurfaceData.Positions[site] * surfaceScale);
+
+        bool LayAt(int site, int parent)
         {
-            Vector3 pos = transform.TransformPoint(BorromeanSurfaceData.Positions[site] * surfaceScale);
+            Vector3 pos = SiteWorld(site);
             Quaternion rot = transform.rotation * BorromeanSurfaceData.Rotations[site];
 
-            // The spindle is the plant's connective tissue and it lies IN the membrane: its
-            // own +z is aimed along the plate's long axis - the grain the sites are laid to -
-            // so the branches read as veins running through the surface. Posed at the prism's
-            // own rotation instead (which is what every lattice family does) it would stand
-            // along the surface NORMAL and skewer its own plate.
-            Quaternion spindleRot = rot * SpindleAlign;
+            // The limb runs from the parent's plate to this one - or out of the HEART, which
+            // sits at the plant's own origin, for the six sites of the innermost orbit. That
+            // is the whole of "spindles grow from the crystal, prisms grow from spindles".
+            Vector3 root = parent >= 0 ? SiteWorld(parent) : transform.position;
+            Vector3 bond = pos - root;
 
-            Spindle newSpindle = AddSpindle();
-            newSpindle.transform.SetPositionAndRotation(pos, spindleRot);
+            Spindle limb = _limb[site];
+            if (!limb)
+            {
+                limb = AddSpindle();
+                _limb[site] = limb;
+                // The branch geometry runs along the spindle's local +z, so LookRotation puts
+                // it on the bond. Up is the site's own surface NORMAL (the third column of its
+                // measured rotation), which keeps the limb's own cross-section lying in the
+                // membrane rather than rolling arbitrarily about the bond.
+                if (!SafeLookRotation.TrySet(limb.transform, bond, rot * Vector3.forward, this))
+                    limb.transform.rotation = rot;
+                limb.transform.position = root;
+                StretchToBond(limb, bond.magnitude);
+            }
 
             HealthPrism prism = EnvironmentPrismPool.Get(healthPrism, pos, rot);
             if (!prism) return false;
 
             AddHealthBlock(prism);
-            // SetParent(worldPositionStays:false) KEEPS the local values, which at this point
-            // are whatever the pooled prism carried, so both locals are set explicitly. The
-            // prism is parented to the SPINDLE and never to another prism: a prism wears its
-            // leaf as localScale, and a non-uniform scale above a rotated child is a shear
-            // (Docs/ECOSYSTEM.md 37.9).
-            prism.transform.SetParent(newSpindle.transform, false);
-            prism.transform.localPosition = Vector3.zero;
-            prism.transform.localRotation = PrismInSpindle;
+            // Parented to the SPINDLE and never to another prism: a prism wears its leaf as
+            // localScale, and a non-uniform scale above a rotated child is a shear
+            // (Docs/ECOSYSTEM.md 37.9). worldPositionStays keeps the plate exactly on its
+            // measured pose - the spindle root is never scaled, only its branch children are,
+            // so nothing can leak into the leaf.
+            prism.transform.SetParent(limb.transform, true);
             prism.LifeForm = this;
             prism.Initialize("flora");
 
@@ -191,17 +231,105 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Stretches a limb's branch geometry to span its own bond.
+        ///
+        /// <para>It scales the spindle's CHILDREN and never the root, for the reason
+        /// <c>AssembledFlora.ScaleSpindleToLattice</c> records: a prism parents to the root, so
+        /// a scaled root would multiply the authored <c>leafSize</c> and the leaf size in the
+        /// config would stop describing the prism. Only the child's LOCAL Z is scaled - on
+        /// every spindle prefab in the project that is the branch's length axis - so a long
+        /// bond gets a long branch rather than a fat one.</para>
+        /// </summary>
+        void StretchToBond(Spindle limb, float bond)
+        {
+            if (!limb || bond <= 0f) return;
+            float reach = ResolveBranchReach(limb);
+            if (reach <= 0f) return;
+
+            float f = bond / reach;
+            Transform root = limb.transform;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                Vector3 s = child.localScale;
+                s.z *= f;
+                child.localScale = s;
+            }
+        }
+
+        /// <summary>
+        /// How far the spindle prefab's branch reaches along the spindle's local +z, measured
+        /// from the mesh bounds composed through the transform chain - not authored, because a
+        /// number copied out of an asset is true only on the day it is copied.
+        ///
+        /// <para>A prefab whose branch does NOT run along +z measures zero and is reported
+        /// once by name: the limb then stands unstretched rather than silently inverted, which
+        /// is a thing a human can see and act on.</para>
+        /// </summary>
+        float ResolveBranchReach(Spindle limb)
+        {
+            int key = spindle ? spindle.GetInstanceID() : 0;
+            if (BranchReach.TryGetValue(key, out float cached)) return cached;
+
+            Transform root = limb.transform;
+            float reach = 0f;
+            var filters = limb.GetComponentsInChildren<MeshFilter>(true);
+            foreach (var mf in filters)
+            {
+                if (!mf || !mf.sharedMesh || mf.transform == root) continue;
+                Bounds b = mf.sharedMesh.bounds;
+                Matrix4x4 m = root.worldToLocalMatrix * mf.transform.localToWorldMatrix;
+                for (int c = 0; c < 8; c++)
+                {
+                    Vector3 p = m.MultiplyPoint3x4(new Vector3(
+                        (c & 1) == 0 ? b.min.x : b.max.x,
+                        (c & 2) == 0 ? b.min.y : b.max.y,
+                        (c & 4) == 0 ? b.min.z : b.max.z));
+                    if (p.z > reach) reach = p.z;
+                }
+            }
+
+            if (reach <= 0f && !_warnedNoBranch)
+            {
+                _warnedNoBranch = true;
+                CSDebug.LogWarning(
+                    $"{name}: spindle prefab '{(spindle ? spindle.name : "none")}' has no branch " +
+                    "geometry along its local +z, so BorromeanFlora cannot stretch its limbs to " +
+                    "their bonds. This species expects Branch.prefab (the branch BranchingFlora " +
+                    "uses), whose branch runs forward from the spindle's origin.", this);
+            }
+            BranchReach[key] = reach;
+            return reach;
+        }
+
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killerName = "")
         {
             // Free the site BEFORE the base call: the base may decide this plant is dead, and
             // a freed site costs nothing either way, where a site left claimed by a prism that
-            // no longer exists is a permanent hole the plant could never regrow into.
+            // no longer exists is a permanent hole the plant could never regrow into. The LIMB
+            // is deliberately left standing - a branch whose leaf was eaten is still a branch,
+            // and keeping it is also what stops a regrowth minting a second spindle on one bond.
             if (healthPrism && _siteOf.TryGetValue(healthPrism, out int site))
             {
                 _siteOf.Remove(healthPrism);
                 if (_occupant != null && _occupant[site] == healthPrism) _occupant[site] = null;
             }
             base.RemoveHealthBlock(healthPrism, killerName);
+        }
+
+        /// <summary>
+        /// Forgets a limb the tracker retired, so the site it carried can grow a new one.
+        /// The parameter is named <c>limb</c> rather than the base's <c>spindle</c> on
+        /// purpose: <see cref="LifeForm.spindle"/> is the PREFAB field, and a parameter that
+        /// shadows it here would make the two look interchangeable.
+        /// </summary>
+        public override void RemoveSpindle(Spindle limb)
+        {
+            if (_limb != null && limb)
+                for (int i = 0; i < _limb.Length; i++)
+                    if (_limb[i] == limb) { _limb[i] = null; break; }
+            base.RemoveSpindle(limb);
         }
 
         /// <summary>

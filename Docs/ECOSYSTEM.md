@@ -8499,12 +8499,11 @@ smooth blob; at `0.85 × 0.55` they lap not at all and it reads as a perforated 
 than a surface. Shipped **`1.15 × 0.68 × 0.115`** of the measured site spacing — 30% lap,
 still unmistakably a membrane, with the individual plates legible inside it.
 
-**Growth runs one whole ORBIT per tick, outward from the heart**, which makes a half-grown
-plant *exactly* as symmetric as a finished one: six plates at the core, blooming out to the
-rings over 60 ticks. That is a property of the ORDERING (orbit-major, sorted by radius), not
-of an animation, and the verifier asserts both halves — every contiguous block of six is one
-orbit, and the blocks' radii are non-decreasing. Grazing frees a site, so a plant eaten at
-its rim regrows from the inside out.
+**Growth runs one whole ORBIT per tick, and it runs OUTWARD ALONG THE SURFACE**, not
+outward in radius — see §48.9, which is where the first pass got this wrong. A half-grown
+plant is *exactly* as symmetric as a finished one (six plates at the core, blooming out to
+the rings over 60 ticks) AND is one connected object at every stage. Grazing frees a site,
+so a plant eaten at its rim regrows from the inside out.
 
 ### 48.5 What it is NOT — and why it needs none of the lattice machinery
 
@@ -8528,25 +8527,26 @@ together — the §34.8 rule, met from the other side.
 |---|---|
 | Prisms per plant | **360** (60 orbits × 6) |
 | Plant radius | **55.6** local units (111 across) |
-| Leaf | `7.063 × 4.176 × 0.706`, volume **20.83**/prism, **7,499** per plant |
-| CHARGE leaf | `1.760 × 1.041 × 0.176` — a uniform **×0.2493** shrink |
+| TIME leaf (the anchor) | `7.063 × 4.176 × 0.706`, volume **20.83**/prism, **7,499** per plant |
+| MASS leaf | `7.677 × 4.913 × 2.150` — **3.89×** the anchor's volume, **29,186** per plant |
+| SPACE leaf | `11.976 × 2.457 × 0.706` — **4.87:1** aspect against the anchor's 1.69:1, **0.997×** its volume |
+| CHARGE leaf | `1.520 × 1.520 × 0.706` — a SQUARE footprint fitted to its own shields, at the anchor's thickness |
 | Seed floor / cap | 1 / **8 per element** — **32 always-on heart colliders** across the four |
-| Heart | 3.946 (Charge **1.97**), measured by `author_lifeform_heart_sizes.py` |
+| Heart | Time 3.946, Mass **4.197**, Space 3.944, Charge **2.088** — `author_lifeform_heart_sizes.py` |
 
 **Charge armours its mass by law** (§35), and a shield swaps in the CIRCUMSCRIBING
 octahedron reaching `1.5 × leafSize` — so a Charge plant is a different geometry problem
-from its three siblings. Fitted here by bisection over the exact OBB separating-axis test to
-the largest uniform shrink whose octahedra still clear one another. Its plates read as a
-sparse skeleton and the octahedra fill the membrane in, exactly as the gyroid and Schwarz P
-do.
+from its three siblings, and what has to look good is its SHIELDED form. See §48.9 for the
+two-part fit that replaced the uniform shrink this section first shipped.
 
-Its heart is correspondingly **half** its siblings' (1.97 against 3.946), because the
+Its heart is correspondingly smaller than its siblings' (2.088 against 3.946), because the
 fleet's heart law sizes a flora from its leaf footprint and its budget and therefore reads
 the shrunken leaf as a smaller plant. That is **consistent with every other shield-fitted
 species in the band** — SchwarzP Charge sits at the band's floor for the same reason — so it
 is recorded rather than special-cased. The anchor does not move: adding this species leaves
 `K = 0.36599` and the band `1.16 → 4.60` byte-for-byte unchanged, which is the only safe
-case for touching that tool at all.
+case for touching that tool at all. MASS, whose plate is 3.89× the anchor's volume, reads as
+a bigger plant and lands at **4.197** — still inside the band's ceiling.
 
 ### 48.7 Deployment, stated plainly because the claim rots
 
@@ -8581,6 +8581,110 @@ the date it was written").
    `author_lifeform_heart_sizes.py`, so `author_borromean_flora_assets.py` READS it back
    instead of authoring it — otherwise the two tools revert each other forever with both
    `--check`s passing in between.
+
+
+### 48.9 The second pass: growth, limbs, tiling and elements
+
+The first pass shipped a correct SHAPE and a wrong PLANT. Four corrections, each measured,
+and each with a rule that outlives this species. They are also why `/flora` now exists as a
+skill beside `/fauna`: every one of them is a flora-general contract that had only ever been
+written down inside one family's source.
+
+**(1) A flora grows the way it WITHERS, run backwards — the crystal first, then limbs out of
+the crystal, then limbs and prisms out of limbs.** The first pass ordered the site table by
+RADIUS and laid one orbit per tick, which is symmetric and *not* connected: on a compact
+surface a radius shell is several disjoint rings, so the plant grew up to **3 separate
+patches** that met up and sealed later. The table is now ordered by **HOP DISTANCE over the
+surface's own site graph** (radius-graph at 1.55 mean spacings; valence 3–7, mean 5.23; 12
+layers) — and the ordering survives the symmetry because *the graph is G-invariant, which
+makes hop distance an ORBIT property rather than a site property*, so a tick is still one
+whole orbit. Every site also names its **PARENT** (`BorromeanSurfaceData.Parents`, `-1` = the
+heart), a parent is always earlier in the table, and `Grow` refuses to lay a plate whose
+parent is absent — which is what keeps the rule true under REGROWTH as well as from seed.
+Measured: exactly **one component after every one of the 60 ticks**, heart included, with the
+rejected radius ordering as the verifier's negative control.
+
+> *A radius sort is not a growth order.* On any surface that wraps — compact or periodic —
+> "outward from the centre" is several fronts at once. Order by hops over the thing's own
+> neighbour graph, and prove connectivity by union-find over the increments the species
+> actually lays.
+
+**(2) A SPINDLE IS A BOND, NOT A MARKER.** The first pass posed each spindle at its own plate,
+rotated onto the plate's grain — so every limb stood in the membrane pointing nowhere in
+particular, and the plant read as plates floating beside sticks. A limb is now posed **on the
+bond its site names**: rooted at the parent (or at the heart, for the innermost orbit),
+`LookRotation`-ed at the child with the site's own surface normal as up, and STRETCHED so the
+branch spans the gap. The measured payoff is that a limb runs along one of its own plate's
+axes to within **21°** on average (44° worst), so the limbs read as veins following the
+tiling rather than as scaffolding.
+
+That is `BranchingFlora`'s shape, and the species' spindle prefab moved with it — off the
+Schwarz P donor's `AssemblyBranch` and onto `Branch`, whose branch runs forward from the
+spindle's origin along local +z. **The three families are worth comparing, because one of
+them is the anti-pattern:** `BranchingFlora` and `PhyllotacticFlora` root the limb on the
+bond; the **gyroid** poses it at the prism and covers the bond in BOTH directions with a
+mirrored PAIR of half-branches meeting there (§34.12); **Schwarz P** poses it at the prism
+with a SINGLE off-centre arm along local −y, so the arm points wherever that prism's −y
+happens to face. That last is a known weak case and must not be copied.
+
+Two mechanical rules travel with it: **scale the spindle's CHILDREN, never the root** (a
+prism parents to the root, so a scaled root multiplies the authored `leafSize` and the config
+stops describing the prism — §34's rule, reached again), and **MEASURE the branch's reach
+rather than authoring it** (compose the prefab's mesh bounds through its transform chain into
+spindle-root space and take the furthest +z; a constant copied out of an asset is true only
+on the day it is copied, and a prefab swap silently invalidates it). A limb is also KEPT when
+its plate is grazed and re-used when the plate grows back — a branch whose leaf was eaten is
+still a branch, and re-use is what stops regrowth minting a second spindle on one bond.
+
+**(3) A PER-SITE CHOICE AMONG EQUALLY-VALID OPTIONS IS NOISE UNLESS IT IS COMBED.** This is
+the largest finding of the pass and it is not specific to this surface. §48.3's asymptotic
+directions come in a PAIR — orthogonal, interchangeable, both equally flush — and
+`rep_frames` picked between them from the sign of an eigenvector in an arbitrary local
+tangent basis, i.e. **effectively at random per site**. Every plate was individually correct
+and the tiling was noise: measured, neighbouring plates' long axes were **56.6° apart**, with
+**49% of edges more than 60° apart** — which is exactly what *"these prisms appear messier
+than they should"* is a description of. Combing (iterated conditional modes over the
+neighbour graph, 24 seeded restarts, the choice made **per orbit REPRESENTATIVE** so it
+cannot break the symmetry) takes that to **25.9°** and 11.5%. It costs nothing at runtime:
+the choice is baked into the shipped table.
+
+Two details are load-bearing. The restarts are not decoration — the all-zeros descent settles
+at 0.855 and the best of 24 reaches 0.899, and a seeded search is what makes that
+reproducible. And the residual ~26° is genuine: the asymptotic field rotates over a curved
+surface and is singular at its flat points, so combing removes the arbitrary half of the
+disagreement and not the real half.
+
+**(4) AN ELEMENT IS A PERTURBATION OF AN ANCHOR.** The first pass gave all four elements one
+plate and shrank Charge, so three of the four were the same plant. Now **TIME is the anchor**
+— the plate tuned by rendering — and the other three are stated against it: **MASS** is more
+VOLUME (3.89×), **SPACE** is more ASPECT at the *same* volume (4.87:1 against 1.69:1, 0.997×),
+so the element reads as shape rather than as size, and it pays for it in flushness (its
+corners lift **0.86** of its own thickness off the membrane against Time's 0.56 — reported,
+because that is what a long plate costs). Authoring one anchor and three perturbations is
+what makes "what does this element do to the plant" one comparison instead of four
+independent fits.
+
+**CHARGE is fitted, and NOT by a uniform shrink.** What has to look good on a Charge plant is
+its SHIELDED form, so the fit has two parts, each measured:
+
+* **Square the footprint.** The clearance is set by the tightest BOND, which runs along the
+  grain, so length bought along the grain is paid for twice. Sweeping the in-plane aspect at
+  the shield limit: a square footprint covers **24.1%** of the membrane with octahedra against
+  **15.6%** at the anchor's 1.69:1 — half again as much shielded surface for the same
+  constraint. A plate whose shielded form has no grain does not need one.
+* **Keep the anchor's THICKNESS.** Thickness is spent along the surface NORMAL, where the
+  neighbours are not, so it costs nothing in clearance — and it is the difference between a
+  solid little jewel and a foil. Worth **4.3×** the volume of the uniform shrink it replaced.
+
+Shipped `1.520 × 1.520 × 0.706`, octahedra reaching `2.28 × 2.28 × 1.06` against a mean bond
+of 7.12, zero shielded overlaps, and 6% wider already fuses (asserted).
+
+**The verifier grew with all of it** — the shipped table is now re-proved for connectivity per
+tick, parent-before-child, one orbit of limbs off the heart, limbs joining real neighbours,
+limbs along a plate axis, the combed grain, and each element's own claim, with **15 negative
+controls** that all fire. The one check this pass RETIRED is *"the blocks' radii are
+non-decreasing"*: it was true, it was cheap, and it was asserting the very property that made
+the plant grow wrong. *A green check on the wrong invariant is worse than no check.*
 
 **Open:** nothing here has been run in the Unity editor. The geometry, the symmetry, the
 minimality, the plate fit and the shield clearance are all proved offline and the C# is

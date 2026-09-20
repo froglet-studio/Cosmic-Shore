@@ -49,6 +49,11 @@ FLORA_COMPONENT_FILEID   = 8186157953239024492                  # the donor's ro
 
 ELEMENTS = [('Charge', 1), ('Mass', 2), ('Space', 3), ('Time', 4)]
 
+# The donor's limb (AssemblyBranch) and this species' own (Branch) - see build_prefab.
+DONOR_SPINDLE_GUID       = '76cd644e62b88cc43a93674d5596971e'
+BRANCH_SPINDLE_GUID      = 'f7ec1bbfe690a184b935434a6e0dcb7a'
+SPINDLE_COMPONENT_FILEID = '5157459880619768690'
+
 # ---- population model (the shape author_flora_populations.py authors, applied by hand
 #      because this species is in no SpawnProfile for that script to walk) -------------
 SEED_FLOOR   = 1      # InitialSpawnCount - one founder; the surface is a whole object
@@ -75,12 +80,13 @@ def read_table():
         if not m: sys.exit(f'{name} not found in BorromeanSurfaceData.cs')
         return int(m.group(1)) if kind == 'int' else float(m.group(1))
     def vec(name):
-        m = re.search(rf'{name} = new\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\);', t)
+        m = re.search(rf'{name}\s*= new\(([-\d.]+)f, ([-\d.]+)f, ([-\d.]+)f\);', t)
         if not m: sys.exit(f'{name} not found in BorromeanSurfaceData.cs')
         return tuple(float(g) for g in m.groups())
     return dict(sites=const('SiteCount'), orbit=const('OrbitSize'),
                 radius=const('PlantRadius', 'float'),
-                leaf=vec('LeafSize'), charge_leaf=vec('ChargeLeafSize'))
+                leaf=vec('TimeLeafSize'),
+                leaves={e: vec(f'{e}LeafSize') for e in ('Charge', 'Mass', 'Space', 'Time')})
 
 
 def v3(t):
@@ -150,6 +156,27 @@ def build_prefab(tbl, flora_guid):
             '  surfaceScale: 1\n')
     out = out[:donor_tail.start(1)] + tail + out[donor_tail.end(1):]
 
+    # THE SPINDLE PREFAB IS PART OF THE GROWTH RULE, so the clone re-points it.  The donor
+    # wires AssemblyBranch, a SINGLE arm hanging off the spindle's local -y from 0.5 to 6.7
+    # units - and because a lattice species poses its spindle at its own PRISM with that
+    # prism's rotation, the arm points wherever the prism's -y happens to face rather than
+    # at any particular neighbour.  That is why Schwarz P's limbs read poorly; the gyroid
+    # avoids it with a MIRRORED PAIR meeting at the prism (Docs/ECOSYSTEM.md 34.12), which
+    # covers the bond in both directions.
+    #
+    # A Borromean limb is a THIRD shape: it spans one named bond, from its PARENT to its
+    # child, and is stretched to fit.  Branch.prefab - the branch BranchingFlora uses - runs
+    # forward from the spindle's own origin along local +z, which is exactly what
+    # LookRotation aims and what BorromeanFlora.StretchToBond scales.  Both prefabs happen
+    # to carry the Spindle component at the same fileID, so only the guid moves - and that
+    # is asserted rather than assumed.
+    if f'guid: {DONOR_SPINDLE_GUID}' not in out:
+        sys.exit('the donor no longer wires AssemblyBranch - re-derive the spindle swap')
+    out = out.replace(f'guid: {DONOR_SPINDLE_GUID}, type: 3',
+                      f'guid: {BRANCH_SPINDLE_GUID}, type: 3')
+    if f'spindle: {{fileID: {SPINDLE_COMPONENT_FILEID}, guid: {BRANCH_SPINDLE_GUID}, type: 3}}' not in out:
+        sys.exit('the spindle reference did not land - Branch.prefab has changed shape')
+
     # healthBlocksForMaturity: one orbit x10; minHealthBlocks: a stub is dead.
     out = re.sub(r'^  healthBlocksForMaturity: \d+$',
                  f'  healthBlocksForMaturity: {tbl["orbit"] * 10}', out, count=1, flags=re.M)
@@ -177,7 +204,11 @@ def existing_heart_scale(path):
 
 
 def build_config(tbl, element, value, prefab_guid, heart='0'):
-    leaf = tbl['charge_leaf'] if element == 'Charge' else tbl['leaf']
+    # THE ELEMENT IS THE PLATE.  A lifeform is its species and its element and nothing
+    # else (Docs/ECOSYSTEM.md 40), so every element states its own leaf here - Time the
+    # measured optimum, Mass more volume, Space more aspect, Charge fitted to its own
+    # shielded octahedra.  All four come out of the measurement; none is retyped.
+    leaf = tbl['leaves'][element]
     budget = tbl['sites']
     quota = max(1, int(budget * QUOTA_FRAC + 0.5))
     # A plant is PlantRadius across, so an offspring belongs clear of its parent.
@@ -323,10 +354,13 @@ def main():
     tbl, files, guids = plan()
     print(f'BorromeanFlora: {tbl["sites"]} sites in orbits of {tbl["orbit"]}, '
           f'plant radius {tbl["radius"]:.1f}')
-    print(f'  leaf   {v3(tbl["leaf"])}   volume/prism '
-          f'{tbl["leaf"][0]*tbl["leaf"][1]*tbl["leaf"][2]:.2f}   '
-          f'plant {tbl["leaf"][0]*tbl["leaf"][1]*tbl["leaf"][2]*tbl["sites"]:,.0f}')
-    print(f'  Charge {v3(tbl["charge_leaf"])} (shield-fitted)')
+    for e in ('Time', 'Mass', 'Space', 'Charge'):
+        L = tbl['leaves'][e]
+        vol = L[0] * L[1] * L[2]
+        note = {'Time': 'the anchor', 'Mass': 'more volume', 'Space': 'more aspect',
+                'Charge': 'fitted to its own shielded octahedra'}[e]
+        print(f'  {e:<6} {v3(L)}  aspect {L[0]/L[1]:4.2f}  volume/prism {vol:6.2f}  '
+              f'plant {vol*tbl["sites"]:8,.0f}   ({note})')
     print(f'  population: floor {SEED_FLOOR}, cap {CAP} per element '
           f'({CAP*4} heart colliders across the four), quota '
           f'{max(1,int(tbl["sites"]*QUOTA_FRAC+0.5))}')

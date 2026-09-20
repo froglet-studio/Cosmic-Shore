@@ -547,8 +547,26 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   order-24 pyritohedral group, but half of those elements reverse some rings' orientations and
   carry this level set to a different one — measured for every orientation assignment. The site
   table is **EXACTLY** invariant (residual `0.00e+00`) because it is a union of whole ORBITS, and
-  growth lays **one whole orbit per tick outward from the heart**, so a half-grown plant is
-  exactly as symmetric as a finished one. Three things generalise. **A centroidal Voronoi
+  growth lays **one whole orbit per tick**, so a half-grown plant is exactly as symmetric as a
+  finished one. **It grows the way a flora WITHERS, run backwards — the crystal first, then limbs
+  out of the crystal, then limbs and prisms out of limbs** (`Docs/ECOSYSTEM.md §48.9`), and that
+  cost a second pass: the first ordering was by RADIUS, which on a surface that wraps is several
+  disjoint rings, so the plant grew up to **3 separate patches** that sealed up later. The table
+  is ordered by **HOP DISTANCE over the surface's own site graph**, which survives the symmetry
+  because *the graph is G-invariant, so hop distance is an ORBIT property rather than a site
+  property*; every site names its **PARENT** (always earlier in the table) and a plate is never
+  laid on the far end of a limb that does not exist — measured, exactly ONE component after every
+  one of the 60 ticks. *A radius sort is not a growth order.* **A SPINDLE IS A BOND, NOT A
+  MARKER**: each limb is rooted at its parent, aimed at its child and stretched to span the gap
+  (a limb runs along one of its own plate's axes to within 21°), which is `BranchingFlora`'s
+  shape — the gyroid reaches the same end from the other side with a mirrored PAIR meeting at the
+  prism (§34.12), while **Schwarz P's single off-centre arm is the anti-pattern** and must not be
+  copied. **A PER-SITE CHOICE AMONG EQUALLY-VALID OPTIONS IS NOISE UNLESS IT IS COMBED** — the two
+  asymptotic directions below are orthogonal and interchangeable, so picking one per site from the
+  sign of an eigenvector in an arbitrary tangent basis left neighbouring plates **56.6°** apart
+  with 49% of edges over 60°, every plate individually flush and the TILING noise; combing the
+  choice per orbit REPRESENTATIVE (so it cannot break the symmetry) takes it to **25.9°** at zero
+  runtime cost. Three more things generalise. **A centroidal Voronoi
   tessellation can be made exactly symmetric** by running Lloyd's on the orbit set and pulling
   each centroid back through the group — averaging over the orbit is what keeps a representative
   a representative, so there is no symmetrisation pass and therefore no drift for one to mask.
@@ -572,13 +590,25 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   evidence** — every structural check passes at any aspect, so the choice was made by rendering
   four: at `1.40 × 0.73` the plates lap 61% and the membrane reads as one smooth blob, at
   `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; shipped `1.15 × 0.68 ×
-  0.115` of the measured site spacing (30% lap). **360 prisms, radius 55.6, 7,499 volume, cap 8
-  per element = 32 always-on heart colliders**, and a CHARGE plant takes a uniform **×0.2493**
-  shrink so its shield octahedra clear (§35) — which also halves its heart (1.97 against 3.946),
-  consistently with every other shield-fitted species, and moves the fleet's heart anchor not at
-  all. Authored by `Tools/Build/measure_borromean_minimal_surface.py` + `author_borromean_flora_assets.py`,
-  re-proved from the shipped table alone by `Tools/Build/verify_borromean_surface_tables.py`
-  (seven negative controls). **In NO SpawnProfile** — reachable through the freestyle Lifeform
+  0.115` of the measured site spacing (36% lap). **360 prisms, radius 55.6, cap 8 per element =
+  32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN ANCHOR**, which is what
+  makes "what does this element do to the plant" one comparison rather than four independent
+  fits: **TIME** is that anchor (7,499 volume per plant), **MASS** is more VOLUME (3.89×),
+  **SPACE** is more ASPECT at the *same* volume (4.87:1 against 1.69:1) and pays for it in
+  flushness (its corners lift 0.86 of its own thickness off the membrane against Time's 0.56),
+  and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Both halves of that
+  fit are measured: the footprint is SQUARE (the clearance is set by the tightest BOND, which
+  runs along the grain, so length there is paid for twice — square covers **24.1%** of the
+  membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is the
+  anchor's unshrunk (thickness is spent along the surface NORMAL, where the neighbours are not,
+  so it costs nothing in clearance and is worth **4.3×** the volume of the uniform shrink it
+  replaced). Authored by `Tools/Build/measure_borromean_minimal_surface.py` +
+  `author_borromean_flora_assets.py`, re-proved from the shipped table alone by
+  `Tools/Build/verify_borromean_surface_tables.py` (**15** negative controls, all firing) — whose
+  one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
+  was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
+  on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`
+  skill**. **In NO SpawnProfile** — reachable through the freestyle Lifeform
   Matrix toy, the worm colony's precedent, because adopting it into a cell means re-deriving that
   cell's volume ladder. Two traps worth more than the species: **a `ROOT` one `dirname` too
   shallow wrote the whole asset tree into `Tools/Assets/` and the verifier, sharing the bug, read
@@ -790,6 +820,17 @@ Meta values: `Any (-1)`, `Random (0)`
 moves, where its heart sits, its body prisms, its config wiring. It loads the per-creature
 anatomy contract on top of `/ecology`'s system invariants (`Docs/ECOSYSTEM.md` §45 is the worked
 example of a species that looked finished and had never run).
+
+**Use the `/flora` skill for ANY work on a PLANT** — adding a species, how one grows, how it
+poses its spindles, how its prisms are shaped and oriented, what its four elements SAY, how it
+reproduces and plants itself. It is `/fauna`'s sibling and loads the per-plant contract on top of
+`/ecology`: the growth law (*a flora grows the way it withers, run backwards* — crystal, then
+limbs out of the crystal, then limbs and prisms out of limbs), the limb contract (**a spindle is
+a BOND, not a marker** — with the measured comparison of how each family poses one, and which one
+is the anti-pattern), the elegance rules for a tiling (**a per-site choice among equally-valid
+options is NOISE unless it is combed**), and the element contract (one authored ANCHOR and three
+perturbations of it, Charge FITTED against its own shielded octahedra). `Docs/ECOSYSTEM.md` §48.9
+is the worked example of a species whose SHAPE was right and whose PLANT was wrong.
 
 **Use the `/arcadegame` skill for ANY new game mode** (the recipe, the shared generator library
 `Tools/Build/arcade_mode_lib.py`, the eleven registrations, the gates), **the `/arenagame` skill on

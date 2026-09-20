@@ -606,3 +606,209 @@ def fit_shield_scale(P, X, Y, Z, leaf, pairs, tol=1e-4):
         if clear(m): lo = m
         else: hi = m
     return lo
+
+# ---------------------------------------------------------------------------------
+#  Growth topology: the site graph, the growth order, and the bond tree
+# ---------------------------------------------------------------------------------
+#  A flora grows the way it withers, RUN BACKWARDS: the crystal first, then limbs out
+#  of the crystal, then limbs and prisms out of limbs.  Everything below exists to make
+#  that true of a surface whose sites were laid down by a tessellation that has no
+#  opinion about order - a radius sort puts six disconnected patches on the surface at
+#  once and lets them meet up later, which is the opposite of growing from the heart.
+# ---------------------------------------------------------------------------------
+
+def group_table(G):
+    """The multiplication table of `G`: `T[a, b] = c` where `G[a] @ G[b] == G[c]`.
+
+    Needed because the bond tree is chosen for ONE representative and carried around the
+    orbit: a parent picked independently per site could split on an exact tie and break
+    the symmetry the whole site table is built to have."""
+    G = np.asarray(G, float)
+    k = len(G)
+    T = -np.ones((k, k), int)
+    for a in range(k):
+        for b in range(k):
+            M = G[a] @ G[b]
+            d = np.abs(np.asarray(G) - M).reshape(k, -1).max(axis=1)
+            c = int(np.argmin(d))
+            assert d[c] < 1e-9, 'G is not closed under multiplication'
+            T[a, b] = c
+    return T
+
+
+def site_graph(P, reach):
+    """Neighbour lists for the site set - every pair within `reach`.
+
+    A radius graph rather than a fixed k: on a centroidal tessellation the valence is
+    genuinely 5-7 and forcing k neighbours reaches across the surface's own folds.  The
+    point set is G-invariant and a distance is G-invariant, so this graph is too, which
+    is what makes the hop distance below an ORBIT property rather than a site property."""
+    from scipy.spatial import cKDTree
+    tree = cKDTree(P)
+    return [np.array(sorted(set(tree.query_ball_point(P[i], reach)) - {i}), int)
+            for i in range(len(P))]
+
+
+def hop_layers(adj, seed):
+    """Breadth-first hop distance from `seed` (an index array). -1 = unreachable."""
+    h = np.full(len(adj), -1, int)
+    h[seed] = 0
+    frontier = list(seed)
+    while frontier:
+        nxt = []
+        for i in frontier:
+            for j in adj[i]:
+                if h[j] < 0:
+                    h[j] = h[i] + 1
+                    nxt.append(j)
+        frontier = nxt
+    return h
+
+
+def comb_axes(adj, A, Bx, k, restarts=12, sweeps=60, seed=11):
+    """Choose, per orbit REPRESENTATIVE, which of the two asymptotic directions is the
+    plate's long axis, so that neighbouring plates agree instead of flipping 90 degrees.
+
+    On a minimal surface the two asymptotic directions are orthogonal and equally valid,
+    and `rep_frames` picks between them from the sign of an eigenvector in an arbitrary
+    tangent basis - i.e. effectively at random per site.  Each plate is then individually
+    flush and the TILING is noise, which is what "these prisms appear messier than they
+    should" is a description of.  Combing is the fix and it costs nothing at runtime: the
+    choice is baked into the shipped table.
+
+    The variable is per representative (`len(A) // k` of them) because the frames are
+    carried around the orbit by the group - swapping a representative's axes swaps every
+    image's, so the choice cannot break the symmetry.  The score is `|cos|` between
+    neighbouring grains, sign-free because a plate is a BOX and a flipped axis is the same
+    plate.
+
+    Iterated conditional modes with SEEDED RESTARTS, not a single descent: measured, the
+    all-zeros start settles at 0.855 while the best of twelve reaches 0.892, so the extra
+    two seconds are worth more than the 60-variable problem looks like it should cost.
+
+    Returns (choice, score_before, score_after)."""
+    n = len(A)
+    reps = n // k
+    E = np.array([(i, j) for i in range(n) for j in adj[i] if j > i], int)
+    owner = [[] for _ in range(reps)]
+    for e, (i, j) in enumerate(E):
+        owner[i // k].append(e)
+        owner[j // k].append(e)
+    owner = [np.array(sorted(set(o)), int) for o in owner]
+    rep_of = np.arange(n) // k
+
+    def grain(sel):
+        return np.where(sel[rep_of][:, None] == 0, A, Bx)
+
+    def edge_scores(g, idx=None):
+        e = E if idx is None else E[idx]
+        return np.abs(np.einsum('ij,ij->i', g[e[:, 0]], g[e[:, 1]]))
+
+    before = float(edge_scores(grain(np.zeros(reps, int))).mean())
+    rng = np.random.default_rng(seed)
+    best_c, best_s = None, -1.0
+    for t in range(restarts):
+        c = np.zeros(reps, int) if t == 0 else rng.integers(0, 2, reps)
+        for _ in range(sweeps):
+            moved = False
+            for r in range(reps):
+                keep, v = c[r], -1.0
+                for opt in (0, 1):
+                    c[r] = opt
+                    s = float(edge_scores(grain(c), owner[r]).sum())
+                    if s > v: v, keep = s, opt
+                if keep != c[r]: moved = True
+                c[r] = keep
+            if not moved: break
+        s = float(edge_scores(grain(c)).mean())
+        if s > best_s: best_s, best_c = s, c.copy()
+    return best_c, before, best_s
+
+
+def bond_tree(P, adj, hop, order_of_rep, X, Y, G, T, k):
+    """A parent for every site: the neighbour one hop CLOSER to the heart whose bond runs
+    most nearly along one of the plate's own axes.
+
+    This is the plant's skeleton.  A spindle is posed on the bond it names - rooted at the
+    parent, aimed at the child - so the limbs lie IN the membrane and run along the tiling's
+    own lines rather than standing off the surface along its normal.  Hop-0 sites have no
+    parent and take the HEART instead (-1), which is what makes the whole plant one
+    connected object from the first grow tick: six limbs leaving the crystal.
+
+    Chosen for the representative alone and carried by the group (hence `T`), so an exact
+    tie cannot make two images of one site pick differently."""
+    n = len(P)
+    parent = np.full(n, -2, int)
+    for r in range(len(P) // k):
+        s = r * k                                   # the representative, element G[0] = I
+        if hop[s] == 0:
+            p = -1
+        else:
+            best, bestv = -1, -np.inf
+            for j in adj[s]:
+                if hop[j] != hop[s] - 1: continue
+                d = P[s] - P[j]
+                L = float(np.linalg.norm(d))
+                if L <= 0: continue
+                d = d / L
+                align = max(abs(float(d @ X[s])), abs(float(d @ Y[s])))
+                v = align - 1e-3 * L                # align first, shortest bond as tie-break
+                if v > bestv: bestv, best = v, j
+            assert best >= 0, f'site {s} at hop {hop[s]} has no parent one hop closer'
+            p = best
+        for j in range(k):
+            if p < 0:
+                parent[r * k + j] = -1
+            else:
+                parent[r * k + j] = (p // k) * k + T[j, p % k]
+    assert (parent >= -1).all()
+    return parent
+
+
+def connected_prefixes(P, adj, k, heart_link):
+    """Assert the laid set is CONNECTED at every grow tick.
+
+    A tick lays one whole orbit, so the property to hold is that `{heart} + sites[0:m*k]`
+    is one component for every m - the heart counting as adjacent to any site within
+    `heart_link`.  This is the measured form of "it appears to grow from the crystal"
+    rather than "it seals up disconnected parts after the fact", and it is checked here
+    rather than asserted in prose because a re-tessellation can quietly break it."""
+    n = len(P)
+    near = np.linalg.norm(P, axis=1) <= heart_link
+    comps = []
+    for m in range(1, n // k + 1):
+        cut = m * k
+        par = list(range(cut + 1))                  # index `cut` is the heart
+        def find(a):
+            while par[a] != a:
+                par[a] = par[par[a]]; a = par[a]
+            return a
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb: par[ra] = rb
+        for i in range(cut):
+            if near[i]: union(i, cut)
+            for j in adj[i]:
+                if j < cut: union(i, j)
+        comps.append(len({find(i) for i in range(cut + 1)}))
+    return comps
+
+
+def plate_flushness(P, X, Y, Z, samples, leaf):
+    """How far a plate's four corners stand off the surface, as a fraction of its own
+    thickness.  A plate that lifts by less than its own half-thickness is lying ON the
+    membrane; one that lifts by several is a shingle propped on a corner.
+
+    This is what the asymptotic directions buy and what a long thin element spends: it is
+    reported per element rather than asserted, because a Space plant's plates are MEANT to
+    be long enough that the surface curves away under them."""
+    from scipy.spatial import cKDTree
+    tree = cKDTree(samples)
+    hx, hy = 0.5 * leaf[0], 0.5 * leaf[1]
+    off = []
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            C = P + sx * hx * X + sy * hy * Y
+            off.append(tree.query(C)[0])
+    off = np.max(np.stack(off, axis=0), axis=0)
+    return float(off.mean()), float(off.max())

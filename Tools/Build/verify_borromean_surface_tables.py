@@ -23,10 +23,13 @@ WHAT IS PROVED, AND WHAT IS NOT
 -------------------------------
 Proved here: the rings are Borromean; their oriented link's symmetry is exactly order 6;
 the site set is EXACTLY a union of orbits of that group; growth runs outward in whole
-orbits; the frames are unit right-handed rotations lying on the surface's ASYMPTOTIC
-directions; the surface through the sites is MINIMAL (mean curvature is a rounding error
-beside the curvature that is actually there); the heart seat is clear; and no two shielded
-CHARGE prisms intersect.
+orbits AND leaves the plant CONNECTED after every one of them, with every site's limb
+earlier in the table than the site itself and exactly one orbit of limbs leaving the heart;
+the frames are unit right-handed rotations lying on the surface's ASYMPTOTIC directions,
+with the choice between the two of them COMBED so neighbouring plates agree about the
+grain; the surface through the sites is MINIMAL (mean curvature is a rounding error beside
+the curvature that is actually there); the heart seat is clear; each element's plate says
+what that element says; and no two shielded CHARGE prisms intersect.
 
 NOT proved here: that the surface is the minimal-AREA one, or that it has genus 1.  Both
 are properties of the mesh, which this script does not have - they are asserted by the
@@ -50,6 +53,13 @@ TABLE = os.path.join(ROOT, 'Assets/_Scripts/Controller/Environment/FloraAndFauna
 
 NUM = r'(-?\d+(?:\.\d+)?)'
 
+# The site graph the growth order is defined over, in mean nearest-neighbour spacings, and
+# how close a site has to be to count as hanging off the heart.  Both mirror
+# measure_borromean_minimal_surface.py; they are repeated here rather than imported because
+# this script's whole job is to re-prove the artifact WITHOUT re-running the tool.
+GRAPH_REACH = 1.55
+HEART_LINK = 1.6
+
 
 def read_table(path=TABLE):
     if not os.path.exists(path):
@@ -65,7 +75,7 @@ def read_table(path=TABLE):
         if not m: sys.exit(f'FAIL: const float {n} missing')
         return float(m.group(1))
     def vec(n):
-        m = re.search(rf'{n} = new\({NUM}f, {NUM}f, {NUM}f\);', t)
+        m = re.search(rf'{n}\s*= new\({NUM}f, {NUM}f, {NUM}f\);', t)
         if not m: sys.exit(f'FAIL: {n} missing')
         return np.array([float(g) for g in m.groups()])
     def arr(n, w):
@@ -73,11 +83,17 @@ def read_table(path=TABLE):
         if not m: sys.exit(f'FAIL: array {n} missing')
         rows = re.findall(r'new\(' + ', '.join([NUM + 'f'] * w) + r'\),', m.group(1))
         return np.array([[float(x) for x in r] for r in rows])
+    def ints(n):
+        m = re.search(rf'{n} =\s*\{{\n(.*?)\n\s*\}};', t, re.S)
+        if not m: sys.exit(f'FAIL: int array {n} missing')
+        return np.array([int(v) for v in re.findall(r'-?\d+', m.group(1))])
     return dict(
         sites=ci('SiteCount'), orbit=ci('OrbitSize'), orbits=ci('OrbitCount'),
         radius=cf('PlantRadius'), seat=cf('HeartSeatRadius'), area=cf('SurfaceArea'),
-        spacing=cf('SiteSpacing'), leaf=vec('LeafSize'), charge=vec('ChargeLeafSize'),
-        P=arr('Positions', 3), Q=arr('Rotations', 4))
+        spacing=cf('SiteSpacing'), bond=cf('LongestBond'),
+        leaf=vec('TimeLeafSize'), charge=vec('ChargeLeafSize'),
+        mass=vec('MassLeafSize'), space=vec('SpaceLeafSize'),
+        parents=ints('Parents'), P=arr('Positions', 3), Q=arr('Rotations', 4))
 
 
 def frames(Q):
@@ -158,11 +174,35 @@ def verify(d, c, label='shipped table'):
                     cKDTree(b).query(img)[0].max() / scale)
     c.ok(worst < 1e-6, 'every contiguous block of OrbitSize is one orbit',
          f'worst block residual {worst:.2e}')
-    rad = np.linalg.norm(blocks, axis=2).mean(axis=1)
-    c.ok(np.all(np.diff(rad) >= -1e-4), 'blocks are ordered outward from the heart',
-         f'radius {rad[0]:.2f} -> {rad[-1]:.2f}')
     c.ok(abs(np.linalg.norm(P, axis=1).max() - d['radius']) < 1e-3,
          'PlantRadius is the furthest site')
+
+    # The order is by HOP distance over the surface's own site graph, not by radius - which
+    # is what makes the plant one connected object at every stage instead of six patches
+    # that meet up later.  Proved from the points: rebuild the graph and walk the table.
+    dd, _ = cKDTree(P).query(P, k=2)
+    nnd = dd[:, 1].mean()
+    adj = B.site_graph(P, GRAPH_REACH * nnd)
+    comps = B.connected_prefixes(P, adj, k, HEART_LINK * nnd)
+    c.ok(set(comps) == {1}, 'the plant is CONNECTED after every grow tick (heart included)',
+         f'worst tick had {max(comps)} components over {len(comps)} ticks')
+    par = d['parents']
+    c.ok(len(par) == len(P), 'one parent per site', f'{len(par)} vs {len(P)}')
+    c.ok(all(par[i] < i for i in range(len(P))),
+         'a site\'s limb is always EARLIER in the table than the site',
+         f'worst offset {max((int(par[i]) - i) for i in range(len(P)))}')
+    c.ok(int((par == -1).sum()) == k,
+         'exactly one orbit of limbs leaves the HEART', f'{int((par==-1).sum())} vs {k}')
+    linked = all(par[i] < 0 or par[i] in adj[i] for i in range(len(P)))
+    c.ok(linked, 'every limb joins two sites that are actually neighbours')
+    live = [i for i in range(len(P)) if par[i] >= 0]
+    bl = np.array([np.linalg.norm(P[i] - P[par[i]]) for i in live]) if live else np.zeros(1)
+    c.ok(abs(bl.max() - d['bond']) < 1e-2, 'LongestBond is the longest limb',
+         f'{bl.max():.3f} vs {d["bond"]:.3f}')
+    al = np.array([max(abs(float((P[i] - P[par[i]]) @ X[i])), abs(float((P[i] - P[par[i]]) @ Y[i])))
+                   / np.linalg.norm(P[i] - P[par[i]]) for i in live]) if live else np.zeros(1)
+    c.ok(al.mean() > 0.85, 'a limb runs along one of its plate\'s own axes',
+         f'|cos| mean {al.mean():.3f} worst {al.min():.3f}')
 
     print('[5] the frames are unit right-handed rotations')
     c.ok(np.abs(np.linalg.norm(Q, axis=1) - 1).max() < 2e-5, 'unit quaternions',
@@ -188,6 +228,11 @@ def verify(d, c, label='shipped table'):
     ny = np.abs(q[:, 1]).mean() / max(K.mean(), 1e-12)
     c.ok(max(nx, ny) < 0.35, 'normal curvature along both plate axes is near zero',
          f'along x {nx:.3f}, along y {ny:.3f} of the shear')
+    # ... and the CHOICE between the two asymptotic directions is COMBED.  Both are
+    # equally valid, so an uncombed table is individually flush and collectively noise.
+    grain = np.array([abs(float(X[i] @ X[j])) for i in range(len(P)) for j in adj[i] if j > i])
+    c.ok(grain.mean() > 0.75, 'neighbouring plates agree about the grain',
+         f'|cos| {grain.mean():.3f} = {np.degrees(np.arccos(min(grain.mean(),1))):.1f} deg apart')
 
     print('[8] spacing, the heart seat, and the plate')
     dd, _ = cKDTree(P).query(P, k=2)
@@ -206,9 +251,29 @@ def verify(d, c, label='shipped table'):
     n_ch = B.obb_overlap_count(P, X, Y, Z, 1.5 * d['charge'], sp)
     c.ok(n_ch == 0, 'no two CHARGE octahedra intersect (the 3x shield law)',
          f'{n_ch} of {len(sp)} near pairs')
-    c.ok(np.all(d['charge'] <= d['leaf'] + 1e-6),
-         'the CHARGE leaf is a SHRINK of the shared one, not a different aspect',
-         f'x{(d["charge"]/np.maximum(d["leaf"],1e-9)).mean():.4f}')
+    c.ok(abs(d['charge'][2] - d['leaf'][2]) < 1e-4,
+         'the CHARGE plate keeps the anchor\'s THICKNESS (spent along the normal, where '
+         'the neighbours are not)', f'{d["charge"][2]:.3f} vs {d["leaf"][2]:.3f}')
+    c.ok(abs(d['charge'][0] - d['charge'][1]) < 1e-4,
+         'its footprint is SQUARE (length along the grain is paid for twice)',
+         f'{d["charge"][0]:.3f} x {d["charge"][1]:.3f}')
+    grown = d['charge'] * np.array([1.06, 1.06, 1.0])
+    c.ok(B.obb_overlap_count(P, X, Y, Z, 1.5 * grown, sp) > 0,
+         'and it is the LARGEST that clears - 6% wider already fuses')
+
+    print('[10] each element states its own plate')
+    volume = lambda v: float(v[0] * v[1] * v[2])
+    c.ok(volume(d['mass']) > 2.0 * volume(d['leaf']),
+         'MASS is more VOLUME than the Time anchor',
+         f'{volume(d["mass"])/volume(d["leaf"]):.2f}x')
+    c.ok(d['space'][0] / d['space'][1] > 2.0 * d['leaf'][0] / d['leaf'][1],
+         'SPACE is more ASPECT than the Time anchor',
+         f'{d["space"][0]/d["space"][1]:.2f}:1 vs {d["leaf"][0]/d["leaf"][1]:.2f}:1')
+    c.ok(abs(volume(d['space']) / volume(d['leaf']) - 1.0) < 0.1,
+         'and SPACE spends no extra volume doing it - the element reads as shape',
+         f'{volume(d["space"])/volume(d["leaf"]):.3f}x')
+    c.ok(volume(d['charge']) < volume(d['leaf']),
+         'CHARGE is the one element that shrinks, because its shield is 3x its plate')
     return c
 
 
@@ -241,8 +306,42 @@ def self_test():
         for a in ('P', 'Q'):
             e[a][[0, k]] = e[a][[k, 0]]
     control('a site swapped across orbits', cross_orbit, 'contiguous block of OrbitSize')
-    control('growth order reversed', lambda e: e.__setitem__('P', e['P'][::-1].copy()),
-            'ordered outward from the heart')
+    def radius_order(e):
+        # The ordering this pass REPLACED: orbits sorted by radius.  It is exactly as
+        # symmetric and exactly as evenly spaced, and it grows several patches at once that
+        # meet up later - which is the defect the hop ordering exists to fix, so it is the
+        # right control for the connectivity check.
+        k = e['orbit']
+        blocks = e['P'].reshape(-1, k, 3)
+        o = np.argsort(np.linalg.norm(blocks, axis=2).mean(axis=1))
+        perm = (o[:, None] * k + np.arange(k)[None, :]).reshape(-1)
+        inv = np.empty(len(perm), int); inv[perm] = np.arange(len(perm))
+        e['P'] = e['P'][perm].copy(); e['Q'] = e['Q'][perm].copy()
+        e['parents'] = np.array([-1 if e['parents'][j] < 0 else inv[e['parents'][j]]
+                                 for j in perm])
+    control('orbits ordered by radius instead of hop', radius_order,
+            'CONNECTED after every grow tick')
+
+    def parents_ahead(e):
+        par = e['parents'].copy()
+        par[e['orbit']:] = np.arange(e['orbit'], len(par)) + 1
+        par[-1] = 0
+        e['parents'] = par
+    control('a site laid before its own limb', parents_ahead, 'EARLIER in the table')
+
+    control('every site hung straight off the heart',
+            lambda e: e.__setitem__('parents', np.full(len(e['P']), -1)),
+            'one orbit of limbs leaves the HEART')
+
+    def uncomb(e):
+        # Rotate every second orbit's frame 90 degrees in its own tangent plane: still
+        # asymptotic (both directions are), still symmetric, and the tiling is noise again.
+        X, Y, Z = frames(e['Q'])
+        sel = (np.arange(len(e['P'])) // e['orbit']) % 2 == 1
+        X2, Y2 = X.copy(), Y.copy()
+        X2[sel], Y2[sel] = Y[sel], -X[sel]
+        e['Q'] = B.quaternion_from_frame(X2, Y2, Z)
+    control('the grain left uncombed', uncomb, 'agree about the grain')
     def sphere(e):
         # the same sites projected onto a sphere of the same radius: still symmetric, still
         # evenly spaced, and NOT minimal.
@@ -265,6 +364,19 @@ def self_test():
             lambda e: e['P'].__setitem__(0, e['P'][0] * 0.05), 'clear of the heart seat')
     control('CHARGE leaf left unshrunk', lambda e: e.__setitem__('charge', e['leaf'].copy()),
             'CHARGE octahedra intersect')
+    control('CHARGE footprint left at the anchor\'s aspect',
+            lambda e: e.__setitem__('charge', e['charge'] * np.array([1.3, 1 / 1.3, 1.0])),
+            'footprint is SQUARE')
+    control('CHARGE shrunk further than it needs to be',
+            lambda e: e.__setitem__('charge', e['charge'] * np.array([0.6, 0.6, 1.0])),
+            'LARGEST that clears')
+    control('MASS left at the anchor plate',
+            lambda e: e.__setitem__('mass', e['leaf'].copy()), 'more VOLUME')
+    control('SPACE left at the anchor plate',
+            lambda e: e.__setitem__('space', e['leaf'].copy()), 'more ASPECT')
+    control('SPACE buying its aspect with extra volume',
+            lambda e: e.__setitem__('space', e['space'] * np.array([1.0, 1.0, 2.0])),
+            'spends no extra volume')
     print(f'\n{"self-test PASSED" if bad == 0 else f"self-test FAILED: {bad} control(s) did not fire"}')
     return bad
 
