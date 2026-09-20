@@ -280,11 +280,47 @@ State all three when you add or resize one:
 3. **Volume**, because volume is the spine. A species whose prisms are not nominal (16)
    makes its cell's `PhaseThresholds` wrong. Per-family exponent:
    `BranchingFlora` lays `leafSize` on all three axes (**s³**); `PhyllotacticFlora` reads
-   only `leafSize.x/y` as a CROSS-SECTION (**s²**); a lattice species is exempt via
-   `PrismSizeFixedByGrowthRule`.
+   only `leafSize.x/y` as a CROSS-SECTION (**s²**); a species whose leaf is a measured
+   TABLE is exempt via `PrismSizeFixedByGrowthRule`, and its exponent is **0** — the
+   per-cell scalar (`SpawnProfileSO.FloraPrismScale`) does not reach it AT ALL, because
+   `Flora.ApplyCellPrismScale` returns early. That is a statement about the code, not a
+   rounding, and a cell's prism axis will then move some of its species and not others.
 
-A species in **no SpawnProfile** (Borromean, the worm colony) costs a cell nothing until
-somebody adopts it — and adopting it means re-deriving that cell's volume ladder. Say so.
+A species in **no SpawnProfile** (the worm colony) costs a cell nothing until somebody
+adopts it. Say so — and re-prove it by grepping the config GUIDs, because *an "it is wired
+nowhere" claim is true only on the date it was written*.
+
+---
+
+## 7.1 ADOPTING a species into a cell
+
+The cheap-looking half is the `SupportedFloras` entry. Four things are not cheap, and each
+has cost a real pass:
+
+* **A species with per-element geometry is adopted as N configs, not one.** A
+  `FloraConfigurationSO` carries ONE `Variant` block, so a rolled config can author one
+  leaf, one budget and one **heart size** for elements that may be nothing alike (the
+  Borromean four span 180–360 prisms, 804–15,739 plant volume and 108–222 units across).
+  `author_lifeform_heart_sizes.py` would then be sizing an average rather than a lifeform.
+  Roll only where the elements really are variations of one plant.
+* **The cell's volume ladder moves, and the AUTHORED half must not follow it.** A
+  play-tested `*EnterVolume` pair is a number a human reached by playing the arena: hold it
+  and let the MARGIN absorb the new mass, then state the new margin. A generator that pins
+  a `REFERENCE_FOREST_VOLUME` is pinning it for exactly this moment — re-anchor it
+  deliberately rather than letting four ladders slide and calling that "unchanged". The
+  COUNT half is derived and legitimately moves.
+* **One model row for N configs needs an assert.** Density scalars round half UP **per
+  config**, and that does not commute with a sum: two seeds × four configs at 3.67 is 28
+  plants, eight seeds once is 29. Scale per config, and assert the row divides evenly.
+  *A row that prices a forest the game does not grow is worse than no row* — worst on the
+  CAP, which is the always-on crystal collider line.
+* **Who OWNS the new config.** A species whose budget is a measured table is owned by its
+  own generator, not by `author_flora_populations.py` — and that script's `OWNED_ELSEWHERE`
+  matching is a **prefix**, which is correct for a CELL-named family and wrong for a
+  SPECIES-named one, because a per-cell config is named for the cell first (`Rampage
+  Borromean Flora Mass Config Data`). Check which kind you are adding. And if the adopting
+  cell's own generator already FORKS its donor's configs, let it fork yours too — two
+  owners for one forest is the same defect as two fitters for one asset.
 
 ---
 
