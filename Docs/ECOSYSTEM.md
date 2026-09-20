@@ -8475,8 +8475,17 @@ composition change while nothing moves.
   to fly it. This cell's normal state is an AI flying the player's vessel behind a menu, where
   a danger prism reads as the ship being jerked about for no reason the player can see. Geode
   and Ourobor already hold that pole.
-- **69 always-on MeshCollider prisms** (super-shielded blossom bosses and terrace keystones)
-  against Yggdra's 225 — under a third, and the generator fails above 80.
+- **69 armoured prisms** (super-shielded blossom bosses and terrace keystones) against Yggdra's
+  225 — under a third, and the generator fails above 80. ⚠ This budget was authored, and
+  described in three places, as a **collider** budget, and that was simply wrong: a shield swaps
+  the MESH and the MASS, never the collider (`shieldMeshCollider.enabled = true` appears nowhere
+  in the project — four sites, all `= false`), so a super-shielded prism keeps the same primitive
+  box trigger an ordinary one has. The budget is kept because the REAL cost is to the **food
+  web** — `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded
+  mass, and armoured mass also leaves the cell's targeting grids — so every prism counted here is
+  mass the grazers can never remove, in a cell whose whole equilibrium is the food web holding
+  the population down. Same trap as Breakwater's stated go/no-go gate that did not exist
+  (`CLAUDE.md`, `BREAKWATER.md`): **verify a cost before you budget against it.**
 - **Nothing inside the nucleus.** Measured nearest prism CORNER **427.8** against the 392
   control radius, a **+35.8** margin. Caldera shipped 89% of its mass inside that radius (§18.1)
   and pre-awarded node control before anyone flew; this cell states the clearance as an
@@ -8605,11 +8614,11 @@ Everything above is offline. Specifically:
    cell should reach Restless within the first minutes and never reach Frenzy.
 5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
 
-**Known gaps, stated rather than hidden:** the cell reuses Yggdra's card icon (a Garland-specific
-one is an art task, and a placeholder that looks authored is worse than one visibly borrowed);
-the flora volume calibration is an estimate; and the cell has not been device-profiled, though at
-4,259 prisms and 69 always-on colliders it is by a wide margin the lightest authored world in the
-freestyle rotation.
+**Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
+(as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora
+volume calibration is an estimate; and the cell has not been device-profiled, though at
+**4,259 prisms** and **37 always-on heart colliders** it is by a wide margin the lightest
+authored world in the freestyle rotation. (The 69 armoured prisms cost no collider at all — §48.3.)
 
 ### 48.9 It is the BOOT world — and the last inference in the boot path had to go (Sep 2026)
 
@@ -8631,7 +8640,7 @@ furnished in the first frame, every time.
 `CellTypeChoiceOptions.EnvironmentFree` chose the first config with **no `EnvironmentPrefab`**.
 That predicate was never the question being asked. What the boot path wants is *how cheap is this
 to BUILD*, and "authors no environment" was a **proxy** for it — exact while no config was both
-cheap and prepopulated. Garland is the first that is: 4,502 prisms build in a fraction of a heavy
+cheap and prepopulated. Garland is the first that is: 4,259 prisms build in a fraction of a heavy
 world's veil, and it boots into a world rather than into an empty sphere. No predicate over a
 config's CONTENT can express that, so the boot choice becomes an authored bit:
 
@@ -8656,8 +8665,8 @@ side the truth lives on. If it is still in the data, split the predicate; if it 
 #### The cost, stated
 
 Booting Garland pays its build on **every** entry to Menu_Main — boot and every return from an
-arcade game — behind the standard `EnvironmentLoadVeil`. Lattice paid nothing there. At 4,502
-prisms it is **13%** of Yggdra's 34,340 and it is the cheapest authored environment in the
+arcade game — behind the standard `EnvironmentLoadVeil`. Lattice paid nothing there. At 4,259
+prisms it is **12%** of Yggdra's 34,340 and it is the cheapest authored environment in the
 rotation, so the veil should be brief, but it is a real cost and it is the price of a home screen
 that is furnished immediately. **§19 is unchanged**: the six heavy worlds remain opt-in through the
 Cell Selector, which is what that section is about — this changes which *cheap* world is the

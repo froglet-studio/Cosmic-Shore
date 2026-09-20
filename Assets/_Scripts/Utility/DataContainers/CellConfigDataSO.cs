@@ -28,7 +28,7 @@ namespace CosmicShore.Utility
                  "Authored rather than inferred: that mode otherwise picks the first config with no " +
                  "EnvironmentPrefab, which is a claim about what a config CONTAINS standing in for the " +
                  "thing actually wanted - how CHEAP it is to build. A config can be both cheap and " +
-                 "prepopulated (Garland: 4,502 prisms, composed for the home-screen camera), and no " +
+                 "prepopulated (Garland: 4,259 prisms, composed for the home-screen camera), and no " +
                  "content predicate can say so. Set it on exactly ONE config per cell; the first one " +
                  "found wins and the environment-free scan is the fallback, so a cell that authors none " +
                  "behaves exactly as before. What it boots is still paid for on EVERY entry to the " +

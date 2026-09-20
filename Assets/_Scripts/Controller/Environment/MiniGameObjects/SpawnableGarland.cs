@@ -226,6 +226,23 @@ namespace CosmicShore.Gameplay
             // world put in their way, so they give ground instead of being tuned around it.
             BuildFalls();
             BuildShoreBands();
+
+            // The scratch dies with the build. It is ~350 KB on this cell and this is the world
+            // the home screen BOOTS into, so it would otherwise be held for as long as the player
+            // sits in the menu - which is most of the time. Clearing at the top of the next build
+            // is not the same thing: there may not be a next build.
+            ReleaseBuildScratch();
+        }
+
+        /// <summary>Drop the yield grid and the knot samples. Build-time only - nothing reads
+        /// them after <see cref="BuildEnvironment"/> returns, and a re-entry rebuilds both.</summary>
+        void ReleaseBuildScratch()
+        {
+            _placed.Clear();
+            _placed.TrimExcess();
+            _yieldGrid.Clear();
+            _bough = null;
+            _vine = null;
         }
 
         // ──────────────────────────────────────────────────────────────────────────────

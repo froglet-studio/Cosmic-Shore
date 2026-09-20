@@ -1775,7 +1775,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>The authored flag outranks the scan because the scan tests what a config
         /// CONTAINS as a proxy for the thing actually wanted — how CHEAP it is to BUILD — and a
-        /// config can be both cheap and prepopulated. Garland is the first: 4,502 prisms,
+        /// config can be both cheap and prepopulated. Garland is the first: 4,259 prisms,
         /// composed for the home-screen camera rather than for a pilot inside it, so it builds
         /// in a fraction of a heavy world's veil and still boots into a world rather than into
         /// an empty sphere. No content predicate can express that, which is the same split

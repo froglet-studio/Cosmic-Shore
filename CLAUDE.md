@@ -461,7 +461,14 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   object. And the ROSTER follows the same brief: no lattice species (their population-event
   reproduction is the runaway the Lattice cell exists to show), four phyllotactic flora and
   three fauna on hard caps — **37 always-on heart colliders** against Blob's 171 and Lattice's
-  1,080, mature at 8,147 prisms. Two ladder rules pull opposite ways and both must hold:
+  1,080, mature at 8,147 prisms. Its 69 super-shielded prisms cost **no collider at all**, and
+  the branch's own generator asserted, printed and documented them for three commits as a
+  "collider budget" before that was checked — the Breakwater trap (*verify a cost before you
+  pay for it*) met from the other side: **a generator's own printed label is read as a
+  MEASUREMENT, so an assumption written into an assertion string becomes fact by repetition.**
+  The budget is kept on its real justification — armoured mass is inedible (`Prism.Consume` is
+  a no-op on it) and leaves the targeting grids, so it is mass the food web can never remove in
+  a cell whose equilibrium depends on grazing (`Docs/ECOSYSTEM.md §48.3`). Two ladder rules pull opposite ways and both must hold:
   **Frenzy above the MATURE cell** (it freezes planting, so a ladder authored on the bare
   baseline leaves the garden permanently half-grown) and **Restless EARLY** (~35% of the planting
   budget, or the food web is dormant for the whole of the cell's growth and the equilibrium never

@@ -895,11 +895,17 @@ def check_invariants(env, roster, problems):
          f"the camera orbit {CAM_R} is no longer inside the bough band - the bough stops being "
          f"the subject and becomes a shell the camera looks at from outside.")
 
-    # Collider budget. Shielded and super-shielded prisms carry ALWAYS-ON convex MeshColliders;
-    # everything else rides the phase-LOD BoxCollider. Yggdra ships 225; this cell is a menu
-    # world and holds itself to a third of that.
-    always_on = env["kinds"].get("Shielded", 0) + env["kinds"].get("SuperShielded", 0)
-    need(always_on <= 80, f"{always_on} always-on MeshCollider prisms - over this cell's 80 budget.")
+    # Armoured-mass budget. This is NOT a collider budget, though it was written as one and the
+    # docs repeated it: a shield swaps the MESH and the MASS, never the collider
+    # (shieldMeshCollider.enabled = true appears nowhere in the project - four sites, all
+    # = false), so a super-shielded prism keeps the same primitive box trigger an ordinary one
+    # has. The real cost is to the FOOD WEB: Prism.Consume is a no-op on super-shielded mass and
+    # only sheds the shield on shielded mass, and armoured mass also leaves the cell's targeting
+    # grids - so every prism counted here is mass the grazers can never remove. In a cell whose
+    # whole equilibrium is "the food web holds the population down", that is a real ceiling.
+    # Yggdra ships 225; this cell is a menu world and holds itself to a third of that.
+    armoured = env["kinds"].get("Shielded", 0) + env["kinds"].get("SuperShielded", 0)
+    need(armoured <= 80, f"{armoured} armoured (inedible) prisms - over this cell's 80 budget.")
 
     # Nothing may state a size outside the shared prism prefab's serialized scale window, because
     # PrismScaleAnimator clamps per axis INSIDE its setter with no log and no return value
@@ -1431,8 +1437,10 @@ def report(env, roster):
         print(f"{fam:<16}{c:>8}{100*c/env['count']:>7.1f}%{v:>14,.0f}{v/c:>11,.0f}")
     print(f"{'TOTAL':<16}{env['count']:>8}{100.0:>7.1f}%{env['volume']:>14,.0f}"
           f"{env['volume']/env['count']:>11,.0f}")
-    print(f"\nalways-on MeshCollider prisms : {env['kinds'].get('SuperShielded', 0)} "
+    print(f"\narmoured (inedible) prisms    : {env['kinds'].get('SuperShielded', 0)} "
           f"super-shielded, {env['kinds'].get('Shielded', 0)} shielded  (budget 80)")
+    print( "                                (costs NO collider - a shield swaps the mesh and the"
+           " mass only)")
     print(f"danger prisms                 : {env['kinds'].get('Danger', 0)}  "
           f"(zero by design - the autopilot flies this world)")
     print(f"prism axis range              : {env['min_axis']:.2f} .. {env['max_axis']:.2f}  "
