@@ -170,6 +170,7 @@ FLORA_PREFABS = {
     "Spire":        "Assets/_Prefabs/FloraAndFauna/SpireFlora.prefab",
     "Tendril":      "Assets/_Prefabs/FloraAndFauna/TendrilFlora.prefab",
     "Wall":         "Assets/_Prefabs/FloraAndFauna/WallFlora.prefab",
+    "Watershed":    "Assets/_Prefabs/FloraAndFauna/WatershedFlora.prefab",
 }
 
 

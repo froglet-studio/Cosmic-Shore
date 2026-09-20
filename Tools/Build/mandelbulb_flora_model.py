@@ -1016,6 +1016,7 @@ SPECIES = {
 SPECIES["Watershed"] = dict(
     prefab="WatershedFlora",
     display="Watershed Flora",
+    concept="the Morse-Smale skeleton: separatrices out of every saddle, then the Fall",
     twist=0.0,
     girth_taper=0.40,
     neutral_cross=(0.0300, 0.0140),

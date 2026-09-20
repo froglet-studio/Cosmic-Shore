@@ -84,6 +84,22 @@ SPECIES_ASSETS = {
             "Time":   "bf07113394fa63b1c9ede5b314a14f1d",
         },
     ),
+    # The Watershed: the Morse-Smale skeleton of the height field - separatrices traced out of
+    # every saddle along its Hessian eigen-directions to the peaks and pits, then THE FALL into
+    # the heart. Same component, same bake; a third GrowthRules row (Docs/ECOSYSTEM.md section 47).
+    "Watershed": dict(
+        prefab="WatershedFlora",
+        asset_prefix="Watershed Flora",
+        toy_row="Watershed",
+        prefab_guid="02650ac30b7148ad97d9a65519d35d96",
+        component_fileid="8542379790884842332",
+        configs={
+            "Charge": "bd9ef8307c7d4a88862834d83fda588b",
+            "Mass":   "3a6d142ae5ce4455831e5b0573a8e360",
+            "Space":  "2b7b4bb40cb84e088f9595974f8d6be3",
+            "Time":   "4b27f684cf9b4db6bcc4b78268e185e2",
+        },
+    ),
 }
 
 FLORA_CONFIG_SCRIPT_GUID = "a32a297a7606432885f4d3e1f83bea9a"   # FloraConfigurationSO
@@ -251,7 +267,7 @@ def config_text(p, elem):
         "  m_Enabled: 1",
         "  m_EditorHideFlags: 0",
         f"  m_Script: {{fileID: 11500000, guid: {FLORA_CONFIG_SCRIPT_GUID}, type: 3}}",
-        f"  m_Name: Mandelbulb Flora {elem}",
+        f"  m_Name: {assets['asset_prefix']} {elem}",
         "  m_EditorClassIdentifier:",
         f"  FloraPrefab: {{fileID: {assets['component_fileid']}, "
         f"guid: {assets['prefab_guid']}, type: 3}}",
@@ -378,8 +394,8 @@ def main():
     for species, assets in SPECIES_ASSETS.items():
         p = plans[species]
         spec = M.SPECIES[species]
-        concept = (f"helicoidal twist {spec['twist']:g} deg/step" if spec["twist"]
-                   else "smooth crossing curves, no twist")
+        concept = spec.get("concept") or (f"helicoidal twist {spec['twist']:g} deg/step" if spec["twist"]
+                                          else "smooth crossing curves, no twist")
         print(f"{spec['display']} ({species}) - {concept}")
         print(f"  prefab   {PREFABS.relative_to(ROOT)}/{assets['prefab']}.prefab  "
               f"(component fileID {assets['component_fileid']})")
