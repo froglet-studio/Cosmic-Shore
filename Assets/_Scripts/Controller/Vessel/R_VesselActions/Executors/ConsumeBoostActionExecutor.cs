@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
                 // reached 256x at 4 charges — a balance bug that made Serpent uncontrollable. Each
                 // charge now adds one unit of the SO's authored per-charge boost multiplier
                 // (default 4 → 4x..16x across 1..4 charges).
-                float perCharge = _so ? _so.BoostMultiplier.Value : 4f;
+                float perCharge = _so ? _so.BoostMultiplier : 4f;
                 _status.BoostMultiplier = perCharge * stacks;
             }
             else

@@ -6,24 +6,25 @@ namespace CosmicShore.Gameplay
     public class GrowSkimmerActionSO : ShipActionSO
     {
         [Header("Size")]
-        [SerializeField] ElementalFloat maxSize = new(3f);
+        [SerializeField] float maxSize = 120f;
         [SerializeField] float growRate = 1.5f;
-        /// <summary>How fast the skimmer shrinks back. Read as a RAW number
-        /// (<see cref="ShrinkRate"/> returns <c>.Value</c>) on a ScriptableObject, so nothing
-        /// evaluates it — authored <c>Enabled: 0</c> to say so. The Rhino's asset carried an
-        /// enabled 6 -> 2 CHARGE ramp that had never run; switching it on is a balance change
-        /// and a design call, not a cleanup (Docs/ElementalAbilitySystem/BACKLOG.md).</summary>
-        [SerializeField] ElementalFloat shrinkRate = new(1f);
+        /// <summary>How fast the skimmer shrinks back. A plain float, and the TYPE is the
+        /// statement: nothing scales this number. It was an <c>ElementalFloat</c> whose asset
+        /// carried an enabled 6 -> 2 CHARGE ramp that had never run, because an ElementalFloat on
+        /// a ScriptableObject read as <c>.Value</c> cannot evaluate. Giving that ramp to CHARGE is
+        /// still a balance change and a design call, not a cleanup
+        /// (Docs/ElementalAbilitySystem/BACKLOG.md).</summary>
+        [SerializeField] float shrinkRate = 6f;
 
         [Header("Boost effect (future hook)")]
         [SerializeField] bool applyBoostWhileGrowing = false;
-        [SerializeField] ElementalFloat boostMultiplier = new(1.25f);
+        [SerializeField] float boostMultiplier = 1.25f;
 
-        public float MaxSize => maxSize.Value;
+        public float MaxSize => maxSize;
         public float GrowRate => growRate;
-        public float ShrinkRate => shrinkRate.Value;
+        public float ShrinkRate => shrinkRate;
         public bool ApplyBoostWhileGrowing => applyBoostWhileGrowing;
-        public float BoostMultiplier => boostMultiplier.Value;
+        public float BoostMultiplier => boostMultiplier;
 
 
         public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)

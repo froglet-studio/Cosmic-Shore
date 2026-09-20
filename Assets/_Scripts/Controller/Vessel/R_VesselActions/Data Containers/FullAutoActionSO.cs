@@ -24,12 +24,13 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileTime = 3f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
-        /// <summary>The authored muzzle speed. Read as a RAW number on a ScriptableObject, so
-        /// nothing evaluates it — authored <c>Enabled: 0</c> to say so. SPACE reaches muzzle
-        /// speed through <see cref="spaceSpeedMultiplier"/> instead. The Sparrow's asset
-        /// carried an enabled 375 -> 4875 SPACE ramp (x13) that had never run, beside the live
-        /// x9 multiplier; turning it on is a balance change, not a cleanup.</summary>
-        [SerializeField] ElementalFloat speedValue;
+        /// <summary>The authored muzzle speed. A plain float, and the TYPE is the statement:
+        /// SPACE reaches muzzle speed through <see cref="spaceSpeedMultiplier"/>, and nothing
+        /// scales this base. It was an <c>ElementalFloat</c> whose asset carried an enabled
+        /// 375 -> 4875 SPACE ramp (x13) that had never run — it was read as <c>.Value</c> on a
+        /// ScriptableObject — beside the live x9 multiplier; giving SPACE a second grip on the
+        /// same number is a balance change, not a cleanup.</summary>
+        [SerializeField] float speedValue = 375f;
 
         /// <summary>SPACE -> muzzle speed: x1 at the resting level, x9 at level 10, floored at x0.4.
         /// Migrated verbatim from the retired ElementalAbilityMapSO generic
@@ -68,7 +69,6 @@ namespace CosmicShore.Gameplay
         public float ProjectileTime => projectileTime;
         public FiringPatterns FiringPattern => firingPattern;
         public int Energy => energy;
-        public ElementalFloat SpeedValue => speedValue;
 
         /// <summary>The accuracy-decay cone, shared by both fire modes. Never null — an
         /// all-zero profile is the sanctioned "no spread" opt-out.</summary>
@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float ResolveSpeed(IVesselStatus status)
         {
-            return speedValue.Value * spaceSpeedMultiplier.EvaluateLive(status);
+            return speedValue * spaceSpeedMultiplier.EvaluateLive(status);
         }
 
         /// <summary>

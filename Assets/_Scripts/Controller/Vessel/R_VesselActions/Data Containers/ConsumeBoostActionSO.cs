@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     public class ConsumeBoostActionSO : ShipActionSO
     {
         [Header("Boost Effect")]
-        [SerializeField] private ElementalFloat boostMultiplier = new(4f);
+        [SerializeField] private float boostMultiplier = 3f;
         [SerializeField] private float boostDuration = 4f;
 
         /// <summary>TIME -> boost duration: x1 at the resting level, x1.6 at level 10, floored at x0.25.
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private int resourceIndex = 1;
         [SerializeField] private float resourceCost = 0f;
 
-        public ElementalFloat BoostMultiplier => boostMultiplier;
+        public float BoostMultiplier => boostMultiplier;
         public float BoostDuration => boostDuration;
 
         /// <summary>The live TIME multiplier on one charge's duration.</summary>

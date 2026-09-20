@@ -176,11 +176,13 @@ namespace CosmicShore.Gameplay
         /// shipped that way and had never run once (Rhino trail ceiling, Rhino skimmer shrink,
         /// Sparrow muzzle speed). <c>Tools/Build/check_elemental_floats.py</c> is the gate.</para>
         ///
-        /// <para>What remains of this path is legacy rather than broken: five MonoBehaviour
-        /// actions under <c>VesselActions/</c> (the pre-<c>R_</c> generation, still on the
-        /// Falcon, Shrike and Urchin) read <c>.Value</c> and rely on it. Converting them to
-        /// <see cref="EvaluateLive"/> is behaviour-neutral and needs the editor; logged in
-        /// Docs/ElementalAbilitySystem/BACKLOG.md.</para>
+        /// <para>Nothing LIVE rides this path any more. Measured 2026-09-20: of the six
+        /// ElementalFloat fields on the pre-<c>R_</c> <c>VesselActions/</c> generation, four sit
+        /// on components no prefab, scene or asset references, and the two that ship (the
+        /// Falcon/Shrike full-auto muzzle speed and the Urchin's gun lifetime) now read
+        /// <see cref="EvaluateLive"/>. The four dead ones still read <c>.Value</c> and are
+        /// proposed for deletion in Docs/ElementalAbilitySystem/BACKLOG.md 5.4c; until that lands,
+        /// this method is what would keep them correct if anything ever carried one again.</para>
         /// </summary>
         void ScaleValueWithLevel(Element changed, int level)
         {

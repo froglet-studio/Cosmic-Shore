@@ -20,12 +20,7 @@ MonoBehaviour:
     element: 4
     UseFloor: 1
     Floor: 0.25
-  boostMultiplier:
-    Enabled: 0
-    Value: 3
-    Min: 1.2
-    Max: 2.7
-    element: 4
+  boostMultiplier: 3
   boostDuration: 3
   maxCharges: 4
   reloadCooldown: 7
