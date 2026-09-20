@@ -4,6 +4,14 @@ the one thing a multi-scale rule is for (that no two prisms share a frame), so t
 real boxes."""
 import sys, math, zlib, struct
 
+# The projection every view in this file shares: `f = FOCAL * W / 2`, so a point at lateral
+# offset X and depth z lands at the frame edge when X / z = 1 / FOCAL. It is NAMED because a
+# gate that has to ask "how big is this prism on screen at arena range" must read the answer
+# from the renderer rather than retype it — a measurement keyed on a copy of this number
+# stops describing the picture the moment somebody tunes the picture.
+FOCAL = 1.5
+
+
 def png(path, w, h, rgb):
     raw = b''.join(b'\x00' + bytes(rgb[y*w*3:(y+1)*w*3]) for y in range(h))
     def chunk(t, d):
@@ -40,7 +48,7 @@ def _render(prisms, path, W, H, yaw, pitch, boxes, bg):
     fwd = [-c for c in cd]
     right = norm(cross(fwd, [0,0,1]))
     up = cross(right, fwd)
-    f = 1.5*W/2
+    f = FOCAL*W/2
 
     zbuf = [1e30]*(W*H)
     col = [bg[i%3] for i in range(W*H*3)]
@@ -150,7 +158,7 @@ def _view(boxes, W, H, yaw, pitch, dist_factor, heart, bg, dist_abs=None):
     upref = [0, 0, 1] if abs(cd[2]) < 0.95 else [0, 1, 0]
     right = norm(cross(fwd, upref))
     up = cross(right, fwd)
-    f = 1.5 * W / 2
+    f = FOCAL * W / 2
     zbuf = [1e30] * (W * H)
     col = [bg[i % 3] for i in range(W * H * 3)]
     light = norm([0.4, 0.5, 0.8])
@@ -245,10 +253,32 @@ def render_closeup(boxes, path, span=30.0, heart=0.0, W=900, H=900,
                    yaw=0.6, pitch=0.25, bg=(8, 9, 14)):
     """One view framed on an ABSOLUTE world SPAN centred on the origin.
 
-    The projection is `f = 1.5 * W / 2`, so a point at lateral offset X and depth z lands at
-    the frame edge when X / z = 1 / 1.5 — the half-width at the centre plane is therefore
-    `dist / 1.5`, and a frame `span` units across wants `dist = 0.75 * span`. Everything
+    The projection is `f = FOCAL * W / 2`, so a point at lateral offset X and depth z lands at
+    the frame edge when X / z = 1 / FOCAL — the half-width at the centre plane is therefore
+    `dist / FOCAL`, and a frame `span` units across wants `dist = 0.5 * FOCAL * span`. Everything
     outside simply falls off the sides, which is what a fly-through looks like."""
-    col = _view(boxes, W, H, yaw, pitch, 0.0, heart, bg, dist_abs=0.75 * span)
+    col = _view(boxes, W, H, yaw, pitch, 0.0, heart, bg, dist_abs=0.5 * FOCAL * span)
     png(path, W, H, col)
     return path
+
+
+def view_extent(boxes):
+    """`_view`'s own framing extent: the largest ABSOLUTE COORDINATE over the prism centres
+    (a Chebyshev half-span, not a radius) — copied here as a function so a measurement and a
+    render cannot disagree about how big the subject is."""
+    return max((max(abs(c) for c in b[0]) for b in boxes), default=1.0)
+
+
+def arena_scale(boxes, tile=700, view=None):
+    """(pixels per world unit, eye distance, extent) for the SHEET's arena view.
+
+    The scale is the one a point ON THE CENTRE PLANE gets: `f / dist`, with `f = FOCAL*tile/2`
+    and `dist = dist_factor * extent`. It is the honest constant for an ORTHOGRAPHIC
+    measurement of a subject centred on the origin — a perspective render spreads the near
+    half of the plant over more pixels and the far half over fewer, and those cancel to this
+    at the centre. Returns the numbers rather than a camera, because the caller wants a
+    number of pixels and not another rasteriser."""
+    view = view or SHEET_VIEWS[0]
+    ext = view_extent(boxes)
+    dist = view[3] * ext
+    return (FOCAL * tile / 2.0) / max(dist, 1e-9), dist, ext

@@ -909,7 +909,9 @@ def grow(surface, rules, seed, budget):
         tail = _sub(end, pts[-2][0])
         if _dot(tail, tail) <= 1e-18:
             return []
-        dive = append_dive(rules, end, _norm(tail), walk_step)
+        # A gasket hands the dive the ring's own chord (the element's step), so walk_step stays
+        # inert on that species (MandelbulbSurface.Growth.TryDive).
+        dive = append_dive(rules, end, _norm(tail), rules.step if gasket else walk_step)
         if dive:
             dive_owed[k] = False
             dives_spent += 1

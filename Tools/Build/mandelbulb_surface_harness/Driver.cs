@@ -5,7 +5,9 @@
 using System;
 using System.Globalization;
 using System.IO;
+using System.Collections;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEngine;
 using CosmicShore.Gameplay;
 
@@ -17,13 +19,14 @@ static class Driver
 
     static int Main(string[] argv)
     {
-        if (argv.Length == 0) { Console.Error.WriteLine("usage: probe|bake|grow|shipped|field|crit|posetable|selftest"); return 2; }
+        if (argv.Length == 0) { Console.Error.WriteLine("usage: probe|bake|grow|shipped|gasket|field|crit|posetable|selftest"); return 2; }
         switch (argv[0])
         {
             case "probe": return Probe(argv);
             case "bake": return Bake(argv);
             case "grow": return Grow(argv);
             case "shipped": return Shipped(argv);
+            case "gasket": return Gasket(argv);
             case "field": return Field(argv);
             case "crit": return Crit(argv);
             case "posetable": return PoseTable(argv);
@@ -261,53 +264,7 @@ static class Driver
         int gw = (int)D(a[5]), gh = gw / 2;
         int seed = (int)D(a[6]), budget = (int)D(a[7]);
 
-        var rules = new MandelbulbSurface.GrowthRules
-        {
-            Field = (MandelbulbSurface.SteeringField)(int)D(a[8]),
-            SwirlDegrees = (float)D(a[9]),
-            FieldMix = (float)D(a[10]),
-            Momentum = (float)D(a[11]),
-            StepSize = (float)D(a[12]),
-            MaxSteps = (int)D(a[13]),
-            LanesPerSeed = (int)D(a[14]),
-            LaneGap = (float)D(a[15]),
-            HopSeek = (float)D(a[16]),
-            HopJitter = (float)D(a[17]),
-            SeedCount = (int)D(a[18]),
-            SeedSpreadDegrees = (float)D(a[19]),
-            MaxTurnDegrees = (float)D(a[20]),
-            RadiusMin = (float)D(a[21]),
-            RadiusMax = (float)D(a[22]),
-            MinRun = (int)D(a[23]),
-            LengthFactor = (float)D(a[24]),
-            GirthTaper = (float)D(a[25]),
-            TwistDegreesPerStep = a.Length > 26 ? (float)D(a[26]) : 0f,
-            DiveCount = a.Length > 27 ? (int)D(a[27]) : 0,
-            DiveStepFraction = a.Length > 28 ? (float)D(a[28]) : 0f,
-            DiveAngleDegrees = a.Length > 29 ? (float)D(a[29]) : 0f,
-            DiveStopRadius = a.Length > 30 ? (float)D(a[30]) : 0f,
-            DiveMaxSteps = a.Length > 31 ? (int)D(a[31]) : 0,
-            DiveSwirlDegrees = a.Length > 32 ? (float)D(a[32]) : 0f,
-            DiveStrideCeiling = a.Length > 33 ? (float)D(a[33]) : 0f,
-            DiveGirthFloor = a.Length > 34 ? (float)D(a[34]) : 0f,
-            DiveAxisAlign = a.Length > 35 ? (float)D(a[35]) : 0f,
-            DiveDescent = a.Length > 36 ? (float)D(a[36]) : 0f,
-            SkeletonSeeds = a.Length > 37 ? (int)D(a[37]) : 0,
-            WalkStep = a.Length > 38 ? (float)D(a[38]) : 0f,
-            MinPersistence = a.Length > 39 ? (float)D(a[39]) : 0f,
-            GirthReference = a.Length > 40 ? (float)D(a[40]) : 0f,
-            GasketLevels = a.Length > 41 ? (int)D(a[41]) : 0,
-            DiscSeeds = a.Length > 42 ? (int)D(a[42]) : 0,
-            DiscPad = a.Length > 43 ? (float)D(a[43]) : 0f,
-            DiscMinRadius = a.Length > 44 ? (float)D(a[44]) : 0f,
-            RingShrink = a.Length > 45 ? (float)D(a[45]) : 0f,
-            RingFlatten = a.Length > 46 ? (float)D(a[46]) : 0f,
-            RingGirthExponent = a.Length > 47 ? (float)D(a[47]) : 0f,
-            RingSamples = a.Length > 48 ? (int)D(a[48]) : 0,
-            GasketOctave = a.Length > 49 ? (float)D(a[49]) : 0f,
-            DiscRelaxRate = a.Length > 50 ? (float)D(a[50]) : 0f,
-            RingGirthFloor = a.Length > 51 ? (float)D(a[51]) : 0f,
-        };
+        var rules = ParseRules(a, 8);
 
         var basis = MandelbulbSurfaceTables.For(element);
         var coeffs = MandelbulbSurface.Compose(basis, w0, w1, w2);
@@ -332,6 +289,142 @@ static class Driver
             laid++;
         }
         Console.WriteLine($"done {laid} {growth.CurvesTraced} {growth.DivesSpent}");
+        return 0;
+    }
+
+    // The 44 growth-rule columns, in the ONE order the wire format has: `o` is the index of
+    // `Field`. Extracted so `shipped` and `gasket` cannot drift — two hand-written copies of a
+    // 44-column positional parser is a transcription error waiting for the 45th column.
+    static MandelbulbSurface.GrowthRules ParseRules(string[] a, int o)
+    {
+        float G(int i, float dflt = 0f) => a.Length > o + i ? (float)D(a[o + i]) : dflt;
+        return new MandelbulbSurface.GrowthRules
+        {
+            Field = (MandelbulbSurface.SteeringField)(int)G(0),
+            SwirlDegrees = G(1),
+            FieldMix = G(2),
+            Momentum = G(3),
+            StepSize = G(4),
+            MaxSteps = (int)G(5),
+            LanesPerSeed = (int)G(6),
+            LaneGap = G(7),
+            HopSeek = G(8),
+            HopJitter = G(9),
+            SeedCount = (int)G(10),
+            SeedSpreadDegrees = G(11),
+            MaxTurnDegrees = G(12),
+            RadiusMin = G(13),
+            RadiusMax = G(14),
+            MinRun = (int)G(15),
+            LengthFactor = G(16),
+            GirthTaper = G(17),
+            TwistDegreesPerStep = G(18),
+            DiveCount = (int)G(19),
+            DiveStepFraction = G(20),
+            DiveAngleDegrees = G(21),
+            DiveStopRadius = G(22),
+            DiveMaxSteps = (int)G(23),
+            DiveSwirlDegrees = G(24),
+            DiveStrideCeiling = G(25),
+            DiveGirthFloor = G(26),
+            DiveAxisAlign = G(27),
+            DiveDescent = G(28),
+            SkeletonSeeds = (int)G(29),
+            WalkStep = G(30),
+            MinPersistence = G(31),
+            GirthReference = G(32),
+            GasketLevels = (int)G(33),
+            DiscSeeds = (int)G(34),
+            DiscPad = G(35),
+            DiscMinRadius = G(36),
+            RingShrink = G(37),
+            RingFlatten = G(38),
+            RingGirthExponent = G(39),
+            RingSamples = (int)G(40),
+            GasketOctave = G(41),
+            DiscRelaxRate = G(42),
+            RingGirthFloor = G(43),
+        };
+    }
+
+    // gasket <element> <w0> <w1> <w2> <gridW> <rules...>
+    //
+    // APOLLONIA's disc set, straight out of the shipped Growth. The set is the species —
+    // the prism stream is one ring per disc in lay order — but it is NOT recoverable from
+    // that stream: a ring's ρ can be back-solved from its prism centres only after
+    // `RingFlatten` and `RingShrink` have already moved them, and a disc's LEVEL is not
+    // written into any address field at all (the Lane is the size OCTAVE, deliberately not
+    // the recursion level). So this verb REFLECTS over Growth's private `_discs`,
+    // `_discOrder`, `_rhoRef` and `_ringSamples` rather than re-deriving them.
+    //
+    // Reflection inside the harness is the honest choice here: the alternative is either a
+    // public accessor on shipped gameplay code that only a test reads, or an inference chain
+    // that could hide the very disagreement the verb exists to find. The harness is the only
+    // caller, it never ships, and reading a private field cannot perturb what it measures.
+    //
+    //   disc <index> <level> <lane> <rho> <ax> <ay> <az>     (disc-index order)
+    //   order <i0> <i1> ...                                  (the lay order, ρ descending)
+    //   ring <N> <rhoRef>
+    static int Gasket(string[] a)
+    {
+        var element = (CosmicShore.Data.Element)Enum.Parse(typeof(CosmicShore.Data.Element), a[1], true);
+        int gw = (int)D(a[5]), gh = gw / 2;
+        var basis = MandelbulbSurfaceTables.For(element);
+        var coeffs = MandelbulbSurface.Compose(basis, (float)D(a[2]), (float)D(a[3]), (float)D(a[4]));
+        var field = MandelbulbSurface.Reconstruct(MandelbulbSurfaceTables.Degree, coeffs, gw, gh);
+        var surface = new MandelbulbSurface.Surface(field, gw, gh);
+        var rules = ParseRules(a, 6);
+        var growth = new MandelbulbSurface.Growth(surface, rules, 1);
+        // The gasket builds LAZILY (the peak census must never run on the planting frame),
+        // so nothing below exists until something asks. SeedCount is that ask.
+        int seedCount = growth.SeedCount;
+
+        const BindingFlags BF = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        var gt = growth.GetType();
+        var fDiscs = gt.GetField("_discs", BF);
+        var fOrder = gt.GetField("_discOrder", BF);
+        var fRhoRef = gt.GetField("_rhoRef", BF);
+        var fSamples = gt.GetField("_ringSamples", BF);
+        if (fDiscs == null || fOrder == null || fRhoRef == null || fSamples == null)
+        {
+            // A renamed field must be LOUD: a silently empty table would read as "this plant
+            // has no discs", which every gate below would then happily agree with.
+            Console.Error.WriteLine("gasket: Growth no longer carries _discs/_discOrder/_rhoRef/_ringSamples");
+            return 2;
+        }
+        var discs = (IList)fDiscs.GetValue(growth);
+        var order = (int[])fOrder.GetValue(growth);
+        float rhoRef = (float)fRhoRef.GetValue(growth);
+        int samples = (int)fSamples.GetValue(growth);
+
+        FieldInfo fAxis = null, fRho = null, fLevel = null, fLane = null;
+        for (int i = 0; i < discs.Count; i++)
+        {
+            var d = discs[i];
+            if (fAxis == null)
+            {
+                var dt = d.GetType();
+                fAxis = dt.GetField("Axis", BF); fRho = dt.GetField("Rho", BF);
+                fLevel = dt.GetField("Level", BF); fLane = dt.GetField("Lane", BF);
+                if (fAxis == null || fRho == null || fLevel == null || fLane == null)
+                {
+                    Console.Error.WriteLine("gasket: Disc no longer carries Axis/Rho/Level/Lane");
+                    return 2;
+                }
+            }
+            var ax = (Vector3)fAxis.GetValue(d);
+            Console.WriteLine(string.Join(" ", new[]
+            {
+                "disc", i.ToString(Inv), ((int)fLevel.GetValue(d)).ToString(Inv),
+                ((int)fLane.GetValue(d)).ToString(Inv), F((float)fRho.GetValue(d)),
+                F(ax.x), F(ax.y), F(ax.z)
+            }));
+        }
+        var sb = new System.Text.StringBuilder("order");
+        for (int i = 0; i < order.Length; i++) { sb.Append(' '); sb.Append(order[i].ToString(Inv)); }
+        Console.WriteLine(sb.ToString());
+        Console.WriteLine($"ring {samples.ToString(Inv)} {F(rhoRef)}");
+        Console.WriteLine($"gasket {discs.Count.ToString(Inv)} {seedCount.ToString(Inv)}");
         return 0;
     }
 

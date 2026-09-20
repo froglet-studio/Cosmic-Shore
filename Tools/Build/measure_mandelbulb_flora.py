@@ -36,10 +36,23 @@ THE FALL's gates are separable by construction: a dive prism carries `TanR != 0`
 surface prism carries exactly 0, so every Fall statistic below is a clean partition of the
 laid plant rather than a re-derivation of which prisms were the dive.
 
+APOLLONIA's gates measure a PACKING rather than a set of curves, and most of them are
+things nothing above them can see — the FULL FORM as a BAND (a one-sided ceiling passes an
+81% plant in silence while it is priced at 100% of its collider budget), RING INTEGRITY
+(measured before the budget, because the budget truncates exactly the ring a naive reading
+would call broken), THE LADDER stated in PIXELS (stated in rings it is satisfied by exactly
+the octaves that were already visible), a LADDER HOLE (a rung the disc set skipped, which
+the ladder gate can only score as illegible) and TANGENCY (a statement about the disc set,
+which the laid plant cannot show). Two of them are MODEL-REGRESSION guards and say so at
+the point of measurement: the ORDERING equality and the level-0 DISC count are identities
+of the model and cannot fire against the shipped algorithm — which is why level 0 is gated
+on the rings that reach the LAID plant instead.
+
 THE WATERSHED's gates only run where the species authors the mechanism
-(`SkeletonSeeds != 0`), and the Fall's only where it authors a dive
-(`DiveStepFraction > 0 && DiveCount > 0`) — a gate that runs on a species with no such
-mechanism is measuring a zero and reporting it as a pass.
+(`SkeletonSeeds != 0`), the Fall's only where it authors a dive
+(`DiveStepFraction > 0 && DiveCount > 0`), and the gasket's only where it authors one
+(`GasketLevels != 0`) — a gate that runs on a species with no such mechanism is measuring a
+zero and reporting it as a pass.
 """
 import argparse
 import math
@@ -314,16 +327,34 @@ def grow_detail(species, element, budget=None):
     rules = M.rules_for(element, species)
     raw, raw_curves, dives_spent = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
-    kept = M.claim_filter(raw, centres)[:budget]
+    # AFTER THE CLAIM, BEFORE THE BUDGET, kept separately: the two answer different
+    # questions and conflating them reads a budget cut as a broken curve (see
+    # gasket_report's ring integrity, which is the gate that found this out the hard way).
+    claimed = M.claim_filter(raw, centres)
+    kept = claimed[:budget]
+    # A gasket species' seed population is its DISC set and the Fall's owed set strides over
+    # the LEVEL-0 discs alone, so `build_seeds` — which reads SeedCount, authored 0 here —
+    # answers 1 and every Fall arrival figure is measured against a denominator of one.
+    gasket = None
+    if rules.gasket_levels != 0:
+        discs, lay, rho_ref = M.build_gasket(surface, rules)
+        gasket = {"discs": discs, "lay": lay, "rho_ref": rho_ref,
+                  "samples": M.ring_samples_for(surface, rules, rho_ref),
+                  "peaks": len(M.peaks(surface))}
+        seeds = [i for i in lay if discs[i].level == 0]
+    else:
+        seeds = M.build_seeds(surface, rules)
     _GROWN[key] = {
         "surface": surface,
         "rules": rules,
         "raw": raw,
         "raw_curves": raw_curves,
         "dives_spent": dives_spent,
+        "claimed": claimed,
         "kept": kept,
+        "gasket": gasket,
         "curves": len({p.curve for p in kept}),
-        "seeds": M.build_seeds(surface, rules),
+        "seeds": seeds,
         "walk_index": {id(p): i for i, p in enumerate(raw)},
         "candidate_cap": budget * CANDIDATE_FACTOR,
     }
@@ -442,6 +473,13 @@ def fall_report(species, element, report):
     dive_i = [i for i, p in enumerate(kept) if p.tan_r != 0.0]
     surf_i = [i for i, p in enumerate(kept) if p.tan_r == 0.0]
     out = {
+        # The population the owed set STRIDES over, which is not the same object on every
+        # species: a walking species strides its seed list, a gasket its LEVEL-0 discs in
+        # rho-descending LAY order (`grow`). Naming it is not cosmetic — `build_seeds` reads
+        # SeedCount, which a gasket authors 0, so a denominator taken from there is 1 and
+        # every arrival figure below reads 600%.
+        "owed_from": ("the LEVEL-0 discs in rho-descending lay order"
+                      if rules.gasket_levels != 0 else "a z-monotone seed list"),
         "requested": min(rules.dive_count, len(d["seeds"])),
         "spent": d["dives_spent"],
         "seeds": len(d["seeds"]),
@@ -653,8 +691,8 @@ def fall_gates(species, element, f, heart_half):
                    f"{f['dive_start_bands']}/8 equal-area theta bands (bound "
                    f"{f['dive_band_bound']} = min({DIVE_BAND_MIN}, dives laid); their prisms "
                    f"then sweep {f['dive_bands_filled']}/8, which is why the per-prism count "
-                   f"cannot see this) — the owed set is being taken as a PREFIX of a "
-                   f"z-monotone seed list, which is a polar cap")
+                   f"cannot see this) — the owed set strides {f['owed_from']}, and on "
+                   f"this plant that stride is landing in a cap rather than over the bulb")
     if f["roll_median"] > DIVE_ROLL_MEDIAN_MAX:
         bad.append(f"{tag} FALL roll: the ribbon rolls a median {f['roll_median']:.2f} deg per "
                    f"step net of the authored twist {f['twist']:.0f} (bound "
@@ -977,6 +1015,466 @@ def watershed_gates(species, element, w):
     return bad
 
 
+# ── APOLLONIA ──────────────────────────────────────────────────────────────────
+#
+# The gasket's gates. Four of the five are things NO existing gate in this file can see,
+# and the reason is the same each time: every gate above was written against a species
+# that draws CURVES, and this one draws a PACKING (Docs/ECOSYSTEM.md §46 — a gate written
+# against one species is a gate calibrated on one species). Measured on this species the
+# two interpenetration bounds are near-vacuous — non-chain touching pairs are 17/1112/603/658
+# against thousands on the ribbon species and deep-interleave is 0.0% on all four — because
+# a packing cannot overlap by construction. What does the work here is RING INTEGRITY and
+# THE LADDER IN SCREEN TERMS.
+
+FORM_FIT_BAND = (0.90, 1.05)     # after-claim count / PRISM_BUDGET — a BAND, not a ceiling
+RING_INTEGRITY_MIN = 0.80        # of its N samples, through the claim, BEFORE the budget
+OCTAVE_FRAME_MIN = 0.010         # share of the arena frame one octave must paint
+OCTAVE_PX_MIN = 2.0              # its median prism's projected LENGTH, pixels
+OCTAVE_LEGIBLE_MIN = 3           # octaves that must clear BOTH
+TANGENCY_MEDIAN_MAX = 0.05       # a child's worst gap to its three parents, over rho_child
+COARSENESS_ORDER = ("Space", "Charge", "Time", "Mass")   # N: <, <=, <
+COARSENESS_RATIO_MIN = 1.5       # N_Mass / N_Space
+SAMPLES_ROUND_MARGIN = 0.05      # |circ/step - round(circ/step)|: REPORTED, see gasket_report
+ARENA_TILE = 700                 # the judging sheet's tile, so "1% of the frame" is ITS frame
+
+# Twenty authored columns a gasket species leaves at a do-nothing value. Same instrument as
+# the Watershed's nine probes and the same argument: an authored value that cannot affect
+# anything must never be mistakable for one that can, and the per-field breakdown is the
+# point, because "the output changed" does not say WHICH column is still wired.
+GASKET_INERT_PROBES = {
+    "field": (4, 5), "swirl": (40.0, -37.0), "field_mix": (0.13, 0.77),
+    "momentum": (0.61, 0.29), "max_steps": (7, 311), "lanes": (2, 9),
+    "lane_gap": (0.9, 0.2), "hop_seek": (3.0, 0.9), "hop_jitter": (0.8, 0.4),
+    "seeds": (7, 133), "seed_spread": (3.0, 47.0), "max_turn": (11.0, 171.0),
+    "r_min": (0.1, 0.9), "r_max": (1.2, 9.0), "min_run": (2, 17),
+    "girth_taper": (0.2, 0.9), "girth_reference": (3.0, 41.0),
+    "skeleton_seeds": (5, 64), "walk_step": (0.02, 0.9), "min_persistence": (0.05, 0.4),
+}
+
+
+def authors_gasket(rules):
+    """The gate on the gates: `Growth` runs no gasket code at all unless this is set, so a
+    species without it would be measured at zero and reported as passing."""
+    return rules.gasket_levels != 0
+
+
+# ── the arena frame ────────────────────────────────────────────────────────────
+#
+# THE LADDER'S GATE IS A SCREEN MEASUREMENT, and that is the whole point of it. Stated in
+# RINGS ("three octaves carrying six rings each") it is satisfied by exactly the octaves
+# that were already visible, so it cannot see the failure it exists for — measured, a plant
+# spending 41% of its prisms on 1.0% of the frame passes the ring-count form of this gate
+# with room to spare. A gate satisfied by the visible part cannot detect an invisible part.
+#
+# ORTHOGRAPHIC, at the SHEET's own arena pixels-per-unit (`mandelbulb_flora_render
+# .arena_scale`, read from the renderer rather than retyped so the two cannot drift). The
+# render is a perspective view; orthographic is the honest instrument for a per-octave
+# statistic because a perspective frame spreads the near half of the plant over more pixels
+# than the far half, which would make an octave's share a function of which side of the
+# plant its rings happened to land on.
+
+def _basis(axis):
+    a = M._norm(axis)
+    ref = (0.0, 0.0, 1.0) if abs(a[2]) < 0.9 else (1.0, 0.0, 0.0)
+    u = M._norm(M._cross(ref, a))
+    return a, u, M._cross(a, u)
+
+
+def _hull(points):
+    """Monotone chain over the 8 projected corners — a box's silhouette is a hexagon, and
+    filling the 6 faces' quads instead would paint the same pixels several times over."""
+    pts = sorted(set(points))
+    if len(pts) < 3:
+        return pts
+
+    def half(seq):
+        out = []
+        for p in seq:
+            while len(out) >= 2 and ((out[-1][0] - out[-2][0]) * (p[1] - out[-2][1])
+                                     - (out[-1][1] - out[-2][1]) * (p[0] - out[-2][0])) <= 0:
+                out.pop()
+            out.append(p)
+        return out
+
+    lo, hi = half(pts), half(list(reversed(pts)))
+    return lo[:-1] + hi[:-1]
+
+
+def _fill(mask, hull, tile):
+    """Scanline-fill a convex polygon by PIXEL CENTRE, and — if it covers none — paint the
+    one pixel it sits in. A sub-pixel prism is not nothing on screen (a thousand of them
+    read as speckle); scoring it zero would say an octave paints no pixels when it paints
+    a dusting of them, which is the opposite of the failure this gate is looking for."""
+    ys = [p[1] for p in hull]
+    painted = 0
+    for y in range(max(0, int(math.floor(min(ys)))), min(tile - 1, int(math.ceil(max(ys)))) + 1):
+        yc, xs, n = y + 0.5, [], len(hull)
+        for i in range(n):
+            ax, ay = hull[i]
+            bx, by = hull[(i + 1) % n]
+            if (ay <= yc) == (by <= yc):
+                continue
+            xs.append(ax + (bx - ax) * (yc - ay) / (by - ay))
+        if len(xs) < 2:
+            continue
+        for x in range(max(0, int(math.ceil(min(xs) - 0.5))),
+                       min(tile - 1, int(math.floor(max(xs) - 0.5))) + 1):
+            o = y * tile + x
+            if not mask[o]:
+                mask[o] = 1
+                painted += 1
+    if painted == 0:
+        cx = sum(p[0] for p in hull) / len(hull)
+        cy = sum(p[1] for p in hull) / len(hull)
+        x, y = int(math.floor(cx)), int(math.floor(cy))
+        if 0 <= x < tile and 0 <= y < tile and not mask[y * tile + x]:
+            mask[y * tile + x] = 1
+            painted = 1
+    return painted
+
+
+def arena_octaves(boxes, lanes, axis, tile=ARENA_TILE):
+    """Per-octave UNION coverage of the arena frame and the median projected prism LENGTH.
+
+    UNION, never a sum of areas: an octave's rings overlap each other on screen and a sum
+    would report a dense small octave as covering more of the frame than it can."""
+    import mandelbulb_flora_render as R
+    ppu, dist, ext = R.arena_scale(boxes, tile)
+    a, u, v = _basis(axis)
+    half, masks, lengths = tile / 2.0, {}, {}
+    for b, lane in zip(boxes, lanes):
+        mask = masks.get(lane)
+        if mask is None:
+            mask = masks[lane] = bytearray(tile * tile)
+            lengths[lane] = []
+        c, ax, h = b
+        corners = []
+        for sx in (-1, 1):
+            for sy in (-1, 1):
+                for sz in (-1, 1):
+                    p = M._add(M._add(M._add(c, M._mul(ax[0], sx * h[0])),
+                                      M._mul(ax[1], sy * h[1])), M._mul(ax[2], sz * h[2]))
+                    corners.append((half + ppu * M._dot(p, u), half - ppu * M._dot(p, v)))
+        hull = _hull(corners)
+        if len(hull) >= 3:
+            _fill(mask, hull, tile)
+        # The LENGTH the eye reads is the long axis foreshortened by the view: a prism seen
+        # end-on is a dot whatever its length, and calling it long would be the same mistake
+        # as summing the areas.
+        d = M._dot(ax[2], a)
+        lengths[lane].append(2 * h[2] * ppu * math.sqrt(max(0.0, 1.0 - d * d)))
+    out = {}
+    for lane, mask in masks.items():
+        out[lane] = {"frame": sum(mask) / float(tile * tile),
+                     "px": median(lengths[lane]),
+                     "prisms": len(lengths[lane])}
+    return out, ppu, dist, ext
+
+
+# ── the gasket's report ────────────────────────────────────────────────────────
+
+def gasket_report(species, element, report, inert=True):
+    """Every number APOLLONIA is gated on, measured on the LAID plant — except the two that
+    a laid plant structurally cannot show, both named where they are taken:
+
+      * RING INTEGRITY is measured on the CLAIM-FILTERED list BEFORE budget truncation.
+        Conflating the two reads a budget cut as a broken ring — the last ring laid is
+        exactly the one the budget truncates, so a plant with 55 perfect rings reports one
+        of them at integrity 0.0 if the two are not kept apart.
+      * TANGENCY is a statement about the DISC SET (`M.build_gasket`), which is the thing
+        `Inscribe` produces. The laid plant can only show the rings that survived, so a
+        gasket that had silently degraded to "a smaller circle roughly in the middle" would
+        still render as circles and still pass every gate above."""
+    import mandelbulb_flora_render as R
+    d = grow_detail(species, element)
+    rules, kept, claimed, boxes = d["rules"], d["kept"], d["claimed"], report["boxes"]
+    g = d["gasket"]
+    discs, lay = g["discs"], g["lay"]
+    samples, rho_ref = g["samples"], g["rho_ref"]
+    out = {"samples": samples, "rho_ref": rho_ref, "discs": len(discs),
+           "raw": len(d["raw"]), "claimed": len(claimed), "laid": len(kept),
+           "budget": M.PRISM_BUDGET, "fit": len(claimed) / float(M.PRISM_BUDGET),
+           "truncated_prisms": max(0, len(claimed) - len(kept)),
+           "peaks": g["peaks"], "disc_seeds": rules.disc_seeds}
+
+    # (a) THE FULL FORM FITS — raw, after-claim and laid, because the three answer different
+    # questions: raw says what the rule produced, after-claim what the game keeps, laid what
+    # the collider budget pays for. A one-sided ceiling passes an 81% plant in silence while
+    # it is priced at 100% of that budget.
+    out["want0"] = min(rules.disc_seeds, out["peaks"]) if rules.disc_seeds > 0 else out["peaks"]
+    by_level, by_lane = {}, {}
+    for disc in discs:
+        by_level[disc.level] = by_level.get(disc.level, 0) + 1
+        by_lane[disc.lane] = by_lane.get(disc.lane, 0) + 1
+    out["by_level"] = [by_level.get(i, 0) for i in range(max(by_level) + 1)]
+    out["by_lane"] = [by_lane.get(i, 0) for i in range(max(1, rules.gasket_levels))]
+    out["level0"] = by_level.get(0, 0)
+    # The LAID half of the same promise, and the only half that can fail. `want0` above
+    # re-types `build_gasket`'s OWN `want` expression and `build_gasket` neither adds nor
+    # removes a level-0 disc afterwards, so `level0 == want0` is an identity of the model
+    # (measured equal for DiscSeeds in {0, -3, 5, 9, 13, 20, 999}) — a gate on it cannot
+    # fire against the shipped algorithm. What is NOT an identity is whether every one of
+    # those coarsest rings REACHED the plant: the claim filter deletes prisms, and a whole
+    # ring swallowed by one already laid is exactly the failure "level 0 is the surface's
+    # peaks" is a claim against. Curve ids are handed out one per ring in LAY order
+    # (`grow`'s gasket branch increments curve_count immediately before each emit and
+    # breaks without incrementing), so curve k+1 IS lay[k] — CHECKED rather than assumed,
+    # because a ring the walk never reached would shift every id after it and silently
+    # re-label every per-ring statement below.
+    level_of_curve = {k + 1: discs[i].level for k, i in enumerate(lay)}
+    laid_curves = {p.curve for p in kept if p.tan_r == 0.0}
+    out["curve_map_ok"] = all(c in level_of_curve for c in laid_curves)
+    out["level0_laid"] = sum(1 for c in laid_curves if level_of_curve.get(c) == 0)
+
+    # rho_ref's LONE-DISC FALLBACK. A level-0 ring is half the angle to its nearest
+    # neighbour, and a disc with no neighbour inside pi/3 takes that frozen constant
+    # instead — so rho_ref, which sets the girth ladder, the octave ladder AND N, can be a
+    # CONSTANT rather than a measurement on the surface. Reported per element for exactly
+    # that reason (measured: the largest disc takes it on Space and Time).
+    top = [disc for disc in discs if disc.level == 0]
+    out["fallback0"] = sum(1 for disc in top if abs(disc.rho - math.pi / 6.0) < 1e-9)
+    out["rho_ref_is_fallback"] = abs(rho_ref - math.pi / 6.0) < 1e-9
+    out["rho_top"] = (min(disc.rho for disc in top), max(disc.rho for disc in top)) if top else (0, 0)
+    out["rho_span"] = (max(disc.rho for disc in discs)
+                       / max(1e-9, min(disc.rho for disc in discs))) if discs else 0.0
+
+    # N's ROUNDING MARGIN. `RingSamplesFor` is `round(circ / step)` and N is shared by every
+    # ring, so half a ULP either side of a boundary is a DIFFERENT PLANT — two independent
+    # transcriptions of this species disagreed by one sample on exactly one element and it
+    # moved the ring count 89 -> 78 and the fill 95% -> 81%. Reported, never gated: the
+    # honest fix is to author N per element, which is a model change and not a bound.
+    circ = 2 * math.pi * math.sin(rho_ref) * d["surface"].mean_radius
+    x = circ / max(1e-9, rules.step)
+    out["samples_exact"] = x
+    out["samples_margin"] = abs(x - round(x))
+    out["samples_authored"] = rules.ring_samples > 0
+    # `ring_samples_for` CLAMPS into [RING_MIN_SAMPLES, RING_MAX_SAMPLES]. Where the clamp
+    # bites, the printed `round(circ/step)` is not N and the margin below describes a
+    # boundary nothing is standing near — say so rather than print a number that is not
+    # the one the plant used.
+    out["samples_clamped"] = (not out["samples_authored"]
+                              and samples != min(M.RING_MAX_SAMPLES,
+                                                 max(M.RING_MIN_SAMPLES, int(round(x)))))
+
+    # (b) RING INTEGRITY, before the budget. One curve IS one ring; its dive (TanR != 0) is a
+    # tail on the ring and is not part of it.
+    emitted, survived = {}, {}
+    for p in d["raw"]:
+        if p.tan_r == 0.0:
+            emitted[p.curve] = emitted.get(p.curve, 0) + 1
+    for p in claimed:
+        if p.tan_r == 0.0:
+            survived[p.curve] = survived.get(p.curve, 0) + 1
+    integrity = {c: survived.get(c, 0) / float(samples) for c in emitted}
+    out["rings"] = len(emitted)
+    out["ring_integrity_min"] = min(integrity.values()) if integrity else float("nan")
+    out["ring_integrity_median"] = median(list(integrity.values())) if integrity else float("nan")
+    out["rings_broken"] = sum(1 for v in integrity.values() if v < RING_INTEGRITY_MIN)
+    out["rings_short_emit"] = sum(1 for v in emitted.values() if v != samples)
+
+    # The budget's own cut, which gate (b) is deliberately blind to: a truncated plant stops
+    # mid-ring, so the last ring laid is an ARC. It is REPORTED rather than gated because the
+    # fix is in the growth rule (refuse to START a ring whose N prisms cannot fit — free,
+    # since the lay order is already ring-major), not in a bound this file can set.
+    laid_by_curve = {}
+    for p in kept:
+        if p.tan_r == 0.0:
+            laid_by_curve[p.curve] = laid_by_curve.get(p.curve, 0) + 1
+    last = kept[-1].curve if kept else None
+    out["last_ring_laid"] = laid_by_curve.get(last, 0)
+    out["last_ring_survived"] = survived.get(last, 0)
+    out["cut_mid_ring"] = out["last_ring_laid"] < out["last_ring_survived"]
+
+    # (c) THE LADDER, in screen terms. Both axes are measured: the gate is on +z, and the
+    # SHEET's own arena camera direction is reported beside it so a reader can see the answer
+    # does not hinge on which axis was picked.
+    lanes = [p.lane for p in kept]
+    oct_z, ppu, dist, ext = arena_octaves(boxes, lanes, (0.0, 0.0, 1.0))
+    view = R.SHEET_VIEWS[0]
+    cd = (math.cos(view[2]) * math.cos(view[1]), math.cos(view[2]) * math.sin(view[1]),
+          math.sin(view[2]))
+    oct_cam, _, _, _ = arena_octaves(boxes, lanes, cd)
+    out["ppu"], out["eye"], out["extent"] = ppu, dist, ext
+    out["octaves"] = oct_z
+    out["octaves_camera"] = oct_cam
+    legible = [k for k, v in oct_z.items()
+               if v["frame"] >= OCTAVE_FRAME_MIN and v["px"] >= OCTAVE_PX_MIN]
+    out["legible"] = sorted(legible)
+    out["legible_camera"] = sorted(k for k, v in oct_cam.items()
+                                   if v["frame"] >= OCTAVE_FRAME_MIN and v["px"] >= OCTAVE_PX_MIN)
+    # A sum of per-OCTAVE unions, so two octaves overlapping on screen are counted twice.
+    # Reported only, never gated (the gate is per octave); measured against the shipped
+    # renderer's own arena tile it lands within 15% of the lit pixels, the difference being
+    # the render's perspective spread and its heart.
+    out["frame_total"] = sum(v["frame"] for v in oct_z.values())
+    out["invisible_spend"] = sum(v["prisms"] for k, v in oct_z.items()
+                                 if k not in legible) / max(1, len(kept))
+
+    # (d) TANGENCY. A child is inscribed in a curvilinear triangle of three discs that were
+    # already there, so its three nearest LOWER-INDEX discs are its parents; its value is the
+    # WORST of those three gaps, because tangency to all three is the claim being made.
+    gaps = []
+    for i, disc in enumerate(discs):
+        if disc.level < 1 or i == 0:
+            continue
+        near = sorted((M._angle(disc.axis, discs[j].axis) - disc.rho - discs[j].rho)
+                      / max(disc.rho, 1e-9) for j in range(i))
+        if len(near) >= 3:
+            gaps.append(max(near[:3]))
+    out["children"] = len(gaps)
+    out["tangency_median"] = median(gaps) if gaps else 0.0
+    out["tangency_max"] = max(gaps, default=0.0)
+
+    # (e) THE ORDERING PROMISE. The lay order is rho-DESCENDING and the lane IS the size
+    # octave, so a budget-stopped plant has laid every ring larger than some rho and no ring
+    # smaller — the whole packing minus its finest generation. That is the property the whole
+    # lane-major contract rests on here, and it is one equality: the LAST prism laid belongs
+    # to the highest octave present.
+    out["last_lane"] = kept[-1].lane if kept else -1
+    out["max_lane"] = max(lanes) if lanes else -1
+    # ...and the half of that promise which is not a theorem. The equality IS one: `lane`
+    # is floor(log2(rho_ref / rho) / octave) clamped, a monotone function of -rho, and the
+    # lay order is rho-descending, so the lane sequence of every emitted prism is
+    # non-decreasing and its last element is its maximum BY CONSTRUCTION (measured: true in
+    # `raw` and in `kept`, on all four elements). It is kept as a model-regression guard and
+    # is labelled as one. A HOLE in the ladder is not a theorem — the octave bands are fixed
+    # widths in log rho and nothing makes the disc set occupy every one of them, so a plant
+    # can reach octave 3 with nothing at all in octave 2, which THE LADDER above scores as
+    # "illegible" and structurally cannot tell apart from "absent".
+    out["lanes_present"] = sorted({p.lane for p in kept})
+    out["lanes_contiguous"] = out["lanes_present"] == list(range(len(out["lanes_present"])))
+    out["lane_prisms"] = {k: v["prisms"] for k, v in sorted(oct_z.items())}
+    dives = {}
+    for p in kept:
+        if p.tan_r != 0.0:
+            dives[p.lane] = dives.get(p.lane, 0) + 1
+    out["lane_dives"] = {k: dives.get(k, 0) for k in sorted(oct_z)}
+
+    # (f) the inert columns, per field — the same instrument as the Watershed's.
+    if inert:
+        base = [_prism_tuple(p) for p in kept]
+        read, drift = [], {}
+        for name, (a, b) in GASKET_INERT_PROBES.items():
+            idx = M.Rules.FIELDS.index(name)
+            worst = 0
+            for value in (a, b):
+                values = rules.as_list()
+                values[idx] = value
+                got = _lay(d["surface"], M.Rules(*values), M.PRISM_BUDGET)
+                if got != base:
+                    worst = max(worst, abs(len(got) - len(base))
+                                + sum(1 for p, q in zip(got, base) if p != q))
+            if worst:
+                read.append(name)
+                drift[name] = worst
+        out["inert_read"] = read
+        out["inert_drift"] = drift
+        out["inert_tested"] = list(GASKET_INERT_PROBES)
+    return out
+
+
+def gasket_gates(species, element, g):
+    bad = []
+    tag = f"{species}/{element}"
+    lo, hi = FORM_FIT_BAND
+    if not (lo <= g["fit"] <= hi):
+        bad.append(f"{tag} FULL FORM: {g['claimed']} prisms survive the claim against a "
+                   f"{g['budget']} budget = {g['fit']:.0%} (band [{lo:.0%}, {hi:.0%}]; raw "
+                   f"{g['raw']}, laid {g['laid']}) — below the floor the plant is priced at "
+                   f"{g['budget']} colliders and lays a fraction of them, above the ceiling "
+                   f"the budget is cutting the form; DiscMinRadius is the dial")
+    if g["rings_broken"] > 0:
+        bad.append(f"{tag} RING INTEGRITY: {g['rings_broken']} of {g['rings']} rings keep "
+                   f"under {RING_INTEGRITY_MIN:.0%} of their {g['samples']} samples through "
+                   f"the claim (worst {g['ring_integrity_min']:.1%}, median "
+                   f"{g['ring_integrity_median']:.1%}) — a ring that loses half its prisms is "
+                   f"an ARC, and this species' whole claim is that the repeated unit is a "
+                   f"CLOSED ring. Measured before the budget, so a budget cut cannot cause it")
+    if len(g["legible"]) < OCTAVE_LEGIBLE_MIN:
+        shares = ", ".join(f"oct{k} {v['frame']:.2%}/{v['px']:.1f}px"
+                           for k, v in sorted(g["octaves"].items()))
+        bad.append(f"{tag} LADDER: {len(g['legible'])} octaves paint >= "
+                   f"{OCTAVE_FRAME_MIN:.1%} of the {ARENA_TILE}px arena frame AND carry a "
+                   f"median prism >= {OCTAVE_PX_MIN}px (bound {OCTAVE_LEGIBLE_MIN}) — "
+                   f"[{shares}], {g['invisible_spend']:.0%} of the plant's prisms spent below "
+                   f"both bars. A ladder stated in RINGS is satisfied by exactly the octaves "
+                   f"that were already visible, which is why this one is stated in pixels")
+    if g["tangency_median"] > TANGENCY_MEDIAN_MAX:
+        bad.append(f"{tag} TANGENCY: the median child disc's worst gap to its three parents "
+                   f"is {g['tangency_median']:.4f} of its own rho (bound "
+                   f"{TANGENCY_MEDIAN_MAX}; max {g['tangency_max']:.4f} over {g['children']} "
+                   f"children) — Inscribe has degraded to 'a smaller circle roughly in the "
+                   f"middle', which still renders as circles and stops being a gasket")
+    if not g["curve_map_ok"]:
+        bad.append(f"{tag} LEVEL 0: a laid ring carries a curve id the lay order does not "
+                   f"account for, so no per-ring statement here can be trusted — the gasket "
+                   f"branch has stopped emitting exactly one curve per disc, in lay order")
+    elif g["level0_laid"] != g["want0"]:
+        bad.append(f"{tag} LEVEL 0: {g['level0_laid']} of the coarsest generation's rings "
+                   f"reach the LAID plant against min(DiscSeeds {g['disc_seeds']}, peaks "
+                   f"{g['peaks']}) = {g['want0']} — {g['level0']} level-0 discs were built, "
+                   f"so the claim ate {g['want0'] - g['level0_laid']} whole ring(s). Level 0 "
+                   f"is the packing's coarsest ring and the first thing laid; a plant "
+                   f"missing one is missing a lobe of the bulb. (The DISC count is measured "
+                   f"too and is an identity of the model — it cannot fire.)")
+    if not g["lanes_contiguous"]:
+        bad.append(f"{tag} LADDER HOLE: the laid plant occupies octaves "
+                   f"{g['lanes_present']} — a rung is MISSING rather than merely small, "
+                   f"which THE LADDER above scores as illegible and cannot tell apart. The "
+                   f"octave bands are fixed widths in log rho, so a gap means the disc set "
+                   f"SKIPPED a size rather than drew it too thin, and the two want opposite "
+                   f"fixes (DiscMinRadius / GasketOctave, not girth)")
+    if g["last_lane"] != g["max_lane"]:
+        bad.append(f"{tag} ORDERING: the last prism laid is in octave {g['last_lane']} while "
+                   f"the plant reaches octave {g['max_lane']} (bound: equal) — a MODEL "
+                   f"REGRESSION guard rather than a measurement of this plant: with the lane "
+                   f"a monotone function of -rho and the lay order rho-descending the two "
+                   f"are equal by construction, so a difference means the lane has stopped "
+                   f"being the size octave and 'the whole bulb drawn thinly' with it")
+    if g.get("inert_read"):
+        bad.append(f"{tag} INERT COLUMNS: {', '.join(g['inert_read'])} CHANGE the plant "
+                   f"(prism-tuple drift {g['inert_drift']}) — a gasket species authors all "
+                   f"{len(g['inert_tested'])} of these at a do-nothing value to say that "
+                   f"nothing here walks")
+    return bad
+
+
+def gasket_species_gates(species, gs):
+    """The one gate that is a statement about the FOUR ELEMENTS rather than about one plant.
+
+    RING COARSENESS is this species' §45 identity, and it is the only place in the family
+    where an element's long axis is spent on SAMPLING rather than on a longer prism: the
+    ring's chord is set by its own geometry, so what the law's step buys here is how many
+    bars go round it. Space draws the coarsest polygon of long blades and Mass the finest
+    mosaic of bricks — and if N ever comes out equal across the four, the element has
+    stopped being visible in the form."""
+    bad = []
+    n = {e: g["samples"] for e, g in gs.items()}
+    if n and len(n) != len(COARSENESS_ORDER):
+        # The one gate here that is a statement about the FOUR, so a partial roster leaves
+        # it unable to run — and a gate that cannot run must say so rather than return []
+        # (`authors_gasket`'s own argument, one level up: a zero reported as a pass).
+        bad.append(f"{species} RING COARSENESS: only {sorted(n)} of "
+                   f"{list(COARSENESS_ORDER)} author a gasket, so the cross-element "
+                   f"identity cannot be measured at all — this gate returned no verdict "
+                   f"rather than a passing one")
+    if len(n) == len(COARSENESS_ORDER):
+        a, b, c, dd = (n[e] for e in COARSENESS_ORDER)
+        if not (a < b <= c < dd):
+            rel = (f"{COARSENESS_ORDER[0]} < {COARSENESS_ORDER[1]} <= "
+                   f"{COARSENESS_ORDER[2]} < {COARSENESS_ORDER[3]}")
+            bad.append(f"{species} RING COARSENESS: N must run {rel} (Space strictly "
+                       f"coarsest, Mass strictly finest); measured {n} — an element's "
+                       f"long axis is spent "
+                       f"here as ring COARSENESS, so equal N is the element not showing up")
+        if n["Space"] and n["Mass"] / float(n["Space"]) < COARSENESS_RATIO_MIN:
+            bad.append(f"{species} RING COARSENESS: N_Mass / N_Space = "
+                       f"{n['Mass'] / float(n['Space']):.2f} (bound "
+                       f"{COARSENESS_RATIO_MIN}) — the four are ordered but too close "
+                       f"together to read as four different materials")
+    return bad
+
+
 # ── Charge's armour at the core ────────────────────────────────────────────────
 
 SHIELD_SAMPLE = 3000     # octahedron SAT is 88 axes; the estimate is sampled, seed fixed
@@ -1076,8 +1574,10 @@ def measure_species(species, args):
     heart_half = 0.5 * heart
     print("=" * 96)
     print(f"{spec['display']}  ({species}) — measured from the shipped surface table")
-    print(f"  concept: {'HELICOIDAL twist, ' + str(spec['twist']) + ' deg/step' if spec['twist'] else 'SMOOTH CROSSING CURVES, no twist'}"
-          f"   neutral prism {spec['neutral_cross']} x {spec['neutral_step']}")
+    shape = ('HELICOIDAL twist, ' + str(spec['twist']) + ' deg/step' if spec['twist']
+             else spec.get('concept') or 'SMOOTH CROSSING CURVES, no twist')
+    print(f"  concept: {shape}"
+          f"\n           neutral prism {spec['neutral_cross']} x {spec['neutral_step']}")
     print(f"  heart: world scale {heart:.3f} (half-extent {heart_half:.3f}) from {heart_src}")
     print("=" * 96 + "\n")
     print(f"  {'element':8s} {'prisms':>6} {'curves':>6} {'volume':>10} {'per prism':>22} "
@@ -1188,6 +1688,94 @@ def measure_species(species, args):
                   f"(REPORTED, never gated: a finite grid cannot promise it found every "
                   f"critical point)")
 
+    # ── APOLLONIA ──────────────────────────────────────────────────────────────
+    gaskets = {}
+    for element in M.ELEMENTS:
+        rules = grow_detail(species, element)["rules"]
+        if authors_gasket(rules):
+            gaskets[element] = gasket_report(species, element, reports[element], inert=True)
+    if gaskets:
+        import mandelbulb_flora_render as _R
+        arena_factor = _R.SHEET_VIEWS[0][3]
+        g0 = next(iter(gaskets.values()))
+        print(f"\n  APOLLONIA (one ring per disc, laid rho-DESCENDING; the lane IS the size "
+              f"octave, {len(g0['by_lane'])} authored)")
+        print(f"    {'element':8s} {'N':>4} {'round':>6} {'rho_ref':>8} {'discs':>6} "
+              f"{'n0 laid/built':>13} {'by level':>22} {'raw/claim/laid':>18} {'fit':>6} {'rings':>6} "
+              f"{'worst ring':>10} {'<80%':>5} {'tangency med/max':>18}")
+        for element in M.ELEMENTS:
+            g = gaskets.get(element)
+            if not g:
+                continue
+            print(f"    {element:8s} {g['samples']:>4} {g['samples_margin']:>6.3f} "
+                  f"{g['rho_ref']:>8.4f} {g['discs']:>6} "
+                  f"{str(g['level0_laid']) + '/' + str(g['level0']):>13} "
+                  f"{str(g['by_level']):>22} "
+                  f"{g['raw']:>5}/{g['claimed']:<5}/{g['laid']:<5} {g['fit']:>6.0%} "
+                  f"{g['rings']:>6} {g['ring_integrity_min']:>10.1%} {g['rings_broken']:>5} "
+                  f"{g['tangency_median']:>8.4f}/{g['tangency_max']:<9.4f}")
+        lo, hi = FORM_FIT_BAND
+        print(f"    fit band [{lo:.0%}, {hi:.0%}] of the {M.PRISM_BUDGET} budget; ring "
+              f"integrity is measured on the CLAIM-FILTERED list BEFORE budget truncation, "
+              f"so a budget cut cannot read as a broken ring")
+        print(f"\n    THE LADDER, IN SCREEN TERMS — share of the {ARENA_TILE}px arena frame "
+              f"(the judging sheet's own tile at {arena_factor}x extent) and the median "
+              f"prism's projected LENGTH. An octave is LEGIBLE at >= {OCTAVE_FRAME_MIN:.1%} "
+              f"and >= {OCTAVE_PX_MIN}px; the bound is {OCTAVE_LEGIBLE_MIN} of them.")
+        for element in M.ELEMENTS:
+            g = gaskets.get(element)
+            if not g:
+                continue
+            def band(table):
+                return "  ".join(
+                    f"oct{k} {v['frame']:>6.2%}/{v['px']:>5.1f}px/{v['prisms']:>4}p"
+                    for k, v in sorted(table.items()))
+            print(f"      {element:8s} +z        {band(g['octaves'])}")
+            print(f"               camera    {band(g['octaves_camera'])}")
+            print(f"               legible {g['legible']} (camera {g['legible_camera']}), "
+                  f"frame total {g['frame_total']:.2%}, invisible spend "
+                  f"{g['invisible_spend']:.0%} of prisms   "
+                  f"{g['ppu']:.2f} px/u at eye {g['eye']:.0f} u, extent {g['extent']:.1f} u")
+            print(f"               lay order: last prism in octave {g['last_lane']} of "
+                  f"{g['max_lane']} present; discs per octave {g['by_lane']}, prisms per "
+                  f"octave {g['lane_prisms']}"
+                  + ("" if g['lanes_contiguous'] else " (A RUNG IS MISSING — the octaves "
+                     f"present are {g['lanes_present']}, not 0..{g['max_lane']})")
+                  + f", of which the FALL's are {g['lane_dives']} "
+                  f"(a dive carries its ring's lane, so the largest octave is the one it "
+                  f"flatters)")
+            print(f"               budget cut {g['truncated_prisms']} prisms"
+                  + (f" and it cut the LAST RING mid-way ({g['last_ring_laid']}/"
+                     f"{g['last_ring_survived']} of its samples) — REPORTED, not gated: the "
+                     f"fix is to refuse to START a ring that cannot fit"
+                     if g['cut_mid_ring'] else " (no ring was cut mid-way)"))
+            print(f"               rho {g['rho_top'][0]:.4f}..{g['rho_top'][1]:.4f} at level 0, "
+                  f"span {g['rho_span']:.2f}x over the plant; {g['fallback0']} of "
+                  f"{g['level0']} level-0 discs took the lone-disc pi/6 fallback"
+                  + (" AND rho_ref IS that constant, so the girth, octave and N ladders are "
+                     "keyed on a frozen number rather than on this surface"
+                     if g['rho_ref_is_fallback'] else ""))
+            print(f"               N = round(circ/step) = round({g['samples_exact']:.3f}), "
+                  f"margin to the rounding boundary {g['samples_margin']:.3f}"
+                  + (f" but N is {g['samples']} — CLAMPED into "
+                     f"[{M.RING_MIN_SAMPLES}, {M.RING_MAX_SAMPLES}], so the margin is "
+                     f"describing a boundary this plant is not standing near"
+                     if g['samples_clamped'] else "")
+                  + (" (AUTHORED, so the margin is decoration)" if g['samples_authored'] else
+                     " — N is shared by every ring, so one unit either way is a different "
+                     "plant; REPORTED, never gated")
+                  + (f"; {g['rings_short_emit']} rings emitted a count other than N"
+                     if g['rings_short_emit'] else ""))
+            if "inert_read" in g:
+                inert = [k for k in g["inert_tested"] if k not in g["inert_read"]]
+                print(f"               inert columns: {len(inert)}/{len(g['inert_tested'])} "
+                      f"prove byte-identical; READ: {', '.join(g['inert_read']) or 'none'}")
+        n = {e: g["samples"] for e, g in gaskets.items()}
+        print(f"    ring coarseness N {n} — the element's long axis spent as SAMPLING, "
+              f"required {COARSENESS_ORDER[0]} < {COARSENESS_ORDER[1]} <= "
+              f"{COARSENESS_ORDER[2]} < {COARSENESS_ORDER[3]} and N_Mass/N_Space >= "
+              f"{COARSENESS_RATIO_MIN}")
+
     s = shield_report(reports, species)
     print(f"\n  Charge armour: {s['armoured_interpenetrating']}/{s['armoured_pairs']} "
           f"({s['armoured_fraction']:.1%}) against its siblings' bare {s['sibling_bare']:.1%}")
@@ -1247,6 +1835,10 @@ def measure_species(species, args):
                 bad += fall_gates(species, element, falls[element], heart_half)
             if element in sheds:
                 bad += watershed_gates(species, element, sheds[element])
+            if element in gaskets:
+                bad += gasket_gates(species, element, gaskets[element])
+        if gaskets:
+            bad += gasket_species_gates(species, gaskets)
 
         # THE ELEMENTAL LAW (Docs/ECOSYSTEM.md §45). This species is EXEMPT from the runtime
         # leaf transform (Flora.PrismSizeFixedByGrowthRule), so it has to state the law in its

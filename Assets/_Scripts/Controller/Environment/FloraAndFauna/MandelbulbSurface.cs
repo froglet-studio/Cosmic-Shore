@@ -1037,8 +1037,9 @@ namespace CosmicShore.Gameplay
             /// <summary>The disc tangent internally to the curvilinear triangle (a,b,c): a
             /// fixed-iteration relaxation that EQUALISES f_i(x) = angle(x, d_i) − ρ_i. No Rng;
             /// measured across all four bakes it converges to a median tangency gap of 0.000.
-            /// The three accumulations are summed in the order (a, b, c) and x is normalised
-            /// once per iteration — both transcription-load-bearing.</summary>
+            /// x is normalised once per iteration, which is transcription-load-bearing; the
+            /// summation order (a, b, c) is NOT — measured, reversing it moves 65 of 255 disc
+            /// rows in their last digits and changes no disc, lane, N or rho_ref.</summary>
             bool Inscribe(int ia, int ib, int ic, out Vector3 x, out float rho)
             {
                 x = _discs[ia].Axis + _discs[ib].Axis + _discs[ic].Axis;
@@ -1308,7 +1309,10 @@ namespace CosmicShore.Gameplay
                 var end = points[points.Count - 1].Position;
                 var tail = end - points[points.Count - 2].Position;
                 if (tail.sqrMagnitude <= 1e-18f) return _dive;
-                AppendDive(_dive, end, tail.normalized, WalkStepSize);
+                // A ring's chord IS the element's step by construction (RingSamplesFor), so
+                // the gasket hands the dive its own chord rather than the walk step — which
+                // keeps WalkStep genuinely inert on this species (measured: it was read here).
+                AppendDive(_dive, end, tail.normalized, Gasket ? _rules.StepSize : WalkStepSize);
                 if (_dive.Count > 0) { _diveOwed[k] = false; _divesSpent++; }
                 return _dive;
             }
