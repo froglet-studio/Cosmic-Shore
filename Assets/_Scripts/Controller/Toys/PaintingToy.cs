@@ -260,7 +260,7 @@ namespace CosmicShore.Gameplay
                 _label.text = $"{_painting.DisplayName}\nresume {Mathf.RoundToInt(100f * done / total)}%";
             else
                 _label.text = times > 0
-                    ? $"{_painting.DisplayName}\npainted ×{times}"
+                    ? $"{_painting.DisplayName}\npainted x{times}"
                     : _painting.DisplayName;
         }
     }

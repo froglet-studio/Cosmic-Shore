@@ -208,6 +208,16 @@ jobs:
           python3 Tools/Build/check_console_logging.py --self-test
           python3 Tools/Build/check_console_logging.py
 
+      # The UI font carries 97 glyphs and its fallback table is EMPTY, so a character
+      # outside that set draws an empty box with nothing logged. Self-test first: this
+      # gate's own statement scan was blind to interpolation braces once, and a gate
+      # nobody has watched fail is a gate nobody should trust.
+      - name: Check TMP glyph coverage
+        run: |
+          set -euo pipefail
+          python3 Tools/Build/check_tmp_glyph_coverage.py --self-test
+          python3 Tools/Build/check_tmp_glyph_coverage.py --check
+
       - name: Check prism shader wiring
         run: |
           set -euo pipefail

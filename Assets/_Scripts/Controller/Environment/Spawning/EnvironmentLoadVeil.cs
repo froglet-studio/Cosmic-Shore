@@ -141,12 +141,12 @@ namespace CosmicShore.Gameplay
                 if (PrismTrailBuilder.IsLayingInProgress)
                     _progress.text =
                         $"BUILDING ARENA  {PrismTrailBuilder.LayProgress:P0}  " +
-                        $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  ·  {_dotTimer:F0}s";
+                        $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  -  {_dotTimer:F0}s";
                 else if (PrismTrailBuilder.GrowRemainingCount > 0)
                     _progress.text =
-                        $"GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  ·  {_dotTimer:F0}s";
+                        $"GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  -  {_dotTimer:F0}s";
                 else
-                    _progress.text = $"·  {_dotTimer:F0}s";
+                    _progress.text = $"-  {_dotTimer:F0}s";
 
                 // PollArenaReady force-settles behind the covered screen and self-releases
                 // on a 180s no-progress stall, so the veil can never hold a wedged build.
