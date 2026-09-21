@@ -211,7 +211,10 @@ def flora_component_block(p):
     # The prefab's own seed prism is the ONLY prism that reads leafSize - every prism the
     # plant lays carries a size measured from its own curve (MandelbulbFlora.AddHealthBlock).
     scx, scy, scz, _ = M.elemental_prism(species, "Space")
-    seed = (scx * M.SHELL_RADIUS, scy * M.SHELL_RADIUS, scz * M.SHELL_RADIUS)
+    # On SPACE's own shell, not the authored one: the §51 reach makes those two different
+    # numbers, and a seed prism authored at the wrong shell is a prism no element ever lays.
+    _sh = M.shell_for("Space")
+    seed = (scx * _sh, scy * _sh, scz * _sh)
     return (
         "  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}\n"
         "  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}\n"

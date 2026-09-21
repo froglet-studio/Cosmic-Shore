@@ -81,10 +81,49 @@ namespace CosmicShore.Gameplay
                  "entry, which is also what a plant with no element grows.")]
         [SerializeField] ElementalForm[] formByElement = Array.Empty<ElementalForm>();
 
-        [Tooltip("World radius of the surface's unit sphere — how big one plant is. Every prism " +
-                 "dimension is a multiple of it, so this is a k^3 volume dial and lands on the " +
-                 "cell's Frenzy ladder (Docs/ECOSYSTEM.md §34.8).")]
+        [Tooltip("World radius of the surface's unit sphere — how big one plant is, BEFORE the " +
+                 "element's reach. Every prism dimension is a multiple of it, so this is a k^3 " +
+                 "volume dial and lands on the cell's Frenzy ladder (Docs/ECOSYSTEM.md §34.8).")]
         [SerializeField, Min(1f)] float shellRadius = 75f;
+
+        /// <summary>
+        /// THE REACH — §51's assembly clause, and the one this family did not spend until
+        /// <c>Docs/ECOSYSTEM.md §56</c>: <c>ReachScale = volume^(-1/3)</c>, normalised on TIME so
+        /// the species' AUTHORED shell is the neutral plant. A SPACE plant reaches x1.288 and a
+        /// MASS plant draws in to x0.781 — a 1.65x span in how big a plant IS — while CHARGE and
+        /// TIME sit at exactly 1, which is the law read literally: their identity is a state and a
+        /// tempo rather than a shape, so only the two SHAPE elements move.
+        ///
+        /// <para>On this family a prism's length IS the walk's step, so the shell is simultaneously
+        /// the plant's extent and its prism size — which is why <c>Flora.ElementalReachScale</c>
+        /// stands down here and this species states the clause in its own fitted data instead. It
+        /// is paid for on the CROSS-SECTION, the one axis the walk does not touch: the authored
+        /// table carries a <c>sqrt(volume)</c> factor against this <c>volume^(-1/3)</c>, so the
+        /// world prism's volume is EXACTLY unchanged (the plant reaches further and thins to pay
+        /// for it) and no cell's volume ladder moves. Everything normalised — the walk, the lanes,
+        /// the hops, the dive — is byte-identical across the four, so a plant is the same prism
+        /// list at a different size, and the claim, being a similarity in both its radius and its
+        /// positions, refuses exactly the prisms it refused before.</para>
+        /// </summary>
+        float ElementalReach
+        {
+            get
+            {
+                // `Element` is both this lifeform's PROPERTY and the enum's type name, so the
+                // neutral has to spell the type out - the same collision Flora.ResolveShieldPeriod
+                // works around.
+                float neutral = FloraElementalForm.ReachScale(CosmicShore.Data.Element.Time);
+                return neutral <= 0f ? 1f : FloraElementalForm.ReachScale(Element) / neutral;
+            }
+        }
+
+        /// <summary>
+        /// The shell this individual actually grows on — <see cref="shellRadius"/> times
+        /// <see cref="ElementalReach"/>. Resolved once in <see cref="Initialize"/> rather than
+        /// multiplied into the serialized field, so a second Initialize on the same instance
+        /// cannot compound it the way <c>ApplyVariantTuning</c>'s LatticeScale would.
+        /// </summary>
+        float _shell = 75f;
 
         [Tooltip("Reconstruction lattice for the height field. Coefficients are grid-independent, " +
                  "so this trades memory against how finely the curve walk can read the surface; " +
@@ -244,6 +283,7 @@ namespace CosmicShore.Gameplay
             // AFTER base.Initialize: this is the first point at which Element is final (prefab ->
             // rolled variant -> cell overrides -> the crystal that carries it).
             _form = ResolveForm();
+            _shell = shellRadius * ElementalReach;
 
             int seed = PlantSeed();
             ResolveWeights(seed, out float w0, out float w1, out float w2);
@@ -426,7 +466,7 @@ namespace CosmicShore.Gameplay
             var address = _addresses[index];
             MandelbulbSurface.Pose(_surface, address, ref _frame,
                                    out var local, out var forward, out var up);
-            local *= shellRadius;
+            local *= _shell;
             Vector3 world = transform.TransformPoint(local);
 
             // Cross-PLANT occupancy. Within one plant a duplicate is already impossible (the
@@ -465,11 +505,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 PrismSize(in MandelbulbSurface.PrismAddress address)
         {
-            float girth = Mathf.Max(0.05f, address.Girth) * shellRadius;
+            float girth = Mathf.Max(0.05f, address.Girth) * _shell;
             return new Vector3(
                 Mathf.Max(0.01f, _form.CrossSection.x * girth),
                 Mathf.Max(0.01f, _form.CrossSection.y * girth),
-                Mathf.Max(0.01f, address.Length * shellRadius));
+                Mathf.Max(0.01f, address.Length * _shell));
         }
 
         /// <summary>
@@ -491,7 +531,7 @@ namespace CosmicShore.Gameplay
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return true;
             float factor = connector ? ConnectorClaimFactor : ClaimFactor;
-            float radius = Mathf.Max(0.25f, factor * address.Length * shellRadius);
+            float radius = Mathf.Max(0.25f, factor * address.Length * _shell);
             return index.TryReserve(world, radius);
         }
 
@@ -794,6 +834,7 @@ namespace CosmicShore.Gameplay
             if (into == null || budget <= 0) return false;
 
             var form = ResolveForm();
+            float shell = shellRadius * ElementalReach;
             ResolveWeights(seed == 0 ? 1 : seed, out float w0, out float w1, out float w2);
             var surface = ResolveSurface(Element, w0, w1, w2);
             var growth = new MandelbulbSurface.Growth(surface, form.Rules, seed == 0 ? 1 : seed);
@@ -804,13 +845,13 @@ namespace CosmicShore.Gameplay
             {
                 MandelbulbSurface.Pose(surface, address, ref frame,
                                        out var local, out var forward, out var up);
-                float girth = Mathf.Max(0.05f, address.Girth) * shellRadius;
+                float girth = Mathf.Max(0.05f, address.Girth) * shell;
                 into.Add(new SpawnPoint(
-                    local * shellRadius,
+                    local * shell,
                     PrismRotation(forward, up),
                     new Vector3(Mathf.Max(0.01f, form.CrossSection.x * girth),
                                 Mathf.Max(0.01f, form.CrossSection.y * girth),
-                                Mathf.Max(0.01f, address.Length * shellRadius))));
+                                Mathf.Max(0.01f, address.Length * shell))));
                 laid++;
             }
             return into.Count > 0;

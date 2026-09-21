@@ -390,11 +390,12 @@ def grow_detail(species, element, budget=None):
     surface = M.surface_for(element, tables=tables, degree=degree, width=M.FIELD_WIDTH)
     rules = M.rules_for(element, species)
     raw, raw_curves, dives_spent = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
-    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    shell = M.shell_for(element)
+    centres = [M._mul(M.pose(surface, p)[0], shell) for p in raw]
     # AFTER THE CLAIM, BEFORE THE BUDGET, kept separately: the two answer different
     # questions and conflating them reads a budget cut as a broken curve (see
     # gasket_report's ring integrity, which is the gate that found this out the hard way).
-    claimed = M.claim_filter(raw, centres)
+    claimed = M.claim_filter(raw, centres, shell=shell)
     kept = claimed[:budget]
     # A gasket species' seed population is its DISC set and the Fall's owed set strides over
     # the LEVEL-0 discs alone, so `build_seeds` — which reads SeedCount, authored 0 here —
@@ -445,7 +446,8 @@ def skeleton_report(species, element, budget=None):
     one lane hop, and nothing else."""
     d = grow_detail(species, element, budget)
     surface, raw = d["surface"], d["raw"]
-    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    shell = M.shell_for(element)
+    centres = [M._mul(M.pose(surface, p)[0], shell) for p in raw]
     forward = [-1] * 0
     roots, forward_edges = [], []
     for i, p in enumerate(raw):
@@ -481,7 +483,7 @@ def skeleton_report(species, element, budget=None):
     rules = d["rules"]
     unit = max(1e-6, max(rules.step,
                          rules.walk_step if rules.walk_step > 0 else rules.step,
-                         rules.lane_gap) * M.SHELL_RADIUS)
+                         rules.lane_gap) * M.shell_for(element))
     bonds = []
     for i, p in enumerate(raw):
         anchor_pt = centres[p.parent] if p.parent >= 0 else (0.0, 0.0, 0.0)
@@ -580,7 +582,7 @@ def seam_pairs(species, element, budget=None):
 
 
 def element_report(element, shell=None, cross=None, budget=None, species="FractalFoliage"):
-    shell = shell or M.SHELL_RADIUS
+    shell = shell or M.shell_for(element)
     cross = cross or M.cross_section_for(element, species)
     surface, rules, prisms, curves = grow_element(element, budget, species)
     boxes = [obb(surface, p, shell, cross) for p in prisms]
@@ -775,7 +777,7 @@ def fall_report(species, element, report):
     d = grow_detail(species, element)
     rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
     walk = d["walk_index"]
-    shell = M.SHELL_RADIUS
+    shell = M.shell_for(element)
     stop_world = rules.dive_stop * shell
     twist = abs(M.SPECIES[species]["twist"])
 
@@ -1131,10 +1133,11 @@ def _prism_tuple(p):
             p.length, p.girth, p.roll, p.curve, p.lane)
 
 
-def _lay(surface, rules, budget):
+def _lay(surface, rules, budget, shell=None):
+    shell = shell or M.SHELL_RADIUS
     raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
-    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
-    return [_prism_tuple(p) for p in M.claim_filter(raw, centres)[:budget]]
+    centres = [M._mul(M.pose(surface, p)[0], shell) for p in raw]
+    return [_prism_tuple(p) for p in M.claim_filter(raw, centres, shell=shell)[:budget]]
 
 
 def census_resolution():
@@ -1270,7 +1273,7 @@ def watershed_report(species, element, report, inert=True):
     d = grow_detail(species, element)
     rules, kept, boxes = d["rules"], d["kept"], report["boxes"]
     walk, surface = d["walk_index"], d["surface"]
-    shell = M.SHELL_RADIUS
+    shell = M.shell_for(element)
     sads = M.saddles(surface)
     out = ring_census(surface, element)
     out["walk_step"] = rules.walk_step if rules.walk_step > 0 else rules.step
@@ -1416,7 +1419,7 @@ def watershed_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(surface, M.Rules(*values), M.budget_for(species))
+                got = _lay(surface, M.Rules(*values), M.budget_for(species), M.shell_for(element))
                 if got != base:
                     n = abs(len(got) - len(base)) + sum(1 for x, y in zip(got, base) if x != y)
                     worst = max(worst, n)
@@ -1903,7 +1906,7 @@ def gasket_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(d["surface"], M.Rules(*values), M.budget_for(species))
+                got = _lay(d["surface"], M.Rules(*values), M.budget_for(species), M.shell_for(element))
                 if got != base:
                     worst = max(worst, abs(len(got) - len(base))
                                 + sum(1 for p, q in zip(got, base) if p != q))

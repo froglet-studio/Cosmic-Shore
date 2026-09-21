@@ -1022,6 +1022,33 @@ trio, and the traps).
   budget at which the same amount of CURVE is laid as before — Apollonia excepted at 2,900,
   because **a gasket's form is finite and priced by `DiscMinRadius` rather than by a budget**.
   `Docs/ECOSYSTEM.md §55`; the `/flora` skill §2.
+- **AND THE REACH IS THE ELEMENT CLAUSE THAT FAMILY HAD NEVER SPENT.** Its four elements grew
+  plants of essentially the same SIZE — an **8% extent spread** against the Borromean membrane's
+  Space plant spanning **222 to Time's 111** — because `Flora.ElementalReachScale` declines §51's
+  assembly clause for a species exempt from the leaf law, on the grounds that *a family whose leaf
+  IS its strut needs nothing*. **That sentence is true of the STRUT and false of the PLANT**, whose
+  extent is the SHELL. It could not simply be taken: the shell is simultaneously the extent and the
+  prism size, so a naive `shell *= reach` is a similarity that scales plant volume by `1/V` and
+  EQUALISES all four — deleting the 14x spread and contradicting §51's own Mass clause. Three fixes
+  fail in instructive ways: scaling POSITIONS only **dashes** Space's ribbons and **fuses** Mass's
+  (the prism's length IS the step); paying on `LengthFactor` needs 2.09x for Mass, the same fusion
+  from the other side; and paying UNIFORMLY on both cross axes — which is volume-exact — makes
+  **MASS LESS CUBIC** (1.55 → 1.77), because Mass's `k < 1` shrinks the length that was already its
+  smallest axis while the pay grows the one that was already largest. What ships pays it on the
+  **THINNEST** cross axis, where Mass's growth pulls the axes together and Space's shrink drives
+  them apart — one rule, each element **more itself** (Mass max/min 1.55 → **1.45**, Space 7.80 →
+  **32.71**, extent span 1.09x → **1.72x**), with `world volume = (L·k)(T·V·k)(K·k) = L·T·K`
+  **exactly** since `k³ = 1/V`, so no cell's ladder moves. **CHARGE and TIME are byte-identical** —
+  the law read literally, since their identity is a state and a tempo rather than a shape — so
+  Charge's armour fit needed no re-solve. Six authored numbers changed and all sixteen (species,
+  element) pairs came back with **identical prism counts, curve counts and cumulative volume to the
+  digit**, the same nine pre-existing gate rows and no new ones: the walk is untouched in normalised
+  space and the claim, a similarity in both its radius and its positions, refuses exactly what it
+  refused before. Stated cost: Space's thin axis is now 0.07–0.16 world units, under
+  `PrismScaleAnimator`'s `minScale` and surviving on `AdmitTargetScale` alone. General rule: **a
+  clause declined because "the leaf IS the extent" was declined about the STRUT, not the PLANT** —
+  and when a pay can land on any of several free axes, **the axis is not a detail**.
+  `Docs/ECOSYSTEM.md §56`.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
   in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —

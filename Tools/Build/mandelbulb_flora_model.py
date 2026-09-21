@@ -1400,6 +1400,30 @@ def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=
 ELEMENT_VOLUME = {"Charge": 1.0, "Mass": 2.0901, "Space": 0.4667, "Time": 1.0}
 ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 0.45, "Space": 2.11, "Time": 1.0}
 
+# THE REACH - the assembly half of the same law (FloraElementalForm.ReachScale), and the one
+# clause this family did not spend until Docs/ECOSYSTEM.md §56. `ReachScale = volume^(-1/3)`,
+# normalised on TIME so the species' AUTHORED shell is the neutral plant: Space reaches
+# x1.288 and Mass draws in to x0.781, a 1.65x span in how big a plant IS. Charge and Time are
+# exactly 1, which is the law read literally - their identity is a state and a tempo, not a
+# shape, so only the two SHAPE elements move.
+#
+# On this family the prism's length IS the walk's step, so the shell is simultaneously the
+# plant's extent and its prism size and the two cannot be spent independently... except on
+# the CROSS-SECTION, which the walk does not touch. So the reach is paid for there:
+#
+#   world length   = (step) x (shell x k)                 = L x k        <- the plant reaches
+#   world thin     = (thin x V) x (shell x k)             = T x V x k
+#   world thick    = (thick) x (shell x k)                = K x k
+#   world volume   = (L x k)(T x V x k)(K x k)           = L x T x K    <- exactly unchanged,
+#                     since k^3 = 1/V                                       to the last bit
+#
+# so the volume ladder of every cell holds, the fitted VOLUME_GAIN below stays valid, and the
+# aspect spread WIDENS in the direction §51 already points (Space longer and thinner, Mass
+# shorter and thicker). The walk is untouched in normalised space, so the plant is the SAME
+# prism list scaled by k - which also means the claim, being a similarity in both its radius
+# and its positions, refuses exactly the prisms it refused before.
+ELEMENT_REACH = {e: v ** (-1.0 / 3.0) for e, v in ELEMENT_VOLUME.items()}
+
 # CHARGE is fitted against its ARMOUR, not its box: a Charge plant's leaves are shielded by
 # law and a shield engages the octahedron CIRCUMSCRIBING the prism, reaching 1.5 x leafSize
 # (Docs/ECOSYSTEM.md §35). Two dials, both fitted by measure_mandelbulb_flora.py --shields:
@@ -1718,6 +1742,14 @@ SPECIES["Apollonia"] = dict(
 VOLUME_GAIN["Apollonia"] = {"Charge": 1.0841, "Mass": 1.0128, "Space": 1.3532, "Time": 1.0}   # fitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
+
+
+def shell_for(element, base=SHELL_RADIUS):
+    """This element's shell - the species' authored radius times the §51 REACH. The one place
+    a plant's EXTENT differs by element on this family; everything normalised (the walk, the
+    lanes, the hops, the dive) is byte-identical across the four, so the plant is the same
+    prism list at a different size (Docs/ECOSYSTEM.md §56)."""
+    return base * ELEMENT_REACH.get(element, 1.0)
 FIELD_WIDTH = 192       # runtime reconstruction lattice
 # Live prisms per plant. Raised from 2,800 when these species started growing OUT of their
 # crystal (Docs/ECOSYSTEM.md §50.6): a plant now carries its own LIMBS — a trunk spiralling
@@ -1774,6 +1806,28 @@ def elemental_prism(species, element):
     gain = VOLUME_GAIN.get(species, {}).get(element, 1.0)
     x2 *= gain
     y2 *= gain
+
+    # THE REACH, paid for on the THINNEST cross axis (see ELEMENT_REACH). The shell carries
+    # V^(-1/3), so the world length moves by that and the pay has to move the cross-section's
+    # PRODUCT by V^(+1/3) to leave the world volume exactly where it was. WHICH cross axis
+    # carries it is free, and it is the whole of the difference between a change that expresses
+    # the law and one that undoes it:
+    #
+    #   MASS's pay is a GROWTH (V > 1), and growing the THINNEST axis is what pulls x, y and z
+    #     together - paid uniformly it grows the axis that was ALREADY largest and comes out
+    #     LESS cubic than before (measured: 1.55 -> 1.77 max/min, against 1.56 here).
+    #   SPACE's pay is a SHRINK, and shrinking the thinnest axis is what drives them apart
+    #     (uniform 8.10, thickest 7.13, thinnest 10.05).
+    #
+    # So one rule serves both and makes each MORE itself, which is what "the four elements are
+    # a redistribution" means when it is spent on a species rather than authored per element.
+    # It also costs the least on screen: a prism's footprint is its length times its THICKEST
+    # cross axis, and this is the pay that leaves that axis alone.
+    reach_pay = volume
+    if y2 <= x2:
+        y2 *= reach_pay
+    else:
+        x2 *= reach_pay
 
     if element == "Charge":
         # Uniform, so the species' own aspect survives the armour fit.

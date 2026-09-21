@@ -1134,9 +1134,9 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
     #     dives survived still disagree by at most one chord midpoint. A skeleton species is
     #     held to 0.01% (measured: exact on all four).
     if mine_dp and theirs_dp:
-        mine_r = min(M._len(M.pose(surface, p)[0]) for p in mine_p) * M.SHELL_RADIUS
+        mine_r = min(M._len(M.pose(surface, p)[0]) for p in mine_p) * M.shell_for(element)
         theirs_r = min(math.sqrt(sum(c * c for c in q))
-                       for q in theirs_xyz) * M.SHELL_RADIUS
+                       for q in theirs_xyz) * M.shell_for(element)
         r_tol = 0.0001 if skeleton else 0.025
         if abs(theirs_r - mine_r) > r_tol * max(mine_r, 1e-9):
             fail(f"{element}: closest prism centre {theirs_r:.4f} u shipped vs "

@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 2.661, y: 0.5329, z: 4.685}
+  leafSize: {x: 3.431, y: 0.3206, z: 6.04}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -111,7 +111,7 @@ MonoBehaviour:
       DiscRelaxRate: 0
       RingGirthFloor: 0
   - Element: 2
-    CrossSection: {x: 0.0388716, y: 0.0275858}
+    CrossSection: {x: 0.0388716, y: 0.057657}
     Rules:
       Field: 2
       SwirlDegrees: 0
@@ -158,7 +158,7 @@ MonoBehaviour:
       DiscRelaxRate: 0
       RingGirthFloor: 0
   - Element: 3
-    CrossSection: {x: 0.0354802, y: 0.00710542}
+    CrossSection: {x: 0.0354802, y: 0.0033161}
     Rules:
       Field: 2
       SwirlDegrees: 0

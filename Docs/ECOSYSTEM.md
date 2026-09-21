@@ -10487,3 +10487,99 @@ prism (right in principle for a DASHED Charge leaf, and it cost Apollonia's Char
 opened an armour failure at its core), and letting the TRUNK claim narrowly while only stems claim
 wide (the trunk is laid first into the very corridor the dives converge on — narrowing it changed
 nothing for the Coral Bloom and cost Apollonia two more rows).
+
+## 56. THE REACH — the element clause the Mandelbulb family had never spent (Sep 2026)
+
+The four elements of every Mandelbulb species grew plants of essentially the same SIZE. Measured
+on Apollonia before this pass: Charge 97.7 u across, Mass 91.0, Space 95.1, Time 99.0 — an **8%
+spread**, against the Borromean membrane's Space plant spanning **222 against Time's 111** (§49).
+Everything else about the four was already far apart (14x in cumulative plant volume, 31 to 269
+curves, ring coarseness 28 to 55), so what a player actually saw was four plants of one size
+differing in how chunky their struts were. The report was that the elements should be *more
+expressed, more distinct from each other*, and this is the clause that was sitting unspent.
+
+§51's assembly half — `ReachScale = volume^(-1/3)`, Space reaching x1.35 while Mass draws in to
+x0.82 — was declined here by `Flora.ElementalReachScale`, which returns 1 for a species exempt
+from the leaf law. Its stated reason is *"a family whose leaf IS its strut needs nothing, because
+the anisotropy already lengthened it"*, and that sentence is **true of the strut and false of the
+plant**: a Mandelbulb plant's extent is its SHELL, and no amount of anisotropy on one prism moves
+it.
+
+### 56.1 Why it could not simply be taken
+
+On this family the shell is simultaneously the plant's extent and its prism size — every prism
+dimension is a multiple of it — so a naive `shell *= reach` is a **pure similarity** and scales the
+plant's volume by `k^3 = 1/V`. That equalises all four plants' cumulative volume, which deletes the
+14x spread the elements already had and contradicts §51's own Mass clause (*the most cumulative
+prism volume*). Three further attempts and why each fails, because each looks right until it is
+written down:
+
+- **Scale positions only, leave the prism.** A curve lays one prism per step and the prism's length
+  IS the step, so the world step grows by `k` while the prism does not: Space's ribbons come out
+  **dashed** and Mass's **fused**. The chain is the one thing that may not be broken.
+- **Pay on `LengthFactor`.** Holding volume with the cross-section unchanged needs
+  `LengthFactor x k^(-3)` = **2.09x** for Mass — a prism twice as long as the step that spaces it,
+  which is the same fusion from the other side.
+- **Pay uniformly on both cross axes** (`x sqrt(V)`, which IS volume-exact). Measured: it makes
+  **MASS LESS CUBIC** — max/min axis ratio 1.55 -> 1.77 — because Mass's `k < 1` shrinks its
+  length, which was already its *smallest* axis, while the pay grows the axis that was already its
+  largest. It also broke a gate: two Mass prisms interleaved to `s* 0.317` against a 0.35 bound.
+
+### 56.2 What ships — pay it on the THINNEST cross axis
+
+The shell carries `k = V^(-1/3)`; the cross-section's PRODUCT carries `V`, so the world prism's
+volume is **exactly** unchanged. WHICH cross axis carries it is free, and that freedom is the whole
+of the difference between a change that expresses the law and one that undoes it:
+
+```
+world length = (step)          x (shell x k)   = L x k       <- the plant reaches
+world thin   = (thin x V)      x (shell x k)   = T x V x k
+world thick  = (thick)         x (shell x k)   = K x k
+world volume = (L x k)(T x V x k)(K x k)       = L x T x K   <- exact, since k^3 = 1/V
+```
+
+**MASS's pay is a GROWTH** (`V > 1`) and growing the thinnest axis is what pulls x, y and z
+together. **SPACE's pay is a SHRINK** and shrinking the thinnest axis is what drives them apart.
+One rule, and each element comes out **more itself**:
+
+| element | shell | extent (Apollonia) | leaf max/min, before -> after |
+|---|---|---|---|
+| Charge | 75.00 | 97.7 u (unchanged) | 2.91 -> **2.91** |
+| Mass | **58.66** | 91.0 -> **71.2 u** | 1.55 -> **1.45** (most cubic) |
+| Space | **96.69** | 95.1 -> **122.6 u** | 7.80 -> **32.71** (most elongated) |
+| Time | 75.00 | 99.0 u (unchanged) | 4.20 -> **4.20** |
+
+Extent span **1.09x -> 1.72x**. It is also the pay that costs the least on screen: a prism's
+footprint is its length times its THICKEST cross axis, and this is the pay that leaves that axis
+alone — which is why it cleared the `Apollonia/Space LADDER` row the uniform pay broke.
+
+**CHARGE and TIME are byte-identical**, which is the law read literally: their identity is a state
+and a tempo rather than a shape, so only the two SHAPE elements move. Charge's armour fit is
+therefore untouched and needed no re-solve.
+
+### 56.3 What it cost, measured
+
+Re-authoring the four prefabs changed **six numbers** — the Mass and Space `CrossSection` on each,
+plus the seed prism's `leafSize`. Held against the baseline, all sixteen (species, element) pairs
+came back with **identical prism counts, identical curve counts and identical cumulative volume to
+the digit**, and `measure_mandelbulb_flora.py --check` reports **exactly the nine pre-existing
+rows** it reported before (CoralBloom's six Fall rows, Apollonia's three) with **no new failures**.
+`measure_flora_elemental_form.py` passes: Mass is still the most cubic leaf and Space the most
+elongated on every one of the four. The verifier still matches the shipped C# prism for prism.
+
+That the prism list is identical is not luck — it is what makes the change reviewable. The walk is
+untouched in normalised space, and the claim, being a similarity in **both** its radius
+(`factor x length`) and its positions, refuses exactly the prisms it refused before.
+
+**The one thing that did move and should be watched:** Space's thin axis is now 0.07–0.16 world
+units on the four species, under `PrismScaleAnimator`'s serialized `minScale` 0.5 and surviving
+only because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first — the same rope §49's
+Space membrane and SchwarzP Charge's 0.39 hang from. Stated rather than hidden: a Space plant's
+ribbons are now genuinely blades.
+
+### 56.4 The rule that generalises
+
+**A clause declined "because the family's leaf IS its extent" is declined about the STRUT, not about
+the PLANT** — check which one the clause was written about before inheriting the exemption. And when
+an element's pay has to land on one of several free axes, **the axis is not a detail**: the same
+volume-exact correction spent on the wrong one made Mass measurably *less* Mass.
