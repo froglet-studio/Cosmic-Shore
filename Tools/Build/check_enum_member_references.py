@@ -34,7 +34,13 @@ import sys
 
 # Tools/Build/<this file> -> Tools/Build -> Tools -> the repository root.
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SCRIPTS = os.path.join(ROOT, "Assets", "_Scripts")
+# Every first-party C# root, NOT just `_Scripts`. `Assets/FTUE` is ~41 files of
+# gameplay code that names enum members like any other, and leaving it out is how
+# twelve references to `GameModes.MultiplayerCrystalCapture` and `.MultiplayerJoust`
+# survived an upstream rename and reached a human's editor as CS0117. The rename tool
+# (`rename_game_modes.py`) had already learned this and roots at `Assets`; this gate,
+# whose entire job is catching a rename the tool missed, had not.
+SCAN_ROOTS = ["Assets/_Scripts", "Assets/FTUE"]
 
 # `public enum Name` / `public enum Name : byte`, then members up to the closing brace.
 ENUM_RE = re.compile(
@@ -121,10 +127,11 @@ def strip_comments_and_strings(src: str) -> str:
 
 
 def cs_files():
-    for base, _dirs, names in os.walk(SCRIPTS):
-        for name in names:
-            if name.endswith(".cs"):
-                yield os.path.join(base, name)
+    for scan_root in SCAN_ROOTS:
+        for base, _dirs, names in os.walk(os.path.join(ROOT, scan_root)):
+            for name in names:
+                if name.endswith(".cs"):
+                    yield os.path.join(base, name)
 
 
 def main() -> int:

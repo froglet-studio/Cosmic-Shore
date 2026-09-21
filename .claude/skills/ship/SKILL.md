@@ -74,6 +74,24 @@ run the `/reorient` skill first and act on its verdict before shipping.
   THEY landed as deletions in YOUR diff, which reads as a catastrophic branch and is
   entirely an artefact. Read the full commit list; re-read any diff hunk you can't
   summarize from memory.
+- **A SHALLOW CLONE INVENTS A MERGE BASE, and the branch then looks catastrophically stale.**
+  Check `.git/shallow` before you believe any staleness number. With truncated history git
+  cannot see the real common ancestor, so `git merge-base --all` returns SEVERAL bases and the
+  `ort` strategy builds a *virtual* one by merging them — against grafted history, that virtual
+  base is garbage. The symptoms are loud and entirely false: one branch measured **8,860 commits
+  ahead** of a base it was four days from, and the trial merge produced **235 conflicts** in
+  files neither side had touched (vendor trees that had been deleted, lifeform assets, whole
+  unrelated subsystems). `git fetch --unshallow` and re-measure: the real numbers were **109/74
+  with ONE merge base**, and the same merge then ran with **zero conflicts**. Nothing about the
+  branch had changed.
+  Two things to carry. **The conflict COUNT is the tell** — conflicts concentrated in files
+  neither branch plausibly edited mean the base is wrong, not the branch; do not start resolving
+  them, because every resolution you hand-craft against a phantom base is work thrown away and
+  some of it will be wrong in a way no review catches. And **an independently-resolved merge is
+  the strongest corroboration available**: when a parallel session had merged the same base into
+  the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
+  evidence the resolution is right than any amount of re-reading it.
+
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
   **`git fetch` the base again right before you open the PR, and treat a moved tip as a

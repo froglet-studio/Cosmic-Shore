@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5624c2ba33ab44b8af6d26dbf100d099, type: 3}
+  m_Name: MainQuest
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSO
+  questId: MainQuest
+  questEnabled: 1
+  designerNotes: 
+  phases:
+  - {fileID: 11400000, guid: 385774e18f65e064fac0a9a87e24b8d3, type: 2}
+  - {fileID: 11400000, guid: e8a13e1e77a105141b6c04e1719482e1, type: 2}
+  - {fileID: 11400000, guid: 97ef7e63a5a923f4a88d3801d1740812, type: 2}
+  - {fileID: 11400000, guid: 3011ca017982c3c4383ed5aa5ddab42f, type: 2}
+  - {fileID: 11400000, guid: fbe786872e98e594d8ecd8222d43feab, type: 2}
+  - {fileID: 11400000, guid: 91c2e58a071b75142b2712ed38fc6c4b, type: 2}
