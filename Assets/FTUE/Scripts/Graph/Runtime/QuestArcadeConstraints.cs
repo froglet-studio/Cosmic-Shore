@@ -46,8 +46,11 @@ namespace CosmicShore.Core
         /// point: IsModeBlocked, AppliesTo and IsIntensityBlocked all resolve through Active,
         /// so one line covers the funnel and no future predicate has to remember the gate.
         ///
-        /// It suppresses the constraints only — the quest graph itself still runs, still shows
-        /// its dialogue and still advances. Turning the gate off restores the funnel exactly,
+        /// This gate covers a constraint set PERSISTED BY AN EARLIER SESSION, which is why it
+        /// is needed even though QuestGraphRunner.TryStart also stands the runner down: these
+        /// constraints live in PlayerPrefs and survive a restart, so a graph that never starts
+        /// cannot clear them. With the gate on the runner does not start, so no new constraint
+        /// is written and no dialogue plays. Turning the gate off restores the funnel exactly,
         /// because the constraints are still persisted underneath.</summary>
         public static bool Active
         {
