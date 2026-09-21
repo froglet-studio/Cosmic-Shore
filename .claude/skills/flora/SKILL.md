@@ -1,6 +1,6 @@
 ---
 name: flora
-description: Use for ANY work on a PLANT — adding a flora species, changing how one grows, poses its spindles, shapes or orients its prisms, expresses its four elements, reproduces, or plants itself; wiring a FloraConfigurationSO or a FloraVariantTuning; or answering "why does this plant look messy / grow in disconnected lumps / have branches pointing nowhere / look the same on all four elements". Loads the growth law (a flora grows the way it withers, run backwards), the limb contract, the elegance rules for a tiling, the element-expression contract, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/{Flora,BranchingFlora,PhyllotacticFlora,AssembledFlora,BorromeanFlora,FloraHeartRegistry}.cs, any Assets/_Prefabs/FloraAndFauna/*Flora.prefab or Spindles/*.prefab, any `* Flora *` config asset, Tools/Build/*flora*/*borromean*/*gyroid*/*schwarz*/*quasi*, or Docs/ECOSYSTEM.md §§32-38, 40, 42-43, 47-48.
+description: Use for ANY work on a PLANT — adding a flora species, changing how one grows, poses its spindles, shapes or orients its prisms, expresses its four elements, reproduces, or plants itself; wiring a FloraConfigurationSO or a FloraVariantTuning; or answering "why does this plant look messy / grow in disconnected lumps / have branches pointing nowhere / look the same on all four elements". Loads the growth law (a flora grows the way it withers, run backwards), the limb contract, the elegance rules for a tiling, the element-expression contract, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/{Flora,BranchingFlora,PhyllotacticFlora,AssembledFlora,BorromeanFlora,FloraHeartRegistry}.cs, any Assets/_Prefabs/FloraAndFauna/*Flora.prefab or Spindles/*.prefab, any `* Flora *` config asset, Tools/Build/*flora*/*borromean*/*gyroid*/*schwarz*/*quasi*, or Docs/ECOSYSTEM.md §§32-38, 40, 42-43, 47-49.
 ---
 
 # Flora: the per-plant contract
@@ -16,6 +16,13 @@ LOCKED and this skill assumes them rather than restating them.
 
 `/fauna` is the sibling for creatures. A plant and a creature share `LifeForm`, the heart
 rule and the wither, and share almost nothing else.
+
+**The worked example this skill was written from is `Docs/ECOSYSTEM.md §49`** — a species
+whose SHAPE was right and whose PLANT was wrong through four passes: the growth order, the
+tiling, the zero-overlap fit, the element contract, and finally its adoption into four
+cells. Every rule below that cites a measured number cites one of those passes. §32 (the
+gyroid octagon colony), §34 (the lattice family) and §48 (Garland, a cell composed for a
+CAMERA) are the other three records worth reading before adding a species.
 
 ---
 
@@ -248,7 +255,23 @@ number anyway, so the asset is not silent about the plant it describes.
 
 ## 6. REPRODUCTION — there are TWO paths and tuning one is dead tuning on the other
 
-A species is on exactly one and the config gives no hint which:
+**Which path a species is on is decided by whether its FORM is bounded.** A periodic
+surface (gyroid, Schwarz P, quasilattice) tiles indefinitely, so its growth rule has an
+opinion about where the next PLANT belongs and it reproduces as a COLONY. A **compact**
+form — one that closes on itself and is FINISHED, like the Borromean membrane — does not:
+it completes and funds an ordinary per-plant offspring out of its growth quota.
+
+That is also the answer to *how much machinery does a new species need*. A compact species
+deliberately has **none** of the lattice apparatus — no frontier, no claim book, no
+mate-snap tolerance, no `LatticeScale` family of absolute distances (`Docs/ECOSYSTEM.md
+§34.8`), no misalignment gate — and inheriting them "for symmetry with the other computed
+species" is inheriting a family of coherence tolerances written in world units against a
+lattice that does not exist here. *A species whose form is bounded does not need them.*
+What it does keep is `PrismSizeFixedByGrowthRule`, because its offsets are still a measured
+table in absolute units; it resizes through its own surface scale, which moves the sites and
+the leaf together.
+
+A species is on exactly one path and the config gives no hint which:
 
 * **Per-plant growth QUOTA** — `FloraConfigurationSO.GrowthPerOffspring`, spent in
   `Flora.TryReproduce`, earned by `NotifyGrew`. Branching, phyllotactic, Borromean.
@@ -344,6 +367,12 @@ author_flora_populations.py     # owns the population numbers (unless OWNED_ELSE
 * **Two fitters must not own one asset.** `author_lifeform_heart_sizes.py` owns
   `HeartWorldScale`; a species generator READS it back rather than authoring it, or the two
   undo each other forever with both `--check`s green.
+  **Resizing a plant therefore RE-PRICES its heart**, because that tool sizes every heart as
+  `K · bodyDiameter^0.5` — growing the Borromean Space membrane 2× took its heart 2.661 →
+  3.379 — and a heart's world scale is read twice AS GAMEPLAY (the collect reward and the
+  live domain fauna buff), so a body-size change is a balance change. Its **monotonicity**
+  check (a bigger lifeform may never carry a smaller heart) is the one place a body-size bug
+  surfaces; re-run it after any geometry change, not just after a heart edit.
 * **Register the species in `author_flora_populations.py`'s `OWNED_ELSEWHERE`** if its own
   generator authors the populations, so the fleet tool stands down by name instead of
   silently disagreeing.
@@ -351,6 +380,25 @@ author_flora_populations.py     # owns the population numbers (unless OWNED_ELSE
   watched fail is a check nobody should trust — and a control has to break the thing the
   check is about, not something correlated with it (sorting an already-sorted table by
   radius is a no-op, so it proves nothing).
+* **A check on the WRONG invariant is worse than no check.** The Borromean chain shipped a
+  green *"the blocks' radii are non-decreasing"* — true, cheap, negative-controllable, and
+  asserting the very property that made the plant grow in disconnected patches. It was
+  RETIRED, and its retirement is worth as much as the checks that replaced it. When a check
+  passes on a plant that is visibly wrong, the check is a suspect.
+* **A solver can fail by being slightly WRONG rather than by failing.** 1,200 Jacobi sweeps
+  on a cotangent Laplacian were still 3% above what five sparse solves reach in under a
+  second — an inflated membrane that passes every structural check. So assert a property of
+  the SURFACE (its AREA) rather than the solver's stopping condition, and prefer a direct
+  solve to an iteration you then have to bound.
+* **A `ROOT` one `dirname` too shallow writes the whole asset tree into the wrong place —
+  and a verifier that shares the bug reads it back and PASSES.** *Consistent wrongness reads
+  exactly like correctness.* The path constant carries an `assert` that `Assets/` is under
+  it; put the same assert in anything that resolves a repo root.
+* **A generated C# constructor's ARITY is a contract several readers parse.** Adding one
+  field to the emitted table broke the verifier's regex and
+  `author_flora_populations.py`'s, both of which count the ctor's floats — neither failed
+  loudly, and one of them is a fleet-wide tool. Grep for every reader of the generated file
+  before you widen its signature.
 
 ---
 
@@ -401,5 +449,8 @@ author_flora_populations.py     # owns the population numbers (unless OWNED_ELSE
    `author_lifeform_heart_sizes.py --check`, `author_flora_populations.py --check`.
 8. Compile the new C# (a stub harness is enough — see the `asset-surgery` skill) and say
    plainly that nothing has been run in the editor, if it has not.
-9. Record the findings in `Docs/ECOSYSTEM.md` and the invariant in `CLAUDE.md` if the change
-   is one.
+9. If a cell ADOPTS it, run §7.1: N configs not one, re-anchor the reference forest rather
+   than letting the authored volume pair float, assert the density row divides evenly across
+   the configs, and say who owns them.
+10. Record the findings in `Docs/ECOSYSTEM.md` and the invariant in `CLAUDE.md` if the change
+    is one — and check no parallel branch has claimed your section number.
