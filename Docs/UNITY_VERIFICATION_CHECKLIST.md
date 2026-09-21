@@ -1092,7 +1092,7 @@ was not**.
    `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
 6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
    2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
-   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   the map's generic multiplier, retired 2026-09-18, was pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
    `ChainRangeFalloff` → 1. Mass and Time unchanged.
 7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
    replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by
@@ -2912,8 +2912,9 @@ top, all data + one curve retune:
   Prisms is suppressed while danger is on. Known cosmetic seam: the stream renders domain
   colors, the revealed prism wears the danger material.
 - **Gun range re-anchored, both modes**: base speed 1500 → **750**
-  (`FullAutoAction.speedValue.Value`), SPACE curve 2.5 → **4.667**
-  (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
+  (`FullAutoActionSO.speedValue`, a plain `float` since 2026-09-20), SPACE curve 2.5 → **4.667**
+  (`FullAutoAction.asset` `spaceSpeedMultiplier`, an `ElementalFloat` read through
+  `FullAutoActionSO.ResolveSpeed` since 2026-09-20 — the retired map field is gone) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
   Verify with a Space crystal binge that range visibly stretches toward the old reach.
 
 **Playtest round 3 (2026-08-10):** now SHIELDED full-size shots on the plain flight, range
@@ -3287,7 +3288,7 @@ GameObject, a removed resource slot, and renamed serialized fields.
 
 | Knob | Where | Value |
 |---|---|---|
-| Boost speed at Time 10 | `Sparrow.asset` Time `MultiplierAtFullLevel` | 1.5 (unchanged — but the hold is now unbounded, so this is the first balance lever) |
+| Boost speed at Time 10 | `Sparrow.prefab` `VesselTransformer.BoostSpeedMultiplier` (was `Sparrow.asset` `MultiplierAtFullLevel`, retired 2026-09-20) | 1.5 (unchanged — but the hold is now unbounded, so this is the first balance lever) |
 | Immunity window | `Sparrow.prefab` `VesselElementalImmunity.condition` | `WhileBoosting` (`Always` = passive ward at Time 5, one field) |
 | Roll pip colours | `SparrowHUDVariant.prefab` | armed cyan `0.55/0.9/1`, spent dim grey `0.35/0.4/0.45 @ a 0.5` |
 | Roll wipe / punch | same | 0.15 s / 0.3 |

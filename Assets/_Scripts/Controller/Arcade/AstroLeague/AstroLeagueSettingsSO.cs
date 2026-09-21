@@ -168,8 +168,9 @@ namespace CosmicShore.Gameplay
                  "FIXED across shapes and intensities so the lining's volume budget (count x prism " +
                  "volume) stays deterministic. The Astro League Cell Config's phase-volume thresholds " +
                  "are raised by exactly that budget (480 x 62.5 = 30000) - retune them together. " +
-                 "Collider budget: each lining prism holds an always-on convex MeshCollider (the " +
-                 "engaged stellated shield) that collider-LOD cannot reclaim - keep this bounded. " +
+                 "Collider budget: the lining is FREE - a shield swaps the mesh and the mass, never " +
+                 "the collider, so these prisms stay LOD-cullable like any other. What the count does " +
+                 "buy is permanence: super-shielded mass is removable only by an energised blade. " +
                  "480 is the doubling that keeps the rim reading as a line on the (much larger) " +
                  "current court instead of a dotted one.")]
         public int edgePrismCount = 480;

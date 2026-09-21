@@ -89,8 +89,9 @@ namespace CosmicShore.Utility
         // Settled super-shield meshes shared across prisms, keyed by quantized geometry -
         // mirrors OctahedronMeshGenerator.GetSharedShieldMesh. Half-extents come from the
         // authored LOCAL BoxCollider size, so every same-size super-shielded prism (e.g. the
-        // 240-prism Astro League edge lining) resolves to ONE mesh: one convex MeshCollider
-        // cook, and settled stellations batch on the instanced render path. Entries are
+        // 240-prism Astro League edge lining) resolves to ONE mesh, so settled stellations batch on
+        // the instanced render path. (There is no convex COOK to save: the shield's MeshCollider is
+        // never enabled and never given a sharedMesh - only the MeshFilter is.) Entries are
         // Unity-null-checked on fetch so a stale cache rebuilds instead of returning
         // destroyed meshes.
         static readonly System.Collections.Generic.Dictionary<(long x, long y, long z, long s), Mesh>

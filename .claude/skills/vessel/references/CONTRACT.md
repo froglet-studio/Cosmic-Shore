@@ -63,8 +63,11 @@ falls back to Jade — the wrong paint plus a console error).
 - **`ShipActionSO` assets are shared and stateless** (declared in
   `R_VesselActions/Data Containers/VesselActionSO.cs`): `StartAction/StopAction(registry,
   status)` per call; no unlock state, no bound ElementalFloats, no subscriptions on SOs
-  (last-initializer-wins in multiplayer is the shipped cautionary tale; the
-  `ElementalFloatBinder` call is deliberately commented dead).
+  (last-initializer-wins in multiplayer is the shipped cautionary tale). The
+  `ElementalFloatBinder` this line used to cite as "deliberately commented dead" was **deleted
+  2026-09-18** — it was dead AND broken (it set a nonexistent `"Ship"` property, and its "clone"
+  dropped `Min`/`Max`/`element`/`Enabled`). Read an SO's `ElementalFloat` through
+  `EvaluateLive(status)` at the point of use.
 - **State lives in executors**: `ShipActionExecutorBase` subclasses in
   `R_VesselActions/Executors/`, listed in the prefab's `ActionExecutorRegistry._executors`,
   resolved by `execs.Get<T>()`.
@@ -102,7 +105,7 @@ OnValidate-trimmed). Per `ElementalAbilityEntry`:
 | `Element` | Charge=1, Mass=2, Space=3, Time=4 (`enum Element`; unlock bit = `1 << (element-1)`) |
 | `AbilityLabel` / `AbilityDescription` | the ability + **the real authoring home of the scaling** (a description citing the wrong SO caused doc-vs-asset drift within one branch) |
 | `Input` | the `InputEvents` the ability rides. `0` (`FullSpeedStraightAction`) doubles as "unset" — legitimate **only** for passive/impact-driven abilities; otherwise it blocks hint→ability derivation |
-| `MultiplierAtFullLevel` / `MinMultiplier` | generic quantitative scaling (1× at resting level, atFull at level 10, floored). **Pin to 1 when a dedicated authored field on the action SO carries the scaling** — otherwise one element drives two parameters (no-double-dip; nothing audits this, it is a convention you must check by grepping the vessel's `Multiplier(element)` consumers incl. `VesselTransformer`) |
+| *(no scaling fields)* | **RETIRED 2026-09-18.** The map carried `MultiplierAtFullLevel` / `MinMultiplier`, read through a generic `handler.Multiplier(element)` that addressed an ELEMENT and never the PARAMETER it scaled. The convention for using it was to switch it off (*pin to 1*), which is the tell that the mechanism was the problem: measured at removal, four of eight hulls pinned it defensively and two were silently applying one element twice to one ability. Quantitative scaling now lives in an `ElementalFloat` on whatever owns the number — see `Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`. The map keeps the QUALITATIVE half only. |
 | `UnlockLevel` (5) / `RelockBelowLevel` (4) / `LatchPolicy` | qualitative tier + hysteresis |
 | `UpgradeLabel` / `UpgradeDescription` | what the player is told at L5 — the HUD reads the map |
 

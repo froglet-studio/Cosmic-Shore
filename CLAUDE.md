@@ -421,11 +421,15 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   number for all twelve because it is expressed in **plants** — territory units of each species'
   own lattice; equalising prism counts instead would shrink the quasicrystal's superstructure
   below its neighbours', which is the comparison the cell exists to make. It is the largest collider budget of any cell and is opt-in
-  through the Cell Selector, and since §36.10 it is also **the boot world** — it replaced Blob at
+  through the Cell Selector. It **was** the boot world between §36.10 and §48 — it replaced Blob at
   `CellConfigs[0]` and `Blob Cell Config` is deleted (only the config; the `Blob Cell` folder's
-  SpawnProfile is still the population of all seven authored freestyle worlds). Booting into it is
+  SpawnProfile is still the population of all seven authored freestyle worlds); **Garland boots
+  today** and Lattice stays at `CellConfigs[0]` as a Cell Selector option. Booting into Lattice was
   affordable because the cost ACCRUES: the cell opens with eight plants and no environment build,
-  and reaches the collider line only after ~7 minutes of growth. That swap also split a conflated
+  and reaches the collider line only after ~7 minutes of growth — which is also the reason it was
+  replaced, since *accruing* is the one thing a home screen cannot afford: the lava-lamp camera
+  shows the cell from 686 units and a world that is nearly empty for its first minutes is empty in
+  exactly the shot the screen exists to draw. That swap also split a conflated
   property — **`Cell.EnvironmentFreeConfig` means CHEAP TO BUILD, not EMPTY**, and the two had one
   test only because Blob satisfied both. The Wanderway run wants empty, so it now reads the new
   **`Cell.BareCanvasConfig`** (no `EnvironmentPrefab` AND a `SpawnProfile` with no flora and no
@@ -436,6 +440,94 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `Tools/Build/author_lattice_cell.py` (`--check`), which `author_flora_populations.py` hands the
   configs to by name prefix (`OWNED_ELSEWHERE`) rather than excluding them silently.
   Full record: `Docs/ECOSYSTEM.md §36`.
+- **A cell composed for a CAMERA is budgeted differently from one composed for a PILOT — and
+  the difference is one rule: spend prisms on LENGTH and SILHOUETTE, never on surface.** The
+  freestyle seven are 34–41k prisms each and are all authored for somebody flying *inside* them;
+  the home screen shows none of that, because `MenuCam_LavaLamp1` orbits the cell centre at
+  **686 units** and at that distance a nominal 2.5-unit prism is a pixel. **Garland**
+  (`SpawnableGarland`, `Docs/ECOSYSTEM.md §48`) is the same kind of world at **4,259 prisms**,
+  and it gets there by laying every family as a curve of ONE prism per step, with that prism's
+  LENGTH **derived from the step** rather than authored (`ChainFill`, 0.82): a 9,377-unit
+  torus-knot bough costs **426** prisms and reads, at that range, exactly as a filled sheet forty
+  times dearer would. Yggdra's trunk overlaps its prisms 3.8×, which is right for something flown
+  through at ten metres and is pure waste at seven hundred. Three consequences travel with the
+  rule. The prisms are **big**, so such a cell must author its volume ladder from MEASUREMENT
+  (2.18M here) — but big prisms are free in colliders, which is what the budget is actually made
+  of. **Depth replaces detail**: a nearly
+  still camera reads a composition through its layers, so the cell is a shore on the seed, a
+  subject band the camera orbits INSIDE (asserted — that is what makes the bough the subject
+  rather than a shell seen from outside), a thinning far edge, and one family (the root falls)
+  that CROSSES all three, without which the cell reads as concentric shells instead of one
+  object. And the ROSTER follows the same brief: no lattice species (their population-event
+  reproduction is the runaway the Lattice cell exists to show), four phyllotactic flora and
+  three fauna on hard caps — **37 always-on heart colliders** against Blob's 171 and Lattice's
+  1,080, mature at 8,147 prisms. Its 69 super-shielded prisms cost **no collider at all**, and
+  the branch's own generator asserted, printed and documented them for three commits as a
+  "collider budget" before that was checked — the Breakwater trap (*verify a cost before you
+  pay for it*) met from the other side: **a generator's own printed label is read as a
+  MEASUREMENT, so an assumption written into an assertion string becomes fact by repetition.**
+  The budget is kept on its real justification — armoured mass is inedible (`Prism.Consume` is
+  a no-op on it) and leaves the targeting grids, so it is mass the food web can never remove in
+  a cell whose equilibrium depends on grazing (`Docs/ECOSYSTEM.md §48.3`). Two ladder rules pull opposite ways and both must hold:
+  **Frenzy above the MATURE cell** (it freezes planting, so a ladder authored on the bare
+  baseline leaves the garden permanently half-grown) and **Restless EARLY** (~35% of the planting
+  budget, or the food web is dormant for the whole of the cell's growth and the equilibrium never
+  starts breathing). Note `CellPhaseRules.Compute` never reads the Restless COUNTS — that
+  boundary is volume-only. Finally, its generator draws **nothing** from the base class's shared
+  `System.Random` or from value noise (every wobble is `Hash01` of the emitting index), which is
+  what lets `Tools/Build/garland_harness/` compile and RUN the shipped C# and
+  `author_garland_cell.py` assert the model against it — so the thresholds are measured rather
+  than believed, and `--self-test` proves both the nucleus-clearance and the no-clipping
+  assertions fire.
+  **NOTHING IN IT CLIPS ANYTHING, and that is a property of the generator rather than of its
+  constants** (`§48.10`). Measured over the whole emitted cloud with a 15-axis separating-axis
+  test, the cell shipped at **4,372 interpenetrating pairs of 8,726 near pairs** — half of
+  everything that could touch — because the file's own rule was *one prism per step sized to
+  close the gap behind it*, i.e. every chain authored at `step × 1.08`. Four different KINDS of
+  fix got it to three: a chain's length became a function of its own STEP; **a golden-angle head
+  cannot hold non-overlapping petals** (a sunflower packs at constant AREAL density, so the
+  head's area runs out before the count does — blossoms became concentric RINGS, which state the
+  ring pitch against the petal's LENGTH and the ring count against its WIDTH, `(2R − L) tan(π/n) >
+  W`, and the same argument retired a 28-leaf single-cone tuft, whose spacing FALLS as the count
+  rises, for a spiral CAP); every family attaches at its own PHASE, because **two families sharing
+  a knot sample are two structures sharing a point in space** and no per-family clearance can see
+  that; and **a chain that starts at its parent's own lay point starts inside it**, so falls and
+  crowns start displaced — DIFFERENTLY, since a crown climbs out of the bough's band and never
+  returns (radial lift) while a fall spends three quarters of its length inside it (sideways, out
+  of the knot's own osculating plane: 44 clipping pairs against 7). The last three pairs were not
+  reachable by tuning, because the falls cross the whole cell and meet *something* at every phase,
+  so the three SHORE families are laid LAST and **YIELD** — a prism that would land inside
+  something already laid is simply not laid, at a cost of **five prisms**, and it REPLACED the
+  band's own landfall-break rule rather than adding to it. Three details of that are load-bearing:
+  the yield gap is **0.75, not 0** (a fit that clears by a hair re-reads as clipping, and a
+  decision taken ON its threshold is one float64 and float32 can disagree about — tightest shipped
+  decision 0.089); the grid's 27-cell neighbourhood only covers every pair that can touch while no
+  prism's bounding radius exceeds half a cell (asserted); and **`LookRotation` is undefined when
+  up is parallel to forward and Unity does not say so — it invents a pose**, which a fall's
+  near-radial last steps hit, found only because the offline model THROWS there instead of
+  measuring what the engine made up. General rule, the gyroid lattice-scale finding one level up:
+  **two prisms occupying the same space is a relationship between families that were each
+  individually correct, so it cannot be derived from any family's own parameters and has to be
+  measured over what the generator really emitted, in the ORIENTATIONS it really emitted them** —
+  which is why the compile harness's `Quaternion` stopped being a stub.
+  **It is the BOOT world**, and getting it there needed the last inference in the boot path made
+  explicit. `CellTypeChoiceOptions.EnvironmentFree` picked the first config with **no**
+  `EnvironmentPrefab` — a claim about what a config CONTAINS standing in for the thing actually
+  wanted, *how cheap it is to BUILD* — and the proxy held only while no config was both. Garland
+  is the first that is: 4,259 prisms build in a fraction of a heavy world's veil, and it boots
+  into a world rather than into an empty sphere. `CellConfigDataSO.BootDefault` is that
+  declaration (`Cell.ResolveBootIndex`, authored flag first, the environment-free scan as the
+  fallback, so every other cell in every other scene is byte-identical — Garland is the only
+  asset in the project that sets it). This is **§36.10's own rule met from the other side**: there
+  a property named for how something is BUILT was read as a claim about what it CONTAINS, and the
+  answer was a second predicate (`BareCanvasConfig`); here a property named for what a config
+  CONTAINS was being asked how it BUILDS, and no predicate over content can answer that, so the
+  answer is an authored bit. The honest cost, stated: Lattice booted instantly and *accrued*,
+  while Garland pays its build on **every** entry to Menu_Main (boot and every return from an
+  arcade game) behind the standard `EnvironmentLoadVeil` — 12% of Yggdra's 34,340 prisms, and the
+  price of a home screen that is furnished in the first frame rather than in the seventh minute.
+  Lattice keeps `CellConfigs[0]` and stays a Cell Selector option; `BareCanvasConfig` still
+  resolves to Barren, so the Wanderway is untouched.
 - **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
   periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
   and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only
@@ -534,6 +626,156 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
   always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
+- **A COMPACT form needs none of the lattice machinery — the Borromean membrane.**
+  `BorromeanFlora` grows the **minimal-genus Seifert surface of the Borromean rings**: the three
+  golden ellipses (semi-axes 1 and φ, the boundaries of three golden rectangles whose twelve
+  corners are an icosahedron's vertices — and a FORCED realization, since by Freedman–Skora the
+  link admits no three round CIRCLES), spanned by the level set `Ω ≡ 2π` of their summed
+  solid-angle potential and relaxed to zero discrete mean curvature. Measured **χ = −3 over three
+  boundary loops ⇒ genus 1**, area **11.955** against **15.250** for three flat discs — and three
+  flat discs are not an alternative, because they intersect and three DISJOINT ones would split a
+  link that is not split, so a CONNECTED spanning surface is forced. **The symmetry is order 6
+  (C3ᵢ) and that is the MAXIMUM available, not a shortfall**: the unoriented rings carry the
+  order-24 pyritohedral group, but half of those elements reverse some rings' orientations and
+  carry this level set to a different one — measured for every orientation assignment. The site
+  table is **EXACTLY** invariant (residual `0.00e+00`) because it is a union of whole ORBITS, and
+  growth lays **one whole orbit per tick**, so a half-grown plant is exactly as symmetric as a
+  finished one. **It grows the way a flora WITHERS, run backwards — the crystal first, then limbs
+  out of the crystal, then limbs and prisms out of limbs** (`Docs/ECOSYSTEM.md §49.9`), and that
+  cost a second pass: the first ordering was by RADIUS, which on a surface that wraps is several
+  disjoint rings, so the plant grew up to **3 separate patches** that sealed up later. The table
+  is ordered by **HOP DISTANCE over the surface's own site graph**, which survives the symmetry
+  because *the graph is G-invariant, so hop distance is an ORBIT property rather than a site
+  property*; every site names its **PARENT** (always earlier in the table) and a plate is never
+  laid on the far end of a limb that does not exist — measured, exactly ONE component after every
+  one of the 60 ticks. *A radius sort is not a growth order.* **A SPINDLE IS A BOND, NOT A
+  MARKER**: each limb is rooted at its parent, aimed at its child and stretched to span the gap
+  (a limb runs along one of its own plate's axes to within 21°), which is `BranchingFlora`'s
+  shape — the gyroid reaches the same end from the other side with a mirrored PAIR meeting at the
+  prism (§34.12), while **Schwarz P's single off-centre arm is the anti-pattern** and must not be
+  copied. **A PER-SITE CHOICE AMONG EQUALLY-VALID OPTIONS IS NOISE UNLESS IT IS COMBED** — the two
+  asymptotic directions below are orthogonal and interchangeable, so picking one per site from the
+  sign of an eigenvector in an arbitrary tangent basis left neighbouring plates **56.6°** apart
+  with 49% of edges over 60°, every plate individually flush and the TILING noise; combing the
+  choice per orbit REPRESENTATIVE (so it cannot break the symmetry) takes it to **25.9°** at zero
+  runtime cost. Three more things generalise. **A centroidal Voronoi
+  tessellation can be made exactly symmetric** by running Lloyd's on the orbit set and pulling
+  each centroid back through the group — averaging over the orbit is what keeps a representative
+  a representative, so there is no symmetrisation pass and therefore no drift for one to mask.
+  **Half the group is IMPROPER**, and a right-handed frame mapped by a reflection is not a
+  rotation, so `y` is re-derived as `z × x` after the map — a plate is a BOX and is invariant
+  under a flip of any one axis, so the geometry is carried exactly and only the quaternion table
+  is equivariant up to a symmetry of the box. And **the plate lies on the surface's ASYMPTOTIC
+  directions**: on a minimal surface the principal curvatures are equal and opposite, so normal
+  curvature vanishes on the two directions bisecting them AND those two are orthogonal — a
+  property minimal surfaces alone have, and the reason a flat rectangle sits flush on a saddle
+  (measured 0.247/0.251 of the local shear along the plate's two axes, against a mean curvature
+  of 0.165 of it; a sphere scores 1.00). **It is NOT a lattice species and deliberately has none
+  of their machinery**: a lattice tiles a periodic surface indefinitely and reproduces as a
+  COLONY because its growth rule has an opinion about where the next PLANT belongs, while a
+  Borromean surface is COMPACT — it closes on itself and is finished — so this plant completes
+  and funds an ordinary per-plant offspring out of its growth quota (§32). No frontier, no claim
+  book, no mate-snap, no `LatticeScale` family of absolute tolerances (§34.8); *a species whose
+  form is bounded does not need them*. It keeps `PrismSizeFixedByGrowthRule` because its offsets
+  are a measured table in absolute units, and resizes through `surfaceScale`, which moves the
+  sites and the leaf together. **NO PRISM MAY INTERPENETRATE ANOTHER, so a plate's SIZE is not
+  authored: an element authors the SHAPE of its plate and the SPACING of its tiling, and the size
+  is FITTED to the largest that clears** (by 3%; 10% bigger collides). Spindles are exempt by
+  design — a limb may pass through a plate. Three measured facts carry it. **THE FOOTPRINT COSTS
+  CLEARANCE AND THE THICKNESS DOES NOT** — a plate's neighbours lie in the membrane beside it, so
+  0.1 → 0.8 of its own width in thickness costs 1.3% of the footprint and buys 7.7× the volume,
+  which is what lets the element contract survive the rule instead of being flattened by it (Mass's
+  volume and Space's equal-volume-at-higher-aspect are SOLVED on that free axis). **COVERAGE IS A
+  PROPERTY OF THE TILING, NOT OF THE COUNT** — every plate is fitted against its own neighbours, so
+  a looser tessellation covers the same membrane with FEWER, BIGGER pieces (the fitted long axis
+  is 0.73–0.93 of the spacing at every count from 24 to 60 orbits), which makes the tiling an
+  element's own decision and gives the ladder its direction: **the more ROOM PER SITE, the bigger
+  the body it carries** — room per site 6.14 (Time) < 8.23 (Mass) < 8.69 (Charge, whose real body
+  is its SHIELD at three times its plate's reach) < **13.68 (Space)**. That ordering is ASSERTED
+  from the shipped tables, both sides measured. It is stated in ROOM and not in orbit COUNT
+  because **an element buys room two ways — by cutting the membrane into fewer pieces, or by
+  growing the MEMBRANE** — and Space does the second, so it has a FINER cut than Mass or Charge
+  (288 plates against 216 and 180) and still the most room of the four. Growing the membrane is a
+  **SIMILARITY**, the one transform that maps a clearing arrangement onto a clearing arrangement
+  exactly, so it costs the guarantee nothing to re-derive. And **the guarantee lives in the CODE, because a guarantee
+  any asset edit can break is not one**: the plant takes its leaf from its own table
+  (`BorromeanSurfaceData.For(Element)`), resolved from its crystal at the TOP of `Initialize`
+  before the base stamps the prefab's seed prism — `Flora.ResolveShieldPeriod`'s argument one field
+  over, which also closed the gap where `surfaceScale` scaled the offsets and not the leaf. **The
+  plate aspect is still a LOOK call and the rendering is still the
+  evidence** — every structural check passes at any aspect, so the choice was made by rendering
+  four: at `1.40 × 0.73` the plates lap 61% and the membrane reads as one smooth blob, at
+  `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; the aspect shipped from that
+  pass survives and its SIZE does not (`1.15` of the spacing along the grain, 36% lap, became a
+  fitted `0.76` and zero). **Stated plainly as a cost: the membrane no longer laps, Time's plant
+  volume fell 7,499 → 3,279, and Space now reads as a frame of STRUTS rather than a skin.**
+  **8 plants per element = 32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN
+  ANCHOR**, which is what
+  makes "what does this element do to the plant" one comparison rather than four independent
+  fits: **TIME** is that anchor (9.11 volume per plate, 1 : 0.59 : 0.15),
+  **MASS** is more VOLUME *and the CHUNKIEST plate* (8.00×, **1 : 0.83 : 0.50** — and it stops
+  short of a cube on purpose, because the footprint is FITTED so the only axis that can move a
+  plate toward one is the thickness, and the thickness IS the volume),
+  **SPACE** is more ROOM — its MEMBRANE is **2×** the anchor's, so its plant spans **222 against
+  111** and its plate is `12.98 × 1.53 × 0.46` at 8.50:1 and the *same* volume (a `k×` membrane
+  fits a `k×` footprint, so holding the volume drives the thickness down by `k²`: same plant
+  volume, same site count, twice the span, struts 2.6× thinner) —
+  and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Charge's plate is
+  `1 : 1.00 : 0.50`, i.e. SQUARER than Mass's, which is why the chunkiness rule is asserted over
+  the three elements whose body IS their plate: a Charge plate is a square slab *because* the body
+  it was fitted against is the octahedron three times it, so how cube-like it is says nothing
+  about what a Charge plant looks like. *A check that has to be scoped is usually telling you
+  something true about the thing you scoped out.* Both halves of that
+  fit are measured: the footprint is SQUARE (the clearance is set by the tightest BOND, which
+  runs along the grain, so length there is paid for twice — square covers **22.5%** of the
+  membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is spent freely
+  (along the surface NORMAL, where the neighbours are not). The element spread across one species
+  is consequently **19.6×** in plant volume (Charge 804 → Mass 15,739), so a cell that rolls all
+  four is pricing an AVERAGE rather than a plant; and Space's 0.46 thickness is under
+  `PrismScaleAnimator`'s serialized `minScale` 0.5, surviving only because `Flora.AddHealthBlock`
+  calls `Prism.AdmitTargetScale` first — the same rope SchwarzP Charge's 0.39 hangs from. Authored by
+  `Tools/Build/measure_borromean_minimal_surface.py` +
+  `author_borromean_flora_assets.py`, re-proved from the shipped tables alone by
+  `Tools/Build/verify_borromean_surface_tables.py` (every check run four times, **22** negative
+  controls, all firing) — whose
+  one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
+  was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
+  on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`
+  skill**. **It grows in RAMPAGE (all four intensities, as mass to destroy), WRECKING BALL (all
+  four) and WILDLIFE BLITZ cells 1 and 2** — every cacti cell but Tollway — plus the freestyle
+  Lifeform Matrix toy. **A cell adopts it as FOUR configs, one per element, never as one rolled
+  config**: a `FloraConfigurationSO` carries ONE `Variant` block, and the four differ in budget
+  (180–360), plate and HEART (2.051–3.379), so a rolled config would author one heart size for
+  four plants whose spans run 108 to 222 and `author_lifeform_heart_sizes.py` would be sizing an
+  average rather than a lifeform. Adopting it moved Rampage's forest 396,178 → **441,070** and its
+  intensity-4 prisms 9,830 → **11,918**, and the answer was to **RE-ANCHOR rather than let the
+  gates float**: the authored volume pair is a play-test result, so it holds and the MARGIN
+  absorbs the mass (Frenzy 4.11× → **3.70×** the mature forest); the COUNT half is derived and
+  legitimately moves (10,000 → 12,250). Three things generalise. **A species whose leaf is a
+  MEASURED TABLE is exempt from `FloraPrismScale` and its volume exponent is 0** — a statement
+  about the code (`PrismSizeFixedByGrowthRule` → `Flora.ApplyCellPrismScale` returns early), not a
+  rounding, so Rampage's prism axis now moves five of its six species and leaves the sixth alone.
+  **ONE model row for FOUR configs needs an assert**, because round-half-up does not commute with
+  a sum: at `FloraPopulationScale 3.67`, two seeds across four configs is 28 plants and eight
+  seeds once is 29 — `forest()` scales per config and `assert_species_aggregation` proves the row
+  divides evenly, since *a row that prices a forest the game does not grow is worse than no row*.
+  And **a prefix rule for a species-owned family is correct only while every config of that
+  species is named for the species alone** — `author_flora_populations.py` matched `"Borromean "`
+  as a prefix, and a per-cell config is named for the CELL first (`Rampage Borromean Flora Mass
+  Config Data`), so the rule became a SUBSTRING or every adopting cell's copy would have been
+  handed silently back to a model that has no input to work from on a measured table. Collider
+  budget: Rampage intensity 1 goes 49,150 → **59,590** prisms (Atlantis 69,000) and 440 → **500**
+  crystals (the Lattice cell's 1,080), both asserted. Tollway is deliberately excluded — its flora
+  are its SCORING SOCKETS, one anchor species per growth FAMILY per intensity, so adding a genuine
+  fifth family there is a mode-design decision rather than an adoption; Hesperides too, because it
+  sows typed planting SITES and a compact membrane is none of them. Two traps worth more than the species: **a `ROOT` one `dirname` too
+  shallow wrote the whole asset tree into `Tools/Assets/` and the verifier, sharing the bug, read
+  it back and passed** — *consistent wrongness reads exactly like correctness*, so the definition
+  now carries an `assert` that `Assets/` is under it; and **a Jacobi sweep on a cotangent system
+  fails by being slightly WRONG rather than by failing** (1,200 sweeps were still 3% above what
+  five sparse solves reach in under a second, i.e. an inflated membrane that passes every
+  structural check), which is why the tool asserts the AREA — a property of the surface rather
+  than of the solver. `Docs/ECOSYSTEM.md §49`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
@@ -737,6 +979,17 @@ moves, where its heart sits, its body prisms, its config wiring. It loads the pe
 anatomy contract on top of `/ecology`'s system invariants (`Docs/ECOSYSTEM.md` §45 is the worked
 example of a species that looked finished and had never run).
 
+**Use the `/flora` skill for ANY work on a PLANT** — adding a species, how one grows, how it
+poses its spindles, how its prisms are shaped and oriented, what its four elements SAY, how it
+reproduces and plants itself. It is `/fauna`'s sibling and loads the per-plant contract on top of
+`/ecology`: the growth law (*a flora grows the way it withers, run backwards* — crystal, then
+limbs out of the crystal, then limbs and prisms out of limbs), the limb contract (**a spindle is
+a BOND, not a marker** — with the measured comparison of how each family poses one, and which one
+is the anti-pattern), the elegance rules for a tiling (**a per-site choice among equally-valid
+options is NOISE unless it is combed**), and the element contract (one authored ANCHOR and three
+perturbations of it, Charge FITTED against its own shielded octahedra). `Docs/ECOSYSTEM.md` §49.9
+is the worked example of a species whose SHAPE was right and whose PLANT was wrong.
+
 **Use the `/arcadegame` skill for ANY new game mode** (the recipe, the shared generator library
 `Tools/Build/arcade_mode_lib.py`, the eleven registrations, the gates), **the `/arenagame` skill on
 top of it for ANY card that seats SEVERAL hulls** (the Arena roster, the fleet facts table, the
@@ -744,6 +997,33 @@ per-hull `StartingElements` handicap, the balance model) and **the `/vessel` ski
 elemental ability maps + level-5 upgrades, HUD rows/hints/gauges, petal bars, hull morphs/rig
 swaps, impact/skimmer containers. It loads the fleet-wide vessel contract, the audit tools, and
 the per-subsystem checklists so the requirements are not re-derived per vessel.
+
+**Use the `/refactor` skill for ANY refactor, cleanup, unification, vestige deletion, dead-code
+removal or type-honesty pass** — and before acting on any backlog row labelled *cleanup*,
+*hygiene* or *consistency*. Its premise is the one this project keeps paying to re-learn: **a
+refactor task arrives as a CLAIM, and the claim is a hypothesis written at the moment somebody
+stopped looking.** Measured instances, all from rows somebody had written down carefully: "six
+fields, behaviour-neutral" was ONE live field whose conversion would have silently switched off an
+ability (another system was WRITING it); "needs the editor" was wrong about which half was dangerous
+(the serialized DATA was); a documented shared-SO hazard was DEAD CODE with a live twin of the same
+method name on a different class; "five open design slots" was three; an audit's twelve
+disagreements were five. So the skill's first deliverable is a MEASUREMENT, not a plan — and it
+carries the rest of what that costs: the guid-ownership sweep (never `grep -rl | head -1`), the rule
+that **incompleteness is a REPORT and inconsistency is a FIX** and the two must never be conflated,
+the three-way grading of every "behaviour-neutral" claim (provably no-op / no-op at the authored
+numbers / a real change that gets flagged for playtest rather than buried in a cleanup), the
+salvage-before-delete gate that makes a vestige a PROPOSAL rather than a deletion, and how to prove
+a change without a compiler (the five standing gates, a Roslyn parse and what it does NOT prove, the
+enumerated-consumer grep that is the real proof for a type swap, and a verification matrix in which
+no row may say "compiles"). **Nothing scans the tree for this work, so the noticing is wired into
+the skills that run at the natural checkpoints**: `/reorient` §3.5 (the resync has just read the
+upstream diff in full — a supersession's leftovers and a system whose ROLE changed while its name
+survived are never more visible), `/ship` §3.6 and `/ship-deep` D8 (the branch has just been read
+adversarially, so the measurement a later `/refactor` pass would spend an hour deriving is already
+in hand). All three **log and never act** — a resync or a ship that grows a second subject cannot
+be reviewed as either one — and all three fail the same way: **a row with no measurement attached
+is worse than no row, because it becomes the next session's claim to disprove**, which is the
+exact failure this skill exists to answer.
 
 ### Team Domains
 
@@ -1934,8 +2214,14 @@ is a residual spread of 6.0× at intensity 1 (8.7× at rest) and 5.3× at intens
 spans ~1.5× on the five hulls it reaches (Time = Soar / afterburner / Serpent boost / Scarab
 ceiling / Dolphin fill) and nothing on the Urchin or the Squirrel, while straight-line speeds
 span 34×. (It reaches the Rhino's ramp ACCELERATION since Broadside's playtest filled that slot,
-but not the ramp's CEILING, which is most of what a lap is bounded by — `regatta_balance.py`'s
-Rhino row does not yet model the endpoint and this number therefore stands.) The generator asserts that spread under 6.1× and asserts the measured course
+and deliberately not the ramp's CEILING, which is most of what a lap is bounded by. ⚠ That was
+FALSE as shipped until 2026-09-18: the fleet-wide `Multiplier(Element.Time)` read in
+`VesselTransformer.CurrentBoostAmount` applied the same element to the ceiling too, undeclared on
+the map and unmodelled here, so `regatta_balance.py`'s Rhino row was right about intent while the
+BUILD was wrong. The element-scaling unification removed that read; the model's output is
+unchanged, so no handicap was re-authored — see
+`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`. General rule: **when a model and a
+build disagree, find out which one is wrong before recording it as a modelling gap.**) The generator asserts that spread under 6.1× and asserts the measured course
 JSON's source hash against the shipped C#, so neither a vessel retune nor a course edit can ship
 on stale numbers. What would close the rest is recorded, not faked: an elemental endpoint on the
 Rhino's ramp CEILING (a `/vessel` change — its acceleration already has one), or a pursuit start. Three general rules: **a per-hull
@@ -2190,7 +2476,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `ModePreview/` | `Docs/` | The arcade card's preview **window**, in **TWO PHASES**: selecting a card stands the mode's own arena and shows the **WORLD ALONE** under the arena's own slowly-orbiting camera (**no vessel, no AI demo**), and **tapping in** is what brings the vessel — the hull swap, the teleport, the AI retarget and the camera loan all happen there and are undone on tapping out. That split is the whole design: a card you only LOOKED at has touched nothing outside its arena, so backing out has nothing to unwind, which is what the messy teardown was paying for. The camera handover is ORDERED both ways (the incoming camera takes the RenderTexture before the outgoing one lets go), because a frame with nobody drawing into the surface IS the white rectangle the window exists to make impossible; "LEVEL PREVIEW NOT AVAILABLE" is the only fallback (`SO_Game.PreviewClip` is deleted). Records the satellite-cell pair (`Cell.InitializeSatellite` / `StrikeSatelliteWorld` — the strike returns POOLED prisms to their pool, never `Destroy`, which corrupts the pool and kills every trail in the scene), the `AIPilot.RetargetCell` requirement (a serialized cellData chases the MENU cell from 120k away), and the `ModePreviewWindow.AnyHasFocus` gate every direct gamepad poll must honour while the pad belongs to the vessel. The looking phase is a **SCALE MODEL** (`CellMiniatureBuilder` — no prisms), and what it models covers all three places an arena can come from: an authored `EnvironmentPrefab` (3 cards), the spawn profile's PLANTING for a grown world (`ModePreviewPlantingModel` — one marker per plant, bands resolved cell-override-first, volume-uniform draws, `Random.state` borrowed not spent), and the mode's SCENE-built track (`ModePreviewDefinitionSO.TrackSpawnablesByIntensity`, authored from the scenes' own `SegmentSpawner`s by `Tools/Build/author_preview_tracks.py --check`; Skim Race's scene-local waypoint track is baked verbatim into `SkimRaceWaypointTrack.prefab` — retune the scene's track and you must re-bake + re-run). "Same cell" is NOT "same arena" — the intensity rebuild-skip asks `ModePreviewDefinitionSO.ArenaDiffers`, never a cell comparison. Astro League and Scarab Scramble still show shell-only (controller-built structure; the `StructurePrefab` extraction is the recorded gap). The flight arena builds **THINNED** — `PrismLayDecimation` lays every Nth prism of a dense trail (`ModePreviewLibrarySO.FlightPrismStride`, 2), so a preview is the mode's real SHAPE at a fraction of its prisms, colliders and spatial-index load; the stride rides on `Cell.SatellitePrismStride` because the environment build can be deferred, and a real scene cell is pinned to 1 in code. A card whose mode seats 2+ previews with one AI **sparring partner**, spawned through the menu's own networked AI chain at the mode's seat 1. **Read before adding a preview for a mode, before touching `ArcadeGameConfigureModal`'s preview window, or before standing up a second Cell anywhere.** |
 | `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. **§ "The switch"** is the ring law — every toy and every matrix station is drawn inside one continuous ring at the radius of its own trigger collider (`Toy.ConfigureSwitchRing`, no waivers left), **in the prism shader, where WHICH prism it is painted as says what it will do** (`ToySwitchSignal`: a playable domain's colour is RESERVED to switches that hand you that domain; everything else is neutral Blue). Read it before adding a toy, a fly-through station, or anything that draws a ring. Toys are either a `MatrixToy` (ONE station that unfolds into a matrix of choices out along the outward radial and folds away on the next pass — cell selector, painting gallery, vessel changer) or a shared `SwapToySetCoordinator<T>` "flip-set" for small universes (each toy is the option it switches you to; the used one flips to your previous option — the domain changer) — Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two SWITCHES in the prism material of the domains you're not, `RequestSetDomain_ServerRpc`), and the "Connect the Dots" Painting toy — a gallery of painting stations (`PaintingToyDefinitionSO` → one `PaintingToy` per `PaintingDefinitionSO`), each running a multi-stroke, multi-domain `PaintingRunner`: per-stroke start gates recolour the trail via `RequestSetDomain_ServerRpc`, pen-up between strokes via `VesselPrismController.SetSpawnerPaused`, shared trail-toy shape language (cones = trail-on pointing at the next point, at HUB scale only — the body-scale cone is reserved for a booster; jacks = stroke-end trail-off; both in the domain prism material), stroke progress AND per-prism drawing state resume across vessel swaps/game modes/sessions (`PaintingProgressStore` + `PaintingPrismStore`, saved prisms regrow via the PrismFactory channel), completion SHARE/REPAINT gates with a self-contained WebGL share export (`PaintingShareExporter` + NativeShare), a 16-painting gallery (on-ramp Star → Rainbow → Saturn → Taj Mahal, then 12 grandiose non-planar constructions — Torus Knot, Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty Mountain, Starry Night, Lion's Head, Peacock — composed from `PaintingStrokeToolkit`: deterministic curves + a divergence-free curl "3D-impressionist" field; stroke order is computed at runtime by `OrderForFlightContinuity` — each stroke starts near the previous stroke's end, domain-contiguous, curvier strokes deferred on near-ties) — plus the **Wanderway microscene conveyor** (`ConveyorToy` + `WanderwayRun` + `WanderwayReturnToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePatternsGrand` + `MicroscenePainter`): a toy you fly into to LEAVE for a wander — the run reverts the host cell to its bare-canvas config (`Cell.BareCanvasConfig` → `Barren`: no environment AND no flora/fauna) through `Cell.RequestCellSwap`, then streams a speed-scaled field of procedurally-varied microscenes ahead of your flight path anywhere you fly, recycling the scene farthest behind into a fresh arrangement ahead — a *closed* system that transports a fixed stock of conserved prisms. **Grand scale (shipped 2026-08-02):** the belt's whole stock — `poolSize × prismBudgetPerScene`, **20 × 1500 = 30,000 prisms**, the same order as an authored cell environment — is built ONCE on the first pass through the toy, behind the same `EnvironmentLoadVeil` + arena-ready gate the Cell Selector uses for a world swap (`MicrosceneConveyor.PrimeAsync` → `PrismTrailBuilder.LayBudgetedAsync`); after that it never instantiates again. 48 recipes in two families: the **classic forty** (gate runs, tunnels, orchards, menageries, shingled domes, torus knots, Möbius rails, banked ribbon chicanes, spine×motif "Medley" composers, …), hand-tuned at `MicroscenePatterns.DesignRadius` and scaled bodily (POSITIONS only — never prism scales, so a bigger belt does not inflate per-prism volume into the host cell's phase ladder), and the **grand eight** (`MicroscenePatternsGrand`: Cathedral, World Tree, Orrery, Sunken City, Leviathan, Geode Vault, Aurora Veil, Hypersphere), which take the scene radius as their basis and multiply their part counts with the budget — borrowing the construction idioms of the freestyle six cell environments. The recycle is fully clock-driven (`Docs/PRISM_ANIMATION.md` §5 C8): collapse = one grow-clock re-stamp per prism, transport = hide + ONE container transform write (legitimate only because the off-screen removal gate proves it unseen), bloom = the standard creation stamps — the old per-frame container scale + per-prism spatial/entity re-sync (~180k writes per recycle at this scale) is deleted. **The run (shipped 2026-08-02)** makes the wander a place you go to and come back from: your trail becomes a **rolling tether** — a ribbon of exactly `tetherPrisms` (100) that follows you, the tail withering and RECYCLING into the pool the head lays from — with the **return station riding that tail**, so the way home is always one tether-length behind you. That recycle is the **one authorized exception** to *Mass is conserved* (explicit sign-off, 2026-08-03): it buys a truly infinite runner at fixed memory, and it is fenced to a live run — `WanderwayRun.RollTether` is the sole caller of `Trail.RemoveOldest`, `VesselPrismController` grew no cap field, and outside a run the law holds in full. Continuity of existence is NOT waived: a retiring prism withers on the grow clock and only then returns to the pool. Full record: `Docs/ECOSYSTEM.md` §0 — do not generalise it, do not revert it. Three exits call the same `WanderwayRun.End`: that station, another pass through the toy, and the **overview button** / gamepad Start (which drop freestyle — the run watches `ToyContext.IsFreestyleActive` for the edge, so no new wiring). Ending a run stops the belt, clears the pen, and repositions the vessel home via `IVessel.SetPose`; the belt's scenes and the bare cell stay (restoring a world is the Cell Selector's job). It paints every scene structurally from the full domain triad (per-structure rainbows, gradients, pinwheels) with danger/shielded/supershielded prisms as capped palette tools, lays skimmable elemental crystals, and releases flora/fauna into the containing cell as ordinary citizens. `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `FrogletTools > Scene Setup > Setup Freestyle Toybox` authors assets + wires the scene. **Second pass (shipped):** `VesselModelBuilder` hull-filters the skimmer sphere (all six ships render, not just Rhino) and, since the vessel vision band shipped, a fly-at STATION shows the **actual ship** — its own materials with the domain-role slots swapped for the live domain material, marked by `VesselVisionShading.StampDisplayModel` — while a GLYPH (a toy emblem, a kingdom icon) keeps the flat preview fill. The split is a DISTANCE argument the geometry already made: a matrix blooms `StationSpacing x MatrixDistanceFactor` = 360u out, just past the band's `nearFullStart`, so stations arrive at FULL mark and resolve into real hulls as you commit; a glyph sits on the toy, inside the near cutoff where the mark is correctly zero and a real hull is a black blob. **A live hull draws with shared PROJECT assets, so it must never be re-tinted by writing through its material** — that would recolour every ship in the game; live models carry a `ToyLiveHull` marker and everything routes through `ToyVesselRoster.ApplyDomain`, which dispatches (a marker, not a heuristic, because the cost of guessing wrong is corrupting shipped assets); `Toy` re-arms only after the vessel flies clear + the flipped toy re-grows slowly (can't switch you back before you escape); a vessel swap keeps your domain (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint) and inherits pose + speed (`IVessel.SetInitialSpeed`) and re-shows the HUD (`OnPlayerPairInitialized`); mini ships recolour on any domain change (`SwapToySetCoordinator.OnTick`); gamepad **Start** exits freestyle and `EventSystem.sendNavigationEvents` is off in freestyle so the pad stops double-driving the UI. **Cell Selector pass (shipped):** the freestyle six cost an `EnvironmentLoadVeil` hold on EVERY entry to Menu_Main (boot and every return from an arcade game), so the Cell now boots `CellTypeChoiceOptions.EnvironmentFree` (the first config with no `EnvironmentPrefab` — no build, no veil; Blob originally, the Lattice cell since `Docs/ECOSYSTEM.md` §36.10) and the six heavy worlds become OPT-IN through `CellSelectorToy` + `CellSelectorToyDefinitionSO`: fly the toy and a matrix of mini-cells blooms outward (the Lifeform Matrix pattern, now sharing `ToyMatrixStation`), each slot a bare genuine SCALE MODEL of the world it creates (no cage, no orb — the model speaks for itself) — `CellMiniatureBuilder` strides the generator's own output (`GetTrailData` + the new `CellEnvironmentSpawnableBase.CachedLays` for per-prism domain) into one mesh with a submesh per domain, spawning NO prisms, streamed one per frame and released after sampling; fly a mini-cell and `Cell.RequestCellSwap` suctions the old world away, drains it 500 prisms/frame, and grows the chosen one back behind the standard veil — picking the cell you are already in IS the freestyle reset (it also retires the pooled trail mass). The toy authors no cell list: it reads `Cell.AvailableConfigs`. **Lifeform Matrix kingdom pass (shipped):** the flat menagerie (14 species on two rows) gained a layer — a pass now blooms three KINGDOM switches (**Fauna / Flora / Vessels**), each opening its own row a layer further out, so the bench had somewhere to put a third kind of thing. The Vessels branch is the toybox's first server-authoritative effect besides the vessel swap: a hull releases an **AI-piloted vessel in the player's own domain** through the SAME chain `ServerPlayerVesselInitializerWithAI` runs for a backfill bot (`RequestSpawnAiCompanion` → spawn Player NO → stamp `NetIsAI`/class/domain/name → spawn vessel → pair init → `ConfigureForGameMode(seekPlayers:false)` → `ActivateAutopilot`), never a parallel local bot. Two general things came out of it: **a server-owned Player carries the HOST'S `OwnerClientId`**, so its spawn event is indistinguishable from the host's own and must be CLAIMED in the same frame as the spawn (`ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer`, now also used per-spawn by the AI backfill, whose correctness previously rested on spawning before it subscribed); and **the AI Player prefab needs no second scene reference** — `NetworkManager.NetworkConfig.PlayerPrefab` IS the prefab every game scene wires by hand, so reading it there removes a reference that can drift from the registered NetworkPrefab. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
 | `ShuffleSystem/` | `Docs/` | **The docs folder keeps the legacy "Shuffle" name; the mode is Maelstrom.** Code, data and enum are now all `Maelstrom` (`GameModes.Maelstrom = 36`) — the mode was called `Tournament` internally until the 2026-09 naming pass brought the code name into line with the `ArcadeGameMaelstrom.asset` card's `DisplayName`. The scene was already `Maelstrom.unity` from the v2 rework. `ARCHITECTURE.md` is a **pointer** to `MaelstromSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
-| `ElementalAbilitySystem/` | `Docs/` | Vessel elemental-ability contract: `ARCHITECTURE.md` (4 abilities × 4 elements × 4 upgrades; §7 four-icon row + control hints), `FLEET_MAPS.md` (per-vessel map status + un-approved proposals), `AUDIT.md` (dated evidence, CONFIRMED/REPORTED labels), `BACKLOG.md` (sequenced plan). Per-ability deep docs live beside the code in `_Scripts/Controller/Vessel/R_VesselActions/*.md`. Work here routes through the `/vessel` skill. |
+| `ElementalAbilitySystem/` | `Docs/` | Vessel elemental-ability contract: `ARCHITECTURE.md` (4 abilities × 4 elements × 4 upgrades; §7 four-icon row + control hints), **`ELEMENT_SCALING_UNIFICATION.md`** (the one scaling channel — element scaling is **PARAMETER-addressed**: one `ElementalFloat` on the asset or component that owns the number, read through `EvaluateLive(status)`. The generic `ElementalAbilityMapSO.MultiplierAtFullLevel` / `handler.Multiplier(element)` was REMOVED 2026-09-18 because it addressed an ELEMENT and so reached every reader of it — of eight vessels, FOUR pinned their entry to 1.0 purely to defend against it and TWO were silently double-applying Time to one ability), **`FLEET_GAPS.md`** (what is INCOMPLETE — the open design slots on the Rhino and Serpent, **counted by the tool rather than by this line**, since a gap list is a snapshot and the scope + rifle branch closed two of its five rows while the report was in review — and, separately, the seven things that only LOOKED incomplete because a tool or an asset was lying about working code), `FLEET_MAPS.md` (per-vessel status + un-approved proposals; it no longer hand-maintains a table of who scales what — ask the tool), `AUDIT.md`, `BACKLOG.md`. **Ask `/element-ability-table` before answering any question about what an element does on a vessel** — it reads the assets and the code the prefab reaches and prints, per element, the ability, every scaling channel NAMED BY ITS FIELD AND HOST ASSET, and the L5 upgrade with the line that gates it. **`Tools/Build/check_elemental_floats.py`** (`--check`, `--self-test`) is the gate: an `ElementalFloat` declared on a **ScriptableObject** and read as `.Value` can never scale, because the binder that keeps `.Value` in step reflects over **MonoBehaviour** fields only — three shipped authored `Enabled` with a real ramp and had never run once. **A gate can only catch a dishonest VALUE; a dishonest TYPE needs the type to change** — nine such fields were read as `.Value` and could never scale whatever they authored, so they became plain `float`s on 2026-09-20, and the migration's real hazard turned out to be the serialized DATA rather than the editor: changing the type turns the YAML from a mapping into a scalar, and Unity applies only the keys a file carries, so a botched block falls back to the C# initializer (rule 4-i) — on the Rhino's skimmer ceiling that is 3 instead of 120, a 40x change with nothing to report it. Per-ability deep docs live beside the code in `_Scripts/Controller/Vessel/R_VesselActions/*.md`. Work here routes through the `/vessel` skill. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `SKIMRACE.md` | `_Scripts/Controller/Arcade/` | Skim Race game mode technical reference |
@@ -4372,7 +4658,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Vessel vision band (**PLATFORM LAW**) | Every vessel is progressively re-shaded into a flat, **cel-banded silhouette in its own DOMAIN colour** as a function of its distance from the camera drawing it — the aid that lets pilots find each other at arena range. **Not a feature a vessel, scene or mode may choose.** The band has FOUR control points and TWO graded edges: zero below `nearStart` (150), grading to full by `nearFull` (350), full across the plateau to `farFull` (2000), grading back to zero by `farEnd` (3500) — because a mark that pops reads as a new object appearing (continuity of existence applied to *visibility*), and because past the far edge a saturated dot reads as one more crystal rather than as a pilot. **The local pilot's own vessel is excluded EXPLICITLY** (`VesselVisionShading.SetLocalVessel`, bound in `VesselController.Initialize` AND `ChangePlayer` under `IsLocalPilot` — the same two sites the corridor and the speed tunnel use, and BOTH are required since `ChangePlayer` never reaches `Initialize`). It was first built with no "is this me" test at all, on the reasoning that a pilot's own hull rides 10-40u from its camera and so falls out below the floor — **that number is `CameraSettingsSO`'s FIELD DEFAULT, and the shipped ASSETS say otherwise**: camera distance is `|followOffset|` and spans 6.7 (Urchin) to **250 (Serpent)**, with the Rhino zooming to 200, so two of eight vessels marked their own hull. Raising the floor above them was rejected because the toybox's vessel matrices bloom at 360u and depend on being just inside the band. **General trap: a number read off a ScriptableObject's field initializer is not the number the game runs on** — an `IsSane` branch, a test and three documents all repeated it self-consistently because they traced to the same default rather than to any asset; the test now re-measures from the assets. The cost is that a replay camera no longer marks the LOCAL ship (it still marks every other), and there is still **no `SetSuppressed` hold**. The mapping is **ABSOLUTE** — the same distance to ANY vessel looks the same, so a player learns the cue once; never add a per-vessel window or a normalize-by-apparent-size. Four layers: (1) the shading lives in **`VesselGraph.shadergraph`** itself, which every hull surface of every vessel is painted with (`VesselCustomization`'s Body/Domain/Window roles are all VesselGraph materials), so a new vessel inherits the law BY BEING PAINTED; (2) ONE stamp site — `VesselHelper.SetShipProperties`, the one method a vessel's domain flows through on every path (spawn, vessel swap, every replicated `NetDomain` change), so there is nothing per-vessel to wire; (3) `VesselVisionDiagnostics` names an unmarkable vessel once, with both fixes; (4) `VesselVisionLawTests` + FrogletTools > Vessels > **Validate Vessel Vision Band** share ONE set of predicates (`VesselVisionShadingConfigSO.IsSane` + `VesselVisionLawSource`). **Colour is the DOMAIN's, never the hull's** — the domain hull materials are stylised two-tone glass (Ruby's is a purple), so the mark reads `SO_ColorSet.GetDomainSignalColor`, the accessor the HUD and Echo Sight already use. **Distance is computed on the GPU** from the object ORIGIN (per-camera live data, and a signal must switch on as ONE object rather than gradient across a long hull); the view vector IS per fragment, since that is what curves the cel bands. Cost: four `SetGlobalVector` per frame and nothing that scales. **A flat fill reads as PAINT, so the interior is DITHERED AWAY FROM THE CENTRE** — hard-edged cells whose address is a quantized DIRECTION from the object origin, so they are angular wedges radiating from the middle of the ship, SCALE-FREE (no hull measurement, same cell count on every vessel) and object-space (no crawl as it flies, no swim as it rolls). Three rules keep it from eating the aid: it modulates the BLEND AMOUNT and never the colour (applied to the colour it drives the interior toward black and punches holes in the ship — the verifier proves every fragment lands on the segment between the hull colour and the undithered mark); the silhouette RIM is exempt, because that is the part that survives at range; and it CLOSES WITH DISTANCE, because the cells hold a constant angular size and past ~900u would fall under a pixel and read as noise rather than texture. Measured at the defaults: 24% of the mark survives at the dead centre and 100% at the rim up close, going solid by 900u — so a ship entering the band gets an OUTLINE first and fills in as it recedes. **The tint's ALPHA is a MARKER, not an opacity** — alpha 0 means "nobody stamped this object", which is what keeps the law off `BlueOrangeProjectileMaterial`, which also wears the graph; and the property must stay **EXPOSED** or it lands outside `UnityPerMaterial`, no MPB can reach it, and the whole law renders as off with nothing reporting it. Tuning: `VesselVisionShadingConfigSO` (`Resources/VesselVisionShadingConfig`) — the ONLY tuning surface for the fleet. See `Docs/VESSEL_VISION.md` | `_Scripts/Utility/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Graphics/Materials/Graphs/` |
 | Prism performance | `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` (the CPU animation managers — `PrismScaleManager`/`MaterialStateManager`/`AdaptiveAnimationManager` — were deleted under the clock-material law; see `Docs/PRISM_ANIMATION.md`) + `PrismDebris` (batched pure-entity death VFX for **both** death visuals: a frame's prism deaths spawn as ONE `em.Instantiate(prototype, N)` batch per family — explosions AND fauna-consumption suctions — with full-duration clock animation and sweep-based batch retirement. A live explosion costs zero per-frame CPU; a live suction costs ONE `float3` (its convergence target MOVES — every implosion comes from `Prism.Consume` and every call site passes a live creature Transform — so the §1 exception rides a per-record refresh with a CPU-mirrored culling envelope). The per-death path is split by five `Prism.Destroy.*` markers. **Death pooling is retired (D4, 2026-08-25)** — a declined batch request is dropped (warn-once), not routed to a pooled GameObject. The pool prefabs remain the CONFIG source (`PrismDebris.Configure` / `ConfigureImplosion` read mesh/material/layer/clamp/duration). Explosion pool is never Get()d and is not prewarmed. Pooled `PrismImplosion` is kept only for Grow (Sparrow ReverseSuction / `StartGrow` / `OnGrowCompleted`).) | `_Scripts/Controller/Managers/`, `_Scripts/Utility/Effects/` |
 | Worm colony kaiju | `WormFauna` (the POPULATION's brain: follow-the-leader slither, apex-omnivore feeding — grazes prism mass AND devours creatures at the jaws AND hunts pilots, one member grown per host-cell fauna production cycle (head → tail → body), mid-body-kill splitting into a strongly-separated second population, boid separation between colonies) + `WormSegmentFauna` (`WormSegmentRole` Head/Body/Tail, role fixed at birth — EVERY member carries its own elemental heart seated at the front of its prisms; danger prisms on the ends, one high-volume core prism on a body) + `WormColonyConfigSO` (all tuning except the growth RATE, which is the cell's `BaseFaunaSpawnTime`). Spawns via `WormColonyFaunaConfig`/`Worm Colony <Element>` species assets; wired into the Lifeform Matrix toy, deliberately in NO SpawnProfile (a boss is opt-in). Design record + invariant rulings + collider budget: `Docs/ECOSYSTEM.md` §23 | `_Scripts/Controller/Environment/FloraAndFauna/`, `_SO_Assets/Lifeforms/` |
-| Cell environments | `CellEnvironmentSpawnableBase` (shared deterministic lay/stream/noise contract) + `SpawnableAtlantis` (Scurry intensity 4, ~69k prisms) + the freestyle seven `SpawnableYggdra`/`Daedala`/`Orrery`/`Zephyr`/`Caldera`/`Geode`/`Ourobor` (~34-41k each, rolled by Menu_Main's Cell via `CellConfigDataSO.EnvironmentPrefab`). Two are built AROUND the nucleus and lay **nothing inside the node-control radius** (an authored environment in there pre-awards node control): **Caldera** — four inward-aimed volcanic massifs in tetrahedral symmetry, no ground plane (`Docs/ECOSYSTEM.md` §18.1) — and **Ourobor** — three interlocked ULTRAWIDE Möbius bands of rolling countryside with a cityscape on BOTH faces, so stalagmites become stalactites and no global "up" survives a lap (`§18.2`). Alongside them, **`SpawnableHesperides`** — the GARDEN cell, the one environment whose world is the **planting**: ~12k authored prisms of architecture (terraces, pergolas, trellises, aqueduct, hanging baskets, super-shielded orchard gate, danger brambles) that `Sow`s ~560 `FloraPlantingSite`s — each tagged with its ground kind (`FloraSiteKind`: Bed/Climb/Basket/Water/Ledge) — which the Cell hands to its ordinary flora spawner (`Cell.TryTakePlantingSite(cfg.PreferredSites, …)` → `Flora.SetPlantPositionOverride(pos, up)`), so a mature Hesperides reaches Yggdra's ~33k prisms by GROWTH — living, grazeable `PhyllotacticFlora` in eight forms (Arbor/Rosette/Frond/Coral/Spire/Tendril/Reed/Lantern) plus gyroid + Schwarz P topiary — not by lay. One growth model, forms are parameters; prisms are shaped by ROLE (stem spans its segment, leaf spans its reach and attaches to the stalk) with depth taper, per-prism jitter, cupped alternating whorls, gravity droop and spiral twist. See `Docs/ECOSYSTEM.md` §23. `EnvironmentLoadVeil` (gate-less scenes defer past boot then hold a connecting-style veil), `CellEnvironmentBaselineMeasurer` (FrogletTools > Ecology > Measure Cell Environment Baselines - PhaseThresholds must ride each measured baseline; see `Docs/ECOSYSTEM.md` §18) | `_Scripts/Controller/Environment/Spawning/`, `_Scripts/Controller/Environment/MiniGameObjects/`, `_Scripts/Editor/` |
+| Cell environments | `CellEnvironmentSpawnableBase` (shared deterministic lay/stream/noise contract) + `SpawnableAtlantis` (Scurry intensity 4, ~69k prisms) + **`SpawnableGarland`** (the FAR-CAMERA cell, ~4.3k prisms, and the one authored world in which no prism clips another — see the bullet under Ecosystem Design Principles and `Docs/ECOSYSTEM.md §48`) + the freestyle seven `SpawnableYggdra`/`Daedala`/`Orrery`/`Zephyr`/`Caldera`/`Geode`/`Ourobor` (~34-41k each, rolled by Menu_Main's Cell via `CellConfigDataSO.EnvironmentPrefab`). Two are built AROUND the nucleus and lay **nothing inside the node-control radius** (an authored environment in there pre-awards node control): **Caldera** — four inward-aimed volcanic massifs in tetrahedral symmetry, no ground plane (`Docs/ECOSYSTEM.md` §18.1) — and **Ourobor** — three interlocked ULTRAWIDE Möbius bands of rolling countryside with a cityscape on BOTH faces, so stalagmites become stalactites and no global "up" survives a lap (`§18.2`). Alongside them, **`SpawnableHesperides`** — the GARDEN cell, the one environment whose world is the **planting**: ~12k authored prisms of architecture (terraces, pergolas, trellises, aqueduct, hanging baskets, super-shielded orchard gate, danger brambles) that `Sow`s ~560 `FloraPlantingSite`s — each tagged with its ground kind (`FloraSiteKind`: Bed/Climb/Basket/Water/Ledge) — which the Cell hands to its ordinary flora spawner (`Cell.TryTakePlantingSite(cfg.PreferredSites, …)` → `Flora.SetPlantPositionOverride(pos, up)`), so a mature Hesperides reaches Yggdra's ~33k prisms by GROWTH — living, grazeable `PhyllotacticFlora` in eight forms (Arbor/Rosette/Frond/Coral/Spire/Tendril/Reed/Lantern) plus gyroid + Schwarz P topiary — not by lay. One growth model, forms are parameters; prisms are shaped by ROLE (stem spans its segment, leaf spans its reach and attaches to the stalk) with depth taper, per-prism jitter, cupped alternating whorls, gravity droop and spiral twist. See `Docs/ECOSYSTEM.md` §23. `EnvironmentLoadVeil` (gate-less scenes defer past boot then hold a connecting-style veil), `CellEnvironmentBaselineMeasurer` (FrogletTools > Ecology > Measure Cell Environment Baselines - PhaseThresholds must ride each measured baseline; see `Docs/ECOSYSTEM.md` §18) | `_Scripts/Controller/Environment/Spawning/`, `_Scripts/Controller/Environment/MiniGameObjects/`, `_Scripts/Editor/` |
 | DOTS bootstrap device gate | `CosmicShoreEntitiesBootstrap` (`ICustomBootstrap`) + `EntitiesGraphicsSupportProbe` — before the default ECS world exists, run the exact call Entities Graphics' `OnCreate` will make (`FindKernel` on the package's `SparseUploader` compute shader) and, if it fails, create the default world EMPTY so `PrismRenderService` stays on the legacy MeshRenderer path. Shipped because an Intel Iris Xe laptop crashed before Bootstrap's first frame: the Windows build listed D3D12 ONLY, Unity's built-in D3D12 device filter refused the integrated GPU and fell back to D3D11, every Entities Graphics compute kernel failed to load, Entities logged the `OnCreate` exception and KEPT the half-built system, and the first frame to touch it died natively. The package's own gate (`supportsComputeShaders`) was true the whole time. Windows now also lists D3D11 below D3D12 so the fallback has shaders to load. **A package support gate tests what its author could think of; gate before world creation, never after.** `Docs/PRISM_ECS_MIGRATION.md §8` | `_Scripts/Controller/ECS/Bootstrap/` |
 | Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` || Shield octahedra | `PrismOctahedronShield` (the SHIELDED state's octahedron: per-face bloom engage + a disengage that sheds the shield AS ORDINARY PRISM-EXPLOSION DEBRIS — **the shatter is not a sibling effect of the prism explosion, it IS the prism explosion**, applied to the shield's own mesh: one explosion-debris entity on ExplodingBlockGraph with the same material, clock stamps, per-face `RotateFacesAlongAxis` rotation, UV0 erosion wipe and fade a dying prism's pieces get, 1 triangle per octahedral face where the cube carries 4 per side (`PrismShieldShatter` groups a frame's disengages per shield mesh and spawns through `SpawnExplosionDebrisBatch`; velocity/clamp semantics are `PrismDebris.TryRequestExplosion`'s byte for byte, and `Prism.Damage`'s shield-shed branch forwards its impact vector + true-velocity ceiling so armour knocked off flies on exactly the terms the prism itself would have). **A TEMPORARY shield pops carrying HALF the blast that raised it** — the shield is how an own-domain explosion reads as ACCEPTED rather than as clipping, so both explosion paths (`ExplosionImpactor.ExecuteCommonPrismCommands` and its Burst twin `PrismSpatialIndex.ResolveExplosionHit`) hand `Prism.ActivateShield` the blow's magnitude (`Impulse.Speed × Inertia`) and the blast's `DebrisSpeedLimit`, and `PrismStateManager.ExecuteTimerDeactivation` sheds along `Random.onUnitSphere × (speed × 0.5)`. Half because the blow was absorbed; the CEILING must ride along or the halving never reaches the screen (every AOE impulse saturates the prefab's 33.33 u/s clamp); and the DIRECTION is randomized rather than remembered, because by pop time the impact vector's direction is a lie and re-using it fans a whole blast's shields outward in one coherent sheet with no visible cause. A shield raised with no blow (ability, skim, spawner) still pops at the debris band's authored `minSpeed` (`Docs/PRISM_ANIMATION.md §4.8.1`). The port lives in the MESH, not the pipeline: the shield generators bake the debris attribute set — UV0 wipe frame, flat per-face normals, per-face tangents — and the pipeline is never forked. **One constant INSIDE the pipeline was itself a measurement of the cube, and that one had to give**: `RotateFacesAlongAxis` derives each face's rotation pivot as the plane-foot plus a fixed tangent slide, which is where a CUBE wedge's centre sits (its faces are four wedges fanned from a face-centre vertex) and is wrong for a single triangle — off centre on the octahedron (0.33 edges on a trail slab) and **outside the face on all 24 stella faces**, whose lateral spike faces share a tetrahedron-face plane so the foot lands in the hole between them. Both generators already bake the true per-face centroid (TEXCOORD1, for the engage bloom), so the graph now lerps its pivot onto it under ONE Hybrid-Per-Instance float (`_FacePivotFromCentroid`, 0 = the cube's derived pivot, 1 = the mesh's centroid) — per-INSTANCE because the two producers share one material by design, which is also why a keyword or a duplicate graph would have split that batch and forked the pipeline. At weight 0 it is BIT-IDENTICAL to before, so no prism retune. General rule: **a shader constant that encodes one mesh's face layout is part of the pipeline that has to give when a second mesh arrives — porting the mesh in cannot reach it.** `Docs/PRISM_ANIMATION.md §4.8.2`. Three bespoke shapes shipped first and were all reverted (an HLSL re-expression of the rotation, a mirrored back-face bake that z-fought under Cull Off, a BlockGraph erosion splice); the rule they bought: **when the base effect already looks right, port the mesh into the pipeline, never the pipeline into the mesh** (`Docs/PRISM_ANIMATION.md §4.8.1`). **The shards' palette is the `GetPrismKindColors` tier LOOKUP for what the shield was showing (`PrismStateManager.GetShedColors` — Shielded pair for the octahedron, Plain for the stellation, which wears the opaque plain material), never a read of the renderer at disengage** — a state change binds its end-state material before it disengages, so by then the renderer already wears the INCOMING tier and reading it painted every shard in plain colours. Beyond the shatter: mass scales with volume; the COLLIDER stays the authored primitive box TRIGGER — the octahedron is a look-only change, because a convex-mesh trigger is invisible to trigger-skimmers and a convex-mesh solid is invisible to solid swipes, whereas the primitive box trigger is seen by both, exactly like an unshielded prism; shape-precise shielded collision is SHIPPED as the spatial-index shell tier: `PrismShellContactManager` + `PrismSpatialIndex.CollectShellContacts` + `ShieldShellMath` run an exact Burst narrowphase — sphere/capsule/OBB probes vs the octahedron and vs the stella as the NON-CONVEX union of its two tetrahedra (spike-tip grazes hit, inter-spike gaps inside the bounding box do not) — dispatching through the same AcceptImpactee effect chain while Skimmer/VesselImpactor suppress box-trigger dispatch for shell-owned pairs; see Docs/SPATIAL_INDEX.md § Shell view). **A super-shielded prism that is HIT but not destroyed now DEFLECTS visibly** — every face wobbles on a precessing/nutating axis and settles, GPU-only off the prism clock (`PrismJiggleClock` + three Hybrid-Per-Instance stamps; composes ON TOP of the shield morph below rather than replacing it; `Docs/PRISM_ANIMATION.md §4.9`). Super-shielded mass stays fully invulnerable — this changes photons and nothing else — but the `IsSuperShielded` early-return that used to be copied into FOUR damage gates (`Prism.Damage`, `Prism.Consume`, `PrismSpatialIndex.ResolveExplosionHit`, `ExplosionImpactor.ExecuteCommonPrismCommands`) is now ONE method, **`Prism.AbsorbSuperShieldHit`**; route every new damage source through it rather than re-testing the flag, or that source's hits go back to reading as misses. A source that BREAKS a super-shield (the Rhino energy sword) calls `DeactivateShields()` first, so it never reaches the gate — everything that does is a hit the prism survived), `PrismStellatedOctahedronShield` (the SUPER-SHIELDED state's stellated octahedron / Stella Octangula — the Skim Race track look; engaged by `PrismStateManager.ActivateSuperShield` with the OPAQUE team material, reversed by `DeactivateShields`), testers, `OctahedronMeshGenerator` / `StellatedOctahedronMeshGenerator` (`PopulateMesh` + `GetSharedShieldMesh` quantized-geometry caches). **Both integrate with the instanced prism render path via the `SetExoticVisualActive` / `SetRenderMeshOverride` handoff — see the anti-pattern below on why a bare MeshFilter swap renders nothing.** **Both morphs are GPU-CLOCKED since 2026-08-15** (`Docs/PRISM_ANIMATION.md` §4.8, §5 B4 — the migration that deleted the last sanctioned CPU prism ticker, `PrismOctahedronShieldManager`): the generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the **cache-shared settled mesh also the morph mesh**, so engage and shatter are one `PrismShieldMorph_float` expression off four Hybrid-Per-Instance properties and same-size shields stay in ONE batch through the whole animation. Consequences to respect when editing: everything is FINAL AT t = 0 (`Engage` applies the entire shielded pose, then stamps — there is no completion callback, because the shader clamps at t = 1 which IS the settled shield); the stamp must be CLEARED at disengage and on pool reuse (the prism's own box mesh carries no centroids, so a live stamp would collapse it toward the object origin); the disengage overlay is batched pure-entity debris (`PrismShieldShatter`) and is deliberately **not cancellable** on re-engage, because deleting visible shards mid-flight breaks continuity of existence; and the per-face CPU mesh rebuilders (`PopulateMeshFaceScale`/`PopulateMeshFaceShatter`) and the `AnimationCurve` fields are RETIRED — `AnimationCurve.EaseInOut(0,0,1,1)` is exactly `smoothstep` (zero end tangents), which is what the shader runs, so every runtime-added shield is unchanged; `BlueBlock.prefab` and `OctahedronShieldTest.prefab` serialized a hand-altered curve and now ease like the fleet | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
@@ -4931,8 +5217,17 @@ ones.
   churned the grids twice; plus one `ShieldActivate` SFX, one timer, one octahedron engage and one
   shed-debris entity PER PRISM. Removing it is a move toward the conserved-mass invariant (mass
   returns to the sanctioned sink) at **zero collider cost in both directions** — a shield swaps the
-  mesh and the mass, never the collider (`shieldMeshCollider.enabled = true` appears nowhere;
-  `PrismKind`'s own doc comment still claims otherwise and is stale). The **authored** permanent
+  mesh and the mass, never the collider (`shieldMeshCollider.enabled = true` appears nowhere, and
+  both shield components' `sharedMesh` writes land on the MeshFilter, so there is not even a convex
+  cook). **That claim had regrown to 23 sites** — `PrismKind`'s own doc comment, the whole
+  Microscene palette family, and the collider-budget lines of five arenas and six `ECOSYSTEM.md`
+  sections — after being refuted three separate times in three new places instead of swept. All 23
+  are corrected and `Tools/Build/check_shield_collider_claims.py` (`--check`, `--self-test`, proven
+  on the pre-fix tree at 23 findings and 0 after) now fails the build on the next one, letting a
+  refutation or a historical narration through. The general rule is CLAUDE.md's own deleted-SDK
+  rule one level down: **a retired claim goes on looking present for as long as anything still
+  describes the project in its terms, so the refutation has to be a SWEEP and not a new
+  paragraph.** The **authored** permanent
   shield (`shielding`, the Sparrow's CHARGE-5) is kept and is unaffected; only the timed stand-in
   went away, and its registry sync moved INSIDE that branch. Stated cost: the shed-debris spray
   each pop threw is gone, and a fully destructive blast publishes no light so it looks exactly as

@@ -1407,6 +1407,47 @@ while toys place at `toyBodyRadius = 22`. Look at the bench. **PASS = the four m
 visible and distinct.** **FAIL = they are inside the sphere** (then the fix is a placement
 value, not code).
 
+### QA-P1-RHINO-RAMP-CEILING ⬜ — Rhino's ramp no longer gets faster with Time
+The element-scaling unification removed a **fleet-wide** `Multiplier(Element.Time)` read from
+`VesselTransformer.CurrentBoostAmount`, which had been multiplying the Rhino's ramp-boost
+**ceiling** by up to ×2.5 on top of the wind-up rate it is supposed to scale. Nobody authored
+that; the map asset, `CLAUDE.md` and `regatta_balance.py` all said Time does NOT touch the
+ceiling. Now it doesn't.
+
+Fly the Rhino in **Headlong** (its circuit race) with Time crystals collected to level 10, on a
+long straight. **PASS = the ramp still SPOOLS UP visibly faster at high Time than at rest (that
+half is intact), but the top speed it settles at is the same at Time 10 as at Time 0.**
+**FAIL = high Time gives a higher top speed** (the read is back), or **the ramp no longer winds
+up faster at all** (the wrong half was removed — `RampBoostActionSO.timeAccelerationMultiplier`).
+Report how the corner/straight rhythm feels: the Rhino is ~2.5× slower flat-out at Time 10 than
+it was, which is the correction, but it may want a ceiling endpoint of its own as a follow-up.
+
+### QA-P1-SERPENT-BOOST-SPEED ⬜ — Serpent's boost is longer with Time, not faster
+Same removal. The Serpent's Time was scaling boost **duration** (declared) **and** boost
+**speed** (undeclared). Speed is now untouched by Time.
+
+Fly the Serpent with Time at level 10 and again at rest, boosting on a straight.
+**PASS = each boost charge lasts visibly longer at Time 10 (×1.6) while the speed it reaches is
+the same as at rest.** **FAIL = the boost is also faster** (the read is back) or **the duration
+no longer extends** (`ConsumeBoostActionSO.timeDurationMultiplier`).
+
+### QA-P1-MANTA-SOAR-SPARROW-AFTERBURNER ⬜ — the two hulls that SHOULD still scale
+These two legitimately used that fleet-wide read and their curves were re-authored onto their own
+prefabs (`VesselTransformer.BoostSpeedMultiplier`: Manta ×1→×1.3 floored ×0.7, Sparrow
+×1→×1.5 floored ×0.5). This is a regression check on the migration.
+
+**PASS = Soar is still faster at high Time on the Manta (Redline or Regatta), and the Sparrow's
+afterburner is still faster at high Time (Dog Fight or Breakwater).** **FAIL = either hull's boost
+speed stopped responding to Time at all** — that means the prefab block did not deserialize, which
+is the one part of this branch that had to be hand-authored into prefab YAML.
+
+### QA-P2-ELEMENT-SCALING-REGRESSION ⬜ — the other eight migrated multipliers
+All ten multipliers were proved bit-identical offline, but only in arithmetic. Spot-check the
+cheapest four in play: **Squirrel** skim energy per hit rises with Charge; **Urchin** spike reach
+rises with Charge; **Sparrow** turret prism z-stretch rises with Mass; **Scarab** forged ball size
+rises with Space (×4 at Space 10). **PASS = each still responds to its element.**
+**FAIL = any one stopped responding** — name which, because each has a different home.
+
 ---
 
 ## Not covered by this list
