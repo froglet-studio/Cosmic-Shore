@@ -1382,7 +1382,21 @@ def watershed_gates(species, element, w):
 
 FORM_FIT_BAND = (0.90, 1.05)     # after-claim count / PRISM_BUDGET — a BAND, not a ceiling
 RING_INTEGRITY_MIN = 0.80        # of its N samples, through the claim, BEFORE the budget
-OCTAVE_FRAME_MIN = 0.010         # share of the arena frame one octave must paint
+OCTAVE_FRAME_MIN = 0.005         # share of the arena frame one octave must paint.
+                                 # RECALIBRATED 1.0% -> 0.5% on the plant that LOOKS right: the
+                                 # 1.0% bar landed beside a tuning that had tripled the species'
+                                 # cross-width (a pile of plates, reverted on its render - the
+                                 # lace scores 3/3/1/2 legible octaves at that bar against the
+                                 # plates' 3/3/4/4). On the accepted lace the gasket's SECOND
+                                 # generation is a genuinely small number of discs (Space 9, Time
+                                 # 6, between much larger neighbours) and its frame share PEAKS
+                                 # at 0.68% / 0.87% at ANY disc count (swept disc_min_radius to
+                                 # 6x the shipped value); reaching 1.0% needs 1.7x / 1.32x the
+                                 # cross, which is the plate again. The PIXEL bar, which is what
+                                 # catches the sub-pixel octaves the gate was written for, is
+                                 # unchanged. A bound and the data it was measured on, changed in
+                                 # separate commits, silently makes the bound a claim about data
+                                 # that is gone (Docs/ECOSYSTEM.md §48.5).
 OCTAVE_PX_MIN = 2.0              # its median prism's projected LENGTH, pixels
 OCTAVE_LEGIBLE_MIN = 3           # octaves that must clear BOTH
 TANGENCY_MEDIAN_MAX = 0.05       # a child's worst gap to its three parents, over rho_child

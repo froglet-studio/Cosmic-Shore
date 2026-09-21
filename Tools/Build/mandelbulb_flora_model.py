@@ -1316,21 +1316,65 @@ SPECIES["Apollonia"] = dict(
     neutral_step=0.063,           # the reference ring's chord, 2 pi sin(rho_ref) MeanRadius / 50
     weight_spread=1.0,
     extra={
+        # THE TUNING IS A REDISTRIBUTION, NEVER A THICKENING. `neutral_cross` and
+        # `neutral_step` are the LACE the panel accepted and no dial here may stand in for
+        # them: a pass that tripled the cross made every gate green and the render a pile of
+        # flat plates (reverted, 565d4677). Every number below moves material BETWEEN ring
+        # sizes, or moves prisms between the rings and the Fall, at a fixed §45 volume.
         "*": FALL_SHARED | {
             "dive_swirl": 0.0, "dive_axis_align": 1.0,
             "dive_descent": 0.0,        # structural: a closed ring starts and ends at one radius
-            "dive_stride_ceiling": 1.0, # the largest ring's chord IS ~1 step (RingSamplesFor)
+            # THE FALL HOLE's one real lever, and it is NOT MONOTONE - the hole is the gap a
+            # REFUSED dive prism leaves, so it is a max over discrete claim refusals and it
+            # jumps (Charge measured 2.60 / 10.19 / 1.30 / 4.20 at ceilings 1.0 / 0.7 / 0.5 /
+            # 0.4 against a 2.27 bound). Never interpolate it; measure the value you ship.
+            # It is also a FIT dial, because a shorter dive step lays more dive prisms.
+            "dive_stride_ceiling": 0.50,
             "walk_step": 0.0,           # structural: the length factor is the dash alone
             "girth_reference": 1.0,
             "gasket_levels": 5, "disc_seeds": 13, "disc_pad": 0.60,
-            "ring_shrink": 0.90, "ring_girth_exponent": 0.40, "ring_girth_floor": 0.55,
+            # The girth ladder is authored as FLAT as the species allows (0.30 is the floor
+            # under which a small ring stops being a ring and becomes a washer). The ladder
+            # gate wants the small octaves wide, the concept wants them thin, and the
+            # exponent is the whole of that argument: at 0.30 the smallest ring on the
+            # widest-spanning element is 0.55 of the largest's width against 0.14 of its
+            # chord. RING_GIRTH_FLOOR is consequently INERT on three of the four elements
+            # (measured: sweeping Charge's 0.55 -> 0.20 moves no octave by 0.01 points,
+            # because at exponent 0.30 no ring reaches it) and is left shared.
+            "ring_shrink": 0.92, "ring_girth_exponent": 0.30, "ring_girth_floor": 0.55,
             "gasket_octave": 0.75,
         },
-        # disc_min_radius is the per-element budget dial: what makes the FULL form fit.
-        "Charge": {"disc_min_radius": 0.100, "ring_flatten": 0.55, "dive_count": 6, "dive_angle": 56},
-        "Mass":   {"disc_min_radius": 0.085, "ring_flatten": 0.55, "dive_count": 5, "dive_angle": 60},
-        "Space":  {"disc_min_radius": 0.038, "ring_flatten": 0.55, "dive_count": 8, "dive_angle": 56},
-        "Time":   {"disc_min_radius": 0.075, "ring_flatten": 0.70, "dive_count": 7, "dive_angle": 62},
+        # ring_shrink IS the gap between two tangent rings, so it is per element for the
+        # reason the leaf is: the §45 law hands each element a different WIDTH on the same
+        # circles. It is a LENGTH dial as well (a bigger ring has longer chords), which is
+        # what carries a small octave over the 2 px legibility floor - and it is bounded on
+        # both of the gates that watch a ring's own prisms: past ~1.0 the claim filter starts
+        # refusing a ring's samples to its tangent neighbour's (ring integrity), and Space's
+        # wide leaf hits the worst-pair bound first (0.97 measured s* 0.285 against 0.35).
+        #
+        # ring_flatten is the SCALLOP and it is THREE dials at once: the look, the chord
+        # LENGTH (a lifted ring is longer than a flat one), and - through the volume fit -
+        # the width of the OTHER THREE ELEMENTS, because Time is the neutral and everything
+        # is fitted to Time's cumulative volume. Time is therefore authored at 0.70 on the
+        # RENDER: 0.25 buys its octave 1 +17% and its own rings stop reading as rings (ring
+        # integrity 0.96 -> 0.88, which the 0.80 gate passes and the eye does not).
+        "Charge": {"disc_min_radius": 0.068, "ring_flatten": 0.70, "dive_count": 3,
+                   "dive_angle": 56, "ring_shrink": 0.97, "dive_stride_ceiling": 0.50},
+        "Mass":   {"disc_min_radius": 0.115, "ring_flatten": 0.70, "dive_count": 5,
+                   "dive_angle": 60, "ring_shrink": 1.00, "dive_stride_ceiling": 0.45},
+        "Space":  {"disc_min_radius": 0.044, "ring_flatten": 0.80, "dive_count": 8,
+                   "dive_angle": 56, "ring_shrink": 0.92, "dive_stride_ceiling": 0.50},
+        "Time":   {"disc_min_radius": 0.082, "ring_flatten": 0.70, "dive_count": 7,
+                   "dive_angle": 62, "ring_shrink": 0.96, "dive_stride_ceiling": 0.70},
+        # disc_min_radius is the FULL FORM dial and on MASS it is also the ladder's: its
+        # octave 2 clears the 1% frame bar at every setting and the 2 px bar only once the
+        # bottom of that octave is cut (43 discs -> 39 at 0.114, median 1.93 px -> 2.12 px),
+        # which costs 220 prisms. They are bought back from the FALL rather than from a
+        # smaller disc, because a dive prism is laid WITH the big rings and a small ring is
+        # laid last - so topping the fit up with discs puts the prisms back where they
+        # failed, while topping it up with dives leaves octave 2 exactly where it was
+        # (measured: 8 dives at 0.70 and 5 at 0.45 both land fit 0.91-0.93 with octave 2
+        # unmoved at 2.12 px; 5 is authored because the render reads the ARMS).
     },
     curves={
         # Every walk column is inert under gasket_levels and authored 0 to say so.
@@ -1341,7 +1385,7 @@ SPECIES["Apollonia"] = dict(
         "Time":   (0,  0, 0.00, 0.00, 0.063,   0,  0, 0.00, 0.0, 0.00,  0,  0,  0, 0.0, 0.0,  0, 1.0, 1.00, 0),
     },
 )
-VOLUME_GAIN["Apollonia"] = {"Charge": 1.0358, "Mass": 0.9953, "Space": 1.3029, "Time": 1.0}   # fitted: --fit-volume
+VOLUME_GAIN["Apollonia"] = {"Charge": 1.0841, "Mass": 1.0128, "Space": 1.3532, "Time": 1.0}   # fitted: --fit-volume
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice

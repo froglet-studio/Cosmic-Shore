@@ -56,7 +56,7 @@ MonoBehaviour:
   domain: 0
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234, type: 2}
-  leafSize: {x: 15.62, y: 0.4568, z: 12.87}
+  leafSize: {x: 2.884, y: 0.513, z: 7.831}
   growPeriod: 0.5
   PlantPeriod: 15
   stunDuration: 1
@@ -64,13 +64,13 @@ MonoBehaviour:
   plantRadiusCellFractionMin: 0.25
   formByElement:
   - Element: 1
-    CrossSection: {x: 0.0480077, y: 0.00900144}
+    CrossSection: {x: 0.0221156, y: 0.0097569}
     Rules:
       Field: 0
       SwirlDegrees: 0
       FieldMix: 0
       Momentum: 0
-      StepSize: 0.116
+      StepSize: 0.063
       MaxSteps: 0
       LanesPerSeed: 0
       LaneGap: 0
@@ -85,14 +85,14 @@ MonoBehaviour:
       LengthFactor: 0.45
       GirthTaper: 1
       TwistDegreesPerStep: 0
-      DiveCount: 13
+      DiveCount: 3
       DiveStepFraction: 0.4
       DiveAngleDegrees: 56
       DiveStopRadius: 0.045
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
-      DiveStrideCeiling: 0.35
-      DiveGirthFloor: 0.36
+      DiveStrideCeiling: 0.5
+      DiveGirthFloor: 0.7
       DiveAxisAlign: 1
       DiveDescent: 0
       SkeletonSeeds: 0
@@ -102,22 +102,22 @@ MonoBehaviour:
       GasketLevels: 5
       DiscSeeds: 13
       DiscPad: 0.6
-      DiscMinRadius: 0.038
-      RingShrink: 0.88
-      RingFlatten: 0
-      RingGirthExponent: 0.13
+      DiscMinRadius: 0.068
+      RingShrink: 0.97
+      RingFlatten: 0.7
+      RingGirthExponent: 0.3
       RingSamples: 0
       GasketOctave: 0.75
       DiscRelaxRate: 0
-      RingGirthFloor: 0.2
+      RingGirthFloor: 0.55
   - Element: 2
-    CrossSection: {x: 0.103406, y: 0.048685}
+    CrossSection: {x: 0.0424305, y: 0.0293599}
     Rules:
       Field: 0
       SwirlDegrees: 0
       FieldMix: 0
       Momentum: 0
-      StepSize: 0.107723
+      StepSize: 0.0552959
       MaxSteps: 0
       LanesPerSeed: 0
       LaneGap: 0
@@ -138,8 +138,8 @@ MonoBehaviour:
       DiveStopRadius: 0.045
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
-      DiveStrideCeiling: 0.55
-      DiveGirthFloor: 0.2
+      DiveStrideCeiling: 0.45
+      DiveGirthFloor: 0.7
       DiveAxisAlign: 1
       DiveDescent: 0
       SkeletonSeeds: 0
@@ -149,22 +149,22 @@ MonoBehaviour:
       GasketLevels: 5
       DiscSeeds: 13
       DiscPad: 0.6
-      DiscMinRadius: 0.044
-      RingShrink: 0.84
-      RingFlatten: 0.55
-      RingGirthExponent: 0.35
+      DiscMinRadius: 0.115
+      RingShrink: 1
+      RingFlatten: 0.7
+      RingGirthExponent: 0.3
       RingSamples: 0
       GasketOctave: 0.75
       DiscRelaxRate: 0
-      RingGirthFloor: 0.3
+      RingGirthFloor: 0.55
   - Element: 3
-    CrossSection: {x: 0.208268, y: 0.00609054}
+    CrossSection: {x: 0.0384507, y: 0.0068397}
     Rules:
       Field: 0
       SwirlDegrees: 0
       FieldMix: 0
       Momentum: 0
-      StepSize: 0.171555
+      StepSize: 0.104407
       MaxSteps: 0
       LanesPerSeed: 0
       LaneGap: 0
@@ -179,14 +179,14 @@ MonoBehaviour:
       LengthFactor: 1
       GirthTaper: 1
       TwistDegreesPerStep: 0
-      DiveCount: 13
+      DiveCount: 8
       DiveStepFraction: 0.4
-      DiveAngleDegrees: 50
+      DiveAngleDegrees: 56
       DiveStopRadius: 0.045
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
-      DiveStrideCeiling: 0.35
-      DiveGirthFloor: 0.1
+      DiveStrideCeiling: 0.5
+      DiveGirthFloor: 0.7
       DiveAxisAlign: 1
       DiveDescent: 0
       SkeletonSeeds: 0
@@ -196,22 +196,22 @@ MonoBehaviour:
       GasketLevels: 5
       DiscSeeds: 13
       DiscPad: 0.6
-      DiscMinRadius: 0.03
-      RingShrink: 0.74
-      RingFlatten: 0.45
-      RingGirthExponent: 0.45
+      DiscMinRadius: 0.044
+      RingShrink: 0.92
+      RingFlatten: 0.8
+      RingGirthExponent: 0.3
       RingSamples: 0
       GasketOctave: 0.75
       DiscRelaxRate: 0
-      RingGirthFloor: 0.12
+      RingGirthFloor: 0.55
   - Element: 4
-    CrossSection: {x: 0.112, y: 0.021}
+    CrossSection: {x: 0.034, y: 0.015}
     Rules:
       Field: 0
       SwirlDegrees: 0
       FieldMix: 0
       Momentum: 0
-      StepSize: 0.116
+      StepSize: 0.063
       MaxSteps: 0
       LanesPerSeed: 0
       LaneGap: 0
@@ -228,12 +228,12 @@ MonoBehaviour:
       TwistDegreesPerStep: 0
       DiveCount: 7
       DiveStepFraction: 0.4
-      DiveAngleDegrees: 52
+      DiveAngleDegrees: 62
       DiveStopRadius: 0.045
       DiveMaxSteps: 160
       DiveSwirlDegrees: 0
-      DiveStrideCeiling: 0.68
-      DiveGirthFloor: 0.15
+      DiveStrideCeiling: 0.7
+      DiveGirthFloor: 0.7
       DiveAxisAlign: 1
       DiveDescent: 0
       SkeletonSeeds: 0
@@ -243,14 +243,14 @@ MonoBehaviour:
       GasketLevels: 5
       DiscSeeds: 13
       DiscPad: 0.6
-      DiscMinRadius: 0.042
-      RingShrink: 0.84
+      DiscMinRadius: 0.082
+      RingShrink: 0.96
       RingFlatten: 0.7
-      RingGirthExponent: 0.35
+      RingGirthExponent: 0.3
       RingSamples: 0
       GasketOctave: 0.75
       DiscRelaxRate: 0
-      RingGirthFloor: 0.3
+      RingGirthFloor: 0.55
   shellRadius: 75
   fieldWidth: 192
   weightSpread: 1
