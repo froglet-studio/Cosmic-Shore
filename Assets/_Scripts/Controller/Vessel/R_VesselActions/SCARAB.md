@@ -489,8 +489,10 @@ Notes and consequences, all of which are design decisions worth marking up:
   button", GamepadInputStrategy.cs:47) — is ignored entirely; repointing it would be a global
   input change affecting every vessel.
 - `ThrottleScalerMultiplier` is the **existing** `ElementalFloat` on `VesselTransformer` (the
-  Squirrel ships it disabled) — the Scarab enables it as its Time scaling, and the map's generic
-  Time multiplier is pinned to 1 so `CurrentBoostAmount()` can never double-dip.
+  Squirrel ships it disabled) — the Scarab enables it as its Time scaling. Double-dipping is now
+  impossible by construction rather than by authoring: the map's generic per-element multiplier
+  was REMOVED on 2026-09-18 (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`), so
+  there is no second channel left for `CurrentBoostAmount()` to read.
 - Speed-tunnel law: nothing to author (absolute fleet-wide mapping) — the tunnel becomes the
   throttle's readout for free, crossing `minEffectSpeed 70` partway up the ramp.
 

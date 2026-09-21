@@ -460,8 +460,9 @@ block" bug. See `URCHIN_TRAIL_RIDER.md` § "The platform change".
 player-generated multi-ball model, the switch, the crystal→ball economy, the four-lane
 "quadrality" rationale, ecology retune and registration checklist — lives in
 `_Scripts/Controller/Vessel/R_VesselActions/SCARAB.md`. Rows come from Garrett's markup of
-2026-08-15. Map multipliers pinned to 1 wherever an authored field carries the scaling (the
-Dolphin pattern); **Space is the exception** — `ScarabBallForge` is a `static class` and can hold
+2026-08-15, when the pattern was still "pin the map multiplier to 1 wherever an authored field
+carries the scaling" (the Dolphin pattern) — that generic channel is gone as of 2026-09-18, so
+every row below is simply an authored field now; **Space is the exception** — `ScarabBallForge` is a `static class` and can hold
 no serialized field, so its carrier is a `static readonly ElementalFloat` in C#
 (`BallSizeScale`, ×1 → ×4 floored ×0.5). It is the one row `element_ability_table.py` cannot see,
 because that tool reads assets.
