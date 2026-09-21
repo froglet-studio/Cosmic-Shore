@@ -25,7 +25,16 @@ Rhino ability docs in `Assets/_Scripts/Controller/Vessel/R_VesselActions/` —
 | Element | Ability | Level-5 upgrade |
 |---|---|---|
 | Charge | `(open design slot)` — *"Charge mapping not yet designed for the Rhino."* | — |
-| Mass | **Trail Slabs** — *"Mass raises the grown trail slab maximum size."* `MultiplierAtFullLevel: 1.5`, `MinMultiplier: 0.25` | — |
+| Mass | **Trail Slabs** — *"Mass raises the grown trail slab maximum size."* ×1 → ×1.5, floored ×0.25 | — |
+
+> ⚠ **This prompt predates the 2026-09-18 element-scaling unification and its numbers moved
+> HOME, not value.** The map's `MultiplierAtFullLevel` / `MinMultiplier` fields are **deleted**;
+> the Mass curve above now lives in `GrowTrailActionSO.massMaxSizeMultiplier` on
+> `GrowTrailAction.asset`, and the Time slot the table below calls open was filled with **Ramp
+> Spool** (`RampBoostActionSO.timeAccelerationMultiplier`). Do **not** author a scaling field into
+> a map asset when acting on this prompt — put the number on the asset or component that owns it
+> and read it through `EvaluateLive(status)`. Run `python3 Tools/Build/element_ability_table.py
+> Rhino --verbose` for the live state rather than trusting this table.
 | Space | `(open design slot)` | — |
 | Time | `(open design slot)` | — |
 

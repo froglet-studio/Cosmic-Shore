@@ -110,7 +110,7 @@ others:
 
    ⚠ **Those two numbers are IMPORTED from `rampage_intensity.py`, not retyped here** — they
    were literals in this mode's generator and went stale the day Rampage adopted the Borromean
-   species (`Docs/ECOSYSTEM.md` §48.12), which took its forest 396,178 → 441,070 and its margin
+   species (`Docs/ECOSYSTEM.md` §49.12), which took its forest 396,178 → 441,070 and its margin
    4.11× → 3.70×. The generator now reads `REFERENCE_FOREST_VOLUME` and `SHIPPED_VOLUME_LADDER`
    from that module and asserts Rampage's forest still matches the volume its ladder is anchored
    to. *A constant copied out of another tool's answer is true only on the day it is copied.*

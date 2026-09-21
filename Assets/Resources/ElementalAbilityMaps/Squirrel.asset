@@ -17,12 +17,11 @@ MonoBehaviour:
   - Element: 1
     AbilityLabel: Skimming
     AbilityDescription: Charge raises the boost energy gained per prism-skimmer
-      collision (map multiplier, read live per hit in SkimmerBoostPrismEffectSO);
+      collision (SkimmerBoostPrismEffectSO.chargeEnergyMultiplier, x1 -> x2 at level
+      10 floored at x0.25, read live per hit);
       at level 5 danger prisms grant the 10x energy bonus (below it they pay base
       energy - the bonus is earned, no longer always on).
     Input: 0
-    MultiplierAtFullLevel: 2
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -32,11 +31,9 @@ MonoBehaviour:
     AbilityLabel: Trail Volume
     AbilityDescription: Mass raises the VOLUME of each trail prism laid (authored
       on the prism controller's trailVolume ElementalFloat, 1 -> 2.5 at level 10,
-      cube root per axis; generic map multiplier stays 1.0 to avoid double-dipping);
+      cube root per axis);
       at level 5 trail prisms arrive shielded.
     Input: 12
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -45,14 +42,13 @@ MonoBehaviour:
   - Element: 3
     AbilityLabel: Skimmer Reach
     AbilityDescription: Space grows the skimmer sphere (authored on the skimmer's
-      Scale ElementalFloat, 15 -> 30 at level 10, evaluated live; generic map
-      multiplier stays 1.0 to avoid double-dipping). BASE joust (no upgrade
-      needed) - joust any lifeform's crystal while moving faster than it to
-      wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
-      allies - own-domain lifeforms level up instead.
+      Scale ElementalFloat, 15 -> 30 at level 10, evaluated live). BASE joust
+      (no upgrade needed) - joust any lifeform's crystal while moving faster than
+      it to wither opposing-domain creatures; at level 5 the joust also SHEPHERDS
+      allies - an own-domain lifeform is NOURISHED instead (ILifeFormEntity.Nourish:
+      its starvation clock resets and its birth counter advances). It used to LEVEL
+      the ally; per-individual lifeform levels were retired by Docs/ECOSYSTEM.md 40.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -62,12 +58,11 @@ MonoBehaviour:
   - Element: 4
     AbilityLabel: Boost Ring
     AbilityDescription: Time shortens the boost-ring cooldown (authored on
-      SquirrelTubeActionSO.cooldownMultiplierAtFullTime, x0.5 at level 10; the
-      generic map Time multiplier stays 1.0 because VesselTransformer consumes it
-      for boost speed); at level 5 each deploy lays a second ring.
+      SquirrelTubeActionSO.cooldownMultiplierAtFullTime, x0.5 at level 10). Time
+      deliberately does NOT touch this hull's boost speed:
+      VesselTransformer.BoostSpeedMultiplier is left disabled on Squirrel.prefab.
+      At level 5 each deploy lays a second ring.
     Input: 11
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

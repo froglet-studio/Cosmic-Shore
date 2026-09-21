@@ -213,7 +213,7 @@ that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 
 ⚠ **The arena grew a SIXTH species on 2026-09-20 and every number in this table moved with
 it.** The Borromean minimal-surface flora was adopted here as mass to destroy
-(`Docs/ECOSYSTEM.md` §48.12) — FOUR configs, one per element, 2 seeded and 3 capped each, in
+(`Docs/ECOSYSTEM.md` §49.12) — FOUR configs, one per element, 2 seeded and 3 capped each, in
 a 0.25–0.85 band. It takes the intensity-4 forest 396,178 → **441,070** volume and 9,830 →
 **11,918** prisms. Three consequences worth reading before touching the ladder:
 

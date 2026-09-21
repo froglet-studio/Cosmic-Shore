@@ -56,7 +56,7 @@ SCRIPT_PATHS = {
 SPECIES = ["Cacti", "Spire", "Pine", "Rosette", "Coral"]
 # ...and the BORROMEAN four, which are one species carried by four configs because the
 # ELEMENT is the plant there: they differ 19.6x in plant volume and 2x in span, so they
-# cannot be rolled from one config's single Variant block (Docs/ECOSYSTEM.md 48.6). They
+# cannot be rolled from one config's single Variant block (Docs/ECOSYSTEM.md 49.6). They
 # are forked from Rampage's exactly as the five above are - same band remap, same verbatim
 # everything-else - so this cell has ONE owner for its forest.
 BORROMEAN_ELEMENTS = ["Charge", "Mass", "Space", "Time"]

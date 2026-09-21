@@ -15,8 +15,8 @@ An element's ability is authored in one place and IMPLEMENTED in two others, and
 three drift:
 
   1. Assets/Resources/ElementalAbilityMaps/{Vessel}.asset
-       the DECLARATION: ability name, input, the generic MultiplierAtFullLevel, the
-       unlock level / latch policy, and the level-5 upgrade's name and prose.
+       the DECLARATION: ability name, input, the unlock level / latch policy, and the
+       level-5 upgrade's name and prose. It carries NO numbers -- see channel 3.
        `/vessel` SKILL.md 2: this asset is a record of intent -- an `UpgradeLabel` is
        documentation until something gates on it.
 
@@ -25,14 +25,20 @@ three drift:
        it is the only thing that makes an upgrade real. A map row with an UpgradeLabel and
        no reachable gate is prose.
 
-  3. `handler.Multiplier(Element.X)` and `ElementalScaling.*` call sites
-       the SCALING, actually. Two channels: the GENERIC one (the map's own
-       MultiplierAtFullLevel, read back through the handler) and BESPOKE authored
-       endpoints on an action/effect SO (`...AtFullSpace`, `...AtRestCharge`, the
-       round-growth pair). CONTRACT 4.2 forbids double-dipping, so a vessel using the
-       bespoke channel pins its map multiplier to 1 -- which makes a map multiplier of 1
-       ambiguous on its face (deliberately inert, or never wired?) and is exactly what
-       this tool disambiguates.
+  3. ElementalFloats and `ElementalScaling.*` call sites
+       the SCALING, actually -- and it is PARAMETER-addressed. Every scaled number
+       declares an ElementalFloat (or a bespoke `...AtFullSpace` / `...AtRestCharge`
+       endpoint pair) on the asset or component that OWNS it, so it can only ever reach
+       that number.
+
+       The generic channel is GONE: the map used to carry MultiplierAtFullLevel +
+       MinMultiplier, read back through `handler.Multiplier(element)`, which addressed
+       an ELEMENT and never a parameter. Measured at removal: of eight hulls two used
+       the fleet-wide boost read as intended, FOUR pinned their map entry to 1.0 purely
+       to defend against it, and TWO were silently applying one element twice to one
+       ability. That is why a map multiplier of 1 used to be ambiguous on its face --
+       there is now no such value to disambiguate.
+       Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md.
 
 Sources 2 and 3 live in C# that a given vessel may or may not REACH, so the join is a
 reference walk from the vessel prefab through its wired action SOs, executors, and
@@ -119,6 +125,52 @@ def blank_comments(src: str) -> str:
     return "".join(out)
 
 
+_CODE_ONLY_CACHE = {}
+
+
+def code_only(path: str, src: str) -> str:
+    """`src` with comment bodies AND string-literal bodies blanked.
+
+    `blank_comments` deliberately preserves strings -- the call-site scanners read real
+    arguments (`Element.Time`), never text. The static-call follow is the one consumer that
+    must NOT see text, because it matches a bare `TypeName.` and a type name is exactly the
+    sort of thing prose talks about: one doc comment in `VesselTransformer` mentioning
+    `ScarabVesselTransformer.Roll()` and two `[Tooltip]` strings in `ScarabAnimation` naming
+    `ScarabVesselTransformer.CurrentTopSpeed` were enough to hang the Scarab's Snap Dash gate
+    on the Manta, the Rhino and the Squirrel -- three fabricated disagreements, on hulls that
+    do not carry that component at all.
+
+    A string's body is blanked in place so every offset and line number still maps."""
+    hit = _CODE_ONLY_CACHE.get(path)
+    if hit is not None:
+        return hit
+    out = list(blank_comments(src))
+    i, n = 0, len(src)
+    while i < n:
+        c = src[i]
+        if c == '"' or c == "'":
+            q, i = c, i + 1
+            while i < n and src[i] != q:
+                if src[i] != "\n":
+                    out[i] = " "
+                i += 2 if src[i] == "\\" else 1
+            i += 1
+        elif c == "/" and i + 1 < n and src[i + 1] in "/*":
+            # already blanked by blank_comments; skip to its end the same way it did
+            if src[i + 1] == "/":
+                while i < n and src[i] != "\n":
+                    i += 1
+            else:
+                while i < n and not (src[i] == "*" and i + 1 < n and src[i + 1] == "/"):
+                    i += 1
+                i += 2
+        else:
+            i += 1
+    result = "".join(out)
+    _CODE_ONLY_CACHE[path] = result
+    return result
+
+
 def args_at(src: str, open_paren: int):
     """Split the top-level, comma-separated arguments of the call whose '(' is at
     open_paren. Returns (list_of_arg_strings, index_after_close)."""
@@ -162,14 +214,21 @@ PROP_RE = re.compile(r"public\s+(?:static\s+)?float\s+(\w+)\s*=>\s*([\w.]+)\s*;"
 # -- is all-optional at its head and backtracks catastrophically: 15.2s over 151 files,
 # three quarters of the tool's entire runtime, for a job that is one pass over lines.
 FLOAT_LINE_RE = re.compile(r"\bfloat\s+(\w+)\s*=\s*(-?[0-9.]+)f?\s*;")
-BOOL_LINE_RE = re.compile(r"\bbool\s+(\w+)\s*[=;]")
+BOOL_LINE_RE = re.compile(r"\bbool\s+(\w+)\s*(?:=\s*(true|false)\s*)?;")
 ELEM_LINE_RE = re.compile(r"\bElement\s+(\w+)\s*=\s*Element\.(\w+)\s*;")
 DECL_HEAD_RE = re.compile(r"^\s*(?:\[[^\]]*\]\s*)*(?:public|private|protected|internal|static|readonly|const|\s)*")
 
 
 def scan_fields(src: str):
-    """{float field: default}, {Element field: name}, {serialized bool field} — one pass."""
-    floats, elems, bools = {}, {}, set()
+    """{float field: default}, {Element field: name}, {serialized bool field: C# default}.
+
+    The bool's DEFAULT is load-bearing, not bookkeeping: Unity applies only the keys a prefab's
+    YAML actually carries, so a serialized bool that is ABSENT there ships its C# initializer
+    (the vessel contract's rule 4-i). `turnUpgradeShieldsTrail` is absent on ten of twelve
+    vessel prefabs and initialized `false`, so a guard that only read authored YAML called that
+    branch LIVE on every one of them -- which is how the Scarab's retired `Armored Switch` read
+    as wired."""
+    floats, elems, bools = {}, {}, {}
     lines = src.split("\n")
     for i, line in enumerate(lines):
         if "float " in line:
@@ -186,7 +245,7 @@ def scan_fields(src: str):
             # between is the house style).
             window = "\n".join(lines[max(0, i - 3):i + 1])
             if m and "SerializeField" in window:
-                bools.add(m.group(1))
+                bools.setdefault(m.group(1), m.group(2) != "false")
     return floats, elems, bools
 
 
@@ -258,7 +317,11 @@ def scan_scripts():
                     sites.append(dict(kind=kind, element=elem, element_field=elem_field,
                                       args=args, line=line_of(m.start()), fn=fn,
                                       near=_nearby(src, m.start())))
-            if not sites:
+            # A file with no indexed CALL SITE is still worth keeping when it DECLARES an
+            # ElementalFloat in a C# initializer: `follow_static_calls` can only hop to a
+            # script the index knows, and `ScarabBallForge` -- a STATIC class, so no
+            # serialized field and no call site -- carries the Scarab's whole SPACE scaling.
+            if not sites and not CSHARP_EF_RE.search(src):
                 continue
             floats, elems, bools = scan_fields(src)
             index[path] = dict(
@@ -305,7 +368,13 @@ def _element_from_args(kind, args, fn):
     if kind == "growth":
         return "Mass", None            # the round-growth curve is Mass by construction
     for a in args:
-        m = re.fullmatch(r"Element\.(\w+)", a)
+        # Optionally namespace-qualified: `Element.Charge` AND
+        # `CosmicShore.Data.Element.Charge`. The Manta's bomb bay writes the qualified form
+        # (its file already has a `CosmicShore.Data` using, so the author was disambiguating
+        # by hand), and a pattern anchored on the bare spelling dropped BOTH of that vessel's
+        # level-5 gates -- which then read as `UPGRADE IS PROSE`, i.e. as a design gap, for
+        # two upgrades that are fully implemented.
+        m = re.fullmatch(r"(?:\w+\.)*Element\.(\w+)", a)
         if m and m.group(1) in ELEMENT_BY_NAME:
             return m.group(1), None
     if kind == "upgrade" and len(args) == 1:
@@ -406,6 +475,92 @@ def elemental_floats(body: str, owner: str):
     return out
 
 
+PREFAB_MOD_RE = re.compile(
+    r"-\s*target:\s*\{fileID:\s*(-?\d+)[^}]*\}\s*\n"
+    r"\s*propertyPath:\s*([\w.]+)\s*\n"
+    r"\s*value:\s*([^\n]*)\n", re.M)
+
+_EF_KEYS = {"Enabled", "Value", "Min", "Max", "element", "UseFloor", "Floor"}
+
+
+def elemental_float_overrides(body: str, owner: str):
+    """ElementalFloats authored as NESTED-PREFAB-INSTANCE OVERRIDES.
+
+    A vessel prefab that nests its skimmer (or any component) as a prefab instance does not
+    serialize that component's fields as a block -- it serializes one `m_Modifications` entry
+    per changed field, scattered and in arbitrary order among every other override on the same
+    target. `ELEMENTAL_FLOAT_RE` matches a contiguous block and is therefore structurally blind
+    to them, which reported `NO SCALING` for the Squirrel's SPACE slot while
+    `Skimmer.Scale` is authored right there at 15 -> 30 on element 3 and read live on every
+    frame. Six of the twelve vessel prefabs author a float this way.
+
+    Entries are grouped by (target fileID, field name), which is what makes one target's
+    `Scale.Min` distinguishable from another's."""
+    groups = defaultdict(dict)
+    for m in PREFAB_MOD_RE.finditer(body):
+        target, path, value = m.group(1), m.group(2), m.group(3).strip()
+        field, _dot, key = path.rpartition(".")
+        if not field or key not in _EF_KEYS:
+            continue
+        groups[(target, field)][key] = value
+
+    out = []
+    for (_target, field), keys in groups.items():
+        if "element" not in keys or "Min" not in keys or "Max" not in keys:
+            continue
+        try:
+            name = ELEMENTS.get(int(keys["element"]))
+            lo, hi = float(keys["Min"]), float(keys["Max"])
+        except ValueError:
+            continue
+        if not name:
+            continue
+        # An override block that does not restate Enabled is inheriting the nested prefab's
+        # own value; report it as enabled rather than inventing a disabled float, and say so.
+        enabled = keys.get("Enabled", "1") == "1"
+        out.append({
+            "kind": "elemental-float", "element": name, "field": field,
+            "enabled": enabled, "min": lo, "max": hi,
+            "site": f"{field} (ElementalFloat, nested-prefab override)", "script": "",
+            "asset": os.path.relpath(owner, ROOT), "call": "EvaluateLive",
+            "endpoints": [], "disabled_by": None if enabled else "Enabled",
+        })
+    return out
+
+
+CSHARP_EF_RE = re.compile(
+    r"ElementalFloat\s+(\w+)\s*=\s*\n?\s*ElementalFloat\s*\.\s*Multiplier\s*\(\s*"
+    r"(-?[\d.]+)f?\s*,\s*(-?[\d.]+)f?\s*,\s*Element\s*\.\s*(\w+)\s*,\s*(-?[\d.]+)f?\s*\)")
+
+
+def csharp_elemental_floats(cs_path: str, src: str, owner: str):
+    """ElementalFloats whose endpoints live in a C# FIELD INITIALIZER rather than in YAML.
+
+    Two cases, and the second is not a corner: (a) a STATIC class can hold no serialized field
+    at all, so `ScarabBallForge.BallSizeScale` -- the Scarab's whole SPACE scaling -- exists
+    only here; and (b) Unity applies only the keys an asset's YAML actually carries, so a float
+    added to the C# after an asset was last written ships its initializer (the vessel
+    contract's rule 4-i). Reporting the YAML alone therefore answers a different question from
+    "what does this vessel fly on".
+
+    A field found in BOTH is reported once, from the YAML, which is the value that wins the
+    moment anyone re-saves the asset."""
+    out = []
+    for m in CSHARP_EF_RE.finditer(src):
+        field, lo, hi, element, floor = m.groups()
+        if element not in ELEMENT_BY_NAME:
+            continue
+        out.append({
+            "kind": "elemental-float", "element": element, "field": field,
+            "enabled": True, "min": float(lo), "max": float(hi),
+            "site": f"{field} (ElementalFloat, C# initializer, floor {float(floor):g})",
+            "script": os.path.relpath(cs_path, ROOT),
+            "asset": os.path.relpath(owner, ROOT), "call": "EvaluateLive",
+            "endpoints": [], "disabled_by": None,
+        })
+    return out
+
+
 def follow_static_calls(reached, script_index):
     """One more hop: a STATIC call from a reached script into another indexed one.
 
@@ -428,6 +583,9 @@ def follow_static_calls(reached, script_index):
                     src = open(cs, encoding="utf-8", errors="replace").read()
                 except OSError:
                     continue
+            # Code only. An un-indexed script is read RAW here, so without this a doc comment
+            # is indistinguishable from a call -- see code_only's note.
+            src = code_only(cs, src)
             for name in set(re.findall(r"\b([A-Z]\w+)\s*\.", src)):
                 target = names.get(name)
                 if target and target not in seen and target != cs:
@@ -489,8 +647,28 @@ def rows_for_vessel(vessel, map_path, guid_to_path, script_index, symbols, max_d
     bodies = [(owner, body) for _cs, owner, body in reached]
 
     per_element = defaultdict(lambda: {"upgrade": [], "map": [], "scale": []})
+    # Serialized ElementalFloats, both shapes: a contiguous block on an asset or a plain
+    # component, and the scattered `m_Modifications` entries a NESTED PREFAB INSTANCE writes.
+    seen_fields = set()
     for _cs, owner, body in reached:
-        for ef in elemental_floats(body, owner):
+        for ef in elemental_floats(body, owner) + elemental_float_overrides(body, owner):
+            per_element[ef["element"]]["scale"].append(ef)
+            seen_fields.add(ef["field"])
+    # ...and the ones whose endpoints exist only in a C# field initializer. YAML wins where
+    # both exist, so this runs second and skips a field already reported.
+    for cs, owner, _body in reached:
+        if not cs:
+            continue
+        info = script_index.get(cs)
+        try:
+            src = info["src"] if info else open(cs, encoding="utf-8",
+                                                errors="replace").read()
+        except OSError:
+            continue
+        for ef in csharp_elemental_floats(cs, src, owner):
+            if ef["field"] in seen_fields:
+                continue
+            seen_fields.add(ef["field"])
             per_element[ef["element"]]["scale"].append(ef)
     for cs, owner, body in reached:
         info = script_index.get(cs) if cs else None
@@ -546,8 +724,14 @@ def guard_state(site, info, own_body):
         if name not in info["bools"]:
             continue
         m = re.search(rf"^\s*{re.escape(name)}:\s*(\d+)\s*$", own_body, re.M)
-        if m and m.group(1) == "0":
-            return name
+        if m:
+            if m.group(1) == "0":
+                return name
+            continue
+        # Absent from the YAML: Unity ships the C# initializer, so an unauthored `false`
+        # is just as dead as an authored 0 -- and far more common.
+        if not info["bools"][name]:
+            return f"{name} (unauthored, C# default false)"
     return None
 
 
@@ -623,15 +807,23 @@ def build_row(vessel, entry, hits):
                             if upgrade_sites else ""))
         if not upgrade_label and live_gates:
             notes.append("gate exists but the map names no upgrade")
-        if abs(at_full - 1.0) > 1e-6 and not map_live:
-            notes.append(f"DEAD MAP MULTIPLIER — x{at_full:g} authored, never read")
-        if abs(at_full - 1.0) <= 1e-6 and map_live and not live_scale:
-            notes.append("map multiplier read but pinned to x1 — scaling is inert")
-        if not live_scale and not (map_live and abs(at_full - 1.0) > 1e-6):
+        # The retired generic channel's three flags (DEAD MAP MULTIPLIER, pinned-to-x1,
+        # TWO LIVE SCALING CHANNELS) are gone with it. A leftover MultiplierAtFullLevel in
+        # an asset is now a loud finding rather than a tuning value, because nothing reads
+        # it -- so say that instead of pricing it.
+        if abs(at_full - 1.0) > 1e-6 or map_live:
+            notes.append("RETIRED CHANNEL PRESENT — this entry still carries a generic map "
+                         "multiplier, or something still calls handler.Multiplier(element). "
+                         "Scaling belongs in an ElementalFloat on whatever owns the number "
+                         "(ELEMENT_SCALING_UNIFICATION.md).")
+        if not live_scale:
             notes.append("NO SCALING — this element changes no number")
-        if abs(at_full - 1.0) > 1e-6 and live_scale and map_live:
-            notes.append("TWO LIVE SCALING CHANNELS — a genuine double-dip if the map "
-                         "multiplier and the bespoke endpoint drive the SAME parameter")
+        # There is deliberately NO multi-channel flag any more. The old one guarded a specific
+        # hazard -- the map's generic multiplier AND a bespoke endpoint landing on the SAME
+        # parameter -- which cannot exist once every channel names its own parameter. Several
+        # channels on one element is now ordinary and correct (the Sparrow's MASS scales turret
+        # prism stretch, bullet growth and missile growth: three parameters, one element), so a
+        # flag here would fire on three legitimate rows and teach readers to skip the notes.
 
     return {
         "vessel": vessel,
@@ -760,14 +952,14 @@ def print_row(row, verbose):
                 print(f"                  {s['site']}  <- {os.path.basename(s['asset'])}")
                 continue
             print(f"                  {where}  <- {os.path.basename(src)}")
-    if row["map_multiplier_is_read"]:
-        mm = row["map_multiplier_at_full"]
-        tag = "" if abs(mm - 1) > 1e-6 else "   (inert - pinned to 1)"
-        print(f"          scale   map x{mm:g} at L10, floor x{row['map_min_multiplier']:g}{tag}")
+    if row["map_multiplier_is_read"] or abs(row["map_multiplier_at_full"] - 1) > 1e-6:
+        # Retired surface. Printed loudly rather than priced, because nothing reads it.
+        print(f"          scale   RETIRED map multiplier x{row['map_multiplier_at_full']:g} "
+              f"still authored" + ("  AND STILL READ" if row["map_multiplier_is_read"] else ""))
         for site in row["map_multiplier_read_at"][:3]:
             print(f"                  read at {site}")
     elif not shown:
-        print(f"          scale   none reachable  (map authors x{row['map_multiplier_at_full']:g})")
+        print("          scale   none reachable")
 
     # upgrade
     lvl = row["unlock_level"]

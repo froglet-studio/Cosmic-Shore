@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 601cddb7a156cfa4bb117ea205f7ecaa, type: 3}
   m_Name: SkimmerBoostPrismEffect
   m_EditorClassIdentifier: 
+  chargeEnergyMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2
+    element: 1
+    UseFloor: 1
+    Floor: 0.25
   addPerHit: 0.1
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}

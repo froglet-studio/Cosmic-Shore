@@ -148,7 +148,7 @@ ASPECT        = dict(Time=1.69, Space=8.5, Mass=1.2, Charge=1.0)
 # THICKNESS, the axis that is nearly free.  Time's is authored (in mean site spacings, the
 # thickness its approved plate had); Mass's and Space's are SOLVED so that their plate
 # volumes land on the authored multiples of Time's - which is the element contract from
-# Docs/ECOSYSTEM.md 48.6, now bought on the axis that costs no clearance instead of on the
+# Docs/ECOSYSTEM.md 49.6, now bought on the axis that costs no clearance instead of on the
 # footprint, which no longer has any to give.  Charge's is a fraction of its own fitted
 # footprint, so its circumscribing octahedron is a jewel lying IN the membrane rather than
 # a flat lozenge or a spike standing out of it.

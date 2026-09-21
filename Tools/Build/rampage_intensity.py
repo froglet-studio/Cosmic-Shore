@@ -111,7 +111,7 @@ SPECIES = [
     # BORROMEAN is ONE row for FOUR configs, and the row prices the MEAN of them - which is
     # the honest thing to do and has to be said out loud, because the four are not close:
     # per plant they run 180 prisms / 804 volume (Charge) to 216 / 15,739 (Mass), a 19.6x
-    # spread (Docs/ECOSYSTEM.md 48.6). `plants` and `cap` are the four configs' seeds and
+    # spread (Docs/ECOSYSTEM.md 49.6). `plants` and `cap` are the four configs' seeds and
     # caps SUMMED (2 and 3 each), which the scalars reproduce exactly at every intensity
     # here because 2 x s and 3 x s round the same way summed or apart - asserted in
     # assert_borromean_aggregation() rather than assumed.
@@ -272,7 +272,7 @@ def forest(intensity: int):
 #
 # BORROMEAN is four configs because the ELEMENT is the plant there: the four differ 19.6x in
 # plant volume and 2x in span, so they cannot be rolled from one config's single Variant
-# block (Docs/ECOSYSTEM.md 48.6, and author_borromean_flora_assets.py's DEPLOYMENTS).
+# block (Docs/ECOSYSTEM.md 49.6, and author_borromean_flora_assets.py's DEPLOYMENTS).
 MULTI_CONFIG = {"Borromean": 4}
 
 

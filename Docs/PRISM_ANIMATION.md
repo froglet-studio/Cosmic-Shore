@@ -1806,7 +1806,8 @@ and it demonstrates the shape generalises: a view-dependent prism visual that is
 than a law still gets exactly one global-uniform publisher and zero per-prism CPU.
 
 While a Dolphin's pilot holds the sight, every prism standing inside the volume their next crystal
-blast would sweep lights up. `PrismDestructionSight` publishes the viewer's OWN sight as five
+blast would sweep lights up. `PrismLit` (named `PrismDestructionSight` until the LIT fundamental
+promoted it — `Docs/LIT.md`) publishes the viewer's OWN sight as five
 globals per frame (apex, sweep axis, gape axis,
 `(height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)`, strength);
 `PrismDestructionSight.hlsl` runs the containment test **once per prism** — at the prism's own
@@ -1960,9 +1961,17 @@ duration, no fly-out offset, no speed cap — the base effect owns all of it, an
 death visuals cannot drift apart because they are one visual.
 
 **A TIMED pop is the one disengage with no breaking force, and it carries HALF the blow
-that shielded it** (2026-08-24). The temporary shield exists to stop a blast reading as
-clipping: an explosion meeting its own domain's mass shields the prism instead of passing
-through it, so the hit reads as ACCEPTED. The pop that ends that shield therefore has to
+that shielded it** (2026-08-24). ⚠ **The explosion is no longer one of its producers**
+(2026-09-18): an own-domain blast passthrough is now said with LIGHT rather than with a
+2-second shield on every prism (`Docs/LIT.md`), so nothing in the game raises a TIMED
+shield with a blow behind it any more and every timed pop takes the impactless
+`minSpeed`-in-a-random-direction branch below. The mechanism is kept, and the two timed
+producers that remain — a prism leaving a crystal's trigger (`Prism.OnTriggerExit`, 2 s)
+and a projectile's `Shield` impact effect (0.5 s) — are exactly the "raised with no blow"
+case it already handles. The paragraph stays because the plumbing does, and because it
+records why a timed pop must not be silent. The temporary shield existed to stop a blast
+reading as clipping: an explosion meeting its own domain's mass shielded the prism instead
+of passing through it, so the hit read as ACCEPTED. The pop that ends that shield therefore has to
 read as a pop — and it is exactly the case with no impact vector to forward, so on the
 zero-vector fallback above every shielded prism in a blast drifted its shards straight up
 at `minSpeed`, in lockstep, a beat after the explosion. Both explosion paths now hand the

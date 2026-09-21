@@ -4,6 +4,9 @@
     "m_ObjectId": "31c264e306584e29b8d8f6acfa27a1ea",
     "m_Properties": [
         {
+            "m_Id": "b61735d79f6fabb75c4cd51896bd88b5"
+        },
+        {
             "m_Id": "a73c418c5217419f82347d8a33ef007c"
         },
         {
@@ -156,6 +159,9 @@
         }
     ],
     "m_Nodes": [
+        {
+            "m_Id": "1f58e6cc2713321e46692862a688b5cb"
+        },
         {
             "m_Id": "0aa348749e4f466ab5e445a4908562a6"
         },
@@ -424,6 +430,20 @@
     "m_GroupDatas": [],
     "m_StickyNoteDatas": [],
     "m_Edges": [
+        {
+            "m_OutputSlot": {
+                "m_Node": {
+                    "m_Id": "1f58e6cc2713321e46692862a688b5cb"
+                },
+                "m_SlotId": 0
+            },
+            "m_InputSlot": {
+                "m_Node": {
+                    "m_Id": "538086febf3544d4ac5a0ac1e2b42dcd"
+                },
+                "m_SlotId": 8
+            }
+        },
         {
             "m_OutputSlot": {
                 "m_Node": {
@@ -3307,6 +3327,9 @@
     "m_ObjectId": "85e9d801b3964ec89ddf4cf6b36b89b4",
     "m_Name": "",
     "m_ChildObjectList": [
+        {
+            "m_Id": "b61735d79f6fabb75c4cd51896bd88b5"
+        },
         {
             "m_Id": "a73c418c5217419f82347d8a33ef007c"
         },
@@ -8052,6 +8075,9 @@
             "m_Id": "0cc0a2bbd5aa49b69bf3ee8dc909ed69"
         },
         {
+            "m_Id": "3dbfed6234e3c7036a755d7b9370edf0"
+        },
+        {
             "m_Id": "9ac8a3c4a1af4320bdffac3d222a394a"
         }
     ],
@@ -10933,5 +10959,99 @@
         "y": 0.0,
         "z": 0.0
     },
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 1,
+    "m_Type": "UnityEditor.ShaderGraph.Internal.Vector1ShaderProperty",
+    "m_ObjectId": "b61735d79f6fabb75c4cd51896bd88b5",
+    "m_Guid": {
+        "m_GuidSerialized": "20273550-2851-361f-4217-a58ecc5b4be0"
+    },
+    "m_Name": "PrismLitDomain",
+    "m_DefaultRefNameVersion": 1,
+    "m_RefNameGeneratedByDisplayName": "PrismLitDomain",
+    "m_DefaultReferenceName": "_PrismLitDomain",
+    "m_OverrideReferenceName": "_PrismLitDomain",
+    "m_GeneratePropertyBlock": true,
+    "m_UseCustomSlotLabel": false,
+    "m_CustomSlotLabel": "",
+    "m_DismissedVersion": 0,
+    "m_Precision": 0,
+    "overrideHLSLDeclaration": false,
+    "hlslDeclarationOverride": 0,
+    "m_Hidden": false,
+    "m_Value": 0.0,
+    "m_FloatType": 0,
+    "m_RangeValues": {
+        "x": 0.0,
+        "y": 1.0
+    }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.PropertyNode",
+    "m_ObjectId": "1f58e6cc2713321e46692862a688b5cb",
+    "m_Group": {
+        "m_Id": ""
+    },
+    "m_Name": "Property",
+    "m_DrawState": {
+        "m_Expanded": true,
+        "m_Position": {
+            "serializedVersion": "2",
+            "x": -1500.0,
+            "y": 2800.0,
+            "width": 200.0,
+            "height": 36.0
+        }
+    },
+    "m_Slots": [
+        {
+            "m_Id": "e1f50d8a3d5f5e5c12f41e06b3cfcf9a"
+        }
+    ],
+    "synonyms": [],
+    "m_Precision": 0,
+    "m_PreviewExpanded": true,
+    "m_DismissedVersion": 0,
+    "m_PreviewMode": 0,
+    "m_CustomColors": {
+        "m_SerializableColors": []
+    },
+    "m_Property": {
+        "m_Id": "b61735d79f6fabb75c4cd51896bd88b5"
+    }
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "e1f50d8a3d5f5e5c12f41e06b3cfcf9a",
+    "m_Id": 0,
+    "m_DisplayName": "PrismLitDomain",
+    "m_SlotType": 1,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Out",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
+    "m_Labels": []
+}
+
+{
+    "m_SGVersion": 0,
+    "m_Type": "UnityEditor.ShaderGraph.Vector1MaterialSlot",
+    "m_ObjectId": "3dbfed6234e3c7036a755d7b9370edf0",
+    "m_Id": 8,
+    "m_DisplayName": "Domain",
+    "m_SlotType": 0,
+    "m_Hidden": false,
+    "m_ShaderOutputName": "Domain",
+    "m_StageCapability": 3,
+    "m_Value": 0.0,
+    "m_DefaultValue": 0.0,
     "m_Labels": []
 }

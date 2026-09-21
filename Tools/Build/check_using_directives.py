@@ -218,15 +218,30 @@ def _git(args):
 
 def working_tree_files():
     """Uncommitted .cs files - a pre-commit run is mostly ABOUT these."""
-    rc, out = _git(["status", "--porcelain"])
+    # -z, because plain `git status --porcelain` QUOTES any path containing a space and this repo
+    # is full of them ("Data Containers", "Skimmer Prism Effects", "Effect Containers", "Cell
+    # Configs"). A quoted path does not end in ".cs", so `endswith(".cs")` dropped every one of
+    # them SILENTLY and the check reported OK over a scope it had narrowed itself -- measured on
+    # the element-scaling branch: 10 of 18 changed files seen, including two of the three files
+    # whose whole edit was adding a `using`. Same disease as the stale-base bug below, so the same
+    # rule applies: a gate must not be able to shrink its own scope by accident. -z never quotes.
+    rc, out = _git(["status", "--porcelain", "-z"])
     if rc != 0:
         return []
-    names = []
-    for line in out.split("\n"):
-        # Porcelain is `XY PATH`; a rename is `R  OLD -> NEW` and only NEW exists to check.
-        path = line[3:].strip()
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1].strip()
+    # With -z each record is `XY PATH`, NUL-separated. A rename/copy emits TWO records --
+    # `R  NEW` then a bare `OLD` -- so the pair is consumed together and only NEW is checked.
+    # (Do not try to spot the bare OLD by looking for an `XY ` prefix: a real path like
+    # "Ab cdef.cs" has a space at index 2 and would be misread as a status line.)
+    recs = [r for r in out.split("\0") if r]
+    names, i = [], 0
+    while i < len(recs):
+        rec = recs[i]
+        i += 1
+        if len(rec) < 4:
+            continue
+        xy, path = rec[:2], rec[3:]
+        if "R" in xy or "C" in xy:
+            i += 1
         if path.endswith(".cs"):
             names.append(path)
     return names
@@ -248,10 +263,12 @@ def changed_files():
     for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
         if _git(["rev-parse", "--verify", "--quiet", base])[0] != 0:
             continue
-        rc, out = _git(["diff", "--name-only", f"{base}...HEAD"])
+        # -z here for the same reason as working_tree_files(): `--name-only` quotes a path with a
+        # space unless core.quotePath is off, and a quoted path silently fails the .cs test.
+        rc, out = _git(["diff", "--name-only", "-z", f"{base}...HEAD"])
         if rc != 0:
             continue
-        names = [n for n in out.split("\n") if n.endswith(".cs")]
+        names = [n for n in out.split("\0") if n.endswith(".cs")]
         extra = [n for n in working_tree_files() if n not in names]
         label = f"{base}...HEAD"
         if extra:

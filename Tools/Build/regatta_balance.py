@@ -70,6 +70,39 @@ def _key(text, key, label):
     return float(m.group(1))
 
 
+def _nested_key(text, owner, key, label):
+    """
+    A key INSIDE a named block: `owner:` then the first `key:` beneath it -- OR the owner read
+    as a plain scalar, because the same field can be serialized either way.
+
+    An `ElementalFloat` serializes as a MAPPING (`owner:` / `  Value: 3`); a plain `float`
+    serializes as a SCALAR (`owner: 3`). The 2026-09-20 pass that turned nine SO-hosted
+    ElementalFloats into plain floats therefore silently changed the SHAPE this reader has to
+    match, and a nested-only read then fails with "block not found" -- which is a crash rather
+    than a wrong number, and so at least fails loudly. Accepting both is what makes the read
+    survive the type either way; the owner is still named, which is the property the rest of
+    this docstring is about.
+
+    Use this for any generic child name (`Value`, `Min`, `Max`, `Enabled`) rather than reaching
+    for `_key`, whose pattern is `^\\s*key:` -- any indent, first match wins. That read is a
+    landmine on a serialized sub-object: the Serpent's boost multiplier was `_key(serpent,
+    "Value")` with a `# boostMultiplier.Value` comment explaining what it MEANT, and it silently
+    became a DIFFERENT ElementalFloat's Value the moment one was added earlier in the same asset
+    (the element-scaling unification added `timeDurationMultiplier`). The model then priced the
+    Serpent with no boost at all, doubling the fleet's lap-time spread from 5.99x to 13.11x --
+    and `--check` still exited 0, because the assert it trips is on the spread, not on the read.
+    A name that does not identify its owner is not a measurement.
+    """
+    scalar = re.search(rf"^\s*{re.escape(owner)}:\s*(-?[0-9.]+)\s*$", text, re.M)
+    if scalar:
+        return float(scalar.group(1))
+    m = re.search(rf"^\s*{re.escape(owner)}:\s*$", text, re.M)
+    assert m, f"{label}: '{owner}' found neither as a scalar nor as a block"
+    m2 = re.search(rf"^\s*{re.escape(key)}:\s*(-?[0-9.]+)\s*$", text[m.end():], re.M)
+    assert m2, f"{label}: '{owner}.{key}' not found"
+    return float(m2.group(1))
+
+
 def _first_key(text, key, label):
     """The FIRST occurrence - used on prefabs where a key appears on one component only."""
     m = re.search(rf"^  {re.escape(key)}:\s*(-?[0-9.]+)\s*$", text, re.M)
@@ -120,7 +153,7 @@ def read_constants():
     assert "squirrel_boost_max" in c, "Squirrel boost max FloatVariable not found"
 
     serpent = _read("Assets/_SO_Assets/VesselActions/Serpent/ConsumeBoostAction.asset")
-    c["serpent_boost"] = _key(serpent, "Value", "SerpentConsumeBoost")       # boostMultiplier.Value
+    c["serpent_boost"] = _nested_key(serpent, "boostMultiplier", "Value", "SerpentConsumeBoost")
     c["serpent_duration"] = _key(serpent, "boostDuration", "SerpentConsumeBoost")
     c["serpent_cost"] = _key(serpent, "resourceCost", "SerpentConsumeBoost")
     sp = _read("Assets/_Prefabs/Spacevessels/Serpent.prefab")
