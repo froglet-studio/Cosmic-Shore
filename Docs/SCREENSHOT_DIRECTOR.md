@@ -130,14 +130,18 @@ that is a follow-up: read `SpeedTunnelConfigSO.Effect01(speed)` and fold it into
 - **F12 is deliberately not the key.** It is Steam's own screenshot key, so binding it would fire
   two captures, one of which has the UI in it. F5–F9 are the diagnostics/benchmark overlays and F11
   is fullscreen.
-- **P is not free either, and that is stated rather than hidden.** `KeyboardInputStrategy` — the
-  dual-WASD desktop scheme every two-stick hull flies on — reads `pKey` as the RIGHT STICK's
-  vertical axis (`WASD` left, `P`/`;`/`L`/`'` right, `KeyboardInputStrategy.cs:90`). So on those
-  hulls a capture press also feeds the vessel one frame of stick, and a held P keeps feeding it —
-  a small nudge to the very framing the system exists to produce. The one-thumb hulls are
-  unaffected: `SingleStickMouseInputStrategy` reads only the left stick, so P reaches nothing
-  there. It is bound anyway because it is the key that was asked for and the nudge is minor; the
-  clean fix is to move the keyboard scheme's right-stick-up off `P`, which is a player-facing
-  rebind (and a CLAUDE.md edit) and therefore a separate decision, not one to take in passing.
-  The general shape: **a key is only "free" against the keys some OTHER system is reading, and an
-  input scheme that consumes raw keys advertises none of them.**
+- **P was not free, and the FLIGHT SCHEME moved rather than the capture key.**
+  `KeyboardInputStrategy` — the dual-WASD desktop scheme every two-stick hull flies on — read
+  `pKey` as the RIGHT STICK's vertical axis (`WASD` left, `P`/`;`/`L`/`'` right). A capture press
+  would therefore also have fed the vessel a frame of stick, and a held P would have kept feeding
+  it — a nudge to the very framing this system exists to produce, on exactly the hulls a
+  third-person photograph is most worth taking of. The one-thumb hulls were never affected
+  (`SingleStickMouseInputStrategy` reads only the left stick), which is what made it easy to miss.
+  **Resolved by moving the flight binding, not the camera**: that scheme's right-stick-up is now
+  **`O`** — same right-hand cluster, directly above `L`, and used nowhere else in the project
+  (verified against every `Keyboard.current` read in `_Scripts`). The capture key is P as asked.
+  Two rules come out of it: **a key is only "free" against the keys some OTHER system is reading,
+  and an input scheme that consumes raw keys advertises none of them** — grep the reads, do not
+  reason from what is "normally" bound; and **when two systems want one key, move the one whose
+  binding is arbitrary** — a photograph key the player asked for by name is a requirement, while
+  which letter is right-stick-up is a detail the scheme has no opinion about.

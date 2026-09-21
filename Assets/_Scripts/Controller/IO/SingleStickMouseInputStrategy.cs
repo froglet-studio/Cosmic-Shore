@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="KeyboardInputStrategy"/>, is a DUAL-stick layout: two digital sticks mixed
     /// through <see cref="DualStickMix"/> into yaw / pitch / speed / roll. A one-thumb vessel
     /// reads none of that mix — it reads the left stick's raw deflection — so on those hulls the
-    /// entire right hand (P / ; / L / ') is dead keys, and the only steering left is four digital
+    /// entire right hand (O / ; / L / ') is dead keys, and the only steering left is four digital
     /// WASD directions with no magnitude between "centred" and "hard over". That is playable and
     /// it is not aiming, which is a problem on the vessel the shooter genre is built on.</para>
     ///

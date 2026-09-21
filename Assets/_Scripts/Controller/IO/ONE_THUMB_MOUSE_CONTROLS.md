@@ -15,7 +15,7 @@ else:
 
 ## 1. Why these vessels needed their own scheme
 
-The desktop default, `KeyboardInputStrategy`, is a **dual-stick** layout: WASD and P/;/L/' are two
+The desktop default, `KeyboardInputStrategy`, is a **dual-stick** layout: WASD and O/;/L/' are two
 digital sticks, mixed through `DualStickMix` into yaw / pitch / speed / roll (`XSum` / `YSum` /
 `XDiff` / `YDiff`).
 

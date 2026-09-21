@@ -11,9 +11,9 @@ namespace CosmicShore.Gameplay
     /// the existing stick/trigger events.
     ///
     /// Key → stick → mix → Squirrel feel
-    ///   W / S     left  +Y / -Y     YSum pitch (W+P = big pitch up, S+; = big pitch down)
+    ///   W / S     left  +Y / -Y     YSum pitch (W+O = big pitch up, S+; = big pitch down)
     ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
-    ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
+    ///   O / ;     right +Y / -Y     YDiff roll vs left Y (O+S roll left, W+; roll right)
     ///   L / '     right -X / +X     (same mix as A / D)
     ///   Space       Button1Action   R  Button2Action   Q  Button3Action   E  FlipAction
     ///               (QWER + Space — shared verbatim with SingleStickMouseInputStrategy, because
@@ -87,7 +87,11 @@ namespace CosmicShore.Gameplay
 
             rightStickRaw = new Vector2(
                 Axis(keyboard.quoteKey.isPressed, keyboard.lKey.isPressed),
-                Axis(keyboard.pKey.isPressed, keyboard.semicolonKey.isPressed));
+                // O rather than the historical P: P is the screenshot capture key
+                // (ScreenshotGesture), and a key two systems read is a key that does two things.
+                // O sits directly above L in the same right-hand cluster and is used nowhere else
+                // in the project. See Assets/_Scripts/Utility/ScreenShots/ScreenshotGesture.cs.
+                Axis(keyboard.oKey.isPressed, keyboard.semicolonKey.isPressed));
         }
 
         private static float Axis(bool positive, bool negative)
