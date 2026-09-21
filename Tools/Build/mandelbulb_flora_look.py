@@ -30,7 +30,7 @@ import measure_mandelbulb_flora as X                                  # noqa: E4
 def grow_candidate(species, element, overrides=None, cross=None, seed=12345,
                    budget=None, weights=(0.0, 0.0, 0.0)):
     """The plant the game lays for this rule: (surface, rules, prisms, curves, boxes)."""
-    budget = budget or M.PRISM_BUDGET
+    budget = budget or M.budget_for(species)
     degree, tables = M.load_tables()
     surface = M.surface_for(element, *weights, tables=tables, degree=degree, width=M.FIELD_WIDTH)
     rules = M.rules_for(element, species)

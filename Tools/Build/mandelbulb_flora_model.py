@@ -1828,8 +1828,7 @@ CLAIM_FACTOR = 0.70             # MandelbulbFlora.ClaimFactor
 CONNECTOR_CLAIM_FACTOR = 1.6    # MandelbulbFlora.ConnectorClaimFactor — a LIMB yields
 
 
-def claim_filter(prisms, centres, factor=None, shell=SHELL_RADIUS,
-                 rules_length_factor=1.0):
+def claim_filter(prisms, centres, factor=None, shell=SHELL_RADIUS):
     """What MandelbulbFlora.Claim does, applied offline so a measurement describes the plant
     the game LAYS rather than the candidates the walk produced. A prism is refused when a
     prism already laid sits within `factor * its own length` — under 1, so a curve's own

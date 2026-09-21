@@ -565,8 +565,9 @@ namespace CosmicShore.Gameplay
             // prism, and stretched to span the gap, so a plant reads as one connected object
             // growing outward from its crystal rather than as a field of prisms each wearing a
             // stub. That is the platform's growth law (the /flora skill §2, Docs/ECOSYSTEM.md
-            // §49): first the crystal, then spindles out of the crystal, then prisms out of
-            // spindles, and spindles out of prisms; it loops.
+            // §49 for the law and §55 for this family's application of it): first the crystal,
+            // then spindles out of the crystal, then prisms out of spindles, and spindles out of
+            // prisms; it loops.
             Vector3 childWorld = transform.TransformPoint(order.LocalPosition);
             Quaternion childRot = transform.rotation * order.LocalRotation;
             Vector3 root = ResolveAnchorWorld(order.Index);

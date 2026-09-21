@@ -394,7 +394,7 @@ def grow_detail(species, element, budget=None):
     # AFTER THE CLAIM, BEFORE THE BUDGET, kept separately: the two answer different
     # questions and conflating them reads a budget cut as a broken curve (see
     # gasket_report's ring integrity, which is the gate that found this out the hard way).
-    claimed = M.claim_filter(raw, centres, rules_length_factor=rules.length_factor)
+    claimed = M.claim_filter(raw, centres)
     kept = claimed[:budget]
     # A gasket species' seed population is its DISC set and the Fall's owed set strides over
     # the LEVEL-0 discs alone, so `build_seeds` — which reads SeedCount, authored 0 here —
@@ -1134,8 +1134,7 @@ def _prism_tuple(p):
 def _lay(surface, rules, budget):
     raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
-    return [_prism_tuple(p) for p in M.claim_filter(
-        raw, centres, rules_length_factor=rules.length_factor)[:budget]]
+    return [_prism_tuple(p) for p in M.claim_filter(raw, centres)[:budget]]
 
 
 def census_resolution():
