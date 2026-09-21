@@ -626,6 +626,156 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
   adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
   always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
+- **A COMPACT form needs none of the lattice machinery — the Borromean membrane.**
+  `BorromeanFlora` grows the **minimal-genus Seifert surface of the Borromean rings**: the three
+  golden ellipses (semi-axes 1 and φ, the boundaries of three golden rectangles whose twelve
+  corners are an icosahedron's vertices — and a FORCED realization, since by Freedman–Skora the
+  link admits no three round CIRCLES), spanned by the level set `Ω ≡ 2π` of their summed
+  solid-angle potential and relaxed to zero discrete mean curvature. Measured **χ = −3 over three
+  boundary loops ⇒ genus 1**, area **11.955** against **15.250** for three flat discs — and three
+  flat discs are not an alternative, because they intersect and three DISJOINT ones would split a
+  link that is not split, so a CONNECTED spanning surface is forced. **The symmetry is order 6
+  (C3ᵢ) and that is the MAXIMUM available, not a shortfall**: the unoriented rings carry the
+  order-24 pyritohedral group, but half of those elements reverse some rings' orientations and
+  carry this level set to a different one — measured for every orientation assignment. The site
+  table is **EXACTLY** invariant (residual `0.00e+00`) because it is a union of whole ORBITS, and
+  growth lays **one whole orbit per tick**, so a half-grown plant is exactly as symmetric as a
+  finished one. **It grows the way a flora WITHERS, run backwards — the crystal first, then limbs
+  out of the crystal, then limbs and prisms out of limbs** (`Docs/ECOSYSTEM.md §49.9`), and that
+  cost a second pass: the first ordering was by RADIUS, which on a surface that wraps is several
+  disjoint rings, so the plant grew up to **3 separate patches** that sealed up later. The table
+  is ordered by **HOP DISTANCE over the surface's own site graph**, which survives the symmetry
+  because *the graph is G-invariant, so hop distance is an ORBIT property rather than a site
+  property*; every site names its **PARENT** (always earlier in the table) and a plate is never
+  laid on the far end of a limb that does not exist — measured, exactly ONE component after every
+  one of the 60 ticks. *A radius sort is not a growth order.* **A SPINDLE IS A BOND, NOT A
+  MARKER**: each limb is rooted at its parent, aimed at its child and stretched to span the gap
+  (a limb runs along one of its own plate's axes to within 21°), which is `BranchingFlora`'s
+  shape — the gyroid reaches the same end from the other side with a mirrored PAIR meeting at the
+  prism (§34.12), while **Schwarz P's single off-centre arm is the anti-pattern** and must not be
+  copied. **A PER-SITE CHOICE AMONG EQUALLY-VALID OPTIONS IS NOISE UNLESS IT IS COMBED** — the two
+  asymptotic directions below are orthogonal and interchangeable, so picking one per site from the
+  sign of an eigenvector in an arbitrary tangent basis left neighbouring plates **56.6°** apart
+  with 49% of edges over 60°, every plate individually flush and the TILING noise; combing the
+  choice per orbit REPRESENTATIVE (so it cannot break the symmetry) takes it to **25.9°** at zero
+  runtime cost. Three more things generalise. **A centroidal Voronoi
+  tessellation can be made exactly symmetric** by running Lloyd's on the orbit set and pulling
+  each centroid back through the group — averaging over the orbit is what keeps a representative
+  a representative, so there is no symmetrisation pass and therefore no drift for one to mask.
+  **Half the group is IMPROPER**, and a right-handed frame mapped by a reflection is not a
+  rotation, so `y` is re-derived as `z × x` after the map — a plate is a BOX and is invariant
+  under a flip of any one axis, so the geometry is carried exactly and only the quaternion table
+  is equivariant up to a symmetry of the box. And **the plate lies on the surface's ASYMPTOTIC
+  directions**: on a minimal surface the principal curvatures are equal and opposite, so normal
+  curvature vanishes on the two directions bisecting them AND those two are orthogonal — a
+  property minimal surfaces alone have, and the reason a flat rectangle sits flush on a saddle
+  (measured 0.247/0.251 of the local shear along the plate's two axes, against a mean curvature
+  of 0.165 of it; a sphere scores 1.00). **It is NOT a lattice species and deliberately has none
+  of their machinery**: a lattice tiles a periodic surface indefinitely and reproduces as a
+  COLONY because its growth rule has an opinion about where the next PLANT belongs, while a
+  Borromean surface is COMPACT — it closes on itself and is finished — so this plant completes
+  and funds an ordinary per-plant offspring out of its growth quota (§32). No frontier, no claim
+  book, no mate-snap, no `LatticeScale` family of absolute tolerances (§34.8); *a species whose
+  form is bounded does not need them*. It keeps `PrismSizeFixedByGrowthRule` because its offsets
+  are a measured table in absolute units, and resizes through `surfaceScale`, which moves the
+  sites and the leaf together. **NO PRISM MAY INTERPENETRATE ANOTHER, so a plate's SIZE is not
+  authored: an element authors the SHAPE of its plate and the SPACING of its tiling, and the size
+  is FITTED to the largest that clears** (by 3%; 10% bigger collides). Spindles are exempt by
+  design — a limb may pass through a plate. Three measured facts carry it. **THE FOOTPRINT COSTS
+  CLEARANCE AND THE THICKNESS DOES NOT** — a plate's neighbours lie in the membrane beside it, so
+  0.1 → 0.8 of its own width in thickness costs 1.3% of the footprint and buys 7.7× the volume,
+  which is what lets the element contract survive the rule instead of being flattened by it (Mass's
+  volume and Space's equal-volume-at-higher-aspect are SOLVED on that free axis). **COVERAGE IS A
+  PROPERTY OF THE TILING, NOT OF THE COUNT** — every plate is fitted against its own neighbours, so
+  a looser tessellation covers the same membrane with FEWER, BIGGER pieces (the fitted long axis
+  is 0.73–0.93 of the spacing at every count from 24 to 60 orbits), which makes the tiling an
+  element's own decision and gives the ladder its direction: **the more ROOM PER SITE, the bigger
+  the body it carries** — room per site 6.14 (Time) < 8.23 (Mass) < 8.69 (Charge, whose real body
+  is its SHIELD at three times its plate's reach) < **13.68 (Space)**. That ordering is ASSERTED
+  from the shipped tables, both sides measured. It is stated in ROOM and not in orbit COUNT
+  because **an element buys room two ways — by cutting the membrane into fewer pieces, or by
+  growing the MEMBRANE** — and Space does the second, so it has a FINER cut than Mass or Charge
+  (288 plates against 216 and 180) and still the most room of the four. Growing the membrane is a
+  **SIMILARITY**, the one transform that maps a clearing arrangement onto a clearing arrangement
+  exactly, so it costs the guarantee nothing to re-derive. And **the guarantee lives in the CODE, because a guarantee
+  any asset edit can break is not one**: the plant takes its leaf from its own table
+  (`BorromeanSurfaceData.For(Element)`), resolved from its crystal at the TOP of `Initialize`
+  before the base stamps the prefab's seed prism — `Flora.ResolveShieldPeriod`'s argument one field
+  over, which also closed the gap where `surfaceScale` scaled the offsets and not the leaf. **The
+  plate aspect is still a LOOK call and the rendering is still the
+  evidence** — every structural check passes at any aspect, so the choice was made by rendering
+  four: at `1.40 × 0.73` the plates lap 61% and the membrane reads as one smooth blob, at
+  `0.85 × 0.55` they lap not at all and it reads as a perforated mesh; the aspect shipped from that
+  pass survives and its SIZE does not (`1.15` of the spacing along the grain, 36% lap, became a
+  fitted `0.76` and zero). **Stated plainly as a cost: the membrane no longer laps, Time's plant
+  volume fell 7,499 → 3,279, and Space now reads as a frame of STRUTS rather than a skin.**
+  **8 plants per element = 32 always-on heart colliders.** **AN ELEMENT IS A PERTURBATION OF AN
+  ANCHOR**, which is what
+  makes "what does this element do to the plant" one comparison rather than four independent
+  fits: **TIME** is that anchor (9.11 volume per plate, 1 : 0.59 : 0.15),
+  **MASS** is more VOLUME *and the CHUNKIEST plate* (8.00×, **1 : 0.83 : 0.50** — and it stops
+  short of a cube on purpose, because the footprint is FITTED so the only axis that can move a
+  plate toward one is the thickness, and the thickness IS the volume),
+  **SPACE** is more ROOM — its MEMBRANE is **2×** the anchor's, so its plant spans **222 against
+  111** and its plate is `12.98 × 1.53 × 0.46` at 8.50:1 and the *same* volume (a `k×` membrane
+  fits a `k×` footprint, so holding the volume drives the thickness down by `k²`: same plant
+  volume, same site count, twice the span, struts 2.6× thinner) —
+  and **CHARGE is FITTED to its own shielded form** — not uniformly shrunk. Charge's plate is
+  `1 : 1.00 : 0.50`, i.e. SQUARER than Mass's, which is why the chunkiness rule is asserted over
+  the three elements whose body IS their plate: a Charge plate is a square slab *because* the body
+  it was fitted against is the octahedron three times it, so how cube-like it is says nothing
+  about what a Charge plant looks like. *A check that has to be scoped is usually telling you
+  something true about the thing you scoped out.* Both halves of that
+  fit are measured: the footprint is SQUARE (the clearance is set by the tightest BOND, which
+  runs along the grain, so length there is paid for twice — square covers **22.5%** of the
+  membrane with octahedra against 15.6% at the anchor's aspect) and the THICKNESS is spent freely
+  (along the surface NORMAL, where the neighbours are not). The element spread across one species
+  is consequently **19.6×** in plant volume (Charge 804 → Mass 15,739), so a cell that rolls all
+  four is pricing an AVERAGE rather than a plant; and Space's 0.46 thickness is under
+  `PrismScaleAnimator`'s serialized `minScale` 0.5, surviving only because `Flora.AddHealthBlock`
+  calls `Prism.AdmitTargetScale` first — the same rope SchwarzP Charge's 0.39 hangs from. Authored by
+  `Tools/Build/measure_borromean_minimal_surface.py` +
+  `author_borromean_flora_assets.py`, re-proved from the shipped tables alone by
+  `Tools/Build/verify_borromean_surface_tables.py` (every check run four times, **22** negative
+  controls, all firing) — whose
+  one RETIRED check is worth as much as the new ones: *"the blocks' radii are non-decreasing"*
+  was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
+  on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`
+  skill**. **It grows in RAMPAGE (all four intensities, as mass to destroy), WRECKING BALL (all
+  four) and WILDLIFE BLITZ cells 1 and 2** — every cacti cell but Tollway — plus the freestyle
+  Lifeform Matrix toy. **A cell adopts it as FOUR configs, one per element, never as one rolled
+  config**: a `FloraConfigurationSO` carries ONE `Variant` block, and the four differ in budget
+  (180–360), plate and HEART (2.051–3.379), so a rolled config would author one heart size for
+  four plants whose spans run 108 to 222 and `author_lifeform_heart_sizes.py` would be sizing an
+  average rather than a lifeform. Adopting it moved Rampage's forest 396,178 → **441,070** and its
+  intensity-4 prisms 9,830 → **11,918**, and the answer was to **RE-ANCHOR rather than let the
+  gates float**: the authored volume pair is a play-test result, so it holds and the MARGIN
+  absorbs the mass (Frenzy 4.11× → **3.70×** the mature forest); the COUNT half is derived and
+  legitimately moves (10,000 → 12,250). Three things generalise. **A species whose leaf is a
+  MEASURED TABLE is exempt from `FloraPrismScale` and its volume exponent is 0** — a statement
+  about the code (`PrismSizeFixedByGrowthRule` → `Flora.ApplyCellPrismScale` returns early), not a
+  rounding, so Rampage's prism axis now moves five of its six species and leaves the sixth alone.
+  **ONE model row for FOUR configs needs an assert**, because round-half-up does not commute with
+  a sum: at `FloraPopulationScale 3.67`, two seeds across four configs is 28 plants and eight
+  seeds once is 29 — `forest()` scales per config and `assert_species_aggregation` proves the row
+  divides evenly, since *a row that prices a forest the game does not grow is worse than no row*.
+  And **a prefix rule for a species-owned family is correct only while every config of that
+  species is named for the species alone** — `author_flora_populations.py` matched `"Borromean "`
+  as a prefix, and a per-cell config is named for the CELL first (`Rampage Borromean Flora Mass
+  Config Data`), so the rule became a SUBSTRING or every adopting cell's copy would have been
+  handed silently back to a model that has no input to work from on a measured table. Collider
+  budget: Rampage intensity 1 goes 49,150 → **59,590** prisms (Atlantis 69,000) and 440 → **500**
+  crystals (the Lattice cell's 1,080), both asserted. Tollway is deliberately excluded — its flora
+  are its SCORING SOCKETS, one anchor species per growth FAMILY per intensity, so adding a genuine
+  fifth family there is a mode-design decision rather than an adoption; Hesperides too, because it
+  sows typed planting SITES and a compact membrane is none of them. Two traps worth more than the species: **a `ROOT` one `dirname` too
+  shallow wrote the whole asset tree into `Tools/Assets/` and the verifier, sharing the bug, read
+  it back and passed** — *consistent wrongness reads exactly like correctness*, so the definition
+  now carries an `assert` that `Assets/` is under it; and **a Jacobi sweep on a cotangent system
+  fails by being slightly WRONG rather than by failing** (1,200 sweeps were still 3% above what
+  five sparse solves reach in under a second, i.e. an inflated membrane that passes every
+  structural check), which is why the tool asserts the AREA — a property of the surface rather
+  than of the solver. `Docs/ECOSYSTEM.md §49`.
 - **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
   `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
   defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
@@ -828,6 +978,17 @@ Meta values: `Any (-1)`, `Random (0)`
 moves, where its heart sits, its body prisms, its config wiring. It loads the per-creature
 anatomy contract on top of `/ecology`'s system invariants (`Docs/ECOSYSTEM.md` §45 is the worked
 example of a species that looked finished and had never run).
+
+**Use the `/flora` skill for ANY work on a PLANT** — adding a species, how one grows, how it
+poses its spindles, how its prisms are shaped and oriented, what its four elements SAY, how it
+reproduces and plants itself. It is `/fauna`'s sibling and loads the per-plant contract on top of
+`/ecology`: the growth law (*a flora grows the way it withers, run backwards* — crystal, then
+limbs out of the crystal, then limbs and prisms out of limbs), the limb contract (**a spindle is
+a BOND, not a marker** — with the measured comparison of how each family poses one, and which one
+is the anti-pattern), the elegance rules for a tiling (**a per-site choice among equally-valid
+options is NOISE unless it is combed**), and the element contract (one authored ANCHOR and three
+perturbations of it, Charge FITTED against its own shielded octahedra). `Docs/ECOSYSTEM.md` §49.9
+is the worked example of a species whose SHAPE was right and whose PLANT was wrong.
 
 **Use the `/arcadegame` skill for ANY new game mode** (the recipe, the shared generator library
 `Tools/Build/arcade_mode_lib.py`, the eleven registrations, the gates), **the `/arenagame` skill on

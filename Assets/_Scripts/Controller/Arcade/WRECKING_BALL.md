@@ -5,7 +5,9 @@
 Wrecking Ball is the **Scarab-only demolition race**, and Rampage's analog for the hull whose
 weapons are a **ball** and a **plate**: every domain races to be the first to DESTROY **1,500
 hostile prisms**. A sphere court — the cell nucleus resized, exactly Scarab Scramble's court — is
-grown full of Rampage's five breakable flora (cacti, spires, pines, rosettes, coral, across all
+grown full of Rampage's six breakable flora (cacti, spires, pines, rosettes, coral and the
+Borromean minimal-surface membrane — nine configs, because Borromean is four, one per element —
+across all
 three domains and all four elements), the arena's omni crystals respawn anywhere inside it, and
 **intensity means HOW DENSE and HOW MANY BALLS**: at 1 the court holds 59 plants and eight
 crystals for a four-seat lobby; at 4 it holds 35 and three.
@@ -99,12 +101,22 @@ others:
    keeps whole-cell diet semantics: herbivores eat OPPOSING-domain mass, and the food web grazes
    the forest as it does in Rampage.
 2. **The volume ladder is Rampage's, scaled by this forest.** Rampage's measured intensity-4
-   forest is 396,178 volume and its play-tested ladder sits Restless at 0.285× and Frenzy at
-   4.11× of it; each Wrecking Ball cell's forest is that forest × its plant scale, so its ladder is
+   forest is 441,070 volume and its play-tested ladder sits Restless at 0.256× and Frenzy at
+   3.70× of it; each Wrecking Ball cell's forest is that forest × its plant scale, so its ladder is
    Rampage's × the same ratio (the rule Rampage's own four cells follow). Counts are Rampage's
-   backstops (700 / 10,000). Frenzy leaves at least four switch daises (50,773 each) of headroom
+   backstops. Frenzy leaves at least four switch daises (50,773 each) of headroom
    above the forest at every intensity; the generator asserts it. **ESTIMATE pending the in-editor
    baseline measure.**
+
+   ⚠ **Those two numbers are IMPORTED from `rampage_intensity.py`, not retyped here** — they
+   were literals in this mode's generator and went stale the day Rampage adopted the Borromean
+   species (`Docs/ECOSYSTEM.md` §49.12), which took its forest 396,178 → 441,070 and its margin
+   4.11× → 3.70×. The generator now reads `REFERENCE_FOREST_VOLUME` and `SHIPPED_VOLUME_LADDER`
+   from that module and asserts Rampage's forest still matches the volume its ladder is anchored
+   to. *A constant copied out of another tool's answer is true only on the day it is copied.*
+   Note the gates themselves did not move: the ratio's denominator and the scaling factor are
+   the same number, so it cancels — the forest grew and the play-tested gates held, exactly as
+   in Rampage.
 
 Everything else is referenced: Scramble's membrane, the standard nucleus prefab (resized at
 runtime to the court), the cytoplasm, and Rampage's wildlife pair (tadpole + shark) at Rampage's
