@@ -1624,9 +1624,22 @@ def self_test(only=None):
         ("the connector flag never set (a consumer can no longer tell a limb from a ribbon)",
          "                    _pendingConnector.Add(i < _emitConnectorSegments);",
          "                    _pendingConnector.Add(false);", "trip", "CONNECTOR"),
+        # It is caught by the exact PRISM COUNT rather than by the parent row, and that is
+        # not a weaker catch — it is the right one. Changing the tree changes which seed is
+        # visited when, so the two plants diverge from the first stem and the parent row,
+        # which can only speak about the prefix the two walks AGREE on, has nothing left to
+        # compare. (Measured: it fires on the Watershed, whose count is held exactly because
+        # a separatrix walk has no hop and no Rng draw to be chaotic with.)
         ("the seed tree's tie-break left to float width (the §55.2 symmetry trap)",
          "                        if (pick >= 0 && best[i] >= pickCost - SeedCostEpsilon) continue;",
          "                        if (pick >= 0 && best[i] >= pickCost) continue;",
+         "trip", "prisms shipped, model laid"),
+        # And the parent row's own control, which has to leave the ADDRESSES alone or it is
+        # just another way of growing a different plant: every prism keeps its pose and only
+        # the column that says what it hangs off is wrong.
+        ("every prism's parent reported as the heart (the addresses are untouched)",
+         "                    _pendingParent.Add(_pending.Count == 0",
+         "                    _pendingParent.Add(true ? -1 : _pending.Count == 0",
          "trip", "disagree on their PARENT"),
         ("the gasket's candidates taken smallest-first (the greedy pack keeps the specks)",
          "int c = cl[q].Rho.CompareTo(cl[p].Rho);",
