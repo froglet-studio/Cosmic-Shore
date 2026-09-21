@@ -729,6 +729,71 @@ The specific caller is below the captured rows and is the one measurement still 
 Note the editor tax while reading any Menu_Main capture: `EditorLoop` 19.4% / 7.36 ms and
 `RenderPlayModeViewCameras` 15.3% / 5.80 ms of a 37.77 ms frame.
 
+#### ⚠ BOTH MATERIAL CONVERSIONS PROPOSED BELOW ARE UNSAFE — REFUSED (2026-09-21)
+
+§0.11.5 proposed "`SnowMaterial` → Opaque" and "`SpindleMaterial` → Opaque" as small asset
+edits. Reading the graphs before editing them showed both are wrong, in different ways, and
+neither was attempted.
+
+**`SnowMaterial` → Opaque cannot be a material edit at all, and would be a visual change.**
+
+| fact | source |
+|---|---|
+| `SnowGraph.m_AllowMaterialOverride: **False**` | the `.shadergraph`'s `UniversalTarget` block |
+| so `_Surface` in the `.mat` is **inert residue** | `m_InvalidKeywords: [_SURFACE_TYPE_TRANSPARENT]` — Unity already marks that keyword as one the shader does not declare |
+| `SnowGraph.m_AlphaMode: **2** (Additive)` | matches the Frame Debugger's `Blend One One` |
+
+The graph bakes its surface type into the generated shader, so editing the material changes
+nothing. And the motes are **additive** — they add light. Opaque is not a batching tweak
+there, it is a different effect. (The `.mat` also carries ~40 dead floats from a Lit/Terrain
+ancestry — `_Splat0..3`, `_Metallic0..3`, `_WorkflowMode`, `_TerrainHolesTexture` — which is
+what makes it read as a tunable surface when it is not.)
+
+**`SpindleMaterial` → Opaque WOULD take effect, and would break a LOCKED platform law.**
+`SpindleGraph.m_AllowMaterialOverride` is `True`, so unlike the snow the edit is live. Then:
+
+```
+SurfaceDescription.Alpha <- Power <- Multiply <- Add <- PrismDeathClock(
+                                                   Clock, StartTime, Duration, Direction)
+SurfaceDescription.AlphaClipThreshold  <- NOT DRIVEN BY ANY EDGE, constant 0.05
+```
+
+**The spindle wither/evaporate animation IS an alpha fade** — one second, GPU-clocked
+(`Spindle.StampDeathFade`, `DeathFadeDuration = 1f`). With Opaque there is no blend, only the
+clip, so a fading spindle would render **fully solid until alpha crossed 0.05, then vanish in
+one frame**. That is precisely what CLAUDE.md's continuity-of-existence law forbids —
+*"Nothing may instantly appear or disappear … every entity must grow / bloom / fade / wither
+… over a visible transition"* — and flora withering is one of the places that law was
+written for.
+
+**Why the prisms COULD be opaque and the spindles cannot:** `BlockGraph` is
+`m_SurfaceType: 0` + `m_AlphaClip: True` **and** `PrismOcclusionFade` feeds its
+`AlphaClipThreshold` with a screen-door dither, so a fading prism DISSOLVES. `SpindleGraph`
+has no dither, and adding one is a graph change affecting five materials — not a material flip.
+
+> **The rule: a surface type is a property of the GRAPH, not of the material, unless
+> `m_AllowMaterialOverride` says otherwise — and an opaque conversion is only free for geometry
+> that never fades.** Check both before calling such a change small. §0.11.5's recommendation
+> was written from the `.mat` alone, which shows a `_Surface` float on both materials and
+> cannot show that one of them is dead or that the other is load-bearing for an animation.
+
+#### What the transparent pass actually costs, and the lever that remains
+
+The measured batch cause is **not** the surface type — it is **interleaving**. The Frame
+Debugger reports `SRP: Node have different shaders` between alternating runs, because
+transparent geometry is sorted BACK-TO-FRONT by distance, so snow motes, spindles and crystals
+take turns in depth order and the SRP Batcher breaks at every transition. Two levers follow,
+and neither is an opaque conversion:
+
+1. **Separate the shader families by RENDER QUEUE** so they stop interleaving (Unity sorts by
+   queue first, then by depth within a queue). Material-only, reversible, and safe for the
+   snow specifically because additive blending is commutative. **Untested** — it targets the
+   named cause but its effect has not been measured.
+2. **`SnowChanger.shardDistance`** is the population itself: one GameObject per
+   `shardDistance`³ of the whole membrane sphere. At the shipped **120** with membrane 1200
+   that is **4,189** objects; 150 → 2,145, 200 → 905. This is a density/taste decision, not a
+   correctness one, and it reduces culling and sorting cost as well as draws.
+
 #### What to do, in leverage order
 
 1. **`SnowMaterial` → Opaque + alpha clip, and enable GPU instancing.** This is the exact
