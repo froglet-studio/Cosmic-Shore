@@ -1079,10 +1079,23 @@ last two make a violation loud):
 | **Runtime** fail-loud | `PrismOcclusionDiagnostics.VerifyCorridorCapable`, called from `Prism.SyncRenderMaterial` — every material a prism ever binds passes through it. One error per offending material, naming it | A prism on an unwired shader, or an opaque material without alpha test, screams instead of silently staying solid. |
 | **Asset** gate | Edit-mode test `PrismOcclusionCoverageTests` (graphs wired · every material on them dissolvable · **every prefab carrying a `Prism` renders on a wired graph**) + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** | New prism content authored outside the corridor fails a test, not a playtest. All three gates share ONE rule (`PrismOcclusionDiagnostics.IsCorridorCapable`) so they cannot drift. |
 
-The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, used by exactly one
-caller — `CameraManager`'s manual replay camera, a broadcast vantage that is not looking at
-the local ship, where a camera→ship capsule would cut a hole through unrelated mass. It is
-symmetric (`RestoreGameplayCamera` lifts it) and it is a HOLD, not an opt-out: the vessel
+The **one** sanctioned hold is `PrismOcclusionCorridor.SetSuppressed`, and it has exactly **two**
+callers, both of them cameras posed by hand somewhere the pilot's eye is not, both holding it for
+the identical reason — a camera→ship capsule drawn from a vantage the pilot is not looking through
+cuts a hole through unrelated mass:
+
+1. `CameraManager`'s **manual replay camera**, a broadcast vantage that is not looking at the
+   local ship. Lifted by `RestoreGameplayCamera`.
+2. The **screenshot director's capture camera** (`Docs/SCREENSHOT_DIRECTOR.md`), which poses a
+   second camera for one frame to photograph the vessel from a random capture concept — where the
+   hole would open straight through the trail the photograph exists to show. Lifted in a
+   `finally`, and **identity-guarded**: it only lifts a hold it placed itself, so a photograph
+   taken during a replay cannot lift the replay's hold out from under it.
+
+A third caller needs to make the same argument. What is NOT sanctioned is a hold taken to make
+some content look better, or one taken for longer than the vantage it exists for.
+
+In both cases it is symmetric and it is a HOLD, not an opt-out: the vessel
 binding survives it, so nothing has to remember to re-point the corridor afterwards. That lift
 is **unconditional and first**, above `RestoreGameplayCamera`'s own follow-target early return
 (fixed 2026-08-05): a replay can finish a frame after its scene tore down, when the follow

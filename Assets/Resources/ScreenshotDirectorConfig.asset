@@ -1,0 +1,103 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ffaeda0f24124140b024b5ef6912d40d, type: 3}
+  m_Name: ScreenshotDirectorConfig
+  m_EditorClassIdentifier: 
+  outputFolder: 
+  fileNamePrefix: CosmicShore
+  captureHeight: 2160
+  excludedLayers:
+    serializedVersion: 2
+    m_Bits: 96
+  matchGameQuality: 1
+  holdOcclusionCorridor: 1
+  concepts:
+  - name: Over the Shoulder
+    weight: 1.2
+    worldAligned: 0
+    azimuthDegrees: {x: 155, y: 205}
+    elevationDegrees: {x: 6, y: 22}
+    distance: {x: 12, y: 26}
+    fieldOfView: {x: 55, y: 68}
+    rollDegrees: {x: -3, y: 3}
+    aimLeadSeconds: {x: 0.05, y: 0.3}
+    framingPitchDegrees: {x: -2, y: 4}
+  - name: Sidecar
+    weight: 1.4
+    worldAligned: 0
+    azimuthDegrees: {x: 60, y: 120}
+    elevationDegrees: {x: -8, y: 14}
+    distance: {x: 14, y: 34}
+    fieldOfView: {x: 45, y: 62}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.2}
+    framingPitchDegrees: {x: -3, y: 3}
+  - name: Sidecar (port)
+    weight: 1.4
+    worldAligned: 0
+    azimuthDegrees: {x: 240, y: 300}
+    elevationDegrees: {x: -8, y: 14}
+    distance: {x: 14, y: 34}
+    fieldOfView: {x: 45, y: 62}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.2}
+    framingPitchDegrees: {x: -3, y: 3}
+  - name: Oncoming
+    weight: 1
+    worldAligned: 0
+    azimuthDegrees: {x: -28, y: 28}
+    elevationDegrees: {x: -6, y: 18}
+    distance: {x: 18, y: 45}
+    fieldOfView: {x: 38, y: 55}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0, y: 0}
+    framingPitchDegrees: {x: -2, y: 2}
+  - name: Low Chase
+    weight: 1
+    worldAligned: 0
+    azimuthDegrees: {x: 165, y: 195}
+    elevationDegrees: {x: -22, y: -4}
+    distance: {x: 8, y: 18}
+    fieldOfView: {x: 65, y: 82}
+    rollDegrees: {x: -8, y: 8}
+    aimLeadSeconds: {x: 0.1, y: 0.35}
+    framingPitchDegrees: {x: -5, y: 0}
+  - name: Top Down
+    weight: 0.6
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: 62, y: 86}
+    distance: {x: 28, y: 70}
+    fieldOfView: {x: 45, y: 65}
+    rollDegrees: {x: -12, y: 12}
+    aimLeadSeconds: {x: 0, y: 0.15}
+    framingPitchDegrees: {x: -2, y: 2}
+  - name: Static Tracking Cam
+    weight: 1.1
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -14, y: 30}
+    distance: {x: 35, y: 110}
+    fieldOfView: {x: 28, y: 45}
+    rollDegrees: {x: -3, y: 3}
+    aimLeadSeconds: {x: 0.15, y: 0.45}
+    framingPitchDegrees: {x: -4, y: 4}
+  - name: Establishing (banded hull)
+    weight: 0.5
+    worldAligned: 1
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -10, y: 35}
+    distance: {x: 220, y: 520}
+    fieldOfView: {x: 35, y: 60}
+    rollDegrees: {x: -2, y: 2}
+    aimLeadSeconds: {x: 0, y: 0.5}
+    framingPitchDegrees: {x: -5, y: 5}
