@@ -426,7 +426,7 @@ a{color:var(--accent)}
   <header class="mast">
     <p class="eyebrow">Engineering Readiness Audit · Revision 5</p>
     <h1>Cosmic Shore</h1>
-    <p class="sub">Re-run on 21 September against <code>bleeding-edge</code>, nine days after Revision 4. <strong>The six-week window the plan was written against closed on 11 September.</strong> Engineering kept arriving; verification did not start; and this run corrects three claims Revision 4 got wrong — one of them materially in the project's favour.</p>
+    <p class="sub">Re-run on 21 September against <code>bleeding-edge</code>, nine days after Revision 4. <strong>The six-week window the plan was written against closed on 11 September.</strong> Engineering kept arriving; this run corrects three claims Revision 4 got wrong; and a same-day owner report closes the largest unknown on the board — <strong>fresh builds run, multiplayer included</strong>.</p>
     <dl class="meta">
       <div><dt>Audited</dt><dd>21 Sep 2026</dd></div>
       <div><dt>Previous</dt><dd>Rev 4 · 12 Sep</dd></div>
@@ -464,6 +464,12 @@ a{color:var(--accent)}
     </div>
   </div>
 
+  <div class="note" style="margin:0 0 30px">
+    <span class="hd">Same-day addendum &mdash; 21 September, after this audit was measured</span>
+    <p>The owner reports that <strong>fresh builds have been installed and run correctly, multiplayer features included</strong>, with the note that it <em>"needs everyday testing but it works"</em>. That closes the largest single unknown this series has carried: whether a Windows player runs at all.</p>
+    <p><strong>It is a report, not a verdict.</strong> There is no entry in <code>Docs/QA/RESULTS/</code>, no build id and no log, so the project still holds <strong>one</strong> recorded verdict &mdash; from 14 August. Every figure in this document was measured before the report and none of them moves: the recording is what is missing, not the testing. R1 is re-marked 🟡 on the board rather than closed.</p>
+  </div>
+
   <section>
     <h2><span class="idx">01</span> The window closed, and the plan did not notice</h2>
     <p class="lede">Revision 2 was written on 31 July with a six-week calendar path. That path ended on <strong>11 September</strong>. Every prior audit measured the project against the plan's <em>content</em>; this one starts by measuring it against the plan's <em>clock</em>, because that is the number an investor reads first and no checkpoint has stated it.</p>
@@ -487,7 +493,7 @@ a{color:var(--accent)}
       <table class="ws">
         <thead><tr><th style="width:26%">Rev 4 said</th><th style="width:14%">Verdict</th><th>What the tree shows</th></tr></thead>
         <tbody>
-          <tr class="s-ok"><td>"Nothing in CI builds a Windows player."</td><td><span class="chip c-ok">Wrong</span></td><td><code>.github/workflows/unity-ci.yml</code> runs a weekly IL2CPP <strong>Windows player build</strong> on a self-hosted runner via <code>CosmicShoreBuildPipeline.BuildWindowsRelease</code>, and a <em>Verify build output</em> step fails the job unless <code>CosmicShore.exe</code> exists. The scheduled run of <strong>17 September was green</strong>, as were 7 of the last 10. The step existed at Revision 4's own base commit. <strong>A Windows player is being built; nobody has launched one.</strong> R1's substance holds — its stated evidence does not.</td></tr>
+          <tr class="s-ok"><td>"Nothing in CI builds a Windows player."</td><td><span class="chip c-ok">Wrong</span></td><td><code>.github/workflows/unity-ci.yml</code> runs a weekly IL2CPP <strong>Windows player build</strong> on a self-hosted runner via <code>CosmicShoreBuildPipeline.BuildWindowsRelease</code>, and a <em>Verify build output</em> step fails the job unless <code>CosmicShore.exe</code> exists. The scheduled run of <strong>17 September was green</strong>, as were 7 of the last 10. The step existed at Revision 4's own base commit. <strong>A Windows player is being built — and, per the owner report below, one has now been run.</strong></td></tr>
           <tr class="s-ok"><td>R14 "Not started" — licence register and launch-blocker index.</td><td><span class="chip c-ok">Stale</span></td><td>It landed the <em>same day</em> as the audit (PRs #871 and #873, merged 12 Sep from a branch since deleted). <code>bleeding-edge</code> carries the ✅. More importantly the one <strong>verified compliance gap</strong> — FMOD EULA clause 3 requiring an in-game "FMOD / Firelight Technologies Pty Ltd." credit on every tier — is <strong>closed and gated</strong>: <code>Assets/Resources/CreditsManifest.asset</code>, a release build guard, and <code>check_credits_manifest.py --check</code>, which passes.</td></tr>
           <tr class="s-warn"><td>"54 red + 3 amber = 57 open items" in the verification checklist.</td><td><span class="chip c-warn">Disputed</span></td><td>Counting section markers gives <strong>45 red + 1 amber + 1 green = 46 open</strong>, and the checklist's <em>own banner</em> states 46. The two counts use different units; 57 is not reproducible. The conclusion is unaffected — none of them has been absorbed into QA — but the figure should not be quoted.</td></tr>
         </tbody>
@@ -574,7 +580,7 @@ a{color:var(--accent)}
         <thead><tr><th style="width:5%">#</th><th style="width:26%">Blocker</th><th style="width:12%">Owner</th><th>Why it blocks</th></tr></thead>
         <tbody>
           <tr class="s-crit"><td>1</td><td>No Steamworks app exists</td><td><span class="chip c-crit">Human</span></td><td>H1/H2. The upload script refuses to run without it. Carries external identity, tax and banking lead time, so it cannot be compressed later. Gates DoD #1 and #2 and all of workstreams A and E.</td></tr>
-          <tr class="s-crit"><td>2</td><td>No validation has ever run</td><td><span class="chip c-crit">Human</span></td><td>R1/R2/R3. One QA verdict in the project's history, 38 days old. Backlog 39 days stale at 68 items, 62 never run. 46 checklist items never absorbed. A Windows player builds weekly and <strong>has never been launched</strong>. Gates DoD #3.</td></tr>
+          <tr class="s-crit"><td>2</td><td>No validation has ever run</td><td><span class="chip c-crit">Human</span></td><td>R1/R2/R3. One QA verdict in the project's history, 38 days old. Backlog 39 days stale at 68 items, 62 never run. 46 checklist items never absorbed. A Windows player builds weekly and, per the owner report, <strong>now runs with multiplayer working</strong> &mdash; but none of it is <em>recorded</em>, so R2 still cannot absorb the backlog behind it. Gates DoD #3.</td></tr>
           <tr class="s-crit"><td>3</td><td>Progression service not instantiated</td><td><span class="chip c-crit">Design</span></td><td>One wiring decision. DoD #4 cannot pass until it is taken, and no amount of quest dialogue changes that.</td></tr>
           <tr class="s-warn"><td>4</td><td>No load-time target</td><td><span class="chip c-warn">Session</span></td><td>R7. The target <em>is</em> the deliverable and does not exist. The matrix is now <strong>25 × 4 = 100</strong> combinations, up from the ~28 the original estimate assumed. Gates DoD #5.</td></tr>
           <tr class="s-warn"><td>5</td><td>Licence and entitlement tail</td><td><span class="chip c-warn">Human</span></td><td>FMOD credit is closed and gated. Still open: the FMOD <em>tier</em> decision against the $600k/$200k thresholds; the SOAP receipt (128 first-party files, not removable); the Wwise evaluation-licence question (per-title, survives deleting the folder); "Effects Library" provenance; and vendoring the DOTween and NativeShare notices.</td></tr>
@@ -594,7 +600,7 @@ a{color:var(--accent)}
 
     <ol class="dod">
       <li><span class="n">1</span><span class="t"><b>Steam page live with Playtest signup.</b> The app record does not exist; R6 has no runbook.</span><span class="chip c-crit">Blocked</span></li>
-      <li><span class="n">2</span><span class="t"><b>Playtest build approved, waves granted, invites on.</b> A player builds weekly and green — but nobody has launched one, and there is nowhere to upload it.</span><span class="chip c-crit">Blocked</span></li>
+      <li><span class="n">2</span><span class="t"><b>Playtest build approved, waves granted, invites on.</b> A player builds weekly and green, and the owner reports one running with multiplayer — but there is still nowhere to upload it.</span><span class="chip c-crit">Blocked</span></li>
       <li><span class="n">3</span><span class="t"><b>Fresh install → four-player Tournament, zero P0/P1.</b> Unproven. B18–B23 show the defect class is real and only visible from play.</span><span class="chip c-crit">Unproven</span></li>
       <li><span class="n">4</span><span class="t"><b>Quest chain completes, unlocks persist.</b> Service still not instantiated.</span><span class="chip c-crit">Cannot pass</span></li>
       <li><span class="n">5</span><span class="t"><b>Load time meets target in every mode.</b> No target published; the matrix grew to 100 cells.</span><span class="chip c-crit">No target</span></li>
