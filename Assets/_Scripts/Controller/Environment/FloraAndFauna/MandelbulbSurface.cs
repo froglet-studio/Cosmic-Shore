@@ -872,7 +872,15 @@ namespace CosmicShore.Gameplay
             // is laid before any seed's lane 1, so the plant is a spanning tree of stems the
             // moment the first lane completes and thickens from there.
             int[] _seedParent, _seedOrder, _seedArrival, _laneAnchor;
+            // WHERE that arrival prism is. A stem must start at the prism it hangs off, not at
+            // the seed's own point — for the two walking species and the Watershed those are the
+            // same place (a curve starts AT its seed), but a gasket seed is a disc CENTRE while
+            // its curve starts on the disc's RIM, so building the stem from the centre left the
+            // first limb spanning the parent disc's whole radius with nothing in it. Measured by
+            // measure_mandelbulb_flora.py's bond row at up to 15 strides; 1.6 after this.
+            Vector3[] _seedArrivalPoint;
             readonly List<int> _pendingParent = new();
+            readonly List<bool> _pendingConnector = new();
             static readonly List<Vector3> _noRise = new();
             readonly List<Vector3> _rise = new(96);
             readonly List<Sample> _stemRun = new(96);
@@ -943,6 +951,14 @@ namespace CosmicShore.Gameplay
                 _diveQuota = Mathf.Min(Mathf.Max(0, _rules.DiveCount), _seeds.Count);
                 if (_rules.DiveStepFraction > 0f && _diveQuota > 0)
                     for (int d = 0; d < _diveQuota; d++)
+                        // Over the SEED LIST, which is z-monotone and therefore spread by
+                        // construction — NOT over the lay order. Striding the lay order was
+                        // tried when these species started growing out of their crystal, on the
+                        // reasoning that the plant is now laid in tree order: measured, it
+                        // helped one species' theta spread and hurt another's, because Prim's
+                        // order is spatially COHERENT and a stride over a nearest-neighbour walk
+                        // is not a spread of anything. The generator's own order is the only one
+                        // here with a spread argument behind it (§50.5).
                         _diveOwed[(int)((long)d * _seeds.Count / _diveQuota)] = true;
             }
 
@@ -1178,11 +1194,18 @@ namespace CosmicShore.Gameplay
                     // rather than a spray of hoops.
                     int saveLane = _lane;
                     _lane = 0;
-                    int connectorSegments = PrepareConnector(idx, _ringBody, WalkStepSize);
+                    // The STEP, not the walk step — the same substitution TryDive makes, and for
+                    // the same reason: a ring's chord IS the element's step by construction
+                    // (RingSamplesFor), and this species authors `WalkStep` at its do-nothing
+                    // value to say that NOTHING HERE WALKS. Sampling the stem at the walk step
+                    // made that claim false, which measure_mandelbulb_flora.py's inert-column
+                    // probe reported the moment the stem existed.
+                    int connectorSegments = PrepareConnector(idx, _ringBody, _rules.StepSize);
                     _lane = saveLane;
                     _emitMarkPoint = connectorSegments;
-                    Emit(_rise, _run, TryDive(idx, _run), girth);
+                    Emit(_rise, _run, TryDive(idx, _ringBody), girth);
                     _seedArrival[idx] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
+                    _seedArrivalPoint[idx] = _ringBody[0].Position;
                     _pendingIndex = 0;
                     return true;
                 }
@@ -1246,7 +1269,10 @@ namespace CosmicShore.Gameplay
             }
 
             /// <summary>Next prism, or false when the rule has nothing left to lay.</summary>
-            public bool TryNext(out PrismAddress address) => TryNext(out address, out _);
+            public bool TryNext(out PrismAddress address) => TryNext(out address, out _, out _);
+
+            public bool TryNext(out PrismAddress address, out int parent)
+                => TryNext(out address, out parent, out _);
 
             /// <summary>
             /// The next prism, and the global index of the prism it HANGS OFF (-1 = the heart).
@@ -1255,14 +1281,18 @@ namespace CosmicShore.Gameplay
             /// prism's POSE must stay a pure function of its own address, or the pose table stops
             /// being provable one row at a time.
             /// </summary>
-            public bool TryNext(out PrismAddress address, out int parent)
+            public bool TryNext(out PrismAddress address, out int parent, out bool connector)
             {
                 EnsureSeeds();
                 while (_pendingIndex >= _pending.Count)
                 {
-                    if (!TraceNextCurve()) { address = default; parent = -1; return false; }
+                    if (!TraceNextCurve())
+                    {
+                        address = default; parent = -1; connector = false; return false;
+                    }
                 }
                 parent = _pendingParent[_pendingIndex];
+                connector = _pendingConnector[_pendingIndex];
                 address = _pending[_pendingIndex++];
                 _emitted++;
                 return true;
@@ -1310,9 +1340,16 @@ namespace CosmicShore.Gameplay
                         int connectorSegments = PrepareConnector(k, points, WalkStepSize);
                         int mid = points.Count / 2;
                         _emitMarkPoint = connectorSegments + mid;
-                        Emit(_rise, _run, TryDive(k, _run));
+                        // TryDive is asked about POINTS, not about `_run`: its descent test
+                        // compares the curve's first radius with its last, and a connector
+                        // prefix would answer with the STEM's start instead — a different
+                        // question, on a different curve, that changes which curves earn a Fall.
+                        Emit(_rise, _run, TryDive(k, points));
                         if (_seedArrival[k] < 0)
+                        {
                             _seedArrival[k] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
+                            _seedArrivalPoint[k] = points[0].Position;
+                        }
                         if (_emitMarkedPrism >= 0) _laneAnchor[k] = _emitMarkedPrism;
                         int nxt = Mathf.Min(points.Count - 1, mid + 1);
                         Vector3 tv = points[nxt].Position - points[mid].Position;
@@ -1388,9 +1425,12 @@ namespace CosmicShore.Gameplay
                     _run.Clear(); _run.AddRange(points);
                     _emitConnectorSegments = 0;
                 }
-                Emit(_rise, _run, TryDive(k, _run));
+                Emit(_rise, _run, TryDive(k, points));
                 if (first)
+                {
                     _seedArrival[k] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
+                    _seedArrivalPoint[k] = points[0].Position;
+                }
                 _pendingIndex = 0;
                 return true;
             }
@@ -1664,6 +1704,7 @@ namespace CosmicShore.Gameplay
             {
                 _pending.Clear();
                 _pendingParent.Clear();
+                _pendingConnector.Clear();
                 _pendingIndex = 0;
                 _emitConnectorEnd = -1;
                 _emitMarkedPrism = -1;
@@ -1800,6 +1841,12 @@ namespace CosmicShore.Gameplay
                     _pendingParent.Add(_pending.Count == 0
                                        ? _anchorForNextEmit
                                        : _emitted + _pending.Count - 1);
+                    // A CONNECTOR prism — a trunk's rise or a stem — rather than one of the
+                    // curve's own. Handed out beside the parent for the same reason: it is a
+                    // property of the growth ORDER, not of the address, and a consumer needs
+                    // it because a LIMB has to yield to a ribbon it crosses where a ribbon
+                    // crossing a ribbon is simply what a cage is.
+                    _pendingConnector.Add(i < _emitConnectorSegments);
                     int here = _emitted + _pending.Count;
                     if (i < _emitConnectorSegments) _emitConnectorEnd = here;
                     if (_emitMarkedPrism < 0 && i >= _emitMarkPoint) _emitMarkedPrism = here;
@@ -1846,7 +1893,7 @@ namespace CosmicShore.Gameplay
                 int from = AttachmentSeed(k);
                 if (from >= 0)
                 {
-                    BuildStem(_seeds[from], points[0].Position, step);
+                    BuildStem(_seedArrivalPoint[from], points[0].Position, step);
                     _anchorForNextEmit = _seedArrival[from];
                 }
                 else
@@ -1896,7 +1943,9 @@ namespace CosmicShore.Gameplay
                     Vector3 d = _seeds[i];
                     if (d.sqrMagnitude < 1e-18f) continue;
                     float c = Vector3.Dot(md, d.normalized);
-                    if (c > bestCos) { bestCos = c; best = i; }
+                    // Tolerant + lowest index, for the reason SeedCostEpsilon records: the
+                    // fallback runs over a symmetric seed set too.
+                    if (c > bestCos + SeedCostEpsilon) { bestCos = c; best = i; }
                 }
                 return best;
             }
@@ -1921,6 +1970,26 @@ namespace CosmicShore.Gameplay
             /// ordering (Docs/ECOSYSTEM.md §49) and the reason neither species needs a topological
             /// pass it could get wrong.</para>
             /// </summary>
+            /// <summary>
+            /// How close two seed-tree costs have to be before the INDEX decides.
+            ///
+            /// <para>A Mandelbulb is highly symmetric, so its seeds come in ORBITS whose
+            /// members sit at distances that are equal to the last bit — measured on Space's
+            /// Watershed, four saddles were exactly 0.847114625 from the tree so far, and which
+            /// one Prim admitted first was then decided by float WIDTH: the shipped float32 and
+            /// the offline float64 model picked different ones and grew visibly different plants
+            /// from the same seed. That is the same trap Apollonia's lay order records
+            /// (Docs/ECOSYSTEM.md §54: every ordering is a TOTAL key), met from a second
+            /// direction — and it is invisible to every statistical gate, because both plants
+            /// are perfectly good plants.
+            ///
+            /// <para>1e-5 is far above float32's ~1e-7 resolution on a unit dot product and far
+            /// below any real gap the seed sets produce (the nearest genuine competitor in that
+            /// measurement was 0.14 away), so it separates "the same distance" from "a different
+            /// distance" rather than papering over one.</para>
+            /// </summary>
+            const float SeedCostEpsilon = 1e-5f;
+
             void BuildSeedTree()
             {
                 if (Gasket) { BuildGasketTree(); return; }
@@ -1929,6 +1998,7 @@ namespace CosmicShore.Gameplay
                 _seedOrder = new int[n];
                 _seedArrival = new int[n];
                 _laneAnchor = new int[n];
+                _seedArrivalPoint = new Vector3[n];
                 for (int i = 0; i < n; i++) { _seedParent[i] = -1; _seedArrival[i] = -1; _laneAnchor[i] = -1; }
                 if (n == 0) return;
 
@@ -1958,7 +2028,11 @@ namespace CosmicShore.Gameplay
                     int pick = -1; float pickCost = float.MaxValue;
                     for (int i = 0; i < n; i++)
                     {
-                        if (inTree[i] || best[i] >= pickCost) continue;
+                        // Strictly cheaper by more than the epsilon, or tied and earlier in the
+                        // table. A bare `<` makes the winner of a symmetry tie a property of
+                        // float width (see SeedCostEpsilon).
+                        if (inTree[i]) continue;
+                        if (pick >= 0 && best[i] >= pickCost - SeedCostEpsilon) continue;
                         pick = i; pickCost = best[i];
                     }
                     // Degenerate seed sets (coincident directions) can leave every candidate at
@@ -1973,7 +2047,10 @@ namespace CosmicShore.Gameplay
                     {
                         if (inTree[i]) continue;
                         float c = -Vector3.Dot(dir[pick], dir[i]);
-                        if (c < best[i]) { best[i] = c; bestFrom[i] = pick; }
+                        // Must IMPROVE by more than the epsilon: a tie keeps the parent already
+                        // recorded, which is the earlier seed and therefore the same on both
+                        // implementations.
+                        if (c < best[i] - SeedCostEpsilon) { best[i] = c; bestFrom[i] = pick; }
                     }
                 }
             }
@@ -1995,6 +2072,7 @@ namespace CosmicShore.Gameplay
                 _seedOrder = new int[n];
                 _seedArrival = new int[n];
                 _laneAnchor = new int[n];
+                _seedArrivalPoint = new Vector3[n];
                 for (int i = 0; i < n; i++) { _seedParent[i] = -1; _seedArrival[i] = -1; _laneAnchor[i] = -1; }
                 if (n == 0 || _discOrder == null) return;
 
@@ -2010,7 +2088,9 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < placedCrowns.Count; i++)
                     {
                         float c = Vector3.Dot(_discs[d].Axis, _discs[placedCrowns[i]].Axis);
-                        if (c > bestCos) { bestCos = c; best = placedCrowns[i]; }
+                        // The crowns sit on the bulb's PEAKS, which are the most symmetric points
+                        // it has, so this search is the most tie-prone of the three.
+                        if (c > bestCos + SeedCostEpsilon) { bestCos = c; best = placedCrowns[i]; }
                     }
                     _seedParent[d] = best;                    // -1 for the first crown: the trunk
                     placedCrowns.Add(d);

@@ -382,7 +382,7 @@ def grow_detail(species, element, budget=None):
     that cannot be recovered from the laid plant — whether a dive ran out of steps rather
     than arriving, and which saddle a curve left (the claim filter can eat a curve's first
     prisms, and the first RAW prism of a curve is half a step from its seed)."""
-    budget = budget or M.PRISM_BUDGET
+    budget = budget or M.budget_for(species)
     key = (species, element, budget)
     if key in _GROWN:
         return _GROWN[key]
@@ -394,7 +394,7 @@ def grow_detail(species, element, budget=None):
     # AFTER THE CLAIM, BEFORE THE BUDGET, kept separately: the two answer different
     # questions and conflating them reads a budget cut as a broken curve (see
     # gasket_report's ring integrity, which is the gate that found this out the hard way).
-    claimed = M.claim_filter(raw, centres)
+    claimed = M.claim_filter(raw, centres, rules_length_factor=rules.length_factor)
     kept = claimed[:budget]
     # A gasket species' seed population is its DISC set and the Fall's owed set strides over
     # the LEVEL-0 discs alone, so `build_seeds` — which reads SeedCount, authored 0 here —
@@ -423,6 +423,111 @@ def grow_detail(species, element, budget=None):
         "candidate_cap": budget * CANDIDATE_FACTOR,
     }
     return _GROWN[key]
+
+
+def skeleton_report(species, element, budget=None):
+    """THE PLANT AS ONE OBJECT (the /flora skill §2, Docs/ECOSYSTEM.md §50.6).
+
+    The growth law has two testable properties and this measures both, on the RAW walk —
+    before the claim — because they are properties of the growth RULE and the claim is a
+    per-plant accident on top of it:
+
+      (b) every prism hangs off something that already exists, i.e. `parent[i] < i`;
+      (a) the plant is ONE connected object at every tick, which follows from (b) plus
+          "exactly one prism has no parent" and is asserted directly anyway, by union-find
+          over the whole set, because the law is worth stating rather than deriving.
+
+    And one thing neither of those sees, which is what actually separates this branch from
+    what it replaced: **a bond has to be a BOND**. Give every curve the heart as its parent
+    with no connector and both properties above still hold — the plant is a formally
+    connected star whose limbs each span most of the bulb. So the third row is the bond
+    LENGTH, in units of the prism it lands on: a limb spans one walk step, one ring chord or
+    one lane hop, and nothing else."""
+    d = grow_detail(species, element, budget)
+    surface, raw = d["surface"], d["raw"]
+    centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
+    forward = [-1] * 0
+    roots, forward_edges = [], []
+    for i, p in enumerate(raw):
+        if p.parent < 0:
+            roots.append(i)
+        elif p.parent >= i:
+            forward_edges.append((i, p.parent))
+
+    # Union-find over {heart} + every prism. The heart is index -1, kept as `len(raw)`.
+    n = len(raw)
+    up = list(range(n + 1))
+
+    def find(a):
+        while up[a] != a:
+            up[a] = up[up[a]]
+            a = up[a]
+        return a
+
+    for i, p in enumerate(raw):
+        a, b = find(i), find(p.parent if p.parent >= 0 else n)
+        if a != b:
+            up[a] = b
+    components = len({find(i) for i in range(n + 1)})
+
+    # Bond lengths, priced in the prism they land on. A prism's own length is the walk step
+    # (or the ring chord), so a bond of one prism-length is a limb between neighbours and a
+    # bond of fifty is a limb across the plant.
+    # The unit is the species' own STRIDE, not the prism's length. A connector segment is a
+    # walk step or a ring chord, and the widest legitimate bond is a lane HOP, so those three
+    # are what a limb is measured in. Pricing in the prism instead punishes CHARGE for being
+    # DASHED (§51: its plates are shorter than the step that spaces them), which is a fact
+    # about the leaf and nothing to do with how far a limb reaches.
+    rules = d["rules"]
+    unit = max(1e-6, max(rules.step,
+                         rules.walk_step if rules.walk_step > 0 else rules.step,
+                         rules.lane_gap) * M.SHELL_RADIUS)
+    bonds = []
+    for i, p in enumerate(raw):
+        anchor_pt = centres[p.parent] if p.parent >= 0 else (0.0, 0.0, 0.0)
+        bonds.append(M._len(M._sub(centres[i], anchor_pt)) / unit)
+    bonds.sort()
+    return {
+        "prisms": n,
+        "roots": len(roots),
+        "forward": len(forward_edges),
+        "components": components,
+        "bond_median": bonds[len(bonds) // 2] if bonds else 0.0,
+        "bond_p99": bonds[min(len(bonds) - 1, int(0.99 * len(bonds)))] if bonds else 0.0,
+        "bond_max": bonds[-1] if bonds else 0.0,
+    }
+
+
+# A limb may span a HOP — the gap between one lane and the next, which is what makes the
+# plant a cage rather than a mat — so the bound is stated in the species' own STRIDE (see
+# skeleton_report). MEASURED across all four species and all four elements at their shipped
+# rules: the worst legitimate bond is 4.74 strides (the Coral Bloom's Charge, whose lane gap
+# is its widest), so 8 is a 1.7x margin.
+#
+# The row is not decoration — it is what caught a gasket ring stemming from its parent disc's
+# CENTRE while the prism it hangs off sits on that disc's RIM, which measured 15.2 strides
+# and which connectivity alone structurally cannot see: a star of trunks straight out of the
+# heart is formally ONE component too, and is exactly the shape this branch replaced.
+BOND_MAX_STRIDES = 8.0
+
+
+def skeleton_gates(species, element, s):
+    bad = []
+    if s["forward"]:
+        bad.append(f"{species}/{element}: {s['forward']} prisms hang off a LATER prism — the "
+                   f"growth order is not a growth order (the /flora skill §2)")
+    if s["roots"] != 1:
+        bad.append(f"{species}/{element}: the plant has {s['roots']} prisms with no parent — "
+                   f"a plant grows out of ONE crystal")
+    if s["components"] != 1:
+        bad.append(f"{species}/{element}: the plant is {s['components']} disconnected objects, "
+                   f"not one (union-find over every prism plus the heart)")
+    if s["bond_max"] > BOND_MAX_STRIDES:
+        bad.append(f"{species}/{element}: a limb spans {s['bond_max']:.1f} strides "
+                   f"(bound {BOND_MAX_STRIDES:.1f}) — that is not a bond, it is a wire "
+                   f"across the plant. Connectivity alone cannot see this: a star of trunks "
+                   f"out of the heart is formally connected too")
+    return bad
 
 
 def grow_element(element, budget=None, species="FractalFoliage"):
@@ -491,6 +596,7 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
     # interpenetration BOUND is about ribbons that cross, which is the thing a growth rule
     # can get wrong.
     pairs = []
+    worst_pair = (1e9, -1, -1)
     chain_worst = 1e9
     seams_seen = 0
     for i, j in near_pairs(boxes, reach):
@@ -505,6 +611,11 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
             chain_worst = min(chain_worst, touching_scale(boxes[i], boxes[j]))
             continue
         pairs.append((i, j))
+        # WHICH pair is the worst, and whether a CONNECTOR is in it — the only way to tell a
+        # ribbon-vs-ribbon crossing (which the bound is about) from a limb passing through one.
+        _s = touching_scale(boxes[i], boxes[j])
+        if _s < worst_pair[0]:
+            worst_pair = (_s, i, j)
     inter = deep = 0
     worst = 1e9
     for i, j in pairs:
@@ -553,6 +664,8 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
         "all_pairs": all_touching,
         "all_fraction": all_inter / max(1, all_touching),
         "worst_scale": worst,
+        "worst_pair_link": (prisms[worst_pair[1]].link, prisms[worst_pair[2]].link)
+                           if worst_pair[1] >= 0 else (False, False),
         "chain_worst": chain_worst,
         "seam_pairs": len(seams),
         "seam_pairs_excluded": seams_seen,
@@ -666,8 +779,12 @@ def fall_report(species, element, report):
     stop_world = rules.dive_stop * shell
     twist = abs(M.SPECIES[species]["twist"])
 
-    dive_i = [i for i, p in enumerate(kept) if p.tan_r != 0.0]
-    surf_i = [i for i, p in enumerate(kept) if p.tan_r == 0.0]
+    # The DIVE is a curve's free-space SUFFIX. The trunk's rise is a free-space PREFIX and
+    # is emphatically not a dive: it runs from the heart OUT, so counted as one it reads as
+    # the spiral that never arrived (M.free_space_runs).
+    rise_i, dive_i = M.free_space_runs(kept)
+    free = set(rise_i) | set(dive_i)
+    surf_i = [i for i in range(len(kept)) if i not in free]
     out = {
         # The population the owed set STRIDES over, which is not the same object on every
         # species: a walking species strides its seed list, a gasket its LEVEL-0 discs in
@@ -775,9 +892,9 @@ def fall_report(species, element, report):
     # cannot say how many prisms were emitted (the claim eats some), so the emitted count
     # comes from the walk.
     emitted = {}
-    for p in d["raw"]:
-        if p.tan_r != 0.0:
-            emitted[p.curve] = emitted.get(p.curve, 0) + 1
+    for i in M.free_space_runs(d["raw"])[1]:
+        c = d["raw"][i].curve
+        emitted[c] = emitted.get(c, 0) + 1
     out["emitted_max"] = max(emitted.values(), default=0)
     out["dive_max_steps"] = rules.dive_max_steps
     truncated = 0
@@ -1017,7 +1134,8 @@ def _prism_tuple(p):
 def _lay(surface, rules, budget):
     raw, _, _ = M.grow(surface, rules, 12345, budget * CANDIDATE_FACTOR)
     centres = [M._mul(M.pose(surface, p)[0], M.SHELL_RADIUS) for p in raw]
-    return [_prism_tuple(p) for p in M.claim_filter(raw, centres)[:budget]]
+    return [_prism_tuple(p) for p in M.claim_filter(
+        raw, centres, rules_length_factor=rules.length_factor)[:budget]]
 
 
 def census_resolution():
@@ -1164,9 +1282,13 @@ def watershed_report(species, element, report, inert=True):
 
     # Surface prisms per curve, in WALK order — the arm proper. A dive is a tail on an arm,
     # not part of the net, so it is excluded from every net statistic below.
+    # `p.link` drops the CONNECTOR — the trunk's rise or the stem that carried growth to
+    # this saddle. Those prisms are laid inside the curve's batch and are not part of the
+    # arm: left in, the first one is at the PARENT saddle and every question below ("where
+    # did this arm start", "which saddle does it belong to") is answered about the limb.
     arm = {}
     for i, p in enumerate(kept):
-        if p.tan_r == 0.0:
+        if p.tan_r == 0.0 and not p.link:
             arm.setdefault(p.curve, []).append(i)
     for lst in arm.values():
         lst.sort(key=lambda i: walk[id(kept[i])])
@@ -1207,6 +1329,8 @@ def watershed_report(species, element, report, inert=True):
     # not close: saddles are ~0.3 rad apart and the worst attribution is ~2 deg.
     first_raw = {}
     for p in d["raw"]:
+        if p.link:
+            continue
         if p.curve not in first_raw:
             first_raw[p.curve] = p
     owner, worst_attr = {}, 0.0
@@ -1235,10 +1359,19 @@ def watershed_report(species, element, report, inert=True):
     # (c) no lane starved by the budget. The lanes are INTERLEAVED valley+, ridge+,
     # valley-, ridge-, so a budget that runs out inside lane 2 lays the falls and none of
     # the rises — which is the half that draws the silhouette.
-    lane_count = {}
+    #
+    # Over the NET, not over the plant: connector prisms are stamped with the lane of the
+    # curve they fed, and a seed's first appearance is almost always lane 0, so counting
+    # them puts every stem in the plant into one lane and drives the other three under a
+    # bound that is about the net being EVEN. (Measured on the Watershed's Mass at the
+    # shipped budget: 14.9 / 14.1 / 12.0 with them in, against a 15% floor.)
+    lane_count, net = {}, 0
     for p in kept:
+        if p.link:
+            continue
+        net += 1
         lane_count[p.lane] = lane_count.get(p.lane, 0) + 1
-    out["lane_share"] = {k: lane_count.get(k, 0) / max(1, len(kept))
+    out["lane_share"] = {k: lane_count.get(k, 0) / max(1, net)
                          for k in range(out["lanes_authored"])}
 
     # (e) SEED SPREAD, and its negative control. Farthest-point ordering makes "every
@@ -1284,7 +1417,7 @@ def watershed_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(surface, M.Rules(*values), M.PRISM_BUDGET)
+                got = _lay(surface, M.Rules(*values), M.budget_for(species))
                 if got != base:
                     n = abs(len(got) - len(base)) + sum(1 for x, y in zip(got, base) if x != y)
                     worst = max(worst, n)
@@ -1583,7 +1716,8 @@ def gasket_report(species, element, report, inert=True):
     samples, rho_ref = g["samples"], g["rho_ref"]
     out = {"samples": samples, "rho_ref": rho_ref, "discs": len(discs),
            "raw": len(d["raw"]), "claimed": len(claimed), "laid": len(kept),
-           "budget": M.PRISM_BUDGET, "fit": len(claimed) / float(M.PRISM_BUDGET),
+           "budget": M.budget_for(species),
+           "fit": len(claimed) / float(M.budget_for(species)),
            "truncated_prisms": max(0, len(claimed) - len(kept)),
            "peaks": g["peaks"], "disc_seeds": rules.disc_seeds}
 
@@ -1755,9 +1889,9 @@ def gasket_report(species, element, report, inert=True):
     out["lanes_contiguous"] = out["lanes_present"] == list(range(len(out["lanes_present"])))
     out["lane_prisms"] = {k: v["prisms"] for k, v in sorted(oct_z.items())}
     dives = {}
-    for p in kept:
-        if p.tan_r != 0.0:
-            dives[p.lane] = dives.get(p.lane, 0) + 1
+    for i in M.free_space_runs(kept)[1]:
+        lane = kept[i].lane
+        dives[lane] = dives.get(lane, 0) + 1
     out["lane_dives"] = {k: dives.get(k, 0) for k in sorted(oct_z)}
 
     # (f) the inert columns, per field — the same instrument as the Watershed's.
@@ -1770,7 +1904,7 @@ def gasket_report(species, element, report, inert=True):
             for value in (a, b):
                 values = rules.as_list()
                 values[idx] = value
-                got = _lay(d["surface"], M.Rules(*values), M.PRISM_BUDGET)
+                got = _lay(d["surface"], M.Rules(*values), M.budget_for(species))
                 if got != base:
                     worst = max(worst, abs(len(got) - len(base))
                                 + sum(1 for p, q in zip(got, base) if p != q))
@@ -2086,6 +2220,17 @@ def measure_species(species, args):
     for element in M.ELEMENTS:
         print(f"    {element:8s} {reports[element]['coverage']}")
 
+    # ── THE PLANT AS ONE OBJECT (the /flora skill §2) ─────────────────────────
+    skeletons = {e: skeleton_report(species, e) for e in M.ELEMENTS}
+    print("\n  GROWTH LAW: one object, out of one crystal, bonded limb by limb")
+    print(f"    {'element':8s} {'prisms':>7} {'roots':>6} {'fwd':>4} {'parts':>6} "
+          f"{'bond med/p99/max (strides)':>34}")
+    for element in M.ELEMENTS:
+        k = skeletons[element]
+        print(f"    {element:8s} {k['prisms']:>7} {k['roots']:>6} {k['forward']:>4} "
+              f"{k['components']:>6} {k['bond_median']:>12.2f} {k['bond_p99']:>10.2f} "
+              f"{k['bond_max']:>10.2f}")
+
     # ── THE FALL ───────────────────────────────────────────────────────────────
     falls = {}
     for element in M.ELEMENTS:
@@ -2367,6 +2512,7 @@ def measure_species(species, args):
                        f"species' own Charge walk step, and both are §35/§51 decisions)")
 
         for element in M.ELEMENTS:
+            bad += skeleton_gates(species, element, skeletons[element])
             if element in falls:
                 bad += fall_gates(species, element, falls[element], heart_half)
             if element in sheds:
@@ -2537,7 +2683,8 @@ def render_all(reports, out_dir, heart_half=0.0):
         stem = os.path.join(out_dir, f"mandelbulb_{element.lower()}")
         R.render_sheet(r["boxes"], stem + ".png", heart=heart_half)
         print(f"  rendered {stem}.png")
-        dives = [b for b, p in zip(r["boxes"], r["prisms_list"]) if p.tan_r != 0.0]
+        dive_ix = M.free_space_runs(r["prisms_list"])[1]
+        dives = [r["boxes"][i] for i in dive_ix]
         if dives:
             R.render_sheet(dives, stem + "_dives.png", heart=heart_half)
             print(f"  rendered {stem}_dives.png  ({len(dives)} dive prisms)")

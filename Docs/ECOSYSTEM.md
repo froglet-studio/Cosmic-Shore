@@ -9396,7 +9396,7 @@ Nothing in the code describes a bulb. The plant walks a height field it is hande
 polar cup and the terracing are what the fractal put there — the same claim, and the same *kind* of
 claim, the gyroid octagon colony makes (§32.7).
 
-### 44.1 Why it is not `AssembledFlora`
+### 50.1 Why it is not `AssembledFlora`
 
 §34 is emphatic that a lattice species grows on its surface's OWN tile and never on a fitted grid.
 **That rule is about surfaces that HAVE an exact tiling.** A triply periodic minimal surface does —
@@ -9410,7 +9410,7 @@ point's own tangent basis, its radial lift and its size, and its pose is then a 
 that address and the surface. Nothing is baked; there is no bond table, no claim book and no
 tolerance that can drift.
 
-### 44.2 The plant is not a skin, and that is the whole design
+### 50.2 The plant is not a skin, and that is the whole design
 
 The species' FIRST cut plated every surface cell with one prism and read as a lumpy sphere. Raising
 the resolution made it a finer lumpy sphere. The reason generalises past this species: **a
@@ -9430,7 +9430,7 @@ dust unsampled. The user's framing is the one to keep: *a linear curve made of p
 beauty without extending that resolution in all local directions; and you can jump to another peak
 in a local orthogonal direction to grab another pleasant curve.*
 
-### 44.3 The surface is a spherical HEIGHT FIELD, fitted to spherical harmonics
+### 50.3 The surface is a spherical HEIGHT FIELD, fitted to spherical harmonics
 
 The fractal is evaluated **exactly once, offline**
 (`Tools/Build/bake_mandelbulb_surface.py` → `Tools/Build/mandelbulb_surface_harness/`). Its outer
@@ -9468,7 +9468,7 @@ ball of curves however the rule is tuned. The gains are solved so all four land 
 deviation of 0.22, and they cannot self-intersect — a radial height field is star-shaped by
 construction.
 
-### 44.4 The address, and why it is not the emission index
+### 50.4 The address, and why it is not the emission index
 
 A prism is stamped once with `PrismAddress(θ, φ, radialOffset, tanA, tanB, length, girth, curve,
 lane)`. Three details in that are load-bearing and each was measured.
@@ -9492,7 +9492,7 @@ NOT shipped**: nothing drives the weights after `Initialize`, so a plant is a fi
 family. Turning it on is a per-frame write of three floats and one reconstruction, and it needs the
 collider question answered first (§50.8).
 
-### 44.5 The walk, and the two defects that shaped it
+### 50.5 The walk, and the two defects that shaped it
 
 Curves are traced by a steering field — contour, ascent, descent, azimuth, meridian or geodesic,
 optionally swirled in the tangent plane — blended with the running tangent, and stepped along the
@@ -9518,7 +9518,7 @@ run is structure, a short scrap is detail), against a reference of half the step
 shipped span is **3.2–8.7×**. *A dial whose reference is a ceiling nothing reaches is a dial that
 does nothing.*
 
-### 44.6 The element is the fractal ORDER and the curve family
+### 50.6 The element is the fractal ORDER and the curve family
 
 §40: a lifeform is its species and its element and nothing else. Here an element states its
 *order* — Charge grows the classic 8th-order bulb, Mass the 5th, Space the 3rd, Time the 12th — and
@@ -9537,7 +9537,7 @@ applied to shape instead of tempo). Resolved in `Initialize` AFTER `base.Initial
 where the prefab, the rolled variant, the cell overrides and the crystal carrying the element have
 all landed — the choke point `Flora.ResolveShieldPeriod` uses.
 
-### 44.7 Fitting the prism, and CHARGE
+### 50.7 Fitting the prism, and CHARGE
 
 This species states two BOUNDS rather than a zero, and the reason is structural: **curves CROSS —
 that is what a cage is — so two ribbons meeting at an angle have bounding boxes that must overlap.**
@@ -9568,7 +9568,7 @@ ordering holds — Charge bare 22,690, siblings bare 79,962, Charge **armoured**
 plant is the DENSEST of the four while shielded and much the sparsest once stripped, which is the
 two-pass grazing cost made visible. `--check` fails the build if that ordering ever flips.
 
-### 44.8 Budget
+### 50.8 Budget
 
 | element | prisms | volume | per prism | dims |
 |---|---|---|---|---|
@@ -9583,7 +9583,7 @@ from the Lifeform Matrix toy (the worm colony's posture), so it costs no shipped
 somebody puts it in one — which matters, because Space's ceiling alone is more than the Blob cell's
 whole Frenzy ladder.
 
-### 44.9 The tools
+### 50.9 The tools
 
 - `Tools/Build/bake_mandelbulb_surface.py` — the BAKE. Evaluates the fractal once, per element, and
   writes `MandelbulbSurfaceTables.cs`. `--check` fails the build on drift, and it refuses a fit
@@ -9611,7 +9611,7 @@ other. The first divergence index is reported, so a real transcription error (wh
 1, not step 800) is still loud. *Claiming bit-exactness across two float widths on a chaotic
 recurrence would be claiming something no run could support.*
 
-### 44.10 Open
+### 50.10 Open
 
 - **Nothing has been run in the editor.** Every number here is offline. No plant has been grown in
   Unity, no frame has been timed, and no collider count has been observed. The handoff is
@@ -9638,7 +9638,7 @@ recurrence would be claiming something no run could support.*
   maths is a stdlib transcription with closed-form self-tests. Its armoured pass is **sampled** at
   3,000 pairs with a fixed seed — stated rather than disguised.
 
-### 44.11 What has to be tested in the editor
+### 50.11 What has to be tested in the editor
 
 Nothing below has been run. The offline gates are strong about GEOMETRY and say nothing about
 Unity: whether the prefab's serialized fields deserialize into the nested `GrowthRules` struct at
@@ -9691,7 +9691,7 @@ sixteen answers, one per species that happened to author a per-element leaf, and
 that authored nothing at all. This section states all four in one place, as one rule, at the one
 choke point an elemental law can live at.
 
-### 45.1 The four sentences
+### 51.1 The four sentences
 
 | element | its identity | where it lives |
 |---|---|---|
@@ -9705,7 +9705,7 @@ accident of what was easy: Charge's identity is a *state* and Time's is a *tempo
 Time take the species' own authored form** and only Mass and Space restate it. A species therefore
 authors one leaf and the four elements spend it four ways.
 
-### 45.2 The four are a REDISTRIBUTION of one species' form, never an inflation of it
+### 51.2 The four are a REDISTRIBUTION of one species' form, never an inflation of it
 
 This is the property that makes a fleet-wide leaf law shippable at all, and it is asserted rather
 than hoped for:
@@ -9726,7 +9726,7 @@ constant**: it is `LeafVolumeScale^(-1/3)`, i.e. *a plant spends a fixed amount 
 thinning the leaf buys extent and thickening it costs extent. Space reaches ×1.35 where Mass draws
 in to ×0.82. Two dials that cannot drift apart, because there is only one.
 
-### 45.3 It cannot be authored, for the third time
+### 51.3 It cannot be authored, for the third time
 
 The leaf is authored per **CONFIG**; the element is **ROLLED** per plant
 (`FloraConfigurationSO.SpreadElements`). A config with an empty element palette applies its OWN
@@ -9744,7 +9744,7 @@ afterwards expresses the element — **the same ordering argument `Flora.ApplyCe
 records** (§43). `LifeForm.OnElementResolved()` is that seam: after the crystal is resolved, before
 the prisms are bound.
 
-### 45.4 The constants are MEASURED, and the measurement is one vote per FAMILY
+### 51.4 The constants are MEASURED, and the measurement is one vote per FAMILY
 
 Nothing here was invented. **Eleven shipped species already state this law in their own data**, and
 `Tools/Build/measure_flora_elemental_form.py` re-derives every constant from them and fails the
@@ -9777,7 +9777,7 @@ they author a SQUARE cross-section and take their lengths from their own `segmen
 their leaf vector cannot express an aspect. It is also why the anisotropy column is the lattice
 median alone.
 
-### 45.5 A species whose prism size is dictated by its growth rule is EXEMPT — and CHECKED
+### 51.5 A species whose prism size is dictated by its growth rule is EXEMPT — and CHECKED
 
 `Flora.PrismSizeFixedByGrowthRule` — the guard §40 deliberately kept with no reader, now doing its
 third job — exempts the three lattice species and the Mandelbulb from the runtime transform. A
@@ -9792,7 +9792,7 @@ exemption is also what keeps `fit_shield_clearance.py` and this law from fightin
 re-fitted for its armour is fitted against what the species authors, and nothing transforms it
 afterwards.
 
-### 45.6 Where each family spends the law
+### 51.6 Where each family spends the law
 
 | family | leaf | reach |
 |---|---|---|
@@ -9801,7 +9801,7 @@ afterwards.
 | `AssembledFlora` (×3) | exempt | exempt |
 | `MandelbulbFlora` | exempt | exempt |
 
-### 45.7 The stated limitation
+### 51.7 The stated limitation
 
 `PhyllotacticFlora.AddHealthBlock` deliberately does **not** call `AdmitTargetScale` (§34.9), so
 `PrismScaleAnimator` silently clamps that family's prisms into `[0.5, 10]`. Measured after the
@@ -9809,7 +9809,7 @@ transform, **no** phyllotactic cross-section lands outside that window, so the l
 today — but the tool reports it every run rather than assuming, because the clamp is silent and a
 future retune of either the constants or a species' leaf can walk into it.
 
-### 45.8 What was proven, and how
+### 51.8 What was proven, and how
 
 - **The shipped C# was compiled and RUN** — `Tools/Build/flora_form_harness/` builds
   `FloraElementalForm.cs` + `FloraReproductionRules.cs` + the real `Element` enum against a
@@ -9847,7 +9847,7 @@ They share the **surface family** (one bake per element), which is deliberate: t
 the same WORLD grown two different ways, which is what makes them read as two plants in one biome
 rather than as two unrelated objects.
 
-### 46.1 The twist is a pure function of the address, and costs nothing
+### 52.1 The twist is a pure function of the address, and costs nothing
 
 `PrismAddress.Roll` carries the accumulated twist in radians, stamped once per prism at emission
 (`i × TwistDegreesPerStep`), and `Pose` applies it as a rotation of the frame's normal about the
@@ -9860,7 +9860,7 @@ four of the original species before anything else moved.
 Rodrigues about a unit axis the vector is already perpendicular to reduces to one cos/sin blend
 with the binormal, so the twist costs one cross product and cannot drift off the frame.
 
-### 46.2 The elemental law is DERIVED from each species' neutral form, not typed per element
+### 52.2 The elemental law is DERIVED from each species' neutral form, not typed per element
 
 Both species are EXEMPT from the runtime leaf transform (`PrismSizeFixedByGrowthRule`), so each has
 to state §51's law in its own data. It is **derived** rather than authored: each species authors ONE
@@ -9879,7 +9879,7 @@ Measured, both species:
 | Bloom cumulative volume | 1,778 | **22,942** | 5,123 | 9,925 |
 | Bloom prism aspect | 2.41 | **1.69** | **11.75** | 3.21 |
 
-### 46.3 The finding: an emergent GIRTH quietly re-authors the volume ordering
+### 52.3 The finding: an emergent GIRTH quietly re-authors the volume ordering
 
 The law sets the AUTHORED prism, and what the player sees is the plant — where every prism's
 cross-section is additionally multiplied by its curve's **girth**, a taper keyed on how far that
@@ -9905,7 +9905,7 @@ Coral Bloom barely moves (0.83–1.05) because its concept makes all four famili
 long-running. *A species whose elements differ a lot in HOW they grow will need this fit; one whose
 concept is the same growth everywhere very nearly does not.*
 
-### 46.4 Three gates that were coincidences, found by adding a second species
+### 52.4 Three gates that were coincidences, found by adding a second species
 
 The verifier compiles and RUNS the shipped C# against an independent model, and it holds the walk
 by its statistics because a sequential recurrence with a turn gate is chaotic in its last bits
@@ -9932,7 +9932,7 @@ constants that had been sitting on a coincidence rather than on a margin:
 *A gate written against one species is a gate calibrated on one species.* All three are now derived
 from the plant being checked.
 
-### 46.5 What it costs, and what has to be tested
+### 52.5 What it costs, and what has to be tested
 
 Both species are in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix toy (rows `Mandelbulb`
 and `Coral Bloom`), so neither costs a shipped cell anything until somebody puts it in one. At
@@ -9958,7 +9958,7 @@ more." Coral Bloom (§52) is the smooth one and Fractal Foliage the helicoid. Th
 the two things built to answer the rest of the brief before the self-similar species (§54): a
 **shared radial dive** every species authors, and the **Watershed**, the discovery species.
 
-### 47.1 THE FALL — a curve the surface can no longer carry falls to the heart
+### 53.1 THE FALL — a curve the surface can no longer carry falls to the heart
 
 Every Mandelbulb species lives on ONE shell, with the heart crystal 75 world units away at the
 origin and nothing between. The ask was for the plant to reach it. The answer is not a per-species
@@ -10013,7 +10013,7 @@ a dive prism can never register as radial, measured 0.0% on all twelve), per-div
 one dive's own prisms sweep 3–4 of the 8 bands unaided), and body roll measured net of the
 authored twist by parallel transport (a curve that BENDS must not read as a curve that ROLLS).
 
-### 47.2 THE WATERSHED — the discovery species is the surface's Morse–Smale skeleton
+### 53.2 THE WATERSHED — the discovery species is the surface's Morse–Smale skeleton
 
 The discovery brief was answered by drawing something the bulb already contains and nobody can
 see: the **critical points** of its height field and the **separatrices** between them. Every
@@ -10066,7 +10066,7 @@ finite grid cannot promise it found every critical point, and the shipped census
 −12 / +5 against a sphere's +2, so the complex is not closed on three of four bakes — a fact about
 the bake, stated rather than hidden.
 
-### 47.3 What a heart costs when everything falls into it — and what the gates got wrong first
+### 53.3 What a heart costs when everything falls into it — and what the gates got wrong first
 
 The Fall is what makes "the spindles almost connect to their crystal" literal — the closest dive
 prism's centre sits 3.3 u from the origin against a 0.76 u crystal half-extent — and its price is
@@ -10109,7 +10109,7 @@ chain exclusion learned a closed ring's SEAM; `DIVE_BAND_MIN` is capped at the b
 owed set actually releases into; and the Charge **ladder** is measured ARMOURED, since the
 octahedron is what a Charge plant draws.
 
-### 47.4 The tuning pass, measured
+### 53.4 The tuning pass, measured
 
 Foliage, Bloom and the Watershed are green on every bound after one render-judged pass each
 (one agent per species in its own worktree; the model as the sandbox, the shipped C# as the
@@ -10153,7 +10153,7 @@ one Watershed plant are the same lobed crest net at arena distance; and **Frostw
 (subdivision) never left its prototype. Two judges (one on wonder, one on engineering) and two
 refuters, all of whom had to open the sheets, put the same candidate first.
 
-### 48.1 The concept
+### 54.1 The concept
 
 The one fractal picture everyone recognises: circles packed tangent to circles, the gap between
 three of them filled by a smaller circle, and again. **Level 0 is the bulb's OWN LOBES** — the
@@ -10177,7 +10177,7 @@ the Watershed's saddle extraction sits. The species draws **no random number**. 
 species are bit-identical at 0 through literally the same code), one prefab (`ApolloniaFlora`) and
 no new bake.
 
-### 48.2 Four findings that generalise past the species
+### 54.2 Four findings that generalise past the species
 
 1. **A species whose prism length is set by its own geometry must not also take a `LengthFactor`
    that assumes a walk step.** The first prototype authored `WalkStep 0.063`, so `rules_for`'s
@@ -10216,7 +10216,7 @@ ring) and violated in SCREEN SIZE, which is the quantity that mattered — so th
 with a floor of 0.55, and the ladder gate is restated in screen terms (octaves that cover ≥ 1% of
 the arena frame at a median prism ≥ 2 px).
 
-### 48.3 What holds it
+### 54.3 What holds it
 
 Level 0 (the peak prefix, the half-angle ρ, the lay order's level-0 prefix, N and ρ_ref) is proven
 EXACTLY against the compiled C#; the children are held STATISTICALLY (disc counts per octave, the
@@ -10228,7 +10228,7 @@ one-sided ceiling let an 81% plant pass while priced at 100%), ring integrity, t
 ladder, tangency, elemental ring coarseness (N ordered Space < Charge ≤ Time < Mass), the inert
 walk columns, and the ordering promise (the last laid prism sits in the highest lane present).
 
-### 48.4 Where it lives and what it costs
+### 54.4 Where it lives and what it costs
 
 `ApolloniaFlora.prefab` + four `Apollonia Flora <Element>` configs, authored by
 `author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix
@@ -10239,7 +10239,7 @@ triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the laz
 the disc list belongs cached on the `Surface` keyed by the gasket rules, the shape `_saddles`
 already has.
 
-### 48.5 The tuning pass, measured — and the plant that looked right was not the plant that passed
+### 54.5 The tuning pass, measured — and the plant that looked right was not the plant that passed
 
 Apollonia was tuned TWICE. The first pass made every gate green by tripling the species'
 neutral cross-width (0.034 → 0.112) and nearly doubling its step, against the pass's own
@@ -10328,7 +10328,7 @@ authoring makes it, and a retune of the species it guards can turn it off withou
 it tests** — a control for a FIELD must set that field where it binds, not inherit whatever value
 the assets currently carry.
 
-### 48.6 What has to be tested in the editor
+### 54.6 What has to be tested in the editor
 
 **Nothing in this pass has been run in Unity.** On top of §50.11's list:
 
@@ -10351,3 +10351,108 @@ the assets currently carry.
 5. **The Charge plants must be ARMOURED**, and armoured they must be the densest of the four
    (bare they are the sparsest). **FAIL:** a bare Charge plant means `Flora.ResolveShieldPeriod`
    is not flooring the shield period for this family.
+
+---
+
+## 55. The Mandelbulb family GROWS OUT OF ITS CRYSTAL — the growth law, applied to four species at once (Sep 2026)
+
+The four species of §50–§54 did not obey the platform's growth law, and the report that found
+it named the law exactly: *"the Borromean flora respects the crystal, the continuity of growth
+from the crystal using spindles and prisms."* Restated from the `/flora` skill §2 — **first the
+CRYSTAL, then SPINDLES out of the crystal, then spindles and/or PRISMS out of spindles; the
+process loops** — with two testable properties: **(a)** the plant is ONE connected object at
+every tick, and **(b)** every prism hangs off something that already exists.
+
+These four failed both. Each scattered N independent seeds over the sphere and traced a curve
+from each, so a plant was N disconnected patches that never met; and every prism wore a stub
+spindle standing at the plant ROOT rather than a limb spanning a bond. The Fall (§53) reached
+the heart only at a curve's END — the opposite of growing out of it.
+
+### 55.1 Three pieces carry the law, and none of them is new geometry
+
+| piece | what it is |
+|---|---|
+| the **seed tree** | a spanning tree over the seeds, rooted at the one the trunk climbs to. Prim on great-circle distance for the three walking/skeleton species; **the gasket's is the GASKET** — a child disc is inscribed against three discs it touches, so Apollonia already knew what each ring grows out of. |
+| the **trunk** | the Fall RUN BACKWARDS. `AppendDive` walks a log spiral from a surface point down to the heart; the same points read the other way are a climb out of it. |
+| the **stem** and the **lane anchor** | a stem is the surface path from a seed to its tree parent, sampled on the membrane. A later lane hangs off the prism at the previous lane's midpoint — the point `Hop` steps across from, i.e. **the gap the cage is made of, now spanned by a limb instead of left open**. |
+
+**Prim's insertion order IS a valid growth order.** It only ever admits a seed whose parent is
+already in the tree, so `parent appears earlier than child` holds by construction rather than by
+a topological sort that could be got wrong — the same property the Borromean table gets from its
+hop ordering (§49), and the reason neither species needs a pass it could get wrong.
+
+**Reusing the Fall verbatim for the trunk is the whole point**: the rise cannot acquire a shape,
+a stride ceiling or a winding that the Fall does not already have, and a curve that both rises
+and falls is provably ONE family of curve rather than two that have to be kept in step.
+
+Within a curve the chain already existed — `Emit` lays one prism per SEGMENT — so **only the
+ROOT was missing**. `TryNext` now hands out the index of the prism each one hangs off and
+whether it is a CONNECTOR, deliberately NOT folded into `PrismAddress`: a prism's POSE must stay
+a pure function of its own address, or the pose table stops being provable one row at a time.
+
+`MandelbulbFlora` consumes it. A spindle is rooted at the nearest **STANDING** ancestor, aimed at
+the prism and stretched to span the bond by scaling the spindle's CHILDREN, never its root (a
+prism parents to the root, so a scaled root would multiply the measured leaf). The branch's reach
+is MEASURED off the prefab. A limb is re-used and re-POSED when its prism regrows, so grazing can
+never mint a second spindle on one bond.
+
+### 55.2 Six findings, five of which generalise past this family
+
+1. **A GREEDY PICK OVER A SYMMETRIC POINT SET IS DECIDED BY FLOAT WIDTH.** A Mandelbulb's seeds
+   come in ORBITS: measured on Space's Watershed, four saddles sat at **exactly 0.847114625**
+   from the tree so far, and which one Prim admitted first was decided by the last bit — the
+   shipped float32 and the offline float64 model grew visibly different plants from one seed.
+   This is §54's "every ordering is a TOTAL key" met from a second direction, and it is invisible
+   to every statistical gate because both plants are perfectly good plants. The fix is a
+   tolerant compare plus an INDEX tie-break (`SeedCostEpsilon` 1e-5 — far above float32's ~1e-7
+   on a unit dot product, far below the 0.14 nearest real gap), applied to all three greedy
+   searches: Prim's pick, Prim's relaxation, and the nearest-standing-seed fallback.
+2. **A LIMB MUST START AT THE PRISM IT HANGS OFF, NOT AT THE SEED.** For the walking species and
+   the Watershed those are the same place (a curve starts AT its seed); a **gasket seed is a disc
+   CENTRE while its curve starts on the disc's RIM**, so a stem built from the centre left the
+   first limb spanning the parent disc's whole radius with nothing in it. Measured at up to 15.2
+   strides; 3.9 after. `_seedArrivalPoint` is the fix.
+3. **CONNECTIVITY ALONE CANNOT SEE A WIRE.** Give every curve the heart as its parent with no
+   connector and both properties of the law still hold — the plant is a formally connected STAR
+   whose limbs each span most of the bulb. So the gate is three rows, not one: `parent[i] < i`,
+   exactly one root, one component — **and the bond LENGTH**, priced in the species' own stride.
+   It is what caught finding 2.
+4. **A LIMB YIELDS TO A RIBBON; TWO RIBBONS CROSSING IS WHAT A CAGE IS.** At the ribbon's own
+   claim factor the worst interpenetrating pair in three of the four species was a **limb inside
+   a ribbon**, every one of them with a connector on one side and a curve on the other.
+   Connector prisms claim wider (`ConnectorClaimFactor`), and a refused limb prism costs nothing
+   structural **because the spindle is rooted at the nearest STANDING ancestor** — a gap in a
+   limb simply makes the next limb longer.
+5. **`TanR != 0` MEANT "DIVE" ONLY WHILE THE HEART WAS REACHED AT THE END OF A CURVE.** The
+   trunk is free space too, and it runs from the heart OUT — so every Fall gate read the plant's
+   one connection to its crystal as the one spiral that never arrived. The separator is now
+   structural (`free_space_runs`: within a curve the rise is a PREFIX, the dive a SUFFIX, because
+   `Emit` lays rise → surface → dive), lives in the model, and is shared by both tools.
+6. **A GATE THAT GROUPS BY CURVE NOW SEES A LIMB FIRST.** The Watershed's arm census and its lane
+   shares both keyed on "the curve's first prism" and "every prism's lane", and a seed's first
+   appearance is almost always lane 0 — so every stem in the plant landed in one lane and drove
+   the other three under a floor that is about the net being EVEN. Both drop `link` prisms now.
+   Same class as 5: *when a curve gains a prologue, every gate that says "the curve's first" is
+   answering about the prologue.*
+
+### 55.3 What it cost, measured
+
+- **The plant is 12–32% limb** (worst: the Fractal Foliage's Time, whose 90 seeds each buy a
+  stem), so `PRISM_BUDGET` went **2,800 → 4,150** = `2800 / (1 − 0.3229)` — the budget at which
+  the same amount of CURVE is laid as before, so every bound tuned against the curves still
+  describes the same plant. All four species are in **NO SpawnProfile**, so the extra prisms cost
+  no shipped cell anything, and the always-on collider count is `MaxLivePopulation`, **unchanged**
+  (one heart per plant).
+- The connectors also move per-element VOLUME, so §51's volume gains and the heart band want
+  re-solving (`--fit-volume`, `author_lifeform_heart_sizes.py`).
+
+### 55.4 Verification
+
+`roots = 1`, `components = 1`, `forward-parents = 0` on **all sixteen (species, element) pairs**,
+measured by running the SHIPPED `MandelbulbSurface.cs` through the offline harness. The verifier
+holds the growth order itself prism for prism over the prefix the two walks agree on — both the
+PARENT and the CONNECTOR flag — so the model's labels are proved rather than believed, and it
+gates that the shipped walk marks at least one connector at all (*a plant with no trunk and no
+stems is not growing out of its crystal*).
+
+**Nothing has been run in the editor.**

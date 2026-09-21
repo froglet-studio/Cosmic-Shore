@@ -417,10 +417,15 @@ GASKET_RELAX_RATE_DEFAULT = 0.6
 
 
 class Disc:
-    __slots__ = ("axis", "rho", "level", "lane")
+    # `parent` is the TANGENCY parent — one of the three discs whose gap this one was
+    # inscribed in, and therefore a disc it TOUCHES, so the bond a limb has to span is the
+    # shortest the gasket offers. -1 on a level-0 disc, which crowns a peak and reaches the
+    # crystal through the crown chain instead (MandelbulbSurface.Growth.Disc).
+    __slots__ = ("axis", "rho", "level", "lane", "parent")
 
-    def __init__(self, axis, rho, level, lane=0):
+    def __init__(self, axis, rho, level, lane=0, parent=-1):
         self.axis, self.rho, self.level, self.lane = axis, rho, level, lane
+        self.parent = parent
 
 
 def _angle(a, b):
@@ -497,7 +502,7 @@ def build_gasket(surface, rules):
                     x, rho = r
                     if rho < rules.disc_min_radius:
                         continue
-                    cand.append(Disc(x, rho, lvl))
+                    cand.append(Disc(x, rho, lvl, parent=a))
         order = sorted(range(len(cand)), key=lambda i: (-cand[i].rho, i))
         start = count
         for i in order:
@@ -605,16 +610,29 @@ class Rng:
 
 
 class Prism:
+    # `parent` is the index of the prism this one GROWS OUT OF (-1 = the heart). It is a
+    # property of the growth ORDER, not of the address, which is why the shipped C# hands it
+    # out of TryNext and keeps it out of PrismAddress: a prism's POSE must stay a pure
+    # function of its own address.
     __slots__ = ("theta", "phi", "radial", "dive", "tan_a", "tan_b", "tan_r", "length",
-                 "girth", "roll", "curve", "lane")
+                 "girth", "roll", "curve", "lane", "parent", "link")
 
     def __init__(self, theta, phi, radial, dive, tan_a, tan_b, tan_r, length, girth, roll,
-                 curve, lane):
+                 curve, lane, parent=-1, link=False):
         self.theta, self.phi, self.radial, self.dive = theta, phi, radial, dive
         self.tan_a, self.tan_b, self.tan_r = tan_a, tan_b, tan_r
         self.length, self.girth = length, girth
         self.roll = roll
         self.curve, self.lane = curve, lane
+        self.parent = parent
+        # A CONNECTOR prism — a trunk's rise or a stem — rather than one of the curve's own.
+        # It is a MODEL-SIDE LABEL: the shipped C# computes the same split (Emit's
+        # `_emitConnectorSegments`) and the verifier proves the prisms themselves agree
+        # address for address, but nothing in the harness output carries the label, so what
+        # is proved is the geometry rather than the naming. Gates that ask a question about
+        # a CURVE (where did this arm start, which saddle does it belong to) must drop these
+        # or they answer about the limb that fed it.
+        self.link = link
 
 
 def pose(surface, a):
@@ -776,6 +794,119 @@ def append_dive(rules, p, t, step):
     return out
 
 
+# How close two seed-tree costs have to be before the INDEX decides. A Mandelbulb is highly
+# symmetric, so its seeds come in ORBITS whose members sit at distances equal to the last bit
+# (measured: four of Space's saddles were exactly 0.847114625 from the tree so far), and which
+# one a greedy pick admits first is then decided by float WIDTH — the shipped float32 and this
+# float64 model grew visibly different plants from the same seed. Same trap as Apollonia's lay
+# order (Docs/ECOSYSTEM.md §54: every ordering is a TOTAL key), met from a second direction.
+# See MandelbulbSurface.Growth.SeedCostEpsilon.
+SEED_COST_EPSILON = 1e-5
+
+
+def free_space_runs(prisms):
+    """Split each curve's FREE-SPACE prisms into its leading RISE and its trailing DIVE,
+    as index lists into `prisms`.
+
+    `tan_r != 0` is the address field that says "this prism is in free space", and it used
+    to say "this prism is in the dive" as well — true only while the heart was reached at the
+    END of a curve and nowhere else. Since these species grow OUT of the crystal
+    (Docs/ECOSYSTEM.md §50.6) the TRUNK is a rise: the same log spiral, run backwards, laid
+    BEFORE the surface walk. So the separator is structural rather than a field test, and it
+    is exact: within one curve `emit` lays rise, then surface, then dive, in that order, so
+    the rise is a PREFIX and the dive a SUFFIX.
+
+    Reading a rise as a dive is not a small error — a trunk runs from the heart OUT to the
+    surface, so a gate that measures "where did this dive end" answers with the surface and
+    reports the plant's one connection to its crystal as the one spiral that never arrived."""
+    rise, dive = [], []
+    start = 0
+    n = len(prisms)
+    while start < n:
+        end = start
+        curve = prisms[start].curve
+        while end < n and prisms[end].curve == curve:
+            end += 1
+        i = start
+        while i < end and prisms[i].tan_r != 0.0:
+            i += 1
+        j = end
+        while j > i and prisms[j - 1].tan_r != 0.0:
+            j -= 1
+        rise.extend(range(start, i))
+        dive.extend(range(j, end))
+        start = end
+    return rise, dive
+
+
+def build_seed_tree(seeds):
+    """A spanning tree over the seeds, rooted at seed 0 — Prim on great-circle distance
+    (MandelbulbSurface.Growth.BuildSeedTree). Returns (parent, order); Prim's INSERTION
+    ORDER is itself a valid growth order, because it only ever admits a seed whose parent
+    is already in the tree, so `parent appears earlier than child` holds by construction."""
+    n = len(seeds)
+    parent = [-1] * n
+    order = [0] * n
+    if n == 0:
+        return parent, order
+    dirs = [_norm(v) if _dot(v, v) > 1e-18 else (0.0, 0.0, 1.0) for v in seeds]
+    in_tree = [False] * n
+    best = [float("inf")] * n
+    best_from = [0] * n
+    in_tree[0] = True
+    for i in range(1, n):
+        best[i] = -_dot(dirs[0], dirs[i])       # monotone in great-circle distance
+    for placed in range(1, n):
+        pick, pick_cost = -1, float("inf")
+        for i in range(n):
+            # Strictly cheaper by more than the epsilon, or tied and earlier in the table.
+            if in_tree[i]:
+                continue
+            if pick >= 0 and best[i] >= pick_cost - SEED_COST_EPSILON:
+                continue
+            pick, pick_cost = i, best[i]
+        if pick < 0:                            # degenerate (coincident) seed directions
+            for i in range(n):
+                if not in_tree[i]:
+                    pick = i
+                    break
+        if pick < 0:
+            break
+        in_tree[pick] = True
+        parent[pick] = best_from[pick]
+        order[placed] = pick
+        for i in range(n):
+            if in_tree[i]:
+                continue
+            c = -_dot(dirs[pick], dirs[i])
+            # Must IMPROVE by more than the epsilon: a tie keeps the parent already recorded.
+            if c < best[i] - SEED_COST_EPSILON:
+                best[i], best_from[i] = c, pick
+    return parent, order
+
+
+def build_gasket_tree(discs, lay):
+    """The gasket's tree IS the gasket (MandelbulbSurface.Growth.BuildGasketTree): a child
+    disc is inscribed against three discs it touches, so it already knows what it grows out
+    of. Only the level-0 crowns need a rule, and theirs is the nearest crown laid before."""
+    n = len(discs)
+    parent = [-1] * n
+    order = list(lay)
+    placed_crowns = []
+    for d in lay:
+        if discs[d].level != 0:
+            parent[d] = discs[d].parent
+            continue
+        best, best_cos = -1, -2.0
+        for i in placed_crowns:
+            c = _dot(discs[d].axis, discs[i].axis)
+            if c > best_cos + SEED_COST_EPSILON:
+                best_cos, best = c, i
+        parent[d] = best                       # -1 for the first crown: the trunk
+        placed_crowns.append(d)
+    return parent, order
+
+
 def grow(surface, rules, seed, budget):
     """Lane-MAJOR: every seed lays its lane 0 before any seed lays its lane 1, so a plant
     that stops at its budget is the whole bulb drawn thinly rather than two seeds' worth of
@@ -787,9 +918,22 @@ def grow(surface, rules, seed, budget):
     if gasket:
         discs, lay, rho_ref = build_gasket(surface, rules)
         seeds = [build_frame(surface, *_spherical(d.axis)).position for d in discs]
+        seed_parent, seed_order = build_gasket_tree(discs, lay)
     else:
         seeds = build_seeds(surface, rules)
+        seed_parent, seed_order = build_seed_tree(seeds)
     sads = saddles(surface) if skeleton else None
+    # THE PLANT'S SKELETON (MandelbulbSurface.Growth): where each seed's stem LANDS, and the
+    # prism at the midpoint of its last run — which is exactly the point `hop` steps across
+    # from, so lane L hangs off lane L-1 over a bond one hop long.
+    seed_arrival = [-1] * len(seeds)
+    lane_anchor = [-1] * len(seeds)
+    # WHERE that arrival prism is. A stem must start at the prism it hangs off, not at the
+    # seed's own point: for the walking species and the Watershed those are the same place (a
+    # curve starts AT its seed), but a gasket seed is a disc CENTRE while its curve starts on
+    # the disc's RIM, so a stem from the centre leaves the first limb spanning the parent
+    # disc's whole radius with nothing in it (MandelbulbSurface.Growth._seedArrivalPoint).
+    seed_arrival_point = [(0.0, 0.0, 0.0)] * len(seeds)
     lane_pos = list(seeds)
     lane_tan = [None] * len(seeds)
     lane_dead = [False] * len(seeds)
@@ -811,6 +955,9 @@ def grow(surface, rules, seed, budget):
             for d in range(dive_quota):
                 dive_owed[top[(d * len(top)) // dive_quota]] = True
     else:
+        # Over the SEED LIST, which is z-monotone and therefore spread by construction, never
+        # over the lay order — Prim's order is spatially coherent and a stride over a
+        # nearest-neighbour walk spreads nothing (MandelbulbSurface.Growth.EnsureSeeds).
         dive_quota = min(max(0, rules.dive_count), len(seeds))
         if rules.dive_step > 0 and dive_quota > 0:
             for d in range(dive_quota):
@@ -892,6 +1039,13 @@ def grow(surface, rules, seed, budget):
     out = []
     curve_count = 0
     lane = 0
+    # Emit SKIPS a zero-length segment, so "the nth point" and "the nth prism" are not the
+    # same number. These are set before a batch and written back by it.
+    anchor_for_next_emit = -1
+    emit_connector_segments = 0
+    emit_mark_point = 1 << 60
+    emit_connector_end = -1
+    emit_marked_prism = -1
     taper = rules.girth_taper if rules.girth_taper > 0 else 1.0
     reference = (max(2.0, rules.girth_reference) if rules.girth_reference > 0
                  else max(2.0, rules.max_steps * 0.5))
@@ -917,14 +1071,41 @@ def grow(surface, rules, seed, budget):
             dives_spent += 1
         return dive
 
-    def emit(pts, dive, girth_override=0.0):
-        nonlocal curve_count
+    def emit(rise, pts, dive, girth_override=0.0):
+        """One curve becomes prisms, and the chain of them is the plant's SKELETON — so this
+        is also where a prism learns what it hangs off. Within a batch every prism's parent
+        is its predecessor (a curve IS a chain); the batch's FIRST hangs off
+        `anchor_for_next_emit` (MandelbulbSurface.Growth.Emit).
+
+        The RISE is the Fall run backwards: free-space points laid BEFORE the surface run,
+        carrying the curve out of the heart to where the surface walk begins."""
+        nonlocal curve_count, emit_connector_end, emit_marked_prism, emit_connector_segments
+        nonlocal emit_mark_point
+        emit_connector_end = -1
+        emit_marked_prism = -1
+        base = len(out)
         u = min(1.0, max(0.0, (len(pts) - 1) / reference))
         girth = girth_override if girth_override > 0 else taper + (1.0 - taper) * u
         n_surface = len(pts)
-        flat = [p[0] for p in pts] + list(dive)
+        n_rise = len(rise)
+        flat = list(rise) + [p[0] for p in pts] + list(dive)
         lg_hi = math.log(max(1e-6, _len(pts[-1][0])))
         dive_roll0 = 0.0
+        # The rise pays the SAME seam the Fall does, and pays it UP FRONT: its prisms are
+        # emitted BEFORE the transition that defines the angle.
+        rise_roll0 = 0.0
+        if n_rise > 0:
+            ra, rb = flat[n_rise - 1], pts[0][0]
+            rd = _sub(rb, ra)
+            if _dot(rd, rd) > 1e-14:
+                rfwd = _norm(rd)
+                rfr = build_frame(surface, *_spherical(_mul(_add(ra, rb), 0.5)))
+                up_ray = _sub(rfr.dir, _mul(rfwd, _dot(rfr.dir, rfwd)))
+                up_surf = _sub(rfr.normal, _mul(rfwd, _dot(rfr.normal, rfwd)))
+                if _dot(up_ray, up_ray) > 1e-10 and _dot(up_surf, up_surf) > 1e-10:
+                    up_ray, up_surf = _norm(up_ray), _norm(up_surf)
+                    rise_roll0 = math.atan2(_dot(_cross(up_ray, up_surf), rfwd),
+                                            _dot(up_ray, up_surf))
         for i in range(len(flat) - 1):
             a, b = flat[i], flat[i + 1]
             delta = _sub(b, a)
@@ -936,10 +1117,18 @@ def grow(surface, rules, seed, budget):
             th, ph = _spherical(centre)
             fr = build_frame(surface, th, ph)
             cm = _len(centre)
-            is_dive = len(dive) > 0 and i >= n_surface - 1
+            is_dive = len(dive) > 0 and i >= n_rise + n_surface - 1
+            is_rise = i < n_rise
             g = girth
             roll = i * twist_per_step
-            if is_dive:
+            if is_rise:
+                tan_r = _dot(fwd, fr.dir)
+                dv = 1.0 - cm / max(1e-6, fr.radius)
+                off = 0.0
+                wr = 1.0 if lg_hi <= lg_lo else min(1.0, max(0.0, (math.log(max(1e-6, cm)) - lg_lo) / (lg_hi - lg_lo)))
+                g = girth * (g_floor + (1.0 - g_floor) * wr)
+                roll += rise_roll0
+            elif is_dive:
                 tan_r = _dot(fwd, fr.dir)
                 dv = 1.0 - cm / max(1e-6, fr.radius)
                 off = 0.0
@@ -954,10 +1143,105 @@ def grow(surface, rules, seed, budget):
                 roll += dive_roll0
             else:
                 tan_r, dv, off = 0.0, 0.0, cm - fr.radius
+            parent = anchor_for_next_emit if len(out) == base else len(out) - 1
+            here = len(out)
+            if i < emit_connector_segments:
+                emit_connector_end = here
+            if emit_marked_prism < 0 and i >= emit_mark_point:
+                emit_marked_prism = here
             out.append(Prism(th, ph, off, dv,
                              _dot(fwd, fr.e_theta), _dot(fwd, fr.e_phi), tan_r,
                              ln * max(0.05, rules.length_factor),
-                             g, roll, curve_count, lane))
+                             g, roll, curve_count, lane, parent,
+                             i < emit_connector_segments))
+        # A request is for ONE batch; a stale split would make the next curve's prisms read
+        # as somebody's connector.
+        emit_connector_segments = 0
+        emit_mark_point = 1 << 60
+
+    def build_trunk(seed_point, seed_tangent, step):
+        """THE TRUNK — the Fall run backwards, from the heart out to the root seed. Reusing
+        append_dive verbatim is the point: the rise cannot acquire a shape, a stride ceiling
+        or a winding the Fall does not already have."""
+        d = append_dive(rules, seed_point, seed_tangent or (0.0, 0.0, 0.0), step)
+        # Reversed, and WITHOUT the seed itself: the curve's own first point is the seed.
+        return list(reversed(d))
+
+    def build_stem(a_pos, b_pos, step):
+        """A STEM — the surface path from one seed to the next, a great-circle interpolation
+        evaluated ON the membrane. The final point is left OFF: the curve that follows starts
+        at the seed, and the stem's last segment is what arrives there."""
+        a = _norm(a_pos) if _dot(a_pos, a_pos) > 1e-18 else (0.0, 0.0, 1.0)
+        b = _norm(b_pos) if _dot(b_pos, b_pos) > 1e-18 else (0.0, 0.0, 1.0)
+        cos = min(1.0, max(-1.0, _dot(a, b)))
+        ang = math.acos(cos)
+        arc = ang * max(1e-4, (_len(a_pos) + _len(b_pos)) * 0.5)
+        steps = min(256, max(1, int(arc / max(1e-4, step)) + 1))
+        sin_ang = math.sin(ang)
+        run = []
+        for i in range(steps):
+            t = float(i) / steps
+            if sin_ang > 1e-5:
+                d = _add(_mul(a, math.sin((1.0 - t) * ang) / sin_ang),
+                         _mul(b, math.sin(t * ang) / sin_ang))
+            else:
+                d = _add(_mul(a, 1.0 - t), _mul(b, t))
+            if _dot(d, d) < 1e-18:
+                continue
+            fr = build_frame(surface, *_spherical(_norm(d)))
+            run.append((_mul(fr.dir, fr.radius), fr.normal))
+        return run
+
+    def attachment_seed(k):
+        """Which already-STANDING seed this one grows out of: its tree parent when that
+        parent is standing, else the nearest standing seed by angle (a plant may not start a
+        second component just because one branch failed). -1 only while nothing is standing,
+        which happens exactly once per plant and is what the trunk is for."""
+        parent = seed_parent[k] if k < len(seed_parent) else -1
+        if 0 <= parent < len(seed_arrival) and seed_arrival[parent] >= 0:
+            return parent
+        me = seeds[k] if k < len(seeds) else (0.0, 0.0, 1.0)
+        md = _norm(me) if _dot(me, me) > 1e-18 else (0.0, 0.0, 1.0)
+        best, best_cos = -1, -2.0
+        for i in range(min(len(seed_arrival), len(seeds))):
+            if i == k or seed_arrival[i] < 0:
+                continue
+            d = seeds[i]
+            if _dot(d, d) < 1e-18:
+                continue
+            c = _dot(md, _norm(d))
+            if c > best_cos + SEED_COST_EPSILON:
+                best_cos, best = c, i
+        return best
+
+    def prepare_connector(k, pts, step):
+        """Decide what a curve hangs off and build the run that gets it there. Returns
+        (rise, run, leading connector SEGMENT count)."""
+        nonlocal anchor_for_next_emit, emit_connector_segments
+        if lane_anchor[k] >= 0:
+            # A later lane is one hop across from this seed's previous run. That hop IS the
+            # bond; the prism at its origin was marked when that run was emitted.
+            anchor_for_next_emit = lane_anchor[k]
+            emit_connector_segments = 0
+            return [], list(pts), 0
+        # THIS SEED'S FIRST APPEARANCE — which is usually lane 0, but a seed whose early
+        # curves were all dust makes it on a later lane, so the test is "have I laid anything
+        # yet" rather than "is this lane 0".
+        frm = attachment_seed(k)
+        if frm >= 0:
+            stem = build_stem(seed_arrival_point[frm], pts[0][0], step)
+            rise = []
+            anchor_for_next_emit = seed_arrival[frm]
+        else:
+            # THE TRUNK: exactly one curve per plant takes this branch, and it is the only
+            # prism in the plant whose parent is the crystal itself.
+            rise = build_trunk(pts[0][0], lane_tan[k], step)
+            stem = []
+            anchor_for_next_emit = -1
+        run = list(stem) + list(pts)
+        connector = len(rise) + len(stem)
+        emit_connector_segments = connector
+        return rise, run, connector
 
     if gasket:
         # APOLLONIA: one ring per disc in rho-descending order; the lane IS the size octave.
@@ -973,12 +1257,29 @@ def grow(surface, rules, seed, budget):
             girth = (d.rho / rho_ref) ** rules.ring_girth_exponent if rules.ring_girth_exponent > 0 else 1.0
             girth = max(girth, min(1.0, max(0.0, rules.ring_girth_floor)))
             curve_count += 1
-            emit(pts, try_dive(idx, pts), girth)
+            # A ring arrives over a connector like every other curve: a STEM from the disc it
+            # is inscribed against (a disc it TOUCHES, so the stem is short) or the TRUNK out
+            # of the crystal for the first crown. The ring is then a closed chain hanging off
+            # that arrival, which is what makes the gasket ONE object rather than a spray of
+            # hoops.
+            save_lane = lane
+            lane = 0
+            rise, run, connector = prepare_connector(idx, pts, rules.step)
+            lane = save_lane
+            base = len(out)
+            emit_mark_point = connector
+            emit(rise, run, try_dive(idx, pts), girth)
+            seed_arrival[idx] = emit_connector_end if emit_connector_end >= 0 else base
+            seed_arrival_point[idx] = pts[0][0]
         return out[:budget], curve_count, dives_spent
 
     while lane < lanes and len(out) < budget:
         progressed = False
-        for k in range(len(seeds)):
+        # TREE order, not table order: a seed's stem grows out of the seed it hangs off, so
+        # its parent must already carry prisms. Prim's insertion order gives that by
+        # construction (build_seed_tree).
+        for oi in range(len(seeds)):
+            k = seed_order[oi]
             if len(out) >= budget:
                 break
             if skeleton:
@@ -998,7 +1299,25 @@ def grow(surface, rules, seed, budget):
                 if rules.min_persistence > 0 and abs(_len(pts[-1][0]) - _len(pts[0][0])) < rules.min_persistence:
                     continue
                 curve_count += 1
-                emit(pts, try_dive(k, pts))
+                # All four arms leave the SAME saddle, so the first arm laid is what the
+                # other three hang off — and the saddle itself arrives over a connector. A
+                # saddle whose first arm was dust has no arrival prism yet, so the next arm
+                # to survive pays for the connector: the test is on seed_arrival, not lane.
+                first = seed_arrival[k] < 0
+                if first:
+                    save_lane = lane
+                    lane = 0
+                    rise, run, connector = prepare_connector(k, pts, walk_step)
+                    lane = save_lane
+                else:
+                    anchor_for_next_emit = seed_arrival[k]
+                    rise, run, connector = [], list(pts), 0
+                    emit_connector_segments = 0
+                base = len(out)
+                emit(rise, run, try_dive(k, pts))
+                if first:
+                    seed_arrival[k] = emit_connector_end if emit_connector_end >= 0 else base
+                    seed_arrival_point[k] = pts[0][0]
                 continue
             if lane_dead[k]:
                 continue
@@ -1006,8 +1325,19 @@ def grow(surface, rules, seed, budget):
             pts = trace(lane_pos[k], lane_tan[k], rules.field, walk_step)
             if len(pts) >= max(2, rules.min_run):
                 curve_count += 1
-                emit(pts, try_dive(k, pts))
+                # Lane 0 is the seed's first appearance, so it arrives over a connector — the
+                # TRUNK out of the heart for the root seed, a STEM from its parent seed for
+                # every other. Lane L>0 starts one hop across from lane L-1's midpoint.
+                rise, run, connector = prepare_connector(k, pts, walk_step)
                 mid = len(pts) // 2
+                emit_mark_point = connector + mid
+                base = len(out)
+                emit(rise, run, try_dive(k, pts))
+                if seed_arrival[k] < 0:
+                    seed_arrival[k] = emit_connector_end if emit_connector_end >= 0 else base
+                    seed_arrival_point[k] = pts[0][0]
+                if emit_marked_prism >= 0:
+                    lane_anchor[k] = emit_marked_prism
                 nxt = min(len(pts) - 1, mid + 1)
                 tv = _sub(pts[nxt][0], pts[mid][0])
                 lane_tan[k] = _norm(tv) if _dot(tv, tv) > 1e-18 else (1.0, 0.0, 0.0)
@@ -1389,7 +1719,28 @@ VOLUME_GAIN["Apollonia"] = {"Charge": 1.0841, "Mass": 1.0128, "Space": 1.3532, "
 
 SHELL_RADIUS = 75.0     # world radius of the surface's unit sphere
 FIELD_WIDTH = 192       # runtime reconstruction lattice
-PRISM_BUDGET = 2800     # live prisms per plant
+# Live prisms per plant. Raised from 2,800 when these species started growing OUT of their
+# crystal (Docs/ECOSYSTEM.md §50.6): a plant now carries its own LIMBS — a trunk spiralling
+# out of the heart and a stem to every seed's first appearance — and MEASURED over the four
+# species those connectors are 12% to 32% of a budget's worth of plant (worst: the Fractal
+# Foliage's Time, whose 90 seeds each buy a stem). 4,150 is 2,800 / (1 - 0.3229), i.e. the
+# budget at which the same amount of CURVE is laid as before, so every bound tuned against
+# the curves still describes the same plant. These four species are in NO SpawnProfile, so
+# the extra prisms cost no shipped cell anything; the always-on collider count is
+# MaxLivePopulation and is UNCHANGED (one heart per plant, §50 / the /flora skill §6).
+PRISM_BUDGET = 4150
+
+
+# ...except where the FORM ITSELF is finite. A gasket is not a walk that keeps going until the
+# budget stops it: its rings are the disc set, and the disc set is decided by `DiscMinRadius`.
+# So Apollonia's budget is a MEASUREMENT of its own form (2,600-3,100 prisms after the claim
+# across the four elements) rather than a dial on it, and pricing it at the walking species'
+# 4,150 would advertise a plant of 4,150 colliders that lays two thirds of them.
+PRISM_BUDGET_BY_SPECIES = {"Apollonia": 2900}
+
+
+def budget_for(species):
+    return PRISM_BUDGET_BY_SPECIES.get(species, PRISM_BUDGET)
 WEIGHT_STEPS = 3
 MAX_LIVE_POPULATION = 3
 POPULATION_SIZE = 1
@@ -1473,10 +1824,12 @@ CROSS_SECTION = {e: cross_section_for(e) for e in ("Charge", "Mass", "Space", "T
 WEIGHT_SPREAD = SPECIES["FractalFoliage"]["weight_spread"]
 
 
-CLAIM_FACTOR = 0.70   # MandelbulbFlora.ClaimFactor
+CLAIM_FACTOR = 0.70             # MandelbulbFlora.ClaimFactor
+CONNECTOR_CLAIM_FACTOR = 1.6    # MandelbulbFlora.ConnectorClaimFactor — a LIMB yields
 
 
-def claim_filter(prisms, centres, factor=None, shell=SHELL_RADIUS):
+def claim_filter(prisms, centres, factor=None, shell=SHELL_RADIUS,
+                 rules_length_factor=1.0):
     """What MandelbulbFlora.Claim does, applied offline so a measurement describes the plant
     the game LAYS rather than the candidates the walk produced. A prism is refused when a
     prism already laid sits within `factor * its own length` — under 1, so a curve's own
@@ -1495,7 +1848,17 @@ def claim_filter(prisms, centres, factor=None, shell=SHELL_RADIUS):
         factor = CLAIM_FACTOR
     if not prisms:
         return []
-    radii = [max(0.25, factor * p.length * shell) for p in prisms]
+    # A CONNECTOR claims wider than a ribbon: two curves crossing is what a cage IS, a limb
+    # driven through a ribbon is a wire through the plant, and a refused limb prism costs
+    # nothing structural because the spindle spans from the nearest STANDING ancestor
+    # (MandelbulbFlora.ConnectorClaimFactor).
+    # Measuring a connector's radius on its STEP rather than on its prism (`length / LengthFactor`,
+    # so a DASHED Charge limb claims as much room as its three siblings' do) was tried and is
+    # NOT what ships: measured, it cost Apollonia's Charge 268 prisms and opened a new armour
+    # failure at its core, because that species' limbs are numerous and short. The argument was
+    # sound and the plant disagreed.
+    radii = [max(0.25, (CONNECTOR_CLAIM_FACTOR if p.link else factor) * p.length * shell)
+             for p in prisms]
     cell = max(radii)
     kept_p, kept_c, grid = [], [], {}
     for p, c, r in zip(prisms, centres, radii):

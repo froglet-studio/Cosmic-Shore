@@ -87,6 +87,7 @@ margin (Docs/ECOSYSTEM.md §52).
 """
 import argparse
 import collections
+import itertools
 import math
 import os
 import shutil
@@ -135,9 +136,16 @@ def shipped_prisms(element, rules, w=(0.0, 0.0, 0.0), grid=GRID, seed=SEED, budg
             continue
         if t[0] == "p":
             # p theta phi off dive tanA tanB tanR length girth roll curve lane [pose x9]
+            # Columns 22 and 23 are the growth ORDER's own fields — the prism this one hangs
+            # off, and whether it is a CONNECTOR (a trunk's rise or a stem) rather than one of
+            # the curve's own. Neither is in PrismAddress, on purpose: Pose must stay a pure
+            # function of one address. They are read here so the model's identical labels are
+            # PROVED rather than believed (see the connector row below).
             prisms.append(M.Prism(float(t[1]), float(t[2]), float(t[3]), float(t[4]),
                                   float(t[5]), float(t[6]), float(t[7]), float(t[8]),
-                                  float(t[9]), float(t[10]), int(t[11]), int(t[12])))
+                                  float(t[9]), float(t[10]), int(t[11]), int(t[12]),
+                                  int(t[22]) if len(t) > 22 else -1,
+                                  bool(int(t[23])) if len(t) > 23 else False))
             positions.append((float(t[13]), float(t[14]), float(t[15])))
         elif t[0] == "done":
             curves = int(t[2])
@@ -937,6 +945,16 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
         fail(f"{element}: {north:.0%} of the plant is in one hemisphere")
 
     def stats(ps):
+        # SURFACE prisms only. The premise these three rows rest on is "a prism's length is
+        # its STEP, not its run", which is true of a walk prism and false of a free-space one:
+        # a dive's stride is a fraction of its own radius and the trunk's rise is that same
+        # spiral reversed, so both carry lengths from a different distribution entirely. While
+        # the heart was only ever reached at the END of a curve that was a couple of percent
+        # of a plant and it hid inside the tolerance; a plant that now GROWS out of its
+        # crystal (Docs/ECOSYSTEM.md §50.6) puts a whole trunk in here, and whichever curve
+        # released it is exactly what a chaotic walk disagrees about. Free-space lengths are
+        # not going ungated — they are what the Fall and trunk rows below measure directly.
+        ps = [p for p in ps if p.tan_r == 0.0] or list(ps)
         ln = sorted(p.length for p in ps)
         gr = sorted(p.girth for p in ps)
         return (sum(ln) / len(ln), ln[len(ln) // 2], sum(gr) / len(gr))
@@ -964,8 +982,23 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
     # the tuning pass: Space's smallest octave holds 74 of 137 rings and the median length
     # moved 2.3%). 3% on the lengths; the girth keeps 2%, which is what makes RingGirthFloor
     # gateable (see above).
-    tol = ((0.03, 0.03, 0.02) if gasket
-           else (0.02, 0.02, min(0.10, 0.02 + 0.002 * per_curve)))
+    # A WALKING species' three statistics can only move as far as the prisms the two sides
+    # actually disagree about, so all three bounds are stated in that one unit: 2% for float
+    # width plus `disputed`, the fraction of the PLANT the disputed curves account for. That
+    # is the same unit the curve-count row above is stated in, and for the same reason it
+    # gives there — a bound keyed on prisms-per-curve says something different on a species
+    # whose curves are long, and one keyed on the raw curve COUNT calls 2-of-210 and 11-of-51
+    # the same size of disagreement.
+    #
+    # It replaces a girth-only widening (`0.02 + 0.002 x per_curve`) that was measured before
+    # these species grew out of their crystal, and it is a TIGHTENING almost everywhere: on a
+    # plant the two sides agree about it is 2% on all three, where the old rule handed the
+    # girth up to 10% unconditionally. It also covers the LENGTHS, whose old premise — "a
+    # prism's length is its step, not its run" — stopped being the whole truth when a curve
+    # gained a STEM, since a stem's segment is `arc / ceil(arc / step)` and is therefore
+    # shorter than a walk step by an amount that depends on which seeds needed one.
+    share = min(0.20, 0.02 + disputed)
+    tol = (0.03, 0.03, 0.02) if gasket else (share, share, share)
     for name, x, y, lim in zip(("mean length", "median length", "mean girth"), sa, sb, tol):
         if abs(x - y) > lim * max(abs(x), 1e-6):
             fail(f"{species}/{element}: {name} {y:.5f} shipped vs {x:.5f} model "
@@ -978,8 +1011,10 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
     # tolerances. These three ask about the dive directly, and dive prisms are separable
     # from surface prisms with no bookkeeping at all — `TanR != 0` is the address field that
     # says "this prism is in free space", set on the dive and on nothing else.
-    mine_dp = [p for p in mine_p if p.tan_r != 0.0]
-    theirs_dp = [p for p in theirs_p if p.tan_r != 0.0]
+    # ONE implementation, in the model, because the measure tool needs the identical split
+    # (see M.free_space_runs).
+    mine_rp, mine_dp = (([mine_p[i] for i in ix]) for ix in M.free_space_runs(mine_p))
+    theirs_rp, theirs_dp = (([theirs_p[i] for i in ix]) for ix in M.free_space_runs(theirs_p))
 
     # (a) DIVES SPENT. A property of the run, not of the float width: the owed set is
     #     strided over the seed list and a seed keeps its flag until a dive is actually
@@ -1011,12 +1046,73 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
     #     3 of 8 free ones, worst 26 prisms (FractalFoliage/Charge) against an allowance of
     #     54 — and the prefix-instead-of-stride control moves it far past that with the dive
     #     COUNT unchanged, which is the case a percentage bound would have let through.
-    per_dive = len(mine_dp) / max(1, mine_d)
+    # Priced at the LONGEST dive, not the mean. A dive's length is a function of the RADIUS
+    # it was released at — a log spiral from far out takes many more strides than one from a
+    # valley — so "one flipped dive" can cost anything up to the longest dive in the plant,
+    # and a mean prices the worst case at about half of it. (The mean read as a margin only
+    # because the trunk's rise prisms used to be counted as dive prisms and inflated it; the
+    # splitter above removed that accident, which is what exposed this one.)
+    # On EITHER side: the dives the two plants disagree about are by definition the ones only
+    # one of them laid, so pricing the allowance off the model's plant alone measures the
+    # wrong plant whenever the shipped one is the side with the extra dive.
+    longest = [max(collections.Counter(q.curve for q in dp).values())
+               for dp in (mine_dp, theirs_dp) if dp]
+    per_dive = max(longest) if longest else len(mine_dp) / max(1, mine_d)
     allow = 0 if skeleton else (abs(theirs_d - mine_d) + 1) * per_dive
     if abs(len(theirs_dp) - len(mine_dp)) > allow:
         fail(f"{element}: {len(theirs_dp)} dive prisms shipped, model laid {len(mine_dp)} "
              f"(allowance {allow:.0f} = {abs(theirs_d - mine_d) + 1} dives at "
-             f"{per_dive:.0f} prisms each)")
+             f"{per_dive:.0f} prisms each, the longest in the model's plant)")
+
+    # (b1) THE GROWTH ORDER ITSELF, held prism for prism over the agreeing prefix. `parent`
+    #      and `connector` are the two things TryNext hands out beside the address, and
+    #      neither is in PrismAddress — so without this row the model's labels are a
+    #      transcription nobody checked, and every gate below that reads `link` (the arm
+    #      census, the lane shares, the limb's own claim) would be measuring the model's
+    #      opinion rather than the shipped rule. Checked over the prefix the two walks agree
+    #      on, because past that they are legitimately different plants.
+    agree = 0
+    while (agree < len(mine_p) and agree < len(theirs_p)
+           and abs(mine_p[agree].theta - theirs_p[agree].theta) <= 1e-3
+           and _unwrap(mine_p[agree].phi, theirs_p[agree].phi) <= 1e-3):
+        agree += 1
+    bad_parent = sum(1 for i in range(agree) if mine_p[i].parent != theirs_p[i].parent)
+    bad_link = sum(1 for i in range(agree) if mine_p[i].link != theirs_p[i].link)
+    if bad_parent or bad_link:
+        fail(f"{species}/{element}: over the {agree} prisms the two walks agree on, "
+             f"{bad_parent} disagree on their PARENT and {bad_link} on whether they are a "
+             f"CONNECTOR — the growth order is transcribed wrong")
+    if agree and not any(p.link for p in theirs_p[:agree]):
+        fail(f"{species}/{element}: the shipped walk marks NO prism as a connector — a plant "
+             f"with no trunk and no stems is not growing out of its crystal")
+
+    # (b2) THE TRUNK — the rise out of the crystal (Docs/ECOSYSTEM.md §50.6). It is the one
+    #      thing the plant now does that none of the statistics above reach: a rise is free
+    #      space, so the dive rows would have swallowed it silently before the splitter above
+    #      separated them, and a plant that grew NO trunk would look identical everywhere else.
+    #      EXACTLY ONE curve per plant carries one, it is the FIRST curve, and it reaches the
+    #      same stop radius the Fall does — because it IS the Fall's own output reversed.
+    mine_rc = {q.curve for q in mine_rp}
+    theirs_rc = {q.curve for q in theirs_rp}
+    if len(theirs_rc) != 1 or len(mine_rc) != 1:
+        fail(f"{element}: the plant must grow exactly ONE trunk — shipped carries rises on "
+             f"{len(theirs_rc)} curves, model on {len(mine_rc)}")
+    elif min(theirs_rc) != min(q.curve for q in theirs_p):
+        fail(f"{element}: the trunk is on curve {min(theirs_rc)}, not the plant's first "
+             f"({min(q.curve for q in theirs_p)}) — the crystal is not where growth began")
+    if theirs_rp and mine_rp:
+        # The innermost rise prism must sit essentially on the dive's stop sphere: the trunk
+        # is AppendDive's output reversed, so its last point is that clip and nothing else.
+        t_in = min(abs(1.0 - q.dive) for q in theirs_rp)
+        m_in = min(abs(1.0 - q.dive) for q in mine_rp)
+        if abs(t_in - m_in) > 0.02:
+            fail(f"{element}: the trunk reaches {t_in:.4f} of the surface radius shipped "
+                 f"against {m_in:.4f} in the model (bound 0.02)")
+        # And it must be a RISE, not a stub: a trunk of one prism is a plant whose crystal is
+        # joined to its body by a single plate, which is the shape this branch replaced.
+        if len(theirs_rp) < 3:
+            fail(f"{element}: the trunk is {len(theirs_rp)} prisms — that is a stub, not a "
+                 f"spiral out of the crystal")
 
     # (c) CLOSEST PRISM CENTRE, in world units. This is what "the curve falls to the heart"
     #     means as a number, and it is the row that the `(1f - a.Dive)` factor in Pose is
@@ -1120,27 +1216,51 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
     dive_curves = expect_curves = set()
     first_ring = float("nan")
     if gasket:
-        def rings(prisms, n):
-            """Per curve, the number of SURFACE prisms it emitted. A closed ring of N samples
-            has N+1 points and therefore exactly N segments, and a dive is appended to the
-            same curve with TanR != 0 — the address field that already separates the two
-            everywhere else in this file. The last curve is dropped when the plant hit its
-            budget, because a budget cut is not a broken ring (conflating the two reports a
-            truncated plant as a dashed one; the spec's own §10 records making that mistake)."""
-            per = collections.Counter()
-            dive = set()
-            for q in prisms:
-                if q.tan_r == 0.0:
-                    per[q.curve] += 1
-                else:
-                    dive.add(q.curve)
-            if len(prisms) >= BUDGET and per:
-                del per[max(per)]
-            whole = sum(1 for v in per.values() if v == n)
-            return (whole / len(per) if per else 0.0), dive, len(per)
+        def rings(prisms, xyz, n):
+            """Per curve, is its RING CLOSED — asked of the GEOMETRY rather than of a prism
+            count.
 
-        integ_t, dive_curves, n_rings_t = rings(theirs_p, ring_n)
-        integ_m, mine_dive_curves, _ = rings(mine_p, ring_n)
+            It used to count surface prisms and demand exactly N, which was a restatement of
+            "a closed ring of N samples has N+1 points and therefore N segments". That stopped
+            being the whole of a ring's curve when the gasket started growing out of its
+            crystal (Docs/ECOSYSTEM.md §50.6): a ring now arrives over a STEM from the disc it
+            is inscribed against, so its curve is `stem + ring` and the stem's length varies
+            per disc. There is no arithmetic left to do — so the test asks the thing the count
+            was a proxy for. The last N surface prisms are the ring, and a ring is CLOSED when
+            its first and last prism centres are ONE chord apart, i.e. the chain wraps. Drop
+            `into.Add(into[0])` from RingPoints and the last N surface prisms are the arc plus
+            a stem prism, which does not wrap.
+
+            The last curve is dropped when the plant hit its budget, because a budget cut is
+            not a broken ring (conflating the two reports a truncated plant as a dashed one;
+            the spec's own §10 records making that mistake)."""
+            groups = [(c, list(g)) for c, g in
+                      itertools.groupby(range(len(prisms)), key=lambda i: prisms[i].curve)]
+            # A DIVE is the free-space SUFFIX of a curve; the trunk's rise is a free-space
+            # PREFIX and is not a dive (see free_space_runs).
+            dive = {prisms[i].curve for i in M.free_space_runs(prisms)[1]}
+            if len(prisms) >= BUDGET and groups:
+                groups = groups[:-1]
+            whole = 0
+            for _, ix in groups:
+                surf = [i for i in ix if prisms[i].tan_r == 0.0]
+                if len(surf) < n:
+                    continue
+                pts = [xyz[i] for i in surf[-n:]]
+                steps = sorted(M._len(M._sub(pts[i + 1], pts[i])) for i in range(n - 1))
+                # Against the ring's OWN LARGEST chord, not its median. A ring is flattened
+                # onto R(theta, phi), so its chords are not equal — measured across the four
+                # shipped elements they span 1.0x to 1.6x the median — and the wrap edge is
+                # simply one more of them. Gated on the median instead, four of Time's 44
+                # rings read as open while being perfectly closed.
+                chord = steps[-1]
+                if chord > 1e-9 and M._len(M._sub(pts[-1], pts[0])) <= 1.15 * chord:
+                    whole += 1
+            return (whole / len(groups) if groups else 0.0), dive, len(groups)
+
+        mine_xyz = [M.pose(surface, q)[0] for q in mine_p]
+        integ_t, dive_curves, n_rings_t = rings(theirs_p, theirs_xyz, ring_n)
+        integ_m, mine_dive_curves, _ = rings(mine_p, mine_xyz, ring_n)
         # RING INTEGRITY. This is a statement about what the growth rule EMITS, not about the
         # plant after `MandelbulbFlora.Claim` — the claim lives in a file this harness does
         # not compile, so filtering here in Python would prove nothing about the C#. The
@@ -1149,11 +1269,11 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
         # lands in: drop `into.Add(into[0])` from RingPoints and every ring becomes an ARC
         # while the prism count moves by one part in N and hides inside every other bound.
         if abs(integ_t - integ_m) > 0.05:
-            fail(f"{element}: {integ_t:.1%} of shipped rings emit their full {ring_n} prisms "
-                 f"against the model's {integ_m:.1%} (bound 5 points)")
+            fail(f"{element}: {integ_t:.1%} of shipped rings CLOSE against the model's "
+                 f"{integ_m:.1%} (bound 5 points)")
         if integ_t < 0.95:
-            fail(f"{element}: only {integ_t:.1%} of the shipped plant's {n_rings_t} rings are "
-                 f"CLOSED ({ring_n} prisms each) — the repeated unit is an arc, not a ring")
+            fail(f"{element}: only {integ_t:.1%} of the shipped plant's {n_rings_t} rings CLOSE "
+                 f"({ring_n} prisms each) — the repeated unit is an arc, not a ring")
 
         # WHICH RINGS RELEASE THE FALL, asked of the SHIPPED side alone. Both halves come out
         # of the harness — the lay order and the levels from `gasket`, the dive-bearing curves
@@ -1502,7 +1622,7 @@ def self_test():
          "const float GasketOverlapEps = -1e-4f;", "trip", "discs shipped, model built"),
         ("RingPoints stops leaving the ring CLOSED (every repeated unit becomes an arc)",
          "                into.Add(into[0]);",
-         "                if (samples < 0) into.Add(into[0]);", "trip", "rings emit their full"),
+         "                if (samples < 0) into.Add(into[0]);", "trip", "rings CLOSE"),
         ("the lane taken as the RECURSION LEVEL instead of the size OCTAVE",
          "d.Lane = Mathf.Clamp(Mathf.FloorToInt(o), 0, lanes - 1);",
          "d.Lane = Mathf.Clamp(d.Level, 0, lanes - 1);", "trip", "size octave"),

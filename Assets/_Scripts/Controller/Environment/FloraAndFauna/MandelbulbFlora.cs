@@ -160,6 +160,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         readonly List<int> _parent = new();
 
+        /// <summary>
+        /// Which addresses are CONNECTOR prisms — a trunk's rise or a stem — rather than the
+        /// curve's own. A limb has to YIELD to a ribbon it crosses, where two ribbons crossing
+        /// is simply what a cage is, so this is the one thing <see cref="Claim"/> needs that the
+        /// address does not carry.
+        /// </summary>
+        readonly List<bool> _connector = new();
+
         /// <summary>Addresses whose prism was grazed away and which are open to regrow.</summary>
         readonly Queue<int> _regrow = new();
 
@@ -243,6 +251,7 @@ namespace CosmicShore.Gameplay
             _growth = new MandelbulbSurface.Growth(_surface, _form.Rules, seed);
             _addresses.Clear();
             _parent.Clear();
+            _connector.Clear();
             _regrow.Clear();
             _laid.Clear();
             _limb.Clear();
@@ -394,7 +403,7 @@ namespace CosmicShore.Gameplay
                 // produce seeds x lanes x steps addresses, which is half a million for one
                 // element, and holding them all is 20 MB per plant.
                 if (_addresses.Count >= maxTotalSpawnedObjects * AddressCandidateFactor
-                    || !_growth.TryNext(out var next, out int parent))
+                    || !_growth.TryNext(out var next, out int parent, out bool link))
                 {
                     // Covered everything the rule could reach, or its front was grazed off. Free
                     // the addresses whose prisms are gone and re-open them — that is how a cropped
@@ -404,6 +413,7 @@ namespace CosmicShore.Gameplay
                 }
                 _addresses.Add(next);
                 _parent.Add(parent);
+                _connector.Add(link);
                 Decide(_addresses.Count - 1);
             }
         }
@@ -422,7 +432,7 @@ namespace CosmicShore.Gameplay
             // Cross-PLANT occupancy. Within one plant a duplicate is already impossible (the
             // address list is the claim); this is the only thing that can refuse a prism, and a
             // refusal costs that prism and nothing else.
-            if (!Claim(world, address)) return;
+            if (!Claim(world, address, index < _connector.Count && _connector[index])) return;
 
             _pending.Enqueue(new SpawnOrder
             {
@@ -476,16 +486,29 @@ namespace CosmicShore.Gameplay
         /// touching pairs to zero, and the plant still reaches its whole budget because the
         /// claim thins CANDIDATES rather than the budget.</para>
         /// </summary>
-        bool Claim(Vector3 world, in MandelbulbSurface.PrismAddress address)
+        bool Claim(Vector3 world, in MandelbulbSurface.PrismAddress address, bool connector)
         {
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable) return true;
-            float radius = Mathf.Max(0.25f, ClaimFactor * address.Length * shellRadius);
+            float factor = connector ? ConnectorClaimFactor : ClaimFactor;
+            float radius = Mathf.Max(0.25f, factor * address.Length * shellRadius);
             return index.TryReserve(world, radius);
         }
 
         /// <summary>See <see cref="Claim"/>. Under 1 so a curve's own chain always clears.</summary>
         internal const float ClaimFactor = 0.70f;
+
+        /// <summary>
+        /// A LIMB's claim — the trunk's rise and the stems. Wider than a ribbon's, because the
+        /// two are not the same kind of crossing: two curves meeting at an angle is what a CAGE
+        /// IS, while a limb driven through a ribbon is a wire through the plant. A refused limb
+        /// prism costs nothing structural — the spindle is rooted at the nearest STANDING
+        /// ancestor, so a gap in a limb simply makes the next limb longer — which is what makes
+        /// it safe to let a limb yield. MEASURED: at the ribbon's own 0.70 the worst pair in
+        /// three of the four species was a limb inside a ribbon (s* 0.15 to 0.31 against a 0.35
+        /// floor), and every one of them had a connector on one side and a curve on the other.
+        /// </summary>
+        internal const float ConnectorClaimFactor = 1.6f;
 
         /// <summary>How many addresses the rule may produce per prism of budget. Measured, the
         /// claim keeps between a third and two thirds of what the walk offers.</summary>

@@ -236,7 +236,7 @@ static class Driver
         Console.WriteLine($"surface {F(surface.MeanRadius)} {growth.SeedCount}");
         var frame = new MandelbulbSurface.Frame();
         int laid = 0;
-        while (laid < budget && growth.TryNext(out var addr, out int parent))
+        while (laid < budget && growth.TryNext(out var addr, out int parent, out bool link))
         {
             MandelbulbSurface.Pose(surface, addr, ref frame, out var p, out var f, out var u);
             Console.WriteLine(string.Join(" ", new[]
@@ -248,7 +248,7 @@ static class Driver
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z),
                 // The PARENT this prism hangs off (-1 = the heart). LAST on the line, so every
                 // reader that slices the first 21 columns is untouched by its arrival.
-                parent.ToString(Inv)
+                parent.ToString(Inv), link ? "1" : "0"
             }));
             laid++;
         }
@@ -278,7 +278,7 @@ static class Driver
         Console.WriteLine($"surface {F(surface.MeanRadius)} {growth.SeedCount}");
         var frame = new MandelbulbSurface.Frame();
         int laid = 0;
-        while (laid < budget && growth.TryNext(out var addr, out int parent))
+        while (laid < budget && growth.TryNext(out var addr, out int parent, out bool link))
         {
             MandelbulbSurface.Pose(surface, addr, ref frame, out var p, out var f, out var u);
             Console.WriteLine(string.Join(" ", new[]
@@ -290,7 +290,7 @@ static class Driver
                 F(p.x), F(p.y), F(p.z), F(f.x), F(f.y), F(f.z), F(u.x), F(u.y), F(u.z),
                 // The PARENT this prism hangs off (-1 = the heart). LAST on the line, so every
                 // reader that slices the first 21 columns is untouched by its arrival.
-                parent.ToString(Inv)
+                parent.ToString(Inv), link ? "1" : "0"
             }));
             laid++;
         }

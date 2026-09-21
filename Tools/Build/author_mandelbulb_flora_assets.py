@@ -235,7 +235,7 @@ def flora_component_block(p):
         + "  fieldWidth: %d\n" % M.FIELD_WIDTH
         + "  weightSpread: %g\n" % spec["weight_spread"]
         + "  weightSteps: %d\n" % M.WEIGHT_STEPS
-        + "  maxTotalSpawnedObjects: %d\n" % M.PRISM_BUDGET
+        + "  maxTotalSpawnedObjects: %d\n" % M.budget_for(species)
         + "  growthsPerTick: 8\n"
         + "  maxSpawnsPerFrame: 3\n"
         + "  plantRadius: 150\n")
@@ -311,7 +311,7 @@ def config_text(p, elem):
         "    GrowPeriod: 0.5",
         # The budget IS the form: this element's own measured site count, so a mature plant is a
         # complete bulb and grazing frees exactly the budget regrowth needs.
-        "    MaxTotalSpawnedObjects: %d" % M.PRISM_BUDGET,
+        "    MaxTotalSpawnedObjects: %d" % M.budget_for(p["species"]),
         "    PlantRadiusCellFraction: 0.6",
         "    PlantRadiusCellFractionMin: 0.25",
     ]
