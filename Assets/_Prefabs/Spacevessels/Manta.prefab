@@ -1910,6 +1910,14 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
+  BoostSpeedMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 1.3
+    element: 4
+    UseFloor: 1
+    Floor: 0.7
   PitchScaler: 50
   YawScaler: 30
   RollScaler: 100

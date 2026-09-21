@@ -286,10 +286,9 @@ MAP_BODY = """  vesselClass: 1
     AbilityLabel: Sting
     AbilityDescription: Charge raises the bomb bay's capacity and its skim-charge rate.
       Both authored on MantaStingConfig.asset (capacityPerChargeLevel, chargeRateAtFullCharge);
-      the map multiplier is pinned to 1 so one element never drives a parameter twice.
+      each parameter carries its own ElementalFloat, so one element can never
+      drive a parameter it was not authored on.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -300,10 +299,8 @@ MAP_BODY = """  vesselClass: 1
     AbilityLabel: Yastri
     AbilityDescription: Mass grows the trail's prism volume (VesselPrismController.trailVolume
       on Manta.prefab, 1x to 2.5x). The turn itself is deliberately unscaled - Yastri's element
-      shapes what the turn LEAVES, and the map multiplier is pinned to 1.
+      shapes what the turn LEAVES (YawsteryActionSO.turnRateMultiplier is disabled).
     Input: 12
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -313,10 +310,8 @@ MAP_BODY = """  vesselClass: 1
   - Element: 3
     AbilityLabel: Kabloom
     AbilityDescription: Space widens every bomb bloom (MantaStingConfig.asset,
-      blastScaleAtFullSpace 1.6x at level 10; the map multiplier is pinned to 1).
+      blastScaleAtFullSpace 1.6x at level 10).
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -325,11 +320,11 @@ MAP_BODY = """  vesselClass: 1
       detonate freely inside a team fight. Snapshotted per bomb at plant time.
   - Element: 4
     AbilityLabel: Soar
-    AbilityDescription: Time raises the maximum soaring speed - THIS multiplier is the
-      authoring home, read fleet-wide by VesselTransformer.CurrentBoostAmount while boosting.
+    AbilityDescription: Time raises the maximum soaring speed, authored on Manta.prefab's
+      VesselTransformer.BoostSpeedMultiplier (x1 at rest -> x1.3 at level 10, floored at
+      x0.7) and read while boosting. It was a fleet-wide read of this map's own generic
+      multiplier until the element-scaling unification; the numbers are unchanged.
     Input: 13
-    MultiplierAtFullLevel: 1.3
-    MinMultiplier: 0.7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

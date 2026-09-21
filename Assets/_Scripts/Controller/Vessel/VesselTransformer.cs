@@ -143,6 +143,33 @@ public class VesselTransformer : MonoBehaviour
         public float DefaultThrottleScaler = 50f;
         public ElementalFloat ThrottleScalerMultiplier = new(1f);
 
+        /// <summary>
+        /// How much this hull's BOOST SPEED scales with an element — per vessel, authored on the
+        /// prefab, off by default.
+        ///
+        /// <para>This replaced a fleet-wide <c>ElementalAbilityHandler.Multiplier(Element.Time)</c>
+        /// read inside <see cref="CurrentBoostAmount"/>. That read was introduced for the Sparrow
+        /// (2026-07-14, <c>2d84aa7b9</c>) and justified as "1x for vessels without a map", which was
+        /// true only while the Sparrow owned the only authored map. Measured at removal, across
+        /// eight vessels: Manta and Sparrow used it as intended; Dolphin, Scarab, Squirrel and
+        /// Urchin each pinned their map's Time entry to 1.0 purely to defend against it, spending a
+        /// tuning slot to ask a base class not to act; and Rhino and Serpent were silently applying
+        /// Time TWICE to one ability — the Rhino to its ramp's wind-up rate AND its ceiling (which
+        /// <c>Docs</c> and <c>regatta_balance.py</c> both stated it did not reach), the Serpent to
+        /// its boost's duration AND its speed.</para>
+        ///
+        /// <para>Boost speed is a property of a HULL, so it is authored on the hull. Only a vessel
+        /// whose design says "this element makes my boost faster" enables it; every other hull
+        /// leaves it off and <see cref="CurrentBoostAmount"/> is arithmetically unchanged for them.
+        /// Shipped: Manta 1 -> 1.3 floored at 0.7, Sparrow 1 -> 1.5 floored at 0.5, both on Time,
+        /// preserving their curves exactly. (The retired map's <c>MinMultiplier</c> was a FLOOR, not
+        /// the value at rest — every migrated multiplier is anchored at 1 when the element is at
+        /// rest, so an element can only ever ADD to the hull's authored baseline.) Follows
+        /// <see cref="ThrottleScalerMultiplier"/>, which has been a per-prefab ElementalFloat on
+        /// this class all along.</para>
+        /// </summary>
+        public ElementalFloat BoostSpeedMultiplier = new(1f);
+
         public float PitchScaler = 130f;
         public float YawScaler = 130f;
         public float RollScaler = 130f;
@@ -696,10 +723,10 @@ public class VesselTransformer : MonoBehaviour
         {
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
-                // TIME → boost speed: scaled by the vessel's live Time level via its
-                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                // Element → boost speed, per hull, via this prefab's own BoostSpeedMultiplier.
+                // Exactly 1x (and arithmetically a no-op) on every hull that leaves it disabled.
                 boostAmount = VesselStatus.BoostMultiplier
-                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
+                              * BoostSpeedMultiplier.EvaluateLive(VesselStatus);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;

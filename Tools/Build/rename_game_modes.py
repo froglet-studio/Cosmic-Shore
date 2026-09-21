@@ -111,7 +111,8 @@ EXCLUDED_PATHS = (
     "Assets/_Scripts/Tests/Editor/GameModeRenameMigrationTests.cs",
     "Docs/ShuffleSystem/ARCHITECTURE.md",
     "CLAUDE.md",   # its ShuffleSystem row states the old code name on purpose
-    "AGENTS.md",   # a copy of CLAUDE.md, carrying the same row for the same reason
+    # AGENTS.md needed the same exclusion while it was a hand-made copy of CLAUDE.md. It is a
+    # POINTER now (2026-09-20), so it carries no mode table and nothing here to protect.
     # These two ARE the map. Sweeping them rewrites `("HexRace", "SkimRace")` into
     # `("SkimRace", "SkimRace")`, which is the same self-erasure the migration map suffers, and
     # it takes PROTECTED and DOC_NAMES with it.
@@ -228,8 +229,9 @@ def main():
     ap.add_argument("--apply", action="store_true", help="write the changes")
     ap.add_argument("--check", action="store_true", help="report only (default)")
     # `Assets/_Scripts` alone missed `Assets/FTUE` (a compile error: the FTUE adapter names a
-    # renamed CallToActionTargetType member), and the two root-level docs are separate files that
-    # each restate the mode table. Root at `Assets` rather than enumerating subdirectories.
+    # renamed CallToActionTargetType member). CLAUDE.md restates the mode table and is swept (then
+    # excluded above); AGENTS.md is only a pointer to it now and is kept in the roots so a future
+    # sweep covers whatever it grows. Root at `Assets` rather than enumerating subdirectories.
     ap.add_argument("--roots", nargs="*",
                     default=["Assets", "Docs", "Tools", "CLAUDE.md", "AGENTS.md", "README.md"])
     args = ap.parse_args()

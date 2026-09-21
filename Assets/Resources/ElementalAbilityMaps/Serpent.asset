@@ -22,8 +22,6 @@ MonoBehaviour:
       shots, 12s at rest down to 5.4s at Charge 10. The shot spends no resource and carries no
       ammunition, so the cooldown IS its whole cost.'
     Input: 1
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -36,8 +34,6 @@ MonoBehaviour:
     AbilityLabel: (open design slot)
     AbilityDescription: Mass mapping not yet designed for the Serpent.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -52,8 +48,6 @@ MonoBehaviour:
       view at full zoom at rest, narrowing to 11 at Space 10, floored at 8 so the scope can never
       become a soda straw. Reach is Space''s job fleet-wide and a scope''s whole claim is reach.'
     Input: 2
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -64,10 +58,13 @@ MonoBehaviour:
       zoom at rest becomes 13.8, and Space 10 reaches 6.9.'
   - Element: 4
     AbilityLabel: Boost Duration
-    AbilityDescription: Time extends the boost duration.
+    AbilityDescription: 'Time extends the boost DURATION only
+      (ConsumeBoostActionSO.timeDurationMultiplier, x1 at rest to x1.6 at Time 10, floored
+      at x0.25). Until the element-scaling unification a fleet-wide read in
+      VesselTransformer.CurrentBoostAmount also applied Time to the boost''s SPEED, which
+      this map declared nowhere; speed is now per-hull through the prefab''s own
+      BoostSpeedMultiplier, which the Serpent does not author (so x1, unscaled).'
     Input: 6
-    MultiplierAtFullLevel: 1.6
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

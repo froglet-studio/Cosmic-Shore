@@ -15,7 +15,7 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 |---|---|---|
 | The default, full protocol | `/ship` | Everything below. |
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
-| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, and a doc-drift sweep. |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, and a mechanical refactor-opportunity sweep (D8) over §3.6. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
@@ -47,6 +47,15 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
 - **Say so plainly instead.** The verification line in the PR body and the ship report reads
   "not compiled — no editor or compiler in this environment", followed by what a human must
   do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+- **These gates do not share a command line, and a wrong flag exits 2 — which reads as a
+  FAILURE.** `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py` and `check_elemental_floats.py` take `--check`;
+  `check_conditional_compilation.py` takes none (it just runs) and
+  `check_self_referential_locals.py` wants `--all` or a path list. Passing `--check` to either of
+  the last two gets `error: unrecognized arguments: --check` and exit 2, which in a sweep is
+  indistinguishable from the gate finding something — the sibling of this file's own "a gate that
+  ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
+  reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
 
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
@@ -215,6 +224,20 @@ run the `/reorient` skill first and act on its verdict before shipping.
   below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
   `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
 
+- **A removal's doc sweep is not finished at the system's own `Docs/` folder — the per-feature
+  doc beside the code is where a reader looks FIRST, and it is the last place anyone edits.** A
+  branch that retires a channel naturally documents the retirement where it is defined and where
+  the architecture is written down, then stops. One session did exactly that, and a D2 sweep for
+  the two removed field names found **nineteen** live sites outside that folder still describing
+  the channel as the place a number lives — six per-ability docs, a verification checklist, and,
+  worst, a `Docs/prompts/*.md` that INSTRUCTS a future session to author the deleted field into an
+  asset (the stale-instruction hazard §2 names, in the one file class written to be executed).
+  Two of the nineteen were in a doc the same branch had already rewritten: it said *"nothing in
+  this document should ever again say 'map pinned to 1'"* fourteen lines above four more of them.
+  So: grep the removed IDENTIFIER, not the system, across `Assets/**/*.md`, `Docs/`, `.claude/`
+  and CLAUDE.md, and classify every hit as **describing the removal** (keep) or **describing it as
+  live** (fix). Include `Docs/prompts/` explicitly — a prompt is code somebody will run.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -226,6 +249,26 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+- **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
+  they do not — ask about scope before you discard either.** The collision above assumes two
+  implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
+  keeping both is correct: a parallel session found the same false claim (a collider budget for a
+  cost that does not exist) and corrected it where it had bitten them — one cell's budget, its
+  own doc section, one CLAUDE.md row — while this branch swept the claim's 23 project-wide sites
+  and added a gate. Taking either wholesale would have thrown away real work: theirs, the
+  justification for a specific number; mine, the sweep and the thing that stops the claim
+  regrowing. Both narrations survive because they answer different questions. The test is
+  mechanical: diff each side's file list against the other's. **Same files, same subject → pick
+  one. Disjoint files with one shared subject → keep both, and make each reference the other
+  rather than restating it.**
+- **A gate this branch adds must be negative-controlled against the content the MERGE brought in,
+  not only against your own.** A green gate over files you have never read is not evidence; it is
+  as consistent with "the gate cannot see that region" as with "that region is clean" — and the
+  merge just added a few thousand lines nobody wrote it for. Re-inject the exact defect into the
+  merged-in text and confirm the gate names it there (`cp` the file, mutate one sentence in THEIR
+  prose, run, restore). One pass did this and the gate fired on the parallel branch's new cell
+  doc, which is what turned "it passes" into "it covers them" — and had it stayed silent, the
+  honest report would have been that the gate's scope stops at the branch.
 - **If the branch ships a doc that cites `file:line`, the merge just rotted it.** Line
   references are the one kind of prose that goes stale from a commit that never touched
   your branch. After merging the base, re-resolve EVERY reference mechanically — extract
@@ -403,9 +446,18 @@ Walk every changed file against these gates:
   `author_*_assets.py`** — the narrow form was what this rule originally said and it sees **15 of
   the 36** generators, missing every one whose output is not a mode's asset set (sprite and mesh
   authors, population and layout authors). A branch whose own generators fall outside the glob gets
-  a clean-looking sweep that never ran on its work. Measured 12 Sep 2026: **7 of 15 RED under the
-  narrow glob, 10 of 36 under the wide one** (the family was 11 when this was written -- re-measure,
-  never quote), in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  a clean-looking sweep that never ran on its work. Re-measured 21 Sep 2026: the family is **50**
+  and the wide glob gives **33 OK / 17 RED** — but **7 of those 17 are `ModuleNotFoundError: No
+  module named 'numpy'`**, an environment gap rather than a defect, so the honest tally is 33 OK /
+  **10 RED** / 7 un-runnable here. Split those two before reporting a number; a missing module is a
+  container to fix, a spent `assert` is a generator to fix. (Was 49 / 32 OK / 9 RED on 18 Sep, 10 of
+  36 on 12 Sep and 7 of 15 under the narrow glob; the family was 11 when this was first written --
+  **re-measure, never quote**.) **A/B every red against a clean base worktree before you report
+  the tally**, because the sweep cannot tell a generator your branch broke from one that was
+  already red: this pass found 12 red, and two of them (`author_regatta_assets`,
+  `author_broadside_assets`) were **OK on base and red on the branch** — a reader of a shipped
+  measurement it depends on had gone stale, which the bare count presented as somebody else's
+  debt. The real ones fall in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
   platform change deleted while the generator that authors it was left untouched. That second
   class is the one to carry: **a generator that owns an asset's content is a second place every
   schema change has to land, and it does not fail at the time of the change** — it fails months
@@ -654,6 +706,52 @@ Then act on it — this step produces edits, not intentions:
   decide — silence is the only wrong output. A session that learned nothing
   reusable says so explicitly.
 
+## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
+
+§3.5 harvests what the session learned. This harvests what the session **saw and did not
+fix**. It runs here for one reason: by now you have read every hunk adversarially and
+opened every doc the branch touches, so the measurement a `/refactor` pass would have to
+spend an hour deriving is already in your hands. It will not be next week.
+
+**The output is rows in the owning `BACKLOG`/`TODOS`/`REFACTOR` doc (or `spawn_task`),
+each carrying the command and its output. Never an edit to this branch.** `/refactor` §4
+forbids widening for the same reason §4 below forbids mixing an experiment with finished
+work: a branch that grows a second subject cannot be reviewed as either one.
+
+Three sources, in descending order of how often they pay:
+
+1. **Debt this branch CREATED.** Every "kept for compatibility" field, every accessor you
+   left because something might still read it, every tool you kept rather than retired
+   (§2.5), every doc paragraph you SOFTENED rather than deleted because you were not sure
+   the old behaviour was gone. Each is a row with a blocking question, and you are the
+   only person who will ever know it is there.
+2. **Debt this branch WALKED PAST.** The sibling class with the same latent bug, the dead
+   component the guid sweep turned up, the shared-asset write on a live path, the second
+   copy of the constant you just moved. One pass found four of these and put all four in
+   rows; that is the expected yield, not an unusually messy branch.
+3. **Debt the branch made VISIBLE.** A count, table or "N of M" claim you had to
+   re-derive in §3 — if a hand-maintained table was wrong, the row is *"ask the tool"*,
+   not *"fix the table"* (`/refactor` §7).
+
+Check what you saw against `/refactor` §3's ten shapes before writing the row, because
+the shape is what makes it actionable — *a read whose writer is elsewhere*, *two members
+sharing a name*, *"referenced by nothing"*, *an absent YAML key falling back to the
+initializer*, *a sentinel read as a measurement*, *a silent clamp*, *per-instance state on
+a shared SO*, *prose describing a deleted system*, *a spent one-shot `assert` above a
+generator's validation*.
+
+Two rules that decide whether the row is worth writing:
+
+- **Incompleteness is a REPORT; inconsistency is a FIX.** A vessel with an open design
+  slot is not debt — it is unfinished design, and a row that files it as cleanup invites
+  somebody to invent the design. Say which one it is.
+- **A row with no measurement is worse than no row.** It becomes the next session's claim
+  to disprove, which is exactly the failure `/refactor` exists to answer. If you cannot
+  attach evidence, write down what you would have to measure instead of asserting what
+  you suspect.
+
+A branch that found nothing says so in the report. Silence reads as "not checked".
+
 ## 4. Go / no-go (push back when warranted)
 
 Say **NO** — and list the concrete iterations needed — when any of these hold:
@@ -699,5 +797,7 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
 
 Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
-what was retired), the follow-ups you recorded, and the §3.5 skill-capture outcome
-(skills created/extended, or the explicit "nothing reusable this session").
+what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
+(skills created/extended, or the explicit "nothing reusable this session"), and the
+§3.6 refactor-opportunity outcome (the rows opened and where they live, or the explicit
+"nothing found" — and never a fix made in their place).

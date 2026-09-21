@@ -1635,8 +1635,9 @@ clip one occasionally; that is the environment being real, not a bug.
 
 **Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
 BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
-its 225 shielded/super-shielded landmarks carry always-on convex MeshColliders (~0.3%,
-same ration as the Scurry arena). The Yggdra menu roll has NOT yet been device-profiled —
+its 225 shielded/super-shielded landmarks (~0.3%, same ration as the Scurry arena) cost
+**no extra collider** — a shield swaps the mesh and the mass, never the collider, so they ride
+the same LOD-cullable BoxCollider; they are rationed because armoured mass is never food. The Yggdra menu roll has NOT yet been device-profiled —
 soak Menu_Main with the Yggdra config forced before shipping (see
 `Docs/PERFORMANCE_OPTIMIZATION.md`); the Atlantis prefab's `density` knob (0.5–1.3) is
 the fallback lever.
@@ -1782,10 +1783,12 @@ cutoff · basin `u < 0.34f` · river `hot` noise threshold `> 0.36f` · collapse
 secondary-vent count (5) · erupting mouth disc (285) + curtain strands (5).
 
 **Collider budget:** plain/danger ride the LOD-cullable BoxCollider (bounded by
-`PrismColliderLodManager` radius, not population). Always-on convex MeshColliders (shielded +
-super-shielded landmarks) go 16 → **36**: 35 shielded (fumarole caps + degassing lip caps, both
-families multiplied by the 2× pass's cluster counts) and 1 super-shielded (the cooled massif's
-frozen heart), still ~0.09% of the cell's prisms and well under the 225 the Yggdra roll carries.
+`PrismColliderLodManager` radius, not population) — and so do the shield tiers, which swap the
+mesh and the mass and never the collider, so the whole cell is collider-flat. The shielded /
+super-shielded LANDMARK count goes 16 → **36**: 35 shielded (fumarole caps + degassing lip caps,
+both families multiplied by the 2× pass's cluster counts) and 1 super-shielded (the cooled
+massif's frozen heart), still ~0.09% of the cell's prisms and well under the 225 the Yggdra roll
+carries. That ration is about inedible, near-permanent mass, not about colliders.
 
 ---
 
@@ -1851,9 +1854,10 @@ that is the deliberate contrast with Caldera sitting next to it in the rotation.
 Daedala: Daedala is *built* everywhere and gravity-coherent (terraces climb, minarets stand up);
 Ourobor is landscape with towers on both faces and no global up at all.
 
-**Collider budget:** 27 always-on convex MeshColliders (24 shielded spire crowns + 3
-super-shielded keystones), ~0.07% of the cell's prisms. Everything else is plain and rides the
-LOD-cullable BoxCollider.
+**Collider budget:** flat — every prism rides the LOD-cullable BoxCollider, the 27 armoured
+landmarks (24 shielded spire crowns + 3 super-shielded keystones, ~0.07% of the cell's prisms)
+included: a shield swaps the mesh and the mass, never the collider. The ration is about mass the
+food web cannot take, not about colliders.
 
 **Follow-ups.** (a) Not yet flown — confirm the band width really does read as "locally flat" at
 vessel speed, and that a crossing is legible rather than confusing. (b) Ourobor shares the generic
@@ -2271,9 +2275,10 @@ thing bounding the canopy; there is no cap, TTL or culler anywhere in it.
 
 Per-prism colliders are the same LOD-cullable `BoxCollider` every prism carries (active count
 bounded by `PrismColliderLodManager` radius, not by population), and the mature garden's ~33k
-prisms sits *at* Yggdra's count, not above it. The always-on convex `MeshCollider` tier is **144**
-(96 super-shielded gate + 48 shielded lanterns) against Yggdra's 225 — comfortably inside the
-same ration. The one genuinely new cost is the lifeform **heart**: +1 always-on `SphereCollider`
+prisms sits *at* Yggdra's count, not above it — and the shield tiers add nothing, since a shield
+swaps the mesh and the mass and never the collider. The ARMOURED tier is **144** (96
+super-shielded gate + 48 shielded lanterns) against Yggdra's 225 — comfortably inside the same
+ration, which bounds inedible near-permanent mass rather than colliders. The one genuinely new cost is the lifeform **heart**: +1 always-on `SphereCollider`
 per live plant, ~140 at maturity (flora hearts are bounded by the profile's planting counts and
 the Frenzy ceiling, exactly as fauna hearts are bounded by `MaxLivePopulation`). No new spatial
 query type is introduced — growth uses `PrismSpatialIndex.TryReserve`, the same claim the
@@ -3256,8 +3261,10 @@ Applied at three points, all of them existing chokepoints rather than new ones:
 bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore
 not food. Without that the grazers would eat two thirds of their own jail (the bars are painted
 across the domain triad and the legacy diet eats opposing-domain mass), and the alternative —
-shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on convex
-MeshColliders (`PrismKinds`). A steering rule bought what a shield would have cost.
+shielding the bars — fails on GEOMETRY rather than on colliders (a shield costs none): a shield
+reaches 1.5× `leafSize`, which on a 26u bar laid every 34u fuses the sparse lattice into a solid
+tube and deletes the one-hit break-in the mode is built on (§35). A steering rule bought what a
+shield could not.
 
 Offspring inherit their parent's band for free: they bind the same config.
 
@@ -3476,7 +3483,7 @@ the existing tadpole (8) and brittlestar (4).
 
 | Item | Before | After |
 |---|---|---|
-| Super-shielded edge lining (always-on convex MeshColliders) | 240 | **480** |
+| Super-shielded edge lining (prisms; **zero** extra colliders — a shield swaps the mesh, not the collider) | 240 | **480** |
 | Live fauna cap (bodies) | 12 (tadpole 8 + brittlestar 4) | **34** (+ piranha 22) |
 | New physics queries | — | **none** |
 

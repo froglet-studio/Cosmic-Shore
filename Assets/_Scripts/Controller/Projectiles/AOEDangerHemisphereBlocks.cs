@@ -125,7 +125,7 @@ namespace CosmicShore.Gameplay
                     : Mathf.Lerp(1f, 0.5f, tNorm); // fallback
 
                 // Depth scale
-                float depth = config.DepthScale?.Value ?? 1f;
+                float depth = config.DepthScale;
                 Vector3 baseScale = config.BaseBlockScale;
                 baseScale.z *= depth;
 

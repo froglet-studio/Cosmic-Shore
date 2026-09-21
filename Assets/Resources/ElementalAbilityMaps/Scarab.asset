@@ -23,8 +23,7 @@ MonoBehaviour:
       are destroyed) and elementally debuffing any opposing pilot it engulfs.
       Everything it claims is thrown the way the punch travelled, not away from a
       point. Charge shortens its cooldown - authored on ScarabCavitationBlast,
-      x1 at rest -> x0.5 at level 10, so the generic map multiplier stays 1.0 (no
-      double-dip). THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits,
+      x1 at rest -> x0.5 at level 10 - the one number that paces it. THE DASH ITSELF IS FREE AND NEVER PACED: only the punch waits,
       so a recharging blast never costs you the dodge. No input-event binding: the
       juke polls the right thumbstick directly (ScarabJukeController), and the enum
       has no member for it - InputEvents.RightStickAction (1) and
@@ -32,8 +31,6 @@ MonoBehaviour:
       their names, and 11 is what this entry used to claim, which would have taught
       the four-icon row that the blast is a trigger ability.'
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -44,35 +41,35 @@ MonoBehaviour:
       no sanctioned breaker.
   - Element: 2
     AbilityLabel: Switch
-    AbilityDescription: Mass grows the switch structure - ring aperture and the span
-      of the prism fill across its mouth (authored on
-      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10; the
-      generic map multiplier stays 1.0 to avoid double-dipping).
+    AbilityDescription: 'Mass grows the switch''s RING RADIUS - the mouth a ball has
+      to thread (PlaceSwitchActionExecutor multiplies RingRadius by the
+      PlaceSwitchActionSO.switchScale ElementalFloat, x1 -> x2.5 at level 10, read
+      live at placement). It used to grow the prism fill across that mouth as well;
+      the fill was retired on 2026-08-24 and the switch now blooms in as a bare ring.'
     Input: 6
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Armored Switch
-    UpgradeDescription: The switch is built from SHIELDED prisms (the sanctioned
-      shield tier - never SuperShield), snapshotted at placement so a switch keeps
-      the armour it was born with. An opposing ball now caroms off it and sheds one
-      shield per prism instead of eating straight through, which is what turns a
-      switch placed in front of someone else's shot into real defence.
+    UpgradeLabel:
+    UpgradeDescription: '(open design slot) The previous upgrade, "Armored Switch",
+      built the switch''s mouth from SHIELDED prisms. It was retired on 2026-08-24
+      together with the prism fill it armoured (ScarabSwitch.cs, "Superseded" note in
+      SCARAB.md section 5.1) and nothing replaced it, so the Scarab has no live Mass 5.
+      This entry claimed the retired one until 2026-09-18, which read as a wired
+      upgrade on every surface that asks the map. Do not invent a replacement without
+      sign-off.'
   - Element: 3
     AbilityLabel: Ball Forge
     AbilityDescription: 'Space scales the ball you mint: x1 at rest, x4 at level 10.
-      Unlike the other three rows the map''s generic multiplier IS the carrier here
-      (MultiplierAtFullLevel 4), read live at forge time and stamped once - a ball
-      keeps the size it was born with. No input binding: you forge by flying THROUGH
+      The carrier is ScarabBallForge.BallSizeScale (x1 -> x4, floored at
+      x0.5), read live at forge time and stamped once - a ball keeps the size it
+      was born with. It is an ElementalFloat in C# rather than an asset field only
+      because that class is static and can hold no serialized field. No input binding: you forge by flying THROUGH
       an omni crystal at the speed and heading you want the ball to leave with, so
       making a ball is a piece of driving. The launch velocity is the vessel''s TRUE
       motion including the dash channel, so dashing into a crystal and dashing into
       a resting ball produce the same trajectory.'
     Input: 0
-    MultiplierAtFullLevel: 4
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -84,12 +81,10 @@ MonoBehaviour:
     AbilityLabel: Throttle
     AbilityDescription: Time raises the top speed of the throttle ramp (authored on
       the transformer's ThrottleScalerMultiplier ElementalFloat, x1 -> x1.5 at level
-      10; the generic map Time multiplier stays 1.0 - the no-double-dip pin). The
+      10). The
       throttle is analog on the right trigger, thrust always along the nose, and
       releasing it is the only brake.
     Input: 1
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
