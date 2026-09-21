@@ -249,6 +249,26 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+- **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
+  they do not — ask about scope before you discard either.** The collision above assumes two
+  implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
+  keeping both is correct: a parallel session found the same false claim (a collider budget for a
+  cost that does not exist) and corrected it where it had bitten them — one cell's budget, its
+  own doc section, one CLAUDE.md row — while this branch swept the claim's 23 project-wide sites
+  and added a gate. Taking either wholesale would have thrown away real work: theirs, the
+  justification for a specific number; mine, the sweep and the thing that stops the claim
+  regrowing. Both narrations survive because they answer different questions. The test is
+  mechanical: diff each side's file list against the other's. **Same files, same subject → pick
+  one. Disjoint files with one shared subject → keep both, and make each reference the other
+  rather than restating it.**
+- **A gate this branch adds must be negative-controlled against the content the MERGE brought in,
+  not only against your own.** A green gate over files you have never read is not evidence; it is
+  as consistent with "the gate cannot see that region" as with "that region is clean" — and the
+  merge just added a few thousand lines nobody wrote it for. Re-inject the exact defect into the
+  merged-in text and confirm the gate names it there (`cp` the file, mutate one sentence in THEIR
+  prose, run, restore). One pass did this and the gate fired on the parallel branch's new cell
+  doc, which is what turned "it passes" into "it covers them" — and had it stayed silent, the
+  honest report would have been that the gate's scope stops at the branch.
 - **If the branch ships a doc that cites `file:line`, the merge just rotted it.** Line
   references are the one kind of prose that goes stale from a commit that never touched
   your branch. After merging the base, re-resolve EVERY reference mechanically — extract
