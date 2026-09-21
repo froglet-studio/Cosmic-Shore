@@ -163,8 +163,14 @@ EXCLUDE = set()
 # of an authored plant - the cell's whole environment IS the colony - so this file's rule
 # (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
 # them back to the Blob caps.
+#
+# "Garland ": the Garland cell (Docs/ECOSYSTEM.md 48). Its four species are picked for
+# SILHOUETTE at the menu camera's orbit distance and their floors/caps are derived from that
+# cell's own phase ladder, not from an authored opening density - so this file's rule
+# (cap = ISC x 1.5) would quietly re-cut a roster that was solved against a budget.
 OWNED_ELSEWHERE = {
     "Lattice ": "Tools/Build/author_lattice_cell.py",
+    "Garland ": "Tools/Build/author_garland_cell.py",
 }
 
 
