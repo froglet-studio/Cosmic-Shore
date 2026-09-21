@@ -17,12 +17,7 @@ MonoBehaviour:
   projectileScale: 10
   energy: 0
   speed: 120
-  projectileTime:
-    Enabled: 0
-    Value: 3
-    Min: 0
-    Max: 0
-    element: 0
+  projectileTime: 3
   growthFactorAtRestingMass: 20
   growthFactorAtFullMass: 32
   launchDelaySeconds: 0.2

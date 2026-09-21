@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>It is not a skin, and that is still the whole design.</b> The first cut of this
     /// species plated every surface cell and read as a lumpy sphere at any resolution, because a
-    /// closed crust of a solid form IS that solid (Docs/ECOSYSTEM.md §44.2 lists the four
+    /// closed crust of a solid form IS that solid (Docs/ECOSYSTEM.md §50.2 lists the four
     /// closed-surface candidates built and rejected). What replaced it is anisotropic by
     /// construction: prisms are laid DENSELY along a curve and SPARSELY across it, so a plant is
     /// a lattice of open ribbons you see the fractal through. A curve the rule cannot follow

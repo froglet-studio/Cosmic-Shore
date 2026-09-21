@@ -84,6 +84,80 @@ the ship and dissolves whatever the pilot is flying *into* while they are lookin
 
 ---
 
+## 3.1 It had a sibling, and it was RETIRED — read this before adding a third vantage
+
+`VesselFirstPersonView` (2026-09-16, the Serpent's scope —
+`_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md`) seated the camera IN the
+cockpit instead of ahead of the ship. It was deliberately built to this file's shape: the same
+static-plus-`LateUpdate`-`Driver`, the same `GetCloseCamera` identity test so a death or replay
+camera is never re-posed, the same identity-guarded bind at the four `IsLocalPilot` sites in
+`VesselController`, and the same "apply at the point of use" rule — it set
+`CustomCameraController.FirstPerson` rather than writing `_followOffset`, for the reason §4 gives.
+
+**It was deleted three weeks later, on its own ability's first playtest of the feature**, and the
+reason is the useful part: *"the zoom is nauseating"*. The vantage was right and the MAGNIFICATION
+on it was not — a magnified view is a lever on every motion that reaches it, so a 22° scope
+multiplies the pilot's own turn, the vessel's roll, the camera's settle and the speed tunnel's own
+narrowing by exactly the ~4× it multiplies the target. The scope's magnified picture moved into a
+window of its own (§3.1.1) and the flight camera went back to doing one thing;
+`CustomCameraController` no longer carries `FirstPerson` / `FirstPersonOffset` at all, and the four
+`VesselController` bind lines went with it, because an unreferenced camera vantage is the
+"eventually mistaken for a live feature" trap.
+
+Three things it established are still true and are what a third vantage inherits:
+
+- **A vantage BEATS rather than composes.** First person beat rear view in `EffectiveOffset`: the
+  z-mirror of a cockpit offset is another point inside the same hull, so "look behind from the
+  cockpit" is not a vantage the mirror can express. Two vantages that both re-pose one camera have
+  to be ordered, not blended.
+- **Changing the FIELD OF VIEW is a different, heavier thing than changing the POSE.** The speed
+  tunnel owns FOV fleet-wide, so a zoom must go through
+  `VesselSpeedTunnel.SetHomeFieldOfViewOverride` (`Docs/SPEED_TUNNEL.md §2.1`) and never through
+  the camera. That surface is kept with **no caller today**, as a guard rather than a feature.
+- **Ask whether the magnification belongs on the camera the pilot FLIES with at all.** A second,
+  magnified picture (§3.1.1) costs a render and leaves motion readable at 1×; magnifying the flight
+  view costs nothing and makes every input the pilot did not give as loud as the one they did.
+
+### 3.1.1 The one sanctioned way to show a SECOND view at the same time
+
+That scope needed a magnified picture WITHOUT magnifying the flight view — and §3's "there is deliberately
+NO second camera" still holds, because the rule is about a second **live gameplay** camera. A
+camera that renders only into a `RenderTexture`, is left **disabled** and stepped by hand, and is
+**never tagged MainCamera** is outside all four of §3's systems by construction: the speed tunnel
+resolves `CameraManager`'s active controller and never sees it, `ApplyCameraGraphicsSettings` and
+`SetBackgroundColor` reach only the managed cameras, and `Camera.main` skips it twice over. That is
+the `ConnectingArenaPreview` shape, and `ScopePipView` is the second user of it.
+
+It is posed from the vessel itself — the eye at `1.05 ×` the measured circumscribing hull radius
+past the nose, aimed along the same forward the shot is cast along — so the window cannot become a
+second opinion about where the weapon points. **It is a genuine extra render of the world** (the
+preview stands the gameplay camera down; this one cannot, since that is what the player is flying
+with), so it is paid for with a small square target, no shadows, no AA, a capped refresh and a
+lifetime of exactly as long as the ability is held.
+
+**Passing §3's four tests is NOT sufficient — the camera must also draw the way the GAME'S camera
+draws, and that is where every one of these windows has failed.** A bare
+`AddComponent<Camera>()` comes up with URP's defaults: no post-processing, no volume layer mask,
+SDR. This world is authored almost entirely HDR-emissive against the gameplay volume's tonemapper,
+so an un-adopted camera renders a flat, colourless, near-black version of it. Adopt through
+**`OffscreenCameraSetup`** (`_Scripts/Utility/`) — `AdoptGameCameraFraming` for what it sees and
+clears to, `AdoptGameCameraImage` for how it draws, with **post-processing on by default because it
+is not a quality setting here**, and clip planes deliberately derived per window rather than
+borrowed.
+
+That helper exists because the finding was rediscovered **four times** — `ModePreviewArena`,
+`ConnectingArenaPreview`, `ToyPreviewCamera` and the Serpent's scope — and each rediscovery cost a
+playtest. The general rule: **a picture that renders WRONG and a picture that does not render at
+all are the same report.** The first three framed a bright subject and read as merely low quality;
+the fourth framed open space, where the whole picture *is* the skybox and the volume, and was
+reported as the window being gone. A window whose subject can legitimately be empty also needs an
+opaque BACKING and a full-strength rim, so "showing nothing" and "not there" do not look the same.
+
+**Do not revive `Pip`/`PipCamera.prefab` for this.** Its `border` `RawImage` names a texture guid
+no asset carries, and a `RawImage` with a missing texture draws a solid quad in its own tint — a
+navy rectangle over ~55% of the display — and it gates on `AutoPilotEnabled`, which is false at
+`Start` on every vessel.
+
 ## 4. The mirror is applied at the point of use, never written into the offset
 
 `CustomCameraController.RearView` is a **flag**; `_followOffset` is never touched. This is the

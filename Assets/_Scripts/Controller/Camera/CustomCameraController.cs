@@ -41,11 +41,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool RearView { get; set; }
 
+
         /// <summary>
         /// The offset actually used to pose the camera this frame: the authored one, or its
         /// z-mirror while <see cref="RearView"/> is set. Mirroring z alone — not x, not y — is
         /// what puts the camera directly ahead at the same distance and the same height, rather
         /// than at some reflected vantage the vessel's settings never described.
+        ///
+        /// <para>There was briefly a FIRST-PERSON vantage here too, for the Serpent's scope. It
+        /// is retired: a magnified cockpit view read as nauseating, so the scope's magnification
+        /// moved into its own window and this camera went back to doing one thing
+        /// (<c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> round 4). A future cockpit would be a
+        /// third case here, not a revival of a flag nothing was setting.</para>
         /// </summary>
         private Vector3 EffectiveOffset =>
             RearView
@@ -140,20 +147,27 @@ namespace CosmicShore.Gameplay
 
             _lastTargetPos = _followTarget.position;
 
-            // Apply camera shake offset (decaying random displacement)
-            if (_shakeTimeRemaining > 0f)
-            {
-                _shakeTimeRemaining -= Time.unscaledDeltaTime;
-                float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
-                // Perlin-based shake for smoother motion than pure random. ~10 Hz reads as a weighty
-                // "thud" rather than the ~25 Hz buzz that looked like high-frequency jitter.
-                const float shakeFreq = 10f;
-                float t = Time.unscaledTime * shakeFreq;
-                float x = (Mathf.PerlinNoise(t, 0f) - 0.5f) * 2f;
-                float y = (Mathf.PerlinNoise(0f, t) - 0.5f) * 2f;
-                float z = (Mathf.PerlinNoise(t, t) - 0.5f) * 2f;
-                transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
-            }
+            ApplyShake();
+        }
+
+        /// <summary>
+        /// Decaying random displacement, applied after the pose is settled. Factored out so the
+        /// first-person path — which writes its own pose and returns early — still recoils.
+        /// </summary>
+        private void ApplyShake()
+        {
+            if (_shakeTimeRemaining <= 0f) return;
+
+            _shakeTimeRemaining -= Time.unscaledDeltaTime;
+            float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
+            // Perlin-based shake for smoother motion than pure random. ~10 Hz reads as a weighty
+            // "thud" rather than the ~25 Hz buzz that looked like high-frequency jitter.
+            const float shakeFreq = 10f;
+            float t = Time.unscaledTime * shakeFreq;
+            float x = (Mathf.PerlinNoise(t, 0f) - 0.5f) * 2f;
+            float y = (Mathf.PerlinNoise(0f, t) - 0.5f) * 2f;
+            float z = (Mathf.PerlinNoise(t, t) - 0.5f) * 2f;
+            transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
         }
 
         public void ApplySettings(CameraSettingsSO settings)

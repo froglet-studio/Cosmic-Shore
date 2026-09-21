@@ -50,7 +50,7 @@ GUID_SURFACE_CS = "ae15a77fd141196624e55b833545b01c"
 GUID_TABLES_CS = "4278eea1ad9158a0be0113fde4146748"
 ELEMENT_ID = {"Charge": 1, "Mass": 2, "Space": 3, "Time": 4}
 
-# TWO SPECIES on ONE growth family (Docs/ECOSYSTEM.md §46). They share the component, the
+# TWO SPECIES on ONE growth family (Docs/ECOSYSTEM.md §52). They share the component, the
 # surface bake and every tool; they differ in their curve rules and in one dial each - the
 # foliage TWISTS, the bloom does not - so they are two PREFABS rather than two classes, the
 # way the eight Hesperides phyllotactics are eight species on one class.
@@ -100,7 +100,7 @@ SPECIES_ASSETS = {
             "Time":   "4b27f684cf9b4db6bcc4b78268e185e2",
         },
     ),
-    # Apollonia: the spherical Apollonian gasket of rings - the self-similar species (§48).
+    # Apollonia: the spherical Apollonian gasket of rings - the self-similar species (§54).
     "Apollonia": dict(
         prefab="ApolloniaFlora",
         asset_prefix="Apollonia Flora",

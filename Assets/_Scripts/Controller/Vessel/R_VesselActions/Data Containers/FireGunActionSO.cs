@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileScale = 1f;
         [SerializeField] int energy = 0;
         [SerializeField] float speed = 90f;
-        [SerializeField] ElementalFloat projectileTime;
+        [SerializeField] float projectileTime = 3f;
 
         [Header("Round Growth (MASS)")]
         [Tooltip("How many times its launch size the round swells to, at RESTING Mass " +
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         public float ProjectileScale => projectileScale;
         public int Energy => energy;
         public float Speed => speed;
-        public ElementalFloat ProjectileTime => projectileTime;
+        public float ProjectileTime => projectileTime;
         public float LaunchDelaySeconds => launchDelaySeconds;
 
         /// <summary>

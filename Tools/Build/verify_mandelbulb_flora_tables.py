@@ -77,7 +77,7 @@ WHAT EVERY BOUND IN HERE IS: a MEASUREMENT with a stated margin, never a round n
 Where the task that commissioned a gate named a tighter bound than the shipped, correct code
 can hold, the measured value and the bound are both printed — a bound the shipped tree fails
 is a red build, and a bound the shipped tree passes by 1.1x is a coincidence rather than a
-margin (Docs/ECOSYSTEM.md §46).
+margin (Docs/ECOSYSTEM.md §52).
 
   verify_mandelbulb_flora_tables.py
   verify_mandelbulb_flora_tables.py --self-test   # mutate the shipped file 26 ways and assert
@@ -176,7 +176,7 @@ def octiles(prisms):
     return bins
 
 
-# ── THE WATERSHED's census (Docs/ECOSYSTEM.md §47) ────────────────────────────────────
+# ── THE WATERSHED's census (Docs/ECOSYSTEM.md §53) ────────────────────────────────────
 #
 # The critical points are the ONE place the surface is differentiated twice, and the only
 # place in this species where two implementations could legitimately disagree about a SET
@@ -308,7 +308,7 @@ def check_critical(element, fail, verbose=True):
 
     # THE ORDER, EXACTLY. This is the one the plant reads — a skeleton seed list IS the
     # saddles in farthest-point order, and every budget prefix of it has to be spread over
-    # the whole sphere (§44.5's polar-cap defect, met from a third direction). It is a
+    # the whole sphere (§50.5's polar-cap defect, met from a third direction). It is a
     # permutation of integers, so there is nothing to tolerate: it either matches or the two
     # implementations grow different plants.
     order_ok = their_idx == mine_idx
@@ -323,7 +323,7 @@ def check_critical(element, fail, verbose=True):
     # separate filters over the census and separate farthest-point walks, and Apollonia reads
     # only the second. Its level-0 discs are a PREFIX of this order, so an ordering difference
     # here is not one ring moved, it is a different set of thirteen lobes crowned — the
-    # polar-cap defect (§44.5) met from a fourth direction, since every prefix of a
+    # polar-cap defect (§50.5) met from a fourth direction, since every prefix of a
     # farthest-point order must be spread over the whole sphere.
     peak_ok = their_peaks == mine_peaks
     if not peak_ok:
@@ -413,7 +413,7 @@ def check_pose_table(element, fail, verbose=True):
         # THE RADIAL-LIFT CLAIM, stated as algebra on the shipped row alone: a posed prism
         # sits on its own ray at Radius*(1 - Dive) + RadialOffset. This is the whole of what
         # `Dive` means, it needs no model to check, and it is what the dive's tip depth rests
-        # on (Docs/ECOSYSTEM.md §47).
+        # on (Docs/ECOSYSTEM.md §53).
         w_rad = max(w_rad, abs(math.sqrt(sum(c * c for c in pos)) - abs(radius * (1.0 - dv) + off)))
 
     # POSITION does not read the normal — it is dir * (radius*(1-dive) + off), and both
@@ -421,7 +421,7 @@ def check_pose_table(element, fail, verbose=True):
     # the normal, which is a finite difference of a field the two implementations store as
     # float32 and reconstruct through different double sums, so their floor is ~1e-5 whatever
     # Pose does: measured worst 8.8e-6 (Time). Holding them at the 1e-5 this was commissioned
-    # at would be a 1.13x margin, which §46 records as the shape of a constant that is a
+    # at would be a 1.13x margin, which §52 records as the shape of a constant that is a
     # coincidence rather than a bound; they are held at 1e-4 with the measurement printed.
     for name, value, bound in (("position", w_pos, 1e-6),
                                ("forward", w_fwd, 1e-4),
@@ -481,7 +481,7 @@ def check_heading_roundtrip(fail, verbose=True):
         print(f"  heading round trip exact over {n} headings (worst {worst:.1e} deg)")
 
 
-# ── APOLLONIA's gasket (Docs/ECOSYSTEM.md §48) ────────────────────────────────────────
+# ── APOLLONIA's gasket (Docs/ECOSYSTEM.md §54) ────────────────────────────────────────
 #
 # The disc set IS the species — one ring per disc, in lay order — and it splits cleanly into
 # a half that can be held EXACTLY and a half that cannot, for a reason that is arithmetic
@@ -971,7 +971,7 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
             fail(f"{species}/{element}: {name} {y:.5f} shipped vs {x:.5f} model "
                  f"(tolerance {lim:.1%})")
 
-    # ── THE FALL, by the three statistics the dive owns (Docs/ECOSYSTEM.md §47) ──
+    # ── THE FALL, by the three statistics the dive owns (Docs/ECOSYSTEM.md §53) ──
     #
     # None of them is reachable from the rows above: a dive is a tail on SOME curves, so it
     # moves the prism count and the girth mean by a few percent and hides inside both
@@ -1115,7 +1115,7 @@ def check_element(element, fail, verbose=True, species="FractalFoliage"):
             fail(f"{element}: the skeleton walk disagrees by {worst_addr:.2e} on Dive/TanR "
                  f"(bound 1e-3)")
 
-    # ── APOLLONIA, by the three things a RING owns (Docs/ECOSYSTEM.md §48) ───────────
+    # ── APOLLONIA, by the three things a RING owns (Docs/ECOSYSTEM.md §54) ───────────
     integ_t = integ_m = float("nan")
     dive_curves = expect_curves = set()
     first_ring = float("nan")
@@ -1379,7 +1379,7 @@ def verify(verbose=True):
     # it leaves this file as a bare CalledProcessError — which the `--self-test` loop then
     # reports as "the harness refused to build". That is a lie about four of its own controls
     # (the radial lift and both phi wraps are caught precisely BY this selftest, and they
-    # compile perfectly), and it is exactly the shape §46 warns about: a gate that fires for
+    # compile perfectly), and it is exactly the shape §52 warns about: a gate that fires for
     # the right reason while naming the wrong one.
     try:
         self = run("selftest")
@@ -1462,7 +1462,7 @@ def self_test():
          "if (_seedIndex >= _seeds.Count) { _seedIndex = 0; _lane++; continue; }",
          "if (_seedIndex >= _seeds.Count) { _seedIndex = 0; _lane = lanes; continue; }"),
 
-        # ── THE FALL (Docs/ECOSYSTEM.md §47) ──
+        # ── THE FALL (Docs/ECOSYSTEM.md §53) ──
         ("the (1 - Dive) factor dropped from Pose (every dive prism poses back on the surface)",
          "position = scratch.Dir * (scratch.Radius * (1f - a.Dive) + a.RadialOffset);",
          "position = scratch.Dir * (scratch.Radius + a.RadialOffset);"),
@@ -1473,7 +1473,7 @@ def self_test():
          "_diveOwed[(int)((long)d * _seeds.Count / _diveQuota)] = true;",
          "_diveOwed[d] = true;"),
 
-        # ── THE WATERSHED (§47) ──
+        # ── THE WATERSHED (§53) ──
         ("the separatrix field flipped (valley arms climb, ridge arms fall)",
          "var field = ascend ? SteeringField.Ascent : SteeringField.Descent;",
          "var field = ascend ? SteeringField.Descent : SteeringField.Ascent;"),
@@ -1486,7 +1486,7 @@ def self_test():
         ("the frozen Hessian stencil perturbed 0.01 -> 0.02",
          "public const double HessianStencil = 0.01;",
          "public const double HessianStencil = 0.02;"),
-        # ── APOLLONIA (§48) ──
+        # ── APOLLONIA (§54) ──
         #
         # Every control below is anchored inside the gasket block, which is unreachable while
         # GasketLevels == 0 — so each of them leaves the other three species byte for byte
@@ -1558,7 +1558,7 @@ def self_test():
          "",
          "inert"),
 
-        ("the saddle order gone sharpness-major again (the belt defect, §44.5)",
+        ("the saddle order gone sharpness-major again (the belt defect, §50.5)",
          """                    double dd = dmin[i] - dmin[best];
                     if (dd > OrderDistanceTolerance) { best = i; continue; }
                     if (dd < -OrderDistanceTolerance) continue;

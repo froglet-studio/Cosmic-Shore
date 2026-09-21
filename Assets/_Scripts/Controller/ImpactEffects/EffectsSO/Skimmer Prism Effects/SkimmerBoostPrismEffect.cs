@@ -18,6 +18,17 @@ namespace CosmicShore.Gameplay
                  "IsUpgradeActive) - below the unlock, danger prisms grant only the base energy.")]
         [SerializeField] private float dangerEnergyMultiplier = 10f;
 
+        /// <summary>CHARGE -> skim energy per hit: x1 at the resting level, x2 at level 10, floored at x0.25.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 2, minMultiplier 0.25) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        [SerializeField] ElementalFloat chargeEnergyMultiplier =
+            ElementalFloat.Multiplier(1f, 2f, Element.Charge, 0.25f);
+
         [Header("Shared Config (single source of truth)")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier; // initial/base
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;  // max
@@ -41,7 +52,7 @@ namespace CosmicShore.Gameplay
             // CHARGE -> skim energy: the energy gained per prism-skimmer collision scales with
             // the vessel's live Charge level via its ElementalAbilityMapSO (1x at resting level,
             // 1x for vessels without a map or Charge entry). Per-hit snapshot; stateless SO.
-            float add = addPerHit * (status?.ElementalAbilityHandler?.Multiplier(Element.Charge) ?? 1f);
+            float add = addPerHit * chargeEnergyMultiplier.EvaluateLive(status);
 
             // CHARGE level-5 'Live Wire': danger prisms grant the bonus energy multiplier only
             // once the skimming vessel's Charge upgrade is active (below it, danger prisms pay

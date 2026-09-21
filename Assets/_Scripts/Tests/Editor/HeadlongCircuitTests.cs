@@ -45,19 +45,21 @@ namespace CosmicShore.Tests
         [Test]
         public void Flat_out_radius_matches_the_shipped_Rhino()
         {
-            Assert.AreEqual(1210f, HeadlongCircuitSettings.RhinoTopSpeed, 0.1f,
-                "50 x 24 + 10. If the ramp's maxBoostMultiplier moved, so did every corner.");
+            Assert.AreEqual(1200f, HeadlongCircuitSettings.RhinoTopSpeed, 0.1f,
+                "50 x 24 + 0. If the ramp's maxBoostMultiplier moved, so did every corner. "
+                + "(Was 1210 while the Rhino authored a 10 u/s DefaultMinimumSpeed; the floor "
+                + "went to 0 so the vessel can be brought to a stop - MinimumThrottleBrake.)");
 
-            // 1210 u/s over (1210 x 0.5 + 90) = 695 deg/s is a 99.8u circle; a pilot holding the
+            // 1200 u/s over (1200 x 0.5 + 90) = 690 deg/s is a 99.6u circle; a pilot holding the
             // ramp boost at FULL power may spend only 0.28 of the stick, so the tightest circle
-            // they can fly without giving any of it up is 99.8 / 0.28.
-            Assert.AreEqual(99.8f, RaceCourseGeometry.MinTurnRadius(
+            // they can fly without giving any of it up is 99.6 / 0.28.
+            Assert.AreEqual(99.6f, RaceCourseGeometry.MinTurnRadius(
                 HeadlongCircuitSettings.RhinoTopSpeed,
                 HeadlongCircuitSettings.RhinoRotationThrottleScaler,
                 HeadlongCircuitSettings.RhinoTurnScaler), 0.5f,
                 "Rhino min turn radius at top speed changed - re-derive the circuit ladder.");
 
-            Assert.AreEqual(356.3f, HeadlongCircuitSettings.FlatOutRadius, 1f,
+            Assert.AreEqual(355.9f, HeadlongCircuitSettings.FlatOutRadius, 1f,
                 "The flat-out radius is one point on the curve. If it moved, every corner did.");
         }
 

@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
     /// and a prism is one step of one curve. Curves that cannot be followed cleanly
     /// (too much turn, out of the radius band, over the roughness limit) are ABANDONED
     /// rather than plated, which is what leaves the dust and the singularities
-    /// unsampled. Nothing closes the surface into a skin: `Docs/ECOSYSTEM.md §44.2`
+    /// unsampled. Nothing closes the surface into a skin: `Docs/ECOSYSTEM.md §50.2`
     /// records the four closed-surface candidates that were built and rejected,
     /// because a closed crust of a solid form reads as that solid at any resolution.
     ///
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
             /// <summary>The PEAKS alone — the lobe tips — in FARTHEST-POINT order, the sibling
             /// of <see cref="Saddles"/> and the gasket's level-0 seeds. Cached beside the saddle
             /// list, so a species that never asks for it never pays for it. The peak SET is less
-            /// stable across float widths than the saddle set (§47), which is why the gasket
+            /// stable across float widths than the saddle set (§53), which is why the gasket
             /// takes a PREFIX of this order: a marginal extra peak beyond K is invisible.</summary>
             public IReadOnlyList<CriticalPoint> Peaks()
             {
@@ -302,7 +302,7 @@ namespace CosmicShore.Gameplay
 
         // ── critical points ────────────────────────────────────────────────────────
         //
-        // The WATERSHED species (Docs/ECOSYSTEM.md §47) grows the surface's own Morse–Smale
+        // The WATERSHED species (Docs/ECOSYSTEM.md §53) grows the surface's own Morse–Smale
         // skeleton: every curve is a separatrix leaving a SADDLE of R(θ,φ) along one of its
         // Hessian eigen-directions and running uphill to a peak or downhill to a pit. The
         // detector below is the ONLY place the surface is differentiated twice, and its one
@@ -498,7 +498,7 @@ namespace CosmicShore.Gameplay
         /// Farthest-point ordering: the sharpest saddle first, then repeatedly the saddle
         /// farthest (on the sphere) from everything already taken. A MEASURED correction —
         /// sharpness-major put a plant's strongest quarter into 2 of 8 latitude bands, the
-        /// belt defect §44.5 exists to forbid; farthest-point gives 7–8 of 8 at every prefix.
+        /// belt defect §50.5 exists to forbid; farthest-point gives 7–8 of 8 at every prefix.
         /// </summary>
         public static List<CriticalPoint> FarthestPointOrder(List<CriticalPoint> saddles)
         {
@@ -577,9 +577,9 @@ namespace CosmicShore.Gameplay
             public float TwistDegreesPerStep; // HELICOIDAL roll about the curve's own tangent,
                                               // accumulated step by step along a run. 0 = a flat
                                               // ribbon; the dial that separates the two species
-                                              // built on this rule (Docs/ECOSYSTEM.md §46).
+                                              // built on this rule (Docs/ECOSYSTEM.md §52).
 
-            // ── THE FALL — the radial dive every species authors (Docs/ECOSYSTEM.md §47) ──
+            // ── THE FALL — the radial dive every species authors (Docs/ECOSYSTEM.md §53) ──
             // A curve the surface can no longer carry FALLS: from its last surface sample it
             // continues as a LOGARITHMIC SPIRAL toward the heart — a heading re-derived every
             // step at a constant angle ψ from the inward radial, and a step that is a fixed
@@ -604,19 +604,19 @@ namespace CosmicShore.Gameplay
             public float DiveDescent;       // a run dives only if it DESCENDED at least this much
                                             // (R first − R last, surface units). 0 = any run.
 
-            // ── THE WATERSHED (Docs/ECOSYSTEM.md §47) ──
+            // ── THE WATERSHED (Docs/ECOSYSTEM.md §53) ──
             public int SkeletonSeeds;       // 1 = seeds are the surface's SADDLES and lanes 0–3 are
                                             // their four separatrices; 0 = the free walk above.
             public float WalkStep;          // sampling step of the skeleton walk when > 0; 0 = StepSize.
-                                            // §45 derives StepSize per element while a skeleton's cost
+                                            // §51 derives StepSize per element while a skeleton's cost
                                             // is fixed by the SURFACE, so the two are decoupled here
                                             // and LengthFactor is what makes them agree again.
             public float MinPersistence;    // an arm whose |R_end − R_start| is below this is dust
             public float GirthReference;    // the run length that earns full girth. 0 = MaxSteps/2 —
                                             // meaningless for a skeleton whose longest arm is 29
-                                            // steps (§44's "a ceiling nothing reaches" defect).
+                                            // steps (§50's "a ceiling nothing reaches" defect).
 
-            // ── APOLLONIA — the spherical Apollonian gasket of rings (Docs/ECOSYSTEM.md §48) ──
+            // ── APOLLONIA — the spherical Apollonian gasket of rings (Docs/ECOSYSTEM.md §54) ──
             // Level 0 is the bulb's OWN LOBES: the surface's peaks in farthest-point order, each
             // given half the angle to its nearest neighbour so the big rings crown the lobes and
             // are mutually tangent by construction. Every later disc is the classic Apollonian
@@ -655,7 +655,7 @@ namespace CosmicShore.Gameplay
                                             // gate — stated so nobody authors 0 by accident.
             public int RingSamples;         // prisms per ring, the SAME at every scale (the
                                             // homothety). 0 = DERIVE from the reference ring and
-                                            // this element's own §45 step (RingSamplesFor); > 0 =
+                                            // this element's own §51 step (RingSamplesFor); > 0 =
                                             // that literal count (an escape hatch + a verifier control).
             public float GasketOctave;      // lane = floor(log2(ρ_ref/ρ) / GasketOctave), clamped to
                                             // [0, GasketLevels−1]. THE LANE IS THE SIZE OCTAVE, NOT
@@ -879,7 +879,7 @@ namespace CosmicShore.Gameplay
 
                 // The Fall's owed set is STRIDED, never a prefix: BuildSeeds emits in Fibonacci
                 // order, which is z-monotone, so a prefix would put every dive in a polar cap
-                // (§44.5's defect for a new consumer). Same idiom BuildSeeds uses for `want`.
+                // (§50.5's defect for a new consumer). Same idiom BuildSeeds uses for `want`.
                 _diveOwed = new bool[n];
                 _divesSpent = 0;
                 if (Gasket)
@@ -949,7 +949,7 @@ namespace CosmicShore.Gameplay
                 _ringSamples = RingSamplesFor();
             }
 
-            /// <summary>Prisms per ring. The element's §45 step IS the prism's length on this
+            /// <summary>Prisms per ring. The element's §51 step IS the prism's length on this
             /// family, so it sets how many strokes a ring is drawn with — measured against the
             /// REFERENCE ring so every ring of the plant shares one N, which is the homothety
             /// the species is named for. Space's long blades give a coarse polygon, Mass's

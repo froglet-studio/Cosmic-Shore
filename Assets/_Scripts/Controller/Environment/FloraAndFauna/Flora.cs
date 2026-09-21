@@ -50,8 +50,22 @@ namespace CosmicShore.Gameplay
         /// <c>FloraVariantTuning.LeafSize</c>, scaled by level). Exposed so a flora that shapes
         /// its prisms per ROLE - a stem segment is not a leaf - can derive those shapes from the
         /// element's identity instead of re-authoring it. See <see cref="PhyllotacticFlora"/>.
+        ///
+        /// <para><b>The setter is for a species whose leaf is a MEASUREMENT rather than a
+        /// preference</b> - one whose <see cref="PrismSizeFixedByGrowthRule"/> is true because
+        /// its geometry is an offline table in absolute units. There the size that fits is a
+        /// function of the table and no config field can know it, so an authored leaf that
+        /// disagrees is not a preference but a defect: <see cref="BorromeanFlora"/>'s plates are
+        /// fitted offline to the largest that do not interpenetrate, which is a guarantee, and a
+        /// guarantee any asset edit can break is not one. Same argument as
+        /// <see cref="ResolveShieldPeriod"/>, one field over. Every other species authors its
+        /// leaf and leaves this alone.</para>
         /// </summary>
-        protected Vector3 LeafSize => leafSize;
+        protected Vector3 LeafSize
+        {
+            get => leafSize;
+            set => leafSize = value;
+        }
 
         public abstract void Grow();
         public abstract void Plant();

@@ -130,6 +130,12 @@ MonoBehaviour:
     - {fileID: 11400000, guid: f030f2cceed64578930cd5c47c405595, type: 2}
     - {fileID: 11400000, guid: 52d54f8478ac41449607e8b2f81e602f, type: 2}
     - {fileID: 11400000, guid: e4ae88c4d7b4450a8c7b649336780938, type: 2}
+  - Name: Borromean
+    ElementConfigs:
+    - {fileID: 11400000, guid: e61deb54b42a17dc301eedd9cf2a3b2a, type: 2}
+    - {fileID: 11400000, guid: 46383de74eda38d7fc0f12e180a2bef3, type: 2}
+    - {fileID: 11400000, guid: 06f079efbc163df424ab2731dc9267eb, type: 2}
+    - {fileID: 11400000, guid: 53ee29f1406fdd26f9c5fddefd961fe0, type: 2}
   vesselRoster: []
   stationSpacing: 90
   stationRadius: 12

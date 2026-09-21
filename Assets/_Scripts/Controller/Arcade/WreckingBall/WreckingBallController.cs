@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// flies through becomes its ball, and every hostile prism that ball plows through, or the
     /// juke dash's cavitation plate shreds, is credited to the pilot. First DOMAIN to the
     /// hostile-prism target wins (<see cref="ScoringMetric.PrismsDestroyed"/> - the Rampage /
-    /// Peel the Cage / Salvo metric and machinery, zero new scoring code).
+    /// Cleave / Salvo metric and machinery, zero new scoring code).
     ///
     /// Structurally a sibling of <see cref="RampageController"/> (1 round / 1 turn,
     /// HasEndGame=false, server winner detection in OnTurnEndedCustom, snapshot
@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
     ///
     /// SCARAB-ONLY is enforced entirely by the arcade card's Vessels list, read by the three
     /// platform layers (GameDataSO.SyncFromArcadeGame, ResolveSpawnVesselType, the AI clamp) -
-    /// no mode-local vessel check, per the Astro League / Peel the Cage rule.
+    /// no mode-local vessel check, per the Astro League / Cleave rule.
     /// </summary>
     public class WreckingBallController : MultiplayerDomainGamesController
     {

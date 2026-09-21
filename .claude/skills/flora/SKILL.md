@@ -1,469 +1,456 @@
 ---
 name: flora
-description: Use for ANY new Cosmic Shore FLORA species, or a change to how one is authored - a new Flora subclass or growth family, a flora prefab, the four per-element FloraConfigurationSO assets, a per-plant prism budget or leaf/plate size, a species' planting band, flora reproduction (GrowthPerOffspring, the lattice colony cycle), a flora heart size, or wiring a species into a SpawnProfile or the Lifeform Matrix toy. Loads the four growth families and how to choose between them, the field-ownership map (which of five tools owns which asset field), the measure/author/verify tool trio every new species ships with, and the traps that have actually cost passes. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/*Flora*.cs, Assets/_Scripts/Controller/Assemblers/**, Assets/_Prefabs/FloraAndFauna/*Flora*.prefab, Assets/_SO_Assets/Lifeforms/* Flora *.asset, or Tools/Build/*flora*.py.
+description: Use for ANY work on a PLANT — adding a flora species, changing how one grows, poses its spindles, shapes or orients its prisms, expresses its four elements, reproduces, or plants itself; wiring a FloraConfigurationSO or a FloraVariantTuning; or answering "why does this plant look messy / grow in disconnected lumps / have branches pointing nowhere / look the same on all four elements". Loads the growth law (a flora grows the way it withers, run backwards), the limb contract, the elegance rules for a tiling, the element-expression contract, and the traps that cost real time. Trigger when editing Assets/_Scripts/Controller/Environment/FloraAndFauna/{Flora,BranchingFlora,PhyllotacticFlora,AssembledFlora,BorromeanFlora,FloraHeartRegistry}.cs, any Assets/_Prefabs/FloraAndFauna/*Flora.prefab or Spindles/*.prefab, any `* Flora *` config asset, Tools/Build/*flora*/*borromean*/*gyroid*/*schwarz*/*quasi*, or Docs/ECOSYSTEM.md §§32-38, 40, 42-43, 47-49.
 ---
 
-# Flora Species Protocol
+# Flora: the per-plant contract
 
-You are adding or changing a **plant**. Flora are one half of the food web, so this sits inside the
-ecology's locked invariants — **read `/ecology` first and restate which invariants the change
-touches**. This skill is the layer on top: it says how a *species* is built, who owns each authored
-number, and what has to be measured before anything is authored.
+`/ecology` owns the **system** — populations, caps, diets, phase ladders, the locked
+invariants, the collider budget. **This skill owns the PLANT**: how one grows, what its
+limbs are for, what makes its prisms read as a form rather than as confetti, and what its
+element is supposed to say.
 
-The reference implementation to copy is **`MandelbulbFlora`** — the newest family, and the only one
-that shipped with the full tool trio from day one. Its record is `Docs/ECOSYSTEM.md §44`.
+**Run `/ecology` first for anything that changes the SYSTEM** (seed floors, caps,
+reproduction rates, phase thresholds, what a cell plants). The invariants it loads are
+LOCKED and this skill assumes them rather than restating them.
 
----
+`/fauna` is the sibling for creatures. A plant and a creature share `LifeForm`, the heart
+rule and the wither, and share almost nothing else.
 
-## 1. Pick the growth family FIRST — it decides everything downstream
-
-A flora species is a **growth rule**, not a model: every flora prefab carries exactly ONE prism (the
-seed) and the plant is whatever its rule lays. There are four families and they are not
-interchangeable. Choosing wrong is the single most expensive mistake available here, because the
-family decides how the species reproduces, whether its prism size may ever change, and whether it
-needs a bond table.
-
-| family | the rule | reproduction | prism size | needs |
-|---|---|---|---|---|
-| `BranchingFlora` | stochastic branch walk toward a goal | per-plant growth quota | authored `leafSize`, uniform | nothing |
-| `PhyllotacticFlora` | growing TIPS + golden-angle whorls | per-plant growth quota | per ROLE (stem spans its segment, leaf its reach) | nothing |
-| `AssembledFlora` | crystallise a LATTICE from a measured bond table | **colony cycle** — one birth per `Cell.CurrentFaunaSpawnPeriod` for the whole population | fixed by the lattice, absolute units | an exact tile, a measured bond table, a claim book, a frontier |
-| `MandelbulbFlora` | trace CURVES over a surface defined by a function | per-plant growth quota | authored cross-section x a per-curve GIRTH, length from the curve | a baked height field, nothing else |
-
-**The question that picks the family: where does the shape come from?**
-
-- From the plant's own *walk* → Branching (scribble in bulk) or Phyllotactic (a silhouette: trunk,
-  crown, creeper, rosette). Neither needs any offline work.
-- From a *periodic or quasiperiodic tiling* → `AssembledFlora`. Only if the surface genuinely HAS an
-  exact intrinsic tile. `Docs/ECOSYSTEM.md §34` is emphatic: a square-ish marching walk across a
-  curved surface accumulates drift, fronts arriving from different directions disagree, and the
-  occupancy key degrades to a quantized float. Gyroid, Schwarz P and the icosahedral quasicrystal
-  each have their own tile and use it.
-- From a *function* with no intrinsic tile at all (a fractal boundary, an implicit surface, a level
-  set) → the `MandelbulbFlora` shape: bake the surface once, offline, and address a prism by
-  where it sits ON it — `(theta, phi)` plus a heading in that point's own tangent basis. This keeps the property §34 actually cares about
-  — **sameness is an integer address** — without inventing the fitted grid §34 forbids. Say so
-  explicitly in the class doc, or the next reader will file it as the mistake.
-
-**A SURFACE SPECIES MUST DECIDE WHETHER IT IS A SKIN, AND THE ANSWER IS USUALLY NO.** Plating every
-surface cell gives you a closed crust, and a closed crust of a solid form reads as *that solid*,
-however fine the lattice and however clever the prisms. Raising the resolution makes it a finer
-lumpy sphere; it does not make it interesting. Before you tune anything, decide what the form's
-structure actually IS and plate only that — the Mandelbulb's is its TERRACING, so it grows on the
-terrace risers and leaves the treads open, which is what lets you see into the object at all
-(`Docs/ECOSYSTEM.md §44.2`, which lists the four closed-surface candidates that were built and
-rejected first). Its sibling finding: **a solid form has no interior structure to reveal**, so
-cutting nested shells inside one just gives you spheres — all the information is on the boundary.
-
-**Judge a growth rule by RENDERING it, at the size it will be judged.** An offline model can report
-a prism count, a size spread and an aspect distribution that all look excellent for a form that
-reads as gravel. Render oriented boxes with a depth buffer and a light, not screen-aligned squares
-— squares cannot show the one thing a multi-scale rule is for, which is that no two prisms share a
-frame. `measure_mandelbulb_flora.py --render` is the worked example.
-
-**Prefer extension to addition.** A fifth family must earn its place: state the three things the
-existing four cannot express, and what it composes with (see CLAUDE.md's fundamentals-curation
-process). Four families for ~17 species is already a lot.
+**The worked example this skill was written from is `Docs/ECOSYSTEM.md §49`** — a species
+whose SHAPE was right and whose PLANT was wrong through four passes: the growth order, the
+tiling, the zero-overlap fit, the element contract, and finally its adoption into four
+cells. Every rule below that cites a measured number cites one of those passes. §32 (the
+gyroid octagon colony), §34 (the lattice family) and §48 (Garland, a cell composed for a
+CAMERA) are the other three records worth reading before adding a species.
 
 ---
 
-## 2. Ownership: five tools author flora fields, and two must never own one field
+## 1. The roster, measured
 
-This is the trap that costs a whole pass, because the loser silently wins on whoever ran last. Know
-which tool owns what **before** you write an asset.
+Measured off the shipped prefabs (`m_Script` guid → class, `spindle` guid → prefab), not
+remembered:
 
-| field | owner | notes |
+| prefab | class | spindle prefab |
 |---|---|---|
-| `PopulationSize`, `MaxLivePopulation`, `GrowthPerOffspring`, `OffspringPerBirth` | `Tools/Build/author_flora_populations.py` | …except configs it hands off by name in `OWNED_ELSEWHERE`. It only reaches `_SO_Assets/Lifeforms` configs whose prefab is in `LATTICE_PREFABS`; everything else there is owned by that species' own generator. |
-| `Variant.HeartWorldScale` | `Tools/Build/author_lifeform_heart_sizes.py` | Solves the whole fleet's band at once (`K · bodyDiameter^0.5`, largest lands on `HEART_MAX`). **Register a new species in its `FLORA_PREFABS`** or its heart silently falls back to the set default and stops tracking body size — the exact non-monotone defect it exists to fail the build on. |
-| a shielded (CHARGE) species' leaf size | `Tools/Build/fit_shield_clearance.py` | for the two lattice species. A new species may fit its own, but then say so in both docstrings. |
-| Schwarz P plate sizes | `Tools/Build/fit_schwarz_p_leaf_sizes.py` | |
-| everything else about one species | that species' own `Tools/Build/author_<species>_flora_assets.py` | |
+| Branching, Cacti, Pine, Nerve, SecondaryNerve | `BranchingFlora` | `Branch` |
+| Arbor, Coral, Frond, Lantern, Reed, Rosette, Spire, Tendril | `PhyllotacticFlora` | `Branch` |
+| Gyroid | `AssembledFlora` (+`GyroidAssembler`) | `GyroidBranch` |
+| SchwarzP | `AssembledFlora` (+`SchwarzPAssembler`) | `AssemblyBranch` |
+| Quasicrystal | `AssembledFlora` (+`QuasicrystalAssembler`) | `QuasicrystalBranch` |
+| Borromean | `BorromeanFlora` | `Branch` |
+| Wall | `AssembledFlora` | `AssemblyBranch` |
+| **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
+| **oldWallFlora** | **`GyroidAssembler` — not a `Flora` either** | (n/a) |
 
-**If your generator rewrites a whole asset, it must CARRY THROUGH every field another tool owns** —
-read the existing file, extract the field, re-emit it. Dropping it is worse than fighting over it,
-because the asset silently falls back to a default and nothing reports the change.
-`author_mandelbulb_flora_assets.py` does this for `HeartWorldScale`; copy that shape.
-
-Hand off **by name, never by an exclusion set** — an `EXCLUDE` is invisible in the output, so the
-next reader cannot tell "deliberately owned elsewhere" from "forgotten".
-
----
-
-## 3. What a new species ships with
-
-Three scripts, and they are three because they answer three different questions. Do not collapse
-them.
-
-1. **`Tools/Build/measure_<species>_flora.py` — the MODEL.** A fresh transcription of the growth
-   rule, independent of the C#. It is the authority for prism counts, per-element volume, the
-   fitted prism size, and any claim the C# comments make. Give it `--check` (fail the build on
-   drift), `--render DIR` (PNGs — you cannot judge a plant you have not looked at), and a flag
-   per measured claim.
-2. **`Tools/Build/verify_<species>_flora_tables.py` — the TRANSCRIPTION CHECK.** The step neither
-   the measurement nor code review can see. The gyroid paid five playtests for this gap. It must
-   **compile and RUN the shipped C#**, not parse it — see §4 — and it must have `--self-test` that
-   mutates the shipped file and asserts the gate trips. *A gate nobody has watched fail is a gate
-   nobody should trust.*
-3. **`Tools/Build/author_<species>_flora_assets.py` — the ASSETS.** Prefab, the four element
-   configs, the `.cs.meta` files (stable guids: a script committed without its meta gets a fresh
-   guid on every clone and every prefab reference to it dangles), and the roster row. `--check`,
-   and idempotent.
+The last two rows are the reason a roster is MEASURED: both sit in the flora folder with
+`*Flora` names and carry components that are not a `Flora` at all, so "every prefab named
+`*Flora`" is not the species list. Resolve `m_Script`'s guid to a `.cs.meta` instead.
 
 ---
 
-## 4. Compile and RUN the shipped C#, offline
+## 2. THE GROWTH LAW — a flora grows the way it withers, RUN BACKWARDS
 
-You cannot open Unity, and a syntax-only check proves almost nothing about a `MonoBehaviour` (see
-CLAUDE.md on why Roslyn abandons class-body binding when the base type is unresolved). But the
-*growth math* of a good species is a **pure file** — no `MonoBehaviour`, no Unity types beyond
-`Vector3`/`Vector3Int` — and a pure file can be compiled against a stub and executed:
+> **First comes the CRYSTAL. Then SPINDLES grow from the crystal. Then spindles and/or
+> PRISMS grow from spindles. Spindles can grow from prisms. The process loops. New crystals
+> are planted as flora REPRODUCE, which makes new flora.**
 
-```
-Tools/Build/mandelbulb_surface_harness/{Stubs.cs,Bulb.cs,Driver.cs,run.sh}   # copy this
-Tools/Build/regatta_course_harness/                                    # the original precedent
-```
+Two properties follow, and both are testable rather than aspirational:
 
-`run.sh` needs a per-user dotnet 8 SDK (`bash <(curl -fsSL https://dot.net/v1/dotnet-install.sh)
---channel 8.0 --install-dir $HOME/.dotnet --no-path`, ~40 s). **Split the pure math into its own
-file so this is possible** — `MandelbulbSurface.cs` holds the whole growth rule and knows nothing
-about plants; `MandelbulbFlora.cs` holds the Unity wiring. That split is what turns
-"I think this is right" into a proof, and it costs nothing.
+**(a) The plant is ONE CONNECTED OBJECT at every tick.** It expands outward from the
+crystal. It does not start several patches that meet up and seal later — that reads as
+parts appearing in mid-air, which is the continuity-of-existence law failing at the level
+of the whole organism rather than of a prism.
 
-**Put the WHOLE rule in the pure file, not just the membership test.** Anything the verifier
-cannot run is a thing nobody proved: the Mandelbulb's reconstruction, frame, steering fields, seed
-set, hop and emission all live in `MandelbulbSurface` for exactly that reason, and the flora
-subclass only consumes the addresses. Its harness also compiles the SHIPPED table and the real
-`Element` enum, so what runs is the game rather than a copy of it. It is also what lets the verifier compare two implementations by
-an INTEGER identity (which patch each prism stands for) rather than by position.
+**(b) Every prism hangs off something that already exists.** Whatever growth order a
+species uses, a prism's PARENT must already be laid. In a table-driven species make the
+parent index part of the table and assert `parent[i] < i`; in a frontier-driven species
+(branching, phyllotactic, lattice) the frontier already guarantees it.
 
-**A harness's stdout is a DATA channel — nothing else may write to it.** `csc` prints its
-diagnostics to stdout, so one warning from a rebuild lands in front of the JSON and the caller's
-parse fails naming nothing (`Expecting value: line 1 column 1`), which reads exactly like drift in
-the file under test. Redirect the build to stderr, where `set -e` still fails on it. Measured: a
-self-test control that made a method return early produced CS0162 and cost two full self-test runs
-to attribute. And treat an EMPTY result as a harness failure with its own message rather than
-feeding it to the parser.
+**How to prove (a) rather than claim it.** Walk the growth order in the increments the
+species actually lays (one orbit, one frontier batch, one prism), union-find the laid set
+plus the heart, and assert one component every time.
+`borromean_surface.connected_prefixes` is the worked example; its negative control is the
+ordering it replaced (orbits sorted by RADIUS), which measured **up to 3 components**.
 
-Then run the standing gates, which DO cover the wiring half:
-`check_conditional_compilation.py`, `check_using_directives.py`, `check_enum_member_references.py`,
-`check_switch_label_collisions.py`, `check_self_referential_locals.py`, `check_console_logging.py`.
+**What NOT to do.** Do not order a table by distance from the centre and call it "outward
+from the heart". On any surface that wraps — and a compact or periodic one always does —
+a radius shell is several disconnected rings. Order by HOP DISTANCE over the species' own
+neighbour graph instead.
 
 ---
 
-## 5. THE FOUR ELEMENTAL IDENTITIES — a species does not get to invent these
+## 3. THE LIMB CONTRACT — a spindle is a BOND, not a marker
 
-A plant's element is **ROLLED**, so this is a LAW in code, not a field you author. Every species
-inherits all four; what a species authors is the ONE form the four spend four ways.
+A spindle is a **limb**: it exists to make the plant read as connected, so it has to lie
+ALONG the gap between a prism and whatever that prism grew from. Two poses work and one
+does not:
 
-| element | its identity | the mechanism |
+| species | spindle posed | branch geometry | result |
+|---|---|---|---|
+| `BranchingFlora` | at the **PARENT**, rotation = the growth heading; the child is placed `branchingScaleFactor` forward | `Branch`: one arm along local **+z** from the origin | the limb IS the bond ✅ |
+| `PhyllotacticFlora` | at the **NEW prism**, rotation = its heading | `Branch` | the limb points at the next node ✅ |
+| `AssembledFlora` / gyroid | at the **prism**, wearing the prism's rotation | `GyroidBranch`: a **MIRRORED PAIR** of half-branches meeting at the prism (`Docs/ECOSYSTEM.md` §34.12) | covers the bond in BOTH directions ✅ |
+| `AssembledFlora` / quasicrystal | at the prism, prism's rotation | `QuasicrystalBranch`: mirrored pair along ±x | the strut ✅ |
+| `AssembledFlora` / **Schwarz P** | at the prism, prism's rotation | `AssemblyBranch`: a **SINGLE off-centre arm** along local −y (0.5 → 6.7 units) | points wherever that prism's −y happens to face ⚠ **known weak case — do not copy it** |
+| `BorromeanFlora` | at the **PARENT**, aimed at the child, stretched to the bond | `Branch` | the limb IS the bond ✅ |
+
+**Rules that come out of that table.**
+
+1. **A limb must be aimed at something.** Either root it at the parent and `LookRotation`
+   it at the child, or pose it at the prism and give it geometry that reaches out
+   symmetrically. Posing it at the prism with a ONE-SIDED branch is the Schwarz P case: it
+   is aimed by a rotation that describes the SURFACE, not the bond.
+2. **On a surface species, the prism's rotation is a frame OF the membrane.** Its +z is the
+   surface NORMAL. A spindle wearing it stands perpendicular to the plant and skewers its
+   own plate.
+3. **Stretch the limb to its bond** when bond lengths vary, and scale the spindle's
+   **CHILDREN**, never the root — a prism parents to the root, so a scaled root multiplies
+   the authored `leafSize` and the config stops describing the prism
+   (`AssembledFlora.ScaleSpindleToLattice` records this; `BorromeanFlora.StretchToBond`
+   follows it). Scale the child's LOCAL **z**: on every spindle prefab in the project that
+   is the branch's length axis.
+4. **Measure the branch's reach, don't author it.** Compose the prefab's mesh bounds through
+   its transform chain into spindle-root space and take the furthest +z. A constant copied
+   out of an asset is true only on the day it is copied, and a prefab swap silently invalidates it.
+5. **Keep the limb when its prism is eaten, and re-use it when the prism regrows.** A branch
+   whose leaf was grazed is still a branch — and re-use is also what stops regrowth minting
+   a second spindle on one bond. Track limb-per-site and clear the slot in `RemoveSpindle`.
+
+---
+
+## 4. THE TILING — why prisms read as messy, and the fix
+
+A plant made of many identical plates is judged as a TILING, not as a set of plates. Three
+things decide whether it reads as a form:
+
+**(a) The orientation field must be COMBED.** This is the one that has actually shipped
+broken. Where each site picks from several equally-valid axes independently — e.g. a
+minimal surface's **two asymptotic directions**, which are orthogonal and interchangeable —
+the per-site choice comes out of the sign of an eigenvector in an arbitrary local basis,
+i.e. effectively at random. Every plate is individually correct and the tiling is noise.
+Measured on the Borromean surface before combing: neighbouring plates' long axes **56.6°
+apart**, with **49% of edges more than 60° apart**. After combing (iterated conditional
+modes over the neighbour graph, seeded restarts, the choice made per SYMMETRY ORBIT so it
+cannot break the symmetry): **25.9°**, 11.5%.
+
+> **General rule: a per-site choice among equally-valid options is NOISE unless something
+> makes neighbouring sites choose together.** If your species picks an axis, a handedness, a
+> phase or a variant per prism, comb it — and measure the before/after, because the "after"
+> number is the whole claim.
+
+**(b) The plate has to LIE on the surface.** On a minimal surface the principal curvatures
+are equal and opposite, so normal curvature vanishes along the two directions bisecting
+them AND those two are orthogonal — a property minimal surfaces alone have, and the reason
+a flat rectangle can sit flush on a saddle at all. Put the plate's in-plane axes there.
+Measure it as **corner lift as a fraction of the plate's own thickness** (Borromean Time:
+0.56; a long Space plate: 0.86 — reported, because that is what a high aspect ratio costs).
+
+**(c) NO PRISM MAY INTERPENETRATE ANOTHER — so a plate's SIZE is FITTED, not authored.**
+Two plates of conserved mass passing through each other is a defect, not a density dial.
+What an element authors is the SHAPE of its plate; the size is fitted offline to the largest
+that clears its own neighbours (exact OBB separating-axis test, inflated by a small margin
+so the shipped gap is real rather than a float epsilon). Spindles are exempt — a LIMB may
+pass through a plate, which is what lets a limb span a bond instead of stopping short of it.
+
+Three facts follow, all measured on the Borromean surface and none of them specific to it:
+
+* **The FOOTPRINT costs clearance and the THICKNESS does not.** A plate's neighbours lie in
+  the surface beside it, so growing it along the surface runs into them and growing it along
+  the NORMAL runs into nothing: 0.1 → 0.8 of its own width in thickness cost **1.3%** of the
+  footprint and bought **7.7×** the volume. **This is the axis to spend**, and it is what
+  lets the element contract in §5 survive the zero-overlap rule.
+* **Coverage is a property of the TILING, not of the COUNT.** Every plate is fitted against
+  its own neighbours, so a looser tessellation covers the same surface with FEWER, BIGGER
+  pieces (the fitted long axis stayed 0.73–0.93 of the mean site spacing from 24 to 60
+  orbits). So the site count is a free choice — and the one rule on it is **the more ROOM PER
+  SITE, the bigger the body it carries**, which is why each Borromean element tiles at its own
+  spacing.
+* **An element buys room TWO ways: by cutting the surface into fewer pieces, or by growing
+  the SURFACE.** State the ladder in ROOM PER SITE, never in site count — the two are the
+  same thing only while every element shares one surface, and the moment one does not, a
+  count-based rule reads backwards (Borromean SPACE has a FINER cut than Mass or Charge and
+  the most room of the four). Growing the surface is a **SIMILARITY**, the one transform that
+  maps a clearing arrangement onto a clearing arrangement exactly, so it costs the no-overlap
+  proof nothing to re-derive — and if the element's contract holds its plate's VOLUME, a `k×`
+  surface pays for itself: the fit hands it a `k×` footprint and the volume target drives the
+  thickness down by `k²`. Same plant volume, same prism count, `k×` the span, `k²` thinner
+  struts, from ONE dial.
+* **A bisection converges onto its own boundary**, so a verifier must prove the PROPERTY and
+  not the solver's stopping condition: fit to a 3% margin, assert a 2% gap and that 10%
+  bigger collides. Asserting the margin itself asserts the fit's tolerance, and rounding the
+  shipped table to five decimals was enough to tip 2 of 24 pairs over it.
+
+The lap is therefore **retired as a dial**: it was a look call made by rendering candidates
+(at 1.40× the site spacing the Borromean plates lapped 61% and read as one smooth blob; at
+0.85 they lapped not at all and read as perforated), and removing it costs real coverage —
+that plant's anchor volume fell 7,499 → 3,279 and its Space element now reads as a frame of
+struts rather than a skin (9.2% of its membrane covered). What survives is the ASPECT, which is still a look call, and the
+rule for making one: **judge a candidate at the size it will be judged**
+(`Docs/PALETTE.md §4.3`).
+
+---
+
+## 5. THE ELEMENT CONTRACT — a plant is its species and its ELEMENT
+
+`Docs/ECOSYSTEM.md §40`: a lifeform is its species and its element and nothing else. There
+is no level, no acquired growth, no per-individual history. So everything an element says
+about itself it says exactly ONCE, in that element's own config.
+
+**Author one ANCHOR and three PERTURBATIONS of it**, so "what does this element do to the
+plant" is one comparison rather than four independent fits:
+
+| element | says | how |
 |---|---|---|
-| **CHARGE** | **armours its leaves** — shielded mass, so grazing it costs two passes | `Flora.ResolveShieldPeriod` (§35) |
-| **MASS** | **the most cumulative prism volume, in the most CUBIC leaf** — x, y and z closest together | `FloraElementalForm.ShapeLeaf` |
-| **SPACE** | **the highest ASPECT RATIO** — the long axis trades cumulative prism volume for the **bounding volume of the assembly** | `FloraElementalForm.ShapeLeaf` + `ReachScale` |
-| **TIME** | **the fastest clock** — grows fastest *and* reproduces fastest | `Flora.ResolveGrowPeriod` + `ResolveGrowthPerOffspring` (§38) |
+| **TIME** | the optimum | the plate tuned by rendering it. Everything else is measured against this. |
+| **MASS** | more VOLUME, and the CHUNKIEST plate | nearly square in plan and THICK. Borromean: **8.00×** the anchor's volume, axes **1 : 0.83 : 0.50** against the anchor's 1 : 0.59 : 0.15. |
+| **SPACE** | more ASPECT, and more ROOM | longer and narrower **at the same volume**, so the element reads as SHAPE rather than as size — and, where the species can scale its own surface, a bigger surface too. Borromean: **2× the membrane**, 8.50:1 against the anchor's 1.69:1, volume 1.00×, span 222 against 111. |
+| **CHARGE** | armour | FITTED, not authored — see below. |
 
-Two are about shape and two are not, and that is the design: **Charge and Time take the species'
-own authored form** (their identities are a state and a tempo), and only Mass and Space restate it.
+**Chunky is a claim about SHAPE and only THICKNESS can pay for it.** With the footprint
+FITTED (§4c), the one axis left to move a plate toward a cube is the free one — and the free
+axis IS the volume, so "make Mass chunkier" and "make Mass heavier" are the same edit. Stop
+short of a cube: a cube is not a plate, and the check that says so is worth writing down
+(Borromean asserts `min/max < 0.9`).
 
-**The four are a REDISTRIBUTION, never an inflation.** The four volume multipliers average to
-exactly 1 and the aspect term is volume-exact by construction (a unit-volume shape vector raised to
-any power still has volume 1), so a mixed-element forest holds the mass it held before and **no
-cell's volume phase ladder moves**. This is what makes a fleet-wide leaf law shippable at all — a
-law that gave Mass more material would land on Rampage's play-tested ladder, on Hesperides, and on
-every future cell that grows flora. `ReachScale` falls out of the same statement with **no new
-constant**: it is `volume^(-1/3)`, i.e. a plant spending a fixed amount of material, so Space
-reaches ×1.35 and Mass draws in to ×0.82.
+**A chunkiness rule is asserted over the plates worn AS PLATES, and the exclusion is the
+finding.** Borromean CHARGE's plate is `1 : 1.00 : 0.50` — squarer than Mass's — and that is
+not a counter-example: its plate is a square slab *because* the body it was fitted against is
+the octahedron three times it, so how cube-like the plate is says nothing about what a Charge
+plant looks like. *A check that has to be scoped is usually telling you something true about
+the thing you scoped out.*
 
-**What a new species has to do about it:**
+**CHARGE is a different geometry problem and must be fitted, never scaled by eye.** Charge
+armours its mass by law (`Flora.ResolveShieldPeriod`), and a shield swaps the plate for its
+**CIRCUMSCRIBING octahedron**, which reaches **1.5 × leafSize** from the prism centre —
+3× the plate's own reach, 4.5× its volume (`Docs/ECOSYSTEM.md §35`). So what has to look
+good on a Charge plant is the SHIELDED form; the plate is what shows between refreshes.
+Two measured decisions from the Borromean fit, both of which beat a uniform shrink:
 
-1. **Nothing, if your leaf is free.** Author ONE leaf that reads well and the law spends it. Do
-   not author four per-element leaves "to express the elements" — you will be expressing them
-   twice, and inconsistently with the fleet.
-2. **State it in your own data if your prism size is fixed by your growth rule**
-   (`PrismSizeFixedByGrowthRule` — a lattice, a surface species). You are EXEMPT from the runtime
-   transform, because a transformed leaf lays prisms your bond table no longer describes (§34.8) —
-   so you must satisfy all four clauses yourself, and
-   `Tools/Build/measure_flora_elemental_form.py` checks every one of them: Mass heaviest, Mass most
-   cubic, Space lighter than Time, Space most elongated.
-3. **Say where your REACH lives.** The law scales extent as well as leaf, and each family spends it
-   on its own field (`PhyllotacticFlora.segmentLength`/`whorlRadius`,
-   `BranchingFlora.branchingScaleFactor`). A family whose leaf IS its strut needs nothing — the
-   anisotropy already lengthened it. A family whose length lives elsewhere and does not wire this
-   **cannot express Space at all**, and nothing will tell you.
+* **Fit the in-plane axes and spend the THICKNESS.** Thickness is spent along the surface
+  NORMAL, where the neighbours are not, so it costs almost nothing in clearance — and it is
+  the difference between a solid little jewel and a foil. This is the same free axis §4(c)
+  records for every element; Charge is simply where it was noticed first.
+* **Square the footprint.** The clearance is set by the tightest BOND, which runs along the
+  grain, so length bought along the grain is paid for twice. Sweeping the in-plane aspect at
+  the shield limit, a square footprint covered **22.5%** of the membrane with octahedra
+  against **15.6%** at the anchor's aspect.
 
-**Two traps specific to this law:**
-
-- **A leaf whose axes are already equal has no aspect to exaggerate.** The transform is a no-op on
-  a cube, by design — the law must not invent an aspect a species never authored. If your Space
-  variant has to read as a needle, author a leaf with a long axis and let the law stretch it; do
-  not expect the law to choose one for you.
-- **Check which axis your family actually RENDERS before trusting the transform to be visible.**
-  `PhyllotacticFlora` reads only `LeafSize.x/y`, so a law that lengthens `z` does nothing there —
-  which is precisely why its reach fields are wired. Ask the same question of any new family.
-
-The constants are MEASURED off the eleven species that already shipped the law (three lattice
-species authoring four fitted leaves each, and the eight Hesperides phyllotactics sharing one
-authored ladder), **one vote per FAMILY**, geometric mean of the family medians. If you retune a
-species' per-element leaves you may move the measurement, so re-run the tool — it fails the build
-when the code stops tracking the assets, and its `--self-test` proves it can.
-
----
-
-### 5.1 Two species on one growth rule
-
-A new species does not always need a new FAMILY. If an existing growth rule can express your
-concept with a different parameter set plus at most one new dial, ship a **second prefab** on the
-same component — the way the eight Hesperides phyllotactics are eight species on one class, and
-the way Coral Bloom is the Mandelbulb rule with the twist off and the curves made to continue
-(`Docs/ECOSYSTEM.md §46`). You get the family's whole tool trio, its bake and its verifier for
-free, and the two plants read as the same WORLD grown two ways rather than as two unrelated
-objects.
-
-Four things to get right:
-
-1. **A new dial must be a pure function of the ADDRESS.** A prism's address is the whole of its
-   identity, so anything the pose needs has to be stored in it — never recomputed from state the
-   curve no longer has. And the dial's ZERO must be bit-identical to before it existed, which is
-   what lets you prove you broke nothing.
-2. **Give the second species its own component fileID and its own prefab guid.** A wrong fileID in
-   a `FloraPrefab` reference resolves to no component at all and the config grows nothing,
-   silently.
-3. **DERIVE the elemental law from the species' own neutral form** rather than typing four
-   per-element prisms (§5). That is what makes the CONCEPT persist through the four elements while
-   each element still expresses itself, and it means retuning the concept cannot silently break
-   the law.
-4. **Register it everywhere the first species is registered** —
-   `author_lifeform_heart_sizes.py`'s `FLORA_PREFABS`, the toy roster, the population hand-off —
-   and make every tool loop over the species table rather than defaulting to the first one.
-
-**And re-run the verifier on the NEW species specifically.** A gate written against one species is
-a gate calibrated on one species: adding a second to the Mandelbulb family exposed three
-constants in its verifier that were coincidences rather than margins (a tolerance stated in the
-wrong unit, a "how many prisms agreed first" heuristic that is really a statement about one
-element's surface roughness, and a `phi` comparison with no seam unwrap that had been making the
-first species look 50x worse than it was). Expect your second species to find the same class of
-thing, and fix the gate rather than widening it.
-
-### 5.2 A species can be the surface's own STRUCTURE, and a mechanism can be shared by all of them
-
-The Mandelbulb family now holds FOUR species on one rule (`Docs/ECOSYSTEM.md §47`, `§48`), and the
-last two were built a different way from the first two — not by tuning a curve family but by
-seeding the walk from something the surface already CONTAINS:
-
-- **The Watershed** seeds every curve at a **saddle** of R(θ,φ) and runs it along a Hessian
-  eigen-direction to a peak or a pit — the surface's Morse–Smale skeleton, a net anchored to the
-  topology. The census is run in DOUBLE on the float32 field (`Surface.SampleD`), because a
-  float32 census disagreed with the model on which peaks existed; the seeds are in
-  **farthest-point order** so every budget prefix is spread; and the walk is **pure gradient flow
-  by construction** — the "inert" mix/momentum/swirl columns were found READ while merely authored
-  at their no-op values, and are now short-circuited under `SkeletonSeeds`. *A column that is inert
-  because it was authored at its no-op value is a column that stops being inert on the next edit;
-  the inert-column PROBE (grow twice with the column moved, assert byte-identical prisms) is the
-  gate that catches it.*
-- **Apollonia** seeds level 0 at the surface's **peaks** and packs an Apollonian gasket of discs
-  over them, each disc DRAWN as a closed ring of prisms lifted onto R — with **no address field
-  changed** and `Pose` untouched, because the recursion is a seed-generation concern. Three
-  rules it bought: a species whose prism length is set by its own geometry must not also take a
-  `LengthFactor` that assumes a walk step (a ring's prisms refused their own neighbours through
-  the claim filter); an element's §45 long axis is spent as SAMPLING COARSENESS (prisms per ring
-  derived from the step) rather than as a longer prism; and **lane = the size octave the eye
-  reads, never the recursion depth** (measured non-monotone), which is what makes a budget-stopped
-  plant lose its smallest rings. Every ordering is a TOTAL key — the bulb's symmetry puts children
-  in orbits that share a ρ to the last bit, and `.NET` has no stable `List` sort.
-- **The Fall** is the mechanism every species authors: a released curve continues as a **log
-  spiral** into the heart (constant angle from the inward radial, never a lerp), winding about ONE
-  axis so the pole reads as a rosette, its `up` hung off the RAY, its depth a SHELL FRACTION so a
-  morph scales it, its azimuthal sign carrying a DEAD BAND (a rounding residual decided the winding
-  on a meridional arm), and its step ceiling solved per element (a surface prism is the CHORD,
-  1.05–1.20× the step). It is what makes "the spindles almost connect to their crystal" literal,
-  and its price is paid at the core on the armoured element (§47.3).
-
-**Judge a self-similar species by RENDERING it at arena distance, and count OCTAVES in screen
-pixels, not prisms.** Round one's lesson ("a repeat under ~40 prisms is invisible") was satisfied
-in prism count by a design whose lower octaves were sub-pixel; the ladder gate is now stated in
-screen terms. Nine candidates were prototyped and rendered across two judged rounds before the
-gasket won; the design record (`§48`) says why each runner-up lost, and the reasons are reusable.
+**Where the per-element plate LIVES depends on whether it is a preference or a
+measurement.** Ordinarily it goes in each config's `FloraVariantTuning.LeafSize`, which
+`Flora.ApplyVariantTuning` reads BEFORE `Initialize`, so the prefab's own seed prism gets it
+too — and `PrismSizeFixedByGrowthRule` does NOT block it (that guard is about a per-CELL
+scale, `SpawnProfileSO.FloraPrismScale`, resizing the leaf out from under a measured bond
+table). **But where the plate is FITTED rather than chosen — §4(c) — the species must take
+it from its own table instead, through the protected `Flora.LeafSize` setter**, because a
+guarantee any asset edit can break is not a guarantee and no config field can know the size
+that clears. That is `Flora.ResolveShieldPeriod`'s argument one field over. The element then
+has to be resolved from the plant's own crystal at the TOP of `Initialize`, before
+`base.Initialize` binds and stamps the prefab's authored prisms — otherwise the SEED prism
+wears another element's plate (`BorromeanFlora.ResolveElement`; the ordering
+`Flora.ApplyCellPrismScale` already records). Author the config's `LeafSize` to the same
+number anyway, so the asset is not silent about the plant it describes.
 
 ---
 
-## 6. Fit the prism — do not eyeball it, and remember CHARGE is a different question
+## 6. REPRODUCTION — there are TWO paths and tuning one is dead tuning on the other
 
-A prism's size is a geometric claim about a specific point set (this species' own measured sites,
-with this species' own orientations), so it is **fitted**, exactly. Both bodies are centrally
-symmetric about the prism centre, so the touching scale is closed form rather than a bisection:
+**Which path a species is on is decided by whether its FORM is bounded.** A periodic
+surface (gyroid, Schwarz P, quasilattice) tiles indefinitely, so its growth rule has an
+opinion about where the next PLANT belongs and it reproduces as a COLONY. A **compact**
+form — one that closes on itself and is FINISHED, like the Borromean membrane — does not:
+it completes and funds an ordinary per-plant offspring out of its growth quota.
+
+That is also the answer to *how much machinery does a new species need*. A compact species
+deliberately has **none** of the lattice apparatus — no frontier, no claim book, no
+mate-snap tolerance, no `LatticeScale` family of absolute distances (`Docs/ECOSYSTEM.md
+§34.8`), no misalignment gate — and inheriting them "for symmetry with the other computed
+species" is inheriting a family of coherence tolerances written in world units against a
+lattice that does not exist here. *A species whose form is bounded does not need them.*
+What it does keep is `PrismSizeFixedByGrowthRule`, because its offsets are still a measured
+table in absolute units; it resizes through its own surface scale, which moves the sites and
+the leaf together.
+
+A species is on exactly one path and the config gives no hint which:
+
+* **Per-plant growth QUOTA** — `FloraConfigurationSO.GrowthPerOffspring`, spent in
+  `Flora.TryReproduce`, earned by `NotifyGrew`. Branching, phyllotactic, Borromean.
+* **Colony CYCLE** — a lattice species births ONE plant for the whole population per
+  `Cell.CurrentFaunaSpawnPeriod` (`AssembledFlora`, `Docs/ECOSYSTEM.md §32.7`).
+
+`author_flora_populations.py` writes `GrowthPerOffspring` on every config, including the
+lattice ones where it is **inert** — the asset says 22, the tests pass, and nothing reports
+that the number is never read. Measured: of 102 flora configs, 50 reproduce at all, and
+**34 of those 50 are lattice** (including every asset literally named "…Flora Time"). Split
+the list by `FloraPrefab` before touching either. Colony cadence keys on the **CONFIG's**
+authored element, never the ticking plant's — a colony is mixed-element by construction.
+
+Note the **TIME law** (`Docs/ECOSYSTEM.md §38`): a Time plant reproduces at 1.25× the fleet
+rate and Charge/Mass/Space at 0.8×, applied at spawn by `Flora.ResolveGrowthPerOffspring`
+and by `AssembledFlora.ColonyCyclePeriod`. It cannot be authored per config; do not try.
+
+---
+
+## 7. BUDGETS — what a flora species costs
+
+State all three when you add or resize one:
+
+1. **Always-on heart colliders = `MaxLivePopulation` × elements deployed.** One per LIVE
+   plant, culled by no phase. This is the ceiling that matters; the Lattice cell's 1,080 is
+   the shipped high-water mark.
+2. **LOD-cullable prisms** = plants × per-plant budget. Bounded by the cell's own
+   `FrenzyEnter` COUNT backstop (Frenzy freezes planting AND growth).
+3. **Volume**, because volume is the spine. A species whose prisms are not nominal (16)
+   makes its cell's `PhaseThresholds` wrong. Per-family exponent:
+   `BranchingFlora` lays `leafSize` on all three axes (**s³**); `PhyllotacticFlora` reads
+   only `leafSize.x/y` as a CROSS-SECTION (**s²**); a species whose leaf is a measured
+   TABLE is exempt via `PrismSizeFixedByGrowthRule`, and its exponent is **0** — the
+   per-cell scalar (`SpawnProfileSO.FloraPrismScale`) does not reach it AT ALL, because
+   `Flora.ApplyCellPrismScale` returns early. That is a statement about the code, not a
+   rounding, and a cell's prism axis will then move some of its species and not others.
+
+A species in **no SpawnProfile** (the worm colony) costs a cell nothing until somebody
+adopts it. Say so — and re-prove it by grepping the config GUIDs, because *an "it is wired
+nowhere" claim is true only on the date it was written*.
+
+---
+
+## 7.1 ADOPTING a species into a cell
+
+The cheap-looking half is the `SupportedFloras` entry. Four things are not cheap, and each
+has cost a real pass:
+
+* **A species with per-element geometry is adopted as N configs, not one.** A
+  `FloraConfigurationSO` carries ONE `Variant` block, so a rolled config can author one
+  leaf, one budget and one **heart size** for elements that may be nothing alike (the
+  Borromean four span 180–360 prisms, 804–15,739 plant volume and 108–222 units across).
+  `author_lifeform_heart_sizes.py` would then be sizing an average rather than a lifeform.
+  Roll only where the elements really are variations of one plant.
+* **The cell's volume ladder moves, and the AUTHORED half must not follow it.** A
+  play-tested `*EnterVolume` pair is a number a human reached by playing the arena: hold it
+  and let the MARGIN absorb the new mass, then state the new margin. A generator that pins
+  a `REFERENCE_FOREST_VOLUME` is pinning it for exactly this moment — re-anchor it
+  deliberately rather than letting four ladders slide and calling that "unchanged". The
+  COUNT half is derived and legitimately moves.
+* **One model row for N configs needs an assert.** Density scalars round half UP **per
+  config**, and that does not commute with a sum: two seeds × four configs at 3.67 is 28
+  plants, eight seeds once is 29. Scale per config, and assert the row divides evenly.
+  *A row that prices a forest the game does not grow is worse than no row* — worst on the
+  CAP, which is the always-on crystal collider line.
+* **Who OWNS the new config.** A species whose budget is a measured table is owned by its
+  own generator, not by `author_flora_populations.py` — and that script's `OWNED_ELSEWHERE`
+  matching is a **prefix**, which is correct for a CELL-named family and wrong for a
+  SPECIES-named one, because a per-cell config is named for the cell first (`Rampage
+  Borromean Flora Mass Config Data`). Check which kind you are adding. And if the adopting
+  cell's own generator already FORKS its donor's configs, let it fork yours too — two
+  owners for one forest is the same defect as two fitters for one asset.
+
+---
+
+## 8. THE TOOL CHAIN
+
+A species whose form is computed gets an offline chain, and the split is deliberate:
 
 ```
-s* = max over candidate axes of  |d·u| / (rA(u) + rB(u))
+measure_<species>.py  --write   # derives the table from the definition; slow; emits the C#
+verify_<species>_tables.py      # re-proves the SHIPPED table from the points alone; CI gate
+author_<species>_assets.py      # prefab + 4 configs + registry wiring; --check
+author_lifeform_heart_sizes.py  # owns HeartWorldScale for the whole fleet
+author_flora_populations.py     # owns the population numbers (unless OWNED_ELSEWHERE)
 ```
 
-with candidates = the separating-axis set (15 axes for two boxes; 8+8 face normals plus 36
-edge-edge crosses for two octahedra). `s* >= 1` means the pair is clear as authored.
-
-**A regular lattice can claim ZERO overlapping pairs and must be fitted to it.** A species whose
-prisms are fitted to IRREGULAR patches cannot — two patches meeting along a ridge have bounding
-boxes that must overlap, so it states BOUNDS and gates both of them: how MANY pairs may
-interpenetrate at all, and how DEEP (refuse to lay a prism that would sit essentially inside one
-already laid). A zero you cannot have is worse than a bound you can measure.
-
-**Then do it again for Charge.** `Flora.ResolveShieldPeriod` makes every Charge plant's leaves
-shielded *by law*, and `PrismStateManager.ActivateShield` replaces the box with the octahedron that
-CIRCUMSCRIBES it — `OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE` (3) on the HALF-extents, reaching
-`1.5 × leafSize`. A species fitted for the box it draws is **not** fitted for its armour: measured
-on the Mandelbulb, the ribbon the other three elements clear at fused EVERY armoured pair it had. Both shipped lattice species had the same defect (`Docs/ECOSYSTEM.md §35`).
-
-Two legitimate answers, and you must pick one out loud:
-- **Fit Charge's own prism** (uniformly, so the leaf ASPECT — the species' identity — is exact).
-  Its plates then read as a sparse skeleton and its octahedra fill the lattice in. This is what the
-  gyroid, Schwarz P and Mandelbulb do — and **check WHICH dimension is doing the fusing before you
-  shrink the cross-section**: a prism's `leafSize` includes its LENGTH, so a species that lays
-  prisms end to end along a curve or a rail fuses along its OWN chain, and no cross-section shrink
-  reaches that (measured on the Mandelbulb at a quarter width: still 84% fused). The lever there is
-  the length — its Charge ribbon is DASHED, its prisms shorter than the step that spaces them, and
-  the octahedra fill the dashes in. **The bar to clear is its SIBLINGS, not an invented number:**
-  *a Charge plant wearing its shields must be no more fused than an ordinary plant is bare.* That
-  moves if the species is ever retuned, which an invented constant does not. And check the read
-  INVERTS rather than merely shrinking — armouring multiplies a plant's own silhouette by exactly
-  `0.5 × CIRCUMSCRIBING_SCALE²` = 4.5, so a Charge plant should end up the DENSEST of the four
-  shielded and the sparsest stripped. Gate that ordering; it is the two-pass grazing cost made
-  visible.
-- **Accept the fusion and state it**, when one authored leaf serves all four rolled elements and
-  there is no per-element field to reach (the Hesperides topiaries). *An accepted graze must be a
-  stated number, never something a later reader discovers.*
-
-Never fit the LATTICE instead of the prism: scaling the lattice drags a whole family of
-absolute-distance coherence tolerances with it (§34.8), scaling the prism drags nothing.
-
----
-
-## 7. Budget: prisms, volume, and the one that is never free
-
-State all three before authoring, and remember `/ecology` §4.6 — **prove WHICH ceiling binds**.
-
-- **Per-prism volume** is `leafSize.x·y·z`, flat for the plant's whole life (there is no lifeform
-  level — §40). Nominal is 16; flora ship 0.85 → 135, a 159× span, so never assume nominal.
-- **Per-plant volume** = per-prism × the settled prism count. A cell whose prisms are not nominal
-  **must author its own `PhaseThresholds`**, never inherit the `count × 16` derivation.
-- **Always-on heart colliders = the live PLANT CAP**, one per plant, culled by no phase. This is the
-  only flora number that is never free. Prisms are LOD-cullable by phase; hearts are not. Size
-  `MaxLivePopulation` against the collider budget (shipped references: Rampage 440, the Lattice cell
-  1,080), not against the forest you want — grazing is the real control.
-
-A per-plant budget is **geometry** for a lattice or surface species (a gyroid octagon is 24 prisms
-around one crystal), so a cell-level budget override truncates a shape mid-figure rather than
-thinning the plant. **Plant COUNT is the only lever there.**
+* **`--check` must read the DISK.** A `--check` that re-runs the in-memory validation and
+  prints "no files written" passes whatever the assets actually say.
+* **A slow measurement needs a CACHE keyed on the SOLVER only**, not on the whole library,
+  or every edit to an unrelated helper costs the full solve. Key it on the source of the
+  functions that can change the result (`inspect.getsource`), and say so.
+* **Two fitters must not own one asset.** `author_lifeform_heart_sizes.py` owns
+  `HeartWorldScale`; a species generator READS it back rather than authoring it, or the two
+  undo each other forever with both `--check`s green.
+  **Resizing a plant therefore RE-PRICES its heart**, because that tool sizes every heart as
+  `K · bodyDiameter^0.5` — growing the Borromean Space membrane 2× took its heart 2.661 →
+  3.379 — and a heart's world scale is read twice AS GAMEPLAY (the collect reward and the
+  live domain fauna buff), so a body-size change is a balance change. Its **monotonicity**
+  check (a bigger lifeform may never carry a smaller heart) is the one place a body-size bug
+  surfaces; re-run it after any geometry change, not just after a heart edit.
+* **Register the species in `author_flora_populations.py`'s `OWNED_ELSEWHERE`** if its own
+  generator authors the populations, so the fleet tool stands down by name instead of
+  silently disagreeing.
+* **Every verifier check needs a NEGATIVE CONTROL** under `--self-test`. A check nobody has
+  watched fail is a check nobody should trust — and a control has to break the thing the
+  check is about, not something correlated with it (sorting an already-sorted table by
+  radius is a no-op, so it proves nothing).
+* **A check on the WRONG invariant is worse than no check.** The Borromean chain shipped a
+  green *"the blocks' radii are non-decreasing"* — true, cheap, negative-controllable, and
+  asserting the very property that made the plant grow in disconnected patches. It was
+  RETIRED, and its retirement is worth as much as the checks that replaced it. When a check
+  passes on a plant that is visibly wrong, the check is a suspect.
+* **A solver can fail by being slightly WRONG rather than by failing.** 1,200 Jacobi sweeps
+  on a cotangent Laplacian were still 3% above what five sparse solves reach in under a
+  second — an inflated membrane that passes every structural check. So assert a property of
+  the SURFACE (its AREA) rather than the solver's stopping condition, and prefer a direct
+  solve to an iteration you then have to bound.
+* **A `ROOT` one `dirname` too shallow writes the whole asset tree into the wrong place —
+  and a verifier that shares the bug reads it back and PASSES.** *Consistent wrongness reads
+  exactly like correctness.* The path constant carries an `assert` that `Assets/` is under
+  it; put the same assert in anything that resolves a repo root.
+* **A generated C# constructor's ARITY is a contract several readers parse.** Adding one
+  field to the emitted table broke the verifier's regex and
+  `author_flora_populations.py`'s, both of which count the ctor's floats — neither failed
+  loudly, and one of them is a fleet-wide tool. Grep for every reader of the generated file
+  before you widen its signature.
 
 ---
 
-## 8. Where the species lives — decide it, do not leave it implied
+## 9. Traps, each of which cost real time
 
-- **A `SpawnProfileSO`** makes it part of a cell's standing population. Every cell referencing that
-  profile inherits the cost, so grep the profile's guid and hold the species against the *tightest*
-  consumer — a "N% of Frenzy" figure written against one cell rots the moment the cell is retired.
-- **The Lifeform Matrix toy** (`Assets/_SO_Assets/Toys/Toy_LifeformMatrix.asset`, `floraSpecies`)
-  makes it opt-in: a player flies the bench and releases a population. Costs no cell anything.
-- A species may be in **both**, or in only the toy (the worm colony's "a boss is opt-in", and the
-  Mandelbulb's "in NO SpawnProfile").
-
-**Whichever you choose, say it in the docstring and in `Docs/ECOSYSTEM.md`** — and know that *"it is
-wired nowhere" is true only on the date it was written*. Re-prove absence by grepping the config
-asset's GUID across `_SO_Assets` rather than inheriting the claim.
-
----
-
-## 9. Traps that have actually cost passes
-
-- **A SENTINEL IS NOT A MEASUREMENT.** `LeafSize {0,0,0}`, `MaxTotalSpawnedObjects -1`,
-  `HeartWorldScale 0`, `LatticeScale -1`, `GrowPeriod -1`, `ShieldPeriod -1` all mean *keep what you
-  have*. An offline pass must resolve each the way the RUNTIME does (fall through to the prefab).
-  Reading the zero as a real leaf priced one species 25% light. And write `(-?\d+)`, not `(\d+)`,
-  or you skip `-1` by accident rather than by rule.
-- **A variant block with `Enabled: 0` is never read.** Any tool that authors into a `Variant` must
-  flip `Enabled` with it. A zero-initialised block is safe to enable — every other field's
-  initializer is a keep-the-prefab sentinel.
-- **The component fileID in a `FloraPrefab` reference differs by family.** `PhyllotacticFlora` and
-  `BranchingFlora` share `7514956980722975813`; `AssembledFlora` uses `8186157953239024492`. A wrong
-  one resolves to no component at all and the config grows nothing, **silently**. Copy it from that
-  species' own shipped element asset, or give a new family its own and use it consistently.
-- **`PrismScaleAnimator.SetTargetScale` clamps per axis into `[0.5, 10]` inside the setter**, with
-  no log and no return value — 363 of 404 prefabs inherit those defaults. Anything that STATES a
-  size calls `Prism.AdmitTargetScale(size)` first; anything that GROWS into the bound leaves it
-  alone. When a fitted size does not read on screen, check what the engine actually STORED before
-  re-fitting.
-- **NOTHING may be parented under a prism.** A prism carries its leaf as `localScale`, and a
-  non-uniform scale above a rotated child is a **shear** that compounds every generation. Parent to
-  the prism's *spindle*. (`ReseedBranches` did this and skewed all three lattice species.)
-- **A scale applied to a node that PARENTS its successors compounds** as `scale^depth`. Scale the
-  node's children, not the node.
-- **Flora reproduce TWO ways and the config gives no hint which.** The per-plant growth quota
-  (`GrowthPerOffspring`, spent in `Flora.TryReproduce`) or the lattice **colony cycle** (one birth
-  per `Cell.CurrentFaunaSpawnPeriod` for the whole population). The quota field is written on every
-  config and is **inert** on the lattice ones. Before touching reproduction, split the species list
-  by family and say which path each change reaches.
-- **A colony's cadence reads `Cell.CurrentFaunaSpawnPeriod`, never `OnFaunaWaveSpawned`** — only
-  `RandomLifeSpawner` raises that event, so a subscription is dead code in every `IntensityWise`
-  cell.
-- **`CellTypeChoiceOptions.IntensityWise` swaps the SPAWNER class**, so a spawn-loop feature written
-  in only one of `RandomLifeSpawner`/`IntensityWiseLifeSpawner` is dead in exactly the modes that
-  asked for it. Flora has **five** producers (both spawners, reproduction, the `Microscene`
-  conveyor, the Lifeform Matrix toy), which is why per-cell scalars resolve on the **`Cell`**.
-- **An elemental LAW cannot live in per-element config when the element is ROLLED.** A config with
-  `SpreadElements` and an empty palette applies its OWN block to a rolled element, so nothing
-  writable on any per-element asset reaches it. Put the law at `LifeForm.Initialize`, the one point
-  where prefab, variant, cell overrides and the crystal have all landed — the shape
-  `Flora.ResolveShieldPeriod` and `ResolveGrowthPerOffspring` use. Scope it to `Flora`, not
-  `LifeForm`, or every creature inherits a rule written about plants.
-- **A shared species asset is why per-cell tuning belongs on the PROFILE.** Grep who else references
-  a config before tuning it; Rampage's species are referenced straight out of `Blob Cell/`.
-- **A PCA frame is arbitrary when the point set has rank under 2.** If a species orients a prism by
-  fitting a patch of cells, a two-cell patch (there are always some) has one non-zero eigenvalue, so
-  the two smallest eigenvectors are interchangeable and the frame can flip on a rounding difference
-  between two machines. Test the MINOR eigenvalue against a tolerance and fall back to a
-  well-defined normal. Measured: 12 of 2,596 prisms disagreed between the offline model and the
-  shipped C# until that test landed; then 0 of 2,615.
-- **An orientation decided by the SIGN of a quantity that can be zero is not decided at all.**
-  "Flip the fitted normal outward if `n · census < 0`" is a coin toss whenever the two are nearly
-  perpendicular, which a real patch does reach — it flips between two machines and between the
-  shipped code and the offline model, and on a centrally-symmetric prism it is **invisible on
-  screen**, so nothing but a cross-check finds it. Answer it in order by things that are each
-  either a real answer or explicitly not one (census normal → radial → a sign convention on the
-  first significant component), with a stated tolerance. Measured: 8 of 1,848 plates.
-- **A prism thickness stated as a FRACTION of the prism is a cubic volume term.** A rule that makes
-  long plates then makes long *slabs*, and a slab's volume lands on the cell's Frenzy ladder as the
-  cube of its length. State thickness in absolute lattice cells; the plant's volume is then linear
-  in its plated area, which is a number you can reason about.
-- **A species whose prisms are fitted to irregular patches cannot claim zero interpenetration.** Two
-  patches meeting along a ridge have bounding boxes that MUST overlap — it is geometry, not a
-  defect. State BOUNDS instead and gate both: how MANY pairs may interpenetrate at all, and how DEEP
-  (refuse to lay a prism that would sit essentially inside one already laid — hidden mass buys
-  nothing, and the same rule bounds the interleaving). A zero you cannot have is worse than a bound
-  you can measure. The regular lattice species CAN claim zero and must still be fitted to it.
-- **A tool that MODELS a body size can be wrong by an order of magnitude for a new family.**
-  `author_lifeform_heart_sizes.py` sizes a flora body as the disc `N` prisms of footprint `A` settle
-  into, from the prefab's `leafSize` and a budget capped at 400. Both inputs are meaningless for a
-  species that measures a size per prism and grows thousands of them, and the error is silent
-  because the tool's `--check` compares its own model against itself. Check a new family's body
-  measurement against the species' own model before trusting the heart it authors.
-- **A static registry/frontier survives every cell teardown.** If your species keeps population
-  state, key it by `(Cell, species)` and drop it at all three Cell reset sites. A cache of a *pure
-  function* is exempt — say so, or the next reader files it as the bug.
+* **A radius sort is not a growth order.** §2.
+* **A per-site choice among equal options is noise.** §4(a).
+* **`AssemblyBranch` is not a model to copy.** §3.
+* **A prism wears its leaf as `localScale`, so NOTHING may be parented under one** — a
+  non-uniform scale above a rotated child is a SHEAR, and that is how every lattice species
+  grew skewed slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). Parent a prism to
+  its SPINDLE.
+* **`PrismScaleAnimator` clamps a target scale per axis inside the setter, silently**
+  (`[0.5, 10]` on 363 of 404 prefabs). Anything that STATES a size calls
+  `Prism.AdmitTargetScale(size)` first — `Flora.AddHealthBlock` does. A fitted size that
+  does not read on screen means the engine stored something else.
+* **A planting band is measured from the CELL CENTRE, not the crystal**
+  (`Flora.ResolvePlantCenter`), and it is a volume-uniform BAND, not a shell — a
+  uniform-in-radius draw crowds the inner edge because a shell's area grows as r².
+* **`FloraVariantTuning` sentinels are `0` (LeafSize) and `-1` (counts), and they mean KEEP
+  WHAT YOU HAVE.** A measurement layer that reads a sentinel as a value is measuring the
+  wrong plant; a `\d+` regex that skips `-1` by accident rather than by rule is the same bug
+  waiting.
+* **A `FloraPrefab` reference's component fileID differs by FAMILY** (`PhyllotacticFlora`
+  and `BranchingFlora` share `7514956980722975813`; `AssembledFlora` uses
+  `8186157953239024492`). Copy it per species from a shipped asset of the same family — a
+  wrong one resolves to no component and grows nothing, silently.
+* **A flora prefab holds exactly ONE prism** (the seed), because a plant is a growth RULE.
+  Anything that photographs or measures a flora must run the rule
+  (`Flora.TryPreviewGrowth`), never harvest the prefab's meshes.
+* **`Flora.TryPreviewGrowth` must not touch `UnityEngine.Random`** — it is a pure preview and
+  must not advance a sequence the simulation is drawing from. Seed a `System.Random`.
 
 ---
 
-## 10. Hand back honestly — you cannot run Unity
+## 10. Checklist for a new or reworked species
 
-State the exact in-editor steps, and never claim something works that you have not seen work.
-The minimum handoff for a new species:
-
-1. Open **Menu_Main**, fly the **Lifeform Matrix** toy → Flora → *species* → an element, and watch
-   one plant grow in. (Continuity of existence: prisms must bloom in, never pop.)
-2. Confirm the plant reaches its authored budget and stops, and that shooting prisms makes it
-   **regrow** (budget frees on consumption).
-3. Confirm the CHARGE variant's leaves shield and that the octahedra have room.
-4. Confirm the heart drops on death and is collectable.
-5. **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** after any lifeform-prefab change.
-6. **FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines** if the species entered a
-   SpawnProfile — the offline volume is an ESTIMATE until the measurer confirms it.
-
-Then say which of those you did **not** verify. `Docs/QA/QA_BACKLOG.md` is where unverified work
-goes; the `/ship` protocol reads the PR body's "Verification status" section for exactly this.
+1. `/ecology`: restate which LOCKED invariants the change touches and confirm none is violated.
+2. Growth order is connected from the crystal at every tick — **asserted**, with the
+   rejected ordering as the negative control.
+3. Every limb is aimed at a bond, stretched to it, and scales the spindle's CHILDREN.
+4. The orientation field is combed — with the before/after angle measured.
+5. Four elements: one anchor, two perturbations, Charge FITTED against `1.5 × leafSize`
+   octahedra with a measured clearance and zero shielded overlaps.
+6. Budgets stated: heart colliders, prism count, per-prism volume, and whether any cell's
+   `PhaseThresholds` have to move.
+7. Tool chain green: `measure --check`, `verify --self-test`, `author --check`,
+   `author_lifeform_heart_sizes.py --check`, `author_flora_populations.py --check`.
+8. Compile the new C# (a stub harness is enough — see the `asset-surgery` skill) and say
+   plainly that nothing has been run in the editor, if it has not.
+9. If a cell ADOPTS it, run §7.1: N configs not one, re-anchor the reference forest rather
+   than letting the authored volume pair float, assert the density row divides evenly across
+   the configs, and say who owns them.
+10. Record the findings in `Docs/ECOSYSTEM.md` and the invariant in `CLAUDE.md` if the change
+    is one — and check no parallel branch has claimed your section number.

@@ -13,7 +13,17 @@ namespace CosmicShore.Gameplay
     /// wants to weaken a pilot reaches for that fundamental rather than inventing a per-blast
     /// status. It is the danger-prism debuff
     /// (<see cref="VesselElementalDebuffByDangerPrismEffectSO"/>) lifted onto the explosion
-    /// impactor, same magnitudes, same decay, same per-victim anti-spam.
+    /// impactor, same decay, same per-victim anti-spam.
+    ///
+    /// A HIT'S BITE TRACKS ITS PRICE. Every drain asset in the fleet used to carry a flat -0.5
+    /// whatever the attack, so a Manta bloom worth 12 points bit HALF as deep as a Dolphin cone
+    /// worth the same (it drains two elements, not four) and a warhead grazing for 10 drained
+    /// exactly as hard as the cone. Magnitudes are now DERIVED from Broadside's price list by
+    /// Tools/Build/author_combat_debuff_magnitudes.py — the TOTAL over the elements an attack
+    /// touches is proportional to its points, so how an attack spreads its drain is free and
+    /// what it is worth is not. Because that price list was itself tuned to flatten POINTS PER
+    /// SECOND across the fleet, the drain inherits that balance instead of needing its own pass.
+    /// Do not hand-edit a magnitude: the script's --check fails on drift.
     ///
     /// Domain filtering is NOT this effect's job: <see cref="ExplosionImpactor.AcceptImpactee"/>
     /// already declines own-domain vessels unless the blast is authored/overridden affectSelf, so
@@ -31,7 +41,13 @@ namespace CosmicShore.Gameplay
     public class VesselElementalDebuffByExplosionEffectSO : VesselExplosionEffectSO
     {
         [Header("Debuff Settings")]
-        [Tooltip("Signed level change applied to every element (negative = debuff).")]
+        [Tooltip("Signed level change applied to every element the blast drains (negative = " +
+                 "debuff). DERIVED, not authored: a hit's bite tracks the price Broadside puts " +
+                 "on its verb, so this is total drain / element count where total = points x " +
+                 "(2.0 / 12). Edit it with Tools/Build/author_combat_debuff_magnitudes.py, " +
+                 "whose --check FAILS on a hand-edit. The initializer is the ANCHOR itself " +
+                 "(the 12-point Debuff class over four elements), so a new asset starts on the " +
+                 "one play-tested value.")]
         [SerializeField] private float debuffMagnitude = -0.5f;
 
         [Tooltip("Seconds over which the temporary debuff decays back to baseline.")]

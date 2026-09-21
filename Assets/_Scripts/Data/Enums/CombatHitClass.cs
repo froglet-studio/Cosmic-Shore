@@ -57,6 +57,22 @@ namespace CosmicShore.Data
         /// that carries the elemental debuff and touches no mass. This is the ordinary outcome
         /// of a proximity kill and therefore the cheapest of the three.</summary>
         MissileShockwave = 4,
+
+        /// <summary>A CONTACT strike - a hit landed by the vessel's own body: the Rhino's
+        /// energised sword sweeping a hull, the Squirrel's skimmer overtaking one. Nothing is
+        /// fired and nothing detonates, so it is neither a bullet nor a blast; what it costs is
+        /// CLOSING, which is why a mode can price it above a round shot from across the arena.
+        ///
+        /// <para>It is a VERB, not a hull. The enum divides weapons by what the pilot did, so
+        /// two hulls whose kits look nothing alike share this class when both answer "I flew
+        /// into them" - and a third hull that fires a round shares <see cref="Bullet"/> with the
+        /// Sparrow however different its ammunition looks. Broadside is the mode that needed it:
+        /// a brawl the whole fleet can enter has to be able to score a blade.</para>
+        ///
+        /// <para>Unranked, like <see cref="Bullet"/> and <see cref="Debuff"/> - it is not a tier
+        /// of anything, so it latches on its own key and never upgrades or suppresses another
+        /// class.</para></summary>
+        Strike = 5,
     }
 
     /// <summary>

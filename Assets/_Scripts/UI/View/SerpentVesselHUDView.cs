@@ -197,6 +197,30 @@ namespace CosmicShore.UI
 
         // ---------- Internal animation helpers ----------
 
+        /// <summary>
+        /// Run one pip's fill animation — or, on a HUD nobody is looking at, SETTLE it.
+        ///
+        /// <para><b>A vessel HUD is INACTIVE on every vessel but the local pilot's</b>, and
+        /// <c>MonoBehaviour.StartCoroutine</c> on an inactive GameObject does not silently
+        /// no-op: it logs an error, once per call, with a full native stack. An AI Serpent
+        /// spends boost charges like any other pilot, so this method is reached on every AI
+        /// hull in the match and the console fills with
+        /// <i>"Coroutine couldn't be started because the the game object 'SerpentHUDVariant'
+        /// is inactive!"</i> — an error about a display that is correctly switched off.</para>
+        ///
+        /// <para>The answer is the prism clock's own rule: <b>the STATE goes final and the
+        /// TRANSITION is skipped.</b> A settled pip is exactly what the animation would have
+        /// left behind, so a HUD re-activated later (a vessel swap handing this hull to the
+        /// local pilot) shows the right value rather than a stale one — where simply
+        /// returning would leave the pip reading full after the charge was spent.</para>
+        ///
+        /// <para>It is a guard on the VIEW rather than only on the controller because the
+        /// controller's own subscribe-time gate cannot be sufficient: on the host an AI
+        /// Player carries the HOST's <c>OwnerClientId</c>, so <c>IsLocalUser</c> is true for
+        /// it, and <c>IsInitializedAsAI</c> — the only thing that separates the two — is
+        /// written LATER in the spawn chain than the HUD is built. The controller re-checks
+        /// at the point of use for the same reason; this settles whatever still gets through.</para>
+        /// </summary>
         void StartPipAnim(int index, float from, float to, float seconds)
         {
             if (_boostPips == null) return;
@@ -207,10 +231,34 @@ namespace CosmicShore.UI
             if (_pipAnim != null && _pipAnim[index] != null)
                 StopCoroutine(_pipAnim[index]);
 
+            if (!isActiveAndEnabled)
+            {
+                SettlePip(index, pip, to);
+                return;
+            }
+
             if (_pipAnim != null)
                 _pipAnim[index] = StartCoroutine(CoAnimatePip(index, pip, from, to, seconds));
             else
                 StartCoroutine(CoAnimatePip(index, pip, from, to, seconds));
+        }
+
+        /// <summary>
+        /// The end state <see cref="CoAnimatePip"/> would have arrived at, applied at once.
+        /// Kept beside the coroutine so the two cannot drift: if one gains a channel the
+        /// other has to gain it too.
+        /// </summary>
+        void SettlePip(int index, Image pip, float to)
+        {
+            var end = Mathf.Clamp01(to);
+
+            pip.enabled = true;
+            pip.gameObject.SetActive(true);
+            pip.type = Image.Type.Filled;
+            pip.fillAmount = end;
+            pip.color = (end >= 1f) ? pipFullColor : pipEmptyColor;
+
+            if (_pipAnim != null) _pipAnim[index] = null;
         }
 
         IEnumerator CoAnimatePip(int index, Image pip, float from, float to, float seconds)

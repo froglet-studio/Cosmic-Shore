@@ -563,13 +563,13 @@ class Rules:
               "lanes", "lane_gap", "hop_seek", "hop_jitter", "seeds", "seed_spread",
               "max_turn", "r_min", "r_max", "min_run", "length_factor", "girth_taper",
               "twist",
-              # THE FALL (Docs/ECOSYSTEM.md §47)
+              # THE FALL (Docs/ECOSYSTEM.md §53)
               "dive_count", "dive_step", "dive_angle", "dive_stop", "dive_max_steps",
               "dive_swirl", "dive_stride_ceiling", "dive_girth_floor", "dive_axis_align",
               "dive_descent",
-              # THE WATERSHED (§47)
+              # THE WATERSHED (§53)
               "skeleton_seeds", "walk_step", "min_persistence", "girth_reference",
-              # APOLLONIA (§48)
+              # APOLLONIA (§54)
               "gasket_levels", "disc_seeds", "disc_pad", "disc_min_radius", "ring_shrink",
               "ring_flatten", "ring_girth_exponent", "ring_samples", "gasket_octave",
               "disc_relax_rate", "ring_girth_floor")
@@ -1045,7 +1045,7 @@ def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=
 # ── TWO SPECIES, ONE GROWTH RULE ──────────────────────────────────────────────────────
 #
 # Both trace curves over a baked spherical height field. They differ in ONE thing each,
-# and that thing is the concept (Docs/ECOSYSTEM.md §46):
+# and that thing is the concept (Docs/ECOSYSTEM.md §52):
 #
 #   FRACTAL FOLIAGE  every prism ROLLS about its own curve tangent as the run advances, so
 #                    a curve is a helix of plates rather than a flat band. Short, busy,
@@ -1060,7 +1060,7 @@ def surface_for(element, w0=0.0, w1=0.0, w2=0.0, width=192, tables=None, degree=
 # plants in one biome rather than two unrelated objects.
 #
 # Each species authors ONE neutral form and four CURVE FAMILIES. The four elemental prisms
-# are DERIVED from the neutral by the fleet law (Docs/ECOSYSTEM.md §45) rather than typed
+# are DERIVED from the neutral by the fleet law (Docs/ECOSYSTEM.md §51) rather than typed
 # per element - which is the whole point: the concept persists through all four elements
 # while each element expresses itself.
 
@@ -1074,7 +1074,7 @@ ELEMENT_ANISOTROPY = {"Charge": 1.0, "Mass": 0.45, "Space": 2.11, "Time": 1.0}
 # law and a shield engages the octahedron CIRCUMSCRIBING the prism, reaching 1.5 x leafSize
 # (Docs/ECOSYSTEM.md §35). Two dials, both fitted by measure_mandelbulb_flora.py --shields:
 # a UNIFORM cross-section shrink (uniform so the species' own leaf ASPECT survives, which is
-# what §45 requires of Charge), and a DASH - the prism laid shorter than the step that spaces
+# what §51 requires of Charge), and a DASH - the prism laid shorter than the step that spaces
 # it, which is the only lever that reaches fusion along a ribbon's OWN chain.
 CHARGE_SHIELD_SHRINK = 0.60
 CHARGE_DASH = 0.45
@@ -1082,7 +1082,7 @@ CHARGE_DASH = 0.45
 # GIRTH COMPENSATION - the one number here that is FITTED rather than derived, and the
 # reason it has to exist is worth stating: the law sets the AUTHORED prism, but what a
 # player sees is the plant, and every prism's cross-section is additionally multiplied by
-# its curve's GIRTH - a taper keyed on how far that run got (Docs/ECOSYSTEM.md §44). The
+# its curve's GIRTH - a taper keyed on how far that run got (Docs/ECOSYSTEM.md §50). The
 # mean girth is therefore emergent from the curve family, it differs per element because
 # the four curve families differ on purpose, and measured it INVERTED the ordering the law
 # had just set (Space's long clean runs all reached full girth while Time's short fall
@@ -1114,7 +1114,7 @@ VOLUME_GAIN = {
 # else is the curve family, which is authored, because "the four read as four plants" is
 # richness the law is deliberately silent about.
 # THE FALL's mechanism, shared by every curve family of every species (the expression axes
-# are per species: psi, the axis alignment, the swirl, the count). Docs/ECOSYSTEM.md §47.
+# are per species: psi, the axis alignment, the swirl, the count). Docs/ECOSYSTEM.md §53.
 FALL_SHARED = {
     "dive_step": 0.40,            # f: step as a fraction of the radius -> rho = sqrt(1 - 2f cos psi + f^2)
     "dive_stop": 0.045,           # 3.4 world units at shell 75, against a ~1.2 u crystal half-extent
@@ -1139,7 +1139,7 @@ SPECIES = {
         neutral_cross=(0.0450, 0.0170),
         neutral_step=0.030,
         weight_spread=1.0,
-        # THE FALL (Docs/ECOSYSTEM.md §47): its dives corkscrew, doubling down on the helicoid.
+        # THE FALL (Docs/ECOSYSTEM.md §53): its dives corkscrew, doubling down on the helicoid.
         #
         # CHARGE authors a WALK STEP, and it is an ARMOUR fit rather than a curve-family
         # choice. A Charge prism is laid at CHARGE_DASH x the chord that spaces it and its
@@ -1244,7 +1244,7 @@ SPECIES = {
     ),
 }
 
-# ── THE WATERSHED — the discovery species (Docs/ECOSYSTEM.md §47) ──────────────────────────
+# ── THE WATERSHED — the discovery species (Docs/ECOSYSTEM.md §53) ──────────────────────────
 #
 # Every curve is a SEPARATRIX of the height field: it leaves a saddle along one of the
 # saddle's Hessian eigen-directions and runs uphill to a peak or downhill to a pit. The
@@ -1288,7 +1288,7 @@ SPECIES["Watershed"] = dict(
 )
 VOLUME_GAIN["Watershed"] = {"Charge": 1.0369, "Mass": 1.0819, "Space": 1.3362, "Time": 1.0}   # fitted: --fit-volume
 
-# ── APOLLONIA — the self-similar species (Docs/ECOSYSTEM.md §48) ───────────────────────────
+# ── APOLLONIA — the self-similar species (Docs/ECOSYSTEM.md §54) ───────────────────────────
 #
 # The one fractal picture everyone recognises: circles packed tangent to circles, the gap
 # between three of them filled by a smaller circle, and again. Level 0 is the bulb's OWN
@@ -1320,7 +1320,7 @@ SPECIES["Apollonia"] = dict(
         # `neutral_step` are the LACE the panel accepted and no dial here may stand in for
         # them: a pass that tripled the cross made every gate green and the render a pile of
         # flat plates (reverted, 565d4677). Every number below moves material BETWEEN ring
-        # sizes, or moves prisms between the rings and the Fall, at a fixed §45 volume.
+        # sizes, or moves prisms between the rings and the Fall, at a fixed §51 volume.
         "*": FALL_SHARED | {
             "dive_swirl": 0.0, "dive_axis_align": 1.0,
             "dive_descent": 0.0,        # structural: a closed ring starts and ends at one radius
@@ -1345,7 +1345,7 @@ SPECIES["Apollonia"] = dict(
             "gasket_octave": 0.75,
         },
         # ring_shrink IS the gap between two tangent rings, so it is per element for the
-        # reason the leaf is: the §45 law hands each element a different WIDTH on the same
+        # reason the leaf is: the §51 law hands each element a different WIDTH on the same
         # circles. It is a LENGTH dial as well (a bigger ring has longer chords), which is
         # what carries a small octave over the 2 px legibility floor - and it is bounded on
         # both of the gates that watch a ring's own prisms: past ~1.0 the claim filter starts
@@ -1402,7 +1402,7 @@ def elemental_prism(species, element):
     into a SIZE (its geometric mean) and a unit-volume SHAPE, scales the size by the
     element's volume ratio and raises the shape to its anisotropy exponent - which is
     volume-exact, so volume and aspect are independent dials and the species' own axis
-    ORDER survives (FloraElementalForm.ShapeLeaf, Docs/ECOSYSTEM.md §45).
+    ORDER survives (FloraElementalForm.ShapeLeaf, Docs/ECOSYSTEM.md §51).
 
     The prism's THIRD axis is the step, because on this growth family the step IS the
     prism's length - so "Space's long axis" is a real long axis here rather than a
@@ -1449,7 +1449,7 @@ def rules_for(element, species="FractalFoliage"):
     values[fields.index("step")] = step
     # A skeleton species walks at its OWN step (the surface fixes its cost) and the law's
     # step is what a prism FILLS of it - so its LengthFactor is the ratio (Docs/ECOSYSTEM.md
-    # §47); every other species walks at the law's step and the factor is the dash alone.
+    # §53); every other species walks at the law's step and the factor is the dash alone.
     walk = values[fields.index("walk_step")]
     values[fields.index("length_factor")] = length_factor * (step / walk if walk > 0 else 1.0)
     values[fields.index("twist")] = spec["twist"]

@@ -187,7 +187,7 @@ namespace CosmicShore.Gameplay
                 // swoop is the Manta's corner.
                 LateralPerturbation = new[] { 160f, 200f, 240f, 280f }[i - 1],
                 // A Manta at 720 u/s crosses a mouth in a sixth of a second; its lateral
-                // authority (174 deg/s at that speed) is a quarter of the Rhino's at 1210, so
+                // authority (174 deg/s at that speed) is a quarter of the Rhino's at 1200, so
                 // levels 1-3 sit a step wider than Headlong's (96 / 72 / 58).
                 //
                 // Level 4 does NOT: at 44 it is tighter than Headlong's hardest mouth (46) and

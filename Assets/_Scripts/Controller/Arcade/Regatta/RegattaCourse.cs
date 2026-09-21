@@ -53,11 +53,11 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>The circuit is Headlong's solver, cut for nobody in particular.</b> Redline and
     /// Headlong each state their corner ladder against ONE hull's turning curve. This card seats
-    /// every playable hull, from a 35 u/s Sparrow to a 1210 u/s Rhino, so its ladder is stated
+    /// every playable hull, from a 35 u/s Sparrow to a 1200 u/s Rhino, so its ladder is stated
     /// against the FLEET: the corner profiles are Redline's (the shared solver's proven reach at
     /// each rung), the safety floors are set where the fastest hull that cannot slow instantly -
     /// the Scarab at 216 u/s holds ~102 u - can still make the corner, and the mouths are a step
-    /// wider than Headlong's because a Rhino crosses one at 1210 u/s. What a corner COSTS is then
+    /// wider than Headlong's because a Rhino crosses one at 1200 u/s. What a corner COSTS is then
     /// a property of the hull that arrives at it: a Rhino lifts and pays five seconds of ramp, a
     /// Manta eases a trigger, an Urchin on its rail pays nothing at all. That difference is the
     /// mode.</para>
@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
         /// u/s ceiling holds ~102 u and can only shed speed through its 120 u/s^2 coast drag, so
         /// no corner is cut under 100 u; a Manta with one trigger released holds 82 u and a Rhino
         /// at cruise 29 u, so both clear every rung with room. The mouths start a step wider than
-        /// Headlong's (96/72/58/46): a Rhino arrives at 1210 u/s and has a quarter of a Manta's
+        /// Headlong's (96/72/58/46): a Rhino arrives at 1200 u/s and has a quarter of a Manta's
         /// lateral authority to correct with, and the three rails (offset 22 u, half-width 3 u)
         /// must pass inside the tightest mouth with a prism's clearance to spare - 54 leaves 29.
         /// The reach dials (AngularSpread) are Redline's, measured there to actually produce the

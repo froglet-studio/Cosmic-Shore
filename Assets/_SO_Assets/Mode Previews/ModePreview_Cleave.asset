@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Cleave
+  m_EditorClassIdentifier: 
+  Mode: 39
+  Notes: The four intensities are four unrelated ARENAS, not four sizes of one -
+    Panes / Swell / Cage / Twistbands, one CellConfigDataSO each, so there are
+    exactly four entries here and the preview genuinely changes place with the
+    intensity row. SpawnRingRadiusFloor is set by author_preview_spawns.py from
+    the scene's own ServerPlayerVesselInitializer, and it is LOAD-BEARING because
+    this cell has NO NUCLEUS (nucleus radius reads 0, so the computed ring would
+    collapse to the cell centre - inside the arena the player is meant to attack
+    from outside). The floor mirrors the scene's SCALAR, which is sized for the
+    2,160-radius rungs; rungs 3 and 4 are 720, so the preview opens further out on
+    those two than a match does. Re-run author_preview_spawns.py after any change
+    to the scene's spawn ring.
+  PreviewCell: {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 919fc3cbaa210b46ebacd865c8688b44, type: 2}
+  - {fileID: 11400000, guid: f43c4cc32c5bae18a25a9047d2cdff06, type: 2}
+  - {fileID: 11400000, guid: 6c76217c610119d0f2c76ea4c0858bf0, type: 2}
+  - {fileID: 11400000, guid: 02bfa044b1857c9bba123e6dba4804fe, type: 2}
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: -1
+  ObjectiveText: Energize the blade and cut the arena apart
+  ObjectiveMetric: 5
+  ObjectiveTarget: 200
+  DurationSeconds: 90
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 3150
+  SpawnFormation: 1
+  SpawnPoints: []

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure and gate THE FOUR ELEMENTAL IDENTITIES OF A PLANT (Docs/ECOSYSTEM.md §45).
+"""Measure and gate THE FOUR ELEMENTAL IDENTITIES OF A PLANT (Docs/ECOSYSTEM.md §51).
 
 The law is one sentence per element:
 

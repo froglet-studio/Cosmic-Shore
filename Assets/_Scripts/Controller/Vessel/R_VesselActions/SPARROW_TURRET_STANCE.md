@@ -17,8 +17,10 @@
   designed), `Shielded` (every shot armored — current), `Danger` (round 2's look; bites
   everyone incl. the shooter, suppresses shields — locked law). Read per volley, flip live.
 - **Range quartered from the original** (round 2 halved it, round 3 halves it again — bullets
-  AND turret, shared by design): base speed `FullAutoAction.speedValue.Value` → **375** with
-  the SPACE curve at `MultiplierAtFullLevel` **9**, so **SPACE 0 ≈ 72 u** while **SPACE 15 is
+  AND turret, shared by design): base speed `FullAutoActionSO.speedValue` (a plain `float` since 2026-09-20) → **375** with
+  the SPACE curve at **9** — authored as `FullAutoActionSO.spaceSpeedMultiplier` on
+  `FullAutoAction.asset` since the 2026-09-18 element-scaling unification moved it off the map's
+  retired generic `MultiplierAtFullLevel` — so **SPACE 0 ≈ 72 u** while **SPACE 15 is
   still the original 4875 u/s (≈ 931 u)**. Level 10 lands at 3375 u/s. Progression on SPACE is
   now dramatic: full overcharge reaches 13× the resting range.
 - **ReverseSuction survives as the alternate visual** (`suctionDurationMultiplier: 5` kept):
@@ -414,7 +416,7 @@ Everything that moves both fire modes lives on **`FullAutoAction.asset`**:
 | Knob | Value | Effect |
 |---|---|---|
 | `firingRate` | **90** (was 30 before round 7) | Volleys/s for guns **and** turret. |
-| `speedValue.Value` | **375** (was 1500 before round 3's quartering) | Muzzle speed base for both, before the SPACE multiplier (0.4× at rest → 9× at full overcharge). |
+| `speedValue` | **375** (was 1500 before round 3's quartering) | Muzzle speed base for both, before `spaceSpeedMultiplier` — **×1 at rest, ×9 at SPACE 10**, floored at 0.4. The 0.4 is a FLOOR against the deficit band, never the value at rest; this row said "0.4× at rest" until 2026-09-18, which is the same floor-vs-rest confusion the retired map's `MinMultiplier` invited. |
 | `projectileTime` | **0.3** | Flight time; with the easing curve → ~**72 u** of range at SPACE 0, ~645 u at SPACE 10. |
 | `spread.*` | see `SPARROW_SPRAY_ACCURACY.md` | The accuracy-decay cone, shared by both modes (round 7). |
 

@@ -252,6 +252,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsCreationComplete { get; private set; }
 
+        /// <summary>Hook for a one-shot creation stamp that needs the FINAL transform and a
+        /// live companion entity. Called once from the creation coroutine's completion, right
+        /// after <see cref="IsCreationComplete"/> goes true. Base does nothing.</summary>
+        protected virtual void OnCreationComplete() { }
+
         /// <summary>
         /// True when this prism is exactly what the player will see for the rest of the match:
         /// created (visible), not animating, and settled at its target scale — or dead, which
@@ -978,6 +983,12 @@ namespace CosmicShore.Gameplay
             float createdVolume = prismProperties.volume;
 
             scaleAnimator.BeginGrowthAnimation();
+
+            // The one point in a prism's life that runs exactly once, AFTER the companion
+            // entity exists and with the transform and parent final. A subclass whose
+            // creation carries its own one-shot stamp hangs it here rather than racing
+            // Initialize, which runs before any of that is true.
+            OnCreationComplete();
 
             using (s_createSoapMarker.Auto())
             {

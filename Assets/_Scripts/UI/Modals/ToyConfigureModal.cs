@@ -158,8 +158,19 @@ namespace CosmicShore.UI
         readonly struct Layer
         {
             public readonly List<ToyShellOption> Options;
-            public Layer(List<ToyShellOption> options) { Options = options; }
+            // The label of the branch row that opened this layer; null on the toy's own top
+            // layer. Read back as the PATH a committed variant is remembered under.
+            public readonly string OpenedBy;
+            public Layer(List<ToyShellOption> options, string openedBy = null)
+            {
+                Options  = options;
+                OpenedBy = openedBy;
+            }
         }
+
+        // The synthesized back row of the layer being drawn, so a press on it is never mistaken
+        // for a variant worth remembering (it applies on select like a flip-set row does).
+        ToyShellOption _backRow;
 
         /// <summary>
         /// The bound surface, or null once it has gone away.
@@ -181,9 +192,80 @@ namespace CosmicShore.UI
         /// </summary>
         public void Bind(IToyShellSurface surface)
         {
+            BindInternal(surface, restoreRemembered: true);
+        }
+
+        /// <summary>
+        /// The bind proper. Opening from the grid RESTORES the variant the player last committed
+        /// (<see cref="RestoreRememberedVariant"/>); the registry's re-bind after a cell swap does
+        /// not - the press that caused the swap has just been applied, and lighting the button on
+        /// it again would ask the player to re-arm what they just did.
+        /// </summary>
+        void BindInternal(IToyShellSurface surface, bool restoreRemembered)
+        {
             _surface = surface;
             _boundDefinition = surface?.ShellDefinition;
             Redraw();
+            if (restoreRemembered) RestoreRememberedVariant();
+        }
+
+        /// <summary>The key a toy's remembered variant is filed under: its definition ASSET's name.</summary>
+        string RememberKey => _boundDefinition ? _boundDefinition.name : null;
+
+        /// <summary>
+        /// The path of the option the player is about to commit: the labels of every branch
+        /// opened below the top layer, then the option's own.
+        /// </summary>
+        List<string> PathTo(ToyShellOption option)
+        {
+            var path = new List<string>();
+            for (int i = 1; i < _stack.Count; i++)
+                if (!string.IsNullOrEmpty(_stack[i].OpenedBy)) path.Add(_stack[i].OpenedBy);
+            path.Add(option.Label);
+            return path;
+        }
+
+        /// <summary>
+        /// Walk the remembered path back into the toy: expand each branch it names, then SELECT
+        /// the leaf it ends on - select, never apply. A row that applies on select (a domain, a
+        /// cell you are not in) is not re-applied on open; nothing changes the world because a
+        /// window was opened. The walk stops silently at the first label that no longer matches
+        /// - the toy's options moved on, and the window opens where it would have anyway.
+        /// </summary>
+        void RestoreRememberedVariant()
+        {
+            if (!ToyPreferenceStore.TryGetPath(RememberKey, out var path)) return;
+            if (_stack.Count == 0) return;
+
+            for (int step = 0; step < path.Count; step++)
+            {
+                string label = path[step];
+                bool last = step == path.Count - 1;
+                int index = IndexOfRow(label);
+                if (index < 0) return;
+
+                var option = _rows[index];
+                if (!last)
+                {
+                    if (!option.IsBranch) return;
+                    var next = option.Expand();
+                    if (next is not { Count: > 0 }) return;
+                    PushLayer(next, option.Label);
+                    continue;
+                }
+
+                if (option.IsBranch || option.AppliesOnSelect || option.Apply == null) return;
+                Select(index);
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[ToyBox] Restored '{RememberKey}': {string.Join(" > ", path)}.");
+            }
+        }
+
+        int IndexOfRow(string label)
+        {
+            for (int i = 0; i < _rows.Count; i++)
+                if (!ReferenceEquals(_rows[i], _backRow) && _rows[i].Label == label) return i;
+            return -1;
         }
 
         protected override void Start()
@@ -302,8 +384,9 @@ namespace CosmicShore.UI
         {
             if (preview) preview.Hide();
 
-            // Come back to the toy's own top layer, so reopening never lands the player inside a
-            // branch they left behind three windows ago. The rows are REDRAWN rather than just
+            // Come back to the toy's own top layer, so a re-bind never lands the player inside a
+            // branch they left behind three windows ago (the next open from the grid re-descends
+            // only to the variant they last COMMITTED). The rows are REDRAWN rather than just
             // forgotten: a stack and a drawn list that disagree would leave live, pressable cards
             // for a layer this window no longer thinks it is on.
             if (_stack.Count > 1) _stack.RemoveRange(1, _stack.Count - 1);
@@ -402,9 +485,9 @@ namespace CosmicShore.UI
             DrawRows();
         }
 
-        void PushLayer(List<ToyShellOption> options)
+        void PushLayer(List<ToyShellOption> options, string openedBy = null)
         {
-            _stack.Add(new Layer(options));
+            _stack.Add(new Layer(options, openedBy));
             _selected = -1;
             if (preview) preview.ClearVariant();
             DrawRows();
@@ -438,7 +521,8 @@ namespace CosmicShore.UI
         void DrawRows()
         {
             _rows.Clear();
-            if (_stack.Count > 1) _rows.Add(MakeBackRow());
+            _backRow = _stack.Count > 1 ? MakeBackRow() : null;
+            if (_backRow != null) _rows.Add(_backRow);
             if (_stack.Count > 0) _rows.AddRange(_stack[^1].Options);
 
             if (variantsRoot) variantsRoot.SetActive(_rows.Count > 0);
@@ -554,7 +638,7 @@ namespace CosmicShore.UI
                 }
 
                 PlayMenuAudio(MenuAudioCategory.OptionClick);
-                PushLayer(next);
+                PushLayer(next, option.Label);
                 return;
             }
 
@@ -609,6 +693,12 @@ namespace CosmicShore.UI
 
         void ApplyOption(ToyShellOption option)
         {
+            // Remembered at the press, whichever verb it was (Switch, Spawn, Start, or a row that
+            // applies on select), so the window re-opens on it next time. The back row is a way
+            // out of a layer, not a variant.
+            if (!ReferenceEquals(option, _backRow))
+                ToyPreferenceStore.SavePath(RememberKey, PathTo(option));
+
             if (option.RequiresFreestyle)
             {
                 ApplyAfterFreestyle(option);
@@ -760,7 +850,7 @@ namespace CosmicShore.UI
                                                     System.StringComparison.OrdinalIgnoreCase))
                     continue;
 
-                Bind(candidate);
+                BindInternal(candidate, restoreRemembered: false);
                 return;
             }
         }

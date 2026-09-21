@@ -489,8 +489,10 @@ Notes and consequences, all of which are design decisions worth marking up:
   button", GamepadInputStrategy.cs:47) — is ignored entirely; repointing it would be a global
   input change affecting every vessel.
 - `ThrottleScalerMultiplier` is the **existing** `ElementalFloat` on `VesselTransformer` (the
-  Squirrel ships it disabled) — the Scarab enables it as its Time scaling, and the map's generic
-  Time multiplier is pinned to 1 so `CurrentBoostAmount()` can never double-dip.
+  Squirrel ships it disabled) — the Scarab enables it as its Time scaling. Double-dipping is now
+  impossible by construction rather than by authoring: the map's generic per-element multiplier
+  was REMOVED on 2026-09-18 (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`), so
+  there is no second channel left for `CurrentBoostAmount()` to read.
 - Speed-tunnel law: nothing to author (absolute fleet-wide mapping) — the tunnel becomes the
   throttle's readout for free, crossing `minEffectSpeed 70` partway up the ramp.
 
@@ -1395,7 +1397,8 @@ producer to remember to ask, and is the same count the player can see.
 **A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
 spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
 blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
-`affectSelf = false, destructive = true` flags: own-domain prisms take a temporary shield (the
+`affectSelf = false, destructive = true` flags: own-domain prisms are drawn LIT in the blast's
+domain colour (`Docs/LIT.md`; they took a temporary shield until 2026-09) (the
 no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
 because no vessel made it — which is also what keeps the damage path from dereferencing a null
 pilot.
@@ -1832,8 +1835,8 @@ one frame.
 | prisms per dais | **255** (5 pairs × 2 wings × 25 blades + 5 suns) |
 | tiers | 90 plain / 90 danger / 70 shielded / 5 super-shielded |
 | box volume | **50,773** (≈ 3,173 nominal-16 prisms) |
-| always-on convex MeshColliders | **75** (70 shielded + 5 super-shielded) |
-| LOD-cullable BoxColliders | 180 |
+| shielded / super-shielded prisms | **75** (70 + 5) — **collider-free**; a shield swaps the mesh and the mass, never the collider |
+| LOD-cullable BoxColliders | **255** (every prism on the dais) |
 | planar band | **28.5 → 155.3** (ring 20; Astro League's court radius ≈ 392) |
 | wrap per pair | **288°** around its sun (144° per wing), opened at six hinges |
 | longest / shortest blade | 70.7 / 17.3 |
@@ -2137,10 +2140,10 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + 
 
 | Element | Ability | Quantitative | L5 upgrade |
 |---|---|---|---|
-| **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom; map multiplier pinned to 1) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
-| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
-| **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`MultiplierAtFullLevel 4` on the map itself; stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
-| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled; map multiplier pinned to 1) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
+| **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
+| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
+| **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`ScarabBallForge.BallSizeScale`, a `static readonly` endpoint pair on the forge itself since the 2026-09-18 element-scaling unification; it was `MultiplierAtFullLevel 4` on the map, and that generic channel is gone. Stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
+| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
 
 **Snap Dash is the throttle's upgrade, not the dash's.** The right-stick juke (§3.4) is base kit,
 always available, and has **no cooldown at all** (`jukeCooldownSeconds 0`) — dodging is mobility and

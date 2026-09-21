@@ -168,7 +168,7 @@ BULB_ORDER = {"Charge": 8, "Mass": 5, "Space": 3, "Time": 12}
 # why a species-shaped claim here would be wrong half the time.
 #
 # CHARGE_DASH is 0.45 by law — fitted on the SURFACE, where that inversion (34.6% fused
-# armoured against the siblings' 94.9% bare) is the whole Docs/ECOSYSTEM.md §44 Charge
+# armoured against the siblings' 94.9% bare) is the whole Docs/ECOSYSTEM.md §50 Charge
 # result. So the chain is MEASURED AND REPORTED beside the bound, with its closed form, and
 # the bound states what the gate's own prose always described: "the Fall's BUNDLE has fused
 # into a rod".
@@ -536,7 +536,7 @@ def element_report(element, shell=None, cross=None, budget=None, species="Fracta
         "element": element,
         "species": species,
         # The plant's own BOUNDING radius - what "Space increases the bounding volume of
-        # the assembly" is measured against (Docs/ECOSYSTEM.md §45).
+        # the assembly" is measured against (Docs/ECOSYSTEM.md §51).
         "radius": max(math.sqrt(sum(c * c for c in b[0])) for b in boxes),
         "prisms": len(prisms),
         "curves": curves,
@@ -861,7 +861,7 @@ def fall_report(species, element, report):
     #
     # The roll is measured NET OF THE AUTHORED TWIST: Fractal Foliage rolls every prism
     # 12 deg/step about its own tangent BY DESIGN, so the raw figure measures the concept
-    # rather than a defect (Docs/ECOSYSTEM.md §46 — a gate written against one species is
+    # rather than a defect (Docs/ECOSYSTEM.md §52 — a gate written against one species is
     # a gate calibrated on one species). A species with no twist is unaffected.
     raw_roll, residual = [], []
     for lst in by_curve.values():
@@ -1373,7 +1373,7 @@ def watershed_gates(species, element, w):
 #
 # The gasket's gates. Four of the five are things NO existing gate in this file can see,
 # and the reason is the same each time: every gate above was written against a species
-# that draws CURVES, and this one draws a PACKING (Docs/ECOSYSTEM.md §46 — a gate written
+# that draws CURVES, and this one draws a PACKING (Docs/ECOSYSTEM.md §52 — a gate written
 # against one species is a gate calibrated on one species). Measured on this species the
 # two interpenetration bounds are near-vacuous — non-chain touching pairs are 17/1112/603/658
 # against thousands on the ribbon species and deep-interleave is 0.0% on all four — because
@@ -1396,7 +1396,7 @@ OCTAVE_FRAME_MIN = 0.005         # share of the arena frame one octave must pain
                                  # catches the sub-pixel octaves the gate was written for, is
                                  # unchanged. A bound and the data it was measured on, changed in
                                  # separate commits, silently makes the bound a claim about data
-                                 # that is gone (Docs/ECOSYSTEM.md §48.5).
+                                 # that is gone (Docs/ECOSYSTEM.md §54.5).
 OCTAVE_PX_MIN = 2.0              # its median prism's projected LENGTH, pixels
 OCTAVE_LEGIBLE_MIN = 3           # octaves that must clear BOTH
 TANGENCY_MEDIAN_MAX = 0.05       # a child's worst gap to its three parents, over rho_child
@@ -1693,7 +1693,7 @@ def gasket_report(species, element, report, inert=True):
     # claim about what is ON SCREEN and the bare box is not what renders. A shield reaches
     # 1.5 x leafSize on all three half-extents, so the silhouette it draws is
     # 0.5 x CIRCUMSCRIBING_SCALE^2 = 4.5x the box's, which is the whole reason a Charge plant
-    # is the DENSEST of the four shielded and the sparsest bare (Docs/ECOSYSTEM.md §44). The
+    # is the DENSEST of the four shielded and the sparsest bare (Docs/ECOSYSTEM.md §50). The
     # BARE table is kept and reported beside it: the pair is the inversion made visible, and
     # a bound read against the wrong one of them is a bound on a plant nobody sees.
     out["armoured"] = element == "Charge"
@@ -1856,7 +1856,7 @@ def gasket_gates(species, element, g):
 def gasket_species_gates(species, gs):
     """The one gate that is a statement about the FOUR ELEMENTS rather than about one plant.
 
-    RING COARSENESS is this species' §45 identity, and it is the only place in the family
+    RING COARSENESS is this species' §51 identity, and it is the only place in the family
     where an element's long axis is spent on SAMPLING rather than on a longer prism: the
     ring's chord is set by its own geometry, so what the law's step buys here is how many
     bars go round it. Space draws the coarsest polygon of long blades and Mass the finest
@@ -2233,7 +2233,7 @@ def measure_species(species, args):
               f"gated ARMOURED — its leaves are shielded by law and a shield draws the "
               f"circumscribing octahedron (0.5 x {CIRCUMSCRIBING_SCALE:.0f}^2 = "
               f"{0.5 * CIRCUMSCRIBING_SCALE ** 2:.1f}x the silhouette), so the bare row is the "
-              f"body nobody sees; the pair IS the §44 inversion.")
+              f"body nobody sees; the pair IS the §50 inversion.")
         for element in M.ELEMENTS:
             g = gaskets.get(element)
             if not g:
@@ -2364,7 +2364,7 @@ def measure_species(species, args):
                        f"LengthFactor {s['charge_length_factor']:.4f}) = "
                        f"{s['chain_touching_scale']:.4f}, which no dive dial and no "
                        f"cross-section appears in — the lever there is CHARGE_DASH or this "
-                       f"species' own Charge walk step, and both are §35/§45 decisions)")
+                       f"species' own Charge walk step, and both are §35/§51 decisions)")
 
         for element in M.ELEMENTS:
             if element in falls:
@@ -2376,7 +2376,7 @@ def measure_species(species, args):
         if gaskets:
             bad += gasket_species_gates(species, gaskets)
 
-        # THE ELEMENTAL LAW (Docs/ECOSYSTEM.md §45). This species is EXEMPT from the runtime
+        # THE ELEMENTAL LAW (Docs/ECOSYSTEM.md §51). This species is EXEMPT from the runtime
         # leaf transform (Flora.PrismSizeFixedByGrowthRule), so it has to state the law in its
         # own data - and the claim the player can actually see is about the PLANT, so it is
         # gated on measured CUMULATIVE volume rather than on the authored prism.
@@ -2419,7 +2419,7 @@ def measure_species(species, args):
 
 def fit_volume(only=None):
     """Solve VOLUME_GAIN so the measured CUMULATIVE volume per plant lands on the elemental
-    law's ratios (Docs/ECOSYSTEM.md §45), against TIME as the neutral.
+    law's ratios (Docs/ECOSYSTEM.md §51), against TIME as the neutral.
 
     The law sets the AUTHORED prism; what the player sees is the plant, and every prism's
     cross-section is additionally multiplied by its curve's emergent GIRTH. So a fit is the

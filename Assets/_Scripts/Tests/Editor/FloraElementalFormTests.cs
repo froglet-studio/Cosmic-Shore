@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pins THE FOUR ELEMENTAL IDENTITIES OF A PLANT (Docs/ECOSYSTEM.md §45) - the sibling of
+    /// Pins THE FOUR ELEMENTAL IDENTITIES OF A PLANT (Docs/ECOSYSTEM.md §51) - the sibling of
     /// <see cref="FloraReproductionRulesTests"/>, and the in-editor half of the gate
     /// <c>Tools/Build/measure_flora_elemental_form.py</c> runs offline.
     ///

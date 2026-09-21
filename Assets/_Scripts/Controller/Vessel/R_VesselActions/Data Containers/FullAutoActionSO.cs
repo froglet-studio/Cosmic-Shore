@@ -24,7 +24,24 @@ namespace CosmicShore.Gameplay
         [SerializeField] float projectileTime = 3f;
         [SerializeField] FiringPatterns firingPattern = FiringPatterns.Default;
         [SerializeField] int   energy = 0;
-        [SerializeField] ElementalFloat speedValue;
+        /// <summary>The authored muzzle speed. A plain float, and the TYPE is the statement:
+        /// SPACE reaches muzzle speed through <see cref="spaceSpeedMultiplier"/>, and nothing
+        /// scales this base. It was an <c>ElementalFloat</c> whose asset carried an enabled
+        /// 375 -> 4875 SPACE ramp (x13) that had never run — it was read as <c>.Value</c> on a
+        /// ScriptableObject — beside the live x9 multiplier; giving SPACE a second grip on the
+        /// same number is a balance change, not a cleanup.</summary>
+        [SerializeField] float speedValue = 375f;
+
+        /// <summary>SPACE -> muzzle speed: x1 at the resting level, x9 at level 10, floored at x0.4.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 9, minMultiplier 0.4) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        [SerializeField] ElementalFloat spaceSpeedMultiplier =
+            ElementalFloat.Multiplier(1f, 9f, Element.Space, 0.4f);
 
         [Header("Round Growth (MASS)")]
         [Tooltip("How many times its launch cross-section a round swells to by the END of its " +
@@ -52,7 +69,6 @@ namespace CosmicShore.Gameplay
         public float ProjectileTime => projectileTime;
         public FiringPatterns FiringPattern => firingPattern;
         public int Energy => energy;
-        public ElementalFloat SpeedValue => speedValue;
 
         /// <summary>The accuracy-decay cone, shared by both fire modes. Never null — an
         /// all-zero profile is the sanctioned "no spread" opt-out.</summary>
@@ -60,14 +76,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The live muzzle speed of one shot: the authored base scaled by the vessel's SPACE
-        /// multiplier from its <c>ElementalAbilityMapSO</c>. Read per volley at fire time —
+        /// multiplier, authored on this asset beside the speed it scales. Read per volley at fire time —
         /// never cached across a hold, and never bound as an ElementalFloat on this shared
         /// asset (per-vessel state on a shared SO is last-initializer-wins in multiplayer).
         /// </summary>
         public float ResolveSpeed(IVesselStatus status)
         {
-            var abilities = status?.ElementalAbilityHandler;
-            return speedValue.Value * (abilities ? abilities.Multiplier(Element.Space) : 1f);
+            return speedValue * spaceSpeedMultiplier.EvaluateLive(status);
         }
 
         /// <summary>

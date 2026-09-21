@@ -776,10 +776,11 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 Vector3 pos = anchor + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
+                // Config in - SpawnFaunaWithDomain binds the lineage and resolves replication
+                // for us (B5: a release that skipped it left un-spawned NetworkObjects behind).
                 var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                    cell, clone.FaunaPrefab, anchor, domain, pos);
+                    cell, clone.FaunaPrefab, anchor, domain, pos, clone);
                 if (!fauna) continue;
-                fauna.AssignLineage(cell, clone);
                 if (!first) first = fauna.transform;
                 spawned++;
             }

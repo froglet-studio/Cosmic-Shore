@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// THE FOUR ELEMENTAL IDENTITIES OF A PLANT, as one rule (Docs/ECOSYSTEM.md §45).
+    /// THE FOUR ELEMENTAL IDENTITIES OF A PLANT, as one rule (Docs/ECOSYSTEM.md §51).
     ///
     /// <para>Every element expresses itself in the food web through the shape of the mass it
     /// grows, and each of the four says exactly ONE thing:</para>

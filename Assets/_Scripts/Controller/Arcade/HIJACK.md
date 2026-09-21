@@ -154,7 +154,7 @@ be authored because this cell has no nucleus: without it the crystal falls throu
 The whole yard is rotated **22.5° about world Y** as the last build step, so the equatorial spawn
 ring lines up with rail midpoints rather than the gaps between them. Players spawn through
 `arrangeSpawnPointsAroundCell` + `spawnFormation EquatorialRing` + `spawnRingRadiusFloor 1120` —
-**equatorial, not the default symmetric sphere**, for the same reason Peel the Cage is: the yard's
+**equatorial, not the default symmetric sphere**, for the same reason Cleave is: the yard's
 rails ring the core, so a polar spawn slot would face no rail at all.
 
 Outermost mass reaches **985u** < spawn ring **1120** < membrane **1200**. All three are asserted
@@ -289,7 +289,8 @@ It is AI-only, so it changes nothing for a human pilot in any mode.
 ## 7. Budget and collider impact
 
 `Tools/Build/hijack_budget.py` is the mirror, and `author_hijack_assets.py` imports it — the same
-discipline as `boneyard_budget.py` and `ribcage_budget.py`. Running it prints the table above and
+discipline as `boneyard_budget.py` and `cleave_budget.py` (which replaced the deleted
+`ribcage_budget.py`). Running it prints the table above and
 runs six proofs: the launch aim, the launch gap, rail separation, burr clearance, the arena
 extent against the spawn ring and membrane, and the painting balance.
 

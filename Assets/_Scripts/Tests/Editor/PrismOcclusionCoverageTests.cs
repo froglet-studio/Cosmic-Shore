@@ -34,6 +34,7 @@ namespace CosmicShore.Tests
         static readonly string[] WiredGraphPaths = PrismOcclusionWiringValidator.GraphPaths;
         const string HlslPath = PrismOcclusionWiringValidator.CorridorHlslPath;
         const string FunctionName = PrismOcclusionWiringValidator.CorridorFunctionName;
+        const string DebrisFunctionName = PrismOcclusionWiringValidator.DebrisCorridorFunctionName;
         static readonly string[] GlobalProps = PrismOcclusionWiringValidator.CorridorGlobalProps;
         static readonly HashSet<string> KnownLegacyPrismPrefabs =
             new HashSet<string>(PrismOcclusionWiringValidator.KnownLegacyPrismPrefabs);
@@ -61,9 +62,20 @@ namespace CosmicShore.Tests
         {
             Assert.IsTrue(File.Exists(HlslPath), $"{HlslPath} is missing — the corridor has no GPU half.");
             string hlsl = File.ReadAllText(HlslPath);
-            Assert.IsTrue(hlsl.Contains($"void {FunctionName}_float("),
-                $"{HlslPath} does not declare {FunctionName}_float — ShaderGraph appends the precision suffix, " +
-                "so the function name must match exactly or every prism graph fails to compile.");
+            foreach (var fn in new[] { FunctionName, DebrisFunctionName })
+                Assert.IsTrue(hlsl.Contains($"void {fn}_float("),
+                    $"{HlslPath} does not declare {fn}_float — ShaderGraph appends the precision suffix, " +
+                    "so the function name must match exactly or every prism graph fails to compile.");
+
+            // Both entry points must be thin wrappers over ONE body: live mass and its
+            // debris differ only in the nose clearance they pass, and the day that stops
+            // being true the corridor's SHAPE can drift between them with nothing on
+            // screen to say which half is wrong.
+            Assert.IsTrue(hlsl.Contains("void PrismOcclusionFadeImpl("),
+                $"{HlslPath} has no PrismOcclusionFadeImpl — the two entry points are no longer one body.");
+            Assert.IsTrue(hlsl.Contains("PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE"),
+                $"{HlslPath} has no debris nose clearance — explosion debris is back on the live one, " +
+                "which keeps a solid zone in front of the ship that debris has no collider to justify.");
         }
 
         [Test]
@@ -93,8 +105,9 @@ namespace CosmicShore.Tests
                         $"{graphPath}: {prop} is Hybrid Per Instance — it is a frame global, not per-prism data.");
                 }
 
-                Assert.IsTrue(text.Contains($"\"m_FunctionName\": \"{FunctionName}\""),
-                    $"{graphPath} has no {FunctionName} Custom Function node — prisms on it can never fade.");
+                string expectedFunction = PrismOcclusionWiringValidator.CorridorFunctionFor(graphPath);
+                Assert.IsTrue(text.Contains($"\"m_FunctionName\": \"{expectedFunction}\""),
+                    $"{graphPath} has no {expectedFunction} Custom Function node — prisms on it can never fade.");
             }
         }
 
@@ -115,6 +128,37 @@ namespace CosmicShore.Tests
                 $"{graphPath} has no PrismErosionFade Custom Function node — the debris fade has " +
                 "fallen back to the view-anchored corridor dither. " +
                 "Fix: python3 Tools/Shaders/wire_prism_explosion_erosion.py");
+        }
+
+        [Test]
+        public void Corridor_CapsWhatItsBaseMayTakeOfTheTunnel()
+        {
+            // The nose clearance and the axial grade that leads into it are both written
+            // in HULL RADII and both come off the same end of a corridor whose length is
+            // the CAMERA DISTANCE — which the fleet authors from 6.72 (Urchin) to 250
+            // (Serpent). Uncapped, they took 1.75/rho of the tunnel, so the FULLY-CLEAR
+            // corridor was empty at rho <= 1.75 and 0.384 of the length at the Squirrel's
+            // rho: on a close-camera hull the corridor was nearly inert, and mass sat
+            // solid in front of the ship while the same mass dissolved for a long-camera
+            // one. The cap is what makes the clearance constant's own degenerate-case
+            // note ("only lost inside one hull radius") true.
+            //
+            // Numeric proof, including that the cap is a bit-exact no-op for rho >= 3.5:
+            // Tools/Shaders/verify_prism_corridor_base.py. This gate only catches the
+            // wholesale revert, from assets alone.
+            string hlsl = "Assets/_Graphics/Materials/Graphs/PrismOcclusionCorridor.hlsl";
+            Assert.IsTrue(File.Exists(hlsl), $"{hlsl} is missing.");
+            string text = File.ReadAllText(hlsl).Replace("\r\n", "\n");
+            Assert.IsTrue(text.Contains("PRISM_OCCLUSION_MAX_BASE_SHARE"),
+                $"{hlsl} no longer caps what the nose clearance plus its axial grade may " +
+                "take of the corridor. A close-camera vessel then has little or no " +
+                "see-through corridor at all and nothing else fails. " +
+                "Verify with: python3 Tools/Shaders/verify_prism_corridor_base.py");
+            Assert.IsTrue(text.Contains("float shrink = min(1.0, PRISM_OCCLUSION_MAX_BASE_SHARE"),
+                $"{hlsl} declares PRISM_OCCLUSION_MAX_BASE_SHARE but no longer applies it — " +
+                "an authored cap nothing reads is exactly the shape of a fix that was " +
+                "reverted in the body and left in the header. " +
+                "Verify with: python3 Tools/Shaders/verify_prism_corridor_base.py");
         }
 
         [Test]

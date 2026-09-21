@@ -50,7 +50,7 @@ understood as a **view** of the same lifecycle, not an independent system.
                      fauna body prisms swim — movers keep positions honest)
  Unregister(i)     → slot freed (pool return / destroy)
 
- QuerySphere / QuerySegment / IsAnyPrismWithin (neighborhood views over _buckets/_spatial)
+ QuerySphere / QuerySegment / QueryCone / IsAnyPrismWithin (neighborhood views over _buckets/_spatial)
  — fauna senses (LightFauna, Boid), assembler mate-finding (Gyroid, Wall),
    trail passives (ScoutTrailPrismScaler). Replaced the Physics.OverlapSphere
    calls those systems used to make against prism colliders.
@@ -109,7 +109,7 @@ understood as a **view** of the same lifecycle, not an independent system.
   static, so there is no per-frame rebucketing cost. (Fauna body prisms are the
   moving minority: their `Fauna.NotifyBodyPrismsMoved` calls only rebucket when
   a body crosses an 8m bucket boundary.)
-- **Adaptive query strategy** — `QuerySphere`/`QuerySegment`/`IsAnyPrismWithin` walk the bucket
+- **Adaptive query strategy** — `QuerySphere`/`QuerySegment`/`QueryCone`/`IsAnyPrismWithin` walk the bucket
   AABB for tight radii, but fall back to one linear pass over the 16B hot array
   when the AABB covers more buckets than there are slots (a 100m Scout probe is
   26³ ≈ 17k bucket lookups vs one ~64KB scan).
@@ -169,6 +169,7 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `IsAnyPrismWithin(pos, radius)` | Anyone (read-only) | Live prism in range (claims excluded) |
 | `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list — the replacement for `Physics.OverlapSphere` against prisms |
 | `QuerySegment(a, b, radius, results)` | Fast projectiles (`Projectile.SweepPrismsAlong`) | **Swept** counterpart of `QuerySphere`: live prisms within `radius` of the SEGMENT a→b. A projectile is a *teleport*, not a sweep — the mover writes `position += Velocity·Δt` and PhysX samples its trigger once per physics step, so a Sparrow round at 375 u/s tests only ~26% of its own path (~3% at high SPACE). This is how the ground BETWEEN the samples gets tested, without inflating the collider. Degenerate segment (a == b) reduces to `QuerySphere` exactly |
+| `QueryCone(apex, direction, length, halfAngleDegrees, minRadius, results)` | Hitscan weapons (`SniperShotActionExecutor`) | **Tapering** counterpart of `QuerySegment`: live prisms whose centre lies inside a cone opening from `apex`, with a `minRadius` floor near it. It exists because **a hitscan weapon is aimed in ANGLE and a capsule is not** — a fixed radius is a tube, and 4 u subtends 0.076° at 3,000 u (about 7 px in a 22° scope) while being a blunderbuss at point blank. A cone covers a CONSTANT on-screen area at every range, so a reticle can be drawn at the beam's true size. The floor keeps the apex honest: a pure cone has zero radius there, so mass the ship is about to fly into would be missed by the one weapon pointed straight at it |
 | `CopyLivePrisms(results)` | `PrismColliderLodManager`, telemetry | Whole-population sweep: one linear pass copying every live prism into a caller scratch list |
 | `ReleaseReservation(pos)` | A claimant that changed its mind | Explicit cancel |
 | `Register(prism)` | `Prism.CreateBlockCoroutine` (+ `Prism.Restore` for spawn-window-killed prisms) | Enter the index; consumes matching claim; binds the containing cell's density grids |
@@ -196,7 +197,7 @@ All methods are **main-thread only**. The Burst jobs inside
 `ProcessExplosionFrame` and `ProcessExplosionConeFrame` are scheduled and
 completed synchronously.
 
-`QuerySphere` / `QuerySegment` results are an unordered **snapshot**: the caller's own side
+`QuerySphere` / `QuerySegment` / `QueryCone` results are an unordered **snapshot**: the caller's own side
 effects (consume, predate, steal/convert) can destroy entries mid-iteration,
 so iterate with a `!prism || prism.destroyed` guard — the same contract
 collider snapshots had. Reuse a static scratch list per call site
