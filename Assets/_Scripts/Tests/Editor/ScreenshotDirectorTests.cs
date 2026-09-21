@@ -284,6 +284,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ResolveOutputFolder_DefaultsToTheRepositorysOwnGitIgnoredRecordingsFolder()
+        {
+            // The default has to be resolved per machine, because the whole point is that one
+            // number is right in every clone. Edit-mode tests run in the Editor, where
+            // Application.dataPath is "<repo>/Assets" - so the parent IS the repository root.
+            string resolved = _config.ResolveOutputFolder();
+
+            Assert.IsTrue(Path.IsPathRooted(resolved));
+            Assert.AreEqual(ScreenshotDirectorConfigSO.DefaultFolderName,
+                new DirectoryInfo(resolved).Name,
+                "captures land in the folder .gitignore already excludes, so they are never pushed");
+
+            string repoRoot = Directory.GetParent(Application.dataPath)?.FullName;
+            Assert.AreEqual(repoRoot, new DirectoryInfo(resolved).Parent?.FullName);
+        }
+
+        [Test]
         public void ResolveOutputFolder_HangsARelativePathOffTheDefaultRoot()
         {
             string root = _config.ResolveOutputFolder();

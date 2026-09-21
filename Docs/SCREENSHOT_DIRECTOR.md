@@ -1,20 +1,34 @@
 # The screenshot director
 
-Press **F10** (or the pad's **Select / View / Share**) in flight. A UI-free photograph of your
-vessel lands in your captures folder, shot from a camera angle drawn at random from a library of
-capture concepts. No setup, no scene wiring, no pause.
+Press **P** (or the pad's **Select / View / Share**) in flight. A UI-free photograph of your
+vessel lands in your clone's own `Recordings/` folder, shot from a camera angle drawn at random
+from a library of capture concepts. No setup, no scene wiring, no pause.
 
 - Runtime: `Assets/_Scripts/Utility/ScreenShots/` — `ScreenshotDirector`, `ScreenshotFraming`,
   `ScreenshotConcept`, `ScreenshotGesture`
 - Config: `ScreenshotDirectorConfigSO`, asset at `Assets/Resources/ScreenshotDirectorConfig.asset`
 - Tests: `Assets/_Scripts/Tests/Editor/ScreenshotDirectorTests.cs`
 
-## Where captures go
+## Where captures go, and why they are never pushed
 
 `ScreenshotDirectorConfig` ▸ **Output Folder**. Leave it EMPTY and captures go to
-`<Pictures>/Cosmic Shore`. An absolute path is used as given; a relative one hangs off that same
-default root, so `Runs/Tuesday` is `<Pictures>/Cosmic Shore/Runs/Tuesday`. A folder the OS refuses
-falls back to the persistent data path with a warning rather than losing the shot.
+**`<repo>/Recordings`** — resolved per machine, not hardcoded: in the Editor
+`Application.dataPath` is `<repo>/Assets`, so its parent is whatever your own clone lives in. One
+default is therefore `C:\Users\Will\source\repos\Cosmic-Shore\Recordings` on one machine and
+the equivalent on the next, with no per-user setting to get wrong.
+
+**Nobody else carries your screenshots.** `/Recordings` is already in `.gitignore` (line 77), so
+the folder is private to the machine that made the shots — which is the design: captures are for
+the person who took them to triage and decide what to do with, not repository content. Anything
+that moves this default must move that ignore rule with it, and the regression test
+`ResolveOutputFolder_DefaultsToTheRepositorysOwnGitIgnoredRecordingsFolder` is what makes that
+pairing fail loudly rather than quietly.
+
+A player build has no repository, and the folder beside a shipped executable is routinely
+unwritable (Program Files), so a build falls through to the persistent data path. An absolute path
+is used as given; a relative one hangs off that same default root, so `Runs/Tuesday` is
+`<repo>/Recordings/Runs/Tuesday`. A folder the OS refuses falls back to the persistent data path
+with a warning rather than losing the shot.
 
 Filenames are `CosmicShore_<Concept>_<timestamp>.png`. **The concept name is in the filename on
 purpose**: after a session you can see at a glance which concepts are producing keepers and retune
@@ -115,4 +129,15 @@ that is a follow-up: read `SpeedTunnelConfigSO.Effect01(speed)` and fold it into
   thread (`AsyncGPUReadback` + a worker) is the obvious follow-up if the hitch ever matters.
 - **F12 is deliberately not the key.** It is Steam's own screenshot key, so binding it would fire
   two captures, one of which has the UI in it. F5–F9 are the diagnostics/benchmark overlays and F11
-  is fullscreen; F10 was the free one.
+  is fullscreen.
+- **P is not free either, and that is stated rather than hidden.** `KeyboardInputStrategy` — the
+  dual-WASD desktop scheme every two-stick hull flies on — reads `pKey` as the RIGHT STICK's
+  vertical axis (`WASD` left, `P`/`;`/`L`/`'` right, `KeyboardInputStrategy.cs:90`). So on those
+  hulls a capture press also feeds the vessel one frame of stick, and a held P keeps feeding it —
+  a small nudge to the very framing the system exists to produce. The one-thumb hulls are
+  unaffected: `SingleStickMouseInputStrategy` reads only the left stick, so P reaches nothing
+  there. It is bound anyway because it is the key that was asked for and the nudge is minor; the
+  clean fix is to move the keyboard scheme's right-stick-up off `P`, which is a player-facing
+  rebind (and a CLAUDE.md edit) and therefore a separate decision, not one to take in passing.
+  The general shape: **a key is only "free" against the keys some OTHER system is reading, and an
+  input scheme that consumes raw keys advertises none of them.**

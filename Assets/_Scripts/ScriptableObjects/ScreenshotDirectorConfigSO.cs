@@ -24,9 +24,9 @@ namespace CosmicShore.ScriptableObjects
         public const string ResourcePath = "ScreenshotDirectorConfig";
 
         [Header("Output")]
-        [Tooltip("Folder captures are written to. Leave EMPTY for <Pictures>/Cosmic Shore (and, on " +
-                 "a platform with no Pictures folder, the app's persistent data path). An absolute " +
-                 "path is used as given; a relative one hangs off that same default root.")]
+        [Tooltip("Folder captures are written to. Leave EMPTY for the repo's own git-ignored " +
+                 "Recordings folder (in a player build, the app's persistent data path). An " +
+                 "absolute path is used as given; a relative one hangs off that same default root.")]
         public string outputFolder = string.Empty;
 
         [Tooltip("Filename prefix. The concept's name and a timestamp are appended, so a folder of " +
@@ -217,18 +217,42 @@ namespace CosmicShore.ScriptableObjects
             }
         }
 
+        /// <summary>The folder name every clone's captures land in, at the repository root.</summary>
+        public const string DefaultFolderName = "Recordings";
+
+        /// <summary>
+        /// Where captures go when nothing is authored: <c>&lt;repo&gt;/Recordings</c>.
+        ///
+        /// <para>Resolved PER MACHINE rather than hardcoded — in the Editor
+        /// <c>Application.dataPath</c> is <c>&lt;repo&gt;/Assets</c>, so its parent is whatever
+        /// each person's clone lives in. That is the whole trick: one default that is
+        /// <c>C:\Users\Will\source\repos\Cosmic-Shore\Recordings</c> on one machine and the
+        /// equivalent on the next, with no per-user setting to get wrong.</para>
+        ///
+        /// <para><b>Captures are never pushed.</b> <c>/Recordings</c> is already in
+        /// <c>.gitignore</c> (line 77), so the folder is private to the machine that made the
+        /// shots — which is the point: you keep what you want and nobody else carries the rest.
+        /// Do not remove that ignore rule without moving this default with it.</para>
+        ///
+        /// <para>A player build has no repository, and the folder beside a shipped executable is
+        /// routinely unwritable (Program Files), so a build falls through to the persistent data
+        /// path.</para>
+        /// </summary>
         static string DefaultRoot()
         {
-            try
+            if (Application.isEditor)
             {
-                string pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
-                if (!string.IsNullOrEmpty(pictures)) return Path.Combine(pictures, "Cosmic Shore");
+                try
+                {
+                    var repoRoot = Directory.GetParent(Application.dataPath);
+                    if (repoRoot != null) return Path.Combine(repoRoot.FullName, DefaultFolderName);
+                }
+                catch (Exception)
+                {
+                    // An unexpected dataPath shape; the persistent path always exists.
+                }
             }
-            catch (Exception)
-            {
-                // Some platforms have no such notion; the persistent path always exists.
-            }
-            return Path.Combine(Application.persistentDataPath, "Screenshots");
+            return Path.Combine(Application.persistentDataPath, DefaultFolderName);
         }
 
         /// <summary>
