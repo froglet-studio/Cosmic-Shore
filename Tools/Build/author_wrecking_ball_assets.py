@@ -52,8 +52,14 @@ SCRIPT_PATHS = {
     "WreckingBallPrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/WreckingBallPrismTurnMonitor.cs",
 }
 
-# ── The five species, Rampage's ───────────────────────────────────────────────
+# ── The species, Rampage's ────────────────────────────────────────────────────
 SPECIES = ["Cacti", "Spire", "Pine", "Rosette", "Coral"]
+# ...and the BORROMEAN four, which are one species carried by four configs because the
+# ELEMENT is the plant there: they differ 19.6x in plant volume and 2x in span, so they
+# cannot be rolled from one config's single Variant block (Docs/ECOSYSTEM.md 49.6). They
+# are forked from Rampage's exactly as the five above are - same band remap, same verbatim
+# everything-else - so this cell has ONE owner for its forest.
+BORROMEAN_ELEMENTS = ["Charge", "Mass", "Space", "Time"]
 RAMPAGE_DIR = "Assets/_SO_Assets/Cell Configs/Rampage Cell"
 CELL_DIR = "Assets/_SO_Assets/Cell Configs/Wrecking Ball Cell"
 
@@ -68,6 +74,8 @@ G_ASSET = {
 }
 for _sp in SPECIES:
     G_ASSET[f"Flora{_sp}"] = guid(f"asset/WreckingBall Flora {_sp}")
+for _e in BORROMEAN_ELEMENTS:
+    G_ASSET[f"FloraBorromean{_e}"] = guid(f"asset/WreckingBall Flora Borromean {_e}")
 for _i in range(1, 5):
     G_ASSET[f"CellConfig{_i}"] = guid(f"asset/WreckingBall Cell Config {_i}")
     G_ASSET[f"SpawnProfile{_i}"] = guid(f"asset/WreckingBall Spawn Profile {_i}")
@@ -91,6 +99,9 @@ EXISTING["ScarabScrambleCellConfig"] = lib.existing_guid(
 # Rampage's species and fauna, carried across
 for _sp in SPECIES:
     EXISTING[f"Rampage{_sp}Flora"] = lib.existing_guid(f"{RAMPAGE_DIR}/Rampage {_sp} Flora Config Data.asset")
+for _e in BORROMEAN_ELEMENTS:
+    EXISTING[f"RampageBorromean{_e}Flora"] = lib.existing_guid(
+        f"{RAMPAGE_DIR}/Rampage Borromean Flora {_e} Config Data.asset")
 EXISTING["BlobTadpoleFauna"] = lib.existing_guid(
     "Assets/_SO_Assets/Cell Configs/Blob Cell/Blob Tadpole Fauna Config Data.asset")
 EXISTING["BlobSharkFauna"] = lib.existing_guid(
@@ -139,14 +150,27 @@ FAUNA_SCALE = [1.0, 2.0, 3.0, 4.0]          # Rampage's wildlife ladder, verbati
 CRYSTALS_BY_INTENSITY = [(2, 0), (1, 1), (1, 0), (1, -1)]   # (per player, extra): 4 pilots -> 8/5/4/3
 
 # ── The volume ladder ────────────────────────────────────────────────────────
-# Rampage's measured intensity-4 forest (59 plants, 1x leaves) is 396,178 volume and its
-# play-tested ladder sits Restless at 0.285x and Frenzy at 4.11x of it (RAMPAGE.md); this cell's
+# Rampage's measured intensity-4 forest (67 plants, 1x leaves) is 441,070 volume and its
+# play-tested ladder sits Restless at 0.256x and Frenzy at 3.70x of it (RAMPAGE.md); this cell's
 # forest is that forest times FLORA_SCALE, so each intensity's ladder is Rampage's scaled by its
 # own forest ratio - the same rule Rampage's own four cells follow. Counts are Rampage's
 # backstops. ESTIMATE pending the in-editor baseline measure.
-RAMPAGE_FOREST_VOLUME = 396_178
-RESTLESS_ENTER_RATIO, RESTLESS_EXIT_RATIO = 113_000 / RAMPAGE_FOREST_VOLUME, 81_000 / RAMPAGE_FOREST_VOLUME
-FRENZY_ENTER_RATIO, FRENZY_EXIT_RATIO = 1_630_000 / RAMPAGE_FOREST_VOLUME, 1_260_000 / RAMPAGE_FOREST_VOLUME
+#
+# BOTH halves are IMPORTED from Rampage's own model rather than retyped. They were literals
+# (396,178 and the four gates) and went stale the day Rampage adopted a sixth species - the
+# trap `regatta_balance.py` records as "a constant copied out of an asset is true only on the
+# day it is copied", one level up: here the copy is of another TOOL's answer, and the tool is
+# right next door.
+import rampage_intensity as _rampage
+RAMPAGE_FOREST_VOLUME = _rampage.REFERENCE_FOREST_VOLUME
+_SL = _rampage.SHIPPED_VOLUME_LADDER
+RESTLESS_ENTER_RATIO = _SL["RestlessEnterVolume"] / RAMPAGE_FOREST_VOLUME
+RESTLESS_EXIT_RATIO = _SL["RestlessExitVolume"] / RAMPAGE_FOREST_VOLUME
+FRENZY_ENTER_RATIO = _SL["FrenzyEnterVolume"] / RAMPAGE_FOREST_VOLUME
+FRENZY_EXIT_RATIO = _SL["FrenzyExitVolume"] / RAMPAGE_FOREST_VOLUME
+assert abs(_rampage.forest(4)[3] - RAMPAGE_FOREST_VOLUME) < 1.0, \
+    "Rampage's forest has moved off the volume its ladder is anchored to - re-author there " \
+    "first; this cell's whole ladder is that one scaled."
 
 
 def ladder(scale: float):
@@ -203,8 +227,28 @@ for _sp in SPECIES:
     assert "NetworkSynced" not in out, "Rampage species are per-peer; this fork must stay so too"
     g.emit_asset(f"{CELL_DIR}/WreckingBall {_sp} Flora.asset", G_ASSET[f"Flora{_sp}"], out)
 
+# The Borromean four, forked the same way. Their band is Rampage's, remapped into the court;
+# their BUDGET is a measured table per element and comes through verbatim like everything else.
+for _e in BORROMEAN_ELEMENTS:
+    src = g.read(f"{RAMPAGE_DIR}/Rampage Borromean Flora {_e} Config Data.asset")
+    mmax = re.search(r"^  PlantRadiusCellFractionMaxOverride: ([\d.]+)\n", src, re.M)
+    mmin = re.search(r"^  PlantRadiusCellFractionMinOverride: ([\d.]+)\n", src, re.M)
+    assert mmax and mmin, f"Rampage Borromean {_e} authors no planting band"
+    lo, hi = court_band(float(mmin.group(1)), float(mmax.group(1)))
+    FLORA_BANDS[f"Borromean {_e}"] = (lo, hi)
+    out = src.replace(mmax.group(0), f"  PlantRadiusCellFractionMaxOverride: {lib.num(hi)}\n", 1)
+    out = out.replace(mmin.group(0), f"  PlantRadiusCellFractionMinOverride: {lib.num(lo)}\n", 1)
+    out, n = re.subn(r"^  m_Name: .*$", f"  m_Name: WreckingBall Borromean Flora {_e}", out,
+                     count=1, flags=re.M)
+    assert n == 1
+    assert "NetworkSynced" not in out, "Rampage species are per-peer; this fork must stay so too"
+    g.emit_asset(f"{CELL_DIR}/WreckingBall Borromean Flora {_e}.asset",
+                 G_ASSET[f"FloraBorromean{_e}"], out)
+
 # ── 5. Spawn profiles + cell configs, one per intensity ─────────────────────
-FLORA_LIST = "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'Flora{_sp}']}, type: 2}}\n" for _sp in SPECIES)
+FLORA_LIST = ("".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'Flora{_sp}']}, type: 2}}\n" for _sp in SPECIES)
+              + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'FloraBorromean{_e}']}, type: 2}}\n"
+                        for _e in BORROMEAN_ELEMENTS))
 LADDERS = [ladder(s) for s in FLORA_SCALE]
 for _i in range(1, 5):
     s = FLORA_SCALE[_i - 1]
@@ -233,12 +277,14 @@ for _i in range(1, 5):
     desc = (f"Demolition court cell for Wrecking Ball, intensity {_i} of 4 (CellTypeChoiceOptions."
             f"IntensityWise, list order = intensity). The nucleus IS the {int(COURT_RADIUS)}u sphere "
             f"court (play geometry, not a claim - the controller clears NucleusIsControlZone, which is "
-            f"also what lets the forest plant INSIDE it) and the forest is Rampage's five breakable "
-            f"species re-cut into the court's {COURT_INNER:.2f}-{COURT_OUTER:.2f} band at {s:g}x "
+            f"also what lets the forest plant INSIDE it) and the forest is Rampage's {len(SPECIES)+1} "
+            f"breakable species ({len(SPECIES) + len(BORROMEAN_ELEMENTS)} configs - Borromean is four, one per element) "
+            f"re-cut into the court's {COURT_INNER:.2f}-{COURT_OUTER:.2f} band at {s:g}x "
             f"Rampage's plant count, with Rampage's wildlife at {FAUNA_SCALE[_i - 1]:g}x. Every ball "
             f"reflects off the court wall back through the stands, and crystals respawn anywhere in "
             f"it. The mature forest is ~{lad['forest']:,} volume; this cell's VOLUME thresholds are "
-            f"Rampage's play-tested intensity-4 ladder scaled by that, so Frenzy sits 4.11x above "
+            f"Rampage's play-tested intensity-4 ladder scaled by that, so Frenzy sits "
+            f"{lad['fe'] / lad['forest']:.2f}x above "
             f"the forest at every level. ESTIMATE pending the in-editor baseline measure; regenerate "
             f"with Tools/Build/author_wrecking_ball_assets.py rather than hand-editing.")
     g.emit_asset(f"{CELL_DIR}/WreckingBall Cell Config {_i}.asset", G_ASSET[f"CellConfig{_i}"],

@@ -430,10 +430,13 @@ to pull before the structure counts.
   > slows disengages through debris — if it over-punishes, `maxSlowStrength` on that asset is the
   > dial, and moving it un-shares the fleet's collision read.
 - **Shielded / super-shielded** is the reactor core ring (24) plus one beacon per spire — **30–51
-  always-on convex mesh colliders, 0.15–0.33 % of the structure**. Beacons are shielded rather
+  prisms, 0.15–0.33 % of the structure, and ZERO extra colliders**: A shield swaps the MESH and the mass, never the collider (`shieldMeshCollider.enabled = true` appears nowhere), so these are collider-free and stay
+  LOD-cullable like any other prism. They are still rationed, because armoured mass is never food
+  and super-shielded mass is removable only by an energised blade. Beacons are shielded rather
   than plain so they *survive* a match: a landmark a stray rocket can delete is not a landmark.
-  **Do not armour the wreckage** — a shielded hulk would be both un-shootable cover and a few
-  thousand permanent mesh colliders.
+  **Do not armour the wreckage** — a shielded hulk would be un-shootable cover in a mode whose
+  whole economy is shooting it. (An earlier version of this line priced the ration in "permanent
+  mesh colliders"; that cost does not exist.)
 
 **`boneyard_budget.py` is a MIRROR, not an estimate.** The generator imports it, so the arena and
 its PhaseThresholds cannot drift. That is only possible because the C# was written for it: every

@@ -9,7 +9,7 @@ outside the nucleus out to the membrane, and the arena's **contested crystals** 
 inside the nucleus at the centre of it all. **Intensity means HOW MUCH FOREST, HOW BIG, and
 HOW SCARCE**: at 1 there are **five times as many plants** (295 against 59), their prisms are
 1.6x the authored leaf, the nucleus is 2.5x as wide and there are twice the roster in crystals;
-at 4 everything is back to the shipped, play-tested arena — 59 plants, authored leaves, a single
+at 4 everything is back to the shipped, play-tested arena — 67 plants, authored leaves, a single
 contested crystal for the whole lobby.
 
 **The loop is the Dolphin's own economy, made into a sport.** Nothing here is scripted —
@@ -195,8 +195,8 @@ that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | **flora** (`FloraPopulationScale`) | **5.00×** | 3.67× | 2.33× | **1.00×** (authored) |
-| …seeded plants | **295** | 217 | 137 | **59** |
-| …seeded prisms | **49,150** | 36,160 | 22,820 | **9,830** |
+| …seeded plants | **335** | 245 | 157 | **67** |
+| …seeded prisms | **59,590** | 43,468 | 28,040 | **11,918** |
 | **prism size** (`FloraPrismScale`) | **1.60×** | 1.40× | 1.20× | **1.00×** (authored) |
 | …a cactus leaf | 8 × 8 × 4.8 | 7 × 7 × 4.2 | 6 × 6 × 3.6 | **5 × 5 × 3** |
 | **nucleus** (`NucleusPrefab`) | `Nucleus500` | `Nucleus` | `Nucleus300` | **`HalfNucleus`** |
@@ -205,11 +205,28 @@ that same arena made bigger, denser and easier to hit, and 2–3 interpolate.
 | …for a 4-player lobby | 8 | 4 | 3 | **1** |
 | **wildlife** (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
 | …tadpoles / sharks at cap | 6 / 2 | 12 / 4 | 18 / 6 | **24 / 8** |
-| forest at full growth | 7,651,558 vol | 3,808,056 | 1,559,724 | **396,178** |
-| `FrenzyEnterVolume` | 31,480,000 | 15,670,000 | 6,420,000 | **1,630,000** |
-| `RestlessEnterVolume` | 2,182,000 | 1,086,000 | 445,000 | **113,000** |
-| `FrenzyEnter` (count) | 50,000 | 37,000 | 23,250 | **10,000** |
-| **always-on crystal colliders** | **440** | 323 | 205 | **88** |
+| forest at full growth | 7,876,018 vol | 3,965,178 | 1,671,954 | **441,070** |
+| `FrenzyEnterVolume` | 29,110,000 | 14,650,000 | 6,180,000 | **1,630,000** |
+| `RestlessEnterVolume` | 2,018,000 | 1,016,000 | 428,000 | **113,000** |
+| `FrenzyEnter` (count) | 60,750 | 44,250 | 28,750 | **12,250** |
+| **always-on crystal colliders** | **500** | 367 | 233 | **100** |
+
+⚠ **The arena grew a SIXTH species on 2026-09-20 and every number in this table moved with
+it.** The Borromean minimal-surface flora was adopted here as mass to destroy
+(`Docs/ECOSYSTEM.md` §49.12) — FOUR configs, one per element, 2 seeded and 3 capped each, in
+a 0.25–0.85 band. It takes the intensity-4 forest 396,178 → **441,070** volume and 9,830 →
+**11,918** prisms. Three consequences worth reading before touching the ladder:
+
+* **The authored VOLUME pair did not move and must not.** It is a play-test result, so
+  `rampage_intensity.py` was RE-ANCHORED (`REFERENCE_FOREST_VOLUME` 396,178 → 441,070) and
+  the margin absorbed the new mass: Frenzy **4.11× → 3.70×** the mature forest, Restless
+  28.5% → 25.6%. The COUNT half is derived and legitimately moved with the forest.
+* **The prism-size axis does not reach it.** Borromean's leaf is a MEASURED TABLE, so it
+  reports `PrismSizeFixedByGrowthRule` and `Flora.ApplyCellPrismScale` returns early — a new
+  `TABLE_FIXED = 0` family exponent. `FloraPrismScale` now moves five of the six species.
+* **The four elements are not close.** Per plant they run 180 prisms / 804 volume (Charge)
+  to 216 / 15,739 (Mass), a **19.6×** spread, so at cap the twelve Borromean plants here are
+  three Charge lattices and three Mass bricks, not twelve of anything.
 
 **Why flora COUNT is the headline axis.** Prism size makes a target easier to *hit*; plant count
 makes there be *more of them, everywhere*. At intensity 1 a pilot flying any line through the
@@ -226,7 +243,7 @@ to charge off on the way in. It also makes a ram less punishing to aim around. N
 
 **The prism COUNT moves too, and it is the expensive half.** Prism SIZE is free in colliders —
 the same prisms, larger. Prism COUNT is not, and five times the flora is five times the prisms:
-**49,150 at intensity 1 against 9,830 at 4**. That is the one axis of this ladder with a
+**59,590 at intensity 1 against 11,918 at 4**. That is the one axis of this ladder with a
 collider price, and it is gated rather than asserted-away — see "Collider impact" below.
 
 **The per-family exponent is the part that is easy to get wrong.** `FloraPrismScale` multiplies a
@@ -252,7 +269,7 @@ against a fixed ladder would sit near its own Frenzy gate and freeze planting mi
 `Docs/ECOSYSTEM.md §4.6` trap. Each intensity's volume ladder is therefore the **play-tested
 intensity-4 ladder scaled by that intensity's forest ratio**, which buys two things: intensity 4
 comes out to the digit (its ratio is exactly 1, so the approved arena is not re-authored), and
-every level keeps the same relationship between forest and gates — Frenzy at **4.11×** the mature
+every level keeps the same relationship between forest and gates — Frenzy at **3.70×** the mature
 forest, Restless at **28.5%** of it. Both are asserted.
 
 **What a bigger nucleus couples to, stated plainly.** The nucleus is not decoration here; three
@@ -427,7 +444,8 @@ is even through the whole volume rather than crowded onto one radius:
 *(The table's old `scale/level` column — 1.30 on the cacti, 1.25 on the rest — is gone with
 `LeafScalePerLevel`; the leaf volumes above are what the arena actually builds.)*
 
-Seeded total ≈ **9,830 prisms** across 59 plants, and planting continues past the seed
+Seeded total ≈ **11,918 prisms** across 67 plants (the five authored species plus the four
+Borromean element configs), and planting continues past the seed
 batch until the cell tops out (below).
 
 **The forest fills the cell, it does not ring it.** The bands run from just outside the
@@ -495,7 +513,7 @@ RestlessEnter 700  RestlessExit 500  FrenzyEnter 10000  FrenzyExit 8000   (count
 ⚠ **Since the prism ladder shipped there are FOUR volume ladders, not one** — a heavier forest
 needs a proportionally higher gate or it freezes its own planting (`Docs/ECOSYSTEM.md §4.6`).
 Each intensity's volume pair is this one **scaled by its forest ratio** (I1 ×3.86, I2 ×2.62,
-I3 ×1.68, I4 ×1.00), so intensity 4 is unchanged and every level keeps Frenzy at 4.11× its own
+I3 ×1.68, I4 ×1.00), so intensity 4 is unchanged and every level keeps Frenzy at 3.70× its own
 mature forest. The **count** pair above is genuinely shared, because the prism count is. See
 "Four intensities" for the table; everything below describes the intensity-4 numbers and applies
 proportionally to the rest.
@@ -523,7 +541,7 @@ estimate is 2.56× larger at intensity 1 than at 4. One `Cell.LiveVolume` measur
 intensity corrects all four ladders at once through `rampage_intensity.py`'s `CALIBRATION`
 dict — which is the entire reason the model is a script. They are also now an **over-estimate by
 4.08×**, because they were computed with a level multiplier that no longer exists. **FRENZY is
-the threshold that stopped describing anything** — the mature forest measures 396,178 against a
+the threshold that stopped describing anything** — the mature forest measures 441,070 against a
 1,630,000 gate, so flora alone can no longer reach it (only player trail mass on top can).
 **Restless is measured fine and needs no change**: 113,000 is ~28.5% of the mature forest, so
 fauna still start hunting on schedule. Watch `Cell.LiveVolume` on the DiagnosticsHUD through
@@ -561,7 +579,7 @@ it (`Docs/ECOSYSTEM.md §0`, §29.1).
 **The tuning risk to watch, and it is the interesting one.** This cell has a nucleus, so
 herbivores graze **any** domain's mass outside it (the voracious-exterior rule,
 `Docs/ECOSYSTEM.md §13`) — which is the same forest the pilots are racing to destroy for points.
-At intensity 4 that is 24 grazers working an arena of 9,830 prisms. The homeostasis is designed
+At intensity 4 that is 24 grazers working an arena of 11,918 prisms. The homeostasis is designed
 for it: grazing pushes volume below `FrenzyExitVolume` (1,260,000) and planting plus growth
 resume, so the arena restocks rather than emptying. But whether it restocks *fast enough to keep
 the arena reading dense* at 4× population is a play-test question, not an arithmetic one. If
@@ -807,12 +825,15 @@ Authored headless; every item below needs a play-mode pass.
    time with "N Prisms Left" for the losing domains, and replay reloads the scene clean.
 10. **Every intensity.** Launch 1 and 4 back to back. `Cell.LiveVolume` / prism count on the
     DiagnosticsHUD should settle near **569k / 3,500** and **1.62M / 9,830** — they must look and
-    profile obviously different. If intensity 1 settles far from 569k, put the measured
+    profile obviously different. ⚠ Both pairs PREDATE the sixth species (2026-09-20) and have
+    never been measured since; intensity 4's seeded prism count alone is now 11,918 by the
+    model. Re-measure both before treating either as a target. If intensity 1 settles far from 569k, put the measured
     per-species ratio into `CALIBRATION` in `Tools/Build/rampage_intensity.py` and re-run it;
     all four ladders move together.
 11. **MPPM, 1 host + 1 client, intensity 4 — the race regression test, do not skip.** Both peers
-    must show the same forest and the same prism count. A client that ends up at ~3,500 prisms
-    while the host has ~9,830 is the `AssignConfig` race (below) having regressed. Console may
+    must show the same forest and the same prism count. A client that ends up at a fraction of
+    the host's prism count (the model says ~11,918 seeded at intensity 4) is the
+    `AssignConfig` race (below) having regressed. Console may
     log `IntensityWise config choice DEFERRED` once on the client — that is the gate working.
 12. **Regression: other cells' flora density.** Honouring `MaxTotalSpawnedObjects` on
     branching/phyllotactic flora switches on 45 previously-inert authored budgets. Take a

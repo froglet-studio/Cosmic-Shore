@@ -1,6 +1,6 @@
 ---
 name: ship-deep
-description: The thorough lane of the ship protocol - for a large branch, a LOCKED system (ecology, party/presence, threading, scoring, prism animation, elemental abilities), hand-authored asset YAML/JSON, or the end of a long session. Runs everything /ship does, then adds an adversarial re-read of the diff, a blast-radius sweep over every changed public surface, a semantic-merge duplicate scan, an asset-integrity pass, and a doc-drift sweep. Use for "ship it properly", "full review before the PR", "deep check", or any branch you would be uncomfortable defending line by line.
+description: The thorough lane of the ship protocol - for a large branch, a LOCKED system (ecology, party/presence, threading, scoring, prism animation, elemental abilities), hand-authored asset YAML/JSON, or the end of a long session. Runs everything /ship does, then adds an adversarial re-read of the diff, a blast-radius sweep over every changed public surface, a semantic-merge duplicate scan, an asset-integrity pass, a doc-drift sweep, and a mechanical refactor-opportunity sweep. Use for "ship it properly", "full review before the PR", "deep check", or any branch you would be uncomfortable defending line by line.
 ---
 
 # Ship Deep — assume the diff is wrong until each part survives a check
@@ -147,9 +147,45 @@ The base gate asks whether a WRITER tool's output landed. Here, also:
   guards on an already-applied marker). A non-idempotent tool that stays in the repo is a
   loaded gun; retire it or make it idempotent.
 
+## D8. §3.6 as a SWEEP, not a judgement
+
+The base skill's refactor-opportunity pass asks you to write down what you noticed. At this
+depth, D2 and D6 have already produced most of the raw material mechanically, so the
+opportunities get *enumerated* rather than recalled. Same output contract as §3.6: **rows
+with evidence, never an edit to this branch.**
+
+- **D2's removed/re-signed member list is a vestige worklist.** For every member the branch
+  did NOT delete, count its callers now: `grep -rn '\.<Member>\b' Assets --include=*.cs`.
+  One caller is a row (is the indirection still earning its keep?); zero callers outside
+  docs is a deletion PROPOSAL — and a proposal, not a deletion, because "referenced by
+  nothing" is a statement about what you searched (`/refactor` §3.3: a guid sweep sees
+  neither `Resources.Load` by name nor a C# type reference).
+- **D6's doc hits you SOFTENED are rows.** Every sentence you hedged rather than deleted
+  because you were not certain the old behaviour was gone is a claim the next reader will
+  take as evidence. Name the file, the line and the question that would settle it.
+- **Scoped grep for `/refactor` §3's shapes — over the branch's touched files only**, so the
+  pass cannot cry wolf:
+
+  ```sh
+  F=$(git diff --name-only <merge-base>..HEAD -- '*.cs')
+  grep -n 'fallback\|falls back\|legacy path\|degrades to\|kept for\|for now\|historical' $F
+  grep -n 'TODO\|HACK\|XXX' $F
+  grep -nE '\b(Clamp|Max|Min)\(' $F        # a silent clamp inside a setter (§3.7)
+  ```
+
+  Each hit is read, not reported. What goes in a row is the ones where the comment and the
+  code now disagree.
+- **A serialized field the branch left behind is the expensive one.** Deleting it is a data
+  migration (`/refactor` §3.4 — an absent YAML key ships the C# initializer), so it can
+  never be a tidy-up inside a feature branch. If the branch orphaned one, the row says which
+  assets carry it and what their authored values are *today*, because that measurement is
+  destroyed the moment anybody rewrites those assets.
+
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §4 (go/no-go), §5 (PR). The PR body carries D5's matrix and D2's sweep
+something), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
-"D3 found no duplicate members across the 2 genuinely-merged files" is a result.
+"D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
+go in the report as rows, with where each one lives; a row that turned into a diff hunk on
+this branch is a §4 finding against the branch, not a bonus.

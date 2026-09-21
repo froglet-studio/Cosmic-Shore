@@ -90,7 +90,7 @@ crystal.
 
 ### It touches nothing but photons
 
-The whole ability is `PrismDestructionSight`'s global uniforms, published while the trigger is
+The whole ability is `PrismLit`'s global uniforms, published while the trigger is
 held. No camera write of any kind, no speed change, no input mute, and nothing it does can destroy,
 move or protect a single prism.
 
@@ -175,7 +175,7 @@ placement from the binding, so nothing is hand-positioned.
 | Seeding executor | `Executors/DeployTeamCrystalActionExecutor.cs` |
 | Sight config | `Data Containers/EchoSightActionSO.cs` |
 | Sight executor | `Executors/EchoSightActionExecutor.cs` |
-| Highlight publisher | `_Scripts/Utility/PrismDestructionSight.cs` |
+| Highlight publisher | `_Scripts/Utility/Lit/PrismLit.cs` (was `_Scripts/Utility/PrismDestructionSight.cs`; the LIT fundamental promoted it — `Docs/LIT.md`) |
 | Highlight shader | `_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` |
 | Graph splice tool | `Tools/Shaders/wire_prism_destruction_sight.py` |
 | Shared blast geometry | `ImpactEffects/EffectsSO/Helpers/ExplosionHelper.cs` (`BlastVolume`, `TryResolveConicVolume`) |
@@ -742,8 +742,8 @@ Two channels, deliberately two different looks.
 
 | | published by | colour | who sees it |
 |---|---|---|---|
-| **Yours** | `PrismDestructionSight.PublishLocal` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
-| **Theirs** | `PrismDestructionSight.PublishPeer` | that pilot's **domain signal colour**, pulled toward white by `PRISM_SIGHT_PEER_DESATURATION` | everyone but them |
+| **Yours** | `PrismLit.PublishAimed` | `PRISM_SIGHT_COLOR`, the pale cool cast | you |
+| **Theirs** | `PrismLit.PublishLight` | that pilot's **domain signal colour**, pulled toward white by `PRISM_SIGHT_PEER_DESATURATION` | everyone but them |
 
 **Your own cone wins outright on every prism it covers.** A rival sweeping across the same mass
 cannot recolour, brighten or dim it. This is not a tie-break convenience — an instrument that
@@ -826,10 +826,10 @@ draw call count. Wire cost is three floats per holder at a fraction of the tick 
 
 ### The bank is FOUR slots, and that is bounded by the roster
 
-`PRISM_SIGHT_PEER_SLOTS` / `PrismDestructionSight.PeerSlots`, one number in two files. Four is the
+`PRISM_SIGHT_PEER_SLOTS` / `PrismLit.Slots`, one number in two files. Four is the
 roster of both Dolphin-only modes (`MaxPlayersAllowed: 4` on `ArcadeGameRampage` and
 `ArcadeGameBends`) and one of those four is the viewer, so no roster the game ships can overflow it.
-`PrismDestructionSightTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather
+`PrismLitTests.PeerBank_IsBigEnoughForEveryDolphinOnlyRoster` reads those assets rather
 than restating the number, so *raising a mode's player count* — the change that would silently start
 dropping rivals' marks — fails the test instead of shipping.
 
@@ -860,7 +860,7 @@ kind of "surely this is the same" that turns into a real behaviour change the ne
 refactors near it. The fix was the composition rule above, which needs no division at all on the
 local path.
 
-Edit-mode gates (`Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs`) cover what a C#
+Edit-mode gates (`Assets/_Scripts/Tests/Editor/PrismLitTests.cs`) cover what a C#
 assembly can see: the slot count matching the shader's array length, the bank being big enough for
 the authored rosters, every published global being declared in the HLSL, and the own-sight early
 `return` still preceding the peer loop — that `return` **is** the "your own cone wins outright"
@@ -874,11 +874,11 @@ harness proved honest by re-running it with a `using` removed.
 | file | change |
 |---|---|
 | `Assets/_Graphics/Materials/Graphs/PrismDestructionSight.hlsl` | peer bank + the own-wins composition rule. **No ShaderGraph edit** — the arrays are declared at file scope, the same mechanism `PrismOcclusionCorridor.hlsl` uses for its dials, and the Custom Function signature is unchanged (so `Tools/Shaders/wire_prism_destruction_sight.py` stays valid) |
-| `Assets/_Scripts/Utility/PrismDestructionSight.cs` | split into a local channel and a frame-stamped peer bank with a `LateUpdate` flush driver |
+| `Assets/_Scripts/Utility/PrismDestructionSight.cs` (since renamed `Utility/Lit/PrismLit.cs`) | split into a local channel and a frame-stamped peer bank with a `LateUpdate` flush driver |
 | `Assets/_Scripts/Controller/Vessel/R_VesselActionHandler.cs` | `NetEchoSightShape` |
 | `.../Executors/EchoSightActionExecutor.cs` | local vs peer routing, shape publish/apply, teardown on both channels |
 | `Tools/Shaders/verify_prism_sight_composition.py` | new — compiles and runs the shipped HLSL |
-| `Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs` | new — the C#-visible contracts |
+| `Assets/_Scripts/Tests/Editor/PrismDestructionSightTests.cs` (since renamed `PrismLitTests.cs`) | new — the C#-visible contracts |
 
 ### In-editor verification
 

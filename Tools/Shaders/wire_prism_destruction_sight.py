@@ -30,16 +30,23 @@ a graph revert to repair the wiring.
 What it adds to each graph:
 
   properties (all UNEXPOSED -> declared as globals, driven by Shader.SetGlobalVector from
-  PrismDestructionSight.cs; same shape as the existing _PrismClock / _PrismOcclusion* globals):
+  PrismLit.cs (_Scripts/Utility/Lit/, named PrismDestructionSight.cs until the LIT
+  fundamental promoted it); same shape as the existing _PrismClock / _PrismOcclusion* globals):
       _PrismSightApex     float3  blast apex, world space
       _PrismSightAxis     float3  sweep axis (unit)
       _PrismSightGape     float3  gape axis (unit, perpendicular to the sweep axis)
       _PrismSightParams   float3  (height, coreRadiusPerUnitDepth, halfLengthPerUnitDepth)
       _PrismSightStrength float   highlight fade, 0-1
 
+  property (EXPOSED -> declared INSIDE UnityPerMaterial, so material.SetFloat can reach it;
+  stamped once per domain by ThemeManager.PaintPrismTier on the clones it already makes one per
+  domain, and read by the domain gate a light may carry — Docs/LIT.md):
+      _PrismLitDomain     float   THIS prism's domain (a Domains value; 0 = it has none)
+
   nodes:
       Position (World)                          -> fragment world position
       Property x5                               -> the five globals
+      Property x1                               -> _PrismLitDomain
       PrismDestructionSight (Custom Function)    -> PrismDestructionSight.hlsl
 
   edges (the splice — whatever fed SurfaceDescription.BaseColor is RETARGETED into the custom
@@ -50,6 +57,7 @@ What it adds to each graph:
       AFTER:   <colour source> -> CF.BaseColor
                Position(World) -> CF.PositionWS
                _PrismSightApex/Axis/Gape/Params/Strength -> CF.{Apex,Axis,Gape,Params,Strength}
+               _PrismLitDomain -> CF.Domain
                CF.Color -----------------------------> SurfaceDescription.BaseColor
 
 Usage:  python3 Tools/Shaders/wire_prism_destruction_sight.py [--check]
@@ -83,9 +91,16 @@ VEC3_PROPS = [
     ("PrismSightParams", "_PrismSightParams"),
 ]
 STRENGTH_PROP = ("PrismSightStrength", "_PrismSightStrength")
+# The one EXPOSED property: per MATERIAL, not per frame.
+LIT_DOMAIN_PROP = ("PrismLitDomain", "_PrismLitDomain")
 
-# (integer slot id, display name, "Vector1"|"Vector3", is_output) — the integer ids MUST match the
-# HLSL parameter order (inputs first, then outputs).
+# (integer slot id, display name, "Vector1"|"Vector3", is_output).
+# LIST ORDER is what has to match the HLSL signature, not the ids: a Custom Function node builds
+# its call from m_Slots in array order (all inputs, then all outputs), which is the order this list
+# is written in. That is why Domain (8) sits BEFORE Color (7) — it was added as a ninth slot after
+# the first eight shipped, and it is an INPUT, so it belongs ahead of the output in the array even
+# though its id is higher. Getting this wrong renders every prism material unmateriald with
+# nothing in the console (Tools/Build/check_shadergraph_custom_function_signatures.py).
 CF_SLOTS = [
     (0, "PositionWS", "Vector3", False),
     (1, "Apex", "Vector3", False),
@@ -94,6 +109,7 @@ CF_SLOTS = [
     (4, "Params", "Vector3", False),
     (5, "Strength", "Vector1", False),
     (6, "BaseColor", "Vector3", False),
+    (8, "Domain", "Vector1", False),
     (7, "Color", "Vector3", True),
 ]
 
@@ -168,6 +184,25 @@ def make_global_property(donor, donor_unexposed, name, reference, is_vector3):
     p["overrideHLSLDeclaration"] = donor_unexposed["overrideHLSLDeclaration"]
     p["hlslDeclarationOverride"] = donor_unexposed["hlslDeclarationOverride"]
     p["m_Value"] = {"x": 0.0, "y": 0.0, "z": 0.0, "w": 0.0} if is_vector3 else 0.0
+    return p
+
+
+def make_exposed_property(donor_vector1, name, reference):
+    """A per-MATERIAL float: same shape as the unexposed donor, but IN UnityPerMaterial.
+
+    Exposure is the whole point here — an unexposed property lands outside UnityPerMaterial, no
+    material.SetFloat can reach it, and the domain gate then reads 0 on every prism, which means
+    "this has no domain" and silently excludes all mass from a gated light.
+    """
+    p = json.loads(json.dumps(donor_vector1))
+    p["m_ObjectId"] = new_oid()
+    p["m_Guid"] = {"m_GuidSerialized": str(uuid.uuid4())}
+    p["m_Name"] = name
+    p["m_RefNameGeneratedByDisplayName"] = name
+    p["m_DefaultReferenceName"] = reference
+    p["m_OverrideReferenceName"] = reference
+    p["m_GeneratePropertyBlock"] = True
+    p["m_Value"] = 0.0
     return p
 
 
@@ -296,6 +331,15 @@ def validate(docs, expect_wired):
         assert prop["m_GeneratePropertyBlock"] == 0, \
             f"{name} is exposed — it must be a global, not a per-material property"
 
+    # and the inverse for the one per-material property: the domain gate is a fact about THIS
+    # prism, stamped per material, so it MUST be exposed or nothing can write it
+    domain_prop = find_property(docs, LIT_DOMAIN_PROP[0])
+    assert domain_prop is not None, f"missing property {LIT_DOMAIN_PROP[0]}"
+    assert domain_prop["m_OverrideReferenceName"] == LIT_DOMAIN_PROP[1], \
+        f"{LIT_DOMAIN_PROP[0]} has the wrong reference"
+    assert domain_prop["m_GeneratePropertyBlock"], \
+        f"{LIT_DOMAIN_PROP[0]} is unexposed — it must be per-material, not a global"
+
 
 # ---------------------------------------------------------------------------
 # wiring
@@ -346,12 +390,14 @@ def wire_graph(rel_path, check_only):
         props.append(make_global_property(donor_v3_prop, donor_unexposed, name, reference, True))
     props.append(make_global_property(donor_unexposed, donor_unexposed,
                                       STRENGTH_PROP[0], STRENGTH_PROP[1], False))
-    new_docs += props
-    graph["m_Properties"] += [{"m_Id": p["m_ObjectId"]} for p in props]
+    lit_domain = make_exposed_property(donor_unexposed, LIT_DOMAIN_PROP[0], LIT_DOMAIN_PROP[1])
+    all_props = props + [lit_domain]
+    new_docs += all_props
+    graph["m_Properties"] += [{"m_Id": p["m_ObjectId"]} for p in all_props]
 
     category = max((idx[c["m_Id"]] for c in graph["m_CategoryData"]),
                    key=lambda c: len(c["m_ChildObjectList"]))
-    category["m_ChildObjectList"] += [{"m_Id": p["m_ObjectId"]} for p in props]
+    category["m_ChildObjectList"] += [{"m_Id": p["m_ObjectId"]} for p in all_props]
 
     # ---- nodes ----
     made = []
@@ -364,9 +410,14 @@ def wire_graph(rel_path, check_only):
                                        prop["m_ObjectId"], prop["m_Name"], -1500.0, y))
         y += 90.0
 
+    lit_domain_node, dslots = make_property_node(donor_prop_node, donor_slot_v1,
+                                                lit_domain["m_ObjectId"], lit_domain["m_Name"],
+                                                -1500.0, y)
+
     position_node, pslots = make_position_node(donor_pos, donor_pos_slot, -1500.0, 2320.0)
     cf_node, cslots = make_custom_function_node(donor_cf, donor_slot_v1, donor_slot_v3,
                                                 -1180.0, 2380.0)
+    made.append((lit_domain_node, dslots))
     made.append((position_node, pslots))
     made.append((cf_node, cslots))
 
@@ -391,8 +442,10 @@ def wire_graph(rel_path, check_only):
         f"found {retargeted}")
 
     graph["m_Edges"].append(edge(position_node["m_ObjectId"], 0, cf_node["m_ObjectId"], 0))
-    for slot_id, (node, _slots) in enumerate(made[:5], start=1):
+    # the five globals occupy the head of `made`, in CF input-slot order 1..5
+    for slot_id, (node, _slots) in enumerate(made[:len(props)], start=1):
         graph["m_Edges"].append(edge(node["m_ObjectId"], 0, cf_node["m_ObjectId"], slot_id))
+    graph["m_Edges"].append(edge(lit_domain_node["m_ObjectId"], 0, cf_node["m_ObjectId"], 8))
     graph["m_Edges"].append(edge(cf_node["m_ObjectId"], 7, base_block["m_ObjectId"], 0))
 
     docs += new_docs
@@ -401,7 +454,8 @@ def wire_graph(rel_path, check_only):
     open(path, "w", encoding="utf-8").write(dump_docs(docs))
     validate(load_docs(path), expect_wired=True)  # re-read from disk and re-check
     return True, (f"{os.path.basename(rel_path)}: wired and validated "
-                  f"(+5 globals, +7 nodes, +{len(new_docs) - 12} slots, 7 new edges, 1 retargeted).")
+                  f"(+5 globals, +1 per-material property, +8 nodes, "
+                  f"+{len(new_docs) - 14} slots, 8 new edges, 1 retargeted).")
 
 
 def main():

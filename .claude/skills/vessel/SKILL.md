@@ -49,8 +49,8 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    — it performs steps 1-2 for you and prints, per element: the declared ability and input,
    the L5 upgrade AND the call site that actually gates it, and every live scaling channel
    with its authored numbers. It flags an `UpgradeLabel` with no gate, a
-   `MultiplierAtFullLevel` nothing reads, and a gate a serialized bool switches off on this
-   hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
+   a RETIRED generic map multiplier still authored, and a gate a serialized bool switches off on
+   this hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
 1. Read `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` — what is actually authored?
    `(open design slot)` + `Input: 0` + empty `UpgradeLabel` = the design does not exist yet.
 2. Read the vessel prefab (`Assets/_Prefabs/Spacevessels/{Vessel}.prefab`) for the real wiring —
@@ -134,10 +134,23 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 1. **Ability SOs are shared and stateless.** Per-vessel state lives in executors / vessel-root
    MonoBehaviours; SOs receive `(registry, status)` per call. Never bind state to an SO asset.
-2. **Read element scaling at use time** (`ElementalAbilityHandler.Multiplier(element)` /
-   `ElementalFloat.EvaluateLive`), never cache at init. **No double-dipping**: if a dedicated
-   authored field on the action SO carries the scaling, pin the map's generic
-   `MultiplierAtFullLevel` to 1.
+   **"Stateless" includes not WRITING your own serialized field for a while** — the shape that
+   slips through is a temporary effect implemented as save-multiply-await-restore, because each
+   step reads as correct in isolation and the asset is back to normal when it finishes.
+   `GrowSkimmerActionSO.ApplyMaxSizeDebuff` does this (`maxSize.Value = original * mul`, await,
+   write it back) on an asset every Rhino shares, so two debuffed pilots race and the second
+   restore stores the FIRST one's already-multiplied value as "original" — the effect then never
+   fully lifts. `_isMaxSizeDebuffed` is an early-out on the SO, which guards one caller and is
+   itself shared state. A temporary per-vessel modifier belongs in the executor and is applied at
+   use time; the SO's number is the baseline and never moves. (BACKLOG 5.11 — found by a ship
+   pass, not by a gate: nothing in this project can see a shared-asset write.)
+2. **Read element scaling at use time** (`ElementalFloat.EvaluateLive(status)`), never cache at
+   init. **Scaling is PARAMETER-addressed: one `ElementalFloat` on the asset or component that owns
+   the number.** There is no generic per-element multiplier — `handler.Multiplier(element)` and the
+   map's `MultiplierAtFullLevel`/`MinMultiplier` were removed 2026-09-18, along with the
+   "pin it to 1" convention that was the only safe way to use them. A multiplier is just an
+   `ElementalFloat` whose `Min` is 1 (`ElementalFloat.Multiplier(atRest, atFull, element, floor)`),
+   and it needs a FLOOR or the deficit band inverts it. `Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`.
 3. **Outcome-affecting upgrades gate on `IsUpgradeActive(element)`** (replicated
    `NetElementUnlocks` bits on `R_VesselActionHandler`) — never a raw local level read, which
    desyncs the prismscape across peers. Per-use snapshot at fire/use time.
@@ -352,9 +365,11 @@ applies to new abilities, new resources on the meter list, and anything that add
     `UpgradeDescription`: either FUSE them when they are two halves of one idea (the Urchin's
     "Overcharge" became +1 cascade generation **and** no reach falloff, absorbing the retired
     SPACE-5 "Deep Cascade") or drop one on the record. Also move every element READ with the
-    ability — `Multiplier(Element.X)` calls inside the SO are the half that silently keeps
-    pointing at the old element, and the map multiplier has to move with them (the Urchin's
-    Charge entry went 2.0 → 2.5 to inherit the reach behaviour Space had authored).
+    ability — the `ElementalFloat`'s own `element` field, and any `ElementalScaling` /
+    `GetLevel(Element.X)` read inside the SO, are the half that silently keeps pointing at the
+    old element (the Urchin's Charge reach multiplier went 2.0 → 2.5 to inherit what Space had
+    authored). Run `element_ability_table.py {Vessel}` after the move: the ability's row must
+    name the NEW element and the old element's row must go back to `NO SCALING`.
     (Urchin trigger merge, 2026-08-18.)
 
 29. **Clearing a state flag mid-routine: check what the REST of that frame still reads off it.**

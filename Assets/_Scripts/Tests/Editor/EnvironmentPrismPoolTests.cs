@@ -22,6 +22,7 @@ namespace CosmicShore.Tests
         const string PhyllotacticPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/PhyllotacticFlora.cs";
         const string BranchingPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/BranchingFlora.cs";
         const string AssembledPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/AssembledFlora.cs";
+        const string BorromeanPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/BorromeanFlora.cs";
         const string BoidPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/Boid.cs";
         const string SpawnableBasePath = "Assets/_Scripts/Controller/Environment/Spawning/SpawnableBase.cs";
         const string SpawnableCordPath = "Assets/_Scripts/Controller/Environment/FloraAndFauna/SpawnableCord.cs";
@@ -104,6 +105,7 @@ namespace CosmicShore.Tests
             string phylo = Read(PhyllotacticPath);
             string branching = Read(BranchingPath);
             string assembled = Read(AssembledPath);
+            string borromean = Read(BorromeanPath);
             Assert.IsFalse(Regex.IsMatch(phylo, @"Instantiate\(\s*healthPrism"),
                 "PhyllotacticFlora still Instantiates health prisms.");
             Assert.IsFalse(Regex.IsMatch(branching, @"Instantiate\(\s*healthPrism"),
@@ -113,6 +115,9 @@ namespace CosmicShore.Tests
             Assert.IsTrue(phylo.Contains("EnvironmentPrismPool.Get"));
             Assert.IsTrue(branching.Contains("EnvironmentPrismPool.Get"));
             Assert.IsTrue(assembled.Contains("EnvironmentPrismPool.Get"));
+            Assert.IsFalse(Regex.IsMatch(borromean, @"Instantiate\(\s*healthPrism"),
+                "BorromeanFlora still Instantiates health prisms.");
+            Assert.IsTrue(borromean.Contains("EnvironmentPrismPool.Get"));
 
             Assert.IsTrue(Regex.IsMatch(Read(BoidPath), @"Instantiate\(\s*healthPrism"),
                 "Boid body Instantiates were named, not folded — do not silently route them.");

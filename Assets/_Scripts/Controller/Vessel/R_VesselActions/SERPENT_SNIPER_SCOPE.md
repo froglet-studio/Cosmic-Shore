@@ -20,9 +20,12 @@ Two of the Serpent's three open element slots are now filled. **Mass stays open.
 magnification, and the element and the mechanic are the same statement. **Charge is
 threat/energy**, and on a weapon whose per-shot effect is already absolute (one round, one prism,
 whatever its armour) the only honest axis left is *how often you get to use it* — so Charge owns
-the recovery. Neither ability scales through the map's generic `MultiplierAtFullLevel`; both are
-pinned to `1` there because the action SOs carry dedicated authored fields, per the
-no-double-dipping rule.
+the recovery. Both abilities scale through a dedicated authored field on their own action SO
+(`cooldownMultiplierAtFullCharge`, `zoomDepthAtFullSpace`), read at use time through
+`ElementalScaling.Multiplier`. This doc originally added that both were "pinned to `1`" in the map
+to avoid double-dipping the generic `MultiplierAtFullLevel`; **that channel was deleted on
+2026-09-18** (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`), so there is no longer
+a generic multiplier to pin — the dedicated fields are simply where the numbers live.
 
 ## The right trigger is CONTEXTUAL, and neither ability knows about the other
 

@@ -25,6 +25,10 @@ MonoBehaviour:
   - {fileID: 11400000, guid: e9072b7700d6aba4c53fcb2ffe2be425, type: 2}
   - {fileID: 11400000, guid: 4c9bf30dfa79ed7ed259edb3b25d96be, type: 2}
   - {fileID: 11400000, guid: 2645c718375434dd2ae111640b5e5fa9, type: 2}
+  - {fileID: 11400000, guid: d561aaec03288befe66d0d178a9c0b5c, type: 2}
+  - {fileID: 11400000, guid: a939deec5a5bbf84a77308995247c85c, type: 2}
+  - {fileID: 11400000, guid: e802be65513bfd45c74e0a8fa8f47cef, type: 2}
+  - {fileID: 11400000, guid: 3262e93f70d2d07015257140b64ef088, type: 2}
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
