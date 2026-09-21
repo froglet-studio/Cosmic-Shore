@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
+  m_Name: Garland Cell Spawn Profile
+  m_EditorClassIdentifier: 
+  FloraExcludeLocalDomain: 0
+  FloraSpawnVolumeCeiling: 12000
+  FloraInitialDelaySeconds: 3
+  FloraSpawnIntervalSeconds: 0.5
+  FloraPopulationScale: 1
+  FloraPlantBudgetScale: 1
+  FloraPrismScale: 1
+  SupportedFloras:
+  - {fileID: 11400000, guid: 1f5d38a2c604473e9ab7d20e68f4c913, type: 2}
+  - {fileID: 11400000, guid: 4a90e6b7d2f34c18ae53b901c7d62e84, type: 2}
+  - {fileID: 11400000, guid: 7b23c9f05d8e4a61b04fe8237a95d1c6, type: 2}
+  - {fileID: 11400000, guid: c6e14b83a70d495f82d9c1e64b307af5, type: 2}
+  FaunaExcludeLocalDomain: 0
+  InitialFaunaSpawnWaitTime: 20
+  InitialFaunaReleaseTier: 2147483647
+  FaunaSpawnVolumeThreshold: 1
+  FaunaPopulationScale: 1
+  BaseFaunaSpawnTime: 30
+  SeedFullWaveEveryTick: 0
+  FaunaFoodFloor: 2000
+  FaunaInitialDelaySeconds: 0
+  FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 3
+  HerbivoreSpawnRadius: 560
+  PredatorSpawnPointCount: 2
+  PredatorSpawnRadius: 760
+  SupportedFaunas:
+  - {fileID: 11400000, guid: 2d87f41069b34c0ea5931cd7f28e6b40, type: 2}
+  - {fileID: 11400000, guid: 8e05a72cb94f41d6970b3e8a52d1c7f9, type: 2}
+  - {fileID: 11400000, guid: 5a3bd08e17c6429fb2604ae9d81f3572, type: 2}
