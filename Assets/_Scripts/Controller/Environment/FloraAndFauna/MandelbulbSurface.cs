@@ -775,7 +775,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Radius × (1 − 0) is exact in IEEE, so a surface prism poses byte-identically.
-            position = scratch.Dir * (scratch.Radius * (1f - a.Dive) + a.RadialOffset);
+            position = scratch.Dir * (scratch.Radius * (1f - a.Dive)) + n * a.RadialOffset;
         }
 
         // ── deterministic rng (no UnityEngine.Random: a plant must grow the same on

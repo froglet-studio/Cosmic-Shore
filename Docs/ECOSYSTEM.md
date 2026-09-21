@@ -10456,3 +10456,34 @@ gates that the shipped walk marks at least one connector at all (*a plant with n
 stems is not growing out of its crystal*).
 
 **Nothing has been run in the editor.**
+
+### 55.5 What is LEFT, and what it is — measured, not guessed
+
+`measure_mandelbulb_flora.py --check` is **clean on the Fractal Foliage and on the Watershed**
+and reports **6 rows on the Coral Bloom and 3 on Apollonia**. None of them is a growth-law row —
+every species passes `roots = 1`, `components = 1`, `forward-parents = 0` and the bond bound —
+and both groups have a measured cause rather than a suspicion.
+
+**The Coral Bloom: THE FALL'S DIVES NOW REFUSE EACH OTHER.** Replaying the claim and recording
+WHICH prism blocked each refusal, **42 of the 53 refused dive prisms on Space were refused by
+another DIVE**, 7 by a limb and 4 by a ribbon. That is the bundle §53.3 already names, made
+denser by §55.3's budget raise: all 8 owed dives now land where 4–5 used to, and they converge
+into one corridor. It surfaces as four `FALL hole` rows (a gap the claim left inside a spiral),
+plus `share` and `spread` on Space. **The dials are the ones the gate itself names — `DiveStopRadius`,
+`DiveGirthFloor`, `DiveCount` — and they pull against each other** (`share` wants more dive,
+`hole` wants less bundling), so this is a render-judged tuning round like §53.4's, not an
+arithmetic one. *Do not reach for the claim: it is not what is refusing them.*
+
+**Apollonia: its four elements' FORMS now differ by more than the band is wide.** After the claim
+they lay 2,641–3,096 prisms, a 17% spread against a 15% band, so no single budget can hold all
+four (2,900 is the best available and leaves Charge at 107%). The gate names the right dial —
+**`DiscMinRadius`**, which decides the disc set and therefore the form — and the remaining
+`LADDER` row is the same object seen from the other end (Mass's third size octave has fallen
+under the 2 px legibility bar). A wider limb claim was tried as a shortcut and made it worse.
+
+**Two things were tried against these and are recorded as NOT shipping**, because both arguments
+were sound and both plants disagreed: measuring a limb's claim on its STEP rather than on its
+prism (right in principle for a DASHED Charge leaf, and it cost Apollonia's Charge 268 prisms and
+opened an armour failure at its core), and letting the TRUNK claim narrowly while only stems claim
+wide (the trunk is laid first into the very corridor the dives converge on — narrowing it changed
+nothing for the Coral Bloom and cost Apollonia two more rows).

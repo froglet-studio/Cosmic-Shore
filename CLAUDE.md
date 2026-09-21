@@ -988,6 +988,40 @@ trio, and the traps).
   against the compiled C#. Two judged design rounds, nine rendered candidates — the runners-up
   and why each lost are in `Docs/ECOSYSTEM.md §54`. All four are in **NO SpawnProfile** (opt-in
   from the Lifeform Matrix toy). `Docs/ECOSYSTEM.md §53`, `§54`; the `/flora` skill §5.2.
+- **AND ALL FOUR GROW OUT OF THEIR CRYSTAL — the growth law, applied to a whole family at once.**
+  The family shipped scattering N independent seeds over the sphere and tracing a curve from
+  each, so a plant was N disconnected patches wearing stub spindles at the plant ROOT, and the
+  Fall reached the heart only at a curve's END. Three pieces fix it and **none of them is new
+  geometry**: a **seed tree** (Prim on great-circle distance — and **the gasket's tree IS the
+  GASKET**, since a child disc is inscribed against three discs it TOUCHES, which is why the
+  self-similar species needed no rule at all), a **TRUNK** that is the Fall RUN BACKWARDS (so the
+  rise cannot acquire a shape, a stride ceiling or a winding the Fall does not already have), and
+  a **STEM** to every seed's first appearance plus a **lane anchor** so lane L hangs off the prism
+  at lane L−1's midpoint — the point `Hop` steps across from, i.e. *the gap the cage is made of,
+  now spanned by a limb instead of left open*. **Prim's insertion order IS a growth order**, so
+  `parent < child` holds by construction rather than by a sort that can be wrong. Within a curve
+  the chain already existed (`Emit` lays one prism per SEGMENT) — **only the ROOT was missing**.
+  `TryNext` hands out the parent index and a CONNECTOR flag, deliberately NOT folded into
+  `PrismAddress`, because a prism's POSE must stay a pure function of its own address. Six
+  findings, and five outlive the family: **a greedy pick over a SYMMETRIC point set is decided by
+  FLOAT WIDTH** (four saddles at exactly 0.847114625 from the tree, so float32 and float64 grew
+  different plants with every statistical gate green — the §54 total-key trap from a second
+  direction; fixed with a tolerant compare plus an index tie-break); **a limb must start at the
+  prism it hangs off, NOT at the seed** (a gasket seed is a disc CENTRE while its curve starts on
+  the RIM, so a stem from the centre spanned the parent's whole radius — 15.2 strides against a
+  shipped worst of 4.7); **connectivity alone cannot see a WIRE**, since a star of trunks out of
+  the heart is formally ONE component, so the gate also prices the bond LENGTH in the species' own
+  stride; **a limb YIELDS to a ribbon** while two ribbons crossing is what a cage IS (every worst
+  interpenetrating pair in three of four species was a limb inside a ribbon, and a refused limb
+  prism costs nothing because the spindle roots at the nearest STANDING ancestor); **`TanR != 0`
+  meant "dive" only while the heart was reached at the END of a curve** — the trunk is free space
+  too and runs from the heart OUT, so every Fall gate read the plant's one connection to its
+  crystal as the spiral that never arrived; and **when a curve gains a PROLOGUE, every gate that
+  says "the curve's first" answers about the prologue** (six gates broke at once that had nothing
+  to do with connectors). The plant is **12–32% limb**, so the budget went 2,800 → 4,150 = the
+  budget at which the same amount of CURVE is laid as before — Apollonia excepted at 2,900,
+  because **a gasket's form is finite and priced by `DiscMinRadius` rather than by a budget**.
+  `Docs/ECOSYSTEM.md §55`; the `/flora` skill §2.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
   in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —

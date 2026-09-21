@@ -39,6 +39,7 @@ remembered:
 | SchwarzP | `AssembledFlora` (+`SchwarzPAssembler`) | `AssemblyBranch` |
 | Quasicrystal | `AssembledFlora` (+`QuasicrystalAssembler`) | `QuasicrystalBranch` |
 | Borromean | `BorromeanFlora` | `Branch` |
+| MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` / `CoralBloomFlora` (one growth rule, four species — `Docs/ECOSYSTEM.md` §50, §52, §53, §54) | `Branch` |
 | Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
 | **oldWallFlora** | **`GyroidAssembler` — not a `Flora` either** | (n/a) |
@@ -73,6 +74,31 @@ plus the heart, and assert one component every time.
 `borromean_surface.connected_prefixes` is the worked example; its negative control is the
 ordering it replaced (orbits sorted by RADIUS), which measured **up to 3 components**.
 
+**(c) AND A BOND HAS TO BE A BOND — connectivity alone cannot see a WIRE.** Give every
+curve or patch the heart as its parent with no connector between them and both properties
+above still hold: the plant is a formally connected STAR whose limbs each span most of it.
+So measure the bond LENGTH too, priced in the species' own stride (its walk step, its ring
+chord, its lane gap), and gate the worst. On the Mandelbulb family that row is what caught
+a gasket ring stemming from its parent disc's CENTRE while the prism it hung off sat on
+that disc's RIM — 15.2 strides against a shipped worst of 4.7 (`Docs/ECOSYSTEM.md` §55.2).
+
+**Two more traps the same family paid for, both of which outlive it:**
+
+- **A GREEDY PICK OVER A SYMMETRIC POINT SET IS DECIDED BY FLOAT WIDTH.** If the growth
+  order comes from a spanning tree, a nearest-neighbour search or any other greedy choice,
+  a symmetric surface puts candidates at distances equal to the LAST BIT — measured, four
+  of one bulb's saddles sat at exactly 0.847114625 — and the shipped float32 and the
+  offline float64 model then grow visibly DIFFERENT plants from one seed while every
+  statistical gate stays green. Use a tolerant compare plus an INDEX tie-break, and make
+  every ordering a TOTAL key (`Docs/ECOSYSTEM.md` §54, §55.2).
+- **WHEN A CURVE GAINS A PROLOGUE, EVERY GATE THAT SAYS "THE CURVE'S FIRST" ANSWERS ABOUT
+  THE PROLOGUE.** Adding connectors broke six gates at once that had nothing to do with
+  connectors: an arm census keyed on a curve's first prism, lane shares that counted every
+  prism's lane, and every Fall statistic that separated free space from surface with a
+  field test. Hand the consumer a CONNECTOR flag out of the growth rule (beside the parent
+  — neither belongs in the address, or the pose stops being a pure function of one row),
+  and put it on the wire so the verifier PROVES the split instead of trusting a label.
+
 **What NOT to do.** Do not order a table by distance from the centre and call it "outward
 from the heart". On any surface that wraps — and a compact or periodic one always does —
 a radius shell is several disconnected rings. Order by HOP DISTANCE over the species' own
@@ -94,6 +120,7 @@ does not:
 | `AssembledFlora` / quasicrystal | at the prism, prism's rotation | `QuasicrystalBranch`: mirrored pair along ±x | the strut ✅ |
 | `AssembledFlora` / **Schwarz P** | at the prism, prism's rotation | `AssemblyBranch`: a **SINGLE off-centre arm** along local −y (0.5 → 6.7 units) | points wherever that prism's −y happens to face ⚠ **known weak case — do not copy it** |
 | `BorromeanFlora` | at the **PARENT**, aimed at the child, stretched to the bond | `Branch` | the limb IS the bond ✅ |
+| the **Mandelbulb family** (4 species) | at the nearest **STANDING ancestor**, aimed at the prism, stretched to the bond | `Branch` | the limb IS the bond ✅ — and the ancestor WALK is the part to copy: a species whose claim can refuse a prism cannot hang the next one off a parent that was never laid (`Docs/ECOSYSTEM.md` §55) |
 
 **Rules that come out of that table.**
 
