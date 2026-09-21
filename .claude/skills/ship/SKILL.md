@@ -426,13 +426,18 @@ Walk every changed file against these gates:
   `author_*_assets.py`** — the narrow form was what this rule originally said and it sees **15 of
   the 36** generators, missing every one whose output is not a mode's asset set (sprite and mesh
   authors, population and layout authors). A branch whose own generators fall outside the glob gets
-  a clean-looking sweep that never ran on its work. Re-measured 18 Sep 2026: the family is **49**
-  and the wide glob gives **32 OK / 17 RED** — but **8 of those 17 are `ModuleNotFoundError: No
-  module named 'numpy'`**, an environment gap rather than a defect, so the honest tally is 32 OK /
-  **9 RED** / 8 un-runnable here. Split those two before reporting a number; a missing module is a
-  container to fix, a spent `assert` is a generator to fix. (Was 10 of 36 on 12 Sep and 7 of 15
-  under the narrow glob; the family was 11 when this was first written -- **re-measure, never
-  quote**.) The nine real ones fall in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  a clean-looking sweep that never ran on its work. Re-measured 21 Sep 2026: the family is **50**
+  and the wide glob gives **33 OK / 17 RED** — but **7 of those 17 are `ModuleNotFoundError: No
+  module named 'numpy'`**, an environment gap rather than a defect, so the honest tally is 33 OK /
+  **10 RED** / 7 un-runnable here. Split those two before reporting a number; a missing module is a
+  container to fix, a spent `assert` is a generator to fix. (Was 49 / 32 OK / 9 RED on 18 Sep, 10 of
+  36 on 12 Sep and 7 of 15 under the narrow glob; the family was 11 when this was first written --
+  **re-measure, never quote**.) **A/B every red against a clean base worktree before you report
+  the tally**, because the sweep cannot tell a generator your branch broke from one that was
+  already red: this pass found 12 red, and two of them (`author_regatta_assets`,
+  `author_broadside_assets`) were **OK on base and red on the branch** — a reader of a shipped
+  measurement it depends on had gone stale, which the bare count presented as somebody else's
+  debt. The real ones fall in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
   platform change deleted while the generator that authors it was left untouched. That second
   class is the one to carry: **a generator that owns an asset's content is a second place every
   schema change has to land, and it does not fail at the time of the change** — it fails months
