@@ -31,7 +31,7 @@ namespace CosmicShore.Tests
             var wp = DualStickMix.Mix(W, P);
 
             Assert.Greater(Mathf.Abs(wp.YSum), Mathf.Abs(wOnly.YSum),
-                "W+O must stack YSum (pitch) beyond W alone.");
+                "W+P must stack YSum (pitch) beyond W alone.");
             Assert.AreEqual(wOnly.YSum < 0f, wp.YSum < 0f, "Pitch sign must match W-only.");
             Assert.AreEqual(0.5f, wp.XDiff, 0.0001f);
         }
@@ -56,7 +56,7 @@ namespace CosmicShore.Tests
         public void PAndS_YDiffIsRollLeft()
         {
             var mix = DualStickMix.Mix(S, P);
-            Assert.Greater(mix.YDiff, 0f, "O+S → right.y - left.y > 0 (roll left).");
+            Assert.Greater(mix.YDiff, 0f, "P+S → right.y - left.y > 0 (roll left).");
         }
 
         [Test]

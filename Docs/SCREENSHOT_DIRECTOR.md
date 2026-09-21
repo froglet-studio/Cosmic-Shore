@@ -1,6 +1,6 @@
 # The screenshot director
 
-Press **P** (or the pad's **Select / View / Share**) in flight. A UI-free photograph of your
+Press **0** — the number row's zero — (or the pad's **Select / View / Share**) in flight. A UI-free photograph of your
 vessel lands in your clone's own `Recordings/` folder, shot from a camera angle drawn at random
 from a library of capture concepts. No setup, no scene wiring, no pause.
 
@@ -130,18 +130,21 @@ that is a follow-up: read `SpeedTunnelConfigSO.Effect01(speed)` and fold it into
 - **F12 is deliberately not the key.** It is Steam's own screenshot key, so binding it would fire
   two captures, one of which has the UI in it. F5–F9 are the diagnostics/benchmark overlays and F11
   is fullscreen.
-- **P was not free, and the FLIGHT SCHEME moved rather than the capture key.**
-  `KeyboardInputStrategy` — the dual-WASD desktop scheme every two-stick hull flies on — read
-  `pKey` as the RIGHT STICK's vertical axis (`WASD` left, `P`/`;`/`L`/`'` right). A capture press
-  would therefore also have fed the vessel a frame of stick, and a held P would have kept feeding
-  it — a nudge to the very framing this system exists to produce, on exactly the hulls a
-  third-person photograph is most worth taking of. The one-thumb hulls were never affected
-  (`SingleStickMouseInputStrategy` reads only the left stick), which is what made it easy to miss.
-  **Resolved by moving the flight binding, not the camera**: that scheme's right-stick-up is now
-  **`O`** — same right-hand cluster, directly above `L`, and used nowhere else in the project
-  (verified against every `Keyboard.current` read in `_Scripts`). The capture key is P as asked.
-  Two rules come out of it: **a key is only "free" against the keys some OTHER system is reading,
-  and an input scheme that consumes raw keys advertises none of them** — grep the reads, do not
-  reason from what is "normally" bound; and **when two systems want one key, move the one whose
-  binding is arbitrary** — a photograph key the player asked for by name is a requirement, while
-  which letter is right-stick-up is a detail the scheme has no opinion about.
+- **The key is a DIGIT because every letter is already spoken for, and that turned out to be the
+  better answer anyway.** `KeyboardInputStrategy` — the dual-WASD desktop scheme every two-stick
+  hull flies on — consumes `WASD` (left stick), `P`/`;`/`L`/`'` (right stick), `QWER` + Space (the
+  ability keys, shared verbatim with `SingleStickMouseInputStrategy`) and both Shifts (the
+  triggers). **`P` in particular is right-stick-UP**, so capture bound there would have fed the
+  vessel a frame of stick on every press and kept feeding it on a hold — a nudge to the very
+  framing this system exists to produce, on exactly the hulls a third-person photograph is worth
+  taking of. Moving the flight binding to free `P` up was tried and **reverted**: a capture is a
+  deliberate, occasional act rather than a flight control, so a key *away* from the hands' resting
+  clusters is one you cannot fat-finger mid-manoeuvre, and leaving the flight scheme untouched is
+  what a photograph *of that flight* actually needs. The digits are entirely unclaimed — `0`-`9`
+  are read by nothing in `_Scripts`.
+  The rule it records: **a key is only "free" against the keys some OTHER system is reading, and
+  an input scheme that consumes raw `Keyboard.current` reads advertises none of them** — grep the
+  reads, do not reason from what is "normally" bound. Its corollary is about where to look for
+  room: **when every ergonomic key is taken, ask whether the new binding actually wants an
+  ergonomic key** — a control you press mid-manoeuvre and one you press between them have
+  opposite requirements, and the second is happier on a shelf the first can never reach.
