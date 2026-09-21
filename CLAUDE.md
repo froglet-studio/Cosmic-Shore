@@ -4757,6 +4757,39 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
   vessel bound in an arbitrary order cannot switch off what the local pilot just switched on.
 
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
+- **`?.` and `!= null` on an INTERFACE reference to a `UnityEngine.Object` — the trap that produces
+  exception STORMS rather than exceptions.** Unity reports a destroyed object as null through an
+  *overloaded* `==` on `UnityEngine.Object`. An interface-typed reference (`IPlayer`, `IVessel`,
+  `IRoundStats`, `IVesselStatus`, `ITransform`) never reaches that operator — `!=` and C#'s
+  null-propagating `?.` are plain reference comparisons — so a destroyed `Player` or
+  `VesselController` reads as ALIVE and throws `MissingReferenceException` on the first
+  native-backed member (`gameObject`, `transform`). **The shape is what costs you, not the
+  throw**: the holder is a cached handle nothing clears and the reader is an `Update`/`LateUpdate`
+  loop, so ONE destroyed object becomes an unbounded per-frame exception — and Unity's stack
+  capture then eats the frame rate, which is how it is reported (*"tons of console errors… lots of
+  slowdown very quickly"*). Measured: three signatures storming at once
+  (`MiniGameHUD.Update`, and every objective provider through `ObjectiveIndicator.LateUpdate`),
+  all reaching through two stale handles.
+  **Fix the HANDLE, never the reader.** ~60 runtime sites read `GameDataSO.LocalPlayer` with `?.`
+  and every one of them is individually reasonable; making each remember the trap is a rule you can
+  forget sixty times, and the sixty-first is written next week. The handles that hand out interface
+  references to Unity objects SELF-HEAL — `GameDataSO.LocalPlayer`, `GameDataSO.LocalRoundStats`,
+  `Player.Vessel` return a REAL null once the object behind them is destroyed — through one
+  predicate, **`UnityLiveness.Alive` / `UnityLiveness.Live`** (`_Scripts/Utility/UnityLiveness.cs`);
+  `VesselLiveness` is that same predicate spelled as a caller-side check, and every native-backed
+  accessor on the way (`Player.Transform` / `InputController` / `RoundStats`,
+  `VesselController.Transform`) answers null instead of throwing. Route a new check through those
+  rather than writing an eighth private copy of `x is UnityEngine.Object o && !o` — which is
+  exactly what happened here: `VesselLiveness`'s own doc comment said *"route every such check
+  through here"*, it shipped with no `IPlayer` overload, and `SpectatorController` grew a private
+  one while every objective provider grew none. **The corollary for the LISTS**: a roster holds
+  corpses too, so a `Player` leaves `GameDataSO.Players` in `OnDestroy` as well as
+  `OnNetworkDespawn` (the despawn never fires for the non-networked single-player spawn path, nor
+  for a destroy without a despawn), and `PruneDestroyedRosterEntries` is the sweep.
+  **And a `GameDataSO` is a ScriptableObject**, so in the Editor a stale handle survives play-mode
+  exit and the next session starts holding the last one's corpse — the anti-pattern this document
+  already records for `ScriptableVariable`, one level up. Pinned by `UnityLivenessTests`, whose
+  negative control asserts that a plain `!= null` still disagrees.
 - **Any non-ASCII character in a string that reaches a `TMP_Text`.** The project has effectively ONE UI font — `ALDRICH-REGULAR SDF` — and it carries **97 glyphs**: ASCII 32..126, nbsp (160) and an ellipsis (8230), with an **empty `m_FallbackFontAssetTable`**. Everything else renders as tofu (an empty box), silently, with nothing in the console. A `✓` in a ready-button label shipped as `READY [] 1/1`, and the same pass found a `·` separator already authored into a pool card that simply had not been looked at yet — in the C# default, the prefab, the prefab's placeholder text AND the generator that writes all three. A middle dot, an em dash, an arrow, a check mark and a degree sign are not free characters here; they are empty boxes. Use ASCII in anything a `TMP_Text` displays (`[Tooltip]`, doc comments and log strings are unaffected — they never reach the font), and when a symbol is genuinely wanted, add the glyph to the font asset or give it a fallback rather than assuming it is there. `Assets/Unity Assests/TextMesh Pro/Resources/Fonts & Materials/ALDRICH-REGULAR SDF.asset` is the coverage list; `grep -c "m_Unicode: <decimal>$"` answers the question in one line.
 - **A view's `Start` runs before EVERY `Update` in that frame, so a view that renders state a driver produces on its first tick renders it empty — and then never again.** Unity's order is all `Awake`s, all `Start`s, then all `Update`s, so `View.Start()` → `BuildList()` is guaranteed to run before `Driver.Update()` → `Deal()`. It reads as a replication or timing bug and is neither: it happens identically on the HOST, single-player, with no network involved. The Maelstrom hub drew its field list once at `Start` and showed a solo player one pilot for the whole countdown while three bots sat in the roster the lobby had dealt a frame later. The fix is not `LateUpdate` or a delay — it is to make the view re-render when the state CHANGES (`RefreshRoster`, keyed on a rendered signature rather than on a list reference, because a list mutated in place never changes identity).
 - **Expressing a "held / frozen / pinned / parked" gameplay state as `isKinematic` plus a per-tick position write.** It reads as the obvious way to say "this object is not moving right now", and it silently breaks every force in the game in BOTH directions: a force that acts by writing `rb.linearVelocity` (which is every AOE blast — `ApplyBlastServer`) writes into a body that does not integrate and evaporates, while a force that acts by writing POSITION (depenetration, an eject, a nudge) is undone by the pin on the next tick and the object visibly jitters. Neither failure logs anything. Prefer a state that is BOOKKEEPING over one that is a physics mode: leave the body live and let a flag suspend only the specific rule that must not apply (`AstroLeagueBall`'s seeded ball suspends containment and nothing else — SCARAB.md §4.6). Its companion: **a state transition that each force announces for itself is one the unwired force never announces** — have the object OBSERVE that it moved (`TickNucleusDepartureServer`) instead, so a force added tomorrow is covered with no wiring. And if a body must be able to receive a blast, consider that a body at REST sleeps, and a sleeping actor paired with a rigidbody-less growing trigger is not a pair a physics engine owes you an event for (`rb.sleepThreshold = 0`)

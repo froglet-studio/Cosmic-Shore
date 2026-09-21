@@ -547,8 +547,42 @@ namespace CosmicShore.Utility
         public bool IsTurnRunning { get; private set; }
         public Pose[] SpawnPoses { get; private set; }
         List<Pose> _playerSpawnPoseList = new ();
-        public IPlayer LocalPlayer { get; private set; }
-        public IRoundStats LocalRoundStats { get; private set; }
+        IPlayer _localPlayer;
+        IRoundStats _localRoundStats;
+
+        /// <summary>
+        /// The local pilot's Player, or null once it has been DESTROYED.
+        ///
+        /// <para>Self-healing on purpose. <see cref="IPlayer"/> is an interface, so `?.` and
+        /// `!= null` at a reader never reach <c>UnityEngine.Object</c>'s overloaded null test
+        /// and a destroyed Player reads as alive — then throws <c>MissingReferenceException</c>
+        /// on the first member access. This asset is also a ScriptableObject, so in the Editor
+        /// the field survives play-mode exit and the NEXT session starts holding the LAST
+        /// session's corpse.</para>
+        ///
+        /// <para>Roughly sixty runtime sites read this handle, most of them with `?.` and many
+        /// of them per frame (every turn monitor's display path, every objective provider
+        /// through <c>ObjectiveIndicator.LateUpdate</c>, <c>MiniGameHUD.Update</c>, the toys).
+        /// Each was individually reasonable and all of them were wrong the same way, turning
+        /// one destroyed Player into an unbounded per-frame exception storm that ate the frame
+        /// rate. Fixing the HANDLE fixes every reader at once and covers the next one for free;
+        /// <c>PruneDestroyedRosterEntries</c> already did exactly this for the LISTS and simply
+        /// never covered these two singletons.</para>
+        /// </summary>
+        public IPlayer LocalPlayer
+        {
+            get => UnityLiveness.Alive(_localPlayer) ? _localPlayer : (_localPlayer = null);
+            private set => _localPlayer = value;
+        }
+
+        /// <summary>The local pilot's RoundStats, or null once destroyed — the sibling of
+        /// <see cref="LocalPlayer"/> and null for exactly the same reasons (a destroyed
+        /// <c>RoundStats</c> is a MonoBehaviour behind an interface).</summary>
+        public IRoundStats LocalRoundStats
+        {
+            get => UnityLiveness.Alive(_localRoundStats) ? _localRoundStats : (_localRoundStats = null);
+            private set => _localRoundStats = value;
+        }
         public ISession ActiveSession { get; set; }
         public int TurnsTakenThisRound { get; set; }
         public int RoundsPlayed { get; set; }
@@ -979,15 +1013,32 @@ namespace CosmicShore.Utility
         /// dedup and lookups. Plain C# stats (edit-mode test fakes) are not
         /// UnityEngine.Objects and pass through untouched.
         /// </summary>
-        void PruneDestroyedRosterEntries()
+        public void PruneDestroyedRosterEntries()
         {
             for (int i = Players.Count - 1; i >= 0; i--)
-                if (Players[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(Players[i]))
                     Players.RemoveAt(i);
 
             for (int i = RoundStatsList.Count - 1; i >= 0; i--)
-                if (RoundStatsList[i] is UnityEngine.Object obj && !obj)
+                if (!UnityLiveness.Alive(RoundStatsList[i]))
                     RoundStatsList.RemoveAt(i);
+
+            for (int i = Vessels.Count - 1; i >= 0; i--)
+                if (!UnityLiveness.Alive(Vessels[i]))
+                    Vessels.RemoveAt(i);
+        }
+
+        /// <summary>
+        /// Drop the local handles if the objects behind them are gone. The getters already
+        /// self-heal on READ, so this exists for the one thing a lazy getter cannot do: let a
+        /// dying <c>Player</c> hand the reference back at the moment of death rather than
+        /// leaving it for whoever reads next. Cheap and idempotent — reading the two properties
+        /// IS the check.
+        /// </summary>
+        public void ForgetLocalPlayerIfDestroyed()
+        {
+            _ = LocalPlayer;
+            _ = LocalRoundStats;
         }
 
         /// <summary>

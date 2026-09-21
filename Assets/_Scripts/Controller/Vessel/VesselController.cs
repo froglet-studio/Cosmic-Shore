@@ -211,7 +211,13 @@ namespace CosmicShore.Gameplay
             SetResourceLevels(levels);
         }
         
-        public Transform Transform => transform;
+        /// <summary>This vessel's root transform, or <c>null</c> once the hull has been
+        /// destroyed. <c>transform</c> is native-backed and throws
+        /// <c>MissingReferenceException</c> on a destroyed component, and the readers are
+        /// per-frame objective providers holding a handle across a VESSEL SWAP — so an
+        /// unguarded getter turns one swap into an unbounded exception storm. The holders
+        /// self-heal too (<c>Player.Vessel</c>); this is the backstop for any that do not.</summary>
+        public Transform Transform => this ? transform : null;
 
         public void Teleport(Transform targetTransform) =>
             ShipHelper.Teleport(transform, targetTransform);

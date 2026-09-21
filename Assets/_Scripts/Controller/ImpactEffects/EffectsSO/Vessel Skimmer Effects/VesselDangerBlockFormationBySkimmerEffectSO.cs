@@ -23,12 +23,8 @@ namespace CosmicShore.Gameplay
         
         public override void Execute(VesselImpactor vesselImpactor, SkimmerImpactor skimmerImpactee)
         {
-            if (!cellData)
-            {
-                CSDebug.LogError("No Cell data found!");
-                return;
-            }
-            
+            if (!dangerHemispherePrefab) return;
+
             var victimVessel  = vesselImpactor.Vessel;
             var attackerSkimmer = skimmerImpactee.Skimmer;
             if (attackerSkimmer == null || victimVessel == null)
@@ -36,7 +32,9 @@ namespace CosmicShore.Gameplay
 
             var attackerStatus = attackerSkimmer.VesselStatus;
             var victimStatus   = victimVessel.VesselStatus;
-    
+            if (attackerStatus == null || victimStatus == null)
+                return;
+
             if (attackerStatus.VesselType != VesselClassType.Rhino)
                 return;
 
@@ -50,7 +48,20 @@ namespace CosmicShore.Gameplay
                 return;
 
             var victimPos   = victimTransform.position;
-            var targetPos = cellData.Cell.GetCrystalTransform().position;
+
+            // The formation is aimed AT the cell's crystal, and both halves of reaching it
+            // could be absent. The authored cellData is a serialized handle on a SHARED SO
+            // asset, so it names one cell and is null (or stale) in every scene that is not
+            // that one; and a live cell legitimately has no crystal right now, in which case
+            // GetCrystalTransform warns and returns NULL. The old code guarded neither `.Cell`
+            // nor the returned transform, so a Rhino skimming a rival in any crystal-less cell
+            // threw once per CONTACT - a per-skim NullReferenceException on the fleet's most
+            // contact-dense path, which is what the impactor's isolation guard was catching.
+            var cell = Cell.ResolveHostCell(cellData ? cellData.Cell : null, victimPos);
+            if (!cell) return;
+            var crystalTransform = cell.GetCrystalTransform();
+            if (!crystalTransform) return;
+            var targetPos = crystalTransform.position;
 
             var toTarget = targetPos - victimPos;
             if (toTarget.sqrMagnitude < 0.01f)
@@ -66,6 +77,14 @@ namespace CosmicShore.Gameplay
             if (container != null)
                 GameObjectInjector.InjectRecursive(aoeGo, container);
             var aoe   = aoeGo.GetComponent<AOEDangerHemisphereBlocks>();
+            if (!aoe)
+            {
+                CSDebug.LogError(
+                    $"[VesselDangerBlockFormationBySkimmerEffectSO] '{dangerHemispherePrefab.name}' carries no " +
+                    $"{nameof(AOEDangerHemisphereBlocks)} - the formation cannot be built.");
+                Destroy(aoeGo);
+                return;
+            }
 
             var init = new AOEExplosion.InitializeStruct
             {

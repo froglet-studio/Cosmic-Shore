@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -19,18 +20,26 @@ namespace CosmicShore.Gameplay
     ///
     /// Route every such check through here rather than writing a fourth copy — the interface trap
     /// is exactly the kind of thing that gets fixed at one call site and forgotten at the next.
+    ///
+    /// <para>It WAS forgotten at the next: this class shipped with no <see cref="IPlayer"/>
+    /// overload, so <c>SpectatorController</c> grew a private copy and every objective provider
+    /// grew none at all. The predicate itself now lives once, in
+    /// <see cref="UnityLiveness.Alive"/>, which these overloads delegate to.</para>
     /// </summary>
     public static class VesselLiveness
     {
         /// <summary>True while <paramref name="vessel"/> is non-null AND its underlying Unity
         /// object has not been destroyed.</summary>
-        public static bool IsAlive(this IVessel vessel)
-            => vessel != null && !(vessel is Object o && !o);
+        public static bool IsAlive(this IVessel vessel) => UnityLiveness.Alive(vessel);
 
         /// <summary>True while <paramref name="status"/> is non-null AND its underlying Unity
         /// object has not been destroyed.</summary>
-        public static bool IsAlive(this IVesselStatus status)
-            => status != null && !(status is Object o && !o);
+        public static bool IsAlive(this IVesselStatus status) => UnityLiveness.Alive(status);
+
+        /// <summary>True while <paramref name="player"/> is non-null AND its underlying Unity
+        /// object has not been destroyed. Says nothing about the player's VESSEL — a live
+        /// pilot routinely holds a destroyed hull across a swap, which is its own check.</summary>
+        public static bool IsAlive(this IPlayer player) => UnityLiveness.Alive(player);
 
         /// <summary>The vessel's root transform, or null if it has been destroyed. Convenience for
         /// the roster walks that only want a position.</summary>

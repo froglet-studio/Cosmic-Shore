@@ -160,6 +160,38 @@ hang-dump threshold seconds (0 = off).
 The team's live bug list, inside the editor, with one hard rule: **a fix is not believed until
 the game proves it.**
 
+### `timesSeen` is a FLOOR, and it is most wrong for the issue you care about
+
+The capture path carries a storm guard — `OnLogMessage` drops an entry outright once the worker
+queue is full (`Queue.Count >= MaxQueuedEntries`) — so `TimesSeen` counts what got *through*, not
+what happened. That is the right trade for the ledger's job (dedupe makes drops harmless: one
+surviving entry per signature still files the issue), and it has one consequence worth stating
+because it inverts the obvious reading:
+
+> **A signature that is storming is the signature whose count is most suppressed.** It saturates
+> the queue, so most of its own occurrences are the ones dropped — while a once-per-session error
+> beside it is captured every single time.
+
+So **do not rank by `timesSeen` when hunting a rate problem.** Measured on a real export: a
+per-frame `MissingReferenceException` out of `MiniGameHUD.Update` — running at roughly 200/s and
+visibly eating the frame rate — read **7**, beneath a once-per-domain-reload editor import error
+that read **15**. The ledger named the offender correctly and ranked it fifteenth.
+
+Rank by **CALL SITE** instead. Only an unbounded producer can make a storm, and the ledger already
+tells you which one a signature is: read its `stack` and ask whether the frame it throws from is an
+`Update`, a `LateUpdate`, a `FixedUpdate`, or a per-contact/per-prism dispatch. Everything else —
+a scene load, a join failure, an import — is bounded by an event the player has to cause, and
+cannot produce the symptom however large its count. For the live rate, use
+[`ErrorStormReporter`](#error-storms--errorstormreporter), which is the thing that *can* count:
+it aggregates by the same `BugSignature` with no drop guard and prints the ranked window.
+
+One more shape to expect in an export: **a warn-once message whose text carries a varying number
+files a NEW issue every session.** `PrismClockDiagnostics.WarnNoRenderEntity` keys its own
+suppression on a constant `reasonKey` (correct — one console line per session) but interpolates a
+live entity count into the text, and the signature is over the TEXT, so a single well-behaved
+diagnostic appeared three times under three ids. Three low-count issues that are one issue is the
+tell.
+
 ### The store — why files, why there, and why two of them
 
 One small JSON file per issue, at the **project root**, in a split store:

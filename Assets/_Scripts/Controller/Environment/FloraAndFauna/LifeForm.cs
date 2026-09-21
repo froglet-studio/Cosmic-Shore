@@ -388,7 +388,7 @@ namespace CosmicShore.Gameplay
             // transform.parent. HealthPrism.ResolveSpindle closed the throw; falling back to a
             // real cell closes the orphan, so the conserved mass stays inside the cell whose
             // food web is expected to remove it.
-            var skeletonHost = Cell.ResolveSkeletonHost(cell, transform.position);
+            var skeletonHost = Cell.ResolveHostCell(cell, transform.position);
             Transform skeletonParent = skeletonHost ? skeletonHost.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
                 if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);

@@ -451,9 +451,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The cell a dying lifeform should hand its SKELETON to (Docs/ECOSYSTEM.md §26):
+        /// The cell a loose object should be handed to — a dying lifeform's SKELETON
+        /// (Docs/ECOSYSTEM.md §26), a released elemental HEART:
         /// <paramref name="preferred"/> when it is still alive, otherwise the cell containing
-        /// the body, otherwise the nearest active cell.
+        /// the position, otherwise the nearest active cell.
         ///
         /// <para>It exists because the honest answer used to be <c>null</c>, and a null host
         /// re-parents conserved mass to the SCENE ROOT — outside the hierarchy of the one
@@ -465,8 +466,14 @@ namespace CosmicShore.Gameplay
         /// than being written twice — and it is a cell-lookup question, which is this class's
         /// business. Returns null only when no cell is active at all, which the callers still
         /// handle (the scene root beats losing the mass).</para>
+
+        /// <para>The crystal release path asks the same question for the same reason: a fauna
+        /// withering while its cell is torn down (a cell swap, a scene exit) reached
+        /// <c>cellData.Cell.transform</c> and threw, which aborts the wither COROUTINE and
+        /// leaves a husk — so one dead cell became a growing population of undying
+        /// creatures.</para>
         /// </summary>
-        public static Cell ResolveSkeletonHost(Cell preferred, Vector3 position)
+        public static Cell ResolveHostCell(Cell preferred, Vector3 position)
         {
             if (preferred) return preferred;
             var containing = FindCellContaining(position);

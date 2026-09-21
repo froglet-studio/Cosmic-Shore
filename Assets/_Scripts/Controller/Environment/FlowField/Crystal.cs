@@ -696,10 +696,21 @@ namespace CosmicShore.Gameplay
             bool hadTint = TryGetDisplayedTint(out var fromBright, out var fromDull);
 
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
-            transform.parent = cellData.Cell.transform;
+
+            // Resolved rather than dereferenced. A heart is released from inside a WITHER
+            // COROUTINE, and a creature routinely finishes withering while its cell is being
+            // torn down (a cell swap, a scene exit) - at which point cellData.Cell is null and
+            // the bare dereference threw, aborting the coroutine and leaving an undying husk.
+            // The sibling assignment ~12 lines up has always guarded; this one never did.
+            var host = Cell.ResolveHostCell(cellData ? cellData.Cell : null, transform.position);
+            if (host) transform.parent = host.transform;
+
             var dropCol = gameObject.GetComponent<SphereCollider>();
-            if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
-            dropCol.enabled = true;
+            if (dropCol)
+            {
+                if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
+                dropCol.enabled = true;
+            }
             enabled = true;
 
             for (int i = 0; i < crystalModels.Count; i++)
