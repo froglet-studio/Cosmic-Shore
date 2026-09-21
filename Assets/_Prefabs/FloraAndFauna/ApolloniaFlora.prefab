@@ -255,7 +255,7 @@ MonoBehaviour:
   fieldWidth: 192
   weightSpread: 1
   weightSteps: 3
-  maxTotalSpawnedObjects: 2800
+  maxTotalSpawnedObjects: 2900
   growthsPerTick: 8
   maxSpawnsPerFrame: 3
   plantRadius: 150

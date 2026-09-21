@@ -19,7 +19,7 @@ MonoBehaviour:
   NewPlantPeriod: 9999999
   PopulationSize: 1
   MaxLivePopulation: 3
-  GrowthPerOffspring: 2171
+  GrowthPerOffspring: 2617
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0.5
@@ -27,9 +27,9 @@ MonoBehaviour:
   Element: 1
   Variant:
     Enabled: 1
-    HeartWorldScale: 1.707
+    HeartWorldScale: 1.897
     GrowPeriod: 0.5
-    MaxTotalSpawnedObjects: 2800
+    MaxTotalSpawnedObjects: 4150
     PlantRadiusCellFraction: 0.6
     PlantRadiusCellFractionMin: 0.25
     ShieldPeriod: 1

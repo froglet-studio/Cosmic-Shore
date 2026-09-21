@@ -401,15 +401,23 @@ def main():
     write(TOY, toy, changed, args.check)
 
     # Hand the population numbers over BY NAME rather than excluding these configs silently.
+    # The hand-off is ASSERTED here rather than inserted. author_flora_populations.py's
+    # OWNED_ELSEWHERE is a `{token: (kind, script)}` table — a species is matched as a
+    # SPECIES, never as a prefix — so a line this file pasted in would be a second opinion
+    # about that table's shape, and the shapes have already diverged once. What this file
+    # owns is the CLAIM that these four species' populations are its, and the useful form of
+    # that claim is a check that says so by name when it is missing.
     pop = POPULATIONS.read_text()
-    for assets in SPECIES_ASSETS.values():
-        marker = f'    "{assets["asset_prefix"]} ": "Tools/Build/author_mandelbulb_flora_assets.py",\n'
-        if marker not in pop:
-            anchor = '    "Lattice ": "Tools/Build/author_lattice_cell.py",\n'
-            if anchor not in pop:
-                sys.exit("author_mandelbulb_flora_assets: OWNED_ELSEWHERE anchor not found")
-            pop = pop.replace(anchor, anchor + marker)
-    write(POPULATIONS, pop, changed, args.check)
+    missing = [species for species in SPECIES_ASSETS
+               if f'"{species}": ("species", "Tools/Build/author_mandelbulb_flora_assets.py")'
+               not in pop and
+               f'"{SPECIES_ASSETS[species]["asset_prefix"].split(" Flora")[0]}": '
+               f'("species", "Tools/Build/author_mandelbulb_flora_assets.py")' not in pop]
+    if missing:
+        sys.exit("author_mandelbulb_flora_assets: author_flora_populations.py's "
+                 "OWNED_ELSEWHERE does not hand these species over: " + ", ".join(missing)
+                 + ' — add `"<species>": ("species", "Tools/Build/'
+                   'author_mandelbulb_flora_assets.py"),` for each.')
 
     for species, assets in SPECIES_ASSETS.items():
         p = plans[species]

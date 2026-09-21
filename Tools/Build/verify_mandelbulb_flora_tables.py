@@ -1538,7 +1538,7 @@ def verify(verbose=True):
     return failures
 
 
-def self_test():
+def self_test(only=None):
     """A gate nobody has watched fail is a gate nobody should trust. Each mutation below is
     a plausible transcription slip; every one must be caught."""
     mutations = [
@@ -1614,6 +1614,20 @@ def self_test():
         # whose defects are invisible to every other species' gates is a species that needs
         # its own, and these are the eight places its disc set can silently stop being a
         # gasket while still rendering as a bag of circles.
+        # ── THE GROWTH LAW (Docs/ECOSYSTEM.md §55) ────────────────────────────────────────
+        # Three ways a plant can stop growing out of its crystal while still rendering as a
+        # perfectly good plant, which is exactly why they need controls: none of them changes
+        # a prism's POSE, so every statistic in this file that is about the surface stays green.
+        ("the seed tree dropped (every seed starts its own patch — the defect §55 fixed)",
+         "                int from = AttachmentSeed(k);",
+         "                int from = -1;", "trip", "ONE trunk"),
+        ("the connector flag never set (a consumer can no longer tell a limb from a ribbon)",
+         "                    _pendingConnector.Add(i < _emitConnectorSegments);",
+         "                    _pendingConnector.Add(false);", "trip", "CONNECTOR"),
+        ("the seed tree's tie-break left to float width (the §55.2 symmetry trap)",
+         "                        if (pick >= 0 && best[i] >= pickCost - SeedCostEpsilon) continue;",
+         "                        if (pick >= 0 && best[i] >= pickCost) continue;",
+         "trip", "disagree on their PARENT"),
         ("the gasket's candidates taken smallest-first (the greedy pack keeps the specks)",
          "int c = cl[q].Rho.CompareTo(cl[p].Rho);",
          "int c = cl[p].Rho.CompareTo(cl[q].Rho);", "trip", "rho histogram"),
@@ -1708,6 +1722,8 @@ def self_test():
     baseline = gasket_fingerprint()
     try:
         for entry in mutations:
+            if only and only.lower() not in entry[0].lower():
+                continue
             label, find, replace = entry[0], entry[1], entry[2]
             mode = entry[3] if len(entry) > 3 else "trip"
             # The gate this control was WRITTEN for, as a substring of its message. Without
@@ -1788,12 +1804,32 @@ def main():
     ap.add_argument("--self-test", action="store_true",
                     help="mutate the shipped file and assert every gate trips (and "
                          "that the one claimed pure optimisation moves nothing)")
+    ap.add_argument("--only", metavar="TEXT",
+                    help="with --self-test: run only the controls whose description "
+                         "contains TEXT. For iterating on a NEW control — the full suite is "
+                         "the gate, and it is the one a commit quotes.")
     args = ap.parse_args()
 
     if args.self_test:
-        print("self-test (every control must read 'trips'; the one non-control, which is "
+        # IT EDITS THE SHIPPED FILE IN PLACE, one mutation at a time, and restores it at the
+        # end. So it is NOT safe to run alongside anything that commits: `git add -A` during a
+        # run stages whichever mutation happens to be live, and the result is a perfectly
+        # plausible one-line diff in a docs commit. (That is not hypothetical — it happened,
+        # and what caught it was the harness refusing to pass afterwards.) A leftover from a
+        # crashed run looks exactly the same, so refuse to start on a dirty file rather than
+        # mutating something that is already wrong.
+        dirty = subprocess.run(["git", "diff", "--quiet", "--", SHIPPED],
+                               cwd=ROOT).returncode
+        if dirty:
+            print(f"REFUSING: {os.path.relpath(SHIPPED, ROOT)} has uncommitted changes. This "
+                  f"mode EDITS THAT FILE IN PLACE and restores it from a backup, so a "
+                  f"pre-existing edit would be indistinguishable from a leftover mutation — "
+                  f"and a `git add -A` while it runs will COMMIT one. Commit or stash first.")
+            return 1
+        print("self-test — THIS MUTATES THE SHIPPED FILE IN PLACE. Do not commit while it "
+              "runs.\n(every control must read 'trips'; the one non-control, which is "
               "a\nclaimed pure optimisation, must read 'inert'):")
-        bad = self_test()
+        bad = self_test(args.only)
         if bad:
             for b in bad:
                 print("  " + b, file=sys.stderr)
