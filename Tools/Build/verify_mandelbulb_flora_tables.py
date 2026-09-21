@@ -759,6 +759,73 @@ def check_gasket(element, rules, fail, verbose=True):
     return their_lay, theirs, their_n
 
 
+def check_girth_floor(fail, verbose=True):
+    """`RingGirthFloor`, held against the CODE rather than against the authoring.
+
+    The mean-girth row of `check_element` runs on the SHIPPED rules, and on the shipped
+    Apollonia the floor is nearly inert: after the tuning pass (exponent 0.30, floor 0.55)
+    every element's smallest ring already sits within a few percent of it, so deleting the
+    floor line in the C# moved the mean girth under 2% on all four — the self-test control
+    for that line stopped firing, and what it had been measuring the whole time was where the
+    species happened to be authored, not whether the code applied the field. A control that
+    reads the authoring is a control that goes dark on the next retune.
+
+    So this row FORCES the floor to bind: one gasket element grown twice, once with the floor
+    at 0 and once at 0.95, on both the shipped harness and the model. Two things are
+    asserted. (1) The lift the floor buys — mean girth at 0.95 less mean girth at 0 — must
+    match between the two sides, which is the transcription claim, and it must be LARGE on
+    the model (the probe must actually bind, or this row proves nothing and says so).
+    (2) The floored plant's mean girth must agree to the gasket girth tolerance. With the
+    floor line deleted the shipped lift is exactly zero against a model lift of ~0.26 and the
+    row fires by name whatever the shipped table authors."""
+    on = sorted(sp for sp in M.SPECIES
+                if any(M.rules_for(e, sp).gasket_levels != 0 for e in M.ELEMENTS))
+    idx = M.Rules.FIELDS.index("ring_girth_floor")
+    # Space: the deepest octave ladder of the four, so the floor has the most rings to lift.
+    element = "Space"
+    for species in on:
+        base = M.rules_for(element, species)
+
+        def mean_girth(floor):
+            values = base.as_list()
+            values[idx] = floor
+            rules = M.Rules(*values)
+            mine_p, _, _ = M.grow(model_surface(element)[1], rules, SEED, BUDGET)
+            theirs_p, _, _, _ = shipped_prisms(element, rules)
+            if not mine_p or not theirs_p:
+                fail(f"{species}/{element}: the girth-floor probe at {floor} grew nothing "
+                     f"(model {len(mine_p)}, shipped {len(theirs_p)})")
+                return None, None
+            return (sum(p.girth for p in mine_p) / len(mine_p),
+                    sum(p.girth for p in theirs_p) / len(theirs_p))
+
+        mine_lo, theirs_lo = mean_girth(0.0)
+        mine_hi, theirs_hi = mean_girth(0.95)
+        if None in (mine_lo, theirs_lo, mine_hi, theirs_hi):
+            continue
+        mine_lift, theirs_lift = mine_hi - mine_lo, theirs_hi - theirs_lo
+        # The probe must BIND on the model, or a passing row is vacuous. Measured on the
+        # shipped tree the model lifts the mean girth 0.258 at a 0.95 floor; a lift under 0.05
+        # means the species' rings all already sit above 0.95 and this element is the wrong
+        # probe for it.
+        if mine_lift < 0.05:
+            fail(f"{species}/{element}: the girth-floor probe does not bind on the model "
+                 f"(lift {mine_lift:.4f} from floor 0 to 0.95) — this row proves nothing here")
+            continue
+        if abs(theirs_hi - mine_hi) > 0.02 * mine_hi:
+            fail(f"{species}/{element}: girth floor forced to 0.95 — mean girth "
+                 f"{theirs_hi:.5f} shipped vs {mine_hi:.5f} model (tolerance 2.0%)")
+        if abs(theirs_lift - mine_lift) > 0.10 * mine_lift:
+            fail(f"{species}/{element}: girth floor forced to 0.95 lifts the mean girth by "
+                 f"{theirs_lift:.4f} shipped vs {mine_lift:.4f} model — the floor is not "
+                 f"applied by the shipped code the way the model applies it")
+        elif verbose:
+            print(f"  girth floor ({species}/{element}): forced to 0.95 it lifts the mean "
+                  f"girth {theirs_lift:.4f} shipped / {mine_lift:.4f} model "
+                  f"(from {theirs_lo:.4f} / {mine_lo:.4f}); the floor binds and the two "
+                  f"sides agree")
+
+
 def check_element(element, fail, verbose=True, species="FractalFoliage"):
     rules = M.rules_for(element, species)
 
@@ -1337,6 +1404,7 @@ def verify(verbose=True):
     for element in M.ELEMENTS:
         check_pose_table(element, fail, verbose)
     check_gasket_switch(fail, verbose)
+    check_girth_floor(fail, verbose)
 
     # ALL THREE species, because they share one growth rule and differ only in their curve
     # parameters - so the thing this proves (the shipped C# walks what the model walks) has
@@ -1454,18 +1522,19 @@ def self_test():
         ("Inscribe's relaxation rate dropped 0.6 -> 0.10 (children stop being tangent to three)",
          "const float GasketRelaxRateDefault = 0.6f;",
          "const float GasketRelaxRateDefault = 0.10f;", "trip", "median THIRD tangency gap"),
-        # The girth FLOOR had no control at all, and the bound that has to catch it is the
-        # mean-girth row, which for a gasket used to inherit the walking species'
-        # run-length formula and sit at 10%. Measured, deleting this line moves the mean
-        # girth 11.78% on Space, 2.18% on Time, 0.31% on Mass and 0.07% on Charge — so at
-        # 10% it was caught on ONE element and at the tightened 2% it is caught on two. It
-        # is NOT catchable on Charge or Mass by any bound on this statistic: their smallest
-        # ring's allometric girth already sits within a few percent of the floor, so the
-        # field is nearly inert there by authoring and the measure tool's prism-volume-span
-        # gate is where that has to land.
+        # RE-ANCHORED to a gate that does not depend on the authoring. This control was first
+        # held by `check_element`'s mean-girth row on the SHIPPED rules, and measured there
+        # deleting the line moved the mean girth 11.78% on Space and 2.18% on Time (caught at
+        # 2%) but 0.31% / 0.07% on Mass and Charge (not). Then the tuning pass moved Apollonia
+        # to exponent 0.30 / floor 0.55, every element's smallest ring landed within a few
+        # percent of the floor, and the control went dark on all four: `--self-test` reported
+        # it SLIPPING THROUGH, on an unchanged C# line. A control that can be switched off by
+        # a retune of the species it guards was measuring the species, not the code — so it
+        # is now held by `check_girth_floor`, which forces the floor to 0.95 (where it binds
+        # on any authoring) and compares the lift it buys on both sides.
         ("the ring girth FLOOR dropped (the finest octaves go back to invisible threads)",
          "                    girth = Mathf.Max(girth, Mathf.Clamp01(_rules.RingGirthFloor));\n",
-         "", "trip", "mean girth"),
+         "", "trip", "girth floor forced to 0.95"),
         # THE MASTER SWITCH's own control: a gasket column read on the path every species
         # takes. Nothing else in this file can see it — the three prior species author 0 in
         # every gasket column, so on their real rows this line is a no-op; only the poison

@@ -8541,8 +8541,25 @@ than a Foliage kill, and a ring-crowned bulb is worth exactly what its body says
 statistics (the walk is chaotic in its last bits), the Watershed prism for prism, Apollonia level 0
 exactly (the peak prefix, each ring's ρ to 3e-7, the lay order's level-0 prefix, N and ρ_ref) and
 its children statistically (per-octave counts, the ρ histogram, the tangency median 0.000 on both
-sides); 24 negative controls, 23 tripping a NAMED gate and one — the Inscribe summation order —
-proven inert.
+sides); 25 negative controls, 24 tripping a NAMED gate and one — the level-skip in the triple
+search — proven inert.
+
+**A control the tuning pass switched off, and the rule it leaves behind.** The `RingGirthFloor`
+control (delete the `Mathf.Max` line in the C#) was held by `check_element`'s mean-girth row on the
+SHIPPED rules, and on the plant that shipped first it fired on Space (11.8%) and Time (2.2%). The
+tuning pass then moved Apollonia to exponent 0.30 / floor 0.55, every element's smallest ring landed
+within a few percent of the floor, and the same control on the same unchanged line SLIPPED THROUGH
+on all four elements — `--self-test` exited 1 with nothing in the C# to fix. What the control had
+been measuring was where the species happened to be authored, not whether the code applied the
+field. It is now held by its own row, `check_girth_floor`, which FORCES the floor to 0.95 on Space
+(where it binds on any authoring), grows the plant on both sides at floor 0 and 0.95, and asserts
+the LIFT the floor buys agrees to 10% (measured 0.2566 shipped / 0.2582 model) and the floored mean
+girth to 2% — plus that the probe binds on the model at all (lift ≥ 0.05), so a passing row can
+never be vacuous. With the line deleted the shipped lift is exactly zero and the row fires by name.
+General rule: **a negative control that runs on the shipped authoring is only as sensitive as that
+authoring makes it, and a retune of the species it guards can turn it off without touching the code
+it tests** — a control for a FIELD must set that field where it binds, not inherit whatever value
+the assets currently carry.
 
 ### 48.6 What has to be tested in the editor
 
