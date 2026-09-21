@@ -1070,7 +1070,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected void LeaveSkeleton()
         {
-            var host = cell;
+            // A skeleton with no parent is left at the SCENE ROOT, which used to be the quiet
+            // half of a self-perpetuating storm: the prism is still grazeable mass, and every
+            // path that removed it opened by resolving its spindle through a bare
+            // transform.parent. HealthPrism.ResolveSpindle closed the throw; falling back to a
+            // real cell closes the orphan, so the conserved mass stays inside the cell whose
+            // food web is expected to remove it.
+            var host = Cell.ResolveSkeletonHost(cell, transform.position);
             Transform skeletonParent = host ? host.transform : null;
 
             var prisms = GetComponentsInChildren<HealthPrism>(true);

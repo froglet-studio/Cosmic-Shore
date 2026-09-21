@@ -78,8 +78,13 @@ namespace CosmicShore.Gameplay
             if (!DoesEffectExist(omniCrystalShipEffects)) return;
 
             CrystalImpactData data = CrystalImpactData.FromCrystal(Crystal);
-            foreach (var effect in omniCrystalShipEffects)
-                effect.Execute(shipImpactee, data);
+            for (int e = 0; e < omniCrystalShipEffects.Length; e++)
+            {
+                if (IsEffectSlotEmpty(omniCrystalShipEffects[e], this,
+                        nameof(omniCrystalShipEffects), e)) continue;
+                var ef = omniCrystalShipEffects[e];
+                RunEffectIsolated(() => ef.Execute(shipImpactee, data), ef);
+            }
         }
 
         void ReplayOnRemoteOwner(VesselImpactor shipImpactee)

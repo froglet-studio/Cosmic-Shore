@@ -90,8 +90,13 @@ namespace CosmicShore.Gameplay
 
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
-                foreach (var effect in elementalCrystalShipEffects)
-                    effect.Execute(skimmerImpactor, this);
+                for (int e = 0; e < elementalCrystalShipEffects.Length; e++)
+                {
+                    if (IsEffectSlotEmpty(elementalCrystalShipEffects[e], this,
+                            nameof(elementalCrystalShipEffects), e)) continue;
+                    var ef = elementalCrystalShipEffects[e];
+                    RunEffectIsolated(() => ef.Execute(skimmerImpactor, this), ef);
+                }
             }
 
             // Scoring is credited at CONTACT, not at the end of the flourish: the capture is a

@@ -382,7 +382,14 @@ namespace CosmicShore.Gameplay
 
             // The frame stays. Must precede the wither: a health prism is parented to a
             // spindle, so evaporating spindles first would destroy the mass this conserves.
-            Transform skeletonParent = cell ? cell.transform : null;
+            // A skeleton with no parent is left at the SCENE ROOT, which used to be the quiet
+            // half of a self-perpetuating storm: the prism is still grazeable mass, and every
+            // path that removed it opened by resolving its spindle through a bare
+            // transform.parent. HealthPrism.ResolveSpindle closed the throw; falling back to a
+            // real cell closes the orphan, so the conserved mass stays inside the cell whose
+            // food web is expected to remove it.
+            var skeletonHost = Cell.ResolveSkeletonHost(cell, transform.position);
+            Transform skeletonParent = skeletonHost ? skeletonHost.transform : null;
             foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
                 if (hp && !hp.destroyed) hp.LeaveAsSkeleton(skeletonParent);
 

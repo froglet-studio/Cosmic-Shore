@@ -1,4 +1,4 @@
-# Diagnostics — the crash detector, the shared bug ledger, compile timing, and the on-screen UI report
+# Diagnostics — the crash detector, the shared bug ledger, error storms, compile timing, and the on-screen UI report
 
 **FrogletTools ▸ Diagnostics** is one window with four tabs, plus one standalone report:
 
@@ -47,6 +47,45 @@ ScriptableSingletons under `UserSettings/`, headline-only console output, and no
 (so neither tool draws a ship panel).
 
 ---
+
+## Error storms — `ErrorStormReporter`
+
+A fault inside a per-frame path does not produce *an* error, it produces a **storm**: one
+exception per frame per object until the console is unusable and the frame rate is gone. That is
+how it gets reported, too — *"about 1000 errors per 5 seconds, the game slows down"* — and the
+report is almost useless, because a storm destroys its own evidence. The one line naming the call
+site is somewhere in the middle of several thousand identical ones; Unity's Collapse only helps
+once you already know what you are collapsing, and it hides the RATE, which is the thing that
+separates a storm from a burst at a scene load. Meanwhile every entry costs a stack-trace capture,
+so the game degrades in proportion to how broken it is — exactly when a tester is least able to
+say what happened.
+
+`ErrorStormReporter` (`_Scripts/Utility/Diagnostics/ErrorStormReporter.cs`) is the index over
+that. It subscribes to `Application.logMessageReceived`, keys every `Error` / `Exception` /
+`Assert` with `BugSignature.ErrorId` — the SAME fingerprint the Bug Ledger files under, so a storm
+named here and an issue filed there are one id, not two bugs — and once a 5 s window carries 40 or
+more errors it prints ONE summary: the rate, how many DISTINCT faults are behind it, and the top
+five ranked by count with each one's first stack.
+
+Four decisions are load-bearing:
+
+- **It suppresses nothing.** Every error still reaches the console in full. This is fail-loud with
+  an index, not a filter — consistent with the project's no-silent-fallback policy.
+- **The FIRST stack is kept, not the last.** Later frames of a storm are the same fault observed
+  from an already-degraded state; the first is the closest thing to the cause.
+- **Gated at runtime, not with `#if`.** Editor and development builds only, via
+  `Application.isEditor || Debug.isDebugBuild`. Per `Docs/CONDITIONAL_COMPILATION.md` a guard has
+  to cover a self-consistent unit, and the cheapest way to be certain of that is not to write one;
+  a release player simply never subscribes.
+- **Its own output is tagged and skipped**, or the summary would feed the storm it is summarising.
+
+It needs no wiring (`[RuntimeInitializeOnLoadMethod]`) and resets per play session, so a previous
+run's storm can never be attributed to this one.
+
+**Reading it.** `x412  E-1a2b3c4d5e  NullReferenceException: Object reference not set...` followed
+by four stack frames is a complete bug report: the id to file it under, how hard it is firing, and
+where. If the summary shows many distinct faults at a low count each, it is not a storm — it is a
+scene that is broken in several places, and the ranking is still the order to fix them in.
 
 ## The Crash Detector
 
@@ -334,6 +373,7 @@ a clean run. Copy that shape.
 | Compile-timing recorder (`[InitializeOnLoad]`, opt-in) | `Assets/_Scripts/Editor/Diagnostics/CompileTimingMonitor.cs` |
 | The window (all four tabs) | `Assets/_Scripts/Editor/Diagnostics/DiagnosticsWindow.cs` |
 | On-screen UI report (reader, play mode only) | `Assets/_Scripts/Editor/Diagnostics/OnScreenUIReport.cs` |
+| Error-storm reporter (RUNTIME; editor + dev builds) | `Assets/_Scripts/Utility/Diagnostics/ErrorStormReporter.cs` |
 | Live-store gitignore (committed, self-healed by the tool) | `BugLedger/.gitignore` |
 | Shared signature core (**runtime-safe**) | `Assets/_Scripts/Utility/BugSignature.cs` |
 | Signature determinism tests (edit mode) | `Assets/_Scripts/Tests/Editor/BugSignatureTests.cs` |

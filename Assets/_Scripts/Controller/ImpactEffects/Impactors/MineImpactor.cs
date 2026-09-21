@@ -30,23 +30,29 @@ namespace CosmicShore.Gameplay
             {
                 case VesselImpactor shipImpactee:
                     if(!DoesEffectExist(mineShipEffects)) return;
-                    foreach (var effect in mineShipEffects)
+                    for (int e = 0; e < mineShipEffects.Length; e++)
                     {
-                        effect.Execute(shipImpactee, this);
+                        if (IsEffectSlotEmpty(mineShipEffects[e], this, nameof(mineShipEffects), e)) continue;
+                        var ef = mineShipEffects[e];
+                        RunEffectIsolated(() => ef.Execute(shipImpactee, this), ef);
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
                     if(!DoesEffectExist(mineProjectileEffects)) return;
-                    foreach (var effect in mineProjectileEffects)
+                    for (int e = 0; e < mineProjectileEffects.Length; e++)
                     {
-                        effect.Execute(projectileImpactee, this);
+                        if (IsEffectSlotEmpty(mineProjectileEffects[e], this, nameof(mineProjectileEffects), e)) continue;
+                        var ef = mineProjectileEffects[e];
+                        RunEffectIsolated(() => ef.Execute(projectileImpactee, this), ef);
                     }
                     break;
                 case ExplosionImpactor explosionImpactee:
                     if(!DoesEffectExist(mineExplosionEffects)) return;
-                    foreach (var effect in mineExplosionEffects)
+                    for (int e = 0; e < mineExplosionEffects.Length; e++)
                     {
-                        effect.Execute(explosionImpactee, this);
+                        if (IsEffectSlotEmpty(mineExplosionEffects[e], this, nameof(mineExplosionEffects), e)) continue;
+                        var ef = mineExplosionEffects[e];
+                        RunEffectIsolated(() => ef.Execute(explosionImpactee, this), ef);
                     }
                     break;
             }

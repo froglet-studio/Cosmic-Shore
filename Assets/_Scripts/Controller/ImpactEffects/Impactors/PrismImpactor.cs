@@ -7,6 +7,10 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(Prism))]
     public class PrismImpactor : ImpactorBase
     {
+        // NOTE: none of these four arrays is [SerializeField] and nothing assigns them, so
+        // every branch below is unreachable today (DoesEffectExist sees null and returns).
+        // They are kept guarded rather than deleted so that wiring one later inherits the
+        // empty-slot report and the per-effect isolation the sibling impactors already have.
         VesselPrismEffectSO[] vesselPrismEffects;
         
         ProjectilePrismEffectSO[] projectilePrismEffects;
@@ -31,33 +35,41 @@ namespace CosmicShore.Gameplay
                 case VesselImpactor shipImpactee:
                     // ExecuteEffect(impactee, vesselPrismEffects);
                     if(!DoesEffectExist(vesselPrismEffects)) return;
-                    foreach (var effect in vesselPrismEffects)
+                    for (int e = 0; e < vesselPrismEffects.Length; e++)
                     {
-                        effect.Execute(shipImpactee,this);
+                        if (IsEffectSlotEmpty(vesselPrismEffects[e], this, nameof(vesselPrismEffects), e)) continue;
+                        var ef = vesselPrismEffects[e];
+                        RunEffectIsolated(() => ef.Execute(shipImpactee,this), ef);
                     }
                     break;
                 case ProjectileImpactor projectileImpactee:
                     // ExecuteEffect(impactee, projectilePrismEffects);
                     if(!DoesEffectExist(projectilePrismEffects)) return;
-                    foreach (var effect in projectilePrismEffects)
+                    for (int e = 0; e < projectilePrismEffects.Length; e++)
                     {
-                        effect.Execute(projectileImpactee,this);
+                        if (IsEffectSlotEmpty(projectilePrismEffects[e], this, nameof(projectilePrismEffects), e)) continue;
+                        var ef = projectilePrismEffects[e];
+                        RunEffectIsolated(() => ef.Execute(projectileImpactee,this), ef);
                     }
                     break;
                 case SkimmerImpactor skimmerImpactee:
                     // ExecuteEffect(impactee, skimmerPrismEffects);
                     if(!DoesEffectExist(skimmerPrismEffects)) return;
-                    foreach (var effect in skimmerPrismEffects)
+                    for (int e = 0; e < skimmerPrismEffects.Length; e++)
                     {
-                        effect.Execute(skimmerImpactee,this);
+                        if (IsEffectSlotEmpty(skimmerPrismEffects[e], this, nameof(skimmerPrismEffects), e)) continue;
+                        var ef = skimmerPrismEffects[e];
+                        RunEffectIsolated(() => ef.Execute(skimmerImpactee,this), ef);
                     }
                     break;
                 case ExplosionImpactor explosionImpactee:
                     // ExecuteEffect(impactee, explosionPrismEffects);
                     if(!DoesEffectExist(explosionPrismEffects)) return;
-                    foreach (var effect in explosionPrismEffects)
+                    for (int e = 0; e < explosionPrismEffects.Length; e++)
                     {
-                        effect.Execute(explosionImpactee,this);
+                        if (IsEffectSlotEmpty(explosionPrismEffects[e], this, nameof(explosionPrismEffects), e)) continue;
+                        var ef = explosionPrismEffects[e];
+                        RunEffectIsolated(() => ef.Execute(explosionImpactee,this), ef);
                     }
                     break;
             }

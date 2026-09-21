@@ -46,6 +46,34 @@ namespace CosmicShore.Gameplay
         protected override GameplaySFXCategory DestructionSFX =>
             LifeForm is Flora ? GameplaySFXCategory.FloraCollision : base.DestructionSFX;
 
+        /// <summary>
+        /// The limb this prism hangs off, resolved lazily and NEVER through a bare
+        /// <c>transform.parent</c>.
+        ///
+        /// <para>A health prism is not parented to a spindle for the whole of its life. The
+        /// SKELETON a dead lifeform leaves behind (Docs/ECOSYSTEM.md §26) is re-parented onto
+        /// the host cell by <see cref="LeaveAsSkeleton"/> — and onto the SCENE ROOT when that
+        /// lifeform had no cell, which is a real state, not a defensive hypothetical. The
+        /// skeleton is then ordinary grazeable mass, so the food web routes it straight back
+        /// through <see cref="Implode"/> and <see cref="Explode"/>, the two methods that opened
+        /// with that deref.</para>
+        ///
+        /// <para>The consequence was worse than one exception, because both of those methods
+        /// resolved the spindle BEFORE calling base: the throw aborted the destruction, so the
+        /// prism was never marked destroyed and never left the spatial index — the same grazer
+        /// picked the same prism again on the next tick and threw again, forever, once per
+        /// frame per skeleton prism, with the mass it was trying to remove still standing. A
+        /// self-perpetuating console storm that reads as the game degrading rather than as one
+        /// bug.</para>
+        /// </summary>
+        Spindle ResolveSpindle()
+        {
+            if (spindle) return spindle;
+            var parent = transform.parent;
+            if (parent) spindle = parent.GetComponent<Spindle>();
+            return spindle;
+        }
+
         public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {
             base.Initialize(playerName);
@@ -53,7 +81,7 @@ namespace CosmicShore.Gameplay
                 LifeForm.AddHealthBlock(this);
 
             // Spindle logic disabled for now
-            spindle ??= transform.parent.GetComponent<Spindle>(); // Every healthPrism requires a spindle parent
+            ResolveSpindle();
             if (spindle) spindle.AddHealthBlock(this);
         }
 
@@ -73,7 +101,7 @@ namespace CosmicShore.Gameplay
 
         public void Reparent(Transform newParent)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             transform.parent = newParent;
@@ -104,7 +132,7 @@ namespace CosmicShore.Gameplay
         {
             if (destroyed) return;
 
-            spindle ??= transform.parent ? transform.parent.GetComponent<Spindle>() : null;
+            ResolveSpindle();
             if (spindle)
             {
                 spindle.RemoveHealthBlock(this);
@@ -134,7 +162,7 @@ namespace CosmicShore.Gameplay
         protected override void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false,
                                         float debrisSpeedLimit = 0f)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
@@ -155,7 +183,7 @@ namespace CosmicShore.Gameplay
         
         protected override void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
-            spindle ??= transform.parent.GetComponent<Spindle>();
+            ResolveSpindle();
             if (spindle) spindle.RemoveHealthBlock(this);
 
             base.Implode(targetTransform, domain, playerName, devastate);

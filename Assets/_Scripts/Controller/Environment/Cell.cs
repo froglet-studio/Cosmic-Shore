@@ -450,6 +450,30 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
+        /// <summary>
+        /// The cell a dying lifeform should hand its SKELETON to (Docs/ECOSYSTEM.md §26):
+        /// <paramref name="preferred"/> when it is still alive, otherwise the cell containing
+        /// the body, otherwise the nearest active cell.
+        ///
+        /// <para>It exists because the honest answer used to be <c>null</c>, and a null host
+        /// re-parents conserved mass to the SCENE ROOT — outside the hierarchy of the one
+        /// system expected to graze it away, and with no <c>transform.parent</c> for the
+        /// prism's own lifecycle to resolve a spindle through. Both halves of that were real:
+        /// see <c>HealthPrism.ResolveSpindle</c>.</para>
+        ///
+        /// <para>Fauna and LifeForm are SIBLINGS, not one hierarchy, so this lives here rather
+        /// than being written twice — and it is a cell-lookup question, which is this class's
+        /// business. Returns null only when no cell is active at all, which the callers still
+        /// handle (the scene root beats losing the mass).</para>
+        /// </summary>
+        public static Cell ResolveSkeletonHost(Cell preferred, Vector3 position)
+        {
+            if (preferred) return preferred;
+            var containing = FindCellContaining(position);
+            if (containing) return containing;
+            return FindNearestActiveCell(position);
+        }
+
         CellPhase phase = CellPhase.Calm;
 
         /// <summary>

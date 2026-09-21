@@ -532,9 +532,13 @@ namespace CosmicShore.Gameplay
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
                     if(!DoesEffectExist(vesselExplosionEffects)) return;
-                    foreach (var effect in vesselExplosionEffects)
+                    for (int e = 0; e < vesselExplosionEffects.Length; e++)
                     {
-                        effect.Execute(vesselImpactee, this);
+                        if (IsEffectSlotEmpty(vesselExplosionEffects[e], explosionImpactorDataContainer,
+                                nameof(ExplosionImpactorDataContainerSO.vesselExplosionEffects), e))
+                            continue;
+                        var ve = vesselExplosionEffects[e];
+                        RunEffectIsolated(() => ve.Execute(vesselImpactee, this), ve);
                     }
                     break;
                 
@@ -553,9 +557,17 @@ namespace CosmicShore.Gameplay
                     if (!explosionImpactorDataContainer) return;
                     var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
                     if(!DoesEffectExist(explosionPrismEffects)) return;
-                    foreach (var effect in explosionPrismEffects)
+                    // Isolated because this is the densest dispatch in the game: a blast
+                    // resolves hundreds of prisms per frame for its whole sweep, so one
+                    // throwing effect here is a console storm and a framerate collapse
+                    // rather than an error. Same doctrine as the skimmer and vessel paths.
+                    for (int e = 0; e < explosionPrismEffects.Length; e++)
                     {
-                        effect.Execute(this, prismImpactee);
+                        if (IsEffectSlotEmpty(explosionPrismEffects[e], explosionImpactorDataContainer,
+                                nameof(ExplosionImpactorDataContainerSO.explosionPrismEffects), e))
+                            continue;
+                        var pe = explosionPrismEffects[e];
+                        RunEffectIsolated(() => pe.Execute(this, prismImpactee), pe);
                     }
                     break;
 
@@ -683,7 +695,8 @@ namespace CosmicShore.Gameplay
                     if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
                             nameof(ExplosionImpactorDataContainerSO.explosionCrystalEffects), e))
                         continue;
-                    effects[e].Execute(this, crystal);
+                    var ce = effects[e];
+                    RunEffectIsolated(() => ce.Execute(this, crystal), ce);
                 }
 
                 // Spend the crystal exactly as a collect does: it blooms out and respawns rather
@@ -767,7 +780,8 @@ namespace CosmicShore.Gameplay
                     if (IsEffectSlotEmpty(effects[e], explosionImpactorDataContainer,
                             nameof(ExplosionImpactorDataContainerSO.explosionLifeformCrystalEffects), e))
                         continue;
-                    effects[e].Execute(this, crystal);
+                    var he = effects[e];
+                    RunEffectIsolated(() => he.Execute(this, crystal), he);
                 }
             }
         }
