@@ -10583,3 +10583,92 @@ ribbons are now genuinely blades.
 the PLANT** — check which one the clause was written about before inheriting the exemption. And when
 an element's pay has to land on one of several free axes, **the axis is not a detail**: the same
 volume-exact correction spent on the wrong one made Mass measurably *less* Mass.
+
+## 57. THE ARBORETUM — a cell that is a COLLECTION, not a forest (Sep 2026)
+
+A freestyle Cell-Selector world holding **one specimen of each Mandelbulb species in each
+element — sixteen fractal plants and nothing else**. No `EnvironmentPrefab`, no second
+producer: the cell IS its sixteen specimens, the way the Lattice cell (§36) IS its twelve
+colonies.
+
+It exists because §56 made the four elements read as four different KINDS of plant and there
+was nowhere to see that. The Lifeform Matrix bench lines the same sixteen up in a row for
+COMPARISON; this is a WORLD you fly through and meet them in.
+
+### 57.1 The population IS the cell
+
+`InitialSpawnCount 1`, `PopulationSize 1`, `MaxLivePopulation 1`, on each of sixteen configs.
+"Sixteen total flora" is the design, not a tuning value — an arboretum is a collection of
+specimens. It is a **cap, never a cull**: each plant keeps the growth quota its species
+authored and simply cannot spend it while it is the only one of its kind alive, and the
+seeder's whole remaining job is **extinction recovery** — a specimen the food web strips to
+nothing is replanted. No timer, no decay, no imposed death.
+
+The per-plant budgets are **quoted, never re-authored**. On this family a budget is GEOMETRY:
+4,150 is what §55 sized as *the budget at which the same amount of CURVE is laid as before the
+plants grew limbs*, and Apollonia's 2,900 is what a gasket's own `DiscMinRadius` prices. The
+Lattice cell can cut a lattice plant to 30 prisms because a lattice plant is a tile; cutting
+one of these ships a **truncated specimen**, which is the one thing an arboretum may not do.
+
+Everything else about a plant — leaf, heart, grow tempo — is read **verbatim** off
+`_SO_Assets/Lifeforms/<species> Flora <Element>.asset`. Those sixteen assets are the element
+palette; forking their identity here would be two sources of truth for one plant's shape. This
+cell authors only the population and the planting band.
+
+### 57.2 Measured
+
+| | |
+|---|---|
+| mature garden | **53,891 prisms**, **237,350 volume**, 16 plants |
+| specimens | 167 u across (Apollonia Mass) → **294 u** (Mandelbulb Space) |
+| always-on heart colliders | **16** (one per live plant, culled by no phase) — the Lattice cell's is 1,080 |
+| LOD-cullable prisms | 53,891 at maturity, ceiling **78,100** — Atlantis is ~69,000 and the Lattice cell's ceiling is 82,400 |
+| planting band | 504 u .. 1,104 u, volume-uniform; the sixteen bounding spheres fill **4.2%** of it |
+
+Ladder: Restless 0.35× / 0.26× the mature garden (EARLY, or the food web sleeps through the
+whole of the cell's growth — §48), Frenzy 1.45× / 1.25×. **FrenzyEXIT sits above mature on
+purpose**: the sixteen are hard-capped, so a Frenzy here can only ever be trail-caused, and it
+must always release with the garden intact (§36).
+
+The band's inner edge is outside the ~392 u nucleus, which matters for the reason it always
+does: `Flora.ResolvePlantRadius` clamps a band outside a control zone, so a band authored
+inside one collapses to a single degenerate shell with every specimen on one sphere.
+
+Authored by `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS each of the sixteen
+through the shipped rule rather than trusting a typed number, asserts the relationships rather
+than the values, and appends the config to Menu_Main's `Cell.CellConfigs` — `CellSelectorToy`
+authors no cell list, it reads `Cell.AvailableConfigs`, so adding a world to the selector is an
+edit to the cell's own config rotation and to nothing else.
+
+### 57.3 Two defects it surfaced, and both generalise
+
+**A species key with a SPACE in it can never match a de-spaced name.**
+`author_lifeform_heart_sizes.py` resolves a CELL-CONFIG variant by its prefab GUID and a
+CANONICAL one by its asset NAME through `species_of`, which strips spaces — so `"Coral Bloom"`,
+the only two-word key in `FLORA_PREFABS`, resolved to `CoralBloom`, missed, and **those four
+canonical assets had never been sized by the tool that owns their heart**. The symptom was
+nothing at all: they carried 1.514 (whatever wrote them last) against the band's 1.433, and the
+disagreement only became visible when a second cell copied them. The rule: **when one script
+resolves the same identity two ways, the two ways will disagree, and the half that is
+name-based fails silently.** Now matched on the de-spaced form on both sides, so a key's
+spelling stops being load-bearing.
+
+**`EnvironmentPrefab == null` is how a world is BUILT, not what it CONTAINS.** The Cell
+Selector labelled every environment-free config *"no environment"*, which is true of Barren and
+false of the Lattice cell, the Arboretum, and every Rampage, Tollway and Wrecking Ball cell —
+all of which grow their whole world. §36.10 wrote that rule and answered it with
+`Cell.BareCanvasConfig`; this is its **third reader**, so the predicate is now the static
+`Cell.IsBareCanvas(config)` and the selector says *"grown, not laid"* for the rest.
+
+### 57.4 What it does not do, stated
+
+It shows in the Cell Selector as a **bare station with no scale model**.
+`CellMiniatureBuilder` strides the ENVIRONMENT generator's own output, and a cell whose world
+is grown has no lays to stride until it has grown them — the Lattice cell and Barren have the
+same gap and have shipped with it. The arcade card's preview already solves this class of
+problem for a grown world (`ModePreviewPlantingModel`, one marker per plant); pointing the
+selector at it would fix all three at once and is not done here.
+
+**Nothing has been run in the editor**: the prism counts, volumes and extents above are the
+offline model's, measured by growing the shipped C# growth rule, and the cell has never been
+loaded.

@@ -1049,6 +1049,42 @@ trio, and the traps).
   clause declined because "the leaf IS the extent" was declined about the STRUT, not the PLANT** —
   and when a pay can land on any of several free axes, **the axis is not a detail**.
   `Docs/ECOSYSTEM.md §56`.
+- **A CELL MAY BE A COLLECTION RATHER THAN A FOREST.** The **Arboretum**
+  (`_SO_Assets/Cell Configs/Arboretum Cell/`, a Cell Selector option) holds **one specimen of
+  each Mandelbulb species in each element — sixteen fractal plants and nothing else**: no
+  `EnvironmentPrefab`, no second producer, the cell IS its sixteen the way the Lattice cell IS
+  its twelve colonies. It exists because §56 made the four elements read as four different
+  KINDS of plant and there was nowhere to see that; the Lifeform Matrix bench lines the same
+  sixteen up for COMPARISON, this is a WORLD you meet them in. `MaxLivePopulation 1` per config
+  is a **cap, never a cull** — each plant keeps its authored growth quota and cannot spend it
+  while it is the only one of its kind alive, and the seeder's whole remaining job is
+  extinction recovery. **A per-plant budget is GEOMETRY on this family and is quoted, never
+  re-authored**: the Lattice cell can cut a lattice plant to 30 prisms because a lattice plant
+  is a TILE, and cutting one of these ships a truncated specimen. Measured: **53,891 prisms,
+  237,350 volume, 16 always-on heart colliders** (the Lattice cell's is 1,080), specimens 167 u
+  to **294 u** across, ceiling 78,100 against Atlantis' ~69,000 and Lattice's 82,400; Restless
+  0.35x the mature garden and FrenzyEXIT **above** it, since a hard-capped garden can only ever
+  be frozen by TRAIL and must release intact. Authored by
+  `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS all sixteen through the
+  shipped rule rather than trusting a typed number and appends the config to Menu_Main's
+  `Cell.CellConfigs` — **`CellSelectorToy` authors no cell list**, it reads
+  `Cell.AvailableConfigs`, so adding a world to the selector is an edit to the cell's own
+  rotation and to nothing else. Two defects it surfaced generalise. **A species key with a
+  SPACE in it can never match a de-spaced name**: `author_lifeform_heart_sizes.py` resolves a
+  cell-config variant by prefab GUID and a canonical one by asset NAME through `species_of`,
+  which strips spaces, so `"Coral Bloom"` — its only two-word key — missed, and those four
+  canonical assets **had never been sized by the tool that owns their heart** (1.514 against
+  the band's 1.433, visible only once a second cell copied them). *When one script resolves the
+  same identity two ways, the two will disagree, and the name-based half fails silently.* And
+  **`EnvironmentPrefab == null` is how a world is BUILT, not what it CONTAINS** — the selector
+  labelled every environment-free config *"no environment"*, true of Barren and false of
+  Lattice, the Arboretum and every Rampage/Tollway/Wrecking Ball cell; §36.10's rule met by its
+  THIRD reader, so `Cell.BareCanvasConfig`'s predicate is now the static `Cell.IsBareCanvas`
+  and the rest read *"grown, not laid"*. Stated gap: it shows in the selector as a bare station
+  with **no scale model**, because `CellMiniatureBuilder` strides the ENVIRONMENT generator's
+  output and a grown world has no lays until it has grown them — Lattice and Barren have the
+  same gap; the arcade card's `ModePreviewPlantingModel` would fix all three.
+  `Docs/ECOSYSTEM.md §57`.
 - **THE FOUR ELEMENTAL IDENTITIES OF A PLANT — one rule, and a species does not get to invent
   them.** **CHARGE armours its leaves** (a state, §35); **MASS is the most cumulative prism volume
   in the most CUBIC leaf** (x, y and z closest together); **SPACE is the highest ASPECT RATIO** —
