@@ -235,6 +235,44 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(concept.IsUsable, $"'{concept.name}' ships unusable");
         }
 
+        /// <summary>
+        /// The library's one band that is NOT free to move: every solo concept sits inside the
+        /// vessel vision band's near edge, where a hull still renders as itself, except the ONE
+        /// that crosses it on purpose (Docs/VESSEL_VISION.md).
+        ///
+        /// <para>This is the check that caught the 1.5x zoom-out pass: scaling Static Tracking
+        /// Cam's ceiling arithmetically took it to 165, past the 150 edge, which would have handed
+        /// a shot of the SHIP a flat domain-coloured silhouette with nothing saying why. The edge
+        /// is read from the SHIPPED asset rather than from the C# field initializer, because a
+        /// number read off an initializer is not the number the game runs on — the vision band's
+        /// own docs record that exact trap.</para>
+        /// </summary>
+        [Test]
+        public void Defaults_KeepEverySoloConceptInsideTheVisionBand_ExceptTheOneThatSaysOtherwise()
+        {
+            var vision = Resources.Load<VesselVisionShadingConfigSO>("VesselVisionShadingConfig");
+            if (vision == null || !vision.Enabled)
+                Assert.Ignore("No shipped vision-band asset to measure against.");
+
+            float nearEdge = vision.NearFadeStart;
+            var crossers = new System.Collections.Generic.List<string>();
+
+            foreach (var concept in _config.concepts)
+            {
+                if (concept.framing != ScreenshotFramingKind.Solo) continue;   // a pair's band is a FLOOR
+                if (Mathf.Max(concept.distance.x, concept.distance.y) > nearEdge)
+                    crossers.Add(concept.name);
+            }
+
+            Assert.That(crossers.Count, Is.EqualTo(1),
+                $"exactly one solo concept may photograph a banded hull; these do: " +
+                string.Join(", ", crossers));
+            Assert.That(crossers[0].ToLowerInvariant(), Does.Contain("banded"),
+                $"'{crossers[0]}' crosses the vision band at {nearEdge}u without saying so in its " +
+                "name — either cap it or name it, so a reader of the library can tell the " +
+                "deliberate silhouette shot from an accident.");
+        }
+
         [Test]
         public void PickConcept_NeverDrawsAZeroWeightConcept()
         {

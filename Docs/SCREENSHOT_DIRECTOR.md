@@ -48,6 +48,38 @@ and it can be posed **somewhere the player's camera is not**, which is the whole
 `ScreenCapture.CaptureScreenshot` — what the older `CaptureScreenShot.cs` uses — can do none of
 this: it grabs the composited frame, UI included, from the camera you already have.
 
+## What a capture actually is, pixel for pixel
+
+| | shipped | where it comes from |
+|---|---|---|
+| height | **2160** (4K-tall) | `captureHeight`, `[Range(480, 4320)]` — so 4320 is available |
+| width | `height x the window's aspect` | **3840x2160 on a 16:9 window, and not otherwise** |
+| encoding | **PNG, lossless** | `EncodeToPNG` |
+| colour | 8 bits/channel, `RGBA32`, sRGB | the readback texture; the RT is sRGB read/write |
+| post, AA mode, shadows | the gameplay camera's | `AdoptUrpSettings`, gated on `matchGameQuality` |
+| MSAA | **the URP asset's** (4x today) | the capture RT's `antiAliasing`, then a resolve blit |
+
+Two of those are worth stating plainly rather than being read off the word "4K".
+
+**The width is a function of the window, not a constant.** `captureHeight` sets the height and the
+width follows the window's aspect, deliberately — a capture then frames *exactly* what is on
+screen. On a 16:9 window that is 3840x2160. On an ultrawide or a windowed editor it is 2160 tall
+and whatever that aspect implies, which is the intent, not a shortfall; if a specific pixel size is
+needed, set the Game view to that aspect first.
+
+**MSAA had to be asked for.** `RenderTexture.GetTemporary`'s `antiAliasing` parameter **defaults to
+1**, so for its first few days this feature rendered every capture with no MSAA at all while the
+game beside it ran the URP asset's 4x — post-process AA (FXAA/SMAA/TAA) was correctly adopted the
+whole time, which is exactly why it was not obvious: the shots were anti-aliased, just less than
+the screen they were taken from, and stair-stepping on a prism edge reads as "the renderer" rather
+than as a missing argument. The capture now requests `QualitySettings.antiAliasing` (the value URP
+syncs from its own asset), snapped down to a legal 1/2/4/8, and **resolves it with a blit** — a
+multisampled target cannot be `ReadPixels`'d directly, that is undefined on several backends. One
+extra full-frame copy, on a key the player pressed.
+
+*General shape: a default-valued optional parameter is a decision nobody made, and a quality
+default of "none" fails by looking slightly worse rather than by failing.*
+
 ## A concept is only ranges
 
 There is deliberately **no enum of shot types and no per-concept camera code**. Every shot is one
@@ -73,14 +105,31 @@ is one nobody can author without a programmer.
 Shipped solo library: Over the Shoulder, Sidecar (starboard and port), Oncoming, Low Chase, Top
 Down, Static Tracking Cam, Establishing. Plus three PAIR concepts — see below.
 
-**Every solo distance was widened 1.5x** after the first roll of real captures came back too tight
-(18-39 for Over the Shoulder, 21-51 Sidecar, 27-67 Oncoming, 12-27 Low Chase, 42-105 Top Down).
-Two exceptions, both forced by the vessel vision band rather than by taste: **Static Tracking Cam
-is capped at 150** instead of its scaled 165, because 150 is where the band starts re-shading a
-hull into a flat silhouette and every concept but one is supposed to sit inside it; and
-**Establishing is left at 220-520**, since it is already the wide shot and is deliberately past
-that edge. *A ratio applied to a list of numbers is not a decision until you check what each
-number was up against.*
+**Each solo band is a UNION, not a window.** The first roll of real captures came back too tight,
+so every band was scaled 1.5x — which moved the near edge out along with the far one and quietly
+*deleted* the close shots instead of adding to them. Each band now runs from the tight cut's floor
+to the roomy cut's ceiling, so a single concept rolls the whole range it has ever been able to
+frame and the library gets its variety from the roll rather than from a decision made once at
+authoring time:
+
+| concept | tight cut | 1.5x cut | **shipped (union)** |
+|---|---|---|---|
+| Over the Shoulder | 12-26 | 18-39 | **12-39** |
+| Sidecar (both) | 14-34 | 21-51 | **14-51** |
+| Oncoming | 18-45 | 27-67.5 | **18-67.5** |
+| Low Chase | 8-18 | 12-27 | **8-27** |
+| Top Down | 28-70 | 42-105 | **28-105** |
+| Static Tracking Cam | 35-110 | 52.5-165 | **35-150** (capped) |
+| Establishing | 220-520 | — | **220-520** (unchanged) |
+
+Two numbers are not free scales, and both are forced by the **vessel vision band** rather than by
+taste: **Static Tracking Cam's ceiling is held at 150**, not its arithmetic 165, because 150 is
+where the band starts re-shading a hull into a flat silhouette and every concept but one is
+supposed to sit inside it; and **Establishing is left alone**, since it is already the wide shot
+and is deliberately past that edge. *A ratio applied to a list of numbers is not a decision until
+you check what each number was up against.* `Defaults_KeepEverySoloConceptInsideTheVisionBand…`
+holds both, reading the edge off the **shipped** `VesselVisionShadingConfig` asset rather than off
+the C# field initializer — which is the trap `Docs/VESSEL_VISION.md` records against itself.
 
 ### Lead room is measured in frames, never in metres
 

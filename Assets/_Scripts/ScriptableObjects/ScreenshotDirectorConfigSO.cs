@@ -87,10 +87,22 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// The shipped library. Eight concepts that between them cover the useful vantages on a
-        /// vessel in flight; the distances are deliberately mostly INSIDE 150u, where the vessel
-        /// vision band leaves a hull rendered as itself (Docs/VESSEL_VISION.md) — the two that
-        /// break that rule do it on purpose and say so.
+        /// The shipped library — eight solo concepts covering the useful vantages on a vessel in
+        /// flight, plus three PAIR concepts that only come up when two ships are close together.
+        ///
+        /// <para>The distances are deliberately mostly INSIDE 150u, where the vessel vision band
+        /// leaves a hull rendered as itself (Docs/VESSEL_VISION.md) — the two that break that rule
+        /// do it on purpose and say so.</para>
+        ///
+        /// <para><b>Each solo band is a UNION, not a window.</b> The first cut framed tight; a
+        /// pass that wanted more air scaled every band 1.5x, which moved the near edge out with
+        /// the far one and quietly deleted the close shots rather than adding to them. Each band
+        /// now runs from the tight cut's FLOOR to the roomy cut's CEILING, so one concept rolls
+        /// the whole range it has ever been able to frame and the library gets its variety from
+        /// the roll instead of from a decision made once at authoring time. The one number that
+        /// is not a free scale is Static Tracking Cam's ceiling, held at the vision band's 150u
+        /// near edge rather than its arithmetic 165 — <i>a ratio applied to a list of numbers is
+        /// not a decision until you check what each number was up against.</i></para>
         /// </summary>
         public void ApplyDefaults()
         {
@@ -100,7 +112,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Over the Shoulder", weight = 1.2f,
                     azimuthDegrees = new Vector2(155f, 205f), elevationDegrees = new Vector2(6f, 22f),
-                    distance = new Vector2(18f, 39f), fieldOfView = new Vector2(55f, 68f),
+                    distance = new Vector2(12f, 39f), fieldOfView = new Vector2(55f, 68f),
                     rollDegrees = new Vector2(-3f, 3f), aimLeadSeconds = new Vector2(0.05f, 0.30f),
                     framingPitchDegrees = new Vector2(-2f, 4f),
                 },
@@ -108,7 +120,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Sidecar", weight = 1.4f,
                     azimuthDegrees = new Vector2(60f, 120f), elevationDegrees = new Vector2(-8f, 14f),
-                    distance = new Vector2(21f, 51f), fieldOfView = new Vector2(45f, 62f),
+                    distance = new Vector2(14f, 51f), fieldOfView = new Vector2(45f, 62f),
                     rollDegrees = new Vector2(-6f, 6f), aimLeadSeconds = new Vector2(0.0f, 0.20f),
                     framingPitchDegrees = new Vector2(-3f, 3f),
                 },
@@ -119,7 +131,7 @@ namespace CosmicShore.ScriptableObjects
                     // straight through the hull's nose and tail.
                     name = "Sidecar (port)", weight = 1.4f,
                     azimuthDegrees = new Vector2(240f, 300f), elevationDegrees = new Vector2(-8f, 14f),
-                    distance = new Vector2(21f, 51f), fieldOfView = new Vector2(45f, 62f),
+                    distance = new Vector2(14f, 51f), fieldOfView = new Vector2(45f, 62f),
                     rollDegrees = new Vector2(-6f, 6f), aimLeadSeconds = new Vector2(0.0f, 0.20f),
                     framingPitchDegrees = new Vector2(-3f, 3f),
                 },
@@ -127,7 +139,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Oncoming", weight = 1.0f,
                     azimuthDegrees = new Vector2(-28f, 28f), elevationDegrees = new Vector2(-6f, 18f),
-                    distance = new Vector2(27f, 67.5f), fieldOfView = new Vector2(38f, 55f),
+                    distance = new Vector2(18f, 67.5f), fieldOfView = new Vector2(38f, 55f),
                     rollDegrees = new Vector2(-5f, 5f), aimLeadSeconds = new Vector2(0f, 0f),
                     framingPitchDegrees = new Vector2(-2f, 2f),
                 },
@@ -137,7 +149,7 @@ namespace CosmicShore.ScriptableObjects
                     // sits on top of it.
                     name = "Low Chase", weight = 1.0f,
                     azimuthDegrees = new Vector2(165f, 195f), elevationDegrees = new Vector2(-22f, -4f),
-                    distance = new Vector2(12f, 27f), fieldOfView = new Vector2(65f, 82f),
+                    distance = new Vector2(8f, 27f), fieldOfView = new Vector2(65f, 82f),
                     rollDegrees = new Vector2(-8f, 8f), aimLeadSeconds = new Vector2(0.10f, 0.35f),
                     framingPitchDegrees = new Vector2(-5f, 0f),
                 },
@@ -145,7 +157,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Top Down", weight = 0.6f, worldAligned = true,
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(62f, 86f),
-                    distance = new Vector2(42f, 105f), fieldOfView = new Vector2(45f, 65f),
+                    distance = new Vector2(28f, 105f), fieldOfView = new Vector2(45f, 65f),
                     rollDegrees = new Vector2(-12f, 12f), aimLeadSeconds = new Vector2(0f, 0.15f),
                     framingPitchDegrees = new Vector2(-2f, 2f),
                 },
@@ -155,7 +167,7 @@ namespace CosmicShore.ScriptableObjects
                     // flies past, rather than one riding along with it.
                     name = "Static Tracking Cam", weight = 1.1f, worldAligned = true,
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(-14f, 30f),
-                    distance = new Vector2(52.5f, 150f), fieldOfView = new Vector2(28f, 45f),
+                    distance = new Vector2(35f, 150f), fieldOfView = new Vector2(28f, 45f),
                     rollDegrees = new Vector2(-3f, 3f), aimLeadSeconds = new Vector2(0.15f, 0.45f),
                     framingPitchDegrees = new Vector2(-4f, 4f),
                 },

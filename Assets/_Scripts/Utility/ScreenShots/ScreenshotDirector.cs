@@ -295,10 +295,24 @@ namespace CosmicShore.Utility
             float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
             int width = Mathf.Clamp(Mathf.RoundToInt(height * aspect), 480, 8192);
 
+            // `GetTemporary`'s antiAliasing parameter DEFAULTS TO 1, so omitting it renders the
+            // capture with no MSAA at all while the game beside it runs the URP asset's 4x — the
+            // shot comes back with stair-stepped prism edges and reads as a lower-quality image
+            // than the screen it was taken from. `QualitySettings.antiAliasing` is the value URP
+            // syncs FROM its own asset, so this asks for exactly what the game is running.
+            int msaa = config.matchGameQuality ? ResolveMsaaSamples() : 1;
+
             // sRGB read/write, because the project renders in linear and the PNG has to come out
             // looking like the screen rather than washed out.
             RenderTexture target = RenderTexture.GetTemporary(
-                width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+                width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB, msaa);
+            // An MSAA surface is resolved by BLITTING it, never by reading it: `ReadPixels` off a
+            // multisampled target is undefined on several backends (it returns one sample, or
+            // nothing). One extra full-frame copy, on a key the player pressed.
+            RenderTexture resolve = msaa > 1
+                ? RenderTexture.GetTemporary(
+                    width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
+                : null;
             Texture2D readback = null;
             RenderTexture previousActive = RenderTexture.active;
 
@@ -317,11 +331,15 @@ namespace CosmicShore.Utility
 
                 cam.Render();
 
-                RenderTexture.active = target;
+                if (resolve != null) Graphics.Blit(target, resolve);
+
+                RenderTexture.active = resolve != null ? resolve : target;
                 readback = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 readback.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 readback.Apply(false);
 
+                // PNG, so the file is LOSSLESS — a capture is a source image somebody may crop,
+                // colour or scale later, and a lossy encode would bake this moment's artefacts in.
                 return readback.EncodeToPNG();
             }
             finally
@@ -329,8 +347,24 @@ namespace CosmicShore.Utility
                 RenderTexture.active = previousActive;
                 cam.targetTexture = null;
                 RenderTexture.ReleaseTemporary(target);
+                if (resolve != null) RenderTexture.ReleaseTemporary(resolve);
                 if (readback != null) Destroy(readback);
             }
+        }
+
+        /// <summary>
+        /// The MSAA sample count the game is actually running, snapped to a count a RenderTexture
+        /// will accept. `QualitySettings.antiAliasing` reports 0 for "off" and otherwise 2/4/8;
+        /// a RenderTexture wants 1/2/4/8, so 0 and 1 are the same request and anything else is
+        /// rounded DOWN to a legal count rather than refused (an illegal count throws).
+        /// </summary>
+        static int ResolveMsaaSamples()
+        {
+            int samples = QualitySettings.antiAliasing;
+            if (samples >= 8) return 8;
+            if (samples >= 4) return 4;
+            if (samples >= 2) return 2;
+            return 1;
         }
 
         Camera EnsureCamera(ScreenshotDirectorConfigSO config)
