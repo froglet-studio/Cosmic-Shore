@@ -132,6 +132,20 @@ run the `/reorient` skill first and act on its verdict before shipping.
   members, so every hand-written `IRoundStats` mock stopped compiling — and a broken test mock
   takes `Assembly-CSharp-Editor` down for everyone, which no gameplay compile-check would show.
   Grep for other implementers of any interface the base branch widened.
+- **When your branch changed a shared structure's VALUE TYPE and theirs added an entry in the
+  old one, "keep both" builds a heterogeneous container.** The two edits are different lines of
+  the same dict/list/table, so git merges them without a conflict marker in the common case and
+  with a trivially-resolvable one otherwise — and the result is a structure holding two shapes
+  that its consumer unpacks as one. This branch widened a registry's value from a bare path to a
+  `(kind, path)` pair so an entry could match by SPECIES as well as by prefix; a parallel branch
+  added a new bare-path entry the same day. Keeping both verbatim left the consumer's
+  `for token, (kind, path) in …` unpacking a string — a crash at the tool's NEXT run, in a
+  fleet-wide tool, with nothing at merge time to say so. Python has no compiler to catch it and a
+  C# analogue (a serialized field whose type changed under an entry authored against the old one)
+  fails at deserialization instead. Resolve by **carrying their entry across into the new shape**
+  and deciding, for that entry specifically, which variant it is — then run the consumer over
+  every entry, theirs included. *Whenever a merge touches a container you retyped, the entries you
+  did not write are the ones that are still the old type.*
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
