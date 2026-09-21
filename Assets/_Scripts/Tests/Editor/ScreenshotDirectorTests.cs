@@ -311,5 +311,165 @@ namespace CosmicShore.Tests
             Assert.IsTrue(Path.IsPathRooted(resolved));
         }
     }
+
+    /// <summary>
+    /// The two-shot's whole promise is one geometric fact — the camera sits on the perpendicular
+    /// bisector plane of the two subjects — and these assert the three properties that fall out of
+    /// it, over randomized pairs rather than one hand-picked arrangement.
+    /// </summary>
+    public class ScreenshotPairFramingTests
+    {
+        static ScreenshotConcept PairConcept() => new ScreenshotConcept
+        {
+            name = "Duo", framing = ScreenshotFramingKind.Pair,
+            azimuthDegrees = new Vector2(0f, 360f),
+            elevationDegrees = new Vector2(-80f, 80f),   // must be IGNORED
+            distance = new Vector2(20f, 90f),
+            fieldOfView = new Vector2(30f, 75f),
+            rollDegrees = new Vector2(-10f, 10f),
+            aimLeadSeconds = new Vector2(0f, 2f),        // must be IGNORED
+            framingPitchDegrees = new Vector2(-5f, 5f),
+        };
+
+        [Test]
+        public void SolvePair_PutsTheCameraExactlyEquidistantFromBothSubjects()
+        {
+            var rng = new System.Random(20260921);
+            var concept = PairConcept();
+
+            for (int i = 0; i < 400; i++)
+            {
+                Vector3 a = RandomPoint(rng, 400f);
+                Vector3 b = a + RandomDirection(rng) * Mathf.Lerp(10f, 30f, (float)rng.NextDouble());
+                Vector3 flow = RandomDirection(rng);
+
+                var shot = ScreenshotFraming.SolvePair(concept, a, b, flow, 4f, rng, aspect: 16f / 9f);
+
+                float da = Vector3.Distance(shot.Position, a);
+                float db = Vector3.Distance(shot.Position, b);
+
+                // Relative, because the absolute distances run to a couple of hundred units.
+                Assert.That(Mathf.Abs(da - db) / Mathf.Max(da, db), Is.LessThan(1e-4f),
+                    $"equidistance is the promise: {da} vs {db}");
+            }
+        }
+
+        [Test]
+        public void SolvePair_LaysBothSubjectsSymmetricallyAboutTheFrameCentre()
+        {
+            var rng = new System.Random(77);
+            var concept = PairConcept();
+            concept.rollDegrees = Vector2.zero;
+            concept.framingPitchDegrees = Vector2.zero;
+
+            for (int i = 0; i < 400; i++)
+            {
+                Vector3 a = RandomPoint(rng, 250f);
+                Vector3 b = a + RandomDirection(rng) * Mathf.Lerp(10f, 30f, (float)rng.NextDouble());
+
+                var shot = ScreenshotFraming.SolvePair(concept, a, b, RandomDirection(rng), 4f, rng, aspect: 16f / 9f);
+
+                // Into camera space: mirrored x, equal y and z is exactly "framed the same way".
+                Quaternion inverse = Quaternion.Inverse(shot.Rotation);
+                Vector3 la = inverse * (a - shot.Position);
+                Vector3 lb = inverse * (b - shot.Position);
+
+                Assert.That(la.z, Is.EqualTo(lb.z).Within(1e-3f), "equal depth");
+                Assert.That(la.y, Is.EqualTo(lb.y).Within(1e-3f), "equal height in frame");
+                Assert.That(la.x, Is.EqualTo(-lb.x).Within(1e-3f), "mirrored about the centre line");
+                Assert.That(la.z, Is.GreaterThan(0f), "both in front of the lens");
+            }
+        }
+
+        [Test]
+        public void SolvePair_PullsBackFarEnoughThatBothSubjectsAreInsideTheFrame()
+        {
+            var rng = new System.Random(4242);
+            var concept = PairConcept();
+            concept.distance = new Vector2(0f, 0f);   // force the fit to be the only thing holding it back
+            const float aspect = 16f / 9f;
+
+            for (int i = 0; i < 400; i++)
+            {
+                Vector3 a = RandomPoint(rng, 200f);
+                Vector3 b = a + RandomDirection(rng) * Mathf.Lerp(10f, 30f, (float)rng.NextDouble());
+                const float radius = 5f;
+
+                var shot = ScreenshotFraming.SolvePair(concept, a, b, RandomDirection(rng), radius, rng, aspect: aspect);
+
+                Quaternion inverse = Quaternion.Inverse(shot.Rotation);
+                float halfV = shot.FieldOfView * 0.5f * Mathf.Deg2Rad;
+                float halfH = Mathf.Atan(Mathf.Tan(halfV) * aspect);
+
+                foreach (Vector3 subject in new[] { a, b })
+                {
+                    Vector3 local = inverse * (subject - shot.Position);
+                    // The hull's own extent has to clear the edge too, not just its origin.
+                    float angle = Mathf.Atan2(Mathf.Abs(local.x) + radius, local.z);
+                    Assert.That(angle, Is.LessThanOrEqualTo(halfH + 1e-3f),
+                        "a subject outside the frame is a photograph of one ship");
+                }
+            }
+        }
+
+        [Test]
+        public void SolvePair_IgnoresElevationAndAimLead_BecauseBothWouldBreakThePromise()
+        {
+            // Same seed, same rolls: the only difference is the two fields the solve must not read.
+            var concept = PairConcept();
+            var neutered = PairConcept();
+            neutered.elevationDegrees = Vector2.zero;
+            neutered.aimLeadSeconds = Vector2.zero;
+
+            Vector3 a = new Vector3(5f, -2f, 11f);
+            Vector3 b = a + new Vector3(12f, 6f, -9f).normalized * 22f;
+            Vector3 flow = new Vector3(0.3f, 0.1f, 1f).normalized;
+
+            var withFields = ScreenshotFraming.SolvePair(concept, a, b, flow, 4f, new System.Random(9), aspect: 1.5f);
+            var without = ScreenshotFraming.SolvePair(neutered, a, b, flow, 4f, new System.Random(9), aspect: 1.5f);
+
+            Assert.That(Vector3.Distance(withFields.Position, without.Position), Is.LessThan(1e-4f),
+                "elevation must not move a pair camera off the bisector plane");
+            Assert.That(Quaternion.Angle(withFields.Rotation, without.Rotation), Is.LessThan(1e-3f),
+                "aim lead must not swing a pair camera off the midpoint");
+        }
+
+        [Test]
+        public void SolvePair_SurvivesATailChase_WhereTheFlowIsParallelToTheSeparation()
+        {
+            // The degenerate case that actually happens: one ship directly behind the other, so
+            // the pair defines no "ahead" to measure the vantage from.
+            var concept = PairConcept();
+            Vector3 heading = Vector3.forward;
+            Vector3 a = Vector3.zero;
+            Vector3 b = heading * 18f;
+
+            var shot = ScreenshotFraming.SolvePair(concept, a, b, heading, 4f, new System.Random(1), aspect: 1.6f);
+
+            Assert.IsFalse(float.IsNaN(shot.Position.x) || float.IsNaN(shot.Rotation.x), "no NaN basis");
+            Assert.That(Vector3.Distance(shot.Position, a), Is.EqualTo(Vector3.Distance(shot.Position, b)).Within(1e-3f));
+        }
+
+        [Test]
+        public void SolvePair_CollapsesToASoloShotWhenTheTwoSubjectsCoincide()
+        {
+            var shot = ScreenshotFraming.SolvePair(
+                PairConcept(), Vector3.zero, Vector3.zero, Vector3.forward, 4f, new System.Random(3));
+
+            Assert.IsFalse(float.IsNaN(shot.Position.x), "coincident subjects must not produce NaN");
+            Assert.That(shot.Distance, Is.GreaterThanOrEqualTo(ScreenshotFraming.MinimumDistance));
+        }
+
+        static Vector3 RandomDirection(System.Random rng)
+        {
+            var v = new Vector3(
+                (float)rng.NextDouble() * 2f - 1f,
+                (float)rng.NextDouble() * 2f - 1f,
+                (float)rng.NextDouble() * 2f - 1f);
+            return v.sqrMagnitude < 1e-6f ? Vector3.forward : v.normalized;
+        }
+
+        static Vector3 RandomPoint(System.Random rng, float spread) => RandomDirection(rng) * ((float)rng.NextDouble() * spread);
+    }
 }
 #endif

@@ -116,6 +116,112 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// How much of the frame's half-angle the pair's half-span may fill, leaving the rest as
+        /// margin. At 0.8 two ships never touch the edge even at the near end of a distance range.
+        /// </summary>
+        public const float PairFrameFill = 0.8f;
+
+        /// <summary>
+        /// Solves a TWO-SHOT: one camera, two subjects, both at exactly the same distance from the
+        /// lens and placed symmetrically about the frame's centre.
+        ///
+        /// <para><b>The whole thing is one geometric fact.</b> The set of points equidistant from A
+        /// and B is the perpendicular bisector PLANE of the segment AB — the plane through their
+        /// midpoint whose normal is the separation direction. Put the camera anywhere on that plane
+        /// and aim it at the midpoint, and three properties fall out together, exactly rather than
+        /// approximately: both ships are the same distance from the lens (so the same apparent
+        /// size), the separation direction is perpendicular to the optical axis (so the pair is
+        /// broadside, at maximum spread and equal depth), and they sit symmetrically either side of
+        /// centre. Choosing the camera's RIGHT axis to be the separation direction then lays them
+        /// out across the frame as a level two-shot, which is what <see cref="ScreenshotConcept.rollDegrees"/>
+        /// tilts off horizontal.</para>
+        ///
+        /// <para><b>Two authored fields are ignored here, and that is structural rather than an
+        /// oversight.</b> <see cref="ScreenshotConcept.elevationDegrees"/> would push the camera OFF
+        /// the bisector plane, which is the one move that breaks equidistance — so the vantage is a
+        /// single angle sweeping the plane, and that circle already reaches every vantage the
+        /// guarantee permits. <see cref="ScreenshotConcept.aimLeadSeconds"/> would swing the aim off
+        /// the midpoint; it cannot change either distance (those are fixed by the camera's POSITION,
+        /// not where it looks) but it would slide both ships toward one edge and lose the symmetry
+        /// the shot exists for. Ignoring them in the solve rather than relying on authored zeros is
+        /// what makes the promise impossible to author your way out of.</para>
+        /// </summary>
+        /// <param name="a">One subject.</param>
+        /// <param name="b">The other.</param>
+        /// <param name="flow">Mean direction of travel; the reference the vantage angle is measured
+        /// from once projected into the bisector plane. May be zero.</param>
+        /// <param name="subjectRadius">Largest hull radius of the two, so a ship's own body is
+        /// inside the framed span rather than clipped at the edge.</param>
+        /// <param name="aspect">Viewport width / height. The pair lies across the frame, so the
+        /// fit is solved against the HORIZONTAL half-angle; passing 1 is the conservative choice
+        /// and simply holds the camera further back than a wide frame needs.</param>
+        public static ScreenshotShot SolvePair(
+            ScreenshotConcept concept,
+            Vector3 a,
+            Vector3 b,
+            Vector3 flow,
+            float subjectRadius,
+            System.Random rng,
+            float minimumDistance = MinimumDistance,
+            float aspect = 1f)
+        {
+            Vector3 midpoint = (a + b) * 0.5f;
+            Vector3 separation = b - a;
+            float gap = separation.magnitude;
+
+            // Two subjects on top of each other have no bisector plane and no "same way to frame
+            // them" — there is one subject. The caller's band keeps this out of reach; the guard
+            // is here so the method is total rather than trusting it.
+            if (gap < 1e-4f)
+                return Solve(concept, midpoint, flow, flow, 0f, rng, minimumDistance);
+
+            Vector3 axis = separation / gap;
+
+            // A basis for the bisector plane. The reference is projected INTO the plane, and the
+            // fallbacks matter: in a tail chase the flow is parallel to the separation, so its
+            // projection vanishes — the pair genuinely defines no "ahead", because ahead is along
+            // the line joining them, which is the one direction the camera may not occupy.
+            Vector3 inPlane = Vector3.ProjectOnPlane(flow, axis);
+            if (inPlane.sqrMagnitude < 1e-6f) inPlane = Vector3.ProjectOnPlane(Vector3.up, axis);
+            if (inPlane.sqrMagnitude < 1e-6f) inPlane = Vector3.ProjectOnPlane(Vector3.forward, axis);
+            if (inPlane.sqrMagnitude < 1e-6f) inPlane = Vector3.ProjectOnPlane(Vector3.right, axis);
+            Vector3 e1 = inPlane.normalized;
+            Vector3 e2 = Vector3.Cross(axis, e1);
+
+            float vantage = Sample(concept.azimuthDegrees, rng) * Mathf.Deg2Rad;
+            Vector3 direction = e1 * Mathf.Cos(vantage) + e2 * Mathf.Sin(vantage);
+
+            float fov = Mathf.Clamp(Sample(concept.fieldOfView, rng), 5f, 170f);
+
+            // How far back both must be to fit, with the margin above. The frame's half-angle is
+            // widened by the aspect because the pair lies ACROSS it.
+            float halfSpan = gap * 0.5f + Mathf.Max(0f, subjectRadius);
+            float halfAngle = Mathf.Atan(Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad) * Mathf.Max(0.1f, aspect));
+            float fitDistance = halfSpan / Mathf.Max(1e-3f, Mathf.Tan(halfAngle * PairFrameFill));
+
+            float distance = Mathf.Max(
+                Sample(concept.distance, rng),
+                fitDistance,
+                Mathf.Max(minimumDistance, MinimumDistance));
+
+            Vector3 position = midpoint + direction * distance;
+
+            // `direction` lies in the plane and `axis` is its normal, so the two are perpendicular
+            // by construction and this cross product is always unit length — the pair cannot
+            // degenerate into a camera with no up vector.
+            Vector3 view = -direction;
+            Vector3 up = Vector3.Cross(view, axis).normalized;
+
+            Quaternion rotation = Quaternion.LookRotation(view, up);
+            rotation *= Quaternion.Euler(
+                Sample(concept.framingPitchDegrees, rng),
+                0f,
+                Sample(concept.rollDegrees, rng));
+
+            return new ScreenshotShot(position, rotation, fov, distance);
+        }
+
+        /// <summary>
         /// A value inside a range expressed as a <see cref="Vector2"/>. Order-insensitive, because
         /// an inspector range typed as (210, 150) is a range, not a mistake worth punishing.
         /// </summary>

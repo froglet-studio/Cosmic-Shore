@@ -70,8 +70,17 @@ is measured from the vessel's own course (the shot follows it through a turn) or
 Adding a shot type is a **row in a list**, which is the point — a shot type expressed as a subclass
 is one nobody can author without a programmer.
 
-Shipped library: Over the Shoulder, Sidecar (starboard and port), Oncoming, Low Chase, Top Down,
-Static Tracking Cam, Establishing.
+Shipped solo library: Over the Shoulder, Sidecar (starboard and port), Oncoming, Low Chase, Top
+Down, Static Tracking Cam, Establishing. Plus three PAIR concepts — see below.
+
+**Every solo distance was widened 1.5x** after the first roll of real captures came back too tight
+(18-39 for Over the Shoulder, 21-51 Sidecar, 27-67 Oncoming, 12-27 Low Chase, 42-105 Top Down).
+Two exceptions, both forced by the vessel vision band rather than by taste: **Static Tracking Cam
+is capped at 150** instead of its scaled 165, because 150 is where the band starts re-shading a
+hull into a flat silhouette and every concept but one is supposed to sit inside it; and
+**Establishing is left at 220-520**, since it is already the wide shot and is deliberately past
+that edge. *A ratio applied to a list of numbers is not a decision until you check what each
+number was up against.*
 
 ### Lead room is measured in frames, never in metres
 
@@ -84,6 +93,76 @@ outside it.
 
 This was found by the test suite, not by looking at the code. It is the general trap: **a
 composition parameter expressed in units of the SUBJECT is unbounded relative to the FRAME.**
+
+## The two-shot: two vessels, framed identically
+
+When two vessels are between **10 and 30 units** apart (`pairSeparation`), a capture has an
+**85%** chance (`pairChance`) of being a two-shot instead of a solo — both ships at exactly the
+same distance from the lens, laid out across the frame, symmetric about its centre. It is
+deliberately the high-priority branch: two ships that close is the rarer and more interesting
+moment, and it falls back to a solo shot whenever there is no pair, no usable Pair concept, or the
+roll goes the other way.
+
+### It is one geometric fact, not a search
+
+The set of points **equidistant from A and B is the perpendicular bisector plane** of the segment
+joining them — the plane through their midpoint whose normal is the separation direction. Put the
+camera anywhere on that plane, aim it at the midpoint, and three properties fall out *together*:
+
+| property | why it follows |
+|---|---|
+| both ships the same distance from the lens | that is what the plane *is* — so the same apparent size |
+| the pair is broadside, at equal depth | the separation is the plane's normal, so it is perpendicular to the optical axis |
+| symmetric either side of frame centre | the midpoint is on the axis and they are mirrored about it |
+
+Choosing the camera's **right** axis to be the separation direction then lays them out level, which
+is what `rollDegrees` tilts off horizontal. So the vantage is a single angle sweeping that plane —
+`azimuthDegrees` on a Pair concept is **the angle around the line joining the two ships**, and a
+0-360 range is a free orbit in which *every* angle keeps the promise.
+
+Verified numerically over 200,000 random pairs before it was written: worst-case equidistance error
+**8.9e-15** relative, worst symmetry error **3.7e-13** units, both subjects always in front of the
+lens and always inside the frame with ~5 degrees of margin to spare. `ScreenshotPairFramingTests`
+asserts the same properties over randomized pairs in edit mode.
+
+### Two authored fields are ignored, and that is structural
+
+- **`elevationDegrees`** would push the camera OFF the bisector plane, which is the single move
+  that breaks equidistance. The in-plane angle already reaches every vantage the guarantee permits.
+- **`aimLeadSeconds`** would swing the aim off the midpoint. It cannot change either distance —
+  those are fixed by where the camera *is*, not where it looks — but it slides both ships toward
+  one edge and loses the symmetry the shot exists for.
+
+The solve does not read them, rather than relying on the shipped concepts authoring zeros. **A
+promise you can author your way out of is not a promise**, and the alternative fails silently: the
+photograph still comes out, just not framed the way the concept claims.
+
+### Distance is a floor, not a setting
+
+A Pair concept's `distance` is the **closest** the camera may be; the solve pushes further back
+whenever that is what it takes to fit both hulls, using each ship's own measured radius
+(`PrismOcclusionCorridor.MeasureCircumscribedRadius`, so a new vessel needs nothing authored) and
+the real viewport aspect, since the pair lies across the frame. `Duo Close Pass` authors `0` — "as
+close as they will both fit" — which is why `ScreenshotConcept.IsUsable` exempts Pair concepts from
+the minimum-distance test that would otherwise retire it.
+
+### Where the candidates come from
+
+`VesselVisionShading.CollectStampedVessels` — the vision band's own roster, which every vessel
+joins through `VesselHelper.SetShipProperties` on every spawn, vessel swap and replicated domain
+change. Same argument this system already makes for reading `PrismOcclusionCorridor.Target`: **a
+platform law maintains the handle because the law depends on it being right**, so reading it is
+free and cannot drift from what is on screen. It beats `FindObjectsByType` on correctness rather
+than on speed — `StampDisplayModel` deliberately does not join that roster, so a toy matrix's mini
+hulls can never be mistaken for pilots.
+
+Pairs containing the **local** ship win ties (the photograph is nominally of your own flight);
+among equals the closest pair wins. A tail chase — one ship directly behind another, so the flow is
+parallel to the separation — is the degenerate case that actually happens in a dogfight, and it is
+handled rather than guarded: the pair genuinely defines no "ahead", because ahead is along the line
+joining them, which is the one direction the camera may not occupy, so the reference falls back
+through world up and world forward. The resulting shot lays pursuer and pursued across the frame,
+which is the shot you want of a chase anyway.
 
 ## The three platform laws it meets
 

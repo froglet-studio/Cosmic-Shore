@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -35,6 +36,7 @@ namespace CosmicShore.Utility
         Camera _camera;
         System.Random _rng;
         bool _capturing;
+        readonly List<Transform> _vesselScratch = new();
 
         ScreenshotDirectorConfigSO Config => _config != null ? _config : _config = ScreenshotDirectorConfigSO.Resolve();
 
@@ -88,13 +90,31 @@ namespace CosmicShore.Utility
                     return;
                 }
 
-                var concept = config.PickConcept(_rng);
+                // A pair is the rarer, better moment, so it is checked FIRST and taken most of
+                // the time it exists. It falls back rather than failing: no pair in the band, no
+                // usable Pair concept, or the roll going the other way all land on the solo shot.
+                // Declared up front rather than inline in the `&&` chain: `out` variables
+                // introduced inside a short-circuiting condition are not definitely assigned at a
+                // later use site, so the inline form does not compile.
+                Transform pairA = null;
+                Transform pairB = null;
+                float pairRadius = 0f;
+
+                bool wantPair =
+                    config.HasConcepts(ScreenshotFramingKind.Pair) &&
+                    _rng.NextDouble() < config.pairChance &&
+                    TryResolvePair(config, subject, out pairA, out pairB, out pairRadius);
+
+                var kind = wantPair ? ScreenshotFramingKind.Pair : ScreenshotFramingKind.Solo;
+                var concept = config.PickConcept(_rng, kind)
+                              ?? config.PickConcept(_rng, ScreenshotFramingKind.Solo);
                 if (concept == null)
                 {
                     CSDebug.LogWarning("[Screenshot] No usable capture concept - every concept in " +
                                        "ScreenshotDirectorConfig has zero weight or no reachable distance.");
                     return;
                 }
+                wantPair = concept.framing == ScreenshotFramingKind.Pair;
 
                 heldCorridor = HoldOcclusionCorridor(config);
 
@@ -109,9 +129,28 @@ namespace CosmicShore.Utility
                     : subject.forward;
                 float speed = status?.Speed ?? 0f;
 
-                var shot = ScreenshotFraming.Solve(
-                    concept, subject.position, subject.forward, course, speed, _rng,
-                    minimumDistance: Mathf.Max(ScreenshotFraming.MinimumDistance, hullRadius * 1.6f));
+                ScreenshotShot shot;
+                if (wantPair && pairA != null && pairB != null)
+                {
+                    // The pair's shared heading is what the vantage angle is measured from. Read
+                    // from each hull's own facing rather than the local ship's course, because
+                    // either or both may be a vessel this machine only sees replicated.
+                    Vector3 flow = pairA.forward + pairB.forward;
+                    if (flow.sqrMagnitude < 1e-6f) flow = course;
+
+                    float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+
+                    shot = ScreenshotFraming.SolvePair(
+                        concept, pairA.position, pairB.position, flow, pairRadius, _rng,
+                        minimumDistance: Mathf.Max(ScreenshotFraming.MinimumDistance, pairRadius * 1.6f),
+                        aspect: aspect);
+                }
+                else
+                {
+                    shot = ScreenshotFraming.Solve(
+                        concept, subject.position, subject.forward, course, speed, _rng,
+                        minimumDistance: Mathf.Max(ScreenshotFraming.MinimumDistance, hullRadius * 1.6f));
+                }
 
                 byte[] png = Render(config, shot);
                 if (png == null) return;
@@ -158,6 +197,70 @@ namespace CosmicShore.Utility
             }
 
             status = subject.GetComponent<IVesselStatus>() ?? subject.GetComponentInParent<IVesselStatus>();
+            return true;
+        }
+
+        /// <summary>
+        /// The best two vessels to photograph together, or none.
+        ///
+        /// <para>Candidates come from <see cref="VesselVisionShading.CollectStampedVessels"/> —
+        /// the vision band's own roster, which every vessel joins through
+        /// <c>VesselHelper.SetShipProperties</c> on every spawn, swap and replicated domain change.
+        /// That is the same argument this class already makes for reading the occlusion corridor:
+        /// a platform law maintains the handle because the law depends on it being right, so
+        /// reading it is free and cannot drift from what is on screen. It also excludes the toy
+        /// matrices' mini hulls by construction, since those are stamped through a different door.</para>
+        ///
+        /// <para>Pairs containing the LOCAL ship win ties, because the photograph is nominally of
+        /// your own flight; among equals the closest pair wins, since that is the tighter moment.
+        /// Two vessels at the same position are rejected by the band's floor rather than by a
+        /// special case.</para>
+        /// </summary>
+        bool TryResolvePair(
+            ScreenshotDirectorConfigSO config, Transform local,
+            out Transform a, out Transform b, out float subjectRadius)
+        {
+            a = b = null;
+            subjectRadius = 0f;
+
+            VesselVisionShading.CollectStampedVessels(_vesselScratch);
+            if (_vesselScratch.Count < 2) return false;
+
+            config.ResolvePairBand(out float min, out float max);
+            float minSqr = min * min;
+            float maxSqr = max * max;
+
+            float bestGapSqr = float.MaxValue;
+            bool bestHasLocal = false;
+
+            for (int i = 0; i < _vesselScratch.Count; i++)
+            for (int j = i + 1; j < _vesselScratch.Count; j++)
+            {
+                Transform first = _vesselScratch[i];
+                Transform second = _vesselScratch[j];
+
+                float gapSqr = (second.position - first.position).sqrMagnitude;
+                if (gapSqr < minSqr || gapSqr > maxSqr) continue;
+
+                bool hasLocal = ReferenceEquals(first, local) || ReferenceEquals(second, local);
+
+                // Local beats non-local outright; within a tier, closer wins.
+                if (bestHasLocal && !hasLocal) continue;
+                if (hasLocal == bestHasLocal && gapSqr >= bestGapSqr) continue;
+
+                a = first;
+                b = second;
+                bestGapSqr = gapSqr;
+                bestHasLocal = hasLocal;
+            }
+
+            if (a == null) return false;
+
+            // Measured per hull rather than assumed: the fleet spans a wide size range, and this
+            // is the corridor's own measurement, so a new vessel needs nothing authored.
+            subjectRadius = Mathf.Max(
+                PrismOcclusionCorridor.MeasureCircumscribedRadius(a),
+                PrismOcclusionCorridor.MeasureCircumscribedRadius(b));
             return true;
         }
 

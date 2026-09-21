@@ -52,6 +52,17 @@ namespace CosmicShore.ScriptableObjects
                  "through the trail the shot is of. See Docs/SCREENSHOT_DIRECTOR.md.")]
         public bool holdOcclusionCorridor = true;
 
+        [Header("Pairs")]
+        [Tooltip("Two vessels this far apart (world units) are a PAIR worth photographing " +
+                 "together. Below the floor they overlap into one blob; above the ceiling a shot " +
+                 "framing both has to pull so far back that neither reads as a ship.")]
+        public Vector2 pairSeparation = new Vector2(10f, 30f);
+
+        [Tooltip("How often to take the pair shot WHEN a pair is actually available. 1 = always, " +
+                 "0 = never (the Pair concepts are then dead weight). Two ships close together is " +
+                 "the rarer and more interesting moment, so this is deliberately high.")]
+        [Range(0f, 1f)] public float pairChance = 0.85f;
+
         [Header("Concepts")]
         [Tooltip("Rolled per capture, weighted. Add your own - a concept is only ranges.")]
         public List<ScreenshotConcept> concepts = new List<ScreenshotConcept>();
@@ -89,7 +100,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Over the Shoulder", weight = 1.2f,
                     azimuthDegrees = new Vector2(155f, 205f), elevationDegrees = new Vector2(6f, 22f),
-                    distance = new Vector2(12f, 26f), fieldOfView = new Vector2(55f, 68f),
+                    distance = new Vector2(18f, 39f), fieldOfView = new Vector2(55f, 68f),
                     rollDegrees = new Vector2(-3f, 3f), aimLeadSeconds = new Vector2(0.05f, 0.30f),
                     framingPitchDegrees = new Vector2(-2f, 4f),
                 },
@@ -97,7 +108,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Sidecar", weight = 1.4f,
                     azimuthDegrees = new Vector2(60f, 120f), elevationDegrees = new Vector2(-8f, 14f),
-                    distance = new Vector2(14f, 34f), fieldOfView = new Vector2(45f, 62f),
+                    distance = new Vector2(21f, 51f), fieldOfView = new Vector2(45f, 62f),
                     rollDegrees = new Vector2(-6f, 6f), aimLeadSeconds = new Vector2(0.0f, 0.20f),
                     framingPitchDegrees = new Vector2(-3f, 3f),
                 },
@@ -108,7 +119,7 @@ namespace CosmicShore.ScriptableObjects
                     // straight through the hull's nose and tail.
                     name = "Sidecar (port)", weight = 1.4f,
                     azimuthDegrees = new Vector2(240f, 300f), elevationDegrees = new Vector2(-8f, 14f),
-                    distance = new Vector2(14f, 34f), fieldOfView = new Vector2(45f, 62f),
+                    distance = new Vector2(21f, 51f), fieldOfView = new Vector2(45f, 62f),
                     rollDegrees = new Vector2(-6f, 6f), aimLeadSeconds = new Vector2(0.0f, 0.20f),
                     framingPitchDegrees = new Vector2(-3f, 3f),
                 },
@@ -116,7 +127,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Oncoming", weight = 1.0f,
                     azimuthDegrees = new Vector2(-28f, 28f), elevationDegrees = new Vector2(-6f, 18f),
-                    distance = new Vector2(18f, 45f), fieldOfView = new Vector2(38f, 55f),
+                    distance = new Vector2(27f, 67.5f), fieldOfView = new Vector2(38f, 55f),
                     rollDegrees = new Vector2(-5f, 5f), aimLeadSeconds = new Vector2(0f, 0f),
                     framingPitchDegrees = new Vector2(-2f, 2f),
                 },
@@ -126,7 +137,7 @@ namespace CosmicShore.ScriptableObjects
                     // sits on top of it.
                     name = "Low Chase", weight = 1.0f,
                     azimuthDegrees = new Vector2(165f, 195f), elevationDegrees = new Vector2(-22f, -4f),
-                    distance = new Vector2(8f, 18f), fieldOfView = new Vector2(65f, 82f),
+                    distance = new Vector2(12f, 27f), fieldOfView = new Vector2(65f, 82f),
                     rollDegrees = new Vector2(-8f, 8f), aimLeadSeconds = new Vector2(0.10f, 0.35f),
                     framingPitchDegrees = new Vector2(-5f, 0f),
                 },
@@ -134,7 +145,7 @@ namespace CosmicShore.ScriptableObjects
                 {
                     name = "Top Down", weight = 0.6f, worldAligned = true,
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(62f, 86f),
-                    distance = new Vector2(28f, 70f), fieldOfView = new Vector2(45f, 65f),
+                    distance = new Vector2(42f, 105f), fieldOfView = new Vector2(45f, 65f),
                     rollDegrees = new Vector2(-12f, 12f), aimLeadSeconds = new Vector2(0f, 0.15f),
                     framingPitchDegrees = new Vector2(-2f, 2f),
                 },
@@ -144,7 +155,7 @@ namespace CosmicShore.ScriptableObjects
                     // flies past, rather than one riding along with it.
                     name = "Static Tracking Cam", weight = 1.1f, worldAligned = true,
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(-14f, 30f),
-                    distance = new Vector2(35f, 110f), fieldOfView = new Vector2(28f, 45f),
+                    distance = new Vector2(52.5f, 150f), fieldOfView = new Vector2(28f, 45f),
                     rollDegrees = new Vector2(-3f, 3f), aimLeadSeconds = new Vector2(0.15f, 0.45f),
                     framingPitchDegrees = new Vector2(-4f, 4f),
                 },
@@ -159,6 +170,41 @@ namespace CosmicShore.ScriptableObjects
                     rollDegrees = new Vector2(-2f, 2f), aimLeadSeconds = new Vector2(0f, 0.5f),
                     framingPitchDegrees = new Vector2(-5f, 5f),
                 },
+
+                // ── PAIR ──────────────────────────────────────────────────────────
+                // Drawn only when two vessels are actually inside `pairSeparation`. Their
+                // `azimuthDegrees` sweeps the perpendicular bisector plane of the two, so a full
+                // 0-360 is a free orbit around the line joining them and every angle on it keeps
+                // both ships equidistant. `distance` is a FLOOR: the solve pushes back further
+                // whenever that is what it takes to fit both, so these numbers set the CLOSEST a
+                // two-shot may be rather than where it will land.
+                new ScreenshotConcept
+                {
+                    name = "Duo Two-Shot", weight = 1.6f, framing = ScreenshotFramingKind.Pair,
+                    azimuthDegrees = new Vector2(0f, 360f),
+                    distance = new Vector2(30f, 70f), fieldOfView = new Vector2(48f, 62f),
+                    rollDegrees = new Vector2(-4f, 4f),
+                    framingPitchDegrees = new Vector2(-2f, 2f),
+                },
+                new ScreenshotConcept
+                {
+                    // Long lens, well back: the gap between the two compresses and the arena
+                    // stacks up behind them.
+                    name = "Duo Long Lens", weight = 1.0f, framing = ScreenshotFramingKind.Pair,
+                    azimuthDegrees = new Vector2(0f, 360f),
+                    distance = new Vector2(90f, 140f), fieldOfView = new Vector2(26f, 38f),
+                    rollDegrees = new Vector2(-2f, 2f),
+                    framingPitchDegrees = new Vector2(-2f, 2f),
+                },
+                new ScreenshotConcept
+                {
+                    // As close as the fit allows, wide, and tilted - the pass reads as fast.
+                    name = "Duo Close Pass", weight = 1.2f, framing = ScreenshotFramingKind.Pair,
+                    azimuthDegrees = new Vector2(0f, 360f),
+                    distance = new Vector2(0f, 0f), fieldOfView = new Vector2(66f, 82f),
+                    rollDegrees = new Vector2(-14f, 14f),
+                    framingPitchDegrees = new Vector2(-4f, 4f),
+                },
             };
         }
 
@@ -170,29 +216,60 @@ namespace CosmicShore.ScriptableObjects
         /// Weighted draw from the library. Returns null when nothing is usable, which the director
         /// reports rather than silently taking a default shot the author never asked for.
         /// </summary>
-        public ScreenshotConcept PickConcept(System.Random rng)
+        public ScreenshotConcept PickConcept(System.Random rng) =>
+            PickConcept(rng, ScreenshotFramingKind.Solo);
+
+        /// <summary>
+        /// Weighted draw from the concepts of one framing kind. Returns null when that kind has
+        /// nothing usable, which the director reports or falls back from rather than silently
+        /// taking a shot of a different shape than the one it decided on.
+        /// </summary>
+        public ScreenshotConcept PickConcept(System.Random rng, ScreenshotFramingKind kind)
         {
             if (concepts == null || concepts.Count == 0) return null;
 
             float total = 0f;
             foreach (var c in concepts)
-                if (c != null && c.IsUsable) total += c.weight;
+                if (Eligible(c, kind)) total += c.weight;
 
             if (total <= 0f) return null;
 
             float roll = (float)rng.NextDouble() * total;
             foreach (var c in concepts)
             {
-                if (c == null || !c.IsUsable) continue;
+                if (!Eligible(c, kind)) continue;
                 roll -= c.weight;
                 if (roll <= 0f) return c;
             }
 
             // Floating-point tail: the loop above can exhaust its budget a hair early.
             for (int i = concepts.Count - 1; i >= 0; i--)
-                if (concepts[i] != null && concepts[i].IsUsable) return concepts[i];
+                if (Eligible(concepts[i], kind)) return concepts[i];
 
             return null;
+        }
+
+        static bool Eligible(ScreenshotConcept c, ScreenshotFramingKind kind) =>
+            c != null && c.framing == kind && c.IsUsable;
+
+        /// <summary>Whether this config carries any usable concept of a given framing kind.</summary>
+        public bool HasConcepts(ScreenshotFramingKind kind)
+        {
+            if (concepts == null) return false;
+            for (int i = 0; i < concepts.Count; i++)
+                if (Eligible(concepts[i], kind)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// The pair separation band, low end first, floored at zero. Two vessels closer than
+        /// <c>min</c> overlap into one shape; further than <c>max</c> and a shot holding both
+        /// has to pull back until neither reads as a ship.
+        /// </summary>
+        public void ResolvePairBand(out float min, out float max)
+        {
+            min = Mathf.Max(0f, Mathf.Min(pairSeparation.x, pairSeparation.y));
+            max = Mathf.Max(min, Mathf.Max(pairSeparation.x, pairSeparation.y));
         }
 
         /// <summary>

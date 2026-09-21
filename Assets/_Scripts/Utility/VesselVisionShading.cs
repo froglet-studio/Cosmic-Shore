@@ -198,6 +198,36 @@ namespace CosmicShore.Utility
         /// <summary>The vessel currently excluded as the local pilot's, or null.</summary>
         public static Transform LocalVessel => _localVessel;
 
+        /// <summary>
+        /// Fill <paramref name="into"/> with every live vessel currently carrying a stamp.
+        ///
+        /// <para>A pure INDEX READ — it spawns, moves, tints and removes nothing, and holding the
+        /// list changes no behaviour of the law. It exists because this roster is already the one
+        /// correct answer to "which vessels are in the arena right now": every vessel joins it
+        /// through <c>VesselHelper.SetShipProperties</c>, the single method a vessel's domain flows
+        /// through on every path (spawn, vessel swap, every replicated <c>NetDomain</c> change), so
+        /// it covers local and remote, human and AI, with nothing per-mode to wire — and a caller
+        /// reading it cannot drift from what is actually on screen. Compare
+        /// <c>Object.FindObjectsByType</c>, which would also sweep up prefab-built props.</para>
+        ///
+        /// <para>Display-only models are deliberately absent, because <see cref="StampDisplayModel"/>
+        /// never joins the roster — so a toy matrix's mini hulls can never be mistaken for pilots.
+        /// Destroyed and deactivated vessels are skipped here rather than pruned, since pruning is
+        /// the heal pass's business and a read must not mutate.</para>
+        /// </summary>
+        public static void CollectStampedVessels(List<Transform> into)
+        {
+            if (into == null) return;
+            into.Clear();
+
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var vessel = _entries[i].Vessel;
+                if (vessel == null || !vessel.gameObject.activeInHierarchy) continue;
+                into.Add(vessel);
+            }
+        }
+
         static void ReapplyFor(Transform vessel)
         {
             if (vessel == null) return;
