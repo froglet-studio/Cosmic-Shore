@@ -8472,8 +8472,98 @@ triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the laz
 the disc list belongs cached on the `Surface` keyed by the gasket rules, the shape `_saddles`
 already has.
 
-### 48.5 The tuning pass — TO BE RECORDED
+### 48.5 The tuning pass, measured — and the plant that looked right was not the plant that passed
 
-The measured tables for all four species after `--check` lands green (the Fall's stride and
-core-armour bounds, the Watershed's Space walk step and ring census, Apollonia's `--fit-volume`
-and `--shields`) are recorded here when the pass completes.
+Apollonia was tuned TWICE. The first pass made every gate green by tripling the species'
+neutral cross-width (0.034 → 0.112) and nearly doubling its step, against the pass's own
+instruction to hold the concept dials; rendered, the plant was a pile of wide flat plates, the
+small rings solid washers, the gasket relation lost, and it was **reverted on its render**. The
+second pass held the neutral prism and REDISTRIBUTED — material between ring sizes, prisms
+between the rings and the Fall — at a fixed §45 volume: `DiscMinRadius` per element (the
+full-form dial: Charge 0.068 / Mass 0.115 / Space 0.044 / Time 0.082), `RingShrink` per element
+(the gap between tangent rings, which the law hands a different WIDTH on the same circles),
+`RingFlatten` 0.70 (0.25 buys Time's second octave 17% and its rings stop reading as rings —
+integrity 0.96 → 0.88, which the 0.80 gate passes and the eye does not), the girth ladder as flat
+as a ring allows (exponent 0.30, the floor under which a small ring is a washer), and the Fall's
+stride ceiling per element — which is **not monotone**: the hole is a max over discrete claim
+refusals, Charge measured 2.60 / 10.19 / 1.30 / 4.20 u at ceilings 1.0 / 0.7 / 0.5 / 0.4, so it
+is measured at the value shipped and never interpolated. Mass keeps its ribbon width (+1.8%) and
+loses one generation (49 → 39 discs) that measured 1.6 px at arena distance.
+
+**The finding that outranks the numbers: the ladder's frame bar had been calibrated on the plant
+that was rejected.** The 1.0%-of-frame bar landed beside the tripled-cross tuning, which scores
+3/3/4/4 legible octaves under it where the accepted lace scores 3/3/1/2. On the lace the gasket's
+SECOND generation is a genuinely small number of discs (Space 9, Time 6, between much larger
+neighbours), and its frame share PEAKS at 0.68% / 0.87% at ANY disc count — swept
+`DiscMinRadius` out to 6× the shipped floor, far past any legal fit — so reaching 1.0% needs
+1.7× / 1.32× the cross, which is the plate again. The bar is 0.5%; the PIXEL bar (2 px), which is
+what catches the sub-pixel octaves the gate was written for, is unchanged. *When a bound and the
+data it was measured on are changed in separate commits, the bound silently becomes a claim about
+data that is gone.* Its sibling: **a legibility gate on a self-similar species has a fixed point at
+"stop being self-similar"** — Mass's third octave cleared the 2 px bar only once the bottom of
+that octave was cut — and the thing that stops it there is the render, not the gate.
+
+The shipped fleet, every bound green (`measure_mandelbulb_flora.py --check`; volumes are
+cumulative prism volume per plant at the 2,800 budget, "touching" the near pairs of which the
+percentage interpenetrate, "deep" the fraction past the interleave depth):
+
+| species / element | prisms | curves | volume | per-prism volume min / median / max | touching | deep |
+|---|---|---|---|---|---|---|
+| **Fractal Foliage** Charge | 2,800 | 88 | 1,533 | 0.04 / 0.55 / 1.06 | 284/862 32.9% | 1.6% |
+| Mass | 2,800 | 179 | 19,779 | 1.16 / 7.06 / 11.97 | 249/795 31.3% | 0.0% |
+| Space | 2,800 | 21 | 4,416 | 0.34 / 1.58 / 1.99 | 177/818 21.6% | 0.0% |
+| Time | 2,800 | 147 | 9,463 | 0.82 / 3.38 / 6.25 | 93/296 31.4% | 0.3% |
+| **Coral Bloom** Charge | 2,800 | 53 | 1,391 | 0.06 / 0.50 / 1.48 | 58/150 38.7% | 0.0% |
+| Mass | 2,800 | 32 | 17,941 | 0.61 / 6.41 / 10.34 | 122/585 20.9% | 0.0% |
+| Space | 2,800 | 71 | 4,007 | 0.15 / 1.43 / 3.20 | 76/1256 6.1% | 0.0% |
+| Time | 2,800 | 95 | 8,584 | 0.25 / 3.07 / 11.48 | 108/484 22.3% | 0.0% |
+| **Watershed** Charge | 2,171 | 280 | 2,076 | 0.08 / 0.96 / 2.09 | 25/40 62.5% | 0.0% |
+| Mass | 2,151 | 128 | 26,787 | 2.17 / 12.45 / 19.93 | 133/275 48.4% | 0.0% |
+| Space | 1,493 | 144 | 5,981 | 0.32 / 4.01 / 6.94 | 51/193 26.4% | 0.0% |
+| Time | 2,800 | 399 | 12,817 | 0.49 / 4.58 / 10.10 | 464/580 80.0% | 0.0% |
+| **Apollonia** Charge | 2,707 | 55 | 2,242 | 0.09 / 0.83 / 3.38 | 24/73 32.9% | 0.0% |
+| Mass | 2,555 | 39 | 28,927 | 2.67 / 11.32 / 39.91 | 214/1336 16.0% | 0.6% |
+| Space | 2,575 | 81 | 6,458 | 0.26 / 2.51 / 12.50 | 24/743 3.2% | 0.0% |
+| Time | 2,579 | 44 | 13,839 | 0.68 / 5.37 / 20.00 | 84/630 13.3% | 0.0% |
+
+Three things the table says that the doc should say plainly. **The Watershed's plant is the
+surface's, not the budget's** — its skeleton has exactly as many separatrices as the bake has
+saddles, so Charge / Mass / Space lay 2,171 / 2,151 / 1,493 of a 2,800 budget and only Time is
+budget-bound; a cell that hosts it pays for what the surface holds. **Apollonia's Mass is the
+heaviest plant in the family** (28,927 volume: a 55-gon of 4-unit bricks per ring) and every
+species' Charge is the lightest by an order of magnitude, bare — armoured it is the densest of the
+four, which is §44's inversion holding on all four species. And **every heart is in the band**
+(`author_lifeform_heart_sizes.py`: Mandelbulb / Coral Bloom body 21 → 1.51, the Watershed 26.9 →
+1.71, Apollonia 27.4 → 1.73, against the Shark's 195 → 4.60), so an Apollonia kill pays 15% more
+than a Foliage kill, and a ring-crowned bulb is worth exactly what its body says.
+
+**The verifier holds all of it against the compiled C#**: the two walking species by their
+statistics (the walk is chaotic in its last bits), the Watershed prism for prism, Apollonia level 0
+exactly (the peak prefix, each ring's ρ to 3e-7, the lay order's level-0 prefix, N and ρ_ref) and
+its children statistically (per-octave counts, the ρ histogram, the tangency median 0.000 on both
+sides); 24 negative controls, 23 tripping a NAMED gate and one — the Inscribe summation order —
+proven inert.
+
+### 48.6 What has to be tested in the editor
+
+**Nothing in this pass has been run in Unity.** On top of §44.11's list:
+
+1. **Every species must reach its crystal.** Spawn each of the four from the Lifeform Matrix toy
+   and fly to the heart: a blue spiral (the Fall) must wind into the crystal from every plant, the
+   closest prism a few units short of it. **FAIL:** if the dives are missing, `DiveCount` /
+   `DiveStepFraction` are not reaching the prefab — check the `Rules` block; if they stab straight
+   at the crystal, `DiveAxisAlign` or `DiveAngleDegrees` did not survive the write.
+2. **The Watershed's rings must COUNT.** From the pole, its Charge plant is a 7-fold rosette, Mass
+   4-fold, Space 2-fold, Time 11-fold. **FAIL:** any other count means the seeds are not the
+   surface's saddles (`SkeletonSeeds` not reaching the prefab) or the census ran on the wrong
+   surface.
+3. **Apollonia must read as RINGS, not plates.** Thin tangent circles of several sizes, holes you
+   see the far side through. **FAIL:** wide bands or solid washers mean the neutral prism or the
+   girth floor is wrong on the asset — the plate tuning was reverted for exactly this read.
+4. **The gasket build must not hitch on the planting frame.** `EnsureSeeds` is lazy; the peak
+   census plus the O(n³) triple search runs on the first `TryNext`. Watch the frame time on the
+   first prism of an Apollonia plant at `MaxLivePopulation` 3. **FAIL:** a hitch means the disc
+   list wants caching on the `Surface`, the shape `_saddles` already has.
+5. **The Charge plants must be ARMOURED**, and armoured they must be the densest of the four
+   (bare they are the sparsest). **FAIL:** a bare Charge plant means `Flora.ResolveShieldPeriod`
+   is not flooring the shield period for this family.
