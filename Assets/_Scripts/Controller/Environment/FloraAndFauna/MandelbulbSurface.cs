@@ -833,7 +833,11 @@ namespace CosmicShore.Gameplay
             // Apollonia: the disc set, resolved ONCE per plant in EnsureSeeds (lazy, like the
             // skeleton — the peak census and the O(n³) triple search must never run on the
             // planting frame). One seed per disc, same index, so every per-seed array fits.
-            struct Disc { public Vector3 Axis; public float Rho; public int Level, Lane; }
+            // `Parent` is the tangency parent — one of the three discs whose gap this one was
+            // inscribed in, and therefore a disc it TOUCHES, so the bond a limb has to span is
+            // the shortest the gasket offers. -1 on a level-0 disc, which crowns a peak and
+            // reaches the crystal through the seed tree instead.
+            struct Disc { public Vector3 Axis; public float Rho; public int Level, Lane, Parent; }
             readonly List<Disc> _discs = new();
             int[] _discOrder;              // indices into _discs, ρ-DESCENDING (the lay order)
             float _rhoRef;                 // the largest disc's ρ — computed, the girth reference
@@ -845,6 +849,42 @@ namespace CosmicShore.Gameplay
             readonly List<float> _ringRadii = new(160);
 
             int _seedIndex, _lane, _pendingIndex, _curveCount;
+
+            // ── THE PLANT'S SKELETON ─────────────────────────────────────────────────────────
+            // A flora grows the way it withers, RUN BACKWARDS (the /flora skill §2): the crystal
+            // first, then limbs out of the crystal, then limbs and plates out of limbs. Three
+            // pieces carry that here, and none of them is geometry this species invented:
+            //
+            //   _seedParent / _seedOrder  a spanning tree over the SEEDS, rooted at the heart.
+            //                             Lane 0 is walked in that order, so a seed's stem is
+            //                             always laid after the seed it grows out of.
+            //   _seedArrival[k]           the global index of the prism sitting AT seed k — where
+            //                             its stem lands and its first curve begins. A child
+            //                             seed's stem hangs off its parent's arrival prism.
+            //   _laneAnchor[k]            the global index of the prism at the MIDPOINT of seed
+            //                             k's last run, which is exactly the point `Hop` steps
+            //                             across from. So lane L's curve hangs off lane L-1's
+            //                             body over a bond one hop long — the gap the cage is
+            //                             made of, now spanned by a limb instead of left open.
+            //
+            // The order is LANE-MAJOR and that is what makes the whole thing connected at every
+            // tick rather than only when finished: every seed's lane 0 (its stem + first curve)
+            // is laid before any seed's lane 1, so the plant is a spanning tree of stems the
+            // moment the first lane completes and thickens from there.
+            int[] _seedParent, _seedOrder, _seedArrival, _laneAnchor;
+            readonly List<int> _pendingParent = new();
+            static readonly List<Vector3> _noRise = new();
+            readonly List<Vector3> _rise = new(96);
+            readonly List<Sample> _stemRun = new(96);
+            readonly List<Sample> _run = new(512);
+            int _emitted;                 // prisms handed out so far — the global index base
+            int _anchorForNextEmit = -1;  // what the next batch's first prism hangs off (-1 = heart)
+            // Emit SKIPS a zero-length segment, so "the nth point" and "the nth prism" are not the
+            // same number and cannot be related by arithmetic at the call site. These are set
+            // before a batch and written back by it: the caller says which leading segments are
+            // the connector and which point it wants marked, and gets the PRISM indices back.
+            int _emitConnectorSegments, _emitMarkPoint;
+            int _emitConnectorEnd = -1, _emitMarkedPrism = -1;
 
             public int CurvesTraced => _curveCount;
             public int SeedCount { get { EnsureSeeds(); return _seeds.Count; } }
@@ -876,6 +916,9 @@ namespace CosmicShore.Gameplay
                 _laneTangentValid = new bool[n];
                 _laneDead = new bool[n];
                 for (int i = 0; i < _seeds.Count; i++) _lanePosition[i] = _seeds[i];
+                // The plant's skeleton. Built here for every species, because every species has
+                // seeds and none of them may start a patch in mid-air.
+                BuildSeedTree();
 
                 // The Fall's owed set is STRIDED, never a prefix: BuildSeeds emits in Fibonacci
                 // order, which is z-monotone, so a prefix would put every dive in a polar cap
@@ -977,7 +1020,7 @@ namespace CosmicShore.Gameplay
                     float nn = Mathf.PI / 3f;                          // lone-disc fallback
                     for (int j = 0; j < axes.Count; j++)
                         if (j != i) nn = Mathf.Min(nn, Angle(axes[i], axes[j]));
-                    _discs.Add(new Disc { Axis = axes[i], Rho = 0.5f * nn, Level = 0 });
+                    _discs.Add(new Disc { Axis = axes[i], Rho = 0.5f * nn, Level = 0, Parent = -1 });
                 }
 
                 int start = 0, count = _discs.Count;
@@ -1000,7 +1043,9 @@ namespace CosmicShore.Gameplay
                             if (!Adjacent(a, c) || !Adjacent(b, c)) continue;
                             if (!Inscribe(a, b, c, out Vector3 x, out float rho)) continue;
                             if (rho < _rules.DiscMinRadius) continue;
-                            cand.Add(new Disc { Axis = x, Rho = rho, Level = lvl });
+                            // `a` is the lowest of the three indices, so it is the earliest disc
+                            // created and therefore never later in the lay order than this child.
+                            cand.Add(new Disc { Axis = x, Rho = rho, Level = lvl, Parent = a });
                         }
                     }
                     // Biggest gap first; ties fall through to the (a,b,c) enumeration index —
@@ -1126,10 +1171,18 @@ namespace CosmicShore.Gameplay
                     girth = Mathf.Max(girth, Mathf.Clamp01(_rules.RingGirthFloor));
 
                     _curveCount++;
-                    // The dive leaves from the ring's SEAM (its last segment), deterministic.
-                    // DiveDescent must be authored 0: a closed ring starts and ends at the same
-                    // radius, so any positive value rejects every dive.
-                    Emit(_ringBody, TryDive(idx, _ringBody), girth);
+                    // A ring arrives over a connector like every other curve: a STEM from the
+                    // disc it is inscribed against (a disc it touches, so the stem is short), or
+                    // the TRUNK out of the crystal for the first crown. The ring is then a closed
+                    // chain hanging off that arrival, which is what makes the gasket ONE object
+                    // rather than a spray of hoops.
+                    int saveLane = _lane;
+                    _lane = 0;
+                    int connectorSegments = PrepareConnector(idx, _ringBody, WalkStepSize);
+                    _lane = saveLane;
+                    _emitMarkPoint = connectorSegments;
+                    Emit(_rise, _run, TryDive(idx, _run), girth);
+                    _seedArrival[idx] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
                     _pendingIndex = 0;
                     return true;
                 }
@@ -1193,14 +1246,25 @@ namespace CosmicShore.Gameplay
             }
 
             /// <summary>Next prism, or false when the rule has nothing left to lay.</summary>
-            public bool TryNext(out PrismAddress address)
+            public bool TryNext(out PrismAddress address) => TryNext(out address, out _);
+
+            /// <summary>
+            /// The next prism, and the global index of the prism it HANGS OFF (-1 = the heart).
+            /// The parent is a property of the growth ORDER rather than of the address, which is
+            /// why it is handed out here and never folded into <see cref="PrismAddress"/>: a
+            /// prism's POSE must stay a pure function of its own address, or the pose table stops
+            /// being provable one row at a time.
+            /// </summary>
+            public bool TryNext(out PrismAddress address, out int parent)
             {
                 EnsureSeeds();
                 while (_pendingIndex >= _pending.Count)
                 {
-                    if (!TraceNextCurve()) { address = default; return false; }
+                    if (!TraceNextCurve()) { address = default; parent = -1; return false; }
                 }
+                parent = _pendingParent[_pendingIndex];
                 address = _pending[_pendingIndex++];
+                _emitted++;
                 return true;
             }
 
@@ -1214,7 +1278,10 @@ namespace CosmicShore.Gameplay
                 while (_lane < lanes && guard++ < 4096)
                 {
                     if (_seedIndex >= _seeds.Count) { _seedIndex = 0; _lane++; continue; }
-                    int k = _seedIndex++;
+                    // TREE order, not table order: a seed's stem grows out of the seed it hangs
+                    // off, so its parent must already carry prisms. Prim's insertion order gives
+                    // that by construction (see BuildSeedTree).
+                    int k = _seedOrder[_seedIndex++];
 
                     if (Skeleton)
                     {
@@ -1235,8 +1302,18 @@ namespace CosmicShore.Gameplay
                     if (points.Count >= Mathf.Max(2, _rules.MinRun))
                     {
                         _curveCount++;
-                        Emit(points, TryDive(k, points));
+                        // What this curve HANGS OFF. Lane 0 is the seed's first appearance, so it
+                        // arrives over a connector — the TRUNK out of the heart for the root seed,
+                        // a STEM from its parent seed for every other. Lane L>0 starts one Hop
+                        // across from lane L-1's midpoint, which is a bond a limb can span, so it
+                        // hangs off the prism that was sitting there.
+                        int connectorSegments = PrepareConnector(k, points, WalkStepSize);
                         int mid = points.Count / 2;
+                        _emitMarkPoint = connectorSegments + mid;
+                        Emit(_rise, _run, TryDive(k, _run));
+                        if (_seedArrival[k] < 0)
+                            _seedArrival[k] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
+                        if (_emitMarkedPrism >= 0) _laneAnchor[k] = _emitMarkedPrism;
                         int nxt = Mathf.Min(points.Count - 1, mid + 1);
                         Vector3 tv = points[nxt].Position - points[mid].Position;
                         _laneTangent[k] = tv.sqrMagnitude > 1e-18f ? tv.normalized : Vector3.right;
@@ -1289,7 +1366,31 @@ namespace CosmicShore.Gameplay
                     if (rise < _rules.MinPersistence) return false;                             // dust
                 }
                 _curveCount++;
-                Emit(points, TryDive(k, points));
+                // All four arms leave the SAME saddle, so the first arm laid is what the other
+                // three hang off — and the saddle itself arrives over a connector, the trunk out
+                // of the heart for the root saddle and a stem from its parent for the rest. A
+                // saddle whose first arm was dust has no arrival prism yet, so the next arm to
+                // survive pays for the connector instead; that is why the test is on
+                // `_seedArrival[k]` rather than on the lane number.
+                bool first = _seedArrival == null || _seedArrival[k] < 0;
+                int connectorSegments = 0;
+                if (first)
+                {
+                    int saveLane = _lane;
+                    _lane = 0;                                   // PrepareConnector's "first appearance"
+                    connectorSegments = PrepareConnector(k, points, WalkStepSize);
+                    _lane = saveLane;
+                }
+                else
+                {
+                    _anchorForNextEmit = _seedArrival[k];
+                    _rise.Clear();
+                    _run.Clear(); _run.AddRange(points);
+                    _emitConnectorSegments = 0;
+                }
+                Emit(_rise, _run, TryDive(k, _run));
+                if (first)
+                    _seedArrival[k] = _emitConnectorEnd >= 0 ? _emitConnectorEnd : _emitted;
                 _pendingIndex = 0;
                 return true;
             }
@@ -1537,9 +1638,35 @@ namespace CosmicShore.Gameplay
             /// of it, linearly in log r so the taper is scale-invariant like the spiral.
             /// </summary>
             void Emit(List<Sample> points, List<Vector3> dive, float girthOverride = 0f)
+                => Emit(_noRise, points, dive, girthOverride);
+
+            /// <summary>
+            /// One curve becomes prisms — and the chain of them is the plant's SKELETON, so this
+            /// is also where a prism learns what it hangs off.
+            ///
+            /// <para><b>The RISE is the Fall run backwards</b> (Docs/ECOSYSTEM.md §53): free-space
+            /// points laid BEFORE the surface run, carrying the curve out of the heart to the
+            /// point where the surface walk begins, exactly as <c>dive</c> carries it back in
+            /// afterwards. They are the same log spiral in the same family — the rise is literally
+            /// <c>AppendDive</c>'s output reversed — so nothing new has to be tuned, gated or
+            /// proven about its shape, and the two halves of a curve that both rises and falls
+            /// cannot disagree.</para>
+            ///
+            /// <para>Within a batch every prism's parent is its predecessor, because a curve IS a
+            /// chain; the batch's FIRST prism hangs off <c>_anchorForNextEmit</c> — the global
+            /// index of an already-laid prism, or -1 for the heart itself. That is the whole of
+            /// the growth law's clause (b) (every prism hangs off something that already exists);
+            /// clause (a) — ONE connected object at every tick — is what the seed tree and the
+            /// lane-major order buy, and what <c>connected_prefixes</c> asserts.</para>
+            /// </summary>
+            void Emit(List<Vector3> rise, List<Sample> points, List<Vector3> dive,
+                      float girthOverride = 0f)
             {
                 _pending.Clear();
+                _pendingParent.Clear();
                 _pendingIndex = 0;
+                _emitConnectorEnd = -1;
+                _emitMarkedPrism = -1;
                 // A curve's cross-section is a function of HOW FAR IT GOT: a long clean run is
                 // structure and a short scrap is detail, so one plant carries several scales of
                 // texture and the finest of them sit where the surface is hardest to follow.
@@ -1569,7 +1696,9 @@ namespace CosmicShore.Gameplay
                 float twistPerStep = _rules.TwistDegreesPerStep * Mathf.Deg2Rad;
 
                 int nSurface = points.Count;
+                int nRise = rise.Count;
                 _pts.Clear();
+                for (int i = 0; i < nRise; i++) _pts.Add(rise[i]);
                 for (int i = 0; i < nSurface; i++) _pts.Add(points[i].Position);
                 for (int i = 0; i < dive.Count; i++) _pts.Add(dive[i]);
 
@@ -1577,6 +1706,31 @@ namespace CosmicShore.Gameplay
                 float lgLo = Mathf.Log(Mathf.Max(1e-6f, Mathf.Max(0.01f, _rules.DiveStopRadius)));
                 float lgHi = Mathf.Log(Mathf.Max(1e-6f, points[nSurface - 1].Position.magnitude));
                 float diveRoll0 = 0f;
+                // The rise pays the SAME seam the Fall does, and pays it UP FRONT: its prisms are
+                // emitted BEFORE the transition that defines the angle, so it cannot be computed
+                // where the dive's is. Same expression, same meaning — the signed angle about the
+                // shared heading between the plate hung off the RAY (free space) and the plate hung
+                // off the NORMAL (the surface), so the face is continuous where the curve arrives.
+                float riseRoll0 = 0f;
+                if (nRise > 0)
+                {
+                    Vector3 ra = _pts[nRise - 1], rb = points[0].Position;
+                    Vector3 rd = rb - ra;
+                    if (rd.sqrMagnitude > 1e-14f)
+                    {
+                        Vector3 rfwd = rd.normalized;
+                        Spherical((ra + rb) * 0.5f, out float rth, out float rph);
+                        BuildFrame(_surface, rth, rph, ref _frame);
+                        Vector3 upRay = _frame.Dir - rfwd * Vector3.Dot(_frame.Dir, rfwd);
+                        Vector3 upSurf = _frame.Normal - rfwd * Vector3.Dot(_frame.Normal, rfwd);
+                        if (upRay.sqrMagnitude > 1e-10f && upSurf.sqrMagnitude > 1e-10f)
+                        {
+                            upRay = upRay.normalized; upSurf = upSurf.normalized;
+                            riseRoll0 = Mathf.Atan2(Vector3.Dot(Vector3.Cross(upRay, upSurf), rfwd),
+                                                    Vector3.Dot(upRay, upSurf));
+                        }
+                    }
+                }
 
                 for (int i = 0; i + 1 < _pts.Count; i++)
                 {
@@ -1593,9 +1747,23 @@ namespace CosmicShore.Gameplay
 
                     // The TRANSITION prism (last surface point -> first dive point) is a dive
                     // prism: its heading genuinely leaves the surface.
-                    bool isDive = dive.Count > 0 && i >= nSurface - 1;
+                    bool isDive = dive.Count > 0 && i >= nRise + nSurface - 1;
+                    bool isRise = i < nRise;
                     float tanR, dv, off, g = girth, roll = i * twistPerStep;
-                    if (isDive)
+                    if (isRise)
+                    {
+                        // Free space, exactly as a dive prism is: the plate hangs off the RAY it
+                        // shares with its surface point rather than off a surface normal it is
+                        // nowhere near, and it thins toward the heart on the same log ramp.
+                        tanR = Vector3.Dot(fwd, _frame.Dir);
+                        dv = 1f - cm / Mathf.Max(1e-6f, _frame.Radius);
+                        off = 0f;
+                        float wr = lgHi <= lgLo ? 1f
+                                 : Mathf.Clamp01((Mathf.Log(Mathf.Max(1e-6f, cm)) - lgLo) / (lgHi - lgLo));
+                        g = girth * (gFloor + (1f - gFloor) * wr);
+                        roll += riseRoll0;
+                    }
+                    else if (isDive)
                     {
                         tanR = Vector3.Dot(fwd, _frame.Dir);
                         dv = 1f - cm / Mathf.Max(1e-6f, _frame.Radius);
@@ -1627,12 +1795,279 @@ namespace CosmicShore.Gameplay
                         tanR = 0f; dv = 0f; off = cm - _frame.Radius;
                     }
 
+                    // A curve IS a chain, so a prism's parent is its predecessor in this batch;
+                    // the batch's first hangs off whatever the caller anchored it to.
+                    _pendingParent.Add(_pending.Count == 0
+                                       ? _anchorForNextEmit
+                                       : _emitted + _pending.Count - 1);
+                    int here = _emitted + _pending.Count;
+                    if (i < _emitConnectorSegments) _emitConnectorEnd = here;
+                    if (_emitMarkedPrism < 0 && i >= _emitMarkPoint) _emitMarkedPrism = here;
                     _pending.Add(new PrismAddress(
                         th, ph, off, dv,
                         Vector3.Dot(fwd, _frame.ETheta),
                         Vector3.Dot(fwd, _frame.EPhi), tanR,
                         len * Mathf.Max(0.05f, _rules.LengthFactor),
                         g, roll, _curveCount, _lane));
+                }
+                // A request is for ONE batch. Left standing, a stale split would make the next
+                // curve's prisms read as somebody's connector.
+                _emitConnectorSegments = 0;
+                _emitMarkPoint = int.MaxValue;
+            }
+
+            /// <summary>
+            /// Decide what a curve hangs off, and build the run that gets it there.
+            ///
+            /// <para>Returns the number of leading SEGMENTS that are connector rather than curve —
+            /// what <c>Emit</c> needs in order to hand back the index of the prism that ARRIVES at
+            /// the seed, which is what the seed's later lanes and its child seeds hang off.</para>
+            /// </summary>
+            int PrepareConnector(int k, List<Sample> points, float step)
+            {
+                _rise.Clear();
+                _stemRun.Clear();
+
+                if (_laneAnchor[k] >= 0)
+                {
+                    // A later lane is one Hop across from this seed's previous run. That hop IS
+                    // the bond; the prism at its origin was marked when that run was emitted.
+                    _anchorForNextEmit = _laneAnchor[k];
+                    _run.Clear(); _run.AddRange(points);
+                    _emitConnectorSegments = 0;
+                    return 0;
+                }
+
+                // THIS SEED'S FIRST APPEARANCE. Usually lane 0 — but a seed whose early curves
+                // were all dust makes its first appearance on a later lane, and the test has to be
+                // "have I laid anything yet" rather than "is this lane 0" or that seed starts a
+                // second plant. Measured on the first cut: 3-33 roots per plant, every one of them
+                // a seed whose tree parent laid nothing.
+                int from = AttachmentSeed(k);
+                if (from >= 0)
+                {
+                    BuildStem(_seeds[from], points[0].Position, step);
+                    _anchorForNextEmit = _seedArrival[from];
+                }
+                else
+                {
+                    // THE TRUNK. Exactly one curve per plant takes this branch — the first to
+                    // survive, when nothing else is standing yet — and it is the only prism in
+                    // the plant whose parent is the crystal itself.
+                    Vector3 t0 = _laneTangentValid[k] ? _laneTangent[k] : Vector3.zero;
+                    BuildTrunk(points[0].Position, t0, step);
+                    _anchorForNextEmit = -1;
+                }
+
+                _run.Clear();
+                _run.AddRange(_stemRun);
+                _run.AddRange(points);
+                int connectorSegments = _rise.Count + _stemRun.Count;
+                _emitConnectorSegments = connectorSegments;
+                return connectorSegments;
+            }
+
+            /// <summary>
+            /// Which already-standing seed this one grows out of.
+            ///
+            /// <para>Its TREE parent when that parent is standing — for the walking species the
+            /// nearest seed by great-circle distance, for Apollonia the disc it is literally
+            /// inscribed against — because that is the shortest bond the species knows about and
+            /// the one that carries meaning. When it is not standing (its curves were dust, or
+            /// the budget stopped before it), the NEAREST seed that is: a plant may not start a
+            /// second component just because one branch failed, and proximity is the only thing
+            /// left that keeps the replacement bond short.</para>
+            ///
+            /// <para>-1 only while nothing at all is standing, which happens exactly once per
+            /// plant and is what the trunk is for.</para>
+            /// </summary>
+            int AttachmentSeed(int k)
+            {
+                if (_seedArrival == null) return -1;
+                int parent = _seedParent != null && k < _seedParent.Length ? _seedParent[k] : -1;
+                if (parent >= 0 && parent < _seedArrival.Length && _seedArrival[parent] >= 0) return parent;
+
+                Vector3 me = k < _seeds.Count ? _seeds[k] : Vector3.up;
+                Vector3 md = me.sqrMagnitude > 1e-18f ? me.normalized : Vector3.up;
+                int best = -1; float bestCos = -2f;
+                for (int i = 0; i < _seedArrival.Length && i < _seeds.Count; i++)
+                {
+                    if (i == k || _seedArrival[i] < 0) continue;
+                    Vector3 d = _seeds[i];
+                    if (d.sqrMagnitude < 1e-18f) continue;
+                    float c = Vector3.Dot(md, d.normalized);
+                    if (c > bestCos) { bestCos = c; best = i; }
+                }
+                return best;
+            }
+
+            // ── THE SEED TREE ────────────────────────────────────────────────────────────────
+
+            /// <summary>
+            /// A spanning tree over the seeds, rooted at the one the plant's TRUNK climbs to.
+            ///
+            /// <para>Prim's algorithm on great-circle distance between the seeds' own directions,
+            /// which is the right metric because every seed lies on the same star-shaped surface:
+            /// two seeds close in angle are close on the membrane, and the stem between them is
+            /// short. The root is seed 0 — for the walking species the first point the
+            /// well-spread generator emits, for the Watershed the first saddle in farthest-point
+            /// order, for Apollonia the largest disc — so in every case the trunk climbs to the
+            /// most prominent feature the species knows about rather than to an arbitrary one.</para>
+            ///
+            /// <para><b>Prim's insertion order IS a valid growth order</b>: it only ever admits a
+            /// seed whose parent is already in the tree, so <c>_seedOrder</c> needs no separate
+            /// sort and `parent appears earlier than child` holds by construction rather than by
+            /// assertion. That is the same property the Borromean table gets from its hop
+            /// ordering (Docs/ECOSYSTEM.md §49) and the reason neither species needs a topological
+            /// pass it could get wrong.</para>
+            /// </summary>
+            void BuildSeedTree()
+            {
+                if (Gasket) { BuildGasketTree(); return; }
+                int n = _seeds.Count;
+                _seedParent = new int[n];
+                _seedOrder = new int[n];
+                _seedArrival = new int[n];
+                _laneAnchor = new int[n];
+                for (int i = 0; i < n; i++) { _seedParent[i] = -1; _seedArrival[i] = -1; _laneAnchor[i] = -1; }
+                if (n == 0) return;
+
+                var dir = new Vector3[n];
+                for (int i = 0; i < n; i++)
+                {
+                    var v = _seeds[i];
+                    dir[i] = v.sqrMagnitude > 1e-18f ? v.normalized : Vector3.up;
+                }
+
+                var inTree = new bool[n];
+                var best = new float[n];
+                var bestFrom = new int[n];
+                for (int i = 0; i < n; i++) { best[i] = float.MaxValue; bestFrom[i] = 0; }
+
+                inTree[0] = true;
+                _seedOrder[0] = 0;
+                _seedParent[0] = -1;
+                for (int i = 1; i < n; i++)
+                {
+                    best[i] = -Vector3.Dot(dir[0], dir[i]);   // monotone in great-circle distance
+                    bestFrom[i] = 0;
+                }
+
+                for (int placed = 1; placed < n; placed++)
+                {
+                    int pick = -1; float pickCost = float.MaxValue;
+                    for (int i = 0; i < n; i++)
+                    {
+                        if (inTree[i] || best[i] >= pickCost) continue;
+                        pick = i; pickCost = best[i];
+                    }
+                    // Degenerate seed sets (coincident directions) can leave every candidate at
+                    // the same cost; take the first free index rather than stalling.
+                    if (pick < 0) { for (int i = 0; i < n && pick < 0; i++) if (!inTree[i]) pick = i; }
+                    if (pick < 0) break;
+
+                    inTree[pick] = true;
+                    _seedParent[pick] = bestFrom[pick];
+                    _seedOrder[placed] = pick;
+                    for (int i = 0; i < n; i++)
+                    {
+                        if (inTree[i]) continue;
+                        float c = -Vector3.Dot(dir[pick], dir[i]);
+                        if (c < best[i]) { best[i] = c; bestFrom[i] = pick; }
+                    }
+                }
+            }
+
+            /// <summary>
+            /// The gasket's tree is the GASKET, which is the whole reason this species is the
+            /// self-similar one: a child disc is inscribed in the gap between three discs it
+            /// touches, so it already knows what it grows out of and the plant's skeleton is the
+            /// tangency graph rather than anything imposed on it. Only the level-0 crowns need a
+            /// rule, and theirs is the cheapest one that cannot get the order wrong — each
+            /// attaches to the NEAREST crown laid before it, so the first (the largest ρ, which
+            /// is where the trunk climbs) roots the plant and every later one is a short hop from
+            /// a crown that already exists.
+            /// </summary>
+            void BuildGasketTree()
+            {
+                int n = _seeds.Count;
+                _seedParent = new int[n];
+                _seedOrder = new int[n];
+                _seedArrival = new int[n];
+                _laneAnchor = new int[n];
+                for (int i = 0; i < n; i++) { _seedParent[i] = -1; _seedArrival[i] = -1; _laneAnchor[i] = -1; }
+                if (n == 0 || _discOrder == null) return;
+
+                var placedCrowns = new List<int>(16);
+                for (int r = 0; r < _discOrder.Length; r++)
+                {
+                    int d = _discOrder[r];
+                    _seedOrder[r] = d;
+                    if (d >= n) continue;
+                    if (_discs[d].Level != 0) { _seedParent[d] = _discs[d].Parent; continue; }
+
+                    int best = -1; float bestCos = -2f;
+                    for (int i = 0; i < placedCrowns.Count; i++)
+                    {
+                        float c = Vector3.Dot(_discs[d].Axis, _discs[placedCrowns[i]].Axis);
+                        if (c > bestCos) { bestCos = c; best = placedCrowns[i]; }
+                    }
+                    _seedParent[d] = best;                    // -1 for the first crown: the trunk
+                    placedCrowns.Add(d);
+                }
+            }
+
+            /// <summary>
+            /// THE TRUNK — the Fall run backwards, from the heart out to the root seed.
+            /// <c>AppendDive</c> walks a log spiral from a surface point down to the heart; the
+            /// same points read the other way are a climb out of it. Reusing the descent verbatim
+            /// is the whole point: the rise cannot acquire a shape, a stride ceiling or a winding
+            /// the Fall does not already have, and a curve that both rises and falls is provably
+            /// one family of curve rather than two that have to be kept in step.
+            /// </summary>
+            void BuildTrunk(Vector3 seedPoint, Vector3 seedTangent, float step)
+            {
+                AppendDive(_dive, seedPoint, seedTangent, step);
+                _rise.Clear();
+                // Reversed, and WITHOUT the seed itself: the curve's own first point is the seed,
+                // and a duplicated point is a zero-length segment Emit would drop anyway.
+                for (int i = _dive.Count - 1; i >= 0; i--) _rise.Add(_dive[i]);
+                _dive.Clear();
+            }
+
+            /// <summary>
+            /// A STEM — the surface path from one seed to the next, sampled at the walk step.
+            /// It is a slerp of the two directions evaluated ON the membrane, so every point of
+            /// it is a genuine surface point and its prisms are ordinary plates rather than
+            /// free-space ones. The final point is left OFF: the curve that follows starts at the
+            /// seed, and the stem's last segment is what arrives there.
+            /// </summary>
+            void BuildStem(Vector3 from, Vector3 to, float step)
+            {
+                _stemRun.Clear();
+                Vector3 a = from.sqrMagnitude > 1e-18f ? from.normalized : Vector3.up;
+                Vector3 b = to.sqrMagnitude > 1e-18f ? to.normalized : Vector3.up;
+                float cos = Mathf.Clamp(Vector3.Dot(a, b), -1f, 1f);
+                float ang = Mathf.Acos(cos);
+                float arc = ang * Mathf.Max(1e-4f, (from.magnitude + to.magnitude) * 0.5f);
+                // +1 rather than a ceiling, and no `Vector3.Slerp`: both of those are engine
+                // calls this file would then be proved against a STUB of, and a stub that
+                // differs from Unity in its last bits is a divergence no gate here could see.
+                // The great-circle interpolation is three lines of the arithmetic already in
+                // this file, so the harness proves the shipped expression itself.
+                int steps = Mathf.Clamp((int)(arc / Mathf.Max(1e-4f, step)) + 1, 1, 256);
+                float sinAng = Mathf.Sin(ang);
+                for (int i = 0; i < steps; i++)
+                {
+                    float t = (float)i / steps;
+                    Vector3 d = sinAng > 1e-5f
+                        ? a * (Mathf.Sin((1f - t) * ang) / sinAng) + b * (Mathf.Sin(t * ang) / sinAng)
+                        : a * (1f - t) + b * t;                       // antipodal-safe / near-parallel
+                    if (d.sqrMagnitude < 1e-18f) continue;
+                    d = d.normalized;
+                    Spherical(d, out float th, out float ph);
+                    BuildFrame(_surface, th, ph, ref _frame);
+                    _stemRun.Add(new Sample { Position = _frame.Dir * _frame.Radius, Normal = _frame.Normal });
                 }
             }
         }

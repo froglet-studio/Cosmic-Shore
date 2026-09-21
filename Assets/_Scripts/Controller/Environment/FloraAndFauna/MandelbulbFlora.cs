@@ -145,11 +145,59 @@ namespace CosmicShore.Gameplay
         /// </summary>
         readonly List<MandelbulbSurface.PrismAddress> _addresses = new();
 
+        /// <summary>
+        /// For each address, the index of the address it GROWS OUT OF — <c>-1</c> for the one
+        /// prism that grows out of the heart. Parallel to <see cref="_addresses"/> because a
+        /// parent is a property of the growth ORDER rather than of a prism's pose, and folding it
+        /// into <see cref="MandelbulbSurface.PrismAddress"/> would make
+        /// <c>MandelbulbSurface.Pose</c> stop being a pure function of one address.
+        ///
+        /// <para>The generator guarantees <c>_parent[i] &lt; i</c>, so laying in list order is a
+        /// growth order by construction: nothing is ever hung off something that does not exist
+        /// yet. What it cannot guarantee is that the parent was actually LAID — the claim refuses
+        /// roughly a third of candidates — which is what <see cref="ResolveAnchorWorld"/> is for.
+        /// </para>
+        /// </summary>
+        readonly List<int> _parent = new();
+
         /// <summary>Addresses whose prism was grazed away and which are open to regrow.</summary>
         readonly Queue<int> _regrow = new();
 
         /// <summary>What was actually laid where, so a grazed prism can be freed and regrown.</summary>
         readonly Dictionary<int, HealthPrism> _laid = new();
+
+        /// <summary>
+        /// The LIMB carrying each laid address — the spindle spanning the bond from its anchor to
+        /// it. Kept across grazing for the reason <see cref="BorromeanFlora"/> records: a branch
+        /// whose leaf was eaten is still a branch, and re-using it is what stops a regrowth
+        /// minting a second spindle on one bond. It is RE-POSED on re-use rather than assumed
+        /// still correct, because a regrown prism's nearest standing ancestor may have changed.
+        /// </summary>
+        readonly Dictionary<int, Spindle> _limb = new();
+
+        /// <summary>
+        /// How far the spindle prefab's own branch geometry reaches along its local +z, and the
+        /// prefab's per-child z scales that reach was measured at. Measured once per PREFAB
+        /// rather than authored — the number is a property of a mesh and a transform chain, and a
+        /// constant copied out of an asset is true only on the day it is copied. This mirrors
+        /// <see cref="BorromeanFlora"/>'s measurement deliberately: the two species share the
+        /// contract (a spindle is a bond) and not a base class, and a shared helper would have to
+        /// live on <c>Flora</c>, which every family that does NOT pose limbs this way also
+        /// inherits.
+        /// </summary>
+        static readonly Dictionary<int, BranchGeometry> BranchByPrefab = new();
+        static bool _warnedNoBranch;
+
+        readonly struct BranchGeometry
+        {
+            public readonly float Reach;
+            public readonly float[] ChildScaleZ;
+            public BranchGeometry(float reach, float[] childScaleZ)
+            {
+                Reach = reach;
+                ChildScaleZ = childScaleZ;
+            }
+        }
 
         /// <summary>Reconstructed height fields, shared across plants of the same element and
         /// quantised weights. Bounded rather than unbounded: a field is ~74 KB at the shipped
@@ -194,8 +242,10 @@ namespace CosmicShore.Gameplay
             _surface = ResolveSurface(Element, w0, w1, w2);
             _growth = new MandelbulbSurface.Growth(_surface, _form.Rules, seed);
             _addresses.Clear();
+            _parent.Clear();
             _regrow.Clear();
             _laid.Clear();
+            _limb.Clear();
             _pending.Clear();
         }
 
@@ -344,7 +394,7 @@ namespace CosmicShore.Gameplay
                 // produce seeds x lanes x steps addresses, which is half a million for one
                 // element, and holding them all is 20 MB per plant.
                 if (_addresses.Count >= maxTotalSpawnedObjects * AddressCandidateFactor
-                    || !_growth.TryNext(out var next))
+                    || !_growth.TryNext(out var next, out int parent))
                 {
                     // Covered everything the rule could reach, or its front was grazed off. Free
                     // the addresses whose prisms are gone and re-open them — that is how a cropped
@@ -353,6 +403,7 @@ namespace CosmicShore.Gameplay
                     return;
                 }
                 _addresses.Add(next);
+                _parent.Add(parent);
                 Decide(_addresses.Count - 1);
             }
         }
@@ -486,28 +537,54 @@ namespace CosmicShore.Gameplay
 
         void Execute(SpawnOrder order)
         {
-            // A spindle per prism, parented to the plant root — NOT to a prism. A prism carries
-            // its measured size as its localScale, and a non-uniform scale above a rotated child
-            // is a shear (Docs/ECOSYSTEM.md §37.9). Flat rather than chained because this plant
-            // has no chain the hierarchy could express: a curve is a sequence, not a descent, and
-            // a chained hierarchy would compound each prism's scale into the next.
-            var newSpindle = Instantiate(spindle, transform);
-            newSpindle.LifeForm = this;
-            newSpindle.transform.localPosition = order.LocalPosition;
-            newSpindle.transform.localRotation = order.LocalRotation;
-            AddSpindle(newSpindle);
+            // THE LIMB IS THE BOND. It is rooted at whatever this prism grows OUT of — the
+            // nearest standing ancestor, or the heart at the plant's own origin — aimed at the
+            // prism, and stretched to span the gap, so a plant reads as one connected object
+            // growing outward from its crystal rather than as a field of prisms each wearing a
+            // stub. That is the platform's growth law (the /flora skill §2, Docs/ECOSYSTEM.md
+            // §49): first the crystal, then spindles out of the crystal, then prisms out of
+            // spindles, and spindles out of prisms; it loops.
+            Vector3 childWorld = transform.TransformPoint(order.LocalPosition);
+            Quaternion childRot = transform.rotation * order.LocalRotation;
+            Vector3 root = ResolveAnchorWorld(order.Index);
+            Vector3 bond = childWorld - root;
 
-            var leaf = EnvironmentPrismPool.Get(healthPrism,
-                newSpindle.transform.position, newSpindle.transform.rotation);
+            // Re-used when this address is regrowing into its own vacancy, so grazing can never
+            // mint a second spindle on one bond — and RE-POSED either way, because the nearest
+            // standing ancestor may have changed while the prism was gone.
+            if (!_limb.TryGetValue(order.Index, out var limb) || !limb)
+            {
+                limb = AddSpindle();
+                if (!limb)
+                {
+                    _regrow.Enqueue(order.Index);
+                    return;
+                }
+                _limb[order.Index] = limb;
+            }
+            limb.LifeForm = this;
+            limb.transform.position = root;
+            // The branch geometry runs along the spindle's local +z, so LookRotation puts it on
+            // the bond. Up is the prism's own surface NORMAL — PrismRotation seats the normal on
+            // local +y — which keeps the limb's cross-section lying in the surface rather than
+            // rolling arbitrarily about the bond.
+            if (!SafeLookRotation.TrySet(limb.transform, bond, childRot * Vector3.up, this))
+                limb.transform.rotation = childRot;
+            StretchToBond(limb, bond.magnitude);
+
+            var leaf = EnvironmentPrismPool.Get(healthPrism, childWorld, childRot);
             if (!leaf)
             {
                 _regrow.Enqueue(order.Index);
                 return;
             }
 
-            leaf.transform.SetParent(newSpindle.transform, false);
-            leaf.transform.localPosition = Vector3.zero;
-            leaf.transform.localRotation = Quaternion.identity;
+            // Parented to the SPINDLE and never to another prism: a prism carries its measured
+            // size as its localScale, and a non-uniform scale above a rotated child is a shear
+            // (Docs/ECOSYSTEM.md §37.9). worldPositionStays keeps the prism exactly on the pose
+            // the surface measured — the spindle ROOT is never scaled, only its branch children
+            // are, so no stretch can leak into the leaf.
+            leaf.transform.SetParent(limb.transform, true);
             leaf.LifeForm = this;
             leaf.ChangeTeam(domain);
 
@@ -519,6 +596,144 @@ namespace CosmicShore.Gameplay
 
             // Growth is this plant's feeding — see Flora.NotifyGrew.
             NotifyGrew();
+        }
+
+        /// <summary>
+        /// Where the prism at <paramref name="index"/> grows OUT of, in world space.
+        ///
+        /// <para>The generator hands every address the index it continues from, and guarantees a
+        /// parent is always earlier in the list — so laying in list order is a growth order by
+        /// construction. What it cannot guarantee is that the parent was LAID: the cross-plant
+        /// claim refuses roughly a third of candidates, and a refused prism would otherwise leave
+        /// its whole downstream curve hanging off nothing. So the anchor walks UP the parent chain
+        /// to the nearest prism actually standing, and falls back to the plant's own origin —
+        /// where the heart sits — when the chain runs out. A skipped prism therefore lengthens a
+        /// bond rather than severing a branch, which is what keeps the plant ONE object under
+        /// refusal and under grazing alike.</para>
+        /// </summary>
+        Vector3 ResolveAnchorWorld(int index)
+        {
+            int p = index >= 0 && index < _parent.Count ? _parent[index] : -1;
+            // Bounded by the chain length, and the chain is strictly decreasing, so it terminates.
+            while (p >= 0)
+            {
+                if (_laid.TryGetValue(p, out var prism) && prism) return prism.transform.position;
+                p = p < _parent.Count ? _parent[p] : -1;
+            }
+            return transform.position;
+        }
+
+        /// <summary>
+        /// Stretches a limb's branch geometry to span its own bond.
+        ///
+        /// <para>It scales the spindle's CHILDREN and never the root, for the reason
+        /// <c>AssembledFlora.ScaleSpindleToLattice</c> records: the prism parents to the root, so
+        /// a scaled root would multiply the measured prism size and this species' fitted leaf
+        /// would stop describing the prism. Only the child's LOCAL Z is scaled — on every spindle
+        /// prefab in the project that is the branch's length axis.</para>
+        ///
+        /// <para>It writes an ABSOLUTE scale rather than multiplying the current one, because a
+        /// regrown prism re-poses its existing limb onto a possibly different bond and a
+        /// multiplying stretch would compound every time a plant was grazed back.</para>
+        /// </summary>
+        void StretchToBond(Spindle limb, float bond)
+        {
+            if (!limb || bond <= 0f) return;
+            var geometry = ResolveBranchGeometry(limb);
+            if (geometry.Reach <= 0f || geometry.ChildScaleZ == null) return;
+
+            float f = bond / geometry.Reach;
+            Transform root = limb.transform;
+            // Counted over the BRANCH children only. A re-posed limb can be carrying a prism by
+            // now, and a prism wears its measured size as localScale — writing a branch's z onto
+            // it would shear the leaf, which is the one thing parenting-to-the-spindle exists to
+            // prevent.
+            int seen = 0;
+            for (int i = 0; i < root.childCount && seen < geometry.ChildScaleZ.Length; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.GetComponent<Prism>()) continue;
+                Vector3 scale = child.localScale;
+                scale.z = geometry.ChildScaleZ[seen++] * f;
+                child.localScale = scale;
+            }
+        }
+
+        /// <summary>
+        /// How far the spindle prefab's branch reaches along the spindle's local +z, composed
+        /// through the transform chain from the mesh bounds — not authored, because a number
+        /// copied out of an asset is true only on the day it is copied. The per-child z scales it
+        /// was measured at travel with it, so <see cref="StretchToBond"/> can state an absolute
+        /// scale instead of a multiplier.
+        ///
+        /// <para>A prefab whose branch does NOT run along +z measures zero and is reported once by
+        /// name: the limb then stands unstretched rather than silently inverted, which is a thing
+        /// a human can see and act on.</para>
+        /// </summary>
+        BranchGeometry ResolveBranchGeometry(Spindle limb)
+        {
+            int key = spindle ? spindle.GetInstanceID() : 0;
+            if (BranchByPrefab.TryGetValue(key, out var cached)) return cached;
+
+            Transform root = limb.transform;
+            float reach = 0f;
+            foreach (var filter in limb.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!filter || !filter.sharedMesh || filter.transform == root) continue;
+                Bounds b = filter.sharedMesh.bounds;
+                Matrix4x4 m = root.worldToLocalMatrix * filter.transform.localToWorldMatrix;
+                for (int c = 0; c < 8; c++)
+                {
+                    Vector3 corner = m.MultiplyPoint3x4(new Vector3(
+                        (c & 1) == 0 ? b.min.x : b.max.x,
+                        (c & 2) == 0 ? b.min.y : b.max.y,
+                        (c & 4) == 0 ? b.min.z : b.max.z));
+                    if (corner.z > reach) reach = corner.z;
+                }
+            }
+
+            // Read off the live limb rather than the prefab asset: it has just been instantiated
+            // and nothing has stretched it yet, and reading a prefab's transform chain in a
+            // player is a different question from reading an instance's.
+            var baseZ = new List<float>(root.childCount);
+            for (int i = 0; i < root.childCount; i++)
+            {
+                Transform child = root.GetChild(i);
+                if (child.GetComponent<Prism>()) continue;
+                baseZ.Add(child.localScale.z);
+            }
+
+            if (reach <= 0f && !_warnedNoBranch)
+            {
+                _warnedNoBranch = true;
+                CSDebug.LogWarning(
+                    $"{name}: spindle prefab '{(spindle ? spindle.name : "none")}' has no branch " +
+                    "geometry along its local +z, so MandelbulbFlora cannot stretch its limbs to " +
+                    "their bonds. This family expects the branch BranchingFlora and BorromeanFlora " +
+                    "use, whose geometry runs forward from the spindle's origin.", this);
+            }
+
+            var geometry = new BranchGeometry(reach, baseZ.ToArray());
+            BranchByPrefab[key] = geometry;
+            return geometry;
+        }
+
+        /// <summary>
+        /// Forgets a limb the tracker retired, so the address it carried grows a new one instead
+        /// of re-posing a destroyed object. Named <c>limb</c> rather than the base's
+        /// <c>spindle</c> on purpose: <see cref="LifeForm.spindle"/> is the PREFAB field, and a
+        /// parameter shadowing it here would make the two look interchangeable.
+        /// </summary>
+        public override void RemoveSpindle(Spindle limb)
+        {
+            if (limb && _limb.Count > 0)
+            {
+                int key = int.MinValue;
+                foreach (var pair in _limb)
+                    if (pair.Value == limb) { key = pair.Key; break; }
+                if (key != int.MinValue) _limb.Remove(key);
+            }
+            base.RemoveSpindle(limb);
         }
 
         // The scale the next AddHealthBlock should apply. Flora.AddHealthBlock stamps every prism
