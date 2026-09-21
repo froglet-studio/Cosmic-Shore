@@ -4,6 +4,69 @@ Every open item between `bleeding-edge` and the invite-only Steam Playtest, deri
 **`Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.pdf`** (10 Sep 2026) measured against the
 Revision 2 checkpoint of 31 July.
 
+> ## Re-run 21 Sep 2026 — `Docs/STEAM_CHECKPOINT_REV5_READINESS_AUDIT.pdf`
+>
+> **The six-week window this board serves closed on 11 September 2026.** No checkpoint had stated
+> that, so Revision 5 states it first. Week one of the plan required a Steamworks account, the
+> Direct fee and an app record; `Tools/Steam/upload.sh` still refuses to run for want of one, so
+> **H1 has not happened** and weeks two through six each depend on it.
+>
+> **Three Revision 4 claims are corrected, and the first one is good news:**
+>
+> 1. 🟢 **"Nothing in CI builds a Windows player" is WRONG.** `.github/workflows/unity-ci.yml`
+>    runs a weekly IL2CPP **Windows player build** on a self-hosted runner
+>    (`CosmicShoreBuildPipeline.BuildWindowsRelease`), and a *Verify build output* step fails the
+>    job unless `CosmicShore.exe` exists. **The 17 Sep scheduled run was green**, as were 7 of the
+>    last 10, and the step existed at Rev 4's own base commit. **R1's substance still holds — a
+>    player has never been LAUNCHED — but its stated evidence does not.** H6's wording
+>    ("no workflow builds a Windows player today") understates what is already authored: the job is
+>    gated on `vars.UNITY_RUNNER_LABEL`, and that variable is set.
+> 2. 🟢 **R14 was recorded "Not started" and had landed the same day** (PRs #871/#873, 12 Sep).
+>    Its one **verified compliance gap** — FMOD EULA cl. 3's in-game credit — is now **closed and
+>    gated** (`Assets/Resources/CreditsManifest.asset` + `CreditsReleaseGuard` +
+>    `check_credits_manifest.py --check`, passing).
+> 3. ⚠️ **"57 open items" in `UNITY_VERIFICATION_CHECKLIST.md` is not reproducible.** Counting
+>    section markers gives **46** (45 🔴 / 1 🟡 / 1 🟢), which is what the file's own banner says.
+>    The conclusion is unchanged — none has been absorbed into QA — but do not quote 57.
+>
+> **Re-measured against `bleeding-edge` @ `0eef7c5b`:** live arcade modes **21 → 25**; `GameModes`
+> members **51 → 55**; build-settings scenes **29 → 33**; vessel slots named **26 → 29/32**; L5
+> upgrades **22 → 23/32** (*net +1 including one **regression** — `Scarab.asset` line 53 lost
+> `Armored Switch`*); QA backlog **64 → 68 items, 62 never run**, scan date **still 13 Aug** and now
+> **39 days stale**; QA verdicts **still 1**, from 14 Aug. The progression service is **still
+> instantiated by nothing** — all four sub-claims re-verified independently, third audit running.
+>
+> **Scope against the plan's own premise.** Revision 2 said *"0 features left to build"*. Measured
+> from 31 July to `0eef7c5b`: **1,966 commits** and **19 new game-mode ids**. Every validation
+> estimate on this board was sized against the smaller game — R7's matrix is now **25 × 4 = 100**.
+>
+> **Three findings new to this run**, none of which was in any tracker:
+> * ✅ **Seven shipped strings the UI font cannot draw**, five of them on the **connecting /
+>   arena-build screen every player sees every match**. Fixed, and gated by
+>   `Tools/Build/check_tmp_glyph_coverage.py` (12 self-test controls, wired into CI).
+> * 🚩 **`ArcadeGameCoOpWildlifeBlitz` names a scene that is not in build settings** —
+>   `MinigameWildlifeBlitzMultuplayerCoOp` exists on disk but ships in no player build, so that card
+>   cannot launch. Separately, **20 of 51** arcade cards name scenes that do not exist at all (all
+>   legacy single-player, none on a live roster).
+> * 🚩 **The STORE screen is unreachable** — `StoreScreen.cs` is a real 234-line implementation with
+>   no entry in `ScreenSwitcher`'s screens list, so the commerce de-scope branch that would mark it
+>   is dead code. Related: the **Arena** button is authored `Available` in `Menu_Main.unity` while
+>   the code comment describes Arena as behind a lock.
+>
+> **Revision 2 is now in the repository** (`Docs/STEAM_CHECKPOINT_REV2_PLAYTEST.pdf`, supplied by
+> the owner 21 Sep), so the `A*`/`B*`/`C*`/`D*`/`E*`/`F*` item IDs this board cites can finally be
+> looked up here. The note immediately below is superseded and kept only for the record.
+
+> **Re-run 12 Sep 2026 — `Docs/STEAM_CHECKPOINT_REV4_READINESS_AUDIT.pdf`.** Every Rev 3
+> measurement was taken again against `bleeding-edge` rather than read off this board's ticks.
+> R4, R5, R8, R9 and R16 are **confirmed landed**; R9 in particular honoured its one hard
+> constraint (`invite_wave` on the person record, `BuildSinkEnvelope` clean). Definition of Done
+> moved **1/8 → 2/8**. The blocking finding did **not** move — the progression service is still
+> instantiated by nothing. Scope grew again to **21 modes** (Bloomrush 52, Redline 53), and the
+> unverified pile grew with it: QA still holds **one** verdict from 14 Aug while
+> `UNITY_VERIFICATION_CHECKLIST.md` now carries **57 open items**. All five closed items were
+> "Session" lane; the three most blocking (R1, R2, R3) are the ones a session cannot do.
+
 > **Revision 2 is not in this repository** — it exists but was never committed, so its item
 > definitions (`A4`, `B2`, `C8`, `D2`, …) cited throughout this board cannot be looked up here.
 > The series, the gap, and the one known error in Rev 2's text are recorded in
@@ -42,7 +105,7 @@ A ✅ on an ID means that item has landed. The row stays on the board rather tha
 
 | ID | Item | Lane | Blocks | Prompt |
 |---|---|---|---|---|
-| **R1** | **Prove a Windows IL2CPP player reaches the main menu.** `QA-BUILD-WINDOWS-PLAYER` is a stated P0 in the QA backlog and has never been run. Every defect in that chain — the `IL1005` linker failure, the `PauseMenu.Prewarm` crash — was invisible in the Editor. Build with `Tools/Build/build_windows.sh`, launch, sign in, reach `Menu_Main`, open and close the pause menu, read `Player.log` end to end. | Human | R2, R3, B7, every D item, DoD #3 | — |
+| **R1** | **Prove a Windows IL2CPP player reaches the main menu.** `QA-BUILD-WINDOWS-PLAYER` is a stated P0 in the QA backlog and has never been run. Every defect in that chain — the `IL1005` linker failure, the `PauseMenu.Prewarm` crash — was invisible in the Editor. Build with `Tools/Build/build_windows.sh`, launch, sign in, reach `Menu_Main`, open and close the pause menu, read `Player.log` end to end. **Corrected 21 Sep 2026: the BUILD half is already automated and green** — a weekly IL2CPP Windows player comes off CI (H6) — so this item is now purely *launch it and use it*, on a machine, by a person. That is the whole remaining cost, and it gates R2, R3, B7, every D item and DoD #3. **It has been top of this board since Revision 3 and is the only item whose completion moves more than one Definition-of-Done criterion.** | Human | R2, R3, B7, every D item, DoD #3 | — |
 | **R2** | **Regenerate the QA backlog.** `Docs/QA/QA_BACKLOG.md` was generated 13 Aug against PRs #583–#710; the repo is at #855. Roughly 145 PRs and nine game modes are absent from the list QA works from. Run the `/qa-backlog` skill. ⚠ **Scope is larger than the PR count suggests (found by R8):** `Docs/UNITY_VERIFICATION_CHECKLIST.md` holds **46 open items** (45 🔴 + 1 🟡), every dated one *later* than this backlog's 13 Aug scan, so none has ever been absorbed. The skill already sweeps that file by name — this run is what migrates them. | Session | R3, D5 | run `/qa-backlog` |
 | **R3** | **Start the daily all-modes pass (C8).** Nineteen modes now, not seven. D5's bug bash needs a seed corpus and none exists — one submitted verdict in the backlog's entire history. Start before the bash, not at it. | Human | D5, D6 | — |
 | **R16** ✅ | **Closed the multiplayer session lifecycle — the SESSION half.** Landed 11 Sep 2026; the editor half is **H10** and is deliberately not covered here. Of the four items: **B2 closed** (fixed since 2026-08-20 — the semaphores are deliberately never disposed; the tracker was stale). **B11 closed** as superseded by B16, with the reverted recycle explicitly barred from returning and the evidence that would reopen it written down. **Presence B4** — a real cause found and fixed (`ConvergeToCanonicalAsync` released a lobby it hosts by DELETING it, evicting every other occupant into a frozen online list and a false `ForceReset`), commit `0c1f747b`. **Party B5** — every named cause traced closed in source, plus two the entry never named; its repro predates all of them AND the MPPM unique-tag prerequisite, so the record was stale rather than the bug fixed. **That audit was wrong about where to look, and the owner's play test on 2026-09-16 proved it** (*"multiplayer with 4 players does not work"* → "not everyone gets in", "3 fails too"). Root cause: **B16 recurring through three producers the original fix never reached** — the arcade mode preview, the Lifeform Matrix toy and the Wanderway conveyor all instantiate fauna through `CellLifeSpawnerBase.SpawnFaunaWithDomain` and so skipped `FaunaNetworkSync.ServerSpawn`, leaving four un-spawned `NetworkObject`s of ONE prefab in Menu_Main every time an arcade card was browsed. The defect was planted by the MENU, which is why an audit of the JOIN path re-derived a table of closed causes and found nothing. **Lesson: an audit establishes that the NAMED causes are closed and nothing else — it is evidence about where you looked.** Fixed by moving the lineage bind and the replication seam down into `SpawnFaunaWithDomain` (the one `Instantiate` every producer reaches, so a fourth site cannot bypass it by construction) plus a `NetworkSceneObjectGuard.Sweep` at connection approval, which is the last server-side moment before a guest synchronizes and makes the NEXT leak survivable rather than session-ending. Still not run in an editor; the confirmation pass belongs to H10 and needs an arcade card selected before the second guest joins. Both are 🟡, not 🟢: **nothing was run in an editor** (no Unity in that session), so the two retests are real work and they belong to **H10**. **Second pass, 2026-09-11, on an owner report from live play that outranked this tracker** (*"once you get off the happy path the game is bugged… connecting is a challenge, leaving is a challenge"*, 4 US players, not latency): two structural client defects found and fixed — **B18**, a client could not leave a match at all and could not leave a Maelstrom until the whole race-to-N ended (every exit gated on `IsServer`; the correct pattern existed on exactly one screen), and **B19**, nothing watched a client's scene transition so a lost one was a permanent black screen. Both 🟡 — not playtested. Return (rejoin-in-progress, host migration) stays deliberately cut. **Sibling of R13** — that one is whether the experience is pleasant, this is whether it holds together; the join splash showing nothing for up to ~60s is logged there. | Session ✅ + editor ⬜ | DoD #2, DoD #3, H10 | [`MULTIPLAYER_LIFECYCLE_PROMPT.md`](prompts/MULTIPLAYER_LIFECYCLE_PROMPT.md) |
@@ -84,7 +147,7 @@ A ✅ on an ID means that item has landed. The row stays on the board rather tha
 | **H3** | Coming Soon page live with the Playtest signup section (A5) | Off-machine | Gated on R6's runbook and on E3 capsule art. |
 | **H4** | Wave policy signed (A6) | Off-machine | Gated on R6. |
 | **H5** | Store page + Playtest build submitted for review (A7) | Off-machine | Two Valve reviews, 1–5 business days each. |
-| **H6** | Provision a CI runner | Human | Four workflows are authored; the static half of the landing guard runs. **The compile half needs a runner, and no workflow builds a Windows player today** — which is why R1 is manual. See `Docs/BUILD_AND_DELIVERY.md` §10. |
+| **H6** ✅ | Provision a CI runner | Human | **Done — corrected 21 Sep 2026.** A runner IS provisioned (`vars.UNITY_RUNNER_LABEL` is set) and `unity-ci.yml` builds a **weekly IL2CPP Windows player** via `CosmicShoreBuildPipeline.BuildWindowsRelease`, with a *Verify build output* step that fails unless `CosmicShore.exe` exists; the 17 Sep scheduled run was green, as were 7 of the last 10. The previous wording here — *"no workflow builds a Windows player today"* — was **false**, and it had been false since before Revision 4 measured it. R1 stays manual for the reason it always should have: **CI builds the player and never launches it.** See `Docs/BUILD_AND_DELIVERY.md` §10. |
 | **H7** | Steam overlay verification (B7) | Human | Blocked on R1 plus a real Steam build on a branch. |
 | **H8** | Profiling on the GTX 1060 floor machine (D1) | Human | Locks the hardware floor and the frame/memory targets. |
 | **H9** | Two-hour soak across freestyle and back-to-back tournaments (D3) | Human | |

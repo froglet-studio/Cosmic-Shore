@@ -1,0 +1,456 @@
+<title>Cosmic Shore Readiness Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#ffffff;
+  --ground-2:#fafbfd;
+  --ground-3:#f2f4f8;
+  --ink:#12141c;
+  --ink-2:#2c313d;
+  --muted:#5c6373;
+  --faint:#868da0;
+  --rule:#dfe3ea;
+  --rule-soft:#eef1f5;
+  --accent:#4a3aff;
+  --accent-tint:#efedff;
+  --ok:#0d7a4f;      --ok-tint:#e6f5ee;
+  --warn:#9a5b00;    --warn-tint:#fdf1de;
+  --crit:#b02525;    --crit-tint:#fdecec;
+  --shadow:0 1px 2px rgba(18,20,28,.05), 0 8px 24px -16px rgba(18,20,28,.22);
+  --sans:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1016;
+    --ground-2:#141821;
+    --ground-3:#1b2029;
+    --ink:#e9ebf2;
+    --ink-2:#c7ccda;
+    --muted:#9aa2b5;
+    --faint:#767e93;
+    --rule:#262c3a;
+    --rule-soft:#1c2230;
+    --accent:#8f84ff;
+    --accent-tint:#1e1c3d;
+    --ok:#4bc48c;      --ok-tint:#0f2a20;
+    --warn:#e0a44a;    --warn-tint:#2e2211;
+    --crit:#f0716f;    --crit-tint:#33161a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1016;
+  --ground-2:#141821;
+  --ground-3:#1b2029;
+  --ink:#e9ebf2;
+  --ink-2:#c7ccda;
+  --muted:#9aa2b5;
+  --faint:#767e93;
+  --rule:#262c3a;
+  --rule-soft:#1c2230;
+  --accent:#8f84ff;
+  --accent-tint:#1e1c3d;
+  --ok:#4bc48c;      --ok-tint:#0f2a20;
+  --warn:#e0a44a;    --warn-tint:#2e2211;
+  --crit:#f0716f;    --crit-tint:#33161a;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1080px;margin:0 auto;padding-inline:24px;padding-block:0 96px}
+@media(max-width:640px){.page{padding-inline:16px}}
+
+/* ---------- masthead ---------- */
+.mast{padding-block:56px 32px;border-bottom:2px solid var(--ink)}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 18px
+}
+h1{
+  font-family:var(--sans);font-weight:700;font-size:clamp(38px,6vw,62px);
+  line-height:1.02;letter-spacing:-.026em;margin:0 0 6px;text-wrap:balance
+}
+.mast .sub{
+  font-family:var(--serif);font-size:clamp(17px,2.2vw,21px);line-height:1.45;
+  color:var(--ink-2);margin:0 0 30px;max-width:60ch
+}
+.meta{display:flex;flex-wrap:wrap;gap:0 40px;row-gap:14px;font-size:12.5px}
+.meta div{display:flex;flex-direction:column;gap:3px}
+.meta dt{color:var(--faint);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.meta dd{margin:0;font-weight:500;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* ---------- verdict figures ---------- */
+.figs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+  gap:0;border-bottom:1px solid var(--rule);margin-bottom:8px
+}
+.fig{padding:26px 22px 24px;border-right:1px solid var(--rule-soft)}
+.fig:last-child{border-right:none}
+@media(max-width:640px){.fig{border-right:none;border-bottom:1px solid var(--rule-soft);padding:20px 0}
+  .fig:last-child{border-bottom:none}}
+.fig .n{
+  font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;display:block;margin-bottom:8px
+}
+.fig .n.is-crit{color:var(--crit)}
+.fig .n.is-warn{color:var(--warn)}
+.fig .n.is-ok{color:var(--ok)}
+.fig .l{font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:6px}
+.fig .d{font-size:12.5px;color:var(--muted);line-height:1.42}
+
+/* ---------- sections ---------- */
+section{padding-block:44px 0}
+h2{
+  font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink);margin:0 0 6px;
+  display:flex;align-items:baseline;gap:12px
+}
+h2 .idx{
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);
+  letter-spacing:0
+}
+.lede{
+  font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--ink);
+  margin:0 0 22px;max-width:62ch;text-wrap:pretty
+}
+p{font-family:var(--serif);font-size:15.5px;line-height:1.62;color:var(--ink-2);max-width:66ch;margin:0 0 15px}
+p.tight{margin-bottom:9px}
+code{
+  font-family:var(--mono);font-size:.855em;background:var(--ground-3);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink);
+  word-break:break-word
+}
+strong{font-weight:600;color:var(--ink)}
+.rule{height:1px;background:var(--rule);margin-block:40px 0;border:0}
+
+/* ---------- the finding ---------- */
+.finding{
+  border:1px solid var(--crit);border-left:5px solid var(--crit);
+  background:var(--ground-2);border-radius:4px;padding:30px 30px 26px;margin-bottom:26px
+}
+@media(max-width:640px){.finding{padding:22px 18px}}
+.finding h3{
+  font-family:var(--sans);font-size:clamp(21px,3.2vw,27px);font-weight:700;
+  letter-spacing:-.019em;line-height:1.18;margin:0 0 12px;text-wrap:balance
+}
+.finding p{max-width:70ch}
+.finding p:last-child{margin-bottom:0}
+
+.chain{list-style:none;margin:20px 0 4px;padding:0;display:flex;flex-direction:column;gap:0}
+.chain li{
+  display:grid;grid-template-columns:26px 1fr;gap:14px;align-items:start;
+  padding:11px 0;border-top:1px solid var(--rule)
+}
+.chain li:first-child{border-top:1px solid var(--rule)}
+.chain .step{
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--crit);
+  padding-top:2px;font-variant-numeric:tabular-nums
+}
+.chain .txt{font-size:13.8px;line-height:1.52;color:var(--ink-2)}
+.chain .txt b{color:var(--ink);font-weight:600}
+
+/* ---------- consequence grid ---------- */
+.conseq{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:4px;
+  overflow:hidden;margin:22px 0 0
+}
+.conseq div{background:var(--ground);padding:16px 17px}
+.conseq .site{font-family:var(--mono);font-size:11.5px;color:var(--accent);display:block;margin-bottom:7px;word-break:break-all}
+.conseq .eff{font-size:13px;line-height:1.45;color:var(--ink-2)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 6px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.4px;min-width:560px}
+thead th{
+  text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--faint);padding:0 14px 9px 0;
+  border-bottom:1px solid var(--ink);white-space:nowrap
+}
+tbody td{
+  padding:12px 14px 12px 0;border-bottom:1px solid var(--rule-soft);
+  vertical-align:top;line-height:1.46;color:var(--ink-2)
+}
+tbody tr:last-child td{border-bottom:none}
+tbody td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+td .m{font-family:var(--mono);font-size:11.6px;color:var(--muted);display:block;margin-top:4px;word-break:break-word}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+/* severity stripe on workstream rows */
+.ws tbody td:first-child{
+  border-left:3px solid transparent;padding-left:12px;white-space:normal
+}
+.ws tbody tr.s-ok    td:first-child{border-left-color:var(--ok)}
+.ws tbody tr.s-warn  td:first-child{border-left-color:var(--warn)}
+.ws tbody tr.s-crit  td:first-child{border-left-color:var(--crit)}
+.ws tbody tr.s-off   td:first-child{border-left-color:var(--rule)}
+.ws tbody td:first-child small{
+  display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;
+  color:var(--faint);margin-top:3px;letter-spacing:0
+}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-block;font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;padding:3px 8px;border-radius:3px;white-space:nowrap;
+  border:1px solid transparent
+}
+.c-ok{background:var(--ok-tint);color:var(--ok);border-color:var(--ok)}
+.c-warn{background:var(--warn-tint);color:var(--warn);border-color:var(--warn)}
+.c-crit{background:var(--crit-tint);color:var(--crit);border-color:var(--crit)}
+.c-off{background:var(--ground-3);color:var(--muted);border-color:var(--rule)}
+.c-acc{background:var(--accent-tint);color:var(--accent);border-color:var(--accent)}
+
+/* ---------- callout ---------- */
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-tint);
+  padding:16px 20px;border-radius:0 4px 4px 0;margin:22px 0
+}
+.note p{margin:0;max-width:70ch;font-size:14.5px;color:var(--ink-2)}
+.note p+p{margin-top:10px}
+.note .hd{
+  font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 8px;display:block
+}
+
+/* ---------- actions ---------- */
+.acts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0}
+.acts li{
+  display:grid;grid-template-columns:36px 1fr auto;gap:16px;align-items:start;
+  padding:18px 0;border-bottom:1px solid var(--rule-soft)
+}
+@media(max-width:640px){
+  .acts li{grid-template-columns:28px 1fr;gap:12px}
+  .acts li .tag{grid-column:2;justify-self:start;margin-top:8px}
+}
+.acts li:last-child{border-bottom:none}
+.acts .k{
+  font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);
+  padding-top:3px;font-variant-numeric:tabular-nums
+}
+.acts .b h4{font-family:var(--sans);font-size:15px;font-weight:600;margin:0 0 5px;letter-spacing:-.008em;color:var(--ink)}
+.acts .b p{margin:0;font-size:13.6px;line-height:1.5;max-width:64ch}
+
+/* ---------- dod ---------- */
+.dod{list-style:none;padding:0;margin:0;display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.dod li{background:var(--ground);padding:15px 18px;display:grid;grid-template-columns:26px 1fr auto;gap:14px;align-items:start}
+@media(max-width:640px){.dod li{grid-template-columns:22px 1fr;}
+  .dod li .chip{grid-column:2;justify-self:start;margin-top:7px}}
+.dod .n{font-family:var(--mono);font-size:11.5px;color:var(--faint);padding-top:3px}
+.dod .t{font-size:13.6px;line-height:1.48;color:var(--ink-2)}
+.dod .t b{color:var(--ink);font-weight:600}
+
+footer{
+  margin-top:60px;padding-top:22px;border-top:1px solid var(--rule);
+  font-size:11.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:6px 22px
+}
+footer .mono{font-family:var(--mono)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+
+  <header class="mast">
+    <p class="eyebrow">Engineering Readiness Audit · Revision 4</p>
+    <h1>Cosmic Shore</h1>
+    <p class="sub">Re-run on 12 September against <code>bleeding-edge</code>, two days after Revision 3. Five tracked items landed. The blocking finding did not move, and the verification debt grew faster than the work that closed.</p>
+    <dl class="meta">
+      <div><dt>Audited</dt><dd>12 Sep 2026</dd></div>
+      <div><dt>Previous</dt><dd>Rev 3 · 10 Sep</dd></div>
+      <div><dt>Branch</dt><dd>bleeding-edge <span class="mono">b947481a1</span></dd></div>
+      <div><dt>History</dt><dd>Now complete — 9,427 commits</dd></div>
+      <div><dt>Not covered</dt><dd>Off-machine work; editor runtime</dd></div>
+    </dl>
+  </header>
+
+  <div class="figs">
+    <div class="fig">
+      <span class="l">Items landed</span>
+      <span class="n is-ok">5</span>
+      <span class="d">R4, R5, R8, R9, R16 — all verified against the tree, not taken on trust.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Progression system</span>
+      <span class="n is-crit">Absent</span>
+      <span class="d">Unchanged. Still instantiated by nothing, still orphaned in a folder named DELETE LATER.</span>
+    </div>
+    <div class="fig">
+      <span class="l">QA verdicts</span>
+      <span class="n is-crit">1</span>
+      <span class="d">Still one, from 14 August. The backlog still scans to 13 August.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Unverified items</span>
+      <span class="n is-crit">57</span>
+      <span class="d">In the verification checklist alone — 54 red, 3 amber, none absorbed into QA.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Definition of done</span>
+      <span class="n is-warn">2<span style="color:var(--faint);font-weight:500">/8</span></span>
+      <span class="d">Up from 1. Criterion 6 flipped when wave cohorting landed.</span>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="idx">01</span> What changed in two days</h2>
+    <p class="lede">The board is being worked, and worked well — five items closed, each one landing roughly where its prompt aimed. But every one of them carries the same sentence in its own record: <em>nothing was opened in Unity</em>. The project is closing design and code items faster than it is proving any of them, and the gap between those two rates is now the dominant risk.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:30%">Measure</th><th class="num">Rev 3 · 10 Sep</th><th class="num">Now · 12 Sep</th><th>Reading</th></tr></thead>
+        <tbody>
+          <tr><td>Live arcade modes</td><td class="num">19</td><td class="num">21</td><td>Bloomrush (52) and Redline (53)</td></tr>
+          <tr><td>Scenes in build settings</td><td class="num">27</td><td class="num">29</td><td></td></tr>
+          <tr><td><code>GameModes</code> members</td><td class="num">48</td><td class="num">50</td><td></td></tr>
+          <tr><td>Vessel slots named</td><td class="num">25/32</td><td class="num">26/32</td><td>Manta completed its map</td></tr>
+          <tr><td>Level-5 upgrades authored</td><td class="num">19/32</td><td class="num">22/32</td><td>All three from Manta</td></tr>
+          <tr><td>Tracked items closed</td><td class="num">0/15</td><td class="num">5/15</td><td>R4, R5, R8, R9, R16</td></tr>
+          <tr><td><strong>QA verdicts on record</strong></td><td class="num">1</td><td class="num"><strong>1</strong></td><td>Unchanged</td></tr>
+          <tr><td><strong>QA backlog scan date</strong></td><td class="num">13 Aug</td><td class="num"><strong>13 Aug</strong></td><td>Unchanged</td></tr>
+          <tr><td><strong>Progression service</strong></td><td class="num">absent</td><td class="num"><strong>absent</strong></td><td>Unchanged</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="note">
+      <span class="hd">One limitation from Revision 3 is now closed</span>
+      <p>Rev 3 said no claim could be made about 31 July – 30 August because the clone was shallow at 342 commits. The fetch brought the full history: <strong>9,427 commits</strong>. That caveat no longer applies to future runs.</p>
+      <p>It also revealed that the Rev 3 audit branch had already been <strong>merged into <code>bleeding-edge</code></strong>, which is how the board came to be worked by other sessions between the two runs.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">02</span> The blocking finding, unchanged</h2>
+
+    <div class="finding">
+      <h3>The quest and progression system is still not part of the build</h3>
+      <p>Re-measured from scratch rather than carried forward. Every element of the Revision 3 finding holds exactly:</p>
+      <ol class="chain">
+        <li><span class="step">01</span><span class="txt"><code>GameModeProgressionService</code>'s only host is still <code>MIgration_Prefabs (DELETE LATER)/PlayerDataService.prefab</code>.</span></li>
+        <li><span class="step">02</span><span class="txt">That prefab's guid is still referenced by <b>zero</b> scenes, prefabs or assets.</span></li>
+        <li><span class="step">03</span><span class="txt">No <code>AddComponent</code>, <code>new GameObject</code> or <code>Resources.Load</code> constructs it.</span></li>
+        <li><span class="step">04</span><span class="txt">Its serialized block still carries <code>questList</code> and <code>gameData</code> and <b>no <code>progressionConfig</code></b>, so the authored config that unlocks thirteen modes is still dead.</span></li>
+        <li><span class="step">05</span><span class="txt"><code>ArcadeExploreView</code> still reads <code>progressionService != null && !IsGameModeUnlocked(...)</code> — still failing open, still rendering every mode unlocked.</span></li>
+      </ol>
+      <p style="margin-top:18px">This is correct and expected — the item is deliberately excluded from the board while design works the chain. It is restated because <strong>two more modes shipped into an arcade that no progression gates</strong>, and because Definition of Done #4 remains unreachable regardless of how much dialogue is authored.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">03</span> What landed, verified</h2>
+    <p class="lede">Each of the five was re-measured against the tree rather than read off the board's tick.</p>
+
+    <div class="tw">
+      <table class="ws">
+        <thead><tr><th style="width:18%">Item</th><th style="width:14%">Verified</th><th>What the tree actually shows</th></tr></thead>
+        <tbody>
+          <tr class="s-ok"><td>R5 · PC defaults<small>B2, code half</small></td><td><span class="chip c-ok">Confirmed</span></td><td><code>defaultScreenWidth/Height</code> now <strong>1920 × 1080</strong>, <code>resizableWindow</code> now <strong>1</strong>, Standalone id now <code>com.FrogletGames.CosmicShore</code>. The D3D12 → D3D11 graphics list is <strong>untouched</strong>, which was the one thing that had to survive.</td></tr>
+          <tr class="s-ok"><td>R4 · Commerce de-scope<small>C4</small></td><td><span class="chip c-ok">Confirmed</span></td><td><code>Resources/CommerceAvailability.asset</code> and <code>CommerceDeScopeTests.cs</code> both present. It went further than the prompt asked and found the live path: <strong>PROFILE → <code>UnlockVesselButton</code> → episode panel → Support Us → <code>Application.OpenURL</code></strong>, reachable from a cold boot — and that button never unlocked a vessel.</td></tr>
+          <tr class="s-ok"><td>R9 · Wave cohorting<small>C7</small></td><td><span class="chip c-ok">Confirmed, correctly</span></td><td><code>InviteWaveFor(firstSeenUtcMs)</code> writes <code>invite_wave</code> into the person properties, and <code>BuildSinkEnvelope()</code> is <strong>clean</strong> — the prompt's one hard constraint (never per-event, because UGS schema rows are permanent and capped) was honoured.</td></tr>
+          <tr class="s-ok"><td>R8 · Doc drift</td><td><span class="chip c-ok">Confirmed</span></td><td><code>Docs/STEAM_CHECKPOINT_SERIES.md</code> created; Revision 1 carries a supersession notice. It also established that <strong>Revision 2 is in no repository at all</strong> — the gap is now recorded rather than silent.</td></tr>
+          <tr class="s-warn"><td>R16 · Lifecycle<small>session half</small></td><td><span class="chip c-warn">Landed, unplaytested</span></td><td>B2 and B11 closed as stale; Presence B4 root-caused and fixed (<code>ConvergeToCanonicalAsync</code> deleted a lobby it hosts, evicting every occupant). Then a live-play report produced <strong>two structural defects the tracker never had</strong> — see below. Every fix is 🟡: no editor was run.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h2 style="margin-top:34px"><span class="idx">03.1</span> The two defects that came from playing the game</h2>
+    <p>Both were found on 11 September from an owner report of live play — four US players, explicitly not a latency problem — and neither appeared in any tracker, any test suite or the Revision 3 audit:</p>
+    <ul>
+      <li><strong>B18</strong> — a client <strong>could not leave a match at all</strong>, and could not leave a Maelstrom until the whole race-to-N finished. Every exit was gated on <code>IsServer</code>; the correct pattern existed on exactly one screen.</li>
+      <li><strong>B19</strong> — <strong>nothing watched a client's scene transition</strong>, so a lost one was a permanent black screen.</li>
+    </ul>
+    <p>The report that produced them — <em>"once you get off the happy path the game is bugged… connecting is a challenge, leaving is a challenge"</em> — outranked the bug tracker, which had neither. That is the clearest available argument for items R1 and R3: <strong>this class of defect is only visible from playing, and nobody has been playing systematically.</strong></p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">04</span> The gap that widened</h2>
+    <p class="lede">Five items closed and the amount of unverified work went up, not down. That is the finding of this re-run.</p>
+
+    <div class="conseq">
+      <div><span class="site">QA_BACKLOG.md</span><span class="eff">Still generated <strong>13 Aug</strong>, still 64 items, <strong>58 never run</strong>. Merges now reach PR <strong>#859</strong>.</span></div>
+      <div><span class="site">RESULTS/</span><span class="eff">Still exactly <strong>one</strong> submitted verdict in the project's history — <code>QA-BUILD-COMPILE</code>, 14 August.</span></div>
+      <div><span class="site">UNITY_VERIFICATION_CHECKLIST.md</span><span class="eff"><strong>54 red + 3 amber = 57 open items</strong>, every dated one later than the backlog's scan, so none has ever been absorbed.</span></div>
+      <div><span class="site">The five landed items</span><span class="eff">All five record that <strong>nothing was opened in Unity</strong>. Each adds to the pile it cannot itself clear.</span></div>
+    </div>
+
+    <p style="margin-top:22px">The arithmetic is worth stating plainly. Revision 3 found one QA verdict against a 19-mode game. Two days later there is still one verdict, against a <strong>21-mode</strong> game, with <strong>57</strong> separately-tracked unverified changes and five more landed items on top. <strong>R1 — proving a Windows player reaches the menu — has still never been run</strong>, and it gates every other verification item.</p>
+
+    <p>This is not a criticism of the work landing; the work is good and the prompts are being followed closely. It is that the board has two kinds of item in it, and only one kind is moving. Of the five closed, <strong>five were "Session" lane</strong>. Of the ten open, the three most blocking — R1, R2, R3 — are the ones a session cannot do.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">05</span> Still open, re-verified</h2>
+
+    <div class="tw">
+      <table class="ws">
+        <thead><tr><th style="width:20%">Item</th><th style="width:15%">State</th><th>Re-measured 12 Sep</th></tr></thead>
+        <tbody>
+          <tr class="s-crit"><td>R1 · Windows player<small>P0</small></td><td><span class="chip c-crit">Never run</span></td><td>Unchanged. Gates R2, R3, B7 and every D item. Nothing in CI builds a Windows player.</td></tr>
+          <tr class="s-crit"><td>R2 · QA backlog<small>P0</small></td><td><span class="chip c-crit">Not run</span></td><td>Scan date unchanged at 13 Aug. Scope has grown: the checklist's 57 open items are also waiting on this run to absorb them.</td></tr>
+          <tr class="s-crit"><td>R3 · Daily all-modes pass<small>P0</small></td><td><span class="chip c-crit">Not started</span></td><td>Now 21 modes. B18/B19 are the evidence this would have caught things.</td></tr>
+          <tr class="s-warn"><td>R6 · Playtest dual-appID</td><td><span class="chip c-warn">Not started</span></td><td><code>Tools/Steam/upload.sh</code> still takes <strong>one</strong> app/depot pair — zero matches for a second target. A4/A5/A6 still have no runbook.</td></tr>
+          <tr class="s-warn"><td>R7 · Load-time target</td><td><span class="chip c-warn">Not started</span></td><td>Still no published target. The matrix is now <strong>21 × 4 = 84</strong> combinations, up from 76.</td></tr>
+          <tr class="s-warn"><td>R13 · Multiplayer QoL</td><td><span class="chip c-warn">Not started</span></td><td>Re-measured: a player <strong>still cannot send a friend request</strong> — zero callers of either facade method outside the facade.</td></tr>
+          <tr class="s-warn"><td>R10 · Rhino map</td><td><span class="chip c-warn">Unchanged</span></td><td>Still <strong>1/4 named, 0/4 upgrades</strong>, still locking Astro League, Peel the Cage and Headlong. Manta moved; the Rhino did not.</td></tr>
+          <tr class="s-warn"><td>R11 · Urchin HUD<br>R12 · Serpent map</td><td><span class="chip c-warn">Unchanged</span></td><td>No <code>UrchinHUDVariant.prefab</code>. Serpent still 1/4 named, 0/4 upgrades.</td></tr>
+          <tr class="s-warn"><td>R14 · Licence register<br>R15 · GitHub hygiene</td><td><span class="chip c-warn">Not started</span></td><td>Both unchanged. The licence question is the one with the longest tail if it goes badly.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">06</span> Definition of done · 2 of 8</h2>
+    <p class="lede">One criterion flipped. The four that cannot pass are the same four.</p>
+
+    <ol class="dod">
+      <li><span class="n">1</span><span class="t"><b>Steam page live with Playtest signup.</b> R6 not started, so the Playtest half still has no runbook.</span><span class="chip c-off">At risk</span></li>
+      <li><span class="n">2</span><span class="t"><b>Playtest build approved, waves granted, invites on.</b> R16's session half landed but is unplaytested; R1 still gates it.</span><span class="chip c-off">Blocked</span></li>
+      <li><span class="n">3</span><span class="t"><b>Fresh install → four-player Tournament, zero P0/P1.</b> Still unproven, and B18/B19 show the defect class is real.</span><span class="chip c-crit">Unproven</span></li>
+      <li><span class="n">4</span><span class="t"><b>Quest chain completes, unlocks persist.</b> Service still not instantiated.</span><span class="chip c-crit">Cannot pass</span></li>
+      <li><span class="n">5</span><span class="t"><b>Load time meets target in every mode.</b> No target published; the matrix grew to 84 cells.</span><span class="chip c-crit">No target</span></li>
+      <li><span class="n">6</span><span class="t"><b>Telemetry cohorted by wave.</b> <b>Newly met on the client</b> — <code>invite_wave</code> is on the person record and the envelope stayed clean. The PostHog dashboards are still to build.</span><span class="chip c-ok">Client met</span></li>
+      <li><span class="n">7</span><span class="t"><b>Zero public review surface.</b> Structural.</span><span class="chip c-ok">Met</span></li>
+      <li><span class="n">8</span><span class="t"><b>Gate published, exit checklist signed.</b> R9 means the gate can now be measured; publishing and signing are still H12.</span><span class="chip c-warn">Half</span></li>
+    </ol>
+
+    <p style="margin-top:26px">The verdict is unchanged in shape and sharper in degree. <strong>Nothing on this milestone is blocked on building something.</strong> It is blocked on one wiring decision, one Windows player build, and a validation pass that was scoped in July, has still not begun, and now has 57 tracked items and 21 modes waiting for it. The engineering continues to arrive ahead of plan; what is missing is still the evidence that any of it works.</p>
+  </section>
+
+  <footer class="screen-only">
+    <span>Cosmic Shore · Froglet Inc.</span>
+    <span>Readiness Audit · Revision 4 · 12 September 2026</span>
+    <span class="mono">bleeding-edge @ b947481a1</span>
+    <span>Static repository audit — no editor or player run</span>
+  </footer>
+
+</div>

@@ -1,12 +1,16 @@
 # Steam checkpoint — the revision series
 
-There are **three** revisions of the Steam checkpoint. Two are in this repository. This file is the
+There are **five** revisions of the Steam checkpoint. **All five are now in this repository** (Revisions 2 and 4 were both recovered on 21 Sep 2026). This file is the
 index, and it exists because the series is the thing that drifts: each revision changed the
 *destination*, and a runbook that cites "the checkpoint" without a revision number inherits
 whichever one it happens to open.
 
-**If you only read one, read Revision 3.** The live work board derived from it is
-`Docs/STEAM_RELEASE_TASKS.md`.
+**If you only read one, read Revision 5** — it is the current state and it corrects three of
+Revision 4's claims. The live work board derived from the series is `Docs/STEAM_RELEASE_TASKS.md`.
+
+> **The six-week window Revision 2 was written against closed on 11 September 2026.** Every revision
+> after it measures a project that is past its own plan date, and Revision 5 states that first
+> because no earlier revision did.
 
 ---
 
@@ -15,28 +19,37 @@ whichever one it happens to open.
 | Rev | Date | Destination | In repo? | File |
 |---|---|---|---|---|
 | **1** | 28 Jul 2026 | **Paid Early Access**, one app, `beta`/`default` branches | ✅ yes | `Docs/STEAM_EA_INVESTOR_CHECKPOINT.html` / `.pdf` |
-| **2** | 31 Jul 2026 | **Invite-only Steam Playtest** — the pivot | ❌ **no — never committed** | — |
+| **2** | 31 Jul 2026 | **Invite-only Steam Playtest** — the pivot | ✅ **yes, as of 21 Sep 2026** | `Docs/STEAM_CHECKPOINT_REV2_PLAYTEST.pdf` |
 | **3** | 10 Sep 2026 | Engineering readiness audit *against* Rev 2 | ✅ yes | `Docs/STEAM_CHECKPOINT_REV3_READINESS_AUDIT.html` / `.pdf` |
+| **4** | 12 Sep 2026 | Re-run of the readiness audit — **three claims corrected by Rev 5** | ✅ **yes, as of 21 Sep 2026** | `Docs/STEAM_CHECKPOINT_REV4_READINESS_AUDIT.html` / `.pdf` |
+| **5** | 21 Sep 2026 | Re-run; corrects three Rev 4 claims; states the elapsed window | ✅ yes | `Docs/STEAM_CHECKPOINT_REV5_READINESS_AUDIT.html` / `.pdf` |
 
 ---
 
-## Revision 2 is missing, and that is a real gap
+## Revision 2 was missing for six weeks, and is now recovered
 
-Revision 2 **exists** — Revision 3 is explicitly measured against it, and the work board cites its
-item IDs (`A4`, `A5`, `A6`, `B2`, `B4`, `B7`, `C4`, `C7`, `C8`, `D1`–`D6`, `E1`–`E10`, `F1`–`F4`) —
-but it has never been committed to this repository. Confirmed 2026-09-11 from
-`git log --all --diff-filter=A`: the only checkpoint files ever added are Revision 1's pair and
-Revision 3's pair.
+**Closed 21 Sep 2026.** Revision 2 was supplied by the owner and committed as
+`Docs/STEAM_CHECKPOINT_REV2_PLAYTEST.pdf` (7 pages, 31 July 2026), exactly as the previous version
+of this file asked. Its presence is verified rather than assumed: the file carries the 31 July date
+and the `B2` **"Wwise audio init"** string recorded as an error below — which is also what confirms
+it is the real document and not a reconstruction.
 
-**What that costs.** The Playtest pivot is only recoverable second-hand, through Revision 3's
-summary of it and through the work board. The item IDs the board and the audit both use have **no
-in-repo definition** — you cannot look up what `B2` says, only what Revision 3 and the board say
-about it. That is the mechanism behind the `B2` error recorded below.
+**What its absence had cost, recorded so the shape is not forgotten.** For six weeks the Playtest
+pivot was only recoverable second-hand, through Revision 3's summary of it and through the work
+board. The item IDs the board and every audit use (`A4`, `A5`, `A6`, `B2`, `B4`, `B7`, `C4`, `C7`,
+`C8`, `D1`–`D6`, `E1`–`E10`, `F1`–`F4`) had **no in-repo definition**, so a reader could see what the
+audits said *about* `B2` but never what `B2` said. That is the mechanism behind the error below, and
+it is the argument for committing a checkpoint at the moment it is issued rather than circulating
+it as a file: a document that governs a plan but lives outside the repository is one the repository
+cannot be checked against.
 
-**If you hold a copy, commit it** beside the other two as
-`Docs/STEAM_CHECKPOINT_REV2_PLAYTEST.{html,pdf}` and update the table above. Do not re-derive it
-from Revision 3 — a reconstruction would read as the source document and be wrong in exactly the
-way this file exists to prevent.
+**The general rule this leaves behind.** *A plan the work is measured against belongs in the tree
+with the work.* The gap was found by `git log --all --diff-filter=A` on 2026-09-11 — only
+Revision 1's and Revision 3's pairs had ever been added — and it was closed only when someone who
+happened to hold the file was asked for it.
+
+Note the recovered copy is a **PDF only**; Revisions 1, 3 and 5 carry an `.html` source beside the
+render. There is no HTML for Revision 2 in the tree. Do not reconstruct one.
 
 ### Known error in Revision 2, correctable only here
 
