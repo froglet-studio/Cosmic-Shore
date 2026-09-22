@@ -64,6 +64,7 @@ day after the channel it referred to had been deleted.
 | Serpent | 3/4 | 3/4 | 2/4 |
 | Scarab | 4/4 | 4/4 | 2/4 |
 | Rhino | 2/4 | 3/4 | 0/4 |
+| **Butterfly** | **4/4** | **4/4** | **4/4** | *(added 2026-09-22 — code + map only; its prefab is built by `FrogletTools ▸ Vessels ▸ Create Butterfly Vessel` and is NOT on the branch yet, so the tool cannot see it until that has been run)* |
 
 Everything the tool still flags is a **design gap, not a wiring bug** — three rows: the Rhino's
 Charge and Space, and the Serpent's Mass. The full list, with what each one would cost to fill, is

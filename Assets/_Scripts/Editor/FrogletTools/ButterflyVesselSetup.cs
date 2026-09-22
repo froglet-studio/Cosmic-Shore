@@ -1,0 +1,874 @@
+#if UNITY_EDITOR
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using CosmicShore.Data;
+using CosmicShore.Editor.Froglet;
+using CosmicShore.Gameplay;
+using CosmicShore.UI;
+using CosmicShore.Utility;   // ClientNetworkTransform, NetcodeHooks — NOT Unity.Netcode.Components
+using Unity.Netcode;
+using UnityEditor;
+using UnityEngine;
+
+namespace CosmicShore.Editor
+{
+    /// <summary>
+    /// Builds the <b>Butterfly</b> vessel — the prefab, its effect containers, its action and
+    /// camera assets, its class asset, and its two registrations — from nothing.
+    ///
+    /// <para><b>Why this is an editor tool and not a Python generator.</b> Every other asset in
+    /// this branch was authored headlessly, and a vessel prefab cannot be: its root carries a
+    /// <c>NetworkObject</c>, whose <c>GlobalObjectIdHash</c> Unity computes and which every other
+    /// prefab in <c>DefaultNetworkPrefabs</c> must be distinct from. A hand-authored hash that
+    /// collides does not fail loudly — it makes the prefab indistinguishable from another
+    /// in-scene object and breaks scene synchronization for every later joiner
+    /// (<c>Docs/PartySystem/BUGS.md</c> B16). The same is true of nested prefab INSTANCES (the
+    /// skimmers, the tail, the jets, the HUD), which carry modification blocks Unity owns.</para>
+    ///
+    /// <para><b>The prefab is built from SCRATCH rather than cloned.</b> Cloning the Scarab would
+    /// inherit its hidden Sparrow FBX instance, its containers and its Scarab-only components —
+    /// every one of which would then have to be remembered and removed. Building explicitly means
+    /// every authored number on this vessel is visible in THIS FILE, which is also the only place
+    /// they are written down until someone opens the prefab.</para>
+    ///
+    /// <para><b>Every write goes through <see cref="Set"/>.</b> A <c>SerializedObject</c> write to a
+    /// field that does not exist is a silent no-op, which is indistinguishable from success — so a
+    /// missing property is COLLECTED and reported, and the tool refuses to call itself finished
+    /// with unwired fields outstanding.</para>
+    ///
+    /// <para>Run it, check the report, then use <b>Validate &amp; Push</b> at the bottom — a tool's
+    /// real deliverable is the assets it wrote, and those land in the working tree rather than on
+    /// the branch (<c>Docs/TOOLING.md</c>).</para>
+    /// </summary>
+    public class ButterflyVesselSetup : EditorWindow
+    {
+        const string ToolName = "Butterfly Vessel Setup";
+
+        const string VesselName = "Butterfly";
+        const string PrefabPath = "Assets/_Prefabs/Spacevessels/Butterfly.prefab";
+        const string ActionDir = "Assets/_SO_Assets/VesselActions/Butterfly";
+        const string EffectDir = "Assets/_SO_Assets/Effects";
+        const string CameraPath = "Assets/_SO_Assets/Camera/ButterflyCameraSettingsSO.asset";
+        const string ClassPath = "Assets/_SO_Assets/Classes/SO_Class_Butterfly.asset";
+        const string VesselContainerPath = "Assets/_SO_Assets/Vessel Prefab Container.asset";
+        const string NetworkPrefabsPath = "Assets/DefaultNetworkPrefabs.asset";
+
+        // Reference vessels we borrow shared wiring from. The Squirrel is the fleet's reference
+        // two-thumb hull and the Butterfly is a two-thumb hull, so its prism-spawn channel, its
+        // baseline prism effects and its game-data reference are the right ones to mirror.
+        const string SquirrelPrefabPath = "Assets/_Prefabs/Spacevessels/Squirrel.prefab";
+        const string SkimmerPrefabPath = "Assets/_Prefabs/Spacevessels/Components/Skimmer.prefab";
+        const string HudBasePrefabPath = "Assets/_Prefabs/UI Elements/VesselHUD/VesselHUDPrefab.prefab";
+        const string HudVariantPath = "Assets/_Prefabs/UI Elements/VesselHUD/ButterflyHUDVariant.prefab";
+
+        readonly List<string> _log = new();
+        readonly List<string> _unwired = new();
+        Vector2 _scroll;
+
+        static readonly FrogletToolShipContext Ship = new FrogletToolShipContext(ToolName)
+        {
+            ToolScriptPaths = new[]
+                { "Assets/_Scripts/Editor/FrogletTools/ButterflyVesselSetup.cs" },
+            CommitType = "feat",
+            CommitScope = "vessel",
+            CommitSubject = _ => "feat(vessel): the BUTTERFLY — assets, prefab and registrations",
+        };
+
+        [MenuItem("FrogletTools/Vessels/Create Butterfly Vessel")]
+        [FrogletTool(FrogletToolCategory.Vessels, Importance = 4,
+            Description = "Builds the Butterfly vessel prefab, its effect containers, action and " +
+                          "camera assets, class asset and both registrations. Idempotent.")]
+        public static void Open() =>
+            GetWindow<ButterflyVesselSetup>(true, "Butterfly Vessel Setup").minSize =
+                new Vector2(520, 460);
+
+        void OnGUI()
+        {
+            FrogletEditorPalette.Banner("Butterfly", "The meditative surface painter",
+                                        FrogletEditorPalette.Violet);
+
+            EditorGUILayout.HelpBox(
+                "Builds every Butterfly asset that needs Unity to author it. Safe to re-run: " +
+                "existing assets are updated in place, not duplicated.\n\n" +
+                "After running, read the report below — anything listed as UNWIRED is a field " +
+                "this tool could not find, and is a real gap rather than a warning.",
+                MessageType.Info);
+
+            if (GUILayout.Button("Build the Butterfly", GUILayout.Height(34)))
+                Build();
+
+            if (_log.Count > 0)
+            {
+                EditorGUILayout.Space();
+                _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.MinHeight(180));
+                foreach (var line in _log) EditorGUILayout.LabelField(line, EditorStyles.wordWrappedMiniLabel);
+                EditorGUILayout.EndScrollView();
+
+                if (_unwired.Count > 0)
+                    EditorGUILayout.HelpBox(
+                        $"{_unwired.Count} field(s) could not be wired — see the report. The " +
+                        "vessel will spawn but will not be complete.", MessageType.Error);
+            }
+
+            FrogletToolShipPanel.Draw(Ship, this);
+        }
+
+        // ─────────────────────────────────────────────────────────────── build
+
+        void Build()
+        {
+            _log.Clear();
+            _unwired.Clear();
+
+            try
+            {
+                EnsureFolder(ActionDir);
+
+                var fold = CreateOrUpdate<FoldActionSO>($"{ActionDir}/ButterflyFoldAction.asset");
+                var spread = CreateOrUpdate<SpreadWingsActionSO>($"{ActionDir}/ButterflySpreadWingsAction.asset");
+
+                var effects = BuildEffects();
+                var containers = BuildContainers(effects);
+                var camera = BuildCameraSettings();
+                var hudVariant = BuildHudVariant();
+                var prefab = BuildPrefab(fold, spread, containers, camera, hudVariant);
+                if (prefab) { BuildClassAsset(prefab); Register(prefab); }
+
+                AssetDatabase.SaveAssets();
+                AssetDatabase.Refresh();
+
+                Note(_unwired.Count == 0
+                    ? "DONE — every field wired. Use Validate & Push below."
+                    : $"DONE with {_unwired.Count} UNWIRED field(s) — fix before pushing.");
+            }
+            catch (Exception e)
+            {
+                Note("FAILED: " + e.Message);
+                Debug.LogException(e);
+            }
+        }
+
+        // ─────────────────────────────────────────────────────── effects & containers
+
+        class Effects
+        {
+            public ScriptableObject NearDissolve, FarDissolve, DustDebuff, DustWither, CombatHit;
+        }
+
+        Effects BuildEffects()
+        {
+            var e = new Effects();
+
+            // SPACE — the wings dissolve opposing mass they pass through. TWO assets of one type:
+            // the near-field wings always cut, the far-field pair only once SPACE 5 "Broadwing"
+            // is live, which is what makes the upgrade a genuine widening of the swath rather
+            // than a change to what a pass does.
+            e.NearDissolve = CreateOrUpdate<SkimmerDamagePrismEffectSO>(
+                $"{EffectDir}/Skimmer Prism Effects/ButterflyWingDissolvePrismEffect.asset", so =>
+                {
+                    Set(so, "opposingDomainOnly", true);
+                    Set(so, "requiresUpgradeElement", (int)Element.None);
+                    Set(so, "proportionalDebris", true);
+                    Set(so, "restitution", 1f / 3f);
+                    Set(so, "debrisSpeedLimit", 120f);
+                    Set(so, "swingVelocityScale", 0f);   // the wings are rigid to the hull
+                });
+
+            e.FarDissolve = CreateOrUpdate<SkimmerDamagePrismEffectSO>(
+                $"{EffectDir}/Skimmer Prism Effects/ButterflyBroadwingDissolvePrismEffect.asset", so =>
+                {
+                    Set(so, "opposingDomainOnly", true);
+                    Set(so, "requiresUpgradeElement", (int)Element.Space);
+                    Set(so, "proportionalDebris", true);
+                    Set(so, "restitution", 1f / 3f);
+                    Set(so, "debrisSpeedLimit", 120f);
+                    Set(so, "swingVelocityScale", 0f);
+                });
+
+            // CHARGE — the dust. Two halves: the living pilot and the living creature.
+            e.DustDebuff = CreateOrUpdate<VesselElementalDebuffBySkimmerEffectSO>(
+                $"{EffectDir}/Vessel Skimmer Effects/ButterflyScaleDustDebuffBySkimmerEffect.asset", so =>
+                {
+                    // DERIVED, not chosen: a Strike-class hit is 8 points and a hit's bite tracks
+                    // its price — 8 × (2.0/12) = 1.3333 total, over four elements.
+                    Set(so, "debuffMagnitude", -0.3333333f);
+                    Set(so, "debuffDuration", 4f);
+                    Set(so, "upgradeElement", (int)Element.Charge);
+                    Set(so, "upgradeBiteMultiplier", 2f);
+                    Set(so, "cooldown", 1f);
+                });
+
+            e.DustWither = CreateOrUpdate<SkimmerWitherLifeformByCrystalEffectSO>(
+                $"{EffectDir}/Skimmer Crystal Effects/ButterflyScaleDustWitherLifeformEffect.asset", so =>
+                {
+                    Set(so, "faunaOnly", true);
+                    Set(so, "sparesOwnDomain", false);   // wildlife is quarry whatever colour it wears
+                });
+
+            e.CombatHit = CreateOrUpdate<VesselCombatHitBySkimmerEffectSO>(
+                $"{EffectDir}/Vessel Skimmer Effects/ButterflyCombatHitBySkimmerEffect.asset", so =>
+                {
+                    Set(so, "hitClass", (int)CombatHitClass.Strike);
+                    // OFF: this is the slowest hull in the fleet. An overtake requirement would
+                    // mean it could never score, which is the same trap the wither effect records.
+                    Set(so, "requireFasterThanVictim", false);
+                    Set(so, "requireOwningMachine", true);
+                    Set(so, "sameVictimCooldownSeconds", 1f);
+                    CopyReference(so, "onCombatHitLanded",
+                        FindFirstAssetNamed("Event_CombatHitStats"), "combat-hit stats channel");
+                });
+
+            return e;
+        }
+
+        class Containers
+        {
+            public VesselImpactorDataContainerSO Vessel;
+            public SkimmerImpactorDataContainerSO NearWing, FarWing;
+        }
+
+        Containers BuildContainers(Effects e)
+        {
+            var c = new Containers();
+
+            // The vessel container mirrors the Squirrel's baseline prism trio — damage, haptics,
+            // danger-prism debuff — because a prism should read the same whichever hull hits it.
+            c.Vessel = CreateOrUpdate<VesselImpactorDataContainerSO>(
+                $"{EffectDir}/Effect Containers/VesselContainers/ButterflyImpactorDataContainer.asset",
+                so => CopyArrayFromReferenceContainer(so, "SquirrelImpactorDataContainer",
+                          new[] { "vesselPrismEffects", "vesselCrystalEffects" }));
+
+            c.NearWing = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
+                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyNearWingSkimmerImpactorDataContainer.asset",
+                so =>
+                {
+                    SetArray(so, "skimmerPrismEffectsSO", new[] { e.NearDissolve });
+                    SetArray(so, "vesselSkimmerEffectsSO", new[] { e.DustDebuff, e.CombatHit });
+                    SetArray(so, "skimmerLifeformCrystalEffectsSO", new[] { e.DustWither });
+                });
+
+            c.FarWing = CreateOrUpdate<SkimmerImpactorDataContainerSO>(
+                $"{EffectDir}/Effect Containers/SkimmerContainers/ButterflyFarWingSkimmerImpactorDataContainer.asset",
+                so =>
+                {
+                    // Only the dissolve, and only once Broadwing is live. The dust deliberately
+                    // does NOT widen with the upgrade — Charge owns the bite, Space owns the reach,
+                    // and arming both here would be one upgrade paying out on two elements.
+                    SetArray(so, "skimmerPrismEffectsSO", new[] { e.FarDissolve });
+                });
+
+            return c;
+        }
+
+        CameraSettingsSO BuildCameraSettings() =>
+            CreateOrUpdate<CameraSettingsSO>(CameraPath, so =>
+            {
+                // "flies slow from far away" — the brief's framing, and it is load-bearing for
+                // more than the look: the prism occlusion corridor and the vessel-tail width are
+                // both derived from |followOffset.z|, so this one number sizes the whole vessel's
+                // relationship with the camera.
+                Set(so, "followOffset", new Vector3(0f, 22f, -120f));
+            });
+
+        // ─────────────────────────────────────────────────────────────── HUD
+
+        GameObject BuildHudVariant()
+        {
+            var basePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HudBasePrefabPath);
+            if (!basePrefab) { Unwired("HUD base prefab", HudBasePrefabPath); return null; }
+
+            var existing = AssetDatabase.LoadAssetAtPath<GameObject>(HudVariantPath);
+            if (existing)
+            {
+                EnsureHudView(existing);
+                Note("HUD variant already present — left in place.");
+                return existing;
+            }
+
+            var instance = (GameObject)PrefabUtility.InstantiatePrefab(basePrefab);
+            instance.name = "ButterflyHUDVariant";
+            // SaveAsPrefabAsset on a prefab INSTANCE produces a VARIANT, which is what the fleet's
+            // Squirrel / Manta / Serpent HUDs are. A hard copy would sever propagation — the exact
+            // failure Docs/GAMECANVAS.md records for the forked GameCanvas.
+            var variant = PrefabUtility.SaveAsPrefabAsset(instance, HudVariantPath);
+            DestroyImmediate(instance);
+            EnsureHudView(variant);
+            FrogletToolChangeLedger.Record(ToolName, HudVariantPath);
+            Note("Created HUD variant " + HudVariantPath);
+            return variant;
+        }
+
+        void EnsureHudView(GameObject variant)
+        {
+            if (!variant) return;
+            if (variant.GetComponentInChildren<ButterflyHUDView>(true)) return;
+
+            var root = PrefabUtility.LoadPrefabContents(HudVariantPath);
+            try
+            {
+                var legacy = root.GetComponentInChildren<VesselHUDView>(true);
+                var host = legacy ? legacy.gameObject : root;
+                // The base view IS the contract (IVesselHUDView is an empty marker nothing
+                // implements), so the Butterfly's view has to REPLACE it on the same object
+                // rather than sit beside it — two VesselHUDViews on one HUD is two answers to
+                // every ability-row query.
+                if (legacy) DestroyImmediate(legacy, true);
+                host.AddComponent<ButterflyHUDView>();
+                PrefabUtility.SaveAsPrefabAsset(root, HudVariantPath);
+                Note("Added ButterflyHUDView to the HUD variant.");
+            }
+            finally { PrefabUtility.UnloadPrefabContents(root); }
+        }
+
+        // ─────────────────────────────────────────────────────────────── prefab
+
+        GameObject BuildPrefab(FoldActionSO fold, SpreadWingsActionSO spread,
+                               Containers containers, CameraSettingsSO camera, GameObject hudVariant)
+        {
+            var root = new GameObject(VesselName);
+            try
+            {
+                // ---- networking ----
+                root.AddComponent<NetworkObject>();
+                root.AddComponent<ClientNetworkTransform>();
+                root.AddComponent<NetcodeHooks>();
+
+                var rb = root.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
+
+                // ---- the hull ----
+                var hullGo = new GameObject("Hull");
+                hullGo.transform.SetParent(root.transform, false);
+                hullGo.AddComponent<MeshFilter>();
+                var hullRenderer = hullGo.AddComponent<MeshRenderer>();
+                // TWO slots: submesh 0 is the body, submesh 1 is the wings, and the fleet paints
+                // the DOMAIN colour onto slot 1 (ShipHelper.ApplyShipMaterial). A one-slot hull
+                // throws IndexOutOfRange at theming.
+                hullRenderer.sharedMaterials = BorrowVesselMaterials();
+                hullGo.AddComponent<ButterflyHullBuilder>();
+
+                var hullCollider = hullGo.AddComponent<SphereCollider>();
+                hullCollider.radius = 6f;
+                var impactCollider = hullGo.AddComponent<ImpactCollider>();
+
+                // ---- core vessel components ----
+                var controller = root.AddComponent<VesselController>();
+                var status = root.AddComponent<VesselStatus>();
+                // The BASE transformer: the Butterfly is a TWO-THUMB hull, so it must NOT get
+                // SingleStickVesselTransformer (which sets IsSingleStickControls and would send it
+                // to the mouse-as-one-stick desktop scheme). Nothing else about it is special —
+                // slow is an authored number, not a new flight model.
+                var transformer = root.AddComponent<VesselTransformer>();
+                var prisms = root.AddComponent<VesselPrismController>();
+                var resources = root.AddComponent<ResourceSystem>();
+                root.AddComponent<AIPilot>();
+                root.AddComponent<ButterflyAnimation>();
+                root.AddComponent<ElementalBarsController>();
+                var cameraCustomizer = root.AddComponent<VesselCameraCustomizer>();
+                var actionHandler = root.AddComponent<R_VesselActionHandler>();
+                var customization = root.AddComponent<VesselCustomization>();
+                root.AddComponent<R_ShipElementStatsHandler>();
+                var impactor = root.AddComponent<VesselImpactor>();
+                var hud = root.AddComponent<ButterflyHUDController>();
+                root.AddComponent<VesselTailAndJets>();
+
+                // ---- ability executors ----
+                var actionsGo = new GameObject("VesselActions");
+                actionsGo.transform.SetParent(root.transform, false);
+                var registry = actionsGo.AddComponent<ActionExecutorRegistry>();
+
+                var foldGo = new GameObject("Fold");
+                foldGo.transform.SetParent(actionsGo.transform, false);
+                var foldExec = foldGo.AddComponent<FoldActionExecutor>();
+                Set(foldExec, "config", fold);
+
+                var spreadGo = new GameObject("SpreadWings");
+                spreadGo.transform.SetParent(actionsGo.transform, false);
+                var spreadExec = spreadGo.AddComponent<SpreadWingsActionExecutor>();
+                Set(spreadExec, "config", spread);
+
+                SetArray(registry, "_executors", new UnityEngine.Object[] { foldExec, spreadExec });
+
+                // ---- skimmers: the WINGS ----
+                // SPACE's entire continuous dial is these two bands: Skimmer.Scale is an
+                // ElementalFloat evaluated LIVE, and it drives the skimmer's localScale, so the
+                // wings genuinely grow as the pilot feeds on Space. Without it authored the
+                // element would be decorative — the ability map would describe a reach that never
+                // changes.
+                var nearWing = InstantiateSkimmer(root.transform, "NearWingSkimmer",
+                                                  containers.NearWing, restScale: 26f, fullScale: 44f);
+                var farWing = InstantiateSkimmer(root.transform, "FarWingSkimmer",
+                                                 containers.FarWing, restScale: 44f, fullScale: 72f);
+
+                // ---- HUD ----
+                Transform hudContainer = null;
+                if (hudVariant)
+                {
+                    var hudHost = new GameObject("ShipHUDContainer");
+                    hudHost.transform.SetParent(root.transform, false);
+                    var canvas = hudHost.AddComponent<Canvas>();
+                    canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                    hudHost.AddComponent<UnityEngine.UI.CanvasScaler>();
+                    hudHost.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+                    var hudInstance = (GameObject)PrefabUtility.InstantiatePrefab(hudVariant, hudHost.transform);
+                    hudContainer = hudInstance.transform;
+                }
+
+                // ---- wiring ----
+                WireStatus(status, controller, hud, nearWing, farWing);
+                WireController(controller);
+                Set(cameraCustomizer, "settings", camera);
+                Set(impactor, "vesselImpactorDataContainerSO", containers.Vessel);
+                SetArray(customization, "_shipGeometries", new UnityEngine.Object[] { hullGo });
+                Set(impactCollider, "impactorObject", impactor);
+                WireTransformer(transformer);
+                WirePrisms(prisms);
+                WireResources(resources);
+                WireActionHandler(actionHandler, registry, fold, spread);
+                WireHud(hud, hudContainer, foldExec, spreadExec);
+
+                var saved = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
+                FrogletToolChangeLedger.Record(ToolName, PrefabPath);
+                Note("Wrote " + PrefabPath);
+                return saved;
+            }
+            finally { DestroyImmediate(root); }
+        }
+
+        GameObject InstantiateSkimmer(Transform parent, string name,
+                                      SkimmerImpactorDataContainerSO container,
+                                      float restScale, float fullScale)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(SkimmerPrefabPath);
+            if (!prefab) { Unwired(name, SkimmerPrefabPath); return null; }
+
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab, parent);
+            go.name = name;
+            // The authored localScale is only what shows before the first elemental read; Skimmer
+            // overwrites it from Scale.EvaluateLive every frame it changes.
+            go.transform.localScale = Vector3.one * restScale;
+
+            // The base Skimmer prefab ships a NULL container — an un-overridden nested skimmer
+            // NREs on its first prism contact by design (the contract's §9). Overriding it on the
+            // INSTANCE is the fleet's pattern.
+            var skimmerImpactor = go.GetComponentInChildren<SkimmerImpactor>(true);
+            if (skimmerImpactor) Set(skimmerImpactor, "skimmerImpactorDataContainer", container);
+            else Unwired(name + ".SkimmerImpactor", "not found on the nested skimmer");
+
+            var skimmer = go.GetComponentInChildren<Skimmer>(true);
+            // affectSelf OFF: the wings dissolve mass, and a Butterfly that ate its own team's
+            // wake would delete the surfaces it exists to paint. The effect ALSO gates on domain
+            // (opposingDomainOnly) because affectSelf is evaluated after the effect loop and gates
+            // only the skim bookkeeping — this flag alone would not have protected anything.
+            if (skimmer)
+            {
+                Set(skimmer, "affectSelf", false);
+                SetElementalFloat(skimmer, "Scale", Element.Space, restScale, fullScale);
+                // Spherical wings, not a sword capsule — uniform XYZ.
+                Set(skimmer, "elongateYOnly", false);
+            }
+            else Unwired(name + ".Skimmer", "not found on the nested skimmer");
+            return go;
+        }
+
+        void WireStatus(VesselStatus status, VesselController controller,
+                        MonoBehaviour hud, GameObject nearWing, GameObject farWing)
+        {
+            Set(status, "vesselType", (int)VesselClassType.Butterfly);
+            Set(status, "_name", VesselName);
+            Set(status, "_shipInstance", controller);
+            Set(status, "vesselHUDController", hud);
+            // VesselController.Initialize initializes ONLY these two references — a skimmer the
+            // status does not point at is permanently inert dead weight, silently (the Dolphin
+            // shipped that way for its whole life).
+            if (nearWing) Set(status, "_nearFieldSkimmer", nearWing.GetComponentInChildren<Skimmer>(true));
+            if (farWing) Set(status, "_farFieldSkimmer", farWing.GetComponentInChildren<Skimmer>(true));
+        }
+
+        void WireController(VesselController controller) =>
+            CopyReference(controller, "gameData", FindFirstAssetNamed("Runtime GameData"), "GameDataSO");
+
+        void WireTransformer(VesselTransformer t)
+        {
+            // SLOW, and slow to turn. This is the whole vessel: a cruise a third of the Squirrel's
+            // and a turn rate well under the fleet's, so a corner is something you commit to.
+            Set(t, "DefaultThrottleScaler", 55f);
+            Set(t, "DefaultMinimumSpeed", 12f);
+            Set(t, "PitchScaler", 45f);
+            Set(t, "YawScaler", 45f);
+            Set(t, "RollScaler", 70f);
+            // ZERO, and load-bearing: the Fold stops the vessel with IsTranslationRestricted and
+            // then wants all four stick axes for placing the ghost. TurnScalar returns this while
+            // restricted, so 0 kills pitch and yaw for the hold. Roll is deliberately NOT scaled
+            // by it, which is how YDiff goes on rolling the frame (FoldActionExecutor's note).
+            Set(t, "restrictedTurnMultiplier", 0f);
+        }
+
+        void WirePrisms(VesselPrismController p)
+        {
+            // THE PIANO KEYS: wide across (x), thin (y), SHORT along the flight path (z), laid at
+            // a wavelength that leaves air between them — so the wake reads as a row of keys
+            // rather than a ribbon, and a curve through them reads as a surface.
+            Set(p, "BaseScale", new Vector3(26f, 1.2f, 3.4f));
+            Set(p, "minBlockScale", 0.35f);   // wings shut — a narrow line
+            Set(p, "maxBlockScale", 1f);      // wings spread — the full slab
+            Set(p, "initialWavelength", 9f);
+            Set(p, "minWavelength", 5f);
+            Set(p, "Gap", 0f);                // ONE wide key, not two rails
+            // MASS's continuous dial — the Squirrel's mapping, reused rather than reinvented.
+            SetElementalFloat(p, "trailVolume", Element.Mass, min: 1f, max: 2.5f);
+            Set(p, "massUpgradeShieldsTrail", false);   // Mass 5 here is "Mural", not armour
+            Set(p, "turnUpgradeShieldsTrail", false);
+
+            CopyReferenceFromVessel(p, "_onPrismSpawnedEventChannel", SquirrelPrefabPath,
+                                    "prism spawn event channel");
+        }
+
+        void WireResources(ResourceSystem resources)
+        {
+            // ONE meter, index 0: WING ENERGY. SpreadWingsActionSO.resourceIndex and
+            // ButterflyHUDController.wingEnergyResourceIndex both address it by this index, and
+            // nothing in the fleet catches a stale one — so the three move together or not at all.
+            var so = new SerializedObject(resources);
+            var list = so.FindProperty("Resources");
+            if (list == null) { Unwired("ResourceSystem.Resources", "property not found"); return; }
+
+            list.arraySize = 1;
+            var r = list.GetArrayElementAtIndex(0);
+            SetChild(r, "Name", "Wing Energy");
+            SetChild(r, "maxAmount", 1f);
+            SetChild(r, "initialAmount", 1f);
+            // Refills in ~13s from empty at 60fps. Against SpreadWingsActionSO's 0.22/s drain a
+            // full meter buys about 4.5 seconds of broad stroke — a stroke, not a state.
+            SetChild(r, "resourceGainRate", 0.00125f);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Note("Authored 1 resource meter: [0] Wing Energy");
+        }
+
+        void WireActionHandler(R_VesselActionHandler handler, ActionExecutorRegistry registry,
+                               FoldActionSO fold, SpreadWingsActionSO spread)
+        {
+            Set(handler, "_executors", registry);
+
+            var so = new SerializedObject(handler);
+            var list = so.FindProperty("_inputEventShipActions");
+            if (list == null) { Unwired("R_VesselActionHandler._inputEventShipActions", "not found"); return; }
+
+            list.arraySize = 2;
+            // The map asset is the design record and these two must agree with it:
+            // Mass  = Spread Wings on RightStickAction (1)
+            // Time  = Fold        on LeftStickAction  (2)
+            BindInput(list.GetArrayElementAtIndex(0), InputEvents.RightStickAction, spread);
+            BindInput(list.GetArrayElementAtIndex(1), InputEvents.LeftStickAction, fold);
+            so.ApplyModifiedPropertiesWithoutUndo();
+            Note("Bound RightStickAction → Spread Wings, LeftStickAction → Fold");
+        }
+
+        void BindInput(SerializedProperty entry, InputEvents input, ScriptableObject action)
+        {
+            var ev = entry.FindPropertyRelative("InputEvent");
+            var actions = entry.FindPropertyRelative("ShipActions");
+            if (ev == null || actions == null) { Unwired("InputEventShipActionMapping", "shape changed"); return; }
+            ev.enumValueIndex = (int)input;
+            actions.arraySize = 1;
+            actions.GetArrayElementAtIndex(0).objectReferenceValue = action;
+        }
+
+        void WireHud(ButterflyHUDController hud, Transform hudInstance,
+                     FoldActionExecutor fold, SpreadWingsActionExecutor spread)
+        {
+            Set(hud, "foldExecutor", fold);
+            Set(hud, "spreadExecutor", spread);
+            Set(hud, "wingEnergyResourceIndex", 0);
+            if (!hudInstance) return;
+            var view = hudInstance.GetComponentInChildren<ButterflyHUDView>(true);
+            if (view) { Set(hud, "view", view); Set(hud, "baseView", view); }
+            else Unwired("ButterflyHUDView", "not found in the HUD variant instance");
+        }
+
+        // ─────────────────────────────────────────────────────── class asset & registration
+
+        void BuildClassAsset(GameObject prefab)
+        {
+            var asset = CreateOrUpdate<SO_Vessel>(ClassPath, so =>
+            {
+                Set(so, "Class", (int)VesselClassType.Butterfly);
+                Set(so, "Name", VesselName);
+                Set(so, "Description",
+                    "Slow, wide and quiet. The Butterfly paints broad surfaces through the " +
+                    "hypersea while everyone else is fighting — and folds space when it wants to " +
+                    "be somewhere else.");
+            });
+            if (asset) AddToClassLists(asset);
+        }
+
+        void AddToClassLists(SO_Vessel vessel)
+        {
+            foreach (var path in new[]
+                     {
+                         "Assets/_SO_Assets/Classes/SO_Classlist_All.asset",
+                         "Assets/_SO_Assets/Classes/SO_Classlist_Classes.asset",
+                     })
+            {
+                var list = AssetDatabase.LoadAssetAtPath<ScriptableObject>(path);
+                if (!list) { Note("SKIP class list (absent): " + path); continue; }
+                if (AppendToFirstObjectArray(list, vessel))
+                {
+                    EditorUtility.SetDirty(list);
+                    FrogletToolChangeLedger.Record(ToolName, path);
+                    Note("Added to " + Path.GetFileName(path));
+                }
+            }
+        }
+
+        void Register(GameObject prefab)
+        {
+            var container = AssetDatabase.LoadAssetAtPath<ScriptableObject>(VesselContainerPath);
+            if (container)
+            {
+                var so = new SerializedObject(container);
+                var list = so.FindProperty("_shipPrefabs");
+                // _shipPrefabs is Transform[], NOT GameObject[] — assigning the GameObject here
+                // would silently store null and the vessel would never resolve at spawn
+                // ("No Vessel Prefab found"). The container reads VesselStatus off the Transform.
+                var entryValue = prefab ? prefab.transform : null;
+                if (list != null && !ArrayContains(list, entryValue))
+                {
+                    list.arraySize++;
+                    list.GetArrayElementAtIndex(list.arraySize - 1).objectReferenceValue = entryValue;
+                    so.ApplyModifiedPropertiesWithoutUndo();
+                    EditorUtility.SetDirty(container);
+                    FrogletToolChangeLedger.Record(ToolName, VesselContainerPath);
+                    Note("Registered in Vessel Prefab Container.");
+                }
+                else if (list == null) Unwired("Vessel Prefab Container._shipPrefabs", "not found");
+            }
+            else Unwired("Vessel Prefab Container", VesselContainerPath);
+
+            // Netcode: a client cannot replicate an unregistered NetworkObject. Nothing audits
+            // container ↔ network-list sync, so this is the half that is usually forgotten.
+            var netList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(NetworkPrefabsPath);
+            if (!netList) { Unwired("DefaultNetworkPrefabs", NetworkPrefabsPath); return; }
+            var netSo = new SerializedObject(netList);
+            var prefabs = netSo.FindProperty("List");
+            if (prefabs == null) { Unwired("DefaultNetworkPrefabs.List", "not found"); return; }
+            for (int i = 0; i < prefabs.arraySize; i++)
+            {
+                var p = prefabs.GetArrayElementAtIndex(i).FindPropertyRelative("Prefab");
+                if (p != null && p.objectReferenceValue == prefab) return;   // already registered
+            }
+            prefabs.arraySize++;
+            var entry = prefabs.GetArrayElementAtIndex(prefabs.arraySize - 1);
+            var prefabProp = entry.FindPropertyRelative("Prefab");
+            if (prefabProp != null) prefabProp.objectReferenceValue = prefab;
+            netSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(netList);
+            FrogletToolChangeLedger.Record(ToolName, NetworkPrefabsPath);
+            Note("Registered in DefaultNetworkPrefabs.");
+        }
+
+        // ─────────────────────────────────────────────────────────────── helpers
+
+        T CreateOrUpdate<T>(string path, Action<T> configure = null) where T : ScriptableObject
+        {
+            EnsureFolder(Path.GetDirectoryName(path)!.Replace('\\', '/'));
+            var asset = AssetDatabase.LoadAssetAtPath<T>(path);
+            bool created = false;
+            if (!asset)
+            {
+                asset = CreateInstance<T>();
+                AssetDatabase.CreateAsset(asset, path);
+                created = true;
+            }
+            configure?.Invoke(asset);
+            EditorUtility.SetDirty(asset);
+            FrogletToolChangeLedger.Record(ToolName, path);
+            Note((created ? "Created " : "Updated ") + path);
+            return asset;
+        }
+
+        /// <summary>
+        /// Write a serialized field BY NAME, reporting when it is not there. A SerializedObject
+        /// write to a missing property is a silent no-op — which is indistinguishable from
+        /// success, and is exactly how a vessel ships half-wired.
+        /// </summary>
+        void Set(UnityEngine.Object target, string field, object value)
+        {
+            if (!target) { Unwired(field, "target is null"); return; }
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null) { Unwired($"{target.GetType().Name}.{field}", "property not found"); return; }
+
+            switch (value)
+            {
+                case bool b: p.boolValue = b; break;
+                case int i when p.propertyType == SerializedPropertyType.Enum: p.enumValueIndex = i; break;
+                case int i: p.intValue = i; break;
+                case float f: p.floatValue = f; break;
+                case string s: p.stringValue = s; break;
+                case Vector3 v: p.vector3Value = v; break;
+                case UnityEngine.Object o: p.objectReferenceValue = o; break;
+                default: Unwired($"{target.GetType().Name}.{field}", "unsupported value type"); return;
+            }
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        void SetChild(SerializedProperty parent, string child, object value)
+        {
+            var p = parent.FindPropertyRelative(child);
+            if (p == null) { Unwired(parent.propertyPath + "." + child, "not found"); return; }
+            switch (value)
+            {
+                case string s: p.stringValue = s; break;
+                case float f: p.floatValue = f; break;
+                case int i: p.intValue = i; break;
+            }
+        }
+
+        void SetArray(UnityEngine.Object target, string field, IReadOnlyList<UnityEngine.Object> values)
+        {
+            if (!target) { Unwired(field, "target is null"); return; }
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null || !p.isArray) { Unwired($"{target.GetType().Name}.{field}", "not an array"); return; }
+            p.arraySize = values.Count;
+            for (int i = 0; i < values.Count; i++)
+                p.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>Author an ElementalFloat: the element it reads and its min/max band.</summary>
+        void SetElementalFloat(UnityEngine.Object target, string field, Element element,
+                               float min, float max)
+        {
+            var so = new SerializedObject(target);
+            var p = so.FindProperty(field);
+            if (p == null) { Unwired($"{target.GetType().Name}.{field}", "not found"); return; }
+            SetChild(p, "element", (int)element);
+            SetChild(p, "Min", min);
+            SetChild(p, "Max", max);
+            // Value is what EvaluateLive returns when Enabled is false or the vessel has no
+            // ResourceSystem yet. Seeding it to Min means the disabled path is the RESTING value
+            // rather than whatever the C# initializer happened to be — the difference between a
+            // degraded read and a wrong one.
+            SetChild(p, "Value", min);
+            var enabled = p.FindPropertyRelative("Enabled");
+            if (enabled != null) enabled.boolValue = true;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        void CopyReference(UnityEngine.Object target, string field,
+                           UnityEngine.Object value, string label)
+        {
+            if (!value) { Unwired($"{target.GetType().Name}.{field}", label + " not found"); return; }
+            Set(target, field, value);
+        }
+
+        /// <summary>Borrow a reference from another vessel's prefab, so shared plumbing (the prism
+        /// spawn channel, the game data asset) is the SAME object rather than a lookalike.</summary>
+        void CopyReferenceFromVessel(UnityEngine.Object target, string field,
+                                     string donorPrefabPath, string label)
+        {
+            var donor = AssetDatabase.LoadAssetAtPath<GameObject>(donorPrefabPath);
+            var donorComponent = donor ? donor.GetComponent(target.GetType()) : null;
+            if (!donorComponent) { Unwired($"{target.GetType().Name}.{field}", label + " donor missing"); return; }
+            var donorSo = new SerializedObject(donorComponent);
+            var p = donorSo.FindProperty(field);
+            if (p == null || p.objectReferenceValue == null)
+            { Unwired($"{target.GetType().Name}.{field}", label + " absent on donor"); return; }
+            Set(target, field, p.objectReferenceValue);
+        }
+
+        void CopyArrayFromReferenceContainer(UnityEngine.Object target, string donorName,
+                                             IEnumerable<string> fields)
+        {
+            var donor = FindFirstAssetNamed(donorName);
+            if (!donor) { Unwired(donorName, "donor container not found"); return; }
+            var donorSo = new SerializedObject(donor);
+            var targetSo = new SerializedObject(target);
+            foreach (var field in fields)
+            {
+                var from = donorSo.FindProperty(field);
+                var to = targetSo.FindProperty(field);
+                if (from == null || to == null || !from.isArray) { Unwired(field, "absent on donor or target"); continue; }
+                to.arraySize = from.arraySize;
+                for (int i = 0; i < from.arraySize; i++)
+                    to.GetArrayElementAtIndex(i).objectReferenceValue =
+                        from.GetArrayElementAtIndex(i).objectReferenceValue;
+            }
+            targetSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        Material[] BorrowVesselMaterials()
+        {
+            var donor = AssetDatabase.LoadAssetAtPath<GameObject>(SquirrelPrefabPath);
+            var renderer = donor ? donor.GetComponentInChildren<MeshRenderer>(true) : null;
+            if (renderer && renderer.sharedMaterials.Length >= 2) return renderer.sharedMaterials;
+            var skinned = donor ? donor.GetComponentInChildren<SkinnedMeshRenderer>(true) : null;
+            if (skinned && skinned.sharedMaterials.Length >= 1)
+                return new[] { skinned.sharedMaterials[0], skinned.sharedMaterials[0] };
+            Unwired("hull materials", "no donor renderer with two slots — assign them by hand");
+            return new Material[2];
+        }
+
+        static bool ArrayContains(SerializedProperty array, UnityEngine.Object value)
+        {
+            for (int i = 0; i < array.arraySize; i++)
+                if (array.GetArrayElementAtIndex(i).objectReferenceValue == value) return true;
+            return false;
+        }
+
+        bool AppendToFirstObjectArray(ScriptableObject list, UnityEngine.Object value)
+        {
+            var so = new SerializedObject(list);
+            var it = so.GetIterator();
+            while (it.NextVisible(true))
+            {
+                if (!it.isArray || it.propertyType == SerializedPropertyType.String) continue;
+                if (it.arraySize > 0 &&
+                    it.GetArrayElementAtIndex(0).propertyType != SerializedPropertyType.ObjectReference)
+                    continue;
+                if (ArrayContains(it, value)) return false;
+                it.arraySize++;
+                it.GetArrayElementAtIndex(it.arraySize - 1).objectReferenceValue = value;
+                so.ApplyModifiedPropertiesWithoutUndo();
+                return true;
+            }
+            Unwired(list.name, "no object array to append to");
+            return false;
+        }
+
+        static UnityEngine.Object FindFirstAssetNamed(string name)
+        {
+            var guids = AssetDatabase.FindAssets($"\"{name}\"");
+            foreach (var guid in guids)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                if (Path.GetFileNameWithoutExtension(path) != name) continue;
+                var asset = AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(path);
+                if (asset) return asset;
+            }
+            return null;
+        }
+
+        static void EnsureFolder(string folder)
+        {
+            if (string.IsNullOrEmpty(folder) || AssetDatabase.IsValidFolder(folder)) return;
+            var parent = Path.GetDirectoryName(folder)!.Replace('\\', '/');
+            EnsureFolder(parent);
+            AssetDatabase.CreateFolder(parent, Path.GetFileName(folder));
+        }
+
+        void Note(string message) => _log.Add(message);
+
+        void Unwired(string what, string why)
+        {
+            _unwired.Add(what);
+            _log.Add($"UNWIRED  {what} — {why}");
+        }
+    }
+}
+#endif
