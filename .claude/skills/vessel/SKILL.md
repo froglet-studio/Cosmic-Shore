@@ -475,6 +475,36 @@ applies to new abilities, new resources on the meter list, and anything that add
     new one, write the derivation next to it so the next sweep can check it in one line rather
     than re-deriving it from the integral.
 
+35. **A derivation that collapses two facts into one is a statement about the cases that existed
+    when it was written — and it goes on compiling after you add the case that separates them.**
+    `GunVesselTransformer.SeedTrailRide` set `_facingSign = (int)trailFollower.Direction`, which
+    is correct and unremarkable: `_facingSign` means *does the NOSE agree with the trail's index
+    order*, the follower's `Direction` means *does TRAVEL agree with it*, and those are the same
+    fact for as long as the vessel can only fly nose-first. Giving the Urchin reverse made them
+    different facts, and the seed then claimed a pilot backing into a ribbon was already pointing
+    the way they were travelling — so the rail would have fired them off the way they CAME, in
+    the same breath it caught them, while they were still asking to keep backing up. The fix is a
+    COMPOSITION (`nose vs index = (travel vs index) × (nose vs travel)`), not a sign flip. Nothing
+    reports this class: it is invisible on every forward attach, so the old code passes every test
+    that existed and the new case is the only one that fails. **When you add a degree of freedom to
+    a vessel, grep for the places that read one of its old consequences as a proxy for another** —
+    facing vs. travel, throttle vs. speed, nose vs. course — and ask of each whether the two were
+    ever really one thing or merely always equal.
+
+36. **A negative control has to be chosen INSIDE the band where the thing you changed can
+    matter, or it proves nothing and says so loudly.** The reverse brake's own contract is that
+    the exponential lerp owns the fast fall and the constant rate owns only the tail, so the
+    symmetric flag can only change an answer BELOW the crossover `rate / LERP_AMOUNT` (21.67 u/s
+    on an Urchin at 65 u/s over 2 s). A control asserting "the flag changes the answer" at
+    -300 and -40 u/s therefore failed 2 of 3 — the flag was working perfectly and the test was
+    asking about speeds at which it cannot apply. The repaired control sweeps the whole range and
+    asserts BOTH directions (every case below the crossover differs, every case above is
+    bit-identical), which is a stronger statement than the original intended and is also the
+    thing to re-read before anyone retunes `minimumThrottleBrakeSeconds`. **Derive where your
+    change is reachable before you pick the numbers you test it at** — and prefer a swept control
+    that states the boundary over a handful of hand-picked points, because a hand-picked point
+    that lands outside the reachable band is indistinguishable from a broken feature.
+
 
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
