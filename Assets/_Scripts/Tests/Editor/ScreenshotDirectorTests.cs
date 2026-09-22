@@ -283,10 +283,10 @@ namespace CosmicShore.Tests
         public void VisionBand_IsOneFlatThresholdForTheWholeLibrary()
         {
             _config.markDistantVessels = true;
-            _config.markDistance = 45f;
+            _config.markDistance = 100f;
 
             Assert.IsTrue(_config.TryResolveMarkDistance(out float distance));
-            Assert.That(distance, Is.EqualTo(45f).Within(0.001f));
+            Assert.That(distance, Is.EqualTo(100f).Within(0.001f));
 
             // It does not read the concept at all — that is the simplification, stated as a test.
             foreach (var concept in _config.concepts)
@@ -376,14 +376,61 @@ namespace CosmicShore.Tests
             Assert.AreEqual(_config.concepts.Count, seen.Count, "some concept is unreachable");
         }
 
+        /// <summary>
+        /// <c>{concept}_{yyyy-MM-dd}_{HH-mm}.png</c> — the shot, the date, and a 24-hour clock to
+        /// the minute. Pinned exactly, because the whole point of the format is that a person can
+        /// read it: a drifting separator or a revived seconds field is a silent regression.
+        /// </summary>
         [Test]
-        public void BuildFileName_CarriesTheConceptAndIsPathSafe()
+        public void BuildFileName_IsConceptThenDateThenTwentyFourHourTime()
         {
             string name = _config.BuildFileName("Sidecar (port)", new DateTime(2026, 9, 21, 14, 5, 9));
 
-            Assert.IsTrue(name.Contains("Sidecar"), "the concept name is how a folder is triaged");
-            Assert.IsTrue(name.EndsWith(".png"));
+            Assert.AreEqual("Sidecar-(port)_2026-09-21_14-05.png", name);
             Assert.AreEqual(-1, name.IndexOfAny(Path.GetInvalidFileNameChars()));
+        }
+
+        [Test]
+        public void BuildFileName_UsesAFullTwentyFourHourClock()
+        {
+            Assert.IsTrue(_config.BuildFileName("Shot", new DateTime(2026, 9, 21, 23, 59, 0))
+                .EndsWith("_23-59.png"), "an afternoon capture must not come back as 11-59");
+            Assert.IsTrue(_config.BuildFileName("Shot", new DateTime(2026, 9, 21, 0, 7, 0))
+                .EndsWith("_00-07.png"), "midnight is 00, and every field is zero-padded");
+        }
+
+        /// <summary>
+        /// Minute resolution means two captures a few seconds apart ask for one name, so the
+        /// SECOND one has to land somewhere else — a screenshot you took and no longer have is
+        /// the one outcome this format must not buy.
+        /// </summary>
+        [Test]
+        public void ResolveUniquePath_NeverOverwritesACaptureFromTheSameMinute()
+        {
+            string folder = Path.Combine(Path.GetTempPath(), "cosmic-shore-shot-names-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(folder);
+
+            try
+            {
+                const string file = "Sidecar_2026-09-21_14-05.png";
+
+                string first = ScreenshotDirectorConfigSO.ResolveUniquePath(folder, file);
+                Assert.AreEqual(Path.Combine(folder, file), first,
+                    "the first capture of a minute keeps the clean name");
+
+                File.WriteAllBytes(first, new byte[] { 1 });
+                string second = ScreenshotDirectorConfigSO.ResolveUniquePath(folder, file);
+                Assert.AreNotEqual(first, second, "the second capture must not overwrite the first");
+                Assert.AreEqual(Path.Combine(folder, "Sidecar_2026-09-21_14-05_2.png"), second);
+
+                File.WriteAllBytes(second, new byte[] { 1 });
+                Assert.AreEqual(Path.Combine(folder, "Sidecar_2026-09-21_14-05_3.png"),
+                    ScreenshotDirectorConfigSO.ResolveUniquePath(folder, file));
+            }
+            finally
+            {
+                Directory.Delete(folder, true);
+            }
         }
 
         [Test]

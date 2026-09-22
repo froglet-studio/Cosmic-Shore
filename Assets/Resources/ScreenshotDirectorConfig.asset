@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ScreenshotDirectorConfig
   m_EditorClassIdentifier: 
   outputFolder: 
-  fileNamePrefix: CosmicShore
   captureHeight: 2160
   excludedLayers:
     serializedVersion: 2
@@ -23,7 +22,7 @@ MonoBehaviour:
   pairSeparation: {x: 10, y: 30}
   pairChance: 0.85
   markDistantVessels: 1
-  markDistance: 45
+  markDistance: 100
   hideTailsWithin: 30
   clearShotSamples: 6
   clearShotAcceptOccluders: 0

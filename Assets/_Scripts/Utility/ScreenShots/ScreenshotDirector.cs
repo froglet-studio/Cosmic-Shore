@@ -592,13 +592,15 @@ namespace CosmicShore.Utility
         static void Write(ScreenshotDirectorConfigSO config, ScreenshotConcept concept, byte[] png)
         {
             string folder = config.ResolveOutputFolder();
+            // Named to the MINUTE, so two captures in one minute want one name — resolved against
+            // the folder rather than by putting seconds back into something a person has to read.
             string file = config.BuildFileName(concept.name, DateTime.Now);
             string path;
 
             try
             {
                 Directory.CreateDirectory(folder);
-                path = Path.Combine(folder, file);
+                path = ScreenshotDirectorConfigSO.ResolveUniquePath(folder, file);
             }
             catch (Exception ex)
             {
@@ -608,7 +610,7 @@ namespace CosmicShore.Utility
                                    "falling back to the persistent data path.");
                 folder = Path.Combine(Application.persistentDataPath, "Screenshots");
                 Directory.CreateDirectory(folder);
-                path = Path.Combine(folder, file);
+                path = ScreenshotDirectorConfigSO.ResolveUniquePath(folder, file);
             }
 
             File.WriteAllBytes(path, png);

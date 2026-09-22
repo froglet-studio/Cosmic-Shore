@@ -30,9 +30,20 @@ is used as given; a relative one hangs off that same default root, so `Runs/Tues
 `<repo>/Recordings/Runs/Tuesday`. A folder the OS refuses falls back to the persistent data path
 with a warning rather than losing the shot.
 
-Filenames are `CosmicShore_<Concept>_<timestamp>.png`. **The concept name is in the filename on
-purpose**: after a session you can see at a glance which concepts are producing keepers and retune
-their weights, which is the only way the library gets better.
+Filenames are **`<Concept>_<YYYY-MM-DD>_<HH-mm>.png`** — the shot, the date, and a 24-hour clock to
+the minute (`Sidecar-(port)_2026-09-21_14-05.png`). **The concept leads on purpose**: after a
+session you can see at a glance which concepts are producing keepers and retune their weights,
+which is the only way the library gets better; the date-time trails in a form that still sorts
+chronologically within one concept.
+
+**Seconds are deliberately gone, and that is what forces `ResolveUniquePath`.** A filename is read
+by a person, and the precision that made two captures unique is exactly the precision that made
+every name unreadable — so the uniqueness moved out of the format and into the folder: the first
+capture of a minute keeps the clean name and a later one takes `_2`, `_3`, … before the extension.
+*A screenshot you took and no longer have is worse than one with an ugly name*, so the suffix is the
+one thing here that is not negotiable. `fileNamePrefix` was retired with the seconds — every capture
+already lands in a folder called `Recordings`, so a constant `CosmicShore_` on every file was
+spending the most valuable characters in the name on the one fact the path already carried.
 
 ## Why it is UI-free, and why that is structural
 
@@ -91,7 +102,7 @@ is right everywhere else — it exists so a pilot's own cockpit view is not clut
 their own ship. A photograph OF that ship is the one case the reasoning does not cover, and without
 lifting it the feature would be empty, since the subject of a solo shot is always the local hull.
 
-**The band collapses to a THRESHOLD** at `markDistance` (**45**): past it a hull is the solid
+**The band collapses to a THRESHOLD** at `markDistance` (**100**): past it a hull is the solid
 domain-coloured silhouette, inside it the hull renders as itself, and there is nothing in between.
 The law's four control points and two graded edges exist because *a mark that pops on reads as a
 new object appearing* — continuity of existence applied to visibility — and **a photograph is one
@@ -102,14 +113,20 @@ is the whole rule in one sentence.
 |---|---|---|
 | Low Chase | 8-27 | never |
 | Over the Shoulder | 12-39 | never |
-| Sidecar (both) | 14-51 | past 45 |
-| Oncoming | 18-67.5 | past 45 |
-| Top Down | 28-105 | past 45 |
-| Static Tracking Cam | 35-150 | past 45 |
+| Sidecar (both) | 14-51 | never |
+| Oncoming | 18-67.5 | never |
+| Top Down | 28-105 | past 100 (top 5% of its range) |
+| Static Tracking Cam | 35-150 | past 100 (top third) |
 | Establishing | 220-520 | always |
-| Duo Two-Shot | 30-70 | past 45 |
-| Duo Long Lens | 90-140 | always |
+| Duo Two-Shot | 30-70 | never |
+| Duo Long Lens | 90-140 | past 100 |
 | Duo Close Pass | *(a floor)* | as fitted |
+
+**Read that table before retuning the threshold.** At 100 the mark is a thing the pulled-back shots
+do and the close ones do not — six of the ten concepts can never reach it — which is the point: a
+photograph of your own ship from 20 units should be your ship. Move the number and the column
+moves with it, so check what each concept's range was up against rather than scaling the threshold
+on its own.
 
 An earlier pass rescaled the band's whole arc onto **each concept's own** zoom range, so a mark
 arrived halfway through that shot's furthest zoom. It was correct, it kept every shape ratio of the
@@ -358,7 +375,7 @@ Switch it off per-config with `holdOcclusionCorridor` if you want the corridor i
 are progressively re-shaded into flat domain-coloured silhouettes as a function of distance from
 the camera drawing them (`Docs/VESSEL_VISION.md`). The director holds a **capture pass** that
 collapses that band onto one threshold and includes the local pilot's own hull, so a shot from past
-45 units photographs the silhouette and a closer one photographs the real ship — see *Marking the
+100 units photographs the silhouette and a closer one photographs the real ship — see *Marking the
 ships* above for the numbers and for why this is not the suppression hold the law deliberately does
 not have. The library's shape still follows from the law's own near edge: every concept sits inside
 ~150u **except "Establishing (banded hull)", which breaks it deliberately** and says so in its

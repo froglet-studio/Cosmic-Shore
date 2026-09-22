@@ -29,10 +29,6 @@ namespace CosmicShore.ScriptableObjects
                  "absolute path is used as given; a relative one hangs off that same default root.")]
         public string outputFolder = string.Empty;
 
-        [Tooltip("Filename prefix. The concept's name and a timestamp are appended, so a folder of " +
-                 "captures is sortable by time and greppable by concept.")]
-        public string fileNamePrefix = "CosmicShore";
-
         [Tooltip("Height of the captured image in pixels; width follows the window's aspect, so a " +
                  "capture is framed exactly like what is on screen. 2160 is 4K-tall.")]
         [Range(480, 4320)] public int captureHeight = 2160;
@@ -73,7 +69,7 @@ namespace CosmicShore.ScriptableObjects
                  "is the solid domain-coloured silhouette; inside it the hull renders as itself. " +
                  "One threshold, no graded edges - a photograph is a single frame, so there is " +
                  "nothing for a fade to protect against.")]
-        [Min(0f)] public float markDistance = 45f;
+        [Min(0f)] public float markDistance = 100f;
 
         [Header("Tails")]
         [Tooltip("Hide a ship's TAIL - the long identity streak other players spot you by - when " +
@@ -397,14 +393,58 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// <c>{prefix}_{concept}_{timestamp}.png</c>. The concept name is in the filename so a
-        /// folder of captures says which concepts are earning their weight.
+        /// <c>{concept}_{yyyy-MM-dd}_{HH-mm}.png</c> — the shot, the date, and the time on a
+        /// 24-hour clock to the minute.
+        ///
+        /// <para>The concept leads because that is what you scan a folder for, and the date-time
+        /// trails in a form that sorts chronologically inside one concept. Seconds are deliberately
+        /// gone: a filename is read by a person, and the precision that made two captures unique
+        /// made every name unreadable.</para>
+        ///
+        /// <para><b>Which is why the uniqueness has to come from somewhere else.</b> Minute
+        /// resolution means two captures a few seconds apart want the same name, and the loser of
+        /// that race would be silently overwritten — a screenshot you took and no longer have is
+        /// worse than one with an ugly name. <see cref="ResolveUniquePath"/> is the answer, and it
+        /// is the caller's job rather than this method's because only the caller knows the folder.</para>
         /// </summary>
         public string BuildFileName(string conceptName, DateTime timestamp)
         {
-            string prefix = Sanitize(string.IsNullOrWhiteSpace(fileNamePrefix) ? "CosmicShore" : fileNamePrefix);
             string concept = Sanitize(string.IsNullOrWhiteSpace(conceptName) ? "Shot" : conceptName);
-            return $"{prefix}_{concept}_{timestamp:yyyy-MM-dd_HH-mm-ss-fff}.png";
+            return $"{concept}_{timestamp:yyyy-MM-dd}_{timestamp:HH-mm}.png";
+        }
+
+        /// <summary>
+        /// <paramref name="fileName"/> inside <paramref name="folder"/>, with <c>_2</c>, <c>_3</c>…
+        /// appended before the extension until nothing is there to overwrite.
+        ///
+        /// <para>The FIRST capture of a minute keeps the clean name, so the suffix only ever shows
+        /// up on the captures that actually collided. A filesystem it cannot read falls through to
+        /// the plain name rather than throwing — losing the earlier shot is bad, losing THIS one to
+        /// an exception on the way to naming it is worse.</para>
+        /// </summary>
+        public static string ResolveUniquePath(string folder, string fileName)
+        {
+            string path = Path.Combine(folder, fileName);
+
+            try
+            {
+                if (!File.Exists(path)) return path;
+
+                string stem = Path.GetFileNameWithoutExtension(fileName);
+                string extension = Path.GetExtension(fileName);
+
+                for (int n = 2; n < 1000; n++)
+                {
+                    string candidate = Path.Combine(folder, $"{stem}_{n}{extension}");
+                    if (!File.Exists(candidate)) return candidate;
+                }
+            }
+            catch (Exception)
+            {
+                // An unreadable folder is the write's problem to report, not the namer's.
+            }
+
+            return path;
         }
 
         /// <summary>Strips anything the filesystem would refuse, and collapses spaces to hyphens.</summary>
