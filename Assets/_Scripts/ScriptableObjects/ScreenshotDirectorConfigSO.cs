@@ -113,8 +113,8 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// The shipped library — eight solo concepts covering the useful vantages on a vessel in
-        /// flight, plus three PAIR concepts that only come up when two ships are close together.
+        /// The shipped library — fifteen solo concepts covering the useful vantages on a vessel
+        /// in flight, plus three PAIR concepts that only come up when two ships are close together.
         ///
         /// <para>The distances are deliberately mostly INSIDE 150u, where the vessel vision band
         /// leaves a hull rendered as itself (Docs/VESSEL_VISION.md) — the two that break that rule
@@ -129,6 +129,13 @@ namespace CosmicShore.ScriptableObjects
         /// is not a free scale is Static Tracking Cam's ceiling, held at the vision band's 150u
         /// near edge rather than its arithmetic 165 — <i>a ratio applied to a list of numbers is
         /// not a decision until you check what each number was up against.</i></para>
+        ///
+        /// <para><b>The library is checked for GAPS, not just for length.</b> A concept is an
+        /// azimuth range, so the set of them either covers the circle around a vessel or leaves
+        /// holes in it — and the first cut's holes (28-60, 120-155, 205-240, 300-332) were exactly
+        /// the front and rear three-quarters, which is where anything with a nose and a tail is
+        /// photographed from. Adding a shot type is therefore a question about coverage before it
+        /// is a question about taste: which angle on the subject does the library not have yet.</para>
         /// </summary>
         public void ApplyDefaults()
         {
@@ -181,11 +188,14 @@ namespace CosmicShore.ScriptableObjects
                 },
                 new ScreenshotConcept
                 {
+                    // Declines the mark: the whole subject of a plan view is the hull's own
+                    // outline against the trail below it, and a flat domain-coloured silhouette
+                    // from directly overhead is a coloured dot.
                     name = "Top Down", weight = 0.6f, worldAligned = true,
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(62f, 86f),
                     distance = new Vector2(28f, 105f), fieldOfView = new Vector2(45f, 65f),
                     rollDegrees = new Vector2(-12f, 12f), aimLeadSeconds = new Vector2(0f, 0.15f),
-                    framingPitchDegrees = new Vector2(-2f, 2f),
+                    framingPitchDegrees = new Vector2(-2f, 2f), markVessels = false,
                 },
                 new ScreenshotConcept
                 {
@@ -195,7 +205,11 @@ namespace CosmicShore.ScriptableObjects
                     azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(-14f, 30f),
                     distance = new Vector2(35f, 150f), fieldOfView = new Vector2(28f, 45f),
                     rollDegrees = new Vector2(-3f, 3f), aimLeadSeconds = new Vector2(0.15f, 0.45f),
-                    framingPitchDegrees = new Vector2(-4f, 4f),
+                    // Declines the mark. It is the one concept whose band straddles the threshold
+                    // end to end (35 to 150 against a 100u mark), so left on it would come back a
+                    // hull about half the time and a silhouette the other half from the same named
+                    // shot - the exact inconsistency the flat threshold was adopted to remove.
+                    framingPitchDegrees = new Vector2(-4f, 4f), markVessels = false,
                 },
                 new ScreenshotConcept
                 {
@@ -207,6 +221,94 @@ namespace CosmicShore.ScriptableObjects
                     distance = new Vector2(220f, 520f), fieldOfView = new Vector2(35f, 60f),
                     rollDegrees = new Vector2(-2f, 2f), aimLeadSeconds = new Vector2(0f, 0.5f),
                     framingPitchDegrees = new Vector2(-5f, 5f),
+                },
+
+                // ── the three-quarters ────────────────────────────────────────────
+                // The two canonical hero angles for anything with a nose and a tail, and the two
+                // the first cut left out: measured against the shipped library, azimuth 28-60,
+                // 120-155, 205-240 and 300-332 were empty, which is exactly where a car, a plane
+                // or a ship is photographed from when the picture is OF the vehicle. Split into
+                // starboard and port entries for the reason Sidecar already is - one range
+                // spanning both sides also rolls the dead angles through the nose and tail.
+                new ScreenshotConcept
+                {
+                    // Front three-quarter: nose toward the lens with one flank in view, so the
+                    // silhouette reads and the hull still has depth. The long-ish lens keeps the
+                    // nose from bowing out the way a wide one does this close.
+                    name = "Front Three-Quarter", weight = 0.9f,
+                    azimuthDegrees = new Vector2(30f, 58f), elevationDegrees = new Vector2(-4f, 20f),
+                    distance = new Vector2(11f, 44f), fieldOfView = new Vector2(34f, 52f),
+                    rollDegrees = new Vector2(-4f, 4f), aimLeadSeconds = new Vector2(0f, 0.12f),
+                    framingPitchDegrees = new Vector2(-2f, 3f),
+                },
+                new ScreenshotConcept
+                {
+                    name = "Front Three-Quarter (port)", weight = 0.9f,
+                    azimuthDegrees = new Vector2(302f, 330f), elevationDegrees = new Vector2(-4f, 20f),
+                    distance = new Vector2(11f, 44f), fieldOfView = new Vector2(34f, 52f),
+                    rollDegrees = new Vector2(-4f, 4f), aimLeadSeconds = new Vector2(0f, 0.12f),
+                    framingPitchDegrees = new Vector2(-2f, 3f),
+                },
+                new ScreenshotConcept
+                {
+                    // Rear three-quarter: the hull in one corner of frame and its own trail
+                    // running out of the other, which is the shot that says where it has been.
+                    // More lead than the front pair, because here the space it is flying into is
+                    // behind the camera and the picture is the space it has left.
+                    name = "Rear Three-Quarter", weight = 0.8f,
+                    azimuthDegrees = new Vector2(122f, 153f), elevationDegrees = new Vector2(0f, 24f),
+                    distance = new Vector2(12f, 46f), fieldOfView = new Vector2(40f, 58f),
+                    rollDegrees = new Vector2(-5f, 5f), aimLeadSeconds = new Vector2(0.10f, 0.32f),
+                    framingPitchDegrees = new Vector2(-2f, 4f),
+                },
+                new ScreenshotConcept
+                {
+                    name = "Rear Three-Quarter (port)", weight = 0.8f,
+                    azimuthDegrees = new Vector2(207f, 238f), elevationDegrees = new Vector2(0f, 24f),
+                    distance = new Vector2(12f, 46f), fieldOfView = new Vector2(40f, 58f),
+                    rollDegrees = new Vector2(-5f, 5f), aimLeadSeconds = new Vector2(0.10f, 0.32f),
+                    framingPitchDegrees = new Vector2(-2f, 4f),
+                },
+
+                // ── the rest of the grammar ───────────────────────────────────────
+                new ScreenshotConcept
+                {
+                    // The hero low angle, and the only concept that looks at a hull's underside.
+                    // Wide and close, so the ship fills the top of frame with the arena falling
+                    // away past it. Top Down's mirror in every sense: same free azimuth, opposite
+                    // elevation, and it declines the mark for the same reason.
+                    name = "Underside Pass", weight = 0.6f,
+                    azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(-58f, -30f),
+                    distance = new Vector2(9f, 32f), fieldOfView = new Vector2(62f, 80f),
+                    rollDegrees = new Vector2(-6f, 6f), aimLeadSeconds = new Vector2(0f, 0.18f),
+                    framingPitchDegrees = new Vector2(-4f, 1f), markVessels = false,
+                },
+                new ScreenshotConcept
+                {
+                    // A real dutch tilt - the horizon well off level, which reads as speed and
+                    // instability rather than as a mistake. The roll range deliberately does NOT
+                    // span zero: a range through level rolls the shot back upright in the middle
+                    // of its own draw and stops being a dutch, the same argument that splits
+                    // Sidecar into two entries, one axis over.
+                    name = "Dutch Pass", weight = 0.7f,
+                    azimuthDegrees = new Vector2(52f, 128f), elevationDegrees = new Vector2(-16f, 12f),
+                    distance = new Vector2(10f, 36f), fieldOfView = new Vector2(58f, 78f),
+                    rollDegrees = new Vector2(18f, 34f), aimLeadSeconds = new Vector2(0f, 0.22f),
+                    framingPitchDegrees = new Vector2(-4f, 4f),
+                },
+                new ScreenshotConcept
+                {
+                    // Long lens from well back: the arena stacks up flat behind the ship and the
+                    // ship is picked out of it. It KEEPS the mark, and is the one shot in the
+                    // library that straddles the threshold on purpose - past 100u the hull comes
+                    // back a domain-coloured silhouette against compressed terrain, which is the
+                    // same picture Establishing takes, at a range where the ship is still a shape
+                    // rather than a dot. Ceiling pinned at the vision band's own 150u near edge.
+                    name = "Telephoto Isolation", weight = 0.7f,
+                    azimuthDegrees = new Vector2(0f, 360f), elevationDegrees = new Vector2(-12f, 26f),
+                    distance = new Vector2(95f, 150f), fieldOfView = new Vector2(18f, 28f),
+                    rollDegrees = new Vector2(-2f, 2f), aimLeadSeconds = new Vector2(0.10f, 0.40f),
+                    framingPitchDegrees = new Vector2(-3f, 3f),
                 },
 
                 // ── PAIR ──────────────────────────────────────────────────────────
@@ -309,11 +411,19 @@ namespace CosmicShore.ScriptableObjects
         /// marked?" a question you could only answer by knowing which of eleven concepts the roll
         /// landed on, and a rule you cannot state in one sentence is one nobody can aim. A flat
         /// threshold says it in one: past <see cref="markDistance"/>, marked.</para>
+        ///
+        /// <para>A concept may still <b>decline</b> the mark
+        /// (<see cref="ScreenshotConcept.markVessels"/>), and that is a different thing from the
+        /// per-concept band this replaced: a veto leaves the sentence intact — past
+        /// <see cref="markDistance"/>, marked, unless this shot said not to — where a per-concept
+        /// band replaced the sentence with eleven of them. Shots whose subject is the hull's own
+        /// geometry turn it off; shots where the silhouette against the arena IS the picture leave
+        /// it on.</para>
         /// </summary>
-        public bool TryResolveMarkDistance(out float distance)
+        public bool TryResolveMarkDistance(ScreenshotConcept concept, out float distance)
         {
             distance = Mathf.Max(0f, markDistance);
-            return markDistantVessels;
+            return markDistantVessels && (concept == null || concept.markVessels);
         }
 
         /// <summary>

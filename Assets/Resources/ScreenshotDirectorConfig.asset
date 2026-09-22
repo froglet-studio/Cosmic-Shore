@@ -38,6 +38,7 @@ MonoBehaviour:
     rollDegrees: {x: -3, y: 3}
     aimLeadSeconds: {x: 0.05, y: 0.3}
     framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
   - name: Sidecar
     weight: 1.4
     framing: 0
@@ -49,6 +50,7 @@ MonoBehaviour:
     rollDegrees: {x: -6, y: 6}
     aimLeadSeconds: {x: 0, y: 0.2}
     framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
   - name: Sidecar (port)
     weight: 1.4
     framing: 0
@@ -60,6 +62,7 @@ MonoBehaviour:
     rollDegrees: {x: -6, y: 6}
     aimLeadSeconds: {x: 0, y: 0.2}
     framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
   - name: Oncoming
     weight: 1
     framing: 0
@@ -71,6 +74,7 @@ MonoBehaviour:
     rollDegrees: {x: -5, y: 5}
     aimLeadSeconds: {x: 0, y: 0}
     framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
   - name: Low Chase
     weight: 1
     framing: 0
@@ -82,6 +86,7 @@ MonoBehaviour:
     rollDegrees: {x: -8, y: 8}
     aimLeadSeconds: {x: 0.1, y: 0.35}
     framingPitchDegrees: {x: -5, y: 0}
+    markVessels: 1
   - name: Top Down
     weight: 0.6
     framing: 0
@@ -93,6 +98,7 @@ MonoBehaviour:
     rollDegrees: {x: -12, y: 12}
     aimLeadSeconds: {x: 0, y: 0.15}
     framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 0
   - name: Static Tracking Cam
     weight: 1.1
     framing: 0
@@ -104,6 +110,7 @@ MonoBehaviour:
     rollDegrees: {x: -3, y: 3}
     aimLeadSeconds: {x: 0.15, y: 0.45}
     framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 0
   - name: Establishing (banded hull)
     weight: 0.5
     framing: 0
@@ -115,6 +122,91 @@ MonoBehaviour:
     rollDegrees: {x: -2, y: 2}
     aimLeadSeconds: {x: 0, y: 0.5}
     framingPitchDegrees: {x: -5, y: 5}
+    markVessels: 1
+  - name: Front Three-Quarter
+    weight: 0.9
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 30, y: 58}
+    elevationDegrees: {x: -4, y: 20}
+    distance: {x: 11, y: 44}
+    fieldOfView: {x: 34, y: 52}
+    rollDegrees: {x: -4, y: 4}
+    aimLeadSeconds: {x: 0, y: 0.12}
+    framingPitchDegrees: {x: -2, y: 3}
+    markVessels: 1
+  - name: Front Three-Quarter (port)
+    weight: 0.9
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 302, y: 330}
+    elevationDegrees: {x: -4, y: 20}
+    distance: {x: 11, y: 44}
+    fieldOfView: {x: 34, y: 52}
+    rollDegrees: {x: -4, y: 4}
+    aimLeadSeconds: {x: 0, y: 0.12}
+    framingPitchDegrees: {x: -2, y: 3}
+    markVessels: 1
+  - name: Rear Three-Quarter
+    weight: 0.8
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 122, y: 153}
+    elevationDegrees: {x: 0, y: 24}
+    distance: {x: 12, y: 46}
+    fieldOfView: {x: 40, y: 58}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0.1, y: 0.32}
+    framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
+  - name: Rear Three-Quarter (port)
+    weight: 0.8
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 207, y: 238}
+    elevationDegrees: {x: 0, y: 24}
+    distance: {x: 12, y: 46}
+    fieldOfView: {x: 40, y: 58}
+    rollDegrees: {x: -5, y: 5}
+    aimLeadSeconds: {x: 0.1, y: 0.32}
+    framingPitchDegrees: {x: -2, y: 4}
+    markVessels: 1
+  - name: Underside Pass
+    weight: 0.6
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -58, y: -30}
+    distance: {x: 9, y: 32}
+    fieldOfView: {x: 62, y: 80}
+    rollDegrees: {x: -6, y: 6}
+    aimLeadSeconds: {x: 0, y: 0.18}
+    framingPitchDegrees: {x: -4, y: 1}
+    markVessels: 0
+  - name: Dutch Pass
+    weight: 0.7
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 52, y: 128}
+    elevationDegrees: {x: -16, y: 12}
+    distance: {x: 10, y: 36}
+    fieldOfView: {x: 58, y: 78}
+    rollDegrees: {x: 18, y: 34}
+    aimLeadSeconds: {x: 0, y: 0.22}
+    framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 1
+  - name: Telephoto Isolation
+    weight: 0.7
+    framing: 0
+    worldAligned: 0
+    azimuthDegrees: {x: 0, y: 360}
+    elevationDegrees: {x: -12, y: 26}
+    distance: {x: 95, y: 150}
+    fieldOfView: {x: 18, y: 28}
+    rollDegrees: {x: -2, y: 2}
+    aimLeadSeconds: {x: 0.1, y: 0.4}
+    framingPitchDegrees: {x: -3, y: 3}
+    markVessels: 1
   - name: Duo Two-Shot
     weight: 1.6
     framing: 1
@@ -126,6 +218,7 @@ MonoBehaviour:
     rollDegrees: {x: -4, y: 4}
     aimLeadSeconds: {x: 0, y: 0.25}
     framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
   - name: Duo Long Lens
     weight: 1
     framing: 1
@@ -137,6 +230,7 @@ MonoBehaviour:
     rollDegrees: {x: -2, y: 2}
     aimLeadSeconds: {x: 0, y: 0.25}
     framingPitchDegrees: {x: -2, y: 2}
+    markVessels: 1
   - name: Duo Close Pass
     weight: 1.2
     framing: 1
@@ -148,3 +242,4 @@ MonoBehaviour:
     rollDegrees: {x: -14, y: 14}
     aimLeadSeconds: {x: 0, y: 0.25}
     framingPitchDegrees: {x: -4, y: 4}
+    markVessels: 1

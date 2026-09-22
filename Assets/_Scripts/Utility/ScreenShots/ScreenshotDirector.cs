@@ -168,8 +168,9 @@ namespace CosmicShore.Utility
                 // Mark the ships for the capture frame: the vessel vision band, moved onto one
                 // flat threshold so a hull past it is the solid domain-coloured silhouette and a
                 // hull inside it is itself. Held across Render() and released in the outer
-                // finally, identity-guarded exactly like the corridor's hold above.
-                if (config.TryResolveMarkDistance(out float markDistance))
+                // finally, identity-guarded exactly like the corridor's hold above. The concept
+                // gets a veto and nothing more - it can decline the mark, never move it.
+                if (config.TryResolveMarkDistance(concept, out float markDistance))
                     heldVisionBand = VesselVisionShading.BeginCapturePass(markDistance);
 
                 // And hide the tails the lens is right on top of, same frame, same release.

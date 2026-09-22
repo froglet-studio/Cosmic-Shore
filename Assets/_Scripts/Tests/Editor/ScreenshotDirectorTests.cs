@@ -274,6 +274,59 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
+        /// The library has to cover the CIRCLE around a vessel, not just be long. A concept is an
+        /// azimuth range, so a set of them either wraps the subject or leaves holes — and the
+        /// first cut's holes were 28-60, 120-155, 205-240 and 300-332: precisely the front and
+        /// rear three-quarters, which is where anything with a nose and a tail gets photographed
+        /// from when the picture is of the vehicle. Measured over the course-relative concepts
+        /// that actually choose an angle; a free 0-360 orbit covers everything and so proves
+        /// nothing about coverage.
+        /// </summary>
+        [Test]
+        public void Defaults_LeaveNoLargeGapInTheAnglesTheLibraryShootsFrom()
+        {
+            const float MaxGapDegrees = 5f;
+
+            var picked = new System.Collections.Generic.List<Vector2>();
+            foreach (var concept in _config.concepts)
+            {
+                if (concept.framing != ScreenshotFramingKind.Solo) continue;
+                if (concept.worldAligned) continue;                       // not an angle ON the ship
+                float lo = Mathf.Min(concept.azimuthDegrees.x, concept.azimuthDegrees.y);
+                float hi = Mathf.Max(concept.azimuthDegrees.x, concept.azimuthDegrees.y);
+                if (hi - lo >= 360f) continue;                            // a free orbit proves nothing
+                picked.Add(new Vector2(lo, hi));
+            }
+
+            Assert.That(picked.Count, Is.GreaterThan(0), "no concept picks an angle on the subject");
+
+            int worstRun = 0;
+            int run = 0;
+            int worstAt = -1;
+            for (int degree = 0; degree < 360; degree++)
+            {
+                if (Covered(degree)) { run = 0; continue; }
+                run++;
+                if (run > worstRun) { worstRun = run; worstAt = degree; }
+            }
+
+            Assert.That(worstRun, Is.LessThanOrEqualTo(Mathf.CeilToInt(MaxGapDegrees)),
+                $"the library cannot photograph the subject from {worstRun} degrees of arc " +
+                $"ending at azimuth {worstAt} (0 = ahead, 180 = behind)");
+
+            bool Covered(int degree)
+            {
+                foreach (var span in picked)
+                    for (int turn = -1; turn <= 1; turn++)
+                    {
+                        float d = degree + turn * 360f;
+                        if (d >= span.x && d <= span.y) return true;
+                    }
+                return false;
+            }
+        }
+
+        /// <summary>
         /// One flat threshold: a hull past <c>markDistance</c> is marked and a hull inside it is
         /// not, whichever concept was rolled. The per-concept form this replaced asked the reader
         /// to know which of eleven concepts the roll landed on before they could say whether a
@@ -285,16 +338,56 @@ namespace CosmicShore.Tests
             _config.markDistantVessels = true;
             _config.markDistance = 100f;
 
-            Assert.IsTrue(_config.TryResolveMarkDistance(out float distance));
+            Assert.IsTrue(_config.TryResolveMarkDistance(null, out float distance));
             Assert.That(distance, Is.EqualTo(100f).Within(0.001f));
 
-            // It does not read the concept at all — that is the simplification, stated as a test.
+            // A concept may DECLINE the mark; it may never move it. That is the whole difference
+            // between the veto and the per-concept band this replaced, stated as a test.
             foreach (var concept in _config.concepts)
             {
-                Assert.IsTrue(_config.TryResolveMarkDistance(out float perConcept),
+                _config.TryResolveMarkDistance(concept, out float perConcept);
+                Assert.That(perConcept, Is.EqualTo(distance).Within(0.001f),
                     $"'{concept.name}' must not be able to change the threshold");
-                Assert.That(perConcept, Is.EqualTo(distance).Within(0.001f));
             }
+        }
+
+        /// <summary>
+        /// The veto reaches the shots it was authored for and no others. Named concepts rather
+        /// than a count, because "two concepts decline" stays true through a rename and tells the
+        /// next reader nothing about whether the right two are declining.
+        /// </summary>
+        [Test]
+        public void VisionBand_IsDeclinedByTheShotsWhoseSubjectIsTheHull()
+        {
+            _config.markDistantVessels = true;
+
+            AssertMarks("Establishing (banded hull)", true);
+            AssertMarks("Telephoto Isolation", true);
+            AssertMarks("Duo Long Lens", true);
+            AssertMarks("Top Down", false);
+            AssertMarks("Static Tracking Cam", false);
+            AssertMarks("Underside Pass", false);
+
+            void AssertMarks(string name, bool expected)
+            {
+                var concept = _config.concepts.Find(c => c.name == name);
+                Assert.NotNull(concept, $"'{name}' is missing from the shipped library");
+                Assert.That(_config.TryResolveMarkDistance(concept, out _), Is.EqualTo(expected),
+                    $"'{name}' should {(expected ? "mark" : "decline the mark")}");
+            }
+        }
+
+        /// <summary>
+        /// A concept that declines can never make the mark appear, so the config switch has to be
+        /// able to silence the ones that accept it — otherwise "mark off" is only mostly off.
+        /// </summary>
+        [Test]
+        public void VisionBand_ConfigSwitchOutranksAConceptThatWantsTheMark()
+        {
+            _config.markDistantVessels = false;
+            foreach (var concept in _config.concepts)
+                Assert.IsFalse(_config.TryResolveMarkDistance(concept, out _),
+                    $"'{concept.name}' marked with the config's mark switched off");
         }
 
         /// <summary>
@@ -304,7 +397,7 @@ namespace CosmicShore.Tests
         [Test]
         public void VisionBand_ThresholdLandsInsideTheLibrarysOwnRange()
         {
-            Assert.IsTrue(_config.TryResolveMarkDistance(out float threshold));
+            Assert.IsTrue(_config.TryResolveMarkDistance(null, out float threshold));
 
             int marks = 0;
             int spares = 0;
@@ -313,7 +406,10 @@ namespace CosmicShore.Tests
                 if (concept.framing != ScreenshotFramingKind.Solo) continue;
                 float lo = Mathf.Min(concept.distance.x, concept.distance.y);
                 float hi = Mathf.Max(concept.distance.x, concept.distance.y);
-                if (hi >= threshold) marks++;
+                // A concept that declines the mark cannot produce one however far back it shoots,
+                // so it does not count toward the threshold being reachable. Counting it would let
+                // the library pass this test while no capture in it could ever come back marked.
+                if (hi >= threshold && concept.markVessels) marks++;
                 if (lo <= threshold) spares++;
             }
 
@@ -327,7 +423,7 @@ namespace CosmicShore.Tests
         public void VisionBand_IsOffWhenTheCaptureDoesNotWantIt()
         {
             _config.markDistantVessels = false;
-            Assert.IsFalse(_config.TryResolveMarkDistance(out _));
+            Assert.IsFalse(_config.TryResolveMarkDistance(null, out _));
         }
 
         /// <summary>
@@ -369,9 +465,17 @@ namespace CosmicShore.Tests
         [Test]
         public void PickConcept_ReachesEveryWeightedConcept()
         {
+            // Drawn PER FRAMING KIND, because that is how the director draws them: a solo roll
+            // can never return a Pair concept, so asking one roll to reach all eighteen compares
+            // the fifteen solo concepts against the whole library and fails on the three pairs
+            // however reachable every one of them is.
             var seen = new System.Collections.Generic.HashSet<string>();
             var rng = new System.Random(13);
-            for (int i = 0; i < 5000; i++) seen.Add(_config.PickConcept(rng).name);
+            for (int i = 0; i < 5000; i++)
+            {
+                seen.Add(_config.PickConcept(rng, ScreenshotFramingKind.Solo).name);
+                seen.Add(_config.PickConcept(rng, ScreenshotFramingKind.Pair).name);
+            }
 
             Assert.AreEqual(_config.concepts.Count, seen.Count, "some concept is unreachable");
         }

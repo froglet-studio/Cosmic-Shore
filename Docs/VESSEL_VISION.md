@@ -94,6 +94,11 @@ publisher re-writes all four globals every `LateUpdate`. The local exclusion lif
 photograph OF the pilot's own hull is the one case the exclusion's reasoning — *do not clutter a
 pilot's own cockpit view* — does not cover.
 
+The director's own capture concepts may individually **decline** that override, and that stays
+outside this law: declining is a decision not to open the pass at all, so it is a caller choosing
+not to call. Nothing on the far side of `BeginCapturePass` knows a concept exists, and no shot can
+ask the band for a threshold of its own.
+
 > **The general trap, and it is the reason this survived review once:** a number read off a
 > `ScriptableObject`'s **field initializer** is not the number the game runs on. `IsSane` encoded
 > the false premise, a test asserted it, and three documents repeated it — all self-consistently,

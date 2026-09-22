@@ -109,24 +109,42 @@ new object appearing* — continuity of existence applied to visibility — and 
 frame**, so there is nothing for a fade to protect against. Dropping the edges is free here, and it
 is the whole rule in one sentence.
 
+**A concept may DECLINE the mark, and may never move it.** `ScreenshotConcept.markVessels` is a
+veto, which is a different thing from the per-concept band below that it lives beside: a veto leaves
+the sentence intact — *past `markDistance`, marked, unless this shot said not to* — where a
+per-concept band replaced the one sentence with fifteen of them. Shots whose subject is the hull's
+own geometry turn it off; shots where the silhouette against the arena IS the picture leave it on.
+
 | concept | zoom range | marked |
 |---|---|---|
-| Low Chase | 8-27 | never |
-| Over the Shoulder | 12-39 | never |
-| Sidecar (both) | 14-51 | never |
-| Oncoming | 18-67.5 | never |
-| Top Down | 28-105 | past 100 (top 5% of its range) |
-| Static Tracking Cam | 35-150 | past 100 (top third) |
+| Low Chase | 8-27 | never (out of range) |
+| Front Three-Quarter (both) | 11-44 | never (out of range) |
+| Over the Shoulder | 12-39 | never (out of range) |
+| Rear Three-Quarter (both) | 12-46 | never (out of range) |
+| Sidecar (both) | 14-51 | never (out of range) |
+| Oncoming | 18-67.5 | never (out of range) |
+| Dutch Pass | 10-36 | never (out of range) |
+| Underside Pass | 9-32 | **declines** |
+| Top Down | 28-105 | **declines** |
+| Static Tracking Cam | 35-150 | **declines** |
+| Telephoto Isolation | 95-150 | past 100 (top half) |
 | Establishing | 220-520 | always |
-| Duo Two-Shot | 30-70 | never |
+| Duo Two-Shot | 30-70 | never (out of range) |
 | Duo Long Lens | 90-140 | past 100 |
 | Duo Close Pass | *(a floor)* | as fitted |
 
+The three that decline are the three whose subject is the hull's own outline: a plan view, a view
+from underneath, and the one concept whose band straddles the threshold end to end. **Static
+Tracking Cam is the case the veto was added for** — at 35 to 150 against a 100u mark it came back
+a hull about half the time and a silhouette the other half *from the same named shot*, which is
+exactly the inconsistency the flat threshold was adopted to remove, arriving through the distance
+roll instead of through the concept.
+
 **Read that table before retuning the threshold.** At 100 the mark is a thing the pulled-back shots
-do and the close ones do not — six of the ten concepts can never reach it — which is the point: a
-photograph of your own ship from 20 units should be your ship. Move the number and the column
-moves with it, so check what each concept's range was up against rather than scaling the threshold
-on its own.
+do and the close ones do not — eleven of the fifteen concepts can never reach it and three more
+refuse it — which is the point: a photograph of your own ship from 20 units should be your ship.
+Move the number and the column moves with it, so check what each concept's range was up against
+rather than scaling the threshold on its own.
 
 An earlier pass rescaled the band's whole arc onto **each concept's own** zoom range, so a mark
 arrived halfway through that shot's furthest zoom. It was correct, it kept every shape ratio of the
@@ -243,12 +261,45 @@ is measured from the vessel's own course (the shot follows it through a turn) or
 | `aimLeadSeconds` | aims ahead of the subject, leaving the space it is flying into |
 | `framingPitchDegrees` | drops the subject off-centre for some sky |
 | `weight` | relative odds; 0 retires a concept without deleting it |
+| `markVessels` | veto on the vision-band mark for this shot; cannot move the threshold |
 
 Adding a shot type is a **row in a list**, which is the point — a shot type expressed as a subclass
 is one nobody can author without a programmer.
 
-Shipped solo library: Over the Shoulder, Sidecar (starboard and port), Oncoming, Low Chase, Top
-Down, Static Tracking Cam, Establishing. Plus three PAIR concepts — see below.
+Shipped solo library, by what it is an angle ON:
+
+| | concepts |
+|---|---|
+| behind | Over the Shoulder, Low Chase |
+| the three-quarters | Front Three-Quarter, Front Three-Quarter (port), Rear Three-Quarter, Rear Three-Quarter (port) |
+| beside | Sidecar, Sidecar (port), Dutch Pass |
+| ahead | Oncoming |
+| above / below | Top Down, Underside Pass |
+| pulled back | Static Tracking Cam, Telephoto Isolation, Establishing (banded hull) |
+
+Plus three PAIR concepts — see below.
+
+### The library is checked for GAPS, not just for length
+
+A concept is an azimuth range, so a set of them either **wraps the subject or leaves holes in it**.
+Measured over the shipped library's course-relative concepts, the first cut's holes were 28-60,
+120-155, 205-240 and 300-332 — precisely the **front and rear three-quarters**, which is where
+anything with a nose and a tail is photographed from when the picture is of the vehicle. Four
+entries closed them (split starboard/port for the reason Sidecar already is: one range spanning
+both sides also rolls the dead angles straight through the nose and tail), and the worst remaining
+gap is **1°**. `Defaults_LeaveNoLargeGapInTheAnglesTheLibraryShootsFrom` holds it at ≤5°, measuring
+only the concepts that actually *choose* an angle — a free 0-360 orbit covers everything and so
+proves nothing about coverage.
+
+So **adding a shot type is a question about coverage before it is a question about taste**: which
+angle on the subject does the library not have yet. The three that are not azimuth gaps each fill a
+different axis — `Underside Pass` is the only view of a hull from below (Top Down's mirror in every
+sense: same free azimuth, opposite elevation, and it declines the mark for the same reason),
+`Dutch Pass` is the only real tilt (its roll range deliberately does **not** span zero, since a
+range through level rolls the shot back upright in the middle of its own draw and stops being a
+dutch — the Sidecar split, one axis over), and `Telephoto Isolation` is the only long lens that
+stays inside the vision band's near edge, so it is the one shot that photographs a silhouette
+against compressed terrain at a range where the ship is still a shape rather than a dot.
 
 **Each solo band is a UNION, not a window.** The first roll of real captures came back too tight,
 so every band was scaled 1.5x — which moved the near edge out along with the far one and quietly
@@ -266,6 +317,12 @@ authoring time:
 | Top Down | 28-70 | 42-105 | **28-105** |
 | Static Tracking Cam | 35-110 | 52.5-165 | **35-150** (capped) |
 | Establishing | 220-520 | — | **220-520** (unchanged) |
+
+The concepts added later were authored against the shipped union directly and have no earlier cut
+to reconcile: Front Three-Quarter **11-44**, Rear Three-Quarter **12-46**, Dutch Pass **10-36**,
+Underside Pass **9-32**, Telephoto Isolation **95-150** — that last one capped at 150 for the same
+reason Static Tracking Cam is, and it is the number to check first if the vision band's near edge
+ever moves.
 
 Two numbers are not free scales, and both are forced by the **vessel vision band** rather than by
 taste: **Static Tracking Cam's ceiling is held at 150**, not its arithmetic 165, because 150 is

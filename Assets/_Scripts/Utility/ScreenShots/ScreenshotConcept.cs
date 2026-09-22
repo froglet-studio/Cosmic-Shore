@@ -77,6 +77,13 @@ namespace CosmicShore.Utility
                  "the lower third of frame and gives the shot some sky.")]
         public Vector2 framingPitchDegrees = new Vector2(-3f, 3f);
 
+        [Tooltip("Let the vessel vision band mark hulls in this shot, when the config's mark is on " +
+                 "at all. This is a VETO, not a dial: a concept can decline the mark but can never " +
+                 "move the threshold, which stays one number for the whole library. Turn it off on " +
+                 "a shot whose whole subject is the hull's own geometry, and leave it on where a " +
+                 "flat domain-coloured silhouette against the arena IS the picture.")]
+        public bool markVessels = true;
+
         /// <summary>
         /// A SOLO concept with no reachable distance can never produce a shot. A PAIR concept is
         /// exempt from the distance test on purpose: there <see cref="distance"/> is a floor the
