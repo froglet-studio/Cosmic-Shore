@@ -4255,6 +4255,19 @@ proximity and confirm the outer shockwave still pays **10**; a centre-punch must
 60. Also confirm **Astro League** is unchanged: bat a ball into a goal and confirm nobody is
 credited a combat hit by the detonation.
 
+### 3a. ONE BLAST PAYS A VICTIM ONCE
+
+`ExplosionImpactor._vesselsHit` was a tally and is now also the **gate** on vessel-effect
+dispatch. `AOEExplosion` grows for **3 s** while `VesselCombatHitLatch`'s window is **0.5 s**, so
+a pilot who is swept up, thrown clear and turns back into the same fireball used to be paid and
+drained twice for one shot.
+
+**Verify (Dog Fight or Broadside, 2 players):** fire a HEAVY rocket so it detonates beside a
+pilot, then have that pilot immediately turn and fly back through the expanding sphere. They must
+score **20 once** and take **2 petals once** — not twice. Then confirm nothing else regressed:
+the Dolphin's Space-slot pilot tally still counts each pilot its cone catches (one per pilot, not
+per frame), and the Scarab's cavitation plate still debuffs a rival it sweeps.
+
 ### 4. A hit's elemental bite is now TEN POINTS TO THE PETAL
 
 Fleet-wide. Every drain got lighter and three verbs gained one they never had.

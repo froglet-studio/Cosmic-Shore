@@ -588,6 +588,29 @@ fired. And the tier ordering stays honest: the sphere is *inside* the warhead's 
 dearer tier is still the closer one, and `VesselCombatHitLatch` pays the best of the three
 exactly once per rocket per victim.
 
+### ONE BLAST PAYS A VICTIM ONCE — the latch cannot answer for a blast that outlives it
+
+The three tiers dedupe through `VesselCombatHitLatch`, which folds all three missile classes
+onto ONE key and admits only a strictly CLOSER tier inside an open window — so a rocket whose
+shockwave, blast and direct hit all reach the same pilot pays 30 and not 60, and
+`CombatHitDrain` nets the same way for 3 petals and not 6.
+
+That window is **0.5 s**, and it is the anti-spam floor between two *different* rockets. It is
+deliberately much shorter than a blast's own life: `AOEExplosion` is a trigger that keeps
+GROWING for **3 seconds**. So a pilot swept up by the sphere, thrown clear, and turning back
+into it re-enters *the same detonation* and raises `OnTriggerEnter` again — past the latch, and
+therefore paid and drained a second time for one shot.
+
+The answer is the per-blast ledger that was already there and was only a TALLY:
+`ExplosionImpactor._vesselsHit` now **gates** the vessel-effect dispatch as well as counting it
+(`if (!_vesselsHit.Add(id)) break;`). One detonation, one payout per pilot, whatever the
+geometry does in between. The Dolphin's `BlastTally` is unchanged — it reads the same set's
+count — and no explosion is pooled (every one is `Destroy`ed when its sweep ends), so the ledger
+is per-blast by construction with no lifecycle to get wrong.
+
+General rule: **a dedupe window sized for the gap between two EVENTS cannot dedupe one event
+that lasts longer than the window.** Ask how long the thing being deduped lives.
+
 Still behind the stance, deliberately: in **Wildlife Liberation** — a Sparrow-only mode scored
 on creature kills — the blast's creature joust (`ExplosionWitherLifeformByCrystalEffectSO`, on
 the warhead container) is the heavy rocket's alone, so a pilot must **stop to hunt with
