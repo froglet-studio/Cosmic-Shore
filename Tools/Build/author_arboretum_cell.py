@@ -1,26 +1,34 @@
 #!/usr/bin/env python3
 """
 Author the ARBORETUM cell - the freestyle Cell-Selector world that is a COLLECTION OF
-SPECIMENS: one plant of each of the four Mandelbulb species in each of the four elements,
-SIXTEEN in all, and nothing else.
+SPECIMENS: one plant of each of the four Mandelbulb species AND of the Borromean membrane,
+in each of the four elements - TWENTY in all, and nothing else.
 
 WHY A SCRIPT (the /ecology skill's rule, and the /flora skill §6): a cell whose mass comes
 entirely from FLORA has to have its phase ladder authored against the forest it will actually
-grow, and these sixteen plants' per-prism volumes span 40x (FractalFoliage Charge 0.61 median
--> Watershed Mass 14.34). Eight hand-typed thresholds drift the first time one leaf is
-refitted - which just happened (Docs/ECOSYSTEM.md §56 moved every Mass and Space
-cross-section in the family). This file holds the model, GROWS each of the sixteen plants
-through the shipped growth rule to measure it, prints the table, and supports --check.
+grow, and these twenty plants' per-prism volumes span two orders of magnitude (FractalFoliage
+Charge 0.61 median -> Borromean Mass 72.87). Eight hand-typed thresholds drift the first time
+one leaf is refitted - which just happened (Docs/ECOSYSTEM.md §56 moved every Mass and Space
+cross-section in the Mandelbulb family). This file holds the model, GROWS each of the sixteen
+Mandelbulb plants through the shipped growth rule to measure it, READS the four Borromean
+specimens out of their own measured table, prints the table, and supports --check.
 
 THE MODEL
 ---------
-Roster      one plant per (species, element). The element IDENTITY - leaf, heart, per-plant
-            budget, grow tempo - is copied VERBATIM off _SO_Assets/Lifeforms/<species>
-            Flora <Element>.asset, because those sixteen assets are the element palette and
-            forking their identity here would be two sources of truth for one plant's shape.
-            This cell authors only the population (floor, cap, initial) and the planting band.
+Roster      one plant per (species, element), over FIVE species: the four Mandelbulb ones and
+            the Borromean membrane. The element IDENTITY - leaf, heart, per-plant budget,
+            grow tempo - is never authored here. For the Mandelbulb four it is copied
+            VERBATIM off _SO_Assets/Lifeforms/<species> Flora <Element>.asset, because those
+            sixteen assets are the element palette and forking their identity here would be
+            two sources of truth for one plant's shape. The Borromean four are not authored
+            here AT ALL: author_borromean_flora_assets.py owns that species' configs in
+            every cell that grows it (its DEPLOYMENTS table), so this script READS the four
+            it wrote - their GUIDs off their own .meta, their measured budget and plate out
+            of BorromeanSurfaceData.cs through that tool's own reader - and fails by name if
+            they are missing. This cell authors only the population (floor, cap, initial),
+            the planting band, the SupportedFloras list, and the ladder.
 
-Population  FLOOR 1, CAP 1, INITIAL 1. "Sixteen total flora" is the cell, not a tuning value:
+Population  FLOOR 1, CAP 1, INITIAL 1. "One of each" is the cell, not a tuning value:
             it is an ARBORETUM, a collection of specimens, so each config holds exactly one.
             That is a cap, never a cull - the plant keeps its authored growth quota and simply
             cannot spend it while it is the only one of its kind alive, and the seeder's whole
@@ -28,12 +36,14 @@ Population  FLOOR 1, CAP 1, INITIAL 1. "Sixteen total flora" is the cell, not a 
             replanted). No timer, no decay, no imposed death: CLAUDE.md's conserved-mass law
             in full.
 
-Prisms      per-plant budgets are GEOMETRY on this family and are quoted, never re-authored:
-            the Mandelbulb budget is 4,150 because §55 sized it as "the budget at which the
-            same amount of CURVE is laid as before the plants grew limbs", and Apollonia's
-            2,900 because a gasket's form is finite and priced by DiscMinRadius rather than by
-            a budget. Cutting them would ship a truncated specimen, which is the one thing an
-            arboretum may not do.
+Prisms      per-plant budgets are GEOMETRY on both families and are quoted, never
+            re-authored: the Mandelbulb budget is 4,150 because §55 sized it as "the budget
+            at which the same amount of CURVE is laid as before the plants grew limbs",
+            Apollonia's 2,900 because a gasket's form is finite and priced by DiscMinRadius
+            rather than by a budget, and a Borromean plant's is its element's whole site
+            table (180..360) because that surface is COMPACT - it closes on itself and is
+            finished (§49). Cutting any of them would ship a truncated specimen, which is the
+            one thing an arboretum may not do.
 
 Ladder      derived from ONE set of ratios against the mature garden, so every threshold moves
             together when a leaf changes. FrenzyEXIT sits ABOVE the mature garden on purpose
@@ -42,9 +52,17 @@ Ladder      derived from ONE set of ratios against the mature garden, so every t
             with the garden intact.
 
 WHAT IT DELIBERATELY IS NOT: a forest. There is no EnvironmentPrefab and no second producer -
-the cell IS its sixteen specimens, the way the Lattice cell IS its twelve colonies. It is also
-not the Lifeform Matrix bench, which lines the same sixteen up in a row for comparison; this
+the cell IS its twenty specimens, the way the Lattice cell IS its twelve colonies. It is also
+not the Lifeform Matrix bench, which lines the same species up in a row for comparison; this
 is a WORLD you fly through and meet them in.
+
+WHY THE BORROMEAN FOUR BELONG HERE: the species is the one in the project whose four elements
+are each FITTED rather than typed - Time the anchor, Mass the chunkiest plate, Space the same
+volume at 8.5:1 on twice the membrane, Charge a square slab fitted to its own shielded
+octahedra - so a 19.6x spread in plant volume across one species is the clearest statement
+the fleet has of what an element IS. That is the same sentence §56 spent on the Mandelbulb
+reach, said by a compact surface instead of a fractal cage, which is exactly the comparison
+this cell exists to make.
 
 Usage:
     python3 Tools/Build/author_arboretum_cell.py            # write + print the table
@@ -60,6 +78,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import author_borromean_flora_assets as borromean  # noqa: E402
 import mandelbulb_flora_model as M  # noqa: E402
 import measure_mandelbulb_flora as measure  # noqa: E402
 
@@ -104,10 +123,10 @@ SPREAD = 200          # where a (refused) offspring would be placed; kept wide s
                       # re-seed after a death does not land on the parent's own grave
 
 # ── The garden BAND (volume-uniform between these fractions of the membrane) ─
-# Sixteen specimens, MEASURED at 167-294 units across (the table this script prints - never
+# Twenty specimens, MEASURED at 108-294 units across (the table this script prints - never
 # eyeballed, and note the §56 reach put a 1.72x SPAN between a Mass specimen and a Space one),
-# placed in a WIDE shell so they read as a scattered arboretum rather than a ring. The sixteen
-# bounding spheres together occupy 4.2% of the band, asserted in verify(), so a collision is
+# placed in a WIDE shell so they read as a scattered arboretum rather than a ring. The twenty
+# bounding spheres together occupy a few percent of the band, asserted in verify(), so a collision is
 # unlikely and harmless when it happens: every prism still goes through
 # PrismSpatialIndex.TryReserve, so two specimens that do meet simply stop against each other.
 #
@@ -203,20 +222,80 @@ def prefab_ref(species):
 
 # ── The model ───────────────────────────────────────────────────────────────
 
+def borromean_config_name(element):
+    """The asset author_borromean_flora_assets.py deploys into this cell's folder.
+
+    The prefix is that tool's DEPLOYMENTS entry for this cell, not a name invented here -
+    if the two ever disagree, borromean_state() reports the miss BY NAME rather than this
+    cell silently growing nineteen plants.
+    """
+    return f"{PREFIX} Borromean Flora {element} Config Data"
+
+
+def borromean_rows():
+    """The four Borromean specimens, READ rather than authored.
+
+    author_borromean_flora_assets.py owns this species' configs in every cell that grows it,
+    so this consumes that tool's own table reader and its own GUID rule instead of keeping a
+    second copy of either. A plant's prism count IS its element's site table, because a
+    Borromean surface is COMPACT - it closes on itself and is finished, so there is no budget
+    to stop it short (Docs/ECOSYSTEM.md §49); every plate in one plant is identical, so the
+    per-prism spread is a point; and the plant RADIUS is the table's own.
+    """
+    tbl = borromean.read_table()
+    rows = []
+    for element in ELEMENTS:
+        el = tbl["elements"][element]
+        per = el["leaf"][0] * el["leaf"][1] * el["leaf"][2]
+        name = borromean_config_name(element)
+        rows.append(dict(
+            family="Borromean", species="Borromean", display="Borromean",
+            element=element, prisms=el["sites"], curves=0,
+            volume=per * el["sites"], radius=el["radius"], dims=(per, per),
+            asset=name, guid=borromean.guid(name + ".asset"), owned_here=False,
+        ))
+    return rows
+
+
+def borromean_state(rows):
+    """Are the four this cell depends on actually on disk, under the GUIDs we referenced?
+
+    A SupportedFloras entry pointing at a GUID nothing owns resolves to no config at all and
+    grows nothing, silently - the /flora skill §8 failure mode one level up. So the handoff
+    is checked rather than assumed, and it names the tool that closes it.
+    """
+    missing = []
+    for r in rows:
+        if r["owned_here"]:
+            continue
+        meta = os.path.join(CELL_DIR, r["asset"] + ".asset.meta")
+        if not os.path.exists(meta):
+            missing.append(f"{r['asset']}.asset is missing - run "
+                           f"Tools/Build/author_borromean_flora_assets.py --write")
+        elif f"guid: {r['guid']}" not in read(meta):
+            missing.append(f"{r['asset']}.asset.meta does not carry guid {r['guid']} - "
+                           f"author_borromean_flora_assets.py's deployment prefix and this "
+                           f"cell's PREFIX disagree")
+    return missing
+
+
 def budget():
-    """GROW each of the sixteen through the shipped rule and measure what it lays."""
+    """GROW the sixteen Mandelbulb specimens through the shipped rule, READ the Borromean four."""
     rows = []
     for species in M.SPECIES:
         for element in ELEMENTS:
             r = measure.element_report(element, species=species)
+            name = flora_asset_name(species, element)
             rows.append(dict(
-                species=species, element=element,
+                family="Mandelbulb", species=species, display=display(species),
+                element=element,
                 prisms=r["prisms"], curves=r["curves"],
                 volume=r["volume"], radius=r["radius"],
                 dims=r["dims"],
                 quota=source_field(species, element, "GrowthPerOffspring"),
+                asset=name, guid=guid_for(name), owned_here=True,
             ))
-    return rows
+    return rows + borromean_rows()
 
 
 def totals(rows):
@@ -254,10 +333,16 @@ def verify(rows):
     t, L = totals(rows), ladder(rows)
     problems = []
 
-    if len(rows) != 16:
-        problems.append(f"the roster is {len(rows)} configs, not the 16 this cell is named for")
-    if t["plants"] != 16:
-        problems.append(f"the cell holds {t['plants']} plants, not 16 - CAP must stay 1")
+    if len(rows) != 20:
+        problems.append(f"the roster is {len(rows)} configs, not the 20 this cell is built "
+                        f"from - five species in four elements")
+    if t["plants"] != len(rows):
+        problems.append(f"the cell holds {t['plants']} plants for {len(rows)} configs - "
+                        f"CAP must stay 1, one specimen of each")
+    for family, want in (("Mandelbulb", 16), ("Borromean", 4)):
+        got = sum(1 for r in rows if r["family"] == family)
+        if got != want:
+            problems.append(f"{got} {family} configs, not {want}")
 
     # §36: a trail-caused Frenzy must always release with the garden intact.
     if L["FrenzyExitVolume"] <= t["volume"]:
@@ -290,11 +375,11 @@ def verify(rows):
     if BAND_INNER * MEMBRANE_RADIUS <= NUCLEUS_RADIUS:
         problems.append(f"band inner {BAND_INNER * MEMBRANE_RADIUS:.0f}u is inside the "
                         f"{NUCLEUS_RADIUS:.0f}u nucleus")
-    # ...and it must be wide enough that sixteen specimens are not stacked on one another.
+    # ...and it must be wide enough that the specimens are not stacked on one another.
     shell = (BAND_OUTER * MEMBRANE_RADIUS) ** 3 - (BAND_INNER * MEMBRANE_RADIUS) ** 3
     occupied = len(rows) * t["widest"] ** 3
     if occupied > shell * 0.10:
-        problems.append(f"the sixteen bounding spheres fill {occupied / shell:.1%} of the "
+        problems.append(f"the {len(rows)} bounding spheres fill {occupied / shell:.1%} of the "
                         f"planting band - specimens will routinely interpenetrate")
 
     return problems
@@ -413,9 +498,11 @@ def fauna_asset():
 
 def profile_asset(rows):
     name = f"{PREFIX} Cell Spawn Profile"
+    # Every row carries its OWN guid - the sixteen this script authors and the four
+    # author_borromean_flora_assets.py does - so the list can never disagree with who owns
+    # the asset behind an entry.
     floras = "".join(
-        f"  - {{fileID: 11400000, guid: {guid_for(flora_asset_name(r['species'], r['element']))}, type: 2}}\n"
-        for r in rows)
+        f"  - {{fileID: 11400000, guid: {r['guid']}, type: 2}}\n" for r in rows)
     return HEADER % (SCRIPT["profile"], name) + (
         "  FloraExcludeLocalDomain: 0\n"
         "  FloraSpawnVolumeCeiling: 12000\n"
@@ -446,8 +533,8 @@ def cell_asset(rows):
     L = ladder(rows)
     return HEADER % (SCRIPT["cell"], name) + (
         f"  CellName: {CELL_NAME}\n"
-        "  Description: An arboretum - one specimen of each Mandelbulb species in each element,\n"
-        "    sixteen fractal plants and nothing else\n"
+        "  Description: An arboretum - one specimen of each Mandelbulb species and of the\n"
+        "    Borromean membrane, in each element; twenty plants and nothing else\n"
         f"  Icon: {{fileID: 21300000, guid: {ICON}, type: 3}}\n"
         "  Difficulty: 2\n"
         "  CellEndGameScore: 0\n"
@@ -468,7 +555,9 @@ def emit(rows):
     """name -> (text, guid). Every asset this cell owns."""
     out = {}
     for r in rows:
-        n = flora_asset_name(r["species"], r["element"])
+        if not r["owned_here"]:
+            continue          # the Borromean four belong to their own species' generator
+        n = r["asset"]
         out[n] = (flora_asset(r), guid_for(n))
     n = f"{PREFIX} Tadpole Fauna Config Data"
     out[n] = (fauna_asset(), guid_for(n))
@@ -540,11 +629,18 @@ def report(rows):
     print("  species          element    prisms  curves      volume     across   per-prism")
     for r in rows:
         lo, hi = r["dims"]
-        print(f"  {display(r['species']):<16} {r['element']:<9} {r['prisms']:>6}  "
-              f"{r['curves']:>5}  {r['volume']:>10,.0f}  {2 * r['radius']:>7.1f}u  "
+        curves = f"{r['curves']:>5}" if r["curves"] else "    —"
+        print(f"  {r['display']:<16} {r['element']:<9} {r['prisms']:>6}  "
+              f"{curves}  {r['volume']:>10,.0f}  {2 * r['radius']:>7.1f}u  "
               f"{lo:>5.2f}..{hi:>6.2f}")
     print(f"\n  mature garden   {t['prisms']:,} prisms, {t['volume']:,.0f} volume, "
           f"{t['plants']} plants")
+    for family in ("Mandelbulb", "Borromean"):
+        fam = [r for r in rows if r["family"] == family]
+        print(f"    {family:<12}  {sum(r['prisms'] for r in fam):>6,} prisms, "
+              f"{sum(r['volume'] for r in fam):>9,.0f} volume, {len(fam)} plants"
+              + ("" if family == "Mandelbulb"
+                 else "   (configs owned by author_borromean_flora_assets.py)"))
     print(f"  colliders       {t['plants']} always-on heart crystals (one per live plant, "
           f"culled by no phase) — the Lattice cell's is {LATTICE_HEART_COLLIDERS:,}")
     print(f"                  {t['prisms']:,} LOD-cullable prisms at maturity, ceiling "
@@ -568,7 +664,7 @@ def main():
     rows = budget()
     report(rows)
 
-    problems = verify(rows)
+    problems = verify(rows) + borromean_state(rows)
     assets = emit(rows)
     size, listed = scene_state()
 

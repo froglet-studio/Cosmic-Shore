@@ -10586,57 +10586,85 @@ volume-exact correction spent on the wrong one made Mass measurably *less* Mass.
 
 ## 57. THE ARBORETUM — a cell that is a COLLECTION, not a forest (Sep 2026)
 
-A freestyle Cell-Selector world holding **one specimen of each Mandelbulb species in each
-element — sixteen fractal plants and nothing else**. No `EnvironmentPrefab`, no second
-producer: the cell IS its sixteen specimens, the way the Lattice cell (§36) IS its twelve
-colonies.
+A freestyle Cell-Selector world holding **one specimen of each of five species in each element
+— twenty plants and nothing else**: the four Mandelbulb species (§50, §52, §53) and the
+Borromean membrane (§49). No `EnvironmentPrefab`, no second producer: the cell IS its twenty
+specimens, the way the Lattice cell (§36) IS its twelve colonies.
 
 It exists because §56 made the four elements read as four different KINDS of plant and there
-was nowhere to see that. The Lifeform Matrix bench lines the same sixteen up in a row for
+was nowhere to see that. The Lifeform Matrix bench lines the same species up in a row for
 COMPARISON; this is a WORLD you fly through and meet them in.
+
+**Why the Borromean four belong here.** The species is the one in the project whose four
+elements are each FITTED rather than typed — Time the anchor, Mass the chunkiest plate, Space
+the same volume at 8.5:1 on **twice** the membrane, Charge a square slab fitted to its own
+shielded octahedra — giving a **19.6× spread in plant volume across one species** (804 →
+15,739) and a **2× spread in span** (108 u → 222 u). That is the same sentence §56's reach
+spends on the Mandelbulb family, said by a COMPACT surface instead of a fractal cage, which is
+exactly the comparison this cell exists to make. It also puts two very different growth
+LAWS beside each other: a plant that is finished when its surface closes, next to one that
+traces curves until its budget runs out.
 
 ### 57.1 The population IS the cell
 
-`InitialSpawnCount 1`, `PopulationSize 1`, `MaxLivePopulation 1`, on each of sixteen configs.
-"Sixteen total flora" is the design, not a tuning value — an arboretum is a collection of
+`InitialSpawnCount 1`, `PopulationSize 1`, `MaxLivePopulation 1`, on each of twenty configs.
+"One of each" is the design, not a tuning value — an arboretum is a collection of
 specimens. It is a **cap, never a cull**: each plant keeps the growth quota its species
 authored and simply cannot spend it while it is the only one of its kind alive, and the
 seeder's whole remaining job is **extinction recovery** — a specimen the food web strips to
 nothing is replanted. No timer, no decay, no imposed death.
 
-The per-plant budgets are **quoted, never re-authored**. On this family a budget is GEOMETRY:
+The per-plant budgets are **quoted, never re-authored**. On both families a budget is GEOMETRY:
 4,150 is what §55 sized as *the budget at which the same amount of CURVE is laid as before the
-plants grew limbs*, and Apollonia's 2,900 is what a gasket's own `DiscMinRadius` prices. The
-Lattice cell can cut a lattice plant to 30 prisms because a lattice plant is a tile; cutting
-one of these ships a **truncated specimen**, which is the one thing an arboretum may not do.
+plants grew limbs*, Apollonia's 2,900 is what a gasket's own `DiscMinRadius` prices, and a
+Borromean plant's is its element's whole site table (180–360) because that surface is compact —
+it closes on itself and is **finished** (§49). The Lattice cell can cut a lattice plant to 30
+prisms because a lattice plant is a tile; cutting one of these ships a **truncated specimen**,
+which is the one thing an arboretum may not do.
 
-Everything else about a plant — leaf, heart, grow tempo — is read **verbatim** off
-`_SO_Assets/Lifeforms/<species> Flora <Element>.asset`. Those sixteen assets are the element
-palette; forking their identity here would be two sources of truth for one plant's shape. This
-cell authors only the population and the planting band.
+Everything else about a plant — leaf, heart, grow tempo — is never authored here. The sixteen
+Mandelbulb configs read it **verbatim** off `_SO_Assets/Lifeforms/<species> Flora
+<Element>.asset`, because those sixteen assets are the element palette and forking their
+identity here would be two sources of truth for one plant's shape. **The Borromean four are not
+authored here at all**: `author_borromean_flora_assets.py` owns that species' configs in every
+cell that grows it (its `DEPLOYMENTS` table, whose row for this cell says only *seed 1, cap 1,
+band 0.42..0.92*), so `author_arboretum_cell.py` READS the four it wrote — their GUIDs off
+their own `.meta`, their measured budget and plate through that tool's own table reader — and
+**fails by name** if they are missing or carry a different GUID. A `SupportedFloras` entry
+pointing at a GUID nothing owns resolves to no config at all and grows nothing, silently, so
+the handoff is checked rather than assumed. This cell authors only the population, the planting
+band, the roster and the ladder.
 
 ### 57.2 Measured
 
 | | |
 |---|---|
-| mature garden | **53,891 prisms**, **237,350 volume**, 16 plants |
-| specimens | 167 u across (Apollonia Mass) → **294 u** (Mandelbulb Space) |
-| always-on heart colliders | **16** (one per live plant, culled by no phase) — the Lattice cell's is 1,080 |
-| LOD-cullable prisms | 53,891 at maturity, ceiling **78,100** — Atlantis is ~69,000 and the Lattice cell's ceiling is 82,400 |
-| planting band | 504 u .. 1,104 u, volume-uniform; the sixteen bounding spheres fill **4.2%** of it |
+| mature garden | **54,935 prisms**, **259,795 volume**, 20 plants |
+| by family | Mandelbulb 53,891 prisms / 237,350 volume over 16; Borromean **1,044 / 22,445** over 4 |
+| specimens | 108 u across (Borromean Charge and Mass) → **294 u** (Mandelbulb Space) |
+| per-prism volume | 0.07 (Coral Bloom Space) → **72.87** (Borromean Mass) — three orders of magnitude |
+| always-on heart colliders | **20** (one per live plant, culled by no phase) — the Lattice cell's is 1,080 |
+| LOD-cullable prisms | 54,935 at maturity, ceiling **79,700** — Atlantis is ~69,000 and the Lattice cell's ceiling is 82,400 |
+| planting band | 504 u .. 1,104 u, volume-uniform; the twenty bounding spheres fill **5.2%** of it |
 
 Ladder: Restless 0.35× / 0.26× the mature garden (EARLY, or the food web sleeps through the
 whole of the cell's growth — §48), Frenzy 1.45× / 1.25×. **FrenzyEXIT sits above mature on
-purpose**: the sixteen are hard-capped, so a Frenzy here can only ever be trail-caused, and it
+purpose**: the twenty are hard-capped, so a Frenzy here can only ever be trail-caused, and it
 must always release with the garden intact (§36).
+
+Adding the Borromean four cost **1.9% of the prism count and 9.5% of the volume** — the whole
+species weighs less than one Mandelbulb Mass specimen — so the ceiling moved 78,100 → 79,700 and
+stayed under the Lattice cell's. Four more heart colliders is the honest cost, and it is the
+only flora number that is never free.
 
 The band's inner edge is outside the ~392 u nucleus, which matters for the reason it always
 does: `Flora.ResolvePlantRadius` clamps a band outside a control zone, so a band authored
 inside one collapses to a single degenerate shell with every specimen on one sphere.
 
 Authored by `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS each of the sixteen
-through the shipped rule rather than trusting a typed number, asserts the relationships rather
-than the values, and appends the config to Menu_Main's `Cell.CellConfigs` — `CellSelectorToy`
+Mandelbulb specimens through the shipped rule rather than trusting a typed number, reads the
+Borromean four out of their own measured table, asserts the relationships rather than the
+values, and appends the config to Menu_Main's `Cell.CellConfigs` — `CellSelectorToy`
 authors no cell list, it reads `Cell.AvailableConfigs`, so adding a world to the selector is an
 edit to the cell's own config rotation and to nothing else.
 
@@ -10670,5 +10698,5 @@ problem for a grown world (`ModePreviewPlantingModel`, one marker per plant); po
 selector at it would fix all three at once and is not done here.
 
 **Nothing has been run in the editor**: the prism counts, volumes and extents above are the
-offline model's, measured by growing the shipped C# growth rule, and the cell has never been
-loaded.
+offline model's — the Mandelbulb sixteen measured by growing the shipped C# growth rule, the
+Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never been loaded.

@@ -365,8 +365,9 @@ nowhere" claim is true only on the date it was written*.
 ## 7.1 ADOPTING a species into a cell
 
 **A cell may be a COLLECTION rather than a forest**, and then the population IS the design:
-the Arboretum holds `MaxLivePopulation 1` on each of sixteen configs, which is a cap and
-never a cull — the plant keeps its authored growth quota, cannot spend it while it is the
+the Arboretum holds `MaxLivePopulation 1` on each of twenty configs — five species in four
+elements — which is a cap and
+never a cull: the plant keeps its authored growth quota, cannot spend it while it is the
 only one of its kind alive, and the seeder's whole remaining job is extinction recovery. Two
 rules for any such cell (`Docs/ECOSYSTEM.md §57`): **quote the per-plant budget, never
 re-author it** (on a lattice or a surface species a budget is GEOMETRY, so cutting it ships a
@@ -374,6 +375,16 @@ truncated specimen — the Lattice cell may cut a lattice plant to 30 prisms onl
 lattice plant is a TILE), and **read every other per-element field verbatim off the canonical
 `_SO_Assets/Lifeforms` asset**, because those are the element palette and a fork is two
 sources of truth for one plant's shape.
+
+**And if the species already has a per-cell DEPLOYMENT table, use it rather than authoring a
+second copy.** The Borromean four in that cell are not authored by the cell's generator at
+all: `author_borromean_flora_assets.py` owns that species' configs in every cell that grows
+it, so its `DEPLOYMENTS` row says only *seed, cap, band* and the cell's generator READS the
+four it wrote — GUIDs off their own `.meta`, budget and plate through that tool's own table
+reader. Two owners for one asset is the trap §2 is about; a cell that quotes instead is a
+cell a leaf refit cannot leave stale. **Check the handoff rather than assuming it**: a
+`SupportedFloras` entry pointing at a GUID nothing owns resolves to no config at all and grows
+nothing, SILENTLY — so fail by name, and say which tool closes it.
 
 Two traps from authoring one, both about IDENTITY:
 

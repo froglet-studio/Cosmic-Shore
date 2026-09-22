@@ -744,8 +744,9 @@ trio, and the traps).
   was true, cheap, and asserting the very property that made the plant grow wrong. *A green check
   on the wrong invariant is worse than no check.* Per-plant guidance now lives in the **`/flora`
   skill**. **It grows in RAMPAGE (all four intensities, as mass to destroy), WRECKING BALL (all
-  four) and WILDLIFE BLITZ cells 1 and 2** — every cacti cell but Tollway — plus the freestyle
-  Lifeform Matrix toy. **A cell adopts it as FOUR configs, one per element, never as one rolled
+  four), WILDLIFE BLITZ cells 1 and 2** — every cacti cell but Tollway — **and the freestyle
+  ARBORETUM**, the one cell that grows it to be LOOKED at rather than flown through (one
+  specimen per element, `cap 1`), plus the freestyle Lifeform Matrix toy. **A cell adopts it as FOUR configs, one per element, never as one rolled
   config**: a `FloraConfigurationSO` carries ONE `Variant` block, and the four differ in budget
   (180–360), plate and HEART (2.051–3.379), so a rolled config would author one heart size for
   four plants whose spans run 108 to 222 and `author_lifeform_heart_sizes.py` would be sizing an
@@ -1051,22 +1052,38 @@ trio, and the traps).
   `Docs/ECOSYSTEM.md §56`.
 - **A CELL MAY BE A COLLECTION RATHER THAN A FOREST.** The **Arboretum**
   (`_SO_Assets/Cell Configs/Arboretum Cell/`, a Cell Selector option) holds **one specimen of
-  each Mandelbulb species in each element — sixteen fractal plants and nothing else**: no
-  `EnvironmentPrefab`, no second producer, the cell IS its sixteen the way the Lattice cell IS
+  each of FIVE species in each element — twenty plants and nothing else**: the four Mandelbulb
+  species and the **Borromean membrane**; no
+  `EnvironmentPrefab`, no second producer, the cell IS its twenty the way the Lattice cell IS
   its twelve colonies. It exists because §56 made the four elements read as four different
   KINDS of plant and there was nowhere to see that; the Lifeform Matrix bench lines the same
-  sixteen up for COMPARISON, this is a WORLD you meet them in. `MaxLivePopulation 1` per config
+  species up for COMPARISON, this is a WORLD you meet them in. **The Borromean four earn their
+  place by saying that sentence a different way**: theirs are the fleet's only elements each
+  FITTED rather than typed (Time the anchor, Mass the chunkiest plate, Space the same volume at
+  8.5:1 on twice the membrane, Charge a square slab fitted to its own shielded octahedra), a
+  **19.6x** volume spread and a **2x** span spread across ONE species, said by a COMPACT surface
+  that is FINISHED when it closes rather than by a fractal cage that traces until its budget
+  runs out. They are also the one part of this cell it does NOT author:
+  `author_borromean_flora_assets.py` owns that species' configs in every cell that grows it, so
+  the Arboretum's generator READS the four it wrote — GUIDs off their own `.meta`, budget and
+  plate through that tool's own table reader — and **fails by name** if they are missing, since
+  a `SupportedFloras` entry pointing at a GUID nothing owns grows nothing, silently.
+  `MaxLivePopulation 1` per config
   is a **cap, never a cull** — each plant keeps its authored growth quota and cannot spend it
   while it is the only one of its kind alive, and the seeder's whole remaining job is
   extinction recovery. **A per-plant budget is GEOMETRY on this family and is quoted, never
   re-authored**: the Lattice cell can cut a lattice plant to 30 prisms because a lattice plant
-  is a TILE, and cutting one of these ships a truncated specimen. Measured: **53,891 prisms,
-  237,350 volume, 16 always-on heart colliders** (the Lattice cell's is 1,080), specimens 167 u
-  to **294 u** across, ceiling 78,100 against Atlantis' ~69,000 and Lattice's 82,400; Restless
+  is a TILE, and cutting one of these ships a truncated specimen (a Borromean plant's budget is
+  its element's whole site table, because that surface CLOSES). Measured: **54,935 prisms,
+  259,795 volume, 20 always-on heart colliders** (the Lattice cell's is 1,080), specimens 108 u
+  to **294 u** across, per-prism volume 0.07 to 72.87, ceiling 79,700 against Atlantis' ~69,000
+  and Lattice's 82,400 — the whole Borromean species costs **1.9%** of the prism count and weighs
+  less than one Mandelbulb Mass specimen; Restless
   0.35x the mature garden and FrenzyEXIT **above** it, since a hard-capped garden can only ever
   be frozen by TRAIL and must release intact. Authored by
-  `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS all sixteen through the
-  shipped rule rather than trusting a typed number and appends the config to Menu_Main's
+  `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS all sixteen Mandelbulb
+  specimens through the shipped rule rather than trusting a typed number, reads the Borromean
+  four out of their own measured table, and appends the config to Menu_Main's
   `Cell.CellConfigs` — **`CellSelectorToy` authors no cell list**, it reads
   `Cell.AvailableConfigs`, so adding a world to the selector is an edit to the cell's own
   rotation and to nothing else. Two defects it surfaced generalise. **A species key with a

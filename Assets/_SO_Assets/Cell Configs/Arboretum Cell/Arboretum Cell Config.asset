@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Arboretum Cell Config
   m_EditorClassIdentifier:
   CellName: Arboretum
-  Description: An arboretum - one specimen of each Mandelbulb species in each element,
-    sixteen fractal plants and nothing else
+  Description: An arboretum - one specimen of each Mandelbulb species and of the
+    Borromean membrane, in each element; twenty plants and nothing else
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -25,11 +25,11 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 3e15bfd0ff16dfce27bdb54b726f2e39, type: 2}
   PhaseThresholds:
-    RestlessEnter: 18900
-    RestlessExit: 14000
-    FrenzyEnter: 78100
-    FrenzyExit: 67400
-    RestlessEnterVolume: 83000
-    RestlessExitVolume: 62000
-    FrenzyEnterVolume: 344000
-    FrenzyExitVolume: 297000
+    RestlessEnter: 19200
+    RestlessExit: 14300
+    FrenzyEnter: 79700
+    FrenzyExit: 68700
+    RestlessEnterVolume: 91000
+    RestlessExitVolume: 68000
+    FrenzyEnterVolume: 377000
+    FrenzyExitVolume: 325000

@@ -32,8 +32,10 @@ CELL first ("Rampage Borromean Flora Mass Config Data"), and a prefix rule would
 handed every adopting cell's copy silently back to it.
 
 DEPLOYMENT, stated plainly because the claim rots: as of this commit the species grows in
-RAMPAGE (as mass to destroy), WRECKING BALL and WILDLIFE BLITZ cells 1 and 2, as well as
-being reachable through the freestyle Lifeform Matrix toy.  `DEPLOYMENTS` below is this
+RAMPAGE (as mass to destroy), WRECKING BALL, WILDLIFE BLITZ cells 1 and 2 and the
+freestyle ARBORETUM (as a SPECIMEN - one of each element, the only cell that grows it to
+be looked at rather than flown through), as well as being reachable through the freestyle
+Lifeform Matrix toy.  `DEPLOYMENTS` below is this
 tool's half of that; the other half is each cell's own generator, which owns the
 `SupportedFloras` list and the volume ladder the adoption moves.  WRECKING BALL is
 deliberately NOT in `DEPLOYMENTS` - it FORKS Rampage's configs, so it has one owner for its
@@ -101,6 +103,14 @@ DEPLOYMENTS = [
     # forest. It takes the Borromean four the same way it takes the other five.
     ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 1', 'Wildlife Cell 1', 1, 2, (0.25, 0.85)),
     ('_SO_Assets/Cell Configs/WildLife Blitz Cells/Cell 2', 'Wildlife Cell 2', 1, 2, (0.25, 0.85)),
+    # THE ARBORETUM is the one deployment that is not a forest: cap 1 means ONE specimen of
+    # each element, which is that cell's whole proposition (Docs/ECOSYSTEM.md 57). Its band
+    # is wider and starts further out than the others' because it has to clear the ~392u
+    # nucleus - Flora.ResolvePlantRadius collapses a band authored inside a control zone to
+    # one degenerate shell, and sixteen Mandelbulb specimens plus these four on one sphere
+    # is not an arboretum. That cell's own generator owns its SupportedFloras list and its
+    # volume ladder, and READS these four back rather than re-authoring them.
+    ('_SO_Assets/Cell Configs/Arboretum Cell',    'Arboretum',        1,  1, (0.42, 0.92)),
 ]
 
 
