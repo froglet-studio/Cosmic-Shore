@@ -11,7 +11,7 @@ Two of the Serpent's three open element slots are now filled. **Mass stays open.
 
 | Element | Ability | Input | Quantitative parameter | Level-5 upgrade |
 |---|---|---|---|---|
-| Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round carries through up to 3 prisms instead of stopping at the first |
+| Charge | **Sniper Shot** | RT (`RightStickAction`) | cooldown: 12 s at rest → 5.4 s at Charge 10 | **Pierce** — the round may break SUPER-SHIELDED mass. Below it armour is not a target at all and the round flies past it |
 | Mass | *(open design slot)* | — | — | — |
 | Space | **Scope** | LT (`LeftStickAction`) | magnification: 22° FOV at full zoom at rest → 11° at Space 10, floored at 8° | **Deep Focus** — ×1.6 more zoom depth, and the floor drops with it (13.8° at rest, 6.9° at Space 10) |
 | Time | Boost Duration | A / Space (`Button1Action`) | boost duration ×1.6 at L10 | — *(unchanged)* |
@@ -212,9 +212,9 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `cooldownSeconds` | 12 | wait between shots at resting Charge — the ability's whole cost |
 | `cooldownMultiplierAtFullCharge` | 0.45 | → 5.4 s at Charge 10 |
 | `rangeUnits` | 3000 | the whole flight; there is no projectile to outrun |
-| `coneHalfAngleDegrees` | 10° | angular half-width of the hitscan — **529 u** at 3,000 u; wider than the eyepiece can show once zoomed (round 9b, authored) |
-| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past **34 u** (it was 688 u at 0.5°) |
-| `pierceCount` | 3 | prisms a PIERCING round takes; 0 = unlimited |
+| `coneHalfAngleDegrees` | 1.5° | angular half-width of the hitscan — **78.5 u** at 3,000 u (round 10; it was 0.5° = 26 u, then 10° = 529 u for one playtest) |
+| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past **229 u** |
+| `pierceCount` | **0** | prisms the round takes, at EVERY tier; 0 = unlimited — everything the cone contains |
 | `debrisSpeed` / `debrisSpeedLimit` | 90 / 120 | true-velocity debris and its ceiling |
 | `beamSeconds` | 0.35 s | how long the tracer takes to fade out |
 | `beamStartWidth` | 1.5 u | tracer width at the muzzle; the far end is drawn at the cone's own radius |
@@ -1189,6 +1189,133 @@ separator — and note round 9a's console was being **flooded** by an unrelated 
 diagnostic line. That spam is fixed (see `Docs/LIT.md`), so the scope's own report is readable now
 in a way it was not when rounds 9 and 9a were played.
 
+## Round 10 — "still no reticle in the zoom window ... just get something to appear in the pip"
+
+The playtest after round 9b, and it reported three things at once:
+
+> still no reticle in the zoom window. the effect cone widened like a cone (too big not desired),
+> but the destruction was small (too small not desired). it should pierce through everything. do a
+> full audit of what is going on. the zoom is working great, but i havn't seen you draw anything in
+> the center of the pip. start there. just get something to appear in the pip
+
+### What round 9b actually proved
+
+It was a size experiment and it came back NEGATIVE, which is worth as much as a fix. The eyepiece
+ring went from **6–24 px** to **82–117 px** — a factor of roughly ten, across the whole dial, with
+four fixed-size posts around it — and the report is identical to the three before it. **Size was
+never the cause.** Nothing that makes the mark bigger can make it appear, and the two remaining
+explanations are that the generated geometry never reaches the screen or that nothing parented
+under the eyepiece does.
+
+Neither is decidable from source, and rounds 5 and 6 of this instrument were both spent trying:
+
+- `ScopeRingGraphic.OnPopulateMesh` was read in full again and is correct. Its radius is measured
+  from `GetPixelAdjustedRect().center`, which is `(0, 0)` for a centred pivot at any rect size;
+  `Graphic.DoMeshGeneration` only guards `width >= 0 && height >= 0`, which zero passes; and every
+  `Radius`/`Thickness`/`Sweep01` setter calls `SetVerticesDirty`.
+- `ScopePipView` was grepped for re-parenting or sibling reordering that could put the picture over
+  the marks. It writes `_surface.texture`, `_surface.enabled` and `_camera.enabled` and touches no
+  transform in the canvas.
+- The colour was ruled out: `SO_ColorSet.GetDomainSignalColor` normalises by the brightest channel
+  and returns **white** when the palette authors black, `ResolveTracerColour` falls back to white
+  when there is no ColorSet at all, and `WithAlpha` then forces the alpha explicitly. It cannot be
+  transparent and it cannot be black.
+- `Tick` is running: `_pip.Tick` is the last thing in it, the zoom works, and every ring write is
+  above that line — a null ring would throw before the picture ever updated.
+
+### What shipped instead: a PROBE
+
+`SniperScopeOverlay` now draws a fifth mark inside the eyepiece, out of five plain
+`UnityEngine.UI.Image` quads — a centre pip and four posts — laid out around the **same measured
+radius** the real reticle was given that frame, at full alpha, drawn last.
+
+A sprite-less `Image` falls through to `Graphic.OnPopulateMesh`, which emits one quad filling its
+rect. It shares **no geometry code** with `ScopeRingGraphic` or `ScopeCrosshairGraphic`, and shares
+only the canvas, the parent and the draw order with them. So one playtest now splits the two
+remaining explanations:
+
+| What the next playtest shows | What it means |
+|---|---|
+| The probe appears, the ring still does not | The fault is inside the generated `MaskableGraphic` path |
+| Neither appears while the picture does | The fault is in what is parented under the eyepiece |
+| Both appear | It was the zero-sized rect (below), and the instrument is fixed |
+
+This is the same discipline round 7 used on the window itself: **when a component renders and
+another does not, reach for the one that provably renders rather than reasoning about the one that
+does not.**
+
+### And the one measurable difference, removed
+
+Every generated graphic in this overlay was built with `rect.sizeDelta = Vector2.zero`. The
+eyepiece's two petals — the components that provably render — are built with a **full-size** rect.
+That was the only structural difference between them, so it is gone: `MakeRing` and `MakeCross` now
+give their rects `GraphicRectPixels` (512) on both axes.
+
+**Nothing about the geometry moves.** A centred pivot on centred anchors keeps `rect.center` at
+`(0, 0)` whatever the size, every radius these components draw is measured from that centre in
+absolute units, and there is no mask anywhere in this canvas, so a rect is not a clip. It is
+removed because it was the last difference worth removing, not because it was diagnosed.
+
+`SelfCheck` now checks the probe alongside the three marks it already checked.
+
+### The weapon half — "the destruction was small ... it should pierce through everything"
+
+Two separate defects, both real, both found by reading `SniperShotActionExecutor.ResolveShot`.
+
+**The round destroyed ONE prism.** The budget was
+
+```csharp
+bool pierces = IsPierceUnlocked;                            // Charge 5
+int budget = pierces ? (so.PierceCount <= 0 ? int.MaxValue  // authored 3
+                                            : so.PierceCount)
+                     : 1;                                   // <- every un-upgraded shot
+```
+
+so an un-upgraded rifle on a **twelve-second** cooldown was worth exactly one prism, and an
+upgraded one three. That is not a sniper round, and it is what the pilot measured. **The round now
+pierces by default**: the budget is the authored number at every tier, and the asset authors **0**,
+which is unlimited — everything the cone contains.
+
+**Charge 5 "Pierce" was then an upgrade whose whole content had become the base behaviour**, which
+is a dead upgrade rather than a generous one. It is re-cut onto the thing the ability already does
+and had never gated: **ARMOUR**. Below Charge 5 a super-shielded prism is not a target at all, so
+the round flies *through* it and kills whatever is behind; at Charge 5 the sanctioned teardown in
+`DestroyPrism` runs and the Serpent is the fleet's second force that can take a super-shield off.
+
+The gate lives in `IsValidTarget` rather than in the loop, and that placement is the whole of why
+it works: `Prism.Damage` **hard-ignores** super-shielded mass, so an un-upgraded round that treated
+armour as a target would stop on it, set the tracer's end point there, and destroy nothing —
+visibly dying against a wall it was supposed to pass. Excluding it from the target set instead
+means the round never notices it. **"Pierce" now names a CAPABILITY rather than a count: how many
+prisms the round goes through is the weapon's, and what it can go through is the element's.**
+
+**The cone came back down.** `coneHalfAngleDegrees` **10° → 1.5°**. Ten degrees was round 9b's size
+experiment and it swept a **529 u** radius at 3,000 u — a shotgun, which is what the pilot saw and
+did not want. Half a degree (26 u) is a needle. One and a half is a rifle: **78.5 u** at full
+range, and the tracer is drawn at that same radius because the beam IS the volume tested. It also
+keeps the eyepiece ring inside the petal for most of the dial — 24.5 px at fov 60, 72.7 px at fov
+22, pinning at the 117 px cap only near the very bottom of the zoom.
+
+The general rule round 9b left behind is unchanged and was followed here: **the dial to move is the
+weapon's angle, never the cap.**
+
+### The audit's clean bill
+
+Everything else in the shot was re-read and is correct as it stands: the `QueryCone` snapshot is
+re-sorted along the axis before anything dies and each prism is re-tested after the sort (a kill
+can destroy others through its own side effects); the stop point is read *before* the kill, because
+a destroyed prism's transform is on its way back to the pool; `IsValidTarget` still never eats the
+pilot's own wall; `devastate: true` on the ordinary path stops an armoured prism costing two
+twelve-second cooldowns; and the debris carries a true-velocity vector with its matching ceiling
+rather than saturating the explosion prefab's legacy 33.33 u/s clamp.
+
+One latent trap found and left alone, because it is not live: `coneHalfAngleDegrees` carries
+`[Range(0.05f, 5f)]`, and a `RangeAttribute` is a **property drawer** — it clamps in the inspector
+and not at deserialization. The authored 10 was therefore live the whole time, and would have
+snapped to 5 the first time anyone touched that asset in the inspector. At 1.5 it is inside the
+range again, so nothing is at risk now; but *a serialized value outside its own `Range` is a value
+that changes the next time a human looks at it.*
+
 ## Drive-by corrections
 
 - **The doc's own opening paragraph still described the round-1 COCKPIT** — *"the view drops into
@@ -1287,7 +1414,10 @@ constant) both firing.
    League rail and fire. Expect the stella octangula to shed as debris *and* the prism to die —
    both, in one shot. Anything less (a deflect wobble, or the shield popping with the prism
    surviving) means the two-step sequence regressed.
-8. **Pierce:** raise Charge to 5 and fire down a line of 3+ prisms — expect 3 destroyed, not 1.
+8. **Pierce:** fire down a line of prisms at ANY Charge level — expect every prism in the cone
+   destroyed, not one. Then point at super-shielded mass below Charge 5: the round must fly
+   PAST it and kill whatever is behind. At Charge 5 the same shot takes the armour off and kills
+   it (step 7).
 9. **The contextual trigger:** unscoped, press RT — the **cloak** should engage exactly as it does
    today. Scoped, press RT — the cloak must **not** engage.
 10. **Teardown:** while scoped, open the overview / pause (or let a turn end). The window must

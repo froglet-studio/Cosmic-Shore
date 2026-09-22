@@ -130,6 +130,20 @@ namespace CosmicShore.Gameplay
         // panel read as an instrument rather than as a hole in the screen.
         const float BorderPixels = 3f;
 
+        // Every generated graphic's RECT, in canvas units. It is a SIZE rather than the zero the
+        // rings were built with, and the difference is not cosmetic: a zero-sized rect was the one
+        // measurable thing separating the marks (which have never been seen) from the eyepiece
+        // (which draws perfectly), so it is removed rather than reasoned about. Nothing about the
+        // geometry moves - a centred pivot on centred anchors keeps rect.center at (0, 0) whatever
+        // the size, and every radius these components draw is measured from that centre in
+        // absolute units - and with no mask anywhere in this canvas a rect is not a clip.
+        const float GraphicRectPixels = 512f;
+
+        // The PROBE reticle's centre pip. It is its own number rather than DotRadius because the
+        // probe is not the instrument: it states the same measurement in a component class that
+        // provably renders here, so it must stay legible even where the real dot would not be.
+        const float ProbePipPixels = 6f;
+
         // How far inside the petal's own edges the recharge ring sits.
         const float ArcInsetPixels = 8f;
 
@@ -165,6 +179,20 @@ namespace CosmicShore.Gameplay
         ScopeRingGraphic _track;
         ScopeRingGraphic _arc;
         ScopePipView _pip;
+
+        // The PROBE reticle: the same mark, built out of plain UnityEngine.UI.Image quads.
+        //
+        // It is here because four rounds of this instrument have come back as the same four words
+        // and none of them could be told apart from source. The eyepiece is a RawImage subclass
+        // and draws; every mark in the window is a bare MaskableGraphic subclass and none of them
+        // has ever been seen - including the recharge arc, which was reported missing two rounds
+        // before the reticle was. A sprite-less Image falls through to Graphic.OnPopulateMesh,
+        // which emits one quad filling its rect, so it shares no geometry code with either: ONE
+        // playtest now separates "the generated geometry never reaches the screen" from "nothing
+        // parented under the eyepiece does". Drawn LAST, so it cannot be covered by the marks it
+        // is standing in for.
+        Image[] _probe;
+        RectTransform[] _probeRect;
 
         // The flight view's reticle. Its own root, so it can be placed in SCREEN coordinates and
         // stood down on its own (a rear-view flip hides it while the eyepiece keeps working).
@@ -241,6 +269,8 @@ namespace CosmicShore.Gameplay
             _ring = MakeRing(_pipRect, "Reticle", 40f, RingThickness);
             _dot = MakeRing(_pipRect, "ReticleDot", DotRadius, DotRadius * 2f);
 
+            BuildProbeReticle();
+
             _pip = new ScopePipView(_pipSurface);
         }
 
@@ -306,7 +336,7 @@ namespace CosmicShore.Gameplay
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = Vector2.zero;
+            rect.sizeDelta = new Vector2(GraphicRectPixels, GraphicRectPixels);
 
             var ring = go.AddComponent<ScopeRingGraphic>();
             ring.raycastTarget = false;
@@ -329,13 +359,88 @@ namespace CosmicShore.Gameplay
             rect.anchorMax = new Vector2(0.5f, 0.5f);
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = Vector2.zero;
+            rect.sizeDelta = new Vector2(GraphicRectPixels, GraphicRectPixels);
 
             var cross = go.AddComponent<ScopeCrosshairGraphic>();
             cross.raycastTarget = false;
             cross.ArmLength = CrossArmPixels;
             cross.Thickness = CrossThickness;
             return cross;
+        }
+
+        /// <summary>
+        /// Build the PROBE reticle: five plain <see cref="Image"/> quads — a centre pip and four
+        /// posts — parented to the eyepiece and drawn after everything else in it.
+        ///
+        /// <para><b>It is a measuring instrument for the instrument.</b> A sprite-less
+        /// <c>Image</c> falls through to <c>Graphic.OnPopulateMesh</c>, which emits one quad
+        /// filling the rect — no arc, no feather, no generated outline — so it has no code in
+        /// common with <see cref="ScopeRingGraphic"/> or <see cref="ScopeCrosshairGraphic"/> and
+        /// only the canvas, the parent and the draw order in common with them. Whatever the next
+        /// playtest says, it says it about exactly one thing: if this mark appears and the ring
+        /// still does not, the fault is inside the generated graphics; if neither appears while
+        /// the picture does, the fault is in what is parented under the eyepiece; if both appear,
+        /// it was the zero-sized rect the rings were built with.</para>
+        ///
+        /// <para>It is deliberately drawn at FULL alpha rather than dimmed while the weapon
+        /// recharges. The instrument dims its marks to say "not loaded", which is right for a
+        /// readout and wrong for a probe: twelve of every thirteen seconds of a scoped pilot's
+        /// life are spent recharging, and a probe nobody can see during them answers nothing.</para>
+        /// </summary>
+        void BuildProbeReticle()
+        {
+            _probe = new Image[5];
+            _probeRect = new RectTransform[5];
+
+            for (int i = 0; i < _probe.Length; i++)
+            {
+                var go = new GameObject(i == 0 ? "ProbePip" : $"ProbePost{i}", typeof(RectTransform));
+                go.transform.SetParent(_pipRect, false);
+
+                var rect = go.GetComponent<RectTransform>();
+                rect.anchorMin = new Vector2(0.5f, 0.5f);
+                rect.anchorMax = new Vector2(0.5f, 0.5f);
+                rect.pivot = new Vector2(0.5f, 0.5f);
+                rect.anchoredPosition = Vector2.zero;
+                rect.sizeDelta = new Vector2(ProbePipPixels, ProbePipPixels);
+
+                var img = go.AddComponent<Image>();
+                img.raycastTarget = false;
+                img.color = Color.white;
+
+                _probe[i] = img;
+                _probeRect[i] = rect;
+            }
+        }
+
+        /// <summary>
+        /// Lay the probe out around the same radius the real reticle was given this frame, so the
+        /// two are the same claim drawn two ways and a pilot seeing one and not the other is
+        /// reporting a difference between the COMPONENTS rather than between the numbers.
+        /// </summary>
+        void DrawProbeReticle(float radius, Color colour)
+        {
+            if (_probe == null) return;
+
+            _probeRect[0].sizeDelta = new Vector2(ProbePipPixels, ProbePipPixels);
+            _probeRect[0].anchoredPosition = Vector2.zero;
+
+            // The posts sit OUTSIDE the ring with the instrument's own gap, so the probe and the
+            // mark it stands in for occupy the same place rather than two nested ones.
+            float reach = radius + CrossGapPixels + CrossArmPixels * 0.5f;
+            var upright = new Vector2(CrossThickness, CrossArmPixels);
+            var across = new Vector2(CrossArmPixels, CrossThickness);
+
+            _probeRect[1].sizeDelta = upright;
+            _probeRect[1].anchoredPosition = new Vector2(0f, reach);
+            _probeRect[2].sizeDelta = upright;
+            _probeRect[2].anchoredPosition = new Vector2(0f, -reach);
+            _probeRect[3].sizeDelta = across;
+            _probeRect[3].anchoredPosition = new Vector2(-reach, 0f);
+            _probeRect[4].sizeDelta = across;
+            _probeRect[4].anchoredPosition = new Vector2(reach, 0f);
+
+            for (int i = 0; i < _probe.Length; i++) _probe[i].color = WithAlpha(colour, 1f);
         }
 
         /// <summary>
@@ -396,6 +501,8 @@ namespace CosmicShore.Gameplay
             _dot.Thickness = DotRadius * 2f;
             _dot.Sweep01 = 1f;
             _dot.color = WithAlpha(colour, ready ? 1f : DimAlpha * 0.7f);
+
+            DrawProbeReticle(radius, colour);
 
             // INSIDE the petal, against its own tightest edges - which are the two long ones
             // running down to the apex, not the top edge, so this is meaningfully smaller than the
@@ -708,6 +815,7 @@ namespace CosmicShore.Gameplay
             if (!CheckMarkVisible(_ring, "the eyepiece reticle")) return;
             if (!CheckMarkVisible(_cross, "the eyepiece reticle's locator posts")) return;
             if (!CheckMarkVisible(_arc, "the recharge arc")) return;
+            if (_probe != null && !CheckMarkVisible(_probe[0], "the probe reticle")) return;
 
             // The reticles are reported separately from the window because they are a separate
             // report: a pilot who says "I could not see either reticle" has said nothing about
