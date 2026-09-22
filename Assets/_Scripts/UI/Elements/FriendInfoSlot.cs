@@ -21,9 +21,30 @@ namespace CosmicShore.UI
                  "the local player is the party host. Click removes that member from the party.")]
         [SerializeField] private Button kickButton;
 
+        [Tooltip("Optional. The animated domain halo drawn behind the avatar. Leave EMPTY - " +
+                 "the slot builds and binds one itself so every slot carries the signal with " +
+                 "no scene wiring to forget. Assign only to override the generated one.")]
+        [SerializeField] private PartySlotDomainGlow domainGlow;
+
         string _playerId;
         bool _isLocalPlayer;
         Action<string> _onKick;
+
+        void Awake()
+        {
+            EnsureDomainGlow();
+        }
+
+        /// <summary>
+        /// Builds the domain halo behind this slot's avatar if one is not already authored.
+        /// Structural rather than opt-in: a slot that quietly lacks the halo is a slot whose
+        /// pilot has no visible team, and there is no per-slot reason to ever want that.
+        /// </summary>
+        void EnsureDomainGlow()
+        {
+            if (domainGlow == null && avatarIcon != null)
+                domainGlow = PartySlotDomainGlow.EnsureFor(avatarIcon);
+        }
 
         /// <summary>Whether this slot has a player assigned.</summary>
         public bool IsOccupied => !string.IsNullOrEmpty(_playerId);
@@ -41,6 +62,22 @@ namespace CosmicShore.UI
         /// <summary>Underlying GameObject of the avatar icon - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
+
+        /// <summary>
+        /// Paints this slot's halo in the seated pilot's domain colour, or hides it when that
+        /// pilot's domain is not resolvable (<paramref name="domainColour"/> null). Cheap and
+        /// idempotent, so the owning panel can push the LIVE domain every tick rather than
+        /// snapshotting one at population time - domain is re-picked mid-lobby and a snapshot
+        /// would go stale silently.
+        /// </summary>
+        public void SetDomainGlow(Color? domainColour)
+        {
+            EnsureDomainGlow();
+            if (domainGlow == null) return;
+
+            if (domainColour.HasValue) domainGlow.Show(domainColour.Value);
+            else                       domainGlow.Hide();
+        }
 
         /// <summary>
         /// Configures this slot as the local player's slot.
@@ -113,6 +150,9 @@ namespace CosmicShore.UI
 
             if (kickButton)
                 kickButton.gameObject.SetActive(false);
+
+            // An empty slot has no pilot and therefore no domain.
+            SetDomainGlow(null);
         }
 
         /// <summary>

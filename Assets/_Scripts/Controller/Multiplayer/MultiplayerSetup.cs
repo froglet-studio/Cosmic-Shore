@@ -393,7 +393,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts).AsMainThread();
                     break;
                 }
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
@@ -418,7 +418,7 @@ namespace CosmicShore.Gameplay
             };
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Joining session {sessionId}");
-            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
+            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts).AsMainThread();
         }
 
         // --------------------------
@@ -437,7 +437,7 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions).AsMainThread();
                     CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
                     return results.Sessions;
                 }
@@ -457,6 +457,25 @@ namespace CosmicShore.Gameplay
         private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
                                                   NetworkManager.ConnectionApprovalResponse response)
         {
+            // Last chance to clear stray NetworkObjects before THIS guest synchronizes.
+            //
+            // The other sweeps all run at a session's START, which covers what existed then and
+            // nothing created since. But the index collision that breaks synchronization throws
+            // "the moment a host starts OR A CLIENT SYNCHRONIZES" (NetworkSceneObjectGuard's own
+            // words), and a host sitting in Menu_Main keeps creating objects for as long as it is
+            // up - so a host that took its first guest cleanly could still be poisoned by the
+            // time the second one knocked. That is Docs/PartySystem/BUGS.md B5: host + 1 worked,
+            // anything after it failed, and the host stayed broken for the rest of the session.
+            //
+            // Approval is the right hook because it is the last server-side moment before the
+            // guest synchronizes, it runs exactly once per join (never per frame), and Sweep is
+            // non-destructive to anything live: it skips spawned objects and strips only the
+            // DUPLICATES of a hash, keeping one. The producers that leaked here are fixed at
+            // source (CellLifeSpawnerBase); this is what makes the NEXT one survivable instead
+            // of session-ending.
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                NetworkSceneObjectGuard.Sweep($"before approving client {request.ClientNetworkId} (host pre-synchronize)");
+
             // A SPECTATOR announces itself in the approval payload and gets NO Player object -
             // see SpectatorSession. The host's own local connection is never a spectator, whatever
             // its payload says: a stale token could only have been armed by a spectate this machine
@@ -515,7 +534,7 @@ namespace CosmicShore.Gameplay
         // --------------------------
         private async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
         {
-            var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
+            var playerName = await AuthenticationService.Instance.GetPlayerNameAsync().AsMainThread();
 
             return new Dictionary<string, PlayerProperty>
             {
@@ -537,6 +556,13 @@ namespace CosmicShore.Gameplay
         // --------------------------
         // Transport Failure Handler
         // --------------------------
+        // Netcode raises this on the main thread, but the UGS awaits below hand the
+        // continuation to the ThreadPool unless each one carries .AsMainThread() - and
+        // everything after them (networkManager.Shutdown, the scene reload, the SOAP
+        // raises inside HandleHostLossAsync) is main-thread-only. This handler is wired
+        // at sign-in (EnsureNetcodeCallbacksWired), so it is live in Menu_Main, where a
+        // transport hiccup while partied is exactly the "random crash" shape
+        // Docs/THREADING.md exists to prevent.
         private async void OnTransportFailure()
         {
             try
@@ -557,9 +583,9 @@ namespace CosmicShore.Gameplay
                 if (gameData.ActiveSession != null)
                 {
                     if (gameData.ActiveSession.IsHost)
-                        await gameData.ActiveSession.AsHost().DeleteAsync();
+                        await gameData.ActiveSession.AsHost().DeleteAsync().AsMainThread();
                     else
-                        await gameData.ActiveSession.LeaveAsync();
+                        await gameData.ActiveSession.LeaveAsync().AsMainThread();
 
                     gameData.ActiveSession = null;
                 }

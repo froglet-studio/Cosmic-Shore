@@ -5,27 +5,25 @@ namespace CosmicShore.Gameplay
 {
     public class CoOpWildlifeBlitzMiniGame : MultiplayerMiniGameControllerBase
     {
-        int readyClientCount;
-
         protected override void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc();
         }
 
+        // The ready gate lives on the base (MultiplayerMiniGameControllerBase.EvaluateReadyGate).
+        // This mode used to keep its own copy - a bare count evaluated only on a press - which had
+        // both of the defects recorded there: a double-press could start the match without somebody,
+        // and a player leaving mid-wait stranded everyone else at the ready screen forever.
         [ServerRpc(RequireOwnership = false)]
         void OnReadyClicked_ServerRpc(ServerRpcParams rpcParams = default)
         {
-            readyClientCount++;
-
-            // Connected clients minus SPECTATORS (humans who own a Ready button).
-            int humanCount = SpectatorSession.CountHumanClients(NetworkManager.Singleton);
-            if (readyClientCount < humanCount)
-                return;
-
-            readyClientCount = 0;
-            OnReadyClicked_ClientRpc();
+            MarkClientReady(rpcParams.Receive.SenderClientId);
+            EvaluateReadyGate("Ready pressed");
         }
+
+        /// <summary>Every human has pressed Ready - start the shared countdown.</summary>
+        protected override void OnAllPlayersReady() => OnReadyClicked_ClientRpc();
 
         [ClientRpc]
         void OnReadyClicked_ClientRpc()

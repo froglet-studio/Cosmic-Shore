@@ -401,6 +401,136 @@ namespace CosmicShore.Utility
             return BoxOverlapsTetN(false, cN, f1, f2, f3) || BoxOverlapsTetN(true, cN, f1, f2, f3);
         }
 
+        // ------------------------------------------------------------------
+        // PUBLIC PREDICATES — plain BOX shell (the prism's own authored box)
+        //
+        // An UNSHIELDED prism's exact surface IS its authored box, so these are
+        // not a fidelity improvement over the PhysX trigger — they exist so the
+        // shell tier can own a prism whose COLLIDER cannot be trusted: one whose
+        // pose is driven per-frame off the GPU, and one sampled at the render
+        // rate rather than the 25 Hz physics tick. Shape parity with PhysX is
+        // therefore the CORRECTNESS BAR here, not a bonus: any disagreement is a
+        // behaviour change, which is why these are validated against brute force
+        // exactly as the octahedron/stella predicates were.
+        // ------------------------------------------------------------------
+
+        /// <summary>Exact sphere-vs-box-shell overlap.</summary>
+        public static bool SphereOverlapsBox(in ShellFrame s, float3 center, float radius)
+        {
+            float3 n = ToNormalized(in s, center);
+            if (math.cmax(math.abs(n)) <= 1f) return true;
+            return DistSqPointBoxSurface(in s, center) <= radius * radius;
+        }
+
+        /// <summary>Exact capsule-vs-box-shell overlap.</summary>
+        public static bool CapsuleOverlapsBox(in ShellFrame s, float3 a, float3 b, float radius)
+        {
+            if (SegmentHitsBoxN(ToNormalized(in s, a), ToNormalized(in s, b))) return true;
+            return DistSqSegmentBoxSurface(in s, a, b) <= radius * radius;
+        }
+
+        /// <summary>
+        /// Exact oriented-box-vs-box-shell overlap. The PROBE may be a general
+        /// parallelepiped (TransformVector under non-uniform parent scale does not
+        /// preserve orthogonality), so its separating axes are the three edge-pair
+        /// CROSSES, never its own edge vectors — the shell's axes are orthogonal and
+        /// are its own face normals. 15 axes: 3 shell faces, 3 probe faces, 9 crosses.
+        /// </summary>
+        public static bool BoxOverlapsBox(in ShellFrame s, float3 boxCenter, float3 e1, float3 e2, float3 e3)
+        {
+            float3 d = boxCenter - s.Center;
+            float3 u0 = s.AxisX, u1 = s.AxisY, u2 = s.AxisZ;
+
+            if (SeparatedBoxBox(u0, d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(u1, d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(u2, d, u0, u1, u2, e1, e2, e3)) return false;
+
+            if (SeparatedBoxBox(math.cross(e1, e2), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(e2, e3), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(e3, e1), d, u0, u1, u2, e1, e2, e3)) return false;
+
+            if (SeparatedBoxBox(math.cross(u0, e1), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u0, e2), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u0, e3), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u1, e1), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u1, e2), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u1, e3), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u2, e1), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u2, e2), d, u0, u1, u2, e1, e2, e3)) return false;
+            if (SeparatedBoxBox(math.cross(u2, e3), d, u0, u1, u2, e1, e2, e3)) return false;
+
+            return true;
+        }
+
+        // A degenerate axis (parallel edges) carries no information — the parallel
+        // case is already covered by the two face-normal sets, so skipping it is
+        // exact, not an approximation.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool SeparatedBoxBox(float3 axis, float3 d,
+                                    float3 u0, float3 u1, float3 u2,
+                                    float3 e1, float3 e2, float3 e3)
+        {
+            if (math.lengthsq(axis) < 1e-12f) return false;
+            float rA = math.abs(math.dot(u0, axis)) + math.abs(math.dot(u1, axis)) + math.abs(math.dot(u2, axis));
+            float rB = math.abs(math.dot(e1, axis)) + math.abs(math.dot(e2, axis)) + math.abs(math.dot(e3, axis));
+            return math.abs(math.dot(d, axis)) > rA + rB;
+        }
+
+        // Closest point on the box (clamped in the normalized frame, measured in
+        // WORLD space — distance is not affine-invariant under non-uniform axes).
+        static float DistSqPointBoxSurface(in ShellFrame s, float3 p)
+        {
+            float3 n = ToNormalized(in s, p);
+            float3 c = math.clamp(n, -1f, 1f);
+            float3 world = s.Center + c.x * s.AxisX + c.y * s.AxisY + c.z * s.AxisZ;
+            return math.distancesq(p, world);
+        }
+
+        // Segment vs the box's 6 faces as 12 triangles — the same construction
+        // DistSqSegmentOctaSurface uses over the octahedron's 8 faces.
+        static float DistSqSegmentBoxSurface(in ShellFrame s, float3 a, float3 b)
+        {
+            float best = float.MaxValue;
+            for (int axis = 0; axis < 3; axis++)
+            {
+                float3 nAxis = axis == 0 ? s.AxisX : axis == 1 ? s.AxisY : s.AxisZ;
+                float3 t1 = axis == 0 ? s.AxisY : axis == 1 ? s.AxisZ : s.AxisX;
+                float3 t2 = axis == 0 ? s.AxisZ : axis == 1 ? s.AxisX : s.AxisY;
+                for (int sign = -1; sign <= 1; sign += 2)
+                {
+                    float3 f = s.Center + sign * nAxis;
+                    float3 v00 = f - t1 - t2, v10 = f + t1 - t2, v11 = f + t1 + t2, v01 = f - t1 + t2;
+                    best = math.min(best, DistSqSegmentTriangle(a, b, v00, v10, v11));
+                    best = math.min(best, DistSqSegmentTriangle(a, b, v00, v11, v01));
+                }
+            }
+            return best;
+        }
+
+        // Segment vs the unit cube in the normalized frame (slab clipping).
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static bool SegmentHitsBoxN(float3 aN, float3 bN)
+        {
+            float t0 = 0f, t1 = 1f;
+            float3 d = bN - aN;
+            for (int i = 0; i < 3; i++)
+            {
+                float ai = i == 0 ? aN.x : i == 1 ? aN.y : aN.z;
+                float di = i == 0 ? d.x : i == 1 ? d.y : d.z;
+                if (math.abs(di) < 1e-12f)
+                {
+                    if (ai < -1f || ai > 1f) return false;
+                    continue;
+                }
+                float lo = (-1f - ai) / di, hi = (1f - ai) / di;
+                if (lo > hi) { float tmp = lo; lo = hi; hi = tmp; }
+                t0 = math.max(t0, lo);
+                t1 = math.min(t1, hi);
+                if (t0 > t1) return false;
+            }
+            return true;
+        }
+
         // Octahedron support on axis a is the L-infinity norm of a (L1-ball dual).
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static bool SeparatedOnAxisOcta(float3 a, float3 cN, float3 e1, float3 e2, float3 e3)

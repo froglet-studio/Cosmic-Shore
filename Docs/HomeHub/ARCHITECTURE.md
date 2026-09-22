@@ -37,9 +37,9 @@ Unavailable  → not interactable, reads as not-built
 An entry that is simply **not drawn** tells the player the game has three things in it, and the
 day it ships they have to re-learn the screen. Both unfinished states stay on screen; they differ
 in what they promise. `Locked` says *this exists and you cannot open it yet* — which was true of
-Arena until its launch window shipped (§3); nothing is Locked today, and the state stays because
-the next unfinished entry will need it. `Unavailable` says *this is not built*, which is true of
-Mission, and it does not respond at all.
+Arena until its launch window shipped (§3), and is true today of the **commerce** surfaces, which
+are the pattern's second set of consumers (§2.4). `Unavailable` says *this is not built*, which is
+true of Mission, and it does not respond at all.
 
 `MenuHubButton.SetAvailability` is the runtime seam a progression unlock plugs into later, so
 opening Arena needs no new plumbing here.
@@ -56,6 +56,8 @@ live on the hub button any more:
 | `MenuHubButton` | hub entries | which modal Available opens |
 | `ScreenSwitcher` | nav-bar links | which screens are closed (`disabledScreens`), and what Available navigates to |
 | `NavLink` | in-screen tab rows | which view Available selects |
+| `SO_CommerceAvailability` | `Resources/CommerceAvailability` | which state each **commerce** surface is in, for the invite build's de-scope (§2.4) |
+| `CommerceAffordance` | any commerce control | which surface that control belongs to — never what state it is in |
 
 **The shared piece is the state and its presentation, never the target.** The three hosts aim at
 three different types — `ScreenSwitcher.ModalWindows`, `MenuScreens`, a `View` — and cannot be
@@ -93,6 +95,52 @@ Driven at runtime, not authored on the links, for the reason the list exists at 
 copies of the same fact drift. A screen added to `disabledScreens` tomorrow is marked with no scene
 edit; a screen removed from it goes back to normal without one either. Only the disabled links get
 a view: an Available entry has nothing to present.
+
+### 2.4 Commerce: a second authority, because a de-scope is a POSTURE rather than a design decision
+
+The invite build sells nothing — all IAP and web checkout is cut behind the paid-EA gate, and the
+checkout flow still carries an unresolved entitlement-verification gap
+(`Docs/MENU_PROGRESSION_AND_IAP.md` §5, §6). Every surface that would take money therefore carries
+one of these states, authored in **one** place: `Resources/CommerceAvailability`
+(`SO_CommerceAvailability`). Full record: `Docs/MENU_PROGRESSION_AND_IAP.md` §6.
+
+`disabledScreens` is deliberately *not* that place, even though a de-scoped store screen is a closed
+screen. The two lists answer different questions and move on different clocks:
+
+| | `disabledScreens` | `SO_CommerceAvailability` |
+|---|---|---|
+| Says | this screen is **permanently** closed (ARK, PORT) | this surface is closed **for this build** |
+| Reads as | `Locked` | whatever the surface's own row says |
+| Flips when | design opens the screen | the paid-EA conversion — **one asset edit** |
+| Lives in | the scene | `Resources/` |
+
+So `ScreenSwitcher.IsScreenDisabled` consults both, and `MarkDisabledNavLinks` takes a commerce
+screen's state and wording from the config rather than stamping `Locked`. A screen must be authored
+in exactly one of them; a commerce screen the config calls `Available` while it sits in
+`disabledScreens` falls back to `Locked`, because a nav entry that is skipped **and** reads as open
+is the defect the whole mechanism exists to prevent.
+
+**The config says WHICH state; it never says what the state looks like.** It has no colour, no
+alpha, no overlay and no sting of its own — `SO_CommerceAvailability.Mark` and `TryPress` both hand
+off to `MenuAvailabilityView`, so the de-scope cannot become a second locked look. That is asserted
+rather than trusted: `CommerceDeScopeTests.ThereIsExactlyOneLockedLook` fails if either commerce
+file grows presentation.
+
+Two rules come out of building it, and both generalise past commerce.
+
+**A config whose job is to CLOSE something must fail closed.** Every other config in the project
+falls back to the behaviour that shipped before it existed. This one inverts that: its code defaults
+are the de-scoped state, so a missing or unloadable asset closes the money surfaces instead of
+re-opening them. A surface that comes back because an asset failed to load is the one failure nobody
+notices until a player hits it.
+
+**A screen cannot mark the button that OPENS it.** A screen can only mark controls it holds a
+reference to, and only once its own `Start` has run — and the affordance that most needs marking is
+the one outside it that runs first. `EpisodeScreen` is the worked example: it sits *on* the panel it
+toggles, that panel ships inactive, so its `Start` cannot run until the panel opens, which is
+exactly what the de-scope prevents. Hence `CommerceAffordance`, a marker the control carries itself
+and applies from its own `OnEnable`. It holds only *which surface* — putting the state on it would
+recreate the drift the single config exists to remove.
 
 The link for a screen index is resolved the same two ways `UpdateNavBar` highlights one — the
 explicit `NavActiveImages` list first (each entry's **parent** is its button), then the legacy
@@ -134,7 +182,7 @@ Arena screen modal is a duplicate of the arcade one with its explore view pointe
 |---|---|---|
 | `OrganicRematchGames` | the INJECTED `SO_GameList` — `ArcadeConfigSyncManager.FindGameByMode`, `QuickPlayButton`, the AI vessel pick, leaderboards, loadouts | **every** card, arcade and arena alike |
 | `ArcadeGames` | the Arcade grid's `rosterOverride` | the master minus the arena cards |
-| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush |
+| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush, Regatta |
 
 The master list is deliberately still the union: a guest resolves the card the host opened **by
 mode** through the injected list, so a card removed from it would open on the host and never on
@@ -150,9 +198,14 @@ the mode is finished, launchable, in the build settings, drawn by no screen, and
 the lists by hand. `Tools/Build/check_gamelist_scenes.py` now prints every master card that reaches
 NEITHER grid. It **reports rather than fails**, deliberately — withholding a finished mode from the
 grid while keeping it launchable is a legitimate state (a mode still being tuned), so a hard gate
-would be wrong about that case; what it cannot be wrong about is naming the card. As of 2026-09-10
-the arcade roster is **17 cards** = the master's 19 minus the 2 arena cards, and the Arcade grid
-draws **16** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window).
+would be wrong about that case; what it cannot be wrong about is naming the card. As of this branch
+the arcade roster is **19 cards** = the master's 21 minus the 2 arena cards, and the Arcade grid
+draws **18** of them (`ArcadeExploreView` excludes the Maelstrom card, which has its own window) —
+17/16 before Bloomrush and Redline landed. Note that at 18 drawn cards the authored 12 slots need
+**two** cloned rows, where 16 needed one; both are injected, so the dead-button trap does not apply,
+but the scroll-extent fit is now carrying a case it has not carried before.
+
+**A mode GENERATOR is a second place that registration has to land.** Every `Tools/Build/author_*_assets.py` predates the split and registers the master alone, so a regenerated mode is master-only again and the report above fires on the next run rather than the change. `author_redline_assets.py` and `author_bloomrush_assets.py` now write both rosters; the rest still do not, and each one is a card that will fall off the grid the next time anybody runs it. Same shape as the ship protocol's standing note that *a generator that owns an asset's content is a second place every schema change has to land, and it does not fail at the time of the change*.
 
 ### 3.2 The Arena launch window: the same authority, one more question
 
@@ -167,8 +220,8 @@ it is the first entry in the one `ArcadeGameConfigureModal`'s `launchPanels` (fi
 and the arcade panel accepts every non-Maelstrom card). `ArenaLaunchPanel.Handles` answers for
 the cards in `ArenaGames`, so a card moved between the rosters changes windows with no code.
 
-The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (the card's
-own unlocked `Vessels`), writes the pick through the existing `SetSelectedShipInternal` (so the
+The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (EVERY hull
+the card lists — §3.3), writes the pick through the existing `SetSelectedShipInternal` (so the
 local player's `NetDefaultVesselType` carries it), and gates Start through
 `RefreshStartAvailability` — the ONE place Start's availability is decided, shared with the
 weekly-challenge lock so the two can never disagree. The confirmation is **per session**: armed
@@ -178,6 +231,98 @@ press itself, because a disabled button is never the whole gate.
 
 Two things the window does NOT draw: the objective box and the controls block. The panel's
 `objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
+
+### 3.3 What the carousel offers: the card's list, never the Hangar's lock
+
+**A card's `Vessels` list is the authority on what a mode admits. The Hangar's purchase lock
+(`SO_Vessel.IsLocked`) gates the Hangar.** The first cut of the carousel filtered the card's list
+by that lock — copied from the legacy `ArcadeLoadoutView` — and it shipped: six of the eight class
+assets are authored `isLocked: 1` (only the Squirrel is `ownedFromStart`; the Scarab's asset
+happens to carry `isLocked: 0`), the commerce surfaces are de-scoped for this window, and the
+unlocks a cloud save grants are mirrored onto the assets only for hulls the player bought with
+crystals — so on a fresh account every arena carousel held exactly **Squirrel and Scarab**, and
+the Regatta, a card that lists all eight hulls, offered two. Reported as *"the vessel select was
+only allowing me to pick the squirrel and another vessel that looked kinda like the sparrow image,
+but it was the scarab"* (the second half is §3.4).
+
+Two facts make dropping the filter the right shape rather than a workaround:
+
+- **The arcade already ignores the lock.** An arcade card pins one hull, and
+  `ArcadeGameConfigureModal.ResolveModeVessel` hands the pilot that hull whether or not they own it
+  — a player who owns only the Squirrel flies a Dolphin on Rampage. Honouring the lock in the arena
+  therefore made the SAME hull flyable on one card and hidden on the next, which is not a
+  progression system, it is an inconsistency wearing one's clothes.
+- **The list is already the gate.** A hull the card should not admit is a hull the card does not
+  list; `ArenaRosterTests` holds that every listed hull exists and carries its icons, and the
+  `/arenagame` skill holds that every listed hull has had its kit read.
+
+What the lock still gates is unchanged: the Hangar's own views, the freestyle vessel-selection
+panel, and the legacy loadout view all read `IsLocked` as before. The carousel's other rules are
+untouched — the default pick, the per-session confirmation, Start dead until confirmed.
+
+### 3.4 The Scarab's icon was the Sparrow's
+
+`SO_Class_Scarab.IconActive` pointed at the codex's `tool_vessel-changer__scarab.png`, and that
+file is **byte-identical** to `tool_vessel-changer__sparrow.png`. Every asset-reading mesh
+harvester — `CodexImageBaker.HarvestModel` and `ToyModelBuilder.TryBuild` (the toybox's mini
+hulls) — sees what the prefab ASSET shows, and the Scarab's asset shows a Sparrow: its hull is
+generated in `ScarabHullBuilder.Awake` and its wrapped Sparrow model's renderers are switched off
+in the same `Awake`, so on the asset the real hull is an empty `MeshFilter` beside a still-enabled
+Sparrow. Both harvesters now skip `IProceduralElementMorphSource.HiddenLegacyModelRoot` and
+harvest `IProceduralHullSource` pieces (the Scarab answers off the asset with the same parts its
+runtime `EmitParts` lays), so a codex re-bake and the toybox's mini Scarab are the Scarab. The
+card icons themselves (`Assets/_Graphics/CardImages/Scarab.png` / `Scarab_Inactive.png`) are
+rendered from the SHIPPED hull by `Tools/Build/render_scarab_card_icons.py` (Roslyn compiles and
+runs `ScarabHullForm` at the prefab's authored proportions; `--check` fails on a hull retune
+until the script is re-run) in the card family's palette — a stand-in until an artist draws
+one, but a stand-in that is the ship. `ArenaRosterTests` compares icon FILE bytes across a card's
+hulls, because the two sprites were different assets with the same pixels, which a reference
+check cannot see.
+
+### 3.5 Second playtest: the CONFIRM button sat on Play, and the Urchin was a white square
+
+Two more defects in the same window, both invisible to every static check that had been run on
+it, both reported off the rendered frame (*"the urchin's card icon isn't correct, and there is a
+strange button that sits over the play button in the arena card. it goes away when clicked"*).
+
+**The SELECT VESSEL button was a CLONE of the Play button that never got moved.** Same parent
+(`ConfigurationDetailView`), same anchors (0.690..0.998 × 0.056..0.156), same pivot, same
+(0, −22) offset — with the CONFIRM plate in place of START GAME. So it sat exactly on Play, and
+because `ArenaLaunchPanel.ShowVessel` hides it the moment the pilot confirms, what the pilot saw
+was a button over Play that vanished when pressed. The code was right; the rect was a copy. It
+now lives INSIDE the carousel (`ControlsDescription/Content`, beside `VesselIcon` and the two
+arrows), centred under the icon at the plate's native 272×72 — the fixed-pixel idiom the arrows
+already use, and the resolution rule §5.3 records (a 272×72 plate stretched to 326×92 upscales on
+every display). `Tools/Build/author_arena_launch_panel_layout.py` (`--check`) authors it and
+PROVES the picker's button and Play are disjoint by solving both rects against the canvas's
+reference resolution — a clone-and-forget cannot pass it again. General rule: **a widget cloned
+from a sibling inherits that sibling's PLACE, and a cloned rect is a fact about the donor, not a
+decision about the copy.**
+
+**The Urchin's `IconActive` / `IconInactive` pointed at two sprite guids no `.meta` in the tree
+owns** — art deleted before this clone's history begins, class asset never re-pointed. A
+`UnityEngine.UI.Image` whose sprite is missing draws a SOLID WHITE QUAD in its tint (the
+`Pip.prefab` frame trap in CLAUDE.md's anti-patterns, in a second costume), so the carousel showed
+a white square and called it the Urchin. The Urchin's real card art was in the tree the whole
+time (`CardImages/Urchin_Square.png`, which the class's `CardSilohoutteActive` already used — the
+same file shape the Dolphin uses for ITS `IconActive`); it had no inactive sibling, so
+`Tools/Build/author_urchin_card_icons.py` (`--check`) derives `Urchin_Inactive.png` with the card
+family's greyed look and re-points the class asset. `Tools/Build/check_vessel_class_icons.py`
+(`--self-test`) is the general gate: every `SO_Class_*.asset`'s two icons must resolve to an
+owned guid, because a dangling sprite reference fails as a white rectangle and never as an
+error. `ArenaRosterTests` already asserted the icons non-null — in the editor, where a missing
+sprite loads as null, so it would have caught this the first time the suite ran on this card.
+
+### 3.6 The carousel re-opens on the hull you last flew
+
+An arena card remembers the hull each pilot last pressed ready with, per card, and the
+carousel opens ON it - `InitializeDefaultShipFromAvailable`'s step 0, ahead of the session's
+last hull and the legacy loadout file. The per-session confirmation (§3.2) is untouched: the
+hull is selected, SELECT VESSEL is still the pilot's press, because a Start that could fire on
+a hull nobody chose this session is the gate that section exists to keep shut. The whole
+record (intensity, placed AI, domain count, own domain, own hull) and the rules that
+re-validate it are `Docs/ArcadeLaunch/ARCHITECTURE.md` §3.2 - the arena is the arcade pointed
+at another roster, so it inherits the memory with the modal.
 
 ## 4. The Toy Box drives the LIVE toys
 
@@ -500,6 +645,29 @@ stall); and the render rate is 30 rather than 20 because each render is now smal
 afford. General rule, the connecting panel's again: **a preview camera's cost is decided by what it
 is allowed to SEE, not by how often it looks.**
 
+### 4.1.7a The window re-opens on the variant you last committed
+
+Opening a toy from the grid re-descends to the variant the player last pressed Switch / Spawn
+/ Start on - the Lifeform Matrix opens on Fauna > Shark > Charge with SPAWN lit, the cell
+selector on the world last switched to. `ToyPreferenceStore` (`_Scripts/System/Preferences/`)
+keeps, per toy, the PATH to that option: the labels of the branches opened below the top layer
+and the leaf's own. A toy's options are built at runtime and carry no ids, so the label IS the
+identity - it is the station's own name, and a variant whose name changed is a different
+variant to the player too. The key is the definition ASSET's name, the one thing about a toy
+that survives the cell swaps that rebuild the toybox.
+
+Three rules keep it from doing anything a window open should not do. **It selects, never
+applies**: a row that applies on select (a domain, a world you are not in) is not re-applied
+because a window opened - the walk expands branches and ends on `Select`, and stops at a leaf
+that would apply. **It walks only from the grid**: the registry's re-bind after a cell swap
+(`HandleRegistryChanged` -> `BindInternal(restore: false)`) does not restore, since the press
+that caused the swap has just been applied and lighting the button on it again would ask the
+player to re-arm what they just did. **It stops silently at the first label that no longer
+matches** - a species retired, a painting renamed - and the window opens where it would have
+opened anyway. The close-time reset to the top layer (§4.2) stands; what changed is that the
+next open from the grid re-descends only to the variant last COMMITTED, not to wherever the
+player was browsing.
+
 ## 4.1.7 The type scale, the cards and the plates (second pass)
 
 §5.4.1's bands were the right SHAPE and twice the right SIZE: a toy's name at 42–58 and its
@@ -665,6 +833,27 @@ and the freestyle enter/exit handlers — because the switcher already owns the 
 screen index and the freestyle flag, and a button that watched any one of them alone would be
 wrong on the other two. `blocksRaycasts` and `interactable` follow the alpha, so a faded-out hub
 can neither be clicked through a modal nor reached by gamepad navigation.
+
+**That "freestyle is off" read is only as good as WHEN the flag is cleared, and it shipped wrong
+once.** `ScreenSwitcher.HandleExitFreestyle` runs on `OnMenuStateTransitionStart`, and the live
+state it consults (`InFreestyle` = the switcher's own flag OR `MenuCrystalClickHandler
+.IsInFreestyle`) used to say YES on the way out, because the handler cleared `_isInFreestyle` only
+after the camera blend's `await` — after it had already raised both of its exit events. So exiting
+freestyle resolved `visible = false`, left the hub row faded out and non-interactable, and
+scheduled nothing to recompute it: the app's primary navigation was gone until the player opened a
+modal or paged screens, and **the hub buttons are what open the modals**. The same staleness made
+`Refocus()` (which early-returns on `InFreestyle`) never restore the pad's selection, and made the
+gamepad gate flap — `HandleExitFreestyle` handed the pad back and `Update`'s self-heal took it away
+again for the whole blend. `TransitionToMenu` now clears the flag at the TOP, right after input is
+paused and autopilot resumes: freestyle is over there, and what follows is a camera blend, not
+flight. It mirrors the enter path (§4.1 — the flag is set before that side's start event, which is
+the property `ToyConfigureModal` relies on) and matches what `ToyboxController` already believed,
+since it has always treated `OnMenuStateTransitionStart` as the end of freestyle. The hub row and
+`Refocus()` also joined the input gate's self-heal in `ScreenSwitcher.Update`, so a missed
+transition event can no longer strand the row — a fifth call site, and the only one that is a
+backstop rather than a fact changing. General rule: **a flag cleared after an `await` is stale for
+every subscriber of the event raised before it** — if subscribers read the flag back, clear it
+before the raise, on both edges.
 
 ## 5. Scene wiring checklist
 

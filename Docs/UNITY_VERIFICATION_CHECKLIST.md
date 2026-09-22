@@ -3,9 +3,36 @@
 > **Superseded for new work — see `Docs/QA/`.** The untested-development backlog is now
 > generated and maintained by the `/qa-backlog` skill in `Docs/QA/QA_BACKLOG.md`, with a
 > submission/result loop (`Docs/QA/README.md`) that archives passes and turns failures
-> into dev tasks. The two entries below are kept until they are run; new unverified work
-> does **not** get a section here — record it in the PR body's *Verification status*
-> section and the scan will pick it up.
+> into dev tasks. New unverified work does **not** get a section here — record it in the
+> PR body's *Verification status* section and the scan will pick it up.
+
+> ### ⚠ The supersession is not finished — corrected 2026-09-11 (doc-drift sweep, item **R8**)
+>
+> **This banner used to say "the two entries below are kept until they are run." That was wrong,
+> and by a wide margin.** Counted from the section headers on 2026-09-11:
+>
+> | Marker | Sections |
+> |---|---|
+> | 🔴 unverified | **45** |
+> | 🟡 partially confirmed | **1** |
+> | 🟢 verified in editor | **1** |
+> | **total** | **47** |
+>
+> So **46 sections are still open**, not two. Dated ones run **2026-08-15 → 2026-08-27**; eighteen
+> carry no date in their header at all.
+>
+> **None of them is in the QA backlog yet.** `Docs/QA/QA_BACKLOG.md` was generated **2026-08-13**,
+> which is *earlier than every dated item above* — so the backlog could not have absorbed them even
+> in principle, and this file is currently the only record that they exist. Treating it as a spent
+> pointer would silently drop 46 items of editor-side risk.
+>
+> **What closes this properly:** running the `/qa-backlog` skill — tracked as board item **R2** on
+> `Docs/STEAM_RELEASE_TASKS.md`. That skill already sweeps this file by name as an in-repo source
+> (`.claude/skills/qa-backlog/SKILL.md`, "Also sweep in-repo records"), so the items migrate as part
+> of a normal run. **Do not hand-migrate them into `QA_BACKLOG.md`** — that file is tool-owned and a
+> hand-edit would be overwritten by the next scan.
+>
+> Until R2 runs, **this file is live, not superseded.** Work the open items below.
 
 **Purpose.** Some changes land on shared branches (`bleeding-edge` and the
 per-feature branches) without ever being opened in the Unity Editor —
@@ -1065,7 +1092,7 @@ was not**.
    `AssignTrail`-after-`Initialize`, into its own `Trail` declared `PrismscapeDimension.Trail`.
 6. **Element map re-cut.** Charge = the whole spike weapon (depth × reach; map multiplier moved
    2.0 → **2.5**, the value Space used to carry). Space = the track's LENGTH (authored on the SO,
-   map multiplier pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
+   the map's generic multiplier, retired 2026-09-18, was pinned 1.0). "Overcharge" is now the merged L5: +1 generation **and**
    `ChainRangeFalloff` → 1. Mass and Time unchanged.
 7. **Assets:** `UrchinSpikeVolleyAction.asset` / `UrchinSpikeBarrageAction.asset` **deleted**,
    replaced by `UrchinSpikeAction.asset`; `UrchinTrackAction.asset` added. All authored by
@@ -1135,8 +1162,9 @@ The editor-riskiest items:
 - **The CELL overloads at 4 loose balls, regardless of domain** (the per-domain forge cap is
   gone). Get a FOURTH ball loose in the court — any mix of domains, any mix of forged and
   knocked-loose-from-the-nucleus — and all four should detonate at once, each in its own
-  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms take
-  a temporary shield rather than being destroyed (the no-perceived-clipping rule). **Check both
+  domain-coloured blast, with the court-wide overload toast. Watch that own-domain prisms are
+  drawn LIT in the blast's domain colour rather than being destroyed (the no-perceived-clipping
+  rule — they took a temporary shield until 2026-09, `Docs/LIT.md`). **Check both
   entry routes**, because the old cap could only see one: forge a fourth from a crystal, and
   separately knock a fourth inward off the nucleus wall. An EMBEDDED ball must not count —
   three loose plus any number still studded in the shell is quiet.
@@ -2884,8 +2912,9 @@ top, all data + one curve retune:
   Prisms is suppressed while danger is on. Known cosmetic seam: the stream renders domain
   colors, the revealed prism wears the danger material.
 - **Gun range re-anchored, both modes**: base speed 1500 → **750**
-  (`FullAutoAction.speedValue.Value`), SPACE curve 2.5 → **4.667**
-  (`Sparrow.asset` MultiplierAtFullLevel) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
+  (`FullAutoActionSO.speedValue`, a plain `float` since 2026-09-20), SPACE curve 2.5 → **4.667**
+  (`FullAutoAction.asset` `spaceSpeedMultiplier`, an `ElementalFloat` read through
+  `FullAutoActionSO.ResolveSpeed` since 2026-09-20 — the retired map field is gone) — SPACE 0 range halves (~143 u), SPACE 15 unchanged.
   Verify with a Space crystal binge that range visibly stretches toward the old reach.
 
 **Playtest round 3 (2026-08-10):** now SHIELDED full-size shots on the plain flight, range
@@ -3259,7 +3288,7 @@ GameObject, a removed resource slot, and renamed serialized fields.
 
 | Knob | Where | Value |
 |---|---|---|
-| Boost speed at Time 10 | `Sparrow.asset` Time `MultiplierAtFullLevel` | 1.5 (unchanged — but the hold is now unbounded, so this is the first balance lever) |
+| Boost speed at Time 10 | `Sparrow.prefab` `VesselTransformer.BoostSpeedMultiplier` (was `Sparrow.asset` `MultiplierAtFullLevel`, retired 2026-09-20) | 1.5 (unchanged — but the hold is now unbounded, so this is the first balance lever) |
 | Immunity window | `Sparrow.prefab` `VesselElementalImmunity.condition` | `WhileBoosting` (`Always` = passive ward at Time 5, one field) |
 | Roll pip colours | `SparrowHUDVariant.prefab` | armed cyan `0.55/0.9/1`, spent dim grey `0.35/0.4/0.45 @ a 0.5` |
 | Roll wipe / punch | same | 0.15 s / 0.3 |
@@ -3835,6 +3864,121 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
    `bleeding-edge` and carries no charge shell (the material has exactly one user,
    `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.
+
+---
+
+## 🔴 Dolphin rig swap — FLOWN, BROKE, FIXED; needs a re-flight (2026-08-26; flight 17 pending 2026-09-15)
+
+> **DO NOT MERGE until step 7 passes.** The swap ran, every asset check passed, and the ship was
+> still broken in flight — the puppetry tore apart and the hull wore a leftover Blender colour.
+> Both causes are found, fixed and recorded below. The lesson is the entry's own headline:
+> **every structural check on this list passed while the vessel was unusable**, because both
+> defects lived in things the swap did not touch. Asset verification bounds what a swap BROKE; it
+> cannot tell you the ship is right.
+>
+> **Flight 17 (2026-09-15) is the one to fly next.** Sixteen flights tuned the boosters' seat and
+> the last landed it on bleeding-edge's station to the digit while the playtest still read worse.
+> The seat was the wrong dial: the legacy art's chassis-child hierarchy made the wings and boosters
+> ORBIT the fuselage's turn and swing about ONE shared seat per class, and every construction since
+> flight 3 composed the chassis turn into their orientation only. `RiptideAnimation.PlacePartOnChassis`
+> now reproduces that chain in vessel space (`Docs/VESSEL_CONSTRUCTION.md` §4.6.5, flight 17), at
+> bleeding-edge's 75° booster amplitude, with the roll mirror OFF (an opt-in field). Proven offline
+> only — the verifier lands every rig vertex where the legacy vertex would (6.7e-16 wu).
+
+### What the flight found, and why nothing here caught it
+
+| symptom | cause | why the checks missed it |
+|---|---|---|
+| hull puppeteers wrongly | `RiptideAnimation` drove `localPosition` **absolutely**. `VesselAnimation` grew rest-relative ROTATION when the first rig landed and never grew the POSITION half. Every bone on this rig rests at `(0, boneLength, 0)` with large rest rotations, so `(0, .15, −1.7)` flung each of six engines 1.7u along a *different* axis and pulled the chassis and wings off their parents. | Nothing static reads an animation. The swap correctly cleared the animation's Transform fields so they bind by bone name — and binding to the right bone is exactly what exposed the latent absolute-position bug. |
+| yellow left from Blender | the rig's `.meta` had `externalObjects: {}`, so it imported its own DCC materials. `accent.001` — the material that should carry the DOMAIN colour — is `EmissiveColor (1.0, 0.395, 0.0)` at `EmissiveFactor 10`. | Material *remapping* is authoring, not geometry. Every renderer/collider/bone count was right. |
+| domain colour on the wrong surface | submesh ORDER is **not** a convention: this rig emits `[accent, BASE, windsheild, N]`, so the platform default `_domainMaterialSlot: 1` painted the team colour onto the BODY — which the field's own tooltip forbids. The Sparrow's order puts Domain at 1; the Manta family's puts it at 2. | The default is only correct for models that happen to emit Domain second. Nothing measured the order. |
+
+Fixed in `9493ebedf`: the three roles remapped in the rig's importer, the Dolphin moved to the
+order-independent `_domainReplacesMaterials`, and `CaptureRestPositions` / `MovePartFromRest` added
+as the sibling of the rotation trio (anchor through the HOME parent, offset through the CURRENT one,
+so the drift re-parenting still works). `VesselRigSwapper` now REFUSES a rig whose hull wears none of
+the fleet's materials — the Rhino and Urchin rigs have the same empty `externalObjects` and would
+have reproduced this exactly.
+
+`FrogletTools ▸ Vessels ▸ Swap Vessel Rig` is new and, like every writer tool, **its output is the
+deliverable and it lands in your working tree, not on the branch** — so the swapped
+`Dolphin.prefab` is a separate commit from the tool that wrote it. The tool was written without a
+Unity CLI in the remote container, i.e. type-checked against transcribed stubs only, which is why
+its output was verified against the prefab YAML rather than against the tool's own log:
+
+> **The compile gap closed itself, and it is worth knowing why.** `unity-ci.yml`'s `unity` job is
+> gated on `vars.UNITY_RUNNER_LABEL != ''`, which is unset — so it is **skipped on every PR in this
+> repo** and nothing in CI compiles C#. But Unity compiles `Assembly-CSharp-Editor` as ONE unit, and
+> there is no `.asmdef` under `Assets/_Scripts/Editor/`, so all four editor files this branch
+> touches land in that single assembly. Garrett ran **two** of them — the brand-new `Swap Vessel
+> Rig` menu item, and the morph audit reporting the *magnitude* percentages that only this branch's
+> code can produce. A stale assembly could not contain either. So that assembly compiled, and
+> `VesselConstructionAuditor.cs` — which nothing else has ever exercised — compiled with it.
+> **An assembly-wide compile is transitive evidence; a passing menu item vouches for its
+> whole assembly, not just its own file.**
+
+**Asset verification of the pushed prefab, measured differentially against the pre-swap revision.**
+Six `Engine Left/Right.N` sub-pixel GameObjects removed and nothing else; MeshRenderer 18 → 1 and
+MeshFilter 19 → 2 (legacy hull art stripped — what remains is the skimmer sphere and the crackle
+overlay); one stripped `SkinnedMeshRenderer` from the rig instance; **11 Box + 1 Sphere colliders
+unchanged**; 48 → 48 MonoBehaviours; rig sourced from the guid *owned* by
+`dolphin_shapekey_with_animations.fbx`, parented under `OrientationHandle` at identity; six jets on
+`jetint/jetinm/jetinb × .l/.r`, all six names present among the rig's 30 Model nodes; tail unmoved
+at `(0, 0, −21)`; `RiptideAnimation`'s 13 Transform fields cleared to bind by name and its
+`SkinnedMeshRenderer` bound; `_shipGeometries` 11 → 1; **0 dangling fileIDs introduced** (one
+pre-existing dangle cleared); missing-script set identical before and after; §3 reachability clean;
+and the Dolphin **absent** from the §3.4 duplicate-hull list, proving the old renderers were removed
+rather than merely disabled. Full table: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md` § Phase 2.
+
+**What the numbers rest on** (all measured, reproducible with
+`python3 Tools/Build/measure_vessel_models.py` and the derivations in
+`Docs/VESSEL_CONSTRUCTION.md` §4.3):
+
+- the rig IS the shipped hull, same place, no offset — so **no collider is re-fitted**, they are
+  re-homed onto bones with the world pose preserved;
+- the six jets mount on `jetint/jetinm/jetinb`, the **nozzle** bones (712 skinned verts each — the
+  restored exhaust bells), not on `jetT/jetm/jetB`, which skin the engine CASES (538 each);
+- the six mouth centres are the rearmost lip band of each nozzle bone's own skinned geometry.
+
+### Steps
+
+1. ✅ **Dry run first.** Open the window, leave the vessel on Dolphin, press **Dry run**. Every mapped
+   bone and legacy object must resolve and it must report **4 element shapes**. A refusal lists what
+   is missing and writes nothing.
+2. ✅ **Perform the swap.** Then open `Dolphin.prefab` and look at it: one skinned hull, no doubled
+   geometry, the six engine pods showing open exhaust bells (the shipped hull's are sealed cones —
+   that visible difference is the confirmation the rig is in).
+3. ✅ **`FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs`** — the Dolphin must report four
+   element shapes **with non-zero magnitude**. Magnitude is the point: a rig can carry four
+   correctly-named shapes that move nothing (Rhino's and Urchin's do), and before this branch the
+   audit could not tell the difference. **Reported:** Mass 12.056%, Charge 4.314%, Space 3.140%,
+   Time 13.538% of the hull diagonal — every one three orders of magnitude clear of the 0.1% inert
+   threshold — and the fleet line moved to 9/12.
+4. ⬜ **`Audit Vessel Tails and Jets`** — six jets, still resolving, now on the nozzle bones.
+5. ⬜ **`Audit Corridor Vessel Radii`** — the occlusion corridor measures the hull at bind. The rig's
+   bounds match the shipped hull's to three decimals, so this number should NOT move. If it does,
+   something else changed.
+6. ⬜ **`Audit Vessel Skimmers`** — unaffected by the swap (the skimmer is under `OrientationHandle`,
+   not under the model), so it must still pass exactly as before.
+7. 🔴 **Fly it — THE ONE THAT MATTERS.** Sixteen flights so far; flight 17 NOT yet flown. Element level 0 → 10 on each of the four elements and watch the hull morph; check the
+   jaws, wings and six thrusters still animate (`RiptideAnimation` re-binds by bone name, so its
+   inspector fields are deliberately left EMPTY); check the trail, the skim and the crystal blast
+   are unchanged. **Flight 17's specific read, judged against a bleeding-edge Dolphin flown side
+   by side:** in ordinary flight the wings and all six boosters must swing WITH the fuselage's
+   turn (they orbit it, no longer spinning in place while the tail sweeps away) and the boosters
+   must swing about the common seat behind the body at the old art's exaggerated 75° — the
+   legacy read, drift untouched. Two legacy-parity choices to confirm or flip in the inspector
+   on `Dolphin.prefab`'s `RiptideAnimation`: `thrusterAnimationScaler 75` (the old amplitude; a
+   lower number is a FEEL cut on a construction that is now right) and `mirrorAppendageRoll`
+   off (flight 8's mirror was asked for against the broken construction; tick it if the roll
+   still reads backwards on the parts and not on the hull).
+8. ✅ **Ship the output.** Use the window's **Validate & Push** button, which stages only the prefab
+   the tool recorded. Do not `git add -A`.
+
+If step 3 does not go green, **do not hand-fix the prefab** — say what it reported. The mapping is
+measured and a mismatch means the measurement is wrong, which is a thing to correct at the source.
+
+---
 
 ## 🔴 Scarab hull + puppetry + elemental morphs (`claude/scarab-vessel-polish-k9mds6`) — NOT EDITOR-VERIFIED
 

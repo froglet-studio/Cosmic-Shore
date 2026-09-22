@@ -46,16 +46,44 @@ DECL = re.compile(
 NS = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
 USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
 ALIAS = re.compile(r"^\s*using\s+\w+\s*=", re.M)
+ENUM_BODY = re.compile(r"\benum\s+[A-Z]\w*[^{}]*\{([^{}]*)\}", re.S)
+ENUM_MEMBER = re.compile(r"^\s*(?:\[[^\]]*\]\s*)*([A-Z]\w*)\s*(?:=.*)?$", re.S)
+# A MEMBER DECLARATION: the identifier in DECLARATOR position. Same argument as the enum
+# members above, one level over -- at its own declaration the name is a MEMBER, not a type
+# reference, so a member sharing a type's name elsewhere reads as a missing using for a type
+# the file never mentions (`void Pulse()`, `const string WeeklyChallenge = ...`).
+#
+# METHODS and FIELDS need DIFFERENT suppressions, and conflating them fails one way or the other:
+#   - A method is also written bare at every CALL SITE (`Pulse();`), which is not a declaration,
+#     so blanking only the declaration leaves every call reported. Its NAME goes in `own`.
+#   - A field must NOT go in `own`: `public WidgetSO WidgetSO;` needs a using for WidgetSO, and a
+#     name-set suppression would hide the very reference that needs it. Only the declarator
+#     OCCURRENCE is blanked, leaving the TYPE position reported.
+# Both match the name in DECLARATOR position only, never the TYPE position the regex consumes on
+# the way there. `new` is deliberately NOT a listed modifier: it would let `new Vector3(...)` read
+# as a declaration and blind the gate to the constructor call, which is exactly where a using is
+# needed.
+_MODS = (r"(?:(?:public|private|protected|internal|static|readonly|const|virtual|override|abstract"
+         r"|sealed|extern|async|partial|unsafe|volatile|event|required|ref)[ \t]+)*")
+_HEAD = r"^[ \t]*(?:\[[^\]]*\][ \t]*)*" + _MODS + r"[\w.<>,\[\]\?]+[ \t]+"
+METHOD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?=\()", re.M)
+FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
 
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
+# `#region <free text>` is PROSE, not code -- C# lets the label be anything to end of line and
+# does not require quotes, so an ordinary section heading like `#region Player Profile` reads as
+# a bare type reference and reports a missing `using` for a file that compiles perfectly.
+# `#error` / `#warning` take free text the same way. (`#if`/`#pragma` take real identifiers and
+# are deliberately left alone.)
+DIRECTIVE_TEXT = re.compile(r"^[ \t]*#[ \t]*(?:region|endregion|error|warning)\b.*?$", re.M)
 
 
 def strip(src: str) -> str:
-    return STRING.sub('""', COMMENT.sub(" ", src))
+    return STRING.sub('""', COMMENT.sub(" ", DIRECTIVE_TEXT.sub(" ", src)))
 
 
 def index_declarations():
@@ -133,8 +161,26 @@ def check_file(path, decls):
     # Types this file declares itself are always in scope.
     own = set(DECL.findall(src))
 
+    # So are the MEMBERS of enums it declares. An enum member is written bare at its
+    # declaration (`Prism,`) and is not a type reference at all, so a member that happens to
+    # share a name with a type elsewhere — `PrismRenderOverrideSet.Prism` against the Prism
+    # class — reads as a missing using for a type the file never mentions. A gate that cries
+    # wolf is a gate nobody reads, and this one is scoped to CHANGED files, so the noise
+    # arrives attached to somebody's unrelated edit.
+    for body in ENUM_BODY.findall(src):
+        for member in body.split(","):
+            m = ENUM_MEMBER.match(member)
+            if m:
+                own.add(m.group(1))
+
+    # And so are the METHODS it declares -- by NAME, because a method is written bare at every
+    # call site too. A FIELD or PROPERTY is suppressed only at its declarator OCCURRENCE, so its
+    # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
+    own.update(METHOD_DECL.findall(src))
+    scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+
     bad = []
-    for name in sorted(set(MENTION.findall(src))):
+    for name in sorted(set(MENTION.findall(scan))):
         if name in own:
             continue
         where = decls.get(name)
@@ -164,6 +210,30 @@ def self_test():
          "a name inside a COMMENT is not a reference"),
         ("namespace CosmicShore.Gameplay { class A { int x = Foo.WidgetSO; } }", 0,
          "a qualified member access is not a bare reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { int x; }\n#endregion\n}", 0,
+         "a name in a #region LABEL is not a reference"),
+        ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { WidgetSO w; }\n#endregion\n}", 1,
+         "...but a real reference in the same file is still caught"),
+        ("namespace CosmicShore.Gameplay { enum E { WidgetSO, Other } }", 0,
+         "an enum MEMBER sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay { enum E { Other } class A { WidgetSO w; } }", 1,
+         "...but a real reference beside that enum is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n}\n}", 0,
+         "a METHOD declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n    void B() {\n        WidgetSO();\n    }\n}\n}", 0,
+         "...and neither is a CALL to it -- the shape that motivated the split"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public const string WidgetSO = \"x\";\n}\n}", 0,
+         "a CONST declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public int WidgetSO => 1;\n}\n}", 0,
+         "a PROPERTY declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() { }\n    WidgetSO w;\n}\n}", 1,
+         "...but a real reference beside those members is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = new WidgetSO();\n    }\n}\n}", 1,
+         "a CONSTRUCTOR call is a reference -- `new` must not read as a declaration"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO Field;\n}\n}", 1,
+         "a FIELD's TYPE is a reference even though its name is a declarator"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
+         "a field named after its OWN type still reports the TYPE"),
     ]
     ok = True
     for src, want, label in cases:
@@ -177,26 +247,76 @@ def self_test():
     return 0 if ok else 1
 
 
-def changed_files():
-    """Files changed against the base ref - the default scope, where the signal is exact."""
+def _git(args):
+    """Run a git command, returning (returncode, stdout). Never raises."""
     import subprocess
-    for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
-        try:
-            out = subprocess.run(["git", "diff", "--name-only", f"{base}...HEAD"],
-                                 cwd=ROOT, capture_output=True, text=True, timeout=30)
-            names = [n for n in out.stdout.split("\n") if n.endswith(".cs")]
-            if out.returncode == 0 and names:
-                return names
-        except Exception:
-            pass
-    # Fall back to the working tree's own uncommitted changes.
     try:
-        import subprocess
-        out = subprocess.run(["git", "status", "--porcelain"], cwd=ROOT,
-                             capture_output=True, text=True, timeout=30)
-        return [l[3:].strip() for l in out.stdout.split("\n") if l[3:].strip().endswith(".cs")]
+        out = subprocess.run(["git"] + args, cwd=ROOT, capture_output=True,
+                             text=True, timeout=30)
+        return out.returncode, out.stdout
     except Exception:
+        return 1, ""
+
+
+def working_tree_files():
+    """Uncommitted .cs files - a pre-commit run is mostly ABOUT these."""
+    # -z, because plain `git status --porcelain` QUOTES any path containing a space and this repo
+    # is full of them ("Data Containers", "Skimmer Prism Effects", "Effect Containers", "Cell
+    # Configs"). A quoted path does not end in ".cs", so `endswith(".cs")` dropped every one of
+    # them SILENTLY and the check reported OK over a scope it had narrowed itself -- measured on
+    # the element-scaling branch: 10 of 18 changed files seen, including two of the three files
+    # whose whole edit was adding a `using`. Same disease as the stale-base bug below, so the same
+    # rule applies: a gate must not be able to shrink its own scope by accident. -z never quotes.
+    rc, out = _git(["status", "--porcelain", "-z"])
+    if rc != 0:
         return []
+    # With -z each record is `XY PATH`, NUL-separated. A rename/copy emits TWO records --
+    # `R  NEW` then a bare `OLD` -- so the pair is consumed together and only NEW is checked.
+    # (Do not try to spot the bare OLD by looking for an `XY ` prefix: a real path like
+    # "Ab cdef.cs" has a space at index 2 and would be misread as a status line.)
+    recs = [r for r in out.split("\0") if r]
+    names, i = [], 0
+    while i < len(recs):
+        rec = recs[i]
+        i += 1
+        if len(rec) < 4:
+            continue
+        xy, path = rec[:2], rec[3:]
+        if "R" in xy or "C" in xy:
+            i += 1
+        if path.endswith(".cs"):
+            names.append(path)
+    return names
+
+
+def changed_files():
+    """
+    Files changed against the base ref - the default scope, where the signal is exact.
+
+    Returns (scope_label, names). The FIRST base that RESOLVES wins, even when its diff is
+    EMPTY: an empty diff is a real answer ("this branch has no committed changes yet"), not a
+    reason to try the next base. Falling through on empty is how a STALE local `bleeding-edge`
+    - 661 commits behind origin on the day this was found - silently became the base and widened
+    this check from one file to 411, reporting 15 pre-existing findings that belonged to nobody's
+    change. The header above says never to wire the project-wide scope in as a blocking gate;
+    that promise is only kept if the scope cannot widen itself by accident. Uncommitted work is
+    always unioned in, and the chosen scope is always printed.
+    """
+    for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
+        if _git(["rev-parse", "--verify", "--quiet", base])[0] != 0:
+            continue
+        # -z here for the same reason as working_tree_files(): `--name-only` quotes a path with a
+        # space unless core.quotePath is off, and a quoted path silently fails the .cs test.
+        rc, out = _git(["diff", "--name-only", "-z", f"{base}...HEAD"])
+        if rc != 0:
+            continue
+        names = [n for n in out.split("\0") if n.endswith(".cs")]
+        extra = [n for n in working_tree_files() if n not in names]
+        label = f"{base}...HEAD"
+        if extra:
+            label += " + uncommitted"
+        return label, names + extra
+    return "uncommitted only", working_tree_files()
 
 
 def main():
@@ -204,11 +324,16 @@ def main():
     if "--self-test" in sys.argv:
         return self_test()
 
+    args_were_explicit = bool(args)
+    scope = "explicit paths"
     decls = index_declarations()
     if not args:
-        args = [SCRIPTS] if "--all" in sys.argv else changed_files()
+        if "--all" in sys.argv:
+            args, scope = [SCRIPTS], "--all (WHOLE PROJECT - expect false positives)"
+        else:
+            scope, args = changed_files()
         if not args:
-            print("using-directive check: no changed .cs files to check")
+            print(f"using-directive check: no changed .cs files to check (scope: {scope})")
             return 0
     targets = []
     for a in args:
@@ -228,8 +353,9 @@ def main():
                   f"- add `using {declared};`")
             problems += 1
 
+    scope_note = f", scope: {scope}" if not args_were_explicit else ""
     print(f"using-directive check: {'OK' if not problems else str(problems) + ' PROBLEM(S)'} "
-          f"({len(targets)} files, {len(decls)} types indexed)")
+          f"({len(targets)} files, {len(decls)} types indexed{scope_note})")
     return 1 if problems else 0
 
 

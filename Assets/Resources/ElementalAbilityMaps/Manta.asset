@@ -15,44 +15,48 @@ MonoBehaviour:
   vesselClass: 1
   entries:
   - Element: 1
-    AbilityLabel: Overcharge Detonation
-    AbilityDescription: Charge widens the overcharge detonation blast.
+    AbilityLabel: Sting
+    AbilityDescription: Charge raises the bomb bay's capacity and its skim-charge rate.
+      Both authored on MantaStingConfig.asset (capacityPerChargeLevel, chargeRateAtFullCharge);
+      each parameter carries its own ElementalFloat, so one element can never
+      drive a parameter it was not authored on.
     Input: 0
-    MultiplierAtFullLevel: 1.75
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Contagion
+    UpgradeDescription: Anything caught in a bomb's detonation is itself bombed, free -
+      one good route cascades through a whole pack. Snapshotted per bomb at plant time.
   - Element: 2
-    AbilityLabel: Overcharge Harvest
-    AbilityDescription: Mass raises the overcharge harvest capacity.
-    Input: 0
-    MultiplierAtFullLevel: 1.75
-    MinMultiplier: 0.25
+    AbilityLabel: Yastri
+    AbilityDescription: Mass grows the trail's prism volume (VesselPrismController.trailVolume
+      on Manta.prefab, 1x to 2.5x). The turn itself is deliberately unscaled - Yastri's element
+      shapes what the turn LEAVES (YawsteryActionSO.turnRateMultiplier is disabled).
+    Input: 12
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: Shielded Turn Trails
+    UpgradeDescription: Prisms laid during a hard Yastri turn come out shielded - a bank
+      leaves a defensible wall behind you. Regular shield only, per-spawn snapshot.
   - Element: 3
-    AbilityLabel: Yawstery
-    AbilityDescription: Space raises the Yawstery turn rate.
+    AbilityLabel: Kabloom
+    AbilityDescription: Space widens every bomb bloom (MantaStingConfig.asset,
+      blastScaleAtFullSpace 1.6x at level 10).
     Input: 0
-    MultiplierAtFullLevel: 1.6
-    MinMultiplier: 0.25
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: 
-    UpgradeDescription: 
+    UpgradeLabel: No Friendly Fire
+    UpgradeDescription: Blooms stop catching allies and allied prisms, so the Manta can
+      detonate freely inside a team fight. Snapshotted per bomb at plant time.
   - Element: 4
-    AbilityLabel: (open design slot)
-    AbilityDescription: Time mapping not yet designed for the Manta.
-    Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
+    AbilityLabel: Soar
+    AbilityDescription: Time raises the maximum soaring speed, authored on Manta.prefab's
+      VesselTransformer.BoostSpeedMultiplier (x1 at rest -> x1.3 at level 10, floored at
+      x0.7) and read while boosting. It was a fleet-wide read of this map's own generic
+      multiplier until the element-scaling unification; the numbers are unchanged.
+    Input: 13
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

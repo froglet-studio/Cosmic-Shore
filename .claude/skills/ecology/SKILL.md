@@ -15,6 +15,10 @@ this protocol exists to prevent that. Follow it exactly.
   contract (§4)**, the platform-wiring plan (§5), the phased roadmap (§6), the orchestration (§7).
 - `Docs/ECOSYSTEM.md` — the mechanics log (how the current system actually works).
 
+**If the change is about ONE CREATURE** — adding or reviving a species, how it moves,
+where its heart sits, its body prisms, its config wiring — **load `/fauna` as well**.
+This skill owns the system; that one owns the animal.
+
 ## 2. Restate before you edit (this kills the #1 source of rework)
 In one or two lines, state which invariants the change touches and confirm it violates **none**:
 **continuity of existence** (nothing pops in/out — everything grows/fades/suctions/withers; PLATFORM-WIDE) ·
@@ -112,7 +116,7 @@ what the carve-out silently broke — see the traps below.
   `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
   EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
   production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
-  (Rampage, PeelTheCage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  (Rampage, Cleave, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
   PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
   therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
   `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored

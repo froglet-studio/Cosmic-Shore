@@ -20,8 +20,6 @@ MonoBehaviour:
       - short at rest, unchanged at full overcharge. At level 5 shots pierce through
       prisms - both bullets and turret-stance prism rounds.
     Input: 1
-    MultiplierAtFullLevel: 9
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -36,8 +34,6 @@ MonoBehaviour:
       no unlock). Time raises the boost speed; at level 5 boosting also makes you
       immune to elemental debuffs.
     Input: 7
-    MultiplierAtFullLevel: 1.5
-    MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -53,8 +49,6 @@ MonoBehaviour:
       10), so the hit volume grows with the visual. At level 5 fired prisms arrive
       shielded.
     Input: 6
-    MultiplierAtFullLevel: 2.5
-    MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -73,8 +67,6 @@ MonoBehaviour:
       wildlife. Charge widens the prism blast (authored on the skyburst effect
       assets); at level 5 both explosions spare your own domain.
     Input: 2
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

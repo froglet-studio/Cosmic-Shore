@@ -38,6 +38,17 @@ namespace CosmicShore.ScriptableObjects
         public UserActionType ViewUserAction;
         public UserActionType PlayUserAction;
 
+        [Header("Starting elements (arena cards)")]
+        [Tooltip("Element levels each HULL starts this card's match at - the platform's " +
+                 "handicap dial for a card that seats several vessels. One row per hull " +
+                 "(Intensity 0 = every intensity; 1-4 = that intensity only, winning over the 0 " +
+                 "row). A hull with no row starts at rest (every element level 0), which is " +
+                 "also what every single-hull card gets by leaving this empty. Published to " +
+                 "every peer by the config sync and applied in VesselController.Initialize, so " +
+                 "a guest's own vessel is seeded exactly as the host's replica of it. Authored " +
+                 "by the card's generator from its balance model, never by hand.")]
+        public List<VesselStartingElements> StartingElements = new();
+
         [Header("Elemental Comeback (required for every party game)")]
         [Tooltip("Levels of ALL FOUR elements a trailing player/team gains per unit of score " +
                  "deficit behind first place (leaderScore - yourTeamScore, in this mode's " +

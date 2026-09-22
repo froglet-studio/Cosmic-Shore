@@ -60,6 +60,35 @@ Two `StudioEventEmitter`s both playing `Creature colide`: one on **Trigger Enter
 collider that enters the crystal — skimmers, prisms, fauna) and one on **Object Destroy**. Confirm
 that is the intent; the trigger-enter one is a likely source of untuned bursts.
 
+## C9 — Four UI sounds are SILENT until you author their events (new, 12 Sep)
+
+Four menu/UI sounds were playing from `.wav` files inside the **NiceVibrations plugin's demo
+folder** (`HapticSamples/`). Those clips sit under a notice that opens by declaring the pack
+**CC-BY-NC 3.0 — non-commercial** — and whose source list names freesound titles rather than the
+shipped filenames, so no shipped clip can be mapped to a term. They have been unwired and the four
+call sites migrated to FMOD `EventReference` fields, per CLAUDE.md's audio convention.
+
+**Every one of those four slots is deliberately EMPTY, so all four are silent right now.** That is
+the convention, not an oversight: an empty slot is a visible TODO in the inspector, where pointing
+it at a borrowed "temp" event would be an invisible one that survives to release. Nothing was
+substituted, so what replaces each is entirely your call.
+
+| Sound | Where the slot is | What it was doing |
+|---|---|---|
+| Countdown beat | `CountdownTimer.prefab` ▸ `CountdownTimer.countdownBeepEvent` | One tick per countdown number (3 · 2 · 1 · GO), in every game scene |
+| Typing tick | `Profile.prefab`, `ModalWindows.prefab`, `Menu_Main` ▸ `ProfileModal.typingAudioEvent` | One tick per character while a random display name types itself in, ~75 ms apart |
+| Currency burst — fired | `Menu_Main` ▸ `IconEmitter.onTriggerEvent` (3 emitters) | The moment a currency burst launches |
+| Currency burst — landed | `Menu_Main` ▸ `IconEmitter.targetReachedEvent` (3 emitters) | The last icon arriving at the balance |
+
+Two notes for authoring. The typing tick fires **~13 times a second** for the length of a name, so
+it wants to be very short and cheap, with Max Instances set. And `IconEmitter` carries a per-emitter
+`AudioVolume` trim (0.1 on the shipped emitters) which is multiplied into the player's SFX level, so
+author these at full level and let the trim do the ducking.
+
+All four now route through `AudioSystem` / `FMODOneShotVolumeHelper`, so they respect the SFX slider
+the moment you wire them — including the `IconEmitter` pair, which previously called
+`AudioSource.PlayOneShot` and ignored it.
+
 ## C8 — Optional: enable the FMOD error callback while diagnosing
 
 `FMOD ▸ Edit Settings ▸ Enable Error Callback` is off and Logging Level is None, so FMOD's own

@@ -41,7 +41,7 @@ mode enum, so a third kind of card is a new subclass and one entry in the modal'
 
 ### 1.1 The third panel: the Arena's
 
-`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush) can be flown in
+`ArenaLaunchPanel` is that third subclass. An arena card (Astro League, Brood Rush, Regatta) can be flown in
 more than one hull, so the panel carries a vessel carousel and a SELECT VESSEL button, and
 **Start is dead until a hull is confirmed** — the modal's `RefreshStartAvailability` is the one
 place Start's availability is decided, so this gate and the weekly-challenge lock cannot disagree.
@@ -97,7 +97,9 @@ Two consequences worth knowing:
   `CommitConfiguration(playSound: false)` is the auto path.
 - **The party sees the card the host opens.** On the old flow the host browsed privately. This
   is inherent to there being no private step, and it is bounded: `ArcadeConfigSyncManager`'s
-  own `_isCommitted` guard means one commit per open, and closing the modal re-arms it.
+  own `_isCommitted` guard means one commit per CARD (§3.1.1 — it used to be one per *session*,
+  which a close route that skipped `NotifyConfigClosed` left latched forever), and every close
+  route re-arms it, because the modal notifies on its own `OnModalClosed`.
 
 `OnStartGameClicked` is a latch (`_localPlayerReady`): the panel subscribes it, a prefab may
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
@@ -136,6 +138,141 @@ re-announces the count and never launches, because a launch is something a press
 General rule: **anything a peer must be able to catch up on is state, not an event.** A
 message is right for "this just happened"; it is wrong for "this is the case now", because
 the peers that most need "now" are the ones that were not listening when it was sent.
+
+### 3.1.1 Replicated state is only half of it — the DELIVERY was still an edge
+
+Making the lobby a `NetworkVariable` fixed the peers that were not *listening*. It did not
+fix the peers that could not *draw*, and every remaining sync complaint about the arcade
+card came from that gap. Three shipped symptoms, one shape.
+
+**A guest in FREESTYLE could not be shown a card at all.** Freestyle is not "the appshell is
+on a different screen": `ScreenSwitcher.HandleEnterFreestyle` closes every modal, fades the
+screens `CanvasGroup` out and hands the pad to the vessel; `NavigateTo` then refuses outright
+(so `FollowHostToArcadeScreen` was a no-op) and `ModalWindowIn` refuses to open at all while
+that input gate is engaged. The host's open arrived, ran to completion, drew nothing, and the
+guest kept flying while the rest of the party sat in a lobby waiting on their Ready. The open
+is a value change, so nothing ever delivered it a second time.
+
+Being pulled into the host's card is the same class of host-driven move
+`FollowHostToArcadeScreen` already exists for, so **leaving freestyle is part of it**:
+`ScreenSwitcher.RequestExitFreestyle` toggles the guest out and runs the caller back on
+`OnMenuStateTransitionEnd`. Never on the start event and never on the live flag — the start
+of the exit runs another `CloseAllModals`, so anything opened before the end is closed again
+on the way out. (Same rule the Toy Box records for entering freestyle, mirrored.) A guest who
+chose to fly *on their own* is left alone: only a host-driven open takes the ship off
+somebody, and the catch-up path below explicitly declines to.
+
+**A guest who missed the open once could never see the card again.** Every path that turns
+the snapshot into a modal is an edge — `OnValueChanged`, the initial read in
+`OnNetworkSpawn`, the replay in `OnEnable` — and each has a real way to be missed: the modal
+was still loading when the value landed, the guest was flying, or the modal's GameObject
+simply never re-enabled (`ModalWindowOut` fades a `CanvasGroup`; it does not deactivate, so
+`OnEnable` runs once per scene). With the host sitting in the card there was no further change
+coming, and tapping the card registers a game PICK rather than opening anything. So the guest
+was stuck, permanently, with a correct value replicated on their own machine.
+
+`ArcadeGameConfigureModal.ReconcileClientLobby` closes it by asking the state-shaped question
+once a second: **which generation has this guest actually DRAWN, against the one the host is
+broadcasting?** A mismatch opens the card. It is the same shape as `ScreenSwitcher`'s
+self-healing input gate — read the live state, never trust that the event fired. Two rules
+keep it from being a nuisance: it declines while the guest is in freestyle (catching up must
+not take the ship off someone using it — they get the card when they land), and a guest can no
+longer dismiss the host's lobby at all (`AllowGamepadBClose` is false in client mode), so the
+reconcile is never fighting a deliberate choice. A local close the host did not order — a
+screen sweep, freestyle entry — forgets the drawn generation on purpose, which is what brings
+the card back. Tapping any card while a lobby is open also re-enters it, since the host has
+already answered the party's request and a pick recorded then sits on a board nobody reads.
+
+**A host who changed their mind could not move the party.** The sync manager's commit guard
+is a bool cleared by `NotifyConfigClosed`, and only the host's ✕ ever called it. Gamepad B,
+`ScreenSwitcher.CloseAllModals` (raised on freestyle ENTRY, so a host who flew left a phantom
+lobby behind) and `ForceCloseImmediate` all ended at `ModalWindowOut`. The guard stayed
+latched with `IsOpen` still true, so the host's next card returned on the first line of
+`CommitConfiguration` — nothing replicated, and every guest stayed pinned to the previous
+card with no way off it.
+
+Fixed at both ends, because either alone would leave the other as a trap:
+
+- **The modal notifies on its OWN close event.** `HandleSelfClosed` is hooked to
+  `OnModalClosed` and now runs `CloseAndNotifyClients`, which is the lesson the same method
+  already carried for the preview teardown — *one subscription instead of one rule per caller
+  is the difference between "every route we thought of" and "every route"*. The launch is the
+  one close that must NOT broadcast a dismissal, and it goes out through the same
+  `ModalWindowOut` as everything else, so it names itself with a `_launching` flag rather than
+  being told apart by inspection.
+- **The guard is keyed on the CARD.** `if (_isCommitted && lobby.IsOpen && lobby.GameMode ==
+  gameMode) return;` still suppresses a repeat of the card that is already open — its actual
+  job — while a *different* card can never be swallowed, whatever a future close route forgets.
+
+General rule: **a value being replicated does not make it delivered.** State fixes "was this
+peer listening"; it does nothing about "could this peer act on it", and the second question
+needs a reconcile that reads the state rather than another edge that announces it.
+
+### 3.1.2 The human head-count is the HOST's, replicated
+
+The roster draws `seats - humans = AI`, and the two peers used to answer *humans* from
+different sources: the host from Netcode's connected clients (ground truth) and a guest from
+`HostConnectionDataSO.PartyMembers`, the presence-lobby list, polled every 3 s and very often
+1 on a guest. A guest that believes it is alone in a four-seat match draws **three AI avatars
+nobody placed and nobody spawns** — the real backfill is `GameDataSO.RequestedAIBackfillCount`,
+computed host-side — which is exactly how it was reported: extra AI, client-side only, never
+in the game.
+
+`LobbySnapshot.HumanCount` carries the host's own count, republished when a member joins or
+leaves mid-lobby, and a guest reads it back instead of deriving one. The host's read moved to
+`SpectatorSession.CountHumanClients` at the same time: a spectator is a Netcode client with no
+Player object, and counting one as a pilot silently removes an AI seat that the spawner then
+fills anyway. `ArcadeLobbySnapshotTests` holds every field of the snapshot inside `Equals` by
+reflection, because a field missing there never dirties the NetworkVariable and the omission
+shows up only on a second machine.
+
+General rule: **when two peers must agree on a number, one of them owns it and the other reads
+it** — a second derivation is a second answer, and the disagreement surfaces as UI nobody can
+trace to a count.
+
+### 3.2 A card re-opens on what it was last LAUNCHED with
+
+The panel used to open every card the same way - minimum intensity, no bots, everyone on Jade -
+so a player who plays Scarab Scramble at intensity 3 against two Ruby bots re-authored that
+setup on every visit. It now re-seeds itself from `LaunchPreferenceStore`
+(`_Scripts/System/Preferences/`), one `LaunchPreference` record per `GameModes`, on local disk
+through the same `DataAccessor` file store `FavoriteSystem` uses. The arena grid is the same
+modal pointed at a different roster, so the one key serves both.
+
+**Written on a LAUNCH, never on a ready press.** `HandleAllPlayersReady` writes the record
+before it resets the config - a pilot who readied and whose party then dismissed the card has
+not launched anything, and remembering that would restore a setup that never flew. The record
+has two halves written by two authorities: the **host terms** (intensity, domain count, the
+placed AI in placement order) are written only by the launch authority (`SaveHostTerms`), and
+the **pilot choice** (own domain, own hull) by every instance, host and guest alike
+(`SavePilotChoice`) - so a guest readying on a card this machine once hosted cannot clobber
+the host terms it last launched with. The weekly challenge writes nothing: pinned terms are
+not a preference.
+
+**Read as a WISH, re-validated at every seam** (`LaunchPreferenceRules`, pure and held by
+`HomeHubPreferenceTests`):
+
+| field | restored where | clamped against |
+|---|---|---|
+| intensity | `InitializeConfigFromGameDefaults`, so the row, the preview and the commit all see it | the card's range AND the player's unlocks - a saved 4 on a mode whose 3 and 4 are still locked opens on 2, never on a dimmed button drawn selected |
+| placed AI + domain count | `RestoreRememberedRoster`, AFTER `CommitConfiguration` | Blue dropped; cut to the seats free above the humans present (a party that grew gets fewer bots back); the domain count covers every placement's prefix and stays inside the card's window, through the same `HandlePlayerCountSelected` clamp a live placement takes |
+| own domain | `RestoreRememberedDomain`, AFTER the commit on the host, and on a guest's first draw of a NEW lobby generation | only inside `ActiveDomains[0..DC-1]` - a Gold pick on a two-domain lobby falls back to Jade, because lighting a dimmed tile is a promise the spawn would break; routed through `HandleDomainSelected` so it is a real server request, never a lit tile the server never heard about |
+| own hull | `InitializeDefaultShipFromAvailable`, step 0 (ahead of the session's last hull and the legacy loadout file) | must be one the card lists; the arena's per-session confirmation gate is untouched - the carousel opens ON the hull, the pilot still presses SELECT VESSEL |
+
+Two orderings are load-bearing. The roster and domain restores run **after** the commit,
+because the commit is what opens the replicated lobby (`NotifyRosterChanged` refuses a closed
+one, so placements restored earlier would never reach a guest) and what resets every human to
+Jade (so a domain restored earlier would be undone). And a guest restores its domain only on a
+lobby GENERATION it has not drawn before: the guest path re-runs when a guest taps the card to
+get back into the lobby it dismissed, and re-picking there would override a pick they made
+since.
+
+What it does not do: it does not remember the Add AI toggle's armed state (a mode, not a
+setup), it does not auto-confirm an arena hull, and it does not write to the cloud - a launch
+setup is a convenience of THIS machine, made with the party and the unlocks it has. The
+legacy `LoadoutSystem.SaveGameLoadOut` "last game play configuration" is superseded for the
+hull; its only writer was the retired two-screen path's `PlaySelectedGame`, and its read is
+kept as a fallback below this store.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
@@ -509,7 +646,7 @@ answer. It is read-only on scenes and idempotent.
 
 | Mode | Arenas | Note |
 |---|---|---|
-| PeelTheCage | 5 | the cage's rind count IS the intensity |
+| Cleave | 5 | the cage's rind count IS the intensity |
 | Dog Fight, Salvo's twin arena | 4 | the shared Boneyard configs |
 | The Bends | 4 | Rampage's arena, referenced not forked |
 | Wildlife Liberation | 4 | |
@@ -529,7 +666,7 @@ at that intensity.
 | Intensity | Adds | Pool |
 |---|---|---|
 | 1 | Joust, Skim Race, Scurry | 3 |
-| 2 | Rampage, Peel the Cage | 5 |
+| 2 | Rampage, Cleave | 5 |
 | 3 | Scarab Scramble | 6 |
 | 4 | The Bends | 7 |
 
@@ -543,7 +680,7 @@ an un-authored asset is never left unable to draw, which would be a mode that ca
 panel's list all still read it, and the list draws locked modes *greyed rather than hidden*,
 because a list that only grows tells the player nothing about what they are missing.
 
-`MaelstromController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
+`MaelstromController.DrawNextRound` draws from the filtered list. Repeat-avoidance maps
 `CurrentGameIndex` (a `GameQueue` index) **into** that list first — at low intensity the two
 index spaces are not the same, and treating them as one would avoid the wrong mode.
 
@@ -632,6 +769,15 @@ Authored data: `SO_ArcadeGame.Tips` (per-card play tips) and `SO_ArcadeGame.Prev
   swap for a vessel-locked mode — the pre-existing cost recorded in
   `Docs/ModePreview/ARCHITECTURE.md §7`, now paid on intensity changes too for the four modes
   with per-intensity arenas.
+- **The party-sync repairs in §3.1.1–§3.1.2 have not been through a real party.** They are
+  reasoned from the code and the reported symptoms; the reconcile in particular deserves a
+  three-machine pass (host opens a card, one guest flying, one guest cold-joining, host backs out
+  and picks another). The self-heal ticks once a second, so a guest can be up to a second behind
+  the host on a missed edge — deliberate, and invisible next to the modal's own open animation.
+- **A guest cannot dismiss the host's lobby**, by design (§3.1.1): gamepad B is refused in client
+  mode and a local close is undone by the reconcile. If a guest ever needs a legitimate way out —
+  "leave this lobby" as distinct from "close this window" — it has to be a real request to the
+  host, not a window close, or it is the stuck-guest bug again.
 - **The in-Maelstrom pre-game panel is not built.** The design calls for the same panel between
   rounds *without* the domain row (domain cannot change mid-tournament); that lives in the
   Maelstrom scene and is deliberately left for its own pass.
@@ -672,3 +818,39 @@ layout is redesigned.
 **Left alone as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The channel is
 raised and nothing subscribes to it, in code or in any scene — a removal candidate, but a SOAP
 integration point rather than part of the two-screen path.
+
+## The Maelstrom pool list is a Toy Box VARIANT ROW
+
+`MaelstromPoolRow.prefab` was a 228×170 chamfered PNG drawn **Simple** — stretched — into a 260×80
+grid cell, carrying one centred label and nothing else. That is the trap §4.1.8 of
+`Docs/HomeHub/ARCHITECTURE.md` records for the toy cards and `Docs/GAME_MODE_TOPBAR.md` for the goal
+stack (a low-resolution plate upscaled on every display: the pixelated bent corners), squashed to
+3.25:1 on top of it. And it said only the mode's NAME, so sixteen rows of a ladder whose entire
+subject is *which rung a mode enters on* told the player nothing about the ladder.
+
+It is now the Toy Box's **variant row**: the same two chamfered sprites (`Group 1585.png` body,
+`Rectangle 1127 (2).png` rim) drawn **Sliced** at `pixelsPerUnitMultiplier = referencePixelsPerUnit
+/ 100`, the mode's name bottom-left and one detail line above it — `TIER 2  ·  SPARROW`. Cell
+310×88 against the variant row's 275×88, two columns in a ~713-wide viewport.
+
+**It deliberately does not use the big 400×250 toy CARD, and it deliberately does not fill that
+card's portrait slot.** The card's upper two thirds are a baked portrait; a mode's nearest field is
+`SO_ArcadeGame.IconActive`, which is the ARCADE GRID's card art and is legacy — **Salvo carries
+Rampage's picture and Joust carries Duel for the Cell's**. Filling a portrait slot from a field that
+does not mean what the slot wants is the same mistake as the earlier pass that wrote that sprite
+over the row's BACKGROUND and turned every row into a cyan slab (`MaelstromPoolEntry.icon` is still
+left empty for exactly that reason). The Toy Box's own answer to "this thing has no portrait" is the
+accent fill, and a mode has no authored accent either — so the row states facts instead of inventing
+art. General rule: **a card slot is a promise about what the data means, not a place to put the
+nearest sprite the asset happens to carry.**
+
+The scroll content also gained a `ContentSizeFitter`. Its height was AUTHORED at 1351.7 for a grid
+whose rows add up to 903, so the list has always ended in a screenful of nothing, and any cell-size
+change makes that worse. A fitter rather than a re-measured literal, because the pool is sixteen
+modes today and the whole point of the asset is that adding a seventeenth is one edit.
+
+Authored by `Tools/Build/author_maelstrom_pool_cards.py` (`--check`), which reads the slice
+multiplier off the canvas rather than writing it down, and **asserts that the fitter landed on the
+pool list's own Content object** — the first cut of that insert anchored on the `m_Layer` line after
+the matched body and put the component on whatever object was serialized next (`AvatarSpace`), which
+Unity accepts in silence.

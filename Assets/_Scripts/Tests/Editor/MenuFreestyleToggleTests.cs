@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.IO;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -74,6 +75,46 @@ namespace CosmicShore.Tests
             Assert.IsNotNull(prop);
             Assert.AreEqual(typeof(bool), prop.PropertyType);
             Assert.IsTrue(prop.CanRead);
+        }
+
+        /// <summary>
+        /// The exit transition must clear <c>_isInFreestyle</c> BEFORE it raises
+        /// <c>OnMenuStateTransitionStart</c>, because subscribers of that event read the flag back
+        /// as "are we still flying?" while handling it.
+        ///
+        /// <para>It used to be cleared after the camera blend's await, so every such subscriber was
+        /// told YES on the way out. <c>ScreenSwitcher.HandleExitFreestyle</c> is the one that paid:
+        /// it recomputes the home hub's visibility from that answer, so exiting freestyle left the
+        /// hub row (Mission / Toy Box / Arena / Arcade) faded out and non-interactable, with nothing
+        /// scheduled to recompute it.</para>
+        ///
+        /// <para>Source-order rather than behaviour, because the transition is an async
+        /// <c>UniTaskVoid</c> driven by a live vessel, a camera controller and an injected SOAP
+        /// container - none of which exist in edit mode.</para>
+        /// </summary>
+        [Test]
+        public void TransitionToMenu_ClearsFreestyleFlag_BeforeRaisingTransitionStart()
+        {
+            string path = Path.Combine(
+                Application.dataPath,
+                "_Scripts/Controller/Multiplayer/MenuCrystalClickHandler.cs");
+            Assert.IsTrue(File.Exists(path), $"Expected MenuCrystalClickHandler at {path}");
+
+            string source = File.ReadAllText(path);
+
+            int method = source.IndexOf("UniTaskVoid TransitionToMenu()", System.StringComparison.Ordinal);
+            Assert.Greater(method, -1, "TransitionToMenu() not found.");
+
+            int raise = source.IndexOf("OnMenuStateTransitionStart.Raise()", method, System.StringComparison.Ordinal);
+            Assert.Greater(raise, -1, "TransitionToMenu() should raise OnMenuStateTransitionStart.");
+
+            int clear = source.IndexOf("_isInFreestyle = false", method, System.StringComparison.Ordinal);
+            Assert.Greater(clear, -1, "TransitionToMenu() should clear _isInFreestyle.");
+
+            Assert.Less(clear, raise,
+                "_isInFreestyle must be cleared BEFORE OnMenuStateTransitionStart is raised - " +
+                "subscribers read IsInFreestyle while handling that event, and a stale 'true' " +
+                "leaves the home hub buttons disabled after returning from freestyle.");
         }
 
         #endregion

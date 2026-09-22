@@ -628,7 +628,7 @@ to the back.
 
 `GunSprayAccuracy.Saturation01` still reads against the **sustainable** cap and pins at 1 for the
 whole blow-out. That is not an oversight: both haptic channels are already at their ceiling when
-the plateau is reached (strength 1.0, and the 45 ms interval is the floor NiceVibrations can hold
+the plateau is reached (strength 1.0, and the 45 ms interval is already inside the 50 ms spray clip
 without pulses cutting each other off), so there is no headroom left to spend, and re-scaling
 against the far cap would only make the first six seconds — the part a pilot actually flies in —
 read weaker. The buzz going flat *is* the stage-3 signal; the widening tracers are the stage-4
@@ -837,7 +837,7 @@ Everything that moves **both** fire modes lives on `FullAutoAction.asset`:
 | `spread.blowoutMaxMultiplier` | **5** | The final cap, as a MULTIPLE of the sustainable one (→ 7.5°), so retuning the cap carries the blow-out with it. Full spread lands at **10 s**. 1 disables the blow-out. |
 | `spread.distributionBias` | **0.5** | 0.5 = uniform over the disc (even saturation). 1.0 = dense core + thin halo. |
 | `spread.hapticFloor01` | **0.15** | Buzz strength before any accuracy is lost — above zero so the gun is felt from round one. |
-| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. Keep the max-spread value above ~0.04 s: NiceVibrations holds one clip at a time, so pulses closer than the clip just cut each other off. Both channels reach their ceiling at the **plateau**, not at the blow-out — see Round 6. |
+| `spread.hapticIntervalAtRest` / `AtMaxSpread` | **0.10 / 0.045** | Pulse cadence at each end of the ramp. The interval is a REQUEST issued on the next frame, so 0.045 is delivered as 0.050 s at 60 fps — exactly the spray clip's length, i.e. back-to-back whole clips rather than the truncation this note used to claim. Do not go lower: duty is already saturated at 100% by 0.030 s and the envelope collapses to a flat hum at one frame (~0.017 s). Measured — see `Docs/HAPTICS.md` § "The cadence floor". Both channels reach their ceiling at the **plateau**, not at the blow-out — see Round 6. |
 
 The charge shell's own dials are **not** here — they live on
 `_Graphics/Materials/ProjectileChargeFieldMaterial.mat`, because they are a look, not a weapon

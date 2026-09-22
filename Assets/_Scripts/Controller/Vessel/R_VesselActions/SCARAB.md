@@ -489,8 +489,10 @@ Notes and consequences, all of which are design decisions worth marking up:
   button", GamepadInputStrategy.cs:47) — is ignored entirely; repointing it would be a global
   input change affecting every vessel.
 - `ThrottleScalerMultiplier` is the **existing** `ElementalFloat` on `VesselTransformer` (the
-  Squirrel ships it disabled) — the Scarab enables it as its Time scaling, and the map's generic
-  Time multiplier is pinned to 1 so `CurrentBoostAmount()` can never double-dip.
+  Squirrel ships it disabled) — the Scarab enables it as its Time scaling. Double-dipping is now
+  impossible by construction rather than by authoring: the map's generic per-element multiplier
+  was REMOVED on 2026-09-18 (`Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md`), so
+  there is no second channel left for `CurrentBoostAmount()` to read.
 - Speed-tunnel law: nothing to author (absolute fleet-wide mapping) — the tunnel becomes the
   throttle's readout for free, crossing `minEffectSpeed 70` partway up the ramp.
 
@@ -933,6 +935,25 @@ Code: `AOECylindricalExplosion.mirrorAboutStartPlane` (+ `MirrorsAboutStartPlane
 
 ---
 
+### 3.10 AUTOPILOT can dash (SHIPPED 2026-09-14, with Wrecking Ball and Undertow)
+
+The juke is stick-driven and `Update` returns before the gesture logic for an autopilot vessel, so
+an AI Scarab could never dash and never fire the plate — in a mode whose weapon is the plate, an
+all-AI domain would be an opponent that cannot play (the Tollway rule).
+`ScarabJukeController.TryAutopilotDash(worldShove)` runs a **committed** dash through the same
+`Fire` path a human's perimeter push runs (steal window, roll, `OnJukeFired` → the plate), gated to
+the SIMULATING machine (an AI is server-owned; a spawned non-server peer refuses) and refused while
+the juke is spent or a roll is live, so an AI can never fire faster than a human. Returns whether
+it fired, so a caller paces off the answer. Modes call it from their `SetExternalTargetProvider`
+closure on a slow sample clock. Nothing changes for a human pilot.
+
+**And the plate now SCORES and KILLS THROUGH A HEART, platform-wide** (Undertow's platform change):
+`ScarabCavitationExplosionImpactorDataContainer` carries a Debuff-class
+`VesselCombatHitByExplosionEffectSO` (`requireDebuffableVictim`, so the score follows the drain)
+and an `ExplosionWitherLifeformByCrystalEffectSO` (fauna only, own-domain not spared), beside the
+debuff and the ball forge it always had. Counted everywhere, paid only by Undertow's rule.
+Record: `Arcade/UNDERTOW.md`.
+
 ## 4. The ball
 
 This is the largest departure from the shipped mode, and it is worth stating plainly: **today
@@ -1237,6 +1258,18 @@ Cell-owned visual **inherits semantics it did not want** with the geometry; this
 ask a semantic accessor a geometric question and you **lose the geometry along with the
 semantics**, silently, because zero is a perfectly plausible-looking radius.
 
+### 4.1d The ball SCORES for its pilot (SHIPPED 2026-09-14, with Wrecking Ball)
+
+The prism scan above named **"Astro League"** as the attacker of every prism a ball ate — a name on
+no roster, so nothing a ball ever ate scored for anyone. `AstroLeagueBall` now carries
+`n_PilotName` (server-written, replicated, mirrored into a managed string per change): stamped
+with the **forger** at the forge (`ScarabBallForge.Request` → `RecordPilotServer`), re-stamped by
+every **vessel strike** (`RecordTouchServer`), left alone by a **blast** (so a plate that shoves
+your ball does not launder its credit), cleared at the Astro League **kickoff**. Replicated because
+the scan runs on every peer and environment mass is credited by the machine that simulates the
+attacker (`StatsManager.OwnsAttacker`). `PilotName` falls back to the old string for a ball
+nobody has claimed. Record: `Arcade/WRECKING_BALL.md`.
+
 ### 4.2 Permanent team colour
 
 **A ball is its maker's colour forever.** No striker recolouring: an opponent can bat your ball
@@ -1364,7 +1397,8 @@ producer to remember to ask, and is the same count the player can see.
 **A ball detonates in a DOMAIN explosion.** `AstroLeagueSettingsSO.detonationExplosionPrefabs`
 spawns an `AOEExplosion` carrying the BALL's domain and that domain's `AOEExplosionMaterial`, so the
 blast wears the ball's colour. The rest is stock `ExplosionImpactor` behaviour with the shipped
-`affectSelf = false, destructive = true` flags: own-domain prisms take a temporary shield (the
+`affectSelf = false, destructive = true` flags: own-domain prisms are drawn LIT in the blast's
+domain colour (`Docs/LIT.md`; they took a temporary shield until 2026-09) (the
 no-perceived-clipping rule) and other domains are destroyed. It is flagged `AnnonymousExplosion`
 because no vessel made it — which is also what keeps the damage path from dereferencing a null
 pilot.
@@ -1801,8 +1835,8 @@ one frame.
 | prisms per dais | **255** (5 pairs × 2 wings × 25 blades + 5 suns) |
 | tiers | 90 plain / 90 danger / 70 shielded / 5 super-shielded |
 | box volume | **50,773** (≈ 3,173 nominal-16 prisms) |
-| always-on convex MeshColliders | **75** (70 shielded + 5 super-shielded) |
-| LOD-cullable BoxColliders | 180 |
+| shielded / super-shielded prisms | **75** (70 + 5) — **collider-free**; a shield swaps the mesh and the mass, never the collider |
+| LOD-cullable BoxColliders | **255** (every prism on the dais) |
 | planar band | **28.5 → 155.3** (ring 20; Astro League's court radius ≈ 392) |
 | wrap per pair | **288°** around its sun (144° per wing), opened at six hinges |
 | longest / shortest blade | 70.7 / 17.3 |
@@ -2106,10 +2140,10 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + 
 
 | Element | Ability | Quantitative | L5 upgrade |
 |---|---|---|---|
-| **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom; map multiplier pinned to 1) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
-| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
-| **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`MultiplierAtFullLevel 4` on the map itself; stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
-| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled; map multiplier pinned to 1) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
+| **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
+| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
+| **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`ScarabBallForge.BallSizeScale`, a `static readonly` endpoint pair on the forge itself since the 2026-09-18 element-scaling unification; it was `MultiplierAtFullLevel 4` on the map, and that generic channel is gone. Stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
+| **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
 
 **Snap Dash is the throttle's upgrade, not the dash's.** The right-stick juke (§3.4) is base kit,
 always available, and has **no cooldown at all** (`jukeCooldownSeconds 0`) — dodging is mobility and

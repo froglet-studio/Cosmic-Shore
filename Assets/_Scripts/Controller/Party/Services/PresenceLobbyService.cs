@@ -223,6 +223,34 @@ namespace CosmicShore.Gameplay
             if (canonicalId == null) return;
             if (_activeLobby != null && _activeLobby.Id == canonicalId) return;
 
+            // A lobby we HOST and other people are sitting in is not ours to tear down.
+            // The release below is DeleteOwnLobbyQuietlyAsync, which DELETES when we are the
+            // host - correct for the case it was written for (the simultaneous-create race,
+            // where the lobby is one we made milliseconds ago and are alone in) and destructive
+            // here: converging out of an OCCUPIED lobby deletes it under its other occupants.
+            // Their ISession handle dies, every refresh throws, and after
+            // MAX_REFRESH_ERRORS_BEFORE_RECONNECT consecutive errors they take the
+            // ForceReset -> throwaway-lobby path this system calls its main historical failure
+            // surface - with their online list frozen and any in-flight invite lost the whole
+            // way through. That is the shape of Docs/PresenceSystem/BUGS.md B4's second half
+            // ("partied rows vanish from a third player's online panel").
+            //
+            // Nobody needs us to move first. Every occupant runs this same converge, on the
+            // same throttle, against the same query, so they migrate to the canonical lobby
+            // themselves; once they have we are alone and the next tick converges normally,
+            // deleting an empty lobby - which is what the release is for. The split still
+            // heals, one converge interval later, instead of evicting a room full of people.
+            // Terminating by construction: members of a non-canonical lobby always migrate,
+            // and only its host ever waits.
+            if (_activeLobby is { IsHost: true } && _activeLobby.Players.Count > 1)
+            {
+                CSDebug.LogVerbose(CSLogChannel.Party,
+                    $"[PresenceLobbyService] Deferring converge to {canonicalId}: we host " +
+                    $"{_activeLobby.Id} with {_activeLobby.Players.Count} players in it - " +
+                    "migrating now would delete it under them. Retrying once they have moved.");
+                return;
+            }
+
             // Migrate down to the canonical lobby: join it FIRST so a failed join
             // never leaves us lobby-less, then release the one we were holding.
             try
@@ -498,6 +526,16 @@ namespace CosmicShore.Gameplay
         /// Leaves or deletes the active lobby without throwing.  Used to release
         /// a lobby that lost a race condition (a rival lobby was created at the
         /// same moment and we are merging into theirs).
+        ///
+        /// <para>
+        /// CONTRACT - only call this on a lobby we are ALONE in. When we are its host this
+        /// DELETES it, which is right for the race-loser it was written for (created
+        /// milliseconds ago, nobody else in it) and evicts everybody if it is not. The
+        /// caller decides; <see cref="ConvergeToCanonicalAsync"/> defers its migration while
+        /// the lobby it hosts still has other players in it, and that guard carries the full
+        /// reasoning. A future caller that needs to release an OCCUPIED lobby it hosts needs
+        /// a non-destructive release, not this one.
+        /// </para>
         /// </summary>
         private async UniTask DeleteOwnLobbyQuietlyAsync()
         {

@@ -189,6 +189,15 @@ namespace CosmicShore.UI
         /// </summary>
         bool IsClientMode => _isClientMode;
 
+        /// <summary>
+        /// A GUEST does not get to dismiss the host's lobby. The card is the host's, the host is
+        /// waiting on this player's Ready, and every route back into it is host-driven - so a B
+        /// press here removes the player from a lobby they cannot re-enter, which is the shape of
+        /// the whole class of bug this file's reconcile exists to end. (Their own X is the same
+        /// question; it is hidden in client mode by ApplyHostOnlyInteractability.)
+        /// </summary>
+        protected override bool AllowGamepadBClose => base.AllowGamepadBClose && !IsClientMode;
+
         #region Unity lifecycle
 
         void Awake()
@@ -288,6 +297,8 @@ namespace CosmicShore.UI
         protected override void Update()
         {
             base.Update();
+
+            ReconcileClientLobby();
 
             var pad = Gamepad.current;
             if (pad == null) return;
@@ -401,6 +412,23 @@ namespace CosmicShore.UI
                 // silence reads as a dead button.
                 AudioSystem.Instance?.PlayMenuAudio(MenuAudioCategory.OptionClick);
 
+                // While the host HAS a card open, a tap is a way back INTO it rather than a
+                // request for a different one: the host has already answered the party's request
+                // (CommitConfiguration clears every standing pick), so a pick recorded now sits on
+                // a board nobody is reading. A guest who dismissed the lobby - or whose own
+                // dismissal is why they cannot see it - otherwise has no control anywhere that
+                // gets them back to the card the rest of the party is waiting in.
+                if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+                {
+                    var lobby = arcadeConfigSyncManager.CurrentLobby;
+                    if (lobby.IsOpen)
+                    {
+                        HandleConfigOpenedOnClient(lobby.GameMode, lobby.Intensity, lobby.PlayerCount,
+                                                   lobby.MaxPlayers, lobby.DomainCount);
+                        return;
+                    }
+                }
+
                 if (arcadeConfigSyncManager && hostConnectionData != null)
                     arcadeConfigSyncManager.RequestGamePick(
                         (int)selectedGame.Mode, hostConnectionData.LocalAvatarId);
@@ -486,6 +514,7 @@ namespace CosmicShore.UI
 
             // Fresh modal session - re-arm the commit guard so this card's own commit can fire.
             ResetCommitGuard();
+            _launching = false;
 
             config.ResetState();
             config.SelectedGame = selectedGame;
@@ -504,6 +533,9 @@ namespace CosmicShore.UI
             // depends on PC (DC <= PC) and ResetState() leaves PlayerCount at 0. For modes
             // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
             config.DomainCount = ComputeDefaultDomainCount();
+            if (QuestArcadeConstraints.AppliesTo(selectedGame.Mode) && QuestArcadeConstraints.ForcedDomainCount > 0)
+                config.DomainCount = Mathf.Clamp(QuestArcadeConstraints.ForcedDomainCount,
+                    MinDomainsForGame, ComputeMaxDomainCount());
             InitializeGameMetaView(selectedGame);
             ApplyWeeklyChallengePresentation();
             InitializeConfigControls(selectedGame);
@@ -521,7 +553,107 @@ namespace CosmicShore.UI
             // every human to Jade, spawns the chips and opens the same panel on the clients.
             // Deferring it would leave the domain tiles inert on a panel already showing them.
             CommitConfiguration();
+
+            // AFTER the commit, deliberately: the commit publishes the lobby (so the placements
+            // can be broadcast at all - NotifyRosterChanged refuses a closed lobby) and resets
+            // every human to Jade (so a restored domain pick has to land after it, not before).
+            RestoreRememberedRoster();
+            RestoreRememberedDomain();
             RefreshRoster();
+        }
+
+        /// <summary>
+        /// Re-place the bots the host launched this card with last time, and re-widen the domain
+        /// count to what they launched with - the host half of <see cref="LaunchPreference"/>.
+        /// Host only, never for the weekly challenge (its terms are pinned), never while the
+        /// FTUE quest funnel is shaping this card (same reason - see below), and every value is
+        /// re-clamped against the card and the party on the ground: a party that grew since
+        /// gets fewer of its bots back, a prefix the seat count cannot stretch to is clamped the
+        /// way a live placement is.
+        ///
+        /// <para>The funnel guard is not optional. This runs AFTER the card-open pin that
+        /// <see cref="QuestArcadeConstraints"/> applies to the seat and domain counts, so without
+        /// it a remembered roster silently re-places bots and re-widens the domain count over an
+        /// authored tutorial's terms - one authority accepting an input and a later one
+        /// overriding it. <see cref="QuestArcadeConstraints.AppliesTo"/> resolves through
+        /// <c>Active</c>, so the master developer unlock lifts this with the rest of the
+        /// funnel.</para>
+        /// </summary>
+        void RestoreRememberedRoster()
+        {
+            if (IsClientMode || _weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasHostTerms) return;
+
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+                                    MaxMatchSeats);
+            var placements = LaunchPreferenceRules.ResolveAiPlacements(
+                remembered.AIDomains, ceiling - BaseSeats);
+
+            config.AIDomains.Clear();
+            config.AIDomains.AddRange(placements);
+
+            // Seat count first (it bounds the domain count), then the domain count against the
+            // new bound - the same order a live placement takes through AddAiToDomain.
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            config.DomainCount = LaunchPreferenceRules.ResolveDomainCount(
+                remembered.DomainCount, config.DomainCount, MinDomainsForGame,
+                ComputeMaxDomainCount(), placements);
+            if (dcStepper)
+                dcStepper.Initialize(MinDomainsForGame, ComputeMaxDomainCount(), config.DomainCount);
+
+            RefreshTileVisibility();
+            BroadcastRosterToClients();
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] Restored {_selectedGame.Mode}: {placements.Count} placed AI, " +
+                $"domains={config.DomainCount}, seats={config.PlayerCount}.");
+        }
+
+        /// <summary>
+        /// Re-pick the domain this pilot pressed ready with on this card last time - the pilot
+        /// half of <see cref="LaunchPreference"/>, and the one restore both the host and a guest
+        /// perform, since each pilot's colour is their own. Routed through
+        /// <see cref="HandleDomainSelected"/> so it is a real server request: a tile lit without
+        /// the round trip is the "UI claims a domain the server never got" case that method
+        /// exists to refuse. Jade is skipped because the commit already put everyone there.
+        /// </summary>
+        void RestoreRememberedDomain()
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasPilotChoice) return;
+
+            var domain = LaunchPreferenceRules.ResolvePilotDomain(remembered.Domain, config.DomainCount);
+            if (domain == Domains.Jade) return;
+
+            HandleDomainSelected(domain);
+        }
+
+        /// <summary>
+        /// Write this card's launch setup to <see cref="LaunchPreferenceStore"/>. Called once per
+        /// launch on every instance: the launch authority writes the host terms (intensity, domain
+        /// count, placed AI) and its own pilot choice; a guest writes only its own domain and
+        /// hull, so the host terms this machine last launched with are not clobbered by a match
+        /// it merely joined. Never for the weekly challenge, and never for a card the FTUE quest
+        /// funnel is pinning - in both cases the terms on screen were authored rather than
+        /// chosen, and writing them would hand the next free launch of that mode the tutorial's
+        /// setup as if the host had picked it.
+        /// </summary>
+        void RememberLaunchPreference(bool launchAuthority)
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
+
+            var vessel = config.SelectedShip ? config.SelectedShip.Class : VesselClassType.Random;
+            var domain = config.SelectedDomain;
+
+            if (launchAuthority)
+                LaunchPreferenceStore.SaveHostTerms(_selectedGame.Mode, config.Intensity,
+                                                    config.DomainCount, config.AIDomains, domain, vessel);
+            else
+                LaunchPreferenceStore.SavePilotChoice(_selectedGame.Mode, domain, vessel);
         }
 
         #endregion
@@ -927,7 +1059,48 @@ namespace CosmicShore.UI
         {
             ShutDownPreview();
             if (_activePanel) _activePanel.Hide();
+
+            // ...and the PARTY has to hear about it too, for exactly the reason the comment on
+            // OnEnable gives about the content: one subscription on the modal's own close event
+            // is the difference between "every route we thought of" and "every route". Only the
+            // host's X went through CloseAndNotifyClients; gamepad B, ScreenSwitcher's
+            // CloseAllModals (raised on freestyle ENTRY, so a host who flew left a phantom lobby
+            // behind) and ForceCloseImmediate all ended at ModalWindowOut. The sync manager then
+            // still believed its lobby was open and its commit guard was still latched, so the
+            // host's NEXT card returned on the first line of CommitConfiguration and every guest
+            // stayed pinned to the previous card with no way off it.
+            //
+            // Re-entrancy is safe: CloseAndNotifyClients is _closing-guarded, and the
+            // ModalWindowOut inside it is a no-op once isOn is already false - which it is by the
+            // time this event is raised, on every route that raises it.
+            if (_launching || _closing) return;
+
+            // The same two-instance gate every other lobby handler carries: the Maelstrom
+            // window's copy of this component authors no panels and never opens a card, so it
+            // must not speak for a lobby the ARCADE copy owns. Its own close reaching
+            // NotifyConfigClosed would end the host's session from a window that was never in it.
+            if (!UsesLaunchPanels) return;
+
+            if (IsClientMode)
+            {
+                // A guest never broadcasts a close - the lobby is not theirs to end. And this
+                // close was not the host's (that route is HandleConfigClosedOnClient, which runs
+                // under _closing), so it is something local taking the window down - freestyle
+                // entry, a screen sweep - and the guest is now out of a lobby the host still has
+                // open. Forgetting which generation was drawn is what lets ReconcileClientLobby
+                // put them back in.
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            CloseAndNotifyClients();
         }
+
+        // True for exactly the span of the launch close. A launch is the one close that must NOT
+        // broadcast "the config was dismissed" - the opposite of what just happened - and it goes
+        // out through the same ModalWindowOut as every other route, so the routes can only be told
+        // apart by the caller saying which one it is.
+        bool _launching;
 
         void ShutDownPreview()
         {
@@ -1063,16 +1236,41 @@ namespace CosmicShore.UI
 
         #region Initialization helpers
 
+        /// <summary>
+        /// How many HUMANS are in this match, answered the SAME way on every peer.
+        ///
+        /// <para>It used to be answered two different ways, and the roster is
+        /// <c>seats - humans = AI</c>, so the two peers drew different rosters: the host read
+        /// Netcode's connected clients (ground truth) while a guest read
+        /// <c>HostConnectionDataSO.PartyMembers</c> - the presence-lobby list, polled every 3s and
+        /// very often 1 on a guest. A guest that thinks it is alone in a four-seat match draws
+        /// three AI avatars, none of which the host ever asked for and none of which spawn: the
+        /// backfill is <c>GameDataSO.RequestedAIBackfillCount</c>, computed host-side. Hence the
+        /// host's count RIDES THE LOBBY (<c>LobbySnapshot.HumanCount</c>) and a client reads it
+        /// back rather than deriving its own.</para>
+        ///
+        /// <para>The host's own read is <c>SpectatorSession.CountHumanClients</c>, not the raw
+        /// connected-client count: a spectator is a Netcode client with no Player object, and
+        /// counting one as a pilot removes an AI seat that the spawner then fills anyway.</para>
+        /// </summary>
         int CurrentPartyHumanCount
         {
             get
             {
-                // Prefer Netcode connected client count - it's the ground truth for
-                // human players and avoids stale PartyMembers (polled every 3s).
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer)
-                    return Mathf.Max(1, nm.ConnectedClientsIds.Count);
+                    return Mathf.Max(1, SpectatorSession.CountHumanClients(nm));
 
+                // Guest: the host's own count, replicated with the open lobby.
+                if (arcadeConfigSyncManager && arcadeConfigSyncManager.IsSpawned)
+                {
+                    var lobby = arcadeConfigSyncManager.CurrentLobby;
+                    if (lobby.IsOpen && lobby.HumanCount > 0)
+                        return lobby.HumanCount;
+                }
+
+                // Outside an open lobby there is nothing authoritative to read; the presence
+                // list is the best available and only drives the arcade grid's own defaults.
                 return hostConnectionData != null && hostConnectionData.PartyMembers != null
                     ? Mathf.Max(1, hostConnectionData.PartyMembers.Count)
                     : 1;
@@ -1109,13 +1307,20 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
+            // The card re-opens on the intensity it was last LAUNCHED at from this machine
+            // (LaunchPreferenceStore), clamped to the card's range and to what this player has
+            // unlocked - a never-launched card opens on its minimum exactly as before.
+            LaunchPreferenceStore.TryGet(game.Mode, out var remembered);
+            int rememberedIntensity = remembered.HasHostTerms ? remembered.Intensity : 0;
+
             config.Intensity   = _weeklyChallengeLocked
                 // The challenge's intensity is the same ask for every player, so it is NOT
                 // clamped to what this player has unlocked - the weekly challenge is a curated
                 // invitation into a mode, and an unlock gate would make two players in the same
                 // week face different objectives.
                 ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
-                : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+                : LaunchPreferenceRules.ResolveIntensity(
+                    rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
             // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
             // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
@@ -1127,6 +1332,18 @@ namespace CosmicShore.UI
             // extra seat is one more pilot competing for the same crystals. The party's humans
             // still win the clamp below (a fact on the ground beats a preference).
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
+
+            // Quest-graph funnel (FTUE first orientation): pin the intensity and default the
+            // player count — for the TUTORIAL mode only, never a newly unlocked one.
+            if (QuestArcadeConstraints.AppliesTo(game.Mode))
+            {
+                if (QuestArcadeConstraints.ForcedIntensity > 0)
+                    config.Intensity = Mathf.Clamp(QuestArcadeConstraints.ForcedIntensity, game.MinIntensity, game.MaxIntensity);
+                if (QuestArcadeConstraints.ForcedPlayerCount > 0)
+                    config.PlayerCount = Mathf.Clamp(QuestArcadeConstraints.ForcedPlayerCount,
+                        Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount),
+                        Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers));
+            }
 
             SyncGameDataConfig();
         }
@@ -1179,10 +1396,14 @@ namespace CosmicShore.UI
 
                 button.SetActive(active);
 
-                // Lock intensity 3 and 4 if the player hasn't unlocked them yet
-                if (active && progressionService != null)
+                // Lock intensities the player hasn't unlocked — and, during the quest-graph
+                // funnel, every intensity except the forced one (FTUE first orientation).
+                if (active)
                 {
-                    bool unlocked = progressionService.IsIntensityUnlocked(game.Mode, level);
+                    bool unlocked = progressionService == null
+                                    || progressionService.IsIntensityUnlocked(game.Mode, level);
+                    if (QuestArcadeConstraints.IsIntensityBlocked(game.Mode, level))
+                        unlocked = false;
                     button.SetLocked(!unlocked);
                 }
 
@@ -1225,26 +1446,48 @@ namespace CosmicShore.UI
         int ComputeDefaultDomainCount() =>
             Mathf.Clamp(DefaultDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
+        /// <summary>
+        /// The hulls the carousel offers: EVERY hull the card lists. A card's <c>Vessels</c> list
+        /// is the authority on what a mode admits - an arcade card pins its one hull whether or
+        /// not the pilot has bought it in the Hangar (<see cref="ResolveModeVessel"/> never asks),
+        /// so an arena card that consulted <see cref="SO_Vessel.IsLocked"/> made the same hull
+        /// flyable on a Rampage card and hidden on the Regatta card. With six of the eight class
+        /// assets authored locked and the commerce surfaces de-scoped, that filter left exactly
+        /// Squirrel and Scarab in every arena carousel. The hangar lock gates the HANGAR.
+        /// </summary>
         void BuildAvailableShips(SO_ArcadeGame game)
         {
             _availableShips.Clear();
 
             if (!game || game.Vessels == null) return;
 
-            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
+            _availableShips.AddRange(game.Vessels.Where(s => s != null));
         }
 
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
             {
+                // With a null ship, SyncGameDataShip silently launches the DOLPHIN class —
+                // a vessel the player may not even own. Scream so this mis-state (every
+                // vessel of the game's roster locked) is never diagnosed from gameplay.
+                Debug.LogError($"[ArcadeConfigModal] '{(_selectedGame ? _selectedGame.DisplayName : "?")}' has NO unlocked vessels — " +
+                               "the launch will fall back to the Dolphin class. Check vessel lock state (starter Squirrel should be unlocked).");
                 SetSelectedShipInternal(null);
                 return;
             }
 
             SO_Vessel chosen = null;
 
-            if (gameData && gameData.selectedVesselClass)
+            // 0) the hull this pilot last pressed ready with ON THIS CARD - the arena's carousel
+            //    re-opens on it (still to be confirmed; the per-session gate is the design).
+            //    A single-hull card resolves to its one hull either way.
+            if (_selectedGame && LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)
+                && remembered.HasPilotChoice && remembered.Vessel != VesselClassType.Random)
+                chosen = _availableShips.FirstOrDefault(s => s.Class == remembered.Vessel);
+
+            // 1) the hull last selected anywhere this session
+            if (!chosen && gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
                 if (prevType != VesselClassType.Any && prevType != VesselClassType.Random)
@@ -2107,7 +2350,17 @@ namespace CosmicShore.UI
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "[FLOW-2] [ArcadeConfigModal] All players ready!");
 
+            // Armed for the WHOLE launch, not just the ModalWindowOut at the end: the scene
+            // transition InvokeGameLaunch starts can take this modal down through a route of its
+            // own, and any close that is not marked as a launch now broadcasts a dismissal.
+            _launching = true;
+
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
+
+            // The setup that is about to fly is the one to remember - written here, before the
+            // config below is reset, and never on a mere ready press (a pilot who readies and
+            // whose party then dismisses the card has not launched anything).
+            RememberLaunchPreference(shouldLaunch);
 
             if (shouldLaunch)
             {
@@ -2141,8 +2394,10 @@ namespace CosmicShore.UI
             // Close the modal on all instances. The preview window and the panel come down with
             // it through HandleSelfClosed (hooked to OnModalClosed), so this route needs no
             // teardown of its own - deliberately NOT CloseAndNotifyClients(), which would tell the
-            // party the config was DISMISSED, the opposite of what just happened.
+            // party the config was DISMISSED, the opposite of what just happened. HandleSelfClosed
+            // now makes that notify itself on every other route, so this one has to name itself.
             ModalWindowOut();
+            _launching = false;
         }
 
         /// <summary>
@@ -2380,10 +2635,50 @@ namespace CosmicShore.UI
             // the legacy client screens died with the one-panel layout.
             if (!UsesLaunchPanels) return;
 
+            // A guest who is FLYING cannot be shown anything. Freestyle is not just "the appshell
+            // is on another screen": ScreenSwitcher.HandleEnterFreestyle has closed every modal,
+            // faded the screens CanvasGroup out and handed the pad to the vessel; NavigateTo
+            // refuses outright (so FollowHostToArcadeScreen below is a no-op) and ModalWindowIn
+            // refuses to open at all while that input gate is engaged. So the host's open landed,
+            // drew nothing, and the guest kept flying while the party sat in a lobby - and because
+            // the open is an EDGE, nothing ever delivered it again.
+            //
+            // Being pulled into the host's card is exactly the kind of host-driven move
+            // FollowHostToArcadeScreen already exists for, so leaving freestyle is part of it. The
+            // re-entry is deferred to the END of the exit transition, never the start: the start
+            // event runs another CloseAllModals, which would close whatever we opened.
+            if (Switcher && Switcher.IsInFreestyle)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeConfigModal] Host opened mode={gameModeInt} while this guest is in freestyle - leaving freestyle first.");
+
+                if (Switcher.RequestExitFreestyle(() =>
+                    {
+                        _freestyleExitDeadline = 0f;
+                        HandleConfigOpenedOnClient(gameModeInt, intensity, playerCount, maxPlayers, domainCount);
+                    }))
+                {
+                    // Hold the reconcile off while the blend runs - InFreestyle goes false at the
+                    // START of the exit, so without this it would fire a second, half-transitioned
+                    // open a second later. A DEADLINE rather than a flag: if the callback is ever
+                    // dropped, the reconcile takes over again instead of the guest being stuck,
+                    // which is the exact failure this whole path exists to end.
+                    _freestyleExitDeadline = Time.unscaledTime + FreestyleExitGraceSeconds;
+                    return;
+                }
+            }
+
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
+            _launching = false;
+            // A generation this guest has never drawn is a NEW lobby: the one moment its own
+            // remembered domain should be re-picked. A re-draw of the same lobby (the guest
+            // tapping the card to get back in) must not override a pick made since.
+            int previousGeneration = _appliedLobbyGeneration;
+            _appliedLobbyGeneration = arcadeConfigSyncManager ? arcadeConfigSyncManager.CurrentLobby.Generation : 0;
+            bool freshLobby = _appliedLobbyGeneration != previousGeneration;
 
             // Re-arm the commit guard. Clients never commit - CommitConfiguration runs on the
             // host's card open - but a player who was previously the party host might carry a
@@ -2450,7 +2745,81 @@ namespace CosmicShore.UI
             // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
+            if (freshLobby) RestoreRememberedDomain();
             RefreshRoster();
+        }
+
+        // Which lobby GENERATION this guest has actually drawn. The replicated LobbySnapshot is
+        // state; every path that turns it into a modal is an EDGE (OnValueChanged, the initial
+        // read in OnNetworkSpawn, the replay in OnEnable), and an edge that is missed is missed
+        // forever. Comparing the generation this guest DREW against the one the host is
+        // BROADCASTING is the state-shaped question, and it is the only one that can heal.
+        int _appliedLobbyGeneration;
+        float _nextLobbyReconcileTime;
+
+        // Comfortably longer than any camera blend the exit can pick, and a ceiling rather than a
+        // schedule: it only ever delays the fallback.
+        const float FreestyleExitGraceSeconds = 6f;
+        float _freestyleExitDeadline;
+
+        /// <summary>
+        /// Self-heal: if the host's lobby is open and this guest is not showing it, show it.
+        ///
+        /// <para>Every delivery path for the open is an edge, and each one has a real way to be
+        /// missed - the modal was mid-scene-load when the value landed, the guest was flying so
+        /// the open drew nothing, the modal's GameObject never re-enabled so <c>OnEnable</c>'s
+        /// replay never ran again (<c>ModalWindowOut</c> fades a CanvasGroup; it does not
+        /// deactivate). A guest in that state had no route back in at all: the host was sitting
+        /// in the card, so no further change was coming, and tapping the card registers a game
+        /// PICK rather than opening anything. This is the same shape as ScreenSwitcher's
+        /// self-healing input gate - read the live state, do not trust that the event fired.</para>
+        ///
+        /// <para>It re-opens only for a generation this guest has never drawn, so a guest who
+        /// dismissed the card themselves is not fought with; a host who re-opens (a new
+        /// generation) reaches them either way.</para>
+        /// </summary>
+        void ReconcileClientLobby()
+        {
+            if (!UsesLaunchPanels || !arcadeConfigSyncManager) return;
+
+            // Once a second: this compares two ints, but it also asks Netcode whether this peer is
+            // a client, and there is nothing here worth a per-frame answer.
+            if (Time.unscaledTime < _nextLobbyReconcileTime) return;
+            _nextLobbyReconcileTime = Time.unscaledTime + 1f;
+
+            if (Time.unscaledTime < _freestyleExitDeadline) return;
+
+            // A guest who chose to FLY is left alone. Only a host-driven open pulls a player out
+            // of freestyle (see the exit in HandleConfigOpenedOnClient) - this is the catch-up
+            // path, and catching up must never take the ship off somebody who is using it. They
+            // get the card the moment they land, because nothing here has been recorded as drawn.
+            if (Switcher && (Switcher.IsInFreestyle || Switcher.IsFreestyleSettling)) return;
+
+            if (!arcadeConfigSyncManager.IsSpawned || !ArcadeConfigSyncManager.IsPartyClient)
+            {
+                // Solo, offline, or the host - there is no remote lobby to follow, and a stale
+                // generation must not survive into the next party this machine joins.
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            var lobby = arcadeConfigSyncManager.CurrentLobby;
+
+            if (!lobby.IsOpen)
+            {
+                if (_appliedLobbyGeneration != 0 && IsClientMode) HandleConfigClosedOnClient();
+                _appliedLobbyGeneration = 0;
+                return;
+            }
+
+            if (lobby.Generation == _appliedLobbyGeneration) return;
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeConfigModal] Lobby gen {lobby.Generation} was never drawn on this guest " +
+                $"(showing {_appliedLobbyGeneration}) - opening it now.");
+
+            HandleConfigOpenedOnClient(lobby.GameMode, lobby.Intensity, lobby.PlayerCount,
+                                       lobby.MaxPlayers, lobby.DomainCount);
         }
 
         /// <summary>
@@ -2465,6 +2834,7 @@ namespace CosmicShore.UI
 
             _isClientMode = false;
             _vesselConfirmed = false;
+            _appliedLobbyGeneration = 0;
             DespawnAllChips();
 
             // A panel in its own window is closed through the panel, exactly as the host's close

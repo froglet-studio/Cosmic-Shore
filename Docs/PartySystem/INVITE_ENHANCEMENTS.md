@@ -166,7 +166,9 @@ already called on panel open by `ArcadeLobbyList.OnEnable` and
   **whole row background is the invite button**. `_invitable` is set in
   `Populate`: `onInvite != null && (status == Online || status == InLobby)`.
 - **`ArcadeLobbyList`** (`UI/Elements/ArcadeLobbyList.cs`) is the 4-slot
-  party panel (slot 0 = local, slots 1-3 = remote `PartyMembers`).
+  party panel. Its seating is the **synced** one (host first, then clients in
+  join order, the same on every device) — NOT local-first; see `UI.md`
+  § "Seating, and why it is not the `PartyMembers` list order".
 - `FriendsListPanel.ResolveRemoteStatus` maps a remote player to
   `Online / InLobby / LobbyFull / InMatch` from their advertised
   `PartyMemberCount` / `PartyMaxSlots` / `MatchName`. It already has an

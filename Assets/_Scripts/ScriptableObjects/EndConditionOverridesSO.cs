@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
@@ -47,8 +48,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>PeelTheCage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultPeelTheCagePrismTarget = 2000;
+        /// <summary>Cleave hostile-prism destruction target used when <see cref="cleavePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultCleavePrismTarget = 1500;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
@@ -66,6 +67,40 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultHijackStealTarget = 750;
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
         public const int DefaultTollwayTollTarget = 4;
+
+        /// <summary>Wrecking Ball hostile-prism target used when <see cref="wreckingBallPrismTarget"/>
+        /// is 0. Lower than Rampage's 2000 because the court forest is smaller than Rampage's
+        /// (35-59 plants against 59-295) and a match should end with forest still standing.</summary>
+        public const int DefaultWreckingBallPrismTarget = 1500;
+
+        /// <summary>Undertow point target used when <see cref="undertowPointTarget"/> is 0. A bend
+        /// (an opposing pilot caught in the plate) is 3 and a creature killed by it is 1
+        /// (UndertowScoringRuleSO), so 12 is four clean bends, twelve kills, or any mix.</summary>
+        public const int DefaultUndertowPointTarget = 12;
+
+        /// <summary>Broadside points PER PILOT used when <see cref="broadsidePointsPerPilot"/>
+        /// is 0. The mixed-fleet brawl prices a hit by its VERB (BroadsideScoringRuleSO): a round
+        /// is 1, a contact strike 8, an area debuff 12, a rocket 10/20/30 by how close it got.
+        ///
+        /// <para>Unlike every other target on this asset this one is a RATE, not a total: the
+        /// number a domain actually races to scales with how many pilots are on a side (see
+        /// <see cref="BroadsideExtraPilotFraction"/>), because a second pilot roughly doubles a
+        /// domain's scoring rate - the combat latch is per shooter-victim pair, so two pilots
+        /// working one victim really do both score - and a fixed total would make a 4v4 a third
+        /// the length of a 1v1. Modelled in Tools/Build/broadside_balance.py, which reads BOTH
+        /// constants off this file rather than restating them.</para></summary>
+        public const int DefaultBroadsidePointsPerPilot = 100;
+
+        /// <summary>How much of a whole pilot's worth of target each pilot AFTER the first adds:
+        /// <c>target = perPilot x (1 + this x (teamSize - 1))</c>, so 100 / 160 / 220 / 280 for a
+        /// 1 / 2 / 3 / 4 pilot team.
+        ///
+        /// <para>Deliberately below 1: at 1.0 the target would rise exactly as fast as the team's
+        /// rate and match length would be flat, which reads as a teammate contributing nothing.
+        /// At 0.6 a fuller side finishes somewhat sooner - filling your team is a real advantage,
+        /// stated rather than hidden - while a lone pilot is still asked for a number one hull
+        /// can reach.</para></summary>
+        public const float BroadsideExtraPilotFraction = 0.6f;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
@@ -103,6 +138,19 @@ namespace CosmicShore.ScriptableObjects
         /// to size the circuit, so the two cannot drift.</summary>
         public const int DefaultHeadlongGateTarget = 24;
 
+        /// <summary>Redline RACE length used when <see cref="redlineGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
+        /// Read by <c>RaceGateTurnMonitor</c> (through the controller) for the target and by
+        /// <c>RedlineController</c> to size the circuit, so the two cannot drift.</summary>
+        public const int DefaultRedlineGateTarget = 24;
+
+        /// <summary>Regatta RACE length used when <see cref="regattaGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the eight-ring circuit. The rings
+        /// per lap are a property of the ARENA (RegattaCourse.RingsPerLap - the rails are laid
+        /// through them), so the controller derives its lap count as target / rings and the
+        /// target must be a whole number of laps; the generator asserts it.</summary>
+        public const int DefaultRegattaGateTarget = 24;
+
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -126,11 +174,20 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
-        [Tooltip("PeelTheCage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+        [Tooltip("Cleave: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
                  "escalation ladder with it. 0 = default (2000).")]
-        [Min(0)] public int ribcagePrismTarget = 2000;
+        [Min(0)] public int cleavePrismTarget = 1500;
+
+        [Tooltip("Cleave: per-INTENSITY override of the target above - element 0 is intensity 1. " +
+                 "Empty, a 0 entry, or an intensity past the end falls back to the scalar. It " +
+                 "exists because this mode's intensities are four different PLACES rather than " +
+                 "four sizes of one: 1 and 2 are vast 2,160-radius arenas you cross, 3 and 4 are " +
+                 "compact 720-radius objects you peel. Every rung is made of the same small " +
+                 "prisms, so the counts are comparable and the target is what says how much of a " +
+                 "place a match asks you to get through.")]
+        public List<int> cleavePrismTargetByIntensity = new() { 1200, 1200, 1500, 1500 };
 
         [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
                  "(race to N), summed across that domain's players like every other target " +
@@ -194,12 +251,41 @@ namespace CosmicShore.ScriptableObjects
                  "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
         [Min(0)] public int headlongGateTarget = 24;
 
+        [Tooltip("Redline: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int redlineGateTarget = 24;
+
+        [Tooltip("Regatta: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "arena lays eight rings a lap with the rails threaded through them, so this " +
+                 "must be a multiple of eight; the controller races laps = target / 8. 24 = " +
+                 "three laps. 0 uses the default.")]
+        [Min(0)] public int regattaGateTarget = 24;
+
         [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
                  "goal race: a ring must be planted, survive, and be threaded, which is " +
                  "slower than shooting at a net and faster than tearing down a wreck.")]
         [Min(0)] public int tollwayTollTarget = 8;
+
+        [Tooltip("Wrecking Ball: hostile prisms (the court forest, rival trails, fauna bodies) a " +
+                 "DOMAIN must destroy between them to win (race to N) - with the ball OR the " +
+                 "cavitation plate; your own team's mass never counts. 0 = default (1500).")]
+        [Min(0)] public int wreckingBallPrismTarget = 1500;
+
+        [Tooltip("Undertow: POINTS a DOMAIN needs to win (race to N). A bend - an opposing pilot " +
+                 "caught in your cavitation plate - is 3 points and a creature the plate kills is " +
+                 "1, summed across the domain's pilots. 0 = default (12).")]
+        [Min(0)] public int undertowPointTarget = 12;
+
+        [Tooltip("Broadside: points PER PILOT on a domain. The number a domain actually races " +
+                 "to is this x (1 + 0.6 x (teamSize - 1)) - 100/160/220/280 for a 1/2/3/4 pilot " +
+                 "team - because a second pilot roughly doubles a side's scoring rate. Every " +
+                 "hull on the card scores into one total, priced by the VERB that landed the " +
+                 "hit: a round is 1, a contact strike 8, an area debuff 12, a rocket 10/20/30. " +
+                 "0 = default (100).")]
+        [Min(0)] public int broadsidePointsPerPilot = 100;
 
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
@@ -209,7 +295,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
         [Min(0)] public int rampagePrismTargetBuild = 2000;
-        [Min(0)] public int ribcagePrismTargetBuild = 2000;
+        [Min(0)] public int cleavePrismTargetBuild = 1500;
+        [HideInInspector] public List<int> cleavePrismTargetByIntensityBuild = new() { 1200, 1200, 1500, 1500 };
         [Min(0)] public int wildlifeKillTargetBuild = 30;
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
@@ -221,8 +308,13 @@ namespace CosmicShore.ScriptableObjects
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
         [Min(0)] public int headlongGateTargetBuild = 24;
+        [Min(0)] public int redlineGateTargetBuild = 24;
+        [Min(0)] public int regattaGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
+        [Min(0)] public int wreckingBallPrismTargetBuild = 1500;
+        [Min(0)] public int undertowPointTargetBuild = 12;
+        [Min(0)] public int broadsidePointsPerPilotBuild = 100;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -283,11 +375,34 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
-        /// PeelTheCage target ("race to N" hostile prisms destroyed): the configured value when
-        /// &gt; 0, otherwise <see cref="DefaultPeelTheCagePrismTarget"/>.
+        /// Cleave target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultCleavePrismTarget"/>.
         /// </summary>
-        public int GetPeelTheCagePrismTarget() =>
-            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget;
+        public int GetCleavePrismTarget() =>
+            cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget;
+
+        /// <summary>
+        /// Cleave target for a given INTENSITY (1-based), falling back to
+        /// <see cref="GetCleavePrismTarget"/> when that rung authors nothing.
+        ///
+        /// <para>The fallback chain is deliberate: a missing or 0 entry means "this rung has
+        /// nothing to say", never "no target" — an author who sizes rung 1 and leaves rung 2
+        /// blank gets the mode's scalar, not a match that ends on the first prism.</para>
+        ///
+        /// <para>Safe to read the intensity at the call site because
+        /// <c>CleavePrismTurnMonitor</c> resolves the target SERVER-side and replicates the
+        /// result; a client receives the number rather than computing it (the distinction
+        /// Docs/ECOSYSTEM.md §28 records for <c>CellTypeChoiceOptions.IntensityWise</c>).</para>
+        /// </summary>
+        public int GetCleavePrismTarget(int intensity)
+        {
+            if (cleavePrismTargetByIntensity == null || cleavePrismTargetByIntensity.Count == 0)
+                return GetCleavePrismTarget();
+
+            int i = Mathf.Clamp(intensity - 1, 0, cleavePrismTargetByIntensity.Count - 1);
+            int v = cleavePrismTargetByIntensity[i];
+            return v > 0 ? v : GetCleavePrismTarget();
+        }
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
@@ -379,6 +494,23 @@ namespace CosmicShore.ScriptableObjects
             headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
 
         /// <summary>
+        /// Redline race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRedlineGateTarget"/>. Read by
+        /// <c>RedlineController.AuthoredGateTarget</c>, which the turn monitor asks in turn - so
+        /// the finish line and the course cannot drift apart.
+        /// </summary>
+        public int GetRedlineGateTarget() =>
+            redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget;
+
+        /// <summary>
+        /// Regatta race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRegattaGateTarget"/>. Read by
+        /// <c>RegattaController.AuthoredGateTarget</c>, which the turn monitor asks in turn.
+        /// </summary>
+        public int GetRegattaGateTarget() =>
+            regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget;
+
+        /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
         /// steal count, so teammates pool.
@@ -395,6 +527,46 @@ namespace CosmicShore.ScriptableObjects
             tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
 
         /// <summary>
+        /// Wrecking Ball prism target ("race to N" hostile prisms destroyed): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWreckingBallPrismTarget"/>. Compared against a
+        /// DOMAIN's summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetWreckingBallPrismTarget() =>
+            wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget;
+
+        /// <summary>
+        /// Undertow point target ("first domain to N points"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultUndertowPointTarget"/>. Compared against a DOMAIN's bends
+        /// (CombatPoints) plus kills (LifeformsKilled), folded by UndertowScoringRuleSO.DomainValue.
+        /// </summary>
+        public int GetUndertowPointTarget() =>
+            undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget;
+
+        /// <summary>
+        /// Broadside points PER PILOT: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBroadsidePointsPerPilot"/>. Feed it to
+        /// <see cref="GetBroadsidePointTarget"/> - this is not itself a target.
+        /// </summary>
+        public int GetBroadsidePointsPerPilot() =>
+            broadsidePointsPerPilot > 0 ? broadsidePointsPerPilot : DefaultBroadsidePointsPerPilot;
+
+        /// <summary>
+        /// Broadside's actual race target for a domain of <paramref name="teamSize"/> pilots:
+        /// <c>perPilot x (1 + <see cref="BroadsideExtraPilotFraction"/> x (teamSize - 1))</c>.
+        /// Compared against a DOMAIN's summed CombatPoints, which every hull on the card pays
+        /// into through its own weapon class.
+        ///
+        /// <para>Resolved SERVER-side by BroadsidePointTurnMonitor and replicated as an int, so a
+        /// client RECEIVES the target rather than re-deriving it from a roster it may not have
+        /// finished building - the same distinction CrystalManager's IntensityScaled count
+        /// records. A team size below 1 is clamped, so an empty roster cannot produce a target
+        /// of 0 and end the match on the countdown.</para>
+        /// </summary>
+        public int GetBroadsidePointTarget(int teamSize) =>
+            Mathf.RoundToInt(GetBroadsidePointsPerPilot() *
+                             (1f + BroadsideExtraPilotFraction * (Mathf.Max(1, teamSize) - 1)));
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -408,7 +580,11 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
                 GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
                 GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
-                GameModes.PeelTheCage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget,
+                // Scalar only: this reader answers "what does a match of this mode race to" for
+                // editor tooling, and Cleave's real answer is per-intensity (see
+                // GetCleavePrismTarget(int)). Reporting rung 1 here would read as the mode's
+                // target and be wrong for three quarters of its ladder.
+                GameModes.Cleave                   => cleavePrismTarget > 0 ? cleavePrismTarget : DefaultCleavePrismTarget,
                 GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
@@ -418,13 +594,34 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
+                GameModes.Redline                   => redlineGateTarget > 0 ? redlineGateTarget : DefaultRedlineGateTarget,
+                GameModes.Regatta                   => regattaGateTarget > 0 ? regattaGateTarget : DefaultRegattaGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
+                GameModes.WreckingBall              => wreckingBallPrismTarget > 0 ? wreckingBallPrismTarget : DefaultWreckingBallPrismTarget,
+                GameModes.Undertow                  => undertowPointTarget > 0 ? undertowPointTarget : DefaultUndertowPointTarget,
+                // Per PILOT, not a total - the race target scales with team size and is only known at
+                // runtime, so the editor's authored-target readout shows the rate.
+                GameModes.Broadside                 => GetBroadsidePointsPerPilot(),
                 _                                   => 0,
             };
 
             return target > 0;
         }
+
+        /// <summary>Element-wise equality for a per-intensity ladder, treating null and empty as
+        /// the same thing (both mean "this mode authors no ladder").</summary>
+        static bool SameInts(List<int> a, List<int> b)
+        {
+            int na = a?.Count ?? 0, nb = b?.Count ?? 0;
+            if (na != nb) return false;
+            for (int i = 0; i < na; i++) if (a[i] != b[i]) return false;
+            return true;
+        }
+
+        /// <summary>A COPY, never the same list: build and live must not alias, or capturing the
+        /// baseline would make every later live edit silently edit the baseline too.</summary>
+        static List<int> CopyInts(List<int> src) => src == null ? new List<int>() : new List<int>(src);
 
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
@@ -434,7 +631,8 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget == maelstromWinTargetBuild &&
             nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
             rampagePrismTarget == rampagePrismTargetBuild &&
-            ribcagePrismTarget == ribcagePrismTargetBuild &&
+            cleavePrismTarget == cleavePrismTargetBuild &&
+            SameInts(cleavePrismTargetByIntensity, cleavePrismTargetByIntensityBuild) &&
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
@@ -445,8 +643,13 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
             headlongGateTarget == headlongGateTargetBuild &&
+            redlineGateTarget == redlineGateTargetBuild &&
+            regattaGateTarget == regattaGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
-            tollwayTollTarget == tollwayTollTargetBuild;
+            tollwayTollTarget == tollwayTollTargetBuild &&
+            wreckingBallPrismTarget == wreckingBallPrismTargetBuild &&
+            undertowPointTarget == undertowPointTargetBuild &&
+            broadsidePointsPerPilot == broadsidePointsPerPilotBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -457,7 +660,8 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
             rampagePrismTarget = rampagePrismTargetBuild;
-            ribcagePrismTarget = ribcagePrismTargetBuild;
+            cleavePrismTarget = cleavePrismTargetBuild;
+            cleavePrismTargetByIntensity = CopyInts(cleavePrismTargetByIntensityBuild);
             wildlifeKillTarget = wildlifeKillTargetBuild;
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
@@ -468,8 +672,13 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
             headlongGateTarget = headlongGateTargetBuild;
+            redlineGateTarget = redlineGateTargetBuild;
+            regattaGateTarget = regattaGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
+            wreckingBallPrismTarget = wreckingBallPrismTargetBuild;
+            undertowPointTarget = undertowPointTargetBuild;
+            broadsidePointsPerPilot = broadsidePointsPerPilotBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -481,7 +690,8 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
             rampagePrismTargetBuild = rampagePrismTarget;
-            ribcagePrismTargetBuild = ribcagePrismTarget;
+            cleavePrismTargetBuild = cleavePrismTarget;
+            cleavePrismTargetByIntensityBuild = CopyInts(cleavePrismTargetByIntensity);
             wildlifeKillTargetBuild = wildlifeKillTarget;
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;
@@ -492,8 +702,13 @@ namespace CosmicShore.ScriptableObjects
             breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;
             headlongGateTargetBuild = headlongGateTarget;
+            redlineGateTargetBuild = redlineGateTarget;
+            regattaGateTargetBuild = regattaGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
+            wreckingBallPrismTargetBuild = wreckingBallPrismTarget;
+            undertowPointTargetBuild = undertowPointTarget;
+            broadsidePointsPerPilotBuild = broadsidePointsPerPilot;
         }
     }
 }

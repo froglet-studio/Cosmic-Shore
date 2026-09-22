@@ -1,0 +1,509 @@
+<title>Cosmic Shore Readiness Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+:root{
+  --ground:#ffffff;
+  --ground-2:#fafbfd;
+  --ground-3:#f2f4f8;
+  --ink:#12141c;
+  --ink-2:#2c313d;
+  --muted:#5c6373;
+  --faint:#868da0;
+  --rule:#dfe3ea;
+  --rule-soft:#eef1f5;
+  --accent:#4a3aff;
+  --accent-tint:#efedff;
+  --ok:#0d7a4f;      --ok-tint:#e6f5ee;
+  --warn:#9a5b00;    --warn-tint:#fdf1de;
+  --crit:#b02525;    --crit-tint:#fdecec;
+  --shadow:0 1px 2px rgba(18,20,28,.05), 0 8px 24px -16px rgba(18,20,28,.22);
+  --sans:"Archivo","Helvetica Neue",Helvetica,Arial,sans-serif;
+  --serif:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0e1016;
+    --ground-2:#141821;
+    --ground-3:#1b2029;
+    --ink:#e9ebf2;
+    --ink-2:#c7ccda;
+    --muted:#9aa2b5;
+    --faint:#767e93;
+    --rule:#262c3a;
+    --rule-soft:#1c2230;
+    --accent:#8f84ff;
+    --accent-tint:#1e1c3d;
+    --ok:#4bc48c;      --ok-tint:#0f2a20;
+    --warn:#e0a44a;    --warn-tint:#2e2211;
+    --crit:#f0716f;    --crit-tint:#33161a;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0e1016;
+  --ground-2:#141821;
+  --ground-3:#1b2029;
+  --ink:#e9ebf2;
+  --ink-2:#c7ccda;
+  --muted:#9aa2b5;
+  --faint:#767e93;
+  --rule:#262c3a;
+  --rule-soft:#1c2230;
+  --accent:#8f84ff;
+  --accent-tint:#1e1c3d;
+  --ok:#4bc48c;      --ok-tint:#0f2a20;
+  --warn:#e0a44a;    --warn-tint:#2e2211;
+  --crit:#f0716f;    --crit-tint:#33161a;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -16px rgba(0,0,0,.8);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:15px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+.page{max-width:1080px;margin:0 auto;padding-inline:24px;padding-block:0 96px}
+@media(max-width:640px){.page{padding-inline:16px}}
+
+/* ---------- masthead ---------- */
+.mast{padding-block:56px 32px;border-bottom:2px solid var(--ink)}
+.eyebrow{
+  font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin:0 0 18px
+}
+h1{
+  font-family:var(--sans);font-weight:700;font-size:clamp(38px,6vw,62px);
+  line-height:1.02;letter-spacing:-.026em;margin:0 0 6px;text-wrap:balance
+}
+.mast .sub{
+  font-family:var(--serif);font-size:clamp(17px,2.2vw,21px);line-height:1.45;
+  color:var(--ink-2);margin:0 0 30px;max-width:60ch
+}
+.meta{display:flex;flex-wrap:wrap;gap:0 40px;row-gap:14px;font-size:12.5px}
+.meta div{display:flex;flex-direction:column;gap:3px}
+.meta dt{color:var(--faint);font-size:10.5px;font-weight:600;letter-spacing:.12em;text-transform:uppercase}
+.meta dd{margin:0;font-weight:500;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+/* ---------- verdict figures ---------- */
+.figs{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));
+  gap:0;border-bottom:1px solid var(--rule);margin-bottom:8px
+}
+.fig{padding:26px 22px 24px;border-right:1px solid var(--rule-soft)}
+.fig:last-child{border-right:none}
+@media(max-width:640px){.fig{border-right:none;border-bottom:1px solid var(--rule-soft);padding:20px 0}
+  .fig:last-child{border-bottom:none}}
+.fig .n{
+  font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1;
+  font-variant-numeric:tabular-nums;display:block;margin-bottom:8px
+}
+.fig .n.is-crit{color:var(--crit)}
+.fig .n.is-warn{color:var(--warn)}
+.fig .n.is-ok{color:var(--ok)}
+.fig .l{font-size:10.5px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--faint);display:block;margin-bottom:6px}
+.fig .d{font-size:12.5px;color:var(--muted);line-height:1.42}
+
+/* ---------- sections ---------- */
+section{padding-block:44px 0}
+h2{
+  font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink);margin:0 0 6px;
+  display:flex;align-items:baseline;gap:12px
+}
+h2 .idx{
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--accent);
+  letter-spacing:0
+}
+.lede{
+  font-family:var(--serif);font-size:19px;line-height:1.5;color:var(--ink);
+  margin:0 0 22px;max-width:62ch;text-wrap:pretty
+}
+p{font-family:var(--serif);font-size:15.5px;line-height:1.62;color:var(--ink-2);max-width:66ch;margin:0 0 15px}
+p.tight{margin-bottom:9px}
+code{
+  font-family:var(--mono);font-size:.855em;background:var(--ground-3);
+  padding:1.5px 5px;border-radius:3px;color:var(--ink);
+  word-break:break-word
+}
+strong{font-weight:600;color:var(--ink)}
+.rule{height:1px;background:var(--rule);margin-block:40px 0;border:0}
+
+/* ---------- the finding ---------- */
+.finding{
+  border:1px solid var(--crit);border-left:5px solid var(--crit);
+  background:var(--ground-2);border-radius:4px;padding:30px 30px 26px;margin-bottom:26px
+}
+@media(max-width:640px){.finding{padding:22px 18px}}
+.finding h3{
+  font-family:var(--sans);font-size:clamp(21px,3.2vw,27px);font-weight:700;
+  letter-spacing:-.019em;line-height:1.18;margin:0 0 12px;text-wrap:balance
+}
+.finding p{max-width:70ch}
+.finding p:last-child{margin-bottom:0}
+
+.chain{list-style:none;margin:20px 0 4px;padding:0;display:flex;flex-direction:column;gap:0}
+.chain li{
+  display:grid;grid-template-columns:26px 1fr;gap:14px;align-items:start;
+  padding:11px 0;border-top:1px solid var(--rule)
+}
+.chain li:first-child{border-top:1px solid var(--rule)}
+.chain .step{
+  font-family:var(--mono);font-size:11px;font-weight:500;color:var(--crit);
+  padding-top:2px;font-variant-numeric:tabular-nums
+}
+.chain .txt{font-size:13.8px;line-height:1.52;color:var(--ink-2)}
+.chain .txt b{color:var(--ink);font-weight:600}
+
+/* ---------- consequence grid ---------- */
+.conseq{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);border-radius:4px;
+  overflow:hidden;margin:22px 0 0
+}
+.conseq div{background:var(--ground);padding:16px 17px}
+.conseq .site{font-family:var(--mono);font-size:11.5px;color:var(--accent);display:block;margin-bottom:7px;word-break:break-all}
+.conseq .eff{font-size:13px;line-height:1.45;color:var(--ink-2)}
+
+/* ---------- tables ---------- */
+.tw{overflow-x:auto;margin:0 0 6px;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.4px;min-width:560px}
+thead th{
+  text-align:left;font-size:10.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--faint);padding:0 14px 9px 0;
+  border-bottom:1px solid var(--ink);white-space:nowrap
+}
+tbody td{
+  padding:12px 14px 12px 0;border-bottom:1px solid var(--rule-soft);
+  vertical-align:top;line-height:1.46;color:var(--ink-2)
+}
+tbody tr:last-child td{border-bottom:none}
+tbody td:first-child{color:var(--ink);font-weight:500;white-space:nowrap}
+td .m{font-family:var(--mono);font-size:11.6px;color:var(--muted);display:block;margin-top:4px;word-break:break-word}
+.num{font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+
+/* severity stripe on workstream rows */
+.ws tbody td:first-child{
+  border-left:3px solid transparent;padding-left:12px;white-space:normal
+}
+.ws tbody tr.s-ok    td:first-child{border-left-color:var(--ok)}
+.ws tbody tr.s-warn  td:first-child{border-left-color:var(--warn)}
+.ws tbody tr.s-crit  td:first-child{border-left-color:var(--crit)}
+.ws tbody tr.s-off   td:first-child{border-left-color:var(--rule)}
+.ws tbody td:first-child small{
+  display:block;font-family:var(--mono);font-weight:400;font-size:10.5px;
+  color:var(--faint);margin-top:3px;letter-spacing:0
+}
+
+/* ---------- chips ---------- */
+.chip{
+  display:inline-block;font-size:10px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;padding:3px 8px;border-radius:3px;white-space:nowrap;
+  border:1px solid transparent
+}
+.c-ok{background:var(--ok-tint);color:var(--ok);border-color:var(--ok)}
+.c-warn{background:var(--warn-tint);color:var(--warn);border-color:var(--warn)}
+.c-crit{background:var(--crit-tint);color:var(--crit);border-color:var(--crit)}
+.c-off{background:var(--ground-3);color:var(--muted);border-color:var(--rule)}
+.c-acc{background:var(--accent-tint);color:var(--accent);border-color:var(--accent)}
+
+/* ---------- callout ---------- */
+.note{
+  border-left:3px solid var(--accent);background:var(--accent-tint);
+  padding:16px 20px;border-radius:0 4px 4px 0;margin:22px 0
+}
+.note p{margin:0;max-width:70ch;font-size:14.5px;color:var(--ink-2)}
+.note p+p{margin-top:10px}
+.note .hd{
+  font-family:var(--sans);font-size:10.5px;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--accent);margin:0 0 8px;display:block
+}
+
+/* ---------- actions ---------- */
+.acts{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0}
+.acts li{
+  display:grid;grid-template-columns:36px 1fr auto;gap:16px;align-items:start;
+  padding:18px 0;border-bottom:1px solid var(--rule-soft)
+}
+@media(max-width:640px){
+  .acts li{grid-template-columns:28px 1fr;gap:12px}
+  .acts li .tag{grid-column:2;justify-self:start;margin-top:8px}
+}
+.acts li:last-child{border-bottom:none}
+.acts .k{
+  font-family:var(--mono);font-size:12px;font-weight:500;color:var(--accent);
+  padding-top:3px;font-variant-numeric:tabular-nums
+}
+.acts .b h4{font-family:var(--sans);font-size:15px;font-weight:600;margin:0 0 5px;letter-spacing:-.008em;color:var(--ink)}
+.acts .b p{margin:0;font-size:13.6px;line-height:1.5;max-width:64ch}
+
+/* ---------- dod ---------- */
+.dod{list-style:none;padding:0;margin:0;display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);border-radius:4px;overflow:hidden}
+.dod li{background:var(--ground);padding:15px 18px;display:grid;grid-template-columns:26px 1fr auto;gap:14px;align-items:start}
+@media(max-width:640px){.dod li{grid-template-columns:22px 1fr;}
+  .dod li .chip{grid-column:2;justify-self:start;margin-top:7px}}
+.dod .n{font-family:var(--mono);font-size:11.5px;color:var(--faint);padding-top:3px}
+.dod .t{font-size:13.6px;line-height:1.48;color:var(--ink-2)}
+.dod .t b{color:var(--ink);font-weight:600}
+
+footer{
+  margin-top:60px;padding-top:22px;border-top:1px solid var(--rule);
+  font-size:11.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:6px 22px
+}
+footer .mono{font-family:var(--mono)}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:2px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="page">
+
+  <header class="mast">
+    <p class="eyebrow">Engineering Readiness Audit · Revision 3</p>
+    <h1>Cosmic Shore</h1>
+    <p class="sub">Repository state on 10 September 2026, measured against the Invite-Only Playtest checkpoint of 31 July. The build has grown far past what that plan described. One system in it does not run at all.</p>
+    <dl class="meta">
+      <div><dt>Audited</dt><dd>10 Sep 2026</dd></div>
+      <div><dt>Against</dt><dd>Checkpoint Rev 2 · 31 Jul</dd></div>
+      <div><dt>Branch</dt><dd>bleeding-edge <span class="mono">01685a89</span></dd></div>
+      <div><dt>Method</dt><dd>Static repository audit</dd></div>
+      <div><dt>Not covered</dt><dd>Off-machine work; editor runtime</dd></div>
+    </dl>
+  </header>
+
+  <div class="figs">
+    <div class="fig">
+      <span class="l">Playable modes</span>
+      <span class="n is-ok">19</span>
+      <span class="d">In the live arcade roster, all launchable. The checkpoint accounted for seven.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Progression system</span>
+      <span class="n is-crit">Absent</span>
+      <span class="d">Present in source, instantiated by nothing. Fails open — nothing gates, nothing unlocks.</span>
+    </div>
+    <div class="fig">
+      <span class="l">QA verdicts on record</span>
+      <span class="n is-crit">1</span>
+      <span class="d">Of 64 backlog items. 58 have never been run; the list is 145 PRs stale.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Vessel ability slots</span>
+      <span class="n is-warn">25<span style="color:var(--faint);font-weight:500">/32</span></span>
+      <span class="d">19 of 32 level-5 upgrades authored. Rhino is 1/4 and locks three shipped modes.</span>
+    </div>
+    <div class="fig">
+      <span class="l">Definition of done</span>
+      <span class="n is-warn">1<span style="color:var(--faint);font-weight:500">/8</span></span>
+      <span class="d">Clearly met today. Four are blocked on validation that has not started.</span>
+    </div>
+  </div>
+
+  <section>
+    <h2><span class="idx">01</span> Assessment</h2>
+    <p class="lede">The checkpoint's central claim — <em>zero features left to build</em> — has held, and then some. What it did not anticipate is that the team would spend the six weeks building fifteen more game modes. The gap that matters is no longer feature work. It is that the one system the milestone's guided-progression story rests on is not in the build, and that essentially none of the new work has been validated.</p>
+
+    <p>Two things are worth separating, because they carry different risk. <strong>Engineering delivery ran ahead of plan.</strong> Workstream B, sized at 9.5 person-days, is largely landed as code and tooling: a scripted Windows IL2CPP pipeline, a SteamPipe uploader, offline fallback, crash reporting, four CI workflows. Workstream C's engineering half — settings, economy, dual-sink telemetry, consent — is done. The repository carries 73 build-gate scripts and 143 design documents; the discipline is real.</p>
+
+    <p><strong>Validation did not run.</strong> Workstream D is 23 person-days of profiling, soak, regression, bug bash and a signed exit checklist, and there is no evidence in the repository that any of it began. The QA backlog was generated on 13 August against PRs up to #710; the repository is now at #855. It holds 64 items, of which 58 have never been run and 6 are partial, against exactly one submitted verdict in its entire history. That would be uncomfortable at the checkpoint's seven-mode scope. At nineteen modes it is the dominant risk to the milestone.</p>
+
+    <div class="note">
+      <span class="hd">Scope note on this audit</span>
+      <p>Everything below is verified against files in the repository. Workstreams A, E and most of F are off-machine — Steamworks paperwork, capsule art, a hosted privacy policy — and cannot be audited from here; they are marked as such rather than guessed at. The git clone available to this session covers <span class="mono">30 Aug – 10 Sep</span> only, so no claim is made about what landed between 31 July and 30 August from commit history; mode and system inventory is taken from the shipped assets themselves.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">02</span> The blocking finding</h2>
+
+    <div class="finding">
+      <h3>The quest and progression system is not part of the build</h3>
+      <p><code>GameModeProgressionService</code> is a real, substantial system — 31 KB, cloud-persisted through <code>UGSDataService.ProgressionRepo</code>, with unlock evaluation, intensity tiers, analytics hooks and a designer-tunable config. It is also instantiated by nothing. Its only host prefab sits in a folder named <code>MIgration_Prefabs (DELETE LATER)</code> and is referenced by no scene, no prefab and no asset. No code path constructs it. At runtime <code>GameModeProgressionService.Instance</code> is null.</p>
+
+      <ol class="chain">
+        <li><span class="step">01</span><span class="txt">The service exists only on <code>MIgration_Prefabs (DELETE LATER)/PlayerDataService.prefab</code>.</span></li>
+        <li><span class="step">02</span><span class="txt">That prefab's guid appears in <b>zero</b> scenes, prefabs or assets across <code>Assets/</code>.</span></li>
+        <li><span class="step">03</span><span class="txt">No <code>AddComponent</code>, <code>new GameObject</code> or <code>Resources.Load</code> creates it. Every consumer reads <code>.Instance</code> and null-guards.</span></li>
+        <li><span class="step">04</span><span class="txt">Every null-guard <b>fails open</b>, so the failure is invisible: the game simply behaves as if everything is unlocked.</span></li>
+        <li><span class="step">05</span><span class="txt">Independently, the authored <code>ProgressionConfig.asset</code> is <b>not assigned</b> to the service — its serialized block carries <code>questList</code> and <code>gameData</code> and no config field at all.</span></li>
+      </ol>
+
+      <div class="conseq">
+        <div><span class="site">ArcadeExploreView:255</span><span class="eff"><code>isLocked = false</code> for every card. The arcade is fully open.</span></div>
+        <div><span class="site">ArcadeGameConfigureModal:1110</span><span class="eff">Falls back to <code>game.MaxIntensity</code>. Every intensity is available.</span></div>
+        <div><span class="site">QuestTrackView</span><span class="eff">Null-guarded. The quest track renders nothing to progress.</span></div>
+        <div><span class="site">EndGameSequencer</span><span class="eff">No unlock is granted and no progression is written at end of match.</span></div>
+      </div>
+    </div>
+
+    <p>This reframes the checkpoint's own scoping. C10 describes <em>“a data and configuration pass on a shipped system”</em> and C11 <em>“test and finalise the quest and progression system end to end”</em> — eleven person-days that both assume the system is running. It is not. Definition of Done #4, <em>“a fresh account completes the quest chain, with unlocks and progression persisting through Cloud Save,”</em> cannot pass in the current build under any amount of dialogue authoring.</p>
+
+    <p>The second defect is the one that would bite <em>after</em> the first is fixed, and it is worth knowing before anyone wires the service up. <code>ProgressionConfig.asset</code> lists thirteen always-unlocked modes; because it is unassigned the service would fall back to its built-in default of <code>{ Maelstrom }</code> alone. Wiring the service in without also assigning that config would take the arcade from <em>fully open</em> to <strong>fifteen of nineteen modes permanently locked</strong> — leaving only Skim Race, Joust, Scurry and Maelstrom reachable, and hiding every mode built since the checkpoint. Three modes are missing from the authored list as well: Astro League <code>37</code>, Brood Rush <code>38</code> and Scarab Scramble <code>43</code>.</p>
+
+    <h2 style="margin-top:34px"><span class="idx">02.1</span> Quest content, separately</h2>
+    <p>The designer's backlog is real but smaller than it looks, and it is not what blocks the milestone. The chain holds six quests covering four live modes — Crystal Capture, Hex Race, Joust and Wildlife Blitz — plus a Party Game entry explicitly flagged <code>IsPlaceholder: 1</code> and a Vessel Hangar unlock. Against nineteen playable modes, the chain describes about a fifth of the game.</p>
+    <p>Note also that <code>Assets/_Scripts/System/Quest/QuestSystem.cs</code> is a separate, older prototype and should not be mistaken for the shipping system: it carries hardcoded <code>TestQuest</code> / <code>TestQuest2</code> fields, keeps all state in memory with no persistence, has its reward grant commented out behind a <code>TODO</code>, and contains a loop that ignores its own iterator and always evaluates <code>TestQuest</code>. It is in no scene or prefab. It is dead code and a trap for the next person who greps for “quest”.</p>
+
+    <div class="note">
+      <span class="hd">Recommendation — decouple the build from the chain</span>
+      <p>Make the quest chain a <strong>guide, not a gate</strong>, for this milestone. <code>GameModeProgressionService</code> already carries <code>IsGameModeInQuestChain(mode)</code>, and the arcade view does not consult it. Having <code>IsGameModeUnlocked</code> return true for any mode outside the chain is a one-line change that gives the correct semantic — the chain leads a new player through four modes, and the rest of the game stays reachable — and it holds whether the chain has six quests or twenty.</p>
+      <p>That converts the designer's content from a critical-path blocker into an enhancement that can land at any time, and it lets the service be wired into the boot chain now so that Cloud Save persistence, unlock analytics and the quest track can actually be tested. The alternative — adding the three missing ids to <code>alwaysUnlockedModes</code> — works too, but leaves the same failure waiting for mode twenty.</p>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">03</span> What shipped since the checkpoint</h2>
+    <p class="lede">The checkpoint's “already shipped” table describes a minigame trio plus four bonus modes. That table is now substantially out of date, in the project's favour.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th>Area</th><th>At checkpoint</th><th class="num">Now</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td>Game modes, live roster</td><td>7 (trio + 4 bonus)</td><td class="num">19</td><td>All launchable; the gamelist scene gate passes across all seven rosters</td></tr>
+          <tr><td>Scenes in build settings</td><td>—</td><td class="num">27</td><td>Bootstrap, Authentication, Menu_Main + 22 gameplay + 2 single-player</td></tr>
+          <tr><td>Vessel hulls</td><td>—</td><td class="num">12</td><td>Scarab added beyond the eleven <code>VesselClassType</code> entries</td></tr>
+          <tr><td>Ability slots named</td><td>—</td><td class="num">25/32</td><td>Dolphin, Sparrow, Squirrel, Urchin, Scarab complete</td></tr>
+          <tr><td>Level-5 upgrades authored</td><td>—</td><td class="num">19/32</td><td>Manta, Rhino and Serpent carry none</td></tr>
+          <tr><td>First-party C# files</td><td>~1,100</td><td class="num">1,878</td><td></td></tr>
+          <tr><td>Build-gate scripts</td><td>—</td><td class="num">73</td><td><code>Tools/Build/*.py</code>, most runnable without Unity</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p style="margin-top:20px">Fifteen modes exist that the checkpoint's accounting does not contain: Astro League, Brood Rush, Rampage, Peel the Cage, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, Salvo, Switchback, Hijack, Tollway, Headlong, Breakwater and Skein. Four of them — Switchback, Headlong, Breakwater, Skein — now share an extracted <code>GateRaceController</code> platform rather than each carrying their own copy, which is the right direction for a roster this size.</p>
+
+    <p><strong>One coupling deserves attention.</strong> Astro League, Peel the Cage and Headlong all lock to the Rhino, whose elemental ability map has one of four slots designed and none of its four level-5 upgrades authored. Three shipped modes rest on a hull that is, by the fleet's own contract, unfinished. The Urchin has the mirror problem from the other side: its map is complete at 4/4 with all four upgrades, and it has no HUD prefab at all — <code>UrchinHUDVariant.prefab</code> does not exist, which leaves its HUD controller and view unreferenced. Both are design decisions, not defects, but they are exposed to players in the invite build.</p>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">04</span> Workstream reassessment</h2>
+    <p class="lede">Each row is the checkpoint's own item, re-scored against what is actually in the repository. Off-machine items are marked rather than guessed.</p>
+
+    <div class="tw">
+      <table class="ws">
+        <thead><tr><th style="width:20%">Item</th><th style="width:16%">State</th><th>Verified finding</th></tr></thead>
+        <tbody>
+          <tr class="s-off"><td>A · Steam &amp; Playtest<small>A1–A7</small></td><td><span class="chip c-off">Off-machine</span></td><td>Cannot be audited from the repository. <code>Docs/STEAM_BUSINESS_SETUP.md</code> is a thorough runbook — but it is written for <strong>Revision 1</strong>: a paid release, the 30-day Steam Direct clock, and <code>beta</code>/<code>default</code> branches on one app. It contains no procedure for the Playtest child app, the Request Access queue or friend invites, so A4, A5 and A6 have no runbook behind them.</td></tr>
+
+          <tr class="s-ok"><td>B1 · Windows build<small>build profile</small></td><td><span class="chip c-ok">Shipped</span></td><td><code>CosmicShoreBuildPipeline.cs</code> + <code>Tools/Build/build_windows.sh</code> drive <code>StandaloneWindows64</code> at IL2CPP/Release, stamp version and commit, and refuse a build whose first scene is not Bootstrap. Graphics APIs are explicitly D3D12 then D3D11, matching the device-gate fix. The <em>Build Profiles</em> folder holds a Linux profile only — documented as deliberate, since CI drives the script.</td></tr>
+
+          <tr class="s-warn"><td>B2 · PC sanity pass<small>3.0 person-days</small></td><td><span class="chip c-warn">Gaps found</span></td><td>Three mobile-era defaults were never re-pointed at PC: <code>defaultScreenWidth/Height</code> is <strong>1024 × 768</strong>, <code>resizableWindow</code> is <strong>0</strong>, and the Standalone bundle identifier is still <code>com.Froglet-Games.Tail-Glider</code>. The manual pass itself has no recorded result.</td></tr>
+
+          <tr class="s-ok"><td>B3 · Offline launch</td><td><span class="chip c-ok">Shipped</span></td><td><code>OfflineModeService</code>, <code>ReconnectService</code> and <code>LocalCloudDataCache</code> are present; the flow reaches the menu and states why.</td></tr>
+
+          <tr class="s-warn"><td>B4 · SteamPipe<small>both appIDs</small></td><td><span class="chip c-warn">Single app</span></td><td><code>Tools/Steam/upload.sh</code> and the two VDF templates are ready and deliberately unarmed. They take <strong>one</strong> <code>STEAM_APPID</code>/<code>STEAM_DEPOTID</code> pair. Revision 2 requires the base app and the Playtest depot as separate targets.</td></tr>
+
+          <tr class="s-ok"><td>B5 · Repeatable build<br>B6 · Crash reporting</td><td><span class="chip c-ok">Shipped</span></td><td><code>Docs/BUILD_AND_DELIVERY.md</code> carries the checklist and self-assesses each B item honestly. <code>CrashReportingService</code> sits behind the existing consent toggle.</td></tr>
+
+          <tr class="s-warn"><td>B · CI runners</td><td><span class="chip c-warn">Not running</span></td><td>Four workflows are authored — <code>unity-ci</code>, <code>bleeding-edge-guard</code>, <code>sync-build-branches</code>, <code>tag-internal-build</code>. The static half of the landing guard runs; <strong>the compile half needs a runner</strong>. No workflow builds a Windows player today.</td></tr>
+
+          <tr class="s-ok"><td>C1 · Settings<br>C5 · Economy</td><td><span class="chip c-ok">Shipped</span></td><td>Four-tab settings panel is live. <code>Docs/ECONOMY_TABLES.md</code> records the locked payout table (200 / 50 / 0) as applied in code and assets.</td></tr>
+
+          <tr class="s-crit"><td>C4 · De-scope sweep<small>3.0 person-days</small></td><td><span class="chip c-crit">Largely open</span></td><td><code>StoreScreen</code>, <code>EpisodeScreen</code>, <code>PurchaseCard</code> and <code>PurchaseConfirmationModal</code> are all still live surfaces. The only “Coming Soon” treatment anywhere in the codebase is on quest cards. Partial credit: <code>MenuHubButton</code> does carry proper <em>Locked</em> and <em>Unavailable</em> states for Arena and Mission. The checkpoint calls this doubly load-bearing because the invite build is the first thing outsiders see — that reasoning still holds.</td></tr>
+
+          <tr class="s-warn"><td>C7 · Instrumentation<small>5.0 person-days</small></td><td><span class="chip c-warn">Partial</span></td><td>Both sinks exist (<code>PostHogAnalyticsSink</code>, <code>UgsAnalyticsSink</code>) behind a consent overlay, with a real event surface including <code>RecordModeUnlocked</code>, <code>RecordQuestCompleted</code> and the crystal economy. <strong>Wave cohorting appears nowhere</strong> in the instrumentation code — and the paid-EA gate is defined to read directly off those dashboards.</td></tr>
+
+          <tr class="s-crit"><td>C9–C11 · Quest chain<small>15.0 person-days</small></td><td><span class="chip c-crit">Mis-scoped</span></td><td>See §02. The system is not in the build, so the “data and configuration pass on a shipped system” framing does not hold.</td></tr>
+
+          <tr class="s-crit"><td>D · Stability gate<small>23.0 person-days</small></td><td><span class="chip c-crit">Not started</span></td><td>No evidence of D1–D6 in the repository. <code>Docs/PERFORMANCE_OPTIMIZATION.md</code> was last verified <strong>8 July</strong>. No load-time target is published anywhere, which is D2's actual deliverable. The benchmark tool and its Load Time Insights tab are ready to produce one.</td></tr>
+
+          <tr class="s-crit"><td>D · QA evidence</td><td><span class="chip c-crit">One verdict</span></td><td>64 backlog items: <strong>58 never run</strong>, 6 partial, and a single submitted verdict — <code>QA-BUILD-COMPILE</code> PASS, 14 August. <code>DEV_TASKS.md</code> is empty. Critically, <code>QA-BUILD-WINDOWS-PLAYER</code> is a stated P0 and <strong>has never been run</strong>: no one has confirmed a Windows IL2CPP player reaches the main menu.</td></tr>
+
+          <tr class="s-off"><td>E · Marketing &amp; waves<small>25.5 person-days</small></td><td><span class="chip c-off">Off-machine</span></td><td>Not auditable here. The checkpoint's own HIGH risk — 13 days of capsule and trailer work on one contributor — is unchanged.</td></tr>
+
+          <tr class="s-off"><td>F · Legal<small>3.0 person-days</small></td><td><span class="chip c-off">Drafted</span></td><td><code>Docs/Legal/</code> is present. Hosting the policy at a public URL and linking it are off-machine.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">05</span> Documentation drift</h2>
+    <p class="lede">Five documents will actively mislead someone picking up this work. They are cheap to fix and expensive to leave, because each one reads as authoritative.</p>
+
+    <div class="tw">
+      <table>
+        <thead><tr><th style="width:30%">Document</th><th>Drift</th></tr></thead>
+        <tbody>
+          <tr><td>Docs/STEAM_EA_INVESTOR_CHECKPOINT<span class="m">.html / .pdf</span></td><td>Is <strong>Revision 1</strong>, 28 July, still describing a paid Early Access launch. The Playtest pivot exists nowhere in the repository — every runbook that cites it inherits the wrong destination.</td></tr>
+          <tr><td>Docs/QA/QA_BACKLOG.md<span class="m">generated 2026-08-13</span></td><td>Covers PRs #583–#710. The repository is at #855, so roughly 145 PRs of work — including nine game modes — are absent from the list QA is meant to work from.</td></tr>
+          <tr><td>Docs/UI_REDESIGN_TASKS.md<span class="m">T1, T3</span></td><td>Says T1 <em>in progress</em> and T3 <em>todo</em>. Both shipped: <code>SafeAreaFitter</code> exists, and the GameCanvas unification gate passes with the fork gone and 15 scenes on the CORE prefab.</td></tr>
+          <tr><td>Docs/PERFORMANCE_OPTIMIZATION.md<span class="m">verified 2026-07-08</span></td><td>Two months and roughly fifteen game modes stale. Its backlog is the input to D1 and D3.</td></tr>
+          <tr><td>Checkpoint Rev 2, item B2<span class="m">“Wwise audio init”</span></td><td>The project's audio middleware is <strong>FMOD</strong>. <code>Assets/Wwise/</code> has zero first-party references and is inert. A PC sanity pass written against Wwise would test nothing.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">06</span> What to do, in order</h2>
+    <p class="lede">Ordered by what unblocks the most. The first three are days of work, not weeks, and two of them are independent of the designer.</p>
+
+    <ol class="acts">
+      <li><span class="k">01</span><div class="b"><h4>Decide the progression posture, then wire the service in</h4><p>Take the guide-not-gate decision in §02, wire <code>GameModeProgressionService</code> into the boot chain, and assign <code>ProgressionConfig.asset</code>. Until this lands, Cloud Save persistence, unlock analytics and the quest track are all untestable, and Definition of Done #4 is unreachable. Do not wire the service without the config — that trades an open arcade for fifteen permanently locked modes.</p></div><span class="chip c-crit tag">Blocker</span></li>
+
+      <li><span class="k">02</span><div class="b"><h4>Prove a Windows player reaches the menu</h4><p><code>QA-BUILD-WINDOWS-PLAYER</code> is a stated P0 that has never been run. Every prior defect in that chain — the linker failure, the pause-menu crash — was invisible in the Editor. Nothing else in Workstream D means anything until this passes, and it also unblocks B7's overlay check.</p></div><span class="chip c-crit tag">P0</span></li>
+
+      <li><span class="k">03</span><div class="b"><h4>Regenerate the QA backlog and start the daily pass</h4><p>Run <code>/qa-backlog</code> so the list covers PRs #711–#855 and the nine modes added since. C8's daily all-modes session now means nineteen modes, not seven — it should start immediately rather than waiting for the bug bash, because D5 needs a seed corpus that does not currently exist.</p></div><span class="chip c-crit tag">Critical path</span></li>
+
+      <li><span class="k">04</span><div class="b"><h4>Re-scope D2 against the real matrix</h4><p>Load time was sized at 8.0 person-days against roughly seven modes. The matrix is now <strong>19 modes × 4 intensities = 76 combinations</strong>. Publish the load-time target first — it is D2's actual deliverable and it does not exist yet — then measure. The benchmark tool's Load Time Insights tab already produces the attribution.</p></div><span class="chip c-warn tag">Re-scope</span></li>
+
+      <li><span class="k">05</span><div class="b"><h4>Finish the de-scope sweep</h4><p>Give the store, episode and purchase surfaces the deliberate coming-soon treatment C4 specifies. <code>MenuHubButton</code>'s Locked and Unavailable states are the pattern to extend — the mechanism exists, it simply has not been applied to the commerce surfaces.</p></div><span class="chip c-warn tag">3.0 days</span></li>
+
+      <li><span class="k">06</span><div class="b"><h4>Write the Playtest half of the Steam runbook</h4><p>A4, A5 and A6 have no procedure behind them, and the existing runbook points at a paid release. Add the child app, Request Access queue and friend-invite configuration, and extend <code>Tools/Steam/upload.sh</code> to take a second appID/depot pair.</p></div><span class="chip c-warn tag">Workstream A/B</span></li>
+
+      <li><span class="k">07</span><div class="b"><h4>Add wave cohorting to instrumentation</h4><p>The paid-EA gate is defined to read retention and stability cohorted by invite wave. No cohort dimension exists in the analytics code today, so the gate has no data source. This is small, and it is on the critical path to the milestone <em>after</em> this one.</p></div><span class="chip c-acc tag">Gate input</span></li>
+
+      <li><span class="k">08</span><div class="b"><h4>Close the PC platform defaults and the doc drift</h4><p>Set the default resolution to 1920 × 1080, enable <code>resizableWindow</code>, re-point the Standalone bundle identifier off <em>Tail-Glider</em>, and correct the five documents in §05 — starting with publishing Revision 2 into the repository so the runbooks stop describing a paid launch.</p></div><span class="chip c-acc tag">Low cost</span></li>
+    </ol>
+  </section>
+
+  <hr class="rule">
+
+  <section>
+    <h2><span class="idx">07</span> Definition of done, re-scored</h2>
+    <p class="lede">The checkpoint requires all eight to hold simultaneously. One does today.</p>
+
+    <ol class="dod">
+      <li><span class="n">1</span><span class="t"><b>Steam page live with Playtest signup, review passed.</b> Off-machine, and the Playtest half has no runbook.</span><span class="chip c-off">At risk</span></li>
+      <li><span class="n">2</span><span class="t"><b>Playtest build approved, Waves 0 and 1 granted, friend invites on.</b> Blocked on #1 and on a proven Windows player.</span><span class="chip c-off">Blocked</span></li>
+      <li><span class="n">3</span><span class="t"><b>Fresh install reaches a completed four-player Tournament, zero P0/P1.</b> Unproven — the P0 player-build test has never been run and there is no defect corpus to score against.</span><span class="chip c-crit">Unproven</span></li>
+      <li><span class="n">4</span><span class="t"><b>Fresh account completes the quest chain, unlocks persist through Cloud Save.</b> Cannot pass: the progression service is not instantiated in any scene.</span><span class="chip c-crit">Cannot pass</span></li>
+      <li><span class="n">5</span><span class="t"><b>Cold boot to playable meets the load-time target in every mode at every intensity.</b> No target published; the matrix is now 76 combinations.</span><span class="chip c-crit">No target</span></li>
+      <li><span class="n">6</span><span class="t"><b>Crash reporting and funnel telemetry in dashboards, cohorted by wave.</b> Crash reporting and both analytics sinks ship; wave cohorting does not exist.</span><span class="chip c-warn">Partial</span></li>
+      <li><span class="n">7</span><span class="t"><b>Zero public review surface.</b> Structural — a property of Steam Playtest configuration, not of the build.</span><span class="chip c-ok">Met</span></li>
+      <li><span class="n">8</span><span class="t"><b>Paid-EA gate criteria published and exit checklist signed.</b> Criteria are published in Revision 2; the checklist cannot be signed without Workstream D evidence.</span><span class="chip c-warn">Half</span></li>
+    </ol>
+
+    <p style="margin-top:26px">The honest summary is that the milestone is not gated on building anything. It is gated on <strong>one wiring decision, one player build, and the validation pass that was scoped in July and has not begun</strong> — now against a game roughly three times the size the plan assumed. The engineering that the checkpoint said was finished really is finished, and then some; what is missing is the evidence that it works.</p>
+  </section>
+
+  <footer>
+    <span>Cosmic Shore · Froglet Inc.</span>
+    <span>Readiness Audit · Revision 3 · 10 September 2026</span>
+    <span class="mono">bleeding-edge @ 01685a89</span>
+    <span>Static repository audit — no editor or player run</span>
+  </footer>
+
+</div>

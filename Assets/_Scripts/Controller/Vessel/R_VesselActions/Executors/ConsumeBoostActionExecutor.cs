@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
             // Element → parameter (Time → boost duration). Anchored at 1x at resting level; a high
             // Time element makes each Serpent boost charge last longer.
             float duration = Mathf.Max(0.05f,
-                _so.BoostDuration * (_status?.ElementalAbilityHandler.Multiplier(Element.Time) ?? 1f));
+                _so.BoostDuration * _so.TimeDurationMultiplier(_status));
 
             OnChargeConsumed?.Invoke(pipIndex, duration);
             _available = Mathf.Max(0, _available - 1);
@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
                 // reached 256x at 4 charges — a balance bug that made Serpent uncontrollable. Each
                 // charge now adds one unit of the SO's authored per-charge boost multiplier
                 // (default 4 → 4x..16x across 1..4 charges).
-                float perCharge = _so ? _so.BoostMultiplier.Value : 4f;
+                float perCharge = _so ? _so.BoostMultiplier : 4f;
                 _status.BoostMultiplier = perCharge * stacks;
             }
             else

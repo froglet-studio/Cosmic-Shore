@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// Salvo - the **Sparrow-only** demolition race, and Dog Fight's inverse in the same
     /// Boneyard: there the wreckage is cover and shooting it is worthless; here tearing it
     /// apart IS the score. Every domain races to destroy the hostile-prism target first
-    /// (<see cref="ScoringMetric.PrismsDestroyed"/>, the Rampage/PeelTheCage metric - the
+    /// (<see cref="ScoringMetric.PrismsDestroyed"/>, the Rampage/Cleave metric - the
     /// destruction stat auto-increments via StatsManager's block-destroyed channel plus the
     /// environment-prism client RPC, so no per-event listener is needed here).
     ///
@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
             // re-guards on IsServer anyway, so a client subscription is inert by construction.
             onOmniCrystalCollected.OnRaised += HandleOmniCrystalCollected;
 
-            // Belt-and-braces against the PeelTheCage regression where players started a match on a
+            // Belt-and-braces against the Cleave regression where players started a match on a
             // non-zero score: RoundStats lives on the PERSISTENT Player object, and a stat that
             // survives a scene load is worth zeroing twice rather than never. The authoritative
             // reset is ServerPlayerVesselInitializer.PrepareForNewScene.

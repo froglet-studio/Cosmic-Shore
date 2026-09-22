@@ -57,13 +57,19 @@ namespace CosmicShore.Data
         // scores a point; first domain to the wave target (default 3) wins. See
         // _Scripts/Controller/Arcade/BROODRUSH.md.
         BroodRush = 38,
-        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
-        // pens the cell's brood; domains race to smash the destruction target, and the
-        // leader IS the cell's controlling domain - so the fauna wave hatches in the
-        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
-        // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
-        PeelTheCage = 39,
+        // Cleave (39): the Rhino-only SLICING race. Domains race to cut a per-INTENSITY
+        // target of hostile prisms out of the arena (1200 / 1200 / 1500 / 1500 - a target is
+        // a fraction of the arena, so it is re-priced whenever the arena is re-cut), and the
+        // arena IS the score. Intensity picks WHICH PLACE you cut rather than how much of it
+        // there is - four unrelated arenas, one CellConfigDataSO each: angled panes, wide
+        // wavy roads, a three-rind cage, and interlocked one-sided Mobius ribbons. Every
+        // arena is built from the same SMALL prisms (SliceArenaGeometry.PrismScaleI1..I4, all
+        // 2): destroying lots of little prisms is the fun, one big prism reads as low
+        // poly. Every prism is plain or danger; nothing is shielded,
+        // because an AI never pulls the triggers that energize a blade and hardened mass
+        // would be mass an all-AI domain could never score against. See
+        // _Scripts/Controller/Arcade/CLEAVE.md.
+        Cleave = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
@@ -182,9 +188,68 @@ namespace CosmicShore.Data
         // last row is the highest, and re-run check_switch_label_collisions.py after a merge.
         Skein = 51,
 
+        // Bloomrush (52): the Manta-only party game - the delayed-detonation race, and the
+        // vessel's accessibility thesis as a mode: nobody has to learn a button. Skim the reef
+        // to arm bombs, graze wildlife and rival Mantas to plant them (silently - one bomb per
+        // target, tagging is denial), then reach a crystal before the fuses burn down and set
+        // the whole board off at once. 120-second round; score = hostile VOLUME destroyed
+        // (crystal blooms are bigger than fuse fizzles, so beating the fuse pays by
+        // construction); tiebreaker = fuses beaten. First DOMAIN sum wins. See
+        // _Scripts/Controller/Arcade/BLOOMRUSH.md.
+        //
+        // 52, not 45: this branch took 45 while Switchback took it on bleeding-edge - the
+        // parallel-branch collision the Skein note above records, hit a fourth time.
+        Bloomrush = 52,
+
+        // Redline (53): the Manta-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first DOMAIN whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Manta's FULL-BOOST turn radius - the 237u circle it holds with both triggers
+        // flat - and since Soar is the OVERLAP of the triggers and Yastri their DIFFERENCE, a
+        // corner is one question: how much Soar is it worth? Intensity is how many corners a
+        // lap asks it at. The solver is Headlong's, the cut is the Manta's. See
+        // _Scripts/Controller/Arcade/REDLINE.md.
+        Redline = 53,
+
+        // WreckingBall (54, display name "Wrecking Ball"): the Scarab-only demolition race, and
+        // Rampage's analog for the hull whose weapons are a BALL and a PLATE. A sphere court is
+        // grown full of Rampage's five breakable flora; every bright crystal you fly through
+        // becomes your ball and every prism it plows through is yours, and the juke dash's
+        // cavitation plate shreds whatever is beside you. First DOMAIN to the hostile-prism
+        // target wins (ScoringMetric.PrismsDestroyed). Intensity is DENSITY and SUPPLY: more
+        // forest and more crystals at 1, a sparse court and a scarce ball at 4. See
+        // _Scripts/Controller/Arcade/WRECKING_BALL.md.
+        WreckingBall = 54,
+
+        // Undertow (55): the Scarab-only cavitation duel - The Bends for the hull whose blast is a
+        // sideways PLATE rather than a cone. Fought in Wildlife Liberation's caged arena: dash
+        // beside a rival to catch them in the plate (every element stripped for four seconds -
+        // one BEND) and drag the wildlife through it (a creature caught in the plate dies -
+        // one KILL). Points are bends and kills together; first DOMAIN to the target wins.
+        // See _Scripts/Controller/Arcade/UNDERTOW.md.
+        Undertow = 55,
+
+        // Regatta (56): the ARENA race - every playable hull on the same closed circuit of
+        // switch rings, three super-shielded rails (one per domain) braided along the racing
+        // line so an Urchin grinds it and a Squirrel skims it while a Manta, a Rhino, a Scarab
+        // or a Sparrow flies beside it; first DOMAIN whose LEAD RUNNER threads the last gate
+        // of the last lap wins. The mixed fleet is balanced by the card's per-hull STARTING
+        // ELEMENTS (SO_ArcadeGame.StartingElements) and the corner mix, never by a mode-local
+        // speed dial. See _Scripts/Controller/Arcade/REGATTA.md.
+        Regatta = 56,
+
+        // Broadside (57): the ARENA brawl - Regatta's fighting twin. Seven hulls loose in Dog
+        // Fight's Boneyard, each fighting with the weapon it actually has: a Sparrow's guns and
+        // rockets, an Urchin's chain spikes, a Rhino's energised sword, a Squirrel's joust, a
+        // Dolphin's cone, a Scarab's plate, a Manta's bloom. A hit is priced by the VERB that
+        // landed it and never by the hull - a round is 1, a contact strike 8, an area debuff 12,
+        // a rocket 10/20/30 by how close it got - and the first DOMAIN to the point target wins
+        // on ScoringMetric.CombatPoints. See _Scripts/Controller/Arcade/BROADSIDE.md.
+        Broadside = 57,
+
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 49) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 54) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.

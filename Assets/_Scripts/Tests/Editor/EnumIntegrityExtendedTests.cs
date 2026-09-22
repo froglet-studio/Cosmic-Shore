@@ -11,7 +11,9 @@ namespace CosmicShore.Tests
     /// Extended Enum Integrity Tests - Covers additional enums not in the original suite.
     ///
     /// WHY THIS MATTERS:
-    /// CaptainLevel maps directly to PlayFab product content types for in-app purchases.
+    /// CaptainLevel is serialized into captain progression records; the numbering is a
+    /// storage contract, not a display order. (It also used to map to PlayFab product
+    /// content types, which is gone - see Docs/PLAYFAB_RETIREMENT.md.)
     /// If the integer values shift, players who purchased Upgrade3 could see Upgrade2
     /// applied to their account - a monetization-breaking bug. CSLogLevel controls
     /// runtime log filtering, so its values matter for configuration persistence.
@@ -38,7 +40,7 @@ namespace CosmicShore.Tests
         public void CaptainLevel_HasCorrectIntegerValue(CaptainLevel level, int expected)
         {
             Assert.AreEqual(expected, (int)level,
-                $"CaptainLevel.{level} must be {expected}. Changing this breaks PlayFab purchase records.");
+                $"CaptainLevel.{level} must be {expected}. The values are serialized into captain progression records, so changing one silently re-reads existing saves.");
         }
 
         [Test]

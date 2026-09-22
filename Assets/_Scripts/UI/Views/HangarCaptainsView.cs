@@ -57,6 +57,43 @@ namespace CosmicShore.UI
         void Start()
         {
             CaptainManager.OnLoadCaptainData += NewCaptainData;
+            MarkDeScopedCommerceAffordances();
+        }
+
+        /// <summary>
+        /// Gives the two commerce affordances on this view the app shell's shared locked look while
+        /// the de-scope holds (<c>Docs/STEAM_RELEASE_TASKS.md</c> R4) — the upgrade button, which is
+        /// the Hangar's path into the purchase confirmation modal, and the Go To Store button, which
+        /// points at a screen that is no longer navigable.
+        ///
+        /// <para>Structural rather than authored, like <c>ScreenSwitcher.MarkDisabledNavLinks</c>, so
+        /// the conversion needs no scene edit. Both buttons are <c>SetActive</c>-toggled by
+        /// <see cref="UpdateView"/> and the view re-applies on every enable, so marking once here is
+        /// enough.</para>
+        ///
+        /// <para><b>They deliberately take DIFFERENT surfaces, and the reading differs with them.</b>
+        /// The upgrade button is a purchase, so it is <c>Locked</c> — pressable, refusing with a
+        /// reason, because there is something to say. Go To Store points at a screen that does not
+        /// exist (<c>MenuScreens.STORE</c> has no entry in <c>ScreenSwitcher.screens</c> at all), so it
+        /// takes the store's own <c>Unavailable</c> and reads as inert: <i>this is not built</i> has
+        /// nothing to add, and the dimming is the whole message. Do not "improve" it into a Locked
+        /// button with a toast — that would claim the store is coming, which is a promise this build
+        /// is not making.</para>
+        ///
+        /// <para>It is only the CAPTAIN UPGRADE that is locked. Captain upgrades are priced in the
+        /// PlayFab catalog (<c>CatalogManager</c>), which the UGS auth migration left inert — so the
+        /// upgrade was already refusing, with a bare denied sting and no explanation, which is the
+        /// "reads as broken rather than unfinished" state this de-scope exists to fix. The live
+        /// soft-currency loop is elsewhere and untouched: crystals are earned in <c>Scoreboard</c>
+        /// and spent on vessels by <c>VesselUnlockSystem</c>, neither of which passes through here.</para>
+        /// </summary>
+        void MarkDeScopedCommerceAffordances()
+        {
+            if (UpgradeButton)
+                SO_CommerceAvailability.Mark(UpgradeButton.gameObject, CommerceSurface.CatalogPurchase);
+
+            if (GoToStoreButton)
+                SO_CommerceAvailability.Mark(GoToStoreButton.gameObject, CommerceSurface.StoreScreen);
         }
 
         void OnDisable()
@@ -168,8 +205,20 @@ namespace CosmicShore.UI
             SelectCaptain(shipClassTypeVariable.Value);
         }
 
+        /// <summary>
+        /// The second of the two paths that can open <see cref="PurchaseConfirmationModal"/> (the
+        /// other is <c>PurchaseCard.OnClickBuy</c>), so the de-scope has to hold here too. The
+        /// commerce gate is asked FIRST and presents its own refusal: below it sits the bare
+        /// <c>DeniedMenuAudio</c>, which says "no" without saying why, and a de-scoped surface that
+        /// answers with an unexplained sting is what reads as broken.
+        /// </summary>
         public virtual void OnClickBuy()
         {
+            if (!SO_CommerceAvailability.TryPress(
+                    UpgradeButton ? UpgradeButton.gameObject : gameObject,
+                    CommerceSurface.CatalogPurchase))
+                return;
+
             if (crystalRequirementSatisfied && xpRequirementSatisfied)
             {
                 ConfirmationModal.SetVirtualItem(upgrade, PurchaseUpgrade);
@@ -181,8 +230,18 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// The modal's confirm callback. Gated as well as <see cref="OnClickBuy"/> because it is
+        /// public and a scene could wire a button straight to it — the same defence-in-depth split
+        /// <c>IAPManager.OpenCheckout</c> uses: gate the UI so the player is never offered it, and
+        /// never rely on the UI alone to enforce it. It cannot double-sting, because the only other
+        /// way in is a modal the gate above keeps closed.
+        /// </summary>
         public void PurchaseUpgrade()
         {
+            if (!SO_CommerceAvailability.Instance.IsAvailable(CommerceSurface.CatalogPurchase))
+                return;
+
             if (crystalRequirementSatisfied && xpRequirementSatisfied)
             {
                 CatalogManager.Instance.PurchaseCaptainUpgrade(captain, OnCaptainUpgraded);

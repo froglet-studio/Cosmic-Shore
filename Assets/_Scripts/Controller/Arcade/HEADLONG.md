@@ -19,11 +19,11 @@ sustained speed:
 
 | stick | speed | radius it holds | reads as |
 |---|---|---|---|
-| 0.30 | **1210 u/s** | 332 u | flat out, nothing given up |
-| 0.40 | 1046 | 244 | a fast sweeper |
-| 0.50 | 881 | 190 | a real corner |
-| 0.70 | 553 | 124 | slow in, hard out |
-| 1.00 | 60 | 29 | pivot in place |
+| 0.30 | **1200 u/s** | 332 u | flat out, nothing given up |
+| 0.40 | 1036 | 244 | a fast sweeper |
+| 0.50 | 871 | 190 | a real corner |
+| 0.70 | 543 | 123 | slow in, hard out |
+| 1.00 | 50 | 25 | pivot in place |
 
 **A corner is therefore an optimisation, not a classification**: find the largest speed whose
 radius fits, and trade it against how long the following straight is (a tighter line is quicker
@@ -65,7 +65,7 @@ cost speed.
 
 Because its turn radius **converges** with speed, which is unique in the fleet. With
 `RotationThrottleScaler` at 0.5, `R(v) = 180v / (π(0.5v + 90))` approaches **115 u** and never
-exceeds it: 100 u at 1210 u/s, 114 u at 12 100 u/s. Every other hull's turning circle grows
+exceeds it: 100 u at 1200 u/s, 113 u at 12 000 u/s. Every other hull's turning circle grows
 without bound, so a circuit whose corners are cut at a fixed radius is a course only this vessel
 gets *better* at as it accelerates.
 
@@ -94,7 +94,13 @@ place that has to stay a single equality test.
 ## 4. The circuit generator
 
 `HeadlongCircuit` (+ `HeadlongCircuitSettings`), pure and deterministic — see
-`RaceCourseGeometry` for the shared RNG and geometry.
+`RaceCourseGeometry` for the shared RNG and geometry. **Shared with Redline since 2026-09**: the
+Manta's circuit supplies its own settings (`RedlineCourse.ForIntensity`) to this solver, and the
+one change made for it is `HeadlongCircuitSettings.CornerFloorRadius` — an ABSOLUTE safety floor
+that a course cut for another vessel states in its own units; `ForIntensity` here leaves it 0,
+so this mode's circuits are bit-for-bit what they were. Redline's tuning pass also found that the
+solver's REACH (`AngularSpread`) rather than its profile is what moves a level's corner demand —
+see `REDLINE.md` §4 before re-cutting either ladder.
 
 **It builds TO a corner profile.** Each intensity authors one target **turn angle** per gate; the
 generator deals them around the lap, then solves a per-vertex "sharpness" by bisection (three
@@ -157,7 +163,7 @@ the corner demand**. The shipped C# was additionally compiled against real
 | 3 | 2 / 8 | 166 u · 65% | 305 u · 96% | 369 u · 100% | 332–820 | 142° |
 | 4 | 3 / 8 | **107 u · 37%** | 165 u · 64% | 268 u · 91% | 489–924 | 149° |
 
-Percentages are of the Rhino's 1210 u/s top speed, via `FastestSpeedForCorner`. Level 4 spends
+Percentages are of the Rhino's 1200 u/s top speed, via `FastestSpeedForCorner`. (They are unchanged from when that top speed was 1210: zeroing the Rhino's `DefaultMinimumSpeed` so the vessel can be brought to a stop moved every number in this table by less than the rounding — re-measured over the same 600 seeds, radii and percentages are IDENTICAL, and the generated gate positions are bit-identical.) Level 4 spends
 its whole 360° budget on three corners and is therefore a **triangle with gates down its sides**:
 three real braking zones and three long straights to wind the ramp back up, which is the most
 demanding shape eight gates can make.
@@ -250,7 +256,7 @@ leaving them as an absence.
 2. **Launch at intensity 1, 2 players.** The connecting panel holds until the circuit arrives,
    then eight rings bloom in a closed loop. Your next gate is lit lime and the objective arrow
    points at it.
-3. **Fly a lap holding full throttle.** Speed should climb linearly toward 1210 over ~5.2 s. At
+3. **Fly a lap holding full throttle.** Speed should climb linearly toward 1200 over ~5.2 s. At
    intensity 1 and 2 there should be exactly ONE corner that makes you give some of it back;
    everything else goes flat out with quiet hands. Watch the speed readout — it is the mode's
    only feedback on how much stick a corner cost you.
@@ -280,7 +286,7 @@ leaving them as an absence.
   compiled and run under a stub harness. Nobody has flown it. See
   `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
-  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1210 arrives
+  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1200 arrives
   3.5× faster and those numbers are very likely too short. The graded ramp helps here for free —
   an AI that steers now sheds speed rather than carrying full ramp into a corner it cannot
   make — but it is not a substitute for tuning the distances.
@@ -289,6 +295,18 @@ leaving them as an absence.
   compensate; whether that is enough is a play-test question, and widening it further is the
   lever. Aiming the gate at the inbound line instead was considered and rejected: it only moves
   the problem to the exit, since no single axis can be within 50° of both legs of a hairpin.
+- **The Rhino's ramp gained a Time endpoint after this mode shipped, and the corner table was
+  not re-derived.** Broadside's first playtest filled the Rhino's `(open design slot)` Time row
+  with **Ramp Spool** (`accelerationPerSecond` ×2.5 at level 10, ×0.5 at −5 — the multiply was
+  already in `RampBoostActionExecutor`, only the asset was flat). It does **not** move
+  `maxBoostMultiplier`, so **every speed and every corner radius in §4 and §6 is unchanged** —
+  `HeadlongCircuitSettings` is cut against `SpeedAtStick`/`CornerRadiusAtStick`, which read the
+  ceiling, not the wind-up. What *does* change is how much of a straight a pilot converts: at
+  Time 10 the ramp reaches top in 2.1 s instead of 5.2, which makes this mode's short legs pay
+  more than the circuit was tuned against. Headlong's card authors no Time row, so nothing moves
+  at rest today — but the comeback system can hand a trailing Rhino element levels, and it now
+  reaches this ability where it previously reached nothing. Worth a play-test before anyone
+  authors a Time row here.
 - **The mode does not read the boost state anywhere.** The whole design rests on the pilot
   choosing to hold it, and nothing on the HUD says whether they still have it beyond the speed
   itself. A "boost held" streak readout is the obvious next thing and is deliberately not here.

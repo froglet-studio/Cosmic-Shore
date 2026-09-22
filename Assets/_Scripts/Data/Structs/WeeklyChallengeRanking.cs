@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace CosmicShore.Data
 {
@@ -46,6 +47,23 @@ namespace CosmicShore.Data
         /// </summary>
         public int AvatarId;
 
+        /// <summary>
+        /// The challenge PERIOD this entry was submitted for — the UTC-Monday week key
+        /// (<c>2026-09-07</c>), or a test period ("T42"). <c>null</c> when the row told us
+        /// nothing, which is every entry submitted before the stamp shipped.
+        ///
+        /// <para><b>It exists because a leaderboard row does not otherwise say which week it
+        /// belongs to.</b> The board is ONE board reset weekly by UGS, and that reset is a
+        /// service-side schedule nothing in this code can enforce (the client SDK has no reset
+        /// call) — so when it is missing or misaligned, last week's times stay on the board and
+        /// rank above this week's forever
+        /// (the score is a time and the sort is ascending, so an old fast run never falls off).
+        /// The rows are real, the names are real, the times are real; they are simply answers to
+        /// a DIFFERENT question than the one the panel is asking. Stamping the period is what
+        /// lets a read tell the two apart — see <see cref="IsForPeriod"/>.</para>
+        /// </summary>
+        public string PeriodKey;
+
         /// <summary>"This row told us nothing about its avatar." Deliberately -1 rather than 0,
         /// because 0 is a REAL icon id and a missing avatar would silently show as that one.</summary>
         public const int NoAvatar = -1;
@@ -56,6 +74,11 @@ namespace CosmicShore.Data
         /// <summary>The metadata field an avatar id travels in. One character on purpose: leaderboard
         /// metadata is size-capped and this is the whole payload.</summary>
         public const string AvatarMetadataKey = "a";
+
+        /// <summary>The metadata field the challenge period travels in. One character for the same
+        /// reason as the avatar's, and a DIFFERENT one so the two can be read independently — an
+        /// entry may legitimately carry a period and no avatar.</summary>
+        public const string PeriodMetadataKey = "w";
 
         /// <summary>
         /// The avatar id out of a leaderboard entry's metadata JSON, or <see cref="NoAvatar"/>.
@@ -73,16 +96,11 @@ namespace CosmicShore.Data
         /// </summary>
         public static int ReadAvatarIdFromMetadata(string metadata)
         {
-            if (string.IsNullOrEmpty(metadata)) return NoAvatar;
+            int i = ValueStart(metadata, AvatarMetadataKey);
+            if (i < 0) return NoAvatar;
 
-            int key = metadata.IndexOf("\"" + AvatarMetadataKey + "\"", StringComparison.Ordinal);
-            if (key < 0) return NoAvatar;
-
-            int colon = metadata.IndexOf(':', key + AvatarMetadataKey.Length + 2);
-            if (colon < 0) return NoAvatar;
-
-            int i = colon + 1;
-            while (i < metadata.Length && (metadata[i] == ' ' || metadata[i] == '"')) i++;
+            // A number submitted as a STRING ({"a":"7"}) is still an avatar id.
+            if (i < metadata.Length && metadata[i] == '"') i++;
 
             int start = i;
             while (i < metadata.Length && char.IsDigit(metadata[i])) i++;
@@ -90,6 +108,118 @@ namespace CosmicShore.Data
             return i > start && int.TryParse(metadata.Substring(start, i - start), out int id) && id >= 0
                 ? id
                 : NoAvatar;
+        }
+
+        /// <summary>
+        /// The period key out of a leaderboard entry's metadata JSON, or <c>null</c>.
+        ///
+        /// <para>Null for every entry submitted before the stamp shipped, for a truncated payload,
+        /// and for an empty string — all of which are the same state ("this row does not say which
+        /// week it is from") and are treated as NOT the current period by
+        /// <see cref="IsForPeriod"/>. That is the deliberate direction: an unstamped row on a board
+        /// that should have reset is exactly the row we are trying not to show.</para>
+        /// </summary>
+        public static string ReadPeriodKeyFromMetadata(string metadata)
+        {
+            int i = ValueStart(metadata, PeriodMetadataKey);
+            if (i < 0 || i >= metadata.Length) return null;
+
+            if (metadata[i] == '"')
+            {
+                int close = metadata.IndexOf('"', i + 1);
+                return close > i + 1 ? metadata.Substring(i + 1, close - i - 1) : null;
+            }
+
+            // Unquoted is not a shape this game writes, but a bare token up to the next delimiter
+            // is still unambiguous, and reading it costs less than deciding it is corrupt.
+            int end = i;
+            while (end < metadata.Length &&
+                   metadata[end] != ',' && metadata[end] != '}' && metadata[end] != ' ') end++;
+            return end > i ? metadata.Substring(i, end - i) : null;
+        }
+
+        /// <summary>
+        /// Index of a metadata field's VALUE — just past its colon and any spaces — or -1.
+        ///
+        /// <para>The key is matched <b>with its quotes</b> so a longer key that merely starts with
+        /// it (<c>"ab"</c>) is never mistaken for it. Shared by both readers so a fix to the scan
+        /// cannot land on one field and miss the other.</para>
+        /// </summary>
+        static int ValueStart(string metadata, string key)
+        {
+            if (string.IsNullOrEmpty(metadata)) return -1;
+
+            string token = "\"" + key + "\"";
+            int at = metadata.IndexOf(token, StringComparison.Ordinal);
+            if (at < 0) return -1;
+
+            int colon = metadata.IndexOf(':', at + token.Length);
+            if (colon < 0) return -1;
+
+            int i = colon + 1;
+            while (i < metadata.Length && metadata[i] == ' ') i++;
+            return i;
+        }
+
+        /// <summary>
+        /// Whether a row belongs to the period being ranked.
+        ///
+        /// <para>A row that does not say (<c>null</c>, empty) is <b>not</b> this period. An unknown
+        /// CURRENT period is the opposite — with nothing to judge against, every row passes, because
+        /// emptying a board over a missing catalog would be a worse answer than showing it.</para>
+        /// </summary>
+        public static bool IsForPeriod(string rowPeriodKey, string currentPeriodKey) =>
+            string.IsNullOrEmpty(currentPeriodKey) ||
+            string.Equals(rowPeriodKey, currentPeriodKey, StringComparison.Ordinal);
+
+        /// <summary>
+        /// Drop every row that is not from <paramref name="currentPeriodKey"/> and return how many
+        /// went. <b>Ranks are re-numbered 1..n only when something was dropped</b> — a board that
+        /// reset correctly has nothing to drop, and its rows keep the true ranks UGS gave them.
+        ///
+        /// <para>When rows ARE dropped, renumbering is the same argument the Friends scope already
+        /// makes: a list showing 1st, 4th, 812th is a board with most of its rows missing rather
+        /// than a ranking of what is left.</para>
+        /// </summary>
+        public static int RetainPeriod(List<WeeklyChallengeRanking> rows, string currentPeriodKey)
+        {
+            if (rows == null || rows.Count == 0 || string.IsNullOrEmpty(currentPeriodKey)) return 0;
+
+            int kept = 0;
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (!IsForPeriod(rows[i].PeriodKey, currentPeriodKey)) continue;
+                rows[kept++] = rows[i];
+            }
+
+            int dropped = rows.Count - kept;
+            if (dropped == 0) return 0;
+
+            rows.RemoveRange(kept, dropped);
+            Renumber(rows);
+            return dropped;
+        }
+
+        /// <summary>
+        /// Re-rank a list 1..n in the order it is already in.
+        ///
+        /// <para>Shared by <see cref="RetainPeriod"/> and by the paged read, which filter in
+        /// different places and must not end up with different ideas of what a rank means. Only
+        /// ever called when rows were actually dropped — see <see cref="RetainPeriod"/> for why a
+        /// clean board keeps the ranks UGS gave it. It also decides ties the same way either
+        /// route: UGS may hand two players the same rank, so POSITION is the only basis that
+        /// stays 1..n once anything is removed.</para>
+        /// </summary>
+        public static void Renumber(List<WeeklyChallengeRanking> rows)
+        {
+            if (rows == null) return;
+
+            for (int i = 0; i < rows.Count; i++)
+            {
+                var row = rows[i];
+                row.Rank = i + 1;
+                rows[i] = row;
+            }
         }
 
         /// <summary>mm:ss.cc — the reading a race time wants.</summary>

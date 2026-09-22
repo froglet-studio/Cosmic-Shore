@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
         public float BaseRadius;          // radius of the circuit's underlying circle
         public float LateralPerturbation; // ...and out of its plane
         public float CornerRadiusFactor;  // hard SAFETY floor: no corner tighter than this x FOR
+        public float CornerFloorRadius;   // ...or, when > 0, this ABSOLUTE floor instead (a course
+                                          // cut for another vessel - Redline's Manta - states its
+                                          // floor in its own units rather than in Rhino radii)
         public float[] CornerProfile;     // the TURN ANGLES this lap is built to, in degrees
         public float RadialSwing;         // how far a vertex may be driven in/out to cut a corner
         public float AngularSpread;       // how uneven the gate spacing may become
@@ -31,8 +34,12 @@ namespace CosmicShore.Gameplay
         /// <summary>`DefaultThrottleScaler` on Rhino.prefab.</summary>
         public const float RhinoThrottleScaler = 50f;
 
-        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab.</summary>
-        public const float RhinoMinimumSpeed = 10f;
+        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab. **0 since the minimum-throttle brake**
+        /// (`MinimumThrottleBrake`, `SQUIRREL_DRIFT.md` §3.5): a floor is a speed the pilot cannot
+        /// give back, so a two-thumb flier that is meant to be able to STOP cannot author one.
+        /// It was 10, and the whole of what that bought this mode was 10 u/s of padding on both
+        /// ends of the speed ladder — measured, the circuits it generates are unchanged.</summary>
+        public const float RhinoMinimumSpeed = 0f;
 
         /// <summary>`maxBoostMultiplier` on RhinoRampBoostAction.asset.</summary>
         public const float RhinoMaxBoostMultiplier = 24f;
@@ -72,7 +79,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
-        /// top speed WITHOUT dropping the ramp boost. ~410 u.
+        /// top speed WITHOUT dropping the ramp boost. <b>355.9 u</b> — `MinTurnRadius(1200)` 99.6
+        /// over `BoostStickBudget` 0.28, and pinned by `HeadlongCircuitTests`. (This said "~410 u"
+        /// from the commit that authored the mode; it was never that, at either top speed — 355.9
+        /// now, 356.3 while the Rhino authored a 10 u/s floor.)
         ///
         /// <para>Turn rate is linear in stick, so a pilot holding the boost turns at
         /// <c>BoostStickBudget x omega(v)</c> and therefore flies a circle
@@ -207,7 +217,7 @@ namespace CosmicShore.Gameplay
                 AngularSpread = new[] { 1.2f, 2.0f, 2.8f, 3.6f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
                 // Wider than Switchback's ladder at every step: a Rhino arrives at up to
-                // 1210 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
+                // 1200 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
                 // time and has a quarter of the lateral authority to correct with on the way in.
                 RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
@@ -228,6 +238,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Builds a Headlong circuit: a CLOSED loop of gates a Rhino races laps of, cut so that its
     /// corners sit at a chosen multiple of the vessel's flat-out turn radius.
+    ///
+    /// <para><b>Shared by Redline</b> (the Manta's circuit race) since 2026-09: the solver is a
+    /// pure function of its settings, and a second copy of it would have been the semantic
+    /// duplicate the ship protocol scans for. What is Rhino-specific lives in
+    /// <see cref="HeadlongCircuitSettings.ForIntensity"/> and the flat-out constants; a
+    /// course cut for another vessel supplies its own settings (<c>RedlineCourse</c>) and
+    /// states its safety floor through <see cref="HeadlongCircuitSettings.CornerFloorRadius"/>.</para>
     ///
     /// <para><b>Why a closed loop rather than Switchback's open chain.</b> The whole point of the
     /// Rhino is that its turn radius CONVERGES with speed (RHINO_RAMP_BOOST.md), so the
@@ -302,7 +319,13 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < n; i++) sharp[i] = 0.5f;
             SolveProfile(sharp, targets, s, n);
 
-            float floor = s.CornerRadiusFactor * HeadlongCircuitSettings.FlatOutRadius;
+            // The safety floor: the Rhino's, as a fraction of its flat-out radius, unless the
+            // settings state one outright. HeadlongCircuitSettings.ForIntensity leaves
+            // CornerFloorRadius at 0, so Headlong is bit-for-bit what it was; RedlineCourse
+            // states the Manta's floor in the Manta's own units.
+            float floor = s.CornerFloorRadius > 0f
+                ? s.CornerFloorRadius
+                : s.CornerRadiusFactor * HeadlongCircuitSettings.FlatOutRadius;
             float scale = 1f;
             List<Vector3> pts = null;
 

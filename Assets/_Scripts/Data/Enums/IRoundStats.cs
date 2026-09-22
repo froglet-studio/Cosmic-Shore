@@ -47,8 +47,10 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnBulletHitsLandedChanged;
         event Action<IRoundStats> OnMissileHitsLandedChanged;
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
+        event Action<IRoundStats> OnStrikeHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
         event Action<IRoundStats> OnSwitchesThreadedChanged;
+        event Action<IRoundStats> OnFusesBeatenChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -134,6 +136,17 @@ namespace CosmicShore.Data
         int DebuffHitsLanded { get; set; }
 
         /// <summary>
+        /// CONTACT strikes this player has LANDED on an opposing pilot - the Rhino's energised
+        /// sword sweeping a hull, the Squirrel's skimmer overtaking one. The fourth raw count,
+        /// and the one that exists because a brawl the whole fleet can enter has to be able to
+        /// say what a bladed hull actually did: before it, <c>CombatHitScoring.Credit</c>'s
+        /// else-arm tallied every non-missile, non-debuff hit as a BULLET, so a Rhino with no
+        /// gun would have reported bullets on the scoreboard breakdown.
+        /// A raw count like its siblings: Broadside is the only mode that pays for it.
+        /// </summary>
+        int StrikeHitsLanded { get; set; }
+
+        /// <summary>
         /// Weighted combat score - the sum of what this mode paid for each landed hit
         /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Accumulated server-side at the moment of
         /// the hit rather than derived, so it is a monotonic cumulative int like every other
@@ -154,6 +167,14 @@ namespace CosmicShore.Data
         /// because every pilot flies the SAME course.
         /// </summary>
         int SwitchesThreaded { get; set; }
+        /// <summary>
+        /// Manta bombs this player detonated WITH A CRYSTAL before their fuses ran out —
+        /// "fuses beaten", Bloomrush's tiebreaker. Timed-out bombs never count: the whole
+        /// stat exists to reward reaching a crystal in time. Credited on the planter's
+        /// simulation machine (bombs are local objects) through
+        /// <c>StatsManager.FusesBeaten</c> / <c>Player.ReportFusesBeaten_ServerRpc</c>.
+        /// </summary>
+        int FusesBeaten { get; set; }
 
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
@@ -204,8 +225,10 @@ namespace CosmicShore.Data
             BulletHitsLanded = 0;
             MissileHitsLanded = 0;
             DebuffHitsLanded = 0;
+            StrikeHitsLanded = 0;
             CombatPoints = 0;
             SwitchesThreaded = 0;
+            FusesBeaten = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

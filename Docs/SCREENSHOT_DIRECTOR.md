@@ -221,7 +221,7 @@ At `clearShotSamples = 1` it is exactly the old single roll.
 ### The occluder test is a CONE, and it stops short of the hull
 
 `PrismSpatialIndex.CountInCone` counts live prisms inside the cone from the lens to the subject's
-circumscribing sphere — **the same volume `PrismOcclusionCorridor` dissolves**, so the thing being
+circumscribing sphere — **very nearly the volume `PrismOcclusionCorridor` dissolves**, so the thing being
 counted here and the thing being cleared there are one geometry. A cone rather than a capsule
 because that is what occlusion is: a prism a metre off the axis at the far end barely clips the
 silhouette, while the same prism a metre off the axis at the lens fills the frame.

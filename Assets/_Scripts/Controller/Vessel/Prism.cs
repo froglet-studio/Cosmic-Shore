@@ -139,6 +139,35 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// Local-space geometry of the prism's OWN authored box — the surface an
+        /// UNSHIELDED prism presents. Distinct from <see cref="TryGetShellGeometry"/>,
+        /// which always returns the SHIELD (3x circumscribing) geometry even for a
+        /// prism that is not currently shielded; reading that for a plain prism would
+        /// hand the shell tier a box three times too big.
+        ///
+        /// Used only by the experimental extended-coverage shell tier
+        /// (<see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/>).
+        /// </summary>
+        internal bool TryGetBoxGeometry(out Vector3 centerLocal, out Vector3 halfExtentsLocal)
+        {
+            if (_authoredColliderSizeCached)
+            {
+                centerLocal = blockCollider != null ? blockCollider.center : Vector3.zero;
+                halfExtentsLocal = _authoredColliderSize * 0.5f;
+                return true;
+            }
+            if (blockCollider != null)
+            {
+                centerLocal = blockCollider.center;
+                halfExtentsLocal = blockCollider.size * 0.5f;
+                return true;
+            }
+            centerLocal = default;
+            halfExtentsLocal = default;
+            return false;
+        }
+
         public Domains Domain
         {
             get => teamManager?.Domain ?? Domains.Blue;
@@ -222,6 +251,11 @@ namespace CosmicShore.Gameplay
         /// is why scale alone can never prove a prism is on screen.
         /// </summary>
         public bool IsCreationComplete { get; private set; }
+
+        /// <summary>Hook for a one-shot creation stamp that needs the FINAL transform and a
+        /// live companion entity. Called once from the creation coroutine's completion, right
+        /// after <see cref="IsCreationComplete"/> goes true. Base does nothing.</summary>
+        protected virtual void OnCreationComplete() { }
 
         /// <summary>
         /// True when this prism is exactly what the player will see for the rest of the match:
@@ -949,6 +983,12 @@ namespace CosmicShore.Gameplay
             float createdVolume = prismProperties.volume;
 
             scaleAnimator.BeginGrowthAnimation();
+
+            // The one point in a prism's life that runs exactly once, AFTER the companion
+            // entity exists and with the transform and parent final. A subclass whose
+            // creation carries its own one-shot stamp hangs it here rather than racing
+            // Initialize, which runs before any of that is true.
+            OnCreationComplete();
 
             using (s_createSoapMarker.Auto())
             {

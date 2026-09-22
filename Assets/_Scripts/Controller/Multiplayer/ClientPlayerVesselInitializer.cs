@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
@@ -306,6 +307,17 @@ namespace CosmicShore.Gameplay
         /// late host-side spawn. Cancelled once the local pair is initialised
         /// (<see cref="InitializePair"/>) or on despawn.
         /// </summary>
+        /// <summary>
+        /// Tells every peer that a departed pilot's ship is now flown by the AI. The toast feed is
+        /// a per-peer surface, so the server's own post does not travel - this carries it.
+        /// </summary>
+        [ClientRpc]
+        internal void AnnouncePilotHandedToAI_ClientRpc(string playerName, int domain)
+        {
+            if (IsServer) return;   // the server already posted its own
+            GameToastAPI.Post(GameToastSituation.PilotHandedToAI, (Domains)domain, playerName);
+        }
+
         async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
         {
             // These must cover MORE wall-clock than PartyInviteController.joinReadyTimeoutSeconds,

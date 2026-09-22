@@ -55,7 +55,7 @@ game scene and still exists.
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
 | **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
-| **MinigamePeelTheCage** | `_Scenes/Multiplayer Scenes/` | `PeelTheCage (39)` | `PeelTheCageController` |
+| **MinigameCleave** | `_Scenes/Multiplayer Scenes/` | `Cleave (39)` | `CleaveController` |
 | **MinigameWildlifeLiberation** | `_Scenes/Multiplayer Scenes/` | `WildlifeLiberation (40)` | `WildlifeLiberationController` |
 | **MinigameDogFight** | `_Scenes/Multiplayer Scenes/` | `DogFight (41)` | `DogFightController` |
 | **MinigameBends** | `_Scenes/Multiplayer Scenes/` | `Bends (42)` | `BendsController` |
@@ -64,9 +64,15 @@ game scene and still exists.
 | **MinigameSwitchback** | `_Scenes/Multiplayer Scenes/` | `Switchback (45)` | `SwitchbackController` |
 | **MinigameHijack** | `_Scenes/Multiplayer Scenes/` | `Hijack (46)` | `HijackController` |
 | **MinigameTollway** | `_Scenes/Multiplayer Scenes/` | `Tollway (48)` | `TollwayController` |
+| **MinigameWreckingBall** | `_Scenes/Multiplayer Scenes/` | `WreckingBall (54)` | `WreckingBallController` |
+| **MinigameUndertow** | `_Scenes/Multiplayer Scenes/` | `Undertow (55)` | `UndertowController` |
 | **MinigameHeadlong** | `_Scenes/Multiplayer Scenes/` | `Headlong (49)` | `HeadlongController` |
 | **MinigameBreakwater** | `_Scenes/Multiplayer Scenes/` | `Breakwater (50)` | `BreakwaterController` |
 | **MinigameSkein** | `_Scenes/Multiplayer Scenes/` | `Skein (51)` | `SkeinController` |
+| **MinigameBloomrush** | `_Scenes/Multiplayer Scenes/` | `Bloomrush (52)` | `BloomrushController` |
+| **MinigameRedline** | `_Scenes/Multiplayer Scenes/` | `Redline (53)` | `RedlineController` |
+| **MinigameRegatta** | `_Scenes/Multiplayer Scenes/` | `Regatta (56)` | `RegattaController` |
+| **MinigameBroadside** | `_Scenes/Multiplayer Scenes/` | `Broadside (57)` | `BroadsideController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
 | **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
@@ -280,7 +286,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 35 | `Scurry` | MP | MinigameScurryMultiplayer_Gameplay | `ScurryController` |
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 | 38 | `BroodRush` | MP | MinigameBroodRush | `BroodRushController` |
-| 39 | `PeelTheCage` | MP | MinigamePeelTheCage | `PeelTheCageController` ("Peel the Cage" — see `PEEL_THE_CAGE.md`) |
+| 39 | `Cleave` | MP | MinigameCleave | `CleaveController` (see `CLEAVE.md`) |
 | 40 | `WildlifeLiberation` | MP | MinigameWildlifeLiberation | `WildlifeLiberationController` (see `WILDLIFE_LIBERATION.md`) |
 | 41 | `DogFight` | MP | MinigameDogFight | `DogFightController` (Sparrow gun duel — see `DOGFIGHT.md`) |
 | 42 | `Bends` | MP | MinigameBends | `BendsController` ("The Bends" — Dolphin debuff duel, see `BENDS.md`) |
@@ -289,9 +295,15 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 45 | `Switchback` | MP | MinigameSwitchback | `SwitchbackController` (Dolphin gate race — see `SWITCHBACK.md`) |
 | 46 | `Hijack` | MP | MinigameHijack | `HijackController` (Urchin rail heist — see `HIJACK.md`) |
 | 48 | `Tollway` | MP | MinigameTollway | `TollwayController` (Scarab ring race — see `TOLLWAY.md`) |
+| 54 | `WreckingBall` | MP | MinigameWreckingBall | `WreckingBallController` ("Wrecking Ball" — Scarab demolition race, see `WRECKING_BALL.md`) |
+| 55 | `Undertow` | MP | MinigameUndertow | `UndertowController` (Scarab cavitation duel — see `UNDERTOW.md`) |
 | 49 | `Headlong` | MP | MinigameHeadlong | `HeadlongController` (Rhino circuit race — see `HEADLONG.md`) |
 | 50 | `Breakwater` | MP | MinigameBreakwater | `BreakwaterController` (Sparrow station race — see `BREAKWATER.md`) |
 | 51 | `Skein` | MP | MinigameSkein | `SkeinController` (Urchin cable race — see `SKEIN.md`) |
+| 52 | `Bloomrush` | MP | MinigameBloomrush | `BloomrushController` (Manta bomb-tag party game, 120 s timed, volume-destroyed scoring — see `BLOOMRUSH.md`) |
+| 53 | `Redline` | MP | MinigameRedline | `RedlineController` (Manta circuit race — see `REDLINE.md`) |
+| 56 | `Regatta` | MP | MinigameRegatta | `RegattaController` (the ARENA race — every playable hull on a rail circuit; see `REGATTA.md`) |
+| 57 | `Broadside` | MP | MinigameBroadside | `BroadsideController` (the ARENA brawl — seven hulls, each with its own weapon, priced per VERB; see `BROADSIDE.md`) |
 
 Note: IDs 7, 31 and 47 are skipped in the enum, and all three are reserved forever because saved selections still carry them. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document); 47 was Drumfire, the Dolphin-only rhythm range removed in 2026-09 because it read as Rampage without offering enough of its own (its lane geometry survives as a platform capability — `ApproachLaneGeometry`, `CrystalManager.CrystalPlacementMode.ApproachLanes`, `ScoringMetric.VolumeDestroyed`). Many single-player arcade modes (1, 3-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations. `Rampage(2)` left this set — it is now a multiplayer destruction race with its own `MinigameRampage` scene (see `_Scripts/Controller/Arcade/RAMPAGE.md`).
 
@@ -470,7 +482,10 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 
 **Key features**:
 - Own ready-sync pattern (not via `MultiplayerDomainGamesController`)
-- Server-side `readyClientCount` for synchronization
+- Server-side ready gate for synchronization — a SET of which clients have pressed
+  (`MultiplayerMiniGameControllerBase.MarkClientReady` / `EvaluateReadyGate`), re-decided on
+  every press AND every disconnect. It was a bare count evaluated only on a press, which
+  stranded the whole party when somebody left mid-wait (`Docs/PartySystem/BUGS.md` B20).
 - Round setup broadcast via ClientRpc
 
 ---
@@ -555,13 +570,16 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DistanceTurnMonitor` | `TurnMonitors/` | Player travels N units |
 | `ResourceAccumulationTurnMonitor` | `TurnMonitors/` | Player collects N resources |
 | `RampagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Rampage target |
-| `PeelTheCagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed cage destruction reaches the PeelTheCage target |
+| `CleavePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Cleave target |
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
-| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein). Was `SwitchbackGateTurnMonitor` |
+| `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong, Breakwater, Skein, Redline, Regatta). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
+| `WreckingBallPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile prisms destroyed (ball + plate) reach the Wrecking Ball target |
+| `UndertowPointTurnMonitor` | `TurnMonitors/` | A domain's bends (CombatPoints) plus creature kills reach the Undertow target (on `CombatPointTurnMonitorBase`) |
+| `BroadsidePointTurnMonitor` | `TurnMonitors/` | A domain's summed CombatPoints reach the Broadside target, every hull paying in through its own verb (on `CombatPointTurnMonitorBase`) |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 

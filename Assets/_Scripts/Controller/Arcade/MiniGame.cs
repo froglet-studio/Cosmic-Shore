@@ -212,7 +212,14 @@ namespace CosmicShore.Gameplay
                 IPlayer.InitializeData data = new()
                 {
                     vesselClass = playerShipTypeInitialized ? PlayerVesselType : defaultPlayerVesselType,
-                    PlayerName = i == 0 ? PlayerDataController.PlayerProfile.DisplayName : PlayerNames[i],
+                    // Was PlayerDataController.PlayerProfile.DisplayName (PlayFab). The live
+                    // profile owner is PlayerDataService; fall back to the placeholder name when
+                    // it has not loaded, as the PlayFab path effectively always did here.
+                    PlayerName = i == 0
+                        ? (PlayerDataService.Instance?.CurrentProfile?.Identity?.DisplayName is { Length: > 0 } name
+                            ? name
+                            : PlayerNames[i])
+                        : PlayerNames[i],
                 };
                 
                 // TODO - Player spawning and initializations are done using PlayerSpawner now!
@@ -290,7 +297,6 @@ namespace CosmicShore.Gameplay
         {
             if (IsDailyChallenge)
             {
-                // LeaderboardManager.Instance.ReportDailyChallengeStatistic(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/, ScoreTracker.GolfRules);
                 DailyChallengeSystem.Instance.ReportScore(0/*(int)ScoreTracker.GetWinnerScoreData().Score*/);
 
                 // TODO: P1 Hide play again button, or map it to use another ticket
@@ -328,7 +334,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // [PLAYFAB DISABLED] Was: LeaderboardManager.Instance.ReportGameplayStatistic(...)
+                // [RETIRED] Was a PlayFab leaderboard report; PlayFab is gone.
                 // Leaderboard reporting now handled by UGS via UGSStatsManager.
             }
 

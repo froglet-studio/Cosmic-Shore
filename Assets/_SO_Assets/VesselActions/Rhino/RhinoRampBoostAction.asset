@@ -12,6 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2e2aa3c7a9df459f875cb52dfc5a2fff, type: 3}
   m_Name: RhinoRampBoostAction
   m_EditorClassIdentifier:
+  timeAccelerationMultiplier:
+    Enabled: 1
+    Value: 1
+    Min: 1
+    Max: 2.5
+    element: 4
+    UseFloor: 1
+    Floor: 0.5
   maxBoostMultiplier: 24
   accelerationPerSecond: 220
   returnPerSecond: 120

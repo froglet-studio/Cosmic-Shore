@@ -92,6 +92,21 @@ splits self-heal in every phase. Single-writer is preserved: HCS
 remains the sole author of the values; `PresenceLobbyService` only
 carries them.
 
+**A converge never destroys a lobby somebody else is in (2026-09-11).**
+The migration releases the lobby we were holding through
+`DeleteOwnLobbyQuietlyAsync`, which DELETES when we are its host — right
+for the case it was written for (the simultaneous-create race: a lobby
+made milliseconds ago that we are alone in), destructive when the
+periodic converge applies it to a populated one. A deleted lobby leaves
+its occupants with a dead `ISession`: refreshes throw, the online list
+freezes, and three errors later they take the `ForceReset` path this
+doc calls the main historical failure surface. So the converge now
+**defers** while the lobby we host still holds other players. It costs
+one interval and no eviction: every occupant runs the same converge
+against the same query, so they migrate themselves, and the host — alone
+by then — converges normally. Terminating by construction, since only a
+host ever waits and members always move. See `BUGS.md` B4.
+
 ## Identity propagation (display name / avatar) — how a rename reaches every surface
 
 **Source of truth:** `PlayerDataService.CurrentProfile` (Cloud Save).
@@ -200,7 +215,7 @@ block (companion to the existing entry guard at the top of
 ## Related docs
 
 - `REFACTOR.md` — `PresenceLobbyService` refactor backlog
-- `BUGS.md` — open presence-side bugs (B1, B4, B6)
+- `BUGS.md` — open presence-side bugs (B1, B4, B6 — all 🟡, all awaiting a retest)
 - `TESTS.md` — presence-specific manual test procedures
 - `TODOS.md` — minor parking-lot items
 - `../PartySystem/ARCHITECTURE.md` — party (Relay) layer

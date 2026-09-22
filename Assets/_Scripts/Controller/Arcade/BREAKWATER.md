@@ -1116,7 +1116,7 @@ one is the set the model's claims are about, and the sweep's tightest margin liv
 
 `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and passes through on
 arrival — so handing it the port's centre produces a pilot orbiting the mouth, the defect both
-PeelTheCage and Dog Fight record. 240 is under the shortest leg the ladder produces (275), so a
+Cleave and Dog Fight record. 240 is under the shortest leg the ladder produces (275), so a
 pilot always spends the head of a leg lining up rather than arriving already committed; 280 is
 2.15× the tightest turning circle at the transient ceiling, so the approach leg is flyable from any
 bearing; 200 clears the widest dish rim the ladder builds (126).

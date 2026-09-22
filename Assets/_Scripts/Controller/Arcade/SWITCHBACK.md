@@ -251,7 +251,7 @@ waypoints**:
 
 `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and passes through on
 arrival — so handing it the ring's centre produces a pilot orbiting the hoop, the defect both
-PeelTheCage and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
+Cleave and Dog Fight record. Which side is "behind" is **latched** when the gate changes,
 not recomputed: a pilot that drifts just past the plane without threading would otherwise see the
 sides swap and swing away (Dog Fight's break-off lesson).
 
@@ -517,8 +517,11 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   `Tools/Build/audit_persistent_listener_injection.py --check` resolves every persistent
   `UnityEvent` listener in every scene and prefab to its target's script and fails on any
   `(class, method)` whose class declares an `[Inject]` field and is not reviewed. It RATCHETS —
-  today's 28 pairs are frozen as an explicitly UNREVIEWED baseline, so it passes now and fails on
-  anything new. **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
+  its pairs are frozen as an explicitly UNREVIEWED baseline, so it passes now and fails on
+  anything new. (That baseline was **28** when this was written and is **56** since 12 Sep 2026,
+  when the auditor's own parser was fixed: it had been reading 279 of the project's 992 persistent
+  calls. Not one of the added rows is new debt — see CLAUDE.md's entry on this gate for the three
+  rules that came out of it.) **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
   site, forever; layer 2 holds everywhere at once. `MenuAudio` now falls back to
   `AudioSystem.Instance` and warns ONCE per component, so the next runtime-created UI object that
   nobody injects loses a SOUND rather than a BUTTON. `MenuAudioResilienceTests` pins it.
