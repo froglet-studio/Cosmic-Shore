@@ -218,6 +218,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(FrameCapCommand);
             UnregisterCommand(DiagCommand);
             UnregisterCommand(RenderersCommand);
+            RendererHideSwitch.ShowIfHidden();
             DisposeRecorders();
             if (_instance == this) _instance = null;
         }
@@ -237,10 +238,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         const string RenderersCommand = "renderers";
         RendererCensus _lastCensus;
 
+        // renderers                  → census
+        // renderers hide <prefix>      → switch off every renderer on a material named <prefix>*
+        // renderers show               → switch exactly those back on
         string HandleRenderersCommand(string[] args)
         {
+            string verb = args is { Length: > 0 } ? args[0].ToLowerInvariant() : "";
+            if (verb == "hide") return RendererHideSwitch.Hide(args.Length > 1 ? args[1] : null);
+            if (verb == "show") return RendererHideSwitch.Show();
+
             _lastCensus = RendererCensus.Take();
-            return _lastCensus.Describe();
+            string hidden = RendererHideSwitch.HiddenCount > 0
+                ? $" [{RendererHideSwitch.HiddenCount:N0} hidden by 'renderers hide']"
+                : "";
+            return _lastCensus.Describe() + hidden;
         }
 
         /// <summary>

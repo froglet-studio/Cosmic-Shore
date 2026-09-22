@@ -38,5 +38,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.AreEqual(0, RendererCensus.Top(new Dictionary<string, int> { ["a"] = 1 }, 0).Length);
             Assert.AreEqual(0, RendererCensus.Top(new Dictionary<string, int> { ["a"] = 1 }, -3).Length);
         }
+
+        [Test]
+        public void HideSwitch_MatchesPrefix_CaseInsensitive_AcrossPhaseVariants()
+        {
+            Assert.IsTrue(RendererHideSwitch.Matches("SpindleMaterial_Phase3", "Spindle"));
+            Assert.IsTrue(RendererHideSwitch.Matches("SpindleMaterial_Phase0", "spindle"));
+            Assert.IsTrue(RendererHideSwitch.Matches("SpindleMaterial", "SpindleMaterial"));
+        }
+
+        [Test]
+        public void HideSwitch_NeverMatchesOnEmptyInput_OrAMidNameHit()
+        {
+            // An empty prefix must not mean "hide everything" — that is a blank screen, not an A/B.
+            Assert.IsFalse(RendererHideSwitch.Matches("SpindleMaterial_Phase3", ""));
+            Assert.IsFalse(RendererHideSwitch.Matches("SpindleMaterial_Phase3", null));
+            Assert.IsFalse(RendererHideSwitch.Matches(null, "Spindle"));
+            // Prefix, not substring: a snow shard carrying "Spindle" mid-name stays lit.
+            Assert.IsFalse(RendererHideSwitch.Matches("GyroidSpindle", "Spindle"));
+        }
     }
 }

@@ -997,10 +997,34 @@ saving is an estimate from `Instantiate.Copy`'s share, not a number.
 
 | Lever | Cost it attacks | Status |
 |---|---|---|
-| Spindle renderer count (~one per lattice prism) | culling + render-job wait, most of 14 ms idle + 5.6 ms extraction | **needs the census first** — then a design: distance LOD on spindle renderers, or moving spindles onto the instanced path |
+| Spindle renderer count (~one per lattice prism) | culling + render-job wait, most of 14 ms idle + 5.6 ms extraction | **census taken (below); A/B pending** — then a design: distance LOD on spindle renderers, or moving spindles onto the instanced path |
 | `SnowChanger.shardDistance` 120 → 200 | 4,189 → 905 renderers | visual-density call, not taken |
 | Per-growth-step `Instantiate` (~720 µs) | 3.6 ms of `AssembledFlora.Update` | pooling prism+spindle pairs would remove Produce/Copy/Awake together |
 | Dead SOAP listeners | part of `Instantiate.Copy` | **done** (above) |
+
+#### The census (Menu_Main boot world, editor, 2026-09-22)
+
+```
+Renderers  45,197 on · 28,544 off · 4,599 visible
+           mesh 44,569 · skinned 544 · particle 16 · trail 6 · line 15 · other 47
+top        SpindleMaterial_Phase3=5093, _Phase1=5018, _Phase0=4991, _Phase5=4977, _Phase4=4968, …
+frame      CPU (busy) 18.6 ms · GPU 1.1 ms · 8,283 draws · 926 SetPass · Prism Path ents=30,285
+```
+
+The eight `SpindleMaterial_Phase*` rows are `Spindle.GetPhaseVariant`'s eight shared sway
+materials. The five on screen sum to **25,047** and the line was cut at the screen edge; at
+~5,000 per variant the eight hold **~40,000 — about 88% of the enabled renderers**, against
+**4,599 visible** in total. So the culling pass walks roughly ten renderers for every one it
+draws, and nine of those ten are spindles. The 28,544 disabled are the instanced prisms'
+own GameObject renderers, which is the path working as designed.
+
+That is still a CORRELATION. The causal test is one keystroke: `renderers hide Spindle`
+switches every enabled renderer on a `Spindle*` material off (and reports the exact count),
+`renderers show` switches exactly those back on (`RendererHideSwitch`, beside the census).
+Read CPU (busy) and Frame Time in both states with the Game view focused. If CPU busy falls
+by most of the culling wait, the fix is to take spindles out of the GameObject renderer
+population; if it barely moves, the renderer-count hypothesis is dead and the 14 ms idle is
+something else.
 
 ---
 

@@ -109,5 +109,81 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             $"trail {trail:N0} · line {line:N0} · other {other:N0} | top: " +
             (topMaterials is { Length: > 0 } ? string.Join(", ", topMaterials) : "none");
     }
+
+    /// <summary>
+    /// The A/B half of the census: switch OFF every enabled renderer whose shared material name
+    /// starts with a prefix, then switch exactly those back on. A census says who is in the
+    /// culling population; only removing them says what they COST.
+    ///
+    /// The first reading of the Lattice boot world put ~40,000 of 45,197 enabled renderers on
+    /// the eight <c>SpindleMaterial_Phase*</c> variants, with 4,599 visible — so the hypothesis
+    /// "culling walks every renderer and most of them are spindles nobody can see" is testable
+    /// in one keystroke: <c>renderers hide Spindle</c>, read CPU, <c>renderers show</c>.
+    ///
+    /// Diagnostic only, and deliberately blunt: it writes <c>Renderer.enabled</c>, the property
+    /// the spindle lifecycle also writes. A spindle that withers while hidden is destroyed as
+    /// normal; one GROWN while hidden is visible (reported as drift on <c>show</c>). It restores
+    /// only what it switched off, so it can never light a renderer something else disabled.
+    /// </summary>
+    public static class RendererHideSwitch
+    {
+        static readonly List<Renderer> s_hidden = new();
+        static string s_prefix;
+
+        public static int HiddenCount => s_hidden.Count;
+
+        /// <summary>Pure: does a material name belong to the hidden group? Ordinal, case-insensitive.</summary>
+        public static bool Matches(string materialName, string prefix) =>
+            !string.IsNullOrEmpty(prefix) && materialName != null &&
+            materialName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+
+        public static string Hide(string prefix)
+        {
+            if (string.IsNullOrEmpty(prefix)) return "usage: renderers hide <material-name-prefix>   e.g. renderers hide Spindle";
+            if (s_hidden.Count > 0) return $"already hiding {s_hidden.Count:N0} '{s_prefix}*' renderers — 'renderers show' first";
+
+            var all = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            // Name each material once, not once per renderer: 40k .name reads are 40k strings.
+            var verdict = new Dictionary<Material, bool>(64);
+            for (int i = 0; i < all.Length; i++)
+            {
+                var r = all[i];
+                if (!r.enabled) continue;
+                var m = r.sharedMaterial;
+                if (m == null) continue;
+                if (!verdict.TryGetValue(m, out bool hit)) verdict[m] = hit = Matches(m.name, prefix);
+                if (!hit) continue;
+                r.enabled = false;
+                s_hidden.Add(r);
+            }
+            s_prefix = prefix;
+            return $"hid {s_hidden.Count:N0} renderers on '{prefix}*' ({all.Length:N0} scanned). " +
+                   "Wait ~5 s, read CPU (busy) and Frame Time, then 'renderers show'.";
+        }
+
+        public static string Show()
+        {
+            if (s_hidden.Count == 0) return "nothing hidden";
+            int restored = 0;
+            for (int i = 0; i < s_hidden.Count; i++)
+            {
+                var r = s_hidden[i];
+                if (r == null) continue; // destroyed while hidden (a withered spindle) — nothing to restore
+                r.enabled = true;
+                restored++;
+            }
+            int gone = s_hidden.Count - restored;
+            string prefix = s_prefix;
+            s_hidden.Clear();
+            s_prefix = null;
+            return $"restored {restored:N0} '{prefix}*' renderers" + (gone > 0 ? $" ({gone:N0} were destroyed while hidden)" : "");
+        }
+
+        /// <summary>Put everything back — a hidden world must never survive the HUD that hid it.</summary>
+        public static void ShowIfHidden() { if (s_hidden.Count > 0) Show(); }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() { s_hidden.Clear(); s_prefix = null; }
+    }
 }
 #endif
