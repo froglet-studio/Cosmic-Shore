@@ -283,6 +283,18 @@ juice through `ElementBars` when a vessel wants it.
   SetActive(false)). New controllers go in `Assets/_Scripts/UI/Controller/` and
   views in `Assets/_Scripts/UI/View/` (Squirrel/Dolphin's controllers under
   `R_VesselActions/Data Containers/` are historical drift, not the pattern).
+- **`VesselHUDView.Initialize()` is ABSTRACT — a new view that omits it does not compile**, and
+  nothing outside the editor will tell you (`CS0534`; a Roslyn syntax pass abandons class-body
+  binding when it cannot resolve the base, so it reports *nothing*). `VesselHUDController`'s
+  `Initialize(IVesselStatus)` is virtual and `SetAbilityUpgraded(Element, bool)` is virtual, so
+  only the view's `Initialize` is mandatory. Seat every readout at its resting value there, and
+  make it idempotent — it re-runs on a vessel swap, on a live component, so a field still holding
+  the previous pilot's value is shown as if it were this one's.
+
+  Run `python3 Tools/Build/check_abstract_member_implementations.py` before committing any new
+  subclass; it is the only thing in the repo that catches this class of error. See SKILL.md
+  rule 35 for the full list of abstract bases a new vessel touches.
+
 - **`IVesselHUDView` is a trap**: an empty marker interface implemented by nothing —
   `VesselHUDView` (abstract class) is the real contract. The legacy `ShipHUD` reparent path is
   dead for the shipping fleet (only Termite still nests `HUDContainer.prefab`).

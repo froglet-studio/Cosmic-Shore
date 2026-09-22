@@ -54,6 +54,20 @@ namespace CosmicShore.UI
                  "flips as the wings actually close rather than a frame later.")]
         [SerializeField, Range(0f, 0.5f)] float emptyThreshold = 0.02f;
 
+        /// <summary>
+        /// Seat every readout at its resting value. Idempotent, because this re-runs on a vessel
+        /// swap: the HUD component is not rebuilt, so a field left holding the previous pilot's
+        /// last value would be shown for one frame as if it were this one's.
+        ///
+        /// <para>Full rather than empty is the honest seed — a Butterfly spawns with its wing
+        /// meter charged, and a gauge that starts dry reads as an ability that is already spent.</para>
+        /// </summary>
+        public override void Initialize()
+        {
+            SetWingEnergy(1f);
+            SetAbilityCooldown(Element.Time, 0f);
+        }
+
         /// <summary>Push the wing-energy meter, 0..1.</summary>
         public void SetWingEnergy(float normalized)
         {
