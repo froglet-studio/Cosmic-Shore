@@ -5,7 +5,8 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Fail-loud reporting for the Serpent scope's on-screen instrument
-    /// (<see cref="SniperScopeOverlay"/>).
+    /// (<see cref="SniperScopeOverlay"/>) — the eyepiece, and the reticle drawn over the
+    /// flight view beside it.
     ///
     /// <para><b>Its failure mode is a BLANK SCREEN, and a blank screen is one report for three
     /// completely different faults.</b> Since round 4 retired the main-camera cockpit, the
@@ -58,10 +59,18 @@ namespace CosmicShore.Gameplay
             /// invisible. The detail names which.
             /// </summary>
             Unusable = 4,
+
+            /// <summary>
+            /// No usable gameplay camera, so the FLIGHT view's reticle has no optics to be
+            /// projected through and is stood down. The EYEPIECE is unaffected — it carries its
+            /// own camera — which is exactly why this is its own reason rather than a refusal of
+            /// the whole instrument.
+            /// </summary>
+            NoGameCamera = 5,
         }
 
         static bool _drawingReported;
-        static readonly bool[] _reported = new bool[5];
+        static readonly bool[] _reported = new bool[6];
 
         // Domain reload can be disabled, which would otherwise latch every flag from the previous
         // play session and make the whole diagnostic silent exactly when it is being iterated on.
@@ -129,6 +138,11 @@ namespace CosmicShore.Gameplay
                 "no root, which should be impossible. The scope's eye has nowhere to sit.",
             Reason.Unusable =>
                 $"the instrument ticked but cannot be seen: {detail}",
+            Reason.NoGameCamera =>
+                "there is no perspective Camera.main to project the flight view's reticle " +
+                "through, so only the eyepiece's reticle is drawn. The eyepiece itself is " +
+                "unaffected. If this fires in a gameplay scene, something has disabled or " +
+                "untagged the gameplay camera.",
             _ => "unknown reason.",
         };
     }

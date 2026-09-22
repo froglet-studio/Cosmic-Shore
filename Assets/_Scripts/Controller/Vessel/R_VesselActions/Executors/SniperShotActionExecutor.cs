@@ -121,6 +121,20 @@ namespace CosmicShore.Gameplay
         public float ConeHalfAngleDegrees => config != null ? config.ConeHalfAngleDegrees : 0.5f;
 
         /// <summary>
+        /// How far the round reaches, in world units — the anchor the FLIGHT view's reticle is
+        /// projected at.
+        ///
+        /// <para>The eyepiece does not need it: that camera sits ON the shot's own axis, so the
+        /// cone projects to a circle about the centre of the picture whatever range you pick. The
+        /// gameplay camera does not, so the axis projects to a POINT only where that camera is
+        /// behind the hull and on its line — which is the Serpent's steady state (its authored
+        /// follow offset is a pure <c>(0, 0, -250)</c>) and is NOT true while the camera's
+        /// smoothing is catching up through a turn. Projecting the point the shot actually reaches
+        /// is right in both cases; assuming screen centre is right in one of them.</para>
+        /// </summary>
+        public float RangeUnits => config != null ? config.RangeUnits : 3000f;
+
+        /// <summary>
         /// The firing pilot's domain colour. One resolver for the tracer and the reticle, so the
         /// mark the pilot aims with and the mark the shot leaves can never disagree about whose
         /// shot it was.

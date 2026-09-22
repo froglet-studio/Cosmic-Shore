@@ -29,22 +29,46 @@ namespace CosmicShore.Gameplay
     /// are round 3's, untouched; the rect went 16:9 → SQUARE with the shape.
     /// <c>R_VesselActions/SERPENT_SNIPER_SCOPE.md</c> rounds 7–8.</para>
     ///
-    /// <para><b>The reticle moved INTO the eyepiece and stays there.</b> Round 3 drew it over the
-    /// middle of the screen because the middle of the screen was the scope. It is not any more, so
-    /// a reticle there would be a measurement of a view nobody is looking through. Everything the
-    /// scope says is therefore said inside the one shape the pilot is aiming with — which is also
-    /// what a real scope's reticle furniture looks like. <b>A shaped window cannot bound its own
-    /// furniture by its bounding box</b>, so every radius drawn inside it is capped by the petal's
-    /// measured INRADIUS (<see cref="ScopePetalGeometry.Inradius01"/>, 0.59× the half-side, set by
-    /// the two long edges running down to the apex) rather than by a fraction of the height.</para>
+    /// <para><b>There are TWO reticles, and they are the same measurement through different
+    /// optics.</b> One sits inside the eyepiece and one is drawn over the FLIGHT view, because a
+    /// scoped pilot is using both pictures: the eyepiece to read the target and the flight view to
+    /// keep the shot on it while they fly. Both are the sniper cone's own angular size projected
+    /// through the view they are drawn in — one function,
+    /// <see cref="ReticlePixels"/>, handed each view's half-height and its own field of view — so
+    /// the eyepiece's <b>GROWS as the pilot zooms</b> (its field of view narrows while the cone
+    /// does not) while the flight view's <b>stays small</b>, since the gameplay camera's field of
+    /// view is not the scope's dial. Two circles the pilot can compare, both of them true.</para>
     ///
-    /// <para><b>The reticle is a MEASUREMENT, not decoration.</b> Its radius is the cone's own
-    /// half-angle projected through the WINDOW's live vertical field of view
-    /// (<c>r = H · tan(halfAngle) / tan(fov/2)</c>, where <c>H</c> is half the eyepiece's HEIGHT,
-    /// because a vertical field of view is what its vertical extent subtends) — so it
-    /// tracks the zoom exactly. Anything inside the ring is inside the shot. An authored reticle
-    /// sprite would be a claim about the weapon that stops being true the first time either number
-    /// moves.</para>
+    /// <para><b>Round 3 drew a reticle over the middle of the screen because the middle of the
+    /// screen WAS the scope; this one is not that.</b> It is not centred and it is not a
+    /// decoration left behind — it is projected at the point the shot actually reaches
+    /// (<c>hull.position + hull.forward × range</c>), so it marks where the round goes rather than
+    /// where the camera happens to look. On the Serpent's authored follow offset — a pure
+    /// <c>(0, 0, −250)</c>, camera exactly behind the hull on the shot's own axis — that lands on
+    /// screen centre in the steady state, and the projection is what keeps it honest through the
+    /// camera's smoothing lag, through a rear-view flip (where the aim point falls behind the
+    /// camera and the reticle is stood down outright) and on any future follow offset that is not
+    /// on the axis.</para>
+    ///
+    /// <para><b>A shaped window cannot bound its own furniture by its bounding box</b>, so every
+    /// radius drawn inside the EYEPIECE is capped by the petal's measured INRADIUS
+    /// (<see cref="ScopePetalGeometry.Inradius01"/>, 0.59× the half-side, set by the two long
+    /// edges running down to the apex) rather than by a fraction of the height. The flight view's
+    /// reticle has no such shape to sit in and takes no cap.</para>
+    ///
+    /// <para><b>A reticle is a MEASUREMENT, not decoration.</b> Its radius is the cone's own
+    /// half-angle projected through its view's live vertical field of view
+    /// (<c>r = H · tan(halfAngle) / tan(fov/2)</c>, where <c>H</c> is half that view's HEIGHT,
+    /// because a vertical field of view is what a vertical extent subtends) — so the eyepiece's
+    /// tracks the zoom exactly and the flight view's tracks whatever the speed tunnel has done to
+    /// the gameplay camera. Anything inside either ring is inside the shot. An authored reticle
+    /// sprite would be a claim about the weapon that stops being true the first time any of those
+    /// numbers moves.</para>
+    ///
+    /// <para><b>Both reticles are up only while the scope is.</b> They are built with the rest of
+    /// the instrument, shown by <see cref="Tick"/> and taken down by <see cref="Hide"/>, so a
+    /// pilot who is not scoped has no mark on their screen at all — which is what makes the mark
+    /// mean "I am aiming" rather than "I am a Serpent".</para>
     ///
     /// <para><b>The recharge ring is duplicated here on purpose.</b> The fleet's ability lockup
     /// carries it too — its clockwise veil now draws on a LOCKED card, which is what finally put
@@ -54,7 +78,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Generated, not authored.</b> One runtime canvas, two <see cref="ScopePetalImage"/>s
     /// (the opaque backing and the picture, the same component so the frame is the petal's own
-    /// outline) and four <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no per-vessel
+    /// outline) and six <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no per-vessel
     /// wiring — the petal is traced geometry, not the <c>charge_petal</c> PNG, so it is exact at
     /// any size. It is built on first use by <see cref="SniperScopeActionExecutor"/> for the LOCAL
     /// PILOT only and torn down with the vessel.</para>
@@ -91,6 +115,13 @@ namespace CosmicShore.Gameplay
         const float PipTopMargin = 220f;
         const float PipLeftMargin = 16f;
 
+        // The flight view's reticle floors lower than the eyepiece's: it is SUPPOSED to be small
+        // (the gameplay camera is wide), so a floor generous enough to keep the eyepiece's ring
+        // readable would here be an inflation of the very number the ring exists to state. Three
+        // pixels is the smallest radius at which ScopeRingGraphic still emits a ring rather than a
+        // smudge, and at the widest field of view the fleet runs it does not bind.
+        const float FlightReticleMinPixels = 3f;
+
         Canvas _canvas;
         RectTransform _pipRect;
         ScopePetalImage _backing;
@@ -100,6 +131,12 @@ namespace CosmicShore.Gameplay
         ScopeRingGraphic _track;
         ScopeRingGraphic _arc;
         ScopePipView _pip;
+
+        // The flight view's reticle. Its own root, so it can be placed in SCREEN coordinates and
+        // stood down on its own (a rear-view flip hides it while the eyepiece keeps working).
+        RectTransform _flightRect;
+        ScopeRingGraphic _flightRing;
+        ScopeRingGraphic _flightDot;
 
         bool _wasReady = true;
         float _readyFlashUntil;
@@ -133,6 +170,11 @@ namespace CosmicShore.Gameplay
             // Deliberately NO GraphicRaycaster either - a hit target over the flight view would
             // eat presses meant for the world.
 
+            // FIRST, so it is the EARLIEST sibling: UGUI draws siblings in order, and on the rare
+            // frame the aim point projects into the top-left corner the opaque eyepiece should
+            // cover the flight reticle rather than have a stray ring floating over the picture.
+            BuildFlightReticle();
+
             var pipGo = new GameObject("Pip", typeof(RectTransform));
             pipGo.transform.SetParent(transform, false);
             _pipRect = pipGo.GetComponent<RectTransform>();
@@ -158,12 +200,37 @@ namespace CosmicShore.Gameplay
 
             // Order matters: the recharge bed, then the arc, then the reticle on top - UGUI draws
             // siblings in order and the reticle is the thing being aimed with.
-            _track = MakeRing("ChargeTrack", 130f, ArcThickness);
-            _arc = MakeRing("ChargeArc", 130f, ArcThickness);
-            _ring = MakeRing("Reticle", 40f, RingThickness);
-            _dot = MakeRing("ReticleDot", DotRadius, DotRadius * 2f);
+            _track = MakeRing(_pipRect, "ChargeTrack", 130f, ArcThickness);
+            _arc = MakeRing(_pipRect, "ChargeArc", 130f, ArcThickness);
+            _ring = MakeRing(_pipRect, "Reticle", 40f, RingThickness);
+            _dot = MakeRing(_pipRect, "ReticleDot", DotRadius, DotRadius * 2f);
 
             _pip = new ScopePipView(_pipSurface);
+        }
+
+        /// <summary>
+        /// The reticle drawn over the FLIGHT view: a root placed in screen coordinates every
+        /// frame, carrying the same ring-and-pip pair the eyepiece uses.
+        ///
+        /// <para>Its root is anchored to the canvas's bottom-left corner with a CENTRED pivot and
+        /// a zero size, which is what makes <c>anchoredPosition</c> a screen pixel coordinate
+        /// outright: this canvas is ScreenSpaceOverlay with deliberately no <c>CanvasScaler</c>,
+        /// so a canvas unit IS a screen pixel and <c>Camera.WorldToScreenPoint</c>'s answer can be
+        /// written straight in with no mapping to keep in step.</para>
+        /// </summary>
+        void BuildFlightReticle()
+        {
+            var go = new GameObject("FlightReticle", typeof(RectTransform));
+            go.transform.SetParent(transform, false);
+
+            _flightRect = go.GetComponent<RectTransform>();
+            _flightRect.anchorMin = Vector2.zero;
+            _flightRect.anchorMax = Vector2.zero;
+            _flightRect.pivot = new Vector2(0.5f, 0.5f);
+            _flightRect.sizeDelta = Vector2.zero;
+
+            _flightRing = MakeRing(_flightRect, "Reticle", FlightReticleMinPixels, RingThickness);
+            _flightDot = MakeRing(_flightRect, "ReticleDot", DotRadius, DotRadius * 2f);
         }
 
         /// <summary>
@@ -189,13 +256,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A ring centred on the EYEPIECE. Anchored at the middle of the parent rect, which is a
-        /// fraction of that rect and so is independent of the eyepiece's own top-left pivot.
+        /// A ring centred on <paramref name="parent"/>. Anchored at the middle of that rect, which
+        /// is a FRACTION of it and so is independent of whatever pivot the parent carries — the
+        /// eyepiece's is its own top-left corner and the flight reticle's root is its centre.
         /// </summary>
-        ScopeRingGraphic MakeRing(string name, float radius, float thickness)
+        ScopeRingGraphic MakeRing(RectTransform parent, string name, float radius, float thickness)
         {
             var go = new GameObject(name, typeof(RectTransform));
-            go.transform.SetParent(_pipRect, false);
+            go.transform.SetParent(parent, false);
             var rect = go.GetComponent<RectTransform>();
             rect.anchorMin = new Vector2(0.5f, 0.5f);
             rect.anchorMax = new Vector2(0.5f, 0.5f);
@@ -216,18 +284,23 @@ namespace CosmicShore.Gameplay
         /// <param name="vessel">The local pilot's hull — the window's eye rides past its nose.</param>
         /// <param name="fieldOfView">The window's magnified vertical field of view this frame. A
         /// pure function of the pilot's trigger depth.</param>
-        /// <param name="coneHalfAngleDegrees">The sniper cone's half-angle, which the reticle IS.</param>
+        /// <param name="coneHalfAngleDegrees">The sniper cone's half-angle, which both reticles
+        /// ARE.</param>
+        /// <param name="rangeUnits">How far the round reaches. Only the FLIGHT view's reticle uses
+        /// it, as the point along the shot's axis to project — the eyepiece's camera sits on that
+        /// axis, so there every range projects to the same place.</param>
         /// <param name="cooldown01">What is LEFT of the recharge (0 = ready), matching
         /// <c>SniperShotActionExecutor.CooldownRemaining01</c> and the fleet's own veil sense.</param>
         /// <param name="colour">The pilot's domain signal colour, shared with the shot's tracer so
         /// the mark you aim with and the mark you leave cannot disagree.</param>
         public void Tick(Transform vessel, float fieldOfView, float coneHalfAngleDegrees,
-                         float cooldown01, Color colour)
+                         float rangeUnits, float cooldown01, Color colour)
         {
             SetVisible(true);
 
             float halfHeight = LayOutPip();
-            float radius = ReticleRadiusPixels(coneHalfAngleDegrees, fieldOfView, halfHeight);
+            float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(fieldOfView), halfHeight,
+                                         minPixels: 6f);
             radius = Mathf.Min(radius, ReticleBudgetPixels(halfHeight));
             bool ready = cooldown01 <= 0.0001f;
 
@@ -284,6 +357,8 @@ namespace CosmicShore.Gameplay
 
             _pip.Tick(vessel, fieldOfView);
 
+            DrawFlightReticle(vessel, coneHalfAngleDegrees, rangeUnits, ready, colour);
+
             SelfCheck(halfHeight);
         }
 
@@ -322,21 +397,107 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The cone's half-angle in pixels INSIDE the eyepiece: the same projection the screen
-        /// version used, with half the eyepiece's HEIGHT standing in for half the screen height and
-        /// the window's own field of view standing in for the camera's.
+        /// The cone's half-angle in pixels through ONE view's optics — the whole of what both
+        /// reticles are.
+        ///
+        /// <para>A vertical field of view is what a view's vertical extent subtends, so half that
+        /// extent in pixels divided by <c>tan(fov/2)</c> is the pixels-per-unit-tangent of that
+        /// picture, and the cone's own tangent scales straight through it. The eyepiece passes
+        /// half its HEIGHT and the field of view the scope is driving its window at; the flight
+        /// view passes half the gameplay camera's pixel height and that camera's live field of
+        /// view. Same function, and the difference between the two pictures is entirely in the
+        /// arguments — which is exactly the claim the instrument is making.</para>
+        ///
+        /// <para>The floor is the CALLER's because the two views want different ones: the
+        /// eyepiece's ring must stay readable at the wide end of its dial, while the flight view's
+        /// is supposed to be small and a generous floor there would inflate the number the ring
+        /// exists to state. Neither view takes a CEILING here — the eyepiece's is the petal's own
+        /// inradius (see <see cref="ReticleBudgetPixels"/>, applied by its caller), because a
+        /// shaped window cannot be capped by its bounding box, and the flight view has no shape to
+        /// sit inside at all.</para>
         /// </summary>
-        static float ReticleRadiusPixels(float coneHalfAngleDegrees, float fieldOfView,
-                                         float halfHeight)
+        static float ReticlePixels(float coneHalfAngleDegrees, float tanHalfFov, float halfHeight,
+                                   float minPixels)
         {
-            float halfFov = Mathf.Clamp(fieldOfView * 0.5f, 0.5f, 89f) * Mathf.Deg2Rad;
             float half = Mathf.Max(0.01f, coneHalfAngleDegrees) * Mathf.Deg2Rad;
+            float pixels = halfHeight * Mathf.Tan(half) / Mathf.Max(0.0001f, tanHalfFov);
+            return Mathf.Max(minPixels, pixels);
+        }
 
-            float pixels = halfHeight * Mathf.Tan(half) / Mathf.Tan(halfFov);
-            // Floored so the ring is still a ring at the wide end of the dial. The CEILING is the
-            // petal's own (see ReticleBudgetPixels, applied by the caller), not a fraction of the
-            // half-height - a shaped window cannot be capped by its bounding box.
-            return Mathf.Max(6f, pixels);
+        /// <summary>
+        /// <c>tan(fov / 2)</c> for a vertical field of view in degrees, clamped away from both
+        /// degenerate ends so no camera state can divide the projection above by zero or drive it
+        /// to infinity.
+        /// </summary>
+        static float TanHalf(float fieldOfViewDegrees) =>
+            Mathf.Tan(Mathf.Clamp(fieldOfViewDegrees * 0.5f, 0.5f, 89f) * Mathf.Deg2Rad);
+
+        /// <summary>
+        /// Place and size the FLIGHT view's reticle for this frame, or stand it down.
+        ///
+        /// <para>Its centre is the screen projection of the point the round actually reaches, and
+        /// that is what makes it a mark on the SHOT rather than on the camera: the gameplay camera
+        /// is not guaranteed to sit on the shot's axis — the Serpent's authored offset puts it
+        /// there in the steady state, its smoothing takes it off through every turn, and the
+        /// rear-view mirror puts it on the wrong side entirely — so the projection is re-measured
+        /// every frame rather than assumed to be screen centre.</para>
+        ///
+        /// <para>It is stood down, rather than clamped to an edge, whenever the aim point falls
+        /// behind the camera (<c>WorldToScreenPoint</c>'s <c>z</c> is the view-space depth, and a
+        /// negative one projects to a MIRRORED position that is a plausible-looking lie). An
+        /// orthographic or absent camera stands it down too, loudly once, because neither can
+        /// project an angle — while the eyepiece, which carries its own camera, keeps working.</para>
+        /// </summary>
+        void DrawFlightReticle(Transform vessel, float coneHalfAngleDegrees, float rangeUnits,
+                               bool ready, Color colour)
+        {
+            if (_flightRect == null) return;
+
+            if (vessel == null)
+            {
+                _flightRect.gameObject.SetActive(false);
+                return;
+            }
+
+            var cam = Camera.main;
+            if (cam == null || cam.orthographic)
+            {
+                SniperScopeDiagnostics.Decline(SniperScopeDiagnostics.Reason.NoGameCamera);
+                _flightRect.gameObject.SetActive(false);
+                return;
+            }
+
+            // The same origin and axis SniperShotActionExecutor.ResolveShot casts along, so the
+            // mark cannot drift from the round.
+            Vector3 aim = vessel.position + vessel.forward * Mathf.Max(1f, rangeUnits);
+            Vector3 projected = cam.WorldToScreenPoint(aim);
+            if (projected.z <= 0f)
+            {
+                _flightRect.gameObject.SetActive(false);
+                return;
+            }
+
+            _flightRect.gameObject.SetActive(true);
+            _flightRect.anchoredPosition = new Vector2(projected.x, projected.y);
+
+            // pixelHeight rather than Screen.height: it is the height the projection above is
+            // expressed in, so the two agree even for a camera drawing into a sub-viewport.
+            float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(cam.fieldOfView),
+                                         cam.pixelHeight * 0.5f, FlightReticleMinPixels);
+
+            // Both derived from the radius rather than authored, so the mark keeps reading as a
+            // ring with a pip in it at whatever size the cone works out to: a fixed 2 px band and
+            // a fixed 2.5 px dot would together fill a 5 px reticle solid.
+            _flightRing.Radius = radius;
+            _flightRing.Thickness = Mathf.Min(RingThickness, radius * 0.5f);
+            _flightRing.Sweep01 = 1f;
+            _flightRing.color = WithAlpha(colour, ready ? 1f : DimAlpha);
+
+            float dot = Mathf.Clamp(radius * 0.3f, 1f, DotRadius);
+            _flightDot.Radius = dot;
+            _flightDot.Thickness = dot * 2f;
+            _flightDot.Sweep01 = 1f;
+            _flightDot.color = WithAlpha(colour, ready ? 1f : DimAlpha * 0.7f);
         }
 
         static Color WithAlpha(Color c, float a) { c.a = a; return c; }
@@ -370,6 +531,16 @@ namespace CosmicShore.Gameplay
         void SetVisible(bool visible)
         {
             if (_pipRect != null) _pipRect.gameObject.SetActive(visible);
+
+            // The flight reticle is only ever SWITCHED OFF here, never on, and the asymmetry is
+            // deliberate: its visibility has two levels — the scope is up, AND the aim point can
+            // be projected this frame — and <see cref="DrawFlightReticle"/> owns the second. Were
+            // this to re-activate it every tick, a frame it had just stood down (the rear view)
+            // would be re-activated on the next one and stood down again, and each of those
+            // toggles runs Graphic.OnEnable -> SetAllDirty: a rebuild of both its meshes, every
+            // frame, for as long as the pilot is looking backwards. SetActive with the value an
+            // object already has is a no-op, so leaving the ON case to that method costs nothing.
+            if (!visible && _flightRect != null) _flightRect.gameObject.SetActive(false);
         }
 
         /// <summary>
