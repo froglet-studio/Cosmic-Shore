@@ -165,12 +165,15 @@ namespace CosmicShore.Utility
                         candidate => CountOccluders(candidate.Position, subjectPosition, hullRadius));
                 }
 
-                // Mark the ships for the capture frame: the vessel vision band, rescaled so the
-                // mark arrives halfway through this concept's own zoom range and is a solid
-                // domain-coloured silhouette at its furthest. Held across Render() and released in
-                // the outer finally, identity-guarded exactly like the corridor's hold above.
-                if (config.TryResolveVisionBand(concept, out float markStart, out float markSolid))
-                    heldVisionBand = VesselVisionShading.BeginCapturePass(markStart, markSolid);
+                // Mark the ships for the capture frame: the vessel vision band, moved onto one
+                // flat threshold so a hull past it is the solid domain-coloured silhouette and a
+                // hull inside it is itself. Held across Render() and released in the outer
+                // finally, identity-guarded exactly like the corridor's hold above.
+                if (config.TryResolveMarkDistance(out float markDistance))
+                    heldVisionBand = VesselVisionShading.BeginCapturePass(markDistance);
+
+                // And hide the tails the lens is right on top of, same frame, same release.
+                HideNearTails(config, shot.Position);
 
                 byte[] png = Render(config, shot);
                 if (png == null) return;
@@ -188,6 +191,7 @@ namespace CosmicShore.Utility
                 // own hold survives a photograph taken during it.
                 if (heldCorridor) PrismOcclusionCorridor.SetSuppressed(false);
                 if (heldVisionBand) VesselVisionShading.EndCapturePass();
+                ShowHeldTails();
                 _capturing = false;
             }
         }
@@ -271,6 +275,56 @@ namespace CosmicShore.Utility
 
             Vector3 basePoint = cameraPosition + toSubject * (reach / distance);
             return index.CountInCone(cameraPosition, basePoint, subjectRadius);
+        }
+
+        // ───────────────────────── tails at close range ─────────────────────────
+
+        /// <summary>Tails THIS capture switched off, restored by <see cref="ShowHeldTails"/>.</summary>
+        readonly List<VesselTailAndJets> _heldTails = new();
+
+        /// <summary>
+        /// Hide the TAIL of every stamped vessel within <c>hideTailsWithin</c> of the lens.
+        ///
+        /// <para>A tail is tuned to be legible from across a cell — that is its whole job — so at
+        /// the 8-to-50 units most of the concept library shoots from, it is a ribbon several hull
+        /// lengths long crossing the frame in front of the thing the photograph is of. Distance is
+        /// what separates the two readings, so distance is what this gates on: nothing about the
+        /// tail changes in play, and a capture from further back still gets it.</para>
+        ///
+        /// <para>Scoped to TAILS through <see cref="VesselTailAndJets.HideTails"/>, which is the
+        /// class that owns what a tail is. JETS stay lit — they read thrust, and close range is
+        /// exactly where that reads. The prism TRAIL is untouchable by law and is not a
+        /// <c>TrailRenderer</c> at all.</para>
+        ///
+        /// <para>Measured from the CAMERA rather than from the subject, because the complaint is
+        /// about what the lens is on top of; a second ship far from the subject but right beside
+        /// the camera is the case a subject-relative test would miss.</para>
+        /// </summary>
+        void HideNearTails(ScreenshotDirectorConfigSO config, Vector3 cameraPosition)
+        {
+            float reach = config.ResolveTailHideDistance();
+            if (reach <= 0f) return;
+
+            float reachSqr = reach * reach;
+            VesselVisionShading.CollectStampedVessels(_vesselScratch);
+
+            for (int i = 0; i < _vesselScratch.Count; i++)
+            {
+                var vessel = _vesselScratch[i];
+                if (vessel == null) continue;
+                if ((vessel.position - cameraPosition).sqrMagnitude > reachSqr) continue;
+
+                var fx = vessel.GetComponentInChildren<VesselTailAndJets>(true);
+                if (fx != null && fx.HideTails()) _heldTails.Add(fx);
+            }
+        }
+
+        /// <summary>Release every tail hold this capture placed. Unconditional, like the others.</summary>
+        void ShowHeldTails()
+        {
+            for (int i = 0; i < _heldTails.Count; i++)
+                if (_heldTails[i] != null) _heldTails[i].ShowTails();
+            _heldTails.Clear();
         }
 
         // ───────────────────────── the subject ─────────────────────────

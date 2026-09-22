@@ -274,72 +274,78 @@ namespace CosmicShore.Tests
         }
 
         /// <summary>
-        /// The mark arrives at the halfway point of the shot's OWN furthest zoom and is full at
-        /// that furthest zoom — so the same rule reads the same way on a 12-39 chase camera and a
-        /// 220-520 establishing shot, which one fleet-wide distance could never do.
+        /// One flat threshold: a hull past <c>markDistance</c> is marked and a hull inside it is
+        /// not, whichever concept was rolled. The per-concept form this replaced asked the reader
+        /// to know which of eleven concepts the roll landed on before they could say whether a
+        /// ship in a photograph would be a silhouette.
         /// </summary>
         [Test]
-        public void VisionBand_ArrivesHalfwayThroughTheConceptsOwnRange()
+        public void VisionBand_IsOneFlatThresholdForTheWholeLibrary()
         {
             _config.markDistantVessels = true;
-            _config.markEngageFraction = 0.5f;
+            _config.markDistance = 45f;
 
+            Assert.IsTrue(_config.TryResolveMarkDistance(out float distance));
+            Assert.That(distance, Is.EqualTo(45f).Within(0.001f));
+
+            // It does not read the concept at all — that is the simplification, stated as a test.
             foreach (var concept in _config.concepts)
             {
-                if (concept.framing != ScreenshotFramingKind.Solo) continue;
-
-                float lo = Mathf.Min(concept.distance.x, concept.distance.y);
-                float hi = Mathf.Max(concept.distance.x, concept.distance.y);
-                if (hi - lo < 1f) continue;   // a floor, not a range — covered by its own test
-
-                Assert.IsTrue(_config.TryResolveVisionBand(concept, out float fade, out float full),
-                    $"'{concept.name}' has a real distance range and should resolve a band");
-
-                Assert.That(fade, Is.EqualTo((lo + hi) * 0.5f).Within(0.001f),
-                    $"'{concept.name}': the mark should start arriving at the halfway point");
-                Assert.That(full, Is.EqualTo(hi).Within(0.001f),
-                    $"'{concept.name}': the mark should be full at the furthest zoom");
-                Assert.That(full, Is.GreaterThan(fade), $"'{concept.name}': inverted rising edge");
+                Assert.IsTrue(_config.TryResolveMarkDistance(out float perConcept),
+                    $"'{concept.name}' must not be able to change the threshold");
+                Assert.That(perConcept, Is.EqualTo(distance).Within(0.001f));
             }
         }
 
         /// <summary>
-        /// A PAIR concept's distance is a FLOOR the two-shot fit overrides, so a band with no
-        /// width cannot locate its own halfway point. Those are measured against the LIBRARY's
-        /// reach instead — which is what keeps `Duo Close Pass`, authored (0, 0) and fitted to
-        /// something close, photographing an unmarked hull rather than a silhouette.
+        /// The threshold has to sit INSIDE the range the library shoots from, or it says nothing:
+        /// below every concept's floor marks every photograph, above every ceiling marks none.
         /// </summary>
         [Test]
-        public void VisionBand_FallsBackToTheLibrarysReachForAFloorRatherThanARange()
+        public void VisionBand_ThresholdLandsInsideTheLibrarysOwnRange()
         {
-            _config.markDistantVessels = true;
-            _config.markEngageFraction = 0.5f;
+            Assert.IsTrue(_config.TryResolveMarkDistance(out float threshold));
 
-            float furthest = _config.FurthestZoom();
-            Assert.That(furthest, Is.GreaterThan(0f), "the shipped library has a furthest zoom");
-
-            var degenerate = new ScreenshotConcept
+            int marks = 0;
+            int spares = 0;
+            foreach (var concept in _config.concepts)
             {
-                name = "Floor, not a range",
-                framing = ScreenshotFramingKind.Pair,
-                distance = new Vector2(0f, 0f),
-            };
+                if (concept.framing != ScreenshotFramingKind.Solo) continue;
+                float lo = Mathf.Min(concept.distance.x, concept.distance.y);
+                float hi = Mathf.Max(concept.distance.x, concept.distance.y);
+                if (hi >= threshold) marks++;
+                if (lo <= threshold) spares++;
+            }
 
-            Assert.IsTrue(_config.TryResolveVisionBand(degenerate, out float fade, out float full));
-            Assert.That(fade, Is.EqualTo(furthest * 0.5f).Within(0.001f));
-            Assert.That(full, Is.EqualTo(furthest).Within(0.001f));
-
-            // The point of the fallback: a close fitted pair shot lands well under the edge.
-            Assert.That(40f, Is.LessThan(fade),
-                "a close two-shot must sit below the rising edge, or every pair is a silhouette");
+            Assert.That(marks, Is.GreaterThan(0),
+                $"no solo concept can reach {threshold}u, so the mark never appears in a capture");
+            Assert.That(spares, Is.GreaterThan(0),
+                $"every solo concept starts past {threshold}u, so every capture is a silhouette");
         }
 
         [Test]
         public void VisionBand_IsOffWhenTheCaptureDoesNotWantIt()
         {
             _config.markDistantVessels = false;
-            Assert.IsFalse(_config.TryResolveVisionBand(_config.concepts[0], out _, out _));
-            Assert.IsFalse(_config.TryResolveVisionBand(null, out _, out _));
+            Assert.IsFalse(_config.TryResolveMarkDistance(out _));
+        }
+
+        /// <summary>
+        /// The tail hold is a DISTANCE, floored at zero, and 0 means "keep every tail" rather than
+        /// "hide every tail" — an inverted sentinel here would blank the streaks in every capture.
+        /// </summary>
+        [Test]
+        public void TailHold_IsADistanceAndZeroMeansKeepThem()
+        {
+            Assert.That(_config.ResolveTailHideDistance(), Is.GreaterThan(0f),
+                "the shipped default hides tails at close range");
+
+            _config.hideTailsWithin = 0f;
+            Assert.That(_config.ResolveTailHideDistance(), Is.EqualTo(0f));
+
+            _config.hideTailsWithin = -12f;
+            Assert.That(_config.ResolveTailHideDistance(), Is.EqualTo(0f),
+                "a negative reach must floor to off, never wrap into a huge one");
         }
 
         [Test]

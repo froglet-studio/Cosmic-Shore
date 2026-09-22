@@ -69,11 +69,18 @@ namespace CosmicShore.ScriptableObjects
                  "otherwise clutter. Off renders hulls exactly as they look in play.")]
         public bool markDistantVessels = true;
 
-        [Tooltip("Where in a concept's own distance range the mark starts arriving. 0.5 = the " +
-                 "halfway point of that shot's furthest zoom, reaching full strength at the " +
-                 "furthest zoom itself - so a close shot photographs the real hull and a pulled-" +
-                 "back one photographs the domain-coloured silhouette.")]
-        [Range(0f, 1f)] public float markEngageFraction = 0.5f;
+        [Tooltip("How far a ship has to be from the lens to come back MARKED. Beyond it the hull " +
+                 "is the solid domain-coloured silhouette; inside it the hull renders as itself. " +
+                 "One threshold, no graded edges - a photograph is a single frame, so there is " +
+                 "nothing for a fade to protect against.")]
+        [Min(0f)] public float markDistance = 45f;
+
+        [Header("Tails")]
+        [Tooltip("Hide a ship's TAIL - the long identity streak other players spot you by - when " +
+                 "it is this close to the lens, for the capture frame only. At close range a " +
+                 "ribbon sized to be read from across an arena crosses the whole picture. 0 keeps " +
+                 "every tail. Jets are never hidden: they read thrust, which is a close-range read.")]
+        [Min(0f)] public float hideTailsWithin = 30f;
 
         [Header("Clear line of sight")]
         [Tooltip("How many vantages to try per capture, keeping the one with the least prism " +
@@ -297,67 +304,32 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The distance past which a capture marks a hull with the vessel vision band, when the
+        /// mark is authored on at all.
+        ///
+        /// <para>ONE number for the whole library rather than a fraction of each concept's own
+        /// zoom range. The per-concept form shipped first and was correct: it made a pulled-back
+        /// shot mark and a tight shot not, whichever concept was rolled. It also made "is this ship
+        /// marked?" a question you could only answer by knowing which of eleven concepts the roll
+        /// landed on, and a rule you cannot state in one sentence is one nobody can aim. A flat
+        /// threshold says it in one: past <see cref="markDistance"/>, marked.</para>
+        /// </summary>
+        public bool TryResolveMarkDistance(out float distance)
+        {
+            distance = Mathf.Max(0f, markDistance);
+            return markDistantVessels;
+        }
+
+        /// <summary>
+        /// How close to the lens a ship has to be for its tail to be held dark, or 0 for never.
+        /// </summary>
+        public float ResolveTailHideDistance() => Mathf.Max(0f, hideTailsWithin);
+
+        /// <summary>
         /// The pair separation band, low end first, floored at zero. Two vessels closer than
         /// <c>min</c> overlap into one shape; further than <c>max</c> and a shot holding both
         /// has to pull back until neither reads as a ship.
         /// </summary>
-        /// <summary>
-        /// The furthest any concept in this library can place the camera — the reach the whole
-        /// set is measured against when a single concept cannot speak for itself.
-        /// </summary>
-        public float FurthestZoom()
-        {
-            float furthest = 0f;
-            if (concepts == null) return furthest;
-
-            for (int i = 0; i < concepts.Count; i++)
-            {
-                var concept = concepts[i];
-                if (concept == null || !concept.IsUsable) continue;
-                furthest = Mathf.Max(furthest, Mathf.Max(concept.distance.x, concept.distance.y));
-            }
-            return furthest;
-        }
-
-        /// <summary>
-        /// Where the vessel vision band's rising edge goes for a capture taken on
-        /// <paramref name="concept"/>: arriving at <see cref="markEngageFraction"/> of the way
-        /// through that concept's own distance range, and full at its furthest zoom.
-        ///
-        /// <para>Per-concept rather than one fleet-wide distance, because the library spans 12
-        /// units to 520 and a single threshold either marks nothing on two thirds of the shots or
-        /// marks everything on the close ones. Measuring each shot against its OWN range is what
-        /// makes the rule read the same way everywhere: pulled back for this kind of shot means
-        /// marked, close in for this kind of shot means the real hull.</para>
-        ///
-        /// <para>A PAIR concept's <c>distance</c> is a FLOOR rather than a range (the two-shot fit
-        /// overrides it), so a band with no width cannot say where its own halfway point is; those
-        /// fall back to the LIBRARY's furthest zoom, which is why <c>Duo Close Pass</c> - authored
-        /// (0, 0) and fitted to something close - correctly photographs an unmarked hull.</para>
-        /// </summary>
-        public bool TryResolveVisionBand(ScreenshotConcept concept, out float nearFadeStart, out float nearFullStart)
-        {
-            nearFadeStart = nearFullStart = 0f;
-            if (!markDistantVessels || concept == null) return false;
-
-            float lo = Mathf.Min(concept.distance.x, concept.distance.y);
-            float hi = Mathf.Max(concept.distance.x, concept.distance.y);
-
-            if (hi - lo < MinMarkBandWidth)
-            {
-                lo = 0f;
-                hi = FurthestZoom();
-                if (hi <= MinMarkBandWidth) return false;
-            }
-
-            nearFadeStart = Mathf.Lerp(lo, hi, Mathf.Clamp01(markEngageFraction));
-            nearFullStart = hi;
-            return true;
-        }
-
-        /// <summary>A distance range narrower than this cannot locate its own halfway point.</summary>
-        const float MinMarkBandWidth = 1f;
-
         public void ResolvePairBand(out float min, out float max)
         {
             min = Mathf.Max(0f, Mathf.Min(pairSeparation.x, pairSeparation.y));

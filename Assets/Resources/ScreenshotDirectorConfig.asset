@@ -23,7 +23,8 @@ MonoBehaviour:
   pairSeparation: {x: 10, y: 30}
   pairChance: 0.85
   markDistantVessels: 1
-  markEngageFraction: 0.5
+  markDistance: 45
+  hideTailsWithin: 30
   clearShotSamples: 6
   clearShotAcceptOccluders: 0
   concepts:

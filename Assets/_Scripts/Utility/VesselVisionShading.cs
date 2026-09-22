@@ -203,10 +203,23 @@ namespace CosmicShore.Utility
         public static bool IsCapturePassActive => _capturePass;
 
         /// <summary>
-        /// Open the band for ONE hand-stepped render: rescale it so the mark starts arriving at
-        /// <paramref name="markStartDistance"/> and is a solid silhouette by
-        /// <paramref name="markSolidDistance"/>, and include the local pilot's own hull — both
-        /// undone by <see cref="EndCapturePass"/>.
+        /// Open the band for ONE hand-stepped render: mark every vessel further than
+        /// <paramref name="markThresholdDistance"/> from the lens and nothing nearer, and include
+        /// the local pilot's own hull — both undone by <see cref="EndCapturePass"/>.
+        ///
+        /// <para><b>It is a THRESHOLD, not a band.</b> The law's four control points exist because
+        /// a mark that pops on reads as a new object appearing, which is continuity of existence
+        /// applied to visibility — and a photograph is ONE frame, so there is nothing for it to pop
+        /// against. Dropping the graded edges is therefore free here and is the whole simplification:
+        /// beyond the threshold a hull is the solid domain-coloured silhouette, inside it the hull
+        /// renders as itself, and there is no in-between for a shot to land in. An earlier version
+        /// rescaled the law's whole three-beat arc onto each concept's own zoom range; it was
+        /// correct and it made "when is a ship marked?" a question about which concept was rolled.</para>
+        ///
+        /// <para>The break-up closes at the same threshold for the same reason: over distance the
+        /// band opens its centre into cells and closes them again by
+        /// <c>breakupEndDistance</c>, and leaving that authored 900 in place would have every
+        /// photograph come back an outline with a dithered middle.</para>
         ///
         /// <para>This is NOT the suppression hold this law deliberately does not have, and the
         /// difference is the whole justification: a suppression hold would let a camera switch the
@@ -226,49 +239,30 @@ namespace CosmicShore.Utility
         /// last at most one frame — but the release is unconditional anyway, because the STAMP
         /// half does not self-heal for a frame or more (the heal is round-robin).</para>
         ///
-        /// <para>Returns false, changing nothing, when the law is authored off or the requested
-        /// edge is degenerate — a caller must still call <see cref="EndCapturePass"/> only if it
-        /// got true, on the identity-guard principle the corridor's hold uses.</para>
+        /// <para>Returns false, changing nothing, when the law is authored off — a caller must
+        /// still call <see cref="EndCapturePass"/> only if it got true, on the identity-guard
+        /// principle the corridor's hold uses.</para>
         /// </summary>
-        public static bool BeginCapturePass(float markStartDistance, float markSolidDistance)
+        public static bool BeginCapturePass(float markThresholdDistance)
         {
             var config = Config;
             if (!config.Enabled || _capturePass) return false;
 
-            float start = Mathf.Max(0f, markStartDistance);
-            float solid = Mathf.Max(markSolidDistance, start + MinCaptureEdgeWidth);
+            float start = Mathf.Max(0f, markThresholdDistance);
+            float solid = start + MinCaptureEdgeWidth;
 
-            // COMPRESS the law's own arc onto this shot's range rather than truncating it. Over
-            // distance the band tells a three-beat story — the mark arrives, it reaches full
-            // strength, then the centre break-up closes and the hull becomes a solid silhouette —
-            // and the shipped asset spends 150..350 on the first two beats and 350..900 on the
-            // third. A capture band that only moved the rising edge would fit the first two beats
-            // and never the third, so every photograph would come back an outline with a dithered
-            // middle, which is not the look at range that this exists to put in a picture.
-            // Rescaling the whole arc keeps every SHAPE ratio of the law and moves only its
-            // distance axis, so a shot at its furthest zoom reads like a ship across an arena.
-            float arc = config.BreakupActive
-                ? Mathf.Max(config.BreakupEndDistance - config.NearFadeStart, MinCaptureEdgeWidth)
-                : Mathf.Max(config.NearFullStart - config.NearFadeStart, MinCaptureEdgeWidth);
-            float fullAt = Mathf.Clamp01((config.NearFullStart - config.NearFadeStart) / arc);
-
-            float nearFullStart = Mathf.Max(Mathf.Lerp(start, solid, fullAt), start + MinCaptureEdgeWidth);
-
-            // The FAR edges are deliberately NOT rescaled. They exist so a pilot is not reading
+            // The FAR edges are deliberately NOT moved. They exist so a pilot is not reading
             // coloured dots across half an arena, which is a thing a cockpit does and a photograph
-            // never does — and rescaling them onto a 39-unit chase shot would put the far fade at
-            // ~40 units and un-mark every ship in the frame. Raised only where the moved rising
-            // edge would have overtaken them, since an inverted band is the one shape the shader
-            // cannot render sanely.
-            float farFullEnd = Mathf.Max(config.FarFullEnd, nearFullStart);
+            // never does. Raised only where the threshold would have overtaken them, since an
+            // inverted band is the one shape the shader cannot render sanely.
+            float farFullEnd = Mathf.Max(config.FarFullEnd, solid);
             float farFadeEnd = Mathf.Max(config.FarFadeEnd, farFullEnd + MinCaptureEdgeWidth);
 
-            Shader.SetGlobalVector(BandId, new Vector4(start, nearFullStart, farFullEnd, farFadeEnd));
+            Shader.SetGlobalVector(BandId, new Vector4(start, solid, farFullEnd, farFadeEnd));
 
             if (config.BreakupActive)
                 Shader.SetGlobalVector(BreakupId, new Vector4(
-                    config.BreakupCells, config.BreakupReach, config.BreakupStrength,
-                    Mathf.Max(solid, nearFullStart + MinCaptureEdgeWidth)));
+                    config.BreakupCells, config.BreakupReach, config.BreakupStrength, solid));
 
             _capturePass = true;
             ReapplyFor(_localVessel);

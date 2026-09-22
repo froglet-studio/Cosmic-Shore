@@ -83,8 +83,9 @@ being correct. Every *other* ship is still marked from such a camera, which is w
 controls, and this one is most useful precisely where they are suppressed.
 
 **There is one scoped override, and it is the opposite of a suppression.**
-`VesselVisionShading.BeginCapturePass` / `EndCapturePass` rescale the band's distance axis and lift
-the local exclusion for ONE hand-stepped render — the screenshot director's, which renders into a
+`VesselVisionShading.BeginCapturePass` / `EndCapturePass` collapse the band onto a single distance
+THRESHOLD (marked past it, unmarked inside it, with the centre break-up closed at the same point)
+and lift the local exclusion for ONE hand-stepped render — the screenshot director's, which renders into a
 RenderTexture by calling `Camera.Render()` itself (`Docs/SCREENSHOT_DIRECTOR.md`). The distinction
 that keeps the law intact is that a suppression hold can switch the aid OFF, which is what makes an
 aid authorable-away; this can only ever mark MORE, on a camera nobody is looking through. It is
