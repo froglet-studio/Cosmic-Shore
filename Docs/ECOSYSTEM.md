@@ -10652,9 +10652,10 @@ whole of the cell's growth — §48), Frenzy 1.45× / 1.25×. **FrenzyEXIT sits 
 purpose**: the twenty are hard-capped, so a Frenzy here can only ever be trail-caused, and it
 must always release with the garden intact (§36).
 
-Adding the Borromean four cost **1.9% of the prism count and 9.5% of the volume** — the whole
-species weighs less than one Mandelbulb Mass specimen — so the ceiling moved 78,100 → 79,700 and
-stayed under the Lattice cell's. Four more heart colliders is the honest cost, and it is the
+Adding the Borromean four **grew the garden by 1.9% in prisms and 9.5% in volume** (53,891 →
+54,935 and 237,350 → 259,795) — the whole species weighs less than the single heaviest Mandelbulb
+specimen (Mandelbulb Flora Mass, 36,154) — so the ceiling moved 78,100 → 79,700 and stayed under
+the Lattice cell's. Four more heart colliders is the honest cost, and it is the
 only flora number that is never free.
 
 The band's inner edge is outside the ~392 u nucleus, which matters for the reason it always

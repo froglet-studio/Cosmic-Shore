@@ -1077,8 +1077,8 @@ trio, and the traps).
   its element's whole site table, because that surface CLOSES). Measured: **54,935 prisms,
   259,795 volume, 20 always-on heart colliders** (the Lattice cell's is 1,080), specimens 108 u
   to **294 u** across, per-prism volume 0.07 to 72.87, ceiling 79,700 against Atlantis' ~69,000
-  and Lattice's 82,400 — the whole Borromean species costs **1.9%** of the prism count and weighs
-  less than one Mandelbulb Mass specimen; Restless
+  and Lattice's 82,400 — the four Borromean specimens **grew the garden 1.9% in prisms and 9.5%
+  in volume** and together weigh less than the single heaviest Mandelbulb specimen; Restless
   0.35x the mature garden and FrenzyEXIT **above** it, since a hard-capped garden can only ever
   be frozen by TRAIL and must release intact. Authored by
   `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS all sixteen Mandelbulb
