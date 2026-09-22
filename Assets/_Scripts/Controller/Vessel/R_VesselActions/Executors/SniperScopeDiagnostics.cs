@@ -110,14 +110,39 @@ namespace CosmicShore.Gameplay
         /// Report the first frame the instrument lays out — on a CHANNEL, off by default, because
         /// this is bring-up telemetry for a working system rather than a fault. The refusals above
         /// stay unconditional warnings.
+        ///
+        /// <para><b>It reports the two RETICLES as well as the window, because they are a separate
+        /// report.</b> "I could not see either reticle" and "I could not see the window" are
+        /// different sentences with different causes, and until they are each stated here the only
+        /// fact this line carried was the eyepiece's rect — which is satisfied by a window drawing
+        /// perfectly with nothing in it. Both reticle radii are the SAME measurement through
+        /// different optics (<c>SniperScopeOverlay.ReticlePixels</c>), so printing them together
+        /// also states whether the zoom is reaching the eyepiece's: it should be several times the
+        /// flight view's at any zoom past the wide end, and equal to it only when both views share
+        /// a field of view.</para>
         /// </summary>
-        public static void Drawing(Vector2 centre, float radius, Vector2 screen)
+        /// <param name="centre">The eyepiece's centre in screen coordinates.</param>
+        /// <param name="radius">Half the eyepiece's side.</param>
+        /// <param name="screen">The live screen size.</param>
+        /// <param name="eyeReticlePixels">The reticle radius drawn INSIDE the eyepiece.</param>
+        /// <param name="flight">Where the FLIGHT view's reticle landed this frame, or null when it
+        /// stood down (no gameplay camera, or the aim point behind it).</param>
+        /// <param name="flightReticlePixels">That reticle's radius, meaningless when it stood down.</param>
+        public static void Drawing(Vector2 centre, float radius, Vector2 screen,
+                                   float eyeReticlePixels, Vector2? flight, float flightReticlePixels)
         {
             if (_drawingReported) return;
             _drawingReported = true;
+
+            string flightLine = flight.HasValue
+                ? $"Flight reticle at {flight.Value} radius {flightReticlePixels:0.#} px."
+                : "Flight reticle STOOD DOWN this frame — no gameplay camera, or the aim point " +
+                  "projected behind it (a rear view does exactly that).";
+
             CSDebug.LogVerbose(CSLogChannel.SerpentScope,
                 $"[SerpentScope] Eyepiece laid out: centre {centre} radius {radius:0.#} px on a " +
-                $"{screen.x:0}x{screen.y:0} screen. If nothing is visible there, the window is " +
+                $"{screen.x:0}x{screen.y:0} screen. Eyepiece reticle radius {eyeReticlePixels:0.#} px. " +
+                $"{flightLine} If nothing is visible where these say it is, they are drawing and " +
                 $"being covered — run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
         }
 

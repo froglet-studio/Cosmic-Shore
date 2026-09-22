@@ -5555,7 +5555,13 @@ ones.
   shield (`shielding`, the Sparrow's CHARGE-5) is kept and is unaffected; only the timed stand-in
   went away, and its registry sync moved INSIDE that branch. Stated cost: the shed-debris spray
   each pop threw is gone, and a fully destructive blast publishes no light so it looks exactly as
-  it did. Full record: `Docs/LIT.md`.
+  it did. **Growing the peer BANK costs an editor restart, once, on every machine that pulls
+  it**: Unity pins a shader global ARRAY at the length of its FIRST write for the whole editor
+  session, so the session in which `PrismDestructionSight`'s 4 slots became `PrismLit`'s 8
+  logged `exceeds previous array size (8 vs 4)` every frame AND silently dropped peers 5-8 —
+  nothing wrong in the tree, invisible to every offline gate, and a player build never sees it.
+  *Superseding or resizing anything that publishes a shader global array is a loud, lossy,
+  session-scoped event; say "restart Unity" in the commit message.* Full record: `Docs/LIT.md`.
 - **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
   lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
   highest-level gameplay arc — faction missions, where players venture into the hypersea for

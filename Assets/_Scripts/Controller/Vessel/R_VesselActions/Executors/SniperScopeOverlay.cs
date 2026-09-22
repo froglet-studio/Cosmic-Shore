@@ -617,7 +617,19 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            SniperScopeDiagnostics.Drawing(centre, halfHeight, new Vector2(Screen.width, Screen.height));
+            // The reticles are reported separately from the window because they are a separate
+            // report: a pilot who says "I could not see either reticle" has said nothing about
+            // whether the eyepiece was there, and every check above is satisfied by a window that
+            // draws perfectly with nothing in it. DrawFlightReticle owns the flight root's active
+            // state, so reading it here is reading what that method decided this frame rather than
+            // re-deriving it.
+            bool flightDrawn = _flightRect != null && _flightRect.gameObject.activeSelf;
+            Vector2? flightAt = flightDrawn ? _flightRect.anchoredPosition : (Vector2?)null;
+
+            SniperScopeDiagnostics.Drawing(centre, halfHeight, new Vector2(Screen.width, Screen.height),
+                                           _ring != null ? _ring.Radius : 0f,
+                                           flightAt,
+                                           _flightRing != null ? _flightRing.Radius : 0f);
         }
 
         void OnDestroy() => _pip?.Dispose();

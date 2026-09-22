@@ -997,6 +997,72 @@ own reason rather than a refusal of the whole instrument: the eyepiece carries i
 is unaffected, so reporting it as "the scope window is not drawn" would send the next reader to the
 wrong half.
 
+## Round 9a — the playtest, and the two things it reported at once
+
+> *"I got a lot of this error, but i could not see either reticle — `Property
+> (_PrismSightPeerApex) exceeds previous array size (8 vs 4). Cap to previous size. Restart Unity
+> to recreate the arrays.`"*
+
+Two reports in one sentence, and they are **independent**. Separating them was the whole of this
+round; only one of them is a defect, and it is not in this feature.
+
+### The array error is a SUPERSESSION artefact, and the fix is to restart Unity
+
+`_PrismSightPeerApex` is one of the five peer-bank globals the LIT system publishes. Nothing in the
+scope touches it. It is written from exactly one place — `PrismLit.Flush`, at a fixed length of
+`PrismLit.Slots` = **8**, matching `PRISM_SIGHT_PEER_SLOTS` in `PrismDestructionSight.hlsl`, with
+`PrismLitTests` holding the two in step.
+
+The 4 comes from the system `PrismLit` **replaced**. Commit `8618ea98` ("promote LIT to a
+fundamental") deleted `Assets/_Scripts/Utility/PrismDestructionSight.cs`, whose
+`PrismDestructionSight.PeerSlots` was **4**, and wrote `PrismLit` in its place with 8. Unity binds a
+shader GLOBAL array at the length of its **first** write and keeps that length **for the whole
+editor session** — which is what its own "Restart Unity to recreate the arrays" is telling you. An
+editor session that ran the old code before the script reload therefore has the bank pinned at 4,
+so every frame afterwards the new code's 8-long write is capped and logged. A player build never
+sees it: a fresh process has nothing pinned.
+
+So: **restart Unity.** There is nothing to fix in the tree — `PrismDestructionSight.cs` is gone,
+the only writer is at 8, and the shader declares 8.
+
+The general rule is worth more than the incident, and `PrismLit.cs` already half-states it in the
+comment above its bank arrays: **superseding a system that publishes a shader global ARRAY changes
+that array's length, and the length is pinned per editor session** — so the supersession's first
+session after a pull spams an error every frame *and silently drops the tail of the bank* (here,
+peers 5–8 of the LIT system go dark). The failure is loud, session-scoped, and invisible to every
+offline gate.
+
+Its practical cost here is the second report: the spam buries the `[SerpentScope]` lines that are
+the one documented way to tell why a reticle is missing.
+
+### "I could not see either reticle" — what the instrument can now say for itself
+
+Nothing was found in the code. The build compiles, both reticles are constructed identically (the
+same `MakeRing`, differing only in parent), `ScopeRingGraphic` emits a ring at the flight view's
+3 px floor, `ResolveTracerColour` cannot return black (`GetDomainSignalColor` answers white for an
+unauthored domain, by the rule `Docs/PALETTE.md §2.4` records), and every gate in `DrawOverlay` is
+an unconditional warning.
+
+Rounds 5 and 6 already paid for guessing at this from source, so this round does not. What it does
+instead is close the gap those rounds left in the diagnostic: **`Drawing` reported the WINDOW and
+said nothing about the RETICLES**, and every check in `SelfCheck` is satisfied by a window that
+draws perfectly with nothing in it. It now carries the eyepiece reticle's radius, whether the
+flight reticle drew at all this frame, and where it landed — so the next report separates:
+
+| What the line says | What it means |
+|---|---|
+| no `[SerpentScope]` line at all, no warning | the scope never engaged; the executor is not ticking |
+| an unconditional `[SerpentScope]` warning | a named gate refused — the warning says which |
+| `Eyepiece reticle radius 6 px` and it does not grow with the trigger | the zoom is not reaching `ReticlePixels` |
+| `Flight reticle STOOD DOWN` | no gameplay camera, or the aim point projected behind it |
+| both radii printed and plausible | they are drawing and something is **over** them — `FrogletTools > Diagnostics > Report On-Screen UI`, in play mode |
+
+That last row is deliberately not a warning, for the reason this file already records: an
+unconditional "everything checks out" becomes a permanent false positive the day the real defect is
+fixed. **The whole procedure is still one switch** — `CSLogChannel.SerpentScope` in FrogletTools >
+Toolbox > Logging — and it is worth restarting Unity first so the line is not buried under the
+array spam above.
+
 ## Drive-by corrections
 
 - **The doc's own opening paragraph still described the round-1 COCKPIT** — *"the view drops into

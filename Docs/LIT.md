@@ -74,6 +74,29 @@ Composition with the other fundamentals is what earns it the weight: **Domain** 
 - With no producer lighting anything, `Flush` returns before writing and the shader returns after
   two compares.
 
+### Changing the bank's SIZE costs an editor restart, once, for everyone who pulls it
+
+Unity binds a shader GLOBAL array at the length of its **first** `SetGlobal*Array` and keeps that
+length **for the whole editor session** — which is what its own error message means by *"Restart
+Unity to recreate the arrays."* So the session in which the bank grows is the one that breaks:
+
+```
+Property (_PrismSightPeerApex) exceeds previous array size (8 vs 4). Cap to previous size.
+```
+
+That is exactly what happened when `PrismDestructionSight` (`PeerSlots = 4`) became `PrismLit`
+(`Slots = 8`) in `8618ea98`. Any editor session that had already run the old code had the bank
+pinned at 4, so after the script reload every frame logged the error **and silently dropped peers
+5–8**. Nothing is wrong in the tree; a player build never sees it, because a fresh process has
+nothing pinned.
+
+**Superseding or resizing a system that publishes a shader global ARRAY is therefore a one-time,
+session-scoped, loud-and-lossy event on every machine that pulls it, and no offline gate can see
+it.** If the bank ever grows past 8, say so in the commit message: the fix is *restart Unity*, and
+a reader who does not know that reads a per-frame `LogError` as a defect in whatever was on screen
+at the time. (`PrismLitTests` keeps `Slots` and `PRISM_SIGHT_PEER_SLOTS` in step, which is the
+*other* half — it catches the two drifting apart, not this.)
+
 ## Rules
 
 1. **One predicate, three shapes.** `LitVolume.Contains` is the single CPU transcription of the
