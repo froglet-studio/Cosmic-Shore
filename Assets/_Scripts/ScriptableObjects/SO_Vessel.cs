@@ -59,10 +59,32 @@ public class SO_Vessel : ScriptableObject
     [SerializeField] public int UnlockCost = 100;
 
     /// <summary>
-    /// Whether this vessel is currently locked. In builds, resets to the serialized default on launch.
-    /// Will be synced with UGS once backend integration is complete.
+    /// Whether this vessel is locked FOR PLAY right now. In builds, resets to the serialized
+    /// default on launch. Will be synced with UGS once backend integration is complete.
+    ///
+    /// Honours the master developer unlock (<see cref="CosmicShore.Core.DeveloperUnlockGate"/>),
+    /// which is ON by default until the FTUE is designed - so this reads false for every vessel
+    /// unless somebody has deliberately turned the gate off. That is the point: one switch, and
+    /// all ~20 readers of this property (hangar cards, lock overlays, arcade rosters, vessel
+    /// selection) open together instead of each learning about the gate.
+    ///
+    /// Code that GRANTS or REVOKES ownership must read <see cref="IsLockedByEntitlement"/>
+    /// instead - see that property.
     /// </summary>
-    public bool IsLocked => isLocked;
+    public bool IsLocked => isLocked && !CosmicShore.Core.DeveloperUnlockGate.AllUnlocked;
+
+    /// <summary>
+    /// The raw entitlement: whether the player has actually earned or bought this vessel,
+    /// ignoring the master developer unlock.
+    ///
+    /// This exists because gating a READ also reaches the WRITE path's guards. With the gate on,
+    /// <see cref="IsLocked"/> is false for every vessel, so VesselUnlockSystem's
+    /// `if (!vessel.IsLocked) return false` would refuse every unlock and persist none of them -
+    /// the developer convenience would silently corrupt the thing it was meant to bypass.
+    /// Anything that grants, revokes or persists ownership reads THIS; anything that asks
+    /// "may the player use this right now" reads <see cref="IsLocked"/>.
+    /// </summary>
+    public bool IsLockedByEntitlement => isLocked;
 
     /// <summary>
     /// Whether the player owns this vessel from first launch with nothing spent. Read this, not

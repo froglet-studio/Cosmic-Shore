@@ -64,6 +64,8 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             VesselUnlockSystem.OnUnlockStateChanged += RefreshGridCards;
+            // Flipping the master developer unlock changes every card's lock overlay.
+            DeveloperUnlockGate.OnChanged += RefreshGridCards;
 
             if (eyeButton)
             {
@@ -75,6 +77,7 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             VesselUnlockSystem.OnUnlockStateChanged -= RefreshGridCards;
+            DeveloperUnlockGate.OnChanged -= RefreshGridCards;
         }
 
         public void OnScreenEnter()

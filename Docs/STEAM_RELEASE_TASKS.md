@@ -106,20 +106,33 @@ A ✅ on an ID means that item has landed. The row stays on the board rather tha
 Everything above is independent of the quest chain **except through one decision**, and it is
 worth making early because it changes what R2, R3 and H11 are testing.
 
-`GameModeProgressionService` is not instantiated in any scene, so every unlock gate currently
-**fails open** — the arcade renders fully unlocked and all intensities are available. That is a
-survivable state for an invite build, and arguably the right one. But it means:
+**✅ CLOSED 21 Sep 2026 — the service is instantiated.** `Menu_Main.unity` now carries a live,
+enabled `GameModeProgressionService` with all three references wired, `progressionConfig`
+included — so the hazard this section warned about (*"wiring the service in without also
+assigning `ProgressionConfig.asset` would lock 15 of the 19 live arcade modes"*) was avoided by
+construction rather than survived. The authored unlock list is live for the first time.
 
-- **QA is currently testing an ungated game.** If the service is wired in later, every unlock
-  path becomes untested again and R2/R3 have to re-run against it.
-- **Wiring the service in without also assigning `ProgressionConfig.asset` would lock 15 of the
-  19 live arcade modes**, because the built-in fallback config is `{ Maelstrom }` alone.
+**The posture question it asked is answered, and answered a different way than the audit
+proposed.** Rather than making the chain a guide by changing `IsGameModeUnlocked`, the merge
+ships a **master unlock that is ON by default** — `DeveloperUnlockGate.DefaultAllUnlocked =
+true`, live in release builds, overridable per machine via `PlayerPrefs["DEV_ALL_UNLOCKED"]` from
+the Froglet Toolbox. It gates six choke points (all vessels, all modes, all intensities, the
+hangar, the arcade funnel, and the quest runner itself). The practical effect is the same as the
+audit's recommendation — nothing is locked — but it is **reversible without a code change**, and
+it leaves the authored progression intact underneath to be switched on when the FTUE is designed.
 
-So decide the posture *before* R3 starts, not after. The audit's recommendation is to make the
-chain a **guide rather than a gate** — have `IsGameModeUnlocked` return true for any mode outside
-the chain, using the `IsGameModeInQuestChain` predicate that already exists and is not consulted
-by the arcade view. That decouples the invite build from design's content permanently, and it
-holds whether the chain ends up with six quests or twenty.
+Two consequences to carry, neither of them a defect:
+
+- **QA is still testing an ungated game by default**, so R2/R3 are not invalidated. What changed
+  is that the gated game is now *reachable* (flip the toggle) instead of unreachable.
+- **The quest graph does not run while the gate is on** — `QuestGraphRunner.TryStart` is the
+  sixth choke point — so merging this does **not** put an FTUE in front of anyone. The FTUE can
+  only be play-tested with the gate off.
+
+⚠ **Neither gate state has been play-tested.** The verification behind the merge was static
+only (asset YAML, source, the standing gates); see
+[`Docs/QA/RESULTS/2026-09-21-claude-progression-merge.md`](QA/RESULTS/2026-09-21-claude-progression-merge.md),
+which carries the two test procedures as proposed backlog items for the next `/qa-backlog` run.
 
 ---
 
@@ -132,7 +145,7 @@ Mapped to the checkpoint's eight exit criteria, so the board can be read backwar
 | 1 | Steam page live with Playtest signup, review passed | H1, H3, H5, R6, H13 |
 | 2 | Playtest build approved, Waves 0–1 granted, invites on | R1, R6, **R16**, H5, H17 |
 | 3 | Fresh install → completed 4-player Maelstrom, zero P0/P1 | R1, R2, R3, R16, H11, H12 |
-| 4 | Fresh account completes the quest chain, unlocks persist | *(quest work — excluded from this board)* |
+| 4 | Fresh account completes the quest chain, unlocks persist | *(quest work — excluded from this board)* ⚠ **the blocker MOVED on 21 Sep 2026, it did not close.** `GameModeProgressionService` is now instantiated and configured, so "the service exists nowhere" is no longer what stands in the way. What does is `ProgressionBackendGate.CloudEnabled = false`: progression is neither loaded from nor saved to the `GAME_MODE_PROGRESSION` cloud record, so **every session starts from a fresh progression state** and nothing persists. Flipping it is a separate change with its own test pass. |
 | 5 | Cold boot to playable meets the load-time target, all modes | R7, H8 |
 | 6 | Crash + funnel telemetry in dashboards, cohorted by wave | R9 ✅ *(client emits `invite_wave`; the dashboards themselves are still to build in PostHog)* |
 | 7 | Zero public review surface | structural — Playtest configuration, already true |

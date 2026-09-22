@@ -225,6 +225,14 @@ namespace CosmicShore.Gameplay
             // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
             if (crystal) crystal.SetEmbeddedIn(this);
 
+            // The ELEMENT gets the last word on this lifeform's FORM, and it has to get it
+            // here: the crystal that carries the element was resolved two lines up, and
+            // BindEmbeddedParts on the next line stamps the prefab's own prisms. A form
+            // applied after that leaves the SEED prism at the pre-element size while
+            // everything grown afterwards expresses the element - the same ordering argument
+            // Flora.ApplyCellPrismScale records. See Flora.OnElementResolved.
+            OnElementResolved();
+
             BindEmbeddedParts();
 
             // The ELEMENT gets the last word on the cadence - after the prefab, after the
@@ -448,6 +456,20 @@ namespace CosmicShore.Gameplay
         /// overrides afterwards.</para>
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
+
+        /// <summary>
+        /// Called once during <see cref="Initialize"/>, after the crystal carrying this
+        /// lifeform's ELEMENT has been resolved and BEFORE the prefab's own prisms are bound
+        /// and stamped. The hook for anything whose value is a function of the element and has
+        /// to be in place before the first prism exists - today, the flora leaf form
+        /// (<c>Flora.OnElementResolved</c> -> <c>FloraElementalForm</c>).
+        ///
+        /// <para>Base does nothing, deliberately: <b>fauna are not plants.</b> The elemental
+        /// FORM laws are written about the food web's mass, and a creature's body prisms are
+        /// not that - the same reason <see cref="ResolveShieldPeriod"/> is overridden on
+        /// <c>Flora</c> rather than here.</para>
+        /// </summary>
+        protected virtual void OnElementResolved() { }
 
         IEnumerator ShieldRegenCoroutine()
         {

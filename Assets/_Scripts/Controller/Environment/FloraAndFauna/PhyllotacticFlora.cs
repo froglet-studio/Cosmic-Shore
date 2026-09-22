@@ -413,6 +413,29 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// The ASSEMBLY half of the Mass/Space law (<c>Flora.ElementalReachScale</c>): this
+        /// family's length lives in its own segment and whorl geometry, not in its leaf - it
+        /// reads <c>LeafSize.x/y</c> as a CROSS-SECTION only - so the leaf transform alone
+        /// could never make a Space plant reach further or a Mass plant draw in. Scaling the
+        /// two extent fields is what lets "Space trades cumulative prism volume for the
+        /// bounding volume of the assembly" mean anything here.
+        ///
+        /// <para>Applied ONCE, at the element hook, on top of whatever the species authored.
+        /// It introduces no constant of its own: the reach scale is the inverse cube root of
+        /// the leaf volume scale, i.e. a plant spending a fixed amount of material.</para>
+        /// </summary>
+        protected override void OnElementResolved()
+        {
+            base.OnElementResolved();
+
+            float reach = ElementalReachScale;
+            if (Mathf.Approximately(reach, 1f)) return;
+
+            segmentLength *= reach;
+            whorlRadius *= reach;
+        }
+
         // The scale the next AddHealthBlock should apply. Flora.AddHealthBlock stamps every prism
         // with the one leafSize; this flora shapes its prisms per ROLE (stem vs leaf) and per
         // depth, so it overrides that stamp for the prism it is currently placing.

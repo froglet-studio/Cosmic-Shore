@@ -2162,19 +2162,35 @@ namespace CosmicShore.Gameplay
             {
                 if (CellConfigs == null) return null;
                 for (int i = 0; i < CellConfigs.Count; i++)
-                {
-                    var cfg = CellConfigs[i];
-                    if (!cfg || cfg.EnvironmentPrefab != null) continue;
-
-                    var profile = cfg.SpawnProfile;
-                    // No profile at all is as bare as it gets.
-                    if (!profile) return cfg;
-                    if (profile.SupportedFloras is { Count: > 0 }) continue;
-                    if (profile.SupportedFaunas is { Count: > 0 }) continue;
-                    return cfg;
-                }
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return CellConfigs[i];
                 return EnvironmentFreeConfig;
             }
+        }
+
+        /// <summary>
+        /// Does THIS config grow nothing — no authored <c>EnvironmentPrefab</c> and a
+        /// <c>SpawnProfile</c> listing no flora and no fauna? The one-config half of
+        /// <see cref="BareCanvasConfig"/>, split out because a second reader arrived that asks
+        /// about a config it already has rather than searching for one.
+        ///
+        /// <para>It is the answer to a question <c>EnvironmentPrefab == null</c> looks like it
+        /// answers and does not: that field says how a world is BUILT (laid up front, or grown),
+        /// and MOST environment-free configs are not empty at all — the Lattice cell IS twelve
+        /// colonies, the Arboretum IS sixteen specimens, and every Rampage, Tollway and Wrecking
+        /// Ball cell grows its whole forest. Docs/ECOSYSTEM.md §36.10's rule, met by its third
+        /// reader.</para>
+        /// </summary>
+        public static bool IsBareCanvas(CellConfigDataSO config)
+        {
+            if (!config || config.EnvironmentPrefab != null) return false;
+
+            var profile = config.SpawnProfile;
+            // No profile at all is as bare as it gets.
+            if (!profile) return true;
+            if (profile.SupportedFloras is { Count: > 0 }) return false;
+            if (profile.SupportedFaunas is { Count: > 0 }) return false;
+            return true;
         }
 
         // ── Satellite cells ──────────────────────────────────────────────────

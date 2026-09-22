@@ -110,3 +110,4 @@ Assets/_Recovery.meta
 mono_crash.*
 unity-editmode-*.log
 Tools/tmp_*.cs
+.claude/worktrees/
