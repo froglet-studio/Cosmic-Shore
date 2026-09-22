@@ -209,6 +209,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             BuildUI();
             RegisterCommand(FrameCapCommand, HandleFrameCapCommand);
             RegisterCommand(DiagCommand, HandleDiagCommand);
+            RegisterCommand(RenderersCommand, HandleRenderersCommand);
         }
 
         void OnDestroy()
@@ -216,6 +217,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RestoreFrameCap();
             UnregisterCommand(FrameCapCommand);
             UnregisterCommand(DiagCommand);
+            UnregisterCommand(RenderersCommand);
             DisposeRecorders();
             if (_instance == this) _instance = null;
         }
@@ -229,6 +231,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         int _savedVSync, _savedTargetFrameRate;
 
         const string DiagCommand = "diag";
+
+        // ── renderer census ──────────────────────────────────────────────
+        // On demand only: see RendererCensus for why it is never sampled on a timer.
+        const string RenderersCommand = "renderers";
+        RendererCensus _lastCensus;
+
+        string HandleRenderersCommand(string[] args)
+        {
+            _lastCensus = RendererCensus.Take();
+            return _lastCensus.Describe();
+        }
 
         /// <summary>
         /// <c>diag [label] [seconds]</c> — start a timed recording, TAGGED. The label is what
@@ -476,6 +489,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "SetPass", Col(White, RInt(_setPass).ToString()));
                 Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
                 Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
+                Row(la, va, "Renderers", _lastCensus == null
+                    ? Col(Dim, "type 'renderers'")
+                    : Col(White, _lastCensus.Summary()) +
+                      Col(Dim, $" ({Time.unscaledTime - _lastCensus.takenAt:F0}s ago)"));
 
                 // Instanced prism path (Entities Graphics): ON ⇒ draw calls should decouple
                 // from prism count; OFF (reason) explains why they don't. See PrismRenderService.
@@ -785,6 +802,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             // Computed AFTER avgFrameMs/avgFps are filled in below? No — they are filled in the
             // `if (n > 0)` block further down, so the verdict is assigned there instead. See
             // the ordering note at that site.
+            // Taken AFTER sampling stopped, so its own cost can never land in the run's frames.
+            r.renderers = _lastCensus = RendererCensus.Take();
             r.frameCapVSync = QualitySettings.vSyncCount;
             r.frameCapTarget = Application.targetFrameRate;
             r.allocMB = Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024);
@@ -858,6 +877,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
                           $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
+            if (r.renderers != null) sb.AppendLine($"renderers {r.renderers.Describe()}");
             sb.AppendLine($"spikes ({r.spikes?.Count ?? 0}):");
             if (r.spikes != null)
                 foreach (var s in r.spikes)
@@ -1136,6 +1156,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             /// </summary>
             public int frameCapVSync, frameCapTarget;
             public float idleMs;
+
+            /// <summary>
+            /// The culling population at the end of the run. Draw calls turned out to cost
+            /// ~0.2 ms of a 57 ms frame; renderer COUNT is what culling and the render-job
+            /// wait scale with, and no report recorded it.
+            /// </summary>
+            public RendererCensus renderers;
 
             public List<DiagSpike> spikes;
         }

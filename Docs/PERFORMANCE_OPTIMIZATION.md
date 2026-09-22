@@ -904,6 +904,106 @@ reading **and a negative control** (24.5 ms CPU vs a real 40 ms GPU still reads
 
 ---
 
+### 0.11.6 THE FRAME, ATTRIBUTED — draws cost ~0.2 ms; the cost is renderer COUNT and instantiation (2026-09-22)
+
+One Profiler frame of the Lattice boot world, Editor, Deep Profile OFF, main thread
+**57.64 ms**. Every row below is read off that capture; the full tree was expanded to
+the leaves.
+
+```
+EditorLoop                                   4.65 ms           (free in a player)
+PlayerLoop                                  52.58 ms  113.9 KB
+├─ RenderPlayModeViewCameras                24.13 ms      0 B
+│  ├─ DoRenderLoop_Internal                 12.54
+│  │  ├─ RenderSingleCameraInternal (cull)   8.04
+│  │  │  └─ CullScriptable → CreateSharedRendererScene
+│  │  │     → EndRenderQueueExtraction       5.63
+│  │  │        ├─ ExecuteRenderQueueJob      3.00  (worker, 2 calls)
+│  │  │        └─ Idle                       2.11  ← main thread blocked
+│  │  └─ Submit → ExecuteRenderGraph         4.17
+│  │     ├─ DrawOpaqueObjects                3.20  (of which Idle 3.07)
+│  │     ├─ DrawScreenSpaceUI                0.46
+│  │     ├─ Bloom                            0.24
+│  │     └─ DrawTransparentObjects           0.05  ←←
+│  └─ Gfx.EndAsyncJobFrame                  11.53
+│     └─ WaitForRenderJobs → Idle            8.99  ← main thread blocked
+└─ UpdateScene                              28.44 ms  113.9 KB
+   └─ ScriptRunBehaviourUpdate              11.46     57.3 KB
+      └─ AssembledFlora.Update()             6.20     36.3 KB  (705 calls, self 1.75)
+         └─ Instantiate                      3.60     26.6 KB  (10 calls)
+            ├─ Produce 1.25 · Copy 1.21 · Awake 1.10
+```
+
+#### The draw-call thread is closed
+
+**`DrawTransparentObjects` = 0.05 ms.** The 2,401 transparent draws §0.11.5 found are
+0.09% of the frame. `DrawOpaqueObjects`' real submission is 0.13 ms (3.20 less 3.07
+idle). Total draw submission for the whole scene is **~0.2 ms** — so the transparent-
+queue investigation, the SnowMaterial/SpindleMaterial conversions §0.11.5 proposed and
+then refused, and any further batching work are all levers on a number that does not
+matter. Three independent measurements now agree (the 0.042 µs/draw arithmetic, the
+Frame Debugger's opaque/transparent split, and this Hierarchy).
+
+#### Where the render block actually goes
+
+**14.17 ms of the 24.13 is `Idle`** — 8.99 + 3.07 + 2.11, the main thread parked at
+`WaitForJobGroupID`. That is a quarter of the whole main-thread frame spent waiting on
+worker jobs, and the jobs are render-queue extraction (culling) and the graphics jobs.
+**Both scale with how many `Renderer`s are enabled on active GameObjects** — not with
+draws, entities or triangles.
+
+Instanced prisms are not in that population: on the BRG path their GameObject renderer
+is disabled and Entities Graphics culls them separately (and §0.10 measured that path at
+515 draws for 103,823 entities). What IS in it is everything hung off a prism as a
+GameObject — **one `Spindle` per grown child prism** (`AssembledFlora.cs:571`, 1–2
+renderers each; the gyroid's branch is a mirrored pair), plus `SnowChanger`'s cytoplasm
+shards (`round(4/3·π·1200³ / 120³)` = **4,189**), plus hearts and environment.
+
+*Not yet measured:* the actual renderer count. `DiagnosticsHUD` now answers it — console
+**`renderers`**, which also writes a Render-section row, and every saved diagnostic
+records the census taken after sampling stops (`RendererCensus`). It reports enabled /
+disabled / visible, the renderer-type split, and the eight material groups that own the
+most enabled renderers, which names the spindles and the snow directly. It is on demand
+only: a `FindObjectsByType` over tens of thousands of objects is a spike of its own, so
+sampling it on a timer would corrupt the frames the HUD reports.
+
+#### The instantiate cost, and the part of it that was free
+
+`AssembledFlora.Update()` at 6.20 ms is the largest game-code row. Its 1.75 ms self time
+across 705 calls is mostly per-invoke profiler overhead (line 1 returns when
+`pendingSpawns` is empty). The real cost is **`Instantiate` — 3.60 ms for 5 prisms + 5
+spindles, ~720 µs per growth step** — and `Instantiate.Copy` (1.21 ms, 105 `GC.Alloc`)
+is dominated by UnityEvent persistent-call serialization.
+
+Part of that was two dead components on every lattice prism: an `EventListenerNoParam`
+pair wiring `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` to
+`Prism.ReturnToPool`, whose only raiser (`ShapeDrawingManager`) was deleted in C15.
+Zero C# references either event. **Stripped 2026-09-22 from all 8 carriers — 15
+components:** `SpawnablePrism`, `ShieldedSpawnablePrism`, `GyroidBlock Variant`,
+`MassGyroidBlock Variant`, `SchwarzPBlock Variant`, `QuasicrystalBlock Variant`,
+`SpaceGyroidBlock Variant` (which was carrying **four** — its own pair on top of the pair
+inherited from `GyroidBlock Variant`) and `Prisms With Pools/Sparrow Prism` (one). Five
+are prefab variants, where the listeners were `m_AddedComponents` rather than
+`m_Component` entries. Proven offline: document count fell by exactly the number
+removed, the same-file dangling-reference set is unchanged against `HEAD` on every file,
+no project file references either event guid afterwards, and the only nesting of a carrier
+(`SpaceGyroidBlock` → `GyroidBlock Variant`) references neither of the removed listeners. The event ASSETS are kept (the C15 ruling), and the earlier "do not strip the
+EventListeners" note is superseded — it was a scope boundary for that migration, not a
+functional rule. Expected effect: two fewer UnityEvent lists copied per prism, and
+`EventListenerBase.Awake()` ×10 gone from every growth step. **Re-measure it** — the
+saving is an estimate from `Instantiate.Copy`'s share, not a number.
+
+#### What is left, by size
+
+| Lever | Cost it attacks | Status |
+|---|---|---|
+| Spindle renderer count (~one per lattice prism) | culling + render-job wait, most of 14 ms idle + 5.6 ms extraction | **needs the census first** — then a design: distance LOD on spindle renderers, or moving spindles onto the instanced path |
+| `SnowChanger.shardDistance` 120 → 200 | 4,189 → 905 renderers | visual-density call, not taken |
+| Per-growth-step `Instantiate` (~720 µs) | 3.6 ms of `AssembledFlora.Update` | pooling prism+spindle pairs would remove Produce/Copy/Awake together |
+| Dead SOAP listeners | part of `Instantiate.Copy` | **done** (above) |
+
+---
+
 ## 0.8 CAPTURE A + A2 — the boot world, MEASURED (2026-09-10)
 
 Two spike frames captured off a 10-minute Menu_Main sit (Lattice boot world), in
