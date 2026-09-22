@@ -279,6 +279,22 @@ Shipped solo library, by what it is an angle ON:
 
 Plus three PAIR concepts — see below.
 
+### Every library claim is checked against the SHIPPED ASSET, not just the defaults
+
+`ApplyDefaults` is what runs in a clone with no asset; `Resources/ScreenshotDirectorConfig` is what
+runs in the game. They are two different libraries, and a test that builds
+`CreateInstance().ApplyDefaults()` proves its invariant about the one nobody plays.
+
+So the three claims ABOUT the library — exactly one banded concept, no azimuth gap over 5°, the
+mark threshold reachable — are each written as **one predicate** run over **both** libraries
+(`EveryShippedLibrary`), and a failure names which one broke. The behaviour tests keep using the
+throwaway defaults instance, because they mutate it (weights to zero, the mark switched off) and
+the authored asset is a live project file; the library predicates are read-only, which is what
+makes pointing them at it safe at all.
+
+This is `Docs/VESSEL_VISION.md`'s own recorded trap, one subsystem over: *a number read off a
+ScriptableObject's field initializer is not the number the game runs on.*
+
 ### The library is checked for GAPS, not just for length
 
 A concept is an azimuth range, so a set of them either **wraps the subject or leaves holes in it**.

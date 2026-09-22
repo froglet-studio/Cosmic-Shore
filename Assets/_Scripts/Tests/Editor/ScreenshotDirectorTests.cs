@@ -254,10 +254,19 @@ namespace CosmicShore.Tests
             if (vision == null || !vision.Enabled)
                 Assert.Ignore("No shipped vision-band asset to measure against.");
 
-            float nearEdge = vision.NearFadeStart;
+            foreach (var library in EveryShippedLibrary())
+                AssertOneBandedConcept(library, vision.NearFadeStart);
+        }
+
+        /// <summary>
+        /// The predicate, written ONCE so the defaults and the authored asset are held to the same
+        /// bar rather than to two copies of it that can drift apart.
+        /// </summary>
+        static void AssertOneBandedConcept(Library library, float nearEdge)
+        {
             var crossers = new System.Collections.Generic.List<string>();
 
-            foreach (var concept in _config.concepts)
+            foreach (var concept in library.Concepts)
             {
                 if (concept.framing != ScreenshotFramingKind.Solo) continue;   // a pair's band is a FLOOR
                 if (Mathf.Max(concept.distance.x, concept.distance.y) > nearEdge)
@@ -265,12 +274,52 @@ namespace CosmicShore.Tests
             }
 
             Assert.That(crossers.Count, Is.EqualTo(1),
-                $"exactly one solo concept may photograph a banded hull; these do: " +
-                string.Join(", ", crossers));
+                $"[{library.Name}] exactly one solo concept may photograph a banded hull; these " +
+                "do: " + string.Join(", ", crossers));
             Assert.That(crossers[0].ToLowerInvariant(), Does.Contain("banded"),
-                $"'{crossers[0]}' crosses the vision band at {nearEdge}u without saying so in its " +
-                "name — either cap it or name it, so a reader of the library can tell the " +
-                "deliberate silhouette shot from an accident.");
+                $"[{library.Name}] '{crossers[0]}' crosses the vision band at {nearEdge}u without " +
+                "saying so in its name — either cap it or name it, so a reader of the library can " +
+                "tell the deliberate silhouette shot from an accident.");
+        }
+
+        // ───────────────────── the libraries under test ─────────────────────
+
+        /// <summary>One named concept library, so a failure says WHICH one broke the invariant.</summary>
+        readonly struct Library
+        {
+            public readonly string Name;
+            public readonly System.Collections.Generic.List<ScreenshotConcept> Concepts;
+            public Library(string name, System.Collections.Generic.List<ScreenshotConcept> concepts)
+            {
+                Name = name;
+                Concepts = concepts;
+            }
+        }
+
+        /// <summary>
+        /// The C# defaults AND the authored asset, because they are two different libraries and
+        /// the game runs the second one. Every behaviour test in this file mutates
+        /// <c>_config</c> — weights to zero, the mark switched off — so those must stay on the
+        /// throwaway defaults instance; but a claim ABOUT the library (what it can frame, which
+        /// angles it covers, whether the mark is reachable) is only worth anything if it holds
+        /// for the asset <see cref="ScreenshotDirectorConfigSO.Resolve"/> will actually load.
+        ///
+        /// <para>This is the trap <c>Docs/VESSEL_VISION.md</c> records against itself, one
+        /// subsystem over: <i>a number read off a ScriptableObject's field initializer is not the
+        /// number the game runs on.</i> Proving an invariant against <see cref="ApplyDefaults"/>
+        /// alone is proving it about a code path that only runs in a clone with no asset.</para>
+        ///
+        /// <para>The asset is read and never written — the invariants below are all read-only,
+        /// which is what makes it safe to point them at a live project asset at all.</para>
+        /// </summary>
+        System.Collections.Generic.IEnumerable<Library> EveryShippedLibrary()
+        {
+            yield return new Library("code defaults", _config.concepts);
+
+            var authored = Resources.Load<ScreenshotDirectorConfigSO>(
+                ScreenshotDirectorConfigSO.ResourcePath);
+            if (authored != null && authored.concepts != null && authored.concepts.Count > 0)
+                yield return new Library(authored.name, authored.concepts);
         }
 
         /// <summary>
@@ -285,10 +334,17 @@ namespace CosmicShore.Tests
         [Test]
         public void Defaults_LeaveNoLargeGapInTheAnglesTheLibraryShootsFrom()
         {
+            foreach (var library in EveryShippedLibrary())
+                AssertNoLargeAzimuthGap(library);
+        }
+
+        /// <summary>The coverage predicate, written ONCE — see <see cref="AssertOneBandedConcept"/>.</summary>
+        static void AssertNoLargeAzimuthGap(Library library)
+        {
             const float MaxGapDegrees = 5f;
 
             var picked = new System.Collections.Generic.List<Vector2>();
-            foreach (var concept in _config.concepts)
+            foreach (var concept in library.Concepts)
             {
                 if (concept.framing != ScreenshotFramingKind.Solo) continue;
                 if (concept.worldAligned) continue;                       // not an angle ON the ship
@@ -298,7 +354,8 @@ namespace CosmicShore.Tests
                 picked.Add(new Vector2(lo, hi));
             }
 
-            Assert.That(picked.Count, Is.GreaterThan(0), "no concept picks an angle on the subject");
+            Assert.That(picked.Count, Is.GreaterThan(0),
+                $"[{library.Name}] no concept picks an angle on the subject");
 
             int worstRun = 0;
             int run = 0;
@@ -311,7 +368,7 @@ namespace CosmicShore.Tests
             }
 
             Assert.That(worstRun, Is.LessThanOrEqualTo(Mathf.CeilToInt(MaxGapDegrees)),
-                $"the library cannot photograph the subject from {worstRun} degrees of arc " +
+                $"[{library.Name}] cannot photograph the subject from {worstRun} degrees of arc " +
                 $"ending at azimuth {worstAt} (0 = ahead, 180 = behind)");
 
             bool Covered(int degree)
@@ -361,19 +418,27 @@ namespace CosmicShore.Tests
         {
             _config.markDistantVessels = true;
 
-            AssertMarks("Establishing (banded hull)", true);
-            AssertMarks("Telephoto Isolation", true);
-            AssertMarks("Duo Long Lens", true);
-            AssertMarks("Top Down", false);
-            AssertMarks("Static Tracking Cam", false);
-            AssertMarks("Underside Pass", false);
-
-            void AssertMarks(string name, bool expected)
+            foreach (var library in EveryShippedLibrary())
             {
-                var concept = _config.concepts.Find(c => c.name == name);
-                Assert.NotNull(concept, $"'{name}' is missing from the shipped library");
+                AssertMarks(library, "Establishing (banded hull)", true);
+                AssertMarks(library, "Telephoto Isolation", true);
+                AssertMarks(library, "Duo Long Lens", true);
+                AssertMarks(library, "Top Down", false);
+                AssertMarks(library, "Static Tracking Cam", false);
+                AssertMarks(library, "Underside Pass", false);
+            }
+
+            // Resolved against the DEFAULTS instance on purpose: the veto is the concept's and the
+            // threshold is the config's, so asking the mutable instance about a concept from the
+            // authored asset is exactly the composition the director performs, and it keeps the
+            // test from writing to a live project asset.
+            void AssertMarks(Library library, string name, bool expected)
+            {
+                var concept = library.Concepts.Find(c => c.name == name);
+                Assert.NotNull(concept, $"[{library.Name}] '{name}' is missing");
                 Assert.That(_config.TryResolveMarkDistance(concept, out _), Is.EqualTo(expected),
-                    $"'{name}' should {(expected ? "mark" : "decline the mark")}");
+                    $"[{library.Name}] '{name}' should " +
+                    (expected ? "mark" : "decline the mark"));
             }
         }
 
@@ -399,9 +464,16 @@ namespace CosmicShore.Tests
         {
             Assert.IsTrue(_config.TryResolveMarkDistance(null, out float threshold));
 
+            foreach (var library in EveryShippedLibrary())
+                AssertMarkThresholdIsReachable(library, threshold);
+        }
+
+        /// <summary>The reachability predicate, written ONCE — see <see cref="AssertOneBandedConcept"/>.</summary>
+        static void AssertMarkThresholdIsReachable(Library library, float threshold)
+        {
             int marks = 0;
             int spares = 0;
-            foreach (var concept in _config.concepts)
+            foreach (var concept in library.Concepts)
             {
                 if (concept.framing != ScreenshotFramingKind.Solo) continue;
                 float lo = Mathf.Min(concept.distance.x, concept.distance.y);
@@ -414,9 +486,11 @@ namespace CosmicShore.Tests
             }
 
             Assert.That(marks, Is.GreaterThan(0),
-                $"no solo concept can reach {threshold}u, so the mark never appears in a capture");
+                $"[{library.Name}] no solo concept can reach {threshold}u, so the mark never " +
+                "appears in a capture");
             Assert.That(spares, Is.GreaterThan(0),
-                $"every solo concept starts past {threshold}u, so every capture is a silhouette");
+                $"[{library.Name}] every solo concept starts past {threshold}u, so every capture " +
+                "is a silhouette");
         }
 
         [Test]
