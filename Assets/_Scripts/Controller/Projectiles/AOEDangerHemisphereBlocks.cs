@@ -13,6 +13,9 @@ namespace CosmicShore.Gameplay
 {
     public sealed class AOEDangerHemisphereBlocks : AOEExplosion
     {
+        /// <summary>This blast LAYS prisms - see <see cref="AOEExplosion.CreatesMass"/>.</summary>
+        public override bool CreatesMass => true;
+
         [Header("Config")]
         [SerializeField] private DangerHemisphereConfigSO config;
 
