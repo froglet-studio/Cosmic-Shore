@@ -39,6 +39,7 @@ remembered:
 | SchwarzP | `AssembledFlora` (+`SchwarzPAssembler`) | `AssemblyBranch` |
 | Quasicrystal | `AssembledFlora` (+`QuasicrystalAssembler`) | `QuasicrystalBranch` |
 | Borromean | `BorromeanFlora` | `Branch` |
+| MandelbulbFlora, CoralBloomFlora, WatershedFlora, ApolloniaFlora | `MandelbulbFlora` — **all four**, measured; there is no `CoralBloomFlora` class, the species differ only in their authored `GrowthRules` (`Docs/ECOSYSTEM.md` §50, §52, §53, §54, §55, §56) | `Branch` |
 | Wall | `AssembledFlora` | `AssemblyBranch` |
 | **Seaweed** | **`SegmentSpawner` — NOT a `Flora` at all** | (n/a) |
 | **oldWallFlora** | **`GyroidAssembler` — not a `Flora` either** | (n/a) |
@@ -73,6 +74,31 @@ plus the heart, and assert one component every time.
 `borromean_surface.connected_prefixes` is the worked example; its negative control is the
 ordering it replaced (orbits sorted by RADIUS), which measured **up to 3 components**.
 
+**(c) AND A BOND HAS TO BE A BOND — connectivity alone cannot see a WIRE.** Give every
+curve or patch the heart as its parent with no connector between them and both properties
+above still hold: the plant is a formally connected STAR whose limbs each span most of it.
+So measure the bond LENGTH too, priced in the species' own stride (its walk step, its ring
+chord, its lane gap), and gate the worst. On the Mandelbulb family that row is what caught
+a gasket ring stemming from its parent disc's CENTRE while the prism it hung off sat on
+that disc's RIM — 15.2 strides against a shipped worst of 4.7 (`Docs/ECOSYSTEM.md` §55.2).
+
+**Two more traps the same family paid for, both of which outlive it:**
+
+- **A GREEDY PICK OVER A SYMMETRIC POINT SET IS DECIDED BY FLOAT WIDTH.** If the growth
+  order comes from a spanning tree, a nearest-neighbour search or any other greedy choice,
+  a symmetric surface puts candidates at distances equal to the LAST BIT — measured, four
+  of one bulb's saddles sat at exactly 0.847114625 — and the shipped float32 and the
+  offline float64 model then grow visibly DIFFERENT plants from one seed while every
+  statistical gate stays green. Use a tolerant compare plus an INDEX tie-break, and make
+  every ordering a TOTAL key (`Docs/ECOSYSTEM.md` §54, §55.2).
+- **WHEN A CURVE GAINS A PROLOGUE, EVERY GATE THAT SAYS "THE CURVE'S FIRST" ANSWERS ABOUT
+  THE PROLOGUE.** Adding connectors broke six gates at once that had nothing to do with
+  connectors: an arm census keyed on a curve's first prism, lane shares that counted every
+  prism's lane, and every Fall statistic that separated free space from surface with a
+  field test. Hand the consumer a CONNECTOR flag out of the growth rule (beside the parent
+  — neither belongs in the address, or the pose stops being a pure function of one row),
+  and put it on the wire so the verifier PROVES the split instead of trusting a label.
+
 **What NOT to do.** Do not order a table by distance from the centre and call it "outward
 from the heart". On any surface that wraps — and a compact or periodic one always does —
 a radius shell is several disconnected rings. Order by HOP DISTANCE over the species' own
@@ -94,6 +120,7 @@ does not:
 | `AssembledFlora` / quasicrystal | at the prism, prism's rotation | `QuasicrystalBranch`: mirrored pair along ±x | the strut ✅ |
 | `AssembledFlora` / **Schwarz P** | at the prism, prism's rotation | `AssemblyBranch`: a **SINGLE off-centre arm** along local −y (0.5 → 6.7 units) | points wherever that prism's −y happens to face ⚠ **known weak case — do not copy it** |
 | `BorromeanFlora` | at the **PARENT**, aimed at the child, stretched to the bond | `Branch` | the limb IS the bond ✅ |
+| the **Mandelbulb family** (4 species) | at the nearest **STANDING ancestor**, aimed at the prism, stretched to the bond | `Branch` | the limb IS the bond ✅ — and the ancestor WALK is the part to copy: a species whose claim can refuse a prism cannot hang the next one off a parent that was never laid (`Docs/ECOSYSTEM.md` §55) |
 
 **Rules that come out of that table.**
 
@@ -236,6 +263,26 @@ Two measured decisions from the Borromean fit, both of which beat a uniform shri
   the shield limit, a square footprint covered **22.5%** of the membrane with octahedra
   against **15.6%** at the anchor's aspect.
 
+**THE REACH — §51's other clause, and the one most likely to be declined by mistake.** A
+Space plant reaches `volume^(-1/3)` = ×1.35 and a Mass plant draws in to ×0.82, on whatever
+field carries the species' EXTENT. `Flora.ElementalReachScale` returns 1 for a species exempt
+from the leaf law on the stated grounds that *a family whose leaf IS its strut needs nothing,
+because the anisotropy already lengthened it* — **that is true of the STRUT and false of the
+PLANT.** The Mandelbulb family inherited the exemption and grew four plants of the same size
+for its whole life (8% extent spread, against the Borromean's 2×). Before you accept the
+exemption, ask which of the two the clause was written about.
+
+Taking it is not free where extent and leaf are the SAME dial, and three ways to pay fail
+instructively (`Docs/ECOSYSTEM.md §56`): scaling the shell alone is a SIMILARITY that
+equalises every element's plant volume; scaling POSITIONS alone DASHES the long-reaching
+element and FUSES the compact one, because a prism's length IS the walk's step; and paying
+UNIFORMLY on both cross axes — which is volume-exact and looks obviously right — made **MASS
+LESS CUBIC**, because a compact element's shrink lands on the axis that was already its
+smallest while the pay grows the one that was already largest. What works is paying on the
+**THINNEST** cross axis, where the heavy element's growth pulls the axes together and the
+light one's shrink drives them apart: one rule, each element more itself, volume exact.
+**When a pay can land on any of several free axes, the axis is not a detail.**
+
 **Where the per-element plate LIVES depends on whether it is a preference or a
 measurement.** Ordinarily it goes in each config's `FloraVariantTuning.LeafSize`, which
 `Flora.ApplyVariantTuning` reads BEFORE `Initialize`, so the prefab's own seed prism gets it
@@ -317,6 +364,50 @@ nowhere" claim is true only on the date it was written*.
 
 ## 7.1 ADOPTING a species into a cell
 
+**A cell may be a COLLECTION rather than a forest**, and then the population IS the design:
+the Arboretum holds `MaxLivePopulation 1` on each of twenty configs — five species in four
+elements — which is a cap and
+never a cull: the plant keeps its authored growth quota, cannot spend it while it is the
+only one of its kind alive, and the seeder's whole remaining job is extinction recovery. Two
+rules for any such cell (`Docs/ECOSYSTEM.md §57`): **quote the per-plant budget, never
+re-author it** (on a lattice or a surface species a budget is GEOMETRY, so cutting it ships a
+truncated specimen — the Lattice cell may cut a lattice plant to 30 prisms only because a
+lattice plant is a TILE), and **read every other per-element field verbatim off the canonical
+`_SO_Assets/Lifeforms` asset**, because those are the element palette and a fork is two
+sources of truth for one plant's shape.
+
+**And if the species already has a per-cell DEPLOYMENT table, use it rather than authoring a
+second copy.** The Borromean four in that cell are not authored by the cell's generator at
+all: `author_borromean_flora_assets.py` owns that species' configs in every cell that grows
+it, so its `DEPLOYMENTS` row says only *seed, cap, band* and the cell's generator READS the
+four it wrote — GUIDs off their own `.meta`, budget and plate through that tool's own table
+reader. Two owners for one asset is the trap §2 is about; a cell that quotes instead is a
+cell a leaf refit cannot leave stale. **Check the handoff rather than assuming it**: a
+`SupportedFloras` entry pointing at a GUID nothing owns resolves to no config at all and grows
+nothing, SILENTLY — so fail by name, and say which tool closes it.
+
+**The ORDER is species generator → heart sizer → cell generator, and the middle step is easy to
+skip.** A species generator reads an existing heart back rather than inventing one, so a config
+it has just CREATED gets `HeartWorldScale: 0` — the sentinel that falls through to
+`ElementalCrystalSet.defaultHeartWorldScale` and silently stops tracking body size, which is
+exactly the non-monotone defect `author_lifeform_heart_sizes.py` exists to fail the build on.
+That tool finds the new configs on its own (it resolves a cell-config variant by prefab GUID),
+so the fix is one `--write` — but nothing prompts you, and the species generator's own `--check`
+goes green either way because it is quoting the zero faithfully.
+
+Two traps from authoring one, both about IDENTITY:
+
+* **A species key with a SPACE in it can never match a de-spaced name.**
+  `author_lifeform_heart_sizes.py` resolves a cell-config variant by prefab GUID and a
+  canonical one by asset NAME through `species_of`, which strips spaces — so `"Coral Bloom"`,
+  its only two-word key, missed, and those four canonical assets had never been sized by the
+  tool that owns their heart. *When one script resolves the same identity two ways, the two
+  will disagree, and the name-based half fails silently.*
+* **`EnvironmentPrefab == null` is how a world is BUILT, never what it CONTAINS.** Most
+  environment-free configs grow a whole world (Lattice, Arboretum, every Rampage, Tollway and
+  Wrecking Ball cell). Ask `Cell.IsBareCanvas` instead — §36.10's rule, now on its third
+  reader.
+
 The cheap-looking half is the `SupportedFloras` entry. Four things are not cheap, and each
 has cost a real pass:
 
@@ -357,7 +448,14 @@ verify_<species>_tables.py      # re-proves the SHIPPED table from the points al
 author_<species>_assets.py      # prefab + 4 configs + registry wiring; --check
 author_lifeform_heart_sizes.py  # owns HeartWorldScale for the whole fleet
 author_flora_populations.py     # owns the population numbers (unless OWNED_ELSEWHERE)
+author_<cell>_cell.py           # a cell built FROM a species; grows it to size its ladder
 ```
+
+* **The ORDER matters and is not obvious**: `author_lifeform_heart_sizes.py` writes both the
+  canonical `Lifeforms` assets AND every copy under `Cell Configs`, while a cell generator
+  READS the canonical heart back. Run the heart sizer first, then the species generator, then
+  the cell's — and re-run all three `--check`s, because a cell that copies a stale heart makes
+  the disagreement visible for the first time rather than causing it.
 
 * **`--check` must read the DISK.** A `--check` that re-runs the in-memory validation and
   prints "no files written" passes whatever the assets actually say.

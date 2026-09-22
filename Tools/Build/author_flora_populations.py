@@ -180,6 +180,13 @@ OWNED_ELSEWHERE = {
     "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
     "Garland ": ("prefix", "Tools/Build/author_garland_cell.py"),
     "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
+    # The Mandelbulb family: four species on one growth rule, each with a MEASURED
+    # per-element budget, so their own generator owns the populations wherever the config
+    # lives.  Matched as a SPECIES (never a prefix) for the reason stated above.
+    "Mandelbulb": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
 }
 
 
