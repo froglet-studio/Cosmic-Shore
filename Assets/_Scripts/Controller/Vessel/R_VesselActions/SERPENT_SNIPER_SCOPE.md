@@ -212,8 +212,8 @@ for the retired Steady Eye bleed; round 4 removed the bleed and the field with i
 | `cooldownSeconds` | 12 | wait between shots at resting Charge — the ability's whole cost |
 | `cooldownMultiplierAtFullCharge` | 0.45 | → 5.4 s at Charge 10 |
 | `rangeUnits` | 3000 | the whole flight; there is no projectile to outrun |
-| `coneHalfAngleDegrees` | 0.5° | angular half-width of the hitscan — 26.2 u at 3,000 u, ~49 px across at the 22° scope |
-| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past 688 u |
+| `coneHalfAngleDegrees` | 10° | angular half-width of the hitscan — **529 u** at 3,000 u; wider than the eyepiece can show once zoomed (round 9b, authored) |
+| `minPathRadius` | 6 u | radius floor near the muzzle; the angular term takes over past **34 u** (it was 688 u at 0.5°) |
 | `pierceCount` | 3 | prisms a PIERCING round takes; 0 = unlimited |
 | `debrisSpeed` / `debrisSpeedLimit` | 90 / 120 | true-velocity debris and its ceiling |
 | `beamSeconds` | 0.35 s | how long the tracer takes to fade out |
@@ -273,10 +273,12 @@ world distance and a pilot aims in ANGLE.** Anything wide enough to be aimable a
 blunderbuss at 100 u, which is the opposite of a sniper rifle. A bundle of parallel rays — the
 other suggestion — has the same problem plus gaps between the rays, and costs N queries.
 
-So the path is an **angular cone**: `radius(t) = max(minRadius, t · tan(halfAngle))`. At a **0.5°**
-half-angle that is 26.2 u at 3,000 u and, crucially, **the same on-screen size at every range** —
-about 49 px across at the 22° scope, 135 px at full magnification. *That* is what lets the reticle
-be drawn at the beam's true size rather than at a guess, which is the whole of §2 below.
+So the path is an **angular cone**: `radius(t) = max(minRadius, t · tan(halfAngle))`. The property
+that matters is that it is **the same on-screen size at every range**, whatever the angle — *that*
+is what lets the reticle be drawn at the beam's true size rather than at a guess, which is the whole
+of §2 below. The angle shipped at **0.5°** (26.2 u at 3,000 u, ~49 px across at the 22° scope) and
+was raised to **10°** by authored instruction in round 9b, which is 529 u at 3,000 u — see §9b for
+what that costs.
 
 The `minPathRadius` floor (6 u) is not a fudge: a pure cone has **zero** radius at the apex, so
 mass the ship is about to fly into would be missed by the one weapon pointed straight at it. The
@@ -1113,6 +1115,79 @@ That last row is deliberately not a warning, for the reason this file already re
 unconditional "everything checks out" becomes a permanent false positive the day the real defect is
 fixed. **The whole procedure is one switch** — `CSLogChannel.SerpentScope` in FrogletTools >
 Toolbox > Logging.
+
+## Round 9b — "I still see no reticle at all. increase the radius of the sniper shot to 10"
+
+Round 9a answered a size complaint with a **locator** (four fixed 16 px posts, the ring untouched)
+on the reasoning that the fix for a mark too small to see is never to draw it bigger than it is.
+The posts shipped and the report came back **identical**: *"I still see no reticle at all."*
+
+**That is the fourth consecutive round in which a correct change bought no part of the
+complaint**, and this file already records what that means (round 7): *when successive correct
+fixes keep buying diminishing amounts of the same complaint, the defect is one layer below the one
+being fixed.* So this round does two separate things, and they are separate on purpose.
+
+### 1. The weapon's angle, by instruction
+
+`SniperShotAction.asset` — `coneHalfAngleDegrees: 0.5` → **`10`**. This is an authored gameplay
+change, not a UI one, and it is stated plainly rather than folded into the reticle work:
+
+- **The hitscan cone is twenty times wider.** `PrismSpatialIndex.QueryCone` now sweeps a cone of
+  radius **529 u at 3,000 u** where it swept 26.2 u, and the `minPathRadius` floor stops mattering
+  past **34 u** rather than past 688 u. Everything about pierce, super-shield teardown and debris
+  is unchanged; what changed is how much mass one trigger pull can reach.
+- **The eyepiece ring is 82 px at the wide end** (`270 · tan10 / tan30`), against 6 px before —
+  13.7× — and the flight view's is **95 px at the game's default 90° FOV**, against 4.7.
+
+### 2. What the cap now does, which is the honest cost
+
+`ReticleBudgetPixels` caps anything drawn at the eyepiece's optical centre to the petal's measured
+**inradius** (a shaped window cannot bound its own furniture by its bounding box), and round 9a
+took the posts' outer ends out of that budget as well. At 0.5° that cap **never bound**. At 10° it
+binds over most of the dial:
+
+| scope FOV | ring would be | ring is drawn at |
+|---|---|---|
+| 60° (wide end) | 82.5 px | **82.5** |
+| 50° | 102.1 px | **102.1** |
+| ~44° | 117.2 px | **117.2** — the ceiling |
+| 22° (full zoom) | 244.9 px | **117.3**, pinned |
+| 8° (Deep Focus) | 680.8 px | **117.3**, pinned |
+
+So the original request's *"it should grow as the player zooms in"* now holds across roughly the
+**first third** of the trigger's travel and not past it. That pin is not a bug — a 10° cone
+genuinely subtends more than a 540 px window can show once magnified, and a ring that left the
+petal would be a worse lie than one that stops growing. **If it reads badly, the dial to move is
+the weapon's angle; never the cap, which is what keeps the mark inside the shape.**
+
+### 3. The one gap in `SelfCheck`, closed
+
+Every check `SelfCheck` ran was a **construction** fact: canvas enabled, `Graphic.IsActive()`,
+eyepiece size, backing alpha, panel on screen. **Every one of them is satisfied by a window that
+draws perfectly with nothing in it** — which is precisely the report. The eyepiece is a `RawImage`
+subclass and the rings are bare `MaskableGraphic`s, so there is a whole class of failure that takes
+the marks out and leaves the picture untouched, and none of it throws:
+
+- the graphic is **disabled**,
+- its `CanvasRenderer` is **culled** (a mask whose rect does not intersect it),
+- its colour is **transparent**.
+
+`CheckMarkVisible` now tests all three on the reticle ring, its posts and the recharge arc, and
+reports the first fault **unconditionally by name**. A fourth case — a colour that is black against
+a black backing — is deliberately *not* guessed at here: `ResolveTracerColour` falls back to
+**white**, not to a palette field that can author black (`Docs/PALETTE.md` §2.5), which is what
+keeps it off the list.
+
+**What this round does NOT claim.** It does not explain why the marks were invisible. It raises the
+ring from 6 px to 82 and closes the one blind spot in the check that was supposed to catch this, so
+the next report can only be one of two things — *still nothing*, which now means the rings are not
+drawing at all and size was never the cause, or *there it is*. Either answer is progress; a fifth
+round of reading source would not be. `CSLogChannel.SerpentScope` in FrogletTools > Toolbox >
+Logging, and `FrogletTools > Diagnostics > Report On-Screen UI` in play mode, are still the
+separator — and note round 9a's console was being **flooded** by an unrelated per-frame
+`_PrismSightPeer*` array error, which is exactly the shape of thing that buries a once-per-session
+diagnostic line. That spam is fixed (see `Docs/LIT.md`), so the scope's own report is readable now
+in a way it was not when rounds 9 and 9a were played.
 
 ## Drive-by corrections
 

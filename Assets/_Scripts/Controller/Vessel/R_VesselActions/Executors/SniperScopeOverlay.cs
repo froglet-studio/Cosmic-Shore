@@ -1,6 +1,7 @@
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.Gameplay
 {
@@ -40,16 +41,27 @@ namespace CosmicShore.Gameplay
     /// view is not the scope's dial. Two circles the pilot can compare, both of them true.</para>
     ///
     /// <para><b>Each ring is surrounded by four fixed-size POSTS, and that split is round 9a's
-    /// finding.</b> The cone is a half-angle of <b>0.5°</b>, so a ring stating it honestly is about
-    /// <b>6–24 px</b> inside the eyepiece and <b>~8 px</b> over the flight view — a 2 px hairline
-    /// roughly 1% of the window across, over a lit arena. That is the correct measurement and it is
-    /// under the threshold of being noticed, which is exactly how it came back: <i>"still no
-    /// reticle in sight."</i> <see cref="ScopeCrosshairGraphic"/> answers it without touching the
-    /// number: <b>the posts LOCATE and the ring MEASURES</b>. The posts are a fixed pixel length,
-    /// so the mark is always findable whatever the weapon's angle or the zoom; their inner ends sit
-    /// just outside the ring, so they point at it and the whole reticle visibly opens up as the
-    /// pilot zooms in. Nothing about the ring changed — <b>the fix for a mark that is too small to
-    /// see is never to draw it bigger than it is.</b></para>
+    /// finding.</b> At the <b>0.5°</b> half-angle the weapon shipped with, a ring stating it
+    /// honestly was about <b>6–24 px</b> inside the eyepiece and <b>~8 px</b> over the flight view
+    /// — a 2 px hairline roughly 1% of the window across, over a lit arena. That is the correct
+    /// measurement and it is under the threshold of being noticed, which is exactly how it came
+    /// back: <i>"still no reticle in sight."</i> <see cref="ScopeCrosshairGraphic"/> answers it
+    /// without touching the number: <b>the posts LOCATE and the ring MEASURES</b>. The posts are a
+    /// fixed pixel length, so the mark is always findable whatever the weapon's angle or the zoom;
+    /// their inner ends sit just outside the ring, so they point at it and the whole reticle
+    /// visibly opens up as the pilot zooms in. Nothing about the ring changed — <b>the fix for a
+    /// mark that is too small to see is never to draw it bigger than it is.</b></para>
+    ///
+    /// <para><b>Round 9b raised the WEAPON instead, by authored instruction, and that is what the
+    /// ceiling below is now for.</b> <c>coneHalfAngleDegrees</c> went <b>0.5° → 10°</b>, so the
+    /// eyepiece ring is <b>82 px</b> at the wide end of the dial and reaches the petal's own
+    /// inradius at about <b>fov 44</b>, after which it is PINNED at <b>117 px</b> for the rest of
+    /// the zoom. That pin is honest rather than a bug — a 10° cone genuinely subtends more than
+    /// this window can show once magnified — but it does mean the <i>grows as you zoom</i> half of
+    /// the promise now holds over the first third of the trigger's travel and not past it. The cap
+    /// went from a guarantee that never bound to a limit that binds most of the time; if that
+    /// reads badly, the dial to move is the weapon's angle, never the cap, because the cap is what
+    /// keeps the mark inside the shape.</para>
     ///
     /// <para><b>Round 3 drew a reticle over the middle of the screen because the middle of the
     /// screen WAS the scope; this one is not that.</b> It is not centred and it is not a
@@ -350,9 +362,11 @@ namespace CosmicShore.Gameplay
             float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(fieldOfView), halfHeight,
                                          minPixels: 6f);
             // The posts live OUTSIDE the ring, so it is the post's outer end that has to fit the
-            // petal - not the ring's edge. In practice this never binds (a 0.5 degree cone reads
-            // about 6-24 px here against a budget of ~139), which is the point: the cap is a
-            // guarantee that the mark stays inside the window at any weapon angle, not a tuning.
+            // petal - not the ring's edge. At the weapon's 10 degree half-angle this BINDS from
+            // about fov 44 downward (82 px at the wide end, pinned at 117 px past that), where at
+            // the old 0.5 degrees it never did: the cone now subtends more than the window can
+            // show once magnified, and a mark that leaves the petal is worse than one that stops
+            // growing. The cap is the guarantee, not the tuning - move the weapon's angle.
             float ringCeiling = Mathf.Max(6f, ReticleBudgetPixels(halfHeight)
                                               - CrossGapPixels - CrossArmPixels);
             radius = Mathf.Min(radius, ringCeiling);
@@ -684,6 +698,17 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // EVERY CHECK ABOVE IS SATISFIED BY A WINDOW THAT DRAWS PERFECTLY WITH NOTHING IN
+            // IT, and that is the exact report this feature keeps getting back. The eyepiece is a
+            // RawImage subclass while the rings are bare MaskableGraphics, so there is a whole
+            // class of failure - a graphic disabled, culled by a mask, or handed a transparent
+            // colour - that takes the marks out and leaves the picture untouched. Each of those
+            // is readable and none of them throws, so they are checked here rather than guessed
+            // at from source: rounds 5 and 6 of this instrument were both spent doing the latter.
+            if (!CheckMarkVisible(_ring, "the eyepiece reticle")) return;
+            if (!CheckMarkVisible(_cross, "the eyepiece reticle's locator posts")) return;
+            if (!CheckMarkVisible(_arc, "the recharge arc")) return;
+
             // The reticles are reported separately from the window because they are a separate
             // report: a pilot who says "I could not see either reticle" has said nothing about
             // whether the eyepiece was there, and every check above is satisfied by a window that
@@ -698,6 +723,52 @@ namespace CosmicShore.Gameplay
                                            flightAt,
                                            _flightRing != null ? _flightRing.Radius : 0f,
                                            CrossGapPixels + CrossArmPixels);
+        }
+
+        /// <summary>
+        /// One mark drawn inside the eyepiece: is it actually going to reach the screen?
+        ///
+        /// <para>Three states produce an identical report from a pilot - <i>"the window is there
+        /// and there is nothing in it"</i> - and none of them is an error anywhere: the graphic is
+        /// disabled, its <c>CanvasRenderer</c> is CULLED (a mask whose rect does not intersect
+        /// it), or its colour is transparent. A fourth, a colour that is black on a black backing,
+        /// is not decidable here and is deliberately not guessed at; the tracer colour falls back
+        /// to WHITE rather than to a palette field that can author black, which is what keeps it
+        /// out of this list.</para>
+        ///
+        /// <para>Returns false once it has reported, so the caller stops: the first fault is the
+        /// one to fix and three lines about the same cause is noise.</para>
+        /// </summary>
+        static bool CheckMarkVisible(Graphic g, string what)
+        {
+            if (g == null)
+            {
+                SniperScopeDiagnostics.Unusable($"{what} was never built.");
+                return false;
+            }
+
+            if (!g.isActiveAndEnabled)
+            {
+                SniperScopeDiagnostics.Unusable(
+                    $"{what} is on screen but its graphic is disabled, so it submits nothing.");
+                return false;
+            }
+
+            if (g.canvasRenderer != null && g.canvasRenderer.cull)
+            {
+                SniperScopeDiagnostics.Unusable(
+                    $"{what} is CULLED by a mask - its CanvasRenderer is drawing nothing while " +
+                    "the eyepiece around it draws normally.");
+                return false;
+            }
+
+            if (g.color.a <= 0.01f)
+            {
+                SniperScopeDiagnostics.Unusable($"{what} is fully transparent (alpha {g.color.a:0.###}).");
+                return false;
+            }
+
+            return true;
         }
 
         void OnDestroy() => _pip?.Dispose();
