@@ -48,6 +48,26 @@ USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
 ALIAS = re.compile(r"^\s*using\s+\w+\s*=", re.M)
 ENUM_BODY = re.compile(r"\benum\s+[A-Z]\w*[^{}]*\{([^{}]*)\}", re.S)
 ENUM_MEMBER = re.compile(r"^\s*(?:\[[^\]]*\]\s*)*([A-Z]\w*)\s*(?:=.*)?$", re.S)
+# A MEMBER DECLARATION: the identifier in DECLARATOR position. Same argument as the enum
+# members above, one level over -- at its own declaration the name is a MEMBER, not a type
+# reference, so a member sharing a type's name elsewhere reads as a missing using for a type
+# the file never mentions (`void Pulse()`, `const string WeeklyChallenge = ...`).
+#
+# METHODS and FIELDS need DIFFERENT suppressions, and conflating them fails one way or the other:
+#   - A method is also written bare at every CALL SITE (`Pulse();`), which is not a declaration,
+#     so blanking only the declaration leaves every call reported. Its NAME goes in `own`.
+#   - A field must NOT go in `own`: `public WidgetSO WidgetSO;` needs a using for WidgetSO, and a
+#     name-set suppression would hide the very reference that needs it. Only the declarator
+#     OCCURRENCE is blanked, leaving the TYPE position reported.
+# Both match the name in DECLARATOR position only, never the TYPE position the regex consumes on
+# the way there. `new` is deliberately NOT a listed modifier: it would let `new Vector3(...)` read
+# as a declaration and blind the gate to the constructor call, which is exactly where a using is
+# needed.
+_MODS = (r"(?:(?:public|private|protected|internal|static|readonly|const|virtual|override|abstract"
+         r"|sealed|extern|async|partial|unsafe|volatile|event|required|ref)[ \t]+)*")
+_HEAD = r"^[ \t]*(?:\[[^\]]*\][ \t]*)*" + _MODS + r"[\w.<>,\[\]\?]+[ \t]+"
+METHOD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?=\()", re.M)
+FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
@@ -153,8 +173,14 @@ def check_file(path, decls):
             if m:
                 own.add(m.group(1))
 
+    # And so are the METHODS it declares -- by NAME, because a method is written bare at every
+    # call site too. A FIELD or PROPERTY is suppressed only at its declarator OCCURRENCE, so its
+    # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
+    own.update(METHOD_DECL.findall(src))
+    scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+
     bad = []
-    for name in sorted(set(MENTION.findall(src))):
+    for name in sorted(set(MENTION.findall(scan))):
         if name in own:
             continue
         where = decls.get(name)
@@ -192,6 +218,22 @@ def self_test():
          "an enum MEMBER sharing a type's name is not a reference"),
         ("namespace CosmicShore.Gameplay { enum E { Other } class A { WidgetSO w; } }", 1,
          "...but a real reference beside that enum is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n}\n}", 0,
+         "a METHOD declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n    void B() {\n        WidgetSO();\n    }\n}\n}", 0,
+         "...and neither is a CALL to it -- the shape that motivated the split"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public const string WidgetSO = \"x\";\n}\n}", 0,
+         "a CONST declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public int WidgetSO => 1;\n}\n}", 0,
+         "a PROPERTY declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() { }\n    WidgetSO w;\n}\n}", 1,
+         "...but a real reference beside those members is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = new WidgetSO();\n    }\n}\n}", 1,
+         "a CONSTRUCTOR call is a reference -- `new` must not read as a declaration"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO Field;\n}\n}", 1,
+         "a FIELD's TYPE is a reference even though its name is a declarator"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
+         "a field named after its OWN type still reports the TYPE"),
     ]
     ok = True
     for src, want, label in cases:
