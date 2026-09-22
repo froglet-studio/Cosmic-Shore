@@ -360,7 +360,7 @@ namespace CosmicShore.Gameplay
         // editor captures where Burst wasn't applied). Replaces the managed
         // 8000-prisms-per-frame slice, whose per-entry object-graph cost made
         // every recompute a ~10 ms reader-attributed frame spike at high prism
-        // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
+        // counts (Docs/archive/PERFORMANCE_LOG_2026.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
 
         /// <summary>The three playable domains, hoisted to a static. These used to be

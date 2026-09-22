@@ -48,7 +48,9 @@ Check T2 as well — T3 depended on it, so it is unlikely to still be genuinely 
 `/ui-redesign-tracker` skill if it applies; it exists to verify these against the working tree
 rather than trusting a claim, which is exactly this situation.
 
-**4 · `Docs/PERFORMANCE_OPTIMIZATION.md` is two months stale.**
+**4 · `Docs/PERFORMANCE_OPTIMIZATION.md` is two months stale.** *(Done 2026-09-11; superseded
+2026-09-22 — the doc was rewritten as a short state-and-plan document and the old log frozen as
+`Docs/archive/PERFORMANCE_LOG_2026.md`. Skip this item.)*
 File/line references were verified **2026-07-08**; the session handoff at §0 is dated 2026-07-15.
 Roughly fifteen game modes have landed since. Its §4 backlog is the input to D1 and D3.
 

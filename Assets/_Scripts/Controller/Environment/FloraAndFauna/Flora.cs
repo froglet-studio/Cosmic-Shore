@@ -680,7 +680,7 @@ namespace CosmicShore.Gameplay
         // there is ONE PER PLANT - 1,080 of them in the Lattice boot world - so a
         // `new WaitForSeconds(...)` per tick is 1,080 allocations per grow cycle for two values
         // that almost never change. Measured: the coroutine group allocates 18.2 KB/frame in a
-        // boot-world spike frame (Docs/PERFORMANCE_OPTIMIZATION.md §0.8).
+        // boot-world spike frame (Docs/archive/PERFORMANCE_LOG_2026.md §0.8).
         //
         // Re-minted when the authored period changes rather than cached once. Today a lazy
         // first-use cache would also be correct - `ApplyVariantTuning` writes `growPeriod`

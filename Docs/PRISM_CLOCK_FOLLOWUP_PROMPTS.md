@@ -426,7 +426,7 @@ owned as §3.8 **#11** + §5 **C15**.
   `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` (only the
   deleted manager `Raise()`d them; their prism-prefab `EventListenerNoParam`
   listeners were stripped 2026-09 for instantiate cost —
-  `PERFORMANCE_OPTIMIZATION.md` §0.11.6 — so raising them is now a no-op).
+  `Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6 — so raising them is now a no-op).
 - Do **not** re-open as a clock migration of unreachable code. Do **not**
   delete `ShapeDefinition`, the painting converter, the SOAP events, or
   `SegmentSpawner`. The painting toy is the successor (scoreless).

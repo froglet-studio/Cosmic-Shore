@@ -1,5 +1,12 @@
 # Prism Explosion A/B Benchmark — legacy-cpu vs gpu-clock
 
+> **Status (2026-09-22).** The A/B framing is **historical**: the legacy-cpu arm no longer exists
+> (the clock-material law deleted the CPU animation path, `Docs/PRISM_ANIMATION.md`), so only the
+> gpu-clock variant can be run. The rig is still live and is now simply **the prism-death
+> benchmark**: console `bench` in `PrismGridExplosionTest.unity`. Its last result is the
+> 2026-08-25 row below — **6.87 µs per death**, dominated by `Prism.Destroy.Setup` self time.
+> Current state and plan: `Docs/PERFORMANCE_OPTIMIZATION.md`.
+
 The pre-merge performance comparison for the clock-material migration: FPS as a
 function of time across the FULL explosion interval, repeated runs per variant,
 one report comparing the envelopes. Built on Yash's prism-grid explosion rig

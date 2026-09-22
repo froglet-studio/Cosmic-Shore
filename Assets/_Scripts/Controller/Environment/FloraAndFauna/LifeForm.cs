@@ -453,7 +453,7 @@ namespace CosmicShore.Gameplay
         // lifeform, and Charge floors every Charge plant at a 1 s period (Flora.ChargeShieldPeriod),
         // so the old body allocated a fresh List per cycle AND a WaitForSeconds PER PRISM - on a
         // plant with dozens of prisms, dozens of allocations a second, times the population.
-        // Measured contribution in a boot-world spike frame: Docs/PERFORMANCE_OPTIMIZATION.md §0.8.
+        // Measured contribution in a boot-world spike frame: Docs/archive/PERFORMANCE_LOG_2026.md §0.8.
         //
         // The snapshot itself is load-bearing and is KEPT: the tracker mutates while this
         // coroutine yields between prisms (grazing, growth), so iterating it directly would

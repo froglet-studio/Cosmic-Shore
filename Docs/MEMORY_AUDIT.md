@@ -1,42 +1,57 @@
 # Memory Audit — runtime + asset/build footprint
 
-Companion to `PERFORMANCE_OPTIMIZATION.md`, which covers frame cost. This one
-covers **what the game holds**, in two halves that fail differently: runtime
-memory (never recorded — capture-gated) and the asset/build footprint (measured
-2026-09-09 against `78a95259f`).
+Companion to `PERFORMANCE_OPTIMIZATION.md`, which covers frame cost (it lists this doc as lever
+**L7**). This one covers **what the game holds**, in two halves that fail differently: runtime
+memory (first EDITOR readings 2026-09-22 — a build reading is still owed) and the asset/build
+footprint (measured 2026-09-09 against `78a95259f`).
 
 > **Provenance.** Authored on `origin/Ys-merge-2026-09-07` (`78a95259f`), a branch
 > that was **abandoned**, and recovered onto `origin/bleeding-edge` (`1f160508f`)
 > on 2026-09-14. **Every figure in §2 describes `78a95259f`, not this tree** — the
 > findings are about import settings rather than raw size, so they are very likely
-> still true, but re-measure before quoting a megabyte number. §1 was never
-> recorded at all on either tree.
+> still true, but re-measure before quoting a megabyte number. §1's readings were taken on
+> `claude/bold-fermi-54nlts` (base `1f160508f`) in the Editor.
 
 ---
 
-## 1. Runtime memory — never recorded
+## 1. Runtime memory — first readings (Editor, 2026-09-22)
 
-`DiagnosticsHUD` already exposes a **Memory** section (F7 → F6) and nobody has
-written its numbers down. Read it during Captures A–C
-(`Docs/PERFORMANCE_CAPTURE_RECIPES.md`) and fill this table in:
+Read off `DiagnosticsHUD` (F7 → Advanced) during the perf sessions. **These are Editor numbers:
+the Managed heap and Unity-allocated rows include the Editor's own memory**, so they overstate a
+player build. They are recorded so a build reading has something to be compared with, not to be
+quoted as the game's footprint. Device: 32,697 MB RAM · 11,996 MB VRAM.
 
-| Reading | Capture A (boot world, 1 / 4 / 8 min) | Capture B (benchmark) | Capture C (live mode) |
-|---|---|---|---|
-| GC per frame | | | |
-| Managed heap | | | |
-| Unity allocated | | | |
-| Reserved vs device RAM | | | |
-| Gfx driver | | | |
+| Scenario | Prism entities | GC / frame (live row) | Managed | Unity alloc | Reserved (% RAM) | Gfx driver |
+|---|---:|---:|---:|---:|---:|---:|
+| Lattice boot world | 24,243 | 18.6 KB | 1,566 MB | 1,344 MB | 2,854 MB (9%) | 449 MB |
+| Lattice boot world | 30,285 | 27.0 KB | 1,627 MB | 1,280 MB | 1,911 MB (6%) | 455 MB |
+| Lattice boot world (+ stress cloud) | 33,114 | — | 1,716 MB | — | 2,031 MB | — |
+| Lattice boot world, spindles hidden | 49,116 | 20.0 KB | 1,732 MB | 1,676 MB | 2,893 MB (9%) | 455 MB |
+| Lab scene, `grid` 47³ | 103,823 | — | 1,790 MB | 1,886 MB | 2,633 MB | — |
+
+What they say, with the Editor caveat attached:
+
+- **Nothing here is near a limit on this machine** (≤ 9% of RAM). The question for a 1.5–2 GB
+  managed heap is the COLLECTION cost it implies on the main thread, not the footprint.
+- **Reserved does not track prism count** (1,911 → 2,893 MB across similar populations): it
+  moves with session history. Look for a climb that does not come back down, in a build.
+- The GC row is a one-frame sample. The averaged gameplay figure is **154.5 KB/frame** in the
+  Profiler (`PERFORMANCE_OPTIMIZATION.md` §1, lead 4).
+
+**Still owed:** the same table from a **Development build** (the HUD works there), for S1–S5 of
+`PERFORMANCE_OPTIMIZATION.md` §3.1.
 
 Add alongside them, since nothing surfaces these today:
 
 - **Pool footprint** — `GenericPoolManager` buffer depths × prefab cost.
 - **`PrismSpatialIndex` NativeArray high-water** — the packed arrays scale with
-  `_highWaterMark`, which is also what §4 Tier 1 #1's four sync scans iterate.
+  `_highWaterMark`, which is also what the four sync scans in lever L5 iterate
+  (`Docs/archive/PERFORMANCE_LOG_2026.md` §4 Tier 1 #1).
   One number explains both a memory figure and a frame cost.
 - **`PrismRenderService.LiveEntityCount`**.
 
-**Why the boot world is the interesting case:** the Lattice cell reaches
+**Why Lattice is the interesting case** (scenario S2 — it is no longer the boot world on
+bleeding-edge, Garland is, but it is still the heaviest cell a player can pick): the Lattice cell reaches
 ~63,360 prism colliders + 1,080 heart colliders at cap over ~7 minutes
 (`Docs/ECOSYSTEM.md:6172`, `:6236`). Reserved memory that climbs and does not
 come back down after the population stabilises is the thing to look for.
@@ -143,7 +158,7 @@ nothing references them, this is the single largest one-line saving available.
   understanding before touching anything smaller.
 - **Standalone defaults to quality tier 0 ("Very Low")** —
   `m_PerPlatformDefaultQuality: Standalone: 0`. Flagged in
-  `PERFORMANCE_OPTIMIZATION.md` §0.2 and still untouched.
+  `Docs/archive/PERFORMANCE_LOG_2026.md` §0.2 and still untouched.
 
 ---
 

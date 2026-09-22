@@ -12,7 +12,7 @@ the search:
 
   1. Update / LateUpdate / FixedUpdate / OnGUI bodies.
   2. `yield return new WaitForSeconds(...)` inside a LOOP - one allocation per
-     iteration, forever, per live instance. (Docs/PERFORMANCE_OPTIMIZATION.md
+     iteration, forever, per live instance. (Docs/archive/PERFORMANCE_LOG_2026.md
      Tier 0b; Flora.GrowCoroutine and LifeForm.ShieldRegenCoroutine were this.)
   3. Coroutines that `yield return null` in a loop - these run every frame too
      and are invisible to a scan that only looks at Update.

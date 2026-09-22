@@ -1,10 +1,18 @@
 # Prism ECS Migration — Assessment & Plan
 
-**Status:** Assessment complete; Phase R is the launch-blocking work item.
+**Status (2026-09-22): Phase R SHIPPED and MEASURED — the instanced path is the default and it
+works.** `Resources/PrismRenderConfig.asset` has `useInstancedRendering: 1`. Measured in the lab
+scene: **103,823 prisms at 4.8 ms CPU vs 61.9 ms on the legacy path (12.9×)**, and in the Lattice
+boot world **8,436 prisms in 23 opaque draw calls** (`Docs/archive/PERFORMANCE_LOG_2026.md`
+§0.10, §0.11.5). Checkpoints A–C below are therefore verified in use, not merely "done". The one
+open item here is **Checkpoint D (pure-entity bulk mass)** — lever **L4** in
+`Docs/PERFORMANCE_OPTIMIZATION.md` §3.3 — and it is unscheduled: no measured scenario yet shows
+GameObject existence as the binding cost. The rest of this doc is the design record.
 **Context:** A full 3-player Skim Race (SkimRace, mode 33) round ends in single-digit FPS.
 Target: sustained 60 fps. This doc evaluates the ECS exploration on
 `claude/ecs-migration-guide-Db42i` and lays out the migration plan.
-**Companion docs:** `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` (original audit),
+**Companion docs:** `Docs/PERFORMANCE_OPTIMIZATION.md` (current state + plan; the original
+pre-ECS `PRISM_PERFORMANCE_AUDIT.md` was deleted 2026-09-22 — `git log --diff-filter=D`),
 `Docs/SPATIAL_INDEX.md`, `Docs/ECOSYSTEM_MASTERPLAN.md` (scale ambitions this must serve),
 `Docs/PRISM_ANIMATION.md` (**the clock-material law, LOCKED** — prism animation is one
 initial-conditions stamp + GPU clock + one scheduled end swap; the per-instance

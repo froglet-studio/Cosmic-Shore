@@ -1440,7 +1440,7 @@ decision, made per profile.
 (still clamped by each species' `MaxLivePopulation` — a tick with the species at cap
 hatches nothing). The profile is shared by `Menu_Main` **and** `BenchmarkStressTest`, so
 the benchmark now runs a fuller average fauna population; re-baseline before reading it
-against older numbers (`Docs/PERFORMANCE_OPTIMIZATION.md`).
+against older numbers (`Docs/archive/PERFORMANCE_LOG_2026.md`).
 
 ### 16.2 Shielded mass is not food for any herbivore
 

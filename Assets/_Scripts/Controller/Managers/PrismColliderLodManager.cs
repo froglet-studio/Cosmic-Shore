@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
         int _cullCursor;
         readonly List<Prism> _liveScratch = new(4096);
 
-        // Attribution split (Docs/PERFORMANCE_OPTIMIZATION.md): Sweep is the 0.25s
+        // Attribution split (Docs/archive/PERFORMANCE_LOG_2026.md): Sweep is the 0.25s
         // tick (Burst classify + restore/enqueue transitions); Drain is the
         // every-frame budgeted cull application.
         static readonly ProfilerMarker s_sweepMarker = new("LOD.Sweep");

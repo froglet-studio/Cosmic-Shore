@@ -524,7 +524,7 @@ Fix these DURING the migration (most disappear by construction under stamp+clock
     `EventOnShapePrismReturnToPool` are kept; their `EventListenerNoParam`
     listeners on 8 prism prefabs were **stripped 2026-09** (they were only ever
     raised by the deleted manager, and every prism instantiate paid to
-    serialize their UnityEvent lists — `PERFORMANCE_OPTIMIZATION.md` §0.11.6),
+    serialize their UnityEvent lists — `Docs/archive/PERFORMANCE_LOG_2026.md` §0.11.6),
     superseding the earlier "do not strip" note, which was a scope boundary
     rather than a functional rule. Do not reintroduce as a clock migration of
     unreachable code.

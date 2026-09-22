@@ -300,6 +300,28 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 
 ---
 
+## DiagnosticsHUD console commands
+
+Type into the HUD's command row (F7 → the input at the bottom) and press **Run**. The answer
+prints in the Console row of the overlay. Full reference and when to use each:
+`Docs/PERFORMANCE_OPTIMIZATION.md` §4.6.
+
+| Command | Does |
+|---|---|
+| `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap — a capped frame cannot show a change smaller than its idle time |
+| `diag [label] [seconds]` | Timed, **tagged** recording → `diag_*.json` + `.txt` with averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, renderer census) |
+| `renderers` | Renderer census: enabled / disabled / visible, by type, top 8 materials |
+| `renderers hide <prefix>` / `renderers show` | Switch off every renderer on a material named `<prefix>*`, then exactly those back on |
+| `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
+| `prisms <n>` / `prisms off` | Render-only stress cloud of `n` prism entities |
+| `grid …` / `lab …` / `bench` | `PrismGridExplosionTest` scene only: real prism lattice, mixed populations, explosion benchmark |
+
+**Prefer text over screenshots when reporting a measurement**: the Runtime Capture tab's
+**Copy error log** and the `diag` `.txt` are both plain text with averages, where a HUD
+screenshot is one frame.
+
+---
+
 ## Key files
 
 | Role | File |
@@ -355,3 +377,18 @@ initializers, `INetworkSerializable` structs).
   The recorder is inert unless armed AND the runtime host exists (Editor / Development builds).
 - **Cross-source runs** (Editor vs DevBuild, or different platforms) aren't comparable on absolute
   numbers — only same-source before/after deltas are meaningful (Compare warns).
+
+---
+
+## Troubleshooting
+
+| Problem | Solution |
+|---|---|
+| "Start Benchmark" button is grayed out | Enter Play Mode first |
+| No config slot visible | Create a `BenchmarkConfigSO` asset and assign it |
+| History shows 0 snapshots | Check that the output folder matches your config. Click "Rebuild Index" |
+| Rendering stats are all zero | Enable "Capture Rendering Stats" in the config. Some stats may not be available on all platforms |
+| GC Allocations look wrong | The tool uses `ProfilerRecorder("GC Allocated In Frame")` which requires Unity 2021+. Verify your Unity version |
+| Physics stats missing | Enable "Capture Physics Stats" in the config. The recorder uses `"Active Dynamic Bodies"` which requires Unity's physics profiler module |
+| Reports not saving | Check that `Application.persistentDataPath` is writable. Look in the Console for `[Benchmark]` log messages |
+| Profiler counters not visible | Open Unity Profiler, look under the "Scripts" module. Counters only update while a benchmark is actively running |

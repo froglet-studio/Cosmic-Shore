@@ -886,7 +886,7 @@ namespace CosmicShore.Gameplay
         // Split attribution for the ~0.5ms creation-completion tick: which of the
         // three suspects dominates decides the fix (enableable-component render flag
         // vs SOAP listener work vs spatial bind). See
-        // Docs/PERFORMANCE_OPTIMIZATION.md Task 4.
+        // Docs/archive/PERFORMANCE_LOG_2026.md Task 4.
         static readonly ProfilerMarker s_createVisibilityMarker = new("Prism.Create.Visibility");
         static readonly ProfilerMarker s_createSoapMarker = new("Prism.Create.SOAPRaise");
         static readonly ProfilerMarker s_createSpatialMarker = new("Prism.Create.SpatialBind");

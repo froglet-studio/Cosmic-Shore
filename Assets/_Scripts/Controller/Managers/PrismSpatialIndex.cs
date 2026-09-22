@@ -85,7 +85,7 @@ namespace CosmicShore.Gameplay
     /// Cell-volume summation view data - one entry per slot, packed for the Burst
     /// <see cref="CellVolumeSumJob"/> that replaces Cell's managed per-prism volume
     /// recompute (the old 8000-prisms-per-frame slice was a ~10 ms reader-attributed
-    /// frame spike at high prism counts; see Docs/PERFORMANCE_OPTIMIZATION.md).
+    /// frame spike at high prism counts; see Docs/archive/PERFORMANCE_LOG_2026.md).
     ///
     /// Distinct from <see cref="PrismDamageData"/> on purpose: the damage view's
     /// Volume/Domain are registration-time snapshots whose staleness is part of the
@@ -1484,7 +1484,7 @@ namespace CosmicShore.Gameplay
         /// One Burst pass summing every live prism bound to <paramref name="cellId"/>
         /// into <paramref name="results"/> (layout: the CellVolume* constants).
         /// Replaces Cell's managed per-prism recompute slice - see
-        /// Docs/PERFORMANCE_OPTIMIZATION.md. Returns false (results untouched) when
+        /// Docs/archive/PERFORMANCE_LOG_2026.md. Returns false (results untouched) when
         /// the index isn't allocated or the buffer is undersized; the caller keeps
         /// its previously published sums.
         /// </summary>

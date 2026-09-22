@@ -194,7 +194,7 @@ is the coupling, and re-pointing it at an interface is a design change, not a mo
 
 ### The EDITOR assembly is a separate axis, and it was already measured
 
-`Docs/PERFORMANCE_OPTIMIZATION.md` (Task 10) carries a file-by-file check of splitting
+`Docs/archive/PERFORMANCE_LOG_2026.md` (Task 10) carries a file-by-file check of splitting
 `Assembly-CSharp-Editor`, concluded independently of this work: of 168 editor files, 79 are
 tests that structurally cannot move, and of the remaining 89 only **26 (~17% of editor LOC)**
 are free of gameplay-type references. It was closed as not worth shipping *at that time*.
