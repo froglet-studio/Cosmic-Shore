@@ -391,10 +391,7 @@
             "m_Id": "eee64984b18648bf889ef78982fa98f1"
         },
         {
-            "m_Id": "0c04161ef40f4904911a63939601dc74"
-        },
-        {
-            "m_Id": "9bf05affd09b4f0b99c84672d66cdb93"
+            "m_Id": "4c5f71a5e7964b0abff2df6357e0f169"
         }
     ],
     "m_GroupDatas": [],
@@ -1697,7 +1694,7 @@
             },
             "m_InputSlot": {
                 "m_Node": {
-                    "m_Id": "0c04161ef40f4904911a63939601dc74"
+                    "m_Id": "4c5f71a5e7964b0abff2df6357e0f169"
                 },
                 "m_SlotId": 0
             }
@@ -1711,7 +1708,7 @@
             },
             "m_InputSlot": {
                 "m_Node": {
-                    "m_Id": "0c04161ef40f4904911a63939601dc74"
+                    "m_Id": "4c5f71a5e7964b0abff2df6357e0f169"
                 },
                 "m_SlotId": 1
             }
@@ -1719,9 +1716,9 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "0c04161ef40f4904911a63939601dc74"
+                    "m_Id": "4c5f71a5e7964b0abff2df6357e0f169"
                 },
-                "m_SlotId": 3
+                "m_SlotId": 2
             },
             "m_InputSlot": {
                 "m_Node": {
@@ -1733,29 +1730,15 @@
         {
             "m_OutputSlot": {
                 "m_Node": {
-                    "m_Id": "0c04161ef40f4904911a63939601dc74"
+                    "m_Id": "4c5f71a5e7964b0abff2df6357e0f169"
                 },
-                "m_SlotId": 4
+                "m_SlotId": 3
             },
             "m_InputSlot": {
                 "m_Node": {
                     "m_Id": "f7b3432596ff4bd5b08a201d63b2e436"
                 },
                 "m_SlotId": 0
-            }
-        },
-        {
-            "m_OutputSlot": {
-                "m_Node": {
-                    "m_Id": "9bf05affd09b4f0b99c84672d66cdb93"
-                },
-                "m_SlotId": 0
-            },
-            "m_InputSlot": {
-                "m_Node": {
-                    "m_Id": "0c04161ef40f4904911a63939601dc74"
-                },
-                "m_SlotId": 2
             }
         }
     ],
@@ -10258,7 +10241,7 @@
 {
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.CustomFunctionNode",
-    "m_ObjectId": "0c04161ef40f4904911a63939601dc74",
+    "m_ObjectId": "4c5f71a5e7964b0abff2df6357e0f169",
     "m_Group": {
         "m_Id": ""
     },
@@ -10275,19 +10258,16 @@
     },
     "m_Slots": [
         {
-            "m_Id": "537880f7483f40c59701e398e9926231"
+            "m_Id": "a5856339ff92454e99a6896b5252c7a6"
         },
         {
-            "m_Id": "d868435f7aea46ada08dc52f99a94b62"
+            "m_Id": "d95d07991f57486baee80d828b8f9600"
         },
         {
-            "m_Id": "d3c31ebef5f4407aa8190eea167ec12e"
+            "m_Id": "dd8de533920b4541b663f639334600f8"
         },
         {
-            "m_Id": "d172278d438043e9aa3260d260066396"
-        },
-        {
-            "m_Id": "a4569948eb774e5cbb995279efcaff5c"
+            "m_Id": "3822092e2c204826b85936d1213c8074"
         }
     ],
     "synonyms": [],
@@ -10307,7 +10287,7 @@
 {
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "537880f7483f40c59701e398e9926231",
+    "m_ObjectId": "a5856339ff92454e99a6896b5252c7a6",
     "m_Id": 0,
     "m_DisplayName": "Position",
     "m_SlotType": 0,
@@ -10330,7 +10310,7 @@
 {
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "d868435f7aea46ada08dc52f99a94b62",
+    "m_ObjectId": "d95d07991f57486baee80d828b8f9600",
     "m_Id": 1,
     "m_DisplayName": "Normal",
     "m_SlotType": 0,
@@ -10353,31 +10333,8 @@
 {
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "d3c31ebef5f4407aa8190eea167ec12e",
+    "m_ObjectId": "dd8de533920b4541b663f639334600f8",
     "m_Id": 2,
-    "m_DisplayName": "Tangent",
-    "m_SlotType": 0,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Tangent",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "d172278d438043e9aa3260d260066396",
-    "m_Id": 3,
     "m_DisplayName": "OutPosition",
     "m_SlotType": 1,
     "m_Hidden": false,
@@ -10399,8 +10356,8 @@
 {
     "m_SGVersion": 0,
     "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "a4569948eb774e5cbb995279efcaff5c",
-    "m_Id": 4,
+    "m_ObjectId": "3822092e2c204826b85936d1213c8074",
+    "m_Id": 3,
     "m_DisplayName": "OutNormal",
     "m_SlotType": 1,
     "m_Hidden": false,
@@ -10410,62 +10367,6 @@
         "x": 0.0,
         "y": 0.0,
         "z": 0.0
-    },
-    "m_DefaultValue": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 0.0
-    },
-    "m_Labels": []
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.TangentVectorNode",
-    "m_ObjectId": "9bf05affd09b4f0b99c84672d66cdb93",
-    "m_Group": {
-        "m_Id": ""
-    },
-    "m_Name": "Tangent Vector",
-    "m_DrawState": {
-        "m_Expanded": true,
-        "m_Position": {
-            "serializedVersion": "2",
-            "x": -1960.0,
-            "y": 3220.0,
-            "width": 209.3333740234375,
-            "height": 318.6666564941406
-        }
-    },
-    "m_Slots": [
-        {
-            "m_Id": "a3e17213be39487997b18b7c21fd94e1"
-        }
-    ],
-    "synonyms": [],
-    "m_Precision": 0,
-    "m_PreviewExpanded": true,
-    "m_PreviewMode": 2,
-    "m_CustomColors": {
-        "m_SerializableColors": []
-    },
-    "m_Space": 0
-}
-
-{
-    "m_SGVersion": 0,
-    "m_Type": "UnityEditor.ShaderGraph.Vector3MaterialSlot",
-    "m_ObjectId": "a3e17213be39487997b18b7c21fd94e1",
-    "m_Id": 0,
-    "m_DisplayName": "Out",
-    "m_SlotType": 1,
-    "m_Hidden": false,
-    "m_ShaderOutputName": "Out",
-    "m_StageCapability": 3,
-    "m_Value": {
-        "x": 0.0,
-        "y": 0.0,
-        "z": 1.0
     },
     "m_DefaultValue": {
         "x": 0.0,

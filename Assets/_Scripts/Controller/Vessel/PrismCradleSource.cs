@@ -6,8 +6,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The Urchin's half of the CRADLE (Docs/PRISM_ANIMATION.md §4.7.2): while this vessel is
     /// RIDING a prismscape — attached, not launched off a ribbon's end, not in free flight — it
-    /// reports its hull to <see cref="PrismCradle"/> every frame, and the prism triangles around
-    /// it wrap onto the hull on the GPU.
+    /// reports its hull to <see cref="PrismCradle"/> every frame, and the mass around it drapes
+    /// onto the hull on the GPU.
     ///
     /// <para><b>Ensured, not authored.</b> <see cref="GunVesselTransformer.Initialize"/> adds this
     /// component when the prefab does not carry one, so the cradle cannot be omitted from an
@@ -20,9 +20,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="hullRadius"/> is either authored here or measured ONCE from the hull's own
     /// renderers, the same measurement the occlusion corridor sizes itself with, and cached — it
     /// is never recomputed per frame. The shader takes it beside the centre because a slot is one
-    /// float4, and uses it to put the nearest triangle's centroid exactly on the hull's surface.</para>
+    /// float4, and the whole drape is measured from it: mass inside that sphere closes onto its
+    /// surface, mass just outside rises to meet it.</para>
     ///
-    /// <para><b>Strength is eased, never switched.</b> A bare on/off would snap every triangle in the
+    /// <para><b>Strength is eased, never switched.</b> A bare on/off would snap every vertex in the
     /// band on one frame; the strength ramps over the config's engage/release seconds instead,
     /// so a launch reads as the mass releasing the hull. Reported from <c>Update</c> because the
     /// publisher flushes in <c>LateUpdate</c> and reads the hull's LIVE position there — a hull
@@ -36,7 +37,7 @@ namespace CosmicShore.Gameplay
     [DisallowMultipleComponent]
     public class PrismCradleSource : MonoBehaviour
     {
-        [Tooltip("The hull's radius in world units — the sphere the cradled faces settle onto. " +
+        [Tooltip("The hull's radius in world units — the sphere the draped mass settles onto. " +
                  "0 (the default) measures it ONCE from the hull's own renderers on the first ride, " +
                  "the same measurement the occlusion corridor uses, and caches it.")]
         [Min(0f)]

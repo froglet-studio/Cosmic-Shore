@@ -13,9 +13,11 @@ MonoBehaviour:
   m_Name: PrismCradleConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismCradleConfigSO
   enabled: 1
-  outerRange: 15
-  innerRange: 10
-  neighbourSpread: 2.5
-  maxStrength: 0.1
+  drapeReach: 6
+  drapeExponent: 1.5
+  maxStrength: 1
+  subdivision: 16
+  maxResidentPrisms: 24
+  residencyMargin: 2
   engageSeconds: 0.25
   releaseSeconds: 0.4

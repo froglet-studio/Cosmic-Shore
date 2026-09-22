@@ -352,8 +352,8 @@ def validate(docs, expect_wired):
     # below). Walk through it: the chain it wraps is the one these assertions are about.
     cradle = find_cf(docs, "PrismCradleDeform")
     if cradle is not None and pos_src[0] == cradle["m_ObjectId"]:
-        assert pos_src[1] == 3, \
-            "VertexDescription.Position is not fed by PrismCradleDeform.OutPosition (slot 3 — Position, Normal, Tangent, then the outputs)"
+        assert pos_src[1] == 2, \
+            "VertexDescription.Position is not fed by PrismCradleDeform.OutPosition (slot 2 — Position, Normal, then the outputs)"
         pos_src = sources.get((cradle["m_ObjectId"], 0))
         assert pos_src is not None, "PrismCradleDeform.Position is unconnected"
     feeder = idx[pos_src[0]]

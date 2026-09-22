@@ -1722,45 +1722,61 @@ Four properties worth carrying to the next one:
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md`
 (§14 for the peer channel).
 
-### 4.7.2 The third citizen of §4.7 — the Urchin's cradle (shipped 2026-09-16)
+### 4.7.2 The third citizen of §4.7 — the Urchin's cradle (shipped 2026-09-16, re-cut 2026-09-22)
 
 Like the Echo Sight, not a law: one vessel's ride feel, live only while that vessel is attached.
 It is recorded here because it is the first §4.7 consumer that moves **VERTICES** rather than
 colour or coverage, and it shows the shape holds for a deformation exactly as it held for a tint.
 
 While an Urchin **rides** a prismscape — attached, with a live ride kernel under it; not launched
-off a ribbon's end, not in free flight — the prism TRIANGLE nearest the hull swings so its normal
-points at the hull's centre and its centroid sits ON the hull's surface, on the line from where it
-was to that centre. A prism face is four triangles fanned from its centre (a WEDGE each, on
-`Prism.asset`), and the nearest wedge's three ADJACENT wedges — the two beside it on its face and
-the one across the prism's edge on the next face — come PARTWAY, by how nearly as close as the
-nearest they are, the cross-edge one wrapping around the edge so its OUTWARD face is what meets the
-hull; every other triangle on the prism is untouched. The whole thing ramps with distance (zero at
-15 u, full at 10 u and closer, measured at the wedge centroid), so as the hull rolls from one
-triangle to the next the two meet at the seam both touching the sphere and one hands off to the
-other with nothing snapping. The pilot reads it as the mass they are grinding cradling them. **How
-much of that motion is performed is `PrismCradleConfigSO.MaxStrength`, shipped at 0.1** — the full
-motion read as the mass lurching, and because the blend is of the rigid MOTION the tenth is a whole
-triangle a tenth of the way there rather than a distorted one; the description above is the
-geometry at strength 1. (The first cut moved whole FACES; playtest read that as the slab lifting rather than the mass wrapping,
-and the per-wedge version replaced it the same day.)
+off a ribbon's end, not in free flight — the mass around it **DRAPES** over the hull. Every vertex
+within `drapeReach` of the hull's SURFACE slides along its own radius toward that surface: mass
+INSIDE the hull closes onto it (the wrap — a prism the Urchin is buried in envelopes it instead of
+clipping through it), mass just outside RISES to meet it (the lip), and mass past the reach is
+perfectly still. The pilot reads it as the mass they are grinding cradling them.
+
+**The two rounds this replaced are the finding.** The first cut moved whole prism FACES; the
+second moved individual WEDGES (the four triangles fanned from a face's centre on `Prism.asset`),
+with the nearest wedge landing on the hull's surface, its three neighbours coming partway by a
+continuous adjacency max, and everything else bit-identical. Both were faithful to the request as
+written, both were proven correct by the harness, and both read on screen as **facets hinging** —
+*"this looks terrible"*, then, after a 10x tone-down, *"this effect looks really bad to the point i
+put this down and let this branch go stale."* The lesson generalises past the Urchin: **a
+deformation is only as smooth as the surface it moves, and 24 triangles is not a surface.** No
+rigid per-triangle motion and no amount of tuning could have fixed it, because a turning facet is
+what 24 triangles can express and nothing else. The fix is more surface and a smoother map.
+
+**So a handful of prisms get more surface.** `HighPolyPrismMesh` builds the identical solid —
+a unit cube of the same half-extent, per-face flat normals, the same face-local UV0 — subdivided
+into `subdivision²` quads per face (3,072 triangles at the shipped 16 against the authored 24), and
+`PrismCradle`'s residency pass hands it to the prisms near a riding hull through the platform's own
+shared-mesh handoff (`Prism.SetRenderMeshOverride`). **That is not a §1 violation and the distinction
+is the one worth stating: a mesh override is FINAL at the instant it is applied — a state change,
+exactly like a shield engaging — not an animation.** The animation is still `f(one global uniform)`
+with zero per-prism CPU per frame. Three properties make the swap invisible and affordable:
+
+- it happens where the drape **provably cannot have moved anything** (`residencyMargin` beyond
+  `hullRadius + drapeReach`), so a prism changes geometry only while every one of its vertices is
+  still exactly where the authored mesh put it;
+- the mesh is **SHARED**, so the resident prisms stay in one instanced batch instead of minting a
+  mesh and a draw call each (the rule CLAUDE.md's exotic-visual handoff already records);
+- it is **BUDGETED** (`maxResidentPrisms`, 24 — ~74k triangles at the shipped subdivision), and the
+  nearest prisms win.
 
 `PrismCradle` (`_Scripts/Utility/`) publishes a bank of `PrismCradle.Slots` (4) global slots once
 per frame from `LateUpdate` — `_PrismCradleCentre[i]` (hull centre + radius), `_PrismCradleWeight[i]`
-(eased strength) and `_PrismCradleParams` (outer, inner, live count, neighbour spread) — from a frame-stamped
+(eased strength) and `_PrismCradleParams` (drape reach, exponent, live count) — from a frame-stamped
 registry that `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`,
-gated on the new `GunVesselTransformer.IsRiding`) reports into from `Update`. `PrismCradle.hlsl`
-runs the deformation in the VERTEX stage, spliced **last** on both live graphs' `VertexDescription.
-Position` and `.Normal` by `Tools/Shaders/wire_prism_cradle.py`, which also adds the one other
-node the wedge id needs — an OBJECT-space Tangent Vector into the function's `Tangent` slot (the
-same census as the corridor, the sight, the jiggle and the flight clock, for the same reason; the
-three sibling wirers that pinned the old tail now walk through the cradle node, and the wirer
-MIGRATES a graph carrying the first cut's per-face node). Tuning: `Resources/PrismCradleConfig`
-(`PrismCradleConfigSO`). Proof: `Tools/Shaders/verify_prism_cradle.py` compiles the SHIPPED HLSL
-with clang++ and holds ten properties over randomized inputs on the real 24-wedge mesh layout
-under a (3, 1, 6) model scale, including a negative control.
+gated on `GunVesselTransformer.IsRiding`) reports into from `Update`, and reconciles residency in
+the same pass. `PrismCradle.hlsl` runs the deformation in the VERTEX stage, spliced **last** on
+both live graphs' `VertexDescription.Position` and `.Normal` by `Tools/Shaders/wire_prism_cradle.py`
+(the same census as the corridor, the sight, the jiggle and the flight clock, for the same reason;
+the three sibling wirers that pinned the old tail walk through the cradle node). Tuning:
+`Resources/PrismCradleConfig` (`PrismCradleConfigSO`). Proof: `Tools/Shaders/verify_prism_cradle.py`
+compiles the SHIPPED HLSL with clang++ and holds ten properties over randomized inputs under a
+(3, 1, 6) model scale, including a negative control.
 
-Seven properties worth carrying to the next one:
+Six properties worth carrying to the next one:
 
 - **Live data, so a global — even for geometry.** "Where is the hull relative to this prism" fails
   §1's dividing question (the GPU could not have known it at any stamp), so a per-prism stamp is
@@ -1769,71 +1785,57 @@ Seven properties worth carrying to the next one:
   at once, by publishing the position ONCE. The hull's RADIUS travels beside the centre only
   because a slot is one float4; it is measured once (`PrismOcclusionCorridor.
   MeasureCircumscribedRadius`, the corridor's own hull measurement) or authored, never per frame.
-- **A vertex shader can find its TRIANGLE without a bake — the mesh already says which one.**
-  `Prism.asset` (72 verts, 24 tris) is hard-edged and fanned, and every vertex carries its face
-  normal `n` plus a tangent `t` pointing from the face centre at ITS OWN wedge's outer edge — so
-  `(n, t)` is the wedge id, `b = n × t` names the two wedges beside it and `(t, n)` the one across
-  the prism edge, with no neighbour access and no TEXCOORD1. The face plane's distance `h = dot(n,
-  v)` is the same for every vertex of the face and survives every earlier stage of the chain (grow
-  scale, jiggle and the suction lerp keep it constant), so the wedge centroid `h·(n + ⅔t)` is exact
-  through them all. The first cut used the origin's foot on the face plane as a per-FACE centroid,
-  which was exact too — and moved the whole face, which is what the user saw and rejected: *"it
-  brought the whole rectangular face, when it should only grab one triangle."* A mesh without a
-  per-wedge tangent (the legacy blocks on the built-in cube, the shield octahedra) still moves
-  rigidly per face, about a pivot ⅔h along whatever tangent it has.
-- **The vertex finds the NEAREST triangle on the whole prism itself.** Every one of the 24 wedge
-  centroids is `origin ± h·col_a ± ⅔h·col_b` for two columns of the model matrix, so the minimum
-  hull distance over the prism is 24 lengths in the vertex shader — and `near(X) = 1 −
-  smoothstep(0, spread, d_X − d_min)` says how nearly as close as the nearest any wedge is.
-- **Adjacency is a CONTINUOUS max, not a gate — and that is a continuity requirement, not a
-  softening.** A wedge's weight is `near(W) × max(near(W)^STRAY, near(N1), near(N2), near(N3))`:
-  the nearest scores 1, its neighbours `near`, and anything else `near^(1+STRAY)`, exactly 0 beyond
-  the spread. A hard "is my neighbour the nearest" test would pop the incoming nearest's other
-  neighbours in from zero on the frame it takes over — and the nearest can change to a
-  NON-adjacent wedge (six wedges meet in a ring around a prism corner, and a path over the corner
-  can cross straight to the ring-opposite), where a hard test drops the outgoing wedge from full to
-  nothing in one frame. `near` is continuous in the hull's position and so is a max of it. The
-  stated price: on a THIN prism (a 1 u slab's side face, whose four wedges' centroids sit within a
-  unit of each other) or over a square face's centre, a non-adjacent wedge nearly tied with the
-  nearest comes some of the way too — held back by the stray power (`PRISM_CRADLE_STRAY_POWER`,
-  4), never cut, because "exactly zero until it is the nearest, then one" is the snap the request
-  forbids. The harness measures it (a stray at 98% on the slab's side, where the two side wedges
-  are 0.7 u apart under a 4 u hull) and holds the untouched claim bit-for-bit wherever the nearest
-  is CLEAR (a 6 u cube).
-- **Blend the MOTION, not the vertices.** The wedge's rigid transform (minimal rotation onto the
-  target normal, translation onto the surface) is scaled by the weight — angle × w, offset × w —
-  so a half-cradled wedge is a whole triangle half-way there, never a shrunken one — which is also
-  what makes the shipped `MaxStrength 0.1` a tuning dial rather than a distortion, and what lets it
-  live on the CPU (the publisher scales the weight it banks, so the shader is untouched and the
-  harness that proves the deformation still proves it). The harness
-  holds pairwise world distances to 6e-6 under the (3, 1, 6) scale; a rigid motion is only rigid
-  in an isotropic frame, which is why the arithmetic is in world space (the jiggle reached the same
-  conclusion from the other side). The WRAP falls out of it: the cross-edge neighbour's normal is
-  carried onto the direction to the hull, so it is always its outward face that arrives at the
-  surface (measured: `dot(outward normal, to hull)` −0.18 → 0.84 for the wedge across the edge).
-- **The geometry demanded one term the request did not name: a FACING gate.** A face whose normal
-  points AWAY from the hull is on the prism's far side, and wrapping it is a 180° flip about an
-  axis the cross product cannot define — and the Urchin rides the CENTRELINE of a trail, so the far
-  face's normal line passes through the hull constantly and the flip's axis would swing through
-  every direction as it does, spinning the triangle. The gate fades such wedges out between
-  `dot = −0.5` and `0`, where the rotation axis is always conditioned; wedges at 90° (the ridden
-  prism's own sides, the neighbours it is rolling toward) are above it and wrap. Nothing is lost:
-  a wedge pointing away is behind the wedges pointing toward. The negative control rebuilds the
-  shipped file with the gate's `#ifndef` dials overridden and shows the far wedge move.
-- **Strength is EASED, never switched** (0.25 s in, 0.4 s out) — a bare on/off would snap every
-  triangle in the band on one frame. Continuity is measured, not argued: sweeping the hull 0.01 u
-  at a time along the ribbon, diagonally across a face centre (the 4-way tie) and through the
-  band's outer edge, no vertex moves more than 0.04 u per step, hand-offs and band edge included.
+- **The whole deformation is ONE LINE, and that is why it reads as fabric.** With `rad = p − U`,
+  `d = |rad|`, `s = d − R`: `p' = U + (rad/d)·(d − s·k(s)·w)`. Inside the hull `k = 1`, so at full
+  strength the vertex lands exactly on the surface; outside, `k` falls from 1 at the surface to 0
+  at `drapeReach`. No adjacency, no per-triangle case, no facets, no bake, no TEXCOORD — the map
+  is a pure function of world position and world normal, so it is correct on ANY mesh: the
+  high-poly copy, the authored 24-triangle prism just outside the residency band, the built-in
+  cube, the shield octahedra, the exploding debris. There is no geometry it can be wrong about.
+- **There is no seam because the falloff is C1 at BOTH ends.** `k = (1 − smoothstep(0,1,t))^e`
+  with `t = s/reach`: smoothstep's derivative vanishes at 0 and 1, so the displacement, its first
+  derivative AND the normal correction are all exactly zero at `s = drapeReach`. The reach is the
+  width of the lip, not a cutoff. (The exponent is floored at 1 because `(1−S)^(e−1)` diverges at
+  the far edge below that — the one place the shaping dial can put a crease exactly where the
+  effect is supposed to vanish without one.)
+- **The normal is the map's ANALYTIC inverse-transpose, and the cheap alternative is a trap.**
+  In the radial/tangential frame the differential is `diag(a, b, b)` with `a = f'(d) = 1 − w(k +
+  s·k')` and `b = f(d)/d`, so `n' = normalize(dir·(n·dir)/a + (n − dir·(n·dir))/b)`. The obvious
+  shortcut — lerp `n` toward `dir·sign(n·dir)` — pops discontinuously wherever `n·dir` crosses
+  zero, which on the SIDE faces of the very prism the Urchin is riding is a line straight down the
+  middle of the effect. Note `a → 0` at full strength inside the hull is CORRECT rather than
+  degenerate: a patch flattened onto a sphere has the sphere's normal, and the guarded `1/a` is
+  what delivers it.
+- **A differential claim is proven by CONVERGENCE, not by a tolerance.** The harness deforms a tiny
+  triangle in a face's plane and compares its geometric normal to the one the shader returns at the
+  centroid — but a flat patch of ANY size disagrees at second order in its size, so a single
+  tolerance only measures which patch was chosen. (Measured, and it cost a debugging round: at a
+  fixed 0.02 u patch the worst disagreement was 0.71, which looks exactly like a broken Jacobian.)
+  The assertion is that **halving the patch quarters the error** — shipped: 0.32 → 0.10 → 0.026 →
+  0.0058 — which is the signature of an exact first derivative and nothing else. The negative
+  control rebuilds the file with the radial term neutered and the error **plateaus** at 0.74
+  instead of converging. General rule: *when the claim is "this value is a derivative", assert the
+  convergence RATE; a wrong derivative converges to a constant and a tolerance cannot tell them
+  apart.*
+- **Strength is EASED, never switched** (0.25 s in, 0.4 s out), and the map is affine in the weight,
+  so a half-engaged cradle is the same drape at half depth rather than a differently-shaped one.
+  A bare on/off would snap every vertex in the band on one frame.
 
-**Two stated limitations.** (1) The ride is simulated on the machine that owns the vessel (the
+**Three stated limitations.** (1) The ride is simulated on the machine that owns the vessel (the
 owner, or the host for an AI): a remote replica's transformer is inactive and never attaches, so a
 remote pilot sees no cradle around another player's Urchin — ride state does not replicate today.
-(2) Entities Graphics culls by the prism's `RenderBounds`, which a per-frame global cannot expand,
-so a prism whose bounds are just off-screen can carry a wrapped wedge that should be on-screen; the
-ride camera sits 6.7 u off the hull looking at it and the band is 15 u, so in practice the band is
-near the centre of the frame. Neither has been seen on screen: **nothing here has been run in the
-editor** — the wiring is machine-validated, the HLSL is executed by the harness, and the C# is
-Roslyn-checked against a transcribed stub harness; the LOOK is a playtest away.
+(2) The spatial index keys prisms by their CENTRE, so a very long prism whose centre is outside the
+residency radius but whose end pokes inside is not made resident. It still drapes — the shader
+knows nothing about residency — just at the authored mesh's resolution: **coarse, never wrong.**
+The same applies to subdivision, which is in PARAMETER space, so a 60×1×1 lattice strut is 60×
+coarser along its length than across it; the prismscapes an Urchin actually rides are modest.
+(3) Entities Graphics culls by the prism's `RenderBounds`, which a per-frame global cannot expand,
+so a prism whose bounds are just off-screen can carry a draped face that should be on-screen; the
+ride camera sits 6.7 u off the hull looking at it and the reach is a few units, so in practice the
+band is near the centre of the frame. Neither the look nor the residency cost has been seen on
+screen: **nothing here has been run in the editor** — the wiring is machine-validated, the HLSL is
+executed by the harness, and the C# is Roslyn-checked against a transcribed stub harness; the LOOK
+is a playtest away.
 
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md` § "The
 cradle".
@@ -2285,7 +2287,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C13b | Environment lay pooling: `PrismTrailBuilder.LayOne` through a dedicated unbounded prefab-keyed pool so prisms **snap Blue** then `ChangeTeam` clock-lerps Blue→domain | ✅ SHIPPED 2026-08-25 (Prompt 14). **Not a clock fix** (C13a was; pooling never caused the miss). Design: `EnvironmentPrismPool` — standalone static + hidden DontDestroyOnLoad host; prefab-keyed stacks; **no capacity cap, never Destroy on Release overflow**. Membership = issued dict + `TryRelease`; **never** wire the prism's pool-return delegate (`Cell.RetireWorldIntoSuctionRoot` would vacuum Wanderway). `PrepareForLay` restores authored kind + scale window, `ResetToNeutralForReuse` (writes `currentDomain = Blue`, no `OnTeamChanged`) + `BindMaterialsImmediate`. `CloneBatchAsync` → `GetBatchAsync` (reuse first, `InstantiateAsync` shortfall only). Flora HealthPrism Instantiates folded (`PhyllotacticFlora` / `BranchingFlora` / `AssembledFlora`). Named, not folded: `Boid.cs`, `SpawnableBase` non-prism `leafPrefab`, `SpawnableCord`. Playtest outstanding → Prompt 11. **Do not restore "final domain material from frame 0"** — that was the Jade→Jade no-op. |
 | C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.9 |
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
-| C16 | The Urchin's CRADLE — the prism TRIANGLE nearest a RIDING Urchin wraps onto its hull, its three neighbours partway, everything else still (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2), re-cut the same day from whole faces to wedges: `PrismCradle` (a 4-slot frame-stamped bank, centre + radius + eased strength + neighbour spread, flushed in LateUpdate) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, spliced LAST on both live graphs' Position AND Normal by `Tools/Shaders/wire_prism_cradle.py`, which also feeds it an OBJECT-space Tangent Vector and migrates the per-face node; the flight, jiggle and suction wirers walk through it) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 15 → 10 u band, 2.5 u neighbour spread, **0.1 max strength**, 0.25 s in / 0.4 s out). No bake, no property surgery: `Prism.asset`'s per-wedge TANGENT already names the triangle, the wedge centroid is `h·(n + ⅔t)`, and the vertex finds the prism's nearest wedge itself over the 24 closed-form centroids. Adjacency is a continuous max (`near × max(near^4, near of the 3 neighbours)`), never a hard gate — the nearest can hand off to a NON-adjacent wedge over a corner, where a gate would snap. Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file on the real 24-wedge layout: identity off/outside, centroid on the surface + normal at the centre + rigid under (3,1,6), facing gate, one wedge + 3 neighbours partway + 20 bit-identical under a clear nearest, the outward-face wrap, two triangles on the surface at an edge, continuity ≤ 0.04 u per 0.01 u step incl. the face-centre tie, half-strength = half-motion, nearest of two hulls, gate negative control). Not run in the editor. |
+| C16 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
 
 Phase D — lock-in:
 

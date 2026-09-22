@@ -34,10 +34,9 @@ namespace CosmicShore.Tests
         };
 
         // Slot ids in the order the HLSL declares its parameters (inputs first, then outputs):
-        // Position 0, Normal 1, Tangent 2, OutPosition 3, OutNormal 4.
-        const int SlotTangent = 2;
-        const int SlotOutPosition = 3;
-        const int SlotOutNormal = 4;
+        // Position 0, Normal 1, OutPosition 2, OutNormal 3.
+        const int SlotOutPosition = 2;
+        const int SlotOutNormal = 3;
 
         static string[] Blocks(string path)
         {
@@ -63,8 +62,8 @@ namespace CosmicShore.Tests
             Assert.IsTrue(File.Exists(HlslPath), $"{HlslPath} is missing.");
             string hlsl = File.ReadAllText(HlslPath);
 
-            Assert.IsTrue(hlsl.Contains("void PrismCradleDeform_float(float3 Position, float3 Normal, float3 Tangent,"),
-                "PrismCradle.hlsl no longer declares PrismCradleDeform_float(Position, Normal, Tangent, ...) — every " +
+            Assert.IsTrue(hlsl.Contains("void PrismCradleDeform_float(float3 Position, float3 Normal,"),
+                "PrismCradle.hlsl no longer declares PrismCradleDeform_float(Position, Normal, ...) — every " +
                 "wired graph would fail to compile, or bind its slots to the wrong parameters.");
 
             // The bank is FILE-SCOPE arrays (Shader Graph has no array property type, and an
@@ -120,8 +119,8 @@ namespace CosmicShore.Tests
                 Assert.AreEqual(1, posFeeders.Count, $"{graphPath}: VertexDescription.Position must have exactly one feeder.");
                 Assert.AreEqual(1, nrmFeeders.Count, $"{graphPath}: VertexDescription.Normal must have exactly one feeder.");
 
-                // LAST on the chain: the cradle feeds the blocks DIRECTLY. A node spliced after it
-                // would operate on a per-face rigid motion it knows nothing about.
+                // LAST on the chain: the cradle feeds the blocks DIRECTLY. A node spliced after
+                // it would operate on a draped position and normal it knows nothing about.
                 Assert.AreEqual((cradleId, SlotOutPosition), (posFeeders[0].outNode, posFeeders[0].outSlot),
                     $"{graphPath}: VertexDescription.Position is not fed by {FunctionName}.OutPosition — the cradle must be LAST.");
                 Assert.AreEqual((cradleId, SlotOutNormal), (nrmFeeders[0].outNode, nrmFeeders[0].outSlot),
@@ -135,18 +134,6 @@ namespace CosmicShore.Tests
                     Assert.IsNotNull(src.outNode, $"{graphPath}: {FunctionName}.{label} is unconnected — the vertex chain was dropped.");
                     Assert.AreNotEqual(cradleId, src.outNode, $"{graphPath}: {FunctionName}.{label} is fed by itself.");
                 }
-
-                // The wedge id: Tangent is fed by an OBJECT-space Tangent Vector node. A world-space
-                // one names the wrong wedge on every rotated prism; a missing one collapses the
-                // cradle to whole faces about an off-centre pivot, silently.
-                var tanSrc = edges.FirstOrDefault(e => e.inNode == cradleId && e.inSlot == SlotTangent);
-                Assert.IsNotNull(tanSrc.outNode, $"{graphPath}: {FunctionName}.Tangent is unconnected — no vertex can name its wedge.");
-                var tanBlock = blocks.FirstOrDefault(b => b.Contains($"\"m_ObjectId\": \"{tanSrc.outNode}\""));
-                Assert.IsNotNull(tanBlock, $"{graphPath}: the node feeding {FunctionName}.Tangent is missing from the file.");
-                Assert.IsTrue(tanBlock.Contains("\"m_Type\": \"UnityEditor.ShaderGraph.TangentVectorNode\""),
-                    $"{graphPath}: {FunctionName}.Tangent must be fed by a Tangent Vector node.");
-                Assert.IsTrue(Regex.IsMatch(tanBlock, "\"m_Space\":\\s*0\\b"),
-                    $"{graphPath}: the cradle's Tangent Vector node is not OBJECT space (m_Space 0).");
 
                 // The bank must NOT also exist as graph properties: a same-named property would
                 // shadow the file-scope declaration and read the per-material default (zero).
@@ -190,18 +177,95 @@ namespace CosmicShore.Tests
                 config = ScriptableObject.CreateInstance<PrismCradleConfigSO>();
             }
             Assert.IsTrue(config.IsSane,
-                $"PrismCradleConfig is not sane (outer {config.OuterRange}, inner {config.InnerRange}): the shader treats that band as OFF.");
-            Assert.Greater(config.OuterRange, config.InnerRange,
-                "The cradle band must ramp: outer strictly wider than inner, or the smoothstep divides by zero.");
-            Assert.Greater(config.NeighbourSpread, 0f,
-                "NeighbourSpread must be positive: at 0 the adjacency smoothstep divides by zero and no neighbour ever hands off.");
-            // The ceiling the eased strength runs to. Above 1 the blend overshoots the hull's
-            // surface and over-rotates past its centre, which is a different motion rather than a
-            // stronger one; at 0 the cradle is off, which is what `enabled` is for.
+                $"PrismCradleConfig is not sane (reach {config.DrapeReach}, exponent {config.DrapeExponent}): the shader treats that as OFF.");
+            Assert.Greater(config.DrapeReach, 0f,
+                "DrapeReach must be positive: at 0 the falloff divides by zero and nothing outside the hull ever rises.");
+            Assert.GreaterOrEqual(config.DrapeExponent, 1f,
+                "DrapeExponent below 1 puts a crease at exactly the distance the drape is supposed to vanish without one.");
+            // The ceiling the eased strength runs to. Above 1 the map overshoots the hull's
+            // surface rather than landing on it; at 0 the cradle is off, which is what
+            // `enabled` is for.
             Assert.Greater(config.MaxStrength, 0f,
                 "PrismCradleConfig.MaxStrength is 0 — the cradle publishes a zero weight and nothing deforms. Use `enabled` to switch it off.");
             Assert.LessOrEqual(config.MaxStrength, 1f,
-                "PrismCradleConfig.MaxStrength is above 1 — the motion would overshoot the hull rather than land on it.");
+                "PrismCradleConfig.MaxStrength is above 1 — the map would push mass past the hull rather than onto it.");
+        }
+
+        [Test]
+        public void Config_ResidencySwapIsInvisible()
+        {
+            var config = AssetDatabase.LoadAssetAtPath<PrismCradleConfigSO>(
+                "Assets/Resources/" + PrismCradle.ConfigResourcePath + ".asset")
+                ?? ScriptableObject.CreateInstance<PrismCradleConfigSO>();
+
+            // The whole point of the margin: a prism gains or loses its high-poly geometry only
+            // where the drape provably cannot have moved any of its vertices. A zero margin puts
+            // the swap exactly ON the boundary, where a float comparison decides whether the
+            // player sees a prism change shape.
+            Assert.Greater(config.ResidencyMargin, 0f,
+                "PrismCradleConfig.ResidencyMargin is 0 — the mesh swap would happen at exactly the distance " +
+                "the drape reaches, so it is a coin toss whether the geometry change is visible.");
+
+            // The budget. 0 means the drape only ever runs on the authored 24-triangle prism,
+            // which is the look two playtests rejected; an unbounded one is the cost nobody
+            // signed up for.
+            Assert.Greater(config.MaxResidentPrisms, 0,
+                "PrismCradleConfig.MaxResidentPrisms is 0 — nothing is ever swapped, so the drape runs on the " +
+                "authored 24-triangle prism and reads as facets hinging (the look this redesign replaced).");
+            Assert.LessOrEqual(config.MaxResidentPrisms, 64,
+                "PrismCradleConfig.MaxResidentPrisms is above 64 — this is the feature's entire performance " +
+                "budget and 'a handful of prisms' is what makes the high-poly swap affordable at all.");
+
+            long tris = (long)config.MaxResidentPrisms * config.Subdivision * config.Subdivision * 2 * 6;
+            Assert.Less(tris, 200000,
+                $"The residency budget is {tris} triangles ({config.MaxResidentPrisms} prisms x subdivision " +
+                $"{config.Subdivision}) — lower MaxResidentPrisms or Subdivision.");
+        }
+
+        [Test]
+        public void HighPolyPrismMesh_IsTheSameSolidAtHigherDensity()
+        {
+            var mesh = HighPolyPrismMesh.Get(8);
+            Assert.IsNotNull(mesh, "HighPolyPrismMesh.Get returned null.");
+
+            // Same solid: a unit cube of the half-extent BOTH shipped prism mesh families use
+            // (the authored Prism.asset and the built-in Cube). A different extent is a prism
+            // that visibly changes size the instant it becomes resident.
+            var b = mesh.bounds;
+            Assert.AreEqual(HighPolyPrismMesh.HalfExtent, b.extents.x, 1e-5f, "high-poly prism x extent drifted");
+            Assert.AreEqual(HighPolyPrismMesh.HalfExtent, b.extents.y, 1e-5f, "high-poly prism y extent drifted");
+            Assert.AreEqual(HighPolyPrismMesh.HalfExtent, b.extents.z, 1e-5f, "high-poly prism z extent drifted");
+            Assert.AreEqual(Vector3.zero, b.center, "high-poly prism is not centred on its origin");
+
+            Assert.AreEqual(8 * 8 * 2 * 6, mesh.triangles.Length / 3, "high-poly prism triangle count");
+            Assert.AreEqual(9 * 9 * 6, mesh.vertexCount, "high-poly prism vertex count (per-face grids, hard edges)");
+
+            // HARD edges: every normal is one of the six axis directions, and every vertex's
+            // normal agrees with the face it sits on. A smoothed prism reads as a ball.
+            var verts = mesh.vertices;
+            var norms = mesh.normals;
+            Assert.AreEqual(verts.Length, norms.Length, "high-poly prism has no per-vertex normals");
+            for (int i = 0; i < norms.Length; i++)
+            {
+                float a = Mathf.Abs(norms[i].x) + Mathf.Abs(norms[i].y) + Mathf.Abs(norms[i].z);
+                Assert.AreEqual(1f, a, 1e-4f, $"vertex {i}'s normal is not an axis direction — the faces are smoothed");
+                Assert.AreEqual(HighPolyPrismMesh.HalfExtent, Vector3.Dot(verts[i], norms[i]), 1e-4f,
+                    $"vertex {i} does not lie on the face its normal names");
+            }
+
+            // OUTWARD winding: every triangle's geometric normal agrees with its vertices'.
+            var tris = mesh.triangles;
+            for (int t = 0; t < tris.Length; t += 3)
+            {
+                Vector3 g = Vector3.Cross(verts[tris[t + 1]] - verts[tris[t]], verts[tris[t + 2]] - verts[tris[t]]);
+                Assert.Greater(Vector3.Dot(g.normalized, norms[tris[t]]), 0.99f,
+                    $"triangle {t / 3} is wound INWARD — the prism would render inside-out the instant it became resident");
+            }
+
+            // Shared and cached: the whole reason a swapped prism still batches.
+            Assert.AreSame(mesh, HighPolyPrismMesh.Get(8), "HighPolyPrismMesh.Get is not returning a cached shared mesh");
+            Assert.IsTrue(HighPolyPrismMesh.IsHighPoly(mesh), "HighPolyPrismMesh does not recognise its own mesh");
+            Assert.IsFalse(HighPolyPrismMesh.IsHighPoly(null), "HighPolyPrismMesh claims null is one of its meshes");
         }
 
         [Test]
