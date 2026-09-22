@@ -1060,6 +1060,98 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// How many LIVE prisms stand inside the CONE from <paramref name="apex"/> (a point) to
+        /// the disc of <paramref name="baseRadius"/> at <paramref name="basePoint"/> — i.e. how
+        /// much mass is between a lens and a thing it is looking at.
+        ///
+        /// <para>A COUNT rather than a gather, deliberately: the caller wants "is this view
+        /// blocked, and by how much", and in a dense arena (Atlantis ~69k prisms, Rampage's
+        /// intensity-1 forest ~49k) materialising a <c>List&lt;Prism&gt;</c> of several thousand
+        /// managed references per candidate vantage — and then discarding all of them — costs far
+        /// more than the walk itself. Nothing here touches <c>_prisms</c>.</para>
+        ///
+        /// <para>The shape is a CONE and not <see cref="QuerySegment"/>'s capsule because that is
+        /// what occlusion actually is: a prism a metre off the axis at the far end barely clips the
+        /// subject's silhouette, while the same prism a metre off the axis right at the lens fills
+        /// the frame. The cone from the eye to the subject's circumscribing sphere is exactly the
+        /// volume <c>PrismOcclusionCorridor</c> dissolves for the same reason, so a caller counting
+        /// here and the shader clearing there are describing one geometry.</para>
+        ///
+        /// <para>Both caps are exclusive: a prism behind the apex or past the base disc is not
+        /// between them and is not counted, which is what lets a caller end the cone one hull
+        /// radius short of the subject and so count what OBSCURES the ship rather than the ship's
+        /// own surroundings. Main-thread only; allocates nothing.</para>
+        /// </summary>
+        public int CountInCone(Vector3 apex, Vector3 basePoint, float baseRadius)
+        {
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+
+            float3 p0 = apex;
+            float3 ab = (float3)basePoint - p0;
+            float abLenSq = math.lengthsq(ab);
+            if (abLenSq < 1e-6f || baseRadius <= 0f) return 0;
+
+            // The cone is contained in the capsule of the same axis and radius, so the AABB — and
+            // therefore the bucket walk — is QuerySegment's.
+            float3 lo = math.min(p0, (float3)basePoint) - baseRadius;
+            float3 hi = math.max(p0, (float3)basePoint) + baseRadius;
+            int3 min = (int3)math.floor(lo / BucketSizeMeters);
+            int3 max = (int3)math.floor(hi / BucketSizeMeters);
+
+            int count = 0;
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (IsInsideCone(s.Position, p0, ab, abLenSq, baseRadius)) count++;
+                }
+                return count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (IsInsideCone(s.Position, p0, ab, abLenSq, baseRadius)) count++;
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return count;
+        }
+
+        /// <summary>
+        /// Is <paramref name="p"/> inside the cone from <paramref name="a"/> (a point) to the disc
+        /// of <paramref name="baseRadius"/> at <c>a + ab</c>? The axial parameter is deliberately
+        /// UNCLAMPED, unlike <see cref="DistanceToSegmentSq"/>'s: clamping would round a prism
+        /// behind the apex onto the apex and a prism past the base onto the base disc, turning a
+        /// cone into a capsule with rounded caps and counting mass on the wrong side of both ends.
+        ///
+        /// <para>Public for the same reason <see cref="DistanceToSegmentSq"/> is: the geometry is
+        /// the part that can be silently wrong, and it is the only part an edit-mode test can
+        /// reach without a live index.</para>
+        /// </summary>
+        public static bool IsInsideCone(float3 p, float3 a, float3 ab, float abLenSq, float baseRadius)
+        {
+            float3 ap = p - a;
+            float t = math.dot(ap, ab) / abLenSq;
+            if (t <= 0f || t >= 1f) return false;
+
+            // |ap|^2 - (t|ab|)^2 is the squared perpendicular offset; the cone's allowance there
+            // grows linearly from nothing at the lens to baseRadius at the subject.
+            float perpSq = math.lengthsq(ap) - t * t * abLenSq;
+            float allowed = baseRadius * t;
+            return perpSq <= allowed * allowed;
+        }
+
+        /// <summary>
         /// Squared distance from <paramref name="p"/> to the segment starting at
         /// <paramref name="a"/> with direction/length <paramref name="ab"/> — the same
         /// point-to-segment metric a CapsuleCollider uses, clamped to the endpoints.

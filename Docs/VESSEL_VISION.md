@@ -82,6 +82,17 @@ being correct. Every *other* ship is still marked from such a camera, which is w
 **no `SetSuppressed` hold** — the corridor and the speed tunnel are effects for the pilot at the
 controls, and this one is most useful precisely where they are suppressed.
 
+**There is one scoped override, and it is the opposite of a suppression.**
+`VesselVisionShading.BeginCapturePass` / `EndCapturePass` rescale the band's distance axis and lift
+the local exclusion for ONE hand-stepped render — the screenshot director's, which renders into a
+RenderTexture by calling `Camera.Render()` itself (`Docs/SCREENSHOT_DIRECTOR.md`). The distinction
+that keeps the law intact is that a suppression hold can switch the aid OFF, which is what makes an
+aid authorable-away; this can only ever mark MORE, on a camera nobody is looking through. It is
+released unconditionally in a `finally`, and it would self-heal within a frame regardless, since the
+publisher re-writes all four globals every `LateUpdate`. The local exclusion lifts because a
+photograph OF the pilot's own hull is the one case the exclusion's reasoning — *do not clutter a
+pilot's own cockpit view* — does not cover.
+
 > **The general trap, and it is the reason this survived review once:** a number read off a
 > `ScriptableObject`'s **field initializer** is not the number the game runs on. `IsSane` encoded
 > the false premise, a test asserted it, and three documents repeated it — all self-consistently,

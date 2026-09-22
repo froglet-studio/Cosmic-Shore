@@ -63,6 +63,29 @@ namespace CosmicShore.ScriptableObjects
                  "the rarer and more interesting moment, so this is deliberately high.")]
         [Range(0f, 1f)] public float pairChance = 0.85f;
 
+        [Header("Vessel mark")]
+        [Tooltip("Let the vessel vision band mark the ships in a capture, INCLUDING your own - " +
+                 "which the band normally excludes, since it is your own cockpit view it would " +
+                 "otherwise clutter. Off renders hulls exactly as they look in play.")]
+        public bool markDistantVessels = true;
+
+        [Tooltip("Where in a concept's own distance range the mark starts arriving. 0.5 = the " +
+                 "halfway point of that shot's furthest zoom, reaching full strength at the " +
+                 "furthest zoom itself - so a close shot photographs the real hull and a pulled-" +
+                 "back one photographs the domain-coloured silhouette.")]
+        [Range(0f, 1f)] public float markEngageFraction = 0.5f;
+
+        [Header("Clear line of sight")]
+        [Tooltip("How many vantages to try per capture, keeping the one with the least prism " +
+                 "mass between the lens and the subject. 1 disables the search. The CONCEPT is " +
+                 "rolled once and only the vantage within it is re-rolled, so this changes where " +
+                 "the shot is taken from and never what kind of shot it is.")]
+        [Range(1, 24)] public int clearShotSamples = 6;
+
+        [Tooltip("Stop searching as soon as a vantage is this clear (prisms in the way). 0 = " +
+                 "keep looking until something is perfectly clear or the samples run out.")]
+        [Min(0)] public int clearShotAcceptOccluders = 0;
+
         [Header("Concepts")]
         [Tooltip("Rolled per capture, weighted. Add your own - a concept is only ranges.")]
         public List<ScreenshotConcept> concepts = new List<ScreenshotConcept>();
@@ -278,6 +301,63 @@ namespace CosmicShore.ScriptableObjects
         /// <c>min</c> overlap into one shape; further than <c>max</c> and a shot holding both
         /// has to pull back until neither reads as a ship.
         /// </summary>
+        /// <summary>
+        /// The furthest any concept in this library can place the camera — the reach the whole
+        /// set is measured against when a single concept cannot speak for itself.
+        /// </summary>
+        public float FurthestZoom()
+        {
+            float furthest = 0f;
+            if (concepts == null) return furthest;
+
+            for (int i = 0; i < concepts.Count; i++)
+            {
+                var concept = concepts[i];
+                if (concept == null || !concept.IsUsable) continue;
+                furthest = Mathf.Max(furthest, Mathf.Max(concept.distance.x, concept.distance.y));
+            }
+            return furthest;
+        }
+
+        /// <summary>
+        /// Where the vessel vision band's rising edge goes for a capture taken on
+        /// <paramref name="concept"/>: arriving at <see cref="markEngageFraction"/> of the way
+        /// through that concept's own distance range, and full at its furthest zoom.
+        ///
+        /// <para>Per-concept rather than one fleet-wide distance, because the library spans 12
+        /// units to 520 and a single threshold either marks nothing on two thirds of the shots or
+        /// marks everything on the close ones. Measuring each shot against its OWN range is what
+        /// makes the rule read the same way everywhere: pulled back for this kind of shot means
+        /// marked, close in for this kind of shot means the real hull.</para>
+        ///
+        /// <para>A PAIR concept's <c>distance</c> is a FLOOR rather than a range (the two-shot fit
+        /// overrides it), so a band with no width cannot say where its own halfway point is; those
+        /// fall back to the LIBRARY's furthest zoom, which is why <c>Duo Close Pass</c> - authored
+        /// (0, 0) and fitted to something close - correctly photographs an unmarked hull.</para>
+        /// </summary>
+        public bool TryResolveVisionBand(ScreenshotConcept concept, out float nearFadeStart, out float nearFullStart)
+        {
+            nearFadeStart = nearFullStart = 0f;
+            if (!markDistantVessels || concept == null) return false;
+
+            float lo = Mathf.Min(concept.distance.x, concept.distance.y);
+            float hi = Mathf.Max(concept.distance.x, concept.distance.y);
+
+            if (hi - lo < MinMarkBandWidth)
+            {
+                lo = 0f;
+                hi = FurthestZoom();
+                if (hi <= MinMarkBandWidth) return false;
+            }
+
+            nearFadeStart = Mathf.Lerp(lo, hi, Mathf.Clamp01(markEngageFraction));
+            nearFullStart = hi;
+            return true;
+        }
+
+        /// <summary>A distance range narrower than this cannot locate its own halfway point.</summary>
+        const float MinMarkBandWidth = 1f;
+
         public void ResolvePairBand(out float min, out float max)
         {
             min = Mathf.Max(0f, Mathf.Min(pairSeparation.x, pairSeparation.y));

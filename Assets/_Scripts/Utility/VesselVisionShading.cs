@@ -99,6 +99,7 @@ namespace CosmicShore.Utility
         static Transform _localVessel;
         static MaterialPropertyBlock _block;
         static int _healCursor;
+        static bool _capturePass;
 
         /// <summary>True while the law is publishing a live band.</summary>
         public static bool IsActive => _publishedActive;
@@ -198,6 +199,98 @@ namespace CosmicShore.Utility
         /// <summary>The vessel currently excluded as the local pilot's, or null.</summary>
         public static Transform LocalVessel => _localVessel;
 
+        /// <summary>True while a capture pass is holding the band open (tests / diagnostics).</summary>
+        public static bool IsCapturePassActive => _capturePass;
+
+        /// <summary>
+        /// Open the band for ONE hand-stepped render: rescale it so the mark starts arriving at
+        /// <paramref name="markStartDistance"/> and is a solid silhouette by
+        /// <paramref name="markSolidDistance"/>, and include the local pilot's own hull — both
+        /// undone by <see cref="EndCapturePass"/>.
+        ///
+        /// <para>This is NOT the suppression hold this law deliberately does not have, and the
+        /// difference is the whole justification: a suppression hold would let a camera switch the
+        /// aid OFF, which is what makes an aid authorable-away. This only ever marks MORE, for one
+        /// render, on a camera that is not anybody's eye — the screenshot director's, which renders
+        /// into a RenderTexture by calling <c>Camera.Render()</c> by hand
+        /// (<c>Docs/SCREENSHOT_DIRECTOR.md</c>). Nothing a player is looking through can reach it.</para>
+        ///
+        /// <para>The local exclusion has to lift or the feature is empty: the subject of a
+        /// photograph is usually the local pilot's own ship, which is precisely the hull
+        /// <see cref="EffectiveTint"/> paints with the transparent sentinel. What the exclusion is
+        /// FOR — a pilot not wanting their own cockpit view cluttered by a mark on their own hull —
+        /// simply does not apply to a photograph of that hull.</para>
+        ///
+        /// <para>Safe against a missed release by construction: the publisher re-writes all four
+        /// globals every <c>LateUpdate</c>, so an override that escaped its <c>finally</c> would
+        /// last at most one frame — but the release is unconditional anyway, because the STAMP
+        /// half does not self-heal for a frame or more (the heal is round-robin).</para>
+        ///
+        /// <para>Returns false, changing nothing, when the law is authored off or the requested
+        /// edge is degenerate — a caller must still call <see cref="EndCapturePass"/> only if it
+        /// got true, on the identity-guard principle the corridor's hold uses.</para>
+        /// </summary>
+        public static bool BeginCapturePass(float markStartDistance, float markSolidDistance)
+        {
+            var config = Config;
+            if (!config.Enabled || _capturePass) return false;
+
+            float start = Mathf.Max(0f, markStartDistance);
+            float solid = Mathf.Max(markSolidDistance, start + MinCaptureEdgeWidth);
+
+            // COMPRESS the law's own arc onto this shot's range rather than truncating it. Over
+            // distance the band tells a three-beat story — the mark arrives, it reaches full
+            // strength, then the centre break-up closes and the hull becomes a solid silhouette —
+            // and the shipped asset spends 150..350 on the first two beats and 350..900 on the
+            // third. A capture band that only moved the rising edge would fit the first two beats
+            // and never the third, so every photograph would come back an outline with a dithered
+            // middle, which is not the look at range that this exists to put in a picture.
+            // Rescaling the whole arc keeps every SHAPE ratio of the law and moves only its
+            // distance axis, so a shot at its furthest zoom reads like a ship across an arena.
+            float arc = config.BreakupActive
+                ? Mathf.Max(config.BreakupEndDistance - config.NearFadeStart, MinCaptureEdgeWidth)
+                : Mathf.Max(config.NearFullStart - config.NearFadeStart, MinCaptureEdgeWidth);
+            float fullAt = Mathf.Clamp01((config.NearFullStart - config.NearFadeStart) / arc);
+
+            float nearFullStart = Mathf.Max(Mathf.Lerp(start, solid, fullAt), start + MinCaptureEdgeWidth);
+
+            // The FAR edges are deliberately NOT rescaled. They exist so a pilot is not reading
+            // coloured dots across half an arena, which is a thing a cockpit does and a photograph
+            // never does — and rescaling them onto a 39-unit chase shot would put the far fade at
+            // ~40 units and un-mark every ship in the frame. Raised only where the moved rising
+            // edge would have overtaken them, since an inverted band is the one shape the shader
+            // cannot render sanely.
+            float farFullEnd = Mathf.Max(config.FarFullEnd, nearFullStart);
+            float farFadeEnd = Mathf.Max(config.FarFadeEnd, farFullEnd + MinCaptureEdgeWidth);
+
+            Shader.SetGlobalVector(BandId, new Vector4(start, nearFullStart, farFullEnd, farFadeEnd));
+
+            if (config.BreakupActive)
+                Shader.SetGlobalVector(BreakupId, new Vector4(
+                    config.BreakupCells, config.BreakupReach, config.BreakupStrength,
+                    Mathf.Max(solid, nearFullStart + MinCaptureEdgeWidth)));
+
+            _capturePass = true;
+            ReapplyFor(_localVessel);
+            return true;
+        }
+
+        /// <summary>
+        /// Close a <see cref="BeginCapturePass"/>: restore the authored band and re-exclude the
+        /// local pilot's hull, immediately rather than on the next publish, so a second render in
+        /// the same frame cannot inherit the photograph's band.
+        /// </summary>
+        public static void EndCapturePass()
+        {
+            if (!_capturePass) return;
+            _capturePass = false;
+            ReapplyFor(_localVessel);
+            Publish();
+        }
+
+        /// <summary>Smallest gap that keeps a capture band's edges ordered for the shader.</summary>
+        const float MinCaptureEdgeWidth = 0.01f;
+
         /// <summary>
         /// Fill <paramref name="into"/> with every live vessel currently carrying a stamp.
         ///
@@ -245,7 +338,7 @@ namespace CosmicShore.Utility
         /// costs nothing on the GPU — the fragment takes the early-out every unstamped object takes.
         /// </summary>
         static Color EffectiveTint(Entry entry) =>
-            ReferenceEquals(entry.Vessel, _localVessel) ? Color.clear : entry.Tint;
+            !_capturePass && ReferenceEquals(entry.Vessel, _localVessel) ? Color.clear : entry.Tint;
 
         /// <summary>
         /// Mark a DISPLAY-ONLY model — a mini hull in a toy matrix, built from a ship prefab asset
@@ -286,6 +379,7 @@ namespace CosmicShore.Utility
             _entries.Clear();
             _healCursor = 0;
             _localVessel = null;
+            _capturePass = false;
         }
 
         // ---------------- Internals ----------------

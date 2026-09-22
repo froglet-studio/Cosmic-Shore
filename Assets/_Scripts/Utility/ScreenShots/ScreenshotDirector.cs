@@ -78,6 +78,7 @@ namespace CosmicShore.Utility
         {
             _capturing = true;
             bool heldCorridor = false;
+            bool heldVisionBand = false;
 
             try
             {
@@ -139,18 +140,37 @@ namespace CosmicShore.Utility
                     if (flow.sqrMagnitude < 1e-6f) flow = course;
 
                     float aspect = Screen.height > 0 ? (float)Screen.width / Screen.height : 16f / 9f;
+                    float distanceFloor = Mathf.Max(ScreenshotFraming.MinimumDistance, pairRadius * 1.6f);
 
-                    shot = ScreenshotFraming.SolvePair(
-                        concept, pairA.position, pairB.position, flow, pairRadius, _rng,
-                        minimumDistance: Mathf.Max(ScreenshotFraming.MinimumDistance, pairRadius * 1.6f),
-                        aspect: aspect);
+                    shot = PickClearestShot(
+                        config,
+                        () => ScreenshotFraming.SolvePair(
+                            concept, pairA.position, pairB.position, flow, pairRadius, _rng,
+                            minimumDistance: distanceFloor, aspect: aspect),
+                        candidate =>
+                            CountOccluders(candidate.Position, pairA.position, pairRadius) +
+                            CountOccluders(candidate.Position, pairB.position, pairRadius));
                 }
                 else
                 {
-                    shot = ScreenshotFraming.Solve(
-                        concept, subject.position, subject.forward, course, speed, _rng,
-                        minimumDistance: Mathf.Max(ScreenshotFraming.MinimumDistance, hullRadius * 1.6f));
+                    Vector3 subjectPosition = subject.position;
+                    Vector3 nose = subject.forward;
+                    float distanceFloor = Mathf.Max(ScreenshotFraming.MinimumDistance, hullRadius * 1.6f);
+
+                    shot = PickClearestShot(
+                        config,
+                        () => ScreenshotFraming.Solve(
+                            concept, subjectPosition, nose, course, speed, _rng,
+                            minimumDistance: distanceFloor),
+                        candidate => CountOccluders(candidate.Position, subjectPosition, hullRadius));
                 }
+
+                // Mark the ships for the capture frame: the vessel vision band, rescaled so the
+                // mark arrives halfway through this concept's own zoom range and is a solid
+                // domain-coloured silhouette at its furthest. Held across Render() and released in
+                // the outer finally, identity-guarded exactly like the corridor's hold above.
+                if (config.TryResolveVisionBand(concept, out float markStart, out float markSolid))
+                    heldVisionBand = VesselVisionShading.BeginCapturePass(markStart, markSolid);
 
                 byte[] png = Render(config, shot);
                 if (png == null) return;
@@ -167,8 +187,90 @@ namespace CosmicShore.Utility
                 // Identity-guarded: only lift a hold this capture placed, so a replay camera's
                 // own hold survives a photograph taken during it.
                 if (heldCorridor) PrismOcclusionCorridor.SetSuppressed(false);
+                if (heldVisionBand) VesselVisionShading.EndCapturePass();
                 _capturing = false;
             }
+        }
+
+        // ───────────────────────── a clear line of sight ─────────────────────────
+
+        /// <summary>
+        /// Roll <paramref name="solve"/> a few times and keep the vantage with the least prism mass
+        /// standing between the lens and the subject.
+        ///
+        /// <para>It re-rolls the VANTAGE and never the CONCEPT, which is the whole design: the shot
+        /// stays an over-the-shoulder or a static tracking cam, and only the azimuth, elevation,
+        /// distance and lens within that concept move. A search that could change concepts would
+        /// quietly collapse the library onto whichever shot type happens to look at open space, and
+        /// the point of the library is variety.</para>
+        ///
+        /// <para>Deliberately a PREFERENCE and not a rule — "generally, but not always". It keeps
+        /// the best of a handful of samples rather than searching until it finds a clear one, so a
+        /// capture taken deep inside a forest still comes out (framed from wherever the mass was
+        /// thinnest) instead of failing or teleporting the camera somewhere the concept never
+        /// described. At <c>clearShotSamples = 1</c> it is exactly the old single roll.</para>
+        ///
+        /// <para>The early accept matters more than the sample count: in open space the first
+        /// candidate scores zero and the remaining solves never run, so the common case costs one
+        /// cone count.</para>
+        /// </summary>
+        static ScreenshotShot PickClearestShot(
+            ScreenshotDirectorConfigSO config,
+            Func<ScreenshotShot> solve,
+            Func<ScreenshotShot, int> scoreOccluders)
+        {
+            int samples = Mathf.Max(1, config.clearShotSamples);
+            int acceptAt = Mathf.Max(0, config.clearShotAcceptOccluders);
+
+            ScreenshotShot best = solve();
+            if (samples == 1) return best;
+
+            int bestScore = scoreOccluders(best);
+            if (bestScore <= acceptAt) return best;
+
+            for (int i = 1; i < samples; i++)
+            {
+                var candidate = solve();
+                int score = scoreOccluders(candidate);
+                if (score < bestScore)
+                {
+                    best = candidate;
+                    bestScore = score;
+                }
+                if (bestScore <= acceptAt) break;
+            }
+
+            return best;
+        }
+
+        /// <summary>
+        /// How many live prisms stand between <paramref name="cameraPosition"/> and the subject —
+        /// the cone from the lens to the subject's circumscribing sphere, which is the same volume
+        /// <c>PrismOcclusionCorridor</c> clears for the pilot and therefore the same geometry
+        /// "obscured" means.
+        ///
+        /// <para>The cone stops ONE HULL RADIUS SHORT of the subject on purpose. A ship threading a
+        /// canyon is surrounded by mass and that is a photograph worth having — what ruins the shot
+        /// is a prism between the lens and the hull, so counting to the hull's near surface asks
+        /// exactly that and lets the ship sit in and among the blocks as freely as it likes.</para>
+        ///
+        /// <para>Returns 0 when no spatial index exists (a scene with no prism mass at all), so the
+        /// search degrades to the first roll rather than to an error. Never
+        /// <c>Physics.OverlapSphere</c>: the index is the canonical store of prism mass and physics
+        /// is structurally blind to prisms for the first 0.6 s of their life anyway (CLAUDE.md).</para>
+        /// </summary>
+        static int CountOccluders(Vector3 cameraPosition, Vector3 subjectPosition, float subjectRadius)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || !index.IsAvailable || subjectRadius <= 0f) return 0;
+
+            Vector3 toSubject = subjectPosition - cameraPosition;
+            float distance = toSubject.magnitude;
+            float reach = distance - subjectRadius;
+            if (reach <= 0.01f) return 0;   // camera inside the hull's own sphere; nothing can be between
+
+            Vector3 basePoint = cameraPosition + toSubject * (reach / distance);
+            return index.CountInCone(cameraPosition, basePoint, subjectRadius);
         }
 
         // ───────────────────────── the subject ─────────────────────────

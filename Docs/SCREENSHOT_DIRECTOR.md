@@ -80,6 +80,110 @@ extra full-frame copy, on a key the player pressed.
 *General shape: a default-valued optional parameter is a decision nobody made, and a quality
 default of "none" fails by looking slightly worse rather than by failing.*
 
+## Marking the ships: the vision band, rescaled onto the shot
+
+A capture holds a **capture pass** on the vessel vision band (`Docs/VESSEL_VISION.md`) for the one
+hand-stepped render, so the ships in the photograph carry the flat, cel-banded domain-coloured
+silhouette they carry across an arena in play. Two things change for that render and nothing else:
+
+**The local pilot's own hull is included.** The band excludes it everywhere else, and the exclusion
+is right everywhere else — it exists so a pilot's own cockpit view is not cluttered by a mark on
+their own ship. A photograph OF that ship is the one case the reasoning does not cover, and without
+lifting it the feature would be empty, since the subject of a solo shot is always the local hull.
+
+**The band's distance axis is rescaled onto the concept's own zoom range.** The mark starts
+arriving at `markEngageFraction` (0.5 — the halfway point of that shot's furthest zoom) and is a
+solid silhouette at the furthest zoom itself:
+
+| concept | zoom range | mark from | full | solid |
+|---|---|---|---|---|
+| Low Chase | 8-27 | 17.5 | 20.0 | 27 |
+| Over the Shoulder | 12-39 | 25.5 | 29.1 | 39 |
+| Sidecar (both) | 14-51 | 32.5 | 37.4 | 51 |
+| Oncoming | 18-67.5 | 42.8 | 49.4 | 67.5 |
+| Top Down | 28-105 | 66.5 | 76.8 | 105 |
+| Static Tracking Cam | 35-150 | 92.5 | 107.8 | 150 |
+| Establishing | 220-520 | 370 | 410 | 520 |
+| Duo Two-Shot | 30-70 | 50 | 55.3 | 70 |
+| Duo Long Lens | 90-140 | 115 | 121.7 | 140 |
+| Duo Close Pass | *(a floor)* | 260 | 329.3 | 520 |
+
+**Per concept rather than one fleet-wide distance**, because the library spans 12 units to 520: a
+single threshold either marks nothing on two thirds of the shots or marks everything on the close
+ones. Measuring each shot against its OWN range is what makes the rule read the same way
+everywhere — pulled back for this kind of shot means marked, close in means the real hull — and
+since a shot's distance is drawn uniformly from its band, about half of all captures carry a mark.
+
+**A PAIR concept's `distance` is a FLOOR the two-shot fit overrides, not a range**, so a band with
+no width cannot locate its own halfway point; those fall back to the LIBRARY's furthest zoom. That
+is what keeps `Duo Close Pass` — authored (0, 0) and fitted to something close — photographing an
+unmarked hull instead of a silhouette.
+
+### Why the whole arc is compressed, not just the rising edge
+
+Over distance the band tells a **three-beat story**: the mark arrives, it reaches full strength,
+then the centre break-up closes and the hull becomes a solid silhouette. The shipped asset spends
+150..350 on the first two beats and 350..900 on the third. A capture band that moved only the
+rising edge would fit the first two beats and never the third, so **every photograph would come
+back an outline with a dithered middle** — which is not the look at range that this exists to put
+in a picture. `BeginCapturePass` rescales the whole arc, keeping every SHAPE ratio of the law and
+moving only its distance axis.
+
+The **far edges are deliberately NOT rescaled.** They exist so a pilot is not reading coloured dots
+across half an arena, which is a thing a cockpit does and a photograph never does — and rescaling
+them onto a 39-unit chase shot would put the far fade at ~40 units and un-mark every ship in frame.
+
+### It is not the suppression hold the band deliberately does not have
+
+`Docs/VESSEL_VISION.md` records that this law has no `SetSuppressed`, on the grounds that a hold
+which can switch an aid OFF is what makes an aid authorable-away. The capture pass only ever marks
+MORE, for one render, on a camera that is not anybody's eye — nothing a player looks through can
+reach it. It is released unconditionally in the same `finally` as the corridor's hold, and it would
+self-heal within a frame anyway, since the band's publisher re-writes all four globals every
+`LateUpdate`.
+
+## Preferring a clear line of sight
+
+A capture rolls its vantage `clearShotSamples` times (6) and keeps the one with the least prism mass
+standing between the lens and the subject, stopping early the moment a vantage is clear
+(`clearShotAcceptOccluders`, 0). In open space the first candidate scores zero and the remaining
+solves never run, so the common case costs one query.
+
+**It re-rolls the VANTAGE and never the CONCEPT.** The shot stays an over-the-shoulder or a static
+tracking cam; only the azimuth, elevation, distance and lens within that concept move. A search
+that could change concepts would quietly collapse the library onto whichever shot type happens to
+look at open space, and the point of a library is variety.
+
+**It is a preference, not a rule** — "generally, but not always". Keeping the best of a handful of
+samples means a capture taken deep inside a forest still comes out, framed from wherever the mass
+was thinnest, rather than failing or teleporting the camera somewhere the concept never described.
+At `clearShotSamples = 1` it is exactly the old single roll.
+
+### The occluder test is a CONE, and it stops short of the hull
+
+`PrismSpatialIndex.CountInCone` counts live prisms inside the cone from the lens to the subject's
+circumscribing sphere — **the same volume `PrismOcclusionCorridor` dissolves**, so the thing being
+counted here and the thing being cleared there are one geometry. A cone rather than a capsule
+because that is what occlusion is: a prism a metre off the axis at the far end barely clips the
+silhouette, while the same prism a metre off the axis at the lens fills the frame.
+
+The cone stops **one hull radius short of the subject**, which is what lets a ship sit in and among
+the blocks as freely as it likes — a vessel threading a canyon is surrounded by mass and that is a
+photograph worth having. What ruins a shot is a prism *between* the lens and the hull, so the count
+asks exactly that.
+
+Two implementation notes worth keeping. It is a **count, not a gather**: in a dense arena (Atlantis
+~69k prisms, Rampage's intensity-1 forest ~49k) materialising a `List<Prism>` of several thousand
+managed references per candidate and then discarding all of them costs far more than the walk. And
+its axial parameter is **unclamped**, unlike `DistanceToSegmentSq`'s — clamping rounds a point
+behind the apex onto the apex and a point past the base onto the base disc, turning the cone into a
+capsule with rounded caps and counting mass on the wrong side of both ends. `PrismConeQueryTests`
+holds that with a capsule negative control: six of its seven rejection cases are points a capsule
+would wrongly accept.
+
+Never `Physics.OverlapSphere`: the index is the canonical store of prism mass, and physics is
+structurally blind to prisms for the first 0.6 s of their life anyway (CLAUDE.md).
+
 ## A concept is only ranges
 
 There is deliberately **no enum of shot types and no per-concept camera code**. Every shot is one
@@ -226,12 +330,15 @@ hold, not an opt-out: the vessel binding stays, the lift is unconditional in a `
 identity-guarded so a replay camera's own hold is never lifted by us, and it lasts two frames.
 Switch it off per-config with `holdOcclusionCorridor` if you want the corridor in your shots.
 
-**Vessel vision band — untouched, and it shapes the library.** Hulls are progressively re-shaded
-into flat domain-coloured silhouettes as a function of distance from the camera drawing them, with
-no suppression by design (`Docs/VESSEL_VISION.md`). So a capture camera past ~150u photographs a
-silhouette, not a ship. Every concept in the shipped library sits inside that near edge **except
-"Establishing (banded hull)", which breaks it deliberately** and says so in its name: it is the one
-concept that photographs the world rather than the vessel.
+**Vessel vision band — rescaled for the capture, and it shapes the library.** Hulls are
+progressively re-shaded into flat domain-coloured silhouettes as a function of distance from the
+camera drawing them (`Docs/VESSEL_VISION.md`). The director holds a **capture pass** that rescales
+that band onto the concept's own zoom range and includes the local pilot's own hull, so a pulled-
+back shot photographs the silhouette and a close one photographs the real ship — see *Marking the
+ships* above for the numbers and for why this is not the suppression hold the law deliberately does
+not have. The library's shape still follows from the law's own near edge: every concept sits inside
+~150u **except "Establishing (banded hull)", which breaks it deliberately** and says so in its
+name, being the one concept that photographs the world rather than the vessel.
 
 **Speed tunnel — untouched.** It is bound to the gameplay camera and stays bound; the capture
 camera is a second, disabled camera stepped by hand, so it keeps its concept's authored FOV. A
