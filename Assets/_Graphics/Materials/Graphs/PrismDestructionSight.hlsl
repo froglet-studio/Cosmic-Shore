@@ -88,7 +88,7 @@
 //            PRISM_SIGHT_COLOR (the pale cool cast). There is exactly ONE of these per viewer,
 //            which is why it stays a plain uniform, and its code path is unchanged: with no peer
 //            sight up, this file computes bit-identically to what it computed before.
-//   THEIRS — up to PRISM_SIGHT_PEER_SLOTS volumes in the arrays below, each carrying its
+//   THEIRS — up to PRISM_LIT_PEER_SLOTS volumes in the arrays below, each carrying its
 //            holder's DOMAIN colour, so a lit patch of mass says WHO is about to take it.
 //
 // Why hue is the right channel for the second case, when the first case exists precisely to stay
@@ -96,7 +96,7 @@
 // and the platform already answers every whose-is-it question with domain colour. The same
 // reasoning as the Charge-5 vessel halo, which drives a marked hull to its saturated domain
 // colour because brightness alone cannot separate a ship from the lit mass around it. The
-// palette collision is held off by PRISM_SIGHT_PEER_DESATURATION: a peer's tint is pulled toward
+// palette collision is held off by PRISM_LIT_PEER_DESATURATION: a peer's tint is pulled toward
 // white before it is added, so it reads as coloured LIGHT with a domain in it rather than as the
 // prism having changed team. Own sight stays hueless, so "the pale one is mine" is learnable in
 // one match.
@@ -188,12 +188,12 @@
 // The per-slot cost when a prism is OUTSIDE a light is each shape's own first test: one dot and
 // two compares. That is why there is no separate bounding sphere to maintain, and why raising
 // this bound is cheap.
-#ifndef PRISM_SIGHT_PEER_SLOTS
-#define PRISM_SIGHT_PEER_SLOTS 8
+#ifndef PRISM_LIT_PEER_SLOTS
+#define PRISM_LIT_PEER_SLOTS 8
 #endif
 
 // Mirrors CosmicShore.Data.LitShape — the numeric values ARE the wire format, since PrismLit
-// packs the enum member straight into _PrismSightPeerShape[i].x. Change both together.
+// packs the enum member straight into _PrismLitPeerShape[i].x. Change both together.
 #define PRISM_LIT_SHAPE_CONE     0
 #define PRISM_LIT_SHAPE_SPHERE   1
 #define PRISM_LIT_SHAPE_CYLINDER 2
@@ -203,22 +203,22 @@
 // palette's language (Docs/PALETTE.md); 1 = hueless, at which point a peer's mark is
 // indistinguishable from your own. The shipped value keeps enough hue to name the domain while
 // still reading as light thrown ONTO mass rather than as mass wearing a colour.
-#ifndef PRISM_SIGHT_PEER_DESATURATION
-#define PRISM_SIGHT_PEER_DESATURATION 0.4
+#ifndef PRISM_LIT_PEER_DESATURATION
+#define PRISM_LIT_PEER_DESATURATION 0.4
 #endif
 
 // Peers drive slightly softer than your own sight. Your cone is information you are acting on this
 // second; theirs is context. Same clamp band, so a peer mark can never out-shout the mark you are
 // aiming with.
-#ifndef PRISM_SIGHT_PEER_GAIN
-#define PRISM_SIGHT_PEER_GAIN 0.55
+#ifndef PRISM_LIT_PEER_GAIN
+#define PRISM_LIT_PEER_GAIN 0.55
 #endif
 
 // -----------------------------------------------------------------------------
 // THE DOMAIN GATE — a light may be restricted to ONE domain's mass.
 // -----------------------------------------------------------------------------
 //
-// _PrismSightPeerShape[i].y carries the Domains value a light is gated to, or 0 for "light
+// _PrismLitPeerShape[i].y carries the Domains value a light is gated to, or 0 for "light
 // everything". The prism's own domain arrives as the Domain parameter, which is a PER-MATERIAL
 // value: ThemeManager clones every prism material once per domain at Awake, so a prism's
 // MATERIAL is its domain and _PrismLitDomain is the cheapest honest place to read it from — no
@@ -253,7 +253,7 @@
 //   PeerTint[i]  = (tint.rgb,   strength)
 //   PeerShape[i] = (shape, gate, -, -)      shape: PRISM_LIT_SHAPE_*; gate: a Domains value, 0 = none
 //
-// _PrismSightPeerCount is the master sentinel: unpublished globals read as zero (a player build
+// _PrismLitPeerCount is the master sentinel: unpublished globals read as zero (a player build
 // before any producer lights anything, or the editor between play sessions), the loop below does
 // not execute, and this file behaves exactly as it did when the sight was local-only.
 //
@@ -261,12 +261,12 @@
 // and are deliberately unchanged, because renaming the entry point means editing every prism
 // graph's m_FunctionName for no functional gain, and a Custom Function node that cannot resolve
 // its function renders the material UNMATERIALED with nothing in the console.
-float4 _PrismSightPeerApex[PRISM_SIGHT_PEER_SLOTS];
-float4 _PrismSightPeerAxis[PRISM_SIGHT_PEER_SLOTS];
-float4 _PrismSightPeerGape[PRISM_SIGHT_PEER_SLOTS];
-float4 _PrismSightPeerTint[PRISM_SIGHT_PEER_SLOTS];
-float4 _PrismSightPeerShape[PRISM_SIGHT_PEER_SLOTS];
-float  _PrismSightPeerCount;
+float4 _PrismLitPeerApex[PRISM_LIT_PEER_SLOTS];
+float4 _PrismLitPeerAxis[PRISM_LIT_PEER_SLOTS];
+float4 _PrismLitPeerGape[PRISM_LIT_PEER_SLOTS];
+float4 _PrismLitPeerTint[PRISM_LIT_PEER_SLOTS];
+float4 _PrismLitPeerShape[PRISM_LIT_PEER_SLOTS];
+float  _PrismLitPeerCount;
 
 // How deep inside one blast volume a point stands, on the edge-weighted curve, or 0 if outside.
 //
@@ -390,7 +390,7 @@ void PrismDestructionSight_float(
 
     // Both sentinels: an unheld own trigger with nobody else holding one costs exactly these two
     // compares and nothing else.
-    int peerCount = min((int)_PrismSightPeerCount, PRISM_SIGHT_PEER_SLOTS);
+    int peerCount = min((int)_PrismLitPeerCount, PRISM_LIT_PEER_SLOTS);
     if ((Params.x <= 0.0 || Strength <= 0.0) && peerCount <= 0)
         return;
 
@@ -434,11 +434,11 @@ void PrismDestructionSight_float(
     [loop]
     for (int i = 0; i < peerCount; i++)
     {
-        float4 apex = _PrismSightPeerApex[i];
-        float4 axis = _PrismSightPeerAxis[i];
-        float4 gape = _PrismSightPeerGape[i];
-        float4 tint = _PrismSightPeerTint[i];
-        float4 tag  = _PrismSightPeerShape[i];
+        float4 apex = _PrismLitPeerApex[i];
+        float4 axis = _PrismLitPeerAxis[i];
+        float4 gape = _PrismLitPeerGape[i];
+        float4 tint = _PrismLitPeerTint[i];
+        float4 tag  = _PrismLitPeerShape[i];
         float  shape = tag.x;
 
         // The domain gate, tested BEFORE any geometry: a light restricted to one domain's mass
@@ -456,7 +456,7 @@ void PrismDestructionSight_float(
 
         // Pulled toward white so a rival's mark reads as coloured light on the mass rather than as
         // the mass having changed domain.
-        float3 peerColor = lerp(tint.rgb, float3(1.0, 1.0, 1.0), PRISM_SIGHT_PEER_DESATURATION);
+        float3 peerColor = lerp(tint.rgb, float3(1.0, 1.0, 1.0), PRISM_LIT_PEER_DESATURATION);
         weighted += peerColor * w;
         total    += w;
         peak      = max(peak, w);
@@ -465,7 +465,7 @@ void PrismDestructionSight_float(
     if (total <= 0.0)
         return;
 
-    Color = BaseColor + (weighted / total) * (peak * PRISM_SIGHT_PEER_GAIN);
+    Color = BaseColor + (weighted / total) * (peak * PRISM_LIT_PEER_GAIN);
 }
 
 #endif // PRISM_DESTRUCTION_SIGHT_INCLUDED

@@ -129,21 +129,26 @@ namespace CosmicShore.Gameplay
         /// stood down (no gameplay camera, or the aim point behind it).</param>
         /// <param name="flightReticlePixels">That reticle's radius, meaningless when it stood down.</param>
         public static void Drawing(Vector2 centre, float radius, Vector2 screen,
-                                   float eyeReticlePixels, Vector2? flight, float flightReticlePixels)
+                                   float eyeReticlePixels, Vector2? flight, float flightReticlePixels,
+                                   float postReachPixels)
         {
             if (_drawingReported) return;
             _drawingReported = true;
 
             string flightLine = flight.HasValue
-                ? $"Flight reticle at {flight.Value} radius {flightReticlePixels:0.#} px."
+                ? $"Flight reticle at {flight.Value} ring {flightReticlePixels:0.#} px, mark " +
+                  $"{(flightReticlePixels + postReachPixels) * 2f:0.#} px across."
                 : "Flight reticle STOOD DOWN this frame — no gameplay camera, or the aim point " +
                   "projected behind it (a rear view does exactly that).";
 
             CSDebug.LogVerbose(CSLogChannel.SerpentScope,
                 $"[SerpentScope] Eyepiece laid out: centre {centre} radius {radius:0.#} px on a " +
-                $"{screen.x:0}x{screen.y:0} screen. Eyepiece reticle radius {eyeReticlePixels:0.#} px. " +
-                $"{flightLine} If nothing is visible where these say it is, they are drawing and " +
-                $"being covered — run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
+                $"{screen.x:0}x{screen.y:0} screen. Eyepiece reticle ring {eyeReticlePixels:0.#} px, " +
+                $"mark {(eyeReticlePixels + postReachPixels) * 2f:0.#} px across. {flightLine} " +
+                $"The RING is the shot's true angular size and is legitimately a few pixels wide; " +
+                $"the MARK is the four posts around it, which is what the pilot can actually see. " +
+                $"If nothing is visible where these say it is, they are drawing and being covered " +
+                $"— run FrogletTools > Diagnostics > Report On-Screen UI in play mode.");
         }
 
         static string Explain(Reason reason, string detail) => reason switch

@@ -1002,66 +1002,117 @@ wrong half.
 > *"I got a lot of this error, but i could not see either reticle — `Property
 > (_PrismSightPeerApex) exceeds previous array size (8 vs 4). Cap to previous size. Restart Unity
 > to recreate the arrays.`"*
+>
+> *"this is filling the consul with this error. And still no retical in site. please check that
+> you are putting it in the center of the charge petal shaped zoom window."*
 
 Two reports in one sentence, and they are **independent**. Separating them was the whole of this
-round; only one of them is a defect, and it is not in this feature.
+round; neither defect is where the report points, and one of them is not in this feature at all.
 
-### The array error is a SUPERSESSION artefact, and the fix is to restart Unity
+### The array error was a SUPERSESSION artefact, and the fix is a RENAME — not a restart
 
-`_PrismSightPeerApex` is one of the five peer-bank globals the LIT system publishes. Nothing in the
-scope touches it. It is written from exactly one place — `PrismLit.Flush`, at a fixed length of
-`PrismLit.Slots` = **8**, matching `PRISM_SIGHT_PEER_SLOTS` in `PrismDestructionSight.hlsl`, with
-`PrismLitTests` holding the two in step.
+`_PrismSightPeerApex` is one of the five peer-bank globals the LIT system publishes. Nothing in
+the scope touches it. It is written from exactly one place — `PrismLit.Flush`, at a fixed length of
+`PrismLit.Slots` = **8** — and the shader declares 8, with `PrismLitTests` holding the two in step.
 
-The 4 comes from the system `PrismLit` **replaced**. Commit `8618ea98` ("promote LIT to a
-fundamental") deleted `Assets/_Scripts/Utility/PrismDestructionSight.cs`, whose
-`PrismDestructionSight.PeerSlots` was **4**, and wrote `PrismLit` in its place with 8. Unity binds a
-shader GLOBAL array at the length of its **first** write and keeps that length **for the whole
-editor session** — which is what its own "Restart Unity to recreate the arrays" is telling you. An
-editor session that ran the old code before the script reload therefore has the bank pinned at 4,
-so every frame afterwards the new code's 8-long write is capped and logged. A player build never
-sees it: a fresh process has nothing pinned.
+The 4 came from the system `PrismLit` **replaced**. Commit `8618ea98` ("promote LIT to a
+fundamental") deleted `Assets/_Scripts/Utility/PrismDestructionSight.cs`, whose `PeerSlots` was
+**4**, and wrote `PrismLit` in its place with 8 — **inheriting the retired system's property
+names**. Unity binds a shader GLOBAL array at the length of its **first** write, keyed on the
+property NAME, and keeps that length **for the whole editor session**; so an editor that had ever
+run the old code had those names pinned at 4, every frame after the script reload logged the
+error, and peers 5–8 of the LIT system were silently dropped.
 
-So: **restart Unity.** There is nothing to fix in the tree — `PrismDestructionSight.cs` is gone,
-the only writer is at 8, and the shader declares 8.
+Round 9a's first answer was *restart Unity*, which is what the message itself says. **It came back
+with the error still on screen, and that is the finding**: a restart only helps the machine that
+performs it, only until the next supersession, and only if whoever hits the wall knows to. The fix
+that does not depend on any of that is the **rename** — the bank is now
+`_PrismLitPeerApex/Axis/Gape/Tint/Shape/Count`, sized by `PRISM_LIT_PEER_SLOTS` and tuned by
+`PRISM_LIT_PEER_DESATURATION`/`_GAIN`. **A name Unity has never been asked to bind cannot carry a
+pinned length**, so the first write in any session, fresh or reloaded, is the one that sets it. It
+also stops the bank being named for a system that no longer owns it.
 
-The general rule is worth more than the incident, and `PrismLit.cs` already half-states it in the
-comment above its bank arrays: **superseding a system that publishes a shader global ARRAY changes
-that array's length, and the length is pinned per editor session** — so the supersession's first
-session after a pull spams an error every frame *and silently drops the tail of the bank* (here,
-peers 5–8 of the LIT system go dark). The failure is loud, session-scoped, and invisible to every
-offline gate.
+Proven by `Tools/Shaders/verify_prism_sight_composition.py`, which compiles and RUNS the shipped
+HLSL: all five composition properties hold under the new names, byte for byte.
 
-Its practical cost here is the second report: the spam buries the `[SerpentScope]` lines that are
+**General rule (now in `Docs/LIT.md` and `CLAUDE.md`): superseding or resizing anything that
+publishes a shader global ARRAY is a one-time, session-scoped, loud-and-lossy event that no
+offline gate can see — and the answer is to rename the globals in the same commit, not to tell
+everyone to restart.**
+
+Its practical cost here was the second report: the spam buried the `[SerpentScope]` lines that are
 the one documented way to tell why a reticle is missing.
 
-### "I could not see either reticle" — what the instrument can now say for itself
+### "still no reticle in sight" — the reticle is CORRECTLY PLACED and a few pixels across
 
-Nothing was found in the code. The build compiles, both reticles are constructed identically (the
-same `MakeRing`, differing only in parent), `ScopeRingGraphic` emits a ring at the flight view's
-3 px floor, `ResolveTracerColour` cannot return black (`GetDomainSignalColor` answers white for an
-unauthored domain, by the rule `Docs/PALETTE.md §2.4` records), and every gate in `DrawOverlay` is
-an unconditional warning.
+The question asked — *is it in the centre of the petal window?* — has a clean answer, and it is
+yes, by construction:
 
-Rounds 5 and 6 already paid for guessing at this from source, so this round does not. What it does
-instead is close the gap those rounds left in the diagnostic: **`Drawing` reported the WINDOW and
-said nothing about the RETICLES**, and every check in `SelfCheck` is satisfied by a window that
-draws perfectly with nothing in it. It now carries the eyepiece reticle's radius, whether the
-flight reticle drew at all this frame, and where it landed — so the next report separates:
+- `ScopePetalGeometry.Centre` is **(0.5, 0.5)**, the petal outline's own bounding-box centre, which
+  is the picture's optical centre because the outline is normalised over that box and its
+  coordinates double as the render target's UVs. That is where the camera's axis lands.
+- `MakeRing` / `MakeCross` anchor every reticle piece at **(0.5, 0.5) of the parent rect** with a
+  centred pivot, zero `anchoredPosition` and zero `sizeDelta`. A UGUI anchor is a fraction of the
+  parent's RECT and is independent of the parent's pivot, so the eyepiece's own top-left pivot does
+  not move them.
+- `MakePetal` insets the RECT symmetrically on all four sides, so the picture shrinks about that
+  same centre.
+
+So the three things that have to agree — the petal's optical centre, the rect's centre, and the
+reticle's anchor — are one point. **The placement was never the defect.**
+
+The defect is the SIZE, and it is arithmetic rather than a guess. `SniperShotAction.asset` authors
+`coneHalfAngleDegrees: 0.5`. A reticle drawn at the shot's true angular size is therefore
+`H · tan(0.5°) / tan(fov/2)`:
+
+| view | half-height | field of view | ring radius |
+|---|---|---|---|
+| eyepiece, wide end | 270 px (side 540 at 1080p) | 60° | 4.1 px → floored to **6** |
+| eyepiece, zoomed | 270 px | 22° | **12.1 px** |
+| eyepiece, Deep Focus | 270 px | 11° | **24.5 px** |
+| flight view | 540 px | 60° | **8.2 px** |
+
+That is a **2 px hairline ring 6–24 px across, inside a 540 px window**, drawn over a magnified
+render of a lit arena — about 1% of the window. It is the correct measurement and it is under the
+threshold of being noticed, which is exactly what came back twice.
+
+**The fix is not to draw it bigger than it is.** `ScopeCrosshairGraphic` adds four fixed-size
+**posts** around each ring: **the posts LOCATE and the ring MEASURES.** Their arms are a fixed
+16 px so the mark is always the same findable size whatever the weapon's angle or the zoom; their
+inner ends sit 6 px outside the ring, so they point at it and the whole reticle visibly opens up as
+the pilot zooms in and the ring grows. The mark is therefore **~44–92 px across** where the ring
+alone was 12–48, and **the ring itself is untouched** — every number the instrument states is the
+number it stated before.
+
+Three details that are not decoration:
+
+- The eyepiece's ring is now capped so the POST's outer end fits the petal's inradius budget, not
+  the ring's edge. In practice it never binds (24 px against ~139), which is the point: it is a
+  guarantee that the mark stays inside the shaped window at any weapon angle, not a tuning.
+- The recharge arc's radius clears the posts as well as the ring, so a wide-open reticle cannot
+  collide with the readout around it.
+- The posts' ENDS are hard while their long sides carry the usual zero-alpha feather. A faded inner
+  end would blur the gap the pilot looks at the target through, which is the one part of a reticle
+  that has to be crisp.
+
+**General rule: a mark drawn at a true physical size is a measurement, and a measurement can be
+correct and unreadable at the same time. Add a locator at a fixed size; never inflate the number.**
+
+The diagnostic line was widened to say both, so the next report cannot conflate them again — it now
+prints the ring radius AND the mark's span for each view:
 
 | What the line says | What it means |
 |---|---|
 | no `[SerpentScope]` line at all, no warning | the scope never engaged; the executor is not ticking |
 | an unconditional `[SerpentScope]` warning | a named gate refused — the warning says which |
-| `Eyepiece reticle radius 6 px` and it does not grow with the trigger | the zoom is not reaching `ReticlePixels` |
+| `ring 6 px` and it does not grow with the trigger | the zoom is not reaching `ReticlePixels` |
 | `Flight reticle STOOD DOWN` | no gameplay camera, or the aim point projected behind it |
-| both radii printed and plausible | they are drawing and something is **over** them — `FrogletTools > Diagnostics > Report On-Screen UI`, in play mode |
+| both rings and marks printed and plausible | they are drawing and something is **over** them — `FrogletTools > Diagnostics > Report On-Screen UI`, in play mode |
 
 That last row is deliberately not a warning, for the reason this file already records: an
 unconditional "everything checks out" becomes a permanent false positive the day the real defect is
-fixed. **The whole procedure is still one switch** — `CSLogChannel.SerpentScope` in FrogletTools >
-Toolbox > Logging — and it is worth restarting Unity first so the line is not buried under the
-array spam above.
+fixed. **The whole procedure is one switch** — `CSLogChannel.SerpentScope` in FrogletTools >
+Toolbox > Logging.
 
 ## Drive-by corrections
 

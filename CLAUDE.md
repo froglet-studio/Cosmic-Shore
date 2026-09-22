@@ -1249,7 +1249,7 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 | **Urchin** | 4 | Playable vessel — chain-reaction spikes + prismscape rider + a projected rail (see `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md`, `URCHIN_TRAIL_RIDER.md`, `URCHIN_TRACK_PROJECTOR.md`). Elemental map complete; **HUD prefab not yet authored**. Its modes are `Hijack(46)`, the rail heist, and `Skein(51)`, the cable race |
 | **Grizzly** | 5 | Playable vessel (AI in progress) |
 | **Squirrel** | 6 | Racing/drift — vaporwave arcade racer, tube-riding along player-generated trails (F-Zero / Redout feel) |
-| **Serpent** | 7 | Playable vessel with dedicated HUD. Holds the fleet's only **scope** — LT opens a magnified eyepiece beside the flight view, shaped like the CHARGE petal (the element that owns its shot), zoomed by the trigger's own depth and NOTHING else, while the pilot's own camera never moves, with a reticle at the shot's true angular size in BOTH pictures (growing in the eyepiece as the zoom narrows it, staying small over the flight view, and up only while the scope is) — and a **sniper shot** (RT while scoped) that is the fleet's **second force able to break a SUPER-SHIELD**, after the Rhino's energised blade — same sanctioned `DeactivateShields` → `Damage(devastate: true)` sequence. See `_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md` |
+| **Serpent** | 7 | Playable vessel with dedicated HUD. Holds the fleet's only **scope** — LT opens a magnified eyepiece beside the flight view, shaped like the CHARGE petal (the element that owns its shot), zoomed by the trigger's own depth and NOTHING else, while the pilot's own camera never moves, with a reticle at the shot's true angular size in BOTH pictures (growing in the eyepiece as the zoom narrows it, staying small over the flight view, and up only while the scope is) — each ring ringed by four FIXED-size posts, because at the authored 0.5° half-angle a true-size ring is 6–24 px in a 540 px window and 8 px over the flight view, i.e. correct and unreadable at the same time: **the posts LOCATE and the ring MEASURES**, and the fix for a mark too small to see is never to draw it bigger than it is — and a **sniper shot** (RT while scoped) that is the fleet's **second force able to break a SUPER-SHIELD**, after the Rhino's energised blade — same sanctioned `DeactivateShields` → `Damage(devastate: true)` sequence. See `_Scripts/Controller/Vessel/R_VesselActions/SERPENT_SNIPER_SCOPE.md` |
 | **Termite** | 8 | Planned |
 | **Falcon** | 9 | Planned |
 | **Shrike** | 10 | Planned |
@@ -5555,13 +5555,17 @@ ones.
   shield (`shielding`, the Sparrow's CHARGE-5) is kept and is unaffected; only the timed stand-in
   went away, and its registry sync moved INSIDE that branch. Stated cost: the shed-debris spray
   each pop threw is gone, and a fully destructive blast publishes no light so it looks exactly as
-  it did. **Growing the peer BANK costs an editor restart, once, on every machine that pulls
-  it**: Unity pins a shader global ARRAY at the length of its FIRST write for the whole editor
-  session, so the session in which `PrismDestructionSight`'s 4 slots became `PrismLit`'s 8
-  logged `exceeds previous array size (8 vs 4)` every frame AND silently dropped peers 5-8 —
-  nothing wrong in the tree, invisible to every offline gate, and a player build never sees it.
-  *Superseding or resizing anything that publishes a shader global array is a loud, lossy,
-  session-scoped event; say "restart Unity" in the commit message.* Full record: `Docs/LIT.md`.
+  it did. **Growing the peer BANK means RENAMING its globals, because a shader global
+  array's length is pinned PER EDITOR SESSION and keyed on the NAME**: `PrismLit` (8 slots)
+  inherited the retired `PrismDestructionSight`'s (4) property names, so every editor that had
+  ever run the old code logged `exceeds previous array size (8 vs 4)` every frame AND silently
+  dropped peers 5-8 — nothing wrong in the tree, invisible to every offline gate, and a player
+  build never sees it. *Restart Unity* is what the message says and it is not a fix: it helps
+  only the machine that does it, only until the next supersession, and only if whoever hits the
+  wall knows to. The bank is therefore `_PrismLitPeer*` / `PRISM_LIT_PEER_*` — **a name Unity has
+  never been asked to bind cannot carry a pinned length.** *Superseding or resizing anything that
+  publishes a shader global array: rename the globals in the same commit.* Full record:
+  `Docs/LIT.md`.
 - **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
   lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
   highest-level gameplay arc — faction missions, where players venture into the hypersea for

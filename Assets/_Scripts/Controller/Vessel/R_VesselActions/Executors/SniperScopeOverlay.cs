@@ -39,6 +39,18 @@ namespace CosmicShore.Gameplay
     /// does not) while the flight view's <b>stays small</b>, since the gameplay camera's field of
     /// view is not the scope's dial. Two circles the pilot can compare, both of them true.</para>
     ///
+    /// <para><b>Each ring is surrounded by four fixed-size POSTS, and that split is round 9a's
+    /// finding.</b> The cone is a half-angle of <b>0.5°</b>, so a ring stating it honestly is about
+    /// <b>6–24 px</b> inside the eyepiece and <b>~8 px</b> over the flight view — a 2 px hairline
+    /// roughly 1% of the window across, over a lit arena. That is the correct measurement and it is
+    /// under the threshold of being noticed, which is exactly how it came back: <i>"still no
+    /// reticle in sight."</i> <see cref="ScopeCrosshairGraphic"/> answers it without touching the
+    /// number: <b>the posts LOCATE and the ring MEASURES</b>. The posts are a fixed pixel length,
+    /// so the mark is always findable whatever the weapon's angle or the zoom; their inner ends sit
+    /// just outside the ring, so they point at it and the whole reticle visibly opens up as the
+    /// pilot zooms in. Nothing about the ring changed — <b>the fix for a mark that is too small to
+    /// see is never to draw it bigger than it is.</b></para>
+    ///
     /// <para><b>Round 3 drew a reticle over the middle of the screen because the middle of the
     /// screen WAS the scope; this one is not that.</b> It is not centred and it is not a
     /// decoration left behind — it is projected at the point the shot actually reaches
@@ -78,7 +90,8 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Generated, not authored.</b> One runtime canvas, two <see cref="ScopePetalImage"/>s
     /// (the opaque backing and the picture, the same component so the frame is the petal's own
-    /// outline) and six <see cref="ScopeRingGraphic"/>s; no sprites, no prefab, no per-vessel
+    /// outline), six <see cref="ScopeRingGraphic"/>s and two
+    /// <see cref="ScopeCrosshairGraphic"/>s; no sprites, no prefab, no per-vessel
     /// wiring — the petal is traced geometry, not the <c>charge_petal</c> PNG, so it is exact at
     /// any size. It is built on first use by <see cref="SniperScopeActionExecutor"/> for the LOCAL
     /// PILOT only and torn down with the vessel.</para>
@@ -92,6 +105,14 @@ namespace CosmicShore.Gameplay
         const float DotRadius = 2.5f;
         const float DimAlpha = 0.3f;
         const float TrackAlpha = 0.22f;
+
+        // The locator POSTS around each reticle (ScopeCrosshairGraphic). Fixed pixel sizes on
+        // purpose: the ring states the shot's TRUE angular size and the posts are what make a mark
+        // that small findable, so their job is to be the same readable size at every zoom and on
+        // both views. Gap first, so the ring is never touched by them.
+        const float CrossGapPixels = 6f;
+        const float CrossArmPixels = 16f;
+        const float CrossThickness = 2.5f;
 
         // The dark backing shows through as a FRAME around the picture, which is what makes the
         // panel read as an instrument rather than as a hole in the screen.
@@ -127,6 +148,7 @@ namespace CosmicShore.Gameplay
         ScopePetalImage _backing;
         ScopePetalImage _pipSurface;
         ScopeRingGraphic _ring;
+        ScopeCrosshairGraphic _cross;
         ScopeRingGraphic _dot;
         ScopeRingGraphic _track;
         ScopeRingGraphic _arc;
@@ -136,6 +158,7 @@ namespace CosmicShore.Gameplay
         // stood down on its own (a rear-view flip hides it while the eyepiece keeps working).
         RectTransform _flightRect;
         ScopeRingGraphic _flightRing;
+        ScopeCrosshairGraphic _flightCross;
         ScopeRingGraphic _flightDot;
 
         bool _wasReady = true;
@@ -202,6 +225,7 @@ namespace CosmicShore.Gameplay
             // siblings in order and the reticle is the thing being aimed with.
             _track = MakeRing(_pipRect, "ChargeTrack", 130f, ArcThickness);
             _arc = MakeRing(_pipRect, "ChargeArc", 130f, ArcThickness);
+            _cross = MakeCross(_pipRect, "ReticlePosts");
             _ring = MakeRing(_pipRect, "Reticle", 40f, RingThickness);
             _dot = MakeRing(_pipRect, "ReticleDot", DotRadius, DotRadius * 2f);
 
@@ -229,6 +253,7 @@ namespace CosmicShore.Gameplay
             _flightRect.pivot = new Vector2(0.5f, 0.5f);
             _flightRect.sizeDelta = Vector2.zero;
 
+            _flightCross = MakeCross(_flightRect, "ReticlePosts");
             _flightRing = MakeRing(_flightRect, "Reticle", FlightReticleMinPixels, RingThickness);
             _flightDot = MakeRing(_flightRect, "ReticleDot", DotRadius, DotRadius * 2f);
         }
@@ -279,6 +304,29 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The four locator posts around one reticle, centred on <paramref name="parent"/> the
+        /// same way <see cref="MakeRing"/> centres a ring — so the posts and the ring they point at
+        /// are placed by one rule and cannot end up concentric with different things.
+        /// </summary>
+        ScopeCrosshairGraphic MakeCross(RectTransform parent, string name)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rect = go.GetComponent<RectTransform>();
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = Vector2.zero;
+
+            var cross = go.AddComponent<ScopeCrosshairGraphic>();
+            cross.raycastTarget = false;
+            cross.ArmLength = CrossArmPixels;
+            cross.Thickness = CrossThickness;
+            return cross;
+        }
+
+        /// <summary>
         /// Drive one frame of the instrument.
         /// </summary>
         /// <param name="vessel">The local pilot's hull — the window's eye rides past its nose.</param>
@@ -301,7 +349,13 @@ namespace CosmicShore.Gameplay
             float halfHeight = LayOutPip();
             float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(fieldOfView), halfHeight,
                                          minPixels: 6f);
-            radius = Mathf.Min(radius, ReticleBudgetPixels(halfHeight));
+            // The posts live OUTSIDE the ring, so it is the post's outer end that has to fit the
+            // petal - not the ring's edge. In practice this never binds (a 0.5 degree cone reads
+            // about 6-24 px here against a budget of ~139), which is the point: the cap is a
+            // guarantee that the mark stays inside the window at any weapon angle, not a tuning.
+            float ringCeiling = Mathf.Max(6f, ReticleBudgetPixels(halfHeight)
+                                              - CrossGapPixels - CrossArmPixels);
+            radius = Mathf.Min(radius, ringCeiling);
             bool ready = cooldown01 <= 0.0001f;
 
             // The instant it comes back: a one-shot flash, so a pilot watching the target rather
@@ -316,6 +370,14 @@ namespace CosmicShore.Gameplay
             _ring.Sweep01 = 1f;
             _ring.color = WithAlpha(colour, ready ? 1f : DimAlpha);
 
+            // The POSTS: a fixed-size mark pointing at a measurement that may be a handful of
+            // pixels across. Their inner end tracks the ring, so the whole reticle visibly opens
+            // up as the pilot zooms in - which is the ring growing, said loudly enough to see.
+            _cross.Radius = radius + CrossGapPixels;
+            _cross.ArmLength = CrossArmPixels;
+            _cross.Thickness = CrossThickness;
+            _cross.color = WithAlpha(colour, ready ? 0.9f : DimAlpha);
+
             _dot.Radius = DotRadius;
             _dot.Thickness = DotRadius * 2f;
             _dot.Sweep01 = 1f;
@@ -326,7 +388,7 @@ namespace CosmicShore.Gameplay
             // half-height (measured 0.59x it). A circle drawn at the half-height would poke out
             // through the taper, and one drawn OUTSIDE the shape needs 1.18x the half-height, which
             // at this window's authored margins pushes the instrument off the left of the screen.
-            float arcRadius = Mathf.Max(radius + ArcThickness * 2f,
+            float arcRadius = Mathf.Max(radius + CrossGapPixels + CrossArmPixels + ArcThickness * 2f,
                                         ReticleBudgetPixels(halfHeight) + ArcThickness
                                             + ReticleClearancePixels);
 
@@ -493,6 +555,11 @@ namespace CosmicShore.Gameplay
             _flightRing.Sweep01 = 1f;
             _flightRing.color = WithAlpha(colour, ready ? 1f : DimAlpha);
 
+            _flightCross.Radius = radius + CrossGapPixels;
+            _flightCross.ArmLength = CrossArmPixels;
+            _flightCross.Thickness = CrossThickness;
+            _flightCross.color = WithAlpha(colour, ready ? 0.9f : DimAlpha);
+
             float dot = Mathf.Clamp(radius * 0.3f, 1f, DotRadius);
             _flightDot.Radius = dot;
             _flightDot.Thickness = dot * 2f;
@@ -629,7 +696,8 @@ namespace CosmicShore.Gameplay
             SniperScopeDiagnostics.Drawing(centre, halfHeight, new Vector2(Screen.width, Screen.height),
                                            _ring != null ? _ring.Radius : 0f,
                                            flightAt,
-                                           _flightRing != null ? _flightRing.Radius : 0f);
+                                           _flightRing != null ? _flightRing.Radius : 0f,
+                                           CrossGapPixels + CrossArmPixels);
         }
 
         void OnDestroy() => _pip?.Dispose();
