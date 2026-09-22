@@ -182,6 +182,40 @@ Missiles are now bought by taking the arena apart — every HOSTILE prism this p
 > its loop is now half as fast, while Dog Fight's arena is cover rather than a supply, so there
 > it mostly lengthens the gap between rockets.
 
+### THE GUN IS THE RELOAD — gunfire only, and its DOMAIN does not matter (2026-09-22)
+
+Two separate corrections to the rule above, both asked for after the split, and each replaces a
+filter the first pass inherited without arguing for it.
+
+**Only DIRECT GUNFIRE pays.** A rocket's blast used to fund the next rocket. Nothing in the
+weapon says it should: the loop is *shoot to reload, reload to rocket*, and a rocket whose own
+detonation buys most of its successor closes that loop on itself — in Salvo, where a skyburst
+can take out thirty cactus prisms, one rocket paid for the next with change. Now a bullet and a
+turret prism round pay, and the blast, the direct hit, a ram, a sword and a creature pay
+nothing.
+
+**Any domain pays.** The old test was `StatsManager.IsFriendlyEnvironmentPrism`, i.e. only
+hostile mass. What is actually being rewarded is *trigger time on mass* rather than territorial
+damage, and gating it on colour made the reload silently dry up in exactly the arenas whose mass
+wears the pilot's own — a teammate's trail, own-domain flora. A pilot willing to spend
+ammunition on their own ribbon has paid for what they get back.
+
+**How the weapon identity travels.** `PrismStats` gained one bool,
+**`DestroyedByGunfire`**, stamped by `Prism.Damage(…, byGunfire:)` the same way `byCreature`
+already is and raised on the one destroyed-channel call every route funnels through. It has to
+ride the channel because it is only knowable at the call that damaged the prism —
+`VesselRearmOnPrismDestruction` sees a death and nothing about what caused it. The flag is set
+by **`ProjectileDamagePrismEffectSO`** (`countsAsGunfire`, on by default), which is the Sparrow's
+*two guns* and nothing else: `SparrowFullAutoProjectileImpactContainer` and
+`SparrowPrismProjectileImpactContainer` both use it, and the skyburst carries its own
+`SkyBurstProjectileDamagePrismEffectSO`. The Urchin's spike uses the shared asset too and is
+unaffected, because the Urchin has no rearm component to pay.
+
+> Note this makes the doc's original argument for listening on the destroyed channel *narrower
+> and still correct*. It was written as "an effect cannot see the blast, so count deaths"; the
+> blast now pays nothing, so that half is moot — but the channel is still the only place every
+> route is visible, which is what makes it possible to DECLINE four of the five in one line.
+
 ### The pilot can SEE the charge — the Charge card's gauge
 
 Doubling the price makes the rack a thing you wait for, so the wait had to become legible. The
@@ -524,29 +558,67 @@ consumers:
   filter written against `aoePrefabs[0]` would have silently re-pointed itself the day one of the
   four skyburst effect assets reordered its list.
 
-### The cost, stated plainly: the base rocket can only score a DIRECT hit
+### BOTH rockets pay the 20-point blast — a tier belongs to the DESTRUCTIVE blast, not to the cairn
 
-This is the consequence to read before balancing anything. The Sparrow's three combat-hit tiers
-do **not** live where the ranking suggests:
+The three combat-hit tiers used not to live where the ranking suggests. The 20-point "prism
+blast" was authored on **`AOEConicSkyBurst`** — the 72-prism *cairn* the detonation lays — so
+splitting the weapon took it away from the base rocket as a side effect of taking away its
+cairn. That was an accident of which prefab happened to carry the reporter: what the tier is
+*about* is a pilot being caught in the blast, and the blast is a different prefab entirely.
 
-| Tier | Points | Lives on |
-|---|---|---|
-| Direct strike | 30 | the projectile's own vessel-impact container |
-| "Prism blast" | 20 | **`AOEConicSkyBurst`** — the cairn prefab |
-| Warhead shockwave | 10 | **`AOEMissileWarhead`** |
+It now lives on **`AOEExplosion`** — the spherical, destructive blast BOTH variants spawn on
+every detonation (`SkyBurstBlastExplosionImpactorDataContainer`, which that prefab previously
+had none of at all: it carried two stale keys for fields the impactor script no longer
+declares, so it applied no vessel effects whatsoever).
 
-A base rocket spawns neither of the last two, so in Dog Fight, Broadside and Salvo it scores
-**only** on a direct strike, and it no longer debuffs a pilot it near-misses at all. In
-**Wildlife Liberation** — a Sparrow-only mode scored on creature kills — the blast's creature
-joust (`ExplosionWitherLifeformByCrystalEffectSO`, on the warhead container) is likewise now
-behind the stance: a pilot must **stop to hunt with rockets**, or kill creatures by shooting
-their body prisms, which is unchanged. That is a real mode-level change and it is deliberate,
-not an oversight; it is the direct consequence of moving the fuze and the shockwave onto the
-heavy rocket.
+| Tier | Points | Lives on | Base | Heavy |
+|---|---|---|---|---|
+| Direct strike | 30 | the projectile's own vessel-impact container | ✅ | ✅ |
+| "Prism blast" | 20 | **`AOEExplosion`** — the destructive sphere (radius 50 u at resting Charge, 85 at Charge 10) | ✅ | ✅ |
+| Warhead shockwave | 10 | **`AOEMissileWarhead`** (95 u) | — | ✅ |
 
-Untouched either way: the direct hit, the destructive spherical blast, and therefore the
-**rearm economy** (`VesselRearmOnPrismDestruction` counts destroyed prisms, and a base rocket
-still destroys them).
+So the heavy rocket's advantage is exactly what it reads as: the **wider outer ring**, not a
+different weapon. The cairn's own container is now empty — the cairn is mass, and reports
+nothing.
+
+Two things travel with the move and neither is a side effect to discover later. **Astro
+League's ball detonation spawns the same prefab and is unaffected**, because it initializes it
+with `Vessel = null` / `AnnonymousExplosion = true` and the reporter declines a blast nobody
+fired. And the tier ordering stays honest: the sphere is *inside* the warhead's 95 u, so the
+dearer tier is still the closer one, and `VesselCombatHitLatch` pays the best of the three
+exactly once per rocket per victim.
+
+Still behind the stance, deliberately: in **Wildlife Liberation** — a Sparrow-only mode scored
+on creature kills — the blast's creature joust (`ExplosionWitherLifeformByCrystalEffectSO`, on
+the warhead container) is the heavy rocket's alone, so a pilot must **stop to hunt with
+rockets**, or kill creatures by shooting their body prisms, which is unchanged.
+
+### ONE PULL, TWO ROCKETS — a fleet-wide double subscription the skyburst was the first to show
+
+Reported after the split: *"it usually fires two missiles if you have the energy and pull the
+trigger once."* It is not a missile bug and it is not new. `R_VesselActionHandler` subscribed to
+the shared input channels with a bare `+=`, and **three paths subscribe**: every
+`VesselController.Initialize`, `VesselController.ChangePlayer` (a LIVE vessel handed to another
+player — the Cellular Duel ownership swap, which `Initialize` never sees), and every input
+un-pause. A C# delegate holds the same handler twice happily and nothing reports it, so
+`OnButtonPressed` ran twice per press, sent the press RPC twice, and
+`SendButtonPressed_ClientRpc` replayed `PerformShipControllerActions` twice on every peer.
+
+**The reason nobody had noticed is the reason it had to be the missile that found it.** Almost
+everything the fleet binds is a HELD ability, and an ability started twice is the same ability
+held — a perfect no-op. It only becomes visible on a one-shot that SPENDS: the tank was charged
+twice and two rockets left the bay for one pull. Halving the rocket's cost made it louder
+(a four-rocket rack survives the double where a two-rocket one just emptied), but it did not
+cause it.
+
+Fixed with a latch (`_subscribedToInputEvents`) rather than the reflexive `-=` before `+=`: a
+`-=` removes ONE occurrence, so on a handler that has ALREADY doubled it nets to no change. The
+release edge is latched with it, because a duplicate release is equally silent.
+
+> General rule: **a duplicated event subscription is invisible on every idempotent consumer and
+> obvious on exactly one kind — the consumer that spends something.** When a press seems to
+> happen twice, check the subscription before the input strategy; the strategies are all
+> properly edge-gated and were the first three places this was looked for.
 
 ### The prism trail, and the two ways a rocket eats its own ribbon
 

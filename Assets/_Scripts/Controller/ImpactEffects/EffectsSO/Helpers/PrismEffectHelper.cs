@@ -20,7 +20,13 @@ namespace CosmicShore.Gameplay
             prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName);
         }
         
-        public static void Damage(IVesselStatus status, PrismImpactor prismImpactor, float inertia, Vector3 Velocity)
+        /// <param name="byGunfire">
+        /// True when the striker is DIRECT GUNFIRE - a round that hit the prism itself. It only
+        /// marks the destroyed-channel payload (<see cref="PrismStats.DestroyedByGunfire"/>) for
+        /// the reload-by-destroying-mass weapon and changes nothing about the damage.
+        /// </param>
+        public static void Damage(IVesselStatus status, PrismImpactor prismImpactor, float inertia, Vector3 Velocity,
+                                  bool byGunfire = false)
         {
             // Default: Course * Speed * inertia
             if (status.Player == null)
@@ -30,7 +36,7 @@ namespace CosmicShore.Gameplay
             }
             
             var damage= Velocity * inertia;
-            prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName);
+            prismImpactor.Prism.Damage(damage, status.Domain, status.PlayerName, byGunfire: byGunfire);
         }
 
         /// <summary>

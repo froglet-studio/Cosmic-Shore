@@ -74,6 +74,12 @@ namespace CosmicShore.Gameplay
                                                sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
+            // The round's own bite, priced off the same list its points come from - ten points
+            // to the petal (so ten bullets cost a victim one). Netted against a superseded
+            // missile tier, because a direct strike admits over its own blast.
+            CombatHitDrain.Apply(victimStatus, hitClass, supersededRank,
+                                 ElementalDebuffSources.Other);
+
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,
