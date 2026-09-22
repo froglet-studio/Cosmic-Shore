@@ -512,6 +512,41 @@ applies to new abilities, new resources on the meter list, and anything that add
     checks pass". (Butterfly, 2026-09-22.)
 
 
+36. **The registrations a vessel's SETUP TOOL cannot write are the ones that get missed — and
+    the toybox roster is the one that matters.** A new vessel's editor setup tool authors every
+    registration that is an ASSET: the `Vessel Prefab Container`, `DefaultNetworkPrefabs`, the
+    `SO_Classlist_*` lists, the camera settings, the class asset. So nobody ever has to remember
+    those. **`ToyVesselRoster.Default` is CODE** (`Assets/_Scripts/Controller/Toys/
+    ToyVesselRoster.cs`), a hand-written array, and it is what the freestyle **Vessel Changer**
+    and the **Lifeform Matrix's hangar** both offer from. A hull missing from it cannot be flown
+    in freestyle at all.
+
+    It fails in the worst available way: **silently and invisibly.** There is no error, no
+    warning and no empty station — the matrix is simply one ship smaller than the fleet, which
+    is indistinguishable from a matrix that is correct. The Butterfly shipped with every asset
+    registration its tool writes and no roster entry, and the only way anyone would have found
+    out is by flying the changer and noticing an absence.
+
+    So, for every new vessel, in the SAME branch that designs it:
+
+    - **Add the class to `ToyVesselRoster.Default`.** Do it when you add the enum member, not
+      when the prefab is authored — the prefab is authored later, in the editor, by the human.
+    - **That is safe because declaration and availability are separate.** Toys that ACT on a
+      hull call `ToyVesselRoster.ResolveOffered(Context, ...)`, which drops any class the prefab
+      container has no prefab for, so a declared-but-unbuilt vessel is simply not offered yet
+      rather than being offered as a swap that resolves to nothing. **Use `ResolveOffered`, not
+      `Resolve`, in any new toy that swaps, releases or previews a hull** — bare `Resolve` is for
+      documenting the roster (the codex harvester), not for acting on it.
+    - **The gate is `ToyVesselRosterCoverageTests`**, which reads the prefab container and
+      requires every registered vessel to be in the roster. It asks the question in the
+      direction that cannot fire early, so it goes green the moment the vessel is designed and
+      red the moment it becomes spawnable without becoming offerable.
+
+    The general shape, worth more than the roster: **a registration that lives in code is one an
+    asset-writing tool cannot perform, so it is the one a checklist has to carry — and enumerate
+    the whole set by asking which lists name a vessel, not by reading the list of lists somebody
+    wrote down last time.** (Butterfly, 2026-09-22.)
+
 ### 4.x Placing prisms from a vessel ability — shield sizing
 
 An ability that BUILDS with prisms (the Scarab's switch dais, the Urchin's track, a boost ring)

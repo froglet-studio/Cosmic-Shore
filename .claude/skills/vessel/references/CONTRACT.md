@@ -28,8 +28,9 @@ Naming trap that applies everywhere: file names renamed Ship→Vessel but class 
 
 ## 1. Identity & registration
 
-A vessel class exists when ALL of these do. Five of eleven classes (Urchin, Grizzly, Termite,
+A vessel class exists when ALL of these do. Several classes (Urchin, Grizzly, Termite,
 Falcon, Shrike) fail parts of this today — that is the backlog, not a pattern to copy.
+Count the fleet from `VesselClassType`, never from this paragraph.
 
 | # | Requirement | Enforced by |
 |---|---|---|
@@ -44,6 +45,7 @@ Falcon, Shrike) fail parts of this today — that is the backlog, not a pattern 
 | 1.9 | `SO_Vessel` meta asset (`SO_Class_{Name}.asset` in `Assets/_SO_Assets/Classes/`, menu `CosmicShore/Vessel/Vessel`) with Class, Name, `InitialResourceLevels`, icons; added to the relevant `SO_Classlist_*`. NOTE: Arcade writes `InitialResourceLevels` into `GameDataSO.ResourceCollection`, but the downstream hop to `ResourceSystem.InitializeElementLevels` is currently **dead** — both `SetResourceLevels` call sites are commented out; the live element seed is `ResourceSystem.Start()` | absence = invisible in hangar/arcade selection |
 | 1.10 | `VesselCustomization._shipGeometries` populated; every hull MeshRenderer needs ≥2 material slots (`ShipHelper.ApplyShipMaterial` writes `materials[1]`; SkinnedMeshRenderer uses `materials[0]`) | LogError "Vessel geometries are not set"; IndexOutOfRange at theming |
 | 1.11 | Telemetry: a per-vessel `VesselTelemetry` subclass **on the prefab** with its `VesselStatEventSO` refs wired (Sparrow/Squirrel pattern). `VesselTelemetryBootstrapper` is the degraded stopgap (runtime AddComponent, null stat SOs, warns every spawn); a new subclass must also extend its VesselType switch | warning every spawn in degraded mode |
+| 1.12 | Listed in **`ToyVesselRoster.Default`** (`Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs`) — the roster the freestyle **Vessel Changer** and the **Lifeform Matrix hangar** both offer from. This is the ONE registration that is CODE rather than an asset, so the vessel's setup tool cannot write it and it is the one that gets missed; a hull absent from it cannot be flown in freestyle. Add it when you add the enum member, ahead of the prefab — `ToyVesselRoster.ResolveOffered` drops classes the prefab container has no prefab for, so a declared-but-unbuilt hull is not offered rather than offered-and-broken | `ToyVesselRosterCoverageTests` (every vessel in the prefab container must be in the roster). Absence is otherwise **silent**: no error, no warning, no empty station — the matrix is just one ship short |
 
 **Spawning**: only two sanctioned paths, both DI-inject via `GameObjectInjector.InjectRecursive`
 and converge on `VesselController.Initialize(IPlayer)` (single-shot — "Double initialization not

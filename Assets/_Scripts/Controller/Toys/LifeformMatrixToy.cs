@@ -615,7 +615,7 @@ namespace CosmicShore.Gameplay
         // ── Pass 2b: the hangar row ──────────────────────────────────────────
 
         void ResolveVesselOffer() =>
-            ToyVesselRoster.Resolve(_def ? _def.VesselRoster : null, _offeredVessels);
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselRoster : null, _offeredVessels);
 
         /// <summary>
         /// The hangar: one mini hull per class, in the player's own domain colour. Unlike the

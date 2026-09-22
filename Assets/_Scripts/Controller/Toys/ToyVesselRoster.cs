@@ -18,14 +18,30 @@ namespace CosmicShore.Gameplay
     public static class ToyVesselRoster
     {
         /// <summary>
-        /// Curated default so a matrix isn't all eleven ships (four of which are unimplemented
-        /// planned classes). Override per-asset wherever a toy authors its own list.
+        /// Curated default so a matrix isn't every ship in the enum (four of which are
+        /// unimplemented planned classes). Override per-asset wherever a toy authors its own list.
+        ///
+        /// <para><b>A SHIPPING VESSEL BELONGS HERE, and this is a CODE list — so it is the one
+        /// registration a vessel's setup tool cannot perform for you.</b> Every other place a new
+        /// hull has to be named is an asset (<c>Vessel Prefab Container</c>,
+        /// <c>DefaultNetworkPrefabs</c>, the class lists), so the editor tool that authors the
+        /// vessel writes them and there is nothing to remember; this array is not, so it is
+        /// exactly the one that gets missed. A hull the game can SPAWN but the changer does not
+        /// OFFER is unreachable from freestyle, and nothing says so — the matrix simply has one
+        /// fewer station than the fleet has ships. <c>ToyVesselRosterCoverageTests</c> is the
+        /// gate: a vessel registered in the prefab container and absent from here fails the
+        /// build.</para>
+        ///
+        /// <para>Listing a hull before its prefab is authored is safe and deliberate —
+        /// <see cref="ResolveOffered"/> drops any class the prefab container cannot answer for,
+        /// so a declared-but-unbuilt vessel is simply not offered yet rather than being offered
+        /// as a swap that fails.</para>
         /// </summary>
         public static readonly VesselClassType[] Default =
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
-            VesselClassType.Urchin, VesselClassType.Scarab,
+            VesselClassType.Urchin, VesselClassType.Scarab, VesselClassType.Butterfly,
         };
 
         /// <summary>
@@ -46,6 +62,29 @@ namespace CosmicShore.Gameplay
                 if (exclude.HasValue && vessel == exclude.Value) continue;
                 if (!into.Contains(vessel)) into.Add(vessel);
             }
+        }
+
+        /// <summary>
+        /// <see cref="Resolve"/>, then minus every class the <paramref name="context"/>'s prefab
+        /// container has no prefab for. <b>This is what a toy that ACTS on a hull must call.</b>
+        ///
+        /// <para>It splits a declaration from an availability: <see cref="Default"/> says which
+        /// hulls the fleet means to offer, and the prefab container says which ones exist on this
+        /// build. Without the split, adding a vessel to the roster in the same branch that
+        /// designs it — which is the only way the roster stays complete, since the prefab is
+        /// authored later in the editor — would put a station in the matrix whose swap resolves
+        /// to nothing (<c>"No Vessel Prefab found"</c>, three LogErrors and no vessel).</para>
+        /// </summary>
+        public static void ResolveOffered(ToyContext context, VesselClassType[] authored,
+            List<VesselClassType> into, VesselClassType? exclude = null)
+        {
+            Resolve(authored, into, exclude);
+
+            var container = context?.VesselPrefabContainer;
+            if (!container) return;
+
+            for (int i = into.Count - 1; i >= 0; i--)
+                if (!container.TryGetShipPrefab(into[i], out _)) into.RemoveAt(i);
         }
 
         /// <summary>

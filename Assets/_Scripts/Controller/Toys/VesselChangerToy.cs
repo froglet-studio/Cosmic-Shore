@@ -113,8 +113,8 @@ namespace CosmicShore.Gameplay
 
             // Into a scratch list, not _offered: that one only exists while the matrix is open,
             // and the emblem is built (and rebuilt on a domain change) whether it is or not.
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _emblemScratch,
-                hasCurrent ? current : null);
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselCollection : null,
+                _emblemScratch, hasCurrent ? current : null);
 
             int wanted = slot - 1;
             if (wanted < 0 || wanted >= _emblemScratch.Count) return false;
@@ -148,8 +148,8 @@ namespace CosmicShore.Gameplay
 
             // You are already flying one of them, so that hull is not on offer here.
             bool hasCurrent = TryGetCurrentVessel(out var current);
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _offered,
-                hasCurrent ? current : null);
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselCollection : null,
+                _offered, hasCurrent ? current : null);
 
             if (_offered.Count != 0) return true;
             CSDebug.LogWarning("[VesselChanger] No other vessels to offer.");
@@ -246,7 +246,8 @@ namespace CosmicShore.Gameplay
         void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
         {
             bool hasCurrent = TryGetCurrentVessel(out var current);
-            ToyVesselRoster.Resolve(_def ? _def.VesselCollection : null, _shellScratch, exclude: null);
+            ToyVesselRoster.ResolveOffered(Context, _def ? _def.VesselCollection : null,
+                _shellScratch, exclude: null);
 
             Color accent = PreviewColor();
 

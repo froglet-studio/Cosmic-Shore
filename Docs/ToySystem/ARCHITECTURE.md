@@ -221,6 +221,23 @@ differ in exactly one argument — the changer excludes the hull you are flying 
 become one of the others), the hangar excludes nothing (a wingman in the ship you are flying is a
 perfectly good thing to ask for). Author `vesselRoster` on the definition to override the default.
 
+**A shipping vessel belongs in that default, and it is the one vessel registration that is CODE
+rather than an asset.** Every other place a new hull has to be named — the `Vessel Prefab
+Container`, `DefaultNetworkPrefabs`, the `SO_Classlist_*` lists, the camera settings — is written
+by that vessel's own editor setup tool, so nobody has to remember them; `ToyVesselRoster.Default`
+is a hand-written array, which makes it exactly the one that gets missed. And it is missed
+**silently**: there is no error, no warning and no empty station, the matrix is simply one ship
+smaller than the fleet, and the player-visible symptom is that the new hull cannot be flown in
+freestyle at all. `ToyVesselRosterCoverageTests` is the gate — every vessel in the prefab
+container must be in the roster.
+
+**Declaration and availability are separate**, which is what lets the roster be complete in the
+branch that DESIGNS a vessel rather than the one that authors its prefab: a toy that ACTS on a
+hull calls `ToyVesselRoster.ResolveOffered(Context, …)`, which drops any class the prefab
+container cannot answer for, so a declared-but-unbuilt hull is not offered yet rather than
+offered as a swap that resolves to nothing. Bare `Resolve` is for DOCUMENTING the roster (the
+codex harvester); anything that swaps, releases or previews a hull uses `ResolveOffered`.
+
 ## Cell Selector (`CellSelectorToy` + `CellSelectorToyDefinitionSO`)
 
 The freestyle **world picker** — and the freestyle **reset** (`Toy_CellSelector.asset`,
