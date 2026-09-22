@@ -2606,7 +2606,7 @@ The scored shape-drawing minigame (`ShapeDrawingManager` + `ShapeDrawingCrystalM
 
 **The painting toy is the successor** — scoreless connect-the-dots in the toybox (`PaintingToy` / `ShapeDefinition` via `PaintingDefinitionSO.sourceShape`).
 
-**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert — **never Raise them**; they dump every listener to `Prism.ReturnToPool`).
+**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP event ASSETS `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` are kept but **nothing listens to them any more**: the `EventListenerNoParam` pairs that wired them to `Prism.ReturnToPool` on 8 prism prefabs were stripped (2026-09) because every lattice-flora growth step paid for serializing their UnityEvent lists in `Instantiate.Copy` (`Docs/PERFORMANCE_OPTIMIZATION.md` §0.11.6). Raising them is now a no-op; re-adding a listener to a PRISM prefab is re-adding that cost to every prism laid.
 
 #### Phase 3: Scoring & PlayerScoreCards (Deferred)
 
