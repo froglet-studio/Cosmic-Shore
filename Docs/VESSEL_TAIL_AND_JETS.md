@@ -170,6 +170,29 @@ audit quietly report the prefab's scale instead of the bone's.
 path (single-player, multiplayer, menu autopilot, every runtime swap), which is what makes it
 impossible to author a hull whose tail flies the wrong domain.
 
+### A scoped hold: hiding a TAIL without touching anything else
+
+`VesselTailAndJets.HideTails()` / `ShowTails()` darken this vessel's tail for as long as a caller
+holds it. Today's one caller is the screenshot director, which takes it on every ship within 30
+units of its lens for one hand-stepped render (`Docs/SCREENSHOT_DIRECTOR.md`): a ribbon sized to be
+legible from across a cell is, at that range, several hull lengths crossing the frame in front of
+the thing the photograph is of.
+
+Three properties are the whole of it, and each is a defect if it goes the other way:
+
+- **It reaches TAILS and not JETS.** A jet reads thrust, which is a close-range read — so hiding
+  one at close range removes the thing that works and keeps the thing that does not.
+- **It hides by `Renderer.forceRenderingOff`, never by disabling the component.** A disabled
+  `TrailRenderer` stops **recording** as well as drawing, so on release the ribbon bridges the gap
+  with one straight segment — a visible artefact left behind by a hold that is supposed to leave
+  nothing. Forcing rendering off leaves the simulation running untouched.
+- **It records what it flipped**, so the release restores exactly those renderers and never
+  re-shows one something else had already hidden — the identity guard the platform's other scoped
+  holds (the occlusion corridor's, the capture pass's) use for the same reason.
+
+The **prism trail is not reachable from here and must never be**. It is conserved mass, mass is
+never hidden (`CLAUDE.md` ▸ *Mass is conserved*), and it is not a `TrailRenderer` at all.
+
 ## 4. Placement: the rules, and every vessel's numbers
 
 **Tail** — on the vessel root, on the centreline, at `z = −1.05 × |followOffset.z|`: just past the

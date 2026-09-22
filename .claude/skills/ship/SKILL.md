@@ -84,6 +84,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   unrelated subsystems). `git fetch --unshallow` and re-measure: the real numbers were **109/74
   with ONE merge base**, and the same merge then ran with **zero conflicts**. Nothing about the
   branch had changed.
+  **`git merge-base --all` is the cheaper and sharper discriminator, and it separates two
+  failures the conflict count conflates.** Shallow history can inflate the *count* while leaving
+  the *base* correct, and only the second is dangerous. One branch measured **9,451 commits
+  behind** a base it was 481 from — a 20x inflation — and `merge-base --all` still returned
+  **exactly ONE** base, so the merge was against the real ancestor and the three conflicts it
+  produced were all in files both sides had genuinely edited. Unshallowing changed the number and
+  nothing else: same base commit, same three conflicts, resolutions unaffected. So run
+  `git merge-base --all origin/<base> HEAD` FIRST — **more than one base means stop and
+  unshallow**; exactly one means the base is sound and an alarming staleness number is cosmetic.
+  Re-run the trial merge after unshallowing either way, and confirm the conflict set is identical
+  before trusting work you already resolved.
   Two things to carry. **The conflict COUNT is the tell** — conflicts concentrated in files
   neither branch plausibly edited mean the base is wrong, not the branch; do not start resolving
   them, because every resolution you hand-craft against a phantom base is work thrown away and
