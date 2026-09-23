@@ -125,9 +125,11 @@ each row names, not from memory. The target and all six scenarios were **confirm
    renames the LIT peer arrays, which stops `_PrismSightPeerApex … exceeds previous array size`
    being logged **every frame**, and per-frame console output would distort every capture. All 15
    `Tools/Build/check_*.py` gates pass; every merged `.cs` parses under Release / Development /
-   Editor defines. **Still owed: one clean editor compile.** The first compile of `62681c830` was
-   reported as "Errors" with no text; a scan of every name this branch's own code calls found
-   nothing missing, so the error text is needed before anything else is assumed.
+   Editor defines. **Compiled clean in the editor at `bfcc16117`** (2026-09-23, which also
+   carries the `freeze`/`ab` tools). The first compile of `62681c830` was reported as "Errors"
+   with no text; a scan of every name this branch's own code calls found nothing missing, and
+   the next compile — on the re-merged tree — came back clean, so the earlier report is
+   recorded as not reproduced rather than as diagnosed.
 2. **The boot world, confirmed in code.** Menu_Main's Cell is `CellTypeChoiceOptions.EnvironmentFree`
    (2) over 12 configs. `Cell.ResolveBootIndex` takes the first config with `BootDefault`, and
    **`Garland Cell Config` is the only asset in the project that sets it** (index 10). Lattice sits
