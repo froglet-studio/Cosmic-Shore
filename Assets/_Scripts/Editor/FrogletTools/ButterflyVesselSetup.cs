@@ -284,20 +284,29 @@ namespace CosmicShore.Editor
             {
                 EnsureHudView(existing);
                 Note("HUD variant already present — left in place.");
-                return existing;
+                // RE-LOAD: EnsureHudView may have re-saved the asset at this path, which
+                // invalidates the reference we are holding.
+                return AssetDatabase.LoadAssetAtPath<GameObject>(HudVariantPath);
             }
 
             var instance = (GameObject)PrefabUtility.InstantiatePrefab(basePrefab);
             instance.name = "ButterflyHUDVariant";
+            StripMissingScripts(instance);
             // SaveAsPrefabAsset on a prefab INSTANCE produces a VARIANT, which is what the fleet's
             // Squirrel / Manta / Serpent HUDs are. A hard copy would sever propagation — the exact
             // failure Docs/GAMECANVAS.md records for the forked GameCanvas.
             var variant = PrefabUtility.SaveAsPrefabAsset(instance, HudVariantPath);
+            if (!variant)
+            {
+                Unwired("HUD variant", "SaveAsPrefabAsset refused " + HudVariantPath);
+                DestroyImmediate(instance);
+                return null;
+            }
             DestroyImmediate(instance);
             EnsureHudView(variant);
             FrogletToolChangeLedger.Record(ToolName, HudVariantPath);
             Note("Created HUD variant " + HudVariantPath);
-            return variant;
+            return AssetDatabase.LoadAssetAtPath<GameObject>(HudVariantPath);
         }
 
         void EnsureHudView(GameObject variant)
@@ -308,6 +317,7 @@ namespace CosmicShore.Editor
             var root = PrefabUtility.LoadPrefabContents(HudVariantPath);
             try
             {
+                StripMissingScripts(root);
                 var legacy = root.GetComponentInChildren<VesselHUDView>(true);
                 var host = legacy ? legacy.gameObject : root;
                 // The base view IS the contract (IVesselHUDView is an empty marker nothing
@@ -355,25 +365,53 @@ namespace CosmicShore.Editor
                 var impactCollider = hullGo.AddComponent<ImpactCollider>();
 
                 // ---- core vessel components ----
-                var controller = root.AddComponent<VesselController>();
-                var status = root.AddComponent<VesselStatus>();
+                // ORDER IS LOAD-BEARING, and it is the whole reason this block is not a flat list
+                // of AddComponent calls. Four fleet components declare a [RequireComponent] naming
+                // an INTERFACE or an ABSTRACT class — VesselController and ResourceSystem name
+                // IVesselStatus, VesselImpactor names IVessel, VesselStatus names VesselAnimation.
+                // Unity cannot ADD any of those, so if the dependency is not ALREADY on the object
+                // it logs "Can't add script behaviour 'X'. The script class can't be abstract!" and
+                // AddComponent returns NULL — and every Set() against that null then reports
+                // "target is null", which reads as a wiring bug in this tool rather than as an
+                // ordering one. Satisfy each with a CONCRETE implementor first and Unity's
+                // GetComponent(requiredType) finds it, so nothing is ever added.
+                var animation = Require<ButterflyAnimation>(root);        // is a VesselAnimation
+                var status = Require<VesselStatus>(root);                 // is an IVesselStatus
+                var controller = Require<VesselController>(root);         // is an IVessel
+                var resources = Require<ResourceSystem>(root);
+                var impactor = Require<VesselImpactor>(root);
+
+                // VesselStatus's own [RequireComponent]s are concrete, so Unity has ALREADY added
+                // VesselCameraCustomizer, R_VesselActionHandler, VesselCustomization and
+                // R_ShipElementStatsHandler by this point. Require<T> takes the existing one —
+                // a bare AddComponent here would mint a SECOND copy of each (none of them carries
+                // [DisallowMultipleComponent]), and two R_VesselActionHandlers is two answers to
+                // every ability press.
+                var cameraCustomizer = Require<VesselCameraCustomizer>(root);
+                var actionHandler = Require<R_VesselActionHandler>(root);
+                var customization = Require<VesselCustomization>(root);
+                Require<R_ShipElementStatsHandler>(root);
+
                 // The BASE transformer: the Butterfly is a TWO-THUMB hull, so it must NOT get
                 // SingleStickVesselTransformer (which sets IsSingleStickControls and would send it
                 // to the mouse-as-one-stick desktop scheme). Nothing else about it is special —
                 // slow is an authored number, not a new flight model.
-                var transformer = root.AddComponent<VesselTransformer>();
-                var prisms = root.AddComponent<VesselPrismController>();
-                var resources = root.AddComponent<ResourceSystem>();
-                root.AddComponent<AIPilot>();
-                root.AddComponent<ButterflyAnimation>();
-                root.AddComponent<ElementalBarsController>();
-                var cameraCustomizer = root.AddComponent<VesselCameraCustomizer>();
-                var actionHandler = root.AddComponent<R_VesselActionHandler>();
-                var customization = root.AddComponent<VesselCustomization>();
-                root.AddComponent<R_ShipElementStatsHandler>();
-                var impactor = root.AddComponent<VesselImpactor>();
-                var hud = root.AddComponent<ButterflyHUDController>();
-                root.AddComponent<VesselTailAndJets>();
+                var transformer = Require<VesselTransformer>(root);
+                var prisms = Require<VesselPrismController>(root);
+                Require<AIPilot>(root);
+                Require<ElementalBarsController>(root);
+                var hud = Require<ButterflyHUDController>(root);
+                Require<VesselTailAndJets>(root);
+
+                // A missing core component means every later Set() would report "target is null"
+                // and bury the one line that says why. Stop here instead.
+                if (!animation || !status || !controller || !resources || !impactor ||
+                    !transformer || !prisms || !actionHandler || !hud)
+                {
+                    Note("ABORTED: a core component could not be added — see UNWIRED above. " +
+                         "No prefab was written.");
+                    return null;
+                }
 
                 // ---- ability executors ----
                 var actionsGo = new GameObject("VesselActions");
@@ -532,6 +570,7 @@ namespace CosmicShore.Editor
             // ONE meter, index 0: WING ENERGY. SpreadWingsActionSO.resourceIndex and
             // ButterflyHUDController.wingEnergyResourceIndex both address it by this index, and
             // nothing in the fleet catches a stale one — so the three move together or not at all.
+            if (!resources) { Unwired("ResourceSystem", "component is null"); return; }
             var so = new SerializedObject(resources);
             var list = so.FindProperty("Resources");
             if (list == null) { Unwired("ResourceSystem.Resources", "property not found"); return; }
@@ -551,6 +590,7 @@ namespace CosmicShore.Editor
         void WireActionHandler(R_VesselActionHandler handler, ActionExecutorRegistry registry,
                                FoldActionSO fold, SpreadWingsActionSO spread)
         {
+            if (!handler) { Unwired("R_VesselActionHandler", "component is null"); return; }
             Set(handler, "_executors", registry);
 
             var so = new SerializedObject(handler);
@@ -672,6 +712,60 @@ namespace CosmicShore.Editor
 
         // ─────────────────────────────────────────────────────────────── helpers
 
+        /// <summary>
+        /// Add <typeparamref name="T"/>, or take the one Unity already added as somebody else's
+        /// <c>[RequireComponent]</c>. Two failures this closes, both of which otherwise present as
+        /// a field that "could not be wired":
+        /// <list type="bullet">
+        /// <item>A bare <c>AddComponent</c> returns <b>null</b> — with only a console log — when
+        /// T declares a <c>[RequireComponent]</c> naming an interface or an abstract class that is
+        /// not already satisfied. Reporting the TYPE here is what makes that one line of console
+        /// noise attributable.</item>
+        /// <item>A bare <c>AddComponent</c> of something Unity already auto-added mints a SECOND
+        /// copy, which nothing complains about and which duplicates every subscription that
+        /// component makes.</item>
+        /// </list>
+        /// </summary>
+        T Require<T>(GameObject go) where T : Component
+        {
+            if (go.TryGetComponent<T>(out var existing)) return existing;
+            var added = go.AddComponent<T>();
+            if (!added)
+                Unwired(typeof(T).Name,
+                        "AddComponent returned null — it declares a [RequireComponent] naming an " +
+                        "interface or abstract type that nothing on this object satisfies yet");
+            return added;
+        }
+
+        /// <summary>
+        /// Remove every MonoBehaviour whose script no longer resolves, on this object and all of
+        /// its descendants, and say how many there were.
+        ///
+        /// <para><b>Unity refuses to SAVE a prefab that contains one</b>, and the base HUD prefab
+        /// contains one: <c>VesselHUDPrefab.prefab</c>'s root carries a MonoBehaviour pointing at
+        /// guid <c>57dc27a3f7264d548b51007c0615f701</c>, which no asset in the project owns — a
+        /// deleted <c>ShipHUDView</c>-era component whose serialized data (<c>hudType</c>,
+        /// <c>resourceDisplays</c>, <c>psIconRoot</c>…) Unity has kept ever since, because it never
+        /// prunes a modification it cannot resolve. Every hand-authored variant in the fleet
+        /// (Squirrel, Serpent, Manta…) carries an <c>m_RemovedComponents</c> entry for it, which is
+        /// what the editor writes when you use Remove Missing Script; this does the same thing from
+        /// code so a generated variant is authored the way a hand-authored one is.</para>
+        ///
+        /// <para>It is deliberately a strip rather than a fix to the base prefab: repointing or
+        /// deleting that component in <c>VesselHUDPrefab.prefab</c> would dangle the
+        /// <c>m_RemovedComponents</c> and modification entries that seven shipped variants hold
+        /// against its fileID, and that is an editor operation, not a YAML edit.</para>
+        /// </summary>
+        int StripMissingScripts(GameObject go)
+        {
+            int removed = 0;
+            foreach (var t in go.GetComponentsInChildren<Transform>(true))
+                removed += GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
+            if (removed > 0)
+                Note($"Removed {removed} missing-script component(s) inherited from the base HUD prefab.");
+            return removed;
+        }
+
         T CreateOrUpdate<T>(string path, Action<T> configure = null) where T : ScriptableObject
         {
             EnsureFolder(Path.GetDirectoryName(path)!.Replace('\\', '/'));
@@ -711,6 +805,13 @@ namespace CosmicShore.Editor
                 case string s: p.stringValue = s; break;
                 case Vector3 v: p.vector3Value = v; break;
                 case UnityEngine.Object o: p.objectReferenceValue = o; break;
+                // A null UnityEngine.Object does NOT match `case UnityEngine.Object` — a type
+                // pattern never matches null — so without this branch a reference the caller could
+                // not resolve is reported as "unsupported value type", which names the wrong
+                // problem and sends the reader to this switch instead of to the null source.
+                case null when p.propertyType == SerializedPropertyType.ObjectReference:
+                    Unwired($"{target.GetType().Name}.{field}", "the value to assign was null");
+                    return;
                 default: Unwired($"{target.GetType().Name}.{field}", "unsupported value type"); return;
             }
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -744,6 +845,7 @@ namespace CosmicShore.Editor
         void SetElementalFloat(UnityEngine.Object target, string field, Element element,
                                float min, float max)
         {
+            if (!target) { Unwired(field, "target is null"); return; }
             var so = new SerializedObject(target);
             var p = so.FindProperty(field);
             if (p == null) { Unwired($"{target.GetType().Name}.{field}", "not found"); return; }
@@ -763,6 +865,7 @@ namespace CosmicShore.Editor
         void CopyReference(UnityEngine.Object target, string field,
                            UnityEngine.Object value, string label)
         {
+            if (!target) { Unwired(field, "target is null"); return; }
             if (!value) { Unwired($"{target.GetType().Name}.{field}", label + " not found"); return; }
             Set(target, field, value);
         }
@@ -772,6 +875,7 @@ namespace CosmicShore.Editor
         void CopyReferenceFromVessel(UnityEngine.Object target, string field,
                                      string donorPrefabPath, string label)
         {
+            if (!target) { Unwired(field, "target is null"); return; }
             var donor = AssetDatabase.LoadAssetAtPath<GameObject>(donorPrefabPath);
             var donorComponent = donor ? donor.GetComponent(target.GetType()) : null;
             if (!donorComponent) { Unwired($"{target.GetType().Name}.{field}", label + " donor missing"); return; }
@@ -785,6 +889,7 @@ namespace CosmicShore.Editor
         void CopyArrayFromReferenceContainer(UnityEngine.Object target, string donorName,
                                              IEnumerable<string> fields)
         {
+            if (!target) { Unwired(donorName, "target container is null"); return; }
             var donor = FindFirstAssetNamed(donorName);
             if (!donor) { Unwired(donorName, "donor container not found"); return; }
             var donorSo = new SerializedObject(donor);

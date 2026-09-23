@@ -62,6 +62,36 @@ without raising an error makes every asker either lie or shout**: the ones that 
 reintroduce the silent-omission defect 1.12 exists to prevent, and the ones that shout drown the
 message that would have fixed it.
 
+**BUILDING one from code: four fleet components declare a `[RequireComponent]` naming a type
+Unity CANNOT ADD.** `VesselController` and `ResourceSystem` name `IVesselStatus`, `VesselImpactor`
+names `IVessel` (both interfaces), and `VesselStatus` names `VesselAnimation` (abstract). Unity
+satisfies a `[RequireComponent]` with `GetComponent(requiredType)` — which resolves interfaces and
+base classes fine — so these are correct and inert **on a prefab that already carries a concrete
+implementor**. They are not inert on an `AddComponent` that has to create one: Unity logs
+`Can't add script behaviour 'X'. The script class can't be abstract!` and **`AddComponent` returns
+null**. Every subsequent `SerializedObject` write against that null then reports *"target is
+null"*, and one of them throws `ArgumentException: Object at index 0 is null` — so an ordering
+mistake presents as a wiring bug, in a completely different part of the tool. Author a vessel in
+DEPENDENCY ORDER (`<VesselAnimation subclass>` → `VesselStatus` → `VesselController` →
+`ResourceSystem`, `VesselImpactor`) and take, never re-add, what Unity auto-added along the way —
+`VesselStatus` pulls in `VesselCameraCustomizer`, `R_VesselActionHandler`, `VesselCustomization`
+and `R_ShipElementStatsHandler`, none of which carries `[DisallowMultipleComponent]`, so a second
+`AddComponent` of any of them silently mints a duplicate. `ButterflyVesselSetup.Require<T>` is the
+shape: existing-or-add, and report the TYPE when the add comes back null.
+
+**And the base HUD prefab carries a MISSING SCRIPT, which blocks SAVING a variant of it.**
+`VesselHUDPrefab.prefab`'s root holds a MonoBehaviour pointing at guid
+`57dc27a3f7264d548b51007c0615f701`, owned by no asset in the project — a deleted `ShipHUDView`-era
+component whose fields (`hudType`, `resourceDisplays`, `psIconRoot`, the four `sparrow*` action
+slots) exist nowhere in the codebase, kept forever because Unity never prunes serialized data it
+cannot resolve. Unity **refuses** `SaveAsPrefabAsset` on anything containing one, so a generated
+variant fails with *"You are trying to save a Prefab with a missing script"* and nothing lands.
+Every hand-authored variant in the fleet carries an `m_RemovedComponents` entry for it, because
+the editor's Remove Missing Script is what the author pressed; from code that is
+`GameObjectUtility.RemoveMonoBehavioursWithMissingScript`, walked over every descendant, BEFORE
+the save. *A shipped prefab can carry a component that has not existed for years, and the only
+thing that ever notices is the next attempt to save a copy of it.*
+
 **Spawning**: only two sanctioned paths, both DI-inject via `GameObjectInjector.InjectRecursive`
 and converge on `VesselController.Initialize(IPlayer)` (single-shot — "Double initialization not
 allowed"): `PlayerSpawner`→`VesselSpawner` (single-player) and
