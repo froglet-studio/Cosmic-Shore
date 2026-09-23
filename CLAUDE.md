@@ -4335,7 +4335,7 @@ Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot ves
 
 - **Individual panels, not GameCanvas prefab**: Extract needed UI panels as scene-level objects under "Game UI" — do not instantiate the full `GameCanvas.prefab`. The GameCanvas prefab bundles a `Canvas` + `CanvasScaler` + `GraphicRaycaster` root that would conflict with Menu_Main's existing Canvas.
 - **Reuse existing SOAP pipeline**: `MenuCrystalClickHandler` already toggles autopilot↔freestyle with CanvasGroup fading. "Game UI" `CanvasGroup` is already wired into its `freestyleCanvasGroups[]` array. `MainMenuController` already has `MainMenuState.Freestyle`. No new states or SOAP events needed.
-- **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` (not the singleplayer `VesselSelectionPanelController`) — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients.
+- **There is NO vessel-selection panel, and there must never be another one**: changing your hull in freestyle is the **Vessel Changer TOY** (fly it, or open it in the menu Toy Box — two inputs to one declaration, `Docs/ToySystem/ARCHITECTURE.md` § "One declaration"). A scene-authored panel of vessel cards was retired 2026-09-23 having been **inactive in the scene with no caller for its `Open()`**, and its card grid had never gained the Scarab or the Butterfly — which is the whole argument: *a roster authored as scene objects is a roster nobody updates, and the only reason nobody noticed is that nobody could open it.*
 - **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 3 (scoring). Phase 2 scored shape drawing was **deleted 2026-08-25** (C15); the painting toy is the successor.
 
 #### Current "Game UI" Container
@@ -4344,16 +4344,13 @@ The existing "Game UI" in Menu_Main has two children:
 
 ```
 Game UI [RectTransform, CanvasGroup]                    ← already in freestyleCanvasGroups[]
-├── MiniGameHUD [RectTransform, CanvasGroup, MenuMiniGameHUD]
-│   └── Volume / Pause Button [Image, Button, MenuAudio]
-│       └── MenuMiniGameHUD.Awake() wires onClick → vesselSelectionPanel.Open() + Hide()
-│
-└── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
-    ├── Buttons (Resume, Close) → onClick includes MenuMiniGameHUD.Show()
-    └── Menu [GridLayout, 6× ShipCardView]
+└── MiniGameHUD [RectTransform, CanvasGroup, MenuMiniGameHUD]
+    └── Volume / Pause Button [Image, Button, MenuAudio]
+        └── MenuMiniGameHUD.Awake() wires onClick → MenuCrystalClickHandler.ToggleTransition()
+            (EXITS freestyle — it has never opened a panel, whatever this file used to say)
 ```
 
-`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 3 scoring is needed.
+`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that EXITS freestyle (`MenuCrystalClickHandler.ToggleTransition`), vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 3 scoring is needed.
 
 **Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Start** while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
 
@@ -4370,10 +4367,6 @@ Game UI [RectTransform, CanvasGroup]
 │   ├── ThumbCursors (LeftCursor, RightCursor — ThumbCursor)
 │   ├── NotificationUI [GameToastController + GameToastView]
 │   └── PlayerScoreContainer [Transform — for dynamically instantiated PlayerScoreCards]
-│
-├── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
-│   ├── Buttons (Resume, Close)
-│   └── Menu [GridLayout, 6× ShipCardView]
 │
 └── ScoreboardController [Scoreboard.cs — hidden by default, no OnShowGameEndScreen in basic freestyle]
     ├── SinglePlayerView
@@ -4424,18 +4417,28 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
 
-#### Vessel Selection Panel (Network-Aware)
+#### Vessel selection — RETIRED (2026-09-23)
 
-The Vessel Selection Panel in Menu_Main already uses `MenuVesselSelectionPanelController` (network-aware). For reference, here is how it differs from the singleplayer variant:
+**Changing your hull in freestyle is the Vessel Changer TOY and nothing else.** The scene-authored
+`Vessel Selection Panel` (`MenuVesselSelectionPanelController` + `VesselSelectionPanelUI` +
+`ShipCardView`, plus the never-referenced singleplayer twin `VesselSelectionPanelController`) is
+deleted, along with its 21-GameObject subtree in Menu_Main.
 
-| Aspect | Singleplayer (`VesselSelectionPanelController`) | Menu (`MenuVesselSelectionPanelController`) |
-|---|---|---|
-| Vessel swap | `VesselSpawner.SpawnShip()` — local instantiate | `MenuServerPlayerVesselInitializer.RequestSwap()` — Netcode pipeline |
-| Multiplayer | Not supported | Replicates to all clients |
-| Autopilot | Snapshots & restores AI/input state | Restores freestyle control after swap delay |
-| References | `VesselSpawner`, `ThemeManagerDataContainerSO` | `MenuServerPlayerVesselInitializer`, `MenuCrystalClickHandler`, `MenuFreestyleEventsContainerSO` |
+**It was already unreachable, and that is the finding worth keeping.** Measured before deleting:
+its GameObject carried `m_IsActive: 0`, `Awake` called `ui.Hide()`, `Open()` had **zero** callers
+in C# and **zero** persistent UnityEvent listeners — the only two wired listeners were its own
+internal Close and Resume buttons. So the deletion is provably a runtime no-op, and this file was
+wrong about it in three separate places (it claimed the freestyle Volume/Pause button opened the
+panel; that button has only ever called `MenuCrystalClickHandler.ToggleTransition`).
 
-The panel opens from a button in the freestyle HUD. While open, the vessel flies on autopilot. On "Resume", if a different vessel is selected, it requests a network swap and waits `restoreFreestyleDelayMs` (600ms) before restoring player control.
+Its card grid held **seven hand-placed cards** — Rhino, Dolphin, Manta, Squirrel, Serpent,
+Sparrow, Urchin — and had never gained the **Scarab** or the **Butterfly**. That is the general
+rule this retirement exists to enforce: **a roster authored as scene objects is a roster nobody
+updates**, and the only reason its staleness never surfaced is that nobody could open it. A
+surface that offers a vessel, a world, a lifeform or a painting **derives its list from the live
+system that owns those things** — for hulls, `ToyVesselRoster` (CONTRACT.md §1.12) — and it is
+reached through the toy that owns the action, so the world station and the menu window cannot
+disagree.
 
 #### SOAP Event Flow (Freestyle Toggle with Game UI)
 
@@ -4456,7 +4459,6 @@ Player taps freestyle button
           ├─ InputController.SetPause(true), Vessel.ToggleAIPilot(true)
           ├─ freestyleEvents.OnExitFreestyle.Raise()
           │   └─ MainMenuController → TransitionTo(Ready)
-          │   └─ MenuVesselSelectionPanelController → ui.Hide() (auto-close panel)
           ├─ FadeToSavedMenuAlphas()
           │   ├─ menuCanvasGroups[] → restore to saved alphas
           │   └─ freestyleCanvasGroups[] → fade to 0 ("Game UI" hidden)
@@ -4494,16 +4496,13 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Freestyle toggle (autopilot↔control) | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu state machine | `MainMenuController.cs` | `_Scripts/System/` |
 | Menu vessel spawner (base) | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
-| Vessel selection (network-aware) | `MenuVesselSelectionPanelController.cs` | `_Scripts/Controller/Multiplayer/` |
-| Vessel selection UI (show/hide) | `VesselSelectionPanelUI.cs` | `_Scripts/UI/` |
-| Vessel card (per-vessel button) | `VesselCardView.cs` (class: `ShipCardView`) | `_Scripts/UI/` |
+| Vessel selection (the ONLY one) | `VesselChangerToy.cs` + `ToyVesselRoster.cs` | `_Scripts/Controller/Toys/` |
 | Minigame HUD controller | `MiniGameHUD.cs` | `_Scripts/UI/` |
 | Minigame HUD view | `MiniGameHUDView.cs` | `_Scripts/UI/View/` |
 | Scoreboard (end-game results) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Player score card (per-player) | `PlayerScoreCard.cs` | `_Scripts/UI/` |
 | Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
-| Vessel selection (singleplayer, legacy) | `VesselSelectionPanelController.cs` | `_Scripts/UI/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
 
@@ -4512,7 +4511,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **No new `MainMenuState` values** — `Freestyle` already exists and covers the lava-lamp gameplay phase
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
-- **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
+- **Never author a panel of vessel/world/lifeform cards in a scene** — the roster goes stale the day a vessel ships and nothing says so. Hull selection is the Vessel Changer toy, reachable both by flying it and from the menu Toy Box; both read `ToyVesselRoster`
 - **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.

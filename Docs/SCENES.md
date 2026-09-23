@@ -197,7 +197,7 @@ None(0) → Initializing(1) → Ready(2) ⇄ Freestyle(4)
 **Key systems in Menu_Main**:
 - `MenuServerPlayerVesselInitializer` — spawns autopilot vessel for menu background
 - `MenuCrystalClickHandler` — toggles between autopilot and freestyle control
-- `MenuVesselSelectionPanelController` — network-aware vessel swapping
+- `VesselChangerToy` — the ONLY vessel swap surface (fly the toy, or open it in the menu Toy Box)
 - `ScreenSwitcher` — horizontal sliding panel navigation
 - `ArcadeLobbyList` / `FriendsListPanel` — party + social (invite) UI
 - `MenuMiniGameHUD` — freestyle HUD with vessel change trigger

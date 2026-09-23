@@ -21,8 +21,9 @@ read all of it when creating or completing a vessel. Where this file and the cod
 Naming trap that applies everywhere: file names renamed Ship→Vessel but class names did not.
 `VesselActionSO.cs` → `ShipActionSO` · `VesselActionExecutorBase.cs` → `ShipActionExecutorBase` ·
 `VesselHelper.cs` → `ShipHelper` · `R_VesselElementStatsHandler.cs` → `R_ShipElementStatsHandler` ·
-`VesselActions.cs` → `enum ShipActions` · `VesselHUD.cs` → `ShipHUD` (legacy) ·
-`VesselCardView.cs` → `ShipCardView`. **Grep by class name.**
+`VesselActions.cs` → `enum ShipActions` · `VesselHUD.cs` → `ShipHUD` (legacy).
+**Grep by class name.** (`VesselCardView.cs` → `ShipCardView` was on this list until the
+freestyle vessel-selection panel was retired, 2026-09-23.)
 
 ---
 

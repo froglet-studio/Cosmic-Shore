@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -20,8 +21,10 @@ namespace CosmicShore.Gameplay
     /// the moment your domain changes.
     ///
     /// The swap pipeline drops the new vessel into autopilot with input paused, so this restores
-    /// freestyle control once the swap completes (mirroring
-    /// <c>MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync</c>).
+    /// freestyle control once the swap completes. (It used to say it mirrored the freestyle HUD's
+    /// vessel-selection panel; that panel was retired 2026-09-23 after measuring that it was
+    /// inactive in the scene with no caller for its <c>Open()</c> - this toy is the only thing
+    /// that has actually restored freestyle control for some time.)
     /// </summary>
     public sealed class VesselChangerToy : MatrixToy, IToyShellSurface
     {
@@ -219,6 +222,16 @@ namespace CosmicShore.Gameplay
 
             init.RequestSwap(target);
             RestoreControlAfterSwap(this.GetCancellationTokenOnDestroy()).Forget();
+
+            // The cloud record's "last hull the player deliberately picked". This moved here from
+            // the retired freestyle vessel-selection panel (2026-09-23), and moving it is what
+            // made it RUN: that panel was inactive in the scene with no caller for its Open(), so
+            // `HANGAR_DATA.SelectedVessel` had no live writer at all and
+            // Docs/Analytics/DATA_ARCHITECTURE.md's "SelectedVessel gets a writer" had never been
+            // true. A deliberate pick is exactly what a pass through this matrix is, and this toy
+            // is now the only place in the game where one happens.
+            UGSStatsManager.Instance?.ReportVesselSelected(target.ToString());
+
             CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[VesselChanger] -> {target}.");
         }
 

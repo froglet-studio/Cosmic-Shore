@@ -622,7 +622,9 @@ follow the domain changer.
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
 (that's why the old toy left you unable to steer). `VesselChangerToy.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
-`MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
+the retired freestyle vessel-selection panel's `RestoreFreestyleAfterSwapAsync` (that panel was
+deleted 2026-09-23 — measured inactive in the scene with no caller for its `Open()`, so this toy
+had been the only live restorer for some time).
 
 **HUD after swap.** `VesselController.Initialize` creates every vessel's HUD **hidden**, and the
 only menu code that shows the local HUD fires on *entering* freestyle — which a swap doesn't do.
