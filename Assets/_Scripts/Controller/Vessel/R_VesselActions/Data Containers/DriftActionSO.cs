@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool isSharpDrifting;
 
         [Tooltip("Plays the drift start/end one-shots. Disable on a secondary drift tier that is " +
-                 "bound to the same trigger as the primary tier (e.g. the Squirrel's analog drift " +
+                 "bound to the same trigger as the primary tier (e.g. the Scarab's analog drift " +
                  "stacks single + sharp on one trigger) so the SFX isn't played twice.")]
         [SerializeField] bool playDriftSfx = true;
 
