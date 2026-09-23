@@ -1011,17 +1011,15 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Super-shielded ceiling without <c>--force</c>. SuperShielded lazily AddComponents
-        /// <c>PrismStellatedOctahedronShield</c>, whose Awake GENERATES A STELLATION MESH PER
-        /// PRISM, and both shield tiers swap to an always-on convex MeshCollider that
-        /// collider-LOD cannot reclaim (see <see cref="PrismKinds"/>'s own class doc). Shipped
-        /// gameplay caps are SuperShielded 1 per microscene. A five-figure super request is a
-        /// mesh-generation storm, not a measurement — so the lab REFUSES it rather than letting
-        /// the operator discover it as a multi-minute hang.
+        /// <c>PrismStellatedOctahedronShield</c> on first engage, so every super-shielded prism
+        /// pays a component add and an Awake the other tiers do not. The stellation mesh itself
+        /// is SHARED (<c>StellatedOctahedronMeshGenerator.GetSharedShieldMesh</c>) and a shield
+        /// costs no collider (its MeshCollider is only ever disabled), so this is a SPAWN-TIME
+        /// cost, not a per-frame one. The ceiling exists because shipped content caps
+        /// SuperShielded at 1 per microscene: a five-figure request measures a population no
+        /// arena contains. <c>--force</c> lifts it.
         /// </summary>
         const int SuperShieldedCeiling = 256;
-
-        /// <summary>Shielded is a collider cost rather than a mesh-generation storm — warn, do not refuse.</summary>
-        const int ShieldedWarnAbove = 4096;
 
         const string LabUsage =
             "usage: lab <count> [plain|danger|shielded|super] [jade|ruby|blue|gold] [scatter] | " +
@@ -1122,10 +1120,7 @@ namespace CosmicShore.Utility
             SyncInputsFromState();
             Spawn();
 
-            string note = kind == PrismKind.Shielded && sites > ShieldedWarnAbove
-                ? $" — WARNING: {sites:N0} shielded prisms mint {sites:N0} always-on convex MeshColliders"
-                : string.Empty;
-            return $"lab {sites:N0} {kind} {domain}{(scatter ? " SCATTERED" : "")}{note}";
+            return $"lab {sites:N0} {kind} {domain}{(scatter ? " SCATTERED" : "")}";
         }
 
         string HandleLabMix(string[] args, bool force, bool scatter)
@@ -1184,11 +1179,8 @@ namespace CosmicShore.Utility
 
             int sites = _counts.x * _counts.y * _counts.z;
             string filler = sites > total ? $" (+{sites - total} plain filler sites)" : string.Empty;
-            string note = shielded > ShieldedWarnAbove
-                ? $" — WARNING: {shielded:N0} shielded prisms mint that many always-on convex MeshColliders"
-                : string.Empty;
             return $"lab mix {total:N0} prisms across {_mixDomains.Length} domain(s)" +
-                   $"{(scatter ? ", SCATTERED lay order" : "")}{filler}{note}";
+                   $"{(scatter ? ", SCATTERED lay order" : "")}{filler}";
         }
 
         /// <summary>Null when the request is allowed; the refusal text, WITH ITS REASON, when not.</summary>
@@ -1197,10 +1189,9 @@ namespace CosmicShore.Utility
             if (force || superCount <= SuperShieldedCeiling) return null;
             return $"REFUSED: {superCount:N0} super-shielded prisms exceeds the lab ceiling of " +
                    $"{SuperShieldedCeiling:N0}. Each one lazily AddComponents " +
-                   "PrismStellatedOctahedronShield, whose Awake GENERATES A STELLATION MESH PER " +
-                   "PRISM, and swaps to an always-on convex MeshCollider collider-LOD cannot " +
-                   "reclaim (shipped gameplay caps are 1 per microscene). That is a " +
-                   "mesh-generation storm, not a measurement. Re-run with --force if you meant it.";
+                   "PrismStellatedOctahedronShield (a component add + Awake per prism at spawn), " +
+                   "and shipped content caps SuperShielded at 1 per microscene, so this measures " +
+                   "a population no arena contains. Re-run with --force if you meant it.";
         }
 
         // ── UI construction (mirrors DiagnosticsHUD.BuildUI's code-built idiom) ──
