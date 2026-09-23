@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: PrismWakeConfig
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismWakeConfigSO
   enabled: 1
-  amplitude: 0.25
-  radialExponent: 1.5
-  reachHullRadii: 3
-  trainHullRadii: 6
-  wavesPerTrain: 2.5
+  amplitude: 0.45
+  radialExponent: 1
+  reachHullRadii: 8
+  trainHullRadii: 20
+  wavesPerTrain: 3
   phaseTravel: 1.35
-  engageSpeed: 150
-  fullSpeed: 400
+  engageSpeed: 0
+  fullSpeed: 30
   subdivision: 12
-  maxResidentPrisms: 48
-  residencyMargin: 12
-  engageSeconds: 0.35
-  releaseSeconds: 0.9
+  maxResidentPrisms: 96
+  residencyMargin: 24
+  engageSeconds: 0.15
+  releaseSeconds: 0.5

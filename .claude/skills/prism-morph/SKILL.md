@@ -440,8 +440,9 @@ The family is defined by four axes. A new member is a choice on each:
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
   over, outside rises to meet.
 - **WAKE** (fleet-wide, `Docs/PRISM_ANIMATION.md` §4.7.3) — *hull · travelling ripple · at
-  speed · 48 × s12*. A fast vessel drags a ripple through the mass around its recent path, most
-  visibly the ribbon it is laying. **Five things it established that the next member inherits:**
+  speed · 96 × s12, currently OVERTUNED*. A fast vessel drags a ripple through the mass around its
+  recent path, most visibly the RAILS of the ribbon it is laying. **Seven things it established
+  that the next member inherits:**
   (a) a member need not belong to one vessel — the wake is ensured on EVERY vessel and
   deliberately NOT under `IsLocalPilot`, because it is what other pilots see you leaving behind
   you; ask who the effect is FOR before reaching for that gate. (b) **Pick the frame from what
@@ -455,6 +456,20 @@ The family is defined by four axes. A new member is a choice on each:
   (e) **Splice ORDER between two morphs is a real decision and nothing on screen reports it**:
   the wake runs BEFORE the cradle, because the cradle closes mass onto a hull resting on it and a
   wake applied after would re-open the hole. Assert both edges.
+  (f) **A strain's fixed point is part of the design, so say where the mass you are aiming at
+  actually IS.** The wake's header claimed it was most visible on the trail, and the trail is laid
+  essentially along the axis — where displacement `r·E` is smallest. The Squirrel happens to lay
+  **two** rails ±9.6 u out, so it works; a single-rail hull would have been in the dead zone, and
+  the reach (`hullRadius × 3` as first authored) could put even those rails outside the falloff
+  entirely. Measure the geometry the effect is aimed at before authoring a reach in hull radii.
+  (g) **An ABSOLUTE window is a claim about the fleet's real numbers, so author it from
+  measurements.** The wake's engage speed shipped at 150 u/s against a Squirrel that cruises at 54
+  and tops out at 300, so on the hull the mode flies the effect never ran — and the playtest
+  report was *"too subtle"*, because **a window that never opens is indistinguishable on screen
+  from an effect that is too weak.** Which is why every member of this family should ship with a
+  one-line-per-second verbose report on `CSLogChannel.PrismRuntime` naming its live slots, their
+  derived geometry and the resident count, **including the idle case with its reason** — the
+  family's failure modes all render as "nothing is happening" and nothing else separates them.
 
 **Candidates — each needs design sign-off before it is built.** These are illustrative shapes
 the machinery already supports, not an approved roster; do not build one because it is listed.

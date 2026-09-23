@@ -3,10 +3,11 @@
 // prism visual that depends on live gameplay data, and the SECOND that moves VERTICES.)
 //
 // PURPOSE. A vessel travelling fast enough drags a travelling ripple through the mass it is
-// passing — most visibly the ribbon it is laying, which runs straight down the middle of the
+// passing — most visibly the RAILS of the ribbon it is laying, which run either side of the
 // disturbance. The mass around the ship's recent path swells away from that path and shrinks
 // back toward it in a wave that streams BACKWARD, so the crests sit still in the world and the
-// pilot flies out from under them. It reads as a boat's wake: the faster you go, the more of it
+// pilot flies out from under them. Note "around the path" is literal: the map is a strain, the
+// axis is a fixed point, and mass lying exactly ALONG the path is barely moved. It reads as a boat's wake: the faster you go, the more of it
 // there is, and it is a thing other pilots can see you leaving behind you.
 //
 // WHY IT IS A GLOBAL AND NOT A STAMP. "Where is that hull, which way is it pointing, and how

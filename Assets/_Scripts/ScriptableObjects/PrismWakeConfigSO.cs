@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
     /// Docs/PRISM_ANIMATION.md §4.7.3).
     ///
     /// A vessel travelling fast enough drags a travelling ripple through the mass around its
-    /// recent path — most visibly the ribbon it is laying, which runs straight down the middle of
+    /// recent path — most visibly the RAILS of the ribbon it is laying, which run either side of
     /// the disturbance. The prisms in that volume are swapped to a high-poly copy of the identical
     /// solid (<see cref="Subdivision"/>) so the surface RIPPLES instead of hinging, and the swap
     /// happens where the wake is provably zero (<see cref="ResidencyMargin"/>) so it is never seen.

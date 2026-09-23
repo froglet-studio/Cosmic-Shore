@@ -7,10 +7,18 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// The CPU half of the WAKE: a vessel travelling fast enough drags a travelling ripple through
-    /// the mass around its recent path — most visibly the ribbon it is laying, which runs straight
-    /// down the middle of the disturbance. Mass near the path swells away from it and shrinks back
+    /// the mass around its recent path — most visibly the RAILS of the ribbon it is laying, which
+    /// run either side of the disturbance. Mass near the path swells away from it and shrinks back
     /// toward it in a wave that streams backward, so the crests hold still in the world and the
     /// ship flies out from under them.
+    ///
+    /// <para><b>"Near the path" means near, not ON it.</b> The map is a STRAIN, so displacement is
+    /// <c>r·E</c> and the axis itself is a fixed point: mass lying exactly along the path barely
+    /// moves, and what ripples is the mass standing off it. That is a good fit for a trail — a
+    /// vessel that lays two rails (the Squirrel's <c>Gap 18.5</c> puts them ±9.6 u out) has its
+    /// ribbon exactly where the strain is strongest — and it is why the REACH has to cover that
+    /// separation: authored too small, the rails sit past the radial falloff, where the wake is
+    /// exactly zero and the ship leaves no visible trace at all.</para>
     ///
     /// It does exactly two things per frame, and they are different KINDS of thing:
     ///
@@ -260,6 +268,8 @@ namespace CosmicShore.Utility
 
             ReconcileResidency(config, enabled, count);
 
+            ReportState(config, enabled, count);
+
             // Nothing to say and nothing said last frame: skip the writes entirely, so a match in
             // which nobody is moving fast costs this system literally nothing per frame.
             if (count == 0 && _publishedCount == 0) return;
@@ -279,6 +289,57 @@ namespace CosmicShore.Utility
         /// config, the CPU already has both, and deriving them once means the phase the source
         /// integrates and the wave the shader draws cannot fall out of step.
         /// </summary>
+        static float _nextReportTime;
+
+        /// <summary>
+        /// Say, once a second on <see cref="CSLogChannel.PrismRuntime"/>, what the wake is actually
+        /// doing — because every way this effect fails looks identical on screen to every other way.
+        /// A speed under the engage threshold, a hull whose measured radius makes the volume tiny,
+        /// a config switched off, an amplitude that is running but too small to see and a spatial
+        /// index that handed back no candidates all present as "nothing is happening", and no
+        /// amount of staring at a ship separates them. The line names the live slot count, each
+        /// slot's strength / radius / reach / train, and how many prisms are carrying the dense
+        /// mesh, so "is it even working" is answered by reading rather than by guessing.
+        ///
+        /// It reports the IDLE state too, and with the reason: a system that goes quiet when it has
+        /// nothing to say cannot be told apart from one that is not running at all.
+        /// Toggle the channel in FrogletTools &gt; Toolbox &gt; Logging; it is off by default and
+        /// costs one float compare per frame when it is.
+        /// </summary>
+        static void ReportState(PrismWakeConfigSO config, bool enabled, int count)
+        {
+            if (!CSDebug.IsVerbose(CSLogChannel.PrismRuntime)) return;
+            if (Time.unscaledTime < _nextReportTime) return;
+            _nextReportTime = Time.unscaledTime + 1f;
+
+            if (!enabled)
+            {
+                CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
+                    "[PrismWake] idle: " + (config.Enabled ? "config is not sane" : "config disabled"));
+                return;
+            }
+
+            if (count == 0)
+            {
+                CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
+                    $"[PrismWake] idle: {_sources.Count} source(s) reporting, none above the " +
+                    $"engage speed ({config.EngageSpeed:0} u/s -> full at {config.FullSpeed:0}).");
+                return;
+            }
+
+            _report.Clear();
+            for (int i = 0; i < count; i++)
+                _report.Append($" [{i}] w={_shape[i].x:0.00} r={_centre[i].w:0.0} " +
+                               $"reach={_shape[i].y:0.0} train={_shape[i].z:0.0}");
+
+            CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
+                $"[PrismWake] {count} wake(s), amp {config.Amplitude:0.00}, " +
+                $"{_resident.Count}/{config.MaxResidentPrisms} prisms dense at s={config.Subdivision}:" +
+                _report);
+        }
+
+        static readonly System.Text.StringBuilder _report = new();
+
         static void Write(int slot, in Source src, PrismWakeConfigSO config)
         {
             Vector3 p = src.Hull.position;
