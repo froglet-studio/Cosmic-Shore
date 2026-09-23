@@ -38,10 +38,9 @@ its stellation mesh is shared**, so do not repeat either claim.
 
 1. `git fetch origin` and check whether bleeding-edge has moved past `ee2ad320f`. If it has, merge
    it again the same way (a merge commit, never a rebase — the branch is published) and push.
-2. Run the out-of-editor gates (`Tools/Build/check_*.py`). Expected: all pass except
-   `check_using_directives.py`'s known false positive on `PrismStressInjector.cs`
-   (`DontDestroyOnLoad(go)` is the inherited `Object` method, not the `CosmicShore.Utility`
-   type).
+2. Run the out-of-editor gates (`Tools/Build/check_*.py`). Expected: all 15 pass (the
+   `check_using_directives.py` false positive on `DontDestroyOnLoad(go)` was fixed in
+   `5c6439e68`).
 3. Ask the human whether they have opened the merged tree in Unity and got a clean compile. If
    not, ask for that **one** compile before anything else, and report the result plainly.
 

@@ -10,6 +10,7 @@ numbers (`§0.8`, `§0.11.6`, `Task 10`), which stay valid there.
 |---|---|
 | **Rewritten** | 2026-09-22, on branch `claude/bold-fermi-54nlts` @ `561700737` |
 | **Merged** | bleeding-edge `ee2ad320f` merged in on 2026-09-23 (`c2e7a7c46`) — 1,390 files, **including a new boot world** (§1.1) |
+| **Plan revised** | 2026-09-23 on the merged tree @ `5c6439e68` (§3 — every lever re-checked in code) |
 | **Every number below** | an **Editor** number taken on the PRE-merge tree (base `1f160508f`), unless stated. None is a ship number, and none has been re-taken since the merge. |
 
 ---
@@ -62,6 +63,10 @@ scenario set (§3.1) is re-measured on the merged tree. The merge also changed `
 (+121: sway constants shared with health prisms), `PrismRenderService.cs` (+44) and
 `Flora.cs` (+80) — the exact code under lead #1.
 
+**Confirmed in code on the merged tree** (§3.1): Garland is the only `BootDefault` config. The
+merge also brought the **Arboretum** (Cell Selector, ~55k prisms at maturity, one spindle per
+bond), which is why the scenario set gains an S6.
+
 ---
 
 ## 2. What we did, since day 1
@@ -109,33 +114,48 @@ scenario set (§3.1) is re-measured on the merged tree. The merge also changed `
 ## 3. The plan — what is left, in order
 
 Revise the plan before running tests. Tests exist to answer a question on this list.
+**This section was re-derived on the merged tree (`5c6439e68`, 2026-09-23)** by reading the code
+each row names, not from memory. The target and scenario set below are **proposed, awaiting the
+human's confirmation**; nothing in §1 has been re-measured yet.
 
-### 3.1 Step 0 — merge, then set a target and a scenario set
+### 3.1 Step 0 — the tree, the boot world, the target, the scenarios
 
-1. ~~**Merge bleeding-edge into the perf branch**~~ — **done 2026-09-23** (`c2e7a7c46`). Still
-   owed: one editor compile on the merged tree. Nothing measured on the old base describes what
-   players run.
-2. **Write down the target.** Proposal: **60 fps in a Development build on the team's reference
-   PC**, with no frame over 50 ms in steady play. (The editor inflates frame time ~2–3×; an
-   editor number is for *comparing*, a build number is for *judging*.)
-3. **Fix the scenario set** — the same five every time, so numbers are comparable across weeks:
+1. **Merged** 2026-09-23 (`c2e7a7c46`). All 15 `Tools/Build/check_*.py` gates pass; every merged
+   `.cs` parses under Release / Development / Editor defines. **Still owed: one editor compile.**
+2. **The boot world, confirmed in code.** Menu_Main's Cell is `CellTypeChoiceOptions.EnvironmentFree`
+   (2) over 12 configs. `Cell.ResolveBootIndex` takes the first config with `BootDefault`, and
+   **`Garland Cell Config` is the only asset in the project that sets it** (index 10). Lattice sits
+   at index 0 and is now only the rule-2 fallback, reached through the Cell Selector.
 
-   | # | Scenario | Why it is on the list |
-   |---|---|---|
-   | S1 | Menu_Main, **Garland** (default), 4 min | What every player sees first |
-   | S2 | Menu_Main, **Lattice** via Cell Selector, 8 min | Heaviest opt-in world; everything measured so far |
-   | S3 | **Rampage intensity 1** | Heaviest arcade cell (~49k flora prisms); **never profiled** |
-   | S4 | **Scurry intensity 4** (Atlantis, ~69k prisms) | Heaviest authored environment |
-   | S5 | **Wildlife Liberation** | Heaviest fauna (~1.2k creatures) |
+   | World | Prisms | Heart colliders | Grows? |
+   |---|---:|---:|---|
+   | **Garland** (boot) | 4,259 authored → ~8,147 mature | 37 at cap | 4 phyllotactic species, caps 3–7 plants; no lattice species, so no population-driven growth (`ECOSYSTEM.md §48.4`) |
+   | Lattice (opt-in) | ~24k → ~55k over its first minutes (measured pre-merge) | up to 1,080 | yes — reproduction until caps |
+   | **Arboretum** (opt-in, **new since the base**) | 54,935 at maturity | 20 | 20 hard-capped plants, then **stops** (`ECOSYSTEM.md §57`) |
 
-   (SkimRace with 3 players was the original "single-digit fps" report; add it as S6 if it
-   still reproduces after the merge.)
+3. **Target (proposed):** **60 fps in a Development build on the team's reference PC** — a 16.7 ms
+   frame, with no frame over 50 ms in steady play. The editor inflates frame time ~2–3×, so an
+   editor number is for *comparing* and a build number is for *judging*.
+4. **Scenario set (proposed)** — the same set every time, so numbers compare across weeks:
+
+   | # | Scenario | Wait | Why it is on the list |
+   |---|---|---|---|
+   | S1 | Menu_Main, **Garland** (default) | 4 min | What every player sees first |
+   | S2 | Menu_Main, **Lattice** via Cell Selector | 8 min | Heaviest *growing* world; every number so far describes it; the only one with plant **births** (L2) |
+   | S3 | **Rampage intensity 1** | 3 min | Heaviest arcade cell (5.0× flora, ~49k prisms); **never profiled** |
+   | S4 | **Scurry intensity 4** (Atlantis) | 3 min | Heaviest authored environment (~69k prisms) |
+   | S5 | **Wildlife Liberation** | 3 min | Heaviest fauna (~1.2k creatures); QuadFish, Clawfish and worm segments carry spindles too |
+   | S6 | Menu_Main, **Arboretum** via Cell Selector | 8 min | **Added:** new since the base, the largest spindle world (one spindle per bond on ~55k prisms), and hard-capped — the one heavy world that **stops changing**, so it is where an A/B is cleanest |
+
+   The draft list had five. S6 is the one change, for the reason in its row. SkimRace with 3
+   players (the original "single-digit fps" report) stays off the list unless it still
+   reproduces after the merge.
 
 ### 3.2 Step 1 — attribute each scenario once (no A/B needed)
 
 One Profiler frame per scenario, **Hierarchy view expanded to the leaves**, plus the
 **Timeline view** for the render block. This names the cost directly. Record the top 10 rows
-per scenario here. Two questions this answers that no A/B can:
+per scenario in §1. Two questions this answers that no A/B can:
 
 - **What are the worker jobs the main thread waits on?** Timeline shows them by name during
   the `Idle`. If they are `CullScriptable` / render-queue jobs, lead #1 (renderer count) is
@@ -144,26 +164,34 @@ per scenario here. Two questions this answers that no A/B can:
   (coroutines), `ScriptRunBehaviourLateUpdate`, `DirectorUpdate`, physics.
 
 Also sort the Hierarchy by **GC Alloc** once per scenario: that names the 154.5 KB/frame caller.
+Then `diag <scenario> 15` for averages. **One pass, one tree, one SHA.**
 
 ### 3.3 Step 2 — the levers we already know about
 
-Ranked by evidence. Each needs Step 1 to confirm it is big in a scenario that misses the target.
+Ranked by the evidence we had **before** the merge. Each needs Step 1 to confirm it is big in a
+scenario that **misses the target**; the ranking is redone from those numbers once §1 holds
+them. "Merged tree" says whether the code the row names is still there.
 
-| # | Lever | Evidence | Size |
-|---|---|---|---|
-| L1 | **Spindles off GameObject renderers** — draw them through Entities Graphics like prisms, or merge a plant's spindles into one mesh | ~40k enabled spindle renderers vs 4.6k visible; render-job wait 14 ms; hide test suggests ~4 ms | Large, structural. Must keep the per-spindle wither fade (continuity law) |
-| L2 | **Pool prism + spindle pairs** for growth, and route plant **births** through the budgeted spawn queue | `Instantiate` 3.6 ms / 720 µs per growth step; birth spike ~1.2 ms (`archive §0.8`, §4 Tier 0a) | Medium. Ecology change — `/ecology` protocol |
-| L3 | **Find the 154.5 KB/frame gameplay GC** and the multi-MB spike frames | Profiler, `EditorLoop` 0 B, all under `UpdateScene` | Unknown until attributed |
-| L4 | **Pure-entity prisms** (no GameObject at all for bulk mass) | 28,544 disabled prism GameObjects still exist; `Docs/PRISM_ECS_MIGRATION.md` Checkpoint D (designed, not built) | Large, structural, post-launch unless a scenario demands it |
-| L5 | Cheap, known-wrong code, no capture needed | `HijackController` AIs all re-plan on the same frame (`nextRetarget = 0f`); `AstroLeagueBall` `List.Contains` in a hot loop + zero markers; 4 full-population sync scans in `PrismSpatialIndex` with no "anything shielded?" early-out; `ConnectingPanelController` rebuilds strings every frame; `Boid.cs:627` allocating `OverlapSphere` | Small each; list in `archive §4 Tier 1–2` |
-| L6 | Snow shard count (`SnowChanger.shardDistance` 120 → 200 = 4,189 → 905 GameObjects) | Renderer census | Small; a visual-density call for a human |
-| L7 | Memory: music `DecompressOnLoad` (182 MB resident), texture streaming off | `Docs/MEMORY_AUDIT.md` | Load time + RAM, not frame time |
+| # | Lever | Evidence (pre-merge) | Merged tree (`5c6439e68`) | Size |
+|---|---|---|---|---|
+| L1 | **Spindles off GameObject renderers** — draw them through Entities Graphics like prisms, or merge a plant's spindles into one mesh | ~40k enabled spindle renderers vs 4.6k visible (Lattice); render-job wait 14 ms; hide test suggests ~4 ms (confounded, §4.3) | **Still true, and wider.** `Spindle` is still one GameObject `Renderer` per limb; the +121 lines are sway constants handed to health prisms (`PrismSway`) and a `ResolveRenderedObject` fallback. The new Mandelbulb/Borromean families (Arboretum) grow one spindle per bond (`MandelbulbFlora._limb`), and some creatures carry spindles | Large, structural. Must keep the per-spindle wither fade (continuity law) |
+| L2 | **Recycle flora prisms + spindles** instead of minting, and route plant **births** through the budgeted spawn queue | `Instantiate` 3.6 ms / 720 µs per growth step; birth spike ~1.2 ms (`archive §0.8`, §4 Tier 0a) | **Still true, sharper.** Every growth path takes its prism from `EnvironmentPrismPool.Get`, but that pool only **mints** during play: a consumed or exploded prism is `Destroy`ed and never returns. Spindles are a raw `Instantiate` (`LifeForm.AddSpindle`, `AssembledFlora.cs:571`, `PhyllotacticFlora.cs:466`, `BranchingFlora.cs:153`). Recycling can only cover churn (grazing + regrowth), not net growth | Medium. Ecology change — `/ecology` protocol |
+| L3 | **Find the gameplay GC** and the multi-MB spike frames | 154.5 KB/frame in Lattice, all under `UpdateScene` | **Unknown** — a Lattice-only number; re-measure per scenario | Unknown until attributed |
+| L4 | **Pure-entity prisms** (no GameObject at all for bulk mass) | 28,544 disabled prism GameObjects exist; `Docs/PRISM_ECS_MIGRATION.md` Checkpoint D | **Still true**: Checkpoint D is designed, not built | Large, structural, post-launch unless a scenario demands it |
+| L5 | Cheap, known-wrong code, no capture needed | `archive §4 Tier 1–2` | **All still present**, lines moved: `HijackController` AIs re-plan on one frame (`nextRetarget = 0f`, `:217`/`:272`); `AstroLeagueBall._shieldPoppedThisVisit` is a `List` scanned by `Contains` (`:1214`, `:1236`); `PrismSpatialIndex`'s four `Schedule(_highWaterMark).Complete()` scans (`:2211`, `:2363`, `:2448`, `:2520`) with no "anything shielded?" early-out; `ConnectingPanelController.Update` rebuilds strings every frame (`:174–193`); `Boid.cs:627` allocating `OverlapSphere` | Small each |
+| L6 | Snow shard count (`SnowChanger.shardDistance` 120 → 200 = 4,189 → 905 GameObjects) | Renderer census | **Still true** (`SnowChanger.prefab` 120) | Small; a visual-density call for a human |
+| L7 | Memory: music `DecompressOnLoad` (182 MB resident), texture streaming off | `Docs/MEMORY_AUDIT.md` | **Still true** (`cosmic shore chill time 3.wav` `loadType: 0`, `quality: 1`) | Load time + RAM, not frame time |
+
+**New since the base, not a lever yet:** every prism render prototype gained four `float3` sway
+overrides (`PrismSwaySpan*`/`Axis`/`Timing`, 48 B per entity) for the health-prism sway
+(`ECOSYSTEM.md §47`). That is more per-instance data to upload per prism; nothing measured says it
+matters. Watch the GPU row in S2/S6.
 
 ### 3.4 Step 3 — a performance gate
 
 CI runs no Unity job (`UNITY_RUNNER_LABEL` unset), so nothing stops a regression. The pieces
 exist (`-csmbench` dev-build self-runner, `BenchmarkComparison`, `MetricDeltaTests`). Once the
-scenario set exists, a nightly `-csmbench` on S1–S5 with a budget per scenario is the gate.
+scenario set exists, a nightly `-csmbench` on S1–S6 with a budget per scenario is the gate.
 
 ### 3.5 Do NOT redo these — measured dead
 
