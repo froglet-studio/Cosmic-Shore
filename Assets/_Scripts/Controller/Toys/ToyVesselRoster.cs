@@ -84,8 +84,42 @@ namespace CosmicShore.Gameplay
             if (!container) return;
 
             for (int i = into.Count - 1; i >= 0; i--)
-                if (!container.TryGetShipPrefab(into[i], out _)) into.RemoveAt(i);
+            {
+                if (container.TryGetShipPrefab(into[i], out _)) continue;
+                WarnMissingPrefab(into[i]);
+                into.RemoveAt(i);
+            }
         }
+
+        /// <summary>
+        /// Say — once per class, per session — that a rostered hull was dropped for want of a
+        /// prefab, and name the fix.
+        ///
+        /// <para><b>This warning is the whole reason the filter is safe.</b> Dropping the hull
+        /// silently would reproduce the exact defect <see cref="Default"/> exists to prevent: a
+        /// matrix one ship shorter than the fleet, with no error, no warning and no empty
+        /// station, which is indistinguishable from a matrix that is correct. It cost a playtest
+        /// to learn that the first time — <b>a filter that hides a fault is the fault wearing a
+        /// deliberate face</b>, and the only thing separating "not authored yet" from "quietly
+        /// broken" is that one of them says so.</para>
+        ///
+        /// <para>Unconditional rather than a <c>CSLogChannel</c>: a rostered hull with no prefab
+        /// is a real fault every time — either its setup tool has not been run on this machine,
+        /// or the prefab container lost an entry — and both are things somebody has to act on.
+        /// Keyed so a matrix that rebuilds on every domain change cannot spam.</para>
+        /// </summary>
+        static void WarnMissingPrefab(VesselClassType vessel)
+        {
+            if (!_warnedMissingPrefab.Add(vessel)) return;
+            CSDebug.LogWarning(
+                $"[ToyVesselRoster] {vessel} is on the toybox roster but the Vessel Prefab " +
+                "Container has no prefab for it, so no station is offered for it in the Vessel " +
+                "Changer or the Lifeform Matrix hangar. If this vessel is newly designed, run " +
+                $"FrogletTools > Vessels > Create {vessel} Vessel (it authors the prefab and " +
+                "registers it); otherwise the container has lost its entry.");
+        }
+
+        static readonly HashSet<VesselClassType> _warnedMissingPrefab = new();
 
         /// <summary>
         /// A display-only mini hull for <paramref name="vessel"/>, built straight from the ship
