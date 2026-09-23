@@ -539,6 +539,18 @@ inherits two traps that have each cost a round-trip:
   its silhouette as the projected hull of its eight spike tips rather than a hard-coded octagon,
   which is only the outline of an AXIS-ALIGNED sun.
 
+### 4.x2 A `[Range]` on a vessel action's SO is a drawer, not a constraint
+
+`RangeAttribute` is a **property drawer**: it clamps in the inspector and not at deserialization.
+So a serialized value outside its own range is LIVE — the Serpent's `coneHalfAngleDegrees` carried
+`[Range(0.05f, 5f)]` and shipped an authored **10** that worked perfectly, and would have snapped
+to 5 the first time a human clicked that asset. The failure is a retune nobody performed, arriving
+on whoever next opens the inspector, with no diff and no console line.
+
+Two consequences whenever you author an asset value by script (a generator, `sed`, a hand edit of
+the YAML): check it against the field's own attribute, and when you widen a design past a range,
+widen the `[Range]` in the same commit. `[Min]` behaves identically — it is also just a drawer.
+
 ### 4.y Spawning a vessel outside the turn flow (a toy, a rig, a mid-match release)
 
 Anything that spawns a vessel somewhere other than the standard spawn-then-turn-start chain
@@ -653,6 +665,25 @@ every time: *"I don't see the pip."*
   the shot fires and nothing once it is ready, which is indistinguishable from an instrument nobody
   drives. Give it a bed (a dim full ring the fill runs over) and draw READY as a complete bright
   ring rather than as the absence of one.
+
+- **When nothing you wrote renders, reach for a component that PROVABLY renders.** After four
+  rounds of *"still no reticle"* every generated mark in the Serpent's eyepiece had been read,
+  re-read and argued about from source, and none of it could be told apart from the others. What
+  settled it was a **PROBE**: the same mark drawn a second time out of plain `UnityEngine.UI.Image`
+  quads. A sprite-less `Image` falls through to `Graphic.OnPopulateMesh` and emits one quad filling
+  its rect, so it shares no geometry code with a hand-written `MaskableGraphic` and only the canvas,
+  the parent and the draw order with it — which makes **one** playtest separate *the generated
+  geometry never reaches the screen* from *nothing parented under this thing does*. Build the probe
+  to state the same numbers as the real mark and draw it last, so the report is about the
+  COMPONENTS rather than about the values.
+- **Ship ONE candidate fix per report, or budget a second observation.** The probe landed in the
+  same commit as a second plausible fix (the generated rects went from zero-sized to full-size), the
+  report came back *"this is good, I saw it and it changes size nicely"*, and it names neither — so
+  the scaffolding has to stay until one more observation with the probe switched off says whether
+  the real mark draws. That is the sibling of the surface/camera rule above and it costs the same
+  thing: **when two changes could each be the one that worked, the report cannot tell them apart.**
+  If you do ship both, make the cheaper-to-undo one switchable in a line and write the experiment
+  down while you still remember what it would prove.
 
 **The general shape:** *an instrument's failure mode is the vocabulary of the bug report you will
 get.* Before you change one, ask what a pilot could say if it went wrong, and whether that sentence

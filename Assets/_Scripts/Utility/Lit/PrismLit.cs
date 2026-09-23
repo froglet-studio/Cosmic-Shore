@@ -117,12 +117,12 @@ namespace CosmicShore.Utility
         static readonly int StrengthId = Shader.PropertyToID("_PrismSightStrength");
 
         // --- every other light (a fixed bank of array slots) ---
-        static readonly int BankOriginId = Shader.PropertyToID("_PrismSightPeerApex");
-        static readonly int BankAxisId = Shader.PropertyToID("_PrismSightPeerAxis");
-        static readonly int BankGapeId = Shader.PropertyToID("_PrismSightPeerGape");
-        static readonly int BankTintId = Shader.PropertyToID("_PrismSightPeerTint");
-        static readonly int BankShapeId = Shader.PropertyToID("_PrismSightPeerShape");
-        static readonly int BankCountId = Shader.PropertyToID("_PrismSightPeerCount");
+        static readonly int BankOriginId = Shader.PropertyToID("_PrismLitPeerApex");
+        static readonly int BankAxisId = Shader.PropertyToID("_PrismLitPeerAxis");
+        static readonly int BankGapeId = Shader.PropertyToID("_PrismLitPeerGape");
+        static readonly int BankTintId = Shader.PropertyToID("_PrismLitPeerTint");
+        static readonly int BankShapeId = Shader.PropertyToID("_PrismLitPeerShape");
+        static readonly int BankCountId = Shader.PropertyToID("_PrismLitPeerCount");
 
         static bool _publishedAimed;
 
@@ -151,7 +151,7 @@ namespace CosmicShore.Utility
 
         // Always sent at full length: Unity binds an array global at the length of its first
         // write, so a short write later would silently leave the tail of the previous frame's
-        // bank live. Unused slots are zeroed and _PrismSightPeerCount is the real bound.
+        // bank live. Unused slots are zeroed and _PrismLitPeerCount is the real bound.
         static readonly Vector4[] _bankOrigin = new Vector4[Slots];
         static readonly Vector4[] _bankAxis = new Vector4[Slots];
         static readonly Vector4[] _bankGape = new Vector4[Slots];
