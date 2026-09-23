@@ -4911,6 +4911,7 @@ MonoBehaviour:
   flightGrowthCompleteAt01: 0.2
   tail: {fileID: 4771410739787055581}
   tailWidthPerBodyDiameter: 0.4
+  leavesWake: 1
   proximityFuzeRadiusMultiplier: 20
   warheadBlast: {fileID: 6712804517390233106, guid: b2414393379b49a7962c115cdfc92c25,
     type: 3}

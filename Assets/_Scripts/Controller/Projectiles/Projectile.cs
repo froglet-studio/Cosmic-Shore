@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
-    public class Projectile : MonoBehaviour
+    public class Projectile : MonoBehaviour, IPrismWakeCarrier
     {
         [Inject] AudioSystem audioSystem;
         public Vector3 Velocity { get; set; }
@@ -137,6 +137,21 @@ namespace CosmicShore.Gameplay
                  "This is the FIRST DIAL if the tail reads too heavy or too thin. Ignored on a " +
                  "round with no measured body, which keeps the prefab's authored width.")]
         [SerializeField, Range(0f, 3f)] private float tailWidthPerBodyDiameter = 0.4f;
+
+        [Header("Wake")]
+        [Tooltip("Does this round drag a prism WAKE behind it " +
+                 "(Docs/PRISM_ANIMATION.md §4.7.3)? The mass around the path it just flew " +
+                 "ripples on the GPU, with the reach and the train length scaled by this " +
+                 "round's own live hit radius — so a MASS-swollen missile leaves a " +
+                 "proportionally bigger one.\n\n" +
+                 "It is authored per prefab for the same reason the tail above is, and the " +
+                 "answer is the same on every round: the SKYBURST wants one, because it " +
+                 "crosses a whole arena over three seconds and the mass bending around it is " +
+                 "what sells its weight. A bullet does not — 54 of them are alive at once and " +
+                 "54 wakes is wallpaper, on a high-poly residency budget that is SHARED " +
+                 "between every wake in the scene.\n\n" +
+                 "Leave FALSE on every round but the skyburst.")]
+        [SerializeField] private bool leavesWake = false;
 
         [Header("Proximity Fuze")]
         [Tooltip("Detonate EARLY when something worth detonating on comes within this many " +
@@ -383,6 +398,7 @@ namespace CosmicShore.Gameplay
 
             CacheTransformRole();
             CaptureTailRest();
+            EnsureWakeSource();
 
             if (chargeField) chargeField.gameObject.SetActive(false);
         }
@@ -1764,6 +1780,49 @@ namespace CosmicShore.Gameplay
                 transform.position = to;
             }
             finally { s_vesselSweepDepth--; }
+        }
+
+        #endregion
+
+        #region Wake
+
+        /// <summary>
+        /// This round's half of <see cref="IPrismWakeCarrier"/>. It answers with the mover's own
+        /// integrated <see cref="Velocity"/> and the LIVE swept hit radius rather than anything
+        /// measured off the transform, for two reasons the transform cannot cover: the mover
+        /// TELEPORTS (<c>position += Velocity·Δt</c>), so a frame-to-frame delta on a pooled round
+        /// cannot tell a flight step from a reissue somewhere else in the arena; and the round
+        /// swells up to 20x in the first fifth of its flight, so its wake has to grow with it.
+        ///
+        /// <para><c>_moveCts</c> is the flight itself — non-null exactly while the mover is
+        /// running — so a round sitting in the pool, or one that has detonated and been stopped,
+        /// reports no motion and its wake eases out instead of being cut.</para>
+        /// </summary>
+        public bool TryGetWakeMotion(out Vector3 velocity, out float radius)
+        {
+            if (!leavesWake || _moveCts == null)
+            {
+                velocity = Vector3.zero;
+                radius = 0f;
+                return false;
+            }
+
+            velocity = Velocity;
+            radius = _sweepRadius;
+            return radius > 0f;
+        }
+
+        /// <summary>
+        /// Grants this round its <see cref="PrismWakeSource"/> when it is authored to leave one.
+        /// Called from <c>Awake</c>, which for a pooled projectile runs exactly once per instance,
+        /// so the component is never added twice and never added to the 99% of rounds that do not
+        /// want it. The source resolves this component as its carrier on the same call.
+        /// </summary>
+        void EnsureWakeSource()
+        {
+            if (!leavesWake) return;
+            if (!TryGetComponent<PrismWakeSource>(out _))
+                gameObject.AddComponent<PrismWakeSource>();
         }
 
         #endregion

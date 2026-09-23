@@ -1840,30 +1840,71 @@ is a playtest away.
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md` § "The
 cradle".
 
-### 4.7.3 The fourth citizen of §4.7 — the fleet's WAKE (shipped 2026-09-23)
+### 4.7.3 The fourth citizen of §4.7 — the WAKE (shipped 2026-09-23)
 
 The cradle's sibling, built with the `/prism-morph` skill the cradle's history produced, and the
 first member of that family chosen from the skill's own candidate list rather than from a bug.
-Like the cradle it moves **vertices**; unlike it, it belongs to no vessel.
+Like the cradle it moves **vertices**; unlike it, it belongs to no vessel — and, since the second
+playtest, to no vessel at all.
 
-A vessel travelling fast enough drags a **travelling ripple** through the mass around its recent
-path — most visibly the RAILS of the ribbon it is laying, which run either side of the
-disturbance. The mass near the path swells away from it and shrinks back toward it in a wave that
-streams backward, so the crests hold still in the world and the pilot flies out from under them.
-Because the map is a strain, the axis is a fixed point and mass lying exactly ALONG the path barely
-moves, so the reach has to cover a vessel's rail separation or the ribbon sits outside the wake
-entirely — which is exactly what the first playtest found.
-It reads as a boat's wake: the faster you go, the more of it there is.
+Something travelling fast enough drags a **travelling ripple** through the mass around its recent
+path. The mass near the path swells away from it and shrinks back toward it in a wave that streams
+backward, so the crests hold still in the world and the carrier flies out from under them. Because
+the map is a strain, the axis is a fixed point and mass lying exactly ALONG the path barely moves,
+so the reach has to cover the width of whatever is beside the path or it sits outside the wake
+entirely — which is exactly what the first playtest found. It reads as a boat's wake: the faster
+you go, the more of it there is.
 
-**It is not local-pilot-gated, and that is the design rather than an omission.** The corridor, the
-speed tunnel, the vision band and the rear view are all bound under `IPlayer.IsLocalPilot` because
-each describes what the LOCAL CAMERA sees. A wake is a thing **other** pilots see you leaving
-behind you — the same argument `Docs/VESSEL_TAIL_AND_JETS.md` makes for the tail — so every vessel
-on every machine publishes one. That is affordable because `VesselStatus.Speed` and `.Course` both
-replicate (`VesselController.n_Speed` / `n_Course`), so a remote replica's wake runs on the very
-numbers its owner is driving; and because the bank is bounded at **4 slots**, so the cost is
-`O(vessels above the engage speed)` and never `O(prisms)`. `VesselController.Initialize` ensures
-`PrismWakeSource` on every vessel, so it cannot be omitted from a hull by wiring.
+**It belongs to TWO CARRIERS, and the second playtest is why.** It shipped on every vessel, bound
+where the corridor and the speed tunnel bind, and the verdict was *"in this state this is an
+awesome effect, but it will be overused as a wake on every vessel."* That is the finding to carry,
+because nothing measurable would have produced it: the per-vessel grant was cheap, correct,
+replicated and structurally un-omittable, and it was still wrong. **An effect this strong is an
+EVENT, and an event that happens continuously behind everyone is a texture.** It now belongs to
+the two objects a whole arena already has a reason to watch — the **Sparrow's skyburst missile**
+and the **Scarab's ball** — each of which crosses open space alone and fast, so the mass bending
+around it reads as that object's own weight rather than as the medium looking wobbly.
+
+There is a second, quantitative half to the same call: the high-poly residency budget
+(`maxResidentPrisms`) is **shared and split evenly across every live wake**, so a per-vessel grant
+does not merely add wakes, it *divides the one that mattered*. Four hulls above the engage speed is
+24 dense prisms each; eight is twelve. Past a certain headcount every wake is the authored
+24-triangle prism again and the effect is gone from all of them simultaneously — the failure mode
+of a shared budget is not a slow frame, it is the feature silently switching itself off everywhere
+at once. **Adding a third carrier is therefore a design call, not a wiring one**, and
+`PrismWakeTests.NoVesselIsGrantedAWake_TheCarriersAre` is what stops a reasonable-looking diff from
+re-adding the fleet grant.
+
+**A carrier is a CAPABILITY, never a type** (`IPrismWakeCarrier`). `PrismWakeSource` knows nothing
+about missiles or balls: it asks whichever component on its own object answers that interface for
+this frame's velocity and radius. The two shipped carriers have nothing else in common — one is a
+pooled local object whose mover TELEPORTS (`position += Velocity·Δt`), the other a replicated
+rigidbody running `RigidbodyInterpolation.Interpolate` — and the interface is what lets each be
+right about its own motion. A transform delta, which the source still falls back to, is wrong for
+both in a way that does not look wrong: it cannot tell a flight step from a POOL REPOSITION, and on
+a peer it reads a smoothed estimate of a velocity the ball already knows exactly (`n_Velocity`). It
+asks for the **radius every frame** rather than caching one, because both carriers change size
+while they travel: a skyburst swells up to 20× in the first fifth of its flight, and a forged ball
+is sized after its spawn payload is built. A bigger thing leaves a bigger wake, which is the point
+of scaling reach and train length by it.
+
+**Which round gets one is AUTHORED, per prefab** (`Projectile.leavesWake`, true only on
+`SkyBurstProjectile.prefab`) — the same shape, and the same reasoning, as the tail one field above
+it in that inspector: a missile crosses a whole arena over three seconds and everyone has a reason
+to watch it, a bullet is a streak already and **54 of them are alive at once** on a firing Sparrow.
+The ball needs no such flag, because there is only one kind of ball and a ball crossing the court
+*is* what the match is watching; `AstroLeagueBall.Awake` grants itself the source unconditionally,
+which is also what covers the forged ball and the nucleus-seeded ball without either spawn path
+knowing the effect exists.
+
+**The speed window is still ABSOLUTE** (`StrengthForSpeed` takes a speed and nothing else), and it
+is now authored from measured carrier speeds rather than from nothing: engage **6** — the ball's
+own `ballRestSpeed`, below which the simulation zeroes its velocity, so a wake there would describe
+a stationary object — reaching full at **60**, which both carriers clear comfortably in real flight
+(a skyburst crosses ~360 u in three seconds; a ball tops out at 300). The shipped geometry is
+unchanged in ratio and lands in the same band on both: reach `8×` and train `20×` the carrier's
+radius give the ball (7.0 u — collider 0.5 × scale 14) a 56 u reach and a 140 u train, and the
+missile (3.81 u fitted at resting Mass) 30 u and 76 u, growing with MASS.
 
 **Cylindrical, not spherical, and the reason is the ribbon.** The cradle drapes onto a hull, so its
 frame is a sphere about the hull's centre. A wake is about a PATH, so its frame is a cylinder about
@@ -1955,7 +1996,8 @@ than the corner was; a true path wake needs per-vertex history, which no closed-
 centre is outside the volume still ripples at the authored mesh's resolution — coarse, never wrong.
 (3) Entities Graphics culls by `RenderBounds`, which a per-frame global cannot expand, so a prism
 whose bounds are just off-screen can carry a rippled face that should be on-screen. (4) The LOOK has
-had one playtest and is **currently OVERTUNED on purpose** — see below.
+had two playtests: the first found the effect switched off, the second found it good and found it
+misplaced. Both are recorded below, because the second is the more useful one.
 
 **First playtest: the shipped tuning was not subtle, it was OFF, and the reason generalises.** The
 report was *"too subtle to notice on myself or the AI vessels"* in Skim Race. Measured: the Squirrel
@@ -1973,20 +2015,29 @@ off the path axis**, while the reach was `hullRadius × 3` — so on a small hul
 entirely outside the support, where `K` is exactly 0. The header's claim that the ribbon is "most
 visibly" rippled was therefore false as shipped for reasons that had nothing to do with the map.
 
-**Overtuned so the next playtest answers one question: is it running?** `engageSpeed 0 → fullSpeed
-30` (any moving vessel is at full strength), `amplitude 0.45` (the clamp — still provably fold-free,
-see below), `radialExponent 1`, `reach 8 hull radii`, `train 20`, `3 waves per train`, `96 resident
-prisms` at subdivision 12 (**165,888 triangles**, against the 200,000 the edit-mode test bounds).
-Note `radialExponent 1` is exactly where the no-fold slope is WORST — `max|t·K'(t)| = 0.8889` is
-attained at `e = 1, t = 2/3` — so the bound `A < 0.529` is at its tightest here and 0.45 still clears
-it: the overtune spends margin the proof has, not margin the proof assumed. These are diagnostic
-numbers, not a tuning; the shipped values to return toward are an engage speed a boosting hull
-actually reaches on the hull in question, and a reach that covers that hull's own rail separation.
+**Turned up until it could be seen, and then KEPT there.** The diagnostic pass set
+`amplitude 0.45` (the clamp), `radialExponent 1`, `reach 8` radii, `train 20`, `3 waves per train`
+and `96 resident prisms` at subdivision 12 (**165,888 triangles**, against the 200,000 the edit-mode
+test bounds), purely to answer *is it running*. The second playtest answered yes and kept every one
+of those numbers — they are the shipped look now, not diagnostics. Note `radialExponent 1` is
+exactly where the no-fold slope is WORST — `max|t·K'(t)| = 0.8889` is attained at `e = 1, t = 2/3` —
+so the bound `A < 0.529` is at its tightest here and 0.45 still clears it: the turn-up spends margin
+the proof has, not margin the proof assumed. Only the speed window moved again, off the carriers'
+own measured speeds (§ above).
+
+**Second playtest: right effect, wrong owner — and nothing measurable would have said so.** The
+verdict was *"in this state this is an awesome effect, but it will be overused as a wake on every
+vessel"*, and the per-vessel grant it rejected was cheap, correct, replicated, un-omittable by
+wiring and inside budget. **The general rule is about FREQUENCY, not cost: an effect strong enough
+to be an event stops being one the moment it is continuous, and "who has this" is a design decision
+that no amount of correctness in the binding can make for you.** The fix was not to weaken it — the
+look is unchanged — but to move it onto two carriers, which is also what stops the shared residency
+budget from dividing the wake that mattered among wakes nobody asked for.
 
 **`PrismWake.ReportState` exists because of this report.** Every way the wake can fail reads the same
-on screen — under the engage speed, a measured hull radius that makes the volume tiny, a config
+on screen — under the engage speed, a carrier reporting a radius that makes the volume tiny, a config
 switched off, a live amplitude too small to see, a spatial index that returned no candidates — and no
-amount of staring at a ship separates them. Once a second on `CSLogChannel.PrismRuntime`
+amount of staring at the arena separates them. Once a second on `CSLogChannel.PrismRuntime`
 (FrogletTools ▸ Toolbox ▸ Logging, off by default, one float compare per frame when it is) it names
 the live slot count, each slot's strength / radius / reach / train, and how many prisms carry the
 dense mesh. It reports the IDLE state too, **with the reason**, because a system that goes quiet when
@@ -2442,7 +2493,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.9 |
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
 | C16 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
-| C17 | The fleet's WAKE — a travelling ripple in the mass around any fast vessel's recent path (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-23 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of three float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live wakes, query = the sphere bounding the support CYLINDER then filtered to the cylinder) + `PrismWakeSource` (ensured on EVERY vessel by `VesselController.Initialize`, deliberately **not** under `IsLocalPilot` — a wake is what other pilots see you leaving behind you, the tail's own argument, and `n_Speed`/`n_Course` replicate) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.25, exponent 1.5, reach 3 hull radii, train 6, 2.5 waves per train, 150 → 400 u/s window, subdivision 12, 48 resident prisms ≈ 83k triangles, 12 u margin, 0.35 s in / 0.9 s out — **re-authored after the first playtest, see §4.7.3: the engage speed was above the Squirrel's top speed, so the window never opened; currently OVERTUNED to 0 → 30 u/s at amplitude 0.45 / reach 8 / train 20 / 96 prisms while the look is confirmed**). The map is a dimensionless STRAIN about the ship's path — `p' = U + x·â + r(1+E)r̂` — so the axis is a FIXED POINT and the no-fold bound is one number with no geometry in it (`A < 1/1.889`; clamped to 0.45). Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file: identity off and outside the support in all three directions separately, cylindrical purity, no fold over 900,600 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 3.0e−4 → 5.9e−6, no seam at any of the three boundaries, slot authority bit-exact, plus a negative control that PLATEAUS flat at 0.179 with the Jacobian's SHEAR term neutered). Not run in the editor. |
+| C17 | The WAKE — a travelling ripple in the mass around a fast CARRIER's recent path (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-23 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of three float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live wakes, query = the sphere bounding the support CYLINDER then filtered to the cylinder) + `PrismWakeSource` + `IPrismWakeCarrier` (the capability it reads for velocity and live radius — **granted to TWO CARRIERS, not to the fleet**: `Projectile.leavesWake` true only on `SkyBurstProjectile.prefab`, and every `AstroLeagueBall` unconditionally. It shipped on every vessel for ONE playtest and was pulled on the verdict *"awesome effect, but it will be overused as a wake on every vessel"* — an effect strong enough to be an event stops being one when it is continuous, and the high-poly residency budget is SHARED and split evenly, so a per-vessel grant divides the wake that mattered rather than adding wakes) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.25, exponent 1.5, reach 3 hull radii, train 6, 2.5 waves per train, 150 → 400 u/s window, subdivision 12, 48 resident prisms, 12 u margin — **all re-authored across two playtests, see §4.7.3.** The first found the window never opened (engage 150 against a Squirrel that tops out at 300 and cruises at 54), which reads on screen exactly like an effect that is too weak; the shipped values are now amplitude 0.45 / exponent 1 / reach 8 radii / train 20 / 3 waves / 96 prisms ≈ 166k triangles / 24 u margin / 0.15 s in / 0.5 s out, with a **6 → 60 u/s** window authored off the carriers' own measured speeds — 6 is the ball's `ballRestSpeed`, below which its velocity is zeroed). The map is a dimensionless STRAIN about the carrier's path — `p' = U + x·â + r(1+E)r̂` — so the axis is a FIXED POINT and the no-fold bound is one number with no geometry in it (`A < 1/1.889`; clamped to 0.45). Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file: identity off and outside the support in all three directions separately, cylindrical purity, no fold over 900,600 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 3.0e−4 → 5.9e−6, no seam at any of the three boundaries, slot authority bit-exact, plus a negative control that PLATEAUS flat at 0.179 with the Jacobian's SHEAR term neutered). Not run in the editor. |
 
 Phase D — lock-in:
 

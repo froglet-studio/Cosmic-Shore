@@ -12,7 +12,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The automated gate for the fleet's WAKE (Docs/PRISM_ANIMATION.md §4.7.3) — the fourth
+    /// The automated gate for the WAKE (Docs/PRISM_ANIMATION.md §4.7.3) — the fourth
     /// citizen of §4.7's global-uniform shape and the second member of the high-poly morph family.
     /// Its failure modes are SILENT, exactly like the cradle's: a graph that lost the node renders
     /// every prism as before and nothing logs; a bank length that drifts between the C# and the
@@ -27,6 +27,10 @@ namespace CosmicShore.Tests
         const string FunctionName = "PrismWakeDeform";
         const string CradleFunctionName = "PrismCradleDeform";
         const string VesselControllerPath = "Assets/_Scripts/Controller/Vessel/VesselController.cs";
+        const string SourcePath = "Assets/_Scripts/Utility/PrismWakeSource.cs";
+        const string ProjectilePath = "Assets/_Scripts/Controller/Projectiles/Projectile.cs";
+        const string BallPath = "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs";
+        const string SkyburstPrefab = "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab";
 
         static readonly string[] LiveGraphs =
         {
@@ -315,29 +319,71 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void VesselController_EnsuresTheSourceOnEveryVessel_NotOnlyTheLocalPilot()
+        public void NoVesselIsGrantedAWake_TheCarriersAre()
         {
             Assert.IsTrue(File.Exists(VesselControllerPath), $"{VesselControllerPath} is missing.");
-            string src = File.ReadAllText(VesselControllerPath).Replace("\r\n", "\n");
+            string vessel = File.ReadAllText(VesselControllerPath);
 
-            Assert.IsTrue(src.Contains("AddComponent<PrismWakeSource>()"),
-                "VesselController no longer ensures PrismWakeSource — a wake would then be per-prefab wiring, " +
-                "and a vessel authored tomorrow would silently have none.");
+            // The wake shipped on every vessel for one playtest and was pulled: a ripple behind
+            // every hull is wallpaper, and the high-poly residency budget is SHARED, so a
+            // per-vessel grant splits it until no wake is smooth. Re-adding an ensure here is the
+            // specific regression this guards, and it would look entirely reasonable in a diff.
+            Assert.IsFalse(vessel.Contains("AddComponent<PrismWakeSource>()"),
+                "VesselController grants a PrismWakeSource again. The wake belongs to the two CARRIERS " +
+                "(the skyburst missile and the Scarab ball), not to the fleet — see Docs/PRISM_ANIMATION.md §4.7.3.");
 
-            // A wake is a thing OTHER pilots see you leaving behind you — the same argument the
-            // vessel tail is built on — so unlike the corridor, the speed tunnel and the vision
-            // band it is deliberately NOT inside the IsLocalPilot block. This measures that: the
-            // ensure must not sit between `IsLocalPilot` and the closing of that block.
-            int ensure = src.IndexOf("AddComponent<PrismWakeSource>()", System.StringComparison.Ordinal);
-            int gate = src.LastIndexOf("if (player.IsLocalPilot)", ensure, System.StringComparison.Ordinal);
-            Assert.Greater(gate, -1, "VesselController no longer opens an `if (player.IsLocalPilot)` block before " +
-                                     "the wake ensure — this test's premise about the file's shape is stale, not " +
-                                     "necessarily the code.");
-            string between = src.Substring(gate, ensure - gate);
-            Assert.IsTrue(between.Contains("\n            }"),
-                "the PrismWakeSource ensure appears to sit INSIDE the IsLocalPilot block — every remote pilot " +
-                "would then fly with no wake, which is the one audience the effect is for.");
+            foreach (var (path, label) in new[] { (ProjectilePath, "Projectile"), (BallPath, "AstroLeagueBall") })
+            {
+                Assert.IsTrue(File.Exists(path), $"{path} is missing.");
+                string src = File.ReadAllText(path);
+                Assert.IsTrue(src.Contains("IPrismWakeCarrier"),
+                    $"{label} no longer implements IPrismWakeCarrier — its wake would fall back to a transform " +
+                    "delta, which cannot tell a flight step from a pool reissue and reads an interpolated " +
+                    "transform on a peer instead of the replicated velocity.");
+                Assert.IsTrue(src.Contains("AddComponent<PrismWakeSource>()"),
+                    $"{label} no longer grants itself a PrismWakeSource, so nothing publishes its wake.");
+            }
         }
+
+        [Test]
+        public void TheSkyburstIsTheOneRoundAuthoredToLeaveAWake()
+        {
+            Assert.IsTrue(File.Exists(SkyburstPrefab), $"{SkyburstPrefab} is missing.");
+            Assert.IsTrue(File.ReadAllText(SkyburstPrefab).Contains("leavesWake: 1"),
+                "SkyBurstProjectile.prefab no longer authors leavesWake — the missile would fly with no wake, " +
+                "and nothing would report it.");
+
+            // Every OTHER round must leave it false. 54 bullets are alive at once on a firing
+            // Sparrow, and 54 wakes is both wallpaper and the whole shared residency budget.
+            foreach (var path in Directory.GetFiles("Assets/_Prefabs", "*.prefab", SearchOption.AllDirectories))
+            {
+                if (path.Replace('\\', '/').EndsWith("SkyBurstProjectile.prefab")) continue;
+                Assert.IsFalse(File.ReadAllText(path).Contains("leavesWake: 1"),
+                    $"{path} authors leavesWake — only the skyburst may. Adding a carrier is a design call.");
+            }
+        }
+
+        [Test]
+        public void TheSourceAsksACapability_AndFallsBackRatherThanFailingSilently()
+        {
+            Assert.IsTrue(File.Exists(SourcePath), $"{SourcePath} is missing.");
+            string src = File.ReadAllText(SourcePath);
+
+            Assert.IsTrue(src.Contains("IPrismWakeCarrier"),
+                "PrismWakeSource no longer resolves a carrier — it would be back to reading one concrete type.");
+            Assert.IsFalse(src.Contains("IVesselStatus"),
+                "PrismWakeSource still reads IVesselStatus. It is no longer a vessel component; a carrier " +
+                "answers for its own motion, and a vessel dependency here is what made it un-droppable " +
+                "onto a projectile in the first place.");
+
+            // A pooled round is repositioned while disabled, so everything describing the last
+            // flight has to be dropped on reuse — otherwise the first frame publishes a wake from
+            // the previous detonation to this launch bay at an absurd speed.
+            Assert.IsTrue(src.Contains("void OnEnable()") && src.Contains("_hasPreviousPosition = false"),
+                "PrismWakeSource no longer resets its motion state in OnEnable — a pooled carrier would " +
+                "publish one frame of garbage velocity on every reissue.");
+        }
+
     }
 }
 #endif

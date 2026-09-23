@@ -19,8 +19,8 @@ MonoBehaviour:
   trainHullRadii: 20
   wavesPerTrain: 3
   phaseTravel: 1.35
-  engageSpeed: 0
-  fullSpeed: 30
+  engageSpeed: 6
+  fullSpeed: 60
   subdivision: 12
   maxResidentPrisms: 96
   residencyMargin: 24

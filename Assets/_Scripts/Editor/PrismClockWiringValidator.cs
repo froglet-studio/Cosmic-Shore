@@ -65,7 +65,7 @@ namespace CosmicShore.Editor
         public const string SightHlslGuid = "c7d41a9e5b8f4e3ab216d0f97c4e8a52";
         /// <summary>PrismCradle.hlsl — the Urchin's cradle (§4.7.2), a file-scope global bank.</summary>
         public const string CradleHlslGuid = "02815910e1a7418bb18c430341747719";
-        /// <summary>PrismWake.hlsl — the fleet's travelling wake (§4.7.3), a file-scope global bank.</summary>
+        /// <summary>PrismWake.hlsl — the carrier travelling wake (§4.7.3), a file-scope global bank.</summary>
         public const string WakeHlslGuid = "4e61030d8d1148b6a5751d98f71dfcab";
 
         public static readonly string[] DestructionSightGlobals =

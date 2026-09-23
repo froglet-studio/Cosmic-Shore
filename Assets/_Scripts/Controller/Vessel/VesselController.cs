@@ -169,16 +169,15 @@ namespace CosmicShore.Gameplay
                 VesselRearView.SetTarget(transform);
             }
 
-            // The WAKE (Docs/PRISM_ANIMATION.md §4.7.3) is ensured on EVERY vessel and is
-            // deliberately NOT inside the IsLocalPilot block above. The three laws there describe
-            // what the LOCAL CAMERA sees and so belong to the one ship this machine is flying; a
-            // wake is a thing OTHER pilots see you leaving behind you, exactly like the vessel
-            // tail, so every vessel on every machine publishes one. VesselStatus.Speed and .Course
-            // both replicate (n_Speed / n_Course below), which is what makes a remote replica's
-            // wake run on the same numbers its owner's does. Ensured here rather than authored so
-            // it cannot be omitted from a hull by wiring.
-            if (!TryGetComponent<PrismWakeSource>(out _))
-                gameObject.AddComponent<PrismWakeSource>();
+            // NO WAKE IS GRANTED HERE, and that is the design rather than an omission. The
+            // prism wake (Docs/PRISM_ANIMATION.md §4.7.3) shipped on every vessel for exactly one
+            // playtest: it reads beautifully on ONE fast thing crossing open space and reads as
+            // wallpaper when every hull in the match trails one, and its high-poly residency is a
+            // shared 96-prism budget that a per-vessel grant splits until nothing is smooth. It
+            // now belongs to the two objects a whole arena has a reason to watch — the Sparrow's
+            // skyburst missile and the Scarab's ball — which carry it by implementing
+            // IPrismWakeCarrier. Adding a third carrier is a design call, not a wiring one, so do
+            // not re-add an ensure here.
 
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same

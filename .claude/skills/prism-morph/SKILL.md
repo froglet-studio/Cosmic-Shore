@@ -439,13 +439,15 @@ The family is defined by four axes. A new member is a choice on each:
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
   over, outside rises to meet.
-- **WAKE** (fleet-wide, `Docs/PRISM_ANIMATION.md` §4.7.3) — *hull · travelling ripple · at
-  speed · 96 × s12, currently OVERTUNED*. A fast vessel drags a ripple through the mass around its
-  recent path, most visibly the RAILS of the ribbon it is laying. **Seven things it established
-  that the next member inherits:**
-  (a) a member need not belong to one vessel — the wake is ensured on EVERY vessel and
-  deliberately NOT under `IsLocalPilot`, because it is what other pilots see you leaving behind
-  you; ask who the effect is FOR before reaching for that gate. (b) **Pick the frame from what
+- **WAKE** (`Docs/PRISM_ANIMATION.md` §4.7.3) — *carrier · travelling ripple · at speed ·
+  96 × s12*. A fast-moving CARRIER — the Sparrow's skyburst missile, the Scarab's ball — drags a
+  ripple through the mass around its recent path. **Eight things it established that the next
+  member inherits:**
+  (a) **a member need not belong to a vessel at all, and this one was taken OFF the fleet.** It
+  shipped on every vessel, bound where the platform laws bind, and the playtest verdict was
+  *"awesome effect, but it will be overused as a wake on every vessel"* — so ask **who the effect
+  is FOR and how OFTEN it happens** before reaching for a per-vessel gate. See (h), which is the
+  same finding from the budget's side. (b) **Pick the frame from what
   the effect is ABOUT** — cylindrical about the path, not spherical about the hull, because the
   trail is laid on that line. (c) **Prefer a dimensionless STRAIN to a displacement**: scaling a
   coordinate makes its origin a fixed point, so the map is singularity-free and the no-fold bound
@@ -463,13 +465,21 @@ The family is defined by four axes. A new member is a choice on each:
   the reach (`hullRadius × 3` as first authored) could put even those rails outside the falloff
   entirely. Measure the geometry the effect is aimed at before authoring a reach in hull radii.
   (g) **An ABSOLUTE window is a claim about the fleet's real numbers, so author it from
-  measurements.** The wake's engage speed shipped at 150 u/s against a Squirrel that cruises at 54
+  measurements** (and from the CARRIER'S, once there is one — the shipped window is the ball's own
+  `ballRestSpeed`). The wake's engage speed shipped at 150 u/s against a Squirrel that cruises at 54
   and tops out at 300, so on the hull the mode flies the effect never ran — and the playtest
   report was *"too subtle"*, because **a window that never opens is indistinguishable on screen
   from an effect that is too weak.** Which is why every member of this family should ship with a
   one-line-per-second verbose report on `CSLogChannel.PrismRuntime` naming its live slots, their
   derived geometry and the resident count, **including the idle case with its reason** — the
   family's failure modes all render as "nothing is happening" and nothing else separates them.
+  (h) **THE RESIDENCY BUDGET IS SHARED, so granting a member to N things DIVIDES it rather than
+  multiplying the cost** — and that is a different failure from a slow frame. Past a certain
+  headcount every instance is back on the authored 24-triangle prism and the effect is silently
+  gone from ALL of them at once, with nothing in a profile to show for it. So the answer to "who
+  carries this?" is a design decision the budget also has a vote in, and "a few things that earn
+  it" beats "everything, cheaply" for a family whose whole premise is that only a handful of
+  prisms can be smooth at a time.
 
 **Candidates — each needs design sign-off before it is built.** These are illustrative shapes
 the machinery already supports, not an approved roster; do not build one because it is listed.
