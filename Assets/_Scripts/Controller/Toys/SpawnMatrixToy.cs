@@ -8,7 +8,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runtime for the <see cref="LifeformMatrixToyDefinitionSO"/> - the bench for everything you
+    /// Runtime for the <see cref="SpawnMatrixToyDefinitionSO"/> - the bench for everything you
     /// can RELEASE into the cell. Four passes deep at most, each one a layer further OUT:
     ///
     /// <list type="number">
@@ -41,14 +41,14 @@ namespace CosmicShore.Gameplay
     /// player's own; it is despawned with every other AI on the way out of the menu
     /// (SceneLoader.ClearPlayerVesselReferences).
     /// </summary>
-    public sealed class LifeformMatrixToy : Toy, IToyShellSurface
+    public sealed class SpawnMatrixToy : Toy, IToyShellSurface
     {
         /// <summary>The three things this toy can release. Order is the kingdom row, left to right.</summary>
         enum Kingdom { Fauna = 0, Flora = 1, Vessels = 2 }
 
         static readonly Kingdom[] Kingdoms = { Kingdom.Fauna, Kingdom.Flora, Kingdom.Vessels };
 
-        LifeformMatrixToyDefinitionSO _def;
+        SpawnMatrixToyDefinitionSO _def;
 
         // One grid per layer. Opening a layer clears every layer BELOW it, so the matrix is always
         // a single path from the toy outward rather than an accumulating pile of walls.
@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         Domains _lastHullDomain;
         bool _hasHullDomain;
 
-        public void Configure(LifeformMatrixToyDefinitionSO definition) => _def = definition;
+        public void Configure(SpawnMatrixToyDefinitionSO definition) => _def = definition;
 
         static readonly Element[] Elements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
@@ -83,8 +83,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         sealed class EmblemSource : ToyEmblem.IEmblemSource
         {
-            readonly LifeformMatrixToy _toy;
-            public EmblemSource(LifeformMatrixToy toy) => _toy = toy;
+            readonly SpawnMatrixToy _toy;
+            public EmblemSource(SpawnMatrixToy toy) => _toy = toy;
 
             public int SatelliteCount => Kingdoms.Length;
 
@@ -407,18 +407,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Vector3 ShellReleasePoint => LayerOrigin(1);
 
-        List<LifeformMatrixToyDefinitionSO.FaunaSpecies> ValidFauna()
+        List<SpawnMatrixToyDefinitionSO.FaunaSpecies> ValidFauna()
         {
-            var valid = new List<LifeformMatrixToyDefinitionSO.FaunaSpecies>();
+            var valid = new List<SpawnMatrixToyDefinitionSO.FaunaSpecies>();
             if (_def && _def.Fauna != null)
                 foreach (var entry in _def.Fauna)
                     if (entry?.ElementConfigs is { Length: > 0 }) valid.Add(entry);
             return valid;
         }
 
-        List<LifeformMatrixToyDefinitionSO.FloraSpecies> ValidFlora()
+        List<SpawnMatrixToyDefinitionSO.FloraSpecies> ValidFlora()
         {
-            var valid = new List<LifeformMatrixToyDefinitionSO.FloraSpecies>();
+            var valid = new List<SpawnMatrixToyDefinitionSO.FloraSpecies>();
             if (_def && _def.Flora != null)
                 foreach (var entry in _def.Flora)
                     if (entry?.ElementConfigs is { Length: > 0 }) valid.Add(entry);
@@ -526,7 +526,7 @@ namespace CosmicShore.Gameplay
             for (int i = _hullBodies.Count - 1; i >= 0; i--)
                 if (!_hullBodies[i]) _hullBodies.RemoveAt(i);
 
-            var go = new GameObject($"LifeformMatrix_{label}");
+            var go = new GameObject($"SpawnMatrix_{label}");
             // Sibling of the toy (the toybox root), not a child: a grid must not inherit the toy's
             // own bloom scaling, and it is released independently.
             go.transform.SetParent(transform.parent, true);
@@ -573,7 +573,7 @@ namespace CosmicShore.Gameplay
 
             if (offered.Count == 0)
             {
-                CSDebug.LogWarning("[LifeformMatrix] Nothing registered in any kingdom - matrix not opened.");
+                CSDebug.LogWarning("[SpawnMatrix] Nothing registered in any kingdom - matrix not opened.");
                 return;
             }
 
@@ -700,7 +700,7 @@ namespace CosmicShore.Gameplay
 
             if (_offeredVessels.Count == 0)
             {
-                CSDebug.LogWarning("[LifeformMatrix] Vessel roster is empty - hangar not opened.");
+                CSDebug.LogWarning("[SpawnMatrix] Vessel roster is empty - hangar not opened.");
                 return;
             }
 
@@ -815,7 +815,7 @@ namespace CosmicShore.Gameplay
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
-                CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn fauna.");
+                CSDebug.LogWarning("[SpawnMatrix] No cell contains the station - cannot spawn fauna.");
                 return null;
             }
 
@@ -856,7 +856,7 @@ namespace CosmicShore.Gameplay
             }
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
+                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) " +
                     $"on the cell's densest mass at {anchor} (station was at {position})");
             return first;
         }
@@ -866,7 +866,7 @@ namespace CosmicShore.Gameplay
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
             {
-                CSDebug.LogWarning("[LifeformMatrix] No cell contains the station - cannot spawn flora.");
+                CSDebug.LogWarning("[SpawnMatrix] No cell contains the station - cannot spawn flora.");
                 return null;
             }
 
@@ -897,7 +897,7 @@ namespace CosmicShore.Gameplay
                 : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
             if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
                 CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                    $"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
+                    $"[SpawnMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
             return first;
         }
 
@@ -916,7 +916,7 @@ namespace CosmicShore.Gameplay
             var init = Context?.VesselInitializer;
             if (!init)
             {
-                CSDebug.LogWarning("[LifeformMatrix] No menu vessel initializer - cannot release a companion.");
+                CSDebug.LogWarning("[SpawnMatrix] No menu vessel initializer - cannot release a companion.");
                 return;
             }
 
@@ -932,7 +932,7 @@ namespace CosmicShore.Gameplay
             // (it logs that end itself). Claiming completion here would be a lie on every
             // machine that is not the host.
             init.RequestSpawnAiCompanion(vessel, domain, pose);
-            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[LifeformMatrix] Requested a {vessel} companion ({domain}) at {position}.");
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[SpawnMatrix] Requested a {vessel} companion ({domain}) at {position}.");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────

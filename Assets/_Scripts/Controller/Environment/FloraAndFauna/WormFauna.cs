@@ -179,7 +179,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Element-as-data for a POPULATION: the colony root stays heartless (it is the
         /// anchor; the crystal invariant lands on its members — Docs/ECOSYSTEM.md §23.3),
-        /// so a per-element species config (the Lifeform Matrix toy, an element-authored
+        /// so a per-element species config (the Spawn Matrix toy, an element-authored
         /// SpawnProfile entry) forwards its pick to EVERY segment's heart instead of
         /// provisioning a crystal on this empty anchor. Remembered so every member grown on
         /// a later production cycle carries the same element — a colony breeds true.

@@ -46,7 +46,21 @@ Count the fleet from `VesselClassType`, never from this paragraph.
 | 1.9 | `SO_Vessel` meta asset (`SO_Class_{Name}.asset` in `Assets/_SO_Assets/Classes/`, menu `CosmicShore/Vessel/Vessel`) with Class, Name, `InitialResourceLevels`, icons; added to the relevant `SO_Classlist_*`. NOTE: Arcade writes `InitialResourceLevels` into `GameDataSO.ResourceCollection`, but the downstream hop to `ResourceSystem.InitializeElementLevels` is currently **dead** — both `SetResourceLevels` call sites are commented out; the live element seed is `ResourceSystem.Start()` | absence = invisible in hangar/arcade selection |
 | 1.10 | `VesselCustomization._shipGeometries` populated; every hull MeshRenderer needs ≥2 material slots (`ShipHelper.ApplyShipMaterial` writes `materials[1]`; SkinnedMeshRenderer uses `materials[0]`) | LogError "Vessel geometries are not set"; IndexOutOfRange at theming |
 | 1.11 | Telemetry: a per-vessel `VesselTelemetry` subclass **on the prefab** with its `VesselStatEventSO` refs wired (Sparrow/Squirrel pattern). `VesselTelemetryBootstrapper` is the degraded stopgap (runtime AddComponent, null stat SOs, warns every spawn); a new subclass must also extend its VesselType switch | warning every spawn in degraded mode |
-| 1.12 | Listed in **`ToyVesselRoster.Default`** (`Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs`) — the roster the freestyle **Vessel Changer** and the **Lifeform Matrix hangar** both offer from. This is the ONE registration that is CODE rather than an asset, so the vessel's setup tool cannot write it and it is the one that gets missed; a hull absent from it cannot be flown in freestyle. Add it when you add the enum member, ahead of the prefab — `ToyVesselRoster.ResolveOffered` drops classes the prefab container has no prefab for, so a declared-but-unbuilt hull is not offered rather than offered-and-broken | `ToyVesselRosterCoverageTests` (every vessel in the prefab container must be in the roster). Absence is otherwise **silent**: no error, no warning, no empty station — the matrix is just one ship short |
+| 1.12 | Listed in **`ToyVesselRoster.Default`** (`Assets/_Scripts/Controller/Toys/ToyVesselRoster.cs`) — the roster the freestyle **Vessel Changer** and the **Spawn Matrix hangar** both offer from. This is the ONE registration that is CODE rather than an asset, so the vessel's setup tool cannot write it and it is the one that gets missed; a hull absent from it cannot be flown in freestyle. Add it when you add the enum member, ahead of the prefab — `ToyVesselRoster.ResolveOffered` drops classes the prefab container has no prefab for, so a declared-but-unbuilt hull is not offered rather than offered-and-broken | `ToyVesselRosterCoverageTests` (every vessel in the prefab container must be in the roster). Absence is otherwise **silent**: no error, no warning, no empty station — the matrix is just one ship short |
+
+**The container answers a QUESTION and a DEMAND, and they are different calls.**
+`VesselPrefabContainer.TryGetShipPrefab(type, out prefab)` reports a miss as a **LogError** — use
+it only where the caller is about to spawn and a miss really is a fault (`VesselSpawner`,
+`ServerPlayerVesselInitializer`, `…WithAI`'s spawn). Every PROBE — "which of these hulls exist on
+this build?" — passes `reportMissing: false` (`ToyVesselRoster.ResolveOffered` and its hull
+builders, the AI's flyable-subset draw, the codex hull harvest, the launch panel's HUD lookup).
+The split is load-bearing rather than tidy: a roster probe runs every time a toy matrix is built,
+which is **every domain change**, so answering it through the demand form logged a red error per
+rebuild for a hull whose prefab is simply not authored yet — and buried the one keyed warning
+(`ToyVesselRoster` names the setup tool to run) under the storm. **A question that cannot be asked
+without raising an error makes every asker either lie or shout**: the ones that lie go quiet and
+reintroduce the silent-omission defect 1.12 exists to prevent, and the ones that shout drown the
+message that would have fixed it.
 
 **Spawning**: only two sanctioned paths, both DI-inject via `GameObjectInjector.InjectRecursive`
 and converge on `VesselController.Initialize(IPlayer)` (single-shot — "Double initialization not

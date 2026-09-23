@@ -257,7 +257,7 @@ place to try it.
 - **Flora sync is wired but no species opts in.** Nothing has been measured; Rampage is the
   place to try it.
 - **Fauna spawned outside a cell's spawn profile stay peer-local** — the freestyle conveyor and
-  the Lifeform Matrix toy release creatures that no profile lists, so there is no species index
+  the Spawn Matrix toy release creatures that no profile lists, so there is no species index
   to name them by.
 - **Crystal collection stays local per peer**, as it is for every crystal outside
   `NetworkCrystalManager`'s modes. An authoritative collect channel is a separate slice.

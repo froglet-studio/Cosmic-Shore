@@ -2465,7 +2465,7 @@ def measure_species(species, args):
     heaviest = max(r["volume"] for r in reports.values())
     print(f"\n  budget: {M.PRISM_BUDGET} live prisms/plant, cap {cap} plants "
           f"-> {cap * heaviest:,.0f} volume and {cap} always-on heart colliders")
-    print("  in NO SpawnProfile — opt-in from the Lifeform Matrix toy, so it costs no "
+    print("  in NO SpawnProfile — opt-in from the Spawn Matrix toy, so it costs no "
           "shipped cell anything until somebody puts it in one.")
 
     if args.render:

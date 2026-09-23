@@ -135,7 +135,7 @@ namespace CosmicShore.Tests
         /// SpreadElements OFF, EMPTY palette, Variant disabled, so it rolls nothing and
         /// authors nothing). The second is a DORMANT authoring gap, and worth naming so the
         /// exclusion is not mistaken for a clean bill: nothing in Assets/ references its guid
-        /// — the Lifeform Matrix toy's "Worm Colony" entry lists the four canonical
+        /// — the Spawn Matrix toy's "Worm Colony" entry lists the four canonical
         /// "Worm Colony &lt;Element&gt;" siblings, which all author 2.277 — so nothing spawns
         /// it today, but anything that did would render the platform default heart.
         /// LifeFormCrystalValidator reports it; it is an ecology call (give it an element, or

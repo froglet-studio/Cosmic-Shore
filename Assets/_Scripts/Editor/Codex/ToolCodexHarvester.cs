@@ -126,7 +126,7 @@ namespace CosmicShore.Editor.Codex
                 case ConveyorToyDefinitionSO conveyor: AddConveyor(entry, conveyor); return;
                 case ArkwayToyDefinitionSO arkway: AddArkway(entry, arkway); return;
                 case PaintingToyDefinitionSO paintings: AddPaintingGallery(entry, paintings); return;
-                case LifeformMatrixToyDefinitionSO bench: AddLifeformMatrix(entry, bench); return;
+                case SpawnMatrixToyDefinitionSO bench: AddSpawnMatrix(entry, bench); return;
 
                 default:
                     report.Warnings.Add(
@@ -161,7 +161,7 @@ namespace CosmicShore.Editor.Codex
                 // The real ship prefab, so the icon is the hull rather than a label. Resolved from
                 // the same container the spawn pipeline uses - a second roster here would be a
                 // second thing to keep in step with the fleet.
-                if (container && container.TryGetShipPrefab(hull, out var prefab) && prefab)
+                if (container && container.TryGetShipPrefab(hull, out var prefab, reportMissing: false) && prefab)
                     variant.SourcePrefab = prefab.gameObject;
                 entry.Variants.Add(variant);
             }
@@ -325,7 +325,7 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        static void AddLifeformMatrix(CodexEntry entry, LifeformMatrixToyDefinitionSO definition)
+        static void AddSpawnMatrix(CodexEntry entry, SpawnMatrixToyDefinitionSO definition)
         {
             int fauna = definition.Fauna?.Count(s => s != null) ?? 0;
             int flora = definition.Flora?.Count(s => s != null) ?? 0;

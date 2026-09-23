@@ -2526,7 +2526,7 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     rim with no daylight and no interpenetration — the Core offset fix is the first change that
     moves the ENGINE-assembled hull relative to what the offline renders showed, so this is the
     one look-check the harness cannot stand in for.
-16. **Elemental morphs** (§3.0.2): in freestyle, run one element 0 → 10 (the Lifeform Matrix /
+16. **Elemental morphs** (§3.0.2): in freestyle, run one element 0 → 10 (the Spawn Matrix /
     crystal loop or a debug grant) and watch the hull GLIDE — 0.75 s InOutSine, never a snap —
     into its column of the §3.0.2 table; confirm the other three channels hold still, that the
     puppetry keeps playing THROUGH the morph (rotation and mesh writes are disjoint channels),

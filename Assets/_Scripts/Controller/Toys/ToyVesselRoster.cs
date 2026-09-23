@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     /// The one place a toy answers <b>"which hulls do I offer, and what does one look like?"</b>
     ///
     /// Two toys ask it and they ask it for opposite reasons - the <see cref="VesselChangerToy"/>
-    /// offers hulls to BECOME (so it excludes the one you are flying), the Lifeform Matrix's
+    /// offers hulls to BECOME (so it excludes the one you are flying), the Spawn Matrix's
     /// VESSELS branch offers hulls to RELEASE as AI companions (so it excludes nothing). The
     /// roster, the meta-value filtering, the de-duplication and the mini-hull build are identical
     /// either way, and a second copy of the curated list is a second list to forget to update
@@ -85,7 +85,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = into.Count - 1; i >= 0; i--)
             {
-                if (container.TryGetShipPrefab(into[i], out _)) continue;
+                if (container.TryGetShipPrefab(into[i], out _, reportMissing: false)) continue;
                 WarnMissingPrefab(into[i]);
                 into.RemoveAt(i);
             }
@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
             CSDebug.LogWarning(
                 $"[ToyVesselRoster] {vessel} is on the toybox roster but the Vessel Prefab " +
                 "Container has no prefab for it, so no station is offered for it in the Vessel " +
-                "Changer or the Lifeform Matrix hangar. If this vessel is newly designed, run " +
+                "Changer or the Spawn Matrix hangar. If this vessel is newly designed, run " +
                 $"FrogletTools > Vessels > Create {vessel} Vessel (it authors the prefab and " +
                 "registers it); otherwise the container has lost its entry.");
         }
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             return VesselModelBuilder.TryBuild(prefab, radius, previewColor, out model);
         }
 
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             return VesselModelBuilder.TryBuild(prefab, radius, shared, out model);
         }
 
@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
         {
             model = null;
             var container = context?.VesselPrefabContainer;
-            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab)) return false;
+            if (!container || !container.TryGetShipPrefab(vessel, out Transform prefab, reportMissing: false)) return false;
             if (!VesselModelBuilder.TryBuildLive(prefab, radius, DomainMaterial(context), out model))
                 return false;
 
@@ -179,7 +179,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Re-apply the local player's domain to an already-built mini hull, whichever kind it is.
         ///
-        /// <para>One list can hold both kinds (the Lifeform Matrix's <c>_hullBodies</c> holds its
+        /// <para>One list can hold both kinds (the Spawn Matrix's <c>_hullBodies</c> holds its
         /// kingdom glyph and its hangar stations), and they must be re-tinted in OPPOSITE ways: a
         /// flat model owns a preview material, so it is repainted; a live model draws with shared
         /// PROJECT assets, so repainting would recolour every ship in the game permanently. Hence

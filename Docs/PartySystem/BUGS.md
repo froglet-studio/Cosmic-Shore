@@ -417,7 +417,7 @@ spawner and reproduction. **Three other producers** instantiate fauna through
 | Producer | What it releases |
 |---|---|
 | `ModePreviewArena` | `PreviewFaunaCount` (**4**) copies of one prefab, every time an arcade card is selected |
-| `LifeformMatrixToy` | the freestyle release bench |
+| `SpawnMatrixToy` | the freestyle release bench |
 | `Microscene` | the Wanderway conveyor |
 
 Only **`QuadFish.prefab`** and **`TadPoleFauna.prefab`** carry a `NetworkObject`
@@ -1263,7 +1263,7 @@ follows `sceneLoaded` into In Game / In Party / In Menu.
 ## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed + LIVE-VERIFIED 2026-09-02)
 
 > **It came back on 2026-09-16 through three producers this fix never reached** —
-> the arcade mode preview, the Lifeform Matrix toy and the Wanderway conveyor all
+> the arcade mode preview, the Spawn Matrix toy and the Wanderway conveyor all
 > call `CellLifeSpawnerBase.SpawnFaunaWithDomain` directly and so skipped
 > `FaunaNetworkSync.ServerSpawn`. Same mechanism, same prefabs, a different door.
 > See **B5** for the second root-cause pass and for where the seam lives now (in

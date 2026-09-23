@@ -348,15 +348,15 @@ their element's Variant block explicitly. Legacy note: the drone-population pref
 (BoidManager path) now all spawn the base tadpole - per-element identity there awaits
 that system's own config pass.
 
-**Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
+**Spawn Matrix toy (the tuning bench).** `Toy_SpawnMatrix` (in the freestyle
 toybox): fly through it → the kingdom row blooms (Fauna / Flora / Vessels); fly a kingdom →
 a station per species; fly a species → its variant **row — one station per ELEMENT, four of
 them, and that is the whole matrix** (§40), each station wearing that element's crystal drawn
 at that variant's own authored heart size, so the row shows the real size difference before
 you touch any of it; fly a variant → that exact lifeform spawns live into the containing cell
 through the canonical spawn paths on a runtime clone of its config (assets never mutated;
-spawns are ordinary food-web citizens). Files: `LifeformMatrixToyDefinitionSO`,
-`LifeformMatrixToy` (+ station). Collider impact: transient trigger spheres only (species
+spawns are ordinary food-web citizens). Files: `SpawnMatrixToyDefinitionSO`,
+`SpawnMatrixToy` (+ station). Collider impact: transient trigger spheres only (species
 count + ≤4 variants), Menu freestyle only, torn down with the matrix.
 
 ---
@@ -1538,7 +1538,7 @@ unconditional `normalized` (which computes the same magnitude anyway).
 **What was wrong.** The element × level contract (§3) was fully implemented but almost
 nothing used it: every cell config authored ONE element and `InitialLevel: 1`, so a
 session only ever showed a few element variants at level 1. The 4 × 5 matrix existed in
-code and in the Lifeform Matrix bench, and nowhere in the live world.
+code and in the Spawn Matrix bench, and nowhere in the live world.
 
 **The two halves spread differently, on purpose.**
 
@@ -1580,7 +1580,7 @@ exactly as before. *(§40: the whole `Levels` block — `Enabled`, `MinLevel`, `
 `RarityFalloff` — and `InitialLevel` are deleted from both config SOs. `SpreadElements` +
 `ElementPalette` are the only spread surface that still exists.)* Enabled in the shipped cells: Blob (and Rampage, which shares its
 assets), Wildlife Blitz 1–4 with full palettes; Skim Race, Nucleus Rush and Astro League
-with element-only spread. The Lifeform Matrix toy pins both off on its runtime clones — the
+with element-only spread. The Spawn Matrix toy pins both off on its runtime clones — the
 bench must spawn the exact variant its station shows.
 
 **Verify in-editor.** *(⚠ The level half of this procedure is DEAD — run §40's verification
@@ -1938,7 +1938,7 @@ code.
 
 `CellSelectorToy` is the player-facing surface — a toy, so no score, no end condition, no
 timer. Fly it and a matrix of **mini-cells** blooms outward, well clear of the toy (the
-Lifeform Matrix's "fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a
+Spawn Matrix's "fly at a wall of choices" pattern, now sharing `ToyMatrixStation`). Fly a
 mini-cell and the cell becomes it. **Fly the mini-cell of the world you are already in and you
 get the same cycle on the same config — that is the reset.**
 
@@ -2654,7 +2654,7 @@ Two things the first passes left out, both found in play:
   (`Cell.GetDensestRegionAnyDomain`, which falls back to the cell anchor in an empty
   cell) plus the orbit offset — so a worm is drawn to the cell's mass, and one
   dropped outside the membrane comes home instead of drifting in empty space.
-- **The Lifeform Matrix hatched creatures into the void.** The bench's variant
+- **The Spawn Matrix hatched creatures into the void.** The bench's variant
   stations are layered outward and can sit hundreds of units BEYOND the membrane, and
   `SpawnFaunaVariant` hatched the population AT the station — in empty space, with
   nothing to graze, which defeats the bench's purpose. Fauna now hatch on the cell's
@@ -2720,8 +2720,8 @@ the root itself stays heartless, segments grown later inherit the pick in
 breeds true). All are `PopulationSize=1` (a lone kaiju; the seed floor sees split-children
 via lineage registration, so it never re-seeds while any worm lives).
 
-**Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
-are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
+**Spawnable NOW from the Spawn Matrix toy** (freestyle): the four element configs
+are wired as the "Worm Colony" species in `Toy_SpawnMatrix.asset` — fly the toy →
 fly Fauna → fly "Worm Colony" → fly an ELEMENT station and the kaiju spawns live into the
 cell in your domain. (The level row is gone with the level itself, §40; the four element
 stations are the whole matrix, and colony size lives on `KaijuScale`. Level had always been
@@ -2757,7 +2757,7 @@ First pass, in Menu_Main freestyle:
    **FrogletTools > Validation > Validate Lifeform Crystals** — every segment's heart is
    runtime-provisioned by design (and the validator only inspects `LifeForm`/`LightFauna`
    prefabs anyway), so it should stay quiet about the worm.
-2. **Spawn**: freestyle → Lifeform Matrix toy → "Worm Colony" → any element station.
+2. **Spawn**: freestyle → Spawn Matrix toy → "Worm Colony" → any element station.
    Expect 8 segments hatching **on the cell's densest mass** in your domain: a plated
    head, 6 tapering bodies, a bladed tail — segments nearly touching, tapering to the
    tail, with a wide head gap.
@@ -2802,7 +2802,7 @@ spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRang
   its fangs and its own mesh. Wound differentiation is retired entirely.
 - **Wither/bloom ride per-frame CPU** like all fauna today (C6 in the clock-material
   tracker covers that migration; the worm added no new CPU animation tier).
-- **The Lifeform Matrix station for the colony is an anonymous labeled sphere** — the
+- **The Spawn Matrix station for the colony is an anonymous labeled sphere** — the
   root prefab carries no renderer for `ToyModelBuilder` to sample. A mini-worm station
   model is cosmetic follow-up.
 
@@ -2949,7 +2949,7 @@ with a real Roslyn build against a transcribed stub harness (bodies bind — pro
 injecting a `CS0103` and a `CS1503` into the new code and watching both fire), and
 `check_conditional_compilation.py` is clean. On top of §23.6:
 
-1. **Spawn** a colony from the Lifeform Matrix toy. Every segment should now show a heart:
+1. **Spawn** a colony from the Spawn Matrix toy. Every segment should now show a heart:
    8 crystals on a spawn-8 worm, one per segment, all the same element and all the same
    size (level 1 → world 3.5 when this was written; **world 2.28** on all four elements
    since §40.2 authored it from the species' body). If the head's heart looks conspicuously
@@ -3095,7 +3095,7 @@ Time for a fresh `SpawnSegmentCount = 8` colony to reach the 16-segment cap:
 | everything else | 30 s | 240 s | toy-released, ~3 | 147 |
 
 Note the Lattice cell's 5 s is authored for its *flora* colonies' build clock (§36.9), and
-a worm released there from the Lifeform Matrix toy inherits it — full length in 40 s.
+a worm released there from the Spawn Matrix toy inherits it — full length in 40 s.
 
 #### Collider budget — stated plainly, because this one moved
 
@@ -4447,7 +4447,7 @@ species out, so extinction is never permanent.
 **The cap resolves on the `Cell`, never on the config** (`Cell.ResolveFloraPopulation` /
 `ResolveFloraCap` / `IsFloraAtCap`) — the §29.2 rule, and flora needs it more than fauna did: there
 are **five** flora producers (both spawners, `Flora.TryReproduce`, the freestyle `Microscene`
-conveyor, the Lifeform Matrix toy). A cap honoured by one producer is two ceilings for one number.
+conveyor, the Spawn Matrix toy). A cap honoured by one producer is two ceilings for one number.
 The initial-batch `FloraPopulationScale` scaling that both spawners used to inline was routed
 through the same accessor for the same reason.
 
@@ -4672,7 +4672,7 @@ because a spawner flora ran this while still parked at the cell centre (world �
 ≈ 0); an octagon daughter is created AT her centre, so her seed prism was thrown into space,
 the ownership gate declined every garbage site, and the plant reseed-looped forever.
 `ExecuteGrowOrder` always zeroed the locals; the fix copies it. The same fix repairs the
-Lifeform Matrix toy's pinned-station assembled flora, broken the same way for as long as the
+Spawn Matrix toy's pinned-station assembled flora, broken the same way for as long as the
 toy has existed. `Docs/PRISM_ANIMATION.md`-style lesson: a parenting call's semantics
 (`worldPositionStays`) are load-bearing — audit both spawn paths whenever one changes.
 
@@ -4807,7 +4807,7 @@ the one unvalidated link. Resolution, four parts:
    another cannot mate (`claims=3` before any birth = three independent founders, the third
    playtest's centre chaos ball), so where independent frames meet, the colonies now stop
    at a clean interface instead of interpenetrating. The FOUNDER log names each frame's
-   origin (`lineage=` config, or `NONE/toy` for a Lifeform Matrix planting).
+   origin (`lineage=` config, or `NONE/toy` for a Spawn Matrix planting).
 
 **Sixth pass (2026-08-16, chirality confirmed fixed): reproduction became a POPULATION
 event - the organic-growth model.** With the lattice mating correctly ("everything is
@@ -4924,7 +4924,7 @@ world scale, a 5.7× spread nobody chose**, on a number that is read twice as ga
   default. Two callers use it above 1, both on purpose:
   **Wildlife Liberation** escalates creature size per cage (middle room 2, core worms 3, core
   sharks 5, in 16 configs), because its three rooms have to read as tiers the moment the hunt
-  starts and nothing *earned* can deliver that at t=0; and the **Lifeform Matrix bench**, which
+  starts and nothing *earned* can deliver that at t=0; and the **Spawn Matrix bench**, which
   spawns a chosen level so a tuner can see the whole band without playing a session out.
   The distinction that matters is dice vs. intent: a rolled level is a lifeform being handed a
   life it did not live, while an authored one is a designer stating what the room contains.
@@ -5315,7 +5315,7 @@ config (no `Variant` of its own — it delegates to the element palette — but 
 config whose `LeafScalePerLevel` the spawner read, back when that field existed; §40 deleted
 it). `SchwarzPFlora.prefab`'s own
 fallback `leafSize` was the same overlapping 5 × 5 square and now carries the fitted
-Charge/Time plate, so the variant-less path and the Lifeform Matrix preview are correct too.
+Charge/Time plate, so the variant-less path and the Spawn Matrix preview are correct too.
 
 Regenerate with `--render` for the preview sheet, `--write` to re-author. The writer emits
 **every** `FloraVariantTuning` field explicitly and asserts the key set against the C#
@@ -6563,7 +6563,7 @@ five-playtest failure class).
    quasicrystal colony and a gyroid or Schwarz P one: the two must **stop at a clean interface**
    rather than interpenetrate (§36.7). The Cell Selector also reaches the species through any
    world that lists it.
-5. **Lifeform Matrix toy:** the `Quasicrystal` entry appears with all four elements; the
+5. **Spawn Matrix toy:** the `Quasicrystal` entry appears with all four elements; the
    preview icon reads as a patch of aperiodic scaffold spreading from a star (the preview walks
    the real window test).
 6. **Reproduction:** after a plant completes (~59 struts + maturation), one daughter per
@@ -6852,7 +6852,7 @@ LightFauna on QuadFish(Clone) is missing LightFaunaDataSO.
 
 Cost: **Wildlife Liberation** seeds 383 of them (cap 893) — 74% of that mode's 519-creature roster,
 in a mode scored on kills; the **Boneyard scavengers** shared by Dog Fight and Salvo seed 60
-(cap 150); plus the four `QuadFish Fauna *` species assets on the Lifeform Matrix bench. Twelve
+(cap 150); plus the four `QuadFish Fauna *` species assets on the Spawn Matrix bench. Twelve
 `FaunaConfigurationSO` assets point at the one component.
 
 Fixed by authoring `_SO_Assets/Light Fauna Data/QuadFishFaunaDataSO.asset` and migrating the
@@ -6911,7 +6911,7 @@ added, removed or resized.
 **A lifeform is its species and its ELEMENT, and nothing else.** The `Level` axis is deleted from
 the whole ecology — from `ILifeFormEntity`, from `LifeForm` / `Fauna` / `Flora`, from both config
 SOs, from the variant pick a lineage inherits, from the crystal set's size curve and from the
-Lifeform Matrix bench. Four elemental variations are the entire variation a species has, and each
+Spawn Matrix bench. Four elemental variations are the entire variation a species has, and each
 one now states everything about itself exactly once, in its own variant tuning block —
 **including the size of its heart.**
 
@@ -7237,7 +7237,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    scale, so the shark's should read as clearly the prize. Under §33 all three were identical.
 2. **THE HEADLINE CHECK — a creature's heart is not cut by its body scale.** This is §40.3's
    regression. Spawn a **Mass or Time tadpole** (`BaseBodyScale` 0.40, heart 1.563) and a
-   **Charge or Space** one (0.70, heart 2.068) from the Lifeform Matrix bench and kill both.
+   **Charge or Space** one (0.70, heart 2.068) from the Spawn Matrix bench and kill both.
    Two readings, and the ABSOLUTE one is the reliable test:
    - **Absolute (strong).** Each heart must render at its authored size. If the re-size at the
      end of `AssignLineage` is not landing, every heart is multiplied by its own body scale, so
@@ -7258,7 +7258,7 @@ twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna
    Watch its brood instead — a nourished creature should reproduce sooner. Joust an own-domain
    *plant* (rooted, so trivially joustable) and confirm an offspring appears rather than the plant
    inflating.
-5. **The bench shows the band.** Lifeform Matrix → any species → the row is FOUR element stations
+5. **The bench shows the band.** Spawn Matrix → any species → the row is FOUR element stations
    (no level rows), and each station's crystal is drawn at that variant's own heart size, so a
    Shark row reads visibly bigger than a SchwarzP row.
 6. **The reward tracks the size.** Collect a SchwarzP heart and a shark heart and confirm the
@@ -7823,7 +7823,7 @@ a feature that has never run, and it looks exactly like a feature that works.**
 pass that fixed it. The interesting part is not any one defect; it is that **five
 independent things were wrong and every one of them was invisible from where you would
 look for it**, on a species that has a prefab, four element configs, a Codex page, a
-baked portrait and a station on the Lifeform Matrix bench — every outward sign of a
+baked portrait and a station on the Spawn Matrix bench — every outward sign of a
 finished creature.
 
 Provenance, since it is the first question anyone asks: the Clawfish was added by
@@ -8981,7 +8981,7 @@ is twice as big, and `K · d^0.5` pays it √2 of a heart for it.
 
 As of this commit the species grows in **Rampage** (all four intensities, as mass to
 destroy), **Wrecking Ball** (all four) and **Wildlife Blitz cells 1 and 2** — ten spawn
-profiles — as well as being reachable through the freestyle **Lifeform Matrix** toy. §49.12
+profiles — as well as being reachable through the freestyle **Spawn Matrix** toy. §49.12
 is the adoption pass and carries the numbers. **Re-prove the claim by grepping the config
 GUIDs across `_SO_Assets` before inheriting it** (§ the ecology skill's "an 'it is wired
 nowhere' claim is true only on the date it was written") — this paragraph has already been
@@ -9579,7 +9579,7 @@ two-pass grazing cost made visible. `--check` fails the build if that ordering e
 
 At `MaxLivePopulation 3` the ceiling is **174,316 volume and 3 always-on heart colliders** — well
 under the retired plating version's 381,000. The species is in **no `SpawnProfile`**: it is opt-in
-from the Lifeform Matrix toy (the worm colony's posture), so it costs no shipped cell anything until
+from the Spawn Matrix toy (the worm colony's posture), so it costs no shipped cell anything until
 somebody puts it in one — which matters, because Space's ceiling alone is more than the Blob cell's
 whole Frenzy ladder.
 
@@ -9644,7 +9644,7 @@ Nothing below has been run. The offline gates are strong about GEOMETRY and say 
 Unity: whether the prefab's serialized fields deserialize into the nested `GrowthRules` struct at
 all, what the plant costs per frame, or how it reads with the game's materials. Work top-down.
 
-1. **It grows, at all.** Lifeform Matrix toy → Flora → Mandelbulb → each of the four elements in
+1. **It grows, at all.** Spawn Matrix toy → Flora → Mandelbulb → each of the four elements in
    turn. **PASS:** a plant appears and keeps adding prisms until it settles; its shape is visibly
    the one in this section's renders. **FAIL, and the first thing to check:** a plant that lays
    its single seed prism and nothing else means `formByElement` did not deserialize — the nested
@@ -9934,7 +9934,7 @@ from the plant being checked.
 
 ### 52.5 What it costs, and what has to be tested
 
-Both species are in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix toy (rows `Mandelbulb`
+Both species are in **NO `SpawnProfile`** — opt-in from the Spawn Matrix toy (rows `Mandelbulb`
 and `Coral Bloom`), so neither costs a shipped cell anything until somebody puts it in one. At
 `MaxLivePopulation` 3 that is 3 always-on heart colliders and ~69,000 volume each at their heaviest
 element.
@@ -10231,7 +10231,7 @@ walk columns, and the ordering promise (the last laid prism sits in the highest 
 ### 54.4 Where it lives and what it costs
 
 `ApolloniaFlora.prefab` + four `Apollonia Flora <Element>` configs, authored by
-`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix
+`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Spawn Matrix
 toy (row `Apollonia`) like its three siblings. `MaxLivePopulation` 3, `POPULATION_SIZE` 1, one
 always-on heart collider per live plant, 2,800 LOD-cullable prisms. The gasket build is O(n³) in
 triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the lazy `EnsureSeeds` —
@@ -10332,7 +10332,7 @@ the assets currently carry.
 
 **Nothing in this pass has been run in Unity.** On top of §50.11's list:
 
-1. **Every species must reach its crystal.** Spawn each of the four from the Lifeform Matrix toy
+1. **Every species must reach its crystal.** Spawn each of the four from the Spawn Matrix toy
    and fly to the heart: a blue spiral (the Fall) must wind into the crystal from every plant, the
    closest prism a few units short of it. **FAIL:** if the dives are missing, `DiveCount` /
    `DiveStepFraction` are not reaching the prefab — check the `Rules` block; if they stab straight
@@ -10592,7 +10592,7 @@ Borromean membrane (§49). No `EnvironmentPrefab`, no second producer: the cell 
 specimens, the way the Lattice cell (§36) IS its twelve colonies.
 
 It exists because §56 made the four elements read as four different KINDS of plant and there
-was nowhere to see that. The Lifeform Matrix bench lines the same species up in a row for
+was nowhere to see that. The Spawn Matrix bench lines the same species up in a row for
 COMPARISON; this is a WORLD you fly through and meet them in.
 
 **Why the Borromean four belong here.** The species is the one in the project whose four

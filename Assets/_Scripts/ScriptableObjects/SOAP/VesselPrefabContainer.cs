@@ -13,7 +13,28 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField]
         Transform[] _shipPrefabs;
 
+        /// <summary>
+        /// Resolve <paramref name="vesselType"/>, reporting a miss as an ERROR. This is the
+        /// DEMAND form — use it where the caller is about to spawn and a miss is a fault.
+        /// </summary>
         public bool TryGetShipPrefab(VesselClassType vesselType, out Transform shipPrefabTransform)
+            => TryGetShipPrefab(vesselType, out shipPrefabTransform, reportMissing: true);
+
+        /// <summary>
+        /// The same lookup as a QUESTION rather than a demand: <paramref name="reportMissing"/>
+        /// false means a miss is an answer, not a fault.
+        ///
+        /// <para>The split exists because the two readings had one method. A roster PROBE — "which
+        /// of these hulls exist on this build?" — is the normal way a declared-but-unbuilt vessel
+        /// is skipped (<c>ToyVesselRoster.ResolveOffered</c>), and it runs every time a toy matrix
+        /// is built, which is every domain change. Answering it through the demand form logged a
+        /// LogError per rebuild for a hull whose prefab is simply not authored yet, which is both
+        /// wrong (it is not a fault) and actively harmful: it buries the one keyed warning that
+        /// names the actual fix under a red storm. <b>A question that cannot be asked without
+        /// raising an error makes every asker either lie or shout.</b></para>
+        /// </summary>
+        public bool TryGetShipPrefab(VesselClassType vesselType, out Transform shipPrefabTransform,
+            bool reportMissing)
         {
             shipPrefabTransform = null;
 
@@ -39,6 +60,7 @@ namespace CosmicShore.ScriptableObjects
                 if (prefab == null)
                 {
                     emptySlots++;
+                    if (!reportMissing) continue;
                     CSDebug.LogWarning(
                         $"[VesselPrefabContainer] Slot {i} is EMPTY. A slot goes empty when its " +
                         "prefab reference cannot be resolved — most often a prefab added to this " +
@@ -49,7 +71,8 @@ namespace CosmicShore.ScriptableObjects
 
                 if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
                 {
-                    CSDebug.LogWarning($"[VesselPrefabContainer] Slot {i} ({prefab.name}) has no " +
+                    if (reportMissing)
+                        CSDebug.LogWarning($"[VesselPrefabContainer] Slot {i} ({prefab.name}) has no " +
                                        "VesselStatus component - skipping. The slot must hold the " +
                                        "prefab's ROOT transform.");
                     continue;
@@ -65,6 +88,7 @@ namespace CosmicShore.ScriptableObjects
 
             if (shipPrefabTransform == null)
             {
+                if (!reportMissing) return false;
                 CSDebug.LogError(
                     $"[VesselPrefabContainer] No prefab registered for vessel type {vesselType}. " +
                     $"{_shipPrefabs.Length} slot(s), {emptySlots} empty, resolved types: " +

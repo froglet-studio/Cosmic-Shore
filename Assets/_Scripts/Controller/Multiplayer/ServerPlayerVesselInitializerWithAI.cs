@@ -443,7 +443,7 @@ namespace CosmicShore.Gameplay
                 // one unbuilt hull on a roster must not bias the rest toward the fallback.
                 _aiVesselDrawBuffer.Clear();
                 for (int i = 0; i < allowed.Count; i++)
-                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _))
+                    if (vesselPrefabContainer.TryGetShipPrefab(allowed[i], out _, reportMissing: false))
                         _aiVesselDrawBuffer.Add(allowed[i]);
 
                 if (_aiVesselDrawBuffer.Count > 0)
@@ -456,7 +456,7 @@ namespace CosmicShore.Gameplay
                 if (game != null && game.Vessels is { Count: > 0 })
                 {
                     var vessel = game.Vessels[Random.Range(0, game.Vessels.Count)];
-                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _))
+                    if (vessel != null && vesselPrefabContainer.TryGetShipPrefab(vessel.Class, out _, reportMissing: false))
                         return vessel.Class;
                 }
             }

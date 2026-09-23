@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// <para>An option is either a LEAF (<see cref="Apply"/> does the thing) or a BRANCH
     /// (<see cref="Expand"/> yields the next layer). The two shapes exist because that is exactly
     /// what a toy already is in the world: a <see cref="MatrixToy"/> unfolds into stations, and the
-    /// Lifeform Matrix unfolds again into species and then variants. Modelling the shell as one
+    /// Spawn Matrix unfolds again into species and then variants. Modelling the shell as one
     /// flat list would have flattened a tree the player already knows is a tree.</para>
     /// </summary>
     public sealed class ToyShellOption

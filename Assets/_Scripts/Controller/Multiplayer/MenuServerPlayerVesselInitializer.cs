@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
         [Header("Freestyle AI Companions")]
-        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Lifeform Matrix " +
+        [Tooltip("Pilot skill (0..1) for AI companions released by the freestyle Spawn Matrix " +
                  "toy. The menu has no intensity to derive one from, so it is authored here.")]
         [SerializeField, Range(0f, 1f)] float companionSkill = 0.5f;
 
@@ -287,7 +287,7 @@ namespace CosmicShore.Gameplay
         int _aiCompanionCount;
 
         /// <summary>
-        /// Release an AI-piloted vessel into the menu cell - the freestyle Lifeform Matrix's
+        /// Release an AI-piloted vessel into the menu cell - the freestyle Spawn Matrix's
         /// VESSELS branch. Host does it directly; a party client asks the host over the same
         /// request/handler shape as <see cref="RequestSwap"/>, so the bot exists once, on the
         /// server, and replicates to everyone (a locally-spawned one would be invisible to the
@@ -330,7 +330,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _))
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselClass, out _, reportMissing: false))
             {
                 CSDebug.LogError($"[MenuServerVesselInit] No prefab for vessel type {vesselClass} - companion not released.");
                 return;

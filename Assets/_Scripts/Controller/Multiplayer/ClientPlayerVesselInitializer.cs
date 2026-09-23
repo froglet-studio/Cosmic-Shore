@@ -227,7 +227,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called by a non-host client to release an AI companion (the freestyle Lifeform Matrix's
+        /// Called by a non-host client to release an AI companion (the freestyle Spawn Matrix's
         /// VESSELS branch). Spawning a <see cref="Player"/> + vessel is server-only, exactly like a
         /// vessel swap, so a client asks and the server does it - never a locally-spawned bot that
         /// nobody else in the party can see.

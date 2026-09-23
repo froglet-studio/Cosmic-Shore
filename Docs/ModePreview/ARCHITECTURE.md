@@ -230,7 +230,7 @@ structure-only, because a `LifeformsKilled` objective with nothing to shoot is n
 mode. `ModePreviewDefinitionSO.PreviewFauna` + `PreviewFaunaCount` (the three wildlife cards
 author 4 × QuadFish, the game's smallest species) are released by `ModePreviewArena` through the
 canonical `CellLifeSpawnerBase.SpawnFaunaWithDomain` + `AssignLineage` path on a runtime clone —
-the Lifeform Matrix bench's idiom — so each creature registers in the cell's lifeform book and the
+the Spawn Matrix bench's idiom — so each creature registers in the cell's lifeform book and the
 strike retires it with the world. They spawn in **`Domains.Blue`** (the neutral sentinel, hostile
 to every pilot) so anyone's rounds land; a kill still drops the heart (the lifeform-crystal
 invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card that authors a
@@ -282,7 +282,7 @@ lava lamp; the slice is 150/frame, trading invisible drain duration for visible 
 meaningless alone, so when the card's `MinPlayersAllowed >= 2` the modal arms the session with
 `sparringPartner: true` and, on entering flight, the session spawns one AI through the menu's
 ordinary networked pipeline (`MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion` — the
-Lifeform Matrix hangar's path, never a parallel local bot), seated at the mode's **seat 1**
+Spawn Matrix hangar's path, never a parallel local bot), seated at the mode's **seat 1**
 (`SpawnPose`/`ResolveSpawnPose` grew a seat parameter: hand-placed modes use their second
 authored pose, ring modes the second ring slot), in the first active domain that is not the
 player's. The spawn API returns no handle, so the session snapshots the AI player set before

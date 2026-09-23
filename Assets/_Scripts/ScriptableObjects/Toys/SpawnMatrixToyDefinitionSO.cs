@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The <b>Lifeform Matrix</b> toy - the bench for everything you can RELEASE into the cell.
+    /// The <b>Spawn Matrix</b> toy - the bench for everything you can RELEASE into the cell.
     ///
     /// Fly the toy and three KINGDOM switches bloom out ahead: <b>Fauna</b>, <b>Flora</b> and
     /// <b>Vessels</b>. Fly Fauna or Flora and that kingdom's SPECIES matrix blooms a layer
@@ -21,8 +21,8 @@ namespace CosmicShore.ScriptableObjects
     /// citizen - lifeforms feed, starve, reproduce and drop crystals; a companion vessel flies the
     /// lava lamp like any other pilot and lays conserved trail mass the food web can graze.
     /// </summary>
-    [CreateAssetMenu(fileName = "Toy_LifeformMatrix", menuName = "ScriptableObjects/Toys/Lifeform Matrix Toy")]
-    public class LifeformMatrixToyDefinitionSO : ToyDefinitionSO
+    [CreateAssetMenu(fileName = "Toy_SpawnMatrix", menuName = "ScriptableObjects/Toys/Spawn Matrix Toy")]
+    public class SpawnMatrixToyDefinitionSO : ToyDefinitionSO
     {
         [Serializable]
         public class FaunaSpecies
@@ -82,7 +82,7 @@ namespace CosmicShore.ScriptableObjects
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
             var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
-            var toy = go.AddComponent<LifeformMatrixToy>();
+            var toy = go.AddComponent<SpawnMatrixToy>();
             toy.Configure(this);
             toy.Initialize(this, context, placement);
         }

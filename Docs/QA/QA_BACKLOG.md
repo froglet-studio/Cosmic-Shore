@@ -478,7 +478,7 @@ any of it. Reference: `Docs/PALETTE.md` §6.
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
    **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
 3. **Danger prisms** — Cleave ships the same trap in all three
-   domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
+   domains; the worm colony (Spawn Matrix toy) and dangerous flora also work.
    Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
    not a dark edge.
 4. Compare a **gold danger** prism against a **gold plain** prism at speed.
@@ -809,7 +809,7 @@ a double Save producing two writes or an exception · a layout that breaks when
 
 ### QA-ECOLOGY-WORM-KAIJU ⬜ — the worm colony boss
 **Source:** PR #667. Reference: `Docs/ECOSYSTEM.md` §23.6 (spawn steps + dials).
-1. Freestyle → **Lifeform Matrix** toy → "Worm Colony" → any element station.
+1. Freestyle → **Spawn Matrix** toy → "Worm Colony" → any element station.
 2. Watch it move, feed (prism mass, other creatures, and you), and grow.
 3. Kill a **mid-body** segment and watch what happens to the colony.
 4. Kill the head; kill the tail. Watch each death sequence to completion.
@@ -963,7 +963,7 @@ finding giants, it is about the four elements being real and the heart sizes bei
    crystals they drop. Roughly 1.6 / 2.7 / 4.6 world scale — the shark's should read as
    clearly the biggest prize; they used to be identical.
 4. **The size trap.** Spawn a **Mass or Time tadpole** and a **Charge or Space** one from the
-   Lifeform Matrix bench, kill both, and compare their hearts. They should be close — **1.56
+   Spawn Matrix bench, kill both, and compare their hearts. They should be close — **1.56
    and 2.07** world scale, a 1.33× difference. If a creature's heart is being shrunk by its own
    body scale the two drop at **0.63 and 1.45** instead (a 2.5× and 1.43× cut), which reads as
    a **2.3× gap** between them and as two conspicuously tiny crystals. Either signal — report
@@ -972,7 +972,7 @@ finding giants, it is about the four elements being real and the heart sizes bei
    size mid-life** — not body, not leaf, not heart. A visible step is a level surface that
    survived.
 6. Let a brood reproduce and compare the offspring's element with the parent's.
-7. Lifeform Matrix toy: open a species. The variant layer must be **four stations, one per
+7. Spawn Matrix toy: open a species. The variant layer must be **four stations, one per
    element** — no level rows — and each station's crystal drawn at that variant's own heart
    size.
 8. Play Skim Race and Nucleus Rush briefly and judge whether cadence still feels right.
@@ -1401,8 +1401,8 @@ cytoplasm prefabs and three scenes (including `Menu_Main`) still point at a
 throw from `LifeForm.Start()` / `Flora.Plant()`. **PASS = enumerate which ones actually
 throw** — that list scopes the fix branch.
 
-### QA-P2-LIFEFORM-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
-Suspected pre-existing: the Lifeform Matrix's four crystal moons sit ~2.2 world units out
+### QA-P2-SPAWN-MATRIX-MOONS ⬜ — element-crystal "moons" swallowed by the toy body
+Suspected pre-existing: the Spawn Matrix's four crystal moons sit ~2.2 world units out
 while toys place at `toyBodyRadius = 22`. Look at the bench. **PASS = the four moons are
 visible and distinct.** **FAIL = they are inside the sphere** (then the fix is a placement
 value, not code).

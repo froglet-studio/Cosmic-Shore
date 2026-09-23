@@ -31,7 +31,7 @@ it.
 | `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | none — a heart is sized by the **lifeform** carrying it |
 | `Flora` | 16 species — Arbor, Branching, Cacti, Coral, Frond, Gyroid, Lantern, Nerve, Pine, Quasicrystal, Reed, Rosette, SchwarzP, Spire, Tendril, Wall | the 4 **elements** |
 | `Fauna` | 6 species — Brittlestar, Clawfish, QuadFish, Shark, Tadpole, Worm Colony | the 4 **elements** |
-| `Tool` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Lifeform Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
+| `Tool` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Spawn Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
 
 That is 33 pages over 88 lifeform config assets, the crystal set and 6 toy definitions. One entry per config would
 have been exhaustive and 1:1 with the project, and would also have rendered as a wall of 88
@@ -94,7 +94,7 @@ toybox by *what a toy changes*:
 |---|---|---|---|
 | **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
 | **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any tool does. | Cells | Cell Selector, Wanderway |
-| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
+| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Spawn Matrix |
 
 These are the **fundamentals a toy composes with**, not a taxonomy invented for a menu. A toy earns
 its place by working *through* Vessel / Domain / Cell / Prisms rather than around them, so "which

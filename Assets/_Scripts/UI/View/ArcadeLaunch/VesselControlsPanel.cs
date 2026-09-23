@@ -451,7 +451,7 @@ namespace CosmicShore.UI
             _hudView = null;
 
             EnsureVesselPrefabs();
-            if (vesselPrefabs && vesselPrefabs.TryGetShipPrefab(vesselClass, out var prefab) && prefab)
+            if (vesselPrefabs && vesselPrefabs.TryGetShipPrefab(vesselClass, out var prefab, reportMissing: false) && prefab)
                 _hudView = prefab.GetComponentInChildren<VesselHUDView>(true);
 
             if (!_hudView)

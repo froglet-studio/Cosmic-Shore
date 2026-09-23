@@ -518,7 +518,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     `SO_Classlist_*` lists, the camera settings, the class asset. So nobody ever has to remember
     those. **`ToyVesselRoster.Default` is CODE** (`Assets/_Scripts/Controller/Toys/
     ToyVesselRoster.cs`), a hand-written array, and it is what the freestyle **Vessel Changer**
-    and the **Lifeform Matrix's hangar** both offer from. A hull missing from it cannot be flown
+    and the **Spawn Matrix's hangar** both offer from. A hull missing from it cannot be flown
     in freestyle at all.
 
     It fails in the worst available way: **silently and invisibly.** There is no error, no
