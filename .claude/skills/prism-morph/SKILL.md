@@ -439,14 +439,25 @@ The family is defined by four axes. A new member is a choice on each:
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
   over, outside rises to meet.
+- **WAKE** (fleet-wide, `Docs/PRISM_ANIMATION.md` §4.7.3) — *hull · travelling ripple · at
+  speed · 48 × s12*. A fast vessel drags a ripple through the mass around its recent path, most
+  visibly the ribbon it is laying. **Five things it established that the next member inherits:**
+  (a) a member need not belong to one vessel — the wake is ensured on EVERY vessel and
+  deliberately NOT under `IsLocalPilot`, because it is what other pilots see you leaving behind
+  you; ask who the effect is FOR before reaching for that gate. (b) **Pick the frame from what
+  the effect is ABOUT** — cylindrical about the path, not spherical about the hull, because the
+  trail is laid on that line. (c) **Prefer a dimensionless STRAIN to a displacement**: scaling a
+  coordinate makes its origin a fixed point, so the map is singularity-free and the no-fold bound
+  becomes one number with no geometry in it (`A·(1 + max|t·K'(t)|) < 1`) that a retune of the
+  reach or the wavelength cannot invalidate. (d) A map whose field TRAVELS has an off-diagonal
+  **shear** in its Jacobian that a static map does not — it is the term a "close enough" normal
+  omits, so make it the `#ifndef` dial and let the negative control prove it is load-bearing.
+  (e) **Splice ORDER between two morphs is a real decision and nothing on screen reports it**:
+  the wake runs BEFORE the cradle, because the cradle closes mass onto a hull resting on it and a
+  wake applied after would re-open the hole. Assert both edges.
 
 **Candidates — each needs design sign-off before it is built.** These are illustrative shapes
 the machinery already supports, not an approved roster; do not build one because it is listed.
-
-- **WAKE** — *hull · travelling ripple · at speed*. A fast vessel leaves a ripple running back
-  along the ribbon it just laid. Map: radial displacement modulated by a travelling wave in
-  distance-along-the-source's-path. Watch the reach: the residency set follows the ship, so the
-  budget is unchanged, but the map must vanish C1 at both ends of the wave train as well.
 - **PUCKER** — *mouth · pucker · proximity*. The smooth cousin of consumption: the neighbouring
   prisms' surfaces draw toward a feeding creature's mouth for the moment before the prism goes.
   **Touches the ecology — route through `/ecology` as well as this skill**, and note that
@@ -459,10 +470,19 @@ the machinery already supports, not an approved roster; do not build one because
   engages. Note the ownership interaction in §4.2 — a shielding prism is exactly the case where
   the override slot changes hands.
 
-**Two family-wide rules to carry into any of them:**
+**Three family-wide rules to carry into any of them:**
 
 1. **One node, many map kinds** — prefer extending the existing morph node with a map kind over
-   splicing a second node into the vertex chain (§5, last bullet).
+   splicing a second node into the vertex chain (§5, last bullet). The wake is the sanctioned
+   exception and it shows the cost: a second node is a second slot loop, a second no-fold proof,
+   an explicit order to assert, and — see 3 — a sibling-wirer break.
 2. **The family shares the mesh, the residency contract and the bank shape.** If a member needs
    to break one of those, that is a fundamentals conversation (`CLAUDE.md ▸ Design Philosophy`),
    not a local exception.
+3. **Identify a morph STRUCTURALLY, never by name.** `Tools/Shaders/prism_vertex_chain.py` is
+   the shared definition — a Custom Function node with exactly the four correctly-directed
+   Vector3 slots `Position`/`Normal`/`OutPosition`/`OutNormal` — and `walk_past_morphs` is how
+   every non-morph wirer reaches the vertex blocks past however many morphs are in the chain.
+   Adding the wake broke three sibling wirers that each walked past ONE hard-coded name; a name
+   list needs one edit per wirer per morph forever, which is a defect amplifier rather than a
+   fix. **A new member must use that walk and must not add its name anywhere.**

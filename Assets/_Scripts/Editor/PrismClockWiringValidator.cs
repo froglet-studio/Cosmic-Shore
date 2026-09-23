@@ -65,6 +65,8 @@ namespace CosmicShore.Editor
         public const string SightHlslGuid = "c7d41a9e5b8f4e3ab216d0f97c4e8a52";
         /// <summary>PrismCradle.hlsl — the Urchin's cradle (§4.7.2), a file-scope global bank.</summary>
         public const string CradleHlslGuid = "02815910e1a7418bb18c430341747719";
+        /// <summary>PrismWake.hlsl — the fleet's travelling wake (§4.7.3), a file-scope global bank.</summary>
+        public const string WakeHlslGuid = "4e61030d8d1148b6a5751d98f71dfcab";
 
         public static readonly string[] DestructionSightGlobals =
         {
@@ -118,19 +120,41 @@ namespace CosmicShore.Editor
             },
         };
 
+        // The two vertex MORPHS (§4.7.2, §4.7.3) sit at the end of the chain in a fixed order:
+        // ... -> PrismWakeDeform -> PrismCradleDeform -> the two VertexDescription blocks. The
+        // order is not arbitrary and is asserted here because nothing on screen would report it
+        // being swapped: the cradle closes mass onto a hull that is RESTING on it, so it must see
+        // the rippled position; a wake applied after the drape would ripple the very vertices the
+        // drape had just closed onto the hull, and open the hole back up.
+        static readonly GraphEdgeCheck[] WakeEdges =
+        {
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismWakeDeform", InputSlot = 0,
+                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
+                Description = "wake Position fed by PrismSuctionConverge.OutPosition (the wake opens the morph pair)",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismWakeDeform", InputSlot = 1,
+                OutputFunction = "PrismJiggleClock", OutputSlot = 7,
+                Description = "wake Normal fed by PrismJiggleClock.OutNormal (the wake opens the morph pair)",
+            },
+        };
+
         static readonly GraphEdgeCheck[] CradleEdges =
         {
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 0,
-                OutputFunction = "PrismSuctionConverge", OutputSlot = 3,
-                Description = "cradle Position fed by PrismSuctionConverge.OutPosition (the cradle is LAST on Position)",
+                OutputFunction = "PrismWakeDeform", OutputSlot = 2,
+                Description = "cradle Position fed by PrismWakeDeform.OutPosition (the cradle is LAST on Position)",
             },
             new GraphEdgeCheck
             {
                 InputFunction = "PrismCradleDeform", InputSlot = 1,
-                OutputFunction = "PrismJiggleClock", OutputSlot = 7,
-                Description = "cradle Normal fed by PrismJiggleClock.OutNormal (the cradle is LAST on Normal)",
+                OutputFunction = "PrismWakeDeform", OutputSlot = 3,
+                Description = "cradle Normal fed by PrismWakeDeform.OutNormal (the cradle is LAST on Normal)",
             },
         };
 
@@ -179,11 +203,11 @@ namespace CosmicShore.Editor
                     "PrismShieldMorph", "PrismJiggleClock",
                     "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismCradleDeform",
+                    "PrismWakeDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(BackFaceEdges, LiveSuctionEdges), CradleEdges),
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(BackFaceEdges, LiveSuctionEdges), WakeEdges), CradleEdges),
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + fleet wake (PrismWakeDeform, vertex, §4.7.3 global bank) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -214,11 +238,11 @@ namespace CosmicShore.Editor
                     "PrismFlightClock", "PrismShieldMorph", "PrismJiggleClock",
                     "PrismErosionFade", "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
-                    "PrismCradleDeform",
+                    "PrismWakeDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges), LiveSuctionEdges), CradleEdges),
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection + cell-swap suction + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges), LiveSuctionEdges), WakeEdges), CradleEdges),
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection + cell-swap suction + fleet wake (§4.7.3) + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -371,7 +395,7 @@ namespace CosmicShore.Editor
         /// <summary>
         /// HLSL file the Custom Function must source. Clock families →
         /// PrismClockAnimation.hlsl; erosion / back-face → PrismOcclusionCorridor.hlsl;
-        /// sight → PrismDestructionSight.hlsl; cradle → PrismCradle.hlsl. Putting every CF's missing-message on
+        /// sight → PrismDestructionSight.hlsl; cradle → PrismCradle.hlsl; wake → PrismWake.hlsl. Putting every CF's missing-message on
         /// PrismClockAnimation.hlsl was a lie for the non-clock families.
         /// </summary>
         public static string CustomFunctionSourceHint(string functionName)
@@ -386,6 +410,8 @@ namespace CosmicShore.Editor
                     return "PrismDestructionSight.hlsl";
                 case "PrismCradleDeform":
                     return "PrismCradle.hlsl";
+                case "PrismWakeDeform":
+                    return "PrismWake.hlsl";
                 default:
                     return "PrismClockAnimation.hlsl";
             }
@@ -403,6 +429,8 @@ namespace CosmicShore.Editor
                     return SightHlslGuid;
                 case "PrismCradleDeform":
                     return CradleHlslGuid;
+                case "PrismWakeDeform":
+                    return WakeHlslGuid;
                 default:
                     return ClockHlslGuid;
             }

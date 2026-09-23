@@ -169,6 +169,17 @@ namespace CosmicShore.Gameplay
                 VesselRearView.SetTarget(transform);
             }
 
+            // The WAKE (Docs/PRISM_ANIMATION.md §4.7.3) is ensured on EVERY vessel and is
+            // deliberately NOT inside the IsLocalPilot block above. The three laws there describe
+            // what the LOCAL CAMERA sees and so belong to the one ship this machine is flying; a
+            // wake is a thing OTHER pilots see you leaving behind you, exactly like the vessel
+            // tail, so every vessel on every machine publishes one. VesselStatus.Speed and .Course
+            // both replicate (n_Speed / n_Course below), which is what makes a remote replica's
+            // wake run on the same numbers its owner's does. Ensured here rather than authored so
+            // it cannot be omitted from a hull by wiring.
+            if (!TryGetComponent<PrismWakeSource>(out _))
+                gameObject.AddComponent<PrismWakeSource>();
+
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same
             // thing full-screen, at the vessel's own follow distance, on the rig every camera

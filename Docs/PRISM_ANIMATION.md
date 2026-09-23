@@ -1840,6 +1840,124 @@ is a playtest away.
 Mechanic and tuning: `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_TRAIL_RIDER.md` § "The
 cradle".
 
+### 4.7.3 The fourth citizen of §4.7 — the fleet's WAKE (shipped 2026-09-23)
+
+The cradle's sibling, built with the `/prism-morph` skill the cradle's history produced, and the
+first member of that family chosen from the skill's own candidate list rather than from a bug.
+Like the cradle it moves **vertices**; unlike it, it belongs to no vessel.
+
+A vessel travelling fast enough drags a **travelling ripple** through the mass around its recent
+path — most visibly the ribbon it is laying, which runs straight down the middle of the
+disturbance. The mass near the path swells away from it and shrinks back toward it in a wave that
+streams backward, so the crests hold still in the world and the pilot flies out from under them.
+It reads as a boat's wake: the faster you go, the more of it there is.
+
+**It is not local-pilot-gated, and that is the design rather than an omission.** The corridor, the
+speed tunnel, the vision band and the rear view are all bound under `IPlayer.IsLocalPilot` because
+each describes what the LOCAL CAMERA sees. A wake is a thing **other** pilots see you leaving
+behind you — the same argument `Docs/VESSEL_TAIL_AND_JETS.md` makes for the tail — so every vessel
+on every machine publishes one. That is affordable because `VesselStatus.Speed` and `.Course` both
+replicate (`VesselController.n_Speed` / `n_Course`), so a remote replica's wake runs on the very
+numbers its owner is driving; and because the bank is bounded at **4 slots**, so the cost is
+`O(vessels above the engage speed)` and never `O(prisms)`. `VesselController.Initialize` ensures
+`PrismWakeSource` on every vessel, so it cannot be omitted from a hull by wiring.
+
+**Cylindrical, not spherical, and the reason is the ribbon.** The cradle drapes onto a hull, so its
+frame is a sphere about the hull's centre. A wake is about a PATH, so its frame is a cylinder about
+the line the ship just flew down — and the trail is laid ON that line, so a field measured from the
+ship's centre would have had the ribbon sitting at one roughly-constant distance and rippling as a
+whole, where a field measured from the AXIS has it rippling ALONG ITS LENGTH. That is the thing
+that reads as a wake.
+
+**The map is one line, and it is a STRAIN rather than an offset.** With `U` the hull centre, `â` the
+unit axis pointing behind the ship, `x = (p − U)·â`, `r` the distance out from the path and `r̂` its
+direction:
+
+```
+p' = U + x·â + r·(1 + E)·r̂,    E = A · w · g(x/L) · K(r/reach) · sin(ψ − k·x)
+```
+
+Read as three factors it is the wake: `sin(ψ − k·x)` is the wave (ψ integrated on the CPU at the
+ship's own speed, so a crest holds a fixed WORLD position), `g` is the TRAIN envelope (exactly zero
+in value AND slope at the ship's own plane and again one train-length behind it — two planes swept
+through mass at speed, where a kink would read as an invisible wall passing), and `K` is the radial
+falloff (1 and flat on the path itself, so the ribbon does not crease along its spine; zero and flat
+at the reach). Scaling `r` rather than displacing along `r̂` is what makes **the axis a fixed point**:
+the displacement is `r·E` and vanishes with `r`, so the map has no singularity where `r̂` is
+undefined and no vertex can cross the path. The obvious version — displace by a distance `D(x,r)`
+along `r̂` — is singular on the axis and folds the prism inside out for any `r < D`.
+
+**NO FOLD is proven, not tuned, and the proof has no geometry in it.** The map folds only if the
+radial stretch `b = (1+E) + r·∂E/∂r` or the circumferential stretch `c = 1 + E` goes non-positive.
+Both are bounded by the AMPLITUDE alone — `|E| ≤ A` and `|r·∂E/∂r| ≤ A·max|t·K'(t)|`, with
+`max|t·K'(t)| = 0.889` over the whole authored exponent range `e ∈ [1, 6]` — so `b > 0` for every
+`A < 1/1.889 = 0.529`, and `PrismWakeConfigSO` clamps the amplitude to **0.45**. No hull radius, no
+reach, no wavelength enters the bound, so retuning any of them cannot invalidate it. Both halves are
+one predicate, `PrismWakeConfigSO.NeverFolds`, called by the edit-mode test and measured over the
+whole range by the harness.
+
+**The normal is the analytic inverse-transpose, and it carries a term the cradle's has no analogue
+for.** In the cylindrical frame the differential is `J = [[1,0,0],[Rx,b,0],[0,0,c]]` with
+`Rx = r·∂E/∂x` — the **SHEAR**, which exists only because the wave TRAVELS along the axis. Inverting
+and transposing gives `n' = â·(n_a − Rx·n_r/b) + r̂·(n_r/b) + n_θ̂/c`, three terms and two divisions,
+and at `E ≡ 0` it is `n` bit for bit, which is what makes the support boundary seamless. The shear is
+exactly the term a "close enough" normal would omit, so it is the file's `#ifndef` dial and the
+harness's negative control.
+
+**Residency.** `PrismWake` runs the same pass the cradle does, against the wake's own volume: the
+support is a CYLINDER, so the query is the sphere bounding that cylinder grown by the margin and
+candidates are then filtered to the grown cylinder itself — the sphere's corners hold a lot of
+prisms the ripple cannot move, and a budget spent on those is a budget not spent on the ones it can.
+The budget is **shared and split evenly** across live wakes (at least one each), so four ships
+boosting at once get a coarser wake each rather than the first one enumerated taking the lot.
+Everything else is the family's contract verbatim: `HighPolyPrismMesh` shared so the residents stay
+in ONE instanced batch, `Prism.SetRenderMeshOverride` for the handoff, the override slot taken only
+when free and cleared only when still ours, `PrismSpatialIndex.QuerySphere` sorted nearest-first
+(it is unordered, so without the sort the dense mesh goes to whichever prisms the bucket walk
+reached), and a `RuntimeInitializeOnLoadMethod` reset that drops the bookkeeping WITHOUT touching
+prisms that no longer exist.
+
+**Splice ORDER, and why the wake is not last.** The chain now ends
+`… → PrismSuctionConverge / PrismJiggleClock → PrismWakeDeform → PrismCradleDeform → the vertex
+blocks`. The cradle closes mass onto a hull that is RESTING on it, so it must see the rippled
+position; a wake applied AFTER the drape would ripple the very vertices the drape had just closed
+onto the hull and open the hole back up. Nothing on screen would report the two being swapped, so
+`PrismClockWiringValidator` asserts both edges and `PrismWakeTests` asserts the pair.
+
+**That splice broke three sibling wirers, exactly as the skill warns.** `wire_prism_flight_clock.py`,
+`wire_prism_jiggle_clock.py` and `wire_prism_suction_clock.py` each walked past ONE hard-coded node
+name (`PrismCradleDeform`) to find the vertex blocks, and a second morph in the chain made all three
+report a graph they had themselves wired as unwired. The fix is not a second name:
+`Tools/Shaders/prism_vertex_chain.py` now identifies a vertex morph **structurally** — a Custom
+Function node with exactly the four correctly-directed Vector3 slots `Position`/`Normal`/
+`OutPosition`/`OutNormal` — and walks past any chain of them with a cycle guard. *A name list needs
+one edit per wirer per morph forever, which is a defect amplifier rather than a fix.*
+
+**Proven by `Tools/Shaders/verify_prism_wake.py`** — clang++ over the SHIPPED file, executed: identity
+with no live slot; identity outside the support in **all three directions separately** (in front of
+the ship, past the train, past the reach — counted separately, so a support that collapsed in one
+direction cannot pass on the strength of the other two); cylindrical purity (`x` held to 4.9e−7 of
+the train length, `θ` to 1-dot 1.8e−7, and the measured strain never above `A·w`); no fold over
+900,600 samples spanning the whole authored amplitude and exponent range (tightest `dr'/dr` 0.685);
+affine in the strength; the normal proven by **CONVERGENCE RATE** — 3.0e−4 → 7.3e−5 → 2.0e−5 →
+5.9e−6 as the patch halves; no seam at any of the three boundaries; and slot authority (the greater
+`w·g·K` wins and the loser contributes **bit-exactly** nothing, so two cylindrical fields never sum
+into something no analytic normal describes). The negative control rebuilds the file with the shear
+neutered and the error **plateaus flat at 0.179** across all four patch sizes.
+
+**Stated limitations.** (1) The frame is the ship's CURRENT heading, not its path history, so a hard
+turn swings the whole train rather than bending it and a wake laid through a corner reads straighter
+than the corner was; a true path wake needs per-vertex history, which no closed-form map can carry.
+(2) The spatial index keys prisms by their CENTRE, so a prism longer than twice the margin whose
+centre is outside the volume still ripples at the authored mesh's resolution — coarse, never wrong.
+(3) Entities Graphics culls by `RenderBounds`, which a per-frame global cannot expand, so a prism
+whose bounds are just off-screen can carry a rippled face that should be on-screen. (4) **Nothing has
+been run in the editor**: the wiring is machine-validated, the HLSL is executed by the harness, and
+every C# file is Roslyn-checked against a transcribed stub harness. The LOOK is a playtest away, and
+the amplitude (0.25) and the speed window (150 → 400 u/s) are the first numbers to reach for.
+
+Tuning: `Resources/PrismWakeConfig` (`PrismWakeConfigSO`). Recipe: `.claude/skills/prism-morph`.
+
 ### 4.8 The shield morph — the last CPU ticker (shipped 2026-08-15, B4)
 
 Both shield tiers animated their per-face **engage bloom** and **disengage shatter** by
@@ -2288,6 +2406,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C14 | Super-shielded prisms absorb hits SILENTLY — a deflection reads as a miss | ✅ SHIPPED 2026-08-15 — new `PrismJiggleClock` (HLSL) + `_JiggleStartTime`/`_JiggleDuration`/`_JiggleParams` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_jiggle_clock.py`) + `PrismRenderService.StampJiggle`/`ClearJiggleStamp` + `PrismSuperShieldJiggle` (the stamp site) + `PrismSuperShieldJiggleConfigSO` (the feel). Each FACE wobbles about the prism's object origin on an axis that PRECESSES about that face's own normal and NUTATES, decaying to exactly zero at `Duration` so the scheduled clear is invisible. Per-face and per-prism randomness is derived on the GPU from the face normal and the object-to-world translation — no seed stamped, no mesh channel authored, which matters because the super-shield stella carries neither tangents nor UVs (the tangent basis is built from the normal alone). **Not** the §4.7 global-uniform shape: this is §1 animation, not a view-dependent value. The four invulnerability gates that used to each carry their own `IsSuperShielded` early-return now route through ONE `Prism.AbsorbSuperShieldHit`. Design + the measured envelope: §4.9 |
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
 | C16 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
+| C17 | The fleet's WAKE — a travelling ripple in the mass around any fast vessel's recent path (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-23 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of three float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live wakes, query = the sphere bounding the support CYLINDER then filtered to the cylinder) + `PrismWakeSource` (ensured on EVERY vessel by `VesselController.Initialize`, deliberately **not** under `IsLocalPilot` — a wake is what other pilots see you leaving behind you, the tail's own argument, and `n_Speed`/`n_Course` replicate) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.25, exponent 1.5, reach 3 hull radii, train 6, 2.5 waves per train, 150 → 400 u/s window, subdivision 12, 48 resident prisms ≈ 83k triangles, 12 u margin, 0.35 s in / 0.9 s out). The map is a dimensionless STRAIN about the ship's path — `p' = U + x·â + r(1+E)r̂` — so the axis is a FIXED POINT and the no-fold bound is one number with no geometry in it (`A < 1/1.889`; clamped to 0.45). Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file: identity off and outside the support in all three directions separately, cylindrical purity, no fold over 900,600 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 3.0e−4 → 5.9e−6, no seam at any of the three boundaries, slot authority bit-exact, plus a negative control that PLATEAUS flat at 0.179 with the Jacobian's SHEAR term neutered). Not run in the editor. |
 
 Phase D — lock-in:
 

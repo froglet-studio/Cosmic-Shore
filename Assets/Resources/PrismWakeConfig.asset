@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00cc9a400d104f6981e9abebe79a616c, type: 3}
+  m_Name: PrismWakeConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismWakeConfigSO
+  enabled: 1
+  amplitude: 0.25
+  radialExponent: 1.5
+  reachHullRadii: 3
+  trainHullRadii: 6
+  wavesPerTrain: 2.5
+  phaseTravel: 1.35
+  engageSpeed: 150
+  fullSpeed: 400
+  subdivision: 12
+  maxResidentPrisms: 48
+  residencyMargin: 12
+  engageSeconds: 0.35
+  releaseSeconds: 0.9

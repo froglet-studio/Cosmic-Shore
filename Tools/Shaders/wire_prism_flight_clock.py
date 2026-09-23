@@ -50,6 +50,9 @@ import os
 import sys
 import uuid
 
+# One shared definition of the §4.7 vertex-morph chain this wirer has to look past.
+from prism_vertex_chain import walk_past_morphs
+
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPHS = [
     "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
@@ -348,14 +351,12 @@ def validate(docs, expect_wired):
 
     pos_src = sources.get((pos_block["m_ObjectId"], 0))
     assert pos_src is not None, "VertexDescription.Position is unconnected"
-    # §4.7.2 splices PrismCradleDeform LAST of all on Position (after the suction converge
-    # below). Walk through it: the chain it wraps is the one these assertions are about.
-    cradle = find_cf(docs, "PrismCradleDeform")
-    if cradle is not None and pos_src[0] == cradle["m_ObjectId"]:
-        assert pos_src[1] == 2, \
-            "VertexDescription.Position is not fed by PrismCradleDeform.OutPosition (slot 2 — Position, Normal, then the outputs)"
-        pos_src = sources.get((cradle["m_ObjectId"], 0))
-        assert pos_src is not None, "PrismCradleDeform.Position is unconnected"
+    # Docs/PRISM_ANIMATION.md §4.7 splices vertex MORPHS onto the tail of this chain — the
+    # cradle (§4.7.2), the wake (§4.7.3), and whatever comes next. Walk past any of them: the
+    # vertex they hand the block is the one this node produced. Identified STRUCTURALLY by
+    # prism_vertex_chain, never by name, so the next morph costs no edit here.
+    pos_src = walk_past_morphs(pos_src, "Position", sources, idx)
+    assert pos_src is not None, "the vertex Position chain is broken inside a §4.7 morph"
     feeder = idx[pos_src[0]]
     # C9 splices PrismSuctionConverge LAST on Position (after this Add). Accept
     # either the pre-suction topology or the post-suction one; the Add.A / Add.B
