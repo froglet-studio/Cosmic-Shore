@@ -72,6 +72,36 @@ FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
 
+# A call to a method a MonoBehaviour INHERITS from UnityEngine is written bare, exactly like a call
+# to a method the file declares - and the first-party `CosmicShore.Utility.DontDestroyOnLoad`
+# component shares its name with `Object.DontDestroyOnLoad`, so `DontDestroyOnLoad(go);` in a
+# MonoBehaviour read as a missing using for a type the file never mentions. The list is the
+# inherited surface, not a guess: an INVOCATION of one of these names is a call, while the same
+# name after `new`, as an attribute (`[Name(`), as a generic argument or in a declaration is
+# still a type position and is still reported. `,` is deliberately NOT treated as a call site,
+# because `[A, Name(...)]` is an attribute list.
+INHERITED_UNITY_METHODS = (
+    "DontDestroyOnLoad", "Instantiate", "Destroy", "DestroyImmediate",
+    "FindObjectOfType", "FindObjectsOfType", "FindFirstObjectByType", "FindAnyObjectByType",
+    "FindObjectsByType", "StartCoroutine", "StopCoroutine", "StopAllCoroutines", "Invoke",
+    "InvokeRepeating", "CancelInvoke", "IsInvoking", "GetComponent", "GetComponents",
+    "GetComponentInChildren", "GetComponentsInChildren", "GetComponentInParent",
+    "GetComponentsInParent", "TryGetComponent", "SendMessage", "SendMessageUpwards",
+    "BroadcastMessage", "CompareTag",
+)
+INHERITED_CALL = re.compile(
+    r"(?<![\w.])(" + "|".join(INHERITED_UNITY_METHODS) + r")(?=[ \t]*\()")
+
+
+def blank_inherited_calls(src: str) -> str:
+    def repl(m):
+        before = src[:m.start()].rstrip()
+        if before.endswith("[") or before.endswith(",") or re.search(r"\bnew$", before):
+            return m.group(0)          # a type position: constructor or attribute
+        return " " * len(m.group(0))
+    return INHERITED_CALL.sub(repl, src)
+
+
 COMMENT = re.compile(r"//.*?$|/\*.*?\*/", re.S | re.M)
 STRING = re.compile(r'"(?:\\.|[^"\\])*"|\$@?"(?:[^"]|"")*"')
 # `#region <free text>` is PROSE, not code -- C# lets the label be anything to end of line and
@@ -178,6 +208,7 @@ def check_file(path, decls):
     # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
     own.update(METHOD_DECL.findall(src))
     scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+    scan = blank_inherited_calls(scan)
 
     bad = []
     for name in sorted(set(MENTION.findall(scan))):
@@ -196,7 +227,8 @@ def check_file(path, decls):
 def self_test():
     """A gate nobody has watched FAIL is a gate nobody should trust."""
     import tempfile
-    decls = {"WidgetSO": {"CosmicShore.Utility"}, "Thing": {"CosmicShore.Data"}}
+    decls = {"WidgetSO": {"CosmicShore.Utility"}, "Thing": {"CosmicShore.Data"},
+             "DontDestroyOnLoad": {"CosmicShore.Utility"}}
     cases = [
         ("using CosmicShore.Data;\nnamespace CosmicShore.Gameplay { class A { WidgetSO w; } }", 1,
          "missing using is reported"),
@@ -234,6 +266,14 @@ def self_test():
          "a FIELD's TYPE is a reference even though its name is a declarator"),
         ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
          "a field named after its OWN type still reports the TYPE"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Awake() {\n        DontDestroyOnLoad(gameObject);\n    }\n}\n}", 0,
+         "a call to an INHERITED Unity method sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Awake() {\n        gameObject.AddComponent<DontDestroyOnLoad>();\n    }\n}\n}", 1,
+         "...but the same name as a GENERIC ARGUMENT is still a type reference"),
+        ("namespace CosmicShore.Gameplay {\n[DontDestroyOnLoad(1)]\nclass A { }\n}", 1,
+         "...and as an ATTRIBUTE"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void B() {\n        var d = new DontDestroyOnLoad();\n    }\n}\n}", 1,
+         "...and after `new`"),
     ]
     ok = True
     for src, want, label in cases:
