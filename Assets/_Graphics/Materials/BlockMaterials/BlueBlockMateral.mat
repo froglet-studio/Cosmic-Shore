@@ -212,6 +212,10 @@ Material:
     - _StartBrightColor: {r: 1, g: 1, b: 1, a: 1}
     - _StartDarkColor: {r: 1, g: 1, b: 1, a: 1}
     - _StartSpread: {r: 0, g: 0, b: 0, a: 0}
+    - _SwayAxis: {r: 0, g: 0, b: 0, a: 0}
+    - _SwaySpanX: {r: 0, g: 0, b: 0, a: 0}
+    - _SwaySpanY: {r: 0, g: 0, b: 0, a: 0}
+    - _SwayTiming: {r: 0, g: 0, b: 0, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
     - _spread: {r: 0.5, g: 0.5, b: 0.5, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}

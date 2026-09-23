@@ -31,15 +31,17 @@ namespace CosmicShore.Data
         // Brood Rush (BroodRush)
         BroodWaveScored = 40,
 
-        // PeelTheCage ("Peel the Cage")
+        // Cleave
         // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
-        // Values 50/51 were PeelTheCageBroodReleased/PeelTheCagePackReleased when the mode ran a fauna
-        // ladder; the fauna were removed from the level and the same two rungs now mark pure
-        // race progress. Renamed rather than retired because no GameToastConfigSO authors them
-        // yet, so nothing serialized points at the old names.
-        PeelTheCageQuarterPeeled = 50,   // leader is a quarter of the way to the target
-        PeelTheCageHalfPeeled = 51,      // leader is halfway
-        PeelTheCageLeaderChanged = 52,   // the lead changes hands after a milestone
+        // Values 50/51 have now been renamed TWICE and both renames were free for the same
+        // reason: no GameToastConfigSO authors these situations yet, so nothing serialized
+        // points at any of the old names. They were CleaveBroodReleased/CleavePackReleased when
+        // the mode ran a fauna ladder, then ...QuarterPeeled/...HalfPeeled while the mode was
+        // called Peel the Cage. "Peeled" described ONE of the four arenas the mode now ships -
+        // you do not peel a wave sheet - so the rungs are named for what they actually measure.
+        CleaveQuarterCut = 50,      // leader is a quarter of the way to the target
+        CleaveHalfCut = 51,         // leader is halfway
+        CleaveLeaderChanged = 52,   // the lead changes hands after a milestone
 
         // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
         WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target
@@ -99,6 +101,35 @@ namespace CosmicShore.Data
         // Idle hint: the loop is buttonless, so a new pilot has nothing to press and needs
         // telling what flying into things does.
         BloomrushStingHint = 91,
+
+        // Wrecking Ball. Lead: {0} = leading domain, {1} = its prisms destroyed, {2} = target.
+        // The two hints take no args.
+        WreckingBallLeadChanged = 92,   // the lead changes hands past the first milestone
+        WreckingBallForgeHint = 93,     // idle hint: fly through a bright crystal to forge a ball
+        WreckingBallDashHint = 94,      // idle hint: flick the right stick beside the forest
+
+        // Undertow. {0} = leading domain, {1} = that domain's points, {2} = point target. The
+        // hint takes no args.
+        UndertowQuarter = 95,           // the leading domain is a quarter of the way to the target
+        UndertowHalf = 96,              // the leading domain is halfway
+        UndertowLeadChanged = 97,       // the lead changes hands after a milestone
+        UndertowDashHint = 98,          // idle hint: dash beside a rival to catch them in the plate
+
+        // Regatta. Two idle hints, no args: the mode's whole tutorial is "the rail in your
+        // colour is your speed" and which verb your hull uses on it. 110+ because the lobby
+        // block below took 100 and the per-mode blocks under it are full.
+        RegattaRailHint = 110,          // idle hint: the rail in your colour is the racing line
+        RegattaLaneHint = 111,          // idle hint: ride it, skim it, or fly beside it - by hull
+
+        // Broadside. {0} = leading domain, {1} = that domain's points, {2} = point target.
+        // The hints take no args and are per-VERB rather than per-hull, because seven hulls
+        // share four ways of landing a hit and a hint per hull would be seven hints nobody
+        // reads.
+        BroadsideQuarter = 112,         // the leading domain is a quarter of the way to the target
+        BroadsideHalf = 113,            // the leading domain is halfway
+        BroadsideLeadChanged = 114,     // the lead changes hands after a milestone
+        BroadsideVerbHint = 115,        // idle hint: your hull already has a weapon - use it
+        BroadsideCloseHint = 116,       // idle hint: a contact strike pays more than a round
 
         // END-OF-GAME LOBBY. Shared across every multiplayer mode, so 100+ rather than crowding
         // the per-mode blocks. {0} = player name, {1} = how many have asked so far, {2} = how many

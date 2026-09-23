@@ -292,7 +292,7 @@ namespace CosmicShore.Gameplay
                 inheritedVelocityWS,
                 so.ProjectileScale,
                 true,
-                so.ProjectileTime.Value,
+                so.ProjectileTime,
                 charge01,
                 FiringPatterns.Default,
                 so.Energy,

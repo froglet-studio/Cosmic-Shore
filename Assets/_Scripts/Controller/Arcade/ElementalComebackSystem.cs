@@ -164,8 +164,9 @@ namespace CosmicShore.Gameplay
                 case GameModes.BroodRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
-                case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
+                case GameModes.Cleave: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
+                case GameModes.WreckingBall: // same: the Scarab demolition race (ball + plate)
                     return ScoreDifferenceSource.PrismsDestroyed;
                 case GameModes.Bloomrush: // Score lands only at game end - VOLUME is the live stat,
                                           // and the deficit is read in the quantity the mode scores
@@ -176,6 +177,11 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.LifeformsKilled;
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
                 case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
+                case GameModes.Undertow: // bends land as CombatPoints; the rule folds kills in on top,
+                                         // so the comeback reads the BEND deficit alone (see UNDERTOW.md)
+                case GameModes.Broadside: // every verb on the card pays into CombatPoints, so the
+                                          // deficit is already hull-agnostic - which is the whole
+                                          // reason the mode weights at the HIT rather than here
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
@@ -185,6 +191,9 @@ namespace CosmicShore.Gameplay
                                            // same lead runner. No new source - a second one
                                            // reading the same field could only ever disagree.
                 case GameModes.Redline:    // a lapped circuit: the same stat, the same fold
+                case GameModes.Regatta:    // the mixed-fleet lapped circuit: same stat, same fold -
+                                           // and here the comeback is the mode's SECOND balancer
+                                           // after the card's starting elements (REGATTA.md)
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;

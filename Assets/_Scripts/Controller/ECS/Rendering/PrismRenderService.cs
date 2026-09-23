@@ -479,6 +479,14 @@ namespace CosmicShore.ECS
                         em.AddComponentData(prototype, new PrismJiggleStartTimeOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleDurationOverride { Value = 0f });
                         em.AddComponentData(prototype, new PrismJiggleParamsOverride { Value = float3.zero });
+                        // Living-mass sway (Docs/ECOSYSTEM.md §47). A ZERO span is an
+                        // exact no-op, so every prism that is not part of a living limb
+                        // — every trail, every authored environment, every skeleton —
+                        // renders bit-identically to before.
+                        em.AddComponentData(prototype, new PrismSwaySpanXOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwaySpanYOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayAxisOverride { Value = float3.zero });
+                        em.AddComponentData(prototype, new PrismSwayTimingOverride { Value = float3.zero });
                         // Cell-swap world suction (Docs/PRISM_ANIMATION.md §5 C9). Duration 0
                         // = unstamped identity on live graphs (LegacyState default 0). Location
                         // is the same override the Implosion set already carries — added here
@@ -912,6 +920,41 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismJiggleParamsOverride { Value = float3.zero });
         }
 
+        /// <summary>Stamps the LIVING-MASS SWAY: this prism rides the shear field of the
+        /// limb it is bolted to (Docs/ECOSYSTEM.md §47). Every argument is a constant of the
+        /// attachment, so unlike every other stamp on this service there is no start time and
+        /// no duration — the sway does not end, it is what being alive looks like.
+        ///
+        /// spanX / spanY are the limb's +x / +y in THIS prism's object space times the limb's
+        /// amplitude; axis is the limb's +z as a functional on that space; timing is
+        /// (frequency, phase, the prism origin's height up the limb).</summary>
+        public static bool StampSway(in PrismRenderHandle handle, in float3 spanX, in float3 spanY,
+            in float3 axis, in float3 timing)
+        {
+            if (!ClockAnimationEnabled || !IsUsable(in handle)) return false;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return false;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = spanX });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = spanY });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = axis });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = timing });
+            return true;
+        }
+
+        /// <summary>Stops a prism swaying. This is a STATE CHANGE, not a settle: it is what
+        /// a lifeform's death does to the skeleton it leaves behind, so the mass the food web
+        /// then grazes is visibly no longer alive. Also pool hygiene.</summary>
+        public static void ClearSwayStamp(in PrismRenderHandle handle)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            if (!em.HasComponent<PrismSwaySpanXOverride>(handle.Entity)) return;
+            em.SetComponentData(handle.Entity, new PrismSwaySpanXOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwaySpanYOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayAxisOverride { Value = float3.zero });
+            em.SetComponentData(handle.Entity, new PrismSwayTimingOverride { Value = float3.zero });
+        }
+
         /// <summary>Clears a prism's animation stamps back to the settled state (pool
         /// reuse). Safe no-op when the clock components are absent.</summary>
         public static void ClearPrismStamps(in PrismRenderHandle handle)
@@ -922,6 +965,7 @@ namespace CosmicShore.ECS
             ClearShieldMorphStamp(in handle);
             ClearJiggleStamp(in handle);
             ClearSuctionClockStamp(in handle);
+            ClearSwayStamp(in handle);
         }
 
         /// <summary>Stamps an explosion's flight: offset/amount/opacity become pure

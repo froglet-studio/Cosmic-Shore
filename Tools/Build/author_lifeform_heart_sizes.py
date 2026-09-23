@@ -152,13 +152,17 @@ FAUNA_PREFABS = {
 }
 
 FLORA_PREFABS = {
+    "Apollonia":    "Assets/_Prefabs/FloraAndFauna/ApolloniaFlora.prefab",
     "Arbor":        "Assets/_Prefabs/FloraAndFauna/ArborFlora.prefab",
+    "Borromean":    "Assets/_Prefabs/FloraAndFauna/BorromeanFlora.prefab",
     "Branching":    "Assets/_Prefabs/FloraAndFauna/BranchingFlora.prefab",
     "Cacti":        "Assets/_Prefabs/FloraAndFauna/CactiFlora.prefab",
     "Coral":        "Assets/_Prefabs/FloraAndFauna/CoralFlora.prefab",
+    "Coral Bloom":  "Assets/_Prefabs/FloraAndFauna/CoralBloomFlora.prefab",
     "Frond":        "Assets/_Prefabs/FloraAndFauna/FrondFlora.prefab",
     "Gyroid":       "Assets/_Prefabs/FloraAndFauna/GyroidFlora.prefab",
     "Lantern":      "Assets/_Prefabs/FloraAndFauna/LanternFlora.prefab",
+    "Mandelbulb":   "Assets/_Prefabs/FloraAndFauna/MandelbulbFlora.prefab",
     "Nerve":        "Assets/_Prefabs/FloraAndFauna/NerveFlora.prefab",
     "Pine":         "Assets/_Prefabs/FloraAndFauna/PineFlora.prefab",
     "Quasicrystal": "Assets/_Prefabs/FloraAndFauna/QuasicrystalFlora.prefab",
@@ -168,6 +172,7 @@ FLORA_PREFABS = {
     "Spire":        "Assets/_Prefabs/FloraAndFauna/SpireFlora.prefab",
     "Tendril":      "Assets/_Prefabs/FloraAndFauna/TendrilFlora.prefab",
     "Wall":         "Assets/_Prefabs/FloraAndFauna/WallFlora.prefab",
+    "Watershed":    "Assets/_Prefabs/FloraAndFauna/WatershedFlora.prefab",
 }
 
 
@@ -335,11 +340,18 @@ def _instance_transforms(text: str, docs: dict):
     block's `m_TransformParent` (/asset-surgery: an instance is reachable that way ALWAYS,
     and through the parent's `m_Children` only when the parent is a plain Transform).
 
-    Returns {fileID: (parent, localPos, localScale, sourceGuid)}. The guid matters as much
-    as the pose: a nested instance contributes its SOURCE prefab's whole body, and that
-    body is not in this file at all. Skipping either half is not a small loss — the
-    Tadpole's entire body and the Clawfish's entire model are nested instances, so a walk
-    that ignores them measures those two species at a seventh of their real size (§4.9).
+    Returns {fileID: (parent, localPos, localScale, sourceGuid, scaleOverridden)}. The guid
+    matters as much as the pose: a nested instance contributes its SOURCE prefab's whole
+    body, and that body is not in this file at all. Skipping either half is not a small
+    loss — the Tadpole's entire body and the Clawfish's entire model are nested instances,
+    so a walk that ignores them measures those two species at a seventh of their real size
+    (§4.9).
+
+    `scaleOverridden` says whether the instance authored `m_LocalScale.*` rows. That is the
+    difference between a pose that MULTIPLIES the source root's own scale and one that
+    REPLACES it: Unity stores an override as the final serialized value of that field, so
+    an overridden instance scale is the whole answer and re-applying the source root's
+    scale underneath it squares the number (see `_measure_reach`).
     """
     out = {}
     for fid, (cls, body) in docs.items():
@@ -350,6 +362,7 @@ def _instance_transforms(text: str, docs: dict):
         src = re.search(r"m_SourcePrefab: \{fileID: \d+, guid: (\w+)", body)
         pos = [0.0, 0.0, 0.0]
         scale = [1.0, 1.0, 1.0]
+        scale_overridden = False
         # propertyPath / value rows WRAP, so walk the lines. A one-line regex over an
         # m_Modifications list matches zero entries and reads as "no overrides".
         lines = body.split("\n")
@@ -361,8 +374,13 @@ def _instance_transforms(text: str, docs: dict):
             if not vm:
                 continue
             axis = "xyz".index(pm.group(2))
-            (pos if pm.group(1) == "Position" else scale)[axis] = float(vm.group(1))
-        out[fid] = (parent, tuple(pos), tuple(scale), src.group(1) if src else None)
+            if pm.group(1) == "Position":
+                pos[axis] = float(vm.group(1))
+            else:
+                scale[axis] = float(vm.group(1))
+                scale_overridden = True
+        out[fid] = (parent, tuple(pos), tuple(scale),
+                    src.group(1) if src else None, scale_overridden)
     return out
 
 
@@ -396,6 +414,8 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
 
     nodes = {}                         # fileID -> (parent, localPos, localScale)
     nested = {}                        # fileID -> source prefab path
+    nested_fbx = {}                    # fileID -> source MODEL's mesh extent
+    nested_replaces_root_scale = set() # fileIDs whose pose OVERRODE m_LocalScale
     for fid, (cls, body) in docs.items():
         if cls != "4":
             continue
@@ -403,11 +423,29 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
         nodes[fid] = (m.group(1) if m else "0",
                       vec3(body, "m_LocalPosition") or (0.0, 0.0, 0.0),
                       vec3(body, "m_LocalScale") or (1.0, 1.0, 1.0))
-    for fid, (parent, pos, scale, guid) in _instance_transforms(text, docs).items():
+    for fid, (parent, pos, scale, guid, scale_overridden) in \
+            _instance_transforms(text, docs).items():
         nodes[fid] = (parent, pos, scale)
         src = _meta_index().get(guid) if guid else None
-        if src and src.suffix.lower() == ".prefab":
+        if not src:
+            continue
+        if src.suffix.lower() == ".prefab":
             nested[fid] = src
+            if scale_overridden:
+                nested_replaces_root_scale.add(fid)
+        elif src.suffix.lower() == ".fbx":
+            # A nested MODEL instance has no MeshFilter document in this file to find
+            # (_node_mesh_extents only sees `!u!33` docs), and it is not a .prefab to
+            # recurse into - so before this branch a creature whose body IS a model
+            # instance contributed NOTHING and its "body" was measured from whatever
+            # else it carried. On the Clawfish that was its own CRYSTAL, making the
+            # heart's SIZE a function of where the heart SITS: moving the seat forward
+            # by 5.35 units (Docs/ECOSYSTEM.md §45.3) shrank the measured body from
+            # 12.4 to 6.8 and the authored heart from 1.16 to 0.86, which is circular.
+            # Two species nest their body this way - Clawfish and Brittlestar.
+            ext = _fbx_mesh_extent(src)
+            if ext:
+                nested_fbx[fid] = ext
 
     if not nodes:
         return 0.0
@@ -431,6 +469,12 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
         _, lp, ls = nodes[fid]
 
         if is_root and not include_root_scale:
+            # The root contributes its FRAME only, never its own extent. Widening this to
+            # also count the root's mesh/scale was tried and reverted: it took every
+            # BranchingFlora from 3.00 to 6.29 and the Tadpole from 5.00 to 56.30, because
+            # a species whose root carries a placeholder prism scale then measures that
+            # placeholder rather than its body. The §40 band is calibrated against this
+            # rule; changing it is a separate, wider re-authoring.
             wpos, wscale = (0.0, 0.0, 0.0), (1.0, 1.0, 1.0)
         else:
             wpos = tuple(ppos[i] + pscale[i] * lp[i] for i in range(3))
@@ -439,7 +483,16 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
             own = max(biggest, mesh_extent.get(fid, 0.0) * biggest)
             if fid in nested:
                 # The instance's whole source body, scaled by the pose it is placed at.
-                own = max(own, 2.0 * _measure_reach(nested[fid], True, seen) * biggest)
+                # An instance that OVERRODE `m_LocalScale` has already replaced the source
+                # root's own scale - Unity serializes the final value of the field, not a
+                # factor on top of it - so measuring that source WITH its root scale and
+                # then multiplying by `biggest` applies the same number twice. Recursing
+                # with `include_root_scale=False` is what makes the composition match what
+                # the engine builds.
+                own = max(own, 2.0 * _measure_reach(
+                    nested[fid], fid not in nested_replaces_root_scale, seen) * biggest)
+            if fid in nested_fbx:
+                own = max(own, nested_fbx[fid] * biggest)
             reach = max(reach, math.dist(wpos, (0.0, 0.0, 0.0)) + 0.5 * own)
 
         for c in children.get(fid, ()):
@@ -472,6 +525,24 @@ def species_of(asset_name: str) -> str:
     stem = re.sub(r" (Charge|Mass|Space|Time)$", "", asset_name)
     stem = re.sub(r" (Flora|Fauna)$", "", stem)
     return stem.replace(" ", "")
+
+
+def _species_key(name: str, prefabs) -> str | None:
+    """The FLORA_PREFABS/FAUNA_PREFABS key an asset NAME resolves to, if any.
+
+    `species_of` de-spaces ('Worm Colony Mass' -> 'WormColony'), and most keys are one word,
+    so a straight `name in prefabs` worked until a key arrived with a SPACE in it. It did:
+    'Coral Bloom' is the only two-word key, so its four canonical assets resolved to
+    'CoralBloom', missed, and were skipped for as long as the species has existed - while the
+    CELL-CONFIG path, which resolves by prefab GUID rather than by name, sized its copies
+    correctly. The two halves of one script disagreed about which assets it owns, and the only
+    symptom was one species' canonical hearts silently never moving off whatever wrote them
+    last. Match on the de-spaced form on BOTH sides, so a key's spelling stops being load-bearing.
+    """
+    if name in prefabs:
+        return name
+    squashed = {k.replace(" ", ""): k for k in prefabs}
+    return squashed.get(name)
 
 
 def _prefab_guid_index():
@@ -565,9 +636,9 @@ def read_canonical_variants():
         if el is None or int(el) not in ELEMENTS:
             continue                          # WormColonyConfig / …FaunaConfig: no element
 
-        species = species_of(path.stem)
         prefabs = FLORA_PREFABS if kind == "flora" else FAUNA_PREFABS
-        if species not in prefabs:
+        species = _species_key(species_of(path.stem), prefabs)
+        if species is None:
             continue
 
         out.append(Variant(

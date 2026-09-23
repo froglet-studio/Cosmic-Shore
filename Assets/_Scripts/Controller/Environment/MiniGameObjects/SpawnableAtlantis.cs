@@ -51,10 +51,11 @@ namespace CosmicShore.Gameplay
     /// noise in <see cref="PaintingStrokeToolkit"/>; a seed of 0 falls back to a fixed default
     /// rather than time-seeding.
     ///
-    /// Collider budget: plain/danger prisms ride the LOD-cullable BoxCollider (active count is
-    /// bounded by PrismColliderLodManager's radius, not population). Shielded/super-shielded
-    /// prisms carry always-on convex MeshColliders, so they are rationed to ~0.3% of the
-    /// structure and only where they read as deliberate landmarks.
+    /// Collider budget: EVERY kind rides the LOD-cullable BoxCollider (active count is bounded by
+    /// PrismColliderLodManager's radius, not population) - a shield swaps the mesh and the mass,
+    /// never the collider, so the shielded tiers are free here too. They are still rationed to
+    /// ~0.3% of the structure, because armoured mass is never food and super-shielded mass is
+    /// removable only by an energised blade: they read as deliberate landmarks and they persist.
     ///
     /// Steady-state note: ~69k live prisms is ~2.8x the largest previously profiled cohort (the
     /// 25k geodesic shells). The O(population) systems (scale/material managers, spatial index,

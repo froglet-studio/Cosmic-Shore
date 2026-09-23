@@ -83,13 +83,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// SPACE → ball SIZE (SCARAB.md §7): ×1 at rest, ×4 at Space 10. The map's generic
-        /// multiplier IS the carrier, so there is no authored field to double-dip against.
+        /// SPACE → ball SIZE (SCARAB.md §7): ×1 at rest, ×4 at Space 10, floored at ×0.5.
+        /// <para>The carrier is the ElementalFloat below rather than an authored asset field
+        /// because this class is STATIC and can hold no serialized field — the same reason six
+        /// other Scarab knobs live in C# (the vessel contract's rule 4-i). Promote it to a config
+        /// SO if design wants to tune it. The retired map multiplier it replaces also applied a
+        /// hardcoded Max(0.1f, ...) here, which was dead: the map already floored at 0.5.</para>
         /// </summary>
+        static readonly ElementalFloat BallSizeScale =
+            ElementalFloat.Multiplier(1f, 4f, Element.Space, 0.5f);
+
         public static float SizeScaleFor(IVesselStatus status) =>
-            status != null && status.ElementalAbilityHandler != null
-                ? Mathf.Max(0.1f, status.ElementalAbilityHandler.Multiplier(Element.Space))
-                : 1f;
+            BallSizeScale.EvaluateLive(status);
 
         /// <summary>
         /// Forge a ball for <paramref name="status"/>'s domain, on a peer that may spawn one.
@@ -106,7 +111,13 @@ namespace CosmicShore.Gameplay
             if (ForgeGate != null && !ForgeGate(status)) return null;
 
             var ball = Spawn(prefab, at, velocity, status.Domain, SizeScaleFor(status));
-            if (ball != null) OnForged?.Invoke(ball, status);
+            if (ball == null) return null;
+
+            // The ball SCORES for its maker until somebody else bats it: the mass it eats is
+            // credited to this pilot (AstroLeagueBall.RecordPilotServer), which is what makes a
+            // forged ball a demolition tool and not just a payload. A vessel strike re-stamps.
+            ball.RecordPilotServer(status.PlayerName);
+            OnForged?.Invoke(ball, status);
             return ball;
         }
 

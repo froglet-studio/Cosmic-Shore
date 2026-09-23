@@ -354,7 +354,12 @@ namespace CosmicShore.Gameplay
                     Label = DisplayNameOf(config),
                     Detail = isCurrent
                         ? "you are here - choose it again to reset"
-                        : config.EnvironmentPrefab ? "" : "no environment",
+                        : config.EnvironmentPrefab ? ""
+                        : Cell.IsBareCanvas(config) ? "no environment"
+                        // Environment-free is how a world is BUILT, not what it CONTAINS: this
+                        // one has no lay to picture because its whole world is GROWN from its
+                        // spawn profile (Docs/ECOSYSTEM.md §36.10, met by a third reader).
+                        : "grown, not laid",
                     Accent = Definition ? Definition.AccentColor : Color.white,
                     IsCurrent = isCurrent,
                     Apply = () => SelectCell(capturedCell, capturedConfig),

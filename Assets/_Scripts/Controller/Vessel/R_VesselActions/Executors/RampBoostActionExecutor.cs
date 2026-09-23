@@ -85,9 +85,7 @@ namespace CosmicShore.Gameplay
             // Element → parameter (Time → acceleration). Anchored at 1x at resting level;
             // a high Time element winds the Rhino up to top speed faster. Snapshotted at engage
             // because it is read every frame below and EvaluateLive is not free.
-            _timeMultiplier = _status.ElementalAbilityHandler != null
-                ? _status.ElementalAbilityHandler.Multiplier(Element.Time)
-                : 1f;
+            _timeMultiplier = so.TimeAccelerationMultiplier(_status);
 
             Straightness01 = 1f;
             status.BoostMultiplier = so.MaxBoostMultiplier;

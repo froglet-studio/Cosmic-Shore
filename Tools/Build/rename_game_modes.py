@@ -47,16 +47,16 @@ PROTECTED = [
     "CrystalCaptureConfigTests",
     "CrystalCaptureConfigSO",
     "CrystalCaptureConfig",
-    # The ARENA is a ribcage and keeps its name; only the MODE that peels it was renamed. These
-    # are the arena's own prefabs, cell configs and spawn profile - the same set
-    # rename_game_mode_files.py protects, restated here because the two scripts protect at
-    # different granularities (a path fragment there, an identifier here) and a name protected
-    # in one and not the other is a script that points at a file that was never moved.
+    # One of Cleave's four arenas IS a ribcage and keeps its name; the MODE that slices it is
+    # what was renamed (twice). Restated here as well as in rename_game_mode_files.py because
+    # the two scripts protect at different granularities (a path fragment there, an identifier
+    # here) and a name protected in one and not the other is a script that points at a file
+    # that was never moved.
+    #
+    # The CELL configs and spawn profile are deliberately NOT here any more: they named the
+    # mode's cell, not the arena, and moved to "Cleave Cell" with the 2026-09 rename. Only the
+    # one arena that is genuinely rib-shaped keeps the word.
     "SpawnableRibcage",
-    "Ribcage Spawn Profile",
-    "Ribcage Cell",
-    "RibcageSpawnProfile",
-    "RibcageCellConfig",
 ]
 
 # (old, new, enum_id, note). Order is load-bearing: longest key first.
@@ -70,7 +70,14 @@ REPLACEMENTS = [
     ("CellularDuel",                 "DuelForTheCell",        8, "Duel for the Cell"),
     ("NucleusRush",                  "BroodRush",            38, "Brood Rush"),
     ("HexRace",                      "SkimRace",             33, "Skim Race"),
-    ("Ribcage",                      "PeelTheCage",          39, "Peel the Cage"),
+    # Peel the Cage -> Cleave (2026-09): the mode kept only ONE of its four arenas as a
+    # nested-shell cage, so a name that described that one arena stopped describing the game.
+    # The earlier ("Ribcage" -> "PeelTheCage") row is GONE rather than kept alongside this
+    # one: assert_order's RE-MATCH check refuses a map where one key is a substring of
+    # another's value, and chaining two hops here would be wrong anyway - the tree carries no
+    # mode-"Ribcage" identifier any more. Both old names still resolve in ONE hop in
+    # GameModeRenameMigration, which is where the two-generation save actually lands.
+    ("PeelTheCage",                  "Cleave",               39, "Cleave"),
     ("Tournament",                   "Maelstrom",            36, "Maelstrom"),
 ]
 
@@ -104,7 +111,8 @@ EXCLUDED_PATHS = (
     "Assets/_Scripts/Tests/Editor/GameModeRenameMigrationTests.cs",
     "Docs/ShuffleSystem/ARCHITECTURE.md",
     "CLAUDE.md",   # its ShuffleSystem row states the old code name on purpose
-    "AGENTS.md",   # a copy of CLAUDE.md, carrying the same row for the same reason
+    # AGENTS.md needed the same exclusion while it was a hand-made copy of CLAUDE.md. It is a
+    # POINTER now (2026-09-20), so it carries no mode table and nothing here to protect.
     # These two ARE the map. Sweeping them rewrites `("HexRace", "SkimRace")` into
     # `("SkimRace", "SkimRace")`, which is the same self-erasure the migration map suffers, and
     # it takes PROTECTED and DOC_NAMES with it.
@@ -113,7 +121,7 @@ EXCLUDED_PATHS = (
     # Its `guid()` seeds are md5 INPUTS, not names - see that file's docstring. Its paths and
     # dict keys were renamed by hand with the seeds held frozen; a mechanical re-sweep would
     # move the seeds and silently re-mint every guid the mode's assets are addressed by.
-    "Tools/Build/author_ribcage_assets.py",
+    "Tools/Build/author_cleave_assets.py",
 )
 
 TEXT_EXTENSIONS = (".cs", ".md", ".py", ".json")
@@ -221,8 +229,9 @@ def main():
     ap.add_argument("--apply", action="store_true", help="write the changes")
     ap.add_argument("--check", action="store_true", help="report only (default)")
     # `Assets/_Scripts` alone missed `Assets/FTUE` (a compile error: the FTUE adapter names a
-    # renamed CallToActionTargetType member), and the two root-level docs are separate files that
-    # each restate the mode table. Root at `Assets` rather than enumerating subdirectories.
+    # renamed CallToActionTargetType member). CLAUDE.md restates the mode table and is swept (then
+    # excluded above); AGENTS.md is only a pointer to it now and is kept in the roots so a future
+    # sweep covers whatever it grows. Root at `Assets` rather than enumerating subdirectories.
     ap.add_argument("--roots", nargs="*",
                     default=["Assets", "Docs", "Tools", "CLAUDE.md", "AGENTS.md", "README.md"])
     args = ap.parse_args()

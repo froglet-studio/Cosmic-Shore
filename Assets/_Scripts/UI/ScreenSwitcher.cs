@@ -1162,6 +1162,9 @@ namespace CosmicShore.UI
                     if (LeaderboardMenu)
                         LeaderboardMenu.LoadView();
                     break;
+                case MenuScreens.PROFILE:
+                    UserActionSystem.Instance.CompleteAction(UserActionType.ViewProfileMenu);
+                    break;
             }
 
             // Pause game on non-HOME screens (frees CPU for UI rendering)

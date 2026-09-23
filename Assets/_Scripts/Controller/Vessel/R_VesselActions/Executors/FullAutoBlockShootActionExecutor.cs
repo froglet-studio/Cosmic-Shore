@@ -212,7 +212,7 @@ namespace CosmicShore.Gameplay
                         // live Mass level. Volume = x·y·z of lossyScale, so the stretch feeds
                         // Cell.LiveVolume — "volume is the spine".
                         var blockScale = so.BlockScale;
-                        blockScale.z *= abilities ? abilities.Multiplier(Element.Mass) : 1f;
+                        blockScale.z *= so.MassPrismStretchMultiplier(_status);
 
                         // Distance the shot covers before its lifetime ends. The bullets' mover
                         // eases each step by cos(t·π/2T), so the range is that integral —

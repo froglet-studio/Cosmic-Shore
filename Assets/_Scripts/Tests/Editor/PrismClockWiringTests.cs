@@ -62,11 +62,22 @@ namespace CosmicShore.Tests
         {
             foreach (var spec in PrismClockWiringValidator.Specs)
             {
-                Assert.IsFalse(
-                    (spec.CustomFunctions ?? System.Array.Empty<string>()).Contains("PrismOcclusionFade"),
-                    $"{spec.GraphName}: PrismOcclusionFade must not live on clock Specs — " +
-                    "Validate() delegates that census to PrismOcclusionWiringValidator.CheckGraphWiring " +
-                    "so one SoT owns the corridor.");
+                // BOTH entry points — BlockGraph's PrismOcclusionFade and the debris
+                // wrapper ExplodingBlockGraph binds. Naming only the first would let the
+                // corridor's census re-grow a second owner on the exploding graph alone.
+                // Read off the validator's own constants rather than spelled here: a
+                // hand-written list of the names a rule covers stops covering the rule
+                // the day a third wrapper lands, and says nothing when it does.
+                foreach (var fn in new[]
+                {
+                    PrismOcclusionWiringValidator.CorridorFunctionName,
+                    PrismOcclusionWiringValidator.DebrisCorridorFunctionName,
+                })
+                    Assert.IsFalse(
+                        (spec.CustomFunctions ?? System.Array.Empty<string>()).Contains(fn),
+                        $"{spec.GraphName}: {fn} must not live on clock Specs — " +
+                        "Validate() delegates that census to PrismOcclusionWiringValidator.CheckGraphWiring " +
+                        "so one SoT owns the corridor.");
                 Assert.IsFalse(
                     (spec.RequiredProps ?? System.Array.Empty<string>()).Contains("_PrismOcclusionTarget"),
                     $"{spec.GraphName}: corridor globals must not live on RequiredProps " +

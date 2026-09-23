@@ -1,6 +1,6 @@
 ---
 name: ship-deep
-description: The thorough lane of the ship protocol - for a large branch, a LOCKED system (ecology, party/presence, threading, scoring, prism animation, elemental abilities), hand-authored asset YAML/JSON, or the end of a long session. Runs everything /ship does, then adds an adversarial re-read of the diff, a blast-radius sweep over every changed public surface, a semantic-merge duplicate scan, an asset-integrity pass, and a doc-drift sweep. Use for "ship it properly", "full review before the PR", "deep check", or any branch you would be uncomfortable defending line by line.
+description: The thorough lane of the ship protocol - for a large branch, a LOCKED system (ecology, party/presence, threading, scoring, prism animation, elemental abilities), hand-authored asset YAML/JSON, or the end of a long session. Runs everything /ship does, then adds an adversarial re-read of the diff, a blast-radius sweep over every changed public surface, a semantic-merge duplicate scan, an asset-integrity pass, a doc-drift sweep, and a mechanical refactor-opportunity sweep. Use for "ship it properly", "full review before the PR", "deep check", or any branch you would be uncomfortable defending line by line.
 ---
 
 # Ship Deep — assume the diff is wrong until each part survives a check
@@ -71,7 +71,22 @@ member at different offsets auto-merge into a `CS0102` that only Unity will find
   `[SerializeField]`/public field names **and its base classes**, both directions. A key
   you misspelled is silently dropped; a field you omitted silently takes its initializer.
 - No `Missing (Mono Script)` rows: every `m_Script` GUID in a changed prefab/scene
-  resolves to a file that still exists.
+  resolves to a file that still exists. **That sweep needs a BASE-BRANCH CONTROL or it is
+  unreadable**: a fresh clone has no `Library/PackageCache`, so every TextMeshPro, UGUI and
+  Netcode script GUID resolves to nothing and the raw sweep reports dozens of "missing" scripts.
+  Re-ask each unresolved GUID against the base branch (`git grep "guid: $g" <base> -- Assets`) —
+  a GUID already referenced there is a package script and not your problem; what is left is
+  yours. One run split 28 hits into 25 package scripts and **3 real dangling references**, all
+  three in one asset: a graph left over from a class rename, which survived because the renames
+  were `git mv`s so its other GUIDs still resolved, and which therefore loaded as a live typed
+  asset with three permanently broken nodes in it.
+  **And distrust a uniform result.** The first attempt at that control reported 28 of 28 absent,
+  which was not a finding — it was `git grep -qs` erroring out on a flag that does not exist, on
+  every iteration. A probe that answers the same way for every input has usually not run; prove
+  it discriminates by feeding it a case you KNOW lands on each side before reading its output.
+  Pick that known-good case from the BASE branch, not from the branch under test — the first
+  control chosen here was a file the branch itself had added, so "not found" was correct and
+  looked like the probe was still broken.
 - Shader/graph edits: the property you rely on is actually referenced in the graph text
   (`Material.HasProperty` cannot see an unexposed property — `/asset-surgery` §5).
 
@@ -132,9 +147,45 @@ The base gate asks whether a WRITER tool's output landed. Here, also:
   guards on an already-applied marker). A non-idempotent tool that stays in the repo is a
   loaded gun; retire it or make it idempotent.
 
+## D8. §3.6 as a SWEEP, not a judgement
+
+The base skill's refactor-opportunity pass asks you to write down what you noticed. At this
+depth, D2 and D6 have already produced most of the raw material mechanically, so the
+opportunities get *enumerated* rather than recalled. Same output contract as §3.6: **rows
+with evidence, never an edit to this branch.**
+
+- **D2's removed/re-signed member list is a vestige worklist.** For every member the branch
+  did NOT delete, count its callers now: `grep -rn '\.<Member>\b' Assets --include=*.cs`.
+  One caller is a row (is the indirection still earning its keep?); zero callers outside
+  docs is a deletion PROPOSAL — and a proposal, not a deletion, because "referenced by
+  nothing" is a statement about what you searched (`/refactor` §3.3: a guid sweep sees
+  neither `Resources.Load` by name nor a C# type reference).
+- **D6's doc hits you SOFTENED are rows.** Every sentence you hedged rather than deleted
+  because you were not certain the old behaviour was gone is a claim the next reader will
+  take as evidence. Name the file, the line and the question that would settle it.
+- **Scoped grep for `/refactor` §3's shapes — over the branch's touched files only**, so the
+  pass cannot cry wolf:
+
+  ```sh
+  F=$(git diff --name-only <merge-base>..HEAD -- '*.cs')
+  grep -n 'fallback\|falls back\|legacy path\|degrades to\|kept for\|for now\|historical' $F
+  grep -n 'TODO\|HACK\|XXX' $F
+  grep -nE '\b(Clamp|Max|Min)\(' $F        # a silent clamp inside a setter (§3.7)
+  ```
+
+  Each hit is read, not reported. What goes in a row is the ones where the comment and the
+  code now disagree.
+- **A serialized field the branch left behind is the expensive one.** Deleting it is a data
+  migration (`/refactor` §3.4 — an absent YAML key ships the C# initializer), so it can
+  never be a tidy-up inside a feature branch. If the branch orphaned one, the row says which
+  assets carry it and what their authored values are *today*, because that measurement is
+  destroyed the moment anybody rewrites those assets.
+
 ## Then
 
 Return to `/ship` §3.5 (skill capture — a branch this size almost always taught
-something), §4 (go/no-go), §5 (PR). The PR body carries D5's matrix and D2's sweep
+something), §3.6 (refactor opportunities, now fed by D8), §4 (go/no-go), §5 (PR). The PR body carries D5's matrix and D2's sweep
 results; the report carries every pass's verdict, including the ones that found nothing —
-"D3 found no duplicate members across the 2 genuinely-merged files" is a result.
+"D3 found no duplicate members across the 2 genuinely-merged files" is a result. D8's rows
+go in the report as rows, with where each one lives; a row that turned into a diff hunk on
+this branch is a §4 finding against the branch, not a bonus.

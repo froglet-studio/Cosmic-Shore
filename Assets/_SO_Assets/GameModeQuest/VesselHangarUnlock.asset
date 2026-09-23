@@ -20,3 +20,8 @@ MonoBehaviour:
   TargetValue: 0
   Order: 6
   IsPlaceholder: 0
+  FeatureKind: 3
+  FeatureRef: Hangar
+  CallToActionTargetID: 300
+  CompletionUserAction: 300
+  DependencyTargetIDs: []

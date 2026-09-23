@@ -14,12 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   explosionDuration: 2
   explosionDelay: 0.2
-  depthScale:
-    Enabled: 0
-    Value: 1
-    Min: 0
-    Max: 0
-    element: 0
+  depthScale: 1
   baseBlockScale: {x: 10, y: 1, z: 1}
   numberOfRays: 12
   blocksPerRay: 12

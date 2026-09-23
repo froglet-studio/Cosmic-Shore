@@ -41,7 +41,8 @@ namespace CosmicShore.Gameplay
     public static class PrismTrailBuilder
     {
         /// <summary>The one place a prism is born into a trail. Kind is applied AFTER Initialize.</summary>
-        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId)
+        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId,
+            bool admitAuthoredScale = false)
         {
             // Load Time Insights hot-path breakdown: per-stage accumulators (NOT per-item spans —
             // a 25k-prism lay would blow the span budget). Inert (t stays 0) unless a load
@@ -52,7 +53,7 @@ namespace CosmicShore.Gameplay
             var block = EnvironmentPrismPool.Get(prefab, parent);
             t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
-            ConfigureLaid(block, e, trail, ownerId, t);
+            ConfigureLaid(block, e, trail, ownerId, t, admitAuthoredScale);
             return block;
         }
 
@@ -62,7 +63,8 @@ namespace CosmicShore.Gameplay
         /// definition of the prism spawn contract with the per-item path (the drift surface the
         /// environment audit flagged — now it cannot diverge).
         /// </summary>
-        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t)
+        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t,
+            bool admitAuthoredScale)
         {
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
@@ -75,6 +77,30 @@ namespace CosmicShore.Gameplay
 
             block.Initialize();
             t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
+
+            // A lay STATES a size, so a caller may widen the animator's clamp to admit it.
+            // PrismScaleAnimator.SetTargetScale clamps PER AXIS into the prefab's serialized
+            // [minScale, maxScale] INSIDE the setter, with no log and no return value — so an
+            // authored 132-long plank on a prefab whose maxScale is 100 becomes a 100-long plank
+            // and nothing anywhere reports the difference (Docs/PRISM_ANIMATION.md; three passes
+            // of flora fitting measured and shipped sizes the engine never used).
+            //
+            // It is OPT-IN rather than always, because the environment prism prefab is shared by
+            // ~30 spawnables: admitting a size one of them is currently relying on the clamp to
+            // cut is a behaviour change for THAT spawnable, not for the one asking. Only ever
+            // WIDENS, and pool reuse restores the authored window.
+            //
+            // AFTER Initialize, and that ordering is load-bearing (ScarabSwitch.TryLay records
+            // the same trap): Initialize → ResetState → RestoreAuthoredScaleWindow() undoes any
+            // widening and then re-clamps the target against the restored window, so a size
+            // stated before Initialize is silently trimmed twice over. The plain path above is
+            // deliberately left where it is so an un-admitting caller lays byte-for-byte as before.
+            if (admitAuthoredScale)
+            {
+                block.AdmitTargetScale(e.Point.Scale);
+                block.TargetScale = e.Point.Scale;
+                t = LoadInsights.AccumulateSample("Prism lay: authored-scale admission", t);
+            }
 
             // AFTER Initialize: pool-reuse reset clears trail membership, so a stamp made
             // before it is silently wiped (AssignTrail's contract).
@@ -107,11 +133,12 @@ namespace CosmicShore.Gameplay
 
         // ── Sync ─────────────────────────────────────────────────────────────
 
-        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail, string ownerPrefix)
+        public static void LaySync(Prism prefab, IReadOnlyList<PrismLay> elems, Transform parent, Trail trail,
+            string ownerPrefix, bool admitAuthoredScale = false)
         {
             if (!prefab) return;
             for (int i = 0; i < elems.Count; i++)
-                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}");
+                LayOne(prefab, elems[i], parent, trail, $"{ownerPrefix}::{i}", admitAuthoredScale);
         }
 
         /// <summary>Convenience overload for the single-domain, plain-kind environment path.</summary>
@@ -557,7 +584,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static async UniTask LayBudgetedAsync(Prism prefab, IReadOnlyList<PrismLay> elems,
             Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame,
-            List<Prism> collected = null, CancellationToken ct = default)
+            List<Prism> collected = null, CancellationToken ct = default, bool admitAuthoredScale = false)
         {
             if (!prefab || elems == null || elems.Count == 0) return;
 
@@ -602,7 +629,8 @@ namespace CosmicShore.Gameplay
                         long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                         long acc = LoadInsights.AccumulateStart();
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
-                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
+                        ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc,
+                            admitAuthoredScale);
                         collected?.Add(block);
 
                         // Local pose, read straight off the plan - no transform resolve, no

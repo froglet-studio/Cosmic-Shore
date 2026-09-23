@@ -533,6 +533,9 @@ namespace CosmicShore.UI
             // depends on PC (DC <= PC) and ResetState() leaves PlayerCount at 0. For modes
             // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
             config.DomainCount = ComputeDefaultDomainCount();
+            if (QuestArcadeConstraints.AppliesTo(selectedGame.Mode) && QuestArcadeConstraints.ForcedDomainCount > 0)
+                config.DomainCount = Mathf.Clamp(QuestArcadeConstraints.ForcedDomainCount,
+                    MinDomainsForGame, ComputeMaxDomainCount());
             InitializeGameMetaView(selectedGame);
             ApplyWeeklyChallengePresentation();
             InitializeConfigControls(selectedGame);
@@ -550,7 +553,107 @@ namespace CosmicShore.UI
             // every human to Jade, spawns the chips and opens the same panel on the clients.
             // Deferring it would leave the domain tiles inert on a panel already showing them.
             CommitConfiguration();
+
+            // AFTER the commit, deliberately: the commit publishes the lobby (so the placements
+            // can be broadcast at all - NotifyRosterChanged refuses a closed lobby) and resets
+            // every human to Jade (so a restored domain pick has to land after it, not before).
+            RestoreRememberedRoster();
+            RestoreRememberedDomain();
             RefreshRoster();
+        }
+
+        /// <summary>
+        /// Re-place the bots the host launched this card with last time, and re-widen the domain
+        /// count to what they launched with - the host half of <see cref="LaunchPreference"/>.
+        /// Host only, never for the weekly challenge (its terms are pinned), never while the
+        /// FTUE quest funnel is shaping this card (same reason - see below), and every value is
+        /// re-clamped against the card and the party on the ground: a party that grew since
+        /// gets fewer of its bots back, a prefix the seat count cannot stretch to is clamped the
+        /// way a live placement is.
+        ///
+        /// <para>The funnel guard is not optional. This runs AFTER the card-open pin that
+        /// <see cref="QuestArcadeConstraints"/> applies to the seat and domain counts, so without
+        /// it a remembered roster silently re-places bots and re-widens the domain count over an
+        /// authored tutorial's terms - one authority accepting an input and a later one
+        /// overriding it. <see cref="QuestArcadeConstraints.AppliesTo"/> resolves through
+        /// <c>Active</c>, so the master developer unlock lifts this with the rest of the
+        /// funnel.</para>
+        /// </summary>
+        void RestoreRememberedRoster()
+        {
+            if (IsClientMode || _weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasHostTerms) return;
+
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+                                    MaxMatchSeats);
+            var placements = LaunchPreferenceRules.ResolveAiPlacements(
+                remembered.AIDomains, ceiling - BaseSeats);
+
+            config.AIDomains.Clear();
+            config.AIDomains.AddRange(placements);
+
+            // Seat count first (it bounds the domain count), then the domain count against the
+            // new bound - the same order a live placement takes through AddAiToDomain.
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            config.DomainCount = LaunchPreferenceRules.ResolveDomainCount(
+                remembered.DomainCount, config.DomainCount, MinDomainsForGame,
+                ComputeMaxDomainCount(), placements);
+            if (dcStepper)
+                dcStepper.Initialize(MinDomainsForGame, ComputeMaxDomainCount(), config.DomainCount);
+
+            RefreshTileVisibility();
+            BroadcastRosterToClients();
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ArcadeLaunch] Restored {_selectedGame.Mode}: {placements.Count} placed AI, " +
+                $"domains={config.DomainCount}, seats={config.PlayerCount}.");
+        }
+
+        /// <summary>
+        /// Re-pick the domain this pilot pressed ready with on this card last time - the pilot
+        /// half of <see cref="LaunchPreference"/>, and the one restore both the host and a guest
+        /// perform, since each pilot's colour is their own. Routed through
+        /// <see cref="HandleDomainSelected"/> so it is a real server request: a tile lit without
+        /// the round trip is the "UI claims a domain the server never got" case that method
+        /// exists to refuse. Jade is skipped because the commit already put everyone there.
+        /// </summary>
+        void RestoreRememberedDomain()
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (!LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)) return;
+            if (!remembered.HasPilotChoice) return;
+
+            var domain = LaunchPreferenceRules.ResolvePilotDomain(remembered.Domain, config.DomainCount);
+            if (domain == Domains.Jade) return;
+
+            HandleDomainSelected(domain);
+        }
+
+        /// <summary>
+        /// Write this card's launch setup to <see cref="LaunchPreferenceStore"/>. Called once per
+        /// launch on every instance: the launch authority writes the host terms (intensity, domain
+        /// count, placed AI) and its own pilot choice; a guest writes only its own domain and
+        /// hull, so the host terms this machine last launched with are not clobbered by a match
+        /// it merely joined. Never for the weekly challenge, and never for a card the FTUE quest
+        /// funnel is pinning - in both cases the terms on screen were authored rather than
+        /// chosen, and writing them would hand the next free launch of that mode the tutorial's
+        /// setup as if the host had picked it.
+        /// </summary>
+        void RememberLaunchPreference(bool launchAuthority)
+        {
+            if (_weeklyChallengeLocked || config == null || _selectedGame == null) return;
+            if (QuestArcadeConstraints.AppliesTo(_selectedGame.Mode)) return;
+
+            var vessel = config.SelectedShip ? config.SelectedShip.Class : VesselClassType.Random;
+            var domain = config.SelectedDomain;
+
+            if (launchAuthority)
+                LaunchPreferenceStore.SaveHostTerms(_selectedGame.Mode, config.Intensity,
+                                                    config.DomainCount, config.AIDomains, domain, vessel);
+            else
+                LaunchPreferenceStore.SavePilotChoice(_selectedGame.Mode, domain, vessel);
         }
 
         #endregion
@@ -1204,13 +1307,20 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
+            // The card re-opens on the intensity it was last LAUNCHED at from this machine
+            // (LaunchPreferenceStore), clamped to the card's range and to what this player has
+            // unlocked - a never-launched card opens on its minimum exactly as before.
+            LaunchPreferenceStore.TryGet(game.Mode, out var remembered);
+            int rememberedIntensity = remembered.HasHostTerms ? remembered.Intensity : 0;
+
             config.Intensity   = _weeklyChallengeLocked
                 // The challenge's intensity is the same ask for every player, so it is NOT
                 // clamped to what this player has unlocked - the weekly challenge is a curated
                 // invitation into a mode, and an unlock gate would make two players in the same
                 // week face different objectives.
                 ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
-                : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+                : LaunchPreferenceRules.ResolveIntensity(
+                    rememberedIntensity, game.MinIntensity, game.MaxIntensity, maxUnlocked);
 
             // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
             // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
@@ -1222,6 +1332,18 @@ namespace CosmicShore.UI
             // extra seat is one more pilot competing for the same crystals. The party's humans
             // still win the clamp below (a fact on the ground beats a preference).
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
+
+            // Quest-graph funnel (FTUE first orientation): pin the intensity and default the
+            // player count — for the TUTORIAL mode only, never a newly unlocked one.
+            if (QuestArcadeConstraints.AppliesTo(game.Mode))
+            {
+                if (QuestArcadeConstraints.ForcedIntensity > 0)
+                    config.Intensity = Mathf.Clamp(QuestArcadeConstraints.ForcedIntensity, game.MinIntensity, game.MaxIntensity);
+                if (QuestArcadeConstraints.ForcedPlayerCount > 0)
+                    config.PlayerCount = Mathf.Clamp(QuestArcadeConstraints.ForcedPlayerCount,
+                        Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount),
+                        Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers));
+            }
 
             SyncGameDataConfig();
         }
@@ -1274,10 +1396,14 @@ namespace CosmicShore.UI
 
                 button.SetActive(active);
 
-                // Lock intensity 3 and 4 if the player hasn't unlocked them yet
-                if (active && progressionService != null)
+                // Lock intensities the player hasn't unlocked — and, during the quest-graph
+                // funnel, every intensity except the forced one (FTUE first orientation).
+                if (active)
                 {
-                    bool unlocked = progressionService.IsIntensityUnlocked(game.Mode, level);
+                    bool unlocked = progressionService == null
+                                    || progressionService.IsIntensityUnlocked(game.Mode, level);
+                    if (QuestArcadeConstraints.IsIntensityBlocked(game.Mode, level))
+                        unlocked = false;
                     button.SetLocked(!unlocked);
                 }
 
@@ -1320,26 +1446,48 @@ namespace CosmicShore.UI
         int ComputeDefaultDomainCount() =>
             Mathf.Clamp(DefaultDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
+        /// <summary>
+        /// The hulls the carousel offers: EVERY hull the card lists. A card's <c>Vessels</c> list
+        /// is the authority on what a mode admits - an arcade card pins its one hull whether or
+        /// not the pilot has bought it in the Hangar (<see cref="ResolveModeVessel"/> never asks),
+        /// so an arena card that consulted <see cref="SO_Vessel.IsLocked"/> made the same hull
+        /// flyable on a Rampage card and hidden on the Regatta card. With six of the eight class
+        /// assets authored locked and the commerce surfaces de-scoped, that filter left exactly
+        /// Squirrel and Scarab in every arena carousel. The hangar lock gates the HANGAR.
+        /// </summary>
         void BuildAvailableShips(SO_ArcadeGame game)
         {
             _availableShips.Clear();
 
             if (!game || game.Vessels == null) return;
 
-            _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
+            _availableShips.AddRange(game.Vessels.Where(s => s != null));
         }
 
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
             {
+                // With a null ship, SyncGameDataShip silently launches the DOLPHIN class —
+                // a vessel the player may not even own. Scream so this mis-state (every
+                // vessel of the game's roster locked) is never diagnosed from gameplay.
+                Debug.LogError($"[ArcadeConfigModal] '{(_selectedGame ? _selectedGame.DisplayName : "?")}' has NO unlocked vessels — " +
+                               "the launch will fall back to the Dolphin class. Check vessel lock state (starter Squirrel should be unlocked).");
                 SetSelectedShipInternal(null);
                 return;
             }
 
             SO_Vessel chosen = null;
 
-            if (gameData && gameData.selectedVesselClass)
+            // 0) the hull this pilot last pressed ready with ON THIS CARD - the arena's carousel
+            //    re-opens on it (still to be confirmed; the per-session gate is the design).
+            //    A single-hull card resolves to its one hull either way.
+            if (_selectedGame && LaunchPreferenceStore.TryGet(_selectedGame.Mode, out var remembered)
+                && remembered.HasPilotChoice && remembered.Vessel != VesselClassType.Random)
+                chosen = _availableShips.FirstOrDefault(s => s.Class == remembered.Vessel);
+
+            // 1) the hull last selected anywhere this session
+            if (!chosen && gameData && gameData.selectedVesselClass)
             {
                 var prevType = gameData.selectedVesselClass.Value;
                 if (prevType != VesselClassType.Any && prevType != VesselClassType.Random)
@@ -2209,6 +2357,11 @@ namespace CosmicShore.UI
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
+            // The setup that is about to fly is the one to remember - written here, before the
+            // config below is reset, and never on a mere ready press (a pilot who readies and
+            // whose party then dismisses the card has not launched anything).
+            RememberLaunchPreference(shouldLaunch);
+
             if (shouldLaunch)
             {
                 audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
@@ -2520,7 +2673,12 @@ namespace CosmicShore.UI
 
             _isClientMode = true;
             _launching = false;
+            // A generation this guest has never drawn is a NEW lobby: the one moment its own
+            // remembered domain should be re-picked. A re-draw of the same lobby (the guest
+            // tapping the card to get back in) must not override a pick made since.
+            int previousGeneration = _appliedLobbyGeneration;
             _appliedLobbyGeneration = arcadeConfigSyncManager ? arcadeConfigSyncManager.CurrentLobby.Generation : 0;
+            bool freshLobby = _appliedLobbyGeneration != previousGeneration;
 
             // Re-arm the commit guard. Clients never commit - CommitConfiguration runs on the
             // host's card open - but a player who was previously the party host might carry a
@@ -2587,6 +2745,7 @@ namespace CosmicShore.UI
             // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
+            if (freshLobby) RestoreRememberedDomain();
             RefreshRoster();
         }
 

@@ -82,18 +82,11 @@ namespace CosmicShore.Gameplay
             _initialized = false;
         }
 
-        /// <summary>
-        /// Quantitative multiplier for the ability parameter this element owns. Exactly 1 at the
-        /// resting level, at MultiplierAtFullLevel at integer level 10, floored at MinMultiplier.
-        /// Returns 1 for unmapped elements / vessels without a map.
-        /// </summary>
-        public float Multiplier(Element element)
-        {
-            var entry = _map ? _map.GetEntry(element) : null;
-            if (entry == null) return 1f;
-            return ElementalScaling.Multiplier(_status, element,
-                entry.MultiplierAtFullLevel, entry.MinMultiplier);
-        }
+        // Multiplier(Element) is REMOVED. It answered "how much does this element scale things?"
+        // with no way to say WHICH thing, so it was readable from anywhere and scoped to nothing.
+        // A parameter that scales with an element declares an ElementalFloat next to itself and
+        // calls EvaluateLive(status). This handler owns the QUALITATIVE half only — IsUpgradeActive,
+        // which is legitimately a fact about the element rather than an unlabelled number.
 
         /// <summary>
         /// True while this element's qualitative upgrade is active, per the map's latch policy

@@ -164,10 +164,10 @@ namespace CosmicShore.Gameplay
 
                     case CellTypeChoiceOptions.EnvironmentFree:
                     {
-                        for (int i = 0; i < CellConfigs.Count; i++)
-                            if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
-                                return CellConfigs[i];
-                        return CellConfigs[0];
+                        // ResolveBootIndex, not BootIndex: the warning belongs to the one site
+                        // that is asked once (AssignConfig), and this property can be polled.
+                        int i = ResolveBootIndex();
+                        return CellConfigs[i < 0 ? 0 : i];
                     }
 
                     default:
@@ -543,7 +543,7 @@ namespace CosmicShore.Gameplay
         public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain)
         {
             // Containment first: a PENNED brood cannot reach the world outside its pen, so
-            // nothing out there is food no matter whose domain it wears. PeelTheCage's cage starts
+            // nothing out there is food no matter whose domain it wears. Cleave's cage starts
             // contained - the brood is visibly penned inside and will eat the trail of any
             // vessel that ventures IN (that is the whole point of respecting the cage), but it
             // cannot touch the match going on outside. The 25% release clears the radius and
@@ -564,7 +564,7 @@ namespace CosmicShore.Gameplay
         ///
         /// This is a spatial DIET + STEERING rule, not a wall: nothing is teleported and no
         /// collider is added, so a creature can still drift out on its own momentum - it just
-        /// has no reason to and nothing to eat there. PeelTheCage sets it to the cage's shell
+        /// has no reason to and nothing to eat there. Cleave sets it to the cage's shell
         /// radius while the cage is sealed and clears it on the first release.
         /// </summary>
         public float FaunaContainmentRadius { get; set; }
@@ -593,7 +593,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
-        /// aggression? Off by default. PeelTheCage turns it on: the cage is meant to be intimidating,
+        /// aggression? Off by default. Cleave turns it on: the cage is meant to be intimidating,
         /// so flying in does not merely put your trail on the menu - it sends the whole penned
         /// population berserk (Frenzy → CellAggressionLevel.Level2: any-colour steering, friendly
         /// avoidance off, danger-immune, fastest cadence and widest consume radius) until you
@@ -722,7 +722,7 @@ namespace CosmicShore.Gameplay
         /// SERVER-side hook for a game mode that defines "control" by its own scored rule
         /// rather than by laid volume - the same authority move Brood Rush makes when it
         /// says node control IS the nucleus, expressed here as a pin instead of a
-        /// different volume source. PeelTheCage uses it: the cell's controlling domain is the
+        /// different volume source. Cleave uses it: the cell's controlling domain is the
         /// team currently leading the cage-destruction race, so the fauna wave that hatches
         /// wears the leader's colour and the untouched legacy herbivore diet (eat
         /// opposing-domain mass) points the swarm at every trailing team's trails. No
@@ -802,7 +802,7 @@ namespace CosmicShore.Gameplay
         /// escalate its ecology on its own scored signal without the phase compute
         /// becoming a mode concern.
         ///
-        /// PeelTheCage drives it from race progress: the leader passing 25% of the cage
+        /// Cleave drives it from race progress: the leader passing 25% of the cage
         /// target floors the cell at Restless (fauna hunt the opposing-colour centroid),
         /// 50% floors it at Frenzy (any-colour steering, no friendly avoidance,
         /// danger-immune). This is NOT a decay/growth oscillator - it is monotonic in an
@@ -816,7 +816,7 @@ namespace CosmicShore.Gameplay
         /// Defaults to <see cref="int.MaxValue"/> ("everything released"), and every
         /// existing config authors tier 0, so no shipped biome changes behaviour.
         ///
-        /// PeelTheCage holds the cage's brood at -1 (nothing released) until the leader
+        /// Cleave holds the cage's brood at -1 (nothing released) until the leader
         /// cracks 25% of the target, then 0 (the grazer swarm), then 1 at 50% (the
         /// predator joins). Gating PRODUCTION is explicitly allowed by the conserved-mass
         /// law - not creating mass is fine, aging it out is not.
@@ -1714,14 +1714,14 @@ namespace CosmicShore.Gameplay
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
                 CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
-                CellTypeChoiceOptions.EnvironmentFree => FirstEnvironmentFreeIndex(),
+                CellTypeChoiceOptions.EnvironmentFree => BootIndex(),
                 _ => 0
             };
 
             runtime.Config = CellConfigs[index];
 
             // Seed the fauna release gate from the biome BEFORE any spawner can tick. A mode
-            // that seals its cell (PeelTheCage) must not depend on its controller's OnNetworkSpawn
+            // that seals its cell (Cleave) must not depend on its controller's OnNetworkSpawn
             // beating the cell's own bootstrap clock - AssignConfig is upstream of
             // StartSpawnerForMode by construction, so the seal is in place from the first tick.
             // Mode writes (Cell.FaunaReleaseTier) always win afterwards, and RestartSpawnerForMode
@@ -1767,21 +1767,51 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Index of the first config with no authored <c>EnvironmentPrefab</c>, or 0 when
-        /// every config carries one. This is what makes entry to a freestyle scene cheap:
+        /// The config a freestyle scene boots into: the first that DECLARES itself the boot
+        /// default (<see cref="CellConfigDataSO.BootDefault"/>), else the first with no authored
+        /// <c>EnvironmentPrefab</c>, else 0. This is what makes entry to a freestyle scene cheap:
         /// the heavy prepopulated worlds are still listed (the Cell Selector toy offers
         /// them), they just are not paid for until the player asks.
+        ///
+        /// <para>The authored flag outranks the scan because the scan tests what a config
+        /// CONTAINS as a proxy for the thing actually wanted — how CHEAP it is to BUILD — and a
+        /// config can be both cheap and prepopulated. Garland is the first: 4,259 prisms,
+        /// composed for the home-screen camera rather than for a pilot inside it, so it builds
+        /// in a fraction of a heavy world's veil and still boots into a world rather than into
+        /// an empty sphere. No content predicate can express that, which is the same split
+        /// <see cref="BareCanvasConfig"/> records from the other side (Docs/ECOSYSTEM.md §36.10):
+        /// a property named for what something CONTAINS will eventually be asked how it BUILDS.
+        /// The scan stays as the fallback, so a cell that authors no boot default is unchanged.</para>
         /// </summary>
-        int FirstEnvironmentFreeIndex()
+        int BootIndex()
         {
+            int index = ResolveBootIndex();
+            if (index >= 0) return index;
+
+            CSDebug.LogWarning($"[Cell {ID}] Choice mode EnvironmentFree, but no config in " +
+                               "CellConfigs sets BootDefault and every one authors an EnvironmentPrefab - " +
+                               "booting index 0 and paying its build cost. Mark a cheap config " +
+                               "BootDefault, or add an environment-free one (e.g. Barren) to the list.");
+            return 0;
+        }
+
+        /// <summary>
+        /// The boot config's index, or -1 when neither rule finds one. Pure and silent, so
+        /// <see cref="ExpectedConfig"/> — which callers may poll every frame — and
+        /// <c>AssignConfig</c> — which is asked once and owns the warning — cannot drift apart
+        /// about which world a scene boots into.
+        /// </summary>
+        int ResolveBootIndex()
+        {
+            for (int i = 0; i < CellConfigs.Count; i++)
+                if (CellConfigs[i] && CellConfigs[i].BootDefault)
+                    return i;
+
             for (int i = 0; i < CellConfigs.Count; i++)
                 if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
                     return i;
 
-            CSDebug.LogWarning($"[Cell {ID}] Choice mode EnvironmentFree, but every config in " +
-                               "CellConfigs authors an EnvironmentPrefab - booting index 0 and paying " +
-                               "its build cost. Add an environment-free config (e.g. Blob) to the list.");
-            return 0;
+            return -1;
         }
 
         void SetupDensityGrids()
@@ -2132,19 +2162,35 @@ namespace CosmicShore.Gameplay
             {
                 if (CellConfigs == null) return null;
                 for (int i = 0; i < CellConfigs.Count; i++)
-                {
-                    var cfg = CellConfigs[i];
-                    if (!cfg || cfg.EnvironmentPrefab != null) continue;
-
-                    var profile = cfg.SpawnProfile;
-                    // No profile at all is as bare as it gets.
-                    if (!profile) return cfg;
-                    if (profile.SupportedFloras is { Count: > 0 }) continue;
-                    if (profile.SupportedFaunas is { Count: > 0 }) continue;
-                    return cfg;
-                }
+                    if (IsBareCanvas(CellConfigs[i]))
+                        return CellConfigs[i];
                 return EnvironmentFreeConfig;
             }
+        }
+
+        /// <summary>
+        /// Does THIS config grow nothing — no authored <c>EnvironmentPrefab</c> and a
+        /// <c>SpawnProfile</c> listing no flora and no fauna? The one-config half of
+        /// <see cref="BareCanvasConfig"/>, split out because a second reader arrived that asks
+        /// about a config it already has rather than searching for one.
+        ///
+        /// <para>It is the answer to a question <c>EnvironmentPrefab == null</c> looks like it
+        /// answers and does not: that field says how a world is BUILT (laid up front, or grown),
+        /// and MOST environment-free configs are not empty at all — the Lattice cell IS twelve
+        /// colonies, the Arboretum IS sixteen specimens, and every Rampage, Tollway and Wrecking
+        /// Ball cell grows its whole forest. Docs/ECOSYSTEM.md §36.10's rule, met by its third
+        /// reader.</para>
+        /// </summary>
+        public static bool IsBareCanvas(CellConfigDataSO config)
+        {
+            if (!config || config.EnvironmentPrefab != null) return false;
+
+            var profile = config.SpawnProfile;
+            // No profile at all is as bare as it gets.
+            if (!profile) return true;
+            if (profile.SupportedFloras is { Count: > 0 }) return false;
+            if (profile.SupportedFaunas is { Count: > 0 }) return false;
+            return true;
         }
 
         // ── Satellite cells ──────────────────────────────────────────────────
@@ -2938,7 +2984,7 @@ namespace CosmicShore.Gameplay
                     // only sheds the shield on shielded), but they stayed in the grids, so
                     // the density centroids kept STEERING swarms onto mass they had just
                     // been told they cannot eat - the residue behind §16.3's Skim Race
-                    // stall, and fatal to a mode like PeelTheCage whose arena IS a shielded
+                    // stall, and fatal to a mode like Cleave whose arena IS a shielded
                     // structure. Shield state can change at runtime, so
                     // NotifyBlockShieldStateChanged re-files the prism on the transition.
                     //

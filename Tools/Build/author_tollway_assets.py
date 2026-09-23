@@ -67,7 +67,7 @@ G_ASSET = {
     "TollwayScoringRule":     guid("asset/TollwayScoringRule"),
     "TollwaySettings":        guid("asset/TollwaySettings"),
     # Per-intensity: one cell config, one spawn profile and one anchor species each
-    # (CellTypeChoiceOptions.IntensityWise, list order = intensity - the Rampage/Peel the Cage
+    # (CellTypeChoiceOptions.IntensityWise, list order = intensity - the Rampage/Cleave
     # shape). Filled in below, once ANCHOR_SPECIES is known.
     "GameToastConfigTollway": guid("asset/GameToastConfig_Tollway"),
     "ModePreviewTollway":     guid("asset/ModePreview_Tollway"),
@@ -206,7 +206,7 @@ ANCHOR_SPECIES = ["Spire", "Gyroid", "Cacti", "Quasicrystal"]
 
 # One cell config, one spawn profile and one anchor-flora config per intensity. Named the way
 # every other IntensityWise mode names them (`<Mode> Cell Config 1..4`), so the folder reads the
-# same as Rampage's and Peel the Cage's. The flora config is keyed on the SPECIES rather than the
+# same as Rampage's and Cleave's. The flora config is keyed on the SPECIES rather than the
 # index, so swapping the roster mints new guids for the new species and leaves the old ones to be
 # retired by STALE_PATHS rather than silently rewriting a Reed asset into a Gyroid one.
 for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
@@ -539,7 +539,7 @@ emit("Assets/_SO_Assets/Games/TollwaySettings.asset.meta",
 # they exist. That is the whole reason the toll-post system was deleted rather than tuned.
 #
 # ONE SPECIES PER INTENSITY (2026-09-06), through CellTypeChoiceOptions.IntensityWise - the
-# platform way, list order = intensity, the same shape Rampage and Peel the Cage use. Intensity
+# platform way, list order = intensity, the same shape Rampage and Cleave use. Intensity
 # in this mode is TRAFFIC, and the anchor field is what a pilot reads the court by, so the marker
 # grows with the court (see ANCHOR_SPECIES). It costs three more cell configs and three more
 # spawn profiles and buys an arena that is visibly a different place at each setting rather than
