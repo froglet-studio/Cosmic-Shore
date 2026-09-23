@@ -1,6 +1,7 @@
 using UnityEngine;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -210,6 +211,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(FrameCapCommand, HandleFrameCapCommand);
             RegisterCommand(DiagCommand, HandleDiagCommand);
             RegisterCommand(RenderersCommand, HandleRenderersCommand);
+            RegisterCommand(FreezeCommand, EcologyFreezeSwitch.Handle);
+            RegisterCommand(ABComparison.CommandName, HandleABCommand);
         }
 
         void OnDestroy()
@@ -218,7 +221,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(FrameCapCommand);
             UnregisterCommand(DiagCommand);
             UnregisterCommand(RenderersCommand);
+            UnregisterCommand(FreezeCommand);
+            UnregisterCommand(ABComparison.CommandName);
+            _abStopRequested = true;
+            _abAcc = null;
             RendererHideSwitch.ShowIfHidden();
+            EcologyFreezeSwitch.ReleaseIfFrozen();
             DisposeRecorders();
             if (_instance == this) _instance = null;
         }
@@ -262,6 +270,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         string HandleDiagCommand(string[] args)
         {
             if (_recording) return $"already recording ({_recFrames} frames so far) — wait, or press Stop";
+            if (_abRunning) return "an 'ab' run is in progress — wait for it, or 'ab stop'";
 
             string label = string.Empty;
             for (int i = 0; i < args.Length; i++)
@@ -328,6 +337,178 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             QualitySettings.vSyncCount = _savedVSync;
             Application.targetFrameRate = _savedTargetFrameRate;
             _frameCapOverridden = false;
+        }
+
+        // ── ecology freeze ────────────────────────────────────────────────
+        // Production gating for a same-state A/B; the switch owns the hold and its release.
+        const string FreezeCommand = "freeze";
+
+        // ── A/B ───────────────────────────────────────────────────────────
+        // `ab "<command A>" "<command B>" [seconds] [rounds]` runs two console commands as the
+        // two arms of one comparison: counterbalanced rounds (A B | B A | ...), a settle after
+        // every command, a recording per arm, then ONE line of paired deltas and one saved
+        // JSON holding both arms. The statistics are ABComparison's (pure, tested); this class
+        // owns only the clock and the per-frame sampling, which already runs in Update.
+        bool _abRunning, _abStopRequested;
+        ABComparison.ArmAccumulator _abAcc;
+        const string ABSection = "A/B";
+
+        string HandleABCommand(string[] args)
+        {
+            if (args is { Length: 1 } && args[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_abRunning) return "no 'ab' run in progress";
+                _abStopRequested = true;
+                return "stopping after the current step - the world is put back in arm B's state";
+            }
+
+            if (_abRunning) return "an 'ab' run is already in progress — 'ab stop' to cancel it";
+            if (_recording) return "a 'diag' recording is in progress — wait for it first";
+            if (!ABComparison.TryParse(args, out var request, out string error)) return error;
+
+            foreach (string command in new[] { request.CommandA, request.CommandB })
+            {
+                string name = ABComparison.CommandNameOf(command);
+                // A run inside a run would sample into one accumulator from two clocks; a diag
+                // inside a run would record over the arm it was meant to measure.
+                if (name == ABComparison.CommandName || name == DiagCommand)
+                    return $"'{name}' cannot be an arm of an A/B";
+                if (!s_commands.ContainsKey(name))
+                    return $"unknown command '{name}' in an arm — commands: {string.Join(", ", s_commands.Keys)}";
+            }
+
+            StartCoroutine(RunAB(request));
+            float perArm = ABComparison.SettleSeconds + ABComparison.PostCensusGapSeconds + request.Seconds;
+            return $"A/B started: {request.Rounds} rounds x 2 arms x ~{perArm:F0}s = ~{request.Rounds * 2 * perArm:F0}s. " +
+                   $"Hands off; do not change focus. Frozen: {(EcologyFreezeSwitch.IsFrozen ? "yes" : "NO")}";
+        }
+
+        IEnumerator RunAB(ABComparison.Request request)
+        {
+            _abRunning = true;
+            _abStopRequested = false;
+
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var report = new ABComparison.Report
+            {
+                scene = scene,
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                commandA = request.CommandA,
+                commandB = request.CommandB,
+                seconds = request.Seconds,
+                rounds = request.Rounds,
+                settleSeconds = ABComparison.SettleSeconds,
+                frozenAtStart = EcologyFreezeSwitch.IsFrozen,
+                prismPath = CosmicShore.ECS.PrismRenderService.StatusLine(),
+            };
+
+            var schedule = ABComparison.Schedule(request.Rounds);
+            ABComparison.Arm lastArmRun = ABComparison.Arm.B;
+            bool completed = true;
+
+            for (int i = 0; i < schedule.Length; i++)
+            {
+                if (_abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                var arm = schedule[i];
+                int round = i / 2;
+                string status = $"round {round + 1}/{request.Rounds} · arm {arm}";
+
+                string result = ExecuteCommand(arm == ABComparison.Arm.A ? request.CommandA : request.CommandB);
+                lastArmRun = arm;
+
+                SetStat(ABSection, "run", status + " · settling");
+                yield return new WaitForSecondsRealtime(ABComparison.SettleSeconds);
+                if (_abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                // Census before AND after, both outside the recorded window: FindObjectsByType
+                // over tens of thousands of objects is a spike of its own.
+                int renderersStart = RendererCensus.Take().enabled;
+                yield return new WaitForSecondsRealtime(ABComparison.PostCensusGapSeconds);
+
+                int entsStart = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
+                _abAcc = new ABComparison.ArmAccumulator();
+                float end = Time.unscaledTime + request.Seconds;
+                while (Time.unscaledTime < end)
+                {
+                    if (_abStopRequested || !SameScene(scene)) break;
+                    SetStat(ABSection, "run", $"{status} · recording {Time.unscaledTime - (end - request.Seconds):F0}/{request.Seconds}s");
+                    yield return null;
+                }
+
+                var acc = _abAcc;
+                _abAcc = null;
+                if (acc == null || _abStopRequested || !SameScene(scene)) { completed = false; break; }
+
+                var rec = acc.ToRecord(arm, round);
+                rec.prismEntsStart = entsStart;
+                rec.prismEntsEnd = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
+                rec.renderersStart = renderersStart;
+                rec.renderersEnd = RendererCensus.Take().enabled;
+                rec.commandResult = result;
+
+                float namedCap = FrameBoundness.TargetFpsCap();
+                float avgFps = rec.avgFrameMs > 0.0001f ? 1000f / rec.avgFrameMs : 0f;
+                var limit = FrameBoundness.ClassifyFrameLimit(
+                    rec.avgFrameMs, avgFps, rec.avgBusyCpuMs, rec.avgGpuMs,
+                    FrameBoundness.IsFrameCapConfigured(), namedCap, out float idleMs);
+                rec.frameLimit = limit.ToString();
+                rec.frameTrustworthy = ABComparison.IsFrameTrustworthy(limit);
+                rec.idleMs = idleMs;
+
+                report.recordings.Add(rec);
+            }
+
+            // Leave the world in arm B's state, whatever order the schedule ended in, and even
+            // when stopped - B is the "put it back" arm (e.g. renderers show). Not after a scene
+            // change: the command would act on a world the run never saw.
+            if (lastArmRun != ABComparison.Arm.B && SameScene(scene))
+                ExecuteCommand(request.CommandB);
+
+            report.completed = completed;
+            report.frozenAtEnd = EcologyFreezeSwitch.IsFrozen;
+            string line = ABComparison.Summarize(report);
+            string path = SaveABReport(report);
+
+            if (report.warnings.Count > 0)
+                Debug.LogWarning($"[DiagnosticsHUD] {line}\n  " + string.Join("\n  ", report.warnings) + $"\n  saved: {path}");
+            else
+                Debug.Log($"[DiagnosticsHUD] {line}\n  saved: {path}");
+
+            SetStat(ABSection, "run", completed ? "done" : "stopped");
+            SetStat(ABSection, "result", line);
+            SetStat("Console", "›", line);
+            _lastSavedPath = path;
+            _lastSavedShownAt = Time.unscaledTime;
+            if (_visible) RefreshText();
+
+            _abRunning = false;
+            _abStopRequested = false;
+        }
+
+        static bool SameScene(string scene) =>
+            UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == scene;
+
+        string SaveABReport(ABComparison.Report r)
+        {
+            try
+            {
+                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
+                string dir = Path.Combine(docs, OutputFolderName);
+                Directory.CreateDirectory(dir);
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                string baseName = $"ab_{Sanitize(r.scene)}_{stamp}";
+                File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
+                File.WriteAllText(Path.Combine(dir, baseName + ".txt"), ABComparison.BuildText(r));
+                return Path.Combine(dir, baseName + ".json");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[DiagnosticsHUD] Could not save A/B report: {e.Message}");
+                return "(save failed: " + e.Message + ")";
+            }
         }
 
         // ── recorders ─────────────────────────────────────────────────────
@@ -403,6 +584,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
 
             if (_recording) SampleRecording(ms);
+            if (_abAcc != null)
+                _abAcc.Add(ms, _rawCpuMs,
+                    FrameBoundness.BusyCpuMs(_rawCpuMs, _rawMainMs, _rawWaitMs, _rawRenderMs),
+                    _rawGpuMs, RInt(_drawCalls), RInt(_batches), RInt(_setPass), RLong(_gcAlloc) / 1024.0);
 
             _refreshTimer += Time.unscaledDeltaTime;
             if (_refreshTimer >= 0.25f)
@@ -708,6 +893,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void ToggleDiagnostic()
         {
             if (_recording) FinishDiagnostic();
+            else if (_abRunning)
+            {
+                SetStat("Console", "›", "an 'ab' run is in progress — wait for it, or 'ab stop'");
+            }
             else
             {
                 // An F5/button run is ANONYMOUS. Clearing here rather than in StartDiagnostic
@@ -802,6 +991,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 label = _recLabel,
                 prismPath = CosmicShore.ECS.PrismRenderService.StatusLine(),
                 prismEnts = CosmicShore.ECS.PrismRenderService.LiveEntityCount,
+                ecologyFrozen = EcologyFreezeSwitch.IsFrozen,
                 spikes = new List<DiagSpike>(_recSpikes),
             };
             if (_recTimedFrames > 0)
@@ -881,7 +1071,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.AppendLine($"draws avg {r.avgDraws:F0} (sample {r.draws}) · batches avg {r.avgBatches:F0} · " +
                           $"setpass avg {r.avgSetPass:F0} · tris {r.tris:N0} · " +
                           $"RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
-            sb.AppendLine($"GC {r.avgGcKbPerFrame:F1} KB/frame · prism path {r.prismPath}");
+            sb.AppendLine($"GC {r.avgGcKbPerFrame:F1} KB/frame · prism path {r.prismPath} · " +
+                          $"ecology {(r.ecologyFrozen ? "FROZEN" : "running")}");
             sb.AppendLine($"frame cap: vsync {r.frameCapVSync} · target " +
                           $"{(r.frameCapTarget > 0 ? r.frameCapTarget.ToString() : "uncapped")}" +
                           $" · idle {r.idleMs:F1} ms of {r.avgFrameMs:F1} ms");
@@ -1090,9 +1281,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _cmdInput.ActivateInputField(); // keep focus for repeated commands
         }
 
-        void ExecuteCommand(string raw)
+        /// <summary>Runs one console line and returns what the handler answered (also shown on the overlay).</summary>
+        string ExecuteCommand(string raw)
         {
-            if (string.IsNullOrWhiteSpace(raw)) return;
+            if (string.IsNullOrWhiteSpace(raw)) return null;
 
             string[] tokens = raw.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             string name = tokens[0].ToLowerInvariant();
@@ -1115,6 +1307,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             SetStat("Console", "›", result);
             Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
             if (_visible) RefreshText();
+            return result;
         }
 
         // ── serializable report ───────────────────────────────────────────
@@ -1157,6 +1350,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             /// </summary>
             public string prismPath;
             public int prismEnts;
+
+            /// <summary>
+            /// Whether ecology production was held (<c>freeze on</c>) when the run ended. A frozen
+            /// world and a growing one are different populations, so two reports only compare
+            /// when this matches.
+            /// </summary>
+            public bool ecologyFrozen;
 
             /// <summary>
             /// The frame-rate cap IN FORCE during the run, and how much of the average frame

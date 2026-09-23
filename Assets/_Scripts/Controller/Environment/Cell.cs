@@ -1059,7 +1059,7 @@ namespace CosmicShore.Gameplay
         /// oscillator - a frozen-solid cell is a valid state, not a defect to auto-correct.
         /// See Docs/ECOSYSTEM.md §0/§5.
         /// </summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
+        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy && !DiagnosticProductionHold;
 
         /// <summary>
         /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
@@ -1078,8 +1078,50 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool FaunaSpawningEnabled
         {
-            get { EnsureVolumeFresh(); return liveEnvVolumeTotal > 0f; }
+            get
+            {
+                if (DiagnosticProductionHold) return false;
+                EnsureVolumeFresh();
+                return liveEnvVolumeTotal > 0f;
+            }
         }
+
+        // ---------------------------------------------------------------------
+        // Diagnostic production hold - the DiagnosticsHUD `freeze` console command.
+        // ---------------------------------------------------------------------
+
+        /// <summary>
+        /// True while a DIAGNOSTIC production hold is in force on EVERY cell: no plant grows,
+        /// is planted or reproduces, no creature is seeded, born or grown onto a colony. It
+        /// exists for one reason - an A/B measurement is only valid between two arms taken in
+        /// the SAME state (Docs/PERFORMANCE_OPTIMIZATION.md §4.3), and a growing world is a
+        /// different world ten seconds later, so without a hold the arm measured second always
+        /// carries more mass than the arm measured first.
+        ///
+        /// <para>It is PRODUCTION gating and nothing else, the same class of gate Frenzy
+        /// already is (<see cref="FloraGrowingEnabled"/> is false at Frenzy, and that has always
+        /// been legal under the conserved-mass law): nothing is removed, nothing is aged, no
+        /// timer runs. Every ACTIVE force keeps working - grazing, predation, starvation,
+        /// vessel abilities - so a held world can only lose mass, never gain it, and fauna
+        /// aggression is untouched because <see cref="Phase"/> is not touched. Nothing banks
+        /// the held time either: every producer already turns its cycle whether or not it
+        /// produces (the lattice colony books, the worm colony, the seeders), so releasing the
+        /// hold resumes production at its ordinary rate rather than catching up.</para>
+        ///
+        /// <para>Settable only in the Editor and Development builds; in a Release build nothing
+        /// can raise it, so every read is a constant false. Reset at subsystem registration so
+        /// an editor session can never start held, and released by the owning switch on any
+        /// scene change so a measurement setting cannot escape into the next scene.</para>
+        /// </summary>
+        public static bool DiagnosticProductionHold { get; private set; }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        /// <summary>Raises or releases <see cref="DiagnosticProductionHold"/>. Diagnostics only.</summary>
+        public static void SetDiagnosticProductionHold(bool held) => DiagnosticProductionHold = held;
+#endif
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetDiagnosticProductionHold() => DiagnosticProductionHold = false;
 
         /// <summary>
         /// Fauna aggression level derived from <see cref="Phase"/> - a 1:1 mapping now
@@ -1424,6 +1466,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFaunaAtCap(FaunaConfigurationSO config)
         {
+            // Every fauna producer that asks the cell asks HERE (the seeders, reproduction, the
+            // Microscene conveyor), so a diagnostic hold reads as "full" to all of them at once.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFaunaCap(config);
             return cap > 0 && GetLiveFaunaCount(config) >= cap;
         }
@@ -1554,6 +1599,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsFloraAtCap(FloraConfigurationSO config)
         {
+            // Redundant with FloraPlantingEnabled at every current producer; kept so a producer
+            // that asks only for the cap still cannot plant through a diagnostic hold.
+            if (DiagnosticProductionHold) return true;
             int cap = ResolveFloraCap(config);
             return cap > 0 && GetLiveFloraCount(config) >= cap;
         }

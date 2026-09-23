@@ -9,7 +9,7 @@ numbers (`§0.8`, `§0.11.6`, `Task 10`), which stay valid there.
 | | |
 |---|---|
 | **Rewritten** | 2026-09-22, on branch `claude/bold-fermi-54nlts` @ `561700737` |
-| **Merged** | bleeding-edge `ee2ad320f` merged in on 2026-09-23 (`c2e7a7c46`) — 1,390 files, **including a new boot world** (§1.1) |
+| **Merged** | bleeding-edge `ee2ad320f` merged in on 2026-09-23 (`c2e7a7c46`) — 1,390 files, **including a new boot world** (§1.1); then `899f0baba` the same day (`070874533`), for the fix to an every-frame console error |
 | **Plan revised** | 2026-09-23 on the merged tree @ `5c6439e68` (§3 — every lever re-checked in code) |
 | **Every number below** | an **Editor** number taken on the PRE-merge tree (base `1f160508f`), unless stated. None is a ship number, and none has been re-taken since the merge. |
 
@@ -93,6 +93,7 @@ bond), which is why the scenario set gains an S6.
 | 09-20 | Empty-scene baseline; boot world at 1/4/8 min; **Frame Debugger** | ~90% of draws are **not** prisms; prisms = 23 opaque draws; the rest is transparent snow / spindles / crystals. Empty scene's PlayerLoop allocates **304 B** — the HUD's 41.8 KB was editor-side |
 | 09-21 | Refused two proposed material conversions after reading the graphs | Spindles fade by alpha — opaque would make withering pop (continuity law) |
 | 09-22 | **Frame attributed** in the Profiler: draws ~0.2 ms, render-job waiting 14 ms. 15 dead SOAP listeners stripped from 8 prism prefabs. `renderers` census + `renderers hide/show` | ~40k of 45k enabled renderers are spindles; hide test confounded (§4.3) |
+| 09-23 | Merged bleeding-edge (new boot world: Garland); plan re-derived on the merged tree; target + six scenarios confirmed. `freeze` and `ab` console commands | The confounded spindle test can now be re-run in one state (§4.5) |
 
 ### 2.1 How the picture changed
 
@@ -115,13 +116,18 @@ bond), which is why the scenario set gains an S6.
 
 Revise the plan before running tests. Tests exist to answer a question on this list.
 **This section was re-derived on the merged tree (`5c6439e68`, 2026-09-23)** by reading the code
-each row names, not from memory. The target and scenario set below are **proposed, awaiting the
-human's confirmation**; nothing in §1 has been re-measured yet.
+each row names, not from memory. The target and all six scenarios were **confirmed by the human on
+2026-09-23**; nothing in §1 has been re-measured yet.
 
 ### 3.1 Step 0 — the tree, the boot world, the target, the scenarios
 
-1. **Merged** 2026-09-23 (`c2e7a7c46`). All 15 `Tools/Build/check_*.py` gates pass; every merged
-   `.cs` parses under Release / Development / Editor defines. **Still owed: one editor compile.**
+1. **Merged** 2026-09-23 (`c2e7a7c46`), then bleeding-edge `899f0baba` on top (`070874533`) — it
+   renames the LIT peer arrays, which stops `_PrismSightPeerApex … exceeds previous array size`
+   being logged **every frame**, and per-frame console output would distort every capture. All 15
+   `Tools/Build/check_*.py` gates pass; every merged `.cs` parses under Release / Development /
+   Editor defines. **Still owed: one clean editor compile.** The first compile of `62681c830` was
+   reported as "Errors" with no text; a scan of every name this branch's own code calls found
+   nothing missing, so the error text is needed before anything else is assumed.
 2. **The boot world, confirmed in code.** Menu_Main's Cell is `CellTypeChoiceOptions.EnvironmentFree`
    (2) over 12 configs. `Cell.ResolveBootIndex` takes the first config with `BootDefault`, and
    **`Garland Cell Config` is the only asset in the project that sets it** (index 10). Lattice sits
@@ -133,10 +139,10 @@ human's confirmation**; nothing in §1 has been re-measured yet.
    | Lattice (opt-in) | ~24k → ~55k over its first minutes (measured pre-merge) | up to 1,080 | yes — reproduction until caps |
    | **Arboretum** (opt-in, **new since the base**) | 54,935 at maturity | 20 | 20 hard-capped plants, then **stops** (`ECOSYSTEM.md §57`) |
 
-3. **Target (proposed):** **60 fps in a Development build on the team's reference PC** — a 16.7 ms
+3. **Target (confirmed 2026-09-23):** **60 fps in a Development build on the team's reference PC** — a 16.7 ms
    frame, with no frame over 50 ms in steady play. The editor inflates frame time ~2–3×, so an
    editor number is for *comparing* and a build number is for *judging*.
-4. **Scenario set (proposed)** — the same set every time, so numbers compare across weeks:
+4. **Scenario set (confirmed 2026-09-23, all six)** — the same set every time, so numbers compare across weeks:
 
    | # | Scenario | Wait | Why it is on the list |
    |---|---|---|---|
@@ -251,8 +257,10 @@ Three ways to satisfy the rule, simplest first:
 1. **Attribute instead of A/B.** If the Profiler names it, no A/B is needed (§3.2).
 2. **Measure a world that does not change** — the lab scene, or an authored cell (Garland,
    Atlantis) at a fixed time after load.
-3. **Freeze or interleave** a growing world: pause growth first, or take A → B → A → B in quick
-   succession and compare B against the average of the As.
+3. **Freeze and interleave** a growing world — both are now one command each (§4.5):
+   `freeze on` stops the growth, and `ab "<A>" "<B>" 10 3` interleaves the arms, pairs them by
+   round and prints the delta with an error bar. Freezing removes drift; interleaving cancels
+   whatever drift is left (exactly over an even number of rounds, to a third over three).
 
 ### 4.4 Send text, not screenshots
 
@@ -263,14 +271,38 @@ Three ways to satisfy the rule, simplest first:
   census taken after sampling).
 - A Profiler Hierarchy screenshot is fine: it is a tree, and there is no text export.
 
-### 4.5 Tooling the next session should add (small)
+### 4.5 The same-state tools (added 2026-09-23)
 
-- **`freeze on|off`** — hold the world still for an A/B: pause flora growth / reproduction and
-  fauna spawning. It pauses *production*, which the ecology rules allow ("not creating mass is
-  allowed"). It must remove nothing.
-- **`ab "<cmd A>" "<cmd B>" <seconds> <rounds>`** — run A and B alternately, average each, print
-  **one line** such as `CPU busy B−A = −3.8 ms ±0.4 (3 rounds)`. This replaces the human timing
-  the arms by hand.
+- **`freeze on` / `freeze off`** — raises `Cell.DiagnosticProductionHold` on every cell. It is
+  production gating only, the same class of gate Frenzy already is: `FloraGrowingEnabled` (and so
+  planting, plant reproduction and lattice colony births) goes false, `FaunaSpawningEnabled` goes
+  false, `IsFaunaAtCap` / `IsFloraAtCap` read full, and the two producers that ask neither —
+  `RandomLifeSpawner`'s fauna seeder and the worm colony's growth tick — check the hold directly.
+  **It removes nothing and runs no timer**: grazing, predation and starvation keep working, so a
+  frozen world can only lose mass; fauna aggression is untouched because the phase is untouched;
+  and every producer turns its cycle whether or not it produced, so `freeze off` resumes growth at
+  the ordinary rate instead of hatching what was held. It is settable only in the Editor and
+  Development builds, and a scene change releases it (with a warning) so a hold can never freeze
+  the next scenario. Collider impact: none. `diag` reports now record whether it was on.
+  Not covered, deliberately: the player's own trail, and the Lifeform Matrix toy's explicit
+  releases (a player's act, not production).
+- **`ab "<A>" "<B>" [seconds] [rounds]`** — runs the two console commands as the arms of one
+  comparison: rounds are counterbalanced (A B | B A | A B …), each command is followed by a 3 s
+  settle, a renderer census and a 0.5 s gap, then `seconds` of recording. It prints **one line** —
+  `ab: CPU busy B-A = -3.8 ms ±0.4 · GPU … · frame … · draws … · GC/f … (3 rounds, frozen: yes)` —
+  and saves every recording in one `ab_*.json` + `.txt`. `±` is the standard error of the
+  per-round differences (rounds are the replicates; frames inside one recording are not
+  independent), and a delta inside two of them is marked `(noise)`. Loud warnings: world not
+  frozen; the SAME arm's prism-entity or enabled-renderer count moving >5% (between arms these
+  may differ — `renderers hide` changes the renderer count by design, `prismpath` the entity
+  count); a recording whose frame was capped, idle or stalled. The world is always left in arm
+  **B**'s state, so put the restoring command second. The statistics are pure
+  (`ABComparison.cs`) and tested, including two negative controls: pure drift reads as a real
+  effect under a fixed A-then-B order and as zero under the counterbalanced one, and a renderer
+  count that differs between arms by design raises no warning.
+- **A measurement toggle is not a shipped lever.** `renderers hide` switches renderers off in
+  one frame — fine for asking what they cost, never acceptable as the fix. If lever L1 ships, a
+  spindle leaves the culling population by FADING (continuity of existence), not by a toggle.
 
 ### 4.6 HUD console reference (F7 → console)
 
@@ -283,6 +315,8 @@ Three ways to satisfy the rule, simplest first:
 | `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
 | `prisms <n>` / `prisms off` | Render-only stress cloud of `n` prism entities |
 | `grid …` / `lab …` / `bench` | Lab scene only: real prism lattice, mixed populations, explosion benchmark |
+| `freeze on` / `freeze off` | Hold ecology production in every cell (§4.5); released on scene change |
+| `ab "<A>" "<B>" [seconds] [rounds]` | Counterbalanced A/B of two commands → one line of paired deltas + `ab_*.json`; `ab stop` cancels (§4.5) |
 
 ---
 
