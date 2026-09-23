@@ -140,7 +140,12 @@ namespace CosmicShore.UI
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            view.SetMissilesFromAmmo01(ammo01);
+
+            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // rockets, and a count re-derived here would drift from the number the gun spends
+            // the moment the weapon's price changes (it just did - a base rocket is half what
+            // it was, so the bay holds four).
+            view.SetMissilesFromAmmo01(ammo01, fireGunExecutor != null ? fireGunExecutor.ShotCost01 : 0f);
 
             if (fireGunExecutor != null)
                 view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);

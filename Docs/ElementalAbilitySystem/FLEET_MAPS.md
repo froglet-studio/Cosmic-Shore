@@ -152,12 +152,14 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 **CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
 
-- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (**0.01**
-  per prism, so **50 prisms per rocket** and 100 for a full rack — halved from 0.02 later in the
-  same pass) through `VesselRearmOnPrismDestruction` on the vessel root, which
-  listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
-  destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
-  effects at all.
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING MASS WITH GUNFIRE
+  (**0.01** per prism, so **25 prisms per BASE rocket**, 50 per heavy one, and 100 for a full
+  rack — halved from 0.02 later in the same pass) through `VesselRearmOnPrismDestruction` on the
+  vessel root, which listens on the prism-destroyed SOAP channel — the only producer that sees all
+  five ways a Sparrow destroys a prism, which is what makes it possible to DECLINE four of them in
+  one line. Only direct gunfire pays, and its DOMAIN does not matter: a rocket's own blast funding
+  the next rocket closes the shoot-to-reload loop on itself, while a colour gate dried the reload
+  up in arenas whose mass wears the pilot's own.
 - **The omni crystal changed jobs**: it now grants **8 s of elemental-debuff immunity**
   (`VesselTimedElementalWard`, the event-driven sibling of `VesselElementalImmunity`). Checked
   against the mono-vessel-mode rule — none of Dog Fight, Salvo or Wildlife Liberation scores on an

@@ -104,6 +104,14 @@ namespace CosmicShore.Gameplay
                                                sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
+            // A hit bites in proportion to what it is worth - ten points to the petal, netted
+            // against whatever tier this admission supersedes, so one rocket drains its BEST
+            // tier and never the sum of the three it can land in. See CombatHitDrain: the
+            // Debuff class is absent from that table because its drain is authored per weapon
+            // (this same container carries it), so adding this call cannot double it.
+            CombatHitDrain.Apply(victimStatus, hitClass, supersededRank,
+                                 ElementalDebuffSources.Explosion);
+
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,
