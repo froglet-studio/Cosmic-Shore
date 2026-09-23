@@ -57,7 +57,7 @@ change the option assessments, so they lead the report:
    Steamworks.NET, no Facepunch.Steamworks, no Unity Steam package — the only "Steam" hits in
    `Assets/` are inside the inert PlayFab SDK). There is no Steam build target configuration;
    the only build profile on disk is a Linux one, and `ProjectSettings.asset` carries mobile
-   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone). Current public
+   bundle IDs (`com.FrogletGames.TailGlider` for Android/iPhone/Standalone — *the Standalone id became `com.FrogletGames.CosmicShore` on 2026-09-11; Android and iPhone are unchanged*). Current public
    distribution per `README.md` is **itch.io + TestFlight**. Steam/PC is aspirational — it
    appears in `Docs/Legal/PRIVACY_POLICY_TEMPLATE.md` and `Docs/MENU_PROGRESSION_AND_IAP.md`
    as a planned platform. Consequence: there is no Steam acquisition data to bridge *yet*;
@@ -142,7 +142,7 @@ All 28 events flow through `AnalyticsServiceFacade.RecordEvent` (F = facade,
 | `crystals_spent` | `PlayerDataService.cs:339` (`TrySpendCrystals` success) | `amount` (int), `source` (string), `balance` (int) |
 | `crystal_spend_blocked` | `PlayerDataService.cs:331` (spend refused) | `amount` (int), `item` (string), `balance` (int) |
 | `vessel_unlocked` | Hangar purchase — `HangarVesselDetailView.cs:243` | `vessel` (string), `cost` (int), `balance` (int) |
-| `quest_completed` | `QuestSystem.cs:41` | `quest` (string, display title), `shard_value` (int) |
+| `quest_completed` | `GameModeProgressionService.RecordQuestCompletedAnalytics` (was `QuestSystem.cs:41`, deleted with the XP/shard economy) | `quest` (string, display title), `shard_value` (int — always 0 now; shards are gone, the schema row is kept because a UGS parameter row is permanent) |
 | `share_triggered` | `SnsShare.cs:26` | `game_mode` (string) |
 | `friend_request_sent` | `FriendsDataSO.OnFriendRequestSent` — F:595 | `target_id` (string) |
 | `friend_request_received` | `FriendsDataSO.OnFriendRequestReceived` — F:601 | `from_id` (string) |

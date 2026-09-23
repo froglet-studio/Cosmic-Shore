@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         
         public override void OnDestroy()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' - IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[VESSEL] OnDestroy '{gameObject.name}' - IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}");
 
             // Leave the roster we joined in OnNetworkSpawn. Without this a destroyed vessel stays
             // in gameData.Vessels forever, and every consumer that iterates it is exposed to a
@@ -63,12 +63,19 @@ namespace CosmicShore.Gameplay
             // new binding.
             PrismOcclusionCorridor.ClearTarget(transform);
             VesselSpeedTunnel.ClearTarget(transform);
+            VesselRearView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
+
+            // The base is what tears down this behaviour's NetworkVariables. An override that
+            // never calls it suppresses that teardown exactly as a hiding method would - and
+            // without the CS0114 that catches the hiding case, which is why this one survived
+            // while ArcadeConfigSyncManager's was reported.
+            base.OnDestroy();
         }
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkSpawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[VESSEL] OnNetworkSpawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}");
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Vessels.Add(this);
@@ -82,7 +89,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkDespawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[VESSEL] OnNetworkDespawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}");
             if (IsOwner)
                 return;
 
@@ -165,7 +172,16 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
+                VesselRearView.SetTarget(transform);
             }
+
+            // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
+            // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same
+            // thing full-screen, at the vessel's own follow distance, on the rig every camera
+            // platform law is already bound to - instead of a second camera pass into a shared
+            // render texture behind a frame whose art no longer exists. Pip.cs is deliberately
+            // KEPT and deliberately never told it is the local pilot: its Awake default-off is
+            // now the only thing standing PipCamera down on the eight hulls that carry one.
 
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
@@ -174,7 +190,25 @@ namespace CosmicShore.Gameplay
 
             VesselStatus.Customization.Initialize(VesselStatus);
             VesselStatus.ResetForPlay();
+            ApplyStartingElements();
             OnInitialized?.Invoke();
+        }
+
+        /// <summary>
+        /// Seed this hull's element levels from the current card's per-hull table
+        /// (<c>SO_ArcadeGame.StartingElements</c>, published into <c>GameDataSO</c>). Bound HERE
+        /// for the reason the platform laws above are: Initialize is the one method every vessel
+        /// passes through on every spawn path, on every machine, human and AI alike - so a card's
+        /// handicap cannot be escaped by choosing a spawn path, and a guest's own vessel is seeded
+        /// exactly as the host's replica of it. A hull with no row is left at rest: this never
+        /// writes zeros over a seed some other path made. After ResetForPlay, which resets the
+        /// named resources and leaves element levels alone.
+        /// </summary>
+        void ApplyStartingElements()
+        {
+            if (gameData == null || VesselStatus == null) return;
+            if (!gameData.TryGetStartingElements(VesselStatus.VesselType, out var levels)) return;
+            SetResourceLevels(levels);
         }
         
         public Transform Transform => transform;
@@ -293,12 +327,14 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
+                VesselRearView.SetTarget(transform);
             }
             else
             {
                 PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
+                VesselRearView.ClearTarget(transform);
             }
 
             // If the player is AI in general, or if it is a network client

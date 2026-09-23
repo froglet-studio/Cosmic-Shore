@@ -65,6 +65,33 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
+        /// The free-pickup CTA at SIGNAL strength — the sibling of
+        /// <see cref="GetDomainSignalColor"/>, and needed for the same reason.
+        ///
+        /// <para><b>A CTA pair is authored for a CRYSTAL, and a crystal composes both halves.</b>
+        /// In every crystal shader the composition is <c>lerp(dull, bright, (1-N.V)^4)</c>, so
+        /// <see cref="EnvironmentColorSet.DarkCTA"/> paints ~93% of a CTA crystal and
+        /// <see cref="EnvironmentColorSet.BrightCTA"/> is a 2.5% hairline rim
+        /// (<c>Docs/PALETTE.md §2.2</c>). Anything that is NOT a crystal — a prism, a UI chip —
+        /// has no such composition, so painting it with the dull half alone gives it a dark olive
+        /// where the player expects the free-pickup lime. The shipped
+        /// <c>OriginalColorSetSO</c> authors <c>DarkCTA</c> at (0.28, 0.50, 0.08).</para>
+        ///
+        /// <para>Returns the CTA hue with its brightest channel driven to 1, exactly as the domain
+        /// sibling does. Alpha 0 when the palette does not author a CTA at all (both inactive
+        /// palettes author it (0,0,0,0)), so a caller can fall back rather than paint something
+        /// black — a colour accessor that can return black can make an element vanish, and a
+        /// vanished element reads as "not implemented" rather than as mis-tinted.</para>
+        /// </summary>
+        public Color GetCtaSignalColor()
+        {
+            var c = EnvironmentColors != null ? EnvironmentColors.DarkCTA : default;
+            float peak = Mathf.Max(c.r, Mathf.Max(c.g, c.b));
+            if (c.a <= 0f || peak <= 0.001f) return new Color(0f, 0f, 0f, 0f);
+            return new Color(c.r / peak, c.g / peak, c.b / peak, 1f);
+        }
+
+        /// <summary>
         /// The per-domain accent for translucent flat-UI card tints (Maelstrom round/player/summary
         /// cards, Connecting-panel domain rank) - deliberately brighter than
         /// <see cref="DomainColorSet.TrailHighlightColor"/> and alpha-tinted so card backgrounds stay

@@ -220,6 +220,16 @@ Two things the hull path had to get right, both easy to miss:
   which would have produced five blank icons and no error worth reading. `CodexImageBaker.HarvestModel`
   covers both vessel families, so a variant icon goes through it rather than through
   `ToyModelBuilder` (mesh filters only).
+- **One hull is PROCEDURAL, and on the asset it looks like a different ship.** The Scarab builds
+  its hull in `ScarabHullBuilder.Awake` and hides its wrapped Sparrow model in the same `Awake`,
+  so the prefab ASSET carries an empty `MeshFilter` beside a still-enabled Sparrow — and the
+  harvester baked the Scarab AS the Sparrow, byte for byte (`tool_vessel-changer__scarab.png`
+  and `__sparrow.png` had one MD5). `HarvestModel` now skips everything under
+  `IProceduralElementMorphSource.HiddenLegacyModelRoot` and asks `IProceduralHullSource` for the
+  hull the asset cannot show (bare arrays, minted into meshes it then owns as temporaries). Same
+  fix, same seam, in `ToyModelBuilder` for the toybox's mini hulls. The shipped `__scarab.png` is
+  the stale bake until the codex is re-run in the editor; the Scarab's CARD icon does not wait
+  for it (`Tools/Build/render_scarab_card_icons.py`).
 - **Hulls bake FLAT, always.** A vessel draws with the shared vessel graph — domain-tinted, and
   reading per-frame globals that do not exist outside a running frame — so the authored pass would
   render black, fall back to flat anyway, and cost a second render for the same picture.

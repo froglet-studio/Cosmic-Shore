@@ -48,9 +48,62 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool ForceLegacyBoxInteraction;
 
-        // A/B verification switch; must not survive into a normal session.
+        /// <summary>
+        /// EXPERIMENTAL, default OFF. Extends this tier from shielded prisms to EVERY
+        /// registered prism, so vessel/skimmer contact resolves against the spatial
+        /// index at render rate instead of against PhysX box triggers at the 25 Hz
+        /// physics tick.
+        ///
+        /// It buys nothing in SHAPE for an unshielded prism — its exact surface already
+        /// IS its box, which is what PhysX tests. What it buys is sampling rate, contact
+        /// determinism across peers, and the ability to own a prism whose COLLIDER
+        /// cannot be trusted (one posed per-frame from the GPU). What it costs is the
+        /// flag-byte early-out in ShellContactQueryJob: the scan goes from one byte read
+        /// per slot to a bound test per slot per probe, with no broadphase under it.
+        ///
+        /// Toggle only through <see cref="SetExtendToUnshieldedPrisms"/> — the shell view
+        /// is maintained incrementally and a policy change has no incremental event to
+        /// ride.
+        /// </summary>
+        public static bool ExtendToUnshieldedPrisms { get; private set; }
+
+        /// <summary>Per-frame diagnostics for the contact probe. Off by default; reading
+        /// these while false gives the last values, not live ones.</summary>
+        public static bool CollectDiagnostics;
+        public static int LastProbeCount, LastHitCount, LastActivePairs, LastEnterDispatches;
+        public static int PeakHitCount, PeakActivePairs;
+        public static double LastBuildMs, LastQueryMs, LastDispatchMs;
+        public static double PeakQueryMs;
+
+        // A/B verification switches; must not survive into a normal session.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        static void ResetForceLegacy() => ForceLegacyBoxInteraction = false;
+        static void ResetForceLegacy()
+        {
+            ForceLegacyBoxInteraction = false;
+            ExtendToUnshieldedPrisms = false;
+            CollectDiagnostics = false;
+            ResetPeaks();
+        }
+
+        public static void ResetPeaks()
+        {
+            PeakHitCount = PeakActivePairs = 0;
+            PeakQueryMs = 0d;
+        }
+
+        /// <summary>
+        /// Flips extended coverage and rebuilds the shell view, because which slots HAVE
+        /// a shell is exactly what changed. Live pairs are dropped with exit bookkeeping
+        /// so no contact survives the policy change in a half-owned state.
+        /// </summary>
+        public static void SetExtendToUnshieldedPrisms(bool on)
+        {
+            if (ExtendToUnshieldedPrisms == on) return;
+            ExtendToUnshieldedPrisms = on;
+            Instance?.DropAllPairs();
+            PrismSpatialIndex.Instance?.RebuildAllShells();
+            ResetPeaks();
+        }
 
         struct OwnerEntry
         {
@@ -79,6 +132,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<long, ActivePair> _activePairs = new(64);
         readonly List<long> _staleKeys = new(32);
         readonly List<ActivePair> _redispatchBuffer = new(8);
+        int _enterDispatches;
 
         public static PrismShellContactManager EnsureInstance()
         {
@@ -105,7 +159,14 @@ namespace CosmicShore.Gameplay
             if (ForceLegacyBoxInteraction) return false;
             if (prism == null) return false;
             var props = prism.prismProperties;
-            return props != null && (props.IsShielded || props.IsSuperShielded);
+            if (props != null && (props.IsShielded || props.IsSuperShielded)) return true;
+            if (!ExtendToUnshieldedPrisms) return false;
+            // Claim an unshielded prism ONLY if the index really carries a shell for it.
+            // Claiming one without a shell suppresses the trigger path for a prism the
+            // query can never hit, which is an uninteractable prism.
+            if (prism.destroyed || prism.SpatialIndexId < 0) return false;
+            var index = PrismSpatialIndex.Instance;
+            return index != null && index.HasShell(prism.SpatialIndexId);
         }
 
         /// <summary>
@@ -197,8 +258,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            var sw = CollectDiagnostics ? System.Diagnostics.Stopwatch.StartNew() : null;
+
             using (s_buildMarker.Auto())
                 BuildProbes();
+
+            if (sw != null) { LastBuildMs = sw.Elapsed.TotalMilliseconds; sw.Restart(); }
 
             if (_probeCount == 0)
             {
@@ -208,10 +273,29 @@ namespace CosmicShore.Gameplay
 
             index.CollectShellContacts(_probes, _probeCount, _hits);
 
+            if (sw != null)
+            {
+                LastQueryMs = sw.Elapsed.TotalMilliseconds;
+                if (LastQueryMs > PeakQueryMs) PeakQueryMs = LastQueryMs;
+                sw.Restart();
+            }
+
+            _enterDispatches = 0;
             using (s_dispatchMarker.Auto())
             {
                 ResolveContacts(index);
                 SweepStalePairs();
+            }
+
+            if (sw != null)
+            {
+                LastDispatchMs = sw.Elapsed.TotalMilliseconds;
+                LastProbeCount = _probeCount;
+                LastHitCount = _hits.Length;
+                LastActivePairs = _activePairs.Count;
+                LastEnterDispatches = _enterDispatches;
+                if (LastHitCount > PeakHitCount) PeakHitCount = LastHitCount;
+                if (LastActivePairs > PeakActivePairs) PeakActivePairs = LastActivePairs;
             }
         }
 
@@ -382,6 +466,7 @@ namespace CosmicShore.Gameplay
                     LastSeenFrame = frame
                 });
 
+                _enterDispatches++;
                 owner.AcceptImpacteeFromShellContact(prismImpactor);
             }
         }

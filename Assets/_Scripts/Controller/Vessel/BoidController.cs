@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Gameplay;
-using CosmicShore.Utility;
 using Obvious.Soap;
 using CosmicShore.UI;
 
@@ -81,10 +80,6 @@ namespace CosmicShore.Gameplay
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetRightNumberDisplay(queenDrones.Count);
                 onMoundDroneSpawned.Raise(moundDrones.Count);
                 // vessel.VesselStatus.Player.GameCanvas.MiniGameHUD.SetLeftNumberDisplay(moundDrones.Count);
-            }
-            else
-            {
-                CSDebug.Log("No drones to transfer");
             }
         }
     }

@@ -102,6 +102,13 @@ namespace CosmicShore.UI
         {
             yield return null;
             view?.InitializeMissileIcon();
+
+            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
+            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
+            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            if (fireGunExecutor != null)
+                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+
             _initialAmmoRoutine = null;
         }
 
@@ -123,10 +130,25 @@ namespace CosmicShore.UI
             view.SetRollCharge(state);
         }
 
+        /// <summary>
+        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
+        /// the Charge card's gauge says how close the next one is. They are driven from the same
+        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
+        /// is how a UI number drifts from the one the gun spends.
+        /// </summary>
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
-            view.SetMissilesFromAmmo01(ammo01);
+
+            // The COST comes from the executor, never from the HUD: the icon ladder counts
+            // rockets, and a count re-derived here would drift from the number the gun spends
+            // the moment the weapon's price changes (it just did - a base rocket is half what
+            // it was, so the bay holds four).
+            view.SetMissilesFromAmmo01(ammo01, fireGunExecutor != null ? fireGunExecutor.ShotCost01 : 0f);
+
+            if (fireGunExecutor != null)
+                view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
         }
     }
 }

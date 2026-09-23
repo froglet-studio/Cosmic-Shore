@@ -191,7 +191,7 @@ Auto-wired SOAP transitions:
 |---|---|---|
 | AppManager | `AppManager` | Top-level orchestrator + DI root, `[DefaultExecutionOrder(-100)]` |
 | SceneTransitionManager | `SceneTransitionManager` | Fade overlay, `[DefaultExecutionOrder(-50)]` |
-| AudioSystem | `AudioSystem` | Wwise integration, `[DefaultExecutionOrder(-1)]` |
+| AudioSystem | `AudioSystem` | FMOD integration, `[DefaultExecutionOrder(-1)]` |
 | GameSetting | `GameSetting` | PlayerPrefs wrapper, static events (see deferred issue #1) |
 | ThemeManager | `ThemeManager` | Visual theme management |
 | CameraManager | `CameraManager` | Camera lifecycle, LookAtCrystal |

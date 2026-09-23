@@ -74,7 +74,6 @@ namespace CosmicShore.UI
             if (sortedCaptains == null || index < 0 || index >= sortedCaptains.Count)
                 return;
 
-            CSDebug.Log($"Selected {index}");
             shipClassTypeVariable.Value = index;
             OnSelect?.Invoke(sortedCaptains[index]);
 

@@ -86,7 +86,14 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<InputEvents, List<ShipActionSO>> _gamepadOverrideActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
+        /// <summary>Input events whose actions are currently STARTED on this machine — the ledger
+        /// <see cref="ReleaseHeldInputs"/> needs. <c>_inputAbilityStartTimes</c> cannot serve: it
+        /// records when an event LAST started and is never cleared, so it cannot tell a held
+        /// ability from one released a minute ago.</summary>
+        readonly HashSet<InputEvents> _heldInputs = new();
+        readonly List<InputEvents> _heldScratch = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
+        readonly HashSet<InputEvents> _suppressedInputs = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
         readonly List<ShipActionSO> _runtimeInstances = new();
@@ -98,16 +105,37 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // ONE SUBSCRIPTION, EVER - and the latch is what enforces it, because a C# delegate
+        // happily holds the same handler twice and nothing reports it.
+        //
+        // Three paths subscribe and they are not mutually exclusive: VesselController.Initialize
+        // (every spawn), VesselController.ChangePlayer (a LIVE vessel handed to another player -
+        // the Cellular Duel ownership swap, which Initialize never sees), and every un-pause
+        // (OnToggleInputPaused). A second += therefore makes OnButtonPressed run twice per press,
+        // which sends the press RPC twice, which replays PerformShipControllerActions twice on
+        // every peer.
+        //
+        // That is invisible on almost everything the fleet binds, because a HELD ability started
+        // twice is the same ability held - which is exactly why it went unnoticed. It is NOT
+        // invisible on a one-shot that SPENDS: the Sparrow's skyburst charged the tank twice and
+        // launched two rockets from one pull of the trigger. A duplicate release is equally
+        // silent, so the pair is latched together rather than only the press.
+        bool _subscribedToInputEvents;
+
         void SubscribeToInputEvents()
         {
+            if (_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribedToInputEvents = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribedToInputEvents = false;
         }
 
         void OnDisable()
@@ -132,8 +160,55 @@ namespace CosmicShore.Gameplay
 
         public void ToggleSubscription(bool subscribe)
         {
-            if (subscribe) SubscribeToInputEvents();
-            else           UnsubscribeFromInputEvents();
+            if (subscribe)
+            {
+                SubscribeToInputEvents();
+                return;
+            }
+
+            // THE RELEASE EDGE IS AN INPUT EVENT, SO IT NEVER ARRIVES FOR A VESSEL THAT STOPS
+            // BEING DRIVEN. Detaching the button channels with an ability still HELD strands that
+            // ability on — for as long as the vessel lives, on every peer that ran the press,
+            // including the server. It is not hypothetical and it is not one vessel's problem:
+            // every held ability in the fleet is exposed (the Dolphin's Echo Sight and the
+            // Scarab's phase grab are the two today), and the executors' own OnDisable cannot
+            // reach it, because a pause deactivates nothing.
+            //
+            // So the state is torn down where the object goes quiet rather than trusting the edge.
+            // Release BEFORE detaching: StopShipControllerActions raises the ability-duration
+            // event and runs each action's StopAction, which is exactly what a real release does.
+            ReleaseHeldInputs();
+            UnsubscribeFromInputEvents();
+        }
+
+        /// <summary>
+        /// Stop every input event this handler currently has started, as if the pilot had let go.
+        ///
+        /// The OWNER sends it the way a real release travels — owner → server → every peer — so a
+        /// hold cannot survive on somebody else's copy of this vessel. Anything else (a non-owner
+        /// replica, or the non-networked single-player path) stops locally, which is the same
+        /// asymmetry <see cref="OnButtonReleased"/> already has.
+        ///
+        /// Deliberately NOT called from OnDisable or OnNetworkDespawn: those run during teardown,
+        /// where an RPC is unsafe and the object is going away on every peer regardless. An
+        /// executor's own OnDisable covers that case.
+        /// </summary>
+        public void ReleaseHeldInputs()
+        {
+            if (_heldInputs.Count == 0) return;
+
+            _heldScratch.Clear();
+            _heldScratch.AddRange(_heldInputs);      // StopShipControllerActions mutates the set
+            _heldInputs.Clear();
+
+            for (int i = 0; i < _heldScratch.Count; i++)
+            {
+                var ie = _heldScratch[i];
+                if (IsSpawned && IsOwner) SendButtonReleased_ServerRpc(ie);
+                else                      StopShipControllerActions(ie);
+                OnInputEventStopped?.Invoke(ie);
+            }
+            _heldScratch.Clear();
         }
 
         public void Initialize(IVesselStatus v)
@@ -160,6 +235,7 @@ namespace CosmicShore.Gameplay
             if (!HasAction(controlType)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
+            _heldInputs.Add(controlType);
             var actions = ResolveActions(controlType);
 
             foreach (var t in actions)
@@ -181,6 +257,7 @@ namespace CosmicShore.Gameplay
                 Duration    = duration
             });
 
+            _heldInputs.Remove(controlType);
             var actions = ResolveActions(controlType);
 
             for (int i = 0; i < actions.Count; i++)
@@ -344,8 +421,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)
             {
@@ -381,8 +459,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonReleased(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
 
             if (IsSpawned && IsOwner)
             {
@@ -417,6 +496,22 @@ namespace CosmicShore.Gameplay
         }
 
         #region Mute Input
+
+        /// <summary>
+        /// Blanket on/off gate for one input event — unlike <see cref="MuteInput"/> there is no
+        /// timer; the caller owns the release. Used by the Quest Graph flight school to disable
+        /// the action buttons (A/X/B) while only sticks and triggers are being taught. Gated at
+        /// press AND release; engage while the vessel is idle (e.g. right after a transition
+        /// blend) so no held action is left running.
+        /// </summary>
+        public void SetInputSuppressed(InputEvents ie, bool suppressed)
+        {
+            if (suppressed) _suppressedInputs.Add(ie);
+            else _suppressedInputs.Remove(ie);
+        }
+
+        /// <summary>Release every suppression set via <see cref="SetInputSuppressed"/>.</summary>
+        public void ClearSuppressedInputs() => _suppressedInputs.Clear();
 
         bool IsInputMuted(InputEvents ie) =>
             _inputMuteUntil.TryGetValue(ie, out var until) && Time.time < until;

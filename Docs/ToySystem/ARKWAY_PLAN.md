@@ -39,7 +39,7 @@ A scripted attack is the same defect as a scripted fitness function.
    hurt is it, who holds this cell, when does the next wave come. Every one of those is a HUD
    surface that already exists or has a home.
 6. **Bounded forever.** The voyage is infinite at fixed memory, and performance is a design
-   constraint, not a QA step: the census line (`CSLogChannel.CellLifecycle`) is the toy saying
+   constraint, not a QA step: the census line (`CSLogChannel.ToyBox`) is the toy saying
    what it holds.
 
 ## The loop and the arc

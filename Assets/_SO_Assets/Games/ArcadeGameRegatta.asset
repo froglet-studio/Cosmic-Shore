@@ -1,0 +1,163 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameRegatta
+  m_EditorClassIdentifier:
+  Mode: 56
+  IsMultiplayer: 1
+  DisplayName: Regatta
+  Description: Every hull, one circuit, three laps. Three rails run the racing line in the
+    three team colours - an Urchin grinds the one in its colour and a Squirrel skims it,
+    while a Manta, a Rhino, a Scarab or a Sparrow flies beside it. Thread the rings in
+    order; first team to put a pilot through the last one takes it. Pick the hull you fly
+    best - the card hands the slow ones a head start in Time.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameRegatta
+  Vessels:
+  - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
+  - {fileID: 11400000, guid: ec97e344adb08f847a8f7649ab79088e, type: 2}
+  - {fileID: 11400000, guid: bde48fa4833b6364b93111a55ba90958, type: 2}
+  - {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  - {fileID: 11400000, guid: 8a288448ab55edc46ac841a5f2e53d83, type: 2}
+  - {fileID: 11400000, guid: 7b7053dd065edb54baa3b831b90f4985, type: 2}
+  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  Tips:
+  - The rail in YOUR colour is the racing line. Urchins latch onto it, Squirrels skim it.
+  - A rail cannot be shot away. Only an energised Rhino sword opens a hole, and riders bridge holes.
+  - Rhino and Manta pilots: every corner is a price. Lift for the tight ones, wind back up on the straight.
+  - Slow hulls start with Time already high - it is your boost. Fast hulls start with it low.
+  ViewUserAction: 0
+  PlayUserAction: 0
+  StartingElements:
+  - Class: 1
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 7
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 11
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 12
+    Intensity: 1
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 7
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 11
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 12
+    Intensity: 2
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 7
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 11
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 12
+    Intensity: 3
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 1
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: -0.5
+  - Class: 7
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 11
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  - Class: 12
+    Intensity: 4
+    Levels:
+      Mass: 0
+      Charge: 0
+      Space: 0
+      Time: 1
+  ComebackRatePerScoreDeficit: 0.35

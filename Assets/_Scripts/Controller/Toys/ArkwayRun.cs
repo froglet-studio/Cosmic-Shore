@@ -522,7 +522,7 @@ namespace CosmicShore.Gameplay
         void LogVoyageStart()
         {
             // Deliberately ALWAYS ON, one line per voyage: this toy has opened on "no Ark" in
-            // four play tests with nothing in the console. It moves to the CellLifecycle
+            // four play tests with nothing in the console. It moves to the ToyBox
             // channel once three consecutive play tests open on a visible Ark (ARKWAY_PLAN.md,
             // Phase 0).
             var t = LocalVessel()?.Transform;
@@ -543,11 +543,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void LogCensus()
         {
-            if (!CSDebug.IsVerbose(CSLogChannel.CellLifecycle)) return;
+            if (!CSDebug.IsVerbose(CSLogChannel.ToyBox)) return;
             var pen = LocalVessel()?.VesselPrismController;
             int trail = pen && pen.Trail != null ? pen.Trail.TrailList.Count : 0;
             int trail2 = pen && pen.SecondaryTrail != null ? pen.SecondaryTrail.TrailList.Count : 0;
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[Arkway] {_conveyor.Census()}, ark hull {(_ark ? _ark.AliveCount : 0)}/" +
                 $"{(_ark ? _ark.TotalCount : 0)}, wake {(_ark ? _ark.WakeCount : 0)}, " +
                 $"trail {trail}+{trail2}, marks {_trailMarks.Count}, withering {_withering.Count}");
@@ -920,7 +920,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning($"[Arkway] Voyage ended DURING ITS BUILD (stage '{_stage}'): {reason}. " +
                                    "The player never saw the Ark.");
             else
-                CSDebug.LogVerbose(CSLogChannel.CellLifecycle, $"[Arkway] Voyage ended: {reason}.");
+                CSDebug.LogVerbose(CSLogChannel.ToyBox, $"[Arkway] Voyage ended: {reason}.");
 
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;

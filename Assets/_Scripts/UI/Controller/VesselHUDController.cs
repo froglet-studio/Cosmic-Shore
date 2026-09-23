@@ -39,6 +39,19 @@ namespace CosmicShore.UI
             if (!baseView)
                 baseView = GetComponentInChildren<VesselHUDView>(true);
 
+            // Fleet-wide SAFE AREA (Docs/UI_ARCHITECTURE_AUDIT.md §1.3). Structural, like the lockup
+            // below and for the same reason: the ability row anchors to (1, 0) of the HUD root - the
+            // bottom-right corner, which on a landscape phone is the gesture pill and, on the wide
+            // side, a cutout. A vessel cannot be authored without it and a new vessel inherits it.
+            //
+            // It WRAPS the HUD root rather than sitting on it, because NormaliseHudRoot stamps
+            // anchorMin 0 / anchorMax 1 onto that rect once at build. A SafeAreaFitter there would
+            // be overwritten and would never notice: it caches the safe area it last applied
+            // against, and an overwrite it did not cause never reads as a change. Wrapped, the two
+            // compose - the HUD root stretches to fill the SAFE rect instead of the screen.
+            if (baseView)
+                SafeAreaLayer.Wrap(baseView.transform as RectTransform);
+
             // Fleet-wide ability lockup (Docs/ABILITY_LOCKUP.md): the totem card that fuses each
             // ability icon with the element flower that upgrades it, and the owner of the whole
             // row's position, pitch and icon size.

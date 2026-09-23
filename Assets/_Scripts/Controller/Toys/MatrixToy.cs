@@ -152,8 +152,9 @@ namespace CosmicShore.Gameplay
         protected float StationRingRadius(float triggerRadius)
             => ToyFactory.StationRingRadius(triggerRadius, StationSpacing);
 
-        protected virtual void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
             if (_grid) Destroy(_grid);
             _grid = null;
         }

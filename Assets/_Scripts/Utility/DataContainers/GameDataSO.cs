@@ -351,6 +351,19 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CombatPointTargetCount;
 
         /// <summary>
+        /// How many gates the Switchback course has - the number a pilot must thread to finish
+        /// it. Published by <c>RaceGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged, and read by
+        /// <see cref="CosmicShore.Gameplay.GateRaceScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout.
+        ///
+        /// Unlike every other target here it is compared against ONE PILOT's count rather than a
+        /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
+        /// does (GateRaceScoringRuleSO.DomainValue folds by max).
+        /// </summary>
+        [NonSerialized] public int SwitchTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -369,7 +382,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
+                CSDebug.LogError("[GameDataSO] SyncFromArcadeGame - game is null.");
                 return;
             }
 
@@ -395,7 +408,45 @@ namespace CosmicShore.Utility
             // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
             MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
 
+            // The card's per-hull starting element levels, published for the same reason as the
+            // hull list and shipped to every client by the config sync RPC: element levels are
+            // simulated on the machine that OWNS a vessel and never replicate, so the guest's own
+            // vessel has to be seeded from the same table the host seeds its replica from.
+            PublishStartingElements(game.StartingElements);
+
             ClampSelectedVesselToGame(game);
+        }
+
+        /// <summary>
+        /// The CURRENT card's per-hull starting element levels
+        /// (<see cref="SO_ArcadeGame.StartingElements"/>), published by
+        /// <see cref="SyncFromArcadeGame"/> on the host and by the config sync RPC on a client.
+        /// Empty means every hull starts at rest, which is every single-hull card and the menu.
+        /// Pre-launch config like <see cref="AllowedVesselClasses"/>: deliberately NOT cleared by
+        /// ResetRuntimeData(), because it has to survive the scene load into the game scene where
+        /// the vessels that read it spawn.
+        /// </summary>
+        public readonly List<VesselStartingElements> StartingElements = new();
+
+        /// <summary>Replace the published starting-element table. Single writers: the card sync
+        /// on the host, the config RPC on a client, the menu's reset.</summary>
+        public void PublishStartingElements(IList<VesselStartingElements> table)
+        {
+            StartingElements.Clear();
+            if (table == null) return;
+            for (int i = 0; i < table.Count; i++)
+                StartingElements.Add(table[i]);
+        }
+
+        /// <summary>
+        /// The element levels a hull of <paramref name="vesselClass"/> starts THIS match at, at
+        /// the selected intensity. False when the card authors no row for it - the caller then
+        /// leaves the vessel at rest rather than writing zeros over a seed some other path made.
+        /// </summary>
+        public bool TryGetStartingElements(VesselClassType vesselClass, out ResourceCollection levels)
+        {
+            int intensity = SelectedIntensity != null ? SelectedIntensity.Value : 1;
+            return VesselStartingElements.TryResolve(StartingElements, vesselClass, intensity, out levels);
         }
 
         /// <summary>
@@ -444,7 +495,7 @@ namespace CosmicShore.Utility
         /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
         /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
         /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
-        /// game persisted into a mode that does not permit it - a Dolphin flew PeelTheCage, which is
+        /// game persisted into a mode that does not permit it - a Dolphin flew Cleave, which is
         /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
         /// the scene's own aiInitializeDatas).
         ///
@@ -462,8 +513,8 @@ namespace CosmicShore.Utility
             var clamped = ClampVesselToGame(current);
             if (clamped == current) return;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] {game.Mode} does not allow {current}; " +
-                      $"clamping selected vessel to {clamped}.</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] {game.Mode} does not allow {current}; " +
+                      $"clamping selected vessel to {clamped}.");
             selectedVesselClass.Value = clamped;
             if (VesselClassSelectedIndex != null)
                 VesselClassSelectedIndex.Value = (int)clamped;
@@ -483,7 +534,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch, $"[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}");
         }
 
 
@@ -647,6 +698,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -696,6 +748,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -716,7 +769,7 @@ namespace CosmicShore.Utility
         ///
         /// This is needed because scoring is live from the moment the scene's StatsManager
         /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
-        /// between that and the first turn is long: the arena builds (PeelTheCage lays 10-20k prisms),
+        /// between that and the first turn is long: the arena builds (Cleave lays 10-20k prisms),
         /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
         /// in a player's score, so a match could visibly start with someone above zero.
         ///

@@ -63,6 +63,15 @@ public class VesselTransformer : MonoBehaviour
              "whose racing drift is throttle-modulated).")]
     [SerializeField] bool holdSpeedWhileDrifting = false;
 
+    [Tooltip("Seconds the brake takes to shed one full unboosted cruise's worth of speed once " +
+             "the pilot's throttle target reaches ZERO, so \"throttle at minimum\" ends in a real " +
+             "stop instead of an exponential tail that never lands. Only ever engages when the " +
+             "commanded target is 0 — a vessel with a non-zero MinimumSpeed (the one-thumb hulls' " +
+             "10) is untouched, as is any deceleration toward a lower-but-nonzero cruise, and so " +
+             "is the whole of the fall above rate / LERP_AMOUNT. 0 disables it " +
+             "and restores the legacy tail. See MinimumThrottleBrake.")]
+    [SerializeField, Min(0f)] float minimumThrottleBrakeSeconds = MinimumThrottleBrake.DefaultBrakeSeconds;
+
     #region Flight model
     /// <summary>What the throttle is allowed to do while the vessel is drifting. Only consulted
     /// by the VECTOR flight model — on the scalar path the throttle is always live.</summary>
@@ -133,6 +142,33 @@ public class VesselTransformer : MonoBehaviour
         public float DefaultMinimumSpeed = 10f;
         public float DefaultThrottleScaler = 50f;
         public ElementalFloat ThrottleScalerMultiplier = new(1f);
+
+        /// <summary>
+        /// How much this hull's BOOST SPEED scales with an element — per vessel, authored on the
+        /// prefab, off by default.
+        ///
+        /// <para>This replaced a fleet-wide <c>ElementalAbilityHandler.Multiplier(Element.Time)</c>
+        /// read inside <see cref="CurrentBoostAmount"/>. That read was introduced for the Sparrow
+        /// (2026-07-14, <c>2d84aa7b9</c>) and justified as "1x for vessels without a map", which was
+        /// true only while the Sparrow owned the only authored map. Measured at removal, across
+        /// eight vessels: Manta and Sparrow used it as intended; Dolphin, Scarab, Squirrel and
+        /// Urchin each pinned their map's Time entry to 1.0 purely to defend against it, spending a
+        /// tuning slot to ask a base class not to act; and Rhino and Serpent were silently applying
+        /// Time TWICE to one ability — the Rhino to its ramp's wind-up rate AND its ceiling (which
+        /// <c>Docs</c> and <c>regatta_balance.py</c> both stated it did not reach), the Serpent to
+        /// its boost's duration AND its speed.</para>
+        ///
+        /// <para>Boost speed is a property of a HULL, so it is authored on the hull. Only a vessel
+        /// whose design says "this element makes my boost faster" enables it; every other hull
+        /// leaves it off and <see cref="CurrentBoostAmount"/> is arithmetically unchanged for them.
+        /// Shipped: Manta 1 -> 1.3 floored at 0.7, Sparrow 1 -> 1.5 floored at 0.5, both on Time,
+        /// preserving their curves exactly. (The retired map's <c>MinMultiplier</c> was a FLOOR, not
+        /// the value at rest — every migrated multiplier is anchored at 1 when the element is at
+        /// rest, so an element can only ever ADD to the hull's authored baseline.) Follows
+        /// <see cref="ThrottleScalerMultiplier"/>, which has been a per-prefab ElementalFloat on
+        /// this class all along.</para>
+        /// </summary>
+        public ElementalFloat BoostSpeedMultiplier = new(1f);
 
         public float PitchScaler = 130f;
         public float YawScaler = 130f;
@@ -246,6 +282,30 @@ public class VesselTransformer : MonoBehaviour
         private float _singleDriftDamp;
         private float _sharpDriftRotMult = 1f;
         private float _sharpDriftDamp;
+        /// <summary>
+        /// The smoothed analog drift-trigger sum this frame — 0 released, 1 at the single tier,
+        /// 2 buried — and <b>the drift BLEND's own value, not a reading of the control.</b>
+        /// <see cref="ApplyAnalogDrift"/> is the consumer it exists for.
+        ///
+        /// It is right for anything describing the drift the pilot is actually getting, and wrong
+        /// for anything gating a rule on "is the pilot holding this", because everything that
+        /// makes it good at the first job disqualifies it from the second: on a non-gamepad device
+        /// it is EASED (so it ramps in over ~80 ms and keeps decaying after release), on those
+        /// devices it is derived from the drift TIER FLAGS rather than from the trigger at all (a
+        /// single tier reads 1 of 2), the deferred ease-out zeroes it, and it is written only
+        /// inside <see cref="Update"/>, which early-returns on an inactive or stationary vessel —
+        /// so it does not go stale, it FREEZES.
+        ///
+        /// The Scarab spent two playtests learning that. Its REVERSE modifier gated on a public
+        /// 0..1 accessor over this field, then on a raw trigger read, then on a hysteretic latch
+        /// over that read, and none behaved like the button the pilot thought they were holding —
+        /// because none of them was one. It was moved onto a real bound button, and then the whole
+        /// mechanic was retired; the accessor went with it (a public surface that must never be
+        /// read is a trap generator, not a trap record) and this comment is what survives. General
+        /// rule: <b>a value smoothed for one consumer is not a reading of the thing it was
+        /// smoothed from</b> — gate a rule on a control, and leave the eased copy to the feel it
+        /// was built for.
+        /// </summary>
         private float _frameTriggerSum;
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
@@ -386,6 +446,7 @@ public class VesselTransformer : MonoBehaviour
             _driftEaseOutPending = false;
             _driftSpeedHeld = false;
             _heldDriftSpeed = 0f;
+            _frameTriggerSum = 0f;   // never carry a previous life's held trigger into the blend
             RestoreDriftBase();
             _singleDriftRotMult = 1f;
             _singleDriftDamp = 0f;
@@ -662,10 +723,10 @@ public class VesselTransformer : MonoBehaviour
         {
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
-                // TIME → boost speed: scaled by the vessel's live Time level via its
-                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                // Element → boost speed, per hull, via this prefab's own BoostSpeedMultiplier.
+                // Exactly 1x (and arithmetically a no-op) on every hull that leaves it disabled.
                 boostAmount = VesselStatus.BoostMultiplier
-                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
+                              * BoostSpeedMultiplier.EvaluateLive(VesselStatus);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
@@ -673,12 +734,57 @@ public class VesselTransformer : MonoBehaviour
             return boostAmount;
         }
 
+        /// <summary>
+        /// The throttle STICK, as this transformer reads it. The fleet default is the raw dual-stick
+        /// speed axis <c>XDiff</c>, which lives in <b>[0, 1]</b> — so the default hull can be asked
+        /// for anything from a dead stop to full cruise and never for reverse.
+        ///
+        /// It is a seam rather than an inlined read because "how far is the pilot pushing" and
+        /// "what cruise does that buy" are two different questions, and only the first one differs
+        /// per hull. A transformer that re-centres the axis (<c>GunVesselTransformer</c>, whose
+        /// throttle is SIGNED about the stick's rest so pulling back means reverse) overrides this
+        /// and inherits the formula below unchanged — rather than re-typing
+        /// <c>axis × scaler × multiplier × boost + minimum</c>, which is the shape that drifts the
+        /// first time one of those four terms is retuned.
+        ///
+        /// <b>A negative axis is a REVERSE command</b>, and <see cref="MinimumSpeed"/> is added to
+        /// the SIGNED result — so a hull authoring a non-zero floor can never fully reverse. That
+        /// is coherent rather than a gap: <c>MinimumSpeed</c> is the statement "this hull cannot
+        /// stop", and a hull that cannot stop has no business backing up.
+        /// </summary>
+        protected virtual float ThrottleAxis => InputStatus.XDiff;
+
+        /// <summary>
+        /// Whether this transformer's <see cref="ThrottleAxis"/> can command a NEGATIVE cruise —
+        /// i.e. whether this hull flies backwards. False for the whole fleet bar the Urchin.
+        ///
+        /// Read by the two places that must behave differently for such a hull and cannot infer it
+        /// from a single frame's numbers: the terminal brake (which must mirror, rather than clamp
+        /// a reversing vessel to a stop at zero) and <see cref="VesselJet"/> (which turns a hull's
+        /// plumes around when it travels backwards). Deliberately a CODE property and not a
+        /// serialized field: it is a property of the flight model a hull runs, so it must be true
+        /// on a remote replica — where the transformer is switched off and never writes anything —
+        /// and it must not be authorable onto a hull whose <see cref="ThrottleAxis"/> cannot
+        /// actually go negative.
+        /// </summary>
+        public virtual bool CanReverse => false;
+
         /// <summary>The steady-state cruise speed the smoothed `speed` field is moving toward
         /// this frame — throttle × boost + minimum. Single source of the formula for
         /// <see cref="AdvanceSpeed"/> in every transformer.</summary>
         protected virtual float ComputeThrottleTarget()
-            => InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
+            => ThrottleAxis * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
                + MinimumSpeed;
+
+        /// <summary>
+        /// The steady-state cruise speed this transformer is heading for RIGHT NOW, virtual so a
+        /// subclass that overrides the formula (<c>SingleStickVesselTransformer</c>) answers for
+        /// itself. Exposed because an ability that regulates speed has to know which way it is
+        /// going — the Rhino's graded ramp picks its acceleration rate off <c>target >= speed</c>
+        /// — and a second copy of `throttle x scaler x boost + minimum` in an executor would be
+        /// wrong on whichever vessel adopts that ability next.
+        /// </summary>
+        public float CurrentThrottleTarget => ComputeThrottleTarget();
 
         float _speedTrackingRate;
 
@@ -731,7 +837,16 @@ public class VesselTransformer : MonoBehaviour
                     _speedTrackingRate = 0f;
                 return next;
             }
-            return Mathf.Lerp(current, target, LERP_AMOUNT * dt);
+
+            // The exponential owns the whole fall except its last stretch, where it stops
+            // arriving. A zero target is the pilot asking for a STOP, so that stretch gets a
+            // constant rate that actually lands on 0 - see MinimumThrottleBrake for why this is
+            // in the shared step rather than a third per-vessel copy of the same idea.
+            float stepped = Mathf.Lerp(current, target, LERP_AMOUNT * dt);
+            return MinimumThrottleBrake.Apply(
+                stepped, current, target,
+                MinimumThrottleBrake.RateFor(ThrottleScaler, minimumThrottleBrakeSeconds), dt,
+                symmetric: CanReverse);
         }
 
         /// <summary>Advance the smoothed cruise speed one frame toward
@@ -961,8 +1076,6 @@ public class VesselTransformer : MonoBehaviour
             if (toggleManualThrottle && !_driftSpeedHeld)
                 effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
 
-            VesselStatus.Speed = effectiveSpeed;
-
             // Drift course: blend between "go forward" and "drift course" based on analog intensity
             if ((VesselStatus.IsDrifting || _driftEaseOutPending) && _hasDriftBase)
             {
@@ -982,6 +1095,34 @@ public class VesselTransformer : MonoBehaviour
             {
                 VesselStatus.Course = transform.forward;
             }
+
+            // A REVERSING vessel publishes a POSITIVE Speed and a REVERSED Course — never a
+            // negative Speed. `speed` is signed internally because that is the only way the
+            // smoothed cruise field can travel continuously through zero, but the two things the
+            // rest of the game reads are a MAGNITUDE and a DIRECTION OF TRAVEL, and it reads them
+            // separately as often as it reads them together:
+            //
+            //   * `Course * Speed` is the true world velocity either way — inherited projectile
+            //     velocity, debris impulse, an AI's lead on a rival. Both splits get this right.
+            //   * `Speed` ALONE is a magnitude everywhere it is read on its own: the speed
+            //     tunnel's absolute FOV mapping, `wavelength / Speed` trail spacing, the
+            //     spawner's `Speed > 3` gate, telemetry. A negative would break every one of them.
+            //   * `Course` ALONE is where the vessel is HEADING: `TrailFollower` latches its grind
+            //     direction from it, and the prism spawner lays along it. A reversing Urchin's
+            //     wake therefore extends out past its own nose, and backing into a ribbon latches
+            //     the grind going the way the hull is actually travelling — both emergent, with
+            //     nothing in either system taught about reverse.
+            //
+            // Unreachable for every hull that cannot command reverse: `speed` tracks a target that
+            // is never negative and starts from zero, and `throttleMultiplier` is clamped
+            // non-negative — so this branch is a provable no-op for the rest of the fleet.
+            if (effectiveSpeed < 0f)
+            {
+                effectiveSpeed = -effectiveSpeed;
+                VesselStatus.Course = -VesselStatus.Course;
+            }
+
+            VesselStatus.Speed = effectiveSpeed;
 
             transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
         }

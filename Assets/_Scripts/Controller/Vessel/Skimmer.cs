@@ -110,8 +110,13 @@ namespace CosmicShore.Gameplay
             
             _sweetSpot = transform.localScale.x / 4f;
 
+            // Deliberately NOT BindElementalFloats: `Scale` is the only ElementalFloat on this
+            // component and both of its readers (ApplyScaleIfChanged, LiveElementalScale) go
+            // through EvaluateLive. Binding would subscribe ScaleValueWithLevel to keep a
+            // `.Value` nobody reads in step, and register a row in the vessel's ElementStats
+            // list that only a human looking at the inspector would ever see -- which
+            // `/element-ability-table` answers properly, off the authored data.
             ApplyScaleIfChanged();
-            BindElementalFloats(VesselStatus.Vessel);
 
             if (nudgeShardPoolManager) nudgeShardPoolManager.transform.parent = VesselStatus?.Player?.Transform;
         }

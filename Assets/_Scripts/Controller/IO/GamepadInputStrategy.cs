@@ -203,24 +203,24 @@ namespace CosmicShore.Gameplay
             
             // DEBUG: Uncomment to see inversion working (press Tab key to log)
             #if UNITY_EDITOR
-            if (UnityEngine.InputSystem.Keyboard.current != null && 
+            if (CSDebug.IsVerbose(CSLogChannel.Input) &&
+                UnityEngine.InputSystem.Keyboard.current != null &&
                 UnityEngine.InputSystem.Keyboard.current.tabKey.wasPressedThisFrame)
             {
-                CSDebug.Log($"[GamepadInput] Reparameterize Debug:\n" +
+                CSDebug.LogVerbose(CSLogChannel.Input, $"[GamepadInput] Reparameterize:\n" +
                           $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
-                          $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  XDiff: {xDiffBefore:F2} → {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
+                          $"  YSum: {ySumBefore:F2} -> {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  YDiff: {yDiffBefore:F2} -> {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  XDiff: {xDiffBefore:F2} -> {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
             }
             #endif
         }
 
         private void PerformSpeedAndDirectionalEffects()
         {
-            float threshold = .3f;
-            float sumOfRotations = Mathf.Abs(inputStatus.YDiff) + Mathf.Abs(inputStatus.YSum) + Mathf.Abs(inputStatus.XSum);
-            float DeviationFromFullSpeedStraight = (1 - inputStatus.XDiff) + sumOfRotations;
-            float DeviationFromMinimumSpeedStraight = inputStatus.XDiff + sumOfRotations;
+            const float threshold = StraightLineGesture.EngageThreshold;
+            float DeviationFromFullSpeedStraight = StraightLineGesture.DeviationFromFullSpeedStraight(inputStatus);
+            float DeviationFromMinimumSpeedStraight = StraightLineGesture.DeviationFromMinimumSpeedStraight(inputStatus);
 
             if (DeviationFromFullSpeedStraight < threshold && !fullSpeedStraightEffectsStarted)
             {

@@ -74,7 +74,8 @@ namespace CosmicShore.Gameplay
                     .FirstOrDefault();
             string winnerName = winnerRep?.Name ?? "";
 
-            CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} " +
+            if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} " +
                       $"Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.JoustCollisions}j"))}]");
 
@@ -156,7 +157,8 @@ namespace CosmicShore.Gameplay
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
-            CSDebug.Log($"[JoustController] Client synced. Winner='{gameData.WinnerName}' Domain={gameData.WinnerDomain} " +
+            if (CSDebug.IsVerbose(CSLogChannel.ArcadeMatch))
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[JoustController] Client synced. Winner='{gameData.WinnerName}' Domain={gameData.WinnerDomain} " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.Score:F1}"))}]");
 
             gameData.SetResults(rule.BuildResults(gameData));

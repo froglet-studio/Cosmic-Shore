@@ -34,7 +34,6 @@ namespace CosmicShore.Gameplay
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        CSDebug.Log("EndExplode");
                         // Detonate();
                         break;
                 }
@@ -48,7 +47,6 @@ namespace CosmicShore.Gameplay
                 switch (effect)
                 {
                     case TrailBlockImpactEffects.DeactivateTrailBlock:
-                        CSDebug.Log("DeactivateTrailBlock from projectile");
                         prismProperties.trailBlock.Damage(Velocity * Inertia, VesselStatus.Team, VesselStatus.PlayerName);
                         break;
                     case TrailBlockImpactEffects.Steal:
@@ -67,7 +65,6 @@ namespace CosmicShore.Gameplay
                         GetComponent<LoadedGun>().FireGun();
                         break;
                     case TrailBlockImpactEffects.Explode:
-                        CSDebug.Log("TrailExplode");
                         // Detonate();
                         break;
 

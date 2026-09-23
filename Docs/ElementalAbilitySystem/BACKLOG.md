@@ -99,7 +99,9 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
 
 ### Blocked on design (cannot be wired until someone authors the map)
 
-1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+1. **Author the open `ElementalAbilityMapSO` slots** for Rhino and Serpent (Manta shipped
+   2026-08-26 via the spec remake — see FLEET_MAPS.md §2 Manta and `MANTA_STING_KABLOOM.md`;
+   Dolphin shipped earlier). Each
    still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
    Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
    mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
@@ -110,9 +112,10 @@ auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough prio
    vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
    They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
    ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
-3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+3. **Re-survey Dolphin at the vessel level.** The Rhino's icons were missed because the
    first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
-   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+   same may be true of Dolphin (1 icon found) until checked the same way. (Manta is resolved:
+   the 2026-08-26 remake authored its four-icon row into Manta.prefab at the wirer bands.)
 
 ### Independent of the maps
 
@@ -314,7 +317,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     POSITIVE `GapWeight` — growth pulls the hole closed, the shrink puts it back — which yields
     a solid blade (`XScaler`/`YScaler` at `MaxSize 4` → `6 × 12 × 0.5` ≈ **36 volume**, a 48×
     jump). The asset authors `-1`, which inverts it into the runaway-open case. Whichever
-    reading is intended, the volume change lands directly on **PeelTheCage** and **Astro League**
+    reading is intended, the volume change lands directly on **Cleave** and **Astro League**
     (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
     slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
     That is why this is its own branch and not a toy fix.
@@ -352,3 +355,29 @@ the same way the model spins and that the dash still turns at full rate.
 replica's cosmetic roll passes a null transformer and never touches it), and the root bank
 advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
 owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.
+
+## Phase 5 — Element scaling unification (SHIPPED 2026-09-18)
+
+Full record: **`ELEMENT_SCALING_UNIFICATION.md`**. The generic per-element multiplier
+(`ElementalAbilityMapSO.MultiplierAtFullLevel` / `MinMultiplier` +
+`R_VesselElementalAbilityHandler.Multiplier(Element)`) is REMOVED; all ten live multipliers moved to
+an `ElementalFloat` on whatever owns the number, bit-identically. Two undeclared double-applications
+of Time were fixed (Rhino ramp ceiling, Serpent boost speed) and four defensive `1.0` pins deleted.
+
+| # | Item | Status |
+|---|---|---|
+| 5.1 | Retire the generic channel; migrate 10 call sites; author the 9 asset-hosted floats + 2 prefab floats | **SHIPPED** |
+| 5.2 | Rhino/Serpent playtest — each loses an undeclared Time application (ramp ceiling ÷2.5, boost speed ÷1.6 at Time 10). Neither number was ever authored as a design | **NEEDS PLAYTEST** |
+| 5.3 | **THREE `ElementalFloat`s were authored `Enabled` and never evaluated** — `GrowTrailActionSO.maxSize` (Mass 4→8), `GrowSkimmerActionSO.shrinkRate` (Charge 6→2) and `FullAutoActionSO.speedValue` (Space 375→4875), all read via `.Value` on a ScriptableObject, which nothing binds. Authored `Enabled: 0`; runtime behaviour byte-identical. Turning any of them ON is a BALANCE change and needs a design call | **SHIPPED (data honest; the ramps remain a design question)** |
+| 5.3b | **`Tools/Build/check_elemental_floats.py`** — the standing gate. Fails on any ElementalFloat authored `Enabled` with `Min != Max` on a ScriptableObject nothing evaluates. Keyed on the asset's own `m_Script` guid (a field NAME is not an identity), states how many blocks it scanned, `--self-test` with four negative controls, proven against the real tree in both directions | **SHIPPED** |
+| 5.4 | **Legacy bound path: the stated hazard was WRONG and is retracted.** `ElementalShipComponent.BindElementalFloats` reflects over MonoBehaviour fields ONLY, so no ScriptableObject-hosted ElementalFloat is ever bound and none can be dirtied — the vessel-contract rule-1 concern does not apply. What shipped instead: `ElementalFloatBinder` deleted (dead, and broken — it set a nonexistent `"Ship"` property and its "clone" dropped Min/Max/element/Enabled), `Skimmer`'s redundant bind removed (it reads live), `AOERadialBlocks.depthScale` deleted (unserialized, permanently 1, compounding on pool reuse) | **SHIPPED** |
+| 5.4b | **The live surface was TWO fields, and one of them was not behaviour-neutral.** Measured against the shipped prefabs: FOUR of the six sit on components no prefab, scene or asset references (`ConsumeBoostAction.boostMultiplier`, `GrowActionBase.maxSize`/`shrinkRate`, `ZoomGrowRateDistributeAction.sharedRate`) — converting them is dead work, so they moved to 5.4c. `FullAutoAction.speed` is authored `Enabled: 0` on both Falcon and Shrike, so its conversion is a no-op by construction. `FireGunAction.ProjectileTime` (Urchin ×2 guns, `Enabled: 1`, 4 → 8 on **Space**) is the only field with live behaviour — and it is the field **`EnergizeAction` used as a WRITABLE channel** (`ProjectileTime.Value = x` on start, restore on stop), so converting the read alone would have made that write a no-op and silently switched off the Urchin's energize. The write got a channel of its own first: a FLOOR (`FireGunAction.RaiseOutputFloors` / `ClearOutputFloors`), composed as `Mathf.Max(element, floor)`. Identical at the authored numbers, and it removes three defects the write-and-restore shape carried (a level change mid-energize made `ScaleValueWithLevel` overwrite the raise and drop it; the restored "default" was captured from `fireActions[0]` and written to EVERY gun; that default was the pre-scaling authored `Value` 5, so a restore replaced the element-scaled lifetime with a constant until the next level event) | **SHIPPED** |
+| 5.4c | **Five dead pre-`R_` `VesselActions/` components, proposed for deletion, not deleted.** `ConsumeBoostAction`, `GrowActionBase` + its two subclasses `GrowTrailAction`/`GrowSkimmerAction`, `ZoomGrowRateDistributeAction`, and `ToggleProjectileActionWrapper`. Evidence: a guid sweep of each script's `.meta` guid across all of `Assets` (excluding `.cs`/`.meta`) returns **zero** asset referrers for every one, the only C# references are within the dead cluster itself plus one `[Tooltip]` STRING in `SyncActionWrapper`, and every one has a live `R_VesselActions` successor. Not deleted here because `LAUNCH_BLOCKER_INDEX.md`'s salvage-before-delete gate is a human verdict and "referenced by nothing" means nothing is USING it, not that it contains nothing — `GrowActionBase` is the only `IScaleProvider` implementor `SyncActionWrapper`'s tooltip names, so check what that wrapper is for before removing its example. Note `ToggleProjectileActionWrapper` writes another action's public fields (`wrappedAction.Energy`, `wrappedAction.projectileTime`) — the same shape 5.4b just replaced with a floor, one class over | **OPEN — needs a human verdict** |
+| 5.5 | **`ResourceSystem.GetLevel` is NOT off by one — REFUTED, measured.** The arithmetic is float32: `0.7f * 10` rounds to exactly `7f`, and crystal progression's `+= 0.1f` drifts upward, away from the boundary. All 26 cases land on their integer, verified by running real C#. Locked as a standing refutation in `ElementalScalingUnificationTests` | **CLOSED — not a defect** |
+| 5.6 | `element_ability_table.py` could not see `ScarabBallForge.BallSizeScale` (a C# `static readonly`). The tool now reads C# field initializers, which also covers the rule-4-i case of an asset written before the field existed | **SHIPPED** |
+| 5.7 | **Nine SO-hosted `ElementalFloat`s become plain `float`s — the type is the claim.** An ElementalFloat on a ScriptableObject read as `.Value` can never scale, so on these nine the type was a promise the build could not keep. `check_elemental_floats.py` gates the DANGEROUS case (an authored ramp that never runs) and structurally cannot gate a misleading type. Full row, including the two things this was wrong about, in `FLEET_GAPS.md` §3 | **SHIPPED** |
+| 5.8 | **`element_ability_table.py` was wrong about SEVEN of its twelve reported gaps.** Fixed: comment/string blanking in `follow_static_calls` (a doc comment hung a Scarab gate on three hulls); namespace-qualified `Element.X` args (the Manta's two L5 gates read as unimplemented); nested-prefab-instance `m_Modifications` floats (six of twelve vessel prefabs invisible); C# field initializers; and `guard_state` reading a serialized bool's C# default (an unauthored `false` counted as a live gate on ten of twelve hulls). 12 disagreements → 5 | **SHIPPED** |
+| 5.9 | **The Scarab's map declared a retired upgrade.** "Armored Switch" was retired with the switch's prism fill on 2026-08-24; the map went on naming it, so every surface that asks the map reported a wired Mass 5. Entry corrected to an `(open design slot)` that records the retirement, and its `AbilityDescription` corrected (Mass scales the RING RADIUS, not a fill that no longer exists) | **SHIPPED** |
+| 5.10 | The remaining gaps are DESIGN gaps, not wiring. Five when this row was written; **three** after the scope + rifle branch merged and filled the Serpent's Charge and Space: **Rhino Charge + Space, Serpent Mass**. Report: **`FLEET_GAPS.md`** — and re-run `element_ability_table.py --gaps` rather than trusting either count | **OPEN — design** |
+| 5.11a | **A shared `ShipActionSO` mutated its own serialized field at runtime — and the dangerous copy was dead code.** `GrowSkimmerActionSO.ApplyMaxSizeDebuff` writes `maxSize.Value = original * multiplier`, awaits, then writes it back — on a SHARED asset, so in multiplayer two Rhinos debuffed at overlapping times race on one number and the second restore writes the FIRST one's already-multiplied value back as "original". This is the exact last-initializer-wins hazard `ARCHITECTURE.md §2(a)` and the vessel contract both name as their cautionary tale, and it predates this branch — found by D1 while proving the `Enabled: 0` flip on that same field is a no-op. Measured: **nothing calls it.** There are TWO methods by that name — the live caller (`VesselChangeSkimmerSizeByProjectileEffectSO`) holds a `ShieldSkimmerScaleConfigSO`, a different class whose version writes a private runtime `_maxScaleMultiplier` and never touches a serialized field. The uncalled one is deleted, which also unblocked 5.7's `maxSize` | **SHIPPED** |
+| 5.11b | What survives 5.11a: `ShieldSkimmerScaleConfigSO` still keeps its debuff latch and multiplier on the SHARED asset, so two Rhinos still share one debuff and the second one's press is swallowed by `if (_isMaxSizeDebuffed) return` — its own comment says so. The fix is per-vessel state in the driver. **Establish first whether the debuff changes anything on screen**: that config's `prismMaxScale` is tooltipped *"the driver no longer reads it"*, so the answer may be no, and that is a playtest rather than a read | **OPEN — needs a playtest before a fix** |

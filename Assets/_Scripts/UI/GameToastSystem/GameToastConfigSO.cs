@@ -21,6 +21,8 @@ namespace CosmicShore.UI
                  "NewRaceLeader: {0}=leader name\n" +
                  "ComebackActivated: {0}=player name\n" +
                  "BroodWaveScored: {0}=domain name, {1}=brood sum, {2}=wave target\n" +
+                 "CrystalCollected / RocketHit / BendLanded / PrismsDestroyedMilestone / LifeformKilled: " +
+                 "{0}=player name, {1}=new total, {2}=increase, {3}=objective target (0 if none)\n" +
                  "Rich text (<b>, <i>, <color>) is supported.")]
         [TextArea]
         public string messageTemplate;
@@ -38,6 +40,14 @@ namespace CosmicShore.UI
         [Range(0f, 1f)]
         [Tooltip("Alpha multiplier for this line (e.g. dim disconnect notices).")]
         public float alpha = 1f;
+
+        [Header("Stat Toasts")]
+        [Min(1)]
+        [Tooltip("For the per-player STAT situations (CrystalCollected, RocketHit, BendLanded, " +
+                 "PrismsDestroyedMilestone, LifeformKilled): fire only when the player's total " +
+                 "crosses a multiple of this. 1 = every increase (Skim Race's crystals); " +
+                 "10 = every tenth (Scurry's crystals). Ignored by every other situation.")]
+        public int everyN = 1;
 
         [Header("Idle Hint")]
         [Tooltip("When on, this entry is a HINT: it is never raised by gameplay, instead it " +

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -77,6 +78,8 @@ namespace CosmicShore.Core
         bool _isConnected = true;
         bool _signedIn;
         bool _uiActionsWired;
+        bool _profileRefreshWired;
+        string _lastIdentifySignature;
         bool _gameInProgress;
         float _gameStartTime;
         bool _sessionEndRecorded;
@@ -145,6 +148,7 @@ namespace CosmicShore.Core
             _lifecycleEvents.OnAppPaused.OnRaised += HandleAppPaused;
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
             TryWireUiActions();
+            TryWireProfileRefresh();
 
             // Crash capture follows the same opt-in gate as analytics. Applied here so a returning
             // player's stored decision re-arms it immediately after the BeforeSceneLoad disarm.
@@ -287,6 +291,7 @@ namespace CosmicShore.Core
         {
             _signedIn = true;
             TryWireUiActions();
+            TryWireProfileRefresh();
             StartCollectionIfReady();
         }
 
@@ -318,6 +323,7 @@ namespace CosmicShore.Core
             _collecting = true;
             Log("Data collection started.");
 
+            TryWireProfileRefresh();
             IdentifyPlayer();
             MaybeRecordFirstLaunch();
         }
@@ -331,6 +337,14 @@ namespace CosmicShore.Core
                 sink.StopCollection();
 
             _collecting = false;
+
+            // Forget what we last identified. StopCollection DISCARDS the sink's pending queue,
+            // so an identify sent before a revoke may never have uploaded - and if consent is
+            // granted again with the profile unchanged, the dedup above would skip the re-identify
+            // and the person would carry no properties (no invite_wave, so no cohort) for the rest
+            // of the session. Dropping the signature makes the next start always re-identify.
+            _lastIdentifySignature = null;
+
             Log("Data collection stopped (consent revoked).");
         }
 
@@ -437,6 +451,38 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// The invite-wave cohort label for a player, derived from when they were first seen:
+        /// the <c>"yyyy-MM-dd"</c> key of the UTC week (its Monday) that their first session
+        /// fell in. This is the dimension the paid-EA gate splits retention and stability by.
+        ///
+        /// <para><b>It is a PROXY for a Steam grant batch, not the grant batch itself.</b> Steam
+        /// hands the client no wave number - there is no Steam SDK in this build at all, and
+        /// grants are issued in Steamworks - so the wave has to be derived. Waves go out in
+        /// weekly batches, which makes week-of-first-play a faithful stand-in, but a tester who
+        /// requested access in week 1 and installed in week 3 lands in wave 3. Anyone reading
+        /// the gate needs to know that; see DATA_ARCHITECTURE.md 7.3.3.</para>
+        ///
+        /// <para>The week boundary is <see cref="WeeklyChallengeCatalogSO.WeekStartUtc"/>, the
+        /// project's one definition of "which week" - reused rather than reimplemented, because
+        /// two definitions of a week boundary in one project is a reporting bug nobody finds.
+        /// Note this is the REAL week key (<c>WeekKeyFor</c>), never the catalog's instance
+        /// <c>PeriodKeyFor</c>, whose test mode shortens a "week" to minutes - a shrunken test
+        /// period must never reach a cohort the release gate is read off.</para>
+        ///
+        /// <para>Returns empty for an unknown first-seen. 0 is "never stamped", and
+        /// <c>FromUnixTimeMilliseconds(0)</c> would bucket that player into the week of
+        /// 1969-12-29 - a cohort that looks real and is not.</para>
+        /// </summary>
+        public static string InviteWaveFor(long firstSeenUtcMs)
+        {
+            if (firstSeenUtcMs <= 0)
+                return string.Empty;
+
+            return WeeklyChallengeCatalogSO.WeekKeyFor(
+                DateTimeOffset.FromUnixTimeMilliseconds(firstSeenUtcMs).UtcDateTime);
+        }
+
+        /// <summary>
         /// Mirrors cloud-save state onto the PostHog person, so events can be segmented by
         /// player state without a join. Grouped exactly like PLAYER_PROFILE, which is what
         /// makes this mapping mechanical rather than a hand-maintained list.
@@ -463,7 +509,20 @@ namespace CosmicShore.Core
                 properties["crystal_balance"] = profile.Economy.CrystalBalance;
                 properties["lifetime_crystals_earned"] = profile.Economy.LifetimeCrystalsEarned;
                 properties["lifetime_crystals_spent"] = profile.Economy.LifetimeCrystalsSpent;
-                properties["first_seen_utc_ms"] = profile.Lifecycle.FirstSeenUtcMs;
+
+                // First-seen, and the wave derived from it, are written ONLY when known.
+                // PlayerDataService builds a local-default profile in Awake, so an identify
+                // that lands before the cloud profile arrives would otherwise $set
+                // first_seen_utc_ms = 0 and invite_wave = "" OVER the real values - and PostHog
+                // person properties are last-write-wins. An omitted key changes nothing on the
+                // person; a written empty one destroys the cohort the release gate reads.
+                long firstSeenUtcMs = profile.Lifecycle.FirstSeenUtcMs;
+                if (firstSeenUtcMs > 0)
+                {
+                    properties["first_seen_utc_ms"] = firstSeenUtcMs;
+                    properties["invite_wave"] = InviteWaveFor(firstSeenUtcMs);
+                }
+
                 properties["session_count"] = profile.Lifecycle.SessionCount;
                 properties["games_completed"] = profile.Lifecycle.GamesCompleted;
                 properties["total_flight_time_seconds"] = profile.Lifecycle.TotalFlightTimeSeconds;
@@ -482,8 +541,50 @@ namespace CosmicShore.Core
             if (progression?.UnlockedModes != null)
                 properties["unlocked_mode_count"] = progression.UnlockedModes.Count;
 
+            // Send only when something actually CHANGED. Every identify is a billable event on
+            // the PostHog side, and OnProfileChanged is raised by things that do not always move
+            // a person property - RefreshProfileVisuals raises it for a pure UI repaint. Before
+            // the profile-change hook existed every caller was a segment boundary (collection
+            // start, pause, quit, freestyle exit) and this could not matter; now it can.
+            //
+            // A real change (crystals awarded, a rename, a game completed) still sends, which is
+            // the point - this drops the no-ops, not the updates. distinctId is part of the
+            // signature so a change of identity always re-identifies.
+            string signature = BuildIdentifySignature(distinctId, properties);
+            if (signature == _lastIdentifySignature)
+                return;
+
+            _lastIdentifySignature = signature;
+
             foreach (var sink in _sinks)
                 sink.Identify(distinctId, properties);
+        }
+
+        /// <summary>
+        /// Order-independent fingerprint of one identify payload. Sorted because a dictionary
+        /// makes no ordering promise across runtimes, and an ordering-sensitive signature would
+        /// re-send an identical payload rather than dropping it - failing open, which is the safe
+        /// direction but defeats the purpose.
+        ///
+        /// <para>Public because its failure mode is SILENT: a signature that is not sensitive
+        /// enough suppresses an identify that needed to go out, and nothing anywhere reports a
+        /// person who quietly stopped being updated. <c>AnalyticsWaveCohortTests</c> holds it.</para>
+        /// </summary>
+        public static string BuildIdentifySignature(string distinctId, Dictionary<string, object> properties)
+        {
+            var keys = new List<string>(properties.Keys);
+            keys.Sort(StringComparer.Ordinal);
+
+            var sb = new System.Text.StringBuilder(distinctId);
+            foreach (var key in keys)
+            {
+                sb.Append('\u001f').Append(key).Append('=');
+                // Invariant so a locale cannot make an unchanged float look changed (or, worse,
+                // two different values look identical under a low-precision format).
+                sb.Append(Convert.ToString(properties[key], CultureInfo.InvariantCulture));
+            }
+
+            return sb.ToString();
         }
 
         public void RecordPlayAgain() => RecordEvent(UGSKeys.EventPlayAgain);
@@ -744,6 +845,31 @@ namespace CosmicShore.Core
             _uiActionsWired = true;
         }
 
+        /// <summary>
+        /// Re-identify whenever the cloud profile changes, so person properties are refreshed
+        /// the moment the real values exist rather than only at pause/quit.
+        ///
+        /// <para>This is what DATA_ARCHITECTURE.md 7.3.2 always claimed ("refreshed on profile
+        /// change and at session end") and what was actually missing. The gap matters most for
+        /// exactly the thing the paid-EA gate measures: the first identify of a session fires
+        /// from StartCollectionIfReady, which races the cloud-save load, so a session that ended
+        /// in a CRASH could reach pause/quit never and leave the person with no invite_wave -
+        /// systematically under-attributing the crashiest cohort.</para>
+        ///
+        /// <para>Deferred and duplicate-guarded like <see cref="TryWireUiActions"/>: this facade
+        /// is a lazy DI singleton and may be constructed before PlayerDataService exists.</para>
+        /// </summary>
+        void TryWireProfileRefresh()
+        {
+            if (_profileRefreshWired || PlayerDataService.Instance == null)
+                return;
+
+            PlayerDataService.Instance.OnProfileChanged += HandleProfileChanged;
+            _profileRefreshWired = true;
+        }
+
+        void HandleProfileChanged(PlayerProfileData _) => IdentifyPlayer();
+
         void HandleUserAction(UserAction action)
         {
             _lastUiAction = action.Label;
@@ -913,7 +1039,7 @@ namespace CosmicShore.Core
         void Log(string message)
         {
             if (_allowLog)
-                CSDebug.Log($"[Analytics] {message}");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[Analytics] {message}");
         }
     }
 }

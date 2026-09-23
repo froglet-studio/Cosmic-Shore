@@ -76,7 +76,7 @@ against one that does not exist.
 ### 1.1.2 A GROWN world shows its PLANTING
 
 Only **three** of the seventeen preview cells author an `EnvironmentPrefab` — the Boneyard, the
-PeelTheCage and the Wildlife cages. The other fourteen have no generator at all: their arenas are
+Cleave and the Wildlife cages. The other fourteen have no generator at all: their arenas are
 **planted by the spawn profile once a match starts**, so at the instant a card is opened there is
 literally nothing built to sample. That is data, not a defect, and it is why "the environment does
 not show up" was true of almost every card while the model path was working perfectly.
@@ -152,7 +152,7 @@ Measured coverage after this (per preview definition, at every authored intensit
 
 | What the card shows | Modes |
 |---|---|
-| Full scale model of an authored environment | Dog Fight, Peel the Cage, Wildlife Liberation |
+| Full scale model of an authored environment | Dog Fight, Cleave, Wildlife Liberation |
 | Track model + shell (per-intensity) | Joust, Scurry, Skim Race |
 | Planting model + shell | Rampage, The Bends (59 markers / 5 species), Wildlife Blitz ×2 (4 / 1) |
 | Shell alone | Astro League, Brood Rush, Scarab Scramble, Freestyle, Cellular Duel ×2, 2v2 Co-Op |
@@ -176,7 +176,7 @@ and the two disagreed badly — measured against the scenes:
 | Wildlife Liberation | ring floor **1150**, EquatorialRing | 70 u, Symmetric |
 | Scarab Scramble | ring floor **760** | 70 u |
 | Dog Fight | ring floor **700** | 70 u |
-| Peel the Cage | ring floor **576**, EquatorialRing | 70 u, Symmetric |
+| Cleave | ring floor **576**, EquatorialRing | 70 u, Symmetric |
 | Joust / Astro League / Brood Rush | hand-placed on a 70.7 u ring, each facing the core | 70 u ring |
 
 So a card opened you inside the arena the mode starts you outside of, and the two modes whose scenes
@@ -237,7 +237,7 @@ invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card tha
 species without being kill-scored.
 
 **PrismLayDecimation applies at BOTH lay paths.** `SpawnableBase.SpawnPrismTrail` covers track
-structures — but every `CellEnvironmentSpawnableBase` world (the PeelTheCage cage, Atlantis, the
+structures — but every `CellEnvironmentSpawnableBase` world (the Cleave cage, Atlantis, the
 freestyle seven) lays through `PrismTrailBuilder` with its own `_cachedLays` list and never calls
 `SpawnPrismTrail`, so authored-environment previews silently built at FULL density while the
 stride only thinned tracks. `SpawnLeafObjects` now hands the builder
@@ -353,7 +353,54 @@ The objective runner starts on the tap, which is also the arrival.
 ## 2. Focus — who holds the stick
 
 Focus is an input handoff and nothing else: `ToggleAIPilot(false)` + `InputController.SetPause`
-+ `EventSystem.sendNavigationEvents = false`. No fades, no camera blend, no state-machine change.
++ `PauseSystem.TogglePauseGame(false)` + `EventSystem.sendNavigationEvents = false`. No fades, no
+camera blend, no state-machine change.
+
+**The global pause is part of the handover, and leaving it out made every preview unflyable.**
+`ScreenSwitcher` pauses the game on every non-HOME screen to free CPU for the UI
+(`ScreenSwitcher.cs`, `screenId == HOME ? TogglePauseGame(false) : TogglePauseGame(true)`), and
+`PauseSystem.TogglePauseGame` also sets `Time.timeScale = 0`. An arcade card is opened from the
+arcade screen, so by the time this window exists the menu is hard-paused — and flight dies at
+**both** ends of the chain: `InputController.Update` returns on `PauseSystem.Paused` *before* any
+strategy runs, so nothing ever writes a stick, a trigger or a throttle; and `VesselTransformer`
+integrates on `Time.deltaTime`, so a vessel handed perfect input still moves by exactly zero.
+Clearing `InputStatus.Paused` alone grants a stick that cannot reach the ship.
+`MenuCrystalClickHandler.TransitionToFreestyle` has always lifted this for the lava lamp — but
+freestyle is entered from HOME, where the menu is *already* unpaused, so that call is a safety
+net there and load-bearing here. That asymmetry is why the omission survived review.
+
+`ModePreviewSession` tracks whether **it** lifted the pause (`_liftedMenuPause`) rather than
+reading `PauseSystem` back, so it can only ever restore a pause it removed — a card opened from
+the HOME hub runs unpaused and must not be handed a pause it never had.
+
+**Exactly one route RESTORES it, and the others must FORFEIT.** The focus release restores,
+because there the player hands the stick back and the card, its screen and the menu all stay put.
+Every route that LEAVES the menu — the launch, `AbortHard`, `OnDestroy` — drops the lift without
+re-pausing, because `SceneLoader.LaunchGame` and this session are **both** subscribers to
+`GameDataSO.OnLaunchGame` and SceneLoader wins the order (a Bootstrap object subscribed at app
+start, against one that subscribes when Menu_Main loads). SceneLoader unpauses as its very first
+statement, so a restore on that route fires immediately *after* it and hands the loading match
+`Time.timeScale = 0` — launching a game out of a flying preview would start it frozen.
+
+> `SceneLoader.LaunchGame` is the **only** producer of that unpause. `MiniGame` (which does call
+> `TogglePauseGame(false)` on entry) is the legacy single-player base with two subclasses — not
+> the `MiniGameControllerBase` hierarchy every shipped mode uses, and nothing in that hierarchy
+> touches `PauseSystem` at all. A restore that leaned on the game scene unpausing itself would be
+> leaning on a class the arcade modes do not instantiate.
+
+The two failure directions are not symmetric, which is what decides the default: forfeiting
+wrongly leaves the **menu** running unpaused until the next screen change re-pauses it; restoring
+wrongly freezes a **match**.
+
+> **General rule:** *a handover of control is only complete once every gate between the input
+> device and the thing being controlled is open.* This one had four — the AI pilot, the player's
+> own input pause, the global pause, and the EventSystem — and three of them were.
+
+It presented as a hull bug: *"the Wrecking Ball microgame loaded but the Scarab would not move
+when I pulled the trigger."* The Scarab is simply the hull with no cruise floor (`MinimumSpeed 0`)
+whose throttle is one analog channel and nothing else (`ScarabVesselTransformer.ReadThrottle01`
+→ `RightTriggerAnalog`), so a frozen world reads there as a broken ship rather than as a slow one.
+Every other hull was equally frozen.
 
 **Gamepad B is deliberately NOT a release.** While flying, every face button belongs to the
 vessel. `sendNavigationEvents = false` only silences EventSystem-driven UI — three places poll the
@@ -470,6 +517,7 @@ table, but it cannot be the shipped shape.
 | `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
 | `ModePreviewPlantingModel` | `_Scripts/Controller/Arcade/Preview/` | A grown world's PLANTING as lays — one marker per plant, band resolved cell-override-first |
 | `Tools/Build/author_preview_spawns.py` | `Tools/Build/` | Authors every definition's spawn block from the mode's own scene (`--check` verifies) |
+| `Tools/Build/author_mode_previews.py` | `Tools/Build/` | Authors the eight definitions whose generators pre-date `register_preview`, off each card's own scene (`--check` verifies) |
 | `ModePreviewTrackModel` | `_Scripts/Controller/Arcade/Preview/` | A waypoint track's blocks as lays, per intensity, triad-cycled per segment |
 | `Tools/Build/author_preview_tracks.py` | `Tools/Build/` | Writes `TrackSpawnablesByIntensity` from the scenes' own spawners; `--check` in CI style |
 | `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over. The beside-the-window readout is RETIRED: `StartRunner` hides the HUD and re-raises progress as `ModePreviewSession.OnObjectiveProgress(delta, total)`, which the modal routes into the launch panel's objective box + micro toast (`Docs/ArcadeLaunch/ARCHITECTURE.md` §5.5) — one counting source, one visible readout |
@@ -477,19 +525,26 @@ table, but it cannot be the shipped shape.
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
 | ~~`ModePreviewSetupTool`~~ | *retired* | **Gone — scaffolding, its job done.** It stood the preview window up in `Menu_Main` and migrated the scene off earlier revisions (deleting TestFlightButton / FocusFrame / ExitButton / legacy video instances). The migrated scene is on the branch; recover the tool from git history if a scene ever needs the migration again. |
 
-## 6. Shipped definitions (17) — every playable card
+## 6. Shipped definitions (29) — every playable card
 
 Every arcade card whose scene exists on disk now has a definition, so **every playable mode
 previews** and only genuinely dead modes (the ~24 single-player cards whose scenes were deleted)
-show the label. The display names that hid three of them: **Skim Race = SkimRace(33), Joust =
+show the label. **Eight of them shipped without one for a while** — Salvo, Switchback, Hijack,
+Headlong, Breakwater, Skein, Bloomrush and Redline, every mode whose generator pre-dates
+`arcade_mode_lib.register_preview` — and their cards fell back to the static background with no
+Test Flight. They are now authored by `Tools/Build/author_mode_previews.py` (`--check`), which
+reads each card's cell configs off its OWN SCENE (the same read `author_preview_intensities.py`
+makes, so the two cannot disagree) and pins the card's locked hull. The display names that hid three of them: **Skim Race = SkimRace(33), Joust =
 Joust(34), Scurry = Scurry(35)**.
 
 | Group | Modes | Arena source |
 |---|---|---|
-| Full arenas | Rampage, PeelTheCage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
+| Full arenas | Rampage, Cleave, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
 | Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
+| Later arcade modes | Tollway, Wrecking Ball, Undertow, Regatta, Salvo, Hijack, Skein, Bloomrush | The mode's own cell configs, four per intensity where the scene is IntensityWise (Hijack's Switchyard and Skein's knot are authored `EnvironmentPrefab`s, so their scale models show the rails; Salvo and Bloomrush reference the Boneyard and the Rampage forest exactly as the modes do) |
+| Shell-only gate races | Switchback, Headlong, Redline, Breakwater | Controller-built courses (rings solved at match start, Breakwater's stations) on a single cell, so the preview shows the cell and the hull and the Notes say OPEN-ENDED — the same honesty Tollway and Regatta already record. A `StructurePrefab` of a few standing rings is the recorded gap |
 
-Objectives count only where a stat fires solo (prisms destroyed, lifeforms killed); everything
+Objectives count only where a stat fires solo (prisms destroyed, prisms stolen, volume destroyed, lifeforms killed); everything
 else is open-ended — the satellite has no `CrystalManager`, so crystal-scored modes cannot count
 yet (§7). Maelstrom (Maelstrom) stays excluded in code.
 

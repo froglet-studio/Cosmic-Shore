@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameWreckingBall
+  m_EditorClassIdentifier:
+  Mode: 54
+  IsMultiplayer: 1
+  DisplayName: Wrecking Ball
+  Description: Scarabs only, in a walled court grown full of cacti and coral. Fly through
+    a bright crystal and it becomes your ball - bowl it into the thickest stand and every
+    prism it plows through is yours; flick a dash beside the forest and the cavitation
+    plate shreds the rest. Balls bounce off the wall and come back for more. First team
+    to the wrecking target wins.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  GolfScoring: 1
+  SceneName: MinigameWreckingBall
+  Vessels:
+  - {fileID: 11400000, guid: b136d82d275e0f8ea1feef29f0d416a4, type: 2}
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.006

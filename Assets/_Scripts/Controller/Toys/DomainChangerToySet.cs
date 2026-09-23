@@ -79,5 +79,11 @@ namespace CosmicShore.Gameplay
         }
 
         Color DomainColor(Domains d) => ToyFactory.DomainAccentColor(Context, d);
+
+        /// <summary>
+        /// A domain HAS a colour, and it is the whole point of this toy - so the app shell's flat
+        /// card wears the same one the ring does rather than the toy's accent.
+        /// </summary>
+        protected override Color ColorFor(Domains option) => DomainColor(option);
     }
 }

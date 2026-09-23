@@ -57,6 +57,14 @@ namespace CosmicShore.Gameplay
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
         /// <summary>
+        /// This lifeform's HEART, as a transform: the crystal while it lives, and the lifeform's
+        /// own root when it carries none (a colony root, a plant whose crystal has not resolved
+        /// yet). Read LIVE and never cached by callers - a lattice plant moves its crystal onto its
+        /// lattice site after seating it, and a creature carries its heart with it.
+        /// </summary>
+        public Transform HeartTransform => crystal ? crystal.transform : transform;
+
+        /// <summary>
         /// Elemental contract: the WORLD scale this lifeform's heart renders at — authored per
         /// element in the species' variant tuning and sized to suit this body
         /// (Docs/ECOSYSTEM.md §40.2). Non-positive means 'not authored': the set's default is
@@ -97,6 +105,11 @@ namespace CosmicShore.Gameplay
         /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
         /// (Docs/ECOSYSTEM.md §26).
         /// </summary>
+        /// <inheritdoc/>
+        /// <remarks>The exact pair <see cref="Jousted"/> has always gated on - published so a
+        /// caller holding only the heart can ask the same question before acting on it.</remarks>
+        public bool IsDying => dying || isCleaningUp;
+
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
@@ -211,6 +224,14 @@ namespace CosmicShore.Gameplay
             // (destroys opposing-domain lifeforms; Space-5 levels up allies) but never
             // skim-collectable until death drops it. Cleared by ActivateCrystal in Die.
             if (crystal) crystal.SetEmbeddedIn(this);
+
+            // The ELEMENT gets the last word on this lifeform's FORM, and it has to get it
+            // here: the crystal that carries the element was resolved two lines up, and
+            // BindEmbeddedParts on the next line stamps the prefab's own prisms. A form
+            // applied after that leaves the SEED prism at the pre-element size while
+            // everything grown afterwards expresses the element - the same ordering argument
+            // Flora.ApplyCellPrismScale records. See Flora.OnElementResolved.
+            OnElementResolved();
 
             BindEmbeddedParts();
 
@@ -435,6 +456,20 @@ namespace CosmicShore.Gameplay
         /// overrides afterwards.</para>
         /// </summary>
         protected virtual float ResolveShieldPeriod(float authored) => authored;
+
+        /// <summary>
+        /// Called once during <see cref="Initialize"/>, after the crystal carrying this
+        /// lifeform's ELEMENT has been resolved and BEFORE the prefab's own prisms are bound
+        /// and stamped. The hook for anything whose value is a function of the element and has
+        /// to be in place before the first prism exists - today, the flora leaf form
+        /// (<c>Flora.OnElementResolved</c> -> <c>FloraElementalForm</c>).
+        ///
+        /// <para>Base does nothing, deliberately: <b>fauna are not plants.</b> The elemental
+        /// FORM laws are written about the food web's mass, and a creature's body prisms are
+        /// not that - the same reason <see cref="ResolveShieldPeriod"/> is overridden on
+        /// <c>Flora</c> rather than here.</para>
+        /// </summary>
+        protected virtual void OnElementResolved() { }
 
         IEnumerator ShieldRegenCoroutine()
         {

@@ -1,4 +1,5 @@
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -72,8 +73,8 @@ namespace CosmicShore.Gameplay.Audio
 
             _listener.enabled = true;
 
-            if (debugLog)
-                Debug.Log($"[ShipStudioListenerGate] '{name}': FMOD StudioListener ACTIVATED (local player).");
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipStudioListenerGate] '{name}': FMOD StudioListener ACTIVATED (local player).");
         }
     }
 }

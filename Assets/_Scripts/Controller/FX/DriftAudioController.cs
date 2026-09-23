@@ -3,6 +3,7 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using FMOD.Studio;
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -234,9 +235,9 @@ namespace CosmicShore.Gameplay.Audio
             {
                 _classGateChecked = true;
                 _classGatePass = !restrictToVesselClass || _status.VesselType == targetVesselClass;
-                if (!_classGatePass && debugLog)
+                if (!_classGatePass && debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 {
-                    Debug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
                         $"[DriftAudioController] '{name}' vessel class is " +
                         $"{_status.VesselType}, not {targetVesselClass} - disabling.",
                         this);
@@ -254,8 +255,8 @@ namespace CosmicShore.Gameplay.Audio
                 if (!_status.IsLocalUser)
                 {
                     enabled = false;
-                    if (debugLog)
-                        Debug.Log($"[DriftAudioController] '{name}' is remote/AI; disabling.", this);
+                    if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                        CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' is remote/AI; disabling.", this);
                     return;
                 }
             }
@@ -294,7 +295,7 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (driftEvent.IsNull)
             {
-                Debug.LogError($"[DriftAudioController] '{name}' has no Drift Event assigned.", this);
+                CSDebug.LogError($"[DriftAudioController] '{name}' has no Drift Event assigned.", this);
                 return;
             }
 
@@ -318,7 +319,7 @@ namespace CosmicShore.Gameplay.Audio
             }
             else
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[DriftAudioController] Event '{driftEvent}' has no parameter " +
                     $"named '{driftAmountParameterName}'. Drift will play but " +
                     $"single/double/let-go states won't drive it.",
@@ -340,7 +341,7 @@ namespace CosmicShore.Gameplay.Audio
             _instanceStarted = startResult == FMOD.RESULT.OK;
             if (!_instanceStarted)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[DriftAudioController] '{name}' start() returned {startResult} on '{driftEvent}'. " +
                     $"Drift SFX won't play.",
                     this);
@@ -353,8 +354,8 @@ namespace CosmicShore.Gameplay.Audio
             _phase = DriftPhase.Active;
             _releaseTimer = 0f;
 
-            if (debugLog)
-                Debug.Log($"[DriftAudioController] '{name}' drift START (amount={_smoothedAmount:F2}).", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' drift START (amount={_smoothedAmount:F2}).", this);
         }
 
         void TickActive(float dt)
@@ -377,8 +378,8 @@ namespace CosmicShore.Gameplay.Audio
             // drift cycle on the rising edge of release.
             FireReleaseOneShot();
 
-            if (debugLog)
-                Debug.Log(
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio,
                     $"[DriftAudioController] '{name}' drift END - fired " +
                     $"trigger-off one-shot" +
                     (driveParamToOneOnRelease
@@ -449,8 +450,8 @@ namespace CosmicShore.Gameplay.Audio
             _smoothedAmount = 0f;
             _releaseTimer = 0f;
 
-            if (debugLog)
-                Debug.Log($"[DriftAudioController] '{name}' drift RESET - ready for next drift.", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[DriftAudioController] '{name}' drift RESET - ready for next drift.", this);
         }
 
         /// <summary>

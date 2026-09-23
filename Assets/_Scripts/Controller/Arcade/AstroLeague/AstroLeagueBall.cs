@@ -6,6 +6,7 @@ using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -148,7 +149,30 @@ namespace CosmicShore.Gameplay
             LastTouchDomainServer = domain;
             LastToucherNameServer = toucherName ?? string.Empty;
             WallBouncesSinceTouchServer = 0;
+            // A vessel touch hands the ball's SCORING to that pilot; a blast (no name) leaves it
+            // with whoever had it, so a rival's plate that shoves your ball does not launder the
+            // credit for the mass it goes on to eat.
+            if (!string.IsNullOrEmpty(toucherName)) RecordPilotServer(toucherName);
         }
+
+        /// <summary>
+        /// Server: name the pilot this ball scores for from here on - the forge stamps its maker,
+        /// every vessel strike re-stamps the striker. Read by the prism scan on every peer as the
+        /// attacker name of the mass the ball eats; empty means the ball scores for nobody (the
+        /// Astro League kickoff ball, until somebody hits it).
+        /// </summary>
+        public void RecordPilotServer(string pilotName)
+        {
+            if (IsSpawned && !IsServer) return;
+            var value = new FixedString64Bytes(pilotName ?? string.Empty);
+            if (n_PilotName.Value.Equals(value)) return;
+            n_PilotName.Value = value;
+            _pilotNameCache = pilotName ?? string.Empty;
+        }
+
+        /// <summary>The attacker name stamped on the mass this ball eats: its current pilot, or the
+        /// unrostered "Astro League" for a ball nobody has claimed.</summary>
+        public string PilotName => _pilotNameCache.Length > 0 ? _pilotNameCache : BallAttackerName;
 
         void ResetTouchLedgerServer()
         {
@@ -203,6 +227,18 @@ namespace CosmicShore.Gameplay
         // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
         readonly NetworkVariable<Domains> n_LastHitDomain =
             new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // The PILOT this ball scores for: the last vessel to touch it, seeded with its forger at the
+        // forge. Replicated because the prism scan below runs on EVERY peer (one gate, one answer)
+        // and StatsManager credits a prism kill by the ATTACKER NAME the machine that destroyed it
+        // saw - so a name that lived only on the server would score a client pilot's ball on the
+        // server's copy of the trail and never on the client's copy of the forest (environment
+        // mass is credited by the machine that simulates the attacker, StatsManager.OwnsAttacker).
+        // Before this the ball named itself "Astro League", which is on no roster, so every prism
+        // a ball ate scored for nobody - fine in a hoop game, fatal in a demolition race.
+        readonly NetworkVariable<FixedString64Bytes> n_PilotName =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Managed mirror of n_PilotName so the per-prism scan never allocates a string per hit.
+        string _pilotNameCache = string.Empty;
         // STUDDING THE NUCLEUS (the Scarab's seeding ability, SCARAB.md §4.6): the ball was seeded
         // part-sunk in the nucleus surface and nothing has dislodged it yet.
         //
@@ -522,6 +558,12 @@ namespace CosmicShore.Gameplay
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
             ApplyHiddenVisuals(n_Hidden.Value);
+
+            // The scoring pilot travels as a FixedString; mirror it into a managed string once per
+            // change (not once per prism) - a late joiner reads the current value, a replica that
+            // spawned before the forge stamped it catches the stamp.
+            n_PilotName.OnValueChanged += (_, name) => _pilotNameCache = name.ToString();
+            _pilotNameCache = n_PilotName.Value.ToString();
 
             // The retirement animation runs on EVERY peer, and the value it needs can arrive
             // either before this replica spawned (a late joiner) or a frame after it (the server
@@ -1193,7 +1235,7 @@ namespace CosmicShore.Gameplay
                         // per-tier multiplier to the drag.
                         if (_shieldPoppedThisVisit.Contains(prism)) continue;
                         eatenMass += Mathf.Max(0f, prism.CurrentVolume);
-                        prism.Damage(ballVel, ballDomain, BallAttackerName);
+                        prism.Damage(ballVel, ballDomain, PilotName);
                     }
                 }
             }
@@ -2336,7 +2378,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
-        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// that domain into the standard blast rules — so own-domain prisms are drawn LIT in the blast's domain colour (Docs/LIT.md; a temporary shield until 2026-09)
         /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.
@@ -2487,6 +2529,7 @@ namespace CosmicShore.Gameplay
             // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
+            RecordPilotServer(string.Empty);
             _shieldPoppedThisVisit.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;

@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
             if (Debug.unityLogger.logHandler is FilteringLogHandler) return;
 
             Debug.unityLogger.logHandler = new FilteringLogHandler(Debug.unityLogger.logHandler);
-            CSDebug.Log("[BenignLobbyLogFilter] Installed - suppressing the benign LobbyPatcher ArgumentOutOfRangeException.");
+            CSDebug.LogVerbose(CSLogChannel.Party, "[BenignLobbyLogFilter] Installed - suppressing the benign LobbyPatcher ArgumentOutOfRangeException.");
         }
 
         private sealed class FilteringLogHandler : ILogHandler

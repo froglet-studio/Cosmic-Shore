@@ -77,7 +77,26 @@ namespace CosmicShore.Gameplay
             }
 
             OnInitialized();
+
+            // A toy that can also be played from the app shell announces itself here - the one
+            // method every toy passes through, so there is nothing per-toy to remember. Station
+            // toys (a gallery's PaintingToy, a flip-set's SwapToy) do not implement the interface
+            // and so never register: the shell lists TOYS, not their unfolded choices.
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Register(shellSurface);
+
             BloomIn(bloomDuration, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>
+        /// Virtual so every subclass EXTENDS teardown rather than hiding it - Unity invokes only
+        /// the most-derived <c>OnDestroy</c>, and a hiding declaration would leave this toy in the
+        /// app shell's registry as a destroyed reference. Overrides must call base.
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Unregister(shellSurface);
         }
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
@@ -140,6 +159,35 @@ namespace CosmicShore.Gameplay
             _switchDomain = domain;
             if (SwitchRing)
                 ToyFactory.RepaintSwitchRing(SwitchRing, ToyFactory.Theme(Context), signal, domain);
+        }
+
+        /// <summary>
+        /// This toy's switch-ring radius in <b>world</b> units - the ring the player flies
+        /// through, and therefore the honest measure of "how big is this toy" for anything framing
+        /// it or approaching it (the Toy Box's live preview, the vessel drop-off in front of it).
+        ///
+        /// <para>Derived from the same two sources <see cref="BuildSwitchRing"/> uses, in the same
+        /// order, so a camera can never frame by a number that disagrees with the ring the player
+        /// sees. The units differ on purpose: <c>_switchRingRadius</c> is a LOCAL radius (the ring
+        /// is a child of the collider's transform) and is scaled up here, while
+        /// <see cref="ComputeTriggerWorldRadius"/> has already returned a world one.</para>
+        ///
+        /// <para>Falls back to the root's own scale when the toy has no collider yet, which is the
+        /// state during <see cref="Initialize"/> and for a toy whose builder places its trigger
+        /// itself.</para>
+        /// </summary>
+        public float SwitchRingRadius
+        {
+            get
+            {
+                if (_switchRingRadius < 0f)
+                    return Mathf.Max(0.01f, _triggerWorldRadius);
+
+                var t = TryGetComponent(out Collider col) ? col.transform : transform;
+                var s = t.lossyScale;
+                float k = Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
+                return Mathf.Max(0.01f, _switchRingRadius * Mathf.Max(0.0001f, k));
+            }
         }
 
         void BuildSwitchRing(Collider col)
@@ -301,6 +349,20 @@ namespace CosmicShore.Gameplay
             if (!iv.IsLocalUser) return false;
             vessel = iv;
             return true;
+        }
+
+        /// <summary>
+        /// The local player's vessel, or null when there isn't one to act on (no player yet,
+        /// destroyed mid-swap). The app-shell face of a toy whose effect needs a vessel resolves
+        /// it through here rather than re-deriving the chain - it is the same walk the exit gate
+        /// makes, with the same destroyed-object guard.
+        /// </summary>
+        protected IVesselStatus ResolveLocalVessel()
+        {
+            var status = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus;
+            if (status == null) return null;
+            if (status is Object uo && !uo) return null;   // destroyed mid-swap
+            return status;
         }
 
         /// <summary>Called once per local-vessel pass while in freestyle. Implement the toy's effect.</summary>

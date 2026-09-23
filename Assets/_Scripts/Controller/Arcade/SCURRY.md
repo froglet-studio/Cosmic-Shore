@@ -99,7 +99,7 @@ Scene Load Complete
 │   ├─ gameData.InitializeGame()  → raises OnInitializeGame
 │   ├─ [Server] gameData.InvokeSessionStarted()  — AppState → InGame
 │   └─ [Server] SetupNewRound()
-│       ├─ readyClientCount = 0
+│       ├─ ResetReadyGate()
 │       ├─ RaiseToggleReadyButtonEvent(true)  — show Ready button
 │       └─ base.SetupNewRound()  → timer/round bookkeeping
 │
@@ -118,12 +118,12 @@ Player sees "Ready" button
 ├─ Player clicks Ready
 │   └─ OnReadyClicked_() → RaiseToggleReadyButtonEvent(false)
 │       └─ OnReadyClicked_ServerRpc(playerName)
-│           ├─ readyClientCount++
+│           ├─ MarkClientReady(senderClientId)   ← a SET of who, not a count
 │           ├─ NotifyPlayerReady_ClientRpc(playerName)  → game feed: "Player Ready"
-│           └─ if readyClientCount == humanCount:
-│               ├─ readyClientCount = 0
-│               └─ OnReadyClicked_ClientRpc()
-│                   └─ StartCountdownTimer()
+│           └─ EvaluateReadyGate(...)  [also runs on every client DISCONNECT]
+│               └─ if readyClients.Count >= humanCount:
+│                   └─ OnAllPlayersReady() → OnReadyClicked_ClientRpc()
+│                       └─ StartCountdownTimer()
 │
 └─ Countdown ends
     └─ OnCountdownTimerEnded()  [Server only]
@@ -235,7 +235,7 @@ The crystal difference is calculated against the opponent's maximum score (suppo
 
 ### 9. Replay (Play Again)
 
-Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). Play Again is **host-only** (the old rematch-request flow was removed with the per-mode scoreboard subclasses): `Scoreboard.ConfigureLobbyButtons` hides Play Again + Main Menu for non-host clients, and the call path is guarded in both `Scoreboard.OnPlayAgainButtonPressed` and `RequestReplay`. The host's replay carries every client along via the Netcode scene load.
+Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). Play Again **restarts** for the host only — but since 2026-09-11 it is SHOWN to everyone, and a client's press is a **rematch VOTE** (`Docs/PartySystem/BUGS.md` B18 / `SKIMRACE.md` §10). Main Menu is shown to clients too, where it LEAVES THE PARTY rather than returning it. `RequestReplay` still guards the restart path. The host's replay carries every client along via the Netcode scene load.
 
 ```
 Scoreboard.OnPlayAgainButtonPressed()  [host only]

@@ -12,7 +12,7 @@ namespace CosmicShore.UI
 {
     public class QuestTrackView : MonoBehaviour
     {
-        [SerializeField] private SO_GameModeQuestList questList;
+        [SerializeField] private SO_UnlockList questList;
         [SerializeField] private GameObject questItemPrefab;
         [SerializeField] private Transform questItemContainer;
 
@@ -50,6 +50,7 @@ namespace CosmicShore.UI
 
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
+        private ScreenSwitcher _screenSwitcher;
         private Tween _sliderTween;
         private Tween _ghostSliderTween;
         private Tween _descFadeTween;
@@ -145,6 +146,7 @@ namespace CosmicShore.UI
 
                 int cardIndex = i;
                 card.BindClaimAction(() => HandleClaimPressed(cardIndex));
+                card.BindCardAction(() => HandleCardPressed(cardIndex));
                 _cards.Add(card);
             }
         }
@@ -239,6 +241,40 @@ namespace CosmicShore.UI
         //  6. Description text fades in with new quest goal
         //
 
+        /// <summary>
+        /// Whole-card tap: an UNLOCKED (or already-claimed) mode jumps straight to the arcade
+        /// to play it; a ready-to-claim card claims (same as its button, bigger hit target);
+        /// locked cards ignore the tap.
+        /// </summary>
+        void HandleCardPressed(int cardIndex)
+        {
+            if (cardIndex < 0 || cardIndex >= _cards.Count || cardIndex >= questList.Quests.Count) return;
+            if (_isPlayingClaimSequence) return;
+
+            switch (GetCardState(cardIndex))
+            {
+                case QuestItemState.Unlocked:
+                case QuestItemState.Claimed:
+                    OpenArcade();
+                    break;
+
+                case QuestItemState.ReadyToClaim:
+                    HandleClaimPressed(cardIndex);
+                    break;
+            }
+        }
+
+        void OpenArcade()
+        {
+            if (_screenSwitcher == null)
+                _screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+
+            if (_screenSwitcher != null)
+                _screenSwitcher.OnClickArcadeNav();
+            else
+                Debug.LogWarning("[QuestTrackView] No ScreenSwitcher in the scene — cannot open the arcade from the quest track.");
+        }
+
         void HandleClaimPressed(int cardIndex)
         {
             if (cardIndex < 0 || cardIndex >= _cards.Count || cardIndex >= questList.Quests.Count) return;
@@ -253,7 +289,7 @@ namespace CosmicShore.UI
             card.PlayClaimAnimation(() => PlayClaimSequence(cardIndex, quest));
         }
 
-        void PlayClaimSequence(int cardIndex, SO_GameModeQuestData quest)
+        void PlayClaimSequence(int cardIndex, SO_UnlockData quest)
         {
             _isPlayingClaimSequence = true;
             _claimSequence?.Kill();

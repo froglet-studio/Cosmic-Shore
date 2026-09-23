@@ -165,10 +165,11 @@ namespace CosmicShore.Tests
             new object[] { GameModes.Scurry, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
             new object[] { GameModes.AstroLeague, ElementalComebackSystem.ScoreDifferenceSource.Goals },
             new object[] { GameModes.Rampage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
-            new object[] { GameModes.PeelTheCage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
+            new object[] { GameModes.Cleave, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
             new object[] { GameModes.WildlifeLiberation, ElementalComebackSystem.ScoreDifferenceSource.LifeformsKilled },
             new object[] { GameModes.DogFight, ElementalComebackSystem.ScoreDifferenceSource.CombatPoints },
             new object[] { GameModes.ScarabScramble, ElementalComebackSystem.ScoreDifferenceSource.Goals },
+            new object[] { GameModes.Tollway, ElementalComebackSystem.ScoreDifferenceSource.Goals },
         };
 
         [TestCaseSource(nameof(LiveSourceCases))]

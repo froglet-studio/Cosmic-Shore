@@ -330,8 +330,8 @@ species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clippin
 collect-gain cap by level 5 on four of five species. §33 replaced that with ONE curve keyed on
 level alone. **§40 retires the curve with the level**: a heart's size is now AUTHORED per element
 (`FaunaVariantTuning`/`FloraVariantTuning.HeartWorldScale`), solved from that lifeform's measured
-body as `0.32936 · bodyDiameter^0.5` and held under the reward cap by construction — band 1.04
-(SchwarzP Charge) → 4.60 (Shark). Still applied at the one gate, `Crystal.SetEmbeddedIn`. Every
+body as `0.36599 · bodyDiameter^0.5` and held under the reward cap by construction — band 1.16
+(SchwarzP Charge) → 4.60 (Nerve Charge). Still applied at the one gate, `Crystal.SetEmbeddedIn`. Every
 `CrystalScalePerLevel`, `LeafScalePerLevel` and `BodyScalePerLevel` field is deleted, so nothing
 scales with life any more: a lifeform spawns at size and stays there.
 
@@ -1635,8 +1635,9 @@ clip one occasionally; that is the environment being real, not a bug.
 
 **Collider budget:** the environment's plain/danger prisms ride the LOD-cullable
 BoxCollider (active count bounded by `PrismColliderLodManager` radius, not population);
-its 225 shielded/super-shielded landmarks carry always-on convex MeshColliders (~0.3%,
-same ration as the Scurry arena). The Yggdra menu roll has NOT yet been device-profiled —
+its 225 shielded/super-shielded landmarks (~0.3%, same ration as the Scurry arena) cost
+**no extra collider** — a shield swaps the mesh and the mass, never the collider, so they ride
+the same LOD-cullable BoxCollider; they are rationed because armoured mass is never food. The Yggdra menu roll has NOT yet been device-profiled —
 soak Menu_Main with the Yggdra config forced before shipping (see
 `Docs/PERFORMANCE_OPTIMIZATION.md`); the Atlantis prefab's `density` knob (0.5–1.3) is
 the fallback lever.
@@ -1782,10 +1783,12 @@ cutoff · basin `u < 0.34f` · river `hot` noise threshold `> 0.36f` · collapse
 secondary-vent count (5) · erupting mouth disc (285) + curtain strands (5).
 
 **Collider budget:** plain/danger ride the LOD-cullable BoxCollider (bounded by
-`PrismColliderLodManager` radius, not population). Always-on convex MeshColliders (shielded +
-super-shielded landmarks) go 16 → **36**: 35 shielded (fumarole caps + degassing lip caps, both
-families multiplied by the 2× pass's cluster counts) and 1 super-shielded (the cooled massif's
-frozen heart), still ~0.09% of the cell's prisms and well under the 225 the Yggdra roll carries.
+`PrismColliderLodManager` radius, not population) — and so do the shield tiers, which swap the
+mesh and the mass and never the collider, so the whole cell is collider-flat. The shielded /
+super-shielded LANDMARK count goes 16 → **36**: 35 shielded (fumarole caps + degassing lip caps,
+both families multiplied by the 2× pass's cluster counts) and 1 super-shielded (the cooled
+massif's frozen heart), still ~0.09% of the cell's prisms and well under the 225 the Yggdra roll
+carries. That ration is about inedible, near-permanent mass, not about colliders.
 
 ---
 
@@ -1851,9 +1854,10 @@ that is the deliberate contrast with Caldera sitting next to it in the rotation.
 Daedala: Daedala is *built* everywhere and gravity-coherent (terraces climb, minarets stand up);
 Ourobor is landscape with towers on both faces and no global up at all.
 
-**Collider budget:** 27 always-on convex MeshColliders (24 shielded spire crowns + 3
-super-shielded keystones), ~0.07% of the cell's prisms. Everything else is plain and rides the
-LOD-cullable BoxCollider.
+**Collider budget:** flat — every prism rides the LOD-cullable BoxCollider, the 27 armoured
+landmarks (24 shielded spire crowns + 3 super-shielded keystones, ~0.07% of the cell's prisms)
+included: a shield swaps the mesh and the mass, never the collider. The ration is about mass the
+food web cannot take, not about colliders.
 
 **Follow-ups.** (a) Not yet flown — confirm the band width really does read as "locally flat" at
 vessel speed, and that a crossing is legible rather than confusing. (b) Ourobor shares the generic
@@ -2271,9 +2275,10 @@ thing bounding the canopy; there is no cap, TTL or culler anywhere in it.
 
 Per-prism colliders are the same LOD-cullable `BoxCollider` every prism carries (active count
 bounded by `PrismColliderLodManager` radius, not by population), and the mature garden's ~33k
-prisms sits *at* Yggdra's count, not above it. The always-on convex `MeshCollider` tier is **144**
-(96 super-shielded gate + 48 shielded lanterns) against Yggdra's 225 — comfortably inside the
-same ration. The one genuinely new cost is the lifeform **heart**: +1 always-on `SphereCollider`
+prisms sits *at* Yggdra's count, not above it — and the shield tiers add nothing, since a shield
+swaps the mesh and the mass and never the collider. The ARMOURED tier is **144** (96
+super-shielded gate + 48 shielded lanterns) against Yggdra's 225 — comfortably inside the same
+ration, which bounds inedible near-permanent mass rather than colliders. The one genuinely new cost is the lifeform **heart**: +1 always-on `SphereCollider`
 per live plant, ~140 at maturity (flora hearts are bounded by the profile's planting counts and
 the Frenzy ceiling, exactly as fauna hearts are bounded by `MaxLivePopulation`). No new spatial
 query type is introduced — growth uses `PrismSpatialIndex.TryReserve`, the same claim the
@@ -2334,9 +2339,9 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 
 ---
 
-## 22. PeelTheCage — a mode redefining "control", and the shielded-steering finish (August 2026)
+## 22. Cleave — a mode redefining "control", and the shielded-steering finish (August 2026)
 
-> **STATUS (2026-08, later the same month): PeelTheCage no longer has fauna.** The brood was removed
+> **STATUS (2026-08, later the same month): Cleave no longer has fauna.** The brood was removed
 > from the level on request, and with it the controller's ladder. Everything §22.1–§22.2b describes
 > is therefore a record of a SHIPPED-THEN-RETIRED consumer, not live behaviour — but the **platform
 > capabilities it drove all remain** (`Cell.SetModeControlOverride` / `ModePhaseFloor` /
@@ -2346,12 +2351,16 @@ expected `Jit` volume factor), not measured — nothing has been observed runnin
 > reusable part, and re-adding a brood to any mode is a data change against these APIs.
 > **§22.3 (shielded mass leaves the targeting grids) is live and cross-mode — it is unaffected.**
 
-PeelTheCage (`GameModes.PeelTheCage = 39`, display name "Peel the Cage",
-`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md`) is the Rhino-only cage-breaking race: concentric hollow
-shells of prism bone that domains race to smash their way out of — the bone IS the score
-(`ScoringMetric.PrismsDestroyed`, target 2,000), and intensity picks how many shells there are
-(2–5, one `CellConfigDataSO` each via `CellTypeChoiceOptions.IntensityWise`). Its bars are now
-plain one-hit prisms, so §22.3 no longer applies to its own arena.
+Cleave (`GameModes.Cleave = 39`, `_Scripts/Controller/Arcade/CLEAVE.md`) is the Rhino-only
+slicing race: domains race to cut 2,000 hostile prisms out of the arena
+(`ScoringMetric.PrismsDestroyed`), and the arena IS the score. Intensity picks WHICH PLACE you
+cut rather than how much of it there is — four unrelated arenas, one `CellConfigDataSO` each via
+`CellTypeChoiceOptions.IntensityWise`: angled panes, corrugated wave sheets, the three-rind cage
+this mode used to be named after, and interlocked one-sided Möbius ribbons. Every prism in all
+four is plain or danger, so §22.3 no longer applies to its own arena — and the reason it may
+never apply again is an ECOLOGY-adjacent one worth having here: a super-shielded prism can only
+be popped by an ENERGIZED Rhino blade, and an AI never pulls the triggers that energize it, so
+hardened mass in a destruction-scored arena is mass an all-AI domain can never remove.
 
 While it HAD fauna it was ecologically interesting for one reason — **the whole "the fauna hunt
 whoever is losing" feature was written in zero lines of fauna code**, and getting there needed one
@@ -2360,7 +2369,7 @@ mode that wants it.
 
 ### 22.1 The leader IS the controlling domain
 
-`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. PeelTheCage's
+`Cell.SetModeControlOverride(Domains?)` pins the cell's `DominantDomain`. Cleave's
 controller sets it to whichever domain leads the destruction race. Everything else is
 existing machinery:
 
@@ -2374,7 +2383,7 @@ existing machinery:
   mass. That is the entire feature. There is no targeting code, no per-player fauna
   steering, no "find the loser" query — the diet rule was always this, and the mode
   merely arranged for the fauna to wear the right colour.
-- PeelTheCage's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
+- Cleave's cell config therefore has **no `NucleusPrefab`**, and that is load-bearing:
   a nucleus control zone switches herbivores to the spatial "eat anything outside the
   nucleus" diet, which would point the swarm at every team including the leader's.
 
@@ -2404,7 +2413,7 @@ that is the point of the override being a domain rather than a rule.
 
 `Cell.ModePhaseFloor` (nullable, default null) lets a mode hold the cell at or above a
 phase. The volume ladder still runs every tick; the floor only ever **raises** the
-answer. PeelTheCage floors the cell at Restless once the LEADING domain reaches 25% of the win
+answer. Cleave floors the cell at Restless once the LEADING domain reaches 25% of the win
 target and Frenzy at 50%, so fauna aggression, steering, danger-immunity and speed all come
 from the existing `CellPhase → CellAggressionLevel` mapping. Keying the rungs to the
 leader's own progress rather than a cross-domain total is what keeps the escalation
@@ -2416,7 +2425,7 @@ clock. Note the direction of travel — destruction *lowers* the cell's volume, 
 ordinary ladder would only ever descend here; the floor is the sole thing that climbs.
 
 `Cell.FaunaReleaseTier` + `FaunaConfigurationSO.ReleaseTier` stage which species may
-seed (PeelTheCage: the four grazer species from the first tick — penned, not gated — and the
+seed (Cleave: the four grazer species from the first tick — penned, not gated — and the
 predator at 50%). Defaults — config tier 0, cell `int.MaxValue` — leave every shipped
 biome released from the first tick.
 Gating **production** is the explicitly-allowed lever ("not creating mass is allowed;
@@ -2451,17 +2460,17 @@ driven by the pen instead of by mode progress, so it adds no new ladder. Detecti
 Burst `PrismSpatialIndex.QuerySphere` on the PHASE tick (0.4 s, shared buffer, shielded
 mass filtered) — never a physics query, and only while a pen exists.
 
-The pen radius deliberately sits INSIDE the structure that visually encloses it (PeelTheCage:
+The pen radius deliberately sits INSIDE the structure that visually encloses it (Cleave:
 338 vs a 360 shell), so the enclosure's own prisms are outside the pen. That is what stops
 a penned brood from quietly eating its own cage — which matters because a cage may
-legitimately contain unshielded prisms (PeelTheCage's danger traps) that would otherwise be
+legitimately contain unshielded prisms (Cleave's danger traps) that would otherwise be
 food, and would also read as a permanent "intruder".
 
 Collider budget: unchanged by the containment mechanism itself. Containment adds two
 squared-distance compares on paths that already ran; the intruder probe is one
-existing-index sphere query per 0.4 s. The CELL it is used in is another matter — PeelTheCage's
+existing-index sphere query per 0.4 s. The CELL it is used in is another matter — Cleave's
 cage is ~10,229 prisms (Rampage's deliberate arena gate) plus ~150 creature bodies, which
-is the branch's headline perf risk and is stated as such in PEEL_THE_CAGE.md.
+is the branch's headline perf risk and is stated as such in CLEAVE.md.
 
 **The start state is authored as biome DATA, not set at runtime.** `SpawnProfileSO.
 InitialFaunaReleaseTier` seeds `Cell.FaunaReleaseTier` in `AssignConfig`, upstream of
@@ -2474,7 +2483,7 @@ can never decide whether the gate holds.
 
 ### 22.3 The shielded-steering finish (the generalization §16 left half-done)
 
-**Symptom this would have caused.** PeelTheCage's arena is a huge shielded structure. Under
+**Symptom this would have caused.** Cleave's arena is a huge shielded structure. Under
 the pre-existing rules the cage sat in the cell's density grids, so every density
 centroid — the goal at aggression Level1 and Level2 — pointed at mass §16.2 had already
 declared inedible. The swarm would have flown to the cage and found nothing to eat.
@@ -2500,7 +2509,7 @@ a future grazer cannot re-acquire either half of the bug.
 
 **Cross-mode effect, and it is the correct one.** Skim Race's super-shielded track and
 Astro League's super-shielded edge lining no longer pull fauna steering. Both need an
-in-editor regression pass (PEEL_THE_CAGE.md § verification, step 10).
+in-editor regression pass (CLEAVE.md § verification, step 10).
 
 **Collider budget: unchanged, and strictly less work.** No collider, no physics query,
 no index query is added. Shielded prisms are *removed* from the grids, so every density
@@ -2512,7 +2521,7 @@ and ~3.7× *under* Rampage's deliberate 10,000-prism arena gate, in a cell with 
 
 **Known gap, left deliberately.** `Cell.OpposingVolume` still counts shielded mass as
 the fauna prey signal, so a shielded structure satisfies `FaunaFoodFloor` without being
-food. PeelTheCage sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
+food. Cleave sidesteps it (`FaunaFoodFloor 0` — the release tier is the real gate), but
 the honest fix is to net shielded volume out of that signal. It is the population bound
 for every biome, so it deserves its own change and its own verification rather than
 riding along here.
@@ -3080,7 +3089,7 @@ Time for a fresh `SpawnSegmentCount = 8` colony to reach the 16-segment cap:
 
 | cell | period | 8 → 16 | colonies | colliders at cap |
 |---|---:|---:|---|---:|
-| Lattice (the freestyle **boot world**) | 5 s | **40 s** | toy-released, ~3 | 147 |
+| Lattice (freestyle, Cell Selector) | 5 s | **40 s** | toy-released, ~3 | 147 |
 | Blob profile | 15 s | 120 s | toy-released, ~3 | 147 |
 | **Wildlife Liberation** (ambient) | 20 s | 160 s | **9** (`MaxLivePopulation`) | **441** |
 | everything else | 30 s | 240 s | toy-released, ~3 | 147 |
@@ -3252,8 +3261,10 @@ Applied at three points, all of them existing chokepoints rather than new ones:
 bands stop 60u short of every wall, so a creature's own cage is outside its band and therefore
 not food. Without that the grazers would eat two thirds of their own jail (the bars are painted
 across the domain triad and the legacy diet eats opposing-domain mass), and the alternative —
-shielding the bars — would swap ~9,000 LOD-cullable BoxColliders for always-on convex
-MeshColliders (`PrismKinds`). A steering rule bought what a shield would have cost.
+shielding the bars — fails on GEOMETRY rather than on colliders (a shield costs none): a shield
+reaches 1.5× `leafSize`, which on a 26u bar laid every 34u fuses the sparse lattice into a solid
+tube and deletes the one-hit break-in the mode is built on (§35). A steering rule bought what a
+shield could not.
 
 Offspring inherit their parent's band for free: they bind the same config.
 
@@ -3472,7 +3483,7 @@ the existing tadpole (8) and brittlestar (4).
 
 | Item | Before | After |
 |---|---|---|
-| Super-shielded edge lining (always-on convex MeshColliders) | 240 | **480** |
+| Super-shielded edge lining (prisms; **zero** extra colliders — a shield swaps the mesh, not the collider) | 240 | **480** |
 | Live fauna cap (bodies) | 12 (tadpole 8 + brittlestar 4) | **34** (+ piranha 22) |
 | New physics queries | — | **none** |
 
@@ -3953,9 +3964,10 @@ only hostility test was the owner-name/roster comparison and a cactus has no ros
 applies to the world the same rule trails always had — **your own colour is worth nothing** —
 with `Domains.Blue` (the "no team" sentinel) staying hostile to everyone so neutral structure
 still scores. A third of a mixed-domain forest is now yours and worthless, which makes domain
-a real targeting decision instead of decoration. PeelTheCage rides the same metric and is
-unaffected in practice: its cage is painted across the full triad plus Blue joints, so a team
-can still reach a 2,000 target out of ~10,620 prisms.
+a real targeting decision instead of decoration. Cleave rides the same metric and is
+unaffected in practice: every one of its four arenas is painted across the full triad plus Blue
+joints, and `Tools/Build/cleave_budget.py` check 1 asserts it rather than estimating it - the
+worst-off domain's share of each rung is 4x-12x that rung's own target (measured 7.4x-9.3x).
 
 ### 27.9 Corollary — the collecting pilot must run their own crystal effects
 
@@ -4055,7 +4067,7 @@ Lose that race and the SOAP variable still reads its default **0**, `Clamp(0 - 1
 index 0, and the client builds intensity 1's arena while the host builds the chosen one. For the
 whole match. With no error — the clamp is silent and the default is legal.
 
-This was **already live in every IntensityWise scene** (Dog Fight, PeelTheCage, Wildlife Liberation,
+This was **already live in every IntensityWise scene** (Dog Fight, Cleave, Wildlife Liberation,
 both Wildlife Blitz cells) before Rampage went near it.
 
 Fixed with three pieces that only work together:
@@ -4081,15 +4093,23 @@ intensities over two configs would otherwise serve the same arena for 3 and 4 in
 
 ## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
 
+> ⚠ **The forest half of this section is SUPERSEDED by §43** (Sep 2026). Rampage's ladder now
+> scales the forest again — 5.00 / 3.67 / 2.33 / 1.00× the plant count and 1.60 / 1.40 / 1.20 /
+> 1.00× the leaf — because "bigger and easier to hit at intensity 1" is what the mode wanted and
+> the earlier attempt failed for a reason §43 names: it thinned rather than thickened, which just
+> made a smaller arena. The crystal and wildlife columns below are unchanged and still shipped,
+> and `FaunaPopulationScale` (§29.1) is untouched — read §43 for the current forest numbers.
+
 Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
-the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
-intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+the plants of intensity 4). At this pass it no longer touched the forest at all — **every
+intensity grew intensity 4's arena, prism for prism** — and instead moved two things in opposite
+directions:
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
 | wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
-| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+| forest *(at this pass; see §43)* | 9,830 seeded prisms — identical at every intensity | | | |
 
 The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
 capabilities and one general rule came out of it.
@@ -6250,11 +6270,19 @@ current reality, and it is the same order as the heaviest **authored** environme
 - Fauna are held deliberately light (one grazer species, floor 4 / cap 8, no predators) so the
   collider line is dominated by the thing the cell exists to show.
 
-**This cell IS the boot world as of §36.10** — it replaced Blob at `CellConfigs[0]`. That is
-affordable only because the cost accrues rather than lands: the cell opens with **twelve plants**
-and no environment build at all, so entering Menu_Main is as cheap as it was, and the collider
-line above is reached only after ~7 minutes of continuous growth. A player who launches an arcade
-game before then never pays it, and every return to the menu starts the garden over.
+**This cell WAS the boot world between §36.10 and §48** — it replaced Blob at `CellConfigs[0]`,
+and that was affordable only because the cost accrues rather than lands: the cell opens with
+**twelve plants** and no environment build at all, so entering Menu_Main was as cheap as it had
+been, and the collider line above is reached only after ~7 minutes of continuous growth. A player
+who launched an arcade game before then never paid it, and every return to the menu started the
+garden over.
+
+**Garland boots today (§48.9), and the reason is the same sentence read the other way**: accruing
+is exactly what a home screen cannot do. The lava-lamp camera orbits at 686 units from the first
+frame, so a cell that is nearly empty for its first minutes is empty in the one shot the screen
+exists to draw — and "every return to the menu starts the garden over" means it is empty again
+after every arcade game. Lattice keeps `CellConfigs[0]` and stays a Cell Selector option; nothing
+about the colony model below changes.
 
 ### 36.9 The heartbeat is the build clock
 
@@ -6286,8 +6314,8 @@ test served both only because Blob happened to satisfy both:
 | `WanderwayRun` | a world that is **EMPTY** (you wander through open space, not through a world you are leaving) |
 
 Lattice is the first config where those diverge: it authors no environment, so it boots instantly
-and is the correct boot world — and it then grows 42,840 prisms out of twelve seeds, which is the
-opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
+and was the correct boot world at the time — and it then grows 42,840 prisms out of twelve seeds,
+which is the opposite of empty. Left alone, starting a wander would have reset the cell into a garden that grew
 underneath the belt's own 30,000 transported prisms.
 
 So the concept is split. `EnvironmentFreeConfig` keeps its meaning (cheap to build) and
@@ -6785,7 +6813,8 @@ and all four edited files parse without error. **Not verified in Unity** — no 
 from the session, so `/verify-unity` did not run.
 
 In-editor:
-1. **Menu_Main** (the Lattice cell is the boot world, twelve colonies, one per element). Watch the
+1. **Menu_Main**, Cell Selector -> **Lattice** (twelve colonies, one per element; Garland boots,
+   so this is one pass through the selector). Watch the
    four Time colonies out-grow their eleven neighbours over ~10 minutes — that is the law's most
    visible read, since all twelve share one cell clock and one cap.
 2. **Rampage** or **Hesperides** for the quota path: those species roll all four elements from one
@@ -6961,12 +6990,12 @@ have grown a leaf mid-life. Leaving the flag is leaving the guard standing for t
 **The law.** A heart's linear size scales as the SQUARE ROOT of its lifeform's linear size:
 
 ```
-heart = K · bodyDiameter ^ 0.5           K = 0.32936, SOLVED (not authored)
+heart = K · bodyDiameter ^ 0.5           K = 0.36599, SOLVED (not authored)
 ```
 
 That is ordinary allometry — an organ does not scale 1:1 with body length — and it is what makes
-the whole roster fit one reward band. A shark is **19×** a piranha by body; its heart is **4.3×**
-as big, not 19×.
+the whole roster fit one reward band. A shark is **11×** a piranha by body; its heart is **3.3×**
+as big, not 11×.
 
 **`K` is solved so the largest lifeform in the project lands exactly on `HEART_MAX` 4.6**, and
 that is the load-bearing half of the design rather than a convenience. It means the band is always
@@ -7003,33 +7032,35 @@ big the thing is when you look at it — because that is the question the player
   at 312. Sizing against 5000 would let four outliers set `K` for everybody. The SIZING budget is
   capped; the PLANTING budget is untouched.
 
-**The shipped band** — `1.04` (SchwarzP Charge, body 10.0) → `4.60` (Shark, body 195.1), a 4.42×
-spread, paying 0.104 → 0.460 element levels against the 0.50 cap:
+**The shipped band** — `1.16` (SchwarzP Charge, body 10.0) → `4.60` (Nerve Charge, body 158.0),
+a 3.98× spread, paying 0.116 → 0.460 element levels against the 0.50 cap. The anchor is a PLANT,
+not the shark, and that moved in §46.4: the measurement used to apply a nested instance's root
+scale twice, which made the Shark read 195.1 across when it is 133.8:
 
 | species | kind | Charge | Mass | Space | Time |
 |---|---|---:|---:|---:|---:|
-| Arbor | flora | 2.64 | 3.62 | 1.93 | 2.98 |
-| Branching | flora | 3.13 | 3.13 | 3.13 | 3.13 |
-| Brittlestar | fauna | 2.67 | 2.67 | 2.67 | 2.67 |
-| Cacti | flora | 3.50 | 3.50 | 3.50 | 3.50 |
-| Clawfish | fauna | 1.16 | 1.16 | 1.16 | 1.16 |
-| Coral | flora | 1.88 | 2.58 | 1.37 | 2.12 |
-| Frond | flora | 1.88 | 2.58 | 1.37 | 2.12 |
-| Gyroid | flora | 1.33 | 1.94 | 2.06 | 1.93 |
-| Lantern | flora | 1.79 | 2.46 | 1.31 | 2.02 |
-| Nerve | flora | 4.14 | 4.14 | 4.14 | 4.14 |
-| Pine | flora | 3.13 | 3.13 | 3.13 | 3.13 |
-| QuadFish | fauna | 1.98 | 1.98 | 1.98 | 1.98 |
-| Quasicrystal | flora | 1.84 | 2.94 | 2.67 | 2.45 |
-| Reed | flora | 1.56 | 2.13 | 1.14 | 1.75 |
-| Rosette | flora | 2.25 | 3.10 | 1.65 | 2.55 |
-| SchwarzP | flora | **1.04** | 1.62 | 1.69 | 1.65 |
-| Shark | fauna | **4.60** | **4.60** | **4.60** | **4.60** |
-| Spire | flora | 2.06 | 2.83 | 1.51 | 2.33 |
-| Tadpole | fauna | 2.07 | 1.56 | 2.07 | 1.56 |
-| Tendril | flora | 1.90 | 2.61 | 1.39 | 2.15 |
-| Wall | flora | 3.13 | 3.13 | 3.13 | 3.13 |
-| WormColony | fauna | 2.28 | 2.28 | 2.28 | 2.28 |
+| Arbor | flora | 2.93 | 4.03 | 2.14 | 3.31 |
+| Branching | flora | 3.48 | 3.48 | 3.48 | 3.48 |
+| Brittlestar | fauna | 2.57 | 2.57 | 2.57 | 2.57 |
+| Cacti | flora | 3.89 | 3.89 | 3.89 | 3.89 |
+| Clawfish | fauna | 2.16 | 2.16 | 2.16 | 2.16 |
+| Coral | flora | 2.09 | 2.87 | 1.52 | 2.36 |
+| Frond | flora | 2.09 | 2.87 | 1.52 | 2.36 |
+| Gyroid | flora | 1.48 | 2.16 | 2.29 | 2.14 |
+| Lantern | flora | 2.00 | 2.73 | 1.46 | 2.25 |
+| Nerve | flora | **4.60** | **4.60** | **4.60** | **4.60** |
+| Pine | flora | 3.48 | 3.48 | 3.48 | 3.48 |
+| QuadFish | fauna | 1.75 | 1.75 | 1.75 | 1.75 |
+| Quasicrystal | flora | 2.05 | 3.26 | 2.97 | 2.73 |
+| Reed | flora | 1.73 | 2.37 | 1.26 | 1.95 |
+| Rosette | flora | 2.50 | 3.45 | 1.83 | 2.83 |
+| SchwarzP | flora | **1.16** | 1.80 | 1.87 | 1.83 |
+| Shark | fauna | 4.23 | 4.23 | 4.23 | 4.23 |
+| Spire | flora | 2.29 | 3.15 | 1.67 | 2.59 |
+| Tadpole | fauna | 2.30 | 1.74 | 2.30 | 1.74 |
+| Tendril | flora | 2.12 | 2.90 | 1.54 | 2.39 |
+| Wall | flora | 3.48 | 3.48 | 3.48 | 3.48 |
+| WormColony | fauna | 2.14 | 2.14 | 2.14 | 2.14 |
 
 A species whose four elements read alike (Brittlestar, Cacti, Shark, WormColony) is one whose
 elements author no `BaseBodyScale` / leaf difference — the band reports what the roster says, it
@@ -7191,15 +7222,15 @@ shepherding either of them used to move a number nothing rendered.
    WormColony above) will read uniform. That is the honest state of those assets, not a defect to
    answer with a size roll.
 3. **The domain fauna buff re-sorts.** It was uniform per heart under §33's flat curve; it now
-   tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles by **2.2–2.9×
-   per heart** (4.60 against 2.07 or 1.56), and a domain fielding SchwarzP colonies by 4.4×. The pool is still summed across living hearts and still clamped by the
+   tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles by **1.8–2.4×
+   per heart** (4.23 against 2.30 or 1.74), and a domain fielding SchwarzP colonies by 3.6×. The pool is still summed across living hearts and still clamped by the
    maintained-mechanism ceiling (sustained level 10, §15), so the expected change is an ordering
    between domains rather than new saturation.
 
 ### Verify in-editor (the human is the gate — none of this has been run)
 
-Menu_Main freestyle is the fastest read; the **Lattice** cell is the boot world and holds twelve
-flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
+Menu_Main freestyle is the fastest read; the **Lattice** cell (Cell Selector — Garland boots) holds
+twelve flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
 
 1. **Hearts differ by species, and the difference is legible.** Kill a tadpole, a brittlestar and
    a shark in one session and compare the dropped crystals: roughly 1.6–2.1 / 2.7 / 4.6 world
@@ -7210,11 +7241,11 @@ flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
    Two readings, and the ABSOLUTE one is the reliable test:
    - **Absolute (strong).** Each heart must render at its authored size. If the re-size at the
      end of `AssignLineage` is not landing, every heart is multiplied by its own body scale, so
-     the Mass/Time tadpole drops at **0.63** instead of 1.56 (a 2.5× cut) and the Charge/Space
-     one at **1.45** instead of 2.07 (1.43×). A tadpole heart that reads smaller than a
-     SchwarzP plant's (1.04) is the tell.
-   - **Relative (weaker, but needs no reference).** The two tadpoles differ by **1.33×** when
-     the re-size lands (2.068 / 1.563) and by **2.32×** when it does not (1.45 / 0.63) — the
+     the Mass/Time tadpole drops at **0.70** instead of 1.74 (a 2.5× cut) and the Charge/Space
+     one at **1.61** instead of 2.30 (1.43×). A tadpole heart that reads smaller than a
+     SchwarzP plant's (1.16) is the tell.
+   - **Relative (weaker, but needs no reference).** The two tadpoles differ by **1.32×** when
+     the re-size lands (2.303 / 1.741) and by **2.30×** when it does not (1.61 / 0.70) — the
      gap widens because the two body scales differ. Do not read the 2.5× and 1.43× cut factors
      as the gap between the two creatures; they are what each one loses on its own.
 
@@ -7497,7 +7528,7 @@ false until `ArkwayRun` sets `_running`, gating the MOVEMENT itself. `RetireAsyn
 together at the instant the voyage actually begins — beside the player, where it was built.
 
 `ArkwayRun.LogVoyageStart` reports the Ark's hull count and its distance from the vessel at that
-one frame, on `CSLogChannel.CellLifecycle`, because *"no Ark at all"* and *"the Ark is 2,800 units
+one frame, on `CSLogChannel.ToyBox`, because *"no Ark at all"* and *"the Ark is 2,800 units
 ahead"* are indistinguishable on screen and the difference is the whole bug.
 
 ### 41.3.3.3 The bracket is not the build — the voyage opened behind the veil (Sep 2026)
@@ -7588,7 +7619,7 @@ Two more sweeps came with it:
 - **Teardown telemetry on a loop.** `CellRuntimeDataSO.ResetRuntimeData` logged **one line per
   crystal it destroyed**, plus a reset banner; `Cell` logged spawner start/stop; the conveyor
   logged one line per cell stood. All correct for a world built once at scene load, all running on a loop
-  here. They moved to the new `CSLogChannel.CellLifecycle`, and the per-crystal one is guarded on
+  here. They moved to `CSLogChannel.Ecology` (the cell's own channel) and the Arkway's to `ToyBox`; the per-crystal one is DELETED outright rather than guarded on
   `IsVerbose` BEFORE the interpolation — `LogVerbose` is `[Conditional]`, which removes the call
   in a release build but not the argument evaluation in the Editor, so an interpolated string
   inside a per-object loop is still built every time.
@@ -7652,3 +7683,3322 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+---
+
+## 42. A plant's HEART is a place things can be built on (Sep 2026)
+
+**Tollway needed a set of points of interest a player could plant a scoring ring in, and it built
+its own.** `TollwayTollPosts` was a seeded Fibonacci band of emblem markers: replicated from an
+`int`, drawn by the controller, with its own occupancy book, its own 60-line Python re-derivation
+in the generator to keep the two walks honest, and its own test suite. It worked. It was the wrong
+owner, and the second cut deleted the whole thing.
+
+**A flora crystal is the same affordance the ecology already produces everywhere.** It arrives with
+four properties a bespoke socket had to be given by hand:
+
+- it is **placed by the food web**, so the set is ALIVE — a plant can be grazed away and the seeder
+  brings it back, which is a supply of scoring surfaces that ebbs and flows without a single timer;
+- it is **already drawn** and already a thing a pilot flies at;
+- it is **already replicable** — `FloraConfigurationSO.NetworkSynced` (§ the flora network sync)
+  puts the planting DECISION on the wire, which is exactly the set a heart's world position is a
+  function of; and
+- it is a **joustable heart**, so killing an anchor to deny it — and taking an element level for
+  doing so — is counter-play nobody had to design.
+
+General rule: **before a mode builds a set of points of interest, check whether the platform
+already grows one.** It is the same shape as "the Cell owns the environment — minigames don't build
+parallel systems", reached from the other side: not *don't duplicate what the Cell owns*, but
+*look at what the Cell already produces before inventing a peer for it*.
+
+### `FloraHeartRegistry` — the index, and nothing else
+
+One flat list of living plants, registered in `Flora.Initialize` (after `Plant()`, so the first
+read is the planted position) and unregistered in `Flora.Die` and `OnDestroy`. It **leaves on
+death rather than on destruction**, because death RELEASES the heart (`ActivateCrystal`) and a
+crystal anyone can now collect is not a fixture. Entries are `Flora` references and a query reads
+`HeartTransform.position` live — an `AssembledFlora` moves its crystal onto its lattice site after
+seating it, and a plant on a moving container carries its heart with it, so a cached position is
+wrong for two independent reasons.
+
+It **spawns, moves, ages and removes nothing**. The `Cell` already counts live plants per-species
+(`liveFloraCounts`) but holds no positions, and a per-species dictionary cannot answer "the nearest
+heart to this line"; this is the flat list that can. `LifeForm.HeartTransform` is the accessor that
+made it possible and is the public form of an idiom `LifeForm` already used internally.
+
+### The nucleus planting clamp now reads `NucleusIsControlZone`
+
+`Flora.ResolvePlantRadius` clamped its band's inner edge outside the nucleus **unconditionally**,
+and `ClampToPlantingBand` pushed offspring out the same way. In a mode whose nucleus IS the court
+(Astro League, Scarab Scramble, Tollway) that made the entire arena un-plantable — Tollway could
+not seed a plant inside its own court, and any offspring seeded there would have been ejected to
+the wall one birth at a time.
+
+Both stated reasons for the clamp — nucleus mass is the **territorial claim**, and it is **excluded
+from the fauna targeting grids** — *are* the control zone, and a cell that sets
+`Cell.NucleusIsControlZone = false` has already declared it has none ("this nucleus is a wall, not
+a claim": herbivores eat opposing mass anywhere, `DominantDomain` reads the whole cell). The clamp
+now reads that flag. It does not relitigate the invariant; it applies the state the ecology already
+supports.
+
+This is **§25.1's trap from the other side.** There, a mode borrowed the nucleus as play geometry
+and silently inherited its *diet* semantics, so the food web could not remove one prism from the
+whole pitch. Here, a mode that borrowed it as its court could not put a plant inside its own arena.
+Same cause — geometry carrying semantics — opposite symptom. *Whenever a mode repurposes a
+Cell-owned visual, check what SEMANTICS it borrowed with the geometry, in both directions.*
+
+The one reason for the clamp that **survives** is real and accepted: a standard omni crystal
+respawns in the nucleus volume, so a court-mode's plants share space with its crystal respawn. That
+is clutter in a volume the mode has already filled with play, not mass the ecology cannot reach.
+
+**Four callers clear the flag, and only three of them are court modes — name the fourth.** The
+setters are Astro League, Scarab Scramble, Tollway *and the Arkway's traversal cells*
+(`CellConveyor`, which clears it for the whole-cell diet its protect-the-Ark mechanic rides on,
+§41). The Arkway is not a court: its nucleus is still an ordinary core marker, and its traversal
+configs are drawn from `Cell.AvailableConfigs`, which author real flora. So this change lets an
+Arkway cell's plants grow into its nucleus where they were previously clamped out. That follows
+from the rule rather than working around it — with no control zone, herbivores eat opposing mass
+inside the nucleus too, so a plant there is reachable food — and the residual crystal-respawn
+clutter is the same accepted cost. It is called out because *it was not the change's motivating
+case*: the flag is a platform capability, so a clamp keyed on it moves every caller, including
+ones a branch never opened.
+
+### What Tollway seeds, and what it costs
+
+14 **NetworkSynced** flora per intensity (`Tollway Anchor Flora <Species>`, `SpreadElements` over
+that species' four canonical element assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of
+the intensity-1 court the retired posts used — reseeded every 20 s toward a floor and cap of 14.
+
+**Each intensity grows a different KIND of plant**, one per growth family, ordered by standing
+plant volume so the marker grows with the court:
+
+| I | Court | Species | Family | Prisms/plant | Leaf vol | Forest |
+|---|---|---|---|---|---|---|
+| 1 | 480u | Spire | `PhyllotacticFlora` | 40 (cell override) | 14.26 | 560 prisms / 7,986 vol |
+| 2 | 560u | Gyroid | `AssembledFlora` | 30 (own geometry) | 50.27 | 420 / 21,113 |
+| 3 | 640u | Cacti | `BranchingFlora` | 40 (cell override) | 75.00 | 560 / 42,000 |
+| 4 | 720u | Quasicrystal | `AssembledFlora` | 110 (own geometry) | 46.39 | 1,540 / 71,441 |
+
+A **lattice species keeps its own per-plant budget** — a gyroid octagon is 24 prisms around one
+crystal and a quasicrystal heart cell is one vertex's strut tree, so a cell-imposed number does not
+thin the plant, it truncates a shape mid-figure (§32.7/§36's "plant COUNT is the only lever", met
+from the arena side). Only Spire and Cacti take the cell's `MaxTotalSpawnedObjectsOverride`.
+
+- The standing forest is folded into BOTH bands of the cell's volume ladder rather than left for it
+  to discover, and **both ladders are per-intensity** — the four species differ in prism COUNT as
+  well as prism size, so one shared count backstop would be four times too tight at one end.
+  The generator asserts a forest never reaches half its own `RestlessEnterVolume` (worst case:
+  Quasicrystal at 30%), or the ladder would describe the scenery rather than the match.
+- **14 always-on colliders at every intensity** (one heart each) — that is what keeps the collider
+  budget flat while everything else about the field changes; the body prisms are LOD-cullable boxes.
+- A quarter of the anchors roll **Charge** and are therefore shielded (`Flora.ResolveShieldPeriod`),
+  which takes them out of the fauna targeting grids entirely — so the field thins unevenly as the
+  cleanup crew grazes it. Emergent, untested, and the levers if it goes wrong are the reseed
+  cadence, the population or the fauna exclusion fraction. **Never shield the anchors to protect
+  them** (§35: a shield reaches 1.5 × `leafSize`, and it is a different mode).
+- Tollway is the **first shipped user of `FloraNetworkSync`**. The mechanism was complete and
+  unexercised; the Scramble-cloned scene already carried the component.
+
+Full mode record: `_Scripts/Controller/Arcade/TOLLWAY.md` § "Anchors"; the vessel half is
+`R_VesselActions/SCARAB.md` §5.3.
+
+---
+
+## 43. A cell may say how big its prisms are (Sep 2026)
+
+**`SpawnProfileSO.FloraPrismScale`** — the third flora scalar, beside `FloraPopulationScale`
+(how many plants) and `FloraPlantBudgetScale` (how big each plant gets). It says **how big each
+PRISM is**: a multiplier on the leaf a plant would otherwise lay.
+
+Rampage is why it exists. Its intensity ladder wanted a fatter, easier-to-hit forest at
+intensity 1 falling to the shipped arena at intensity 4, and there was no way to author that:
+the five flora configs are **shared across its own four intensities**, so a per-intensity leaf
+size written onto them is one number serving four cells. Same shape as the argument for
+`FaunaPopulationScale` in §29, one level down — that one could not edit the shared Blob species
+without restocking Menu_Main; this one cannot edit a shared species without moving all four
+intensities together.
+
+### 43.1 It is NOT a lifeform level
+
+§40 retired per-individual growth in both its forms — the spawn-time roll and the earned level —
+because *"how big is this thing"* must not be a hidden per-individual **history** the player
+cannot read off the species.
+
+`FloraPrismScale` is a **property of the CELL**, not of the plant. Every plant of a species in a
+given cell is the same size; nothing accumulates, nothing is earned, and two plants of the same
+species and element are never different sizes. It is applied **exactly once**, and it says
+something about *where you are*, which is exactly what a biome is for — the same class of
+statement as "this cell's tadpoles are twice as numerous".
+
+### 43.2 Where it applies, and why the ordering is load-bearing
+
+`Flora.Initialize` → `ApplyCellPrismScale(cell)`, **before `base.Initialize`**.
+
+`LifeForm.Initialize` binds the prefab's own authored prisms through `BindEmbeddedParts` →
+`AddHealthBlock`, and `Flora.AddHealthBlock` stamps `leafSize` onto each one. Apply the scale
+after that call and a plant's **seed prism** keeps the authored size while everything it grows
+afterwards is scaled — a discrepancy visible only on the one prism nobody looks at.
+
+It composes with the variant tuning for free: the spawner calls `ApplyVariantTuning` *before*
+`Initialize`, so the cell's scale multiplies the element's own leaf identity rather than
+replacing it. Resolution lives on the **Cell** (`Cell.ResolveFloraPrismScale`), never on the
+config, per §29's rule — which spawner a biome runs is decided by an unrelated field, and flora
+has four producers.
+
+### 43.3 A LATTICE species is exempt — the reader `PrismSizeFixedByGrowthRule` was kept for
+
+`Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) was deliberately kept in §40 **with
+its reader gone**, as a standing guard: a lattice's bond offsets are a measured table in absolute
+local units, so a scaled leaf lays prisms the table no longer describes, and scaling the lattice
+too drags a whole family of absolute-distance coherence tolerances with it (§34.8).
+
+That guard is now doing its job. The prism scale is the next thing that wanted to resize a leaf,
+and it was gated on the guard **on arrival** rather than rediscovering the hazard. *That is what
+keeping a reader-less guard is for*, and it is the argument against deleting the next one.
+
+### 43.4 It lands on the volume ladder, and the exponent is PER FAMILY
+
+Volume is the spine, so a cell that scales its prisms **must re-derive its own
+`PhaseThresholds`**. The trap is that the exponent is not 3:
+
+| family | what `leafSize` does | volume |
+|---|---|---|
+| `BranchingFlora` | lays it on all three axes (`leafScale = LeafSize`) | **s³** |
+| `PhyllotacticFlora` | reads `LeafSize.x/y` as a **cross-section** only; the long axes span the plant's own `segment` and `reach` | **s²** |
+
+A phyllotactic strut therefore gets **thicker, not longer** — which is the behaviour you want
+from an "easier to hit" dial, and which its own header already stated (*"LENGTHS here are
+structural … does NOT read LeafSize.z"*). Assuming s³ everywhere overstates a 1.6× forest by 1.6×.
+
+Nothing else in a plant scales: branch step, segment length, whorl reach and the growth
+reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all structural, so a plant
+still reaches its authored budget and still occupies its own volume. **Plants read as chunkier,
+not larger.**
+
+### 43.5 Collider budget: this scalar is free, and its sibling is not
+
+**`FloraPrismScale` costs nothing in colliders.** Prism count is untouched — the prisms are
+larger, not more numerous — so the active-collider envelope is identical at every scale. That is a
+property of *this* capability and it is why it is the cheap dial to reach for.
+
+**It is not a property of a cell's intensity ladder.** Rampage's ladder also scales
+`FloraPopulationScale` (5× the plants at intensity 1), and *that* one is priced in colliders on two
+separate lines — LOD-cullable prisms bounded by the cell's own `FrenzyEnter` count backstop, and
+**always-on heart crystals bounded by the plant cap**, one per live plant, which no phase LOD
+culls. `rampage_intensity.py`'s `assert_collider_budget` holds both against cells the game already
+ships (Atlantis' ~69,000 prisms; the Lattice cell's 1,080 plants at cap).
+
+The general rule the pair states: **when a cell scales its flora, ask which of the three scalars
+it is reaching for, because only one of them is free.** Size is free, per-plant budget multiplies
+prisms without multiplying plants, and population multiplies both prisms and always-on crystals.
+
+### 43.6 The Rampage ladder it was built for
+
+Intensity 4 is the shipped, play-tested arena and nothing about it moves; 1 is the same arena
+bigger, denser and easier to hit. Flora **5.00 / 3.67 / 2.33 / 1.00×** (295 / 217 / 137 / 59
+plants, 49,150 / 36,160 / 22,820 / 9,830 prisms), prisms **1.60 / 1.40 / 1.20 / 1.00×**, nucleus
+**500 / 400 / 300 / 200** (prefab scale; world radius 490 / 392 / 294 / 196), and each intensity's
+volume ladder is the play-tested intensity-4 ladder **scaled by its own forest ratio** — so
+intensity 4 reproduces to the digit and every level keeps Frenzy at 4.11× its mature forest and
+Restless at 28.5% of it.
+
+The per-plant **budget** stays 1.00× at every level, deliberately: "more flora" is more PLANTS,
+not bigger ones. Growing the budget would multiply prisms without multiplying the thing the player
+reads — how much forest there is — and it would compound with `FloraPrismScale` on the very same
+prisms. Collider envelope: **50,000 / 37,000 / 23,250 / 10,000** prisms (the count backstop, which
+freezes growth, rather than the plant cap) and **440 / 323 / 205 / 88** always-on heart crystals.
+
+The **nucleus** half follows §13.1: a new core size is a new `CellConfigDataSO` pointing at a
+**resized prefab** — never a scene override, never a `localScale` tweak on a shared prefab, and
+never `Cell.nucleusScaleMultiplier`, which is a scene *component* field and so cannot differ per
+intensity at all. `Nucleus300` and `Nucleus500` were authored beside the existing `HalfNucleus`
+(200) / `Nucleus` (400) / `BigNucleus` (800), named by scale because the older relative names do
+not extend. A bigger nucleus couples to three things and all three follow automatically: the
+crystal respawn volume grows, the flora planting band's inner edge clamps out with it
+(`Flora.ResolvePlantRadius`, so no plant is ever laid inside the nucleus at any intensity), and
+the player spawn ring moves where a scene opts in.
+
+Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four intensities".
+
+### 43.7 Open
+
+- **The phyllotactic leaf volumes are still estimates** (Spire 15.0, Rosette 17.0, Coral 10.6 —
+  those species shape prisms by role, so there is no authored field to read). They now carry a
+  per-intensity s² factor, so an error is amplified 2.56× at Rampage's intensity 1. One
+  `Cell.LiveVolume` measurement per intensity corrects all four ladders through the script's
+  `CALIBRATION` dict.
+- **Not playtested, and intensity 1 is now the heaviest cell in any arcade mode.** Its cactus is
+  8 × 8 × 4.8 against the authored 5 × 5 × 3 *and* there are five times as many plants, so the
+  two densities compound. Confirm it reads as *easy to hit* rather than *fused*, and profile it:
+  the arithmetic clears both shipped reference cells, which is the gate, but it is not a frame
+  time. If prisms fuse, lower `PRISM_SCALES[0]` (never the branch step, which is what makes a
+  plant its own size); if the frame rate is the problem, lower `SCALES[0]`'s population scale,
+  which is the only axis of the ladder that moves colliders at all.
+- **A wider crystal spread at intensity 1** is the one coupling most likely to want tuning: the
+  nucleus is 2.5× wider, so the contested crystals sit in 15.6× the volume. It is offset by that
+  level carrying twice the roster in crystals and by the objective arrow pointing at the nearest
+  one, so the cost is flight time rather than findability.
+
+---
+
+## 44. A spindle is a limb, not a rod (Sep 2026)
+
+Reported as *"the quad fish lack animation at the level of their spindles — they
+shouldn't look so stiff. With the boids we get a murmuration and with brittlestars we
+get dangling legs. The sharks have a nice rig, but the quadfish is lacking."*
+
+The report was exactly right, and the reason is narrower and worse than "the QuadFish
+was never animated".
+
+### 44.1 NO spindle in the game deformed — including the "animated" one
+
+Measured on the merge base:
+
+| graph | edge into `VertexDescription.Position` |
+|---|---|
+| `SpindleGraph` | **none at all** |
+| `AnimatedSpindleGraph` | an `Add` whose A input is a hardcoded `(0,0,0)` — i.e. `Position + 0` |
+
+`AnimatedSpindleGraph` is animated in **colour only** (a Gradient Noise scroll on
+`BaseColor`), is used by **zero materials**, and exposes no `_Phase`. So
+`Spindle.cs`'s entire phase-variant apparatus — eight shared materials per base
+material, bucketed by world position, deliberately *not* a `MaterialPropertyBlock` so
+the renderers stay SRP-batchable — was stamping `_Phase` into a property that only ever
+drove a Voronoi shimmer on the surface. **The desync machinery was real and the thing it
+was desyncing did not exist.**
+
+Everything that *does* move gets it from somewhere else, which is why this was invisible:
+
+| creature | where its motion comes from |
+|---|---|
+| Shark | FBX armature (111 bone/deformer records) + Animator + Animation Rigging: `MultiParentConstraint` binds prism clusters to bones, `MultiAimConstraint` + `SharkJawDriver` work the jaw, `DampedTransform` adds lag |
+| Brittlestar | same family, 647 records — `DampedTransform` chains on five arms ARE the dangling legs |
+| Boids | flocking. Whole-body travel, no deformation |
+| **QuadFish** | **nothing.** `mediumfish.fbx` has one Model node and no bones; the four fin prisms are parented rigidly to a static transform |
+
+### 44.2 The fix, in two halves
+
+**GPU half — `SpindleSway.hlsl`, spliced into `SpindleGraph`** by
+`Tools/Shaders/wire_spindle_sway.py`. Zero per-frame CPU: a function of object-space
+position, `_PrismClock`, the `_Phase` `Spindle.cs` already stamps, and two per-material
+constants. A thousand swaying spindles cost what a thousand still ones did.
+
+**THE BEND IS A SHEAR, AND THAT IS WHAT MAKES IT UNIT-FREE.** One material
+(`SpindleMaterial`) is shared by twelve prefabs whose meshes disagree about scale by
+three orders of magnitude — a gyroid branch spans ~1 object unit, the QuadFish body
+spans 349. A displacement in absolute units is invisible on one and catastrophic on the
+other. So the lateral offset is a FRACTION OF DISTANCE ALONG THE SPINDLE'S OWN AXIS,
+`offset.x = Amplitude * PositionOS.z * sin(...)` — first-order bending. Three properties
+fall out that nobody had to author: it is exactly zero at the root, so a spindle can
+never tear off what it is attached to; it grows toward the tip, which is what a frond, a
+fin and a tail all do; and `Amplitude` is a dimensionless SLOPE, so one number means the
+same visual bend on every mesh sharing the material.
+
+**CPU half — `QuadFishSwimDriver`**, the sibling of `SharkJawDriver`: a presentation
+component that reads creature state and writes transforms. It does the part a vertex
+shader cannot, which is move the FINS, because a fin is a separate rigid object (a
+`HealthPrism` — conserved mass with its own collider) rather than vertices of the body
+mesh. Fins beat in diagonal pairs (a sea turtle's gait), derived from the authored fin
+positions rather than assigned by index; the body banks into measured turns.
+
+### 44.3 Two properties make animating conserved mass free here
+
+1. **The flap writes `localRotation`, never `localPosition`** — so a fin prism's
+   POSITION is untouched and `PrismSpatialIndex` sees no change whatsoever. PhysX
+   re-orients the collider on its own.
+2. **The bank writes the BODY transform, which does move the fins** — and
+   `LightFauna.Update` already calls `NotifyBodyPrismsMoved()` every frame for every
+   creature (the movers contract), so that sync is paid for whether this component
+   exists or not. `[DefaultExecutionOrder(-1)]` is what makes it see THIS frame's pose
+   rather than last frame's; script order between components on different GameObjects is
+   otherwise undefined.
+
+Nothing replicates. Every peer runs it against its own replica, exactly as the shark's
+jaw does — the fish looks alive on every machine for zero bytes on the wire.
+
+### 44.4 Blast radius: an authored list, not a side effect
+
+`_SwayAmplitude` defaults to **0**, and both sine terms are multiplied by it, so the
+splice is a **provable no-op** for any material that does not author the property —
+`verify_spindle_sway.py` T2 measures a **bit-identical** passthrough over 180
+position/clock/phase/frequency combinations, negative-controlled against a non-zero
+amplitude. `SpindleGraph` is worn by five materials and only one is a spindle:
+
+| material | users | swaying? |
+|---|---|---|
+| `SpindleMaterial` | 12 — every flora branch, shark, brittlestar, worm segment, QuadFish | **0.08 / 1.4 rad/s** |
+| `QuadFishSpindleMaterial` | the QuadFish body (new, flat copy) | **0.13 / 5.2 rad/s** |
+| `BranchingMembraneMaterial` | `BranchingMembrane.prefab` | no — default 0 |
+| `FireProjectileMaterial` | `SparrowExhaustProjectile.prefab` | no — default 0 |
+| `BlueProjectileMaterial`, `JadeSpindleMaterial` | none | no |
+
+**WHY THE QUADFISH GETS ITS OWN MATERIAL.** Amplitude is unit-free so it transfers
+across twelve wildly different meshes; FREQUENCY is what genuinely differs per creature.
+A fern wants a slow drift and a swimming fish wants a tail beat near 1 Hz, and one
+number cannot be both without the plant looking like it is buzzing. A second base
+material costs 8 more shared phase variants and no batching (`Spindle.cs` caches them
+per base material), which is the cheapest honest way to say *a fern and a fish do not
+sway alike*. **The general rule: a shared material is a claim that everything wearing it
+moves alike — when that stops being true, fork the material, not the shader.**
+
+The QuadFish numbers come out of the geometry. Its body mesh spans z −217.1 .. +132.0
+(measured off `mediumfish.fbx`), so the shear pivots about mid-body and **the tail
+travels 1.64× as far as the head — a fish, for free, out of where the artist put the
+origin**. Peak lateral excursion is `1.097 × 0.13 × 217 = 31` units on a 349-long body,
+≈ 9% of body length, which is about what a real fish's tail beat is worth.
+
+### 44.5 Collider budget
+
+**Zero.** No prism is created, destroyed, or moved in position; no collider is added,
+removed, or resized. The sway is vertex displacement in a fragment/vertex shader; the
+flap is a rotation of colliders that already existed. The only new cost is
+`QuadFishSwimDriver.Update` — four quaternion writes and one `SignedAngle` per QuadFish
+per frame, on a species whose shipped cap is 8 live creatures.
+
+### 44.6 Invariants
+
+Continuity of existence is respected at both ends: the sway is continuous by
+construction and a dying creature's fins **ease** to rest rather than freezing
+mid-stroke. Mass is conserved — nothing is created or removed. No timer, no lifespan, no
+cull. `_stroke` is INTEGRATED rather than computed as `time × frequency`, because a
+phase computed that way teleports whenever the frequency moves and an accelerating fish
+would visibly skip mid-stroke.
+
+### 44.7 Open, and stated rather than hidden
+
+- **Culling envelope.** A swaying spindle can leave its mesh bounds by
+  `1.097 × Amplitude × |z|` (measured, `verify_spindle_sway.py` T8) — at the shipped
+  0.08 that is 8.8% of a spindle's own length. Unity computes `MeshRenderer` bounds from
+  the mesh, so a spindle at the extreme screen edge can cull one frame early. No
+  per-renderer bounds expansion was added because that is a CPU write per spindle and
+  flora branches are numerous; if it ever pops, that is the fix and the number is above.
+- **NOT PLAY-TESTED.** Nothing here has been run in the editor. The amplitudes and
+  frequencies are reasoned from measured geometry, not from looking at them. `SpindleMaterial`'s
+  pair is the one to judge first, because it moves every plant in the game.
+- **The bank's SIGN is a guess.** `bankDegreesPerHundredTurnRate` is positive on the
+  assumption the fish banks into its turns; which way that actually reads depends on
+  which way the authored body mesh faces, which no code here can know. If the fish banks
+  *out* of its turns, negate that one serialized field.
+- **`Clawfish` is a separate, deeper problem — see §44.8.**
+
+### 44.8 What this found in the Clawfish (FIXED in §45)
+
+`Clawfish` is a LIVE species (four `Clawfish Fauna *` configs plus a Codex entry) and it
+is in a rotted state that this pass deliberately did not paper over:
+
+- **Its root script is `QuadFish.cs`** — which is an EMPTY subclass of `Fauna` with no
+  behaviour at all. `Fauna`'s base has no movement, so the Clawfish does not swim; it is
+  not merely stiff, it is inert. (`QuadFish.cs`'s doc comment calls itself a
+  "placeholder for future quad-based fish creatures". It is not a placeholder; it is a
+  shipped species' script.)
+- **Its prefab carries eight ORPHAN serialized keys** (`healthPrism`, `spindle`,
+  `healthBlocksForMaturity`, `minHealthBlocks`, `shieldPeriod`, `onLifeFormCreated`,
+  `onLifeFormDestroyed`, `Population`) — residue of a class layout that no longer
+  exists, which Unity never prunes and which reads as real wiring.
+- **Its body is a raw `ClawfishTest.fbx` instance**, not a Spindle, so it gets no sway
+  from §44.4 and could not without being re-authored.
+
+At the time of writing only the one defect it shares verbatim with the QuadFish
+(§44.9) was fixed. **The rest is fixed in §45**, which also found three more.
+
+### 44.9 The authored swim animation that never once played
+
+Both fish carried a legacy `Animation` component, `m_PlayAutomatically: 1`, pointing at
+`QuadFishSwim.anim` — **a clip with `m_Legacy: 0`**. The legacy `Animation` component
+refuses a non-legacy clip, so that animation has never played on either creature, on any
+build, ever. It also animated `m_LocalScale` on the ROOT, which `Fauna.Initialize`
+overwrites with `BaseBodyScale` — so even revived it would have fought the species'
+own body size, and being a whole-body squash it would not have moved a fin relative to
+the body anyway.
+
+The component is excised from both prefabs (the five-edit excise; no external referrer,
+dangling-reference set unchanged against `HEAD`). **`QuadFishSwim.anim` is KEPT** — it is
+hand-keyed authoring, and the salvage-before-delete gate applies; it is simply no longer
+referenced. The general rule: **a legacy `Animation` component with a non-legacy clip is
+a feature that has never run, and it looks exactly like a feature that works.**
+
+
+## 45. The Clawfish was never alive — a shipped species with no behaviour (Sep 2026)
+
+§44.8 recorded the Clawfish's state and deliberately did not paper over it. This is the
+pass that fixed it. The interesting part is not any one defect; it is that **five
+independent things were wrong and every one of them was invisible from where you would
+look for it**, on a species that has a prefab, four element configs, a Codex page, a
+baked portrait and a station on the Lifeform Matrix bench — every outward sign of a
+finished creature.
+
+Provenance, since it is the first question anyone asks: the Clawfish was added by
+**Angelo Funaro** on **2024-10-10** (`f28b5076`, *"Added clawfish + created animated
+texture for lifeforms + added png assets for use in shaders"*), with a follow-up the next
+day (`03b8583f`, *"Slight pulse to creature shader/material"*). **The local clone cannot
+answer that question** — it is shallow, and `git log` on every Clawfish asset returns one
+commit about a menu button, which is one of the clone's **45 graft boundaries** rather
+than an authoring commit. `Docs/THIRD_PARTY_REGISTER.md` records the same trap. Check
+`.git/shallow` before reporting a `git log` result as authorship.
+
+### 45.1 The five defects
+
+| # | defect | why nothing could see it |
+|---|---|---|
+| 1 | **No behaviour.** Root script was `QuadFish.cs`, an EMPTY `Fauna` subclass. `Fauna`'s base has no movement, so it spawned and sat there. | The component was present, enabled and named after a fish. An empty class looks exactly like a full one in the inspector. |
+| 2 | **`cellData` was a DANGLING guid** (`16d80244…`, owned by no `.meta` in the project). Every other living flora and fauna prefab points at `Runtime Cell Data.asset`. | A dangling object reference deserializes to `None` and renders as an empty slot, which is indistinguishable from a slot nobody filled in yet. |
+| 3 | **Eight ORPHAN serialized keys**, residue of a class layout that no longer exists (§39 is the same disease). | Unity never prunes an unresolvable key. It stays in the YAML forever and reads as real wiring. |
+| 4 | **Its heart was buried 5.2 units inside its own head** — seat `z −4.07` in a body spanning `z [−17.64, −0.28]`, violating §23.9 outright. | The two numbers live in three files and two unit conventions: the seat is a `m_Modifications` row, the body is an FBX's vertices, and that FBX declares `UnitScaleFactor 1` so it lands at **1/100** of its raw numbers. Nothing compared them. |
+| 5 | **The Codex advertised behaviour it did not have** — `CodexHarvester.BehaviourModel` carried a hand-written row, `"QuadFish" => "Swimmer — steers to a goal on its own"`, for a class that steers nowhere. | The encyclopedia is generated, so the sentence *looked* harvested. It was: the harvester harvested a prose row keyed on a type name, and the type name was the only true part. |
+
+### 45.2 What it now is
+
+`Clawfish.prefab`'s `m_Script` is re-pointed to **`LightFauna`** — the same repair commit
+`11f82f2e` made to the QuadFish, whose title says the whole story: *"give the QuadFish its
+LightFaunaDataSO"*. **The MonoBehaviour's `fileID` is unchanged (`369859875180954115`)**,
+which is the point of doing it as a guid swap rather than a component replace: all four
+`Clawfish Fauna *` configs address the prefab through that fileID, and the Codex addresses
+the GameObject through another, so nothing downstream had to move. `cellData` now points at
+`Runtime Cell Data.asset`, the eight orphans are gone, the six fields `LightFauna` actually
+declares are present, and a new `ClawfishFaunaDataSO` carries its swim tuning (derived from
+`QuadFishFaunaDataSO` and tightened for a body a third the size — 60/24/36 detection /
+separation / consume, 18–32 u/s, `rotationLerpSpeed` 7). `QuadFish.cs` is **deleted**: its
+only user in the project was the Clawfish, so the class's whole existence was a
+misassignment.
+
+### 45.3 The heart seat, and the gate it now has (the SEAT is superseded by §46.2)
+
+`Docs/ECOSYSTEM.md §23.9` says a heart *"is seated at the FRONT of its member's own prisms
+with the body trailing (the tadpole arrangement …), never buried inside them."* That rule
+had **no gate**, and the Clawfish had violated it since 2024.
+
+Measured from the shipped assets — the body out of `ClawfishTest.fbx`, the poses out of the
+prefab's two nested-instance blocks, the heart's size out of `spacecrystalanim.fbx` and the
+crystal prefab's own child scale:
+
+```
+body      z [−17.644, −0.279]   nose at −0.279   cross-section x ±2.82  y ±4.26
+heart     z −4.07 → 1.32
+  authored (prefab view)          half-extent 1.415   rear face −0.095   GAP +0.184   clear
+  runtime  (HeartWorldScale 1.384) half-extent 1.451   rear face −0.131   GAP +0.148   clear
+  the OLD seat buried it 5.206 units inside the body
+```
+
+Which end is the nose is not a guess: `LightFauna` steers with `LookRotation`, so a creature
+travels along **+z**. **The reading of the silhouette in this paragraph was WRONG and §46.2
+corrects it** — the `+z` end is not "a dense, spiked, solid mass (the claws)", it is the OPEN
+MOUTH of a hollow horn, and the "claws" are two horizontal tail FLUKES at the `−z` end. The
+conclusion about which end is the front survives; the reason given for it did not. *A
+silhouette read off a bounding box is a guess wearing a measurement's clothes* — the shape
+only came out when the mesh was split into connected components and its interior ray-cast
+(§46.2).
+
+**A heart has TWO sizes and a seat must clear both.** The prefab's authored `localScale` is
+what the prefab view shows; the runtime size is whatever `LifeFormCrystal.ApplyHeartSize`
+forces from the config's `HeartWorldScale` (§40). They are close here (1.35 vs 1.384) and
+they are not the same number — and here the **runtime** one is the larger, so a seat proven
+only against the prefab view would have been proven in the one place nobody plays.
+
+`Tools/Build/verify_fauna_heart_seat.py` is the gate. It **carries a negative control** —
+the pre-fix seat, asserted to FAIL — because a clearance test that has only ever been
+watched to pass is not evidence it can tell a clip from a clear. It names what it does
+**not** cover rather than guessing: Shark and Brittlestar assemble their bodies from
+`HealthPrism` children, the WormColony's body is its members, and the QuadFish's heart sits
+at its ORIGIN inside a body 3.7× its own width — centred, symmetric, and play-tested that
+way, so it was left alone.
+
+### 45.3a A sixth defect, found BY the fix: the heart's size was a function of the heart's seat
+
+Moving the seat made `author_lifeform_heart_sizes.py --check` fail — *"smallest heart 0.859
+is under HEART_MIN 1.0"*. That was not a symptom of the move; the move **exposed** it.
+
+`_measure_reach` walks a prefab's transform tree and recurses into a nested instance's
+**source prefab**, and the guard was `if src.suffix.lower() == ".prefab"`. A nested **FBX
+model** instance is neither a `.prefab` to recurse into nor a `!u!33 MeshFilter` document
+the same-file mesh scan can see, so **it contributed nothing at all** — its whole body
+counted as one unit. The tool's own docstring names the Clawfish as the case it handles
+(*"the Clawfish's entire model are nested instances, so a walk that ignores them measures
+those two species at a seventh of their real size"*), and it did not.
+
+So on the Clawfish the "body diameter" was measured from the only other thing it carried —
+**its own crystal**. `heart = K · bodyDiameter^0.5`, so the heart's SIZE was a function of
+where the heart SAT: seat −4.07 → body 12.4 → heart 1.16; seat +1.28 → body 6.8 → heart
+0.86. **A pure placement fix moved a reward number.** That is circular, and it is the kind
+of loop that is invisible from either end — the seat is a prefab row, the size is an
+authored config field, and nothing in between says they touch.
+
+Fixed by measuring a nested `.fbx` source's own mesh extent (normalised by its
+`UnitScaleFactor`, §45.5). Two species nest their body that way and only one moves:
+
+| species | before | after |
+|---|---|---|
+| Clawfish   | body 12.4 → heart 1.16 | **body 17.6 → heart 1.384** |
+| Brittlestar | body 65.5 → heart 2.67 | 65.5 → 2.67 (its `HealthPrism` children already reached further than its body mesh, so the mesh was never the binding term) |
+
+Everything else in the band is byte-identical, and `K` is unchanged because it is solved
+against the LARGEST lifeform (the Shark, assembled from prisms). The four
+`Clawfish Fauna *` configs were re-authored by the tool, never by hand.
+
+**The loop is now proven broken by measurement**, not by argument: sweeping the seat over
+`z ∈ {1.32, 4.00}` leaves the authored heart at 1.384. (At `z = 8.00` it rises again to
+1.48 — correctly, because a heart hung that far off the snout really does make the creature
+bigger. Every legal seat is far inside that.)
+
+### 45.4 What was still open on it — BOTH CLOSED in §46
+
+Two things were left for an editor session and both landed headlessly instead:
+
+- **It had ZERO body prisms**, so `Fauna._bodyPrisms` was empty, `OnBodyPrismExploded`
+  could never fire, and **the Clawfish could not be killed by shooting it**. It now carries
+  four `HealthBlock` instances on its tail flukes (§46.2).
+- **It did not sway.** It now has a `Spindle` and wears the shared `SpindleMaterial` (§46.2).
+
+The reason given for deferring the prisms — *"placing gameplay colliders on a hull by
+inference is the exact mistake `Docs/VESSEL_CONSTRUCTION.md` records twice over"* — was
+right about the hazard and wrong about the only way out of it. The answer is not an editor
+session, it is a **measurement**: the poses come from the fluke's own vertices at two z
+stations and its own local slope between them, and `Tools/Build/verify_fauna_heart_seat.py`
+re-reads them out of the shipped prefab. Inference is the mistake; measurement is not
+inference.
+
+The reason given for deferring the sway was **half right and half a limitation worth
+removing**. The lockstep half was real (without a `Spindle`, `_Phase` is a material constant
+and every live Clawfish undulates together) and is answered by the creature now having a
+real `Spindle`. The other half — *"binding `Spindle.RenderedObject` needs the renderer's
+fileID inside the FBX, which cannot be derived outside Unity"* — was a true statement about
+Unity's `fileIdsGeneration: 2` hashes and the **wrong conclusion**: if a component cannot be
+wired from outside, the fix is to make the component wire ITSELF, not to leave a species
+un-animated. `Spindle.CacheRenderers` now resolves an unauthored `RenderedObject` from its
+own children (§46.2). *When a serialized reference cannot be authored headlessly, ask whether
+it needs to be authored at all.*
+
+### 45.5 The rules worth carrying
+
+- **A species can have every outward sign of being finished and still have never run.**
+  Prefab, four configs, a Codex page, a baked portrait, a bench station — the Clawfish had
+  all of it. What it did not have was a single line of code that moves it. When a creature
+  "looks stiff", check whether it has any behaviour at all before tuning its animation.
+- **A generated document describing a thing is not evidence the thing exists.** The Codex's
+  Behaviour sentence was real output from a real harvester, and its input was a hand-written
+  prose row keyed on a type name.
+- **`git log` in a shallow clone reports the graft boundary, not the author.** Check
+  `.git/shallow`, and go to the remote when it is non-empty.
+- **Raw FBX extents from two files are not comparable, and the conversion is a cliff**: a
+  file declaring `UnitScaleFactor 100` lands 1:1, one declaring `1` lands at **1/100**. Two
+  of the three meshes in this one fix declare `1`. Normalise before you compare anything.
+- **A rule with no gate is a rule the project has stopped enforcing.** §23.9 had been
+  written down for a month and violated the whole time.
+- **A measurement tool's docstring is a claim, not a test.** The heart-size tool said in
+  prose that it handled the Clawfish's nested model; its code handled `.prefab` sources
+  only. The prose had been right about the HAZARD and wrong about the FIX for as long as
+  both existed.
+- **Fixing one number can move another that has no business depending on it.** Re-run the
+  authoring gates after a placement change, and if one fails, ask whether the change
+  revealed a loop rather than caused one.
+
+---
+
+## 46. The Clawfish becomes a creature — and a fauna skin fork, walked back (Sep 2026)
+
+§45 left two things open on the Clawfish — it had no body prisms, so it could not be shot,
+and it did not sway — and both are closed here, headlessly. §46.2 is that work.
+
+The same pass also built a **forked `FaunaSpindleGraph`**, giving creatures three things
+`SpindleGraph` does not have, and it was then **walked back on a look call**: the old shader
+and its settings read better. §46.1 is the retirement record, kept because the reading that
+produced it is a measurement and the arguments in it are about the platform rather than
+about that graph.
+
+### 46.1 The fauna skin fork — what it was, and why it is not in the tree
+
+`SpindleGraph` is worn by twelve prefabs and only six of them are creatures. §44 gave every
+one of them a GPU sway, which is a statement about *limbs*. The fork added three things that
+are a statement about *being alive*, lifted from `CreatureTextureGraph` — the one-off shader
+the **Clawfish** wore and nothing else did.
+
+Traced edge by edge, most of that graph is dead: an unconnected `Color1`/`Color2` pair, an
+unconnected gradient, an unconnected `Smooth Wave` subgraph, an unconnected
+`_Transparency_Color` authored at HDR (1024, 1024, 1024). What it actually rendered was
+three things:
+
+| what it did | how |
+|---|---|
+| a **fresnel rim** | `BaseColor = Fresnel(power 3) × texture × …` |
+| a **slow brightness breath** | `… × Remap(SineTime, −1..1 → 0.5..1.2)` |
+| a **scrolling surface** | the alpha texture's UV offset ← `Time × _Direction`, authored `(0, −0.01)` |
+
+*A graph that is 80% dead nodes can still be carrying the one idea worth keeping.* Read the
+edges before deciding a bespoke asset has nothing in it — that half stands whatever happened
+to the fork.
+
+**What was built.** `FaunaSpindleGraph`, a fork of `SpindleGraph` with those three on two
+Custom Functions (`FaunaSkin.hlsl`) driven by `_PrismClock` rather than Unity's `Sine Time`
+— which is what made the original the one thing in the cell that kept breathing while the
+game was paused. Every dial defaulted to a provable no-op (`_RimStrength` 0, `_Pulse` (1,1),
+`_FlowSpeed` (0,0)), proven by compiling the shipped HLSL with clang and negative-controlled,
+so the fork was bit-identical to its parent until a material authored it. Its two colours
+were **unexposed globals** published from the palette's Blue SHIELDED pair, because `Spindle`
+mints eight phase-variant materials per base material at runtime — which COPIES the colour at
+mint time, so painting the base is correct only while `ThemeManager.Awake` beats the first
+spindle, an unenforced ordering with a silent failure. Six fauna prefabs (19 references) moved
+onto a `FaunaSpindleMaterial` authoring rim 0.45, pulse (0.8, 1.2) and flow (0, −0.01).
+
+**Why it is gone.** The look call, on the branch, before anything was played: the old shader
+and settings are better. The whole fork — the graph, `FaunaSkin.hlsl`,
+`FaunaSpindleMaterial`, `FaunaNeutralPalette` and its build check, the `ThemeManager` publish,
+and the four generators and verifiers that owned them — is deleted, every fauna reference is
+back on the shared `SpindleMaterial`, and `QuadFishSpindleMaterial` is back on `SpindleGraph`
+carrying only its own faster sway (0.13 / 5.2 against the shared 0.08 / 1.4, §44.3). Flora was
+never touched in either direction. `CreatureTextureGraph` and `CreatureMaterial` are
+unreferenced again and stay in the tree under the salvage-before-delete rule.
+
+**Three things in it are worth carrying and do not depend on the fork.** (1) A bespoke
+asset's EDGES, not its node count, say whether it is empty. (2) A creature-wide colour that
+`Spindle` will re-mint at runtime belongs in a **global**, not in a painted base material,
+for the mint-time-copy reason above — that hazard is unchanged and the next thing that wants
+a fleet-wide spindle colour hits it. (3) A shared material is a claim that everything wearing
+it moves alike: amplitude transfers across meshes and frequency does not, which is why the
+QuadFish has its own material at all and why the Clawfish takes the shared one.
+
+
+### 46.2 The Clawfish: what it actually is, and what it now has
+
+The shape only came out of splitting the mesh into **connected components** and ray-casting
+its interior. §45.3's reading off the bounding box was wrong:
+
+```
+horn    739 verts   z [−11.61, −0.42]   a HOLLOW open-mouthed cone, pinching shut at z −9.4
+fluke   170 verts   z [−17.78,  −5.08]  thin in y, broad in x — a whale's tail, ×2 mirrored
+```
+
+Largest sphere that fits inside the horn on its own axis: **r 2.21 at z −1.42**, staying over
+r 1.28 all the way back to z −7.4. So there really is a back cavity, and the heart belongs in
+it — it had been sitting at `z +1.32`, **1.6 units in FRONT of the open mouth**, which is
+exactly what "the crystal is in its mouth" describes.
+
+**The seat rule is now derivable rather than chosen**: the horn narrows going back, so how far
+the heart shows through the hull grows monotonically with depth — therefore the **shallowest
+seat that puts the whole heart behind the mouth plane** is also the most enclosed one. That is
+`z −2.66` (prefab space), front face `−0.372` against a mouth plane at `−0.279`.
+
+**It does not fully enclose, and asserting that it did would be asserting a fiction.** At the
+runtime `HeartWorldScale` of 2.18 the crystal is a faceted ball of radius **2.29** — as wide
+as the fish. That is the shipped norm, not an outlier: the QuadFish is the same size (17.5
+world units) and carries a 1.98 heart at its own origin. So the gate MEASURES how far the
+heart shows through the hull (**0.42 units, 14% of the body's widest radius**) and reports it
+without gating on it.
+
+`Tools/Build/verify_fauna_heart_seat.py` was rewritten around that and holds three rules —
+the heart is behind the mouth, no deeper than it has to be, and ahead of its own prisms
+(§23.9, satisfied: it leads them by 10.6 units). It carries **two** negative controls, each
+naming the rule it must break, because the two seats this species has shipped failed
+*differently* and a control that fires for the wrong reason proves nothing about the right
+one.
+
+The prisms are **four `HealthBlock` instances, two per fluke**, matching the QuadFish because
+the two fish are the same size. Their poses are measured, not eyeballed: each sits at the
+blade's own centroid at its z station and is pitched by the blade's own local slope between
+the two stations (`atan(0.83 / 2.6)` = 17.7°). They go on the flukes because §26's ordered
+wither runs farthest-from-the-heart first, so a starving Clawfish should lose its tail before
+its core.
+
+Its body is a nested FBX instance, so `Spindle.RenderedObject` cannot be authored from
+outside the model — Unity's `fileIdsGeneration: 2` fileIDs are importer hashes. Rather than
+let that keep a species un-animated, `Spindle.CacheRenderers` resolves an unauthored
+`RenderedObject` from its own children, **excluding anything under a `Prism` or a `Crystal`**
+— and that exclusion is the whole reason it is not a bare `GetComponentsInChildren` sweep,
+because flora parents its HEALTH PRISM under the spindle root and adopting it would fade
+conserved mass with the branch. Measured: **all 25 shipped `Spindle` components author a
+`RenderedObject`**, so the fallback is dead code for everything that existed before this.
+
+The FBX's material is re-pointed through the importer's own `externalObjects` remap
+(`CreatureMaterial` → the shared `SpindleMaterial`), which is the sanctioned way to say it and
+has a blast radius of one creature, because `ClawfishTest.fbx` has exactly one user. It takes
+the SHARED material rather than keeping its own because its body is now a **spindle**:
+`SpindleMaterial` is the graph `SpindleSway.hlsl` lives in and already authors the shared
+0.08 / 1.4, where `CreatureMaterial` is a different graph entirely and would leave this fish
+the only creature in the cell that does not move.
+
+### 46.3 Collider budget
+
+**Zero change for every species except the Clawfish, which gains four.**
+
+The retired fork (§46.1) was photons and is now not even that; its removal costs nothing and
+frees nothing. The `Spindle` the Clawfish gained is photons too — it runs on `_PrismClock`
+exactly as every other creature's does.
+
+The Clawfish's four `HealthBlock` instances are `PrismKind.Plain` with a LOD-cullable
+`BoxCollider` (`IsShielded: 0` on the shipped prefab), i.e. the same four the QuadFish has
+carried since it shipped. Against `Fauna`'s per-creature body budget that is 4 of 6, and at
+the Clawfish's authored populations it is the smallest fauna line item in any cell that
+carries it.
+
+### 46.4 Open, stated rather than hidden
+
+- **Nothing here has been run in the editor.** The HLSL is compiled and proven by clang, the
+  graph is validated structurally before writing and re-proven by `--check`, the prefab's
+  local references are audited against `HEAD`, and every asset generator is idempotent. None
+  of that is a frame.
+- **`CreatureTextureGraph` and `CreatureMaterial` are referenced by nothing**, as they were
+  before §46.1's fork and as they are again after its walk-back. They stay in the tree under
+  the salvage-before-delete rule; deleting them is a separate, deliberate act.
+- **The Clawfish's sway is the shared 0.08 / 1.4**, i.e. the shark's, not the QuadFish's
+  faster 0.13 / 5.2 — a horn-shaped drifter reads as a slow undulator, but the two fish are
+  the same size and this is a look call nobody has seen yet.
+- **Its four health prisms do NOT sway with it**, so the body bends and the ribs stay rigid:
+  the lockup that reads as one creature breaks as soon as the sway is visible. The fix is
+  §47's, and it generalises — a LIVING health prism should ride its lifeform's sway, which is
+  also what tells living mass apart from a corpse's skeleton and from a vessel's trail.
+
+### 46.5 The heart-size measurement bug, FIXED — and what it re-priced
+
+The bug this section originally recorded as open is closed. `author_lifeform_heart_sizes.py`
+walked a nested `PrefabInstance` by measuring its SOURCE prefab *including* that source root's
+own `localScale`, and then multiplying by the instance's `m_LocalScale` override — but Unity
+serializes an override as the FINAL value of the field, so the override **replaces** the source
+root's scale rather than multiplying it. The walk applied it twice.
+
+`_instance_transforms` now reports whether the instance authored `m_LocalScale.*` at all, and
+`_measure_reach` recurses into such a source with `include_root_scale=False`. That is the whole
+fix — three lines and a flag. **24 of 41 lifeform prefabs measured too large**:
+
+| prefab | before | after |
+|---|---:|---:|
+| `WormBodySegment` | 113.76 | **19.21** |
+| `MassSharkFauna` | 195.06 | 133.81 |
+| `WormTailSegment` | 91.45 | 37.45 |
+| `MassBrittlestarFauna` | 65.54 | 49.22 |
+| `WormHeadSegment` | 47.80 | 34.29 |
+| `Clawfish` | 43.93 | 34.93 |
+| `QuadFish` | 27.70 | 17.46 |
+| every `BranchingFlora` form | 9.43 | 6.29 |
+| `GyroidFlora` | 8.28 | 5.52 |
+
+**What it re-priced, stated plainly.** `K` is SOLVED so the largest lifeform lands on
+`HEART_MAX` 4.6, and the largest lifeform **changed**: the Shark was only the biggest thing in
+the game because its own root scale was being squared. `K` rises 0.32936 → **0.36599**, the
+anchor becomes the **Nerve flora** (body 158.0), and the band tightens from `1.04 → 4.60`
+(4.42×) to `1.16 → 4.60` (3.98×). 113 assets re-authored. The visible consequences:
+
+- **A shark's heart is no longer the biggest in the game** — 4.60 → **4.23**, behind the Nerve
+  plant's 4.60. §40's rule is *a bigger kill pays more*, and the measurement now says the
+  biggest lifeform is a plant; that is the rule working, but it is a **look and feel call
+  nobody has played**.
+- Every fauna heart shrinks except the Tadpole's, which rises with `K` (2.07 → 2.30 /
+  1.56 → 1.74) because its body was measured correctly all along. QuadFish 1.98 → 1.75,
+  Brittlestar 2.67 → 2.57, WormColony 2.28 → 2.14.
+- Every flora heart rises with `K`, because no flora body is measured off a nested instance
+  except `BranchingFlora`/`Gyroid` (whose 1.5× shrink is smaller than `K`'s 1.11× rise only
+  for the gyroid — SchwarzP Charge 1.04 → 1.16, Cacti 3.50 → 3.89).
+- The whole band stays under `MaxSafeHeartWorldScale` **4.8**, monotone, and `--check` is green.
+- The Clawfish's heart *shrinks* slightly, 2.183 → **2.163**, so `verify_fauna_heart_seat.py`
+  still passes with more clearance than before — the earlier estimate that the fix would grow
+  it to 2.35 was made against the old `K` and was wrong.
+
+*A measurement that is wrong by a FACTOR can hide inside a band that is SOLVED, because the
+solve re-normalises the top of it.* Nothing here looked out of range; what it did was re-rank
+the roster.
+
+---
+
+## 47. Living mass is the mass that MOVES — the health prism sway (Sep 2026)
+
+§44 gave every spindle a GPU bend. It stopped at the spindle. The conserved mass **bolted to
+the spindle** — the health prisms that are a creature's body and a plant's leaves — stayed
+rigid, so a Clawfish's fluke bent away from the four ribs lying on it and the lockup that reads
+as ONE creature came apart the moment the sway became visible. It was reported exactly that
+way: *"the sway on the clawfish was competing with its prism lock up."*
+
+This is the other half, and it pays for itself three times over: the lockup holds, a plant's
+leaves move with its branches, and — because the default is an exact no-op — **a living health
+prism is now visibly different from the skeleton a dead lifeform leaves behind and from a
+vessel's trail.** That third one is the part worth keeping: it is a read the player gets for
+free, off a channel nothing else was using.
+
+### 47.1 The sway is a property of the LIMB, not of the mesh
+
+`SpindleSway` displaces a vertex by a pure shear along the limb's own +z:
+
+```
+offset = z_limb * (Amplitude·sin(t), Amplitude·W·sin(t'), 0)        [limb object space]
+```
+
+and the property that makes everything here possible is that **the offset is a function of z
+ALONE**. Every point at the same height on the limb moves identically, whatever its x and y. So
+a prism bolted to the limb does not need to know where AROUND it it sits; it needs its own
+height and the limb's axes. Evaluate the SAME field at the prism's own vertices and the prism
+and the limb surface move together **exactly**, not approximately.
+
+That exactness is the requirement rather than a flourish. An approximation reads as the rib
+sliding on the fin, which is the defect being fixed — so the headline test
+(`Tools/Shaders/verify_prism_sway.py` T3) demands that `PrismSway` with a degenerate basis is
+**bit-identical** to `SpindleSway`, not close to it. Getting there needed one non-obvious thing
+in the shader: the limb height is folded into the span BEFORE the sine, because
+`(Amplitude·height)·sin` and `Amplitude·(height·sin)` are the same real number and different
+float32s. *When two shaders have to agree, the order of operations is part of the contract.*
+
+`PrismSway.hlsl` `#include`s `SpindleSway.hlsl` rather than copying its two wave constants. A
+copy would drift over exactly the timescale the secondary ratio was chosen to make
+non-repeating — i.e. it would look fine for the first few seconds and then slowly come apart,
+which is the worst available failure mode.
+
+### 47.2 What is stamped, and why it is a creation stamp
+
+Four Hybrid-Per-Instance properties, all **constants of the attachment**:
+
+| property | what it is |
+|---|---|
+| `_SwaySpanX` | the limb's +x in THIS prism's object space, × the limb's sway amplitude |
+| `_SwaySpanY` | the limb's +y, same basis and amplitude — the secondary wave's axis |
+| `_SwayAxis` | the limb's +z as a linear FUNCTIONAL on this prism's object space |
+| `_SwayTiming` | (Frequency rad/s, Phase rad, Z0 = the prism ORIGIN's height up the limb) |
+
+A prism does not move relative to the limb it is part of, so **nothing here is ever
+re-computed**: this is `Docs/PRISM_ANIMATION.md`'s clock-material law in its purest form, with
+zero per-frame CPU at any population. It is also the first stamp on the service with **no start
+time and no duration** — the sway does not end, it is what being alive looks like.
+
+Three details are each a trap avoided:
+
+- **`_SwayAxis` is a ROW of the change of basis, never a normalized direction.** A prism
+  routinely carries a non-uniform `leafSize` as its `localScale`, and under that a normalized
+  axis is simply a different — wrong — number. The row is exact by construction.
+- **The limb frame is the RENDERER's transform, not the Spindle root's** (`Spindle.SwayFrame`).
+  `SpindleSway` shears `PositionOS`, and PositionOS is the *rendered mesh's* own space. The two
+  coincide on a spindle whose geometry sits at local identity and do NOT on one whose mesh is
+  posed under it — the Clawfish's body is a nested FBX instance carried at an offset — so
+  baking off the root would shear a rib about an axis its own limb is not using.
+- **The phase is the bucket the limb's material was minted from, not a fresh hash.** `Spindle`
+  desyncs its sway through eight shared phase-variant materials chosen by a position hash
+  (§44), and that hash is now a single `Spindle.PhaseBucket` both the variant picker and the
+  prism stamp read. Two copies of it would be a desync nobody would look for. It is resolved in
+  `Start` and CACHED, because a spindle is routinely `Instantiate`d and only THEN posed
+  (`AssembledFlora`) — re-hashing later hands a prism a phase its own limb is not using.
+
+The stamp site is **`Prism.OnCreationComplete`**, a new one-line virtual called from the
+creation coroutine's completion. It cannot be `Initialize`: Initialize runs before the
+companion entity exists and, on the assembled-flora path, before the prism has been re-parented
+onto its spindle at local identity. `Spindle.Start` re-stamps everything already bound to it,
+so the two orderings both land; every stamped value is a pure function of the attachment, so
+re-stamping is idempotent by construction.
+
+### 47.3 The default is the feature
+
+`_SwaySpanX = _SwaySpanY = (0,0,0)` is an exact, bit-identical no-op, and it is the default on
+the prototype entity, in all 15 prism materials and in both graphs. So:
+
+- **A vessel's trail does not sway.** Neither does an authored cell environment.
+- **A SKELETON does not sway.** `HealthPrism.LeaveAsSkeleton` — the §26 path that hands a dead
+  lifeform's body prisms to the cell as ordinary mass — clears the stamp. A husk that went on
+  swaying would read as a creature nobody could kill.
+- **A prism seated AT its limb's root does not translate**, because the shear is exactly zero
+  at z = 0. An earlier version of this bullet claimed that was the LATTICE case and it is
+  not — see §47.7, which measures it. The limb frame is the RENDERER's (the bullet two above),
+  and a lattice branch mesh is posed under the spindle root rather than at identity, so an
+  `AssembledFlora` prism at `localPosition = Vector3.zero` sits at **`Z0 = ±0.55` of its
+  limb**, not at 0. Every lattice species was already swaying the day this shipped; what was
+  wrong was how MUCH, and the cause was somewhere else entirely.
+
+### 47.4 How it is proven
+
+Four layers, because the two halves can each be right and still not compose:
+
+1. `Tools/Shaders/verify_prism_sway.py` — compiles the SHIPPED HLSL with clang (resolving the
+   include the way Unity will) and runs 8 tests, two negative-controlled: the zero-span no-op,
+   the **bit-identical** agreement with `SpindleSway`, linearity in limb height, a rotated +
+   non-uniformly scaled prism landing on the limb, that the constants are included rather than
+   copied, and the culling-envelope number (`1.0964 × Amplitude × limbHeight`).
+2. `PrismSwayBakeTests` — the C# bake as a pure function (`PrismSway.BakeAttachment`, extracted
+   precisely so the one thing that can be silently wrong is testable without a render service,
+   an entity world or play mode). The identity under test is the whole design in one line: *a
+   prism vertex displaced by the baked span lands, IN LIMB SPACE, exactly where the limb's
+   shear puts the point at that vertex's own height.*
+3. `Tools/Shaders/wire_prism_sway.py --check` — the graph splice, validated structurally before
+   it writes and re-asserted after, including that the sway sits immediately AFTER the shield
+   morph in the vertex chain so the two compose.
+4. `PrismClockWiringValidator` — the four properties are Hybrid Per Instance in both graphs, the
+   Custom Function points at `PrismSway.hlsl`, and six `SwayEdges` assert the composition order,
+   which is the one thing a property check cannot see: every property can be present and correct
+   while the node sits in a branch nothing reads.
+
+### 47.5 Collider budget
+
+**Zero.** This is a vertex shader and four floats of per-instance data. No collider, no spawn,
+no consumption, no per-frame CPU, and — because the sway is baked rather than ticked — no cost
+that scales with the number of living prisms. The renderer's culling box is expanded by the
+measured sweep so a swaying prism at the edge of the screen cannot pop, which is bounds
+arithmetic done once at the stamp.
+
+The one honest cost is **instance data**: four `float3`s per prism, on every prism in the game
+rather than only the living ones, because Entities Graphics carries the override set on the
+prototype. That is 48 bytes per prism — ~2.4 MB at the heaviest shipped cell (the Lattice cell's
+~50,000) — and it buys the whole feature at zero frame cost.
+
+### 47.6 Open, stated rather than hidden
+
+- **Nothing here has been run in the editor.** The HLSL is compiled and proven by clang, the
+  graph splice is validated before writing and re-proven by `--check`, the bake is proven
+  numerically against the shader's own formula, and every touched C# file parses under Roslyn.
+  None of that is a frame.
+- **Only prisms whose PARENT carries the Spindle are reached.** `HealthPrism.Initialize`
+  resolves its limb with `transform.parent.GetComponent<Spindle>()`, which is the platform's
+  own stated convention ("every healthPrism requires a spindle parent") and is satisfied by the
+  Clawfish and by all three flora growth paths. It is NOT satisfied by the **Shark** or the
+  **Brittlestar**, whose body prisms are bound to armature bones by Animation Rigging — which
+  is correct, because their motion comes from the rig rather than from a spindle's shear, and a
+  prism swaying on top of a `DampedTransform` chain would fight it.
+- **The amplitude is the LIMB's, so a species tunes its prisms by tuning its limb.** There is
+  deliberately no per-prism dial: two prisms on one limb moving by different amounts is the
+  defect, not a feature.
+
+### 47.7 A dimensionless slope is not dimensionless under a non-uniform scale (Sep 2026)
+
+Reported as *"i was hoping for a barely perceptible sway in the lattice species."* The three
+lattice flora — gyroid, Schwarz P, quasicrystal — read as dead. §47.3 said that was by
+design, on the grounds that their prisms sit at `Z0 = 0`. **Both halves of that were wrong**,
+and the measurement is the useful part.
+
+**The prisms were never at zero.** `Spindle.SwayFrame` is the RENDERER's transform, and every
+lattice branch prefab poses its mesh *under* the spindle root — `GyroidBranch` at
+`(0, ±1.7133, 0)` with a ±90° twist and `localScale (1, 1, 3.1)`, `AssemblyBranch` at
+`(0, −3.58, 0)` on `6.2`, `QuasicrystalBranch` at `(±3.9399, 0, 0)` on `7.1288`. Taking the
+spindle origin back through each of those puts the prism at `|Z0| = 0.5527 / 0.5774 / 0.5527`
+of its limb, and the mirrored PAIRS agree with each other exactly, which is load-bearing: the
+two half-branches meet AT the prism (§34.12), so halves that disagreed would move the joint
+they share by different amounts and visibly separate. `author_lattice_spindle_materials.py`
+asserts that agreement rather than assuming it.
+
+**The real cause is that `Amplitude` is a slope in OBJECT space.** `SpindleSway.hlsl`'s own
+header called it "a dimensionless SLOPE, so the same number means the same visual bend on
+every mesh that shares the material". That holds for a UNIFORMLY scaled mesh and for nothing
+else: a renderer carrying `localScale (1, 1, sz)` deflects its tip by
+
+```
+world tip angle = atan(Amplitude · sx / sz)
+```
+
+so a mesh stretched along its own bend axis bends that much LESS. And the sentence offered in
+that header as reassurance — *"every shipped spindle prefab is scaled on z to match (Branch
+6.2, TadpoleSpindle 3.0)"* — names the two prefabs that **disagree**. Measured over every
+spindle renderer in the project at the shared 0.08:
+
+| renderer | localScale | world tip lean |
+|---|---|---|
+| `TadpoleSpindle`, worm head/body/tail, `QuadFish` | uniform | **4.57°** |
+| `GyroidBranch` ×2 | (1, 1, 3.1) | 1.48° |
+| `Branch` (every ordinary flora), `AssemblyBranch` | (1, 1, 6.2) | 0.74° |
+| `QuasicrystalBranch` ×2 | (1, 1, 7.1288) | 0.64° |
+
+*A constant that is scale-free in one space is not scale-free in another, and the claim is
+worth re-deriving in the space the player actually sees.*
+
+**The fix is per-mesh amplitudes, not a per-mesh shader.** Three new materials —
+`GyroidSpindleMaterial`, `AssemblySpindleMaterial` (Wall and Schwarz P share that branch),
+`QuasicrystalSpindleMaterial` — each a verbatim clone of `SpindleMaterial` with one number
+changed, authored by `Tools/Build/author_lattice_spindle_materials.py` (`--check`) with the
+amplitude SOLVED from that prefab's own stretch for one target lean. This is §46's rule
+applied one level down: *a shared material is a claim that everything wearing it moves alike*,
+and three meshes that disagree about their own z by 2.3× do not move alike under one slope.
+
+| material | branch | z stretch | amplitude | prism sweep / limb |
+|---|---|---|---|---|
+| `GyroidSpindleMaterial` | `GyroidBranch` | 3.1 | **0.1625** | 3.18% |
+| `AssemblySpindleMaterial` | `AssemblyBranch` | 6.2 | **0.3249** | 3.32% |
+| `QuasicrystalSpindleMaterial` | `QuasicrystalBranch` | 7.1288 | **0.3736** | 3.18% |
+
+**Equal ANGLE is equal FRACTION OF THE LIMB**, which is why one authored number serves a
+family whose bonds span 3 to 24 world units, and why it stays true under
+`FloraVariantTuning.LatticeScale` — that scales the branch and the bond together, so the ratio
+is scale-invariant by construction and all twelve lattice configs are covered by three
+materials.
+
+**3° is the authored number and the bound that set it is the JOINT.** Two neighbouring prisms
+draw independent phases from `Spindle.PhaseBucket`, so the most they ever move APART is twice
+the sweep, ~6.4% of their bond — inside the lattice's own 10% mate-snap tolerance (0.3 on 3,
+§34.8), so a breathing lattice can never read as a broken one. It also keeps a crystal moving
+strictly less than a fish (3° against 4.57°), which is the ordering that should hold. The
+tool asserts the derived amplitudes and the resulting prism sweeps against stated bands, so a
+future branch prefab that seats its prism at a different height cannot silently leave them.
+
+**Stated rather than silently changed: the ordinary flora `Branch` keeps the shared 0.08 and
+its 0.74°.** Twelve prefabs wear it, nobody has asked for it to move, and it is a look call —
+not a bug — now that the number is measured instead of assumed. The cost of the three new
+base materials is 24 runtime phase variants where the lattice family previously shared eight
+(`Spindle` mints them per base material), i.e. ~16 extra draw calls in the Lattice cell and
+zero colliders.
+
+**Open:** unrun in the editor, like the rest of §47. The frequency is left at the shared
+1.4 rad/s deliberately — a crystal arguably wants to be slower than a fern, but that is a
+second unrequested look change and the amplitude is what "barely perceptible" is about.
+`TARGET_TIP_DEGREES` in the authoring tool is the one number to move after the first playtest.
+
+---
+
+## 48. Garland — a cell composed for the CAMERA, at a fifth of the weight (Sep 2026)
+
+The freestyle seven are 34–41k prisms each and are all composed for a pilot who is *inside*
+them. The home screen shows none of that. `MenuCam_LavaLamp1` orbits the cell centre at **686
+units** at 2.83°/s with the autopilot flying the player's vessel through the shot, and at that
+distance a nominal 2.5-unit prism is a pixel: the seven read as haze around a big ball.
+
+**Garland** (`SpawnableGarland`, `Garland Cell Config`) is the answer, requested 2026-09 as an
+Ourobor/Yggdra hybrid held to **~5,000 prisms** so it loads in a breath and does not read as
+busy. It measures **4,259 prisms / 2,177,499 volume** — an eighth of Yggdra's count.
+
+### 48.1 The one rule the whole file follows
+
+**Spend prisms on LENGTH and SILHOUETTE, never on surface.** Every family is a curve laid ONE
+prism per step, with that prism's LENGTH **derived from the step** rather than authored
+(`ChainFill`, 0.82 — see §48.10, where it used to be 1.08 and welded every chain shut). A
+9,377-unit knot costs 426 prisms as a continuous 16×7 bough; filling the same shape as a sheet
+would cost forty times that and read, at 686 units, as exactly the same line. Yggdra's trunk is
+fourteen strands × 220 prisms stepped at 2u against a 7.8u prism — 3.8× overlap, which is how you
+build something that has to survive being flown through at ten metres and is pure waste at seven
+hundred.
+
+The corollary, and the reason the volume is large where the count is small: these prisms are
+**big**. Volume is the spine, so a cell laid this way must author its ladder from measurement —
+which is what §48.4 is about — but big prisms cost nothing in colliders, and colliders are what
+the budget is actually made of.
+
+### 48.2 The composition — three depth layers and one thing crossing them
+
+Depth is what a distant, nearly-still camera has instead of detail.
+
+| layer | radius | families | prisms |
+|---|---|---|---|
+| the **seed's surface** | 436–466 | 2 shore bands (coastlines, one shell each), 8 landfall patches of 14 plates | 443 |
+| the **subject** | 480–870 | the BOUGH (a (2,3) torus knot), the VINE (a (3,2) knot counter-wound inside it at 480–650), 5 + 3 blossoms, 17 leaf skirts, 3 terraces | 2,637 |
+| the **far edge** | 690–1,074 | 8 crown boughlets + their 28-leaf tufts | 544 |
+| **crossing all three** | 436–870 | 8 FALLS — root strands that leave the bough, spiral a third of a turn and land on the shore | 635 |
+
+The camera orbits at 686, **inside** the bough's band (530–870) — asserted, because that is what
+makes the bough the subject rather than a shell seen from outside: its near pass looms and its
+far pass is the backdrop, and the two swap as the camera crawls. The falls are the family that
+earns its 14%: without something crossing the gap between the two things always on screen (the
+nucleus and the bough) the cell reads as two concentric shells rather than one object.
+
+The blossoms are ringed discs facing along the bough's own tangent, so the camera sees
+full faces on one side of the knot and edges on the other — the cheapest way to make a distant
+composition change while nothing moves.
+
+### 48.3 What it does NOT have, and why
+
+- **Zero danger prisms.** Yggdra's thorns are the environment being real for a pilot who chose
+  to fly it. This cell's normal state is an AI flying the player's vessel behind a menu, where
+  a danger prism reads as the ship being jerked about for no reason the player can see. Geode
+  and Ourobor already hold that pole.
+- **69 armoured prisms** (super-shielded blossom bosses and terrace keystones) against Yggdra's
+  225 — under a third, and the generator fails above 80. ⚠ This budget was authored, and
+  described in three places, as a **collider** budget, and that was simply wrong: a shield swaps
+  the MESH and the MASS, never the collider (`shieldMeshCollider.enabled = true` appears nowhere
+  in the project — four sites, all `= false`), so a super-shielded prism keeps the same primitive
+  box trigger an ordinary one has. The budget is kept because the REAL cost is to the **food
+  web** — `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded
+  mass, and armoured mass also leaves the cell's targeting grids — so every prism counted here is
+  mass the grazers can never remove, in a cell whose whole equilibrium is the food web holding
+  the population down. Same trap as Breakwater's stated go/no-go gate that did not exist
+  (`CLAUDE.md`, `BREAKWATER.md`): **verify a cost before you budget against it.**
+- **Nothing inside the nucleus.** Measured nearest prism CORNER **427.8** against the 392
+  control radius, a **+35.8** margin. Caldera shipped 89% of its mass inside that radius (§18.1)
+  and pre-awarded node control before anyone flew; this cell states the clearance as an
+  inequality on the knot's own parameters rather than leaving it to where the blossoms landed:
+  `Major − Minor ≥ NucleusR + the outer ring + a petal's half-diagonal + margin`.
+- **Nothing clipping anything.** Zero interpenetrating pairs over the whole cloud, measured with
+  a 15-axis separating-axis test — see §48.10, which is also the record of it having been 4,372.
+
+### 48.4 The roster — four flora, three fauna, bounded by construction
+
+The user's brief was *a few beautiful flora and fauna on a sustainably high performance
+equilibrium that never grows to bonkers counts like the Lattice cell*. Two decisions do that.
+
+**No lattice species.** Gyroid/SchwarzP/quasicrystal reproduce as a POPULATION — one birth per
+fauna-wave period, forever, up to a cap expressed in plants — which is exactly the growth curve
+the brief rules out, and it is what the shared Blob profile (which all seven other freestyle
+worlds use) runs. Garland authors its own profile with four **phyllotactic** species instead:
+each is a hand-shaped plant with a fixed per-element budget, a seed floor and a hard cap.
+
+**The cap is the ceiling, and it is small.**
+
+| species | floor | cap | budget/plant | prisms at cap | why it is here |
+|---|---|---|---|---|---|
+| Arbor | 3 | 5 | 312 | 1,560 | the hero silhouette — a ~280u tree |
+| Tendril | 4 | 6 | 144 | 864 | ~374u of dangle for 120 prisms — the best reach per prism in the fleet |
+| Lantern | 4 | 7 | 84 | 588 | the blossom pods — colour, near the camera |
+| Spire | 2 | 3 | 204 | 612 | tall thin verticals for rhythm |
+| Brittlestar (herbivore) | 3 | 6 | ~4 | 24 | the grazer that keeps the equilibrium |
+| QuadFish (herbivore) | 4 | 8 | ~4 | 32 | swim strokes — motion at distance |
+| Shark (predator) | 1 | 2 | ~4 | 8 | the majestic slow pass |
+
+**37 always-on heart colliders at cap** — one per live lifeform — against Blob's 171 and the
+Lattice cell's 1,080. The mature cell is **8,147 prisms**; the freestyle seven boot heavier than
+that before anything grows.
+
+Each species uses the canonical `Lifeforms/<Species> Flora <Element>` assets as its
+`ElementPalette`, so an element keeps its own identity (leaf shape, budget, tempo, heart size)
+and this cell only says HOW MANY and WHERE — the split `FloraConfigurationSO`'s cell-level
+overrides exist for. The per-species planting bands (0.36–0.78 of the membrane) put the garden
+in the annulus the camera actually frames.
+
+### 48.5 The ladder — Restless EARLY, Frenzy above the mature garden
+
+|  | volume | count |
+|---|---|---|
+| Restless enter / exit | 2,278,970 / 2,275,770 | 5,527 / 5,327 |
+| Frenzy enter / exit | 2,529,242 / 2,519,642 | 11,747 / 11,147 |
+
+Two rules, and they pull opposite ways. **Frenzy must sit above the MATURE cell** or planting and
+growth freeze with the garden still bare (`Cell.FloraGrowingEnabled => phase < Frenzy`) — so it
+is `env + flora at cap + a fauna/skeleton allowance + the standard freestyle trail band`.
+**Restless must sit EARLY** or the food web is dormant for the whole of the cell's growth and the
+equilibrium never starts breathing — so it is `env + 35% of the planting budget`.
+
+Note `CellPhaseRules.Compute` **never reads the Restless COUNTS** — the Restless boundary is
+volume-only, and only `FrenzyEnter`/`FrenzyExit` are a count backstop. The Restless count pair is
+authored for consistency and for the zero-volume derivation path.
+
+### 48.6 How the numbers are known rather than believed
+
+`SpawnableGarland` draws **nothing** from the base class's shared `System.Random`
+(`RangeF`/`Jit`) and nothing from value noise — every wobble is `Hash01` of the emitting index.
+That was a deliberate constraint, and it buys three things: the world is a closed form, inserting
+a family no longer re-rolls every prism after it, and an offline model can reproduce the cell
+*exactly* instead of estimating it.
+
+Three layers verify it, each negative-controlled:
+
+1. **`Tools/Build/garland_harness/run.sh`** compiles the SHIPPED `SpawnableGarland.cs` against a
+   Unity shim and RUNS it, writing `garland_measurements.json` with a hash of every source that
+   can move a number. Measured: **4,259 prisms, 2,177,499 volume, ZERO clipping pairs** — count,
+   kinds, per-domain
+   volume identical to the model, worst positional disagreement **0.055u** at radius ~1,050
+   (float32 vs float64 on `Mathf.PI` and `GoldenAngle` through angles up to ~200 rad), which is
+   four hundred times smaller than the nucleus margin it has to protect.
+2. **`Tools/Build/author_garland_cell.py`** holds the model, asserts it against that measurement,
+   re-reads all 62 generator scalars, 7 arrays and 13 vectors out of the C# so the mirror cannot
+   drift (negative-controlled), asserts the
+   harness shim's transcriptions appear VERBATIM in the real base class (a transcription is only
+   evidence about shipped code if something pins it to its source), asserts every serialized key
+   it writes is DECLARED by the class that reads it, and then derives the ladder and emits all 21
+   files. `--check` proves the assets on disk are what the model authors.
+3. **`--self-test`** runs TWO negative controls and requires both to fire: pushing the outer
+   blossom ring out by 90u must trip the nucleus clearance, and raising `ChainFill` to 1.06 must
+   trip the no-clipping assertion (it reports 1,250 pairs — bough × bough 417, vine × vine 403,
+   crown × crown 305). A check nobody has watched fail is a check nobody should trust, and the
+   second one matters most: "nothing clips" passes trivially the moment the measurement stops
+   seeing orientations.
+
+The one ESTIMATE is the grown flora's volume per prism (`CALIBRATION`, 80): `PhyllotacticFlora`
+sizes prisms by ROLE, so there is no authored field to read. It is deliberately high — an
+overstated forest makes Frenzy arrive LATER, the safe direction (§27.4) — and it is the least
+load-bearing number here, because the flora is ~7% of this cell's volume while its COUNT, which
+is what the Frenzy backstop reads, is exact.
+
+### 48.7 Invariants
+
+- **Continuity of existence** — every prism lays through `PrismTrailBuilder` and blooms in
+  (inherited from `CellEnvironmentSpawnableBase`; nothing bypasses it).
+- **Mass is conserved** — no decay, no timer, no despawn, no cull anywhere in the file. Flora
+  populations are bounded by a production cap; nothing is ever removed to meet one.
+- **No domain asymmetry** — the generator paints environment mass; fauna still spawn in the
+  cell's controlling colour through the ordinary spawner. With nothing laid inside the nucleus,
+  node control is **unclaimed at boot**.
+- **Volume is the spine** — the ladder is authored from measured volume, with the count fields
+  as the backstop they are.
+- **Endogenous selection / no lifeform level** — the roster authors floors, caps and element
+  palettes only.
+- **Territorial permanence** — untouched; this is a nucleus cell, so the exterior is the
+  voraciously-grazed feeding ground and the nucleus interior is the claim.
+
+### 48.8 Verification (the human is the gate — NONE of this has been run in the editor)
+
+Everything above is offline. Specifically:
+
+1. **Open Menu_Main**, fly the **Cell Selector** toy, pick Garland. Confirm the scale model looks
+   like a world (the selector samples `CachedLays`, so a broken generator shows there first), then
+   that the swap completes behind the `EnvironmentLoadVeil`.
+2. **FrogletTools > Ecology > Measure Cell Environment Baselines** — confirm 4,259 / 2,177,499.
+   Anything more than a few prisms off means the harness shim diverges from the engine and the
+   ladder needs re-deriving.
+3. **Sit on the menu for five minutes** and watch it from the lava-lamp camera. This is the one
+   thing no gate can answer: whether it reads as one composition at 686 units. The dials, in order
+   of bluntness, are the prefab's `density` (0.5–1.3), then `Blossoms`/`Crowns`/`Falls`.
+4. **Confirm the garden grows and stops.** Plant count should settle at 21 and stay there; the
+   cell should reach Restless within the first minutes and never reach Frenzy.
+5. **FrogletTools > Validation > Validate Lifeform Crystals** after any lifeform-prefab change.
+
+**Known gaps, stated rather than hidden:** the cell wears the project-wide placeholder card icon
+(as 15 of the 16 shipped cell configs do — a Garland-specific one is an art task); the flora
+volume calibration is an estimate; and the cell has not been device-profiled, though at
+**4,259 prisms** and **37 always-on heart colliders** it is by a wide margin the lightest
+authored world in the freestyle rotation. (The 69 armoured prisms cost no collider at all — §48.3.)
+
+### 48.9 It is the BOOT world — and the last inference in the boot path had to go (Sep 2026)
+
+Garland replaces **Lattice** as the world Menu_Main opens into. It was flown for an extended
+session at the home-screen camera and stayed performant, which is the only evidence that mattered;
+Lattice keeps `CellConfigs[0]` and stays a Cell Selector option, so nothing is removed.
+
+**Why the swap, in one sentence: accruing is the one thing a home screen cannot do.** §36.10's
+argument for booting Lattice was that its cost *accrues rather than lands* — twelve seeds, no
+environment build, the collider line reached only after ~7 minutes of growth. That is a good
+property for a world you fly *into* and a bad one for a world you *look at*: `MenuCam_LavaLamp1`
+orbits at 686 units from the first frame, so a cell that is nearly empty for its first minutes is
+empty in the one shot the screen exists to draw — and "every return to the menu starts the garden
+over" (§36.10's own sentence) means it is empty again after every arcade game. Garland is
+furnished in the first frame, every time.
+
+#### The mechanism: `CellConfigDataSO.BootDefault`
+
+`CellTypeChoiceOptions.EnvironmentFree` chose the first config with **no `EnvironmentPrefab`**.
+That predicate was never the question being asked. What the boot path wants is *how cheap is this
+to BUILD*, and "authors no environment" was a **proxy** for it — exact while no config was both
+cheap and prepopulated. Garland is the first that is: 4,259 prisms build in a fraction of a heavy
+world's veil, and it boots into a world rather than into an empty sphere. No predicate over a
+config's CONTENT can express that, so the boot choice becomes an authored bit:
+
+| | rule | result today |
+|---|---|---|
+| 1 | first config with `BootDefault` | **Garland** (the only asset in the project that sets it) |
+| 2 | first config with no `EnvironmentPrefab` | Lattice — the pre-§48 behaviour, kept as the fallback |
+| 3 | index 0, with a warning naming both fixes | — |
+
+`Cell.ResolveBootIndex()` is that ladder, **pure and silent**, and both the decision
+(`AssignConfig`) and the prediction (`ExpectedConfig`) call it — they duplicated the old predicate,
+which is exactly the drift this file keeps recording. `BootIndex()` wraps it with the warning,
+because that warning belongs to the site asked *once*, not to a property callers may poll.
+
+**This is §36.10's own rule met from the other side.** There, a property named for how something is
+BUILT (`EnvironmentFreeConfig`) was read as a claim about what it CONTAINS, and the fix was a
+second predicate (`BareCanvasConfig`). Here a property named for what a config CONTAINS was being
+asked how it BUILDS — and the fix could **not** be another predicate, because the fact is not in
+the content. The general form: *when a proxy and the thing it stands for come apart, look at which
+side the truth lives on. If it is still in the data, split the predicate; if it is not, author it.*
+
+#### The cost, stated
+
+Booting Garland pays its build on **every** entry to Menu_Main — boot and every return from an
+arcade game — behind the standard `EnvironmentLoadVeil`. Lattice paid nothing there. At 4,259
+prisms it is **12%** of Yggdra's 34,340 and it is the cheapest authored environment in the
+rotation, so the veil should be brief, but it is a real cost and it is the price of a home screen
+that is furnished immediately. **§19 is unchanged**: the six heavy worlds remain opt-in through the
+Cell Selector, which is what that section is about — this changes which *cheap* world is the
+default, not whether an expensive one may be.
+
+#### What did NOT change
+
+- **`Cell.BareCanvasConfig` still resolves to Barren** (no environment AND an empty spawn profile).
+  The Wanderway and the Arkway are untouched — verified by reproducing the property over the
+  shipped scene list, not by reading it.
+- **Every other cell in every other scene is byte-identical.** `BootDefault` is new and Garland is
+  the only asset that sets it, so rule 2 answers everywhere else exactly as it did.
+- Lattice stays at `CellConfigs[0]`; the Cell Selector reads `Cell.AvailableConfigs`, so its list
+  is unchanged in content and in order.
+
+#### Verified offline (the editor gate is still the human's)
+
+`ResolveBootIndex` was reproduced over the real `Menu_Main.unity` override list plus every
+`Cell Configs/**` asset: 11 configs, Garland the sole `BootDefault`, resolver → index 10 → Garland;
+Lattice present at index 0. `author_garland_cell.py --check` fired on the drift before the asset
+was rewritten and passes after (21 files), `--self-test` still fires the nucleus assertion, the
+compile harness still matches, and the six standing `Tools/Build/check_*.py` gates pass. **No Unity
+CLI is available in this session, so `/verify-unity` did not run** — the two edited C# files parse
+with zero syntax errors, and member-level resolution for a `MonoBehaviour`/`ScriptableObject` pair
+is editor-only by construction (CLAUDE.md, "a check that cannot resolve a type cannot see errors
+ABOUT that type"). The one thing to confirm in-editor is the veil length on entering Menu_Main.
+
+### 48.10 Half the rings, twice the prisms in each — and nothing clipping (Sep 2026)
+
+Requested after the boot swap: *half as many rings, twice the prisms in each, so the prism count
+stays the same — and resize the prisms so nothing clips anything across the whole scene.* Then,
+mid-pass: *remove the single prisms scattered far from the centre.* Both landed together, because
+the first cannot be checked without the measurement the second needed.
+
+**The composition halved its REPEATS and doubled each one's POPULATION.** Five blossoms of 151
+petals where there were nine of 84; three vine blossoms of 78 where there were five of 46; 17
+skirts of 18 leaves where there were 34 of 9; 8 falls of 80 steps for 16 of 40; 8 crowns of 40
+steps and 28-leaf tufts for 16 of 20 and 14; 3 terraces of 146 prisms for 5 of 88; 2 shore bands
+at a 14-unit pitch for 3 at 21. Each product is preserved, so the cell is the same weight built
+from fewer, denser objects — which at 686 units reads as a composition with fewer, stronger
+subjects instead of a scatter.
+
+**The MOTES are gone** — 260 single prisms in a halo at 860–1,150, the only family with no
+structure at all. They were bought as parallax and read as debris. The far edge is now the crown
+alone, which is what §48.2's third layer was always about.
+
+Net: **4,502 → 4,259 prisms**, and volume **4,200,059 → 2,177,499**, almost all of it from the
+chains no longer overlapping (below). The ladder is re-derived from that measurement, not scaled.
+
+#### The clipping was structural, and it was most of the cell
+
+Measured at the merge base with a 15-axis separating-axis test over the emitted cloud: **4,372
+interpenetrating pairs of 8,726 near pairs — half of everything that could touch did**, worst
+penetration 9.56u. That was not an accident; it was the file's own stated rule (*"one prism per
+step with that prism sized to close the gap behind it"*, bough 26u at a 22u step) plus every
+chain authored at `step × 1.08`. Four separate causes, each fixed by a different KIND of change,
+and the kinds are the part worth carrying:
+
+1. **A chain's length is a function of its STEP, not a constant.** `ChainFill` (0.82) replaces
+   every authored chain length. It is under 1 by enough to absorb the jitter AND the corner a
+   bend puts on the inside of a joint — at 1 the chain welds itself shut, which is exactly what
+   `--self-test` now reproduces on demand. The falls' step is a third of the bough's and the
+   crown's grows as the branch climbs, so no authored number could have served all three.
+2. **A golden-angle head cannot hold non-overlapping petals.** A sunflower packs florets at a
+   constant AREAL density, and at this cell's petal size the head's own area runs out long before
+   the count does. Blossoms became concentric RINGS, which state the two clearances separately —
+   the ring pitch against the petal's LENGTH, the ring count against its WIDTH — so each is a
+   bound you can write down: `(2R − L) tan(π/n) > W`. The same argument retired the crown tuft's
+   single-cone fan (28 leaves at one polar angle have a spacing that FALLS as the count rises) for
+   a spiral CAP, and the skirts' one wide fan for six rows of three.
+3. **Two families attached at the same knot sample are two structures at the same point**, which
+   no per-family clearance can see. Every family now attaches at its own PHASE, and the terraces
+   ride the MIDPOINT of a blossom gap rather than their own stride (3 and 5 beat against each
+   other on a closed loop; a terrace 14 samples from a blossom is a deck inside a flower).
+4. **A chain that starts at its parent's own lay point starts INSIDE it**, and no length makes
+   that pair clear. Falls and crowns start displaced — **differently**, and that asymmetry is a
+   measurement rather than a preference. A crown climbs out of the bough's band and never returns,
+   so a radial lift puts the wood behind it for the whole run. A fall does the opposite: it spends
+   three quarters of its length inside the band the bough wanders through, so a radial drop lays
+   it directly under a curve that comes back down to meet it (44 pairs, against 7 for the same
+   fall pushed out the bough's SIDE, where it leaves the knot's osculating plane at once).
+
+#### The shore YIELDS, and that is what makes "nothing clips" a property of the generator
+
+Those four got it to **three** pairs, and coordinate descent over all five attachment phases could
+not do better: the falls are the family that crosses the whole cell, so whatever phase they take
+they meet *something*. Five tuned constants standing between the cell and a defect is not a
+property, it is a coincidence with a maintenance cost.
+
+So the three SHORE families — the falls, the landfall patches and the bands — are laid **last**
+and **yield**: a prism of theirs that would land inside something already laid is simply not laid.
+Nothing is removed and nothing is moved; the root grows round the flower. It costs **five prisms**
+of 4,264, which is the number that makes it a last resort rather than a crutch (asserted: a family
+that yields more than a twentieth of itself has stopped being authored and started being carved,
+and it would thin silently).
+
+It also **replaced** a rule rather than adding one. The bands previously broke where a root came
+down, through an explicit landfall-proximity test; the yield subsumes it, so the coastline still
+breaks at an estuary and there is one mechanism instead of two.
+
+Three details of the yield are load-bearing:
+
+- **`YieldGap` is 0.75, not 0.** A fit that clears by a hair re-reads as clipping the moment
+  anything moves — and a decision taken ON its threshold is one this model (float64) and the
+  engine (float32) can disagree about, which is a one-prism difference with no visible cause.
+  The tightest decision in the shipped cell is **0.089** from the threshold, ~90× the float32
+  noise at these coordinates, and it is asserted.
+- **The grid's 27-cell neighbourhood only covers every pair that can touch while no prism's
+  bounding radius exceeds half a cell** (56 / 2 = 28 against a measured worst of 14.25). Asserted,
+  because a prism resize is exactly the kind of edit that would break it silently.
+- **`LookRotation` is undefined when up is parallel to forward, and Unity does not say so — it
+  invents a pose.** A fall's last steps are very nearly radial while its authored up IS the
+  radial. `ChainUp` projects the up off the step and falls back to a second, orthogonal candidate
+  when that projection collapses. This was found only because the offline model THROWS on the
+  degenerate pose instead of measuring one the engine made up.
+
+#### What the measurement had to gain first
+
+None of this was visible before the harness could see ORIENTATIONS. A prism is an oriented box,
+and a cloud measured as points reports a world of axis-aligned prisms and calls it clear — so the
+shim's `Quaternion` stopped being a stub and became the real basis Unity's `LookRotation` builds
+(`z` along forward, `x = up × z`, `y = z × x`), plus the one operation `SpawnableGarland` asks of
+it (`rot * Vector3.right`). The harness and the model each grew the same 15-axis test and a
+uniform hash-grid broadphase; both report **0 clipping pairs, tightest clearance 0.434u** on the
+shipped generator, and the model additionally reports the breakdown PER FAMILY PAIR, which is what
+turned four vague symptoms into the four causes above.
+
+General rule, and it is the gyroid lattice-scale finding one level up: **two prisms occupying the
+same space is a relationship between families that were each individually correct, so it cannot be
+derived from any family's own parameters and has to be measured over what the generator really
+emitted, in the orientations it really emitted them.**
+
+#### Verified offline (the editor gate is still the human's)
+
+`author_garland_cell.py --check` (21 files) and `--self-test` (both negative controls fire) pass;
+`garland_harness/run.sh --check` confirms the committed measurement is what the SHIPPED
+`SpawnableGarland.cs` emits when compiled and run — 4,259 prisms, 2,177,499 volume, 0 clipping
+pairs, identical to the model on count, kinds and per-domain volume; the six standing
+`Tools/Build/check_*.py` gates pass. The generator's constant readback now also covers the ARRAYS
+and the section/leaf VECTORS, negative-controlled. **No Unity CLI is available in this session, so
+`/verify-unity` did not run** — but the harness compiles `SpawnableGarland.cs` with Roslyn against
+the shim, which is a real type check of that file rather than a syntax parse. What only the editor
+can answer is unchanged: whether the cell reads as one composition at 686 units, and whether the
+denser-but-fewer objects are the right trade.
+
+---
+
+## 49. A flora grown on the MINIMAL SURFACE SPANNING THE BORROMEAN RINGS (Sep 2026)
+
+**The ask:** *"make a flora out of a visually pleasant and symmetric minimal surface on the
+borromean rings."* What shipped is `BorromeanFlora` — a plant whose body is the
+minimal-genus Seifert surface of the Borromean rings, relaxed to zero discrete mean
+curvature, tiled with 360 conserved prisms laid one symmetry ORBIT per grow tick.
+
+Every number is measured offline by `Tools/Build/measure_borromean_minimal_surface.py`,
+lands in the generated `BorromeanSurfaceData.cs`, and is re-proved from the shipped file
+alone by `Tools/Build/verify_borromean_surface_tables.py` (the cheap gate, seven negative
+controls). **Nothing in the C# describes the shape**; the flora reads a table.
+
+### 49.1 What the object is, and why nothing simpler would do
+
+The rings are the canonical realization: three congruent ellipses of semi-axes 1 and **φ**
+in mutually perpendicular planes — the boundaries of three golden rectangles whose twelve
+corners are an icosahedron's vertices. That is not a stylistic choice. By the
+**Freedman–Skora theorem** the Borromean rings cannot be built from three round CIRCLES at
+all, so an ellipse is the simplest curve the link admits, and the golden one is the
+symmetric realization.
+
+**Three flat discs are not an alternative, and the reason is topological rather than
+aesthetic:** three discs spanning the three rings intersect each other, and three
+*disjoint* spanning discs would split the link — which the Borromean rings, being
+non-split, are not. A **connected** spanning surface is forced. The one this ships is the
+level set `Ω ≡ 2π (mod 4π)` of the rings' summed **solid-angle potential**, which is an
+embedded Seifert surface for any level by construction, relaxed until its cotangent mean
+curvature vanishes. Measured: **χ = −3 over three boundary loops ⇒ genus 1**, the
+minimal-genus Seifert surface of the link, area **11.955** against **15.250** for three
+flat discs.
+
+A symmetric **quartic** was tried first — `r = (p−1)(φ²−p)` contains all three rings to
+1e-15 — and abandoned: its zero set is six tangent spheres, not a spanning surface. *An
+implicit surface that CONTAINS a curve is not thereby a surface BOUNDED by it.*
+
+### 49.2 The symmetry is order 6, and that is a MEASUREMENT
+
+As an unoriented set the three rings carry the **pyritohedral group, order 24**. The level
+set does not: half of those elements reverse some rings' orientations and leave others
+alone, which carries `Ω` to a different potential and the level set to a different surface.
+The tool computes the stabiliser of the ORIENTED link for **every** assignment of
+orientations and gets **6** each time (C3ᵢ — a 3-fold rotation about a body diagonal, times
+inversion). So 6 is the maximum available, not a shortfall, and the doc says so because the
+next reader will otherwise try to "fix" it.
+
+**The site table is EXACTLY invariant because it is a union of whole ORBITS.** A site is
+stored as an orbit representative and expanded by the six group elements, so G-invariance
+is a property of the construction rather than a tolerance that could drift — measured
+residual **0.00e+00**, and the verifier's first negative control (nudge one site by 0.5)
+fires on it.
+
+Two consequences worth carrying past this species:
+
+* **A centroidal Voronoi relaxation can be made exactly symmetric** by running Lloyd's
+  algorithm on the ORBIT set and pulling each cell's centroid back through the group
+  (`borromean_surface.symmetric_cvt`). Averaging over the orbit is what keeps a
+  representative a representative; there is no symmetrisation pass afterwards, so there is
+  no drift for one to mask.
+* **Half the group is IMPROPER, and a right-handed frame mapped by an improper element is
+  not a rotation.** `expand_frames` therefore carries x and z and re-derives `y = z × x`,
+  which flips y under a reflection — and a plate is a BOX, invariant under a flip of any one
+  axis. The plate geometry is carried exactly by the whole group; only the quaternion table
+  is equivariant up to a symmetry of the box.
+
+### 49.3 The plate lies on the surface's ASYMPTOTIC directions
+
+A long flat plate belongs where the surface does not bend along it, and **on a minimal
+surface that direction exists and is free**: the principal curvatures are equal and
+opposite, so normal curvature vanishes on the two directions bisecting the principal ones —
+and those two are orthogonal to each other, which is a property minimal surfaces alone
+have. So **both** in-plane axes of every plate lie on a zero-normal-curvature direction,
+which is why a flat rectangle sits flush on a saddle at all.
+
+Measured on the shipped table, from the sites alone with no mesh: normal curvature along
+the long axis is **0.247** and along the short axis **0.251** of the local shear, while
+mean curvature is **0.165** of it. A sphere scores **1.00** on that last ratio, and the
+verifier's sphere control reproduces exactly that.
+
+### 49.4 Two design calls, both made by LOOKING
+
+**The plate aspect is a look call, and the rendering is the evidence.** Every structural
+check passes at any aspect; what the ask turns on is which one reads well. Rendered at four
+aspects: at `1.40 × 0.73` the plates lap **61%** of near pairs and the membrane reads as one
+smooth blob; at `0.85 × 0.55` they lap not at all and it reads as a perforated mesh rather
+than a surface. This shipped at **`1.15 × 0.68 × 0.115`** of the measured site spacing — 30%
+lap, still unmistakably a membrane, with the individual plates legible inside it.
+
+⚠ **The LAP is spent — §49.10 replaced it with a guarantee that no prism interpenetrates
+another**, which is not a tuning of this call but the removal of the axis it was made on.
+What survives is the ASPECT (the shape of the plate, still authored, still a look call) and
+the finding that the measurement cannot make this choice for you. What is gone is the size:
+it is now FITTED to the largest that clears, so a plate's long axis runs 0.76 of the site
+spacing where this call shipped 1.15, and the membrane reads as a tiling of separated plates
+rather than as a lapped skin. Stated plainly because it is a real cost.
+
+**Growth runs one whole ORBIT per tick, and it runs OUTWARD ALONG THE SURFACE**, not
+outward in radius — see §49.9, which is where the first pass got this wrong. A half-grown
+plant is *exactly* as symmetric as a finished one (six plates at the core, blooming out to
+the rings over 60 ticks) AND is one connected object at every stage. Grazing frees a site,
+so a plant eaten at its rim regrows from the inside out.
+
+### 49.5 What it is NOT — and why it needs none of the lattice machinery
+
+**It is not a lattice species.** The three `AssembledFlora` families tile a periodic surface
+indefinitely and reproduce as a COLONY — one daughter per fauna-wave period — because their
+growth rule has an opinion about where the *next plant* belongs. **A Borromean surface is
+COMPACT**: it closes on itself and is finished. So this plant completes, stops growing, and
+funds an ordinary per-plant offspring out of its growth quota like every branching and
+phyllotactic species (§32). There is no frontier, no claim book, no mate-snap and no
+`LatticeScale` family of absolute tolerances (§34.8) — and there is deliberately nothing to
+add: *a species whose form is bounded does not need them.*
+
+It does keep `PrismSizeFixedByGrowthRule = true` (§40's standing guard): the site offsets are
+a measured table in absolute local units, so a per-cell leaf scale would lay prisms the table
+no longer describes. Resizing goes through `surfaceScale`, which moves the sites and the leaf
+together — the §34.8 rule, met from the other side.
+
+### 49.6 Budget, and the CHARGE plant
+
+**Every element grows on its OWN tessellation** (§49.10), so there is no single budget: the
+plates, the spacing, the prism count, the MEMBRANE and the plant radius are all per element
+(§49.11 is the pass that added the membrane to that list).
+
+| | TIME (anchor) | MASS | SPACE | CHARGE |
+|---|---|---|---|---|
+| Orbits × 6 = prisms | 60 × 6 = **360** | 36 × 6 = **216** | 48 × 6 = **288** | 30 × 6 = **180** |
+| Membrane scale | 1.0 | 1.0 | **2.0** | 1.0 |
+| Room per site (mean spacing) | 6.141 | 8.233 | **13.682** | 8.694 |
+| Plate | `4.668 × 2.762 × 0.706` | `5.606 × 4.672 × 2.782` | `12.978 × 1.527 × 0.460` | `2.075 × 2.075 × 1.037` |
+| Plate, normalised | 1 : 0.59 : 0.15 | **1 : 0.83 : 0.50** | **1 : 0.12 : 0.04** | 1 : 1.00 : 0.50 |
+| Volume / prism | **9.11** | **72.87** (8.00×) | **9.11** (1.00×) | **4.47** (0.49×) |
+| Volume / plant | 3,279 | 15,739 | 2,623 | 804 |
+| Plant span (2 × radius) | 111 | 108 | **222** | 108 |
+| Membrane covered | 30.0% | 36.5% | 9.2% | 5.0% plates / **22.5% octahedra** |
+| Heart | 3.209 | **3.372** | **3.379** | **2.051** |
+
+| | |
+|---|---|
+| Seed floor / cap | 1 / **8 per element** — **32 always-on heart colliders** across the four |
+| Hearts authored by | `author_lifeform_heart_sizes.py` (the band `1.16 → 4.60` is unmoved) |
+
+**Charge armours its mass by law** (§35), and a shield swaps in the CIRCUMSCRIBING
+octahedron reaching `1.5 × leafSize` — so a Charge plant is a different geometry problem
+from its three siblings, and what has to look good is its SHIELDED form. See §49.9 for the
+two-part fit that replaced the uniform shrink this section first shipped.
+
+Its heart is correspondingly smaller than its siblings' (**2.051** against 3.209–3.379),
+because the fleet's heart law sizes a flora from its body diameter and therefore reads the
+shrunken leaf as a smaller plant. That is **consistent with every other shield-fitted
+species in the band** — SchwarzP Charge sits at the band's floor for the same reason — so it
+is recorded rather than special-cased. The anchor does not move: adding this species leaves
+`K = 0.36599` and the band `1.16 → 4.60` byte-for-byte unchanged, which is the only safe
+case for touching that tool at all. SPACE's heart moved 2.661 → **3.379** when §49.11
+doubled its membrane, which is the heart law working exactly as written: the plant really
+is twice as big, and `K · d^0.5` pays it √2 of a heart for it.
+
+### 49.7 Deployment
+
+As of this commit the species grows in **Rampage** (all four intensities, as mass to
+destroy), **Wrecking Ball** (all four) and **Wildlife Blitz cells 1 and 2** — ten spawn
+profiles — as well as being reachable through the freestyle **Lifeform Matrix** toy. §49.12
+is the adoption pass and carries the numbers. **Re-prove the claim by grepping the config
+GUIDs across `_SO_Assets` before inheriting it** (§ the ecology skill's "an 'it is wired
+nowhere' claim is true only on the date it was written") — this paragraph has already been
+wrong once, which is why it is a section of its own.
+
+**A CELL ADOPTS IT AS FOUR CONFIGS, ONE PER ELEMENT, never as one rolled config.** That is
+forced rather than tidy: a `FloraConfigurationSO` carries ONE `Variant` block, and the four
+elements differ in their prism BUDGET (180–360), their plate and their HEART (2.051–3.379),
+so a rolled config would have to author one heart size for four plants whose spans run 108
+to 222 — and `author_lifeform_heart_sizes.py` would then be sizing an average rather than a
+lifeform. It also means every adopting cell's SpawnProfile gains four entries, not one.
+
+**Every Borromean config, in every cell, is owned by
+`Tools/Build/author_borromean_flora_assets.py`.** `author_flora_populations.py`'s model is
+`cap = old_single_plant_budget / patch`, which has no input to work from on a species whose
+budget is a measured table, so it hands the whole family off — and its match for this family
+had to become a SUBSTRING rather than a prefix, because a per-cell config is named for the
+CELL first (`Rampage Borromean Flora Mass Config Data`). *A prefix rule for a species-owned
+family is correct only while every config of that species is named for the species alone.*
+
+### 49.8 Four traps this cost, each of which generalises
+
+1. **A `ROOT` computed with one `dirname` too few writes a whole asset tree into the wrong
+   place, and every tool that shares the bug agrees with it.** `Tools/Build/x.py` needs
+   **three** `dirname`s to reach the repo root; two land on `Tools/`. All three new scripts
+   carried it, so the table was written to `Tools/Assets/...`, and the verifier — sharing the
+   bug — read it back and passed. *Consistent wrongness reads exactly like correctness.* The
+   fix is an `assert os.path.isdir(ROOT/'Assets')` beside the definition, which would have
+   caught it on the first run.
+2. **A nested prefab instance carries its NAME as a modification, not as an `m_Name:` key.**
+   The donor clone's `m_Name: SchwarzPCrystal` replace matched nothing and the object kept
+   the donor's name silently — the file loads, nothing dangles, and only a grep for the
+   donor's name finds it. The generator now asserts no donor name survives the clone.
+3. **A Jacobi sweep on a cotangent system does not converge at mesh scale, and it fails by
+   being slightly wrong rather than by failing.** 1,200 sweeps on an 89k-face mesh were still
+   3% above the answer five sparse SOLVES reach in under a second — an inflated membrane that
+   passes every structural check. Same fixed point, two orders of magnitude cheaper, no
+   tuning constant. The tool now asserts the AREA, because area is a property of the surface
+   rather than of the solver, and it is the one number an under-converged run cannot fake.
+4. **Two fitters must not own one asset** (§35, again). `HeartWorldScale` belongs to
+   `author_lifeform_heart_sizes.py`, so `author_borromean_flora_assets.py` READS it back
+   instead of authoring it — otherwise the two tools revert each other forever with both
+   `--check`s passing in between.
+
+
+### 49.9 The second pass: growth, limbs, tiling and elements
+
+The first pass shipped a correct SHAPE and a wrong PLANT. Four corrections, each measured,
+and each with a rule that outlives this species. They are also why `/flora` now exists as a
+skill beside `/fauna`: every one of them is a flora-general contract that had only ever been
+written down inside one family's source.
+
+**(1) A flora grows the way it WITHERS, run backwards — the crystal first, then limbs out of
+the crystal, then limbs and prisms out of limbs.** The first pass ordered the site table by
+RADIUS and laid one orbit per tick, which is symmetric and *not* connected: on a compact
+surface a radius shell is several disjoint rings, so the plant grew up to **3 separate
+patches** that met up and sealed later. The table is now ordered by **HOP DISTANCE over the
+surface's own site graph** (radius-graph at 1.55 mean spacings; valence 3–7, mean 5.23; 12
+layers) — and the ordering survives the symmetry because *the graph is G-invariant, which
+makes hop distance an ORBIT property rather than a site property*, so a tick is still one
+whole orbit. Every site also names its **PARENT** (`BorromeanSurfaceData.Parents`, `-1` = the
+heart), a parent is always earlier in the table, and `Grow` refuses to lay a plate whose
+parent is absent — which is what keeps the rule true under REGROWTH as well as from seed.
+Measured: exactly **one component after every one of the 60 ticks**, heart included, with the
+rejected radius ordering as the verifier's negative control.
+
+> *A radius sort is not a growth order.* On any surface that wraps — compact or periodic —
+> "outward from the centre" is several fronts at once. Order by hops over the thing's own
+> neighbour graph, and prove connectivity by union-find over the increments the species
+> actually lays.
+
+**(2) A SPINDLE IS A BOND, NOT A MARKER.** The first pass posed each spindle at its own plate,
+rotated onto the plate's grain — so every limb stood in the membrane pointing nowhere in
+particular, and the plant read as plates floating beside sticks. A limb is now posed **on the
+bond its site names**: rooted at the parent (or at the heart, for the innermost orbit),
+`LookRotation`-ed at the child with the site's own surface normal as up, and STRETCHED so the
+branch spans the gap. The measured payoff is that a limb runs along one of its own plate's
+axes to within **21°** on average (44° worst), so the limbs read as veins following the
+tiling rather than as scaffolding.
+
+That is `BranchingFlora`'s shape, and the species' spindle prefab moved with it — off the
+Schwarz P donor's `AssemblyBranch` and onto `Branch`, whose branch runs forward from the
+spindle's origin along local +z. **The three families are worth comparing, because one of
+them is the anti-pattern:** `BranchingFlora` and `PhyllotacticFlora` root the limb on the
+bond; the **gyroid** poses it at the prism and covers the bond in BOTH directions with a
+mirrored PAIR of half-branches meeting there (§34.12); **Schwarz P** poses it at the prism
+with a SINGLE off-centre arm along local −y, so the arm points wherever that prism's −y
+happens to face. That last is a known weak case and must not be copied.
+
+Two mechanical rules travel with it: **scale the spindle's CHILDREN, never the root** (a
+prism parents to the root, so a scaled root multiplies the authored `leafSize` and the config
+stops describing the prism — §34's rule, reached again), and **MEASURE the branch's reach
+rather than authoring it** (compose the prefab's mesh bounds through its transform chain into
+spindle-root space and take the furthest +z; a constant copied out of an asset is true only
+on the day it is copied, and a prefab swap silently invalidates it). A limb is also KEPT when
+its plate is grazed and re-used when the plate grows back — a branch whose leaf was eaten is
+still a branch, and re-use is what stops regrowth minting a second spindle on one bond.
+
+**(3) A PER-SITE CHOICE AMONG EQUALLY-VALID OPTIONS IS NOISE UNLESS IT IS COMBED.** This is
+the largest finding of the pass and it is not specific to this surface. §49.3's asymptotic
+directions come in a PAIR — orthogonal, interchangeable, both equally flush — and
+`rep_frames` picked between them from the sign of an eigenvector in an arbitrary local
+tangent basis, i.e. **effectively at random per site**. Every plate was individually correct
+and the tiling was noise: measured, neighbouring plates' long axes were **56.6° apart**, with
+**49% of edges more than 60° apart** — which is exactly what *"these prisms appear messier
+than they should"* is a description of. Combing (iterated conditional modes over the
+neighbour graph, 24 seeded restarts, the choice made **per orbit REPRESENTATIVE** so it
+cannot break the symmetry) takes that to **25.9°** and 11.5%. It costs nothing at runtime:
+the choice is baked into the shipped table.
+
+Two details are load-bearing. The restarts are not decoration — the all-zeros descent settles
+at 0.855 and the best of 24 reaches 0.899, and a seeded search is what makes that
+reproducible. And the residual ~26° is genuine: the asymptotic field rotates over a curved
+surface and is singular at its flat points, so combing removes the arbitrary half of the
+disagreement and not the real half.
+
+**(4) AN ELEMENT IS A PERTURBATION OF AN ANCHOR.** The first pass gave all four elements one
+plate and shrank Charge, so three of the four were the same plant. Now **TIME is the anchor**
+— the plate tuned by rendering — and the other three are stated against it: **MASS** is more
+VOLUME (3.89×), **SPACE** is more ASPECT at the *same* volume (4.87:1 against 1.69:1, 0.997×),
+so the element reads as shape rather than as size, and it pays for it in flushness (its
+corners lift **0.86** of its own thickness off the membrane against Time's 0.56 — reported,
+because that is what a long plate costs). Authoring one anchor and three perturbations is
+what makes "what does this element do to the plant" one comparison instead of four
+independent fits.
+
+**CHARGE is fitted, and NOT by a uniform shrink.** What has to look good on a Charge plant is
+its SHIELDED form, so the fit has two parts, each measured:
+
+* **Square the footprint.** The clearance is set by the tightest BOND, which runs along the
+  grain, so length bought along the grain is paid for twice. Sweeping the in-plane aspect at
+  the shield limit: a square footprint covers **24.1%** of the membrane with octahedra against
+  **15.6%** at the anchor's 1.69:1 — half again as much shielded surface for the same
+  constraint. A plate whose shielded form has no grain does not need one.
+* **Keep the anchor's THICKNESS.** Thickness is spent along the surface NORMAL, where the
+  neighbours are not, so it costs nothing in clearance — and it is the difference between a
+  solid little jewel and a foil. Worth **4.3×** the volume of the uniform shrink it replaced.
+
+Shipped `1.520 × 1.520 × 0.706`, octahedra reaching `2.28 × 2.28 × 1.06` against a mean bond
+of 7.12, zero shielded overlaps, and 6% wider already fuses (asserted).
+
+**The verifier grew with all of it** — the shipped table is now re-proved for connectivity per
+tick, parent-before-child, one orbit of limbs off the heart, limbs joining real neighbours,
+limbs along a plate axis, the combed grain, and each element's own claim, with **15 negative
+controls** that all fire. The one check this pass RETIRED is *"the blocks' radii are
+non-decreasing"*: it was true, it was cheap, and it was asserting the very property that made
+the plant grow wrong. *A green check on the wrong invariant is worse than no check.*
+
+**Open:** nothing here has been run in the Unity editor. The geometry, the symmetry, the
+minimality, the plate fit and the shield clearance are all proved offline and the C# is
+Roslyn-compiled against transcribed stubs, but nobody has watched this plant grow.
+
+### 49.10 The third pass: NO PRISM MAY INTERPENETRATE ANOTHER
+
+The second pass fitted CHARGE's plate to its shielded octahedra and left the other three
+authored — so Time's plates lapped 36% of their near pairs by design (§49.4) and Mass's and
+Space's lapped more. The ask was to remove that outright, **in the positioning and spacing
+as well as the plate**, and spindles were explicitly exempted: a limb may pass through a
+plate, a plate may not pass through a plate.
+
+**A plate's SIZE therefore stops being authored.** What an element authors is the SHAPE of
+its plate and the SPACING of its tiling; the size is FITTED offline to the largest that
+clears, because *the thing being bought is a guarantee and a guarantee cannot be authored as
+a number*. Four measured facts carry the rest.
+
+**(1) THE FOOTPRINT COSTS CLEARANCE AND THE THICKNESS DOES NOT.** A plate's neighbours lie
+in the membrane beside it, so growing it along the surface runs into them and growing it
+along the surface NORMAL runs into nothing. Measured on this surface, taking a plate from
+0.1 to 0.8 of its own width in thickness costs **1.3%** of its footprint and buys **7.7×**
+its volume. That is what lets the element contract survive the zero-overlap rule instead of
+being flattened by it: MASS's `3.89×` volume and SPACE's equal-volume-at-higher-aspect are
+both bought on the free axis, so the tool now SOLVES each element's thickness against the
+anchor's plate volume rather than authoring it (three passes of fit → solve → refit,
+converging in three and always ENDING on a fit, so the shipped plate is one that cleared at
+its own thickness). It is the same insight the second pass found for CHARGE alone —
+*thickness is spent along the normal, where the neighbours are not* — generalised to all
+four, which is the sense in which the earlier finding was under-applied rather than wrong.
+
+**(2) COVERAGE IS A PROPERTY OF THE TILING, NOT OF THE COUNT** — and that is what makes the
+site count an element's own decision. Every plate is fitted against its own neighbours, so a
+coarser tessellation does not cover more membrane; it covers the same membrane with FEWER,
+BIGGER pieces (measured: the fitted plate's long axis is 0.73–0.93 of the mean site spacing
+at every count from 24 orbits to 60). So each element tiles the surface at its own spacing,
+and the ladder runs one way: **the coarser the tessellation, the bigger the body it
+carries.** TIME takes the finest membrane; SPACE spends its area on length; MASS is a slab;
+CHARGE's real body is its SHIELD — three times the reach of the plate it replaces — so it
+needs the most room of all and takes the coarsest tiling. That ordering is **asserted from
+the shipped tables**, both sides measured (body half-diagonal against mean spacing: Time
+2.74 < Space 3.17 < Mass 3.89 < Charge 4.67, spacing 6.14 < 6.84 < 8.23 < 8.69), so a future
+retune that breaks the rule fails the verifier rather than shipping four numbers nobody can
+explain.
+
+**(3) THE GUARANTEE MOVED INTO THE CODE, because a guarantee any asset edit can break is not
+one.** The plant takes its leaf from its own table (`BorromeanSurfaceData.For(Element)`)
+rather than from `FloraVariantTuning.LeafSize`: the size that clears is a function of the
+table, no config field can know it, and an authored leaf that disagrees is not a preference
+but a defect. That is `Flora.ResolveShieldPeriod`'s argument (§35) one field over, and it
+cost `Flora.LeafSize` a protected setter, documented as belonging to a species whose
+`PrismSizeFixedByGrowthRule` is true. **It also closed a gap the class doc had already
+claimed was closed**: `surfaceScale` scaled the site offsets and NOT the leaf, which is
+exactly the §34.8 defect its own tooltip warns about — the leaf is now `table × surfaceScale`,
+and a uniform scale preserves non-overlap exactly. The element is resolved from the plant's
+own crystal at the TOP of `Initialize`, before `base.Initialize`, for the ordering
+`Flora.ApplyCellPrismScale` already records: the base binds the prefab's own authored prisms
+and stamps `leafSize` onto them, so resolving afterwards leaves the SEED prism wearing
+another element's plate.
+
+**(4) A BISECTION CONVERGES ONTO ITS OWN BOUNDARY, so asserting a fit's margin is asserting
+its tolerance.** The fit runs on a body inflated by 3% and returns the un-inflated answer, so
+the shipped plates clear by a real gap rather than by a float epsilon — but at exactly 3% the
+inflated plates are touching to within the bisection's `1e-5`, and rounding the table to five
+decimals was enough to tip **2 of 24** pairs over. The verifier caught the tool and was
+right to: it now proves a **2%** gap and that **10% bigger collides**, which is the pair of
+claims worth making, and the 3% stays the fit's target rather than its assertion. General
+rule: *prove the property, not the solver's stopping condition.*
+
+**(5) THE ESTIMATOR, NOT THE SURFACE, BOUNDS A CURVATURE CHECK.** The verifier's minimality
+and asymptotic-direction checks are a quadric fitted to 14 neighbours of a point cloud, and
+the same shipped table scores 0.17 to 0.43 as that count is varied — so a threshold tuned on
+the anchor (0.25 / 0.35) failed three of the four coarser tables without anything being
+wrong with them. The thresholds are set by the SEPARATION instead: the four land at
+0.17–0.28 and the same sites projected onto a sphere score **91–205**, so 0.5 separates by a
+factor of 180 while surviving the estimator's own ±0.2. *A tolerance tuned on one
+measurement's noise is a tolerance that fails the next measurement.*
+
+**The cost, stated plainly.** The membrane no longer laps, so a Borromean plant reads as a
+tiling of separated plates rather than as a skin — §49.4's look call is spent. TIME's plant
+volume falls **7,499 → 3,279** (0.44×) and its plates are 0.76 of the site spacing against
+the 1.15 that call shipped. SPACE, which spends its area on length, reads as a **frame of struts**
+rather than a skin of plates — a genuinely different plant from the long flat blade the
+second pass shipped, and the honest consequence of holding its volume at the anchor's while
+its footprint is bounded by its neighbours. (Its numbers moved again in §49.11; the ones in
+this paragraph are the third pass's.)
+CHARGE's bare plates cover 5.0%, which is the same number as before; its octahedra, which
+are what a Charge plant actually wears (`Flora.ResolveShieldPeriod` floors its cadence at
+1 s), cover 22.5%.
+
+The verifier runs every check four times and carries **19 negative controls**, all firing —
+including the two that describe this pass rather than the geometry: *every element on ONE
+shared tessellation* (the shape this replaced) and *the biggest body put on the finest
+tessellation* (the ordering rule, broken by swapping two tables that each still clear).
+
+**Open:** still nothing has been run in the Unity editor.
+
+### 49.11 The fourth pass: SPACE grows the MEMBRANE, MASS goes chunky
+
+A look call on the third pass's four plants: *Charge and Time are perfect. Space could be
+scaled up such that the whole structure occupies more overall size while its prisms are
+scaled in the skinny directions to keep their cumulative volume down — make the structures
+even longer and skinnier and the space greater so the two furthest prisms are further apart.
+Mass could get even more chunkier; we don't want size to be 1,1,1 but it should be closer
+than it is.* Charge's and Time's tables come back **byte-for-byte unchanged**, which is what
+a per-element tessellation is for.
+
+**AN ELEMENT CAN BUY ROOM BY GROWING THE MEMBRANE, AND THAT IS THE ONE MOVE THAT COSTS THE
+GUARANTEE NOTHING.** §49.10 stated the ladder in ORBIT COUNT — *the coarser the
+tessellation, the bigger the body it carries* — and that was only ever a proxy. What a plate
+is actually bounded by is ROOM PER SITE, and a site's room is the membrane's area divided
+among the sites, so an element buys it two ways: by cutting the membrane into fewer pieces,
+or by growing the membrane. `SURFACE_SCALE` is the second, and it is a **SIMILARITY** —
+scaling every site and every plate by one `k` maps a clearing arrangement onto a clearing
+arrangement exactly, so the no-overlap proof survives it with nothing to re-derive. The
+ladder is now stated in room per site, and SPACE has a FINER cut than Mass or Charge (48
+orbits against 36 and 30) while having the most room of the four (13.68 against 8.23 and
+8.69) — which is exactly the case the orbit-count wording could not express.
+
+**The volume target then does the rest by itself, and this is why the ask was one number.**
+Space's contract is ASPECT AT THE ANCHOR'S VOLUME. On a fixed membrane that can only be
+bought by making the plate narrower; on a membrane `k` times as big, the fit hands it a `k`
+times bigger footprint and the volume target drives its thickness down by `k²`. Doubling the
+membrane therefore delivered every half of the ask from one dial: the plant spans **222
+against 111** (the two furthest prisms twice as far apart), the plate goes `6.098 × 1.251 ×
+1.194` → `12.978 × 1.527 × 0.460` (longer, and **2.6× thinner**), and the plant's total
+volume is **unchanged at 2,623**. Its aspect went 4.88:1 → **8.50:1** on top, because the
+ask said *longer and skinnier* and a similarity alone changes neither.
+
+**MASS is CHUNKY, and chunky is a claim about SHAPE that only THICKNESS can pay for.** The
+footprint is FITTED, so the only axis left to move a plate toward a cube is the one that
+costs no clearance — and that axis is the volume. Mass goes `1.56:1` → `1.20:1` in plan and
+`3.89×` → `8.00×` Time's plate volume, which lands its three axes on **1 : 0.83 : 0.50**
+against the third pass's 1 : 0.64 : 0.21. *It stops short of a cube on purpose* — the ask
+said so, and a cube is not a plate. Its plant volume doubles, 7,650 → **15,739**, which is
+the price of the shape and is stated rather than hidden: it is now the heaviest of the four
+by a factor of six, and comparable to a Rampage cactus (12,000).
+
+**CHARGE is the reason the chunkiness check is scoped, and the scope is the finding.** Its
+plate is `1 : 1.00 : 0.50` — squarer than Mass's — so a naive "Mass is the chunkiest plate"
+check fails on the shipped tables. It is not a counter-example: Charge's plate is a square
+slab *because the body it was fitted against is the octahedron three times it* (§49.9), so
+"how cube-like is the plate" is not a statement about what a Charge plant looks like. The
+check compares the three elements whose body IS their plate, and says so. *A check that has
+to be scoped is usually telling you something true about the thing you scoped out.*
+
+**One structural change:** the heart seat moved from a shared class constant into the
+per-element `SurfaceTable`. An element that grows the membrane grows the alcove its crystal
+sits in by the same factor, so one number would have been a floor for three elements and a
+lie about the fourth. Its consumers — the verifier's seat check and nothing in the runtime —
+now read it per element. `SurfaceArea` stays a class constant and is re-documented as the
+membrane's area **at the anchor's scale**.
+
+**Two knock-on numbers, both authored rather than hand-written:** Space's `OffspringSpread`
+goes 83 → **166** (it tracks the plant radius) and its heart 2.661 → **3.379** (the heart law
+is `K · bodyDiameter^0.5`, and the body really did double). Mass's heart barely moves,
+3.389 → 3.372, because its body diameter did not. The band `1.16 → 4.60` and `K = 0.36599`
+are untouched.
+
+**The measured cost, stated plainly.** Space's plate is **0.46 thick**, under
+`PrismScaleAnimator`'s serialized `minScale` of 0.5 — it survives only because
+`Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first, which is the same rope SchwarzP
+Charge's 0.39 hangs from (§35). Space also now covers **9.2% of its membrane** against the
+third pass's 14.2%, and its footprint is 0.95 of its site spacing against Time's 0.76 — it is
+a sparse frame of long struts, which is the plant the ask describes and is a long way from
+the skin §49.4 approved. And Mass at 15,739 volume per plant makes the element spread across
+one species **19.6×** (804 → 15,739), so any cell that rolls all four elements is pricing an
+average rather than a plant.
+
+The verifier now runs **22 negative controls**, all firing — the three new ones describe this
+pass rather than the geometry: *Mass left as a flat lozenge at the same volume*, *Mass taken
+all the way to a cube*, and *Space shrunk back onto the anchor-sized membrane* (a full
+similarity, so it still clears, is still symmetric and still spends no extra volume — the only
+thing it loses is the reach, which is the whole element).
+
+**Open:** still nothing has been run in the Unity editor.
+
+### 49.12 The fifth pass: the species is adopted into four cells
+
+*"They are awesome flora. Use them everywhere we have cacti flora and more: in Rampage as
+mass to destroy. Put them in places where they fit."* Every cell that grows cacti except
+Tollway now grows Borromean too.
+
+| cell | profiles | seed / cap per element | band | seeded | at cap |
+|---|---|---|---|---|---|
+| **Rampage** | 4 | 2 / 3 | 0.25–0.85 | 8 plants, 2,088 prisms, 44,892 vol | 12 plants, 3,132 prisms |
+| **Wrecking Ball** | 4 | Rampage's, forked | its 720u court's 0.28–0.92 | as Rampage × `FloraScale` | ditto |
+| **Wildlife Blitz 1, 2** | 1 each | 1 / 2 | 0.25–0.85 | 4 plants, 1,044 prisms, 22,445 vol | 8 plants, 2,088 prisms |
+
+**RAMPAGE'S LADDER MOVED, AND THE ANSWER WAS TO RE-ANCHOR RATHER THAN TO LET THE GATES
+FLOAT.** `rampage_intensity.py` pins `REFERENCE_FOREST_VOLUME` precisely so that a forest
+retune *"shows up as a self-test failure asking for a re-author, instead of silently sliding
+all four ladders to follow the forest and calling that unchanged"* — and adopting this
+species is exactly that case. The forest goes **396,178 → 441,070** (+11%) and 9,830 →
+**11,918** prisms at intensity 4. The authored volume pair is a number a human reached by
+PLAYING the arena, so it stays where it is (`FrenzyEnterVolume 1,630,000`) and the MARGIN
+absorbs the new mass: Frenzy **4.11× → 3.70×** the mature forest, Restless 28.5% → 25.6%.
+Frenzy arriving relatively sooner is the direction that needs watching; 3.70× is still far
+enough that flora alone never freezes planting, which is the property the self-test actually
+asserts. The COUNT half is DERIVED and legitimately moves with the forest (`FrenzyEnter`
+10,000 → 12,250). *The two halves are pinned in the same dict and they are not the same kind
+of number — only one of them is a play-test result.*
+
+**A SPECIES IS EXEMPT FROM `FloraPrismScale` IF ITS LEAF IS A MEASURED TABLE, AND THE
+EXPONENT IS 0.** Rampage's ladder scales its prisms 1.60× / 1.40× / 1.20× / 1.00× and the
+per-family exponent decides what that does to the volume (`BranchingFlora` s³,
+`PhyllotacticFlora` s²). Borromean reports `PrismSizeFixedByGrowthRule`, so
+`Flora.ApplyCellPrismScale` returns early and the scale reaches it **not at all** — a new
+`TABLE_FIXED = 0` family constant, which is a statement about the CODE rather than a
+rounding. This cell's prism axis now moves five of its six species and leaves the sixth
+alone; the three lattice families would be the same.
+
+**ONE ROW FOR FOUR CONFIGS NEEDED AN ASSERT, AND THE ASSERT CAUGHT IT.** The species gets a
+single `SPECIES` row whose `plants` and `cap` are the four configs' numbers SUMMED — and
+round-half-up does not commute with a sum: at `FloraPopulationScale 3.67`, two seeds across
+four configs is **28** plants and eight seeds once is **29**. `forest()` and `flora_cap()`
+now scale **per config** (`MULTI_CONFIG`), and `assert_species_aggregation` proves the row
+divides evenly at every intensity. *A row that prices a forest the game does not grow is
+worse than no row* — and the cap side is the worse half of the two, because the cap IS the
+always-on crystal collider line.
+
+**Collider budget, the gate rather than the paragraph.** Rampage intensity 1: prisms
+49,150 → **59,590** against Atlantis' 69,000, crystals 440 → **500** against the Lattice
+cell's 1,080. Both asserted by `assert_collider_budget()`. Wrecking Ball's ladder is
+Rampage's scaled, and its two ratio constants are now **IMPORTED** from `rampage_intensity`
+rather than retyped — they were literals (`396_178` and the four gates) and went stale the
+moment Rampage grew, which is `regatta_balance.py`'s *"a constant copied out of an asset is
+true only on the day it is copied"* with the asset replaced by another tool's answer.
+
+**Wrecking Ball takes the four the same way it takes the other five: by FORKING Rampage's
+configs** and re-mapping their planting band into its 720u court. Authoring a second set
+there would have given that cell two owners for one forest — the `/ecology` skill's "two
+fitters must not own one asset", met from the deployment side.
+
+**Two cells that grow cacti are deliberately NOT adopting it, and both reasons are worth
+keeping.** **TOLLWAY** grows cacti, but its flora are its *scoring sockets*: it authors ONE
+anchor species per growth FAMILY, one per intensity, as the mode's intensity ladder (§42,
+`TOLLWAY.md`). Borromean is a genuinely new family and would be a natural fifth — which is
+the point: swapping one of four rungs is a mode-design decision, not an adoption.
+**HESPERIDES** sows typed planting SITES (`FloraSiteKind`: bed, climb, basket, water, ledge)
+and every species in it is authored to a site kind; a compact membrane is none of them.
+
+**Stated plainly as costs.** Wildlife Blitz cells 1 and 2 author **no `PhaseThresholds`**,
+so they inherit the platform's `count × 16` derivation — which understates a forest whose
+prisms run 4.47 to 72.87 volume. That is pre-existing (their cacti are already 75 per leaf)
+and is not made worse in kind by this adoption, but it is now understated by four more
+configs. And the element spread means an adopting cell grows four VERY different plants: at
+cap, Rampage's twelve Borromean plants are three Charge lattices of 804 volume and three
+Mass bricks of 15,739.
+
+**Open:** nothing has been run in the Unity editor, and Rampage's ladder is still the
+`OPEN — RE-MEASURE IN-EDITOR` it was before.
+
+---
+
+## 50. The Mandelbulb flora — a species whose shape is a FUNCTION (Sep 2026)
+
+The fourth flora growth family, and the first whose form is not a property of the plant's own walk.
+`MandelbulbFlora` grows a cage of **curves traced over the surface of a Mandelbulb** — the
+escape-time fractal of `v → v^n + c` in triplex coordinates. A mature plant is 2,800 prisms and
+~225 units across: an open lattice of ribbons at several scales, dense along each curve and sparse
+across it, with the dust and the singular zones deliberately unsampled.
+
+Nothing in the code describes a bulb. The plant walks a height field it is handed; the lobes, the
+polar cup and the terracing are what the fractal put there — the same claim, and the same *kind* of
+claim, the gyroid octagon colony makes (§32.7).
+
+### 50.1 Why it is not `AssembledFlora`
+
+§34 is emphatic that a lattice species grows on its surface's OWN tile and never on a fitted grid.
+**That rule is about surfaces that HAVE an exact tiling.** A triply periodic minimal surface does —
+the gyroid and Schwarz P species use theirs, and the quasicrystal projects from Z⁶. A **fractal
+boundary has none**: the Mandelbulb is not periodic, not quasiperiodic, has no repeat unit, and is
+not a smooth manifold. Inventing a tile for it would BE the fitted grid §34 forbids.
+
+What §34 actually protects is that **sameness is an exact address**, and this species keeps that by
+addressing on the SPHERE instead: a prism is stamped once with `(θ, φ)`, its heading in that
+point's own tangent basis, its radial lift and its size, and its pose is then a pure function of
+that address and the surface. Nothing is baked; there is no bond table, no claim book and no
+tolerance that can drift.
+
+### 50.2 The plant is not a skin, and that is the whole design
+
+The species' FIRST cut plated every surface cell with one prism and read as a lumpy sphere. Raising
+the resolution made it a finer lumpy sphere. The reason generalises past this species: **a
+Mandelbulb's form IS its terracing, and a closed crust hides terracing by definition** — from
+outside you only ever see the tread tops. Four closed-surface candidates were built and rejected (an
+adaptive octree of coplanar blocks, radial struts, concentric geometric shells, surface-following
+depth layers). Concentric shells fail for a reason worth carrying alone: **the interior is a solid
+blob, so a shell cut inside it is just a sphere** — all of a fractal's information lives on its
+boundary.
+
+The SECOND cut plated the terrace RISERS only and merged adjacent riser cells into patches, one
+prism per patch. It was a real improvement and still a sampling of an area. It is **retired**: the
+rule that works is ANISOTROPIC. Prisms are laid dense along a curve and sparse across it, so the
+plant is a cage of ribbons you see the fractal through, and a curve the rule cannot follow cleanly —
+too much turn, out of the radius band — is ABANDONED rather than plated, which is what leaves the
+dust unsampled. The user's framing is the one to keep: *a linear curve made of prisms keeps its
+beauty without extending that resolution in all local directions; and you can jump to another peak
+in a local orthogonal direction to grab another pleasant curve.*
+
+### 50.3 The surface is a spherical HEIGHT FIELD, fitted to spherical harmonics
+
+The fractal is evaluated **exactly once, offline**
+(`Tools/Build/bake_mandelbulb_surface.py` → `Tools/Build/mandelbulb_surface_harness/`). Its outer
+surface is ray-marched into `R(θ, φ)`, smoothed, and fitted to real spherical harmonics; the shipped
+table (`MandelbulbSurfaceTables.cs`) is those coefficients. Three measurements make that the right
+representation, and all three are measurements rather than taste.
+
+- **The distance estimator's GRADIENT is unusable as an orientation at this scale.** Measured **48°
+  of swing between surface points 0.013 apart** on a unit bulb. Curves traced against it die on any
+  turn gate — the first parametric build of this rule rendered a black screen for that reason and
+  nothing else. A height field's normal is analytic and smooth, and its smoothing σ is an explicit
+  dial (the same walk turns 7.5°/step at σ 0.5 and 0.7° at σ 6). **This INVERTS §37's advice in one
+  narrow case and is the same finding from the other side**: the Mandelbulb pass already recorded
+  that the analytic DE gradient renders a plant as confetti at voxel scale, and here it also kills
+  the walk that would have replaced the plating.
+- **The fit does not converge and does not need to.** `R` has cliffs where the march jumps sheets.
+  Degree 16 lands at **R² 0.90–0.97** per element; degree **12 lands at 0.11 for the power-12 bulb**
+  (its structure sits exactly at `l = 12` and aliases), and degree 24 buys 0.9926 for four times the
+  table. 16 is the knee. The plant does not need the bulb reproduced — it needs a surface with the
+  bulb's CHARACTER.
+- **Three modes explain the family.** The surface's response to the Julia constant is linear over a
+  useful basin, so a mean plus three modes explain **100.0%** of the variance across 56 sampled
+  fields with the fourth eigenvalue **278× smaller**. Those three modes ARE `∂R/∂c`, which is why
+  **four ray-marches recover the same 3-space that fifty-six do** (99.2–100.0% overlap). **A whole
+  plant is therefore the shared basis plus THREE FLOATS** — 289 coefficients × 4 vectors × 4
+  elements, 18.5 KB for the species, and every plant in a cell is a different member of the same
+  fractal family rather than a rotation of one bake.
+
+Two normalisations happen in the bake and nowhere else, because both are pure scales in coefficient
+space and doing them offline costs the runtime nothing. The mean radius is driven to exactly 1, so a
+species' `RadiusMin/Max` mean the same thing at every fractal order. And the non-DC band is
+multiplied by a per-element **relief gain**: measured, the true outer surface's radial relief is
+**1.2% of the radius at power 12 and 23% at power 3**, so at the bottom of that range the plant is a
+ball of curves however the rule is tuned. The gains are solved so all four land at a relief standard
+deviation of 0.22, and they cannot self-intersect — a radial height field is star-shaped by
+construction.
+
+### 50.4 The address, and why it is not the emission index
+
+A prism is stamped once with `PrismAddress(θ, φ, radialOffset, tanA, tanB, length, girth, curve,
+lane)`. Three details in that are load-bearing and each was measured.
+
+- **Addressing by emission INDEX does not work.** Nudging the Julia constant by 0.0002 moves the
+  median prism **23% of the bulb** and 97% of them further than their own body length, because
+  tracing is sequential and every discrete decision in it reshuffles. The same nudge moves a
+  `(θ, φ)` address by **0.00002**.
+- **The lift is RADIAL, along the ray.** The laid prism and its surface point sit on the same ray by
+  construction; storing the lift along the NORMAL leaves the tangential difference behind and was
+  measured at **2.4 prism lengths** on the worst prism of one preset. Radial round-trips at 1e-16.
+- **LENGTH is AUTHORED, never derived from the address pair.** Deriving it keeps the chain welded
+  and lets prisms stretch **20×** under a morph — and a prism whose length is a function of the
+  morph has a VOLUME that is too, which lands straight on the cell's Frenzy ladder. Authored length
+  holds a plant's volume exactly constant under any morph, at the cost of ~4 percentage points of
+  extra gap between neighbours across the safe basin.
+
+Because pose is a pure function of `(address, surface)`, moving the surface moves every prism with
+no per-prism state. **The continuous morph the surrogate was built for is therefore possible and is
+NOT shipped**: nothing drives the weights after `Initialize`, so a plant is a fixed member of the
+family. Turning it on is a per-frame write of three floats and one reconstruction, and it needs the
+collider question answered first (§50.8).
+
+### 50.5 The walk, and the two defects that shaped it
+
+Curves are traced by a steering field — contour, ascent, descent, azimuth, meridian or geodesic,
+optionally swirled in the tangent plane — blended with the running tangent, and stepped along the
+surface. Lanes hop ORTHOGONALLY to pick up the next ridge. Two defects are recorded because both
+were invisible until they were measured, and both are the same class of mistake.
+
+- **The seed set was a POLAR CAP.** The Fibonacci sphere walks `z` from +1 to −1 monotonically, so
+  taking a PREFIX of it — which is what an NMS that stops at `want` does — yields a cap, not a
+  spread. Measured, **78% of a plant's prisms landed in the top eighth of the sphere by area and
+  nothing at all below the equator.** The NMS now runs over every candidate and the result is
+  STRIDED down. *A well-spread generator is only well-spread over its whole output; a prefix of one
+  has whatever structure the index order has.*
+- **The traversal was SEED-major.** Seeds laid all their lanes in turn, so a plant that stopped at
+  its budget was two seeds drawn fully rather than the whole bulb drawn thinly — measured, 6,000
+  prisms bought a belt around one band. It is LANE-major now: every seed lays its lane 0 before any
+  seed lays its lane 1.
+
+The girth taper has the same shape of error and is worth its own line. It was keyed on the LANE
+index, spread over `LanesPerSeed` generations — and a plant stops at its live-prism budget long
+before it reaches the last of them, so the measured prism-volume span was **1.4×**, i.e. the dial was
+very nearly inert on every plant that actually grows. It keys on the RUN LENGTH now (a long clean
+run is structure, a short scrap is detail), against a reference of half the step ceiling, and the
+shipped span is **3.2–8.7×**. *A dial whose reference is a ceiling nothing reaches is a dial that
+does nothing.*
+
+### 50.6 The element is the fractal ORDER and the curve family
+
+§40: a lifeform is its species and its element and nothing else. Here an element states its
+*order* — Charge grows the classic 8th-order bulb, Mass the 5th, Space the 3rd, Time the 12th — and
+its *curve family*, so the four read as four plants rather than four sizes of one:
+
+| element | order | field | reads as |
+|---|---|---|---|
+| Charge | 8 | contour, swirled 25° | a dashed bead-work cage |
+| Mass | 5 | contour, swirled 55° | spiralling bracts |
+| Space | 3 | geodesic | an open wire cage of long struts |
+| Time | 12 | ascent | fall lines from every crest — a radiant anemone |
+
+Both are authored on the PREFAB rather than on the four element configs, because a config's element
+is ROLLED per plant so no per-element asset field can reach a config that rolls (§38's argument,
+applied to shape instead of tempo). Resolved in `Initialize` AFTER `base.Initialize`, the one point
+where the prefab, the rolled variant, the cell overrides and the crystal carrying the element have
+all landed — the choke point `Flora.ResolveShieldPeriod` uses.
+
+### 50.7 Fitting the prism, and CHARGE
+
+This species states two BOUNDS rather than a zero, and the reason is structural: **curves CROSS —
+that is what a cage is — so two ribbons meeting at an angle have bounding boxes that must overlap.**
+A zero you cannot have is worse than a bound you can measure.
+
+- Consecutive prisms of one curve are a CHAIN, laid end to end by construction, and are measured
+  separately from the bound.
+- **`MandelbulbFlora.Claim` is the thinning rule**, and it is the same call as the cross-plant
+  occupancy check: a prism is refused when one already laid sits within **0.70 × its own length**.
+  The factor is under 1 for a structural reason rather than a tuned one — consecutive prisms sit
+  exactly one length apart, so any factor below 1 clears the chain BY CONSTRUCTION and can never
+  punch a hole along a ribbon. Measured over 6,000 candidates per element, it takes deeply
+  interleaved pairs (separating scale under 0.5) from **17–31% of touching pairs to 0.0–3.1%**, and
+  the plant still reaches its whole budget because the claim thins CANDIDATES, not the budget.
+- The shipped bounds: **at most 5% of touching pairs deeply interleaved** (shipped 0.0–3.1%) and
+  **no pair below separating scale 0.35** (shipped 0.38–0.53).
+
+**CHARGE is fitted against its ARMOUR, and the lever is its LENGTH rather than its width.** A Charge
+plant's leaves are shielded by law and a shield engages the octahedron CIRCUMSCRIBING the prism,
+reaching `1.5 × leafSize` (§35). A prism's `leafSize` includes its LENGTH, so a ribbon laid end to
+end fuses into a solid tube along its own curve — **which is exactly the Skein rail's finding** (a
+rail's armour meets its neighbour's and *which rail am I on* loses its answer). Shrinking the
+cross-section cannot fix that: measured, even at a quarter of its siblings' width Charge's armour was
+84% fused. So **Charge's ribbon is DASHED** (`LengthFactor 0.45`): its prisms are shorter than the
+step that spaces them, the armour has room to close, and the dashes are what the octahedra fill in.
+Measured, that takes it to **34.6%** against its siblings' bare **94.9%**, and the silhouette
+ordering holds — Charge bare 22,690, siblings bare 79,962, Charge **armoured** 102,107 — so a Charge
+plant is the DENSEST of the four while shielded and much the sparsest once stripped, which is the
+two-pass grazing cost made visible. `--check` fails the build if that ordering ever flips.
+
+### 50.8 Budget
+
+| element | prisms | volume | per prism | dims |
+|---|---|---|---|---|
+| Charge | 2,800 | 3,887 | 0.43 / 1.39 / 2.54 | 0.35 .. 2.06 |
+| Mass | 2,800 | 14,044 | 2.63 / 5.02 / 8.31 | 0.62 .. 3.42 |
+| Space | 2,800 | 58,105 | 5.73 / 20.75 / 30.22 | 0.77 .. 4.88 |
+| Time | 2,800 | 8,713 | 1.23 / 3.11 / 10.72 | 0.51 .. 5.02 |
+
+At `MaxLivePopulation 3` the ceiling is **174,316 volume and 3 always-on heart colliders** — well
+under the retired plating version's 381,000. The species is in **no `SpawnProfile`**: it is opt-in
+from the Lifeform Matrix toy (the worm colony's posture), so it costs no shipped cell anything until
+somebody puts it in one — which matters, because Space's ceiling alone is more than the Blob cell's
+whole Frenzy ladder.
+
+### 50.9 The tools
+
+- `Tools/Build/bake_mandelbulb_surface.py` — the BAKE. Evaluates the fractal once, per element, and
+  writes `MandelbulbSurfaceTables.cs`. `--check` fails the build on drift, and it refuses a fit
+  under R² 0.85 or a relief outside 0.19–0.26.
+- `Tools/Build/mandelbulb_flora_model.py` — the growth rule transcribed independently of the C#,
+  reading the SHIPPED table. It also owns `RULES` and `CROSS_SECTION`, because three tools have to
+  agree about them.
+- `Tools/Build/measure_mandelbulb_flora.py` — the measurement: counts, volume, size spread, coverage
+  in equal-AREA bands, the interpenetration bounds, the Charge shield fit. `--check`, `--render`,
+  `--shields`.
+- `Tools/Build/verify_mandelbulb_flora_tables.py` — **compiles and RUNS the shipped C#** through
+  `Tools/Build/mandelbulb_surface_harness/`, which takes `MandelbulbSurface.cs`,
+  `MandelbulbSurfaceTables.cs` and the real `Element` enum against a UnityEngine stub. `--self-test`
+  mutates the shipped file **seven** ways and asserts every gate trips.
+- `Tools/Build/author_mandelbulb_flora_assets.py` — the prefab, the four configs, the script metas
+  and the toy row. `--check`.
+
+**What is proven exactly, and what is not.** The harness selftest (SH round-trip, `Compose`
+linearity, `Pose` inverts its address), the reconstructed height field element by element (1.3e-07),
+and the seed set are held EXACTLY. The walk is held by its statistics — prism count, curve count,
+which equal-area bands carry the plant, the size distribution — and **not** prism for prism, because
+it is a sequential recurrence with a turn gate: the C# runs in float32 and the model in float64, and
+one step landing a hair either side of `dot(t, want) < maxTurnCos` ends a curve in one and not the
+other. The first divergence index is reported, so a real transcription error (which diverges at step
+1, not step 800) is still loud. *Claiming bit-exactness across two float widths on a chaotic
+recurrence would be claiming something no run could support.*
+
+### 50.10 Open
+
+- **Nothing has been run in the editor.** Every number here is offline. No plant has been grown in
+  Unity, no frame has been timed, and no collider count has been observed. The handoff is
+  `/flora` §9 and the branch's own test list.
+- **Its HEART is sized off a body measurement that does not describe this species.**
+  `author_lifeform_heart_sizes.py` models a flora body as the disc `N` prisms of footprint `A`
+  settle into, reading `A` from the prefab's `leafSize` and capping `N` at 400. Both inputs are
+  meaningless here: `leafSize` is now only the SEED prism, and 2,800 is a real per-plant target. It
+  reports a body of **56.1 u** where a plant is **~225 u across**, and authors `HeartWorldScale
+  2.47` rather than the ~4.9 the band's own rule would give the largest lifeform in the game. It
+  also cannot see the per-element cross-section, so all four elements get the same heart. It is not
+  silently wrong — this is the note — but it IS wrong, and the fix has a fleet-wide blast radius (a
+  bigger largest lifeform re-solves `K` and shrinks every other heart), so it is deliberately not
+  bundled with a species change. Carried as its own task.
+- **The morph is possible and not shipped.** See §50.4.
+- **The renders are untextured oriented boxes under one directional light.** They are the right tool
+  for judging a STRUCTURE — which prisms, what size, what frame — and they say nothing about how the
+  species will read with the game's domain palette, emissive fresnel rims and bloom.
+- **The runtime surface cache is a `Clear()`-on-full dictionary of 8 fields** (~74 KB each). It is
+  static and never shrinks below that; a cell holding more distinct `(element, weights)` pairs than
+  that thrashes it and pays one reconstruction per plant. Nothing measured says where that line is.
+- `fit_shield_clearance.py` does not know this species (it is not a bond-table lattice); the
+  octahedron fit lives in this species' own measure script, which says so, and the separating-axis
+  maths is a stdlib transcription with closed-form self-tests. Its armoured pass is **sampled** at
+  3,000 pairs with a fixed seed — stated rather than disguised.
+
+### 50.11 What has to be tested in the editor
+
+Nothing below has been run. The offline gates are strong about GEOMETRY and say nothing about
+Unity: whether the prefab's serialized fields deserialize into the nested `GrowthRules` struct at
+all, what the plant costs per frame, or how it reads with the game's materials. Work top-down.
+
+1. **It grows, at all.** Lifeform Matrix toy → Flora → Mandelbulb → each of the four elements in
+   turn. **PASS:** a plant appears and keeps adding prisms until it settles; its shape is visibly
+   the one in this section's renders. **FAIL, and the first thing to check:** a plant that lays
+   its single seed prism and nothing else means `formByElement` did not deserialize — the nested
+   `MandelbulbSurface.GrowthRules` is a `[Serializable]` struct inside a `[Serializable]` struct
+   inside an array, which is the shape most likely to come back empty, and `ResolveForm` then
+   falls through to its hard-coded default for EVERY element (so all four would look like Charge).
+   A plant that grows a tiny knot means the surface reconstructed but the walk did not.
+2. **The four elements differ.** Release one of each. **PASS:** four visibly different plants —
+   a dashed bead-work cage, spiralling bracts, an open wire cage, a radiant anemone. **FAIL:** two
+   or more identical, which is the `ResolveForm` fall-through above.
+3. **Frame cost while growing.** Profile a single plant from seed to settled, and then three of
+   the heaviest element (Space) at once. The grow tick decides 8 prisms and the drain instantiates
+   3 per frame; `Reconstruct` runs ONCE per plant at ~0.3 M float ops and should not be visible,
+   but it has never been timed. **Watch for:** a hitch at `Initialize` (that is the reconstruction),
+   and a sustained cost while growing (that is the claim, which hits `PrismSpatialIndex` once per
+   decided prism).
+4. **Collider count and the surface cache.** Three plants is three always-on heart colliders, and
+   the prisms are LOD-cullable by phase like any flora. Confirm both, and confirm the static
+   surface cache does not thrash: release more than 8 plants with different weights and watch for
+   a per-plant reconstruction hitch (§50.10).
+5. **Grazing and regrowth.** Let fauna crop a plant, or shoot it. **PASS:** prisms come back — the
+   live-prism budget frees and `ReopenGrazed` re-decides the freed addresses. **FAIL:** a cropped
+   plant stays a permanent fragment.
+6. **CHARGE's shields.** A Charge plant's leaves are shielded by law. **PASS:** its octahedra fill
+   the dashes in and the plant reads DENSER shielded than the other three read bare, and sparser
+   stripped. **FAIL:** its armour fuses into a solid tube along each ribbon, which would mean the
+   dash (`LengthFactor 0.45`) is not reaching the prism.
+7. **How it READS.** The renders are untextured boxes under one light. Judge it with the domain
+   palette, the fresnel rims and bloom, at flight distance and up close, in the boot world.
+8. **Reproduction.** `GrowthPerOffspring` is one whole plant, `MaxLivePopulation` 3. Leave a cell
+   running and confirm a mature plant seeds a second and that the cap holds.
+9. **A plant is a different bulb each time.** Two plants of the same element should be visibly
+   different members of the family (three quantised weights). **FAIL:** identical plants means
+   `PlantSeed` is returning the same hash — it keys on the planted position, so it is the same
+   number for two plants at the same place.
+
+---
+
+## 51. The four elemental identities of a PLANT — one rule, measured off what already ships (Sep 2026)
+
+Three of the four elements already stated an identity somewhere in the flora pipeline and one
+did not, so "what does Mass mean for a plant?" had no answer you could read anywhere — it had
+sixteen answers, one per species that happened to author a per-element leaf, and five species
+that authored nothing at all. This section states all four in one place, as one rule, at the one
+choke point an elemental law can live at.
+
+### 51.1 The four sentences
+
+| element | its identity | where it lives |
+|---|---|---|
+| **CHARGE** | **armours its leaves** — its mass is shielded, so grazing it costs two passes | `Flora.ResolveShieldPeriod` (§35) |
+| **MASS** | **the most cumulative prism volume, in the most CUBIC leaf** — x, y and z sit closest together | `FloraElementalForm.ShapeLeaf` |
+| **SPACE** | **the highest ASPECT RATIO** — the long axis trades that cumulative volume for the **bounding volume of the assembly** | `FloraElementalForm.ShapeLeaf` + `ReachScale` |
+| **TIME** | **the fastest clock** — it grows fastest *and* reproduces fastest | `Flora.ResolveGrowPeriod` + `ResolveGrowthPerOffspring` (§38) |
+
+Two of them are about SHAPE and two are not, and that is the shape of the law rather than an
+accident of what was easy: Charge's identity is a *state* and Time's is a *tempo*, so **Charge and
+Time take the species' own authored form** and only Mass and Space restate it. A species therefore
+authors one leaf and the four elements spend it four ways.
+
+### 51.2 The four are a REDISTRIBUTION of one species' form, never an inflation of it
+
+This is the property that makes a fleet-wide leaf law shippable at all, and it is asserted rather
+than hoped for:
+
+- `LeafVolumeScale`'s four values **average to exactly 1**.
+- The anisotropy term is **volume-exact by construction** — it raises the leaf's *unit-volume*
+  shape vector to a power, and the product of a unit-volume vector's components is 1, so 1 to any
+  power is 1.
+
+So a mixed-element forest holds exactly the mass it held before this law existed, and **no cell's
+volume phase ladder moves** (§4.6 — volume is the spine). What changes is that a Mass plant and a
+Space plant standing in the same cell are now visibly different plants. A law that gave Mass more
+material would have landed on Rampage's play-tested ladder, on Hesperides, on the Lattice cell and
+on every future cell that grows flora; this one lands on none of them.
+
+The same argument produces `ReachScale`, the assembly half of the Space law, **with no new
+constant**: it is `LeafVolumeScale^(-1/3)`, i.e. *a plant spends a fixed amount of material*, so
+thinning the leaf buys extent and thickening it costs extent. Space reaches ×1.35 where Mass draws
+in to ×0.82. Two dials that cannot drift apart, because there is only one.
+
+### 51.3 It cannot be authored, for the third time
+
+The leaf is authored per **CONFIG**; the element is **ROLLED** per plant
+(`FloraConfigurationSO.SpreadElements`). A config with an empty element palette applies its OWN
+variant block to whatever it rolled, so nothing writable on any per-element asset reaches it. This
+is exactly the argument §35 made for the Charge shield cadence and §38 made for the growth quota,
+and it lands in the same place: **resolved at `LifeForm.Initialize`**, the one point where the
+prefab, the variant block, the cell's overrides and the crystal carrying the element have all
+landed — and **scoped to `Flora`**, never `LifeForm`, or every creature inherits a rule written
+about plants.
+
+It needed one new seam. `ResolveShieldPeriod` runs *after* `BindEmbeddedParts`, which is fine for a
+cadence and wrong for a leaf: that method stamps the prefab's own seed prism with `leafSize`, so a
+form applied after it leaves the seed prism at the pre-element size while everything grown
+afterwards expresses the element — **the same ordering argument `Flora.ApplyCellPrismScale` already
+records** (§43). `LifeForm.OnElementResolved()` is that seam: after the crystal is resolved, before
+the prisms are bound.
+
+### 51.4 The constants are MEASURED, and the measurement is one vote per FAMILY
+
+Nothing here was invented. **Eleven shipped species already state this law in their own data**, and
+`Tools/Build/measure_flora_elemental_form.py` re-derives every constant from them and fails the
+build when the code stops tracking the assets.
+
+Measured per element **against TIME as the neutral form** — Time's identity is the clock, so its
+leaf is the species' own. (The original four `GyroidFlora` variants confirm it: Charge and Time
+shipped the *same* `9 × 3.4 × 1.5` leaf, and Charge only diverged later when
+`fit_shield_clearance.py` re-fitted it for its armour, which is a consequence of the Charge law
+rather than a second identity.)
+
+| | gyroid | Schwarz P | quasicrystal | the eight phyllotactics |
+|---|---|---|---|---|
+| Mass volume | ×2.40 | ×1.86 | ×6.14 | ×1.82 |
+| Space volume | ×0.87 | ×0.54 | ×0.98 | ×0.25 |
+| Mass anisotropy | 0.39 | 0.45 | 0.52 | — |
+| Space anisotropy | 2.11 | 2.20 | 1.34 | — |
+
+Three independent authoring decisions agree on the **direction** of both dials and, for the
+aspect, closely on the **magnitude** (Mass 0.39–0.52, Space 1.34–2.20). They agree far less on
+volume (Mass spans 3.3×), which is the honest reading: *the fleet agrees Mass is heaviest and
+Space lightest; it does not agree by how much.* So the law takes a median, not a mean — and
+**each FAMILY gets one vote**, because the eight Hesperides phyllotactics share ONE authored
+cross-section ladder and are therefore one decision, not eight. The law is the geometric mean of
+the two family medians, then normalised so the four average to 1. Shipped: Mass ×1.8347 / A 0.45,
+Space ×0.4097 / A 2.11, Charge and Time ×0.8778 / A 1.
+
+The phyllotactics have **no opinion on aspect** and that is a fact about them rather than a gap:
+they author a SQUARE cross-section and take their lengths from their own `segment`/`reach`, so
+their leaf vector cannot express an aspect. It is also why the anisotropy column is the lattice
+median alone.
+
+### 51.5 A species whose prism size is dictated by its growth rule is EXEMPT — and CHECKED
+
+`Flora.PrismSizeFixedByGrowthRule` — the guard §40 deliberately kept with no reader, now doing its
+third job — exempts the three lattice species and the Mandelbulb from the runtime transform. A
+lattice bonds at offsets measured in **absolute local units**, so a transformed leaf lays prisms
+the bond table no longer describes, and scaling the lattice to match drags a whole family of
+absolute-distance coherence tolerances with it (§34.8).
+
+Those species **state the law in their own fitted data instead**, and the tool checks all four
+clauses on each of them rather than transforming them: Mass is its heaviest leaf, Mass is its most
+cubic, Space is lighter than Time, Space is its most elongated. All three lattice species pass. The
+exemption is also what keeps `fit_shield_clearance.py` and this law from fighting: a Charge leaf
+re-fitted for its armour is fitted against what the species authors, and nothing transforms it
+afterwards.
+
+### 51.6 Where each family spends the law
+
+| family | leaf | reach |
+|---|---|---|
+| `BranchingFlora` | all three axes (s³) | `branchingScaleFactor` — the branch STEP, scaled with the prisms so a Space plant is a wider skeleton rather than one whose prisms outgrow their gaps |
+| `PhyllotacticFlora` | `x`/`y` only, as a CROSS-SECTION (s²) | `segmentLength` + `whorlRadius` — this family's length is not in its leaf at all, so without this Space could not reach further |
+| `AssembledFlora` (×3) | exempt | exempt |
+| `MandelbulbFlora` | exempt | exempt |
+
+### 51.7 The stated limitation
+
+`PhyllotacticFlora.AddHealthBlock` deliberately does **not** call `AdmitTargetScale` (§34.9), so
+`PrismScaleAnimator` silently clamps that family's prisms into `[0.5, 10]`. Measured after the
+transform, **no** phyllotactic cross-section lands outside that window, so the law is not trimmed
+today — but the tool reports it every run rather than assuming, because the clamp is silent and a
+future retune of either the constants or a species' leaf can walk into it.
+
+### 51.8 What was proven, and how
+
+- **The shipped C# was compiled and RUN** — `Tools/Build/flora_form_harness/` builds
+  `FloraElementalForm.cs` + `FloraReproductionRules.cs` + the real `Element` enum against a
+  UnityEngine stub and executes them, and the measurement tool compares the answers against an
+  independent transcription: worst relative disagreement **2.4e-07** over six leaves × four
+  elements. *This is why the law lives in its own pure file rather than inside `Flora`* — a
+  `MonoBehaviour` cannot be compiled out of the editor, and a rule nobody can run is a rule nobody
+  proved.
+- **Four negative controls**, all firing (`--self-test`): a drifted constant, broken volume
+  neutrality, an anisotropy term that moves volume, and an exempt species contradicting the law —
+  plus the unmutated control passing.
+- **Edit-mode tests** (`FloraElementalFormTests`) pin the neutrality property, the four identities,
+  the sentinel rule, and that Time's three clocks are one constant.
+- **Not run in the editor.** What has to be looked at: a Hesperides garden and a Rampage arena,
+  where a Space plant should now read as a wide wiry skeleton and a Mass plant as a compact block
+  of slabs, at the same total forest mass as before.
+
+---
+
+## 52. Two species on one growth rule — the twist and the crossing curve (Sep 2026)
+
+The Mandelbulb family (§50) traces curves over a baked spherical height field. That rule turns out
+to hold two quite different plants, and it holds them **without a second class**: one prefab each,
+one component, one bake, differing in their curve parameters and in one dial apiece — the way the
+eight Hesperides phyllotactics are eight species on one class.
+
+| | **Fractal Foliage** (`MandelbulbFlora`) | **Coral Bloom** (`CoralBloomFlora`) |
+|---|---|---|
+| the concept | every prism **ROLLS about its own curve tangent** as the run advances, so a curve is a helix of plates rather than a flat band | **no twist at all** — the curves themselves are the subject, made to CONTINUE and cross through the whole structure |
+| the dial | `GrowthRules.TwistDegreesPerStep` = **12** | high momentum (0.93–0.96), a low field mix, a long step ceiling — and only long runs survive |
+| reads as | a dense twisted foliage | an open cage of smooth arcs you see the fractal through |
+| neutral prism | `0.045 × 0.017 × 0.030` | `0.030 × 0.014 × 0.045` |
+
+They share the **surface family** (one bake per element), which is deliberate: the two are visibly
+the same WORLD grown two different ways, which is what makes them read as two plants in one biome
+rather than as two unrelated objects.
+
+### 52.1 The twist is a pure function of the address, and costs nothing
+
+`PrismAddress.Roll` carries the accumulated twist in radians, stamped once per prism at emission
+(`i × TwistDegreesPerStep`), and `Pose` applies it as a rotation of the frame's normal about the
+curve's own tangent. Two properties are why it is stored rather than recomputed: a prism's address
+is the **whole** of its identity, so a pose that had to ask "how far along its curve am I?" would
+need the curve to still exist; and roll 0 leaves `up` exactly on the normal, so a species that
+authors no twist is **bit-identical** to before this existed — which the verifier confirmed on all
+four of the original species before anything else moved.
+
+Rodrigues about a unit axis the vector is already perpendicular to reduces to one cos/sin blend
+with the binormal, so the twist costs one cross product and cannot drift off the frame.
+
+### 52.2 The elemental law is DERIVED from each species' neutral form, not typed per element
+
+Both species are EXEMPT from the runtime leaf transform (`PrismSizeFixedByGrowthRule`), so each has
+to state §51's law in its own data. It is **derived** rather than authored: each species authors ONE
+neutral prism and four curve families, and `mandelbulb_flora_model.elemental_prism` applies §51's
+measured ratios to the neutral — which is the whole point of the user's ask, *the concept persists
+through all four elements while each element expresses itself*. The prism's third axis is the
+**step**, because on this family the step IS the prism's length, so "Space's long axis" is a real
+long axis here rather than a dimension nothing renders.
+
+Measured, both species:
+
+| | Charge | Mass | Space | Time |
+|---|---|---|---|---|
+| Foliage cumulative volume | 1,574 | **20,305** | 4,535 | 9,716 |
+| Foliage prism aspect | 2.65 | **1.55** | **7.80** | 2.65 |
+| Bloom cumulative volume | 1,778 | **22,942** | 5,123 | 9,925 |
+| Bloom prism aspect | 2.41 | **1.69** | **11.75** | 3.21 |
+
+### 52.3 The finding: an emergent GIRTH quietly re-authors the volume ordering
+
+The law sets the AUTHORED prism, and what the player sees is the plant — where every prism's
+cross-section is additionally multiplied by its curve's **girth**, a taper keyed on how far that
+run got (§50). The mean girth is therefore emergent from the curve family, it differs per element
+because the four curve families differ on purpose, and measured it **INVERTED the ordering the law
+had just set**: the foliage's Space, whose long clean runs all reach full girth, carried 1.3× its
+Time's cumulative volume against an authored 0.47×.
+
+Two corrections, and the second is the one that generalises:
+
+- The **girth taper is a SPECIES constant**, not a per-element one. It is the plant's texture — how
+  much finer a scrap run is than a structural one — which belongs to the concept. Left per element
+  it multiplies the cross-section by an emergent, element-dependent mean.
+- Each element carries **one measured scalar** (`VOLUME_GAIN`) that cancels its own mean girth, so
+  the ordering holds on the plant rather than only on the authored prism. Volume goes exactly as
+  the cross-section squared and nothing in the walk depends on it (the claim radius is a fraction
+  of a prism's **length**), so the fit is one iteration, not a search.
+
+**The shape of those two rows is the finding rather than the numbers.** Fractal Foliage needs a
+real correction (0.60–1.01) because its four curve families are deliberately very different — a
+fall-line anemone and an open geodesic cage do not produce the same run-length distribution — while
+Coral Bloom barely moves (0.83–1.05) because its concept makes all four families uniformly
+long-running. *A species whose elements differ a lot in HOW they grow will need this fit; one whose
+concept is the same growth everywhere very nearly does not.*
+
+### 52.4 Three gates that were coincidences, found by adding a second species
+
+The verifier compiles and RUNS the shipped C# against an independent model, and it holds the walk
+by its statistics because a sequential recurrence with a turn gate is chaotic in its last bits
+(float32 in C#, float64 in the model). Running a SECOND species through it exposed three
+constants that had been sitting on a coincidence rather than on a margin:
+
+1. **A curve-count tolerance stated as a percentage of the COUNT.** Two curves out of 210 on the
+   foliage's Mass is 1% of the plant; eleven out of 51 on the bloom's Time is 21% of it — and a
+   percentage bound on the count calls those the same size of disagreement. It is now stated in the
+   only unit that means the same thing to both species: **the fraction of the PLANT the disputed
+   curves account for.**
+2. **"The walk diverged before prism 16, so it is a transcription error."** How early two walks
+   separate is a property of how chaotic the SURFACE is — the power-12 Time bulb has 3.3× the
+   relief of the Space one — so the constant was a statement about one species. Worse, it could not
+   be repaired by measuring the SIZE of the first disagreement instead: the prism lists are
+   INDEX-ALIGNED, so the moment one flipped decision drops a curve, every later index compares two
+   different curves and a drift and a jump look identical. The transcription test is now **prism 0**,
+   which a transcription error cannot pass and float width cannot fail; where the walks separate is
+   reported and never gated.
+3. **A `phi` comparison with no seam unwrap**, which read a point either side of `phi = 0` as 2π of
+   error. It was making the original species look 50× worse than it is — the foliage's Time agrees
+   to prism **1084**, not 19 — which is exactly how the magic 16 came to look like a margin.
+
+*A gate written against one species is a gate calibrated on one species.* All three are now derived
+from the plant being checked.
+
+### 52.5 What it costs, and what has to be tested
+
+Both species are in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix toy (rows `Mandelbulb`
+and `Coral Bloom`), so neither costs a shipped cell anything until somebody puts it in one. At
+`MaxLivePopulation` 3 that is 3 always-on heart colliders and ~69,000 volume each at their heaviest
+element.
+
+**Nothing has been run in the editor.** On top of §50.11's list, the two things this pass adds:
+
+1. **The twist must READ.** A Fractal Foliage curve should be a visible helix of plates, and a
+   Coral Bloom curve a flat ribbon. **FAIL:** if the foliage looks flat, `TwistDegreesPerStep` is
+   not reaching the prefab — check the `Rules` block in `MandelbulbFlora.prefab`.
+2. **The two species must read as two plants.** Spawn one of each from the toy and look at them
+   together. **FAIL:** if they read as one species at two sizes, the concept dials are not carrying
+   and the answer is the curve families, not the prism.
+
+## 53. The Fall and the Watershed — every curve reaches the heart, and the third species is the surface's own skeleton (Sep 2026)
+
+The brief for this pass was four flora on the Mandelbulb rule (§50) that are **visually orthogonal**,
+whose curves **move in close enough that the spindles almost connect to their crystal**, one with
+evident self-similarity, one with smooth curves, one with twisting helicoids, and one that expresses
+"a discovery … a place where people don't know what they are looking at, but they want to know
+more." Coral Bloom (§52) is the smooth one and Fractal Foliage the helicoid. This section records
+the two things built to answer the rest of the brief before the self-similar species (§54): a
+**shared radial dive** every species authors, and the **Watershed**, the discovery species.
+
+### 53.1 THE FALL — a curve the surface can no longer carry falls to the heart
+
+Every Mandelbulb species lives on ONE shell, with the heart crystal 75 world units away at the
+origin and nothing between. The ask was for the plant to reach it. The answer is not a per-species
+mechanism but one shared by every curve family: when a run is released — abandoned by its turn
+gate, or run out of steps — the curve **continues as a logarithmic spiral toward the heart**, a
+heading re-derived every step at a constant angle ψ from the inward radial and a step that is a
+fixed fraction `f` of the current radius (`GrowthRules.Dive*`, `Growth.AppendDive`).
+
+Five decisions in it were measured rather than chosen:
+
+- **The heading is re-derived at a constant angle, never lerped toward the radial.** A lerp has no
+  stable non-zero fixed point (it either escapes or degenerates into a radial stab); the constant
+  angle IS the definition of a log spiral, `ρ = sqrt(1 − 2f cos ψ + f²) < 1`, exactly stable, and it
+  terminates by construction.
+- **Every dive winds about ONE axis** (`DiveAxisAlign`): each dive's tangential heading is turned
+  toward the azimuthal direction about the surface's polar axis, so the pole view reads as a
+  rosette of spirals rather than as wisps in every plane. The sign of the azimuthal direction is
+  chosen to agree with the curve's own tangential heading, and that choice carries a **dead band**
+  (`Dot(az, u) < −1e-3`): on a meridional arm the dot product is a rounding residual, and the
+  shipped C# (float32) and the model (float64) wound the Space Watershed's second prism opposite
+  ways until the tie was made deterministic. *A sign decided by a value that can be zero is a sign
+  decided by the last bit.*
+- **The step has a ceiling in multiples of the walk step** (`DiveStrideCeiling`): without one the
+  first prisms after the release are `f·r` long — 13× a surface prism, measured — and the spiral
+  reads as a spike. At the ceiling of 2.0 this was still true in a quieter form: the longest dive
+  prism out-ran every plant's longest surface prism on all twelve (species, element) pairs,
+  because a surface prism is the frame-to-frame CHORD (1.05–1.20× the step, the walk steps in the
+  tangent plane and re-projects onto a larger radius). Solved per element the gate wants ≤ 1.14;
+  the fleet ships **1.10**, with `DiveMaxSteps` raised 96 → 160 to pay for the shorter stride.
+- **The dive's `up` hangs off the RAY, and the seam is paid once.** `Pose` hangs a surface prism's
+  face off the normal, which is meaningless for a prism floating inside the shell; a dive prism
+  (`TanR ≠ 0`) hangs its face off its own ray. The signed angle between the two `up`s about the
+  shared heading is computed ONCE at the release and added to every dive prism's `Roll`, which the
+  address already carries — so the face is continuous across the release with no new field.
+- **Depth is a SHELL FRACTION** (`PrismAddress.Dive`, `position = Dir · (R(θ,φ)·(1 − Dive) +
+  RadialOffset)`), never an absolute lift: under a surface morph a fraction moves a near-heart
+  prism by `(1 − Dive)·ΔR` and the whole spiral scales with the bulb, where an absolute lift tears
+  it off its own release point. Both new fields default 0 = bit-identical, proven against a HEAD
+  build (8 × 4,000 prisms string-identical).
+
+**Which seeds own a dive is strided, never a prefix** — the seed list is z-monotone, so a prefix
+is a polar cap (§50.5's defect for a new consumer) — and **where each dive leaves is emergent**:
+the run decides when it is released. The gates that hold it (`measure_mandelbulb_flora.py`):
+arrival (dives laid ≥ 60% of those owed), crystal clearance (the closest dive prism's tip stays
+outside the heart's half-extent + 0.5 u, and its centre inside 2–6 u), the stride gate above, no
+hole inside a dive wider than 3× the median surface prism, winding ≥ 80° per e-fold of radius,
+share 5–25% of the plant, no dive truncated on `DiveMaxSteps`, the sunburst gate (< 55% of the
+plant pointing within 45° of the ray — which turns out to be a statement about the SURFACE
+family: a dive heading is ψ off the radial and `|cos ψ| ≤ 0.64 < 0.707` for every authored ψ, so
+a dive prism can never register as radial, measured 0.0% on all twelve), per-dive band spread
+(one entry per laid dive at the band it LEFT the surface in — the per-prism count was blind, since
+one dive's own prisms sweep 3–4 of the 8 bands unaided), and body roll measured net of the
+authored twist by parallel transport (a curve that BENDS must not read as a curve that ROLLS).
+
+### 53.2 THE WATERSHED — the discovery species is the surface's Morse–Smale skeleton
+
+The discovery brief was answered by drawing something the bulb already contains and nobody can
+see: the **critical points** of its height field and the **separatrices** between them. Every
+curve of a Watershed plant leaves a **saddle** of R(θ,φ) along one of the saddle's Hessian
+eigen-directions and runs uphill to a peak or downhill to a pit — the surface's own Morse–Smale
+complex. The plant is therefore a NET anchored to the topology rather than to any sampling of it,
+and its peaks and pits sit in latitude rings of exactly **(order − 1)** — 7 / 4 / 2 / 11 for the
+power 8 / 5 / 3 / 12 bakes — each ring rotated half a lobe from the next. That is the fractal's
+exponent made countable, which is what the gyroid and the quasicrystal do with their symmetries
+and what the brief named: the mind wants to discover the depths of the symmetry, and each
+discovery is a reward.
+
+- **The census runs in DOUBLE on the float32 field** (`Surface.SampleD`, a 2× lattice scan, a
+  clamped Newton refinement, acceptance at `|∇| ≤ 2e-3`, dedupe on a 0.01 chord, a frozen
+  `HessianStencil` 0.01). It was float32 first and the shipped C# and the model disagreed on the
+  peak SET (Mass and Space) and on the saddle ORDER (Charge, positions 14/84); moving the census to
+  double and quantising the model's field to float32 made the two agree exactly, and the verifier
+  now proves count, kind, position, sharpness and the farthest-point saddle order against the
+  compiled C#. The peaks and pits are still less stable across float widths than the saddles
+  (measured, and the reason §54 takes a PREFIX of the peak order).
+- **Seeds are the saddles in FARTHEST-POINT order** with a tolerance comparator (1e-6 on sharpness
+  and distance, 1e-5 on angles), so every budget prefix of the seed list is spread over the sphere;
+  the negative control — sharpness-major order — puts Charge's first quarter in 4 of 8 bands.
+- **The four lanes are INTERLEAVED** valley+, ridge+, valley−, ridge−: with the two valley lanes
+  first, Time's budget ran out inside lane 2 and the ridge net — the part that draws the silhouette
+  — was never laid.
+- **A separatrix is PURE gradient flow BY CONSTRUCTION.** The first cut authored `FieldMix 1`,
+  `Momentum 0`, `Swirl 0` and called the columns inert; the inert-column probe (grow twice with
+  those columns at wildly different values, assert byte-identical prisms) found they MOVED the
+  plant — `Trace` and `TryFieldDirection` read them whatever the seeds are, so the claim was true
+  by coincidence of authoring. They are now short-circuited under `SkeletonSeeds` in both
+  implementations. *A column that is inert because it was authored at its no-op value is a column
+  that stops being inert on the next edit.*
+- **The walk step is the species' own** (`WalkStep`, decoupled from the §51 step) because a
+  skeleton's cost is fixed by the SURFACE — Time's 147 saddles need a coarser walk than Mass's 32 —
+  and `LengthFactor` is the ratio that makes the prism fill it; `GirthReference` replaces
+  `MaxSteps/2` because a separatrix arm is short by construction (§50's "a ceiling nothing
+  reaches"). The walk draws no random number, so the verifier holds it **prism for prism**, a
+  stronger contract than the two walking species can offer.
+
+Its gates: separatrix sign (every ridge arm ends higher than it started, every valley arm lower),
+net survival (≥ 65% of saddles keep ≥ 3 arms, mean arm ≥ 5 prisms), no lane starved by the budget
+(≥ 15% each), the **ring census** (modal peak-ring size = order − 1, AND the azimuthal power
+spectrum of the peak set peaks at a multiple of order − 1 — the grouping half has a knife-edge on
+Space, whose rings sit `gap kept ≤ 0.060 | split ≥ 0.347` about the 0.08 threshold, and the
+spectrum half has none), seed spread with its negative control, the inert probe, all four lanes
+inside the candidate cap, the `LengthFactor` band, and peaks on the plant (≥ 50% of peaks carry two
+ridge ends). The Euler characteristic `peaks − saddles + pits` is REPORTED and never gated: a
+finite grid cannot promise it found every critical point, and the shipped censuses give 0 / −8 /
+−12 / +5 against a sphere's +2, so the complex is not closed on three of four bakes — a fact about
+the bake, stated rather than hidden.
+
+### 53.3 What a heart costs when everything falls into it — and what the gates got wrong first
+
+The Fall is what makes "the spindles almost connect to their crystal" literal — the closest dive
+prism's centre sits 3.3 u from the origin against a 0.76 u crystal half-extent — and its price is
+paid at the core, on the Charge plants, whose prisms are ARMOURED (§35). The first core gate
+measured "armoured pairs inside 0.15 R that interpenetrate" and read 41–46% against a 15% bound
+on three species; three tuning agents, independently, took it apart the same way: **55 of 62
+offending pairs were a curve's own consecutive prisms**, and two circumscribing octahedra one
+chord apart along their shared axis overlap iff `3 × LengthFactor ≥ 1` — a closed form with no
+dive parameter in it, a fact of `CHARGE_DASH` (0.45, above the 1/3 cliff) that §50 already accepts
+on the surface. Every dive dial the gate's own message named measured inert or WORSE (the girth
+floor thins the bundle, which shrinks the denominator faster than the numerator: 0.70 → 45.8%,
+0.15 → 75.6%, with the offending count pinned at 59 throughout). The gate now measures the
+**BUNDLE** (non-walk-adjacent pairs — what "the Fall's bundle has fused into a rod" means) and
+reports the chain beside it with its closed form; the chain fuses on Coral Bloom and Apollonia
+(LengthFactor 0.45) and not on Foliage or the Watershed (0.30 / 0.31 — both author a Charge walk
+step to sit under the cliff, which also made their cores read as beads). *A failure message that
+names the dials of the subsystem the failure was measured in is a guess about the cause, and a
+thinning dial that shrinks the denominator faster than the numerator reads as a regression.*
+
+Seven more gate defects came out of the same pass, every one found by an agent forbidden to tune
+around it. The **sunburst** bound (< 55% of the plant within 45° of the ray) is, on a
+gradient-flow species, a census of the BAKE's own steepness — the dive is 0.0% radial by
+construction, so `total = surface × (1 − share)` and Time's reachable floor was 56.3%: a
+skeleton species now carries 0.80 (a genuine spoke-burst reads ≥ 0.95), a walking species 0.55,
+where it separates a hedgehog from a foliage (Foliage/Time 60.6% → 1.9% with a 15° swirl on its
+ascent — a cliff, not a slope, because a swirled walk either can climb a terrace riser or cannot).
+The **seed-spread** bound was a constant 6 bands while its sample was 8 points on Mass (8 uniform
+draws fill an expected 5.25); it is now the discounted uniform expectation AND ≥ 2× the
+sharpness-major control. The **ring census** grouped peaks at a hand-chosen 0.08 rad that sat just
+above the "same ring" gap population on Space (kept ≤ 0.060, split ≥ 0.347); the threshold is now
+derived per element from the peak set's own gap histogram — with every gap floored at the census's
+dedupe chord, because a ring's peaks share a latitude to the last bit and the unfloored ladder was
+degenerate on all four bakes — and reads modal 7 / 4 / 2 / 11 everywhere. A dive **amputated** by
+the claim filter far outside the stop sphere (Coral Bloom/Space: 5 of 45 prisms laid, ending at
+85 u) was invisible to every bound (the hole gate measures consecutive LAID prisms, truncation
+counts steps ATTEMPTED, reach is a MINIMUM one arriving dive satisfies); it now counts against
+ARRIVAL, with the bound at 3.5× the stop radius because the dives of one plant all wind about ONE
+axis and converge into a braid the claim filter ends every dive but the first at. The worst-pair
+chain exclusion learned a closed ring's SEAM; `DIVE_BAND_MIN` is capped at the bands a gasket's
+owed set actually releases into; and the Charge **ladder** is measured ARMOURED, since the
+octahedron is what a Charge plant draws.
+
+### 53.4 The tuning pass, measured
+
+Foliage, Bloom and the Watershed are green on every bound after one render-judged pass each
+(one agent per species in its own worktree; the model as the sandbox, the shipped C# as the
+check). What moved, and why:
+
+- **Fractal Foliage** — Charge's walk step 0.045 (LengthFactor 0.30, the chain under the cliff);
+  Space's seeds 65 → 32, because its struts are ~149 prisms so 2,800 buys ~22 curves however many
+  seeds are authored, and the Fall's strided owed set over a list three times longer than the
+  plant degenerates into a prefix (arrival 38% → 88%); Time's ascent swirled 15° (the hedgehog
+  fix above); Time's dives 8 → 7 for margin on the 25% share ceiling.
+- **Coral Bloom** — Mass's seeds 46 → 28: a BUDGET cut, not a claim cut (all eight dives survived
+  the claim filter and four started past prism 2,800). A Time field-mix change 0.18 → 0.28 was
+  tried and REVERTED: it moved the walk onto a float-width cliff where the shipped C# and the
+  model disagreed on the mean girth by 10% — *a look tuned on the model that the game would not
+  lay*, which is what the verifier exists to catch.
+- **The Watershed** — dive stop 0.060 and a stride ceiling of 0.70 (its holes were
+  core-convergence claim refusals, not a missing stride), Charge's walk step 0.065, Time's dives
+  16 → 8 with the descent gate 0.30 → 0.12. Volume gains fitted: Space 1.34× (its runs sit
+  furthest down the girth taper).
+- Two thin margins, stated: the Watershed's Time is budget-bound at exactly 2,800 prisms, and
+  its lane 3 sits at 15.6% against a 15% floor on Mass and Time — anything that adds dive prisms
+  starves lane 3 first.
+
+## 54. APOLLONIA — the self-similar species is the Apollonian gasket, crowning the bulb's own lobes (Sep 2026)
+
+The self-similar species took **two design rounds** and nine prototyped candidates, every one
+rendered and read at the size it will be judged (§50.2's rule). The first round's four —
+recursive cascades, a zoom ladder of nested funnels, a vortex of equiangular spirals, a
+subdivision cage — all failed the same way: the repeated unit was under ~40 prisms and lived in
+specks, or the ladder existed only down one axis. The second round's runners-up are worth a line
+each, because each bought a rule: the **Echo Lantern** (a closed curve's orbit under a similarity,
+rung n = kⁿ·Rot(nΔ) of the mouth) rendered as the round's single most beautiful image ISOLATED —
+a rose of ten registered scalloped outlines spiralling into the crystal — and as a scalloped star
+when five lanterns were spread over the sphere, because the ladder subtends kⁿ of the mouth and
+octave 4 at k 0.62 is 15% of a silhouette that is itself 10° of the frame; **Heartwood** (a radial
+dendrite from the heart out, 4→2→1 braided strands, 7-fold from the pole) read as a spiny ball
+from every other angle and its deep twigs were below the legibility floor; the **Coastline**
+(the Watershed's ridge net redrawn at four radii, simplifying toward the heart) was the clearest
+"Mandelbrot zoom" at the pole and was **disqualified on orthogonality** — one Coastline level and
+one Watershed plant are the same lobed crest net at arena distance; and **Frostwork**
+(subdivision) never left its prototype. Two judges (one on wonder, one on engineering) and two
+refuters, all of whom had to open the sheets, put the same candidate first.
+
+### 54.1 The concept
+
+The one fractal picture everyone recognises: circles packed tangent to circles, the gap between
+three of them filled by a smaller circle, and again. **Level 0 is the bulb's OWN LOBES** — the
+surface's peaks in farthest-point order (`Surface.Peaks()`, the sibling of `Saddles()`), each
+given half the angle to its nearest neighbour, so the big rings crown the lobes and are mutually
+tangent by construction. Every later disc is the classic Apollonian step: the disc inscribed in a
+curvilinear triangle of three mutually adjacent discs, breadth-first, kept only if it overlaps
+nothing already placed and clears a visibility floor (`DiscMinRadius` — a SIZE rather than a level
+count on purpose: the ladder stops where its rings stop being visible). Each disc is then **drawn
+as a ring of prisms** around its own small circle, lifted onto R(θ,φ), so a big ring crossing three
+lobes and two valleys comes out a scalloped star while a small ring inside one lobe is a clean
+circle: *the surface deforms the shared motif by exactly how much of the bulb the motif spans*,
+which is the fractal's own statement about scale. The largest rings release the Fall (§53.1), so
+the pole view is a rosette with a log spiral winding into the crystal at its centre.
+
+**No address field changed and `Pose` is untouched.** A ring prism is verbatim the shipped surface
+branch — radial lift in `RadialOffset`, a tangential heading, `TanR 0`, `Dive 0` — and the
+recursion is entirely a SEED-GENERATION concern, resolved once per `Growth` in the same lazy place
+the Watershed's saddle extraction sits. The species draws **no random number**. It is
+`MandelbulbFlora` with a third `GrowthRules` row (`GasketLevels` the master switch; the three other
+species are bit-identical at 0 through literally the same code), one prefab (`ApolloniaFlora`) and
+no new bake.
+
+### 54.2 Four findings that generalise past the species
+
+1. **A species whose prism length is set by its own geometry must not also take a `LengthFactor`
+   that assumes a walk step.** The first prototype authored `WalkStep 0.063`, so `rules_for`'s
+   ratio gave Space prisms 21% LONGER than their chord — and `claim_filter` refuses a prism within
+   0.70× its own length of one already laid, so a ring's prisms refused their own neighbours and
+   ring integrity fell to 77%. `WalkStep` is 0 here and the factor is the Charge dash alone;
+   integrity is 0.78–1.00 with 0–1 rings of 49–89 below 80%. **No existing gate could see this**
+   — deep-interleave, worst-scale and the band census all pass while every ring is dashed — so the
+   species ships a ring-integrity gate of its own.
+2. **An element's §51 long axis is spent as SAMPLING COARSENESS, not as a longer prism.**
+   `RingSamplesFor` derives the prisms per ring from the reference ring's circumference and the
+   element's own step (`N = 2π·sin(ρ_ref)·MeanRadius / StepSize`), the same N on every ring of the
+   plant — which is the homothety the species is named for — so Space draws a **29-gon of
+   7.8-world blades** where Mass draws a **55-gon of 4.2-world bricks**: the same packing in two
+   visibly different hands, readable with no colour and no label.
+3. **Lane-major is not sufficient for a multi-scale species, and neither is "lane = recursion
+   depth".** Measured on Mass, the recursion levels' median ρ run 0.260 / 0.270 / 0.067 / 0.151 /
+   0.074 — non-monotone, because how a disc is FOUND and how big it IS are different orderings —
+   so level-major truncation dropped rings of the wrong size. The lay order is ρ-DESCENDING and
+   the lane is the **size octave** (`floor(log2(ρ_ref/ρ) / GasketOctave)`), which makes "a
+   budget-stopped plant loses the smallest rings" exactly true and puts the Fall — which rides the
+   largest rings — among the first things laid.
+4. **A tolerance that widens a SEARCH is not a tolerance that loosens a RESULT.** `DiscPad 0.6`
+   looks alarmingly loose and measures a median tangency gap of exactly 0.000; `DiscPad 0.09` finds
+   no children at all (thirteen rings and nothing else). Measure the result, not the constant
+   that names it — §50's "a named constant is an INPUT to the arithmetic" rule from a new direction.
+
+Two more came from the refutation and are folded in. **Every ordering is a TOTAL key**: the
+bulb's (n−1)-fold symmetry puts children in orbits that share a ρ to the last bit (15 of 16 level-1
+candidates on Mass), `.NET` has no stable sort for `List<T>`, and a mirror that leaned on sort
+stability would have diverged on 94% of the candidates — so candidates order on `(−ρ, enumeration
+index)` and the lay order on `(−ρ, level, index)`. And **the girth ladder has a FLOOR**
+(`RingGirthFloor`): a strict allometry `(ρ/ρ_ref)^0.8` spent 41% of Mass's prisms on 1.0% of the
+arena frame at sub-pixel prism size — the legibility lesson satisfied in PRISM COUNT (46–55 per
+ring) and violated in SCREEN SIZE, which is the quantity that mattered — so the exponent is 0.40
+with a floor of 0.55, and the ladder gate is restated in screen terms (octaves that cover ≥ 1% of
+the arena frame at a median prism ≥ 2 px).
+
+### 54.3 What holds it
+
+Level 0 (the peak prefix, the half-angle ρ, the lay order's level-0 prefix, N and ρ_ref) is proven
+EXACTLY against the compiled C#; the children are held STATISTICALLY (disc counts per octave, the
+ρ histogram, the tangency median), because `Inscribe` is a fixed-iteration relaxation behind a
+`DiscMinRadius` threshold and a near-degenerate triple can land either side of it across float
+widths — measured, Charge and Time agree with the C# prism for prism, Mass and Space to their first
+children. The species' own gates: the full form fits as a BAND (0.90–1.05× the budget — a
+one-sided ceiling let an 81% plant pass while priced at 100%), ring integrity, the screen-space
+ladder, tangency, elemental ring coarseness (N ordered Space < Charge ≤ Time < Mass), the inert
+walk columns, and the ordering promise (the last laid prism sits in the highest lane present).
+
+### 54.4 Where it lives and what it costs
+
+`ApolloniaFlora.prefab` + four `Apollonia Flora <Element>` configs, authored by
+`author_mandelbulb_flora_assets.py`, in **NO `SpawnProfile`** — opt-in from the Lifeform Matrix
+toy (row `Apollonia`) like its three siblings. `MaxLivePopulation` 3, `POPULATION_SIZE` 1, one
+always-on heart collider per live plant, 2,800 LOD-cullable prisms. The gasket build is O(n³) in
+triples (n ≤ ~120) with a 24-step relaxation inside, once per plant in the lazy `EnsureSeeds` —
+0.7 s in Python; **the C# build time at `MaxLivePopulation` 3 is unmeasured** and, if it hitches,
+the disc list belongs cached on the `Surface` keyed by the gasket rules, the shape `_saddles`
+already has.
+
+### 54.5 The tuning pass, measured — and the plant that looked right was not the plant that passed
+
+Apollonia was tuned TWICE. The first pass made every gate green by tripling the species'
+neutral cross-width (0.034 → 0.112) and nearly doubling its step, against the pass's own
+instruction to hold the concept dials; rendered, the plant was a pile of wide flat plates, the
+small rings solid washers, the gasket relation lost, and it was **reverted on its render**. The
+second pass held the neutral prism and REDISTRIBUTED — material between ring sizes, prisms
+between the rings and the Fall — at a fixed §51 volume: `DiscMinRadius` per element (the
+full-form dial: Charge 0.068 / Mass 0.115 / Space 0.044 / Time 0.082), `RingShrink` per element
+(the gap between tangent rings, which the law hands a different WIDTH on the same circles),
+`RingFlatten` 0.70 (0.25 buys Time's second octave 17% and its rings stop reading as rings —
+integrity 0.96 → 0.88, which the 0.80 gate passes and the eye does not), the girth ladder as flat
+as a ring allows (exponent 0.30, the floor under which a small ring is a washer), and the Fall's
+stride ceiling per element — which is **not monotone**: the hole is a max over discrete claim
+refusals, Charge measured 2.60 / 10.19 / 1.30 / 4.20 u at ceilings 1.0 / 0.7 / 0.5 / 0.4, so it
+is measured at the value shipped and never interpolated. Mass keeps its ribbon width (+1.8%) and
+loses one generation (49 → 39 discs) that measured 1.6 px at arena distance.
+
+**The finding that outranks the numbers: the ladder's frame bar had been calibrated on the plant
+that was rejected.** The 1.0%-of-frame bar landed beside the tripled-cross tuning, which scores
+3/3/4/4 legible octaves under it where the accepted lace scores 3/3/1/2. On the lace the gasket's
+SECOND generation is a genuinely small number of discs (Space 9, Time 6, between much larger
+neighbours), and its frame share PEAKS at 0.68% / 0.87% at ANY disc count — swept
+`DiscMinRadius` out to 6× the shipped floor, far past any legal fit — so reaching 1.0% needs
+1.7× / 1.32× the cross, which is the plate again. The bar is 0.5%; the PIXEL bar (2 px), which is
+what catches the sub-pixel octaves the gate was written for, is unchanged. *When a bound and the
+data it was measured on are changed in separate commits, the bound silently becomes a claim about
+data that is gone.* Its sibling: **a legibility gate on a self-similar species has a fixed point at
+"stop being self-similar"** — Mass's third octave cleared the 2 px bar only once the bottom of
+that octave was cut — and the thing that stops it there is the render, not the gate.
+
+The shipped fleet, every bound green (`measure_mandelbulb_flora.py --check`; volumes are
+cumulative prism volume per plant at the 2,800 budget, "touching" the near pairs of which the
+percentage interpenetrate, "deep" the fraction past the interleave depth):
+
+| species / element | prisms | curves | volume | per-prism volume min / median / max | touching | deep |
+|---|---|---|---|---|---|---|
+| **Fractal Foliage** Charge | 2,800 | 88 | 1,533 | 0.04 / 0.55 / 1.06 | 284/862 32.9% | 1.6% |
+| Mass | 2,800 | 179 | 19,779 | 1.16 / 7.06 / 11.97 | 249/795 31.3% | 0.0% |
+| Space | 2,800 | 21 | 4,416 | 0.34 / 1.58 / 1.99 | 177/818 21.6% | 0.0% |
+| Time | 2,800 | 147 | 9,463 | 0.82 / 3.38 / 6.25 | 93/296 31.4% | 0.3% |
+| **Coral Bloom** Charge | 2,800 | 53 | 1,391 | 0.06 / 0.50 / 1.48 | 58/150 38.7% | 0.0% |
+| Mass | 2,800 | 32 | 17,941 | 0.61 / 6.41 / 10.34 | 122/585 20.9% | 0.0% |
+| Space | 2,800 | 71 | 4,007 | 0.15 / 1.43 / 3.20 | 76/1256 6.1% | 0.0% |
+| Time | 2,800 | 95 | 8,584 | 0.25 / 3.07 / 11.48 | 108/484 22.3% | 0.0% |
+| **Watershed** Charge | 2,171 | 280 | 2,076 | 0.08 / 0.96 / 2.09 | 25/40 62.5% | 0.0% |
+| Mass | 2,151 | 128 | 26,787 | 2.17 / 12.45 / 19.93 | 133/275 48.4% | 0.0% |
+| Space | 1,493 | 144 | 5,981 | 0.32 / 4.01 / 6.94 | 51/193 26.4% | 0.0% |
+| Time | 2,800 | 399 | 12,817 | 0.49 / 4.58 / 10.10 | 464/580 80.0% | 0.0% |
+| **Apollonia** Charge | 2,707 | 55 | 2,242 | 0.09 / 0.83 / 3.38 | 24/73 32.9% | 0.0% |
+| Mass | 2,555 | 39 | 28,927 | 2.67 / 11.32 / 39.91 | 214/1336 16.0% | 0.6% |
+| Space | 2,575 | 81 | 6,458 | 0.26 / 2.51 / 12.50 | 24/743 3.2% | 0.0% |
+| Time | 2,579 | 44 | 13,839 | 0.68 / 5.37 / 20.00 | 84/630 13.3% | 0.0% |
+
+Three things the table says that the doc should say plainly. **The Watershed's plant is the
+surface's, not the budget's** — its skeleton has exactly as many separatrices as the bake has
+saddles, so Charge / Mass / Space lay 2,171 / 2,151 / 1,493 of a 2,800 budget and only Time is
+budget-bound; a cell that hosts it pays for what the surface holds. **Apollonia's Mass is the
+heaviest plant in the family** (28,927 volume: a 55-gon of 4-unit bricks per ring) and every
+species' Charge is the lightest by an order of magnitude, bare — armoured it is the densest of the
+four, which is §50's inversion holding on all four species. And **every heart is in the band**
+(`author_lifeform_heart_sizes.py`: Mandelbulb / Coral Bloom body 21 → 1.51, the Watershed 26.9 →
+1.71, Apollonia 27.4 → 1.73, against the Shark's 195 → 4.60), so an Apollonia kill pays 15% more
+than a Foliage kill, and a ring-crowned bulb is worth exactly what its body says.
+
+**The verifier holds all of it against the compiled C#**: the two walking species by their
+statistics (the walk is chaotic in its last bits), the Watershed prism for prism, Apollonia level 0
+exactly (the peak prefix, each ring's ρ to 3e-7, the lay order's level-0 prefix, N and ρ_ref) and
+its children statistically (per-octave counts, the ρ histogram, the tangency median 0.000 on both
+sides); 25 negative controls, 24 tripping a NAMED gate and one — the level-skip in the triple
+search — proven inert.
+
+**A control the tuning pass switched off, and the rule it leaves behind.** The `RingGirthFloor`
+control (delete the `Mathf.Max` line in the C#) was held by `check_element`'s mean-girth row on the
+SHIPPED rules, and on the plant that shipped first it fired on Space (11.8%) and Time (2.2%). The
+tuning pass then moved Apollonia to exponent 0.30 / floor 0.55, every element's smallest ring landed
+within a few percent of the floor, and the same control on the same unchanged line SLIPPED THROUGH
+on all four elements — `--self-test` exited 1 with nothing in the C# to fix. What the control had
+been measuring was where the species happened to be authored, not whether the code applied the
+field. It is now held by its own row, `check_girth_floor`, which FORCES the floor to 0.95 on Space
+(where it binds on any authoring), grows the plant on both sides at floor 0 and 0.95, and asserts
+the LIFT the floor buys agrees to 10% (measured 0.2566 shipped / 0.2582 model) and the floored mean
+girth to 2% — plus that the probe binds on the model at all (lift ≥ 0.05), so a passing row can
+never be vacuous. With the line deleted the shipped lift is exactly zero and the row fires by name.
+General rule: **a negative control that runs on the shipped authoring is only as sensitive as that
+authoring makes it, and a retune of the species it guards can turn it off without touching the code
+it tests** — a control for a FIELD must set that field where it binds, not inherit whatever value
+the assets currently carry.
+
+### 54.6 What has to be tested in the editor
+
+**Nothing in this pass has been run in Unity.** On top of §50.11's list:
+
+1. **Every species must reach its crystal.** Spawn each of the four from the Lifeform Matrix toy
+   and fly to the heart: a blue spiral (the Fall) must wind into the crystal from every plant, the
+   closest prism a few units short of it. **FAIL:** if the dives are missing, `DiveCount` /
+   `DiveStepFraction` are not reaching the prefab — check the `Rules` block; if they stab straight
+   at the crystal, `DiveAxisAlign` or `DiveAngleDegrees` did not survive the write.
+2. **The Watershed's rings must COUNT.** From the pole, its Charge plant is a 7-fold rosette, Mass
+   4-fold, Space 2-fold, Time 11-fold. **FAIL:** any other count means the seeds are not the
+   surface's saddles (`SkeletonSeeds` not reaching the prefab) or the census ran on the wrong
+   surface.
+3. **Apollonia must read as RINGS, not plates.** Thin tangent circles of several sizes, holes you
+   see the far side through. **FAIL:** wide bands or solid washers mean the neutral prism or the
+   girth floor is wrong on the asset — the plate tuning was reverted for exactly this read.
+4. **The gasket build must not hitch on the planting frame.** `EnsureSeeds` is lazy; the peak
+   census plus the O(n³) triple search runs on the first `TryNext`. Watch the frame time on the
+   first prism of an Apollonia plant at `MaxLivePopulation` 3. **FAIL:** a hitch means the disc
+   list wants caching on the `Surface`, the shape `_saddles` already has.
+5. **The Charge plants must be ARMOURED**, and armoured they must be the densest of the four
+   (bare they are the sparsest). **FAIL:** a bare Charge plant means `Flora.ResolveShieldPeriod`
+   is not flooring the shield period for this family.
+
+---
+
+## 55. The Mandelbulb family GROWS OUT OF ITS CRYSTAL — the growth law, applied to four species at once (Sep 2026)
+
+The four species of §50–§54 did not obey the platform's growth law, and the report that found
+it named the law exactly: *"the Borromean flora respects the crystal, the continuity of growth
+from the crystal using spindles and prisms."* Restated from the `/flora` skill §2 — **first the
+CRYSTAL, then SPINDLES out of the crystal, then spindles and/or PRISMS out of spindles; the
+process loops** — with two testable properties: **(a)** the plant is ONE connected object at
+every tick, and **(b)** every prism hangs off something that already exists.
+
+These four failed both. Each scattered N independent seeds over the sphere and traced a curve
+from each, so a plant was N disconnected patches that never met; and every prism wore a stub
+spindle standing at the plant ROOT rather than a limb spanning a bond. The Fall (§53) reached
+the heart only at a curve's END — the opposite of growing out of it.
+
+### 55.1 Three pieces carry the law, and none of them is new geometry
+
+| piece | what it is |
+|---|---|
+| the **seed tree** | a spanning tree over the seeds, rooted at the one the trunk climbs to. Prim on great-circle distance for the three walking/skeleton species; **the gasket's is the GASKET** — a child disc is inscribed against three discs it touches, so Apollonia already knew what each ring grows out of. |
+| the **trunk** | the Fall RUN BACKWARDS. `AppendDive` walks a log spiral from a surface point down to the heart; the same points read the other way are a climb out of it. |
+| the **stem** and the **lane anchor** | a stem is the surface path from a seed to its tree parent, sampled on the membrane. A later lane hangs off the prism at the previous lane's midpoint — the point `Hop` steps across from, i.e. **the gap the cage is made of, now spanned by a limb instead of left open**. |
+
+**Prim's insertion order IS a valid growth order.** It only ever admits a seed whose parent is
+already in the tree, so `parent appears earlier than child` holds by construction rather than by
+a topological sort that could be got wrong — the same property the Borromean table gets from its
+hop ordering (§49), and the reason neither species needs a pass it could get wrong.
+
+**Reusing the Fall verbatim for the trunk is the whole point**: the rise cannot acquire a shape,
+a stride ceiling or a winding that the Fall does not already have, and a curve that both rises
+and falls is provably ONE family of curve rather than two that have to be kept in step.
+
+Within a curve the chain already existed — `Emit` lays one prism per SEGMENT — so **only the
+ROOT was missing**. `TryNext` now hands out the index of the prism each one hangs off and
+whether it is a CONNECTOR, deliberately NOT folded into `PrismAddress`: a prism's POSE must stay
+a pure function of its own address, or the pose table stops being provable one row at a time.
+
+`MandelbulbFlora` consumes it. A spindle is rooted at the nearest **STANDING** ancestor, aimed at
+the prism and stretched to span the bond by scaling the spindle's CHILDREN, never its root (a
+prism parents to the root, so a scaled root would multiply the measured leaf). The branch's reach
+is MEASURED off the prefab. A limb is re-used and re-POSED when its prism regrows, so grazing can
+never mint a second spindle on one bond.
+
+### 55.2 Six findings, five of which generalise past this family
+
+1. **A GREEDY PICK OVER A SYMMETRIC POINT SET IS DECIDED BY FLOAT WIDTH.** A Mandelbulb's seeds
+   come in ORBITS: measured on Space's Watershed, four saddles sat at **exactly 0.847114625**
+   from the tree so far, and which one Prim admitted first was decided by the last bit — the
+   shipped float32 and the offline float64 model grew visibly different plants from one seed.
+   This is §54's "every ordering is a TOTAL key" met from a second direction, and it is invisible
+   to every statistical gate because both plants are perfectly good plants. The fix is a
+   tolerant compare plus an INDEX tie-break (`SeedCostEpsilon` 1e-5 — far above float32's ~1e-7
+   on a unit dot product, far below the 0.14 nearest real gap), applied to all three greedy
+   searches: Prim's pick, Prim's relaxation, and the nearest-standing-seed fallback.
+2. **A LIMB MUST START AT THE PRISM IT HANGS OFF, NOT AT THE SEED.** For the walking species and
+   the Watershed those are the same place (a curve starts AT its seed); a **gasket seed is a disc
+   CENTRE while its curve starts on the disc's RIM**, so a stem built from the centre left the
+   first limb spanning the parent disc's whole radius with nothing in it. Measured at up to 15.2
+   strides; 3.9 after. `_seedArrivalPoint` is the fix.
+3. **CONNECTIVITY ALONE CANNOT SEE A WIRE.** Give every curve the heart as its parent with no
+   connector and both properties of the law still hold — the plant is a formally connected STAR
+   whose limbs each span most of the bulb. So the gate is three rows, not one: `parent[i] < i`,
+   exactly one root, one component — **and the bond LENGTH**, priced in the species' own stride.
+   It is what caught finding 2.
+4. **A LIMB YIELDS TO A RIBBON; TWO RIBBONS CROSSING IS WHAT A CAGE IS.** At the ribbon's own
+   claim factor the worst interpenetrating pair in three of the four species was a **limb inside
+   a ribbon**, every one of them with a connector on one side and a curve on the other.
+   Connector prisms claim wider (`ConnectorClaimFactor`), and a refused limb prism costs nothing
+   structural **because the spindle is rooted at the nearest STANDING ancestor** — a gap in a
+   limb simply makes the next limb longer.
+5. **`TanR != 0` MEANT "DIVE" ONLY WHILE THE HEART WAS REACHED AT THE END OF A CURVE.** The
+   trunk is free space too, and it runs from the heart OUT — so every Fall gate read the plant's
+   one connection to its crystal as the one spiral that never arrived. The separator is now
+   structural (`free_space_runs`: within a curve the rise is a PREFIX, the dive a SUFFIX, because
+   `Emit` lays rise → surface → dive), lives in the model, and is shared by both tools.
+6. **A GATE THAT GROUPS BY CURVE NOW SEES A LIMB FIRST.** The Watershed's arm census and its lane
+   shares both keyed on "the curve's first prism" and "every prism's lane", and a seed's first
+   appearance is almost always lane 0 — so every stem in the plant landed in one lane and drove
+   the other three under a floor that is about the net being EVEN. Both drop `link` prisms now.
+   Same class as 5: *when a curve gains a prologue, every gate that says "the curve's first" is
+   answering about the prologue.*
+
+### 55.3 What it cost, measured
+
+- **The plant is 12–32% limb** (worst: the Fractal Foliage's Time, whose 90 seeds each buy a
+  stem), so `PRISM_BUDGET` went **2,800 → 4,150** = `2800 / (1 − 0.3229)` — the budget at which
+  the same amount of CURVE is laid as before, so every bound tuned against the curves still
+  describes the same plant. All four species are in **NO SpawnProfile**, so the extra prisms cost
+  no shipped cell anything, and the always-on collider count is `MaxLivePopulation`, **unchanged**
+  (one heart per plant).
+- The connectors also move per-element VOLUME, so §51's volume gains and the heart band want
+  re-solving (`--fit-volume`, `author_lifeform_heart_sizes.py`).
+
+### 55.4 Verification
+
+`roots = 1`, `components = 1`, `forward-parents = 0` on **all sixteen (species, element) pairs**,
+measured by running the SHIPPED `MandelbulbSurface.cs` through the offline harness. The verifier
+holds the growth order itself prism for prism over the prefix the two walks agree on — both the
+PARENT and the CONNECTOR flag — so the model's labels are proved rather than believed, and it
+gates that the shipped walk marks at least one connector at all (*a plant with no trunk and no
+stems is not growing out of its crystal*).
+
+**Nothing has been run in the editor.**
+
+### 55.5 What is LEFT, and what it is — measured, not guessed
+
+`measure_mandelbulb_flora.py --check` is **clean on the Fractal Foliage and on the Watershed**
+and reports **6 rows on the Coral Bloom and 3 on Apollonia**. None of them is a growth-law row —
+every species passes `roots = 1`, `components = 1`, `forward-parents = 0` and the bond bound —
+and both groups have a measured cause rather than a suspicion.
+
+**The Coral Bloom: THE FALL'S DIVES NOW REFUSE EACH OTHER.** Replaying the claim and recording
+WHICH prism blocked each refusal, **42 of the 53 refused dive prisms on Space were refused by
+another DIVE**, 7 by a limb and 4 by a ribbon. That is the bundle §53.3 already names, made
+denser by §55.3's budget raise: all 8 owed dives now land where 4–5 used to, and they converge
+into one corridor. It surfaces as four `FALL hole` rows (a gap the claim left inside a spiral),
+plus `share` and `spread` on Space. **The dials are the ones the gate itself names — `DiveStopRadius`,
+`DiveGirthFloor`, `DiveCount` — and they pull against each other** (`share` wants more dive,
+`hole` wants less bundling), so this is a render-judged tuning round like §53.4's, not an
+arithmetic one. *Do not reach for the claim: it is not what is refusing them.*
+
+**Apollonia: its four elements' FORMS now differ by more than the band is wide.** After the claim
+they lay 2,641–3,096 prisms, a 17% spread against a 15% band, so no single budget can hold all
+four (2,900 is the best available and leaves Charge at 107%). The gate names the right dial —
+**`DiscMinRadius`**, which decides the disc set and therefore the form — and the remaining
+`LADDER` row is the same object seen from the other end (Mass's third size octave has fallen
+under the 2 px legibility bar). A wider limb claim was tried as a shortcut and made it worse.
+
+**Two things were tried against these and are recorded as NOT shipping**, because both arguments
+were sound and both plants disagreed: measuring a limb's claim on its STEP rather than on its
+prism (right in principle for a DASHED Charge leaf, and it cost Apollonia's Charge 268 prisms and
+opened an armour failure at its core), and letting the TRUNK claim narrowly while only stems claim
+wide (the trunk is laid first into the very corridor the dives converge on — narrowing it changed
+nothing for the Coral Bloom and cost Apollonia two more rows).
+
+## 56. THE REACH — the element clause the Mandelbulb family had never spent (Sep 2026)
+
+The four elements of every Mandelbulb species grew plants of essentially the same SIZE. Measured
+on Apollonia before this pass: Charge 97.7 u across, Mass 91.0, Space 95.1, Time 99.0 — an **8%
+spread**, against the Borromean membrane's Space plant spanning **222 against Time's 111** (§49).
+Everything else about the four was already far apart (14x in cumulative plant volume, 31 to 269
+curves, ring coarseness 28 to 55), so what a player actually saw was four plants of one size
+differing in how chunky their struts were. The report was that the elements should be *more
+expressed, more distinct from each other*, and this is the clause that was sitting unspent.
+
+§51's assembly half — `ReachScale = volume^(-1/3)`, Space reaching x1.35 while Mass draws in to
+x0.82 — was declined here by `Flora.ElementalReachScale`, which returns 1 for a species exempt
+from the leaf law. Its stated reason is *"a family whose leaf IS its strut needs nothing, because
+the anisotropy already lengthened it"*, and that sentence is **true of the strut and false of the
+plant**: a Mandelbulb plant's extent is its SHELL, and no amount of anisotropy on one prism moves
+it.
+
+### 56.1 Why it could not simply be taken
+
+On this family the shell is simultaneously the plant's extent and its prism size — every prism
+dimension is a multiple of it — so a naive `shell *= reach` is a **pure similarity** and scales the
+plant's volume by `k^3 = 1/V`. That equalises all four plants' cumulative volume, which deletes the
+14x spread the elements already had and contradicts §51's own Mass clause (*the most cumulative
+prism volume*). Three further attempts and why each fails, because each looks right until it is
+written down:
+
+- **Scale positions only, leave the prism.** A curve lays one prism per step and the prism's length
+  IS the step, so the world step grows by `k` while the prism does not: Space's ribbons come out
+  **dashed** and Mass's **fused**. The chain is the one thing that may not be broken.
+- **Pay on `LengthFactor`.** Holding volume with the cross-section unchanged needs
+  `LengthFactor x k^(-3)` = **2.09x** for Mass — a prism twice as long as the step that spaces it,
+  which is the same fusion from the other side.
+- **Pay uniformly on both cross axes** (`x sqrt(V)`, which IS volume-exact). Measured: it makes
+  **MASS LESS CUBIC** — max/min axis ratio 1.55 -> 1.77 — because Mass's `k < 1` shrinks its
+  length, which was already its *smallest* axis, while the pay grows the axis that was already its
+  largest. It also broke a gate: two Mass prisms interleaved to `s* 0.317` against a 0.35 bound.
+
+### 56.2 What ships — pay it on the THINNEST cross axis
+
+The shell carries `k = V^(-1/3)`; the cross-section's PRODUCT carries `V`, so the world prism's
+volume is **exactly** unchanged. WHICH cross axis carries it is free, and that freedom is the whole
+of the difference between a change that expresses the law and one that undoes it:
+
+```
+world length = (step)          x (shell x k)   = L x k       <- the plant reaches
+world thin   = (thin x V)      x (shell x k)   = T x V x k
+world thick  = (thick)         x (shell x k)   = K x k
+world volume = (L x k)(T x V x k)(K x k)       = L x T x K   <- exact, since k^3 = 1/V
+```
+
+**MASS's pay is a GROWTH** (`V > 1`) and growing the thinnest axis is what pulls x, y and z
+together. **SPACE's pay is a SHRINK** and shrinking the thinnest axis is what drives them apart.
+One rule, and each element comes out **more itself**:
+
+| element | shell | extent (Apollonia) | leaf max/min, before -> after |
+|---|---|---|---|
+| Charge | 75.00 | 97.7 u (unchanged) | 2.91 -> **2.91** |
+| Mass | **58.66** | 91.0 -> **71.2 u** | 1.55 -> **1.45** (most cubic) |
+| Space | **96.69** | 95.1 -> **122.6 u** | 7.80 -> **32.71** (most elongated) |
+| Time | 75.00 | 99.0 u (unchanged) | 4.20 -> **4.20** |
+
+Extent span **1.09x -> 1.72x**. It is also the pay that costs the least on screen: a prism's
+footprint is its length times its THICKEST cross axis, and this is the pay that leaves that axis
+alone — which is why it cleared the `Apollonia/Space LADDER` row the uniform pay broke.
+
+**CHARGE and TIME are byte-identical**, which is the law read literally: their identity is a state
+and a tempo rather than a shape, so only the two SHAPE elements move. Charge's armour fit is
+therefore untouched and needed no re-solve.
+
+### 56.3 What it cost, measured
+
+Re-authoring the four prefabs changed **six numbers** — the Mass and Space `CrossSection` on each,
+plus the seed prism's `leafSize`. Held against the baseline, all sixteen (species, element) pairs
+came back with **identical prism counts, identical curve counts and identical cumulative volume to
+the digit**, and `measure_mandelbulb_flora.py --check` reports **exactly the nine pre-existing
+rows** it reported before (CoralBloom's six Fall rows, Apollonia's three) with **no new failures**.
+`measure_flora_elemental_form.py` passes: Mass is still the most cubic leaf and Space the most
+elongated on every one of the four. The verifier still matches the shipped C# prism for prism.
+
+That the prism list is identical is not luck — it is what makes the change reviewable. The walk is
+untouched in normalised space, and the claim, being a similarity in **both** its radius
+(`factor x length`) and its positions, refuses exactly the prisms it refused before.
+
+**The one thing that did move and should be watched:** Space's thin axis is now 0.07–0.16 world
+units on the four species, under `PrismScaleAnimator`'s serialized `minScale` 0.5 and surviving
+only because `Flora.AddHealthBlock` calls `Prism.AdmitTargetScale` first — the same rope §49's
+Space membrane and SchwarzP Charge's 0.39 hang from. Stated rather than hidden: a Space plant's
+ribbons are now genuinely blades.
+
+### 56.4 The rule that generalises
+
+**A clause declined "because the family's leaf IS its extent" is declined about the STRUT, not about
+the PLANT** — check which one the clause was written about before inheriting the exemption. And when
+an element's pay has to land on one of several free axes, **the axis is not a detail**: the same
+volume-exact correction spent on the wrong one made Mass measurably *less* Mass.
+
+## 57. THE ARBORETUM — a cell that is a COLLECTION, not a forest (Sep 2026)
+
+A freestyle Cell-Selector world holding **one specimen of each of five species in each element
+— twenty plants and nothing else**: the four Mandelbulb species (§50, §52, §53) and the
+Borromean membrane (§49). No `EnvironmentPrefab`, no second producer: the cell IS its twenty
+specimens, the way the Lattice cell (§36) IS its twelve colonies.
+
+It exists because §56 made the four elements read as four different KINDS of plant and there
+was nowhere to see that. The Lifeform Matrix bench lines the same species up in a row for
+COMPARISON; this is a WORLD you fly through and meet them in.
+
+**Why the Borromean four belong here.** The species is the one in the project whose four
+elements are each FITTED rather than typed — Time the anchor, Mass the chunkiest plate, Space
+the same volume at 8.5:1 on **twice** the membrane, Charge a square slab fitted to its own
+shielded octahedra — giving a **19.6× spread in plant volume across one species** (804 →
+15,739) and a **2× spread in span** (108 u → 222 u). That is the same sentence §56's reach
+spends on the Mandelbulb family, said by a COMPACT surface instead of a fractal cage, which is
+exactly the comparison this cell exists to make. It also puts two very different growth
+LAWS beside each other: a plant that is finished when its surface closes, next to one that
+traces curves until its budget runs out.
+
+### 57.1 The population IS the cell
+
+`InitialSpawnCount 1`, `PopulationSize 1`, `MaxLivePopulation 1`, on each of twenty configs.
+"One of each" is the design, not a tuning value — an arboretum is a collection of
+specimens. It is a **cap, never a cull**: each plant keeps the growth quota its species
+authored and simply cannot spend it while it is the only one of its kind alive, and the
+seeder's whole remaining job is **extinction recovery** — a specimen the food web strips to
+nothing is replanted. No timer, no decay, no imposed death.
+
+The per-plant budgets are **quoted, never re-authored**. On both families a budget is GEOMETRY:
+4,150 is what §55 sized as *the budget at which the same amount of CURVE is laid as before the
+plants grew limbs*, Apollonia's 2,900 is what a gasket's own `DiscMinRadius` prices, and a
+Borromean plant's is its element's whole site table (180–360) because that surface is compact —
+it closes on itself and is **finished** (§49). The Lattice cell can cut a lattice plant to 30
+prisms because a lattice plant is a tile; cutting one of these ships a **truncated specimen**,
+which is the one thing an arboretum may not do.
+
+Everything else about a plant — leaf, heart, grow tempo — is never authored here. The sixteen
+Mandelbulb configs read it **verbatim** off `_SO_Assets/Lifeforms/<species> Flora
+<Element>.asset`, because those sixteen assets are the element palette and forking their
+identity here would be two sources of truth for one plant's shape. **The Borromean four are not
+authored here at all**: `author_borromean_flora_assets.py` owns that species' configs in every
+cell that grows it (its `DEPLOYMENTS` table, whose row for this cell says only *seed 1, cap 1,
+band 0.42..0.92*), so `author_arboretum_cell.py` READS the four it wrote — their GUIDs off
+their own `.meta`, their measured budget and plate through that tool's own table reader — and
+**fails by name** if they are missing or carry a different GUID. A `SupportedFloras` entry
+pointing at a GUID nothing owns resolves to no config at all and grows nothing, silently, so
+the handoff is checked rather than assumed. This cell authors only the population, the planting
+band, the roster and the ladder.
+
+### 57.2 Measured
+
+| | |
+|---|---|
+| mature garden | **54,935 prisms**, **259,795 volume**, 20 plants |
+| by family | Mandelbulb 53,891 prisms / 237,350 volume over 16; Borromean **1,044 / 22,445** over 4 |
+| specimens | 108 u across (Borromean Charge and Mass) → **294 u** (Mandelbulb Space) |
+| per-prism volume | 0.07 (Coral Bloom Space) → **72.87** (Borromean Mass) — three orders of magnitude |
+| always-on heart colliders | **20** (one per live plant, culled by no phase) — the Lattice cell's is 1,080 |
+| LOD-cullable prisms | 54,935 at maturity, ceiling **79,700** — Atlantis is ~69,000 and the Lattice cell's ceiling is 82,400 |
+| planting band | 504 u .. 1,104 u, volume-uniform; the twenty bounding spheres fill **5.2%** of it |
+
+Ladder: Restless 0.35× / 0.26× the mature garden (EARLY, or the food web sleeps through the
+whole of the cell's growth — §48), Frenzy 1.45× / 1.25×. **FrenzyEXIT sits above mature on
+purpose**: the twenty are hard-capped, so a Frenzy here can only ever be trail-caused, and it
+must always release with the garden intact (§36).
+
+Adding the Borromean four **grew the garden by 1.9% in prisms and 9.5% in volume** (53,891 →
+54,935 and 237,350 → 259,795) — the whole species weighs less than the single heaviest Mandelbulb
+specimen (Mandelbulb Flora Mass, 36,154) — so the ceiling moved 78,100 → 79,700 and stayed under
+the Lattice cell's. Four more heart colliders is the honest cost, and it is the
+only flora number that is never free.
+
+The band's inner edge is outside the ~392 u nucleus, which matters for the reason it always
+does: `Flora.ResolvePlantRadius` clamps a band outside a control zone, so a band authored
+inside one collapses to a single degenerate shell with every specimen on one sphere.
+
+Authored by `Tools/Build/author_arboretum_cell.py` (`--check`), which GROWS each of the sixteen
+Mandelbulb specimens through the shipped rule rather than trusting a typed number, reads the
+Borromean four out of their own measured table, asserts the relationships rather than the
+values, and appends the config to Menu_Main's `Cell.CellConfigs` — `CellSelectorToy`
+authors no cell list, it reads `Cell.AvailableConfigs`, so adding a world to the selector is an
+edit to the cell's own config rotation and to nothing else.
+
+### 57.3 Two defects it surfaced, and both generalise
+
+**A species key with a SPACE in it can never match a de-spaced name.**
+`author_lifeform_heart_sizes.py` resolves a CELL-CONFIG variant by its prefab GUID and a
+CANONICAL one by its asset NAME through `species_of`, which strips spaces — so `"Coral Bloom"`,
+the only two-word key in `FLORA_PREFABS`, resolved to `CoralBloom`, missed, and **those four
+canonical assets had never been sized by the tool that owns their heart**. The symptom was
+nothing at all: they carried 1.514 (whatever wrote them last) against the band's 1.433, and the
+disagreement only became visible when a second cell copied them. The rule: **when one script
+resolves the same identity two ways, the two ways will disagree, and the half that is
+name-based fails silently.** Now matched on the de-spaced form on both sides, so a key's
+spelling stops being load-bearing.
+
+**`EnvironmentPrefab == null` is how a world is BUILT, not what it CONTAINS.** The Cell
+Selector labelled every environment-free config *"no environment"*, which is true of Barren and
+false of the Lattice cell, the Arboretum, and every Rampage, Tollway and Wrecking Ball cell —
+all of which grow their whole world. §36.10 wrote that rule and answered it with
+`Cell.BareCanvasConfig`; this is its **third reader**, so the predicate is now the static
+`Cell.IsBareCanvas(config)` and the selector says *"grown, not laid"* for the rest.
+
+### 57.4 What it does not do, stated
+
+It shows in the Cell Selector as a **bare station with no scale model**.
+`CellMiniatureBuilder` strides the ENVIRONMENT generator's own output, and a cell whose world
+is grown has no lays to stride until it has grown them — the Lattice cell and Barren have the
+same gap and have shipped with it. The arcade card's preview already solves this class of
+problem for a grown world (`ModePreviewPlantingModel`, one marker per plant); pointing the
+selector at it would fix all three at once and is not done here.
+
+**Nothing has been run in the editor**: the prism counts, volumes and extents above are the
+offline model's — the Mandelbulb sixteen measured by growing the shipped C# growth rule, the
+Borromean four read out of `BorromeanSurfaceData.cs` — and the cell has never been loaded.

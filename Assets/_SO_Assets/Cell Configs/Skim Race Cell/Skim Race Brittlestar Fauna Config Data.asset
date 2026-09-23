@@ -22,6 +22,6 @@ MonoBehaviour:
   MaxLivePopulation: 16
   Variant:
     Enabled: 1
-    HeartWorldScale: 2.666
+    HeartWorldScale: 2.568
   SpreadElements: 1
   ElementPalette: []

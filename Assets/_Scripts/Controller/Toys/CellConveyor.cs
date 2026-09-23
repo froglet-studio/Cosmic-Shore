@@ -328,9 +328,10 @@ namespace CosmicShore.Gameplay
                 Centre = centre,
             });
 
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
-                $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
-                $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
+            if (CSDebug.IsVerbose(CSLogChannel.ToyBox))
+                CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                    $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
+                    $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
             return true;
         }
 
@@ -392,7 +393,7 @@ namespace CosmicShore.Gameplay
 
             if (!scrap) return;
             Destroy(scrap);
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[Arkway] Traversal cell clone stripped of {stripped} accumulated object(s).");
         }
 
@@ -574,7 +575,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// One line naming everything the corridor is holding. Off by default (channel
-        /// <see cref="CSLogChannel.CellLifecycle"/>) and raised once per advance, so it costs
+        /// <see cref="CSLogChannel.ToyBox"/>) and raised once per advance, so it costs
         /// nothing in a normal session and answers "what is growing?" in the one that is
         /// getting slower — which is a question no amount of reading the code settles.
         /// </summary>

@@ -102,7 +102,7 @@ namespace CosmicShore.Gameplay
             gameData.LocalRoundStats.Score = finalScore;
 
             if (showDebugLogs)
-                CSDebug.Log($"<color=yellow>[SkimRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
+                CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[SkimRaceTracker] Game end - score={finalScore:F2} winner={isWinner} crystalsRemaining={crystalsRemaining}");
 
             if (isWinner)
             {
@@ -151,9 +151,6 @@ namespace CosmicShore.Gameplay
                 { "Max Clean Streak", squirrel?.MaxCleanStreak ?? 0           },
                 { "Jousts Won",       squirrel?.JoustsWon      ?? 0           }
             };
-
-            foreach (var kvp in stats)
-                CSDebug.Log($"[SkimRaceScoreTracker] {kvp.Key}: {kvp.Value}");
 
             return stats;
         }

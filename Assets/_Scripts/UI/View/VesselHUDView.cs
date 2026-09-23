@@ -135,6 +135,18 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// A ONE-SHOT flash of an ability's card — lit on this frame, decaying on its own.
+        /// The pass-through twin of <see cref="SetAbilityPressed"/>, for an ability that has no
+        /// held control to release: anything that HAPPENS rather than anything that is being
+        /// held. (The Manta's whole kit is that shape — nothing it does is a button.)
+        /// </summary>
+        public void PlayAbilityFlash(Element element)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.PlayPressFlash(element);
+        }
+
+        /// <summary>
         /// Which physical control fires this ability, so the lockup can draw the control chip from
         /// the fleet's one glyph set instead of from per-vessel authored artwork.
         /// </summary>

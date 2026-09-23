@@ -442,6 +442,13 @@ namespace CosmicShore.Gameplay
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
 
+        /// <inheritdoc/>
+        /// <remarks>The exact flag <see cref="Nourish"/> and <see cref="ApplyReplicatedDeath"/>
+        /// already gate on. It is set at the TOP of <see cref="Die"/>, so it is true for the
+        /// whole of a deferred wither - the window in which this creature's heart is still
+        /// embedded but its owner is a corpse.</remarks>
+        public bool IsDying => _diedThisLife;
+
         // --- Elemental contract: one base prefab, FOUR data-defined variants ---
         // There is no level (Docs/ECOSYSTEM.md §40). A creature is its species and its element;
         // the element states its body scale, prism shape, survival numbers, flocking, audio and
@@ -1146,6 +1153,22 @@ namespace CosmicShore.Gameplay
             // Who eats whom is the server's call; a puppet predator never reaches here either
             // (its hunting tick is gated), so this is the belt to that braces.
             if (!IsSimAuthority) return false;
+
+            // ALREADY DEAD - a corpse is not prey. Die() is sealed but NOT idempotent: it
+            // re-raises ReportKill (a second LifeformsKilled credit for one creature) and,
+            // because Jousted has by then stamped the style, it takes the ReleaseHeart branch
+            // and frees the heart while the wither is still eating inward - the exact ordering
+            // Docs/ECOSYSTEM.md §26 forbids ("the heart is the LAST thing standing").
+            //
+            // _consumedAsPrey was never the right gate for this: only Predated sets it, so a
+            // creature that starved or lost its last body prism arrives here with it false. The
+            // corpse window is REAL and seconds long - a deferred wither leaves the heart
+            // embedded for the whole animation - and it is exactly where a big AOE sweep looks.
+            // LifeForm.Jousted has always carried the equivalent guard (dying || isCleaningUp);
+            // Fauna is a SIBLING of LifeForm rather than a subclass, so it never inherited it,
+            // and Fauna.Jousted's own doc already promises the behaviour this restores
+            // ("a creature already dying ... leaves the style alone").
+            if (_diedThisLife) return false;
 
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;

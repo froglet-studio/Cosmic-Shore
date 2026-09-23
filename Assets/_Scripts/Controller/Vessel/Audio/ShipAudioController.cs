@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using FMOD.Studio;
 using FMODUnity;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay.Audio
@@ -432,8 +433,8 @@ namespace CosmicShore.Gameplay.Audio
                     _layers[i].instance.setVolume(volume);
             }
 
-            if (debugLog)
-                Debug.Log($"[ShipAudioController] '{name}' SFX volume -> {volume:F2}", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipAudioController] '{name}' SFX volume -> {volume:F2}", this);
         }
 
         /// <summary>
@@ -484,9 +485,9 @@ namespace CosmicShore.Gameplay.Audio
                 {
                     _creationState = CreationState.SkippedRemote;
 
-                    if (debugLog)
+                    if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                     {
-                        Debug.Log(
+                        CSDebug.LogVerbose(CSLogChannel.Audio,
                             $"[ShipAudioController] '{name}' is remote/AI; " +
                             $"skipping engine audio creation (onlyAudibleToController=true).",
                             this);
@@ -509,7 +510,7 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (engineEvent.IsNull)
             {
-                Debug.LogError($"[ShipAudioController] '{name}' has no Engine Event assigned; nothing will play.", this);
+                CSDebug.LogError($"[ShipAudioController] '{name}' has no Engine Event assigned; nothing will play.", this);
                 return;
             }
 
@@ -526,12 +527,12 @@ namespace CosmicShore.Gameplay.Audio
                     _speedParamIsGlobal = (speedDesc.flags & PARAMETER_FLAGS.GLOBAL) != 0;
                     _hasSpeedParam = true;
 
-                    if (debugLog)
-                        Debug.Log($"[ShipAudioController] '{name}' '{speedParameterName}' param flags={speedDesc.flags} (global={_speedParamIsGlobal})", this);
+                    if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                        CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipAudioController] '{name}' '{speedParameterName}' param flags={speedDesc.flags} (global={_speedParamIsGlobal})", this);
                 }
                 else
                 {
-                    Debug.LogWarning(
+                    CSDebug.LogWarning(
                         $"[ShipAudioController] Event '{engineEvent}' has no parameter named '{speedParameterName}'. " +
                         $"Engine will loop but won't modulate with speed.",
                         this);
@@ -544,12 +545,12 @@ namespace CosmicShore.Gameplay.Audio
                     _tiltParamIsGlobal = (tiltDesc.flags & PARAMETER_FLAGS.GLOBAL) != 0;
                     _hasTiltParam = true;
 
-                    if (debugLog)
-                        Debug.Log($"[ShipAudioController] '{name}' '{tiltParameterName}' param flags={tiltDesc.flags} (global={_tiltParamIsGlobal})", this);
+                    if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                        CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipAudioController] '{name}' '{tiltParameterName}' param flags={tiltDesc.flags} (global={_tiltParamIsGlobal})", this);
                 }
                 else if (!string.IsNullOrEmpty(tiltParameterName))
                 {
-                    Debug.LogWarning(
+                    CSDebug.LogWarning(
                         $"[ShipAudioController] Event '{engineEvent}' has no parameter named '{tiltParameterName}'. " +
                         $"Tilt won't drive the engine sound.",
                         this);
@@ -591,9 +592,9 @@ namespace CosmicShore.Gameplay.Audio
                             runtime.isGlobal = (p.flags & PARAMETER_FLAGS.GLOBAL) != 0;
                             runtime.found = true;
 
-                            if (debugLog)
+                            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                             {
-                                Debug.Log(
+                                CSDebug.LogVerbose(CSLogChannel.Audio,
                                     $"[ShipAudioController] '{name}' extra param '{src.parameterName}' " +
                                     $"found (global={runtime.isGlobal}, value={src.value}, setOnceAtStart={src.setOnceAtStart}).",
                                     this);
@@ -601,7 +602,7 @@ namespace CosmicShore.Gameplay.Audio
                         }
                         else
                         {
-                            Debug.LogWarning(
+                            CSDebug.LogWarning(
                                 $"[ShipAudioController] '{name}' extra param '{src.parameterName}' " +
                                 $"not found on event '{engineEvent}'. It will be ignored.",
                                 this);
@@ -620,9 +621,9 @@ namespace CosmicShore.Gameplay.Audio
             var startResult = _instance.start();
             _instanceStarted = startResult == FMOD.RESULT.OK;
 
-            if (debugLog)
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
             {
-                Debug.Log(
+                CSDebug.LogVerbose(CSLogChannel.Audio,
                     $"[ShipAudioController] '{name}' started engine event '{engineEvent}' " +
                     $"(startResult={startResult}, hasSpeedParam={_hasSpeedParam}).",
                     this);
@@ -640,9 +641,9 @@ namespace CosmicShore.Gameplay.Audio
         {
             if (additionalEngineLayers == null || additionalEngineLayers.Length == 0)
             {
-                if (debugLog)
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 {
-                    Debug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
                         $"[ShipAudioController] '{name}' has no additionalEngineLayers configured - " +
                         $"only the main engineEvent will play.",
                         this);
@@ -659,7 +660,7 @@ namespace CosmicShore.Gameplay.Audio
                 EventReference reference = additionalEngineLayers[i];
                 if (reference.IsNull)
                 {
-                    Debug.LogWarning(
+                    CSDebug.LogWarning(
                         $"[ShipAudioController] '{name}' additionalEngineLayers[{i}] is unassigned (IsNull). " +
                         $"Drag an FMOD event into that slot or remove the entry.",
                         this);
@@ -683,7 +684,7 @@ namespace CosmicShore.Gameplay.Audio
                     }
                     else if (!string.IsNullOrEmpty(speedParameterName))
                     {
-                        Debug.LogWarning(
+                        CSDebug.LogWarning(
                             $"[ShipAudioController] Layer [{i}] '{reference}' has no parameter named '{speedParameterName}'. " +
                             $"It'll play but won't modulate with speed - make sure the child event exposes the same parameter " +
                             $"name, or accept that it'll sit at its default.",
@@ -700,7 +701,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
                 else
                 {
-                    Debug.LogWarning(
+                    CSDebug.LogWarning(
                         $"[ShipAudioController] Layer [{i}] '{reference}' getDescription() failed - " +
                         $"parameter lookup skipped.",
                         this);
@@ -713,14 +714,14 @@ namespace CosmicShore.Gameplay.Audio
 
                 if (!layer.started)
                 {
-                    Debug.LogError(
+                    CSDebug.LogError(
                         $"[ShipAudioController] '{name}' layer [{i}] '{reference}' start() returned {startResult}. " +
                         $"The layer will be silent.",
                         this);
                 }
-                else if (debugLog)
+                else if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
                 {
-                    Debug.Log(
+                    CSDebug.LogVerbose(CSLogChannel.Audio,
                         $"[ShipAudioController] '{name}' started layer [{i}] '{reference}' " +
                         $"(hasSpeed={layer.hasSpeed}, hasTilt={layer.hasTilt}).",
                         this);
@@ -798,8 +799,8 @@ namespace CosmicShore.Gameplay.Audio
                     RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget.gameObject, (Rigidbody)null);
             }
 
-            if (debugLog)
-                Debug.Log($"[ShipAudioController] '{name}' attach mode -> {_attachMode} (layers={_layers.Count})", this);
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipAudioController] '{name}' attach mode -> {_attachMode} (layers={_layers.Count})", this);
         }
 
         AttachMode ResolveDesiredAttachMode()
@@ -913,12 +914,12 @@ namespace CosmicShore.Gameplay.Audio
                 result.isGlobal = (p.flags & PARAMETER_FLAGS.GLOBAL) != 0;
                 result.found = true;
 
-                if (debugLog)
-                    Debug.Log($"[ShipAudioController] '{name}' element param '{paramName}' found (global={result.isGlobal}).", this);
+                if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio))
+                    CSDebug.LogVerbose(CSLogChannel.Audio, $"[ShipAudioController] '{name}' element param '{paramName}' found (global={result.isGlobal}).", this);
             }
             else if (debugLog)
             {
-                Debug.LogWarning(
+                CSDebug.LogWarning(
                     $"[ShipAudioController] '{name}' no parameter named '{paramName}' on engine event. " +
                     $"The corresponding element track won't be driven.",
                     this);
@@ -1116,7 +1117,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            if (debugLog && Time.unscaledTime - _lastLogTime > 1f)
+            if (debugLog && CSDebug.IsVerbose(CSLogChannel.Audio) && Time.unscaledTime - _lastLogTime > 1f)
             {
                 _lastLogTime = Time.unscaledTime;
                 _instance.getPlaybackState(out PLAYBACK_STATE state);
@@ -1188,7 +1189,7 @@ namespace CosmicShore.Gameplay.Audio
                     }
                 }
 
-                Debug.Log(
+                CSDebug.LogVerbose(CSLogChannel.Audio,
                     $"[ShipAudioController] '{name}' attach={_attachMode} " +
                     $"velocity={_smoothedVelocity:F2} speedParam={speedParamValue:F2} " +
                     $"pitchRate={pitchRate:F1} yawRate={yawRate:F1} " +

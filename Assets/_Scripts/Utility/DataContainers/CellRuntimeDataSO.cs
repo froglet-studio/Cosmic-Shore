@@ -242,25 +242,21 @@ namespace CosmicShore.Utility
         /// </summary>
         public void ResetRuntimeData()
         {
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle, "[CellRuntimeDataSO] Resetting runtime data");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[CellRuntimeDataSO] Resetting runtime data");
 
             Cell = null;
 
             if (Crystals != null)
             {
-                // IsVerbose FIRST: LogVerbose is [Conditional], which removes the CALL in a
-                // release build but not the argument evaluation in the Editor - so an
-                // interpolated string inside a per-object loop is still built every time, which
-                // is most of what made this loop expensive on a toy that resets a cell every
-                // crossing.
-                bool trace = CSDebug.IsVerbose(CSLogChannel.CellLifecycle);
+                // No per-crystal line here, on any channel: a log inside a per-object loop is
+                // spam on a toy that resets a cell every crossing, and LogVerbose is
+                // [Conditional] - it removes the CALL in a release build but not the argument
+                // evaluation in the Editor, so an interpolated string is built every time even
+                // when the channel is off.
                 for (int i = Crystals.Count - 1; i >= 0; i--)
                 {
                     if (Crystals[i] && Crystals[i].gameObject)
                     {
-                        if (trace)
-                            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
-                                $"[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}");
                         Object.Destroy(Crystals[i].gameObject);
                     }
                 }
@@ -270,7 +266,7 @@ namespace CosmicShore.Utility
             CellItems?.Clear();
             CellStatsList?.Clear();
 
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle, "[CellRuntimeDataSO] Runtime data reset complete");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[CellRuntimeDataSO] Runtime data reset complete");
         }
     }
 }

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: WreckingBall Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Wrecking Ball
+  Description: Demolition court cell for Wrecking Ball, intensity 4 of 4 (CellTypeChoiceOptions.IntensityWise, list order = intensity). The nucleus IS the 720u sphere court (play geometry, not a claim - the controller clears NucleusIsControlZone, which is also what lets the forest plant INSIDE it) and the forest is Rampage's 6 breakable species (9 configs - Borromean is four, one per element) re-cut into the court's 0.28-0.92 band at 0.6x Rampage's plant count, with Rampage's wildlife at 4x. Every ball reflects off the court wall back through the stands, and crystals respawn anywhere in it. The mature forest is ~264,642 volume; this cell's VOLUME thresholds are Rampage's play-tested intensity-4 ladder scaled by that, so Frenzy sits 3.70x above the forest at every level. ESTIMATE pending the in-editor baseline measure; regenerate with Tools/Build/author_wrecking_ball_assets.py rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 7555898194514117247, guid: b9cf1833fa2493d4b8724ccb6740fb3a, type: 3}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: af10b6facc5c58c91a93d69fc4e9cb5a, type: 2}
+  PhaseThresholds:
+    RestlessEnter: 700
+    RestlessExit: 500
+    FrenzyEnter: 10000
+    FrenzyExit: 8000
+    RestlessEnterVolume: 68000
+    RestlessExitVolume: 49000
+    FrenzyEnterVolume: 978000
+    FrenzyExitVolume: 756000

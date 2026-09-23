@@ -27,9 +27,13 @@ namespace CosmicShore.Gameplay
     public class VesselCombatHitByExplosionEffectSO : VesselExplosionEffectSO
     {
         [Header("Scoring")]
-        [Tooltip("Which weapon class this blast counts as. Missile for the Sparrow's skyburst; " +
-                 "the field exists so a future non-rocket blast can be scored differently.")]
-        [SerializeField] CombatHitClass hitClass = CombatHitClass.Missile;
+        [Tooltip("Which weapon class this blast counts as. A rocket lands in THREE ranked " +
+                 "classes and an explosion can be two of them: MissileBlast for the skyburst's " +
+                 "prism detonation, MissileShockwave for the warhead's outer blast. They share " +
+                 "one latch window per victim, so the closest one a rocket achieves is what " +
+                 "pays - see VesselCombatHitLatch. The field exists so a future non-rocket " +
+                 "blast can be scored differently.")]
+        [SerializeField] CombatHitClass hitClass = CombatHitClass.MissileBlast;
 
         [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. " +
                  "Fail-loud: a missing reference throws rather than silently un-scoring the mode.")]
@@ -96,14 +100,24 @@ namespace CosmicShore.Gameplay
             string shooterName = shooterStatus.PlayerName;
             string victimName = victimStatus.PlayerName;
 
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass, sameVictimCooldownSeconds))
+            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
+                                               sameVictimCooldownSeconds, out int supersededRank))
                 return;
+
+            // A hit bites in proportion to what it is worth - ten points to the petal, netted
+            // against whatever tier this admission supersedes, so one rocket drains its BEST
+            // tier and never the sum of the three it can land in. See CombatHitDrain: the
+            // Debuff class is absent from that table because its drain is authored per weapon
+            // (this same container carries it), so adding this call cannot double it.
+            CombatHitDrain.Apply(victimStatus, hitClass, supersededRank,
+                                 ElementalDebuffSources.Explosion);
 
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,
                 VictimName = victimName,
                 HitClass = hitClass,
+                SupersededRank = supersededRank,
             });
         }
     }

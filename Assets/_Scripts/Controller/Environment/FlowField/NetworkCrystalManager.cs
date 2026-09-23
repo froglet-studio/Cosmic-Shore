@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
                 n_Slots[i] = CrystalSlotData.Empty;
-            CSDebug.Log("[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
         }
 
         // ---------------- Server Turn Start ----------------
@@ -173,9 +173,7 @@ namespace CosmicShore.Gameplay
                 // and client always has both values available together.
                 n_Slots[i] = new CrystalSlotData
                 {
-                    Position = hasAnchors
-                        ? GetSpawnPointAroundAnchor(batchAnchor)
-                        : GetAnchorlessSpawnPoint(),
+                    Position = InitialSpawnPointFor(i + 1, batchAnchor, hasAnchors),
                     Domain = (int)domain
                 };
             }
@@ -207,9 +205,7 @@ namespace CosmicShore.Gameplay
 
                     n_Slots[i] = new CrystalSlotData
                     {
-                        Position = hasAnchors
-                            ? GetSpawnPointAroundAnchor(_initialBatchAnchor)
-                            : GetAnchorlessSpawnPoint(),
+                        Position = InitialSpawnPointFor(i + 1, _initialBatchAnchor, hasAnchors),
                         Domain = (int)domain
                     };
                 }

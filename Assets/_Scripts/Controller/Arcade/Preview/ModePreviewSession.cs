@@ -65,10 +65,6 @@ namespace CosmicShore.Gameplay
                                  "to keep whatever the player is already flying.")]
         MenuServerPlayerVesselInitializer vesselInitializer;
 
-        [SerializeField, Tooltip("HUD shown beside the window once the player takes control " +
-                                 "(objective, progress, timer). Optional.")]
-        ModePreviewHUD hud;
-
         [Header("Placement")]
         [SerializeField, Tooltip("How far from the menu world the satellite arena is parked. Must " +
                                  "stay well beyond every gameplay camera's far clip (8000 in " +
@@ -161,7 +157,12 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            AbortHard(strikeWorld: false);   // never create GameObjects while the scene closes
+            // Before AbortHard, which early-returns when already Idle. Forfeited, not restored:
+            // the scene is going away and the next loader owns the pause state.
+            ForfeitMenuPauseRestore();
+            // Never create GameObjects while the scene closes, and never raise into subscribers
+            // that are being destroyed alongside us.
+            AbortHard(strikeWorld: false, notify: false);
         }
 
         void Subscribe()
@@ -488,6 +489,23 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(false);
             player.InputController?.SetPause(false);
 
+            // ...AND the menu's GLOBAL pause, which is the other half of "who holds the stick"
+            // and was missing. ScreenSwitcher pauses the game on every non-HOME screen to free
+            // CPU for the UI, and the arcade card lives on one - so by the time a card is open
+            // PauseSystem.Paused is true and Time.timeScale is 0. Both halves of flight die on
+            // that: InputController.Update returns BEFORE any strategy runs (so no strategy ever
+            // writes a stick, a trigger or a throttle), and VesselTransformer integrates on
+            // Time.deltaTime, so even a vessel handed perfect input moves by zero. Clearing
+            // InputStatus.Paused alone - which is all this did - grants a stick that cannot
+            // reach the ship. MenuCrystalClickHandler.TransitionToFreestyle has always lifted
+            // this for the lava lamp; the preview is the same handover and needs the same lift.
+            //
+            // Reported as "the Wrecking Ball microgame loaded but the Scarab would not move when
+            // I pulled the trigger" - the Scarab because it is the hull with no cruise floor and
+            // a throttle that is one analog channel, so a frozen world reads as a broken ship
+            // rather than as a slow one.
+            TakeMenuOffPause();
+
             // The pad flies the ship, so it must stop driving the UI at the same time. The
             // EventSystem half; direct device polls (the modal's B-to-close) check
             // ModePreviewWindow.AnyHasFocus instead.
@@ -500,6 +518,58 @@ namespace CosmicShore.Gameplay
             _window?.GrantFocus();
         }
 
+        // The menu behind this window runs PAUSED (ScreenSwitcher pauses on every non-HOME
+        // screen; PauseSystem.TogglePauseGame also sets Time.timeScale = 0). Flight needs it
+        // lifted, and the card needs it back. Tracked as "did WE lift it?" rather than read back
+        // off PauseSystem, so this can only ever restore a pause it removed - a preview that runs
+        // while the menu happens to be unpaused (the card opened from the HOME hub rather than
+        // the arcade screen) must not hand the menu a pause it never had.
+        bool _liftedMenuPause;
+
+        void TakeMenuOffPause()
+        {
+            if (_liftedMenuPause || !CosmicShore.Core.PauseSystem.Paused) return;
+            _liftedMenuPause = true;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(false);
+        }
+
+        /// <summary>
+        /// Put the menu's pause back. The ONE route that may do this is the focus release - the
+        /// player handing the stick back while the card, its screen and the whole menu stay
+        /// exactly where they were. Leaving it unpaused there would run the lava lamp behind a
+        /// modal built on the assumption that it does not.
+        /// </summary>
+        void RestoreMenuPause()
+        {
+            if (!_liftedMenuPause) return;
+            _liftedMenuPause = false;
+            CosmicShore.Core.PauseSystem.TogglePauseGame(true);
+        }
+
+        /// <summary>
+        /// Drop the lift WITHOUT re-pausing: the menu is being LEFT, so its pause state stops
+        /// being this window's business and belongs to whoever loads next.
+        ///
+        /// <para><b>This is not a tidy-up, it is a correctness requirement.</b>
+        /// <c>SceneLoader.LaunchGame</c> and this session are BOTH subscribers to
+        /// <c>GameDataSO.OnLaunchGame</c>, and SceneLoader wins the order (it is a Bootstrap
+        /// object subscribed at app start; this one subscribes when Menu_Main loads). SceneLoader
+        /// unpauses as its very first statement, so a restore here fires immediately AFTER it and
+        /// hands the loading match <c>Time.timeScale = 0</c> - launching a game out of a flying
+        /// preview would start it frozen. The old comment here claimed the game scene's own
+        /// <c>MiniGame</c> unpauses on entry and made the restore safe; it does not.
+        /// <c>MiniGame</c> is the legacy single-player base (two subclasses), not the
+        /// <c>MiniGameControllerBase</c> hierarchy every shipped mode uses, and nothing in that
+        /// hierarchy touches <c>PauseSystem</c> at all - <c>SceneLoader.LaunchGame</c> is the
+        /// only producer.</para>
+        ///
+        /// <para>The failure directions are not symmetric, which is why teardown forfeits rather
+        /// than restoring: forfeiting wrongly leaves the MENU running unpaused (some CPU, behind
+        /// a modal, until the next screen change re-pauses it), while restoring wrongly freezes a
+        /// MATCH.</para>
+        /// </summary>
+        void ForfeitMenuPauseRestore() => _liftedMenuPause = false;
+
         /// <summary>
         /// Tapping out puts the vessel BACK, rather than leaving it flying under AI. The whole
         /// point of the two phases is that a card is only ever in one of two states - a world you
@@ -511,6 +581,8 @@ namespace CosmicShore.Gameplay
         {
             if (EventSystem.current)
                 EventSystem.current.sendNavigationEvents = _navigationWasEnabled;
+
+            RestoreMenuPause();
 
             if (_state != State.Live) return;
 
@@ -529,7 +601,6 @@ namespace CosmicShore.Gameplay
                 }
 
                 StopRunner();
-                if (hud) hud.Hide();
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
@@ -597,7 +668,6 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
-            if (hud) hud.Hide();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
 
@@ -701,15 +771,21 @@ namespace CosmicShore.Gameplay
         /// dies with the scene; only the camera loan, the AI retarget and the runtime SO instance
         /// need explicit hands.</para>
         /// </summary>
-        void AbortHard(bool strikeWorld = true)
+        void AbortHard(bool strikeWorld = true, bool notify = true)
         {
             if (_state == State.Idle) return;
+
+            var mode = ActiveMode;
 
             _cts?.Cancel();
             _cts?.Dispose();
             _cts = null;
 
             StopRunner();
+
+            // Both callers of AbortHard - the launch and OnDestroy - are LEAVING the menu, so
+            // the lift is forfeited here, never restored.
+            ForfeitMenuPauseRestore();
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();
@@ -726,9 +802,24 @@ namespace CosmicShore.Gameplay
             SetLocalTrailPaused(false);
             _state = State.Idle;
             ActiveMode = GameModes.Random;
+
+            // (4) A hard abort ENDS THE PREVIEW, so it has to say so. Stop() raises this and
+            // AbortHard did not, which meant the one route that reaches here on its own - a
+            // LAUNCH - never told the window it had nothing left to draw. The frame then sat on
+            // screen holding the last picture its RenderTexture ever received, over the top of
+            // whatever the player did next. Suppressed on the OnDestroy path for the same reason
+            // the strike is: subscribers are being torn down alongside us.
+            if (notify) OnPreviewEnded?.Invoke(mode, ModePreviewOutcome.Abandoned);
         }
 
-        void HandleLaunchRequested() => AbortHard();
+        // The menu is being LEFT, so the pause lift is forfeited rather than restored - see
+        // ForfeitMenuPauseRestore: SceneLoader.LaunchGame has already unpaused for the match by
+        // the time this runs, and re-pausing here would load it frozen.
+        void HandleLaunchRequested()
+        {
+            ForfeitMenuPauseRestore();
+            AbortHard();
+        }
 
         // ── Vessel + AI bookkeeping ──────────────────────────────────────────
 
@@ -986,10 +1077,9 @@ namespace CosmicShore.Gameplay
             _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
 
             // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
-            // countdown) is RETIRED: the launch panel's OBJECTIVE BOX is the one readout now, and
-            // it deliberately shows no target and no clock. The runner still runs - it feeds the
-            // box through OnObjectiveProgress.
-            if (hud) hud.Hide();
+            // countdown) is RETIRED and now DELETED: the launch panel's OBJECTIVE BOX is the one
+            // readout, and it deliberately shows no target and no clock. The runner still runs -
+            // it feeds the box through OnObjectiveProgress.
 
             _lastRunnerProgress = _runner.Progress;
             _runner.OnProgressChanged -= HandleRunnerProgress;   // never double-subscribe

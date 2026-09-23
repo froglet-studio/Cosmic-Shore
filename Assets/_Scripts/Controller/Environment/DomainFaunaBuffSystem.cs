@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
             var system = host.AddComponent<DomainFaunaBuffSystem>();
             system.gameData = gameData;
             system.AttachRuntime(runtime);
-            CSDebug.Log("[DomainFaunaBuffSystem] Auto-created — living fauna hearts now empower their domain's vessels.");
+            CSDebug.LogVerbose(CSLogChannel.Ecology, "[DomainFaunaBuffSystem] Auto-created - living fauna hearts now empower their domain's vessels.");
             return system;
         }
 
@@ -190,10 +190,11 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < AllElements.Length; i++)
                     rs.SetFaunaBuffModifier(AllElements[i], perElement?[i] ?? 0f);
 
-                if (debugLogging && perElement != null)
-                    CSDebug.Log($"[DomainFaunaBuffSystem] {player.Name} ({player.Domain}): " +
-                                $"C={perElement[0]:F2} M={perElement[1]:F2} " +
-                                $"S={perElement[2]:F2} T={perElement[3]:F2}");
+                if (debugLogging && perElement != null && CSDebug.IsVerbose(CSLogChannel.Ecology))
+                    CSDebug.LogVerbose(CSLogChannel.Ecology,
+                        $"[DomainFaunaBuffSystem] {player.Name} ({player.Domain}): " +
+                        $"C={perElement[0]:F2} M={perElement[1]:F2} " +
+                        $"S={perElement[2]:F2} T={perElement[3]:F2}");
             }
         }
 

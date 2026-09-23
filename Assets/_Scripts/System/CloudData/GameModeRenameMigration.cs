@@ -45,7 +45,12 @@ namespace CosmicShore.Core
             { "MultiplayerCrystalCapture",    "Scurry" },
             { "Tournament",                   "Maelstrom" },
             { "NucleusRush",                  "BroodRush" },
-            { "Ribcage",                      "PeelTheCage" },
+            // TWO generations of one mode, each resolving in ONE hop. Resolve() is a single
+            // dictionary lookup, not a fixed point, so a chain ("Ribcage" -> "PeelTheCage",
+            // "PeelTheCage" -> "Cleave") would leave a Ribcage-era save stranded on a name
+            // nothing reads. Every historical name points at the CURRENT one.
+            { "Ribcage",                      "Cleave" },
+            { "PeelTheCage",                  "Cleave" },
             { "MultiplayerJoust",             "Joust" },
             { "MultiplayerCellularDuel",      "OnlineDuelForTheCell" },
             { "CellularDuel",                 "DuelForTheCell" },
@@ -147,7 +152,7 @@ namespace CosmicShore.Core
                       + MigrateKeys(data.IntensityPlayCounts, composite: true);
 
             if (moved > 0)
-                CSDebug.Log($"[GameModeRename] Migrated {moved} progression entries onto the new mode names.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeRename] Migrated {moved} progression entries onto the new mode names.");
         }
 
         public static void Migrate(ModeStatsCloudData data)
@@ -156,7 +161,7 @@ namespace CosmicShore.Core
 
             int moved = MigrateKeys(data.Modes, composite: true);
             if (moved > 0)
-                CSDebug.Log($"[GameModeRename] Migrated {moved} mode-stat records onto the new mode names.");
+                CSDebug.LogVerbose(CSLogChannel.CloudData, $"[GameModeRename] Migrated {moved} mode-stat records onto the new mode names.");
         }
     }
 }

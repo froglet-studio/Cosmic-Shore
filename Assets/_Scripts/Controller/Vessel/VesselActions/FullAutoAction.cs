@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
                             else inheritedVelocity = VesselStatus.Course;
                         }
                         else inheritedVelocity = Vector3.zero;
-                        gunContainer.FireGun(transform, speed.Value, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
+                        gunContainer.FireGun(transform, speed.EvaluateLive(VesselStatus), inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
                     OnVolleyFired?.Invoke(VesselStatus.PlayerName);

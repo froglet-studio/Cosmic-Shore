@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 
 
@@ -28,6 +29,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool lockToAngle = false;
         [SerializeField, Min(1f)] float maxTurnDegrees = 45f;
 
+        [Header("Elemental")]
+        [Tooltip("Optional element scaling on the turn rate. DISABLED by default, and disabled on " +
+                 "both shipped Yawstery assets: the Manta's spec re-cut moved Space from this turn " +
+                 "rate to Kabloom's blast radius, and Yastri's element (Mass) scales the TRAIL it " +
+                 "throws rather than the turn. Kept as the authoring hook for a future design, now " +
+                 "in the fleet's one scaling idiom (it was an element PICKER read through the " +
+                 "retired generic map multiplier).")]
+        [SerializeField] ElementalFloat turnRateMultiplier = new(1f);
+
+        [Header("Trail")]
+        [Tooltip("Drive the vessel's turn-trail state from this turn's intensity — the outer-" +
+                 "lane prism flare, and the Mass-5 Shielded Turn Trails window " +
+                 "(VesselPrismController.SetTurnTrail). The Manta's Yastri assets author ON.")]
+        [SerializeField] bool driveTrailFlare = false;
+
         [Header("Animation (future)")]
         [SerializeField] string animatorParamFloat = "";
         [SerializeField] string animatorParamTriggerStart = "";
@@ -42,6 +58,10 @@ namespace CosmicShore.Gameplay
 
         public bool LockToAngle => lockToAngle;
         public float MaxTurnDegrees => maxTurnDegrees;
+        /// <summary>The live element multiplier on the turn rate; exactly 1 while disabled.</summary>
+        public float TurnRateMultiplier(IVesselStatus status)
+            => turnRateMultiplier.EvaluateLive(status);
+        public bool DriveTrailFlare => driveTrailFlare;
 
         public string AnimFloat => animatorParamFloat;
         public string AnimStart => animatorParamTriggerStart;

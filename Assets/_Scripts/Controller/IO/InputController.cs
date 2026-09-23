@@ -103,6 +103,17 @@ namespace CosmicShore.Gameplay
             if (PauseSystem.Paused)
                 return;
 
+            // Look behind (C, or LB+RB together). Polled HERE rather than in a HUD or on a
+            // vessel because this is the one per-frame pump that is already gated on exactly
+            // the conditions the gesture needs: local human pilot only (an AI hull and a remote
+            // replica both carry an InputController and must not move the local camera), and
+            // below both pause gates, so the camera cannot be flipped from the overview or a
+            // modal. It drives a camera, not the vessel, so it sits ahead of the strategy - it
+            // is not something a hull could fail to author, and no InputEvents member is spent
+            // on it. See Docs/REAR_VIEW.md.
+            if (RearViewGesture.RequestedThisFrame())
+                VesselRearView.Toggle();
+
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.
             multiMouseService?.Tick();
@@ -183,7 +194,7 @@ namespace CosmicShore.Gameplay
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
 
-                CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
+                CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
             }
         }
 
@@ -338,14 +349,14 @@ namespace CosmicShore.Gameplay
 
         private void OnToggleInvertY(bool status)
         {
-            CSDebug.Log($"[InputController] OnToggleInvertY called with status: {status}");
+            CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Invert Y -> {status}");
             InputStatus.InvertYEnabled = status;
             currentStrategy?.SetInvertY(status);
         }
 
         private void OnToggleInvertThrottle(bool status)
         {
-            CSDebug.Log($"[InputController] OnToggleInvertThrottle called with status: {status}");
+            CSDebug.LogVerbose(CSLogChannel.Input, $"[InputController] Invert throttle -> {status}");
             InputStatus.InvertThrottleEnabled = status;
             currentStrategy?.SetInvertThrottle(status);
         }

@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
             _netCrystalCollisions.Value = CrystalCollisions;
             gameData.CrystalTargetCount = CrystalCollisions;
 
-            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
+            CSDebug.LogVerbose(CSLogChannel.ArcadeMatch, $"[NetworkCrystalMonitor] Server set crystal target: {CrystalCollisions} " +
                       $"(intensity={gameData.SelectedIntensity.Value})");
         }
 

@@ -6,6 +6,7 @@ using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -342,7 +343,6 @@ namespace CosmicShore.Utility
             DrawSceneButton("Main Menu",              "Assets/_Scenes/Menu_Main.unity");
             DrawSceneButton("Photo Booth",            "Assets/_Scenes/Tools/PhotoBooth.unity");
             DrawSceneButton("Recording Studio (WIP)", "Assets/_Scenes/Tools/Recording Studio.unity");
-            DrawSceneButton("PlayFab Sandbox",        "Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity");
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -452,17 +452,25 @@ namespace CosmicShore.Utility
             DrawStackTraceRow("Exception", LogType.Exception);
         }
 
-        // Channels are listed here rather than reflected off the enum so each one carries a
-        // human label; adding a CSLogChannel member without a row here simply leaves it
-        // un-toggleable from the toolbox (and CSLogChannel's own doc comment says not to add
-        // one until real call sites use it).
-        static readonly (CSLogChannel Flag, string Label)[] ChannelRows =
+        // Channels are reflected off CSLogChannel so a member is toggleable the moment it is
+        // declared; the human label rides on the member as [CSLogChannelLabel]. A member with no
+        // label falls back to its name, which is the signal to author one.
+        static readonly (CSLogChannel Flag, string Label)[] ChannelRows = BuildChannelRows();
+
+        static (CSLogChannel Flag, string Label)[] BuildChannelRows()
         {
-            (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
-            (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
-            (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
-            (CSLogChannel.MouseFlight,  "[MouseFlight] one-thumb mouse controls engaged"),
-        };
+            var rows = new List<(CSLogChannel, string)>();
+            foreach (var field in typeof(CSLogChannel).GetFields(
+                         System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
+            {
+                var flag = (CSLogChannel)field.GetValue(null);
+                if (flag == CSLogChannel.None || flag == CSLogChannel.All) continue;
+                var attr = (CSLogChannelLabelAttribute)Attribute.GetCustomAttribute(
+                    field, typeof(CSLogChannelLabelAttribute));
+                rows.Add((flag, attr?.Label ?? field.Name));
+            }
+            return rows.ToArray();
+        }
 
         void DrawStackTraceRow(string label, LogType type)
         {
@@ -875,6 +883,11 @@ namespace CosmicShore.Utility
         {
             DrawTabTitle("Quest Debug", Tabs[4].Color);
 
+            // Above the play-mode gate on purpose: this is a PlayerPrefs value, so it is
+            // flippable with the editor stopped, and needing play mode to turn progression
+            // back on is exactly the friction it exists to remove.
+            DrawMasterUnlockGate();
+
             bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
 
             if (!available)
@@ -977,6 +990,8 @@ namespace CosmicShore.Utility
         {
             DrawTabTitle("Vessel Unlock", Tabs[5].Color);
 
+            DrawMasterUnlockGate();
+
             if (!_vesselList)
             {
                 var guids = AssetDatabase.FindAssets("t:SO_VesselList");
@@ -995,7 +1010,10 @@ namespace CosmicShore.Utility
             {
                 if (vessel == null) continue;
 
-                bool isUnlocked = !vessel.IsLocked;
+                // IsLockedByEntitlement, not IsLocked: this list GRANTS and REVOKES ownership,
+                // and IsLocked reads false for every vessel while the master gate is on - the
+                // rows would all show owned and the toggles would appear to do nothing.
+                bool isUnlocked = !vessel.IsLockedByEntitlement;
                 DrawLogToggle(vessel.Name, isUnlocked, v =>
                 {
                     if (v)
@@ -1253,6 +1271,39 @@ namespace CosmicShore.Utility
             var labelRect = new Rect(rect.x + 12, rect.y, rect.width - 12, rect.height);
             GUI.Label(labelRect, title, _sectionTitleStyle);
             GUILayout.Space(6);
+        }
+
+        /// <summary>
+        /// The MASTER DEVELOPER UNLOCK block. Shown on both the Quest and Vessels tabs because
+        /// the one switch opens both, and drawn ABOVE each tab's play-mode gate because it is a
+        /// PlayerPrefs value that does not need a running game.
+        /// </summary>
+        void DrawMasterUnlockGate()
+        {
+            GUILayout.Space(Pad);
+            DrawSubSectionLabel("Master Developer Unlock");
+
+            bool on = DeveloperUnlockGate.AllUnlocked;
+            DrawLogToggle("Unlock everything (vessels, modes, intensities, hangar)", on,
+                v => DeveloperUnlockGate.AllUnlocked = v);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                on
+                    ? "OPEN - every vessel, game mode and intensity is playable, and the quest graph does not run at all."
+                    : "ENFORCED - real progression is in effect. Locks, the quest graph and the FTUE funnel all apply.",
+                _infoStyle);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button($"Reset to shipped default ({(DeveloperUnlockGate.DefaultAllUnlocked ? "open" : "enforced")})",
+                                 GUILayout.Width(260)))
+                DeveloperUnlockGate.ResetToDefault();
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(Pad);
         }
 
         void DrawSubSectionLabel(string title)

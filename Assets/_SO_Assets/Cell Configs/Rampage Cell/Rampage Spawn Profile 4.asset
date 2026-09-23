@@ -18,12 +18,17 @@ MonoBehaviour:
   FloraSpawnIntervalSeconds: 0
   FloraPopulationScale: 1.0
   FloraPlantBudgetScale: 1.0
+  FloraPrismScale: 1.0
   SupportedFloras:
   - {fileID: 11400000, guid: f9232fe099904e69b63d12f1b0e28717, type: 2}
   - {fileID: 11400000, guid: 5b18cd2b2ac647e48b78dd3e8e155f02, type: 2}
   - {fileID: 11400000, guid: 77428610f484433586d594663b70385a, type: 2}
   - {fileID: 11400000, guid: 8514fbd281c347f0bea06cbc1db3a9c4, type: 2}
   - {fileID: 11400000, guid: c189b76be353421a9d7efae8ecb6cee0, type: 2}
+  - {fileID: 11400000, guid: 098b88aeed1303f1d57943281536cd5b, type: 2}
+  - {fileID: 11400000, guid: e06372730b42011cf38fa299e2dea49f, type: 2}
+  - {fileID: 11400000, guid: 8cca919ddda4e08b0a331d16d3fef647, type: 2}
+  - {fileID: 11400000, guid: 1b5b7c09e9e3db78d13b034d15d6286e, type: 2}
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1

@@ -11,9 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 841db4ce66da4384a711272307733e0f, type: 3}
   m_Name: ScarabCavitationExplosionImpactorDataContainer
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   vesselExplosionEffects:
   - {fileID: 11400000, guid: 1587fc1489104b19b23b3f545657df3d, type: 2}
+  - {fileID: 11400000, guid: 8ddb9ffd0015031800dfec98bcd5dc2d, type: 2}
   explosionPrismEffects: []
   explosionCrystalEffects:
   - {fileID: 11400000, guid: 96f74eb9af7b4eb69ea7fcf039aed090, type: 2}
+  explosionLifeformCrystalEffects:
+  - {fileID: 11400000, guid: 96012329dcaea043338b05dff834a449, type: 2}

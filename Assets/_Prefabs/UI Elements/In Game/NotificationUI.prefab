@@ -210,6 +210,8 @@ GameObject:
   - component: {fileID: 9119655227542307033}
   - component: {fileID: 4019040116689323042}
   - component: {fileID: 6573921154324609260}
+  - component: {fileID: 8123456789012345601}
+  - component: {fileID: 8123456789012345602}
   m_Layer: 5
   m_Name: NotificationUI
   m_TagString: Untagged
@@ -290,6 +292,34 @@ MonoBehaviour:
   toastChannel: {fileID: 11400000, guid: c23748fb5aed4dbc988a5fb34fcd8b61, type: 2}
   library: {fileID: 11400000, guid: d0d5f3caa1e64bf5b154650a01bb0b45, type: 2}
   view: {fileID: 6573921154324609260}
+--- !u!114 &8123456789012345601
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4670989921267096617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac66760f007348199bbe14e8d6772641, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.RaceRankToastDriver
+  library: {fileID: 11400000, guid: d0d5f3caa1e64bf5b154650a01bb0b45, type: 2}
+  pollInterval: 0.5
+--- !u!114 &8123456789012345602
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4670989921267096617}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01b6f6676af3441fad8fb95f4101324b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.StatToastDriver
+  library: {fileID: 11400000, guid: d0d5f3caa1e64bf5b154650a01bb0b45, type: 2}
+  pollInterval: 0.25
 --- !u!114 &6573921154324609260
 MonoBehaviour:
   m_ObjectHideFlags: 0

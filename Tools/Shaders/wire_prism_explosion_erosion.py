@@ -12,11 +12,11 @@ migrated across dominant-axis boundaries as pieces rotated and the wipe jumped f
 
 The splice sits BETWEEN the explosion clock and the occlusion corridor:
 
-  BEFORE:  PrismExplosionClock.Opacity ------------------------> PrismOcclusionFade.BaseAlpha
+  BEFORE:  PrismExplosionClock.Opacity ------------------------> PrismOcclusionFadeDebris.BaseAlpha
   AFTER:   PrismExplosionClock.Opacity -> EROSION.BaseOpacity
            UV (channel 0) --------------> EROSION.UV
            Prop[Velocity] --------------> EROSION.Velocity      (per-prism wipe identity)
-           EROSION.Survival (0..1) -----> PrismOcclusionFade.BaseAlpha
+           EROSION.Survival (0..1) -----> PrismOcclusionFadeDebris.BaseAlpha
 
 So the erosion owns the FADE (angle-free) while the corridor keeps owning OCCLUSION (a
 view effect by definition); Survival is fractional only in the narrow fringe leading
@@ -47,7 +47,10 @@ UV_DONOR = "Assets/_Graphics/Materials/Graphs/ExplosionGraph.shadergraph"
 # GUID of PrismOcclusionCorridor.hlsl (pinned by its committed .meta).
 HLSL_GUID = "bf8e2c1fa76142c89ba03b2e1ae46201"
 FUNCTION_NAME = "PrismErosionFade"
-CORRIDOR_FUNCTION = "PrismOcclusionFade"
+# ExplodingBlockGraph binds the DEBRIS entry point (2026-09-17): the same corridor body
+# with the nose clearance set to 0, because debris has no collider and so nothing to
+# buy with a clearance. See PRISM_OCCLUSION_DEBRIS_NOSE_CLEARANCE in the HLSL.
+CORRIDOR_FUNCTION = "PrismOcclusionFadeDebris"
 CORRIDOR_BASEALPHA_SLOT = 3
 CLOCK_FUNCTION = "PrismExplosionClock"
 

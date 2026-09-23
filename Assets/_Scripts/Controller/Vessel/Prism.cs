@@ -47,6 +47,14 @@ namespace CosmicShore.Gameplay
         // Set transiently by Damage/Consume right before destruction so the destruction
         // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
         bool _destroyedByCreature;
+
+        // Set transiently by Damage the same way, so the destroyed-channel payload can say
+        // whether DIRECT GUNFIRE killed this prism. It exists for the weapon that reloads by
+        // destroying mass (VesselRearmOnPrismDestruction): a Sparrow's tank is filled by its
+        // guns and by nothing else, so the listener has to be able to tell a bullet's kill from
+        // a rocket's blast, and the channel is the only place every route is visible.
+        // False for everything else by construction - a blast, a ram, a creature, a teardown.
+        bool _destroyedByGunfire;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -139,6 +147,35 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// Local-space geometry of the prism's OWN authored box — the surface an
+        /// UNSHIELDED prism presents. Distinct from <see cref="TryGetShellGeometry"/>,
+        /// which always returns the SHIELD (3x circumscribing) geometry even for a
+        /// prism that is not currently shielded; reading that for a plain prism would
+        /// hand the shell tier a box three times too big.
+        ///
+        /// Used only by the experimental extended-coverage shell tier
+        /// (<see cref="PrismShellContactManager.ExtendToUnshieldedPrisms"/>).
+        /// </summary>
+        internal bool TryGetBoxGeometry(out Vector3 centerLocal, out Vector3 halfExtentsLocal)
+        {
+            if (_authoredColliderSizeCached)
+            {
+                centerLocal = blockCollider != null ? blockCollider.center : Vector3.zero;
+                halfExtentsLocal = _authoredColliderSize * 0.5f;
+                return true;
+            }
+            if (blockCollider != null)
+            {
+                centerLocal = blockCollider.center;
+                halfExtentsLocal = blockCollider.size * 0.5f;
+                return true;
+            }
+            centerLocal = default;
+            halfExtentsLocal = default;
+            return false;
+        }
+
         public Domains Domain
         {
             get => teamManager?.Domain ?? Domains.Blue;
@@ -222,6 +259,11 @@ namespace CosmicShore.Gameplay
         /// is why scale alone can never prove a prism is on screen.
         /// </summary>
         public bool IsCreationComplete { get; private set; }
+
+        /// <summary>Hook for a one-shot creation stamp that needs the FINAL transform and a
+        /// live companion entity. Called once from the creation coroutine's completion, right
+        /// after <see cref="IsCreationComplete"/> goes true. Base does nothing.</summary>
+        protected virtual void OnCreationComplete() { }
 
         /// <summary>
         /// True when this prism is exactly what the player will see for the rest of the match:
@@ -712,6 +754,7 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
+            _destroyedByGunfire = false;  // pool reuse: clear stale gunfire-kill flag
             // Pool reuse: a prism whose scale window was widened for an AUTHORED size
             // (AdmitTargetScale) must not carry that ceiling into its next life.
             scaleAnimator?.RestoreAuthoredScaleWindow();
@@ -950,6 +993,12 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.BeginGrowthAnimation();
 
+            // The one point in a prism's life that runs exactly once, AFTER the companion
+            // entity exists and with the transform and parent final. A subclass whose
+            // creation carries its own one-shot stamp hangs it here rather than racing
+            // Initialize, which runs before any of that is true.
+            OnCreationComplete();
+
             using (s_createSoapMarker.Auto())
             {
                 _onTrailBlockCreatedEventChannel.Raise(new PrismStats
@@ -1183,6 +1232,7 @@ namespace CosmicShore.Gameplay
                     Volume = prismProperties.volume,
                     AttackerName = attackerPlayerName,
                     OwnDomain = Domain,
+                    DestroyedByGunfire = _destroyedByGunfire,
                 });
             }
 
@@ -1291,8 +1341,15 @@ namespace CosmicShore.Gameplay
         /// impact vector (see <see cref="PrismEffectHelper.DamageProportional"/>) - the prefab
         /// ceiling is sized for the legacy inertia/volume gain, not for real speeds.
         /// </param>
+        /// <param name="byGunfire">
+        /// True when DIRECT gunfire caused this - a round that struck the prism itself, not a
+        /// blast, a ram or a creature. Stamped onto the destroyed-channel payload
+        /// (<see cref="PrismStats.DestroyedByGunfire"/>) for the reload-by-destroying-mass
+        /// weapon; it changes nothing about the damage. Defaults false, so a new damage source
+        /// is not gunfire until it says it is.
+        /// </param>
         public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false, bool byCreature = false,
-                           float debrisSpeedLimit = 0f)
+                           float debrisSpeedLimit = 0f, bool byGunfire = false)
         {
             if (destroyed) return;
             // Super-shielded prisms are invulnerable to Damage itself. A source that may
@@ -1312,6 +1369,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 _destroyedByCreature = byCreature;
+                _destroyedByGunfire = byGunfire;
                 Explode(impactVector, domain, playerName, devastate, debrisSpeedLimit);
             }
         }

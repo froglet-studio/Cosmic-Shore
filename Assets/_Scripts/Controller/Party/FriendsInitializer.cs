@@ -245,11 +245,11 @@ namespace CosmicShore.Gameplay
                     Availability.Online,
                     new FriendPresenceActivity("In Menu", "Menu_Main"));
 
-                Debug.Log("[FriendsInitializer] Friends service initialized and presence set.");
+                CSDebug.LogVerbose(CSLogChannel.Party, "[FriendsInitializer] Friends service initialized and presence set.");
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[FriendsInitializer] Init failed: {e.Message}");
+                CSDebug.LogWarning($"[FriendsInitializer] Init failed: {e.Message}");
             }
         }
 

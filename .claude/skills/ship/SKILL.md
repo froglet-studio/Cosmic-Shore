@@ -15,7 +15,7 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 |---|---|---|
 | The default, full protocol | `/ship` | Everything below. |
 | A small, already-reviewed branch out the door | `/ship-quick` | Trims the §2 review and §3 doc passes. **Never** trims §2.5. |
-| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, and a doc-drift sweep. |
+| A big branch, a LOCKED system, or a long session | `/ship-deep` | Adds an adversarial re-read, a blast-radius sweep, a doc-drift sweep, and a mechanical refactor-opportunity sweep (D8) over §3.6. |
 | Only to land an editor tool's OUTPUT (no PR) | `/ship-tools` | Runs §2.5 alone, then retires the tool and pushes. |
 
 `/ship <mode>` works too (`/ship quick`, `/ship deep`, `/ship tools`).
@@ -23,6 +23,54 @@ two more iterations should fix. **Opening the PR is the last step, never the fir
 **§2.5 is in every mode. Speed comes out of review depth, never out of the gate** — a
 fast path that can silently drop a tool's output is the exact failure this protocol
 exists to prevent.
+
+## 0.05 There is no compiler and no CI here — do not spend the branch's time on them
+
+**This environment has no Unity Editor, no `unity` CLI, no `dotnet`, and no CI to watch.**
+That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep`,
+`/ship-tools`) and it is not a degraded state to work around:
+
+- **Do not run `/verify-unity`, and do not try to stand a compiler up.** Installing an SDK
+  to Roslyn-parse the diff buys a SYNTAX check and nothing more — every `MonoBehaviour` and
+  `ScriptableObject` base type lives in the `Assembly-CSharp` monolith, so class bodies never
+  bind and the whole class of errors that actually bites (a member that does not exist, a
+  drifted override signature, an argument mismatch, overload resolution) is invisible to it.
+  A gate that cannot resolve a type cannot see errors ABOUT that type.
+- **Do not treat any build gate as a ship requirement.** `check_conditional_compilation.py`,
+  `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py`, a generator's `--check`, "CI is green" — none of them gate a
+  GO here. Run one only when it is the cheapest way to answer a question you actually have
+  about your own change; never as a checklist item, never as evidence, and never as a reason
+  to sit on finished work.
+- **Do not wait on, poll, or report CI.** Do not subscribe to a PR to watch checks. If a
+  human wants CI watched, they will ask.
+- **Say so plainly instead.** The verification line in the PR body and the ship report reads
+  "not compiled — no editor or compiler in this environment", followed by what a human must
+  do at the editor. An honest "unverified" is the deliverable; a manufactured green is not.
+- **These gates do not share a command line, and a wrong flag exits 2 — which reads as a
+  FAILURE.** `check_enum_member_references.py`, `check_switch_label_collisions.py`,
+  `check_using_directives.py` and `check_elemental_floats.py` take `--check`;
+  `check_conditional_compilation.py` takes none (it just runs) and
+  `check_self_referential_locals.py` wants `--all` or a path list. Passing `--check` to either of
+  the last two gets `error: unrecognized arguments: --check` and exit 2, which in a sweep is
+  indistinguishable from the gate finding something — the sibling of this file's own "a gate that
+  ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
+  reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
+
+**And read the exit code of the SCRIPT, not of the pager you piped it into.** `python3
+check.py --check | tail -5; echo $?` reports **`tail`'s** status, which is 0 whatever the
+script did — so a gate printing `FAIL` in the very output you are reading comes back "exit
+0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
+produced by the measurement rather than by the gate, and it is worse than the original
+because you have the failure text on screen and a number telling you to ignore it. Run the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
+not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
+restore and confirm the tree is clean (`git status --short` on the asset path).
+
+**§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
+WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
+runs in full, in every mode.
 
 ## 0.1 Reorient first (when in doubt)
 
@@ -37,8 +85,46 @@ run the `/reorient` skill first and act on its verdict before shipping.
   THEY landed as deletions in YOUR diff, which reads as a catastrophic branch and is
   entirely an artefact. Read the full commit list; re-read any diff hunk you can't
   summarize from memory.
+- **A SHALLOW CLONE INVENTS A MERGE BASE, and the branch then looks catastrophically stale.**
+  Check `.git/shallow` before you believe any staleness number. With truncated history git
+  cannot see the real common ancestor, so `git merge-base --all` returns SEVERAL bases and the
+  `ort` strategy builds a *virtual* one by merging them — against grafted history, that virtual
+  base is garbage. The symptoms are loud and entirely false: one branch measured **8,860 commits
+  ahead** of a base it was four days from, and the trial merge produced **235 conflicts** in
+  files neither side had touched (vendor trees that had been deleted, lifeform assets, whole
+  unrelated subsystems). `git fetch --unshallow` and re-measure: the real numbers were **109/74
+  with ONE merge base**, and the same merge then ran with **zero conflicts**. Nothing about the
+  branch had changed.
+  **`git merge-base --all` is the cheaper and sharper discriminator, and it separates two
+  failures the conflict count conflates.** Shallow history can inflate the *count* while leaving
+  the *base* correct, and only the second is dangerous. One branch measured **9,451 commits
+  behind** a base it was 481 from — a 20x inflation — and `merge-base --all` still returned
+  **exactly ONE** base, so the merge was against the real ancestor and the three conflicts it
+  produced were all in files both sides had genuinely edited. Unshallowing changed the number and
+  nothing else: same base commit, same three conflicts, resolutions unaffected. So run
+  `git merge-base --all origin/<base> HEAD` FIRST — **more than one base means stop and
+  unshallow**; exactly one means the base is sound and an alarming staleness number is cosmetic.
+  Re-run the trial merge after unshallowing either way, and confirm the conflict set is identical
+  before trusting work you already resolved.
+  Two things to carry. **The conflict COUNT is the tell** — conflicts concentrated in files
+  neither branch plausibly edited mean the base is wrong, not the branch; do not start resolving
+  them, because every resolution you hand-craft against a phantom base is work thrown away and
+  some of it will be wrong in a way no review catches. And **an independently-resolved merge is
+  the strongest corroboration available**: when a parallel session had merged the same base into
+  the same branch, `git diff` between the two merge commits' trees was EMPTY, which is better
+  evidence the resolution is right than any amount of re-reading it.
+
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
+  **`git fetch` the base again right before you open the PR, and treat a moved tip as a
+  SECOND merge, not a formality.** `git merge-base origin/<base> HEAD` equalling the base's
+  tip is the test; if it does not, you are about to open a PR that is already behind. One
+  session merged, reviewed the whole tree, re-ran every gate — and then found the base had
+  advanced 18 commits, one of which renumbered the very enum the branch was editing (a new
+  mode taking the id next to the one the branch retired). The second merge produced eight
+  conflicts the first had not, in the same files. The window between "I merged" and "I
+  pushed" is exactly as long as your review, which on a big branch is long enough for a
+  collision to land in it.
   Watch for conflicts a text merge CANNOT see: two branches independently claiming the
   same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
   document with two of them. When you renumber, renumber every inbound reference — and
@@ -59,6 +145,47 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
   enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
   a duplicate-value check over the whole enum, not just your own rows.
+  **Two ways that collision actually arrives, and the second is the one review misses.** The
+  obvious one is both sides authoring the same literal. The subtle one is a member LOSING its
+  explicit value in the resolution and silently taking the next IMPLICIT one: keep-both on
+  `VolumeDestroyed = 9` / `SwitchesThreaded = 9` produced an enum where mine had no `= N` at all,
+  so it took `CombatPoints + 1` and collided with a `Jousts = 7` neither branch had touched. The
+  enum's own "never reorder, only append" comment cannot prevent this — nothing was reordered by
+  hand — so the duplicate-value check is the ONLY thing that catches it. Run it over the whole
+  enum, and separately assert every member still carries an explicit value if the enum requires
+  them.
+  **Two branches appending the IDENTICAL line to a list is silently deduplicated to one.** The
+  YAML trap above is about mis-concatenation; this is its mirror, omission by identity. Both
+  branches added `  - 45` to `ProgressionConfig`'s unlock list after the same anchor, git saw one
+  change, kept one line, and one mode's entry simply was not there — no conflict, no marker, and
+  the file still parses. Any list where two branches append a value derived from the same "next
+  free number" is exposed: count the entries against what both sides should SUM to, and check
+  your own value is present by name, not just that the list grew.
+  **A conflict whose two sides are two function BODIES shares the hunk's trailing lines.** Git
+  ends the hunk at the last differing line, so a common tail — a `return`, a closing call, a
+  `}` — belongs to whichever body you put LAST. Ordering the two bodies therefore silently
+  strips it from the other: `switches_threaded()` lost its `return m` and the generator crashed
+  with `'NoneType' object is not subscriptable` several frames away from the cause. After any
+  keep-both of two callables, check each one still ends the way it did on its own branch — or
+  just run the thing, which is what caught it here.
+  **A test mock of a wide interface is what a parallel branch breaks.** `IRoundStats` gained two
+  members, so every hand-written `IRoundStats` mock stopped compiling — and a broken test mock
+  takes `Assembly-CSharp-Editor` down for everyone, which no gameplay compile-check would show.
+  Grep for other implementers of any interface the base branch widened.
+- **When your branch changed a shared structure's VALUE TYPE and theirs added an entry in the
+  old one, "keep both" builds a heterogeneous container.** The two edits are different lines of
+  the same dict/list/table, so git merges them without a conflict marker in the common case and
+  with a trivially-resolvable one otherwise — and the result is a structure holding two shapes
+  that its consumer unpacks as one. This branch widened a registry's value from a bare path to a
+  `(kind, path)` pair so an entry could match by SPECIES as well as by prefix; a parallel branch
+  added a new bare-path entry the same day. Keeping both verbatim left the consumer's
+  `for token, (kind, path) in …` unpacking a string — a crash at the tool's NEXT run, in a
+  fleet-wide tool, with nothing at merge time to say so. Python has no compiler to catch it and a
+  C# analogue (a serialized field whose type changed under an entry authored against the old one)
+  fails at deserialization instead. Resolve by **carrying their entry across into the new shape**
+  and deciding, for that entry specifically, which variant it is — then run the consumer over
+  every entry, theirs included. *Whenever a merge touches a container you retyped, the entries you
+  did not write are the ones that are still the old type.*
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
@@ -66,6 +193,16 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The dangling-operator test is necessary and NOT sufficient: the shared line the conflict split
+  on can be a COMPLETE statement.** A conflict is bounded by the lines both sides share, so when
+  two branches each add a function/member ending in the same closing line, git puts that line
+  OUTSIDE the hunk and keeping both bodies gives it to whichever side you place last — the other
+  falls off its own end. Three landed in one merge and only two had a dangling operator: a Python
+  `return m` shared by two generator functions (so `switches_threaded()` silently returned `None`
+  and the icon generator crashed), and a `/// <summary>` shared by two enum members (so the second
+  member's doc comment lost its opening tag). Neither is a syntax error in C#, and the Python one
+  is not caught by any parse. After every keep-both resolution, read the line immediately AFTER
+  the hunk and ask which side it belongs to — if the answer is "both", duplicate it.
   **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
   `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
   `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME
@@ -82,6 +219,79 @@ run the `/reorient` skill first and act on its verdict before shipping.
   (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
   the list in question) against what both sides should sum to, and verify every entry has exactly
   its expected key set with no stray duplicate keys — do not eyeball it.
+- **"Take theirs MINUS my removals" is a third resolution shape, and filtering by TOKEN
+  splits every multi-line construct.** When your branch removes a feature that the base
+  branch extended in the same place, the natural resolve is to take their side and drop the
+  lines mentioning your removed thing. That is correct for one-line list entries and wrong
+  for anything spanning lines, because the CONTINUATION lines do not contain the token: a
+  three-line bullet in a `+`-chained C# string lost its first and last lines and left the
+  middle one dangling into the neighbouring bullet — valid C#, wrong prose, no marker, no
+  compile error. A doc comment, a multi-line attribute, a wrapped tooltip and a YAML list
+  item all fail the same way. After a token filter, diff YOUR result against THEIR side
+  (`git diff origin/<base> -- <file>`) and read every removed hunk: each one must be a
+  complete construct, not a hole in the middle of one.
+- **The shared-tail trap has a SOURCE-CODE form, and it produces no conflict marker at all.**
+  Two branches that each append a same-shaped function to the same file split on the shared
+  tail — `    return m` plus the blank lines — so git can hand that tail to whichever function
+  came last and silently TRUNCATE the other. The result parses fine; the truncated function
+  just falls off its end and returns `None`, and the crash surfaces later, deep inside a
+  library, naming neither the function nor the cause. This has now happened **twice on the
+  same file** (`author_objective_icons.py`, both times to the glyph function whose neighbour
+  the other branch added). After merging a file of parallel same-shaped functions, CALL each
+  one and assert it returned something — do not settle for a static "does it return?" check:
+  `ast.walk` descends into NESTED helpers, so a truncated function that happens to define two
+  local helpers reports two returns and looks healthy. Put the assert at the call site, where
+  it can name the offender.
+- **A generator's `--check` that validates only its own constants is not a gate.** The whole
+  claim of "the generator is the source, the assets are the build" rests on `--check` failing
+  when an asset drifts — and a `--check` that merely re-derives its content in memory and
+  verifies its own cross-file assertions proves the SCRIPT is self-consistent while saying
+  nothing about what shipped. One shipped that way: it asserted the enum still held the mode
+  id it expected, then passed cheerfully with an arcade card pointing at a different mode,
+  because it never re-read the card. Make `--check` diff every generated file against disk and
+  fail on any mismatch (naming the file and the first differing line) — then negative-control
+  it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
+  fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
+  so read it out of its enum instead and the sweep disappears.
+- **A conflict hunk's first line can be SHARED CONTEXT, so dropping your side drops it too.**
+  git anchors a hunk at the last line both sides agree on, which for a doc-comment or an
+  attribute block is often the opening tag. Resolving by "take theirs" via a scripted cut from
+  `<<<<<<<` to `>>>>>>>` then silently eats the line ABOVE the marker if you also delete your
+  side's lead-in — one session removed the `/// <summary>` that opened BOTH sides' docstrings and
+  left theirs orphaned. After any scripted resolution, diff the file against the side you claimed
+  to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
+  rather than eyeballing the result.
+
+- **A verdict that is CONDITIONAL on another row does not conflict when that row changes.** Two
+  branches working the same status table (a launch-blocker index, a decision register, a
+  migration tracker) conflict only on the rows they both edited — and the rows most likely to be
+  wrong afterwards are the ones NEITHER touched. One row read `keep` *because* a neighbouring row
+  was staying; the neighbour was removed on the other branch; git merged both sides cleanly and
+  left the dependent verdict standing with its premise deleted. Same shape for a per-folder census
+  or a total: a count of "14 third-party folders" is derived from rows both branches were editing
+  and belongs to neither hunk. After merging a table, re-read the rows you did NOT touch and ask
+  which of them were true only because of a row that moved.
+
+- **A doc that describes its own neighbouring content is making a claim you must check.** A
+  blockquote saying "the two rows below are gone from the table" is prose, not an edit — it reads
+  as done, it survives review, and the rows are still there. Anything of the form *"the table
+  below now …"*, *"see the updated column"*, *"struck through above"* gets the same treatment as a
+  `file:line` reference: go and look. This is the doc-internal case of the producer rule in §2.
+
+- **A removal's doc sweep is not finished at the system's own `Docs/` folder — the per-feature
+  doc beside the code is where a reader looks FIRST, and it is the last place anyone edits.** A
+  branch that retires a channel naturally documents the retirement where it is defined and where
+  the architecture is written down, then stops. One session did exactly that, and a D2 sweep for
+  the two removed field names found **nineteen** live sites outside that folder still describing
+  the channel as the place a number lives — six per-ability docs, a verification checklist, and,
+  worst, a `Docs/prompts/*.md` that INSTRUCTS a future session to author the deleted field into an
+  asset (the stale-instruction hazard §2 names, in the one file class written to be executed).
+  Two of the nineteen were in a doc the same branch had already rewritten: it said *"nothing in
+  this document should ever again say 'map pinned to 1'"* fourteen lines above four more of them.
+  So: grep the removed IDENTIFIER, not the system, across `Assets/**/*.md`, `Docs/`, `.claude/`
+  and CLAUDE.md, and classify every hit as **describing the removal** (keep) or **describing it as
+  live** (fix). Include `Docs/prompts/` explicitly — a prompt is code somebody will run.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -93,6 +303,26 @@ run the `/reorient` skill first and act on its verdict before shipping.
   of one bug. Reference theirs rather than restating it, and keep only the part they do
   not cover. Expect this whenever the base branch touched the same files — check with
   `git log --oneline <merge-base>..origin/<base> -- <your changed files>`.
+- **"Pick one wholesale" is right when the two fixes have the same BLAST RADIUS, and wrong when
+  they do not — ask about scope before you discard either.** The collision above assumes two
+  implementations of one fix. The other shape is two fixes at different ALTITUDES, and there
+  keeping both is correct: a parallel session found the same false claim (a collider budget for a
+  cost that does not exist) and corrected it where it had bitten them — one cell's budget, its
+  own doc section, one CLAUDE.md row — while this branch swept the claim's 23 project-wide sites
+  and added a gate. Taking either wholesale would have thrown away real work: theirs, the
+  justification for a specific number; mine, the sweep and the thing that stops the claim
+  regrowing. Both narrations survive because they answer different questions. The test is
+  mechanical: diff each side's file list against the other's. **Same files, same subject → pick
+  one. Disjoint files with one shared subject → keep both, and make each reference the other
+  rather than restating it.**
+- **A gate this branch adds must be negative-controlled against the content the MERGE brought in,
+  not only against your own.** A green gate over files you have never read is not evidence; it is
+  as consistent with "the gate cannot see that region" as with "that region is clean" — and the
+  merge just added a few thousand lines nobody wrote it for. Re-inject the exact defect into the
+  merged-in text and confirm the gate names it there (`cp` the file, mutate one sentence in THEIR
+  prose, run, restore). One pass did this and the gate fired on the parallel branch's new cell
+  doc, which is what turned "it passes" into "it covers them" — and had it stayed silent, the
+  honest report would have been that the gate's scope stops at the branch.
 - **If the branch ships a doc that cites `file:line`, the merge just rotted it.** Line
   references are the one kind of prose that goes stale from a commit that never touched
   your branch. After merging the base, re-resolve EVERY reference mechanically — extract
@@ -104,6 +334,14 @@ run the `/reorient` skill first and act on its verdict before shipping.
   was written. Where the reference has to survive, **anchor on the symbol and demote the
   number to a hint** ("`RetireWorldIntoSuctionRoot` (`:2058`) — re-grep before trusting
   the number"), because the next drift is not preventable, only survivable.
+- **A clean `git status` is not evidence an asset does not exist — fetch the base first.** When a
+  human says "it's in the prefab" and your tree does not have it, the likeliest explanation is not
+  that they forgot to save: it is that they committed it to the base branch AFTER your branch was
+  cut. A clean working tree says nothing about that, and reporting "it isn't on disk, save your
+  prefab" is both wrong and the kind of wrong that makes a human re-do work they already did.
+  `git fetch origin <base>` and grep the base's version of the file BEFORE telling anyone an asset
+  is missing.
+
 - Restate, in a few sentences, WHAT the branch delivers and WHY. If you can't, you are
   not ready to ship — go re-read the diff.
 
@@ -119,6 +357,21 @@ Walk every changed file against these gates:
   migrated? Renamed/deleted assets - every GUID reference updated?
 - **Verification honesty**: list what was actually verified (in-editor play, tests) vs.
   what only compiles-by-inspection. Unverified risk goes in the PR body, not under the rug.
+- **Inserting a member ABOVE a method silently reassigns that method's doc comment.** A
+  `///` block belongs to whatever declaration follows it, so adding a helper between an
+  existing doc comment and its method hands the doc to the HELPER and leaves the method
+  undocumented — with two `<summary>` tags in one block and no compile error, in a file that
+  otherwise reads perfectly. Three landed in one branch. It is mechanically detectable: scan
+  every changed `.cs` for a line `/// </summary>` immediately followed by `/// <summary>`, and
+  split the hits against the merge base so you only own the new ones. When it fires, decide per
+  site whether the orphaned doc should move DOWN onto its method or be deleted as superseded —
+  the new member usually has its own.
+- **A rename sweep must split its hits by which THING the name means.** One identifier is
+  routinely three: a C# class, an HLSL function, a shadergraph node's `m_FunctionName`. Renaming
+  the class leaves the other two correct, so a blanket search-and-replace is as wrong as no sweep
+  at all, and `grep -rn <OldName>` hands you both kinds in one list. Classify every hit before
+  editing any of them, and keep the old name in a HISTORICAL change-record row with the rename
+  noted beside it rather than rewriting the record of what a past branch did.
 - **A doc that asserts a consequence is not evidence the consequence happens — find the
   PRODUCER.** When a doc (or a verification step, or CLAUDE.md) says "X still lands", "contact
   costs Y", or "the gate leaves Z alone", grep for who actually *calls* the thing that produces
@@ -130,6 +383,17 @@ Walk every changed file against these gates:
   `vesselSlowedByRhinoDangerPrismEvent` under a `"Slow Viewer Integration"` header belonged to
   an effect that only muted an input. Treat "the docs say so" and "the identifier says so" as
   hypotheses to check, never as the check.
+- **A GUARDED call site reads exactly like a working feature when the reference is null.** The
+  producer rule above is about a doc asserting a consequence; this is its sharper form, where the
+  CODE asserts it and is correct. `if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);` is
+  what a careful author writes — and it is also what makes a `{fileID: 0}` in the prefab silent, in
+  every mode, forever. Two shipped that way on one component, and one of them had already been
+  recorded in a bug table as the ✅ case whose shape was then propagated to three other screens. So
+  when a claim turns on a serialized reference, grep the PREFAB/SCENE for the field
+  (`^  <fieldName>: ` inside that component's `!u!114` block, never file-wide) and read the id —
+  the call site cannot tell you, because a null-guard and a working feature are the same source.
+  A field that is `{fileID: 0}` on every instance is a feature that has never run.
+
 - **A number read off a ScriptableObject's FIELD INITIALIZER is not the number the game runs
   on.** The SO declares `public float dynamicMaxDistance = 40f;` and the ASSETS say 250. Reading
   the class is fast, feels authoritative, and is the wrong source — the assets are the game. One
@@ -168,6 +432,187 @@ Walk every changed file against these gates:
   away.** Ask what makes the two cases different at the SOURCE; if the answer is "the type", the
   heuristic is a bug waiting for the one mode that uses both.
 
+- **A rule-guarding test that NAMES the members it knows about stops testing the rule the day a
+  member is added.** A law expressed over an enum ("only `Domain` may wear a playable domain",
+  "only these metrics fold by sum") is usually guarded by a test that enumerates the cases by
+  hand, because at two members a hand list and a loop look identical. Add a third and the test
+  still passes, still reads as the law's guard, and now covers two thirds of it — and the gap is
+  invisible, because nothing fails. `ToySwitchVocabularyTests` guarded the switch reservation by
+  naming `Neutral`; `ToySwitchSignal.Next` landed and the law went untested for it. Whenever a
+  branch adds an enum member, grep for tests that mention the SIBLING members by name and convert
+  them to enumerate the enum (`Enum.GetValues(...).Where(x => x != TheException)`), so the next
+  member is covered on the day it is added rather than the day someone remembers.
+
+- **A test that SUPPLIES the value under test proves the consequence, not the design.** A helper
+  that takes the interesting quantity as a parameter is trivially easy to test, and a suite built
+  on it can be thorough, green, and blind to the thing that actually decides the behaviour. The
+  Sparrow's three missile tiers are ranked-not-additive because of ONE line in
+  `VesselCombatHitLatch.Key`'s constructor (the three classes canonicalise to one key); every
+  upgrade test called `CombatHitScoring.Credit` with a hand-supplied `supersededRank`, so keying
+  the tiers apart — which makes a centre-punch pay 60 through three individually-correct fresh
+  windows — would not have moved a single assertion. **The tell: you are passing a value your
+  production code derives.** Find where it is derived and start the test there; if that is hard
+  to reach, that difficulty is the finding. Its close relative — **when a design lives in a lookup
+  KEY, a test that starts downstream of the lookup cannot see the design at all.**
+
+- **When a fix COMPOSES onto existing behaviour, the test that matters is that the UNTOUCHED
+  half is bit-identical — asserting the new half works is satisfied by every wrong composition
+  too.** Sibling of the rule above, reached from the other side: nothing is hand-supplied here, the
+  tests genuinely drive the shipped path, and they are still blind. A brake added to the fleet's
+  throttle tracking had ten green tests, all of the form "a zero throttle now reaches zero" — which
+  is true of `min(exponential, constant)`, of `exponential - constant`, and of a dozen other
+  compositions that feel completely different to fly. The shipped one was the SUM, measured **40%
+  under the legacy deceleration curve** half a second in: a different fall on every affected hull,
+  including the one the user had named as the CORRECT reference. The class docstring described the
+  intended composition correctly the whole time; only the code disagreed, and no test pinned the
+  docstring. **The tell: your change has a region where it must do nothing, and you have not
+  written that assertion.** Write the no-op half first — "identical to the previous implementation
+  above the crossover, strictly stronger below it" — because the region where a feature must be
+  INVISIBLE is the region no bug report will ever come from.
+
+- **Your own branch's WORKED EXAMPLES go stale, not just its constants.** §2 already says to
+  re-derive every constant a later round moved; the same applies to every place the prose
+  ILLUSTRATES a rule with a specific case. Commit 1 explained a gate with "a vessel with a
+  non-zero `MinimumSpeed` (the Rhino's 10) is untouched"; commit 2, on the user's next message,
+  zeroed exactly that number — leaving the claim in a class docstring, an inspector tooltip, a
+  design doc AND a test constant literally named `RhinoFloor = 10f`, all self-consistent and all
+  false. A named example is a fact assertion with a friendly face, and a test const carrying a
+  vessel's name is one no compiler will ever check. At ship time, grep the branch for the
+  examples its own earlier rounds chose, not only for the numbers they quoted.
+
+- **A gate that ABORTS looks exactly like a gate that passes, if nobody reads its output.** This
+  repo's `Tools/Build/author_*.py` generators do a one-time migration first (clone a donor scene,
+  patch its wiring) and validate everything they built AFTER it. When the donor moves on, the
+  migration's `assert` fires and takes every check below it — while `--check` is still in the
+  workflow, still cited in commit messages, and still exits in a way nobody looks at.
+  `author_dogfight_assets.py` validated *nothing* for months, including four checks a branch had
+  just added to guard its own scoring; `author_ribcage_assets.py` and
+  `author_wildlife_liberation_assets.py` are in that state now. So: **a green gate is only
+  evidence if you can name a failure it produced.** Before citing one, break the thing it guards
+  and watch it fail — and when a spent one-shot is the blocker, make it STAND DOWN (guard the
+  step, register the already-committed output so downstream checks describe the shipped artifact)
+  rather than deleting the checks or living with the abort. Also worth asking of any `--check`:
+  does it diff against DISK, or only validate its own recipe in memory? Those are very different
+  promises and the flag name does not distinguish them.
+  **Sweep the whole family, not just yours** — it is one line and it turns "mine is green" into a
+  tally: `for f in Tools/Build/author_*.py; do printf '%-46s ' "$(basename $f)"; timeout 120
+  python3 "$f" --check >/tmp/g 2>&1 && echo OK || echo RED; done`. **Glob `author_*.py`, not
+  `author_*_assets.py`** — the narrow form was what this rule originally said and it sees **15 of
+  the 36** generators, missing every one whose output is not a mode's asset set (sprite and mesh
+  authors, population and layout authors). A branch whose own generators fall outside the glob gets
+  a clean-looking sweep that never ran on its work. Re-measured 21 Sep 2026: the family is **50**
+  and the wide glob gives **33 OK / 17 RED** — but **7 of those 17 are `ModuleNotFoundError: No
+  module named 'numpy'`**, an environment gap rather than a defect, so the honest tally is 33 OK /
+  **10 RED** / 7 un-runnable here. Split those two before reporting a number; a missing module is a
+  container to fix, a spent `assert` is a generator to fix. (Was 49 / 32 OK / 9 RED on 18 Sep, 10 of
+  36 on 12 Sep and 7 of 15 under the narrow glob; the family was 11 when this was first written --
+  **re-measure, never quote**.) **A/B every red against a clean base worktree before you report
+  the tally**, because the sweep cannot tell a generator your branch broke from one that was
+  already red: this pass found 12 red, and two of them (`author_regatta_assets`,
+  `author_broadside_assets`) were **OK on base and red on the branch** — a reader of a shipped
+  measurement it depends on had gone stale, which the bare count presented as somebody else's
+  debt. The real ones fall in two classes — a spent one-shot `assert` (the donor moved on) and an asset key a
+  platform change deleted while the generator that authors it was left untouched. That second
+  class is the one to carry: **a generator that owns an asset's content is a second place every
+  schema change has to land, and it does not fail at the time of the change** — it fails months
+  later, on somebody else's branch, the next time anyone runs it.
+
+- **Registration can land in TWO lists, and a generator knows one.** The ship rule above
+  ("a generator that owns an asset's content is a second place every schema change has to
+  land") has a sharper variant when the schema change is a SPLIT. This project's arcade
+  rosters split into a master (what the injected `SO_GameList` resolves) and per-grid override
+  lists; every `Tools/Build/author_*_assets.py` predates the split and registers the master
+  alone. Four modes shipped launchable-but-invisible before anyone noticed, and the fix in the
+  ASSET does not fix the GENERATOR — re-run it and the card falls off the grid again. When a
+  branch discovers a registration gap, ask how many lists the thing has to be in, then grep the
+  generators for how many they write; the answer is usually "one" and it does not fail until
+  somebody regenerates, on another branch, months later.
+
+- **A gate you wrote this branch is an INSTRUMENT — point it at the whole tree and READ it, don't
+  just confirm your branch is green.** A gate exists because you just learned a rule; the rule is
+  older than the gate, so the tree is full of places nobody applied it. One session wrote a gate for
+  a fauna-replication seam, watched it pass, and shipped — then a §2 read of a neighbouring file
+  suggested WIDENING the heuristic, and the widened gate immediately named **three more producers**,
+  one of them live and spawning a hundred of the exact object the bug is about. Reading the diff had
+  produced none of them, because none of them contained the word the search was built on. Two
+  corollaries. **Before widening a heuristic gate, enumerate its candidate hits on the current tree
+  and classify them by hand** — that turns "will this cry wolf?" from a fear into a measurement (8
+  hits, 1 false, and the false one was excluded by a rule already in the gate). And **a gate that
+  flags a correct-but-one-call-away funnel is not wrong** — it asks about the enclosing method
+  because a sibling holding the rule is a real failure mode; the answer is usually to move the
+  producer INTO the funnel, which leaves better code than the exemption would have.
+
+- **A LONG branch invalidates its own earlier rounds, and the doc from round 2 is the last place
+  anyone looks.** The rule "a threshold that is a function of X must be re-derived when X moves"
+  is normally about two branches or two authors; on a multi-round branch it is about YOU. Round 3
+  of one branch sized a prism specifically to clear a PhysX sample step at the vessel's then
+  speed, and wrote the derivation up as *"an 8-10% margin"*; round 4 doubled that speed on the
+  user's request and added a launch kick. Nothing failed — no gate covered it, and the round-3
+  prose went on describing a vessel the branch no longer shipped, with the margin actually
+  **negative** (measured: the mode's signature manoeuvre landing 5 times in 6). So at §2, list
+  every constant the branch DERIVED from another, and re-derive each against the values the
+  branch is shipping NOW. **A MEASUREMENT quoted into a doc is a derived value too**, and
+  the commonest stale one: a count taken at commit 2 describes the tree at commit 2, not the tree
+  you are shipping. One branch's write-up said "shared by 25 font assets" — true when measured,
+  **21** by ship time, because a later commit in the same branch deleted four of them. Re-run
+  every number a doc states, at ship time, against the tree as it now stands. Then close it the
+  way it should have been closed: put the derivation in the offline model so it recomputes, and
+  add a mirror gate that re-reads the source values out of the shipped assets — a transcription
+  is only true on the day it is made.
+
+- **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
+  The absence-claim rule below covers comments that rot. This is the variant that was never true
+  in the way it read: `Projectile.SweepVesselsAlong` used single static scratch and argued it was
+  safe because no vessel effect fires another projectile mid-sweep — correct, but only because
+  `ProjectileChainFire` happens to be authored as a projectile-PRISM effect, so the ship arm
+  cannot reach it. Nothing stops someone dropping it into a ship container. When a comment
+  explains why a hazard cannot arise, ask whether the reason is structural or editorial; if a
+  designer could falsify it from the inspector, take the class (here: rent by depth, as the
+  sibling sweep already did) rather than restating the instance.
+
+- **Deleting a FIELD by pattern orphans its attributes, and the orphan adopts the next member.**
+  A regex that removes `[SerializeField] float thing = 1f;` leaves the `[Tooltip(...)]` block above
+  it — which then stacks onto whatever member follows, and `CS0579: Duplicate 'Tooltip'` names the
+  INNOCENT member several lines away. Multi-line attributes make this invisible in a diff read at
+  speed. When retiring a serialized field, delete the whole DECLARATION — attributes, doc comment,
+  trailing blank line — and read the two members either side of the hole afterwards. Same shape as
+  the merge trap above (§1, shared trailing lines), reached without a merge.
+
+- **A `try/catch` turns a hang into a silent degradation. That is worth having and it is not a
+  fix.** Containing an uncontained throw is the right engineering move — an exception inside a
+  covered-screen phase is otherwise a load screen and no other symptom — but the moment you ship it,
+  the bug stops presenting as "it hangs" and starts presenting as "it works but half of it is
+  missing", which reads as a *different, smaller* bug. If you add containment while still hunting a
+  cause, say so explicitly and keep hunting: a session shipped exactly this and the user's next
+  report ("it lost all the structure") was the same one-line defect wearing the fix as a costume.
+
+- **A successor rule resolved TWICE is resolved once wrong.** When a loop learns a new "what
+  follows what" (a circuit's closing leg, a wrap, a ring buffer), every index in that loop is part
+  of the change — and a raw `+ 1` sitting twenty lines below the call you did update is not a
+  smaller version of the same thing, it is the OLD rule surviving where nobody re-read. Resolve the
+  successor ONCE into a local and have everything in the body read from it, then gate it: a source
+  rule refusing any arithmetic index into the collection, with a negative control that re-injects
+  the line that shipped. Static analysis cannot see this — the model that mirrors the code computes
+  its own successors correctly, and unit tests that exercise the element builder never run the
+  assembler.
+
+- **A RETIREMENT leaves residue, and the residue is the part that later reads as a live
+  feature.** When a branch builds a mechanic and then cuts it, sweep for what the cut could not
+  see: a local whose only reader went (`var root = vessel.Transform;`), a helper with zero callers
+  (an "external-motion mode" nobody drives), a member made `public`/`static` for the consumer that
+  no longer exists, a docstring fragment orphaned when its enum member left, a cross-reference to
+  a section number the retirement record took over, and line-wraps that only existed to fit a
+  deleted parameter. Grep each retired identifier repo-wide, then `git diff <base> -- <file>` each
+  touched file: **a file whose remaining diff is only residue should come back to zero**, which is
+  a much sharper test than reading the diff.
+  Two specific shapes are worth naming. **A public surface that must never be read is a trap
+  generator, not a trap record** — an accessor kept "for documentation" after its consumer is gone
+  is exactly where the next author reaches; put the warning on the thing that still exists and
+  delete the surface. And **a green test named for a retired feature is worse than no test**:
+  rename it to the contract it actually pins (usually a property of the pure function underneath,
+  independent of the caller policy that was cut) or delete it — a passing assertion is read as
+  evidence the named behaviour still ships.
+
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
   The third shape is a comment that argues why something is NOT there — "no property block",
@@ -194,6 +639,23 @@ and a green PR, so it runs even in `/ship-quick`.
 ```sh
 git diff --name-only <merge-base>..HEAD -- '*.cs' | xargs -r grep -l 'MenuItem("FrogletTools/'
 ```
+
+**That command finds Unity editor tools and NOTHING ELSE — a WRITER here is not always C#.**
+This project's `Tools/Build/*.py` generators author `.asset`/`.unity`/`.prefab` content
+directly (`author_*_assets.py` is a whole family of them), so a branch adding one has exactly
+the same half-landed-output exposure with no `[MenuItem]` anywhere to find. Sweep the other
+languages too:
+
+```sh
+git diff --name-only <merge-base>..HEAD -- '*.py' '*.sh'
+```
+
+and classify each hit by the same evidence test, widened to that language's write calls:
+`open(..., 'w')`, `Path.write_*`, `shutil.*`, `os.remove/rename/makedirs`, `subprocess` that
+shells out to a writer. A tool whose only output is `print` / `sys.stderr.write` is a READER —
+say so explicitly, because "the branch adds a tool and no assets" is the exact shape of the
+failure this gate exists to catch, and the only thing that distinguishes it from a clean
+READER branch is having run the check.
 
 For each hit, read it and decide from the CODE, not the name:
 
@@ -248,9 +710,29 @@ current — update them if not:
 
 - The system's `Docs/<System>/` or co-located `.md` reference (ARCHITECTURE, mechanics log).
 - `CLAUDE.md` if the branch changed a pattern, invariant, or key-files table it states.
-- In-editor verification steps for anything that needs a human at the editor (you cannot
-  run Unity - the human is the gate; hand them the exact steps and knobs).
+- In-editor verification steps for anything that needs a human at the editor. You cannot
+  run Unity and cannot compile (§0.05), so the human is the ONLY gate: hand them the exact
+  steps and knobs, and never imply a check you did not perform.
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
+- **A MEASUREMENT quoted into a doc is a derived value, and nothing recomputes it.** A `file:line`
+  reference at least fails visibly when you go and look; a number does not — `1.16 → 4.60`,
+  `5.75% of the limb`, `~42,840 prisms at cap` all read as facts forever, and the tool that
+  produced them is one retune away from disagreeing. Before shipping, RE-RUN the tool that
+  measured every number the branch's docs state and diff the output against the prose, and where
+  the number will keep moving, say which tool owns it ("authored by
+  `Tools/Build/author_lattice_spindle_materials.py` (`--check`)") so the next reader re-derives
+  instead of trusting. A measurement with no named producer is the doc equivalent of a magic
+  constant.
+
+- **A class RENAME is invisible to every gate this project has, so the docs that name it go
+  stale silently.** A `git mv` keeps the file's guid, so every scene, prefab and asset
+  reference survives, the compiler is happy because the call sites moved with the rename, and
+  the only thing left holding the old name is prose. This branch pulled the gate-race
+  machinery out of Switchback into `Racing/` and SWITCHBACK.md — the doc a reader reaches for
+  FIRST — still named four types that no longer existed, plus never mentioned the extraction
+  at all. Nothing failed; nothing could have. After any rename or file move, grep the OLD
+  identifier across `Docs/` and every co-located `.md`, and check the moved-from system's doc
+  states its new relationship to the thing it was extracted into, not just its own internals.
 
 ## 3.5 Skill-capture retrospective (harvest what the session learned)
 
@@ -278,6 +760,52 @@ Then act on it — this step produces edits, not intentions:
   decide — silence is the only wrong output. A session that learned nothing
   reusable says so explicitly.
 
+## 3.6 Refactor-opportunity pass (§3.5 for DEBT — rows only, never edits)
+
+§3.5 harvests what the session learned. This harvests what the session **saw and did not
+fix**. It runs here for one reason: by now you have read every hunk adversarially and
+opened every doc the branch touches, so the measurement a `/refactor` pass would have to
+spend an hour deriving is already in your hands. It will not be next week.
+
+**The output is rows in the owning `BACKLOG`/`TODOS`/`REFACTOR` doc (or `spawn_task`),
+each carrying the command and its output. Never an edit to this branch.** `/refactor` §4
+forbids widening for the same reason §4 below forbids mixing an experiment with finished
+work: a branch that grows a second subject cannot be reviewed as either one.
+
+Three sources, in descending order of how often they pay:
+
+1. **Debt this branch CREATED.** Every "kept for compatibility" field, every accessor you
+   left because something might still read it, every tool you kept rather than retired
+   (§2.5), every doc paragraph you SOFTENED rather than deleted because you were not sure
+   the old behaviour was gone. Each is a row with a blocking question, and you are the
+   only person who will ever know it is there.
+2. **Debt this branch WALKED PAST.** The sibling class with the same latent bug, the dead
+   component the guid sweep turned up, the shared-asset write on a live path, the second
+   copy of the constant you just moved. One pass found four of these and put all four in
+   rows; that is the expected yield, not an unusually messy branch.
+3. **Debt the branch made VISIBLE.** A count, table or "N of M" claim you had to
+   re-derive in §3 — if a hand-maintained table was wrong, the row is *"ask the tool"*,
+   not *"fix the table"* (`/refactor` §7).
+
+Check what you saw against `/refactor` §3's ten shapes before writing the row, because
+the shape is what makes it actionable — *a read whose writer is elsewhere*, *two members
+sharing a name*, *"referenced by nothing"*, *an absent YAML key falling back to the
+initializer*, *a sentinel read as a measurement*, *a silent clamp*, *per-instance state on
+a shared SO*, *prose describing a deleted system*, *a spent one-shot `assert` above a
+generator's validation*.
+
+Two rules that decide whether the row is worth writing:
+
+- **Incompleteness is a REPORT; inconsistency is a FIX.** A vessel with an open design
+  slot is not debt — it is unfinished design, and a row that files it as cleanup invites
+  somebody to invent the design. Say which one it is.
+- **A row with no measurement is worse than no row.** It becomes the next session's claim
+  to disprove, which is exactly the failure `/refactor` exists to answer. If you cannot
+  attach evidence, write down what you would have to measure instead of asserting what
+  you suspect.
+
+A branch that found nothing says so in the report. Silence reads as "not checked".
+
 ## 4. Go / no-go (push back when warranted)
 
 Say **NO** — and list the concrete iterations needed — when any of these hold:
@@ -288,8 +816,20 @@ Say **NO** — and list the concrete iterations needed — when any of these hol
   otherwise-good work makes a half-landed migration shippable.
 - The branch mixes an unfinished experiment with finished work (split it instead).
 - A change is known-broken or known-untested in a way that would block another dev
-  building on it (compile risk on hand-authored assets counts).
+  building on it (a hand-authored asset you could not import counts — say which).
 - Docs for a touched LOCKED system (ecology, party, threading, scoring) lag the code.
+
+**If you did run a gate (see §0.05 — you are not required to), a RED result is not
+automatically yours — A/B it before you attribute it, and report it either way.** A gate that passed on your branch can be red after you merge the base, and the
+cause is as likely to be the base's new content as your resolution. Prove it in a detached
+worktree of the base alone (`git worktree add --detach <tmp> origin/<base>`, run the same
+gate there, `git worktree remove --force`): a gate that fails identically on a clean base
+checkout is an upstream break you must NAME in the commit and the PR — with the exact error
+and why you cannot fix it — but not one you have to fix or sit on. One session found two
+this way; one needed a number only the upstream author had (a converted asset's
+pre-conversion budget, which the conversion overwrites), so "fixing" it would have meant
+inventing it. Never silently absorb a red gate as your own, and never let one you did not
+cause block work that is otherwise ready.
 
 Say **GO** when the work is coherent, documented, and honestly labeled. Loose ends that
 don't block building on the branch become a **Follow-ups** section in the PR body — named,
@@ -304,12 +844,14 @@ scoped, and assigned a doc home — not reasons to sit on finished work.
   reader vs writer, which commit carries its output, which tools were retired and which
   were kept and why — §2.5), **Follow-ups** list, collider/perf impact where the ecology
   gate applies.
-- Base is `bleeding-edge` unless told otherwise. After creating, subscribe to PR
-  activity and keep watch (CI, reviews) until merged or told to stop.
+- Base is `bleeding-edge` unless told otherwise. Do not subscribe to PR activity to watch
+  CI (§0.05); subscribe only if the human asks you to follow the review.
 
 ## 6. Report
 
 Tell the prompter: the go/no-go call and why, the PR link (or the iteration list), the
 **§2.5 tool-output verdict** (every tool classified, whose output landed in which commit,
-what was retired), the follow-ups you recorded, and the §3.5 skill-capture outcome
-(skills created/extended, or the explicit "nothing reusable this session").
+what was retired), the follow-ups you recorded, the §3.5 skill-capture outcome
+(skills created/extended, or the explicit "nothing reusable this session"), and the
+§3.6 refactor-opportunity outcome (the rows opened and where they live, or the explicit
+"nothing found" — and never a fix made in their place).

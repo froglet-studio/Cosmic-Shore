@@ -96,7 +96,6 @@ namespace CosmicShore.Gameplay
                         break;
                 }
             }
-            CSDebug.Log("Positions: " + positions.Count);
         }
 
         private void RotateAroundAxis(ref Vector3 v1, ref Vector3 v2, Vector3 axis, float angle)
