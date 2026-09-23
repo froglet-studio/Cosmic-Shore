@@ -1404,6 +1404,63 @@ registers itself instead of its slots, because the slots hold no option state.
 `Toy.OnDestroy` is `protected virtual` for that reason — a subclass that hides it would leave a
 destroyed toy in the registry, so every subclass override calls base.
 
+### One declaration — the station and the window cannot disagree
+
+> **A toy declares its choices ONCE. The fly-into station and the menu Toy Box window are two
+> INPUTS to that one declaration. They may differ in how an option is DRAWN — a station shows the
+> real hull at arena range, a window shows a small preview — never in which options exist or in
+> what pressing one does.**
+
+The interface above was always meant to deliver that (*"the shell asks the LIVE toy rather than
+carrying its own table"*), and it delivered half of it: the menu could not invent an action a toy
+did not have. What it did not prevent was the toy writing **the list twice** — once for its
+stations and once for `BuildShellOptions` — which is what every matrix toy did, and which agreed
+only by coincidence. Measured before the fix:
+
+| toy | the two enumerations | agreed? |
+|---|---|---|
+| Cell Selector | `ResolveOffer` (dedup by `List.Contains`) vs the shell re-walking the same source (dedup by `HashSet`) | yes — two transcriptions of one rule, by luck |
+| Painting gallery | both index `_gallery` | yes |
+| Vessel Changer | the roster minus your hull vs the roster with your hull flagged | by design, but nothing said so |
+| **Lifeform Matrix** | world: Fauna / Flora / **Vessels** · window: Fauna / Flora | **NO — the window had silently lost a whole kingdom** |
+
+That last row is the general case, and its reasoning is the part worth recognising: the hangar was
+omitted on the argument that *"a hull is neither a lifeform nor something the spawn picture can
+show landing"* — **an argument about the PICTURE that cost the window an entire branch of the
+bench**. Releasing an AI wingman is an action a window can offer perfectly well, and it is the
+same `ReleaseCompanion` call the station makes. *When a surface drops an option for presentation
+reasons, it stops being the same surface.*
+
+**`MatrixToy` now makes it structural.** A subclass overrides `BuildOptions(List<ToyShellOption>)`
+and nothing else about its choices:
+
+- the base builds the matrix from that list (`WorldOptions[i]` **is** station *i*);
+- the base answers `IToyShellSurface.BuildShellOptions` with the same call — non-virtual, so there
+  is nowhere to put a second opinion;
+- `MatrixToy.CreateStation` takes the option and wires `station.OnVesselPassed = option.Apply`, so
+  the station's action **is** the window's action rather than a second lambda that agrees;
+- `ToyShellOption.Payload` carries the toy's own subject (the config, the class, the definition),
+  which is what lets one list serve a flat row and a flown-to station without a parallel list of
+  subjects beside it — that parallel list was the thing that could drift.
+
+**Exactly one difference may be declared**, `MatrixToy.WorldOmitsCurrentOption`: the Vessel
+Changer sets it (flying your own hull would swap it for itself), the Cell Selector does not
+(choosing the world you are in IS the freestyle reset, so its station is real and wears a halo).
+One named bool, reviewable and tested — not a hand-filtered second enumeration.
+
+A station that genuinely cannot go through `CreateStation` — the painting gallery's, which is a
+full `Toy` with its own bloom and exit-gated re-arm — must still invoke that same `Apply` and
+nothing else. That is the one place the rule is a convention, and it is named in the code.
+
+**A single-action toy already had this right** and is the pattern to copy: `ConveyorToy` and
+`ArkwayToy` set `Apply = ActivateFromShell`, which calls their own `OnActivated` — *one
+implementation of "throw this switch", so the shell cannot drift from the ring.*
+
+**The gate is `ToySurfaceParityTests`** (`_Scripts/Tests/Editor/`). It fails when a `MatrixToy`
+subclass re-declares `IToyShellSurface` (which would let it re-implement the window's list and win
+over the base), when one wires `OnVesselPassed` itself, or when `MatrixToy` stops holding up its
+own end. Verified as a negative control: all three subclasses failed it before this pass.
+
 ### What each toy offers
 
 | Toy | Options | Needs freestyle? |
@@ -1411,7 +1468,7 @@ destroyed toy in the registry, so every subclass override calls base.
 | Domain Changer | all three domains, the one you wear flagged `current` | no |
 | Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
 | Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
-| Lifeform Matrix | Fauna / Flora → species → element (the world bench's Vessels hangar is deliberately NOT offered flat — `Docs/HomeHub/ARCHITECTURE.md` §4.1.4); an element row previews the lifeform and the window WATCHES the spawn | no |
+| Lifeform Matrix | Fauna / Flora / **Vessels** → species or hull → element; an element row previews the lifeform and the window WATCHES the spawn. The kingdom row walks the same `Kingdoms` + `HasContent` filter the world's does, so it cannot lose one again (it had lost the hangar — see § "One declaration"). A hull release has no `WatchAfterApply`: `ReleaseCompanion` is a ServerRpc, so there is no object to turn the picture onto and claiming one would be a lie on every machine that is not the host | no |
 | Connect the Dots | the gallery, with live progress per canvas | **yes** |
 | Wanderway | one switch: wander / come home | **yes** |
 | Arkway | one switch: set sail / end the voyage | **yes** |
@@ -1429,7 +1486,8 @@ vessel's input is still paused and the camera is still blending — a run begun 
 against a vessel nobody is flying yet.
 
 Two of those three route straight back through `OnActivated`, so there is exactly one
-implementation of "throw this switch". The gallery is the exception worth reading: it walks the
+implementation of "throw this switch" — the single-action pattern § "One declaration" names as
+the one to copy. The gallery is the exception worth reading: it walks the
 same decision tree `PaintingToy.OnActivated` walks (live run → bench, unfinished → resume,
 finished → the SHARE/REPAINT gates), against the same run book, via
 `PaintingToy.CreateRun`/`LiveRun`. A **finished** canvas is the one case a flat list cannot

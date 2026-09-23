@@ -620,10 +620,20 @@ object where it landed in the cell, and goes back to the toy when the target die
 moves on. It is optional in the way `BuildPreview` is: a domain change or a cell swap makes
 nothing to watch and answers null.
 
-**The Lifeform Matrix offers Fauna and Flora here, not Vessels.** The world bench still opens its
-hangar; the flat surface is a *lifeform* release bench — one picture, one Spawn — and a wingman is
-neither a lifeform nor something the spawn picture can show landing. The hangar is reached through
-Navigate.
+**The Lifeform Matrix offers all three kingdoms here — Fauna, Flora AND Vessels.** It used to
+offer the first two, on the reasoning that the flat surface is a *lifeform* release bench and a
+wingman is neither a lifeform nor something the spawn picture can show landing. **That was an
+argument about the PICTURE, and it cost the window a whole branch of the bench** — releasing an
+AI wingman is an action a window can offer perfectly well, and it is the same `ReleaseCompanion`
+call the station makes. Corrected 2026-09-23 under the toy system's *one declaration* law
+(`Docs/ToySystem/ARCHITECTURE.md` § "One declaration"): the window walks the same `Kingdoms` +
+`HasContent` filter the world's kingdom row walks, so it cannot lose one again.
+
+A hull release is the one option here with **no** `WatchAfterApply`, and that is the honest
+answer rather than an omission: `ReleaseCompanion` is a ServerRpc, so on a party client there is
+no object to turn the picture onto and only the server can say whether a companion appeared. The
+window keeps its picture on the hull that was asked for. *A window may decline to WATCH something;
+it may not decline to OFFER it.*
 
 ### 4.1.5 Back steps back ONE layer; only the top layer's Back closes the window
 

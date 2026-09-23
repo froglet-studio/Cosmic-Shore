@@ -5444,7 +5444,28 @@ ones.
   without saying which fundamental it reaches for. A toy that fits none of the three is the signal
   to run the fundamentals-curation process above, not to widen the enum. The in-game encyclopedia's
   **Tools** kingdom groups its pages by exactly this (`Docs/CODEX.md` §3.5).
-  See `Docs/ToySystem/ARCHITECTURE.md` and `Docs/ECOSYSTEM.md §19`.
+  **A TOY DECLARES ITS CHOICES ONCE, and the fly-into station and the menu Toy Box window are two
+  INPUTS to that one declaration** — they may differ in how an option is DRAWN (a station shows the
+  real hull at arena range; a window shows a small preview), never in WHICH options exist or WHAT
+  pressing one does. `IToyShellSurface` always stopped the MENU inventing an action; what it did
+  not stop was the TOY writing the list twice, once for its stations and once for the window, and
+  those agreed only by coincidence: the Lifeform bench's window had silently lost its whole
+  **Vessels** kingdom, dropped on the argument that *a hull is not a lifeform and the spawn picture
+  cannot show one landing* — **an argument about the PICTURE that cost the window a branch of the
+  bench**. *When a surface drops an option for presentation reasons it stops being the same
+  surface; a window may decline to WATCH something, never to OFFER it.* `MatrixToy` now makes it
+  structural — a subclass overrides `BuildOptions` and nothing else about its choices, the base
+  builds the matrix from that list AND answers the window with the same call (non-virtual, so there
+  is nowhere to put a second opinion), and `CreateStation` wires the station's action to the
+  option's own `Apply` so the two are one call rather than two that agree. `ToyShellOption.Payload`
+  carries the toy's subject, which is what removes the parallel list of subjects that could drift.
+  **Exactly one difference may be declared** (`WorldOmitsCurrentOption` — the vessel changer sets
+  it because flying your own hull would swap it for itself; the cell selector does not, because
+  choosing the world you are in IS the freestyle reset). A single-action toy already had it right
+  and is the pattern to copy: `Apply = ActivateFromShell` → its own `OnActivated`, one
+  implementation of "throw this switch". Gate: `ToySurfaceParityTests` (all three matrix toys
+  failed it before the pass).
+  See `Docs/ToySystem/ARCHITECTURE.md` § "One declaration" and `Docs/ECOSYSTEM.md §19`.
 - **Switch** — *a ring you thread, and threading it activates something.* The one word
   the platform has for "this does something when you go through it", and deliberately
   **threader-agnostic**: a **Vessel** threads a freestyle **Toy**, a ball threads a

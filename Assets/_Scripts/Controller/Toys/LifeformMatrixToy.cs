@@ -189,9 +189,17 @@ namespace CosmicShore.Gameplay
         bool IToyShellSurface.ShellAvailable => _def;
 
         /// <summary>
-        /// The bench's three KINGDOMS, each expanding the way a pass unfolds the next row - the
-        /// tree is not flattened, because the player already knows it as a tree (kingdom, then
-        /// species or hull, then element).
+        /// The bench's KINGDOMS, each expanding the way a pass unfolds the next row - the tree is
+        /// not flattened, because the player already knows it as a tree (kingdom, then species or
+        /// hull, then element).
+        ///
+        /// <para>It walks <see cref="Kingdoms"/> through the same <see cref="HasContent"/> filter
+        /// the world's kingdom row walks, so the two rows are the same row. That is not tidiness:
+        /// this window used to add Fauna and Flora by hand and deliberately omit <b>Vessels</b>, on
+        /// the reasoning that a hull is not a lifeform and the spawn picture cannot show one
+        /// landing — which was an argument about the PICTURE that silently cost the window a whole
+        /// kingdom of the bench. Releasing an AI wingman is an action the window can perfectly well
+        /// offer, and it is the same <see cref="ReleaseCompanion"/> call the station makes.</para>
         ///
         /// <para>Releasing works from the menu exactly as it works in flight: a lifeform is spawned
         /// into the containing cell as an ordinary citizen, and a companion hull goes through the
@@ -199,26 +207,88 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
         {
-            // Fauna and Flora ONLY. The world bench also opens a hangar (an AI wingman in your
-            // own domain), and it is deliberately not offered here: the Toy Box's detail window
-            // is a LIFEFORM release bench - one picture, one Spawn button - and a hull is
-            // neither a lifeform nor something the spawn picture can show landing. The hangar
-            // stays a fly-to station, reached through Navigate.
-            into.Add(new ToyShellOption
+            foreach (var kingdom in Kingdoms)
             {
-                Label = "Fauna",
-                Detail = "release a creature into this cell",
-                Accent = Definition ? Definition.AccentColor : Color.white,
-                Expand = BuildShellFaunaSpecies,
-            });
+                if (!HasContent(kingdom)) continue;
+                var captured = kingdom;
 
-            into.Add(new ToyShellOption
+                into.Add(new ToyShellOption
+                {
+                    Label = KingdomLabel(kingdom),
+                    Detail = KingdomDetail(kingdom),
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Payload = captured,
+                    Expand = () => BuildShellKingdom(captured),
+                });
+            }
+        }
+
+        static string KingdomLabel(Kingdom kingdom) => kingdom switch
+        {
+            Kingdom.Fauna => "Fauna",
+            Kingdom.Flora => "Flora",
+            _ => "Vessels",
+        };
+
+        static string KingdomDetail(Kingdom kingdom) => kingdom switch
+        {
+            Kingdom.Fauna => "release a creature into this cell",
+            Kingdom.Flora => "plant a lifeform in this cell",
+            _ => "release an AI wingman in your own domain",
+        };
+
+        List<ToyShellOption> BuildShellKingdom(Kingdom kingdom) => kingdom switch
+        {
+            Kingdom.Fauna => BuildShellFaunaSpecies(),
+            Kingdom.Flora => BuildShellFloraSpecies(),
+            _ => BuildShellHangar(),
+        };
+
+        /// <summary>
+        /// The hangar row, flat: one hull per class, released as an AI companion in the player's
+        /// own domain. The same roster and the same call as the world's hangar grid
+        /// (<see cref="BuildHangarGrid"/>) - it is released at the bench rather than at a station,
+        /// which is where every other shell release lands too.
+        /// </summary>
+        List<ToyShellOption> BuildShellHangar()
+        {
+            var options = new List<ToyShellOption>();
+            ResolveVesselOffer();
+
+            foreach (var vessel in _offeredVessels)
             {
-                Label = "Flora",
-                Detail = "plant a lifeform in this cell",
-                Accent = Definition ? Definition.AccentColor : Color.white,
-                Expand = BuildShellFloraSpecies,
-            });
+                var captured = vessel;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.ToString(),
+                    Accent = ToyVesselRoster.PreviewColor(Context, Definition ? Definition.AccentColor : Color.white),
+                    Payload = captured,
+                    // A wingman is RELEASED, not become - the same verb a lifeform takes, and
+                    // deliberately not the vessel changer's "Switch".
+                    CommitVerb = "Spawn",
+                    Apply = () => ReleaseCompanion(captured, ShellReleasePoint),
+                    BuildPreview = parent => BuildShellHullPreview(captured, parent),
+                    // No WatchAfterApply, deliberately: ReleaseCompanion is a REQUEST (a ServerRpc
+                    // on a party client), so there is no object to turn the picture onto and
+                    // pretending there is would be the lie that method's own comment warns about.
+                    // The window keeps its picture on the hull that was asked for.
+                });
+            }
+            return options;
+        }
+
+        /// <summary>A mini hull for the window's picture - the flat builder, not the live one: a
+        /// preview sits close to the camera, inside the vision band's near cutoff, where a real
+        /// hull reads as a black blob (ToyVesselRoster.TryBuildLiveHull says so).</summary>
+        GameObject BuildShellHullPreview(VesselClassType vessel, Transform parent)
+        {
+            if (!_def || !parent) return null;
+            Color tint = ToyVesselRoster.PreviewColor(Context, Definition ? Definition.AccentColor : Color.white);
+            if (!ToyVesselRoster.TryBuildHull(Context, vessel, _def.StationRadius, tint, out var model))
+                return null;
+            model.transform.SetParent(parent, false);
+            if (model.TryGetComponent(out ToyIdleSpin spin)) Destroy(spin);
+            return model;
         }
 
         // The last lifeform a shell press released, so the window can turn its picture onto it.

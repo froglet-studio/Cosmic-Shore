@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// Monument anchors (where each painting is actually flown, out past the membrane) come from
     /// the definition's proximity-first sphere packing, computed once on the first open and reused.
     /// </summary>
-    public sealed class PaintingGalleryToy : MatrixToy, IToyShellSurface
+    public sealed class PaintingGalleryToy : MatrixToy
     {
         PaintingToyDefinitionSO _def;
 
@@ -126,26 +126,12 @@ namespace CosmicShore.Gameplay
 
         // ── Layout ───────────────────────────────────────────────────────────
 
-        protected override int StationCount => _gallery.Count;
         protected override float StationRadius =>
             (Placement.BodyRadius > 0.01f ? Placement.BodyRadius : 20f) * Mathf.Max(0.25f, _def.IconScaleBodies);
         protected override float MatrixDistanceFactor => _def.MatrixDistanceFactor;
 
         protected override float StationSpacing =>
             Mathf.Max(Placement.TriggerRadius * 2.2f, StationRadius * _def.ClusterSpacingBodies);
-
-        protected override void OnActivated(IVesselStatus localVessel)
-        {
-            if (IsMatrixOpen)
-            {
-                CloseMatrix();
-                return;
-            }
-
-            // Resolve the gallery BEFORE the base opens - StationCount reads from it.
-            if (!ResolveGallery()) return;
-            base.OnActivated(localVessel);
-        }
 
         bool ResolveGallery()
         {
@@ -201,9 +187,17 @@ namespace CosmicShore.Gameplay
 
         // ── App-shell face ───────────────────────────────────────────────────
 
-        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+        // There is no second option list here: MatrixToy answers the window with this toy's own
+        // BuildOptions below.
 
-        bool IToyShellSurface.ShellAvailable => _gallery.Count > 0;
+        protected override bool ShellAvailable
+        {
+            get
+            {
+                ResolveGalleryList();
+                return _gallery.Count > 0;
+            }
+        }
 
         /// <summary>
         /// The whole gallery, one row per canvas - the flat twin of the matrix of miniatures.
@@ -216,8 +210,13 @@ namespace CosmicShore.Gameplay
         /// <c>EnsureStrokes</c>; the strokes are generated in <see cref="BeginFromShell"/>, at the
         /// same moment flying the gallery would have generated them.</para>
         /// </summary>
-        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        protected override void BuildOptions(List<ToyShellOption> into)
         {
+            // The declaration resolves its own source: the gallery list and its packed anchor
+            // poses, which the stations then read back out of.
+            ResolveGalleryList();
+            if (_anchorPositions == null) PackAnchors();
+
             for (int i = 0; i < _gallery.Count; i++)
             {
                 var painting = _gallery[i];
@@ -229,6 +228,7 @@ namespace CosmicShore.Gameplay
                 var captured = painting;
                 into.Add(new ToyShellOption
                 {
+                    Payload = captured,
                     Label = painting.DisplayName,
                     Detail = DescribeForShell(painting, live),
                     Accent = Definition ? Definition.AccentColor : Color.white,
@@ -318,9 +318,15 @@ namespace CosmicShore.Gameplay
 
         // ── Stations: the painting, and nothing but the painting ─────────────
 
-        protected override void BuildStation(int index, Transform parent, Vector3 position, float radius)
+        protected override void BuildStation(ToyShellOption option, Transform parent, Vector3 position, float radius)
         {
-            var painting = _gallery[index];
+            var painting = (PaintingDefinitionSO)option.Payload;
+
+            // The anchor is this painting's own packed pose. Looked up in the gallery the
+            // declaration itself walked, never in a list kept alongside the options - a second
+            // list indexed in step with the first is exactly the coupling MatrixToy removed.
+            int index = _gallery.IndexOf(painting);
+            if (index < 0 || _anchorPositions == null || index >= _anchorPositions.Length) return;
 
             var root = ToyFactory.CreateBareRoot($"{Definition.Id}_{painting.PaintingId}", parent,
                 position, transform.position, radius * 1.6f);
@@ -338,6 +344,11 @@ namespace CosmicShore.Gameplay
             // A full Toy, not a light matrix station: a painting station owns its own bloom, its
             // exit-gated re-arm (so a bench/resume toggle can't double-fire), and a per-frame
             // Update for the completion choice gates.
+            // This station is a full Toy rather than a light ToyMatrixStation, so MatrixToy
+            // cannot wire the option's Apply for it (see MatrixToy.BuildStation). PaintingToy's
+            // own activation and that Apply are the SAME call - BeginFromShell and
+            // PaintingToy.OnActivated walk one run book - which is the condition the base states
+            // for building a station any other way.
             var toy = root.AddComponent<PaintingToy>();
             toy.Configure(painting, _anchorPositions[index], _anchorRotations[index], label, ToyboxRoot);
             // Its switch ring comes from the base like every other toy's - only the radius is ours,
