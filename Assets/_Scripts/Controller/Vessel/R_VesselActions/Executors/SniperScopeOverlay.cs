@@ -52,16 +52,16 @@ namespace CosmicShore.Gameplay
     /// visibly opens up as the pilot zooms in. Nothing about the ring changed — <b>the fix for a
     /// mark that is too small to see is never to draw it bigger than it is.</b></para>
     ///
-    /// <para><b>Round 9b raised the WEAPON instead, by authored instruction, and that is what the
-    /// ceiling below is now for.</b> <c>coneHalfAngleDegrees</c> went <b>0.5° → 10°</b>, so the
-    /// eyepiece ring is <b>82 px</b> at the wide end of the dial and reaches the petal's own
-    /// inradius at about <b>fov 44</b>, after which it is PINNED at <b>117 px</b> for the rest of
-    /// the zoom. That pin is honest rather than a bug — a 10° cone genuinely subtends more than
-    /// this window can show once magnified — but it does mean the <i>grows as you zoom</i> half of
-    /// the promise now holds over the first third of the trigger's travel and not past it. The cap
-    /// went from a guarantee that never bound to a limit that binds most of the time; if that
-    /// reads badly, the dial to move is the weapon's angle, never the cap, because the cap is what
-    /// keeps the mark inside the shape.</para>
+    /// <para><b>Round 9b raised the WEAPON instead, by authored instruction, and the answer it
+    /// got is what the ceiling below is now for.</b> <c>coneHalfAngleDegrees</c> went
+    /// <b>0.5° → 10°</b> and the report came back IDENTICAL — which is how that experiment
+    /// earned its result: nothing that makes a mark bigger can make it appear, so size was never
+    /// the cause. Ten degrees also swept a <b>529 u</b> radius at 3,000 u and read as a shotgun,
+    /// so the weapon ships at <b>1.5°</b> (78.5 u at full range — a rifle, where 0.5° is a
+    /// needle). At 1.5° the eyepiece ring is about <b>24.5 px</b> at fov 60 and <b>72.7 px</b> at
+    /// fov 22, reaching the cap only near the very bottom of the zoom, so <i>grows as you zoom</i>
+    /// holds across almost the whole dial again. The cap is a GUARANTEE that the mark stays inside
+    /// the shape, not a tuning: <b>the dial to move is the weapon's angle, never the cap.</b></para>
     ///
     /// <para><b>Round 3 drew a reticle over the middle of the screen because the middle of the
     /// screen WAS the scope; this one is not that.</b> It is not centred and it is not a
@@ -467,11 +467,12 @@ namespace CosmicShore.Gameplay
             float radius = ReticlePixels(coneHalfAngleDegrees, TanHalf(fieldOfView), halfHeight,
                                          minPixels: 6f);
             // The posts live OUTSIDE the ring, so it is the post's outer end that has to fit the
-            // petal - not the ring's edge. At the weapon's 10 degree half-angle this BINDS from
-            // about fov 44 downward (82 px at the wide end, pinned at 117 px past that), where at
-            // the old 0.5 degrees it never did: the cone now subtends more than the window can
-            // show once magnified, and a mark that leaves the petal is worse than one that stops
-            // growing. The cap is the guarantee, not the tuning - move the weapon's angle.
+            // petal - not the ring's edge. At the shipped 1.5 degree half-angle it binds only near
+            // the very bottom of the zoom (about 24.5 px at fov 60, 72.7 px at fov 22, capped at
+            // 117 px); at the 10 degrees round 9b briefly authored it bound from about fov 44
+            // downward, and at the original 0.5 degrees it never bound at all. A mark that leaves
+            // the petal is worse than one that stops growing, so this stays whatever the angle
+            // does. The cap is the guarantee, not the tuning - move the weapon's angle.
             float ringCeiling = Mathf.Max(6f, ReticleBudgetPixels(halfHeight)
                                               - CrossGapPixels - CrossArmPixels);
             radius = Mathf.Min(radius, ringCeiling);

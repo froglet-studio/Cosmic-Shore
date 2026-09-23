@@ -1316,6 +1316,61 @@ snapped to 5 the first time anyone touched that asset in the inspector. At 1.5 i
 range again, so nothing is at risk now; but *a serialized value outside its own `Range` is a value
 that changes the next time a human looks at it.*
 
+## Round 11 — the probe answered, and the answer is ambiguous on purpose
+
+> *"this is good i saw the recital and it changes size nicely."*
+
+**The mark is on screen and it tracks the zoom.** That is the promise the whole instrument was
+built to make and it is the first round in which a pilot has reported it kept. Nothing in the code
+changed for this round; it is recorded because the round-10 table asked a question and the answer
+is worth writing down along with what it does **not** settle.
+
+### What it settled
+
+Both weapon-half defects are closed by the same report. The cone reads as a rifle rather than a
+shotgun at **1.5°**, and the round is not being described as destroying one prism. And the mark
+inside the eyepiece is legible at a size the pilot could watch change — so the *posts LOCATE, ring
+MEASURES* split (round 9a) plus the 1.5° cone together clear the readability floor that four
+rounds of correct measurement did not.
+
+### What it did not settle, and the open item
+
+**Round 10 shipped TWO changes that could each have made the mark appear**, and one report cannot
+separate them: the PROBE (five plain `Image` quads) and the **512 px rect** the generated rings
+and posts were given in the same commit. The pilot's words name neither component.
+
+So the probe is still in the instrument, and it is still scaffolding:
+
+| If | then |
+|---|---|
+| The rings draw now (the rect was the fault) | the probe is a duplicated mark drawn at full alpha over a correct one, and should come out |
+| Only the probe draws | `ScopeRingGraphic` / `ScopeCrosshairGraphic` never reach the screen here, and the probe is the reticle — which means the two generated classes should be retired instead |
+
+**It was not removed on this pass and that is the deliberate call**, because removing it is exactly
+the move that risks regressing the one thing the pilot has just approved: if it was the probe they
+saw, the reticle vanishes again and round 12 is round 6. The experiment that settles it costs one
+observation and no code — **switch the probe off and look**:
+
+```csharp
+// SniperScopeOverlay.Tick, in place of the DrawProbeReticle(radius, colour) call
+if (_probe != null) foreach (var p in _probe) p.enabled = false;
+```
+
+Reticle still there → delete `BuildProbeReticle` / `DrawProbeReticle` / `_probe` / `_probeRect` /
+`ProbePipPixels` and the `SelfCheck` line that reads them. Reticle gone → keep the probe, and the
+next pass is about why a bare `MaskableGraphic` submits nothing under this canvas while a
+`RawImage` subclass parented beside it submits fine.
+
+Its cost while it stays, stated rather than hidden: the eyepiece draws its reticle **twice** — once
+as a ring with locator posts, once as a pip with square posts at the same radius — and the probe's
+copy is at **full alpha at every moment**, so it does not dim while the weapon recharges. The
+instrument therefore reads as slightly busier than it is designed to, and the recharge dim is half
+as loud as it should be.
+
+The general rule this round leaves behind: **when two fixes ship in one commit and either could be
+the one that worked, the report cannot tell them apart — so budget a second observation, and keep
+the cheaper-to-undo one switchable.**
+
 ## Drive-by corrections
 
 - **The doc's own opening paragraph still described the round-1 COCKPIT** — *"the view drops into
@@ -1331,8 +1386,18 @@ that changes the next time a human looks at it.*
 - **`SniperShotActionExecutor` resolves its registry with `GetComponentInParent`, not
   `GetComponent`.** On every shipped vessel the registry lives on the `ShipActions` container and
   each executor sits on a **child** of it, so a same-object lookup returns null and every fallback
-  below it is silently dead. `ToggleTranslationModeActionExecutor` carries that bug today and is
-  deliberately left alone — it is another ability's play-tested behaviour.
+  below it is silently dead. `ToggleTranslationModeActionExecutor` still uses the same-object form
+  and is deliberately left alone — **measured, it is a latent trap rather than a live defect**, and
+  the measurement is the reason it is left rather than an excuse: that registry feeds exactly one
+  field (`seedAssemblerExecutor`, resolved only when the prefab leaves it empty), the **Serpent**
+  authors it outright (`fileID: 8230992318499782635`) so the fallback never runs, and the
+  **Sparrow** — the only other vessel carrying the executor — has no `SeedAssemblerActionExecutor`
+  and no `stationarySeedConfig` at all, so the null field matches reality. It bites the day a third
+  vessel takes the ability, or the day somebody clears the Serpent's reference expecting the
+  fallback to cover them. Worth noting alongside it: neither `ToggleStationaryModeAction.asset`
+  serializes `stationaryMode`, so **both** fall back to the C# initializer `Mode.Serpent` — the
+  Sparrow's stationary mode runs the Serpent branch and is carried only by that branch's own null
+  guards (rule 4-i, met in the wild).
 
 ## Checked and clear
 
@@ -1547,6 +1612,9 @@ constant) both firing.
 
 ## Follow-ups
 
+- **Settle the PROBE and take it out (round 11).** One observation with the five `Image`
+  quads disabled says whether the generated rings draw. Until then the eyepiece draws its
+  reticle twice and the probe's copy never dims. Steps + both outcomes: round 11 above.
 - Wire the four ability icons (art + `Wire Vessel Ability Row`). The Charge veil no longer needs
   one, but the row still cannot say WHICH ability is recharging.
 - Profile the scope window on a phone. It is a second render of the world at 512² / 30 Hz and it is

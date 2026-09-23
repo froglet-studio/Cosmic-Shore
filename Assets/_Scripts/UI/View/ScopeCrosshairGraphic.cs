@@ -8,7 +8,10 @@ namespace CosmicShore.UI
     /// locator half of an optical sight, whose measuring half is <see cref="ScopeRingGraphic"/>.
     ///
     /// <para><b>It exists because a reticle drawn at a TRUE angular size is, for a narrow weapon,
-    /// a few pixels.</b> The Serpent's sniper cone is a half-angle of <b>0.5°</b>, so the ring
+    /// a few pixels.</b> This was written against the Serpent's sniper cone at a half-angle of
+    /// <b>0.5°</b> (it ships at <b>1.5°</b> today, after a round that tried 10° and came back
+    /// reading as a shotgun — the numbers below are that 0.5° case and are kept because they are
+    /// the case this component exists for), so the ring
     /// that states it honestly works out to roughly 6–24 px inside the scope's eyepiece and ~8 px
     /// over the flight view — a 2 px hairline about 1% of the window across, on top of a magnified
     /// render of a lit arena. That is the right MEASUREMENT and it is below the threshold of being
