@@ -93,6 +93,13 @@ namespace CosmicShore.Gameplay
                                                sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
+            // Routed through the same seam as every other reported hit, so the rule "a hit bites
+            // what it is priced at" is structural rather than remembered. It is a NO-OP for the
+            // Strike class shipped here - a contact strike's drain is authored per weapon (the
+            // Squirrel's overtake mirrors it as an ally buff), so CombatHitDrain declines it.
+            CombatHitDrain.Apply(victimStatus, hitClass, supersededRank,
+                                 ElementalDebuffSources.VesselContact);
+
             onCombatHitLanded.Raise(new CombatHitStats
             {
                 ShooterName = shooterName,

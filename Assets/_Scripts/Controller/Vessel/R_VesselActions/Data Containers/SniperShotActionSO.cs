@@ -60,11 +60,12 @@ namespace CosmicShore.Gameplay
                  "angular term takes over and this stops mattering.")]
         [SerializeField, Min(0f)] private float minPathRadius = 6f;
 
-        [Header("Charge 5 — Pierce")]
-        [Tooltip("How many prisms a PIERCING round destroys before it stops. 0 is unlimited " +
-                 "(everything on the line). Below the Charge-5 upgrade the round always stops at " +
-                 "the first prism it reaches.")]
-        [SerializeField, Min(0)] private int pierceCount = 3;
+        [Tooltip("How many prisms the round destroys before it stops, at EVERY tier. 0 is " +
+                 "unlimited - everything the cone contains. What the Charge-5 Pierce upgrade buys " +
+                 "is not this number but what counts as a target: below it, super-shielded mass " +
+                 "is not one and the round flies past it; at it, the round takes the armour off " +
+                 "and destroys the prism.")]
+        [SerializeField, Min(0)] private int pierceCount;
 
         [Header("Impact")]
         [Tooltip("Debris speed the destroyed prism's pieces carry, in world units/second - the " +

@@ -182,6 +182,40 @@ Missiles are now bought by taking the arena apart — every HOSTILE prism this p
 > its loop is now half as fast, while Dog Fight's arena is cover rather than a supply, so there
 > it mostly lengthens the gap between rockets.
 
+### THE GUN IS THE RELOAD — gunfire only, and its DOMAIN does not matter (2026-09-22)
+
+Two separate corrections to the rule above, both asked for after the split, and each replaces a
+filter the first pass inherited without arguing for it.
+
+**Only DIRECT GUNFIRE pays.** A rocket's blast used to fund the next rocket. Nothing in the
+weapon says it should: the loop is *shoot to reload, reload to rocket*, and a rocket whose own
+detonation buys most of its successor closes that loop on itself — in Salvo, where a skyburst
+can take out thirty cactus prisms, one rocket paid for the next with change. Now a bullet and a
+turret prism round pay, and the blast, the direct hit, a ram, a sword and a creature pay
+nothing.
+
+**Any domain pays.** The old test was `StatsManager.IsFriendlyEnvironmentPrism`, i.e. only
+hostile mass. What is actually being rewarded is *trigger time on mass* rather than territorial
+damage, and gating it on colour made the reload silently dry up in exactly the arenas whose mass
+wears the pilot's own — a teammate's trail, own-domain flora. A pilot willing to spend
+ammunition on their own ribbon has paid for what they get back.
+
+**How the weapon identity travels.** `PrismStats` gained one bool,
+**`DestroyedByGunfire`**, stamped by `Prism.Damage(…, byGunfire:)` the same way `byCreature`
+already is and raised on the one destroyed-channel call every route funnels through. It has to
+ride the channel because it is only knowable at the call that damaged the prism —
+`VesselRearmOnPrismDestruction` sees a death and nothing about what caused it. The flag is set
+by **`ProjectileDamagePrismEffectSO`** (`countsAsGunfire`, on by default), which is the Sparrow's
+*two guns* and nothing else: `SparrowFullAutoProjectileImpactContainer` and
+`SparrowPrismProjectileImpactContainer` both use it, and the skyburst carries its own
+`SkyBurstProjectileDamagePrismEffectSO`. The Urchin's spike uses the shared asset too and is
+unaffected, because the Urchin has no rearm component to pay.
+
+> Note this makes the doc's original argument for listening on the destroyed channel *narrower
+> and still correct*. It was written as "an effect cannot see the blast, so count deaths"; the
+> blast now pays nothing, so that half is moot — but the channel is still the only place every
+> route is visible, which is what makes it possible to DECLINE four of the five in one line.
+
 ### The pilot can SEE the charge — the Charge card's gauge
 
 Doubling the price makes the rack a thing you wait for, so the wait had to become legible. The
@@ -324,8 +358,9 @@ radial prism rays it lays) and `AOEExplosion` (the sphere that destroys prisms, 
 CHARGE). That is the blast aimed at the ARENA.
 
 **`AOEMissileWarhead.prefab` is the new one, and it is aimed at LIVING things**: it debuffs every
-pilot it engulfs (`MissileWarheadDebuffByExplosionEffect`, −0.5 on all four elements for 4 s — the
-same numbers the Dolphin/Scarab blast ships, forked so a missile retune cannot move theirs) and
+pilot it engulfs (−0.10 on all four elements for 4 s — ten points to the petal off the
+10-point shockwave tier, drawn from the hit report by `CombatHitDrain` rather than from a
+per-blast asset, so one rocket's three ranked tiers cannot stack) and
 KILLS the creatures it engulfs (`MissileWarheadWitherLifeformEffect`).
 
 It touches no prism at all. `AOEExplosion.affectsPrisms` (new, default true) is honoured in ONE
@@ -459,6 +494,209 @@ creature in the match. If the other reading is wanted, it is a one-field change:
   pilots and kills fauna. Outside the Sparrow modes that is mostly invisible; in Wildlife Liberation
   it is a real new kill source, which is the point.
 
+## TWO rockets out of one bay (2026-09-22)
+
+The bay now holds two different missiles, and which one leaves is decided by whether the Sparrow
+is **moving or parked**:
+
+| | **BASE rocket** (on the wing) | **HEAVY rocket** (turret stance) |
+|---|---|---|
+| Cost | **0.25** of the tank — the bay holds **four** | **0.5** — the bay holds **two** |
+| Speed | 120 u/s (≈ **229 u** of range) | **240 u/s** (≈ **458 u**) |
+| Proximity fuze | **none** | 20× hit radius (76.2 u at resting MASS) |
+| Warhead shockwave | **none** | 25× hit radius (95.3 u) |
+| Prism cairn on detonation | **none** | the 72-prism shielded conic cairn |
+| Prism trail in flight | none | **one small prism every 30 u**, cap 24 |
+| Direct hit + destructive blast | unchanged | unchanged |
+
+So the cheap rocket is a **precision** weapon — it has to be aimed, it does nothing until it
+touches something, and it leaves nothing behind — and stopping to fire is what buys the
+area-denial rocket that goes off *near* a pilot or a creature, throws the debuff/joust
+shockwave, builds the cairn, and draws a line across the arena on the way.
+
+### The discriminator is the STANCE, never measured speed
+
+`IVesselStatus.IsTranslationRestricted` — the Sparrow's turret stance. Not `Speed < ε`, and the
+reason is replication, not taste: a fire press is replayed on **every peer**
+(`R_VesselActionHandler`), each peer runs `FireGunActionSO.ResolveShot` for itself, and the peers
+have to agree on which rocket left the bay. The stance is a server-write `NetworkVariable`
+(`VesselController.n_IsTranslationRestricted`); `Speed` is simulated locally and would have two
+machines spending different ammo on one press.
+
+It is resolved **once, at the press**, and carried through the 0.2 s launch delay
+(`FireGunActionSO.Shot`, handed to `SpawnAfterBayOpensAsync`). The ammo is spent at the press, so
+a pilot who leaves the stance while the bay is opening still launches the rocket they paid for —
+the alternative is a shot that pays one price and flies the other payload.
+
+### One prefab, a per-shot PAYLOAD — not a second prefab
+
+`ProjectilePayload` (three bools: `ArmWarhead`, `CreateMassOnDetonation`, `LayPrismTrail`) is
+handed to `Gun.FireGun` alongside the shot's speed, exactly as `spareOwnDomain`,
+`stopOnFirstPrismImpact` and `flightGrowthFactor` already are. `ProjectilePayload.Default` is
+what every other gun in the fleet gets and is what `Projectile.Initialize` resets to, so a caller
+that says nothing is byte-identical to before the type existed and a pooled reissue can never
+inherit the previous shot's payload.
+
+A second projectile prefab would have expressed the same four differences — and then charged for
+them forever: every later skyburst edit (the tail, the growth curve, the collider fit, the
+material) would have to land twice, which is the *"a DTO is a second place every field has to be
+added"* failure one level up. The model, the bay animation, the pool, the direct hit, the
+destructive blast and the growth curve are **shared on purpose**; what differs is a parameter set.
+
+Two mechanisms make the three flags reach their payloads without any new condition at the
+consumers:
+
+- **Fuze and warhead collapse together.** `Projectile.FuzeRadiusMultiplier` and the public
+  `WarheadBlastRadiusMultiplier` both return **0** when the flight is not carrying one. They are
+  one weapon — the fuze is only ever the trigger for the warhead — so a shot cannot arm a threat
+  volume that cannot go off, and the three sites that read the fuze (the flight loop, the LIT
+  publisher, the overlap test) plus the detonator's `> 0f` guard all pick it up unchanged. The
+  prefab still authors both radii; the flag says whether the shot is carrying them.
+- **The cairn is filtered by CLASS, not by list position.** `AOEExplosion.CreatesMass` is a
+  virtual `false`, overridden `true` on `AOEBlockCreation` (and its subclasses), `AOERadialBlocks`
+  and `AOEDangerHemisphereBlocks`. `ProjectileDetonatorSO` skips a mass-creating prefab when the
+  flight declines it and keeps the destructive one — so a base rocket still blows its hole. A
+  filter written against `aoePrefabs[0]` would have silently re-pointed itself the day one of the
+  four skyburst effect assets reordered its list.
+
+### BOTH rockets pay the 20-point blast — a tier belongs to the DESTRUCTIVE blast, not to the cairn
+
+The three combat-hit tiers used not to live where the ranking suggests. The 20-point "prism
+blast" was authored on **`AOEConicSkyBurst`** — the 72-prism *cairn* the detonation lays — so
+splitting the weapon took it away from the base rocket as a side effect of taking away its
+cairn. That was an accident of which prefab happened to carry the reporter: what the tier is
+*about* is a pilot being caught in the blast, and the blast is a different prefab entirely.
+
+It now lives on **`AOEExplosion`** — the spherical, destructive blast BOTH variants spawn on
+every detonation (`SkyBurstBlastExplosionImpactorDataContainer`, which that prefab previously
+had none of at all: it carried two stale keys for fields the impactor script no longer
+declares, so it applied no vessel effects whatsoever).
+
+| Tier | Points | Lives on | Base | Heavy |
+|---|---|---|---|---|
+| Direct strike | 30 | the projectile's own vessel-impact container | ✅ | ✅ |
+| "Prism blast" | 20 | **`AOEExplosion`** — the destructive sphere (radius 50 u at resting Charge, 85 at Charge 10) | ✅ | ✅ |
+| Warhead shockwave | 10 | **`AOEMissileWarhead`** (95 u) | — | ✅ |
+
+So the heavy rocket's advantage is exactly what it reads as: the **wider outer ring**, not a
+different weapon. The cairn's own container is now empty — the cairn is mass, and reports
+nothing.
+
+Two things travel with the move and neither is a side effect to discover later. **Astro
+League's ball detonation spawns the same prefab and is unaffected**, because it initializes it
+with `Vessel = null` / `AnnonymousExplosion = true` and the reporter declines a blast nobody
+fired. And the tier ordering stays honest: the sphere is *inside* the warhead's 95 u, so the
+dearer tier is still the closer one, and `VesselCombatHitLatch` pays the best of the three
+exactly once per rocket per victim.
+
+### ONE BLAST PAYS A VICTIM ONCE — the latch cannot answer for a blast that outlives it
+
+The three tiers dedupe through `VesselCombatHitLatch`, which folds all three missile classes
+onto ONE key and admits only a strictly CLOSER tier inside an open window — so a rocket whose
+shockwave, blast and direct hit all reach the same pilot pays 30 and not 60, and
+`CombatHitDrain` nets the same way for 3 petals and not 6.
+
+That window is **0.5 s**, and it is the anti-spam floor between two *different* rockets. It is
+deliberately much shorter than a blast's own life: `AOEExplosion` is a trigger that keeps
+GROWING for **3 seconds**. So a pilot swept up by the sphere, thrown clear, and turning back
+into it re-enters *the same detonation* and raises `OnTriggerEnter` again — past the latch, and
+therefore paid and drained a second time for one shot.
+
+The answer is the per-blast ledger that was already there and was only a TALLY:
+`ExplosionImpactor._vesselsHit` now **gates** the vessel-effect dispatch as well as counting it
+(`if (!_vesselsHit.Add(id)) break;`). One detonation, one payout per pilot, whatever the
+geometry does in between. The Dolphin's `BlastTally` is unchanged — it reads the same set's
+count — and no explosion is pooled (every one is `Destroy`ed when its sweep ends), so the ledger
+is per-blast by construction with no lifecycle to get wrong.
+
+General rule: **a dedupe window sized for the gap between two EVENTS cannot dedupe one event
+that lasts longer than the window.** Ask how long the thing being deduped lives.
+
+Still behind the stance, deliberately: in **Wildlife Liberation** — a Sparrow-only mode scored
+on creature kills — the blast's creature joust (`ExplosionWitherLifeformByCrystalEffectSO`, on
+the warhead container) is the heavy rocket's alone, so a pilot must **stop to hunt with
+rockets**, or kill creatures by shooting their body prisms, which is unchanged.
+
+### ONE PULL, TWO ROCKETS — a fleet-wide double subscription the skyburst was the first to show
+
+Reported after the split: *"it usually fires two missiles if you have the energy and pull the
+trigger once."* It is not a missile bug and it is not new. `R_VesselActionHandler` subscribed to
+the shared input channels with a bare `+=`, and **three paths subscribe**: every
+`VesselController.Initialize`, `VesselController.ChangePlayer` (a LIVE vessel handed to another
+player — the Cellular Duel ownership swap, which `Initialize` never sees), and every input
+un-pause. A C# delegate holds the same handler twice happily and nothing reports it, so
+`OnButtonPressed` ran twice per press, sent the press RPC twice, and
+`SendButtonPressed_ClientRpc` replayed `PerformShipControllerActions` twice on every peer.
+
+**The reason nobody had noticed is the reason it had to be the missile that found it.** Almost
+everything the fleet binds is a HELD ability, and an ability started twice is the same ability
+held — a perfect no-op. It only becomes visible on a one-shot that SPENDS: the tank was charged
+twice and two rockets left the bay for one pull. Halving the rocket's cost made it louder
+(a four-rocket rack survives the double where a two-rocket one just emptied), but it did not
+cause it.
+
+Fixed with a latch (`_subscribedToInputEvents`) rather than the reflexive `-=` before `+=`: a
+`-=` removes ONE occurrence, so on a handler that has ALREADY doubled it nets to no change. The
+release edge is latched with it, because a duplicate release is equally silent.
+
+> General rule: **a duplicated event subscription is invisible on every idempotent consumer and
+> obvious on exactly one kind — the consumer that spends something.** When a press seems to
+> happen twice, check the subscription before the input strategy; the strategies are all
+> properly edge-gated and were the first three places this was looked for.
+
+### The prism trail, and the two ways a rocket eats its own ribbon
+
+The heavy rocket lays one small prism every 30 u along its flight, through
+`BoostRingBuilder.LayOne` — the shared pooled-prism primitive (full-size collider from frame 0,
+trail membership stamped AFTER `Initialize`). One `Trail` per flight, so the ribbon is a **1D
+prismscape** rather than a line of loose Singletons; an Urchin can genuinely grind one.
+
+It is **conserved mass placed by an active force**: nothing removes it, nothing ages it out, it
+is ordinary mass in the shooter's domain that fauna graze, rivals steal and any weapon destroys
+— which is also what returns it to the pool. There is no teardown, for the same reason a
+vessel's own trail has none. It is laid **per peer**, off a locally-simulated flight that every
+peer runs from one replicated press at one replicated pose — the same shape as a vessel trail
+laid locally off replicated motion — so it needs no networking of its own.
+
+A round that leaves prisms *in its own path* will hit them, and it does so two different ways
+that need two different answers:
+
+1. **Its OWN ribbon** — a prism is laid at the round's current position, i.e. inside its own hit
+   sphere (3.81 u at resting MASS) on the frame it appears. Answered by **identity**, permanently:
+   `DisallowImpactOnPrism` skips any prism whose `Trail` is the one this flight laid. Permanent
+   rather than timed because a round that curls back onto its own line should still pass through,
+   and identity is exact — pool reuse clears trail membership and every layer re-stamps its own.
+2. **The SECOND rocket** — a bay holding two heavies fires them down nearly the same line, and
+   rocket 2 would detonate on rocket 1's ribbon a few units out of the bay. Answered by the
+   existing `Prism.ProjectileImmuneUntil` window (`prismTrailImmunitySeconds`, 1 s) — the same
+   mechanism the turret stance uses so *"a spray does not erase its own freshest output"*. A
+   window cannot answer case 1 and identity cannot answer case 2.
+
+**Budget.** At the shipped 240 u/s × 3 s the flight covers `speed × 2T/π` = **458 u** — a round
+decelerates on a cosine, so range is **64%** of the obvious `speed × time` — which at 30 u
+spacing is **15 prisms**, under the 24 cap (headroom for a speed or lifetime retune, and the
+reason the cap exists at all). At `(1, 1, 3)` that is **45 volume per rocket**, negligible
+against any cell's phase ladder, and 15 Boost-pool colliders that the food web and return fire
+remove like any other mass.
+
+Doubling the heavy rocket's speed is not only feel: it is fired from a **standstill**, so unlike
+the base rocket it inherits no vessel velocity. 240 u/s is what keeps the heavy round from being
+the slower one in the world frame.
+
+### The icon ladder was counting the wrong thing, and halving the cost exposed it
+
+`SparrowHUDView.SetMissilesFromAmmo01` spread the tank across the sprite range and **rounded**,
+which conflates *fraction of tank* with *rockets held* — and was wrong before this change too: at
+the old 0.5 cost a 0.75-full tank holds ONE rocket and `round(0.75 × 2)` drew **two**. It now
+counts rockets, `floor(ammo / cost)`, taking the cost from the executor
+(`FireGunActionExecutor.ShotCost01`) rather than re-deriving it in the HUD — the same division
+`ChargeToNextShot` takes the fractional part of, so the ladder and the charge gauge cannot
+disagree. `LadderState` is a public static pure function so it is testable without a canvas.
+
+**Stated gap:** the ladder has **three** sprites (0/1/2) and the bay now holds **four** base
+rockets, so a full bay clamps to the top rung. That under-reports rather than lying about which
+rocket is next; closing it is an ART task (five sprites), not a code one.
+
 ## Files
 
 | File | Role |
@@ -492,6 +730,16 @@ creature in the match. If the other reading is wanted, it is a one-field change:
 | `_SO_Assets/Effects/Effect Containers/Explosion Containers/MissileWarheadExplosionImpactorDataContainer.asset` | **NEW** — [debuff pilots, joust creatures]. Deliberately carries no combat-hit effect: the missile already scores once through its direct hit + conic blast |
 | `_SO_Assets/Effects/Vessel Crystal Effects/SparrowVesselWardByCrystalEffect.asset` | **NEW** — 8 s. Replaces `SparrowVesselChangeResourceByCrystalEffect`, which is DELETED rather than orphaned |
 | `_Scripts/Tests/Editor/SparrowMissileFuzeTests.cs` | **NEW** — the asset gate: warhead ≥ fuze at every MASS level, the warhead's prism abstinence, the collider the detonator assumes, and the Sparrow's swapped crystal wiring |
+| `_Scripts/Controller/Projectiles/ProjectilePayload.cs` | **NEW** — what ONE flight is carrying (`ArmWarhead` / `CreateMassOnDetonation` / `LayPrismTrail`). `Default` is the fleet's pre-existing behaviour and is what `Projectile.Initialize` resets to |
+| `_Scripts/Controller/Projectiles/Projectile.cs` | + the per-flight `Payload` (fuze and warhead multipliers now collapse to 0 when it is not carried); + the FLIGHT PRISM TRAIL (`prismTrailChannel`/`Spacing`/`Scale`/`MaxPrisms`/`Kind`/`ImmunitySeconds`, `LayFlightTrail`, one `Trail` per flight) and the self-ribbon identity skip in `DisallowImpactOnPrism` |
+| `_Scripts/Controller/Projectiles/AOEExplosion.cs` | + `CreatesMass` (virtual false) — the platform predicate for "this blast LAYS prisms", overridden true on `AOEBlockCreation`, `AOERadialBlocks`, `AOEDangerHemisphereBlocks` |
+| `_Scripts/Controller/Projectiles/Gun.cs` | `FireGun`/`FireSingle` take an optional `ProjectilePayload?` (null = the prefab's own authoring, so every other caller is unchanged) |
+| `_Scripts/.../EffectsSO/ProjectileDetonatorSO.cs` | Skips a mass-CREATING blast when the flight declines it, and keeps the destructive one |
+| `_Scripts/.../Data Containers/FireGunActionSO.cs` | + the payload trio and the whole **Stationary Variant** block; + `Shot` and `ResolveShot(status)` — the one place the two rockets are told apart |
+| `_Scripts/.../Executors/FireGunActionExecutor.cs` | Resolves the shot at the PRESS, spends that variant's cost, and carries it through the launch delay |
+| `_Scripts/UI/View/SparrowHUDView.cs` | `SetMissilesFromAmmo01(ammo01, cost01)` counts ROCKETS; `LadderState` extracted as a pure static |
+| `_Scripts/UI/Controller/SparrowHUDController.cs` | Passes the executor's `ShotCost01` rather than re-deriving a cost in the HUD |
+| `_Scripts/Tests/Editor/SparrowMissileVariantTests.cs` | **NEW** — the variant gate: the two RELATIONSHIPS (half the cost, twice the speed), the three payload flags per variant, the prefab still authoring what the heavy rocket switches on, the trail cap covering the heavy flight's range, and the icon ladder's arithmetic |
 | `Assets/_Prefabs/Spacevessels/Sparrow.prefab` | + `VesselRearmOnPrismDestruction` + `VesselTimedElementalWard` on the root. Animation component swapped `MantaAnimationContoller` → `SparrowAnimationController` (same fileID, same serialized fields) + `missileExecutor` wired to the SkyBurst executor |
 
 ## Tuning knobs
@@ -508,16 +756,27 @@ creature in the match. If the other reading is wanted, it is a one-field change:
 | `tailWidthPerBodyDiameter` | `SkyBurstProjectile.prefab` → `Projectile` | 0.4 | The tail's ribbon width as a fraction of the round's own body diameter (3.05 u at resting Mass). 0 hides the tail. Derived from the Sparrow's own `widthScale` 2.5 on a ~6.4 u hull, not play-tested |
 | `proximityFuzeRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 20 | How close something has to get, as a multiple of the round's OWN hit radius (76.2 u at resting MASS). 0 turns the fuze off and the missile detonates only on contact or at end of life |
 | `warheadBlastRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 25 | The debuff/kill blast's radius, off the SAME base (95.3 u at rest). Must stay ≥ the fuze multiplier or a proximity kill cannot catch what tripped it — `SparrowMissileFuzeTests` fails the build if it does not |
-| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | **0.01** | Ammunition per HOSTILE prism destroyed. The tank is 0..1 and a rocket costs 0.5, so **50 prisms per missile, 100 for a full rack**. Halved from 0.02 in 2026-09 |
-| `hostileMassOnly` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | on | Off makes your own trail a self-service reload. Almost certainly not what you want |
+| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | **0.01** | Ammunition per prism destroyed BY GUNFIRE, any domain. The tank is 0..1 and a base rocket costs 0.25, so **25 prisms per base rocket, 50 per heavy one, 100 for a full rack**. Halved from 0.02 in 2026-09 |
+| `requireGunfire` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | on | Only a round that struck the prism itself pays. Off lets a rocket's own blast fund the next rocket, which closes the shoot-to-reload loop on itself. It REPLACED `hostileMassOnly`, which gated on colour and dried the reload up in arenas whose mass wears the pilot's own — and it is authored EXPLICITLY on the prefab rather than left to the C# initializer, so the asset states its own configuration |
 | `wardSeconds` | `SparrowVesselWardByCrystalEffect.asset` | 8 | How long an omni crystal's debuff ward lasts. Refreshes, never stacks |
 | `wardedSources` | `Sparrow.prefab` → `VesselTimedElementalWard` | All (−1) | WHAT the crystal's ward stops. Narrow it to promise less (the Dolphin's drift ward is `DangerPrism` alone) |
-| `debuffMagnitude` / `debuffDuration` | `MissileWarheadDebuffByExplosionEffect.asset` | −0.5 / 4 s | What the warhead does to a pilot. Forked from the Dolphin/Scarab blast's numbers so a missile retune does not move theirs |
+| — (the warhead's own drain asset is **DELETED**) | was `MissileWarheadDebuffByExplosionEffect.asset` | — | A missile's bite is no longer authored per blast. All four missile-adjacent classes drain off the HIT REPORT through `CombatHitDrain` at ten points to the petal, netted against the tier an upgrade supersedes — which is the only place one rocket's three ranked tiers can be prevented from stacking. See `BROADSIDE.md` § *The drain follows the price* |
 | `faunaOnly` | `MissileWarheadWitherLifeformEffect.asset` | on | Off lets the warhead kill FLORA too — a whole grown plant per rocket, through its heart |
 | `sparesOwnDomain` | `MissileWarheadWitherLifeformEffect.asset` | **off** | Off = wildlife is quarry whatever colour it wears. Deliberately the effect's OWN decision, NOT the blast's friendly-fire flag: fauna spawn in ONE colour, so borrowing that flag let the CHARGE-5 *prism* upgrade switch off wildlife kills in the one mode scored on them |
 | `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section |
 | `playsDetonationSfx` | `AOEMissileWarhead.prefab` | **off** | The warhead is SILENT. A skyburst already spawns two authored blasts that each play the shared `Explosion` one-shot; a third at the same point on the same frame sums and phases rather than reading as a bigger explosion. A voice of its own would be its own `EventReference`, shipped empty — never a third consumer of a shared category |
 | `syncIntervalSeconds` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | 1 s | How often the OWNER publishes its missile tank to the other peers as an idempotent SET. 0 disables the correction and accepts per-peer drift, which makes a replica silently skip drawing the missile |
+| `ammoCost` / `stationaryAmmoCost` | `SkyBurstGunAction.asset` | **0.25 / 0.5** | What each rocket costs. Authored as absolutes and asserted as a RATIO (`SparrowMissileVariantTests`), so retuning the heavy one carries the base one with it. The bay is a 0..1 tank: four cheap or two heavy |
+| `speed` / `stationarySpeed` | `SkyBurstGunAction.asset` | **120 / 240** | Flight speed per variant. RANGE is `speed × 2T/π`, not `speed × time` — 229 u and 458 u at the shipped 3 s lifetime |
+| `armWarhead` / `stationaryArmWarhead` | `SkyBurstGunAction.asset` | **off / on** | Whether the shot carries the proximity fuze AND the shockwave. They move together by construction; there is no way to arm one |
+| `createMassOnDetonation` / `stationary…` | `SkyBurstGunAction.asset` | **off / on** | The 72-prism cairn. The DESTRUCTIVE blast in the same detonation is unaffected either way |
+| `layPrismTrail` / `stationaryLayPrismTrail` | `SkyBurstGunAction.asset` | **off / on** | Whether the round draws its ribbon. The prefab authors what the ribbon IS |
+| `hasStationaryVariant` | `SkyBurstGunAction.asset` | **on** | Off collapses the weapon to ONE rocket — the base one, which carries no warhead at all. The whole feature hangs off this bit |
+| `prismTrailSpacing` | `SkyBurstProjectile.prefab` → `Projectile` | **30 u** | Distance between laid prisms. A DISTANCE, not a period, so speed cannot re-space the ribbon |
+| `prismTrailScale` | `SkyBurstProjectile.prefab` → `Projectile` | **(1, 1, 3)** | One trail prism. The Sparrow's own trail prism is (2, 2, 5) — this reads as a thinner, shorter version |
+| `prismTrailMaxPrisms` | `SkyBurstProjectile.prefab` → `Projectile` | **24** | The COLLIDER BUDGET line. The shipped flight lays 15; the cap is what stops a speed or lifetime retune from silently multiplying it |
+| `prismTrailKind` | `SkyBurstProjectile.prefab` → `Projectile` | **Plain** | Ordinary conserved mass. Danger bites its own pilot (locked law); the shield tiers make the ribbon food the ecology can never remove |
+| `prismTrailImmunitySeconds` | `SkyBurstProjectile.prefab` → `Projectile` | **1 s** | How long a fresh trail prism is immune to EVERY projectile — for the SECOND rocket down the same line. The round's own ribbon is skipped permanently by identity instead |
 | Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | Selects the model-IS-the-hit-volume path: the model grows and the collider is fitted to it. The only prefab in the game that sets it. Clearing it puts the missile on the shell path, where it would not grow at all — it has no `chargeField` |
 
 ## In-editor verification
@@ -533,6 +792,28 @@ a reissued missile must not draw a straight ribbon from the last detonation to i
 (`ReclaimTail`'s `Clear()`), and a detonating one's ribbon must fade over ~4 s where it was laid
 rather than vanish with the round (`ReleaseTailToFade`). Everything else is a look call on the
 0.4 width fraction.
+
+**The two-rocket pass (2026-09-22):** authored headless — **nothing here has been run in the
+editor**. Logged as a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md`. In the Sparrow's own
+scene (Dog Fight or Salvo):
+
+1. **Fly and fire (LT).** A rocket leaves the bay as before, flies at 120 u/s, and does
+   **nothing** until it touches something: no early detonation near a pilot, no LIT threat
+   sphere drawn on the mass around it, no cairn left behind. A direct hit still blows its hole.
+2. **Press `A` / Space (turret stance), then fire.** Visibly faster, a line of small prisms
+   appearing every ~30 u behind it, an early detonation as it nears a pilot or a creature, and
+   the 72-prism cairn on detonation.
+3. **The ribbon is not eaten.** Fire a heavy rocket and watch it fly its own line — it must not
+   detonate on the first prism it lays (identity skip). Then fire the SECOND heavy immediately
+   down the same line: it must reach past rocket 1's ribbon (the 1 s immunity window).
+4. **The ribbon is ordinary mass.** Shoot one of the laid prisms — it dies. Leave it near
+   opposing-domain fauna in a seeded cell — it gets grazed.
+5. **The bay counts to four.** Destroy hostile prisms and watch the Charge card's gauge reset
+   every 25 prisms rather than every 50, and the icon ladder step 0 → 1 → 2 and then STAY at 2
+   (the known three-sprite art gap).
+6. **Two-client (MPPM).** Both peers must agree on which rocket left: stop, fire, and confirm the
+   remote peer sees the ribbon and the proximity detonation, not a base rocket.
+7. **Console clean** — in particular no `SafeLookRotation` spam from the per-frame lay.
 
 ## Follow-ups
 
@@ -553,6 +834,26 @@ rather than vanish with the round (`ReleaseTailToFade`). Everything else is a lo
   streaming off this round that is neither measured off the model nor domain-coloured, so if the
   stern reads as two unrelated effects, that is the one to fix (or delete — the tail may simply
   have made it redundant).
+- **The icon ladder needs five sprites.** The bay holds four base rockets and the ladder has
+  three rungs, so a full bay clamps to "2". `LadderState` already clamps correctly; this is art
+  (`missileIcons` on `SparrowHUDVariant.prefab`).
+- **Wildlife Liberation wants a play-test before anything else.** It is scored on creature kills
+  and the blast's creature joust is now behind the turret stance. Either that reads as a good
+  rhythm (stop to hunt) or the mode wants the warhead back on the base rocket — which is one bit
+  (`armWarhead` on `SkyBurstGunAction.asset`), not a code change.
+- **The base rocket's scoring floor.** In Dog Fight / Broadside it can now only score the 30-point
+  direct tier. If that reads as too binary, the cheapest correction is to give it back the
+  warhead alone (`armWarhead: 1`, `createMassOnDetonation: 0`) — the fuze and shockwave without
+  the cairn.
+- **`prismTrailImmunitySeconds` is vs. EVERY projectile, including an enemy's.** 1 s is
+  sub-second-scale by the same argument the turret stance's 0.2 uses, but it has not been
+  play-tested; if a rival complains that shooting a fresh ribbon does nothing, this is the dial.
+- **`Gun.FireGun` forwards the payload on its DEFAULT pattern only.** `FiringPatterns.Spherical`
+  (the Urchin's spike burst) drops it silently, because `FireSpherical` takes no payload and no
+  caller hands one to a fan of rounds. Measured: the Urchin's executor passes none, so it is a
+  no-op today and the case is a comment in `Gun.cs` rather than plumbing nobody needs. If a
+  spherical weapon ever wants a per-shot payload, forward it there rather than discovering that
+  one handed to that pattern is ignored.
 - Remote peers: the bay animation rides the same executor event as the local projectile spawn,
   so it plays wherever the projectile spawns — if skyburst fire is ever server-relayed rather
   than locally simulated per client, the bay animation follows automatically.

@@ -57,6 +57,17 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
   ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
   reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
 
+**And read the exit code of the SCRIPT, not of the pager you piped it into.** `python3
+check.py --check | tail -5; echo $?` reports **`tail`'s** status, which is 0 whatever the
+script did — so a gate printing `FAIL` in the very output you are reading comes back "exit
+0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
+produced by the measurement rather than by the gate, and it is worse than the original
+because you have the failure text on screen and a number telling you to ignore it. Run the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
+not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
+restore and confirm the tree is clean (`git status --short` on the asset path).
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.
@@ -84,6 +95,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   unrelated subsystems). `git fetch --unshallow` and re-measure: the real numbers were **109/74
   with ONE merge base**, and the same merge then ran with **zero conflicts**. Nothing about the
   branch had changed.
+  **`git merge-base --all` is the cheaper and sharper discriminator, and it separates two
+  failures the conflict count conflates.** Shallow history can inflate the *count* while leaving
+  the *base* correct, and only the second is dangerous. One branch measured **9,451 commits
+  behind** a base it was 481 from — a 20x inflation — and `merge-base --all` still returned
+  **exactly ONE** base, so the merge was against the real ancestor and the three conflicts it
+  produced were all in files both sides had genuinely edited. Unshallowing changed the number and
+  nothing else: same base commit, same three conflicts, resolutions unaffected. So run
+  `git merge-base --all origin/<base> HEAD` FIRST — **more than one base means stop and
+  unshallow**; exactly one means the base is sound and an alarming staleness number is cosmetic.
+  Re-run the trial merge after unshallowing either way, and confirm the conflict set is identical
+  before trusting work you already resolved.
   Two things to carry. **The conflict COUNT is the tell** — conflicts concentrated in files
   neither branch plausibly edited mean the base is wrong, not the branch; do not start resolving
   them, because every resolution you hand-craft against a phantom base is work thrown away and
