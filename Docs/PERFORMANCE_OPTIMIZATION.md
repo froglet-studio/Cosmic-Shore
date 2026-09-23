@@ -9,9 +9,8 @@ numbers (`§0.8`, `§0.11.6`, `Task 10`), which stay valid there.
 | | |
 |---|---|
 | **Rewritten** | 2026-09-22, on branch `claude/bold-fermi-54nlts` @ `561700737` |
-| **That branch's base** | `1f160508f` (bleeding-edge, 2026-09-14) |
-| **bleeding-edge now** | `ee2ad320f` — **1,390 files ahead of that base, and it changed the boot world** (§1.1) |
-| **Every number below** | an **Editor** number on this branch's tree, unless stated. None is a ship number. |
+| **Merged** | bleeding-edge `ee2ad320f` merged in on 2026-09-23 (`c2e7a7c46`) — 1,390 files, **including a new boot world** (§1.1) |
+| **Every number below** | an **Editor** number taken on the PRE-merge tree (base `1f160508f`), unless stated. None is a ship number, and none has been re-taken since the merge. |
 
 ---
 
@@ -48,10 +47,10 @@ Four things are open, and nothing else is proven to matter yet:
 4. **Gameplay GC: 154.5 KB/frame** in Menu_Main, inside `UpdateScene`, caller unknown — plus
    single frames allocating up to **7.2 MB** that line up with 108–128 ms hitches.
 
-### 1.1 ⚠ bleeding-edge changed the boot world — re-baseline before anything else
+### 1.1 ⚠ The merge changed the boot world — re-baseline before anything else
 
 PR #892 (merged 2026-09-20) made **Garland** the boot world (`SpawnableGarland`,
-`Docs/ECOSYSTEM.md §48` on bleeding-edge): an authored cell of **4,259 prisms, ~8,147 when
+`Docs/ECOSYSTEM.md §48`): an authored cell of **4,259 prisms, ~8,147 when
 mature, 37 heart colliders**, composed for the far menu camera. **Lattice** — the cell every
 boot-world number in this doc and the archive describes — is now **opt-in through the Cell
 Selector**.
@@ -59,7 +58,7 @@ Selector**.
 So the default home screen is probably far cheaper than anything measured here, and the
 "boot world" problem is now a "heaviest opt-in cell" problem. The findings still hold as facts
 about Lattice and about GameObjects hung off prisms; **their priority does not** until the
-scenario set (§3.1) is re-measured on the merged tree. bleeding-edge also changed `Spindle.cs`
+scenario set (§3.1) is re-measured on the merged tree. The merge also changed `Spindle.cs`
 (+121: sway constants shared with health prisms), `PrismRenderService.cs` (+44) and
 `Flora.cs` (+80) — the exact code under lead #1.
 
@@ -113,8 +112,9 @@ Revise the plan before running tests. Tests exist to answer a question on this l
 
 ### 3.1 Step 0 — merge, then set a target and a scenario set
 
-1. **Merge bleeding-edge into the perf branch** and get it compiling. Nothing measured on the
-   old base describes what players run.
+1. ~~**Merge bleeding-edge into the perf branch**~~ — **done 2026-09-23** (`c2e7a7c46`). Still
+   owed: one editor compile on the merged tree. Nothing measured on the old base describes what
+   players run.
 2. **Write down the target.** Proposal: **60 fps in a Development build on the team's reference
    PC**, with no frame over 50 ms in steady play. (The editor inflates frame time ~2–3×; an
    editor number is for *comparing*, a build number is for *judging*.)

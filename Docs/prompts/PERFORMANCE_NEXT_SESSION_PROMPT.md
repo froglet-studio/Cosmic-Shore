@@ -28,22 +28,22 @@ screenshots by hand. Meanwhile bleeding-edge **replaced the boot world** (Garlan
 opt-in), so the thing being measured is no longer what players see first. This session fixes the
 plan and the method before measuring anything.
 
-## Step 1 — merge bleeding-edge and get it compiling
+## Step 1 — confirm the merged tree compiles
 
-The branch forked from `1f160508f` (2026-09-14). bleeding-edge is ~1,390 files ahead.
+bleeding-edge (`ee2ad320f`) was **already merged** into this branch on 2026-09-23 as merge commit
+`c2e7a7c46`. Conflicts were `AGENTS.md` (took bleeding-edge's pointer file) and `LifeForm.cs`
+(kept both sides). The merge also tripped bleeding-edge's new `check_shield_collider_claims`
+gate on this branch's lab harness, fixed in `5a1b88024`: **a prism shield costs no collider and
+its stellation mesh is shared**, so do not repeat either claim.
 
-1. `git fetch origin bleeding-edge` then `git merge origin/bleeding-edge` (a merge commit, never
-   a rebase — the branch is published).
-2. A dry run predicted conflicts in **`AGENTS.md`** and
-   **`Assets/_Scripts/Controller/Environment/FloraAndFauna/LifeForm.cs`**, and possibly
-   `CLAUDE.md`. For the docs, keep both sides. For `LifeForm.cs`, keep bleeding-edge's logic and
-   re-apply this branch's change on top: the coroutine wait caching from commit `7efa64a6b`
-   (`perf(ecology): stop the two forever-coroutines allocating every tick`) and the comment
-   repoint to `Docs/archive/PERFORMANCE_LOG_2026.md`.
-3. Run the repo's six out-of-editor gates (`Tools/Build/check_*.py`) and a Roslyn syntax parse of
-   every file the merge touched on both sides. Then ask the human for **one** editor compile
-   before anything else. Report the result plainly.
-4. Push (`git push -u origin claude/bold-fermi-54nlts`).
+1. `git fetch origin` and check whether bleeding-edge has moved past `ee2ad320f`. If it has, merge
+   it again the same way (a merge commit, never a rebase — the branch is published) and push.
+2. Run the out-of-editor gates (`Tools/Build/check_*.py`). Expected: all pass except
+   `check_using_directives.py`'s known false positive on `PrismStressInjector.cs`
+   (`DontDestroyOnLoad(go)` is the inherited `Object` method, not the `CosmicShore.Utility`
+   type).
+3. Ask the human whether they have opened the merged tree in Unity and got a clean compile. If
+   not, ask for that **one** compile before anything else, and report the result plainly.
 
 ## Step 2 — rewrite the plan in `Docs/PERFORMANCE_OPTIMIZATION.md` §3
 
