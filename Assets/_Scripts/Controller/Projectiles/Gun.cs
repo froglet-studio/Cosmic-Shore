@@ -83,6 +83,12 @@ namespace CosmicShore.Gameplay
             switch (firingPattern)
             {
                 case FiringPatterns.Spherical:
+                    // NOTE: payload is deliberately NOT forwarded here. A spherical burst is a
+                    // fan of many rounds and no caller carries a per-shot payload onto one (the
+                    // Urchin's spikes are its only user and pass none), so plumbing it through
+                    // FireSpherical would add surface for a case that does not exist. If a
+                    // spherical weapon ever needs one, forward it rather than discovering that a
+                    // payload handed to this pattern is silently ignored.
                     FireSpherical(containerTransform, speed, inheritedVelocity,
                         projectileScale, projectileTime, charge, energy, sphericalPoints);
                     break;

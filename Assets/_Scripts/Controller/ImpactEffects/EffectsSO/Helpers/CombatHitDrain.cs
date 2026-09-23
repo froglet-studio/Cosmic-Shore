@@ -85,13 +85,22 @@ namespace CosmicShore.Gameplay
                 ? 0f
                 : -PointsFor(hitClass) / PointsPerLevel * NormalizedPerLevel;
 
-        /// <summary>The missile class a latch rank stands for; anything else has no rank.</summary>
+        /// <summary>
+        /// The missile class a latch rank stands for - the inverse of
+        /// <see cref="CombatHitClasses.MissileProximityRank"/>, needed because the latch reports
+        /// the RANK (a small stable int) rather than the class it superseded.
+        ///
+        /// <para>Rank 0 means "nothing was superseded" and is never passed here:
+        /// <see cref="Apply"/> guards on <c>supersededRank &gt; 0</c>, which is the only thing
+        /// that makes the netting below correct. The fallback exists so the switch is total and
+        /// is not a meaningful answer - do not read it as one.</para>
+        /// </summary>
         public static CombatHitClass ClassForMissileRank(int rank) => rank switch
         {
             1 => CombatHitClass.MissileShockwave,
             2 => CombatHitClass.MissileBlast,
             3 => CombatHitClass.MissileDirect,
-            _ => CombatHitClass.Bullet,   // rank 0 - no superseded tier; PerElementFor is netted below
+            _ => CombatHitClass.Bullet,   // unreachable from Apply - see the guard above
         };
 
         /// <summary>

@@ -796,7 +796,9 @@ It is deliberately NOT worked around here: inventing a second kill path for one 
 two systems come to disagree about what killed a creature.
 
 **Missile supply changed too.** Missiles no longer reload from omni crystals; they reload from
-destroying hostile prisms (0.01 per prism, 50 prisms per rocket). This mode's quarry is
-CREATURES, whose body prisms are hostile mass — so hunting funds the next rocket, and a pilot
-who runs dry has to shoot something. The omni crystal now grants an 8-second all-source
+destroying prisms WITH GUNFIRE (0.01 per prism, 25 per base rocket and 50 per heavy one; any
+domain, and a rocket's own blast pays nothing). This mode's quarry is CREATURES, and their body
+prisms are shot with the guns — so hunting funds the next rocket, and a pilot who runs dry has
+to shoot something. Note the blast paying nothing bites here specifically: the warhead's creature
+joust is the mode's signature kill and it now funds none of its own successor. The omni crystal now grants an 8-second all-source
 elemental-debuff ward instead.

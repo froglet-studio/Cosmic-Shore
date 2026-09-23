@@ -57,6 +57,17 @@ That is the standing setting for every mode (`/ship`, `/ship-quick`, `/ship-deep
   ABORTS looks exactly like a gate that passes". **Read the first line of any non-zero exit before
   reporting it**; `usage:` means you called it wrong, not that the tree is dirty.
 
+**And read the exit code of the SCRIPT, not of the pager you piped it into.** `python3
+check.py --check | tail -5; echo $?` reports **`tail`'s** status, which is 0 whatever the
+script did — so a gate printing `FAIL` in the very output you are reading comes back "exit
+0". That is this file's own *"a gate that ABORTS looks exactly like a gate that passes"*,
+produced by the measurement rather than by the gate, and it is worse than the original
+because you have the failure text on screen and a number telling you to ignore it. Run the
+script bare (`script >/dev/null 2>&1; echo $?`), or read `${PIPESTATUS[0]}`. Do this on the
+negative control too: a `--check` you have only ever watched SUCCEED is a `--check` you have
+not tested — mutate one authored value, confirm it exits non-zero AND names the file, then
+restore and confirm the tree is clean (`git status --short` on the asset path).
+
 **§2.5 is NOT one of these.** The tool-output gate is a git and filesystem question — did the
 WRITER tool's assets land in a commit — and it needs no compiler, no editor and no CI. It
 runs in full, in every mode.

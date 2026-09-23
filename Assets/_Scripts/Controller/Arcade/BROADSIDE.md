@@ -382,6 +382,27 @@ a volley, and everything about feel.
   *The drain follows the price*.
 - **The Debuff anchor moved 4.2× lighter** and The Bends / Undertow are scored entirely on that
   drain. Their scoring is unaffected; the FEEL is not, and it wants a playtest.
+- **TWO rank->class helpers now exist, with DISAGREEING fallbacks** (refactor row, measured
+  2026-09-23, not a live bug). `CombatHitScoring.ClassForRank` maps an unknown rank to
+  `MissileDirect`; `CombatHitDrain.ClassForMissileRank` maps it to `Bullet`. Both answer the same
+  question - *which class does this latch rank name* - and both are unreachable for rank 0,
+  because each call site guards on `supersededRank > 0`:
+
+  ```
+  $ grep -n "ClassForRank\|ClassForMissileRank" -r Assets/_Scripts --include=*.cs
+  CombatHitScoring.cs:66:   points -= rule.PointsForCombatHit(ClassForRank(supersededRank));   # guarded by isUpgrade
+  CombatHitScoring.cs:74:   static CombatHitClass ClassForRank(int rank) => ... _ => MissileDirect
+  CombatHitDrain.cs:115:    magnitude -= PerElementFor(ClassForMissileRank(supersededRank));    # guarded by > 0
+  CombatHitDrain.cs:98:     public static CombatHitClass ClassForMissileRank(int rank) => ... _ => Bullet
+  ```
+
+  The shape is *two members sharing a name* / *the second copy of the constant you just moved*.
+  If either guard is ever relaxed the two systems answer differently for the same input, and the
+  drain's fallback is the worse one (`PerElementFor(Bullet)` is non-zero, so it would silently
+  REDUCE the netted drain). The fix is one public helper - `CombatHitDrain.ClassForMissileRank`
+  is already public, so `CombatHitScoring` can call it and delete its private copy. Deliberately
+  NOT done on the branch that noticed it: `CombatHitScoring.cs` is otherwise untouched there and
+  a scoring-path edit does not belong in a Sparrow branch.
 - The **milestone toasts and the objective arrow** are shared with Dog Fight's; the arrow
   deliberately does not try to name a weapon, because seven hulls answer *"what do I do when I get
   there"* differently.

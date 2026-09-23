@@ -358,8 +358,9 @@ radial prism rays it lays) and `AOEExplosion` (the sphere that destroys prisms, 
 CHARGE). That is the blast aimed at the ARENA.
 
 **`AOEMissileWarhead.prefab` is the new one, and it is aimed at LIVING things**: it debuffs every
-pilot it engulfs (`MissileWarheadDebuffByExplosionEffect`, −0.5 on all four elements for 4 s — the
-same numbers the Dolphin/Scarab blast ships, forked so a missile retune cannot move theirs) and
+pilot it engulfs (−0.10 on all four elements for 4 s — ten points to the petal off the
+10-point shockwave tier, drawn from the hit report by `CombatHitDrain` rather than from a
+per-blast asset, so one rocket's three ranked tiers cannot stack) and
 KILLS the creatures it engulfs (`MissileWarheadWitherLifeformEffect`).
 
 It touches no prism at all. `AOEExplosion.affectsPrisms` (new, default true) is honoured in ONE
@@ -755,11 +756,11 @@ rocket is next; closing it is an ART task (five sprites), not a code one.
 | `tailWidthPerBodyDiameter` | `SkyBurstProjectile.prefab` → `Projectile` | 0.4 | The tail's ribbon width as a fraction of the round's own body diameter (3.05 u at resting Mass). 0 hides the tail. Derived from the Sparrow's own `widthScale` 2.5 on a ~6.4 u hull, not play-tested |
 | `proximityFuzeRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 20 | How close something has to get, as a multiple of the round's OWN hit radius (76.2 u at resting MASS). 0 turns the fuze off and the missile detonates only on contact or at end of life |
 | `warheadBlastRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 25 | The debuff/kill blast's radius, off the SAME base (95.3 u at rest). Must stay ≥ the fuze multiplier or a proximity kill cannot catch what tripped it — `SparrowMissileFuzeTests` fails the build if it does not |
-| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | **0.01** | Ammunition per HOSTILE prism destroyed. The tank is 0..1 and a rocket costs 0.5, so **50 prisms per missile, 100 for a full rack**. Halved from 0.02 in 2026-09 |
-| `hostileMassOnly` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | on | Off makes your own trail a self-service reload. Almost certainly not what you want |
+| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | **0.01** | Ammunition per prism destroyed BY GUNFIRE, any domain. The tank is 0..1 and a base rocket costs 0.25, so **25 prisms per base rocket, 50 per heavy one, 100 for a full rack**. Halved from 0.02 in 2026-09 |
+| `requireGunfire` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | on | Only a round that struck the prism itself pays. Off lets a rocket's own blast fund the next rocket, which closes the shoot-to-reload loop on itself. It REPLACED `hostileMassOnly`, which gated on colour and dried the reload up in arenas whose mass wears the pilot's own — and it is authored EXPLICITLY on the prefab rather than left to the C# initializer, so the asset states its own configuration |
 | `wardSeconds` | `SparrowVesselWardByCrystalEffect.asset` | 8 | How long an omni crystal's debuff ward lasts. Refreshes, never stacks |
 | `wardedSources` | `Sparrow.prefab` → `VesselTimedElementalWard` | All (−1) | WHAT the crystal's ward stops. Narrow it to promise less (the Dolphin's drift ward is `DangerPrism` alone) |
-| `debuffMagnitude` / `debuffDuration` | `MissileWarheadDebuffByExplosionEffect.asset` | −0.5 / 4 s | What the warhead does to a pilot. Forked from the Dolphin/Scarab blast's numbers so a missile retune does not move theirs |
+| — (the warhead's own drain asset is **DELETED**) | was `MissileWarheadDebuffByExplosionEffect.asset` | — | A missile's bite is no longer authored per blast. All four missile-adjacent classes drain off the HIT REPORT through `CombatHitDrain` at ten points to the petal, netted against the tier an upgrade supersedes — which is the only place one rocket's three ranked tiers can be prevented from stacking. See `BROADSIDE.md` § *The drain follows the price* |
 | `faunaOnly` | `MissileWarheadWitherLifeformEffect.asset` | on | Off lets the warhead kill FLORA too — a whole grown plant per rocket, through its heart |
 | `sparesOwnDomain` | `MissileWarheadWitherLifeformEffect.asset` | **off** | Off = wildlife is quarry whatever colour it wears. Deliberately the effect's OWN decision, NOT the blast's friendly-fire flag: fauna spawn in ONE colour, so borrowing that flag let the CHARGE-5 *prism* upgrade switch off wildlife kills in the one mode scored on them |
 | `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section |
@@ -847,6 +848,12 @@ scene (Dog Fight or Salvo):
 - **`prismTrailImmunitySeconds` is vs. EVERY projectile, including an enemy's.** 1 s is
   sub-second-scale by the same argument the turret stance's 0.2 uses, but it has not been
   play-tested; if a rival complains that shooting a fresh ribbon does nothing, this is the dial.
+- **`Gun.FireGun` forwards the payload on its DEFAULT pattern only.** `FiringPatterns.Spherical`
+  (the Urchin's spike burst) drops it silently, because `FireSpherical` takes no payload and no
+  caller hands one to a fan of rounds. Measured: the Urchin's executor passes none, so it is a
+  no-op today and the case is a comment in `Gun.cs` rather than plumbing nobody needs. If a
+  spherical weapon ever wants a per-shot payload, forward it there rather than discovering that
+  one handed to that pattern is ignored.
 - Remote peers: the bay animation rides the same executor event as the local projectile spawn,
   so it plays wherever the projectile spawns — if skyburst fire is ever server-relayed rather
   than locally simulated per client, the bay animation follows automatically.
