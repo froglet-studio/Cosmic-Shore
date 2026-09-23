@@ -133,7 +133,7 @@ static float3 rndDir() {
 int main()
 {
     // ---------- 1. IDENTITY: no peer sight published => bit-identical to the old function ----------
-    _PrismSightPeerCount = 0.0f;
+    _PrismLitPeerCount = 0.0f;
     int checked = 0, lit = 0, mismatch = 0;
     for (int t = 0; t < 200000; ++t) {
         float3 apex(rnd(-500,500), rnd(-500,500), rnd(-500,500));
@@ -175,22 +175,22 @@ int main()
     float3 base(0.1f, 0.1f, 0.1f);
 
     float3 off0(-1,-1,-1); float3 noParams(-1,0,0);
-    _PrismSightPeerCount = 1.0f;
-    _PrismSightPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
-    _PrismSightPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
-    _PrismSightPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
-    _PrismSightPeerTint[0] = float4(1.0f, 0.0f, 0.4f, 1.0f);
+    _PrismLitPeerCount = 1.0f;
+    _PrismLitPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
+    _PrismLitPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
+    _PrismLitPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
+    _PrismLitPeerTint[0] = float4(1.0f, 0.0f, 0.4f, 1.0f);
     float3 one; PrismDestructionSight_float(float3(0,0,0), off0, axis, gape, noParams, 0.0f, base, 0.0f, one);
     float onePeak = max(one.x - base.x, max(one.y - base.y, one.z - base.z));
 
     float worst = 0.0f;
     for (int n = 1; n <= 4; ++n) {
-        _PrismSightPeerCount = (float)n;
+        _PrismLitPeerCount = (float)n;
         for (int i = 0; i < n; ++i) {
-            _PrismSightPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
-            _PrismSightPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
-            _PrismSightPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
-            _PrismSightPeerTint[i] = float4(1.0f, 0.0f, 0.4f, 1.0f);   // identical: count is the only variable
+            _PrismLitPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
+            _PrismLitPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
+            _PrismLitPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
+            _PrismLitPeerTint[i] = float4(1.0f, 0.0f, 0.4f, 1.0f);   // identical: count is the only variable
         }
         float3 c; PrismDestructionSight_float(float3(0,0,0), off0, axis, gape, noParams, 0.0f, base, 0.0f, c);
         float peak = max(c.x - base.x, max(c.y - base.y, c.z - base.z));
@@ -201,16 +201,16 @@ int main()
            onePeak, worst, worst <= onePeak + 1e-6f ? "BOUNDED (never brighter than one)" : "FAIL (blowout)");
 
     // ---------- 2b. OWN SIGHT IS EXCLUSIVE: rivals in the same volume cannot recolour it --------
-    _PrismSightPeerCount = 4.0f;
+    _PrismLitPeerCount = 4.0f;
     for (int i = 0; i < 4; ++i) {
-        _PrismSightPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
-        _PrismSightPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
-        _PrismSightPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
-        _PrismSightPeerTint[i] = float4(1.0f, 0.0f, 0.0f, 1.0f);
+        _PrismLitPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
+        _PrismLitPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
+        _PrismLitPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
+        _PrismLitPeerTint[i] = float4(1.0f, 0.0f, 0.0f, 1.0f);
     }
     float3 mineCrowded, mineAlone, refAlone;
     PrismDestructionSight_float(float3(0,0,0), apex, axis, gape, params, 1.0f, base, 0.0f, mineCrowded);
-    _PrismSightPeerCount = 0.0f;
+    _PrismLitPeerCount = 0.0f;
     PrismDestructionSight_float(float3(0,0,0), apex, axis, gape, params, 1.0f, base, 0.0f, mineAlone);
     Reference(float3(0,0,0), apex, axis, gape, params, 1.0f, base, refAlone);
     bool exclusive = mineCrowded.x==mineAlone.x && mineCrowded.y==mineAlone.y && mineCrowded.z==mineAlone.z
@@ -220,11 +220,11 @@ int main()
            exclusive ? "IDENTICAL (and equals pre-change)" : "FAIL");
 
     // ---------- 3. PEER-ONLY: a rival's sight lights mass with nobody holding locally ----------
-    _PrismSightPeerCount = 1.0f;
-    _PrismSightPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
-    _PrismSightPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
-    _PrismSightPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
-    _PrismSightPeerTint[0] = float4(1.0f, 0.15f, 0.15f, 1.0f);   // a Ruby-ish signal colour
+    _PrismLitPeerCount = 1.0f;
+    _PrismLitPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
+    _PrismLitPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
+    _PrismLitPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
+    _PrismLitPeerTint[0] = float4(1.0f, 0.15f, 0.15f, 1.0f);   // a Ruby-ish signal colour
     float3 peerOnly; float3 off(-1,-1,-1);
     PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, 0.0f, peerOnly);
     printf("3. peer with no own    : added (%.4f,%.4f,%.4f) -> %s\n",
@@ -233,16 +233,16 @@ int main()
 
     // ---------- 3b. TWO DOMAINS BLEND in hue but not in brightness ----------
     {
-        _PrismSightPeerCount = 2.0f;
+        _PrismLitPeerCount = 2.0f;
         for (int i = 0; i < 2; ++i) {
-            _PrismSightPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
-            _PrismSightPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
-            _PrismSightPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
+            _PrismLitPeerApex[i] = float4(apex.x, apex.y, apex.z, params.x);
+            _PrismLitPeerAxis[i] = float4(axis.x, axis.y, axis.z, params.y);
+            _PrismLitPeerGape[i] = float4(gape.x, gape.y, gape.z, params.z);
         }
-        _PrismSightPeerTint[0] = float4(1.0f, 0.10f, 0.10f, 1.0f);   // a red-ish domain
-        _PrismSightPeerTint[1] = float4(0.10f, 1.0f, 0.40f, 1.0f);   // a green-ish domain
+        _PrismLitPeerTint[0] = float4(1.0f, 0.10f, 0.10f, 1.0f);   // a red-ish domain
+        _PrismLitPeerTint[1] = float4(0.10f, 1.0f, 0.40f, 1.0f);   // a green-ish domain
         float3 both; PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, 0.0f, both);
-        _PrismSightPeerCount = 1.0f;
+        _PrismLitPeerCount = 1.0f;
         float3 redOnly; PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, 0.0f, redOnly);
         float peakBoth = max(both.x-base.x, max(both.y-base.y, both.z-base.z));
         float peakRed  = max(redOnly.x-base.x, max(redOnly.y-base.y, redOnly.z-base.z));
@@ -257,16 +257,16 @@ int main()
     // Its negative control is the SAME light with the gate cleared, which must light all three.
     bool gateOk = true;
     {
-        _PrismSightPeerCount = 1.0f;
-        _PrismSightPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
-        _PrismSightPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
-        _PrismSightPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
-        _PrismSightPeerTint[0] = float4(1.0f, 0.15f, 0.15f, 1.0f);
+        _PrismLitPeerCount = 1.0f;
+        _PrismLitPeerApex[0] = float4(apex.x, apex.y, apex.z, params.x);
+        _PrismLitPeerAxis[0] = float4(axis.x, axis.y, axis.z, params.y);
+        _PrismLitPeerGape[0] = float4(gape.x, gape.y, gape.z, params.z);
+        _PrismLitPeerTint[0] = float4(1.0f, 0.15f, 0.15f, 1.0f);
 
         const float RUBY = 2.0f, JADE = 1.0f, NONE = 0.0f;   // Domains; 0 has no member
         float3 c;
         // gate ON, restricted to Ruby
-        _PrismSightPeerShape[0] = float4(PRISM_LIT_SHAPE_CONE, RUBY, 0.0f, 0.0f);
+        _PrismLitPeerShape[0] = float4(PRISM_LIT_SHAPE_CONE, RUBY, 0.0f, 0.0f);
         PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, RUBY, c);
         bool ownLit = (c.x != base.x || c.y != base.y || c.z != base.z);
         PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, JADE, c);
@@ -275,13 +275,13 @@ int main()
         bool debrisLit = (c.x != base.x || c.y != base.y || c.z != base.z);
 
         // negative control: clear the gate and the very same light must reach all three
-        _PrismSightPeerShape[0] = float4(PRISM_LIT_SHAPE_CONE, 0.0f, 0.0f, 0.0f);
+        _PrismLitPeerShape[0] = float4(PRISM_LIT_SHAPE_CONE, 0.0f, 0.0f, 0.0f);
         bool allLit = true;
         for (float dom : {RUBY, JADE, NONE}) {
             PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(-1,0,0), 0.0f, base, dom, c);
             allLit = allLit && (c.x != base.x || c.y != base.y || c.z != base.z);
         }
-        _PrismSightPeerShape[0] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        _PrismLitPeerShape[0] = float4(0.0f, 0.0f, 0.0f, 0.0f);
 
         gateOk = ownLit && !foreignLit && !debrisLit && allLit;
         printf("3c. domain gate        : gated -> own %s, foreign %s, debris %s; ungated all lit %s -> %s\n",
@@ -291,7 +291,7 @@ int main()
     }
 
     // ---------- 4. FULLY IDLE: nothing published anywhere leaves the colour untouched ----------
-    _PrismSightPeerCount = 0.0f;
+    _PrismLitPeerCount = 0.0f;
     float3 idle; PrismDestructionSight_float(float3(0,0,0), off, axis, gape, float3(0,0,0), 0.0f, base, 0.0f, idle);
     printf("4. idle passthrough    : %s\n",
            (idle.x==base.x && idle.y==base.y && idle.z==base.z) ? "UNTOUCHED" : "FAIL");
@@ -312,8 +312,8 @@ def translate(src):
     out = re.sub(r"\b(tint)\.a\b", r"\1.w", out)
     assert "out float3 Color)" in out, "entry point signature changed"
     out = out.replace("out float3 Color)", "float3 &Color)")
-    for name in ("_PrismSightPeerApex", "_PrismSightPeerAxis", "_PrismSightPeerGape",
-                 "_PrismSightPeerTint", "_PrismSightPeerShape", "_PrismSightPeerCount"):
+    for name in ("_PrismLitPeerApex", "_PrismLitPeerAxis", "_PrismLitPeerGape",
+                 "_PrismLitPeerTint", "_PrismLitPeerShape", "_PrismLitPeerCount"):
         assert name in out, f"{name} missing from the shipped HLSL"
     return out
 

@@ -93,6 +93,71 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // ───────────────────────── a scoped tail hold ─────────────────────────
+
+        /// <summary>
+        /// Renderers THIS hold switched off, so the release restores exactly those and never
+        /// re-shows one something else had already hidden.
+        /// </summary>
+        readonly List<TrailRenderer> _heldTails = new();
+
+        /// <summary>True while <see cref="HideTails"/> is holding this vessel's tails dark.</summary>
+        public bool TailsHidden => _heldTails.Count > 0;
+
+        /// <summary>
+        /// Hide this vessel's <b>TAIL</b> for as long as the caller holds it — the long identity
+        /// streak tuned for other players to find you across a cell. The screenshot director takes
+        /// this for one hand-stepped render on the hulls closest to its lens, where a ribbon sized
+        /// to be read from an arena away crosses the whole frame.
+        ///
+        /// <para><b>Tails only, deliberately not jets.</b> A jet is a readout of an ENGINE, judged
+        /// against a vessel at close range, which is exactly the range this hold applies at — so
+        /// hiding one would remove the thing that reads correctly and keep the thing that does not.
+        /// The prism TRAIL is not reachable from here at all and must never be: it is conserved
+        /// mass, and mass is never hidden (CLAUDE.md ▸ Mass is conserved).</para>
+        ///
+        /// <para><b>Scoped to the MARKERS</b>, like every other operation on this class — never a
+        /// sweep of the <c>TrailRenderer</c>s under the vessel, which would take the Rhino's five
+        /// blade tracers with it (they are a state readout owned by <c>RhinoSwordFXController</c>).</para>
+        ///
+        /// <para>It hides by <see cref="Renderer.forceRenderingOff"/> rather than by disabling the
+        /// component, because a disabled <c>TrailRenderer</c> stops RECORDING as well as drawing —
+        /// so the ribbon would bridge the gap with a straight segment on release, a visible artefact
+        /// left behind by a hold that is supposed to leave nothing. Forcing rendering off leaves the
+        /// simulation running untouched, which is the whole point for a one-frame hold.</para>
+        ///
+        /// <para>Returns whether this call placed the hold, so a caller lifts only what it took.</para>
+        /// </summary>
+        public bool HideTails()
+        {
+            if (_heldTails.Count > 0) return false;
+
+            TailScratch.Clear();
+            GetComponentsInChildren(true, TailScratch);
+            for (int i = 0; i < TailScratch.Count; i++)
+            {
+                CollectScratch.Clear();
+                TailScratch[i].GetComponentsInChildren(true, CollectScratch);
+                for (int j = 0; j < CollectScratch.Count; j++)
+                {
+                    var trail = CollectScratch[j];
+                    if (trail == null || trail.forceRenderingOff) continue;
+                    trail.forceRenderingOff = true;
+                    _heldTails.Add(trail);
+                }
+            }
+
+            return _heldTails.Count > 0;
+        }
+
+        /// <summary>Release a <see cref="HideTails"/>. Unconditional and idempotent.</summary>
+        public void ShowTails()
+        {
+            for (int i = 0; i < _heldTails.Count; i++)
+                if (_heldTails[i] != null) _heldTails[i].forceRenderingOff = false;
+            _heldTails.Clear();
+        }
+
         /// <summary>
         /// Authored list wins; otherwise collect the trails under this vessel's TAIL and JET
         /// markers — never every TrailRenderer under the vessel, see the class doc. Inactive

@@ -150,8 +150,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The scope's whole readout — the magnified window, the cone-sized reticle inside it and
-        /// the recharge ring around it.
+        /// The scope's whole readout — the magnified window, the cone-sized reticle inside it, the
+        /// recharge ring around that, and a second cone-sized reticle over the FLIGHT view.
+        ///
+        /// <para>The flight view's reticle is the same measurement through the gameplay camera's
+        /// own optics, so it stays small while the eyepiece's grows with the zoom, and it is
+        /// projected at the point the shot reaches rather than assumed to be screen centre. Both
+        /// are up only while the scope is: this method is the only thing that draws them and it
+        /// runs only while the trigger is held.</para>
         ///
         /// <para>LOCAL PILOT ONLY: a screen is a thing one machine has. It is built lazily on the
         /// first frame a local pilot actually holds the scope, so a vessel that is never scoped —
@@ -196,7 +202,7 @@ namespace CosmicShore.Gameplay
             if (_overlay == null) _overlay = SniperScopeOverlay.Create();
 
             _overlay.Tick(ship, ResolveScopeFieldOfView(), _shot.ConeHalfAngleDegrees,
-                          _shot.CooldownRemaining01, _shot.TracerColour);
+                          _shot.RangeUnits, _shot.CooldownRemaining01, _shot.TracerColour);
         }
 
         /// <summary>
