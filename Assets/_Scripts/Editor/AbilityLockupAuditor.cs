@@ -326,9 +326,32 @@ namespace CosmicShore.Editor
 
             report.AppendLine($"  {vessel,-10} ✓ {sizes.Count} slot(s); {normalising}. " +
                               "Row position, pitch, cell size and host scale are taken over by the lockup.");
+            ReportCoreCards(view, style, report);
             ReportGauges(vessel, view, report);
             ReportLegacyContent(view, report);
             return problems;
+        }
+
+        /// <summary>
+        /// The NON-elemental cards this vessel binds, if any. They sit LEFT of the four elemental
+        /// ones and carry no element cell, so an icon on one has the whole ability cell to itself and
+        /// is measured against the same narrow edge. Reported rather than required: most vessels bind
+        /// none, and an absent core card is an absence of a claim, not a defect.
+        /// </summary>
+        static void ReportCoreCards(VesselHUDView view, AbilityLockupStyleSO style, StringBuilder report)
+        {
+            foreach (var ability in VesselHUDView.CoreAbilityDisplayOrder)
+            {
+                if (!view.TryGetCoreAbilityIcon(ability, out var icon) || !icon) continue;
+
+                float authored = AuthoredIconSize(icon.rectTransform, out bool readable);
+                string size = readable ? $"{authored:0} → {style.iconBoxSize}" : "size unreadable";
+                bool hasGauge = view.TryGetCoreAbilityGauge(ability, out var gauge) && gauge;
+
+                report.AppendLine($"             core card '{ability}' (no element cell, left of Charge): " +
+                                  $"{icon.name} {size}" +
+                                  (hasGauge ? $", gauge {gauge.name}" : ", no gauge"));
+            }
         }
 
         /// <summary>

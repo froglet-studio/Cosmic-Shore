@@ -7,18 +7,32 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The Squirrel's four lower-right ability icons, in the fleet order charge → mass → space → time
-    /// (the same order as the element flowers above them), each bound to the element that upgrades it:
+    /// The Squirrel's lower-right ability row: the four elemental cards in the fleet order
+    /// charge → mass → space → time (the same order as the element flowers above them), plus ONE
+    /// non-elemental card to their left.
     ///
+    ///   [core]  Skim          (the boost fill, bound as gauge) → no element, no upgrade
     ///   Charge → crystal joust (impactIcon, joust + crystal)   → "Shepherd"
-    ///   Mass   → boost ring    (tubeCooldownIcon)               → "Twin Rings"
-    ///   Space  → steal         (no local readout)               → "Iron Grip"
-    ///   Time   → skim energy   (the boost fill, bound as gauge) → "Live Wire"
+    ///   Mass   → boost ring    (tubeCooldownIcon)              → "Twin Rings"
+    ///   Space  → steal         (no local readout)              → "Iron Grip"
+    ///   Time   → skim energy scaling                           → "Live Wire"
     ///
-    /// <para>Two of those readouts are the LOCKUP's, not this view's. The boost fill is bound as the
-    /// TIME card's gauge - skimming is what banks it, which is what that column now says - and the
-    /// Boost Ring's recharge is the fleet's standard cooldown veil over the MASS card. This view
-    /// keeps only what is genuinely the Squirrel's own: the impact flash and the crystal surge.</para>
+    /// <para><b>Skimming draws on a card of its own, and that is the point of it.</b> It is the
+    /// hull's engine - always available, no button, no cooldown, and what every other Squirrel
+    /// ability spends - so it is bound as <see cref="CoreAbility.Skim"/> and the lockup gives it an
+    /// ability plate with NO element flower above it, one pitch left of Charge. The boost fill goes
+    /// with it as that card's gauge.</para>
+    ///
+    /// <para><b>Stated cost: the TIME card has no icon and therefore renders LOCKED.</b> Time still
+    /// scales skim energy and still carries "Live Wire", so the flower above that card is doing real
+    /// work while the plate below it reads as an ability that does not exist yet. The two honest
+    /// resolutions are an ability of Time's own or a third card state meaning <i>this element
+    /// upgrades a core ability</i>; both are design calls, so neither is invented here.</para>
+    ///
+    /// <para>Two of these readouts are the LOCKUP's, not this view's: the boost fill (the core
+    /// card's gauge) and the Boost Ring's recharge (the fleet's standard cooldown veil over the MASS
+    /// card). This view keeps only what is genuinely the Squirrel's own: the impact flash and the
+    /// crystal surge.</para>
     ///
     /// <para>RETIRED with the 2026-09 element re-cut: the drift sprite/lean (the drift is core
     /// flight with no element, and it was hijacking the card that now carries the Boost Ring) and
@@ -118,8 +132,9 @@ namespace CosmicShore.UI
                     break;
                 case Element.Space:
                 case Element.Time:
-                    // No local readout on either card - Space's steal reach is the skimmer
-                    // sphere itself, and Time's skim energy is the lockup gauge.
+                    // No local readout on either card - Space's steal reach is the skimmer sphere
+                    // itself, and Time's skim energy draws on the non-elemental Skim card, whose
+                    // gauge the lockup owns. Time's own card binds no icon at all.
                     break;
             }
         }

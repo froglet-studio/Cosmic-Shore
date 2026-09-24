@@ -473,13 +473,60 @@ ever arrived and (2) meant the answer would have been wrong if one had.
 
 ## Locked slots — the row is always four cards
 
-`AbilityDisplayOrder` is four elements, so the row is four cards, always. A slot the vessel binds no
+`AbilityDisplayOrder` is four elements, so the **elemental** row is four cards, always — a vessel
+may add non-elemental cards to their left (see below), but never fewer than four elemental ones. A slot the vessel binds no
 icon for renders **locked**: both plates quieter, a hairline mark where the icon would be, no gauge
 track, no chip — but, since 2026-09-16, **the cooldown veil if something is driving one** (see
 "The cooldown" above; it is the only state a locked card draws). Deliberately **not a padlock** —
 the ability is not locked to the *player*, it does not exist yet. This is what puts the Rhino (one named ability, three open design slots) on the fleet's UI
 today instead of leaving it on the old one until design lands, and its element flowers dock into the
 locked cards exactly as they would into live ones.
+
+## Non-elemental cards — the extension point, to the LEFT of the four
+
+Not every ability an element could upgrade *is* one. A hull's **engine** — the thing it always has,
+that the other four spend — belongs on the row and has no flower to sit under. Since 2026-09-24 the
+lockup draws those as **core cards**: an ability plate with its gauge, its cooldown veil, its press
+flash and its control chip, and **no element cell above it at all**. They are keyed on
+`CosmicShore.Data.CoreAbility` (`Skim` is the first and only member today) for the same reason the
+elemental cards are keyed on `Element` — a card is addressed by a compile-time name rather than by a
+string a prefab can typo, and a member added to that enum is the whole of what a new one costs.
+
+**They sit LEFT of the four, in `VesselHUDView.CoreAbilityDisplayOrder`, and that separation is the
+point.** The elemental row must go on reading left-to-right as charge / mass / space / time with
+nothing interleaved, or *"which flower do I fill to upgrade this?"* stops being answered by position
+— which is the whole glance contract. `PlaceHost`'s slot index is therefore **signed**: `0..3` are
+the elemental columns and negative values are the core cards, one `cardPitch` apart each, so adding
+one pushes the set further left and **no elemental column moves**.
+
+**The two kinds line up by arithmetic rather than by eye**, and it is worth stating because it is
+what lets `BuildSlot` serve both from one body. An elemental card is `PlateHeight` tall, offset up by
+`CardCenterOffsetY`, with its ability plate at `-CardCenterOffsetY` — so that plate's centre lands at
+the **host's origin**. A core card is `abilityCellHeight` tall at offset zero with its plate at zero,
+which is the same place. The control chip hangs off the card's own bottom edge either way. Measured
+on the shipped style: ability plate at host Y **+0.0** both ways, chip centre at **−62.0** both ways.
+
+`Element.None` is what selects the shape — the sentinel doing the job it exists for — rather than a
+second bool: `BuildSlot(cardName, host, icon, flowerElement)` skips the element bloom, the element
+plate and the flower socket when handed it.
+
+**There is deliberately no `SetCoreAbilityUpgraded`.** An upgrade is an element reaching level 5, and
+a core ability has no element, so nothing could ever raise it. Everything else a card can do is
+available: `SetCoreAbilityCooldown`, `SetCoreAbilityPressed`, `PlayCoreAbilityFlash`,
+`SetCoreAbilityControl`, and a `gauge` binding adopted exactly as an elemental one is.
+
+**One vessel binds one today.** The Squirrel's **skimming** is `CoreAbility.Skim`: no button, no
+cooldown, always available, and what banks the boost energy every other Squirrel ability spends — so
+its icon and the `boostFill` meter draw on a card one pitch left of Charge. Every other vessel binds
+none and emits nothing, so the row is byte-for-byte what it was.
+
+⚠ **Stated cost on the Squirrel: its TIME card binds no icon and therefore renders LOCKED**, while
+Time genuinely scales skim energy and carries "Live Wire". So the flower above that card is doing
+real work, the plate below it reads as an ability that does not exist yet, and — because
+`SetUpgraded` early-returns on a locked slot — **the Live Wire upgrade draws nothing on the card**.
+The two honest resolutions are an ability of Time's own, or a third card state meaning *this element
+upgrades a core ability*; both are design calls, so neither is invented here. This is the one thing
+about the non-elemental row that is not finished.
 
 ## Rollout + enforcement (all vessels)
 
@@ -496,7 +543,7 @@ per-vessel art or wiring for a human to supply.
 | Dolphin | 4/4 | ✅ (component also authored on the prefab — explicit, and equivalent) |
 | Scarab | 4/4 | ✅ ensured at runtime; `energyRing` re-homed onto the Space card as its gauge |
 | Sparrow | 4/4 | ✅ ensured at runtime; `rollChargeIndicator` becomes the Time card's gauge |
-| Squirrel | 4/4 | ✅ ensured at runtime; AUTHORED flowers re-homed, `boostFill` re-homed onto **Charge** as the skim-energy gauge, Boost Ring recharge on the standard cooldown |
+| Squirrel | 3/4 + 1 core | ✅ ensured at runtime; AUTHORED flowers re-homed. Charge/Mass/Space bound (joust / boost ring / steal), **Time unbound → LOCKED**, and skimming on a **non-elemental card left of Charge** carrying `boostFill` as its gauge. Boost Ring recharge on the standard cooldown |
 | Manta · Rhino · Serpent | 0/4 | ✅ four LOCKED cards — the row exists, the flowers dock, the slots read as undesigned. Blocked on ability DESIGN, not on this style |
 | Urchin | 0/4 | — no HUD prefab exists at all, so there is no view to ensure |
 
@@ -547,6 +594,8 @@ so `enforceStandardPlacement` stays `1` fleet-wide and no other vessel is affect
 | Style tokens (single source of truth) | `Assets/_Scripts/ScriptableObjects/AbilityLockupStyleSO.cs` |
 | Style asset | `Assets/Resources/AbilityLockupStyle.asset` |
 | The composer | `Assets/_Scripts/UI/View/AbilityLockupView.cs` |
+| Non-elemental card key | `Assets/_Scripts/Data/Enums/CoreAbility.cs` |
+| Non-elemental bindings + order | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `coreAbilities`, `CoreAbilityDisplayOrder` |
 | The generated plate | `Assets/_Scripts/UI/View/TrapezoidGraphic.cs` |
 | Upgrade hook (shared) | `Assets/_Scripts/UI/View/VesselHUDView.cs` — `SetAbilityUpgraded` → `SetUpgraded` |
 | Flower socket injection | `Assets/_Scripts/UI/View/ElementalBarsView.cs` — `TrySetPetalRoot` |

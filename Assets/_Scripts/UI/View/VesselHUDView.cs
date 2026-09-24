@@ -41,12 +41,44 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// A <b>non-elemental</b> ability's bindings. Same two visuals as an elemental one - an icon
+        /// and an optional meter - and no <see cref="Element"/>, because nothing upgrades it: the
+        /// lockup draws these cards with NO element cell above the plate.
+        /// </summary>
+        [Serializable]
+        public struct CoreAbilityBinding
+        {
+            [Tooltip("Which core ability this is. Fixes the card's place in the row - see " +
+                     "CoreAbilityDisplayOrder - and is the key every SetCoreAbility* call uses.")]
+            public CoreAbility ability;
+
+            [Tooltip("The ability's icon Image. Its PARENT is re-homed into the row as the card's " +
+                     "host, exactly as an elemental icon's is, so the button, its touch target and " +
+                     "any gauge children travel together.")]
+            public Image icon;
+
+            [Tooltip("Optional meter for this ability. Re-homed into the card and restyled as the " +
+                     "fleet's one gauge; the vessel keeps writing fillAmount on the same Image.")]
+            public Image gauge;
+        }
+
+        /// <summary>
         /// The fleet-wide ability slot order, left to right. It is the element display order used by
         /// <see cref="ElementalBarsView"/> (charge, mass, space, time), so an ability icon always sits
         /// in the same column as the element flower that upgrades it. Do not reorder.
         /// </summary>
         public static readonly Element[] AbilityDisplayOrder =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
+        /// <summary>
+        /// The fleet-wide NON-elemental ability order, and they sit to the LEFT of the four elemental
+        /// cards - the last entry nearest Charge, so adding one pushes the set further left and never
+        /// disturbs the elemental columns. That separation is the whole point: the elemental row must
+        /// go on reading left-to-right as charge / mass / space / time with nothing interleaved, or
+        /// "which flower upgrades this?" stops being answered by position.
+        /// </summary>
+        public static readonly CoreAbility[] CoreAbilityDisplayOrder =
+            { CoreAbility.Skim };
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 
@@ -56,6 +88,12 @@ namespace CosmicShore.UI
                  "and the icons must sit in that same order, left to right, in the lower-right row. " +
                  "Shared system - every vessel HUD wires its own four icons.")]
         public List<AbilityIconBinding> abilityIcons = new();
+
+        [Header("Non-elemental abilities (cards to the LEFT of the elemental row)")]
+        [Tooltip("Abilities no element upgrades - the hull's own engine. Each gets a lockup card " +
+                 "with an ability plate and NO element flower above it, placed left of the four " +
+                 "elemental cards. Empty on most vessels; the Squirrel binds its skimming here.")]
+        public List<CoreAbilityBinding> coreAbilities = new();
 
         [Tooltip("Persistent scale an upgraded ability icon rests at while the upgrade is active.")]
         [SerializeField] private float upgradeHighlightScale = 1.15f;
@@ -118,6 +156,32 @@ namespace CosmicShore.UI
             return false;
         }
 
+        /// <summary>The icon of a non-elemental ability, if the vessel wired one.</summary>
+        public bool TryGetCoreAbilityIcon(CoreAbility ability, out Image icon)
+        {
+            foreach (var binding in coreAbilities)
+            {
+                if (binding.ability != ability || !binding.icon) continue;
+                icon = binding.icon;
+                return true;
+            }
+            icon = null;
+            return false;
+        }
+
+        /// <summary>The meter of a non-elemental ability, if the vessel wired one.</summary>
+        public bool TryGetCoreAbilityGauge(CoreAbility ability, out Image gauge)
+        {
+            foreach (var binding in coreAbilities)
+            {
+                if (binding.ability != ability || !binding.gauge) continue;
+                gauge = binding.gauge;
+                return true;
+            }
+            gauge = null;
+            return false;
+        }
+
         /// <summary>True when this HUD authors the four-icon ability row at all (opt-in rollout).</summary>
         public bool HasAbilityIconRow => abilityIcons is { Count: > 0 };
 
@@ -177,6 +241,39 @@ namespace CosmicShore.UI
         {
             var lockups = ResolveAbilityLockups();
             if (lockups) lockups.SetAbilityCooldown(element, remaining01);
+        }
+
+        /// <summary>
+        /// The same three pushes for a NON-elemental card. There is deliberately no
+        /// <c>SetCoreAbilityUpgraded</c> - an upgrade is an element reaching level 5, and a core
+        /// ability has no element, so there is nothing that could ever raise it.
+        /// </summary>
+        public void SetCoreAbilityCooldown(CoreAbility ability, float remaining01)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetCoreAbilityCooldown(ability, remaining01);
+        }
+
+        public void SetCoreAbilityPressed(CoreAbility ability, bool pressed)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetCoreAbilityPressed(ability, pressed);
+        }
+
+        public void SetCoreAbilityControl(CoreAbility ability, InputEvents input)
+        {
+            var lockups = ResolveAbilityLockups();
+            if (lockups) lockups.SetCoreAbilityControl(ability, input);
+        }
+
+        /// <summary>
+        /// A non-elemental card's icon KERNING, and the rest scale that goes with it. No upgrade
+        /// term - see <see cref="SetCoreAbilityCooldown"/>.
+        /// </summary>
+        protected Vector3 CoreAbilityIconRestScale(CoreAbility ability)
+        {
+            var lockups = ResolveAbilityLockups();
+            return Vector3.one * (lockups ? lockups.CoreIconContentScale(ability) : 1f);
         }
 
         /// <summary>
@@ -374,6 +471,23 @@ namespace CosmicShore.UI
             }
 
             float previousX = float.NegativeInfinity;
+
+            // The NON-elemental cards come first in the same left-to-right walk, because "left of
+            // the elemental row" is the whole layout contract: interleave one and the elemental
+            // columns stop answering "which flower upgrades this?" by position alone.
+            for (int i = 0; i < CoreAbilityDisplayOrder.Length; i++)
+            {
+                if (!TryGetCoreAbilityIcon(CoreAbilityDisplayOrder[i], out var coreIcon)) continue;
+
+                float coreX = coreIcon.rectTransform.position.x;
+                if (coreX < previousX)
+                    Debug.LogWarning($"[VesselHUDView] {name} core ability '{CoreAbilityDisplayOrder[i]}' " +
+                                     "sits LEFT of an earlier core card. Core cards run in " +
+                                     "CoreAbilityDisplayOrder, left to right, and all of them sit left " +
+                                     "of the four elemental cards.", this);
+                previousX = coreX;
+            }
+
             for (int i = 0; i < AbilityDisplayOrder.Length; i++)
             {
                 var expected = AbilityDisplayOrder[i];
