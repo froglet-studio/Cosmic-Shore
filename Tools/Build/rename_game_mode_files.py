@@ -33,9 +33,13 @@ from rename_game_modes import substitute  # noqa: E402
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # All-caps documentation filenames the case-sensitive identifier map cannot see.
+# Each entry points at the name the doc carries NOW, not at the next hop in its history: a
+# two-generation rename (RIBCAGE -> PEEL_THE_CAGE -> CLEAVE) resolves in ONE lookup here, and a
+# chained map would land a stale file on a name nothing uses.
 DOC_NAMES = {
     "HEXRACE.md": "SKIMRACE.md",
-    "RIBCAGE.md": "PEEL_THE_CAGE.md",
+    "RIBCAGE.md": "CLEAVE.md",
+    "PEEL_THE_CAGE.md": "CLEAVE.md",
     "NUCLEUSRUSH.md": "BROODRUSH.md",
     "CRYSTAL_CAPTURE.md": "SCURRY.md",
 }
@@ -43,10 +47,13 @@ DOC_NAMES = {
 # Path fragments that must never be renamed - they name a thing, not a mode.
 PROTECTED_FRAGMENTS = (
     "CrystalCaptureConfig",   # the crystal COLLECTION feel (Docs/ECOSYSTEM.md §31)
-    "SpawnableRibcage",       # the ribcage-shaped arena geometry
-    "Ribcage Cell",           # that arena's cell configs
-    "Ribcage Spawn Profile",
+    "SpawnableRibcage",       # ONE of Cleave's four arenas really is a ribcage - see below
 )
+# The cell configs and spawn profile used to be protected here as "Ribcage Cell" / "Ribcage
+# Spawn Profile". They are not any more, and they are not renamed by this script either: they
+# name the MODE's cell rather than the arena, so they moved to "Cleave Cell" by hand with the
+# 2026-09 rename. Listing a path as protected that has since been moved is worse than omitting
+# it - it reads as a standing rule about a file that no longer exists.
 
 SEARCH_ROOTS = ["Assets", "Docs"]
 

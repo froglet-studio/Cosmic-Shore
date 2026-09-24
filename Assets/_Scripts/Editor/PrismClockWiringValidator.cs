@@ -68,18 +68,28 @@ namespace CosmicShore.Editor
         /// <summary>PrismWake.hlsl — the carrier travelling wake (§4.7.3), a file-scope global bank.</summary>
         public const string WakeHlslGuid = "4e61030d8d1148b6a5751d98f71dfcab";
 
+        /// PrismSway.hlsl — deliberately NOT PrismClockAnimation.hlsl. It `#include`s
+        /// SpindleSway.hlsl so a health prism and the limb it is bolted to share the two
+        /// wave constants rather than each carrying a copy (Docs/ECOSYSTEM.md §47).
+        public const string SwayHlslGuid = "8d51a0c3f2e74b1e9a6c07d4b3f81520";
+
         public static readonly string[] DestructionSightGlobals =
         {
             "_PrismSightApex", "_PrismSightAxis", "_PrismSightGape",
             "_PrismSightParams", "_PrismSightStrength",
         };
 
-        static readonly GraphEdgeCheck[] BackFaceEdges =
+        // The corridor's entry point is PER GRAPH — BlockGraph binds PrismOcclusionFade
+        // (full nose clearance), ExplodingBlockGraph binds PrismOcclusionFadeDebris (no
+        // clearance; debris has no collider, so it has nothing to buy with one). Same
+        // body, same slots — only the wrapper name differs, which is why this is an
+        // argument and not a second edge set.
+        static GraphEdgeCheck[] BackFaceEdges(string corridorFunction) => new[]
         {
             new GraphEdgeCheck
             {
                 InputFunction = "PrismBackFaceFade", InputSlot = 2,
-                OutputFunction = "PrismOcclusionFade", OutputSlot = 4,
+                OutputFunction = corridorFunction, OutputSlot = 4,
                 Description = "back-face BaseAlpha sits AFTER the corridor Alpha",
             },
             new GraphEdgeCheck
@@ -114,7 +124,7 @@ namespace CosmicShore.Editor
             },
             new GraphEdgeCheck
             {
-                InputFunction = "PrismOcclusionFade", InputSlot = 3,
+                InputFunction = "PrismOcclusionFadeDebris", InputSlot = 3,
                 OutputFunction = "PrismErosionFade", OutputSlot = 3,
                 Description = "corridor BaseAlpha fed by erosion Survival",
             },
@@ -178,6 +188,45 @@ namespace CosmicShore.Editor
             },
         };
 
+        /// The sway must sit immediately AFTER the shield morph in the vertex chain, so a
+        /// shielded prism on a living limb does both. Composition order is the one thing a
+        /// property check cannot see: every property can be present and correct while the
+        /// node sits in a branch nothing reads.
+        static readonly GraphEdgeCheck[] SwayEdges =
+        {
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 0,
+                OutputFunction = "PrismShieldMorph", OutputSlot = 8,
+                Description = "sway PositionOS fed by PrismShieldMorph.MorphedPosition",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 1,
+                Description = "sway Clock connected (the shared _PrismClock global)",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 2,
+                Description = "sway SpanX connected",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 3,
+                Description = "sway SpanY connected",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 4,
+                Description = "sway Axis connected",
+            },
+            new GraphEdgeCheck
+            {
+                InputFunction = "PrismSway", InputSlot = 5,
+                Description = "sway Timing connected",
+            },
+        };
+
         public static readonly GraphSpec[] Specs =
         {
             new GraphSpec
@@ -192,6 +241,7 @@ namespace CosmicShore.Editor
                     "_ShieldMorphStartTime", "_ShieldMorphDuration",
                     "_ShieldMorphDirection", "_ShieldMorphOffset",
                     "_JiggleStartTime", "_JiggleDuration", "_JiggleParams",
+                    "_SwaySpanX", "_SwaySpanY", "_SwayAxis", "_SwayTiming",
                     "_SuctionStartTime", "_SuctionDuration", "_SuctionDirection",
                     "_SuctionGrowDelay", "_Location",
                 },
@@ -200,14 +250,14 @@ namespace CosmicShore.Editor
                 {
                     "PrismGrowScale", "PrismColorLerp",
                     "PrismFlightClock", "PrismFlightSqrDistance",
-                    "PrismShieldMorph", "PrismJiggleClock",
+                    "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
                     "PrismWakeDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(BackFaceEdges, LiveSuctionEdges), WakeEdges), CradleEdges),
-                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + fleet wake (PrismWakeDeform, vertex, §4.7.3 global bank) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(BackFaceEdges("PrismOcclusionFade"), LiveSuctionEdges), SwayEdges), WakeEdges), CradleEdges),
+                Purpose = "grow-in bloom (PrismGrowScale, vertex) + color/state transitions (PrismColorLerp, fragment) + ballistic flight (PrismFlightClock, vertex) + shield engage/shatter morph (PrismShieldMorph, vertex) + super-shield deflection jiggle (PrismJiggleClock, vertex) + living-mass sway (PrismSway, vertex) + cell-swap suction (PrismSuctionClock + PrismSuctionConverge, vertex) + wake shockwave (PrismWakeDeform, vertex, §4.7.3 global bank) + Urchin cradle (PrismCradleDeform, vertex, §4.7.2 global bank) + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -228,6 +278,7 @@ namespace CosmicShore.Editor
                     "_ShieldMorphStartTime", "_ShieldMorphDuration",
                     "_ShieldMorphDirection", "_ShieldMorphOffset",
                     "_JiggleStartTime", "_JiggleDuration", "_JiggleParams",
+                    "_SwaySpanX", "_SwaySpanY", "_SwayAxis", "_SwayTiming",
                     "_SuctionStartTime", "_SuctionDuration", "_SuctionDirection",
                     "_SuctionGrowDelay", "_Location",
                 },
@@ -235,14 +286,14 @@ namespace CosmicShore.Editor
                 CustomFunctions = new[]
                 {
                     "PrismExplosionClock", "PrismGrowScale", "PrismColorLerp",
-                    "PrismFlightClock", "PrismShieldMorph", "PrismJiggleClock",
+                    "PrismFlightClock", "PrismShieldMorph", "PrismJiggleClock", "PrismSway",
                     "PrismErosionFade", "PrismBackFaceFade", "PrismDestructionSight",
                     "PrismSuctionClock", "PrismSuctionConverge",
                     "PrismWakeDeform", "PrismCradleDeform",
                 },
                 UnexposedGlobals = DestructionSightGlobals,
-                EdgeChecks = Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges), LiveSuctionEdges), WakeEdges), CradleEdges),
-                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection + cell-swap suction + fleet wake (§4.7.3) + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
+                EdgeChecks = Concat(Concat(Concat(Concat(Concat(ExplosionErosionEdges, BackFaceEdges("PrismOcclusionFadeDebris")), LiveSuctionEdges), SwayEdges), WakeEdges), CradleEdges),
+                Purpose = "explosion debris flight/shatter/fade (PrismExplosionClock) + transparent live prism bloom/color/flight/shield morph/deflection/sway + cell-swap suction + wake shockwave (§4.7.3) + Urchin cradle (§4.7.2) + UV0 erosion + back-face fade + destruction sight",
             },
             new GraphSpec
             {
@@ -405,6 +456,7 @@ namespace CosmicShore.Editor
                 case "PrismErosionFade":
                 case "PrismBackFaceFade":
                 case "PrismOcclusionFade":
+                case "PrismOcclusionFadeDebris":
                     return "PrismOcclusionCorridor.hlsl";
                 case "PrismDestructionSight":
                     return "PrismDestructionSight.hlsl";
@@ -412,6 +464,8 @@ namespace CosmicShore.Editor
                     return "PrismCradle.hlsl";
                 case "PrismWakeDeform":
                     return "PrismWake.hlsl";
+                case "PrismSway":
+                    return "PrismSway.hlsl";
                 default:
                     return "PrismClockAnimation.hlsl";
             }
@@ -424,6 +478,7 @@ namespace CosmicShore.Editor
                 case "PrismErosionFade":
                 case "PrismBackFaceFade":
                 case "PrismOcclusionFade":
+                case "PrismOcclusionFadeDebris":
                     return PrismOcclusionWiringValidator.CorridorHlslGuid;
                 case "PrismDestructionSight":
                     return SightHlslGuid;
@@ -431,6 +486,8 @@ namespace CosmicShore.Editor
                     return CradleHlslGuid;
                 case "PrismWakeDeform":
                     return WakeHlslGuid;
+                case "PrismSway":
+                    return SwayHlslGuid;
                 default:
                     return ClockHlslGuid;
             }

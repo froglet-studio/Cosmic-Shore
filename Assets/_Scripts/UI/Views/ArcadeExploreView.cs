@@ -52,6 +52,7 @@ namespace CosmicShore.UI
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        bool _subscribedToProgression;
 
         // Slots the progression chain locked THIS populate. Recorded rather than re-derived,
         // because "did this card get a SelectGame listener?" is only answerable at the moment the
@@ -83,8 +84,13 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            if (GameModeProgressionService.Instance != null)
-                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+            QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
+            // Flipping the master developer unlock changes every card's lock state.
+            DeveloperUnlockGate.OnChanged += HandleConstraintsChanged;
+            // Guarded + idempotent, and retried from Start() — supersedes the raw
+            // subscribe here, which would double-add alongside it.
+            TrySubscribeToProgression();
 
             _pickSource = ArcadeConfigSyncManager.Instance;
             if (_pickSource != null)
@@ -96,12 +102,17 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+            QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
+            DeveloperUnlockGate.OnChanged -= HandleConstraintsChanged;
+
             // A reveal cut short by the grid going away must not strand a card at alpha 0.
             CardGridReveal.Snap(this, _revealCards, _reveal);
             _reveal = null;
 
-            if (GameModeProgressionService.Instance != null)
+            if (_subscribedToProgression && GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+            _subscribedToProgression = false;
 
             if (_pickSource != null)
             {
@@ -112,6 +123,10 @@ namespace CosmicShore.UI
 
         void Start()
         {
+            // Retry: the progression service may not have existed yet at OnEnable time
+            // (it lives on a DontDestroyOnLoad object created during bootstrap).
+            TrySubscribeToProgression();
+
             LoadoutSystem.Init();
             PopulateGameSelectionList();
 
@@ -142,6 +157,19 @@ namespace CosmicShore.UI
                 foreach (var card in GameCards)
                     if (card) _revealCards.Add(card.gameObject);
             _reveal = CardGridReveal.Play(this, _revealCards, cardRevealSettings, null);
+        }
+
+        void TrySubscribeToProgression()
+        {
+            if (_subscribedToProgression || GameModeProgressionService.Instance == null) return;
+            GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            _subscribedToProgression = true;
+        }
+
+        void HandleConstraintsChanged()
+        {
+            if (isActiveAndEnabled)
+                PopulateGameSelectionList();
         }
 
         public void PopulateGameSelectionList()
@@ -249,8 +277,10 @@ namespace CosmicShore.UI
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.ExploreView = this;
 
-                // Check if this game mode is unlocked via the quest progression system
-                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                // Locked when the quest progression hasn't unlocked the mode, or the running
+                // quest graph has funneled the arcade down to one tutorial mode.
+                bool isLocked = (progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+                                || QuestArcadeConstraints.IsModeBlocked(game.Mode);
                 gameCard.SetLocked(isLocked);
 
                 if (isLocked) _lockedSlots.Add(i);

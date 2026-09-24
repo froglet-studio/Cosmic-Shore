@@ -218,6 +218,15 @@ its GameObject lists it in `m_Component`.
   every human diffing the file reads it as misplaced. Serialize enum fields as
   their INTEGER value (`condition: 1`), and get the integer from the C# —
   an enum with explicit values is not its declaration order.
+  **And insert the component ENTRY inside the matched GameObject's OWN body — never by searching
+  forward from where the match ended.** `re.search(r"^--- !u!1 &<go>$(.*?)(?=^--- !u!)", ...)` gives
+  you a group whose `.end()` is the END of that GameObject, so a `text[m.end(1):].replace("  m_Layer:",
+  …, 1)` lands the entry on whatever object is serialized NEXT. Unity accepts that in silence: the
+  component's own `!u!114` doc still names the right `m_GameObject`, so nothing dangles, nothing
+  errors, and the component is simply attached to the wrong object. Splice inside `m.group(1)` and
+  write it back over `[m.start(1):m.end(1)]`, then **assert afterwards** that the fileID appears in
+  the intended GameObject's component list AND that the component doc points back at that same
+  GameObject — the two-way check is what names the failure, because either one alone passes.
 - **Authoring a whole new asset FOLDER: emit its `.meta` too, or Unity re-mints it.** A directory
   under `Assets/` is itself an asset and needs `fileFormatVersion: 2` / `guid:` /
   `folderAsset: yes` / `DefaultImporter:`. Without it Unity generates one on next import — fine
@@ -1473,6 +1482,35 @@ Both shipped and cost a playtest round each (2026-08, shield-shatter branch):
 Both checks are cheap to run over the parsed JSON and are now standing assertions in
 `PrismClockWiringValidator` + `PrismShieldMorphTests` — copy that shape into any new wirer.
 
+### Trap: a file-mode Custom Function's call is ALL INPUTS, THEN ALL OUTPUTS
+
+Slot IDs do **not** decide the argument order. ShaderGraph emits a file-mode Custom
+Function node's call as every INPUT slot in slot order, then every OUTPUT slot in slot
+order — so an HLSL signature whose parameter list interleaves them, or that declares a
+new input **after** an existing `out`, is called with an input where an output is
+expected. The graph then fails to compile and **every material drawn with it renders
+unmaterialed**, with nothing in the console naming the HLSL file or the node.
+
+That shipped (2026-09, prism corridor branch): adding an `ErosionThreshold` input to
+`PrismOcclusionFade_float` after its two `out` parameters took BOTH prism graphs down, and
+the report was the maximally unhelpful *"all prisms had no materials."* It is the same
+failure surface as the cycle trap above — whole-graph, silent about its cause — and it is
+reached by an edit that looks purely additive.
+
+Two consequences worth carrying:
+
+- **Declare every input before the first `out`.** When a variant needs a different value
+  for one argument, prefer TWO THIN WRAPPERS over one shared body (`…Impl`) to adding a
+  slot: the wrappers keep the node's slot shape byte-identical, so the graph edit is a
+  `m_FunctionName` string swap with no slot or edge churn at all, and the two variants
+  provably cannot drift in shape. `PrismOcclusionFade_float` /
+  `PrismOcclusionFadeDebris_float` over `PrismOcclusionFadeImpl` is the worked example.
+- **Gate it.** `Tools/Build/check_shadergraph_custom_function_signatures.py` parses every
+  `.shadergraph`'s custom-function nodes, resolves each to its HLSL by guid, and asserts
+  the declared parameter order matches the node's slot groups. It carries a `--self-test`
+  that reproduces the shipped failure as a negative control — write that control, because
+  a gate for a whole-graph failure is one nobody will otherwise watch fail.
+
 ### Trap: a clean merge can still be a semantic conflict (duplicate members)
 
 Origin: `Flora.LeafSize` (2026-08). Two branches each added the SAME member to
@@ -2578,6 +2616,53 @@ remove every `Connections` record whose src OR dst is a doomed id, then fix the 
 `ObjectType → Count` rows. Assert afterwards that no connection references a missing object —
 that one check is worth more than re-reading the diff.
 
+**Repairing geometry the IMPORTER discards, and the one technique that makes it safe.**
+Unity's `"A polygon of Mesh 'X' ... is self-intersecting and has been discarded"` is not a
+quality warning — it names an action the importer TOOK, so it is a report of missing faces in
+the shipped mesh. **Measure the action a warning names, not the ratio**: "one face out of
+11,113, 0.009%, pre-existing art" is entirely true and answers the wrong question, and it is
+how twelve missing hull faces survived a first pass. (The mesh name in the message is the
+**Model** node, not the Geometry node — they differ, and searching the wrong one finds nothing.)
+
+The usual offender is a **zero-length edge**: two adjacent corners indexing different vertices
+at the identical position. Repair by dropping the redundant CORNER, not by moving or merging a
+vertex — and check first whether the two corners carry the same UV (if so the edit is lossless;
+if not you are about to weld a seam). Where they differ only in normal, pick which to keep by
+MEASURING — the corner whose normal sits farther from the polygon's own Newell normal is the
+one to drop. Scope the repair to exactly what the importer discards: a zero-area triangle is
+degenerate too and Unity KEEPS it, so repairing one both exceeds the report and would leave a
+2-gon.
+
+Removing one corner touches five parallel arrays with three different domains —
+`PolygonVertexIndex` (corner), normals (ByPolygonVertex), UV indices (ByPolygonVertex +
+IndexToDirect), materials (**ByPolygon — unchanged**, the polygon count does not move), and
+`Edges` + smoothing (ByEdge). Getting the domain wrong is silent.
+
+**The generalizable technique: PROVE A REBUILD RULE AGAINST THE SHIPPED ARTIFACT BEFORE YOU
+RELY ON IT.** `Edges` stores one corner position per unique undirected edge, so removing a
+corner shifts every later entry and patching it by hand is guesswork. Instead, guess the rule
+that BUILT it — emit the first occurrence of each undirected vertex pair in polygon-corner
+order — and compare against what is already in the file. When that reproduces the shipped array
+exactly (same length, same order, same values), "I think this is how it was built" becomes a
+fact and rebuilding it is safe; when it does not, you have learned that cheaply and can refuse
+to write. This applies to any derived array you must regenerate rather than patch. Sanity-check
+the *direction* of the result too: here the edge count RISES by one per repaired polygon, and a
+model that predicted a fall would have been wrong about the topology.
+
+Then verify in layers, cheapest first: round-trip the writer on the untouched file (node count
+and every property value, plus an independent reader); diff the node tree and assert that ONLY
+the arrays you meant to touch differ; assert the invariants that must hold (vertex positions
+byte-identical, blend shapes byte-identical, polygon count unchanged, each layer's length
+matching its domain); then `assimp` the before and after and diff the reports.
+
+**A path with a space silently truncates a shell sweep.** `for f in $(git diff --name-only …)`
+and `… | xargs grep` both word-split, so `Assets/_Models/Vessel Models/Thing.fbx.meta` becomes
+two nonexistent paths — and the loop does not fail, it just processes the files that happen to
+have no spaces. A deleted-asset guid sweep reported "1 file, 0 references" for a change that
+deleted 8. Use `-z`/`-0` (`git diff --name-only -z … | xargs -0`, or
+`while IFS= read -r -d ''`), and sanity-check the COUNT against the diffstat before believing a
+clean result.
+
 ## 4.9 Technique: answering "does every X actually carry Y?" THROUGH prefab nesting
 
 Origin: the crystal-capture rework (2026-08). The branch's whole payoff was routed through
@@ -3350,6 +3435,31 @@ never fold it into a fix for something else.
   the next person re-adds it. The mirror also holds: before REMOVING a `using`, enumerate the
   types that namespace declares and grep the file's body for all of them — checking only the
   one symbol you deleted misses a sibling type that was riding the same import.
+- **"Referenced by nothing" is measured against whatever you grepped, and an ANIMATOR references
+  CLIPS by the model's guid.** A liveness sweep over prefabs and scenes is the obvious one and it
+  misses the case that costs you: a model with ZERO prefab references can still be supplying
+  animation clips to a shipped object, because the reference lives in an `AnimatorController`'s
+  `m_Motion` entries and points at the model's guid, not at the model as an object. Two Cosmic
+  Shore vessel models sat on a delete list that way — one supplying 7 clips to NINE vessels — and
+  the documentation that cleared them was written from a prefab-and-scene sweep. Resolve liveness
+  in TWO steps and never one: grep the guid across `*.controller`/`*.overrideController` as well,
+  then **resolve each referring controller to the prefabs that use IT**, because a controller can
+  itself be dead (this project had two same-named `MantaAnimatorController`s, and the one five
+  vessels use is not the one in `_Animations/`). A reference count is not a liveness measurement
+  until every referrer is itself resolved.
+- **An overlap score is meaningless when the baseline overlap is already ~0 — run the control
+  against the SHIPPED asset before reading a low score as a regression.** Validating "does the new
+  geometry still sit inside the collider that was authored for it" by scoring containment gives a
+  number that looks decisive and is not: if the collider never bounded its own geometry in the
+  first place, the score is ~0 either way and reads as "my change broke it". Measured on the
+  Urchin: 3.58% for the shipped hull against 3.54% for the replacement, i.e. the swap was exactly
+  neutral and the colliders were already loose — a real but SEPARATE pre-existing defect, and not
+  a reason to hold the change. Always compute the same score for the asset you are replacing.
+  Its companion: **a weak discriminator collapses onto the dominant element.** Matching a part to
+  "the nearest bone" by centroid, and then by nearest skinned vertex, both picked the body bone
+  for every appendage on a radially symmetric hull and flagged a correct mapping as wrong twice.
+  Score by something DIRECTIONAL and size-aware (what fraction of each bone's geometry falls
+  inside this part's own volume), and treat two cheap metrics agreeing as one metric.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report
@@ -3373,6 +3483,35 @@ never fold it into a fix for something else.
   unchanged at 0.825, because `z = 20` still won the `max`. Compute it and assert it rather
   than assuming either way — the identical geometry that once made a collider 8× too big is
   what makes this edit free, and only arithmetic tells you which case you are in.
+- **A shader parameter documented as "unit-free" is unit-free only under a UNIFORM scale, and a
+  header claiming otherwise will name its own counter-examples.** `SpindleSway.hlsl` bends a limb
+  with a first-order shear, `offset.x = Amplitude * PositionOS.z * sin(...)`, so `Amplitude` is a
+  dimensionless SLOPE and the header said it therefore "transfers across meshes that disagree
+  about scale by three orders of magnitude". It does not: the shear is evaluated in OBJECT space,
+  so a renderer carrying `localScale (sx, sy, sz)` deflects its tip by `atan(Amplitude * sx / sz)`
+  in WORLD terms — a mesh stretched along its own bend axis bends that much LESS. At the shared
+  0.08 the uniformly-scaled creature spindles leaned 4.57° and every branch-family spindle
+  0.64–1.48°, i.e. the lattice species read as dead while wearing the material that made the fish
+  wave. The reassuring clause in the header (*"every shipped spindle prefab is scaled on z to
+  match (Branch 6.2, TadpoleSpindle 3.0)"*) named the two prefabs that DISAGREE — **a sentence
+  offered as evidence for a claim is the first place to check the claim**, because whoever wrote
+  it had the numbers in front of them and drew the wrong conclusion. Two general rules: any
+  normalized/unit-free/"scale-free" parameter consumed in OBJECT space is a claim about the
+  transform above it, so measure the tip deflection per prefab before sharing one material; and
+  when the fix is per-mesh, prefer **per-mesh MATERIALS with a solved constant** over a per-mesh
+  shader branch — the solve is offline arithmetic (`author_lattice_spindle_materials.py` reads
+  each prefab's own stretch and back-solves the amplitude for one authored angle), and the shader
+  stays one expression. Target the ANGLE, not the offset: equal angle is equal FRACTION OF THE
+  LIMB, so one number serves a family whose limbs span 3–24 world units and survives a later
+  uniform rescale of the whole family.
+- **An asset re-pointer is idempotent only if it asserts the END STATE, never a swap COUNT.** The
+  natural shape for "swap every renderer on this prefab onto the new material" is to count the
+  `guid:` substitutions and `assert swapped == len(renderers)` — which passes on the first run and
+  FAILS on the second with `expected 2 references to swap, swapped 0`, because the work is already
+  done. That makes the tool un-re-runnable and makes `--check` impossible, which is the whole
+  contract (§1.2). Assert instead that every named renderer now carries the new guid, and give the
+  "carries neither the old nor the new one" case its own error message — that is the only genuine
+  failure, and it is a hand-edit somebody else made, not your re-run.
 - **An EFFECTIVE number that everything agrees on may never have been AUTHORED at all.**
   The mirror of "the authored number is not the effective one" (`/vessel` §2.4a): here the
   effective number was 12, three assets had been tuned to match it, a config default and a

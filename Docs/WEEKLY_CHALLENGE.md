@@ -427,7 +427,7 @@ cloud copy returns on the next sign-in.
 | Skim Race | 10 crystals | auto (~39) | 1:30 |
 | Joust | 1 joust | 3 | 1:00 |
 | Rampage | 300 prisms | 2000 | 1:30 |
-| Peel the Cage | 300 prisms | 2000 | 1:30 |
+| Cleave | 300 prisms | 2000 | 1:30 |
 | Salvo | 150 prisms | 700 | 1:30 |
 | Dog Fight | 20 points | 90 | 1:30 |
 | The Bends | 1 bend | 3 | 1:30 |

@@ -859,10 +859,22 @@ namespace CosmicShore.UI
         /// VALUE the vessel pushes rather than an <c>Image</c> it binds like the gauge: there is no
         /// existing per-vessel artwork to preserve, so the lockup owns the whole presentation and a
         /// vessel supplies one float.</para>
+        ///
+        /// <para><b>A LOCKED card draws it too</b>, unlike every other state on this view. Locked
+        /// means "this vessel has not authored an icon for this slot", which is a fact about the
+        /// ART - and a slot that is being DRIVEN is an ability that exists, whatever the row can
+        /// draw of it. The Serpent is the case that proved it: its sniper's recharge was pushed
+        /// correctly from <c>SerpentVesselHUDController</c> from the day the ability shipped, and
+        /// landed nowhere for three rounds of playtest because that vessel binds 0 of its 4 icons.
+        /// The veil needs no icon anyway - it sizes itself on the ability PLATE, which a locked
+        /// card has. The general rule: <i>an indicator that refuses to draw because its
+        /// decoration is missing is indistinguishable from an indicator nobody is driving.</i>
+        /// <see cref="SetUpgraded"/> is deliberately NOT changed: an upgrade is a statement about
+        /// an ability the player can see, and there is nothing there to light.</para>
         /// </summary>
         public void SetAbilityCooldown(Element element, float remaining01)
         {
-            if (!_slots.TryGetValue(element, out var slot) || !style || slot.Locked) return;
+            if (!_slots.TryGetValue(element, out var slot) || !style) return;
 
             remaining01 = Mathf.Clamp01(remaining01);
             bool active = remaining01 > 0.0001f;

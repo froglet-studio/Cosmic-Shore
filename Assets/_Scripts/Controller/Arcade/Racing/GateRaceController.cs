@@ -798,7 +798,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>AIPilot has no arrive-and-stop behaviour - it steers at its target forever and
         /// flies through on arrival - so handing it the ring's centre produces a pilot orbiting
-        /// the hoop, which is the defect PeelTheCage and Dog Fight both record. Instead: while
+        /// the hoop, which is the defect Cleave and Dog Fight both record. Instead: while
         /// far out, aim at a point BEHIND the ring on its own axis, which lines the approach up
         /// with the mouth; inside the commit distance, aim at a point BEYOND it, which flies the
         /// pilot through.</para>

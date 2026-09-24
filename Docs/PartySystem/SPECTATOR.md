@@ -79,8 +79,10 @@ ever gets a Player anyway (an approval callback that stopped honouring the paylo
 
 Two things the host must SUBTRACT a spectator from, because it counts
 `ConnectedClientsIds` as "humans who must press Ready":
-`MultiplayerDomainGamesController`, `CoOpWildlifeBlitzMiniGame`, `MaelstromLobbyNetwork`
-and `ArcadeConfigSyncManager` all read `SpectatorSession.CountHumanClients(nm)`. The
+`MultiplayerDomainGamesController`, `CoOpWildlifeBlitzMiniGame`, `MaelstromLobby`
+and `ArcadeConfigSyncManager` all read `SpectatorSession.CountHumanClients(nm)` (the
+Maelstrom hub also skips spectators per-player via `SpectatorSession.IsSpectatorClient`,
+because its roster is a list of faces rather than a count). The
 registry is cleared on `OnServerStarted` because client ids restart per server session.
 
 On the UGS side the spectator joins the party Relay session (the match's session — the

@@ -8,6 +8,7 @@ using Reflex.Attributes;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     public class Projectile : MonoBehaviour, IPrismWakeCarrier
@@ -191,6 +192,49 @@ namespace CosmicShore.Gameplay
                  "escape is not. Raise this OR shorten the blast to catch faster targets.")]
         [SerializeField, Min(0f)] private float warheadBlastRadiusMultiplier = 0f;
 
+        [Header("Flight Prism Trail")]
+        [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) - the SAME asset the " +
+                 "vessel trail and every boost ring use. Empty (every round but the Sparrow's " +
+                 "heavy skyburst) = this round can lay nothing, whatever a shot asks for.")]
+        [SerializeField] private PrismEventChannelWithReturnSO prismTrailChannel;
+
+        [Tooltip("World units between prisms laid along the flight. 0 = no trail.\n\n" +
+                 "This is a DISTANCE, not a period: a round's speed varies with SPACE, with the " +
+                 "vessel's inherited velocity and with the cosine falloff of its own flight, so " +
+                 "a per-second lay would space the ribbon differently on every shot.")]
+        [SerializeField, Min(0f)] private float prismTrailSpacing = 0f;
+
+        [Tooltip("The size of ONE prism in that trail. Small on purpose - the trail is a line a " +
+                 "rocket drew, not a second vessel trail; the Sparrow's own trail prism is " +
+                 "(2, 2, 5) and this reads as a thinner, shorter version of it.")]
+        [SerializeField] private Vector3 prismTrailScale = new Vector3(1f, 1f, 3f);
+
+        [Tooltip("HARD CAP on prisms laid by one flight - the COLLIDER BUDGET line, and the " +
+                 "number to quote when asked what a missile costs the arena.\n\n" +
+                 "Spacing alone does not bound the count, because the count is range/spacing " +
+                 "and RANGE is derived: speed x 2T/pi, where both terms are authored per shot " +
+                 "and per variant. At the shipped 240 u/s and 3 s that is 458 u = 15 prisms, so " +
+                 "the cap is headroom rather than a limiter - and it is what keeps a future " +
+                 "speed or lifetime retune from silently multiplying the budget.")]
+        [SerializeField, Min(0)] private int prismTrailMaxPrisms = 24;
+
+        [Tooltip("What the laid prisms ARE. Plain is ordinary conserved mass in the shooter's " +
+                 "domain - grazeable by fauna, stealable, destroyable. Anything else is a " +
+                 "balance decision: Danger bites its own pilot (locked law) and the shield " +
+                 "tiers make the trail food the ecology can never remove.")]
+        [SerializeField] private PrismKind prismTrailKind = PrismKind.Plain;
+
+        [Tooltip("Seconds a freshly-laid trail prism is immune to EVERY projectile, using the " +
+                 "same Prism.ProjectileImmuneUntil window the turret stance's placed prisms use " +
+                 "(\"a spray does not erase its own freshest output\").\n\n" +
+                 "It exists for the SECOND rocket: a bay that holds two heavy missiles fires " +
+                 "them down nearly the same line, and without it rocket 2 detonates on rocket " +
+                 "1's ribbon a few units out of the bay. The round's own contact with its own " +
+                 "ribbon is handled separately and PERMANENTLY, by trail identity - a window " +
+                 "cannot answer that, because a round that curls back should still not blow up " +
+                 "on mass it laid itself.")]
+        [SerializeField, Min(0f)] private float prismTrailImmunitySeconds = 1f;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
@@ -214,8 +258,13 @@ namespace CosmicShore.Gameplay
         /// on a round with no warhead. See the serialized field.</summary>
         public AOEExplosion WarheadBlast => warheadBlast;
 
-        /// <summary>The warhead's radius as a multiple of <see cref="HitRadiusWorld"/>.</summary>
-        public float WarheadBlastRadiusMultiplier => warheadBlastRadiusMultiplier;
+        /// <summary>
+        /// The warhead's radius as a multiple of <see cref="HitRadiusWorld"/> — zero when this
+        /// flight is not carrying one, which is what makes the detonator need no new condition:
+        /// it already refuses to spawn a warhead at a non-positive radius.
+        /// </summary>
+        public float WarheadBlastRadiusMultiplier =>
+            Payload.ArmWarhead ? warheadBlastRadiusMultiplier : 0f;
 
         /// <summary>
         /// True once this flight has committed to a detonation. Per-FLIGHT — cleared by
@@ -256,6 +305,25 @@ namespace CosmicShore.Gameplay
         /// Per-shot: the CHARGE level-5 'Domain-Safe Skybursts' upgrade — direct-hit
         /// damage spares prisms of the shooter's own domain. Snapshot at fire time.
         public bool SpareOwnDomain { get; private set; }
+
+        /// <summary>
+        /// What THIS flight is carrying. Reset to <see cref="ProjectilePayload.Default"/> by
+        /// <see cref="Initialize"/>, so a pooled reissue can never inherit the previous shot's
+        /// payload and a caller that says nothing gets the prefab's own authoring.
+        /// </summary>
+        public ProjectilePayload Payload { get; private set; } = ProjectilePayload.Default;
+
+        /// <summary>Hands this flight its payload set. Called by the gun at fire time, after
+        /// <see cref="Initialize"/> and before launch.</summary>
+        public void SetPayload(in ProjectilePayload payload) => Payload = payload;
+
+        /// <summary>
+        /// The fuze radius this flight actually carries, as a multiple of
+        /// <see cref="HitRadiusWorld"/>. Zero when the flight is not carrying its warhead: the
+        /// fuze and the blast it triggers are ONE weapon, so disarming collapses both here
+        /// rather than at each of the three places that read the fuze.
+        /// </summary>
+        float FuzeRadiusMultiplier => Payload.ArmWarhead ? proximityFuzeRadiusMultiplier : 0f;
 
         /// Per-shot: this projectile is a PART of a pooled host object (the Sparrow's
         /// turret prism carries one), not an instance of the projectile pool. Its
@@ -515,6 +583,14 @@ namespace CosmicShore.Gameplay
             _flightGrowthFactor = 1f;
             _intendedWorldScale = Vector3.zero;
 
+            // Per-flight payload. A pooled reissue must not inherit the previous shot's
+            // warhead, its cairn, or a half-laid prism trail: a base rocket handed a heavy
+            // rocket's instance would arrive carrying a fuze nobody armed.
+            Payload = ProjectilePayload.Default;
+            _prismTrail = null;
+            _prismTrailLaid = 0;
+            _sinceLastTrailPrism = 0f;
+
             // Per-flight chain state. Without these two an instance recycled out of the pool
             // would carry the previous cascade's remaining depth (deepening the chain for
             // free) and its spent embed latch (making the round un-embeddable for life).
@@ -591,7 +667,15 @@ namespace CosmicShore.Gameplay
         ///     cases; once the window closes the prism is ordinary friendly-fire mass.
         /// </summary>
         public bool DisallowImpactOnPrism(Prism prism) =>
-            (!friendlyFire && prism.Domain == OwnDomain) || Time.time < prism.ProjectileImmuneUntil;
+            (!friendlyFire && prism.Domain == OwnDomain)
+            || Time.time < prism.ProjectileImmuneUntil
+            // A round never detonates on the ribbon IT laid. An IDENTITY test, not a window:
+            // the mass is directly behind the round and inside its own hit sphere on the very
+            // frame it appears, and a round that curls back onto its own line should still
+            // pass through. Pool reuse clears trail membership (Prism.ResetState) and every
+            // layer re-stamps its own, so "is this prism still in the ribbon I laid" is exactly
+            // what this asks - the same identity test the Urchin's track teardown uses.
+            || (_prismTrail != null && prism.Trail == _prismTrail);
         public bool DisallowImpactOnVessel(Domains vesselDomain) => vesselDomain == OwnDomain;
         #endregion
 
@@ -826,6 +910,11 @@ namespace CosmicShore.Gameplay
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
 
+                    // The prism trail. Laid off the DISTANCE actually covered by this step, so
+                    // the ribbon's spacing is the authored one whatever the round's speed, its
+                    // SPACE level or the cosine falloff of its own flight are doing.
+                    LayFlightTrail(sweepFrom, t.position);
+
                     // Vessels FIRST: a round that would have struck a hull mid-step must not
                     // be consumed by a prism it reached later along the same segment. The two
                     // sweeps are separate queries because their target sets live in different
@@ -849,10 +938,19 @@ namespace CosmicShore.Gameplay
                             return;
                     }
 
+                    // LIT: the sphere this round would detonate inside, drawn on the mass it
+                    // covers in the shooter's domain colour, so a warhead's threat volume is
+                    // something the arena can READ rather than something only the shooter knows.
+                    // Published from inside the flight loop off the same radius the fuze itself
+                    // tests, so the light and the trigger are one number - a fuze that armed at a
+                    // radius the light did not draw would be worse than no light. The bank fades
+                    // it out by itself when the round is retired or detonates.
+                    PublishFuzeLit(t.position);
+
                     // The PROXIMITY FUZE. Checked after the step so it reads the position the
                     // round actually reached this frame, and after the swept prism dispatch so a
                     // direct hit - which ends the flight from inside that call - always wins.
-                    if (proximityFuzeRadiusMultiplier > 0f && !IsDetonating
+                    if (FuzeRadiusMultiplier > 0f && !IsDetonating
                         && ProximityFuzeTripped(t.position))
                     {
                         // The round stops here, and its DIRECT-hit collider goes with it: the
@@ -894,6 +992,70 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"[Projectile] Move loop error: {ex}");
             }
         }
+
+        #region Flight prism trail
+
+        // ONE Trail per flight, created lazily at the first prism. It is what makes the ribbon a
+        // 1D PRISMSCAPE rather than a line of loose Singletons - the dimension the topology
+        // ladder reads, and the membership stamp rule 30's identity test needs. Cleared per
+        // flight in Initialize, so a pooled reissue starts a new ribbon rather than extending
+        // whoever fired this instance last.
+        Trail _prismTrail;
+        int _prismTrailLaid;
+        float _sinceLastTrailPrism;
+
+        /// <summary>
+        /// Lays this step's share of the round's prism trail.
+        ///
+        /// <para><b>It is CONSERVED MASS, placed by an active force.</b> Nothing here removes a
+        /// prism, and nothing ages one out: once laid, a trail prism is ordinary mass in the
+        /// shooter's domain that the food web grazes, a rival steals, and any weapon destroys —
+        /// which is also what returns it to the pool. There is no teardown for the same reason a
+        /// vessel's own trail has none.</para>
+        ///
+        /// <para><b>Per-peer, like the flight that lays it.</b> A projectile is a local,
+        /// unreplicated object simulated on every peer off a replicated press at a replicated
+        /// pose, exactly as a vessel's trail is laid locally off replicated motion. The ribbon
+        /// therefore agrees across peers to the same extent the flight does, and needs no
+        /// networking of its own.</para>
+        ///
+        /// <para>The CAP is the collider-budget statement and is checked before the spacing: a
+        /// round's range is a function of its SPACE level, so spacing alone bounds nothing.</para>
+        /// </summary>
+        void LayFlightTrail(Vector3 from, Vector3 to)
+        {
+            if (!Payload.LayPrismTrail) return;
+            if (prismTrailSpacing <= 0f || !prismTrailChannel) return;
+            if (_prismTrailLaid >= prismTrailMaxPrisms) return;
+
+            _sinceLastTrailPrism += Vector3.Distance(from, to);
+            if (_sinceLastTrailPrism < prismTrailSpacing) return;
+            _sinceLastTrailPrism = 0f;
+
+            // Aim the prism down the round's own flight so the ribbon reads as a line the rocket
+            // drew. A round is never stationary in this loop, but guard anyway: SafeLookRotation
+            // refuses a zero direction rather than inventing a pose.
+            if (!SafeLookRotation.TryGet(Velocity, out var rotation, this, logError: false))
+                rotation = transform.rotation;
+
+            _prismTrail ??= new Trail();
+
+            var playerName = VesselStatus?.Player != null ? VesselStatus.PlayerName : null;
+
+            var laid = BoostRingBuilder.LayOne(
+                prismTrailChannel, to, rotation, prismTrailScale, prismTrailKind,
+                OwnDomain, playerName, $"{playerName}::missiletrail::{GetInstanceID()}::{_prismTrailLaid}",
+                _prismTrail);
+
+            if (!laid) return;   // pool exhausted - lay the next one at the next interval
+
+            if (prismTrailImmunitySeconds > 0f)
+                laid.ProjectileImmuneUntil = Time.time + prismTrailImmunitySeconds;
+
+            _prismTrailLaid++;
+        }
+
+        #endregion
 
         #region Swept contact detection
         //
@@ -1279,6 +1441,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Publish this round's armed fuze volume as a LIT sphere. A no-op on every round in the
+        /// game but the skyburst: <c>proximityFuzeRadiusMultiplier</c> is 0 elsewhere, so there
+        /// is no fuze to draw and nothing is published.
+        ///
+        /// The radius is <see cref="HitRadiusWorld"/> x the fuze multiplier - the exact expression
+        /// <see cref="ProximityFuzeTripped"/> tests - which means it GROWS with MASS along with
+        /// the round it belongs to, and a round still leaving the bay draws the small volume it
+        /// actually has.
+        /// </summary>
+        void PublishFuzeLit(Vector3 position)
+        {
+            float radius = HitRadiusWorld * FuzeRadiusMultiplier;
+            if (radius <= 0f || IsDetonating) return;
+
+            // Domains.Blue for an unrostered round (the anonymous-explosion case) rather than a
+            // guessed team: PrismLit.DomainTint answers white for the sentinel, which reads as a
+            // neutral threat rather than as somebody else's.
+            var domain = VesselStatus?.Player != null ? VesselStatus.Domain : Domains.Blue;
+            PrismLit.PublishLight(GetInstanceID(), LitVolume.Sphere(position, radius), 1f, domain);
+        }
+
+        /// <summary>
         /// Is there anything within the fuze radius worth detonating on?
         ///
         /// <para>An explicit overlap rather than a second trigger collider, for three reasons.
@@ -1297,7 +1481,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool ProximityFuzeTripped(Vector3 position)
         {
-            float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;
+            float radius = HitRadiusWorld * FuzeRadiusMultiplier;
             if (radius <= 0f) return false;
 
             // A VESSEL - identified the way every other impact path identifies one, through the

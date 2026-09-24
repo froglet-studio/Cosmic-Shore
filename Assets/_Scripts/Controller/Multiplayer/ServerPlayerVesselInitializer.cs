@@ -62,11 +62,20 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
                  "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
-                 "PeelTheCage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "Cleave needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
                  "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
                  "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
         [SerializeField, Min(0f)] protected float spawnRingRadiusFloor;
+
+        [Tooltip("Per-INTENSITY override of Spawn Ring Radius Floor - element 0 is intensity 1. " +
+                 "Empty (or a 0 entry, or an intensity past the end) falls back to the scalar " +
+                 "above, so every existing scene is unchanged. It exists because the floor is one " +
+                 "serialized number and a mode whose intensities are different PLACES needs " +
+                 "several: Cleave's intensity-1 and -2 arenas are 2,160 units of radius against " +
+                 "720 for its 3 and 4, so one ring either spawns a pilot inside the big arenas or " +
+                 "parks them 3,000 units away from a speck.")]
+        [SerializeField] protected List<float> spawnRingRadiusFloorByIntensity = new();
 
         [Tooltip("How the computed ring distributes players. Symmetric spreads them over a SPHERE " +
                  "(4 tetrahedral, 3 triangle, 2 antipodal). Equatorial Ring puts everyone on one " +
@@ -450,7 +459,7 @@ namespace CosmicShore.Gameplay
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
             // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
-            // than a nucleus (PeelTheCage's cage), where nucleusRadius is legitimately 0. Without a
+            // than a nucleus (Cleave's cage), where nucleusRadius is legitimately 0. Without a
             // floor that case is indistinguishable from "cell not resolvable yet" below.
             if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
@@ -479,13 +488,39 @@ namespace CosmicShore.Gameplay
                 ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
                 : Mathf.Max(1, gameData.Players.Count);
 
-            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, spawnRingRadiusFloor);
+            float floor = ResolveSpawnRingRadiusFloor();
+            float radius = Mathf.Max(nucleusRadius + spawnDistanceOutsideNucleus, floor);
             gameData.SetSpawnPoses(
                 CellSpawnFormation.Build(count, cell.transform.position, radius, spawnFormation));
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
-                        $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
+                        $"floor {floor:0.#}) around {cell.name}, {spawnFormation}.");
+        }
+
+        /// <summary>
+        /// The spawn-ring floor for the intensity this match is running, falling back to the
+        /// scalar <see cref="spawnRingRadiusFloor"/>.
+        ///
+        /// <para>Reading <c>SelectedIntensity</c> here is safe where <c>Cell.AssignConfig</c>'s
+        /// is not: this runs SERVER-side, and the intensity is set before the scene loads. The
+        /// race that bites the cell (Docs/ECOSYSTEM.md §28) is a CLIENT computing a value it
+        /// should have received.</para>
+        ///
+        /// <para>A missing or 0 entry means "this rung has nothing to say", not "no floor" — an
+        /// author who sizes rung 1 and leaves rung 2 blank gets the scalar, never the centre of
+        /// the cell.</para>
+        /// </summary>
+        float ResolveSpawnRingRadiusFloor()
+        {
+            if (spawnRingRadiusFloorByIntensity == null || spawnRingRadiusFloorByIntensity.Count == 0)
+                return spawnRingRadiusFloor;
+
+            int intensity = gameData != null && gameData.SelectedIntensity != null
+                ? gameData.SelectedIntensity.Value : 1;
+            int i = Mathf.Clamp(intensity - 1, 0, spawnRingRadiusFloorByIntensity.Count - 1);
+            float v = spawnRingRadiusFloorByIntensity[i];
+            return v > 0f ? v : spawnRingRadiusFloor;
         }
 
         /// <summary>Latched once the scene is known to have NO start-line provider, so the
@@ -696,7 +731,7 @@ namespace CosmicShore.Gameplay
         /// wearing the hull it last flew, and the launcher-side clamp in
         /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
         /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
-        /// therefore flew Rhino-only PeelTheCage on every client while the AI (whose class comes from
+        /// therefore flew Rhino-only Cleave on every client while the AI (whose class comes from
         /// the scene's aiInitializeDatas) correctly spawned Rhinos.
         ///
         /// The SERVER is the only authority that sees every player's request and the mode's rules

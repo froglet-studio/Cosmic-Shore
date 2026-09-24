@@ -163,14 +163,36 @@ EXCLUDE = set()
 # of an authored plant - the cell's whole environment IS the colony - so this file's rule
 # (cap = old_single_plant_budget / patch) has no input to work from and would silently shrink
 # them back to the Blob caps.
+#
+# "Garland ": the Garland cell (Docs/ECOSYSTEM.md 48). Its four species are picked for
+# SILHOUETTE at the menu camera's orbit distance and their floors/caps are derived from that
+# cell's own phase ladder, not from an authored opening density - so this file's rule
+# (cap = ISC x 1.5) would quietly re-cut a roster that was solved against a budget.
+#
+# The entries match DIFFERENTLY, and the difference is the point.  "Lattice " and "Garland "
+# name CELLS, and a cell's configs all start with its name, so a prefix is exact.  "Borromean"
+# names a SPECIES, and a species' per-cell configs are named for the CELL first ("Rampage
+# Borromean Flora Mass Config Data") - so a prefix rule would silently hand every adopting
+# cell's copy back to this script, whose model (cap = old_single_plant_budget / patch) has
+# no input to work from on a species whose budget is a MEASURED TABLE per element.  A
+# species owned by its own generator is owned by it WHEREVER the config lives.
 OWNED_ELSEWHERE = {
-    "Lattice ": "Tools/Build/author_lattice_cell.py",
+    "Lattice ": ("prefix", "Tools/Build/author_lattice_cell.py"),
+    "Garland ": ("prefix", "Tools/Build/author_garland_cell.py"),
+    "Borromean": ("species", "Tools/Build/author_borromean_flora_assets.py"),
+    # The Mandelbulb family: four species on one growth rule, each with a MEASURED
+    # per-element budget, so their own generator owns the populations wherever the config
+    # lives.  Matched as a SPECIES (never a prefix) for the reason stated above.
+    "Mandelbulb": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Coral Bloom": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Watershed": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
+    "Apollonia": ("species", "Tools/Build/author_mandelbulb_flora_assets.py"),
 }
 
 
 def owner_of(name):
-    for prefix, script in OWNED_ELSEWHERE.items():
-        if name.startswith(prefix):
+    for token, (kind, script) in OWNED_ELSEWHERE.items():
+        if name.startswith(token) if kind == "prefix" else (token in name):
             return script
     return None
 

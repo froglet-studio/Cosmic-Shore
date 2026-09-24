@@ -2414,7 +2414,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A DOMAIN explosion where the ball died: coloured by the ball's own domain, and carrying
-        /// that domain into the standard blast rules — so own-domain prisms take a temporary shield
+        /// that domain into the standard blast rules — so own-domain prisms are drawn LIT in the blast's domain colour (Docs/LIT.md; a temporary shield until 2026-09)
         /// (the no-perceived-clipping rule) while other domains are destroyed. None of that is new
         /// behaviour; it is what <c>ExplosionImpactor</c> already does with
         /// <c>affectSelf = false, destructive = true</c>, which every shipped blast prefab authors.

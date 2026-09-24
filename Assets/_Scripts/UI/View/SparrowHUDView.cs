@@ -134,21 +134,53 @@ namespace CosmicShore.UI
                 .SetLink(gauge.gameObject);
         }
 
-        public void SetMissilesFromAmmo01(float ammo01)
+        /// <summary>
+        /// How many rockets the bay HOLDS right now, drawn from the authored icon ladder.
+        ///
+        /// <para><b>It counts ROCKETS, not tank fraction.</b> It used to spread <c>ammo01</c>
+        /// across the sprite range and ROUND, which conflates two different quantities and was
+        /// wrong even at the old one-cost weapon: at cost 0.5 a 0.75-full tank holds ONE rocket
+        /// and <c>round(0.75 x 2)</c> drew TWO. Now it is <c>floor(ammo / cost)</c> — the same
+        /// arithmetic <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/>
+        /// takes the fractional part of, so the ladder and the charge gauge are two readings of
+        /// one division and cannot disagree.</para>
+        ///
+        /// <para>The count is CLAMPED to the art: the ladder has three sprites (0/1/2) while the
+        /// bay now holds four base rockets, so a full bay reads as the top sprite. That
+        /// under-reports rather than lying about which rocket is next, and closing it is an ART
+        /// task (five sprites), not a code one.</para>
+        /// </summary>
+        /// <param name="cost01">One BASE shot's cost as a fraction of the full tank. 0 =
+        /// unknown, in which case the ladder falls back to the tank fraction it used to show.</param>
+        public void SetMissilesFromAmmo01(float ammo01, float cost01)
         {
             if (!missileIcon || missileIcons == null || missileIcons.Length == 0)
                 return;
 
-            var maxState = missileIcons.Length - 1;
-            var state = Mathf.Clamp(
-                Mathf.RoundToInt(Mathf.Clamp01(ammo01) * maxState),
-                0, maxState);
-
-            var sprite = missileIcons[state];
+            var sprite = missileIcons[LadderState(ammo01, cost01, missileIcons.Length)];
             if (!sprite) return;
 
             missileIcon.sprite = sprite;
             missileIcon.enabled = true;
+        }
+
+        /// <summary>
+        /// Which rung of the icon ladder a tank shows, as a pure function so it can be tested
+        /// without a canvas — the sibling of
+        /// <see cref="CosmicShore.Gameplay.FireGunActionExecutor.ChargeToNextShot"/>, which takes
+        /// the FRACTIONAL part of the same division.
+        /// </summary>
+        /// <param name="ammo01">How full the tank is, 0..1.</param>
+        /// <param name="cost01">One BASE shot's cost as a fraction of the tank; 0 = unknown.</param>
+        /// <param name="ladderLength">How many sprites the ladder has (rung 0 = empty).</param>
+        public static int LadderState(float ammo01, float cost01, int ladderLength)
+        {
+            int maxState = Mathf.Max(0, ladderLength - 1);
+            ammo01 = Mathf.Clamp01(ammo01);
+
+            return cost01 > 0f
+                ? Mathf.Clamp(Mathf.FloorToInt(ammo01 / cost01), 0, maxState)
+                : Mathf.Clamp(Mathf.RoundToInt(ammo01 * maxState), 0, maxState);
         }
 
         #endregion

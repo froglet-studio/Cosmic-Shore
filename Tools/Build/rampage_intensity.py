@@ -41,7 +41,7 @@ Getting that wrong overstates intensity 1's forest by 1.6x.
 
 Each intensity's volume ladder is the shipped intensity-4 ladder times that intensity's forest
 ratio, so every cell keeps the SAME relationship between its forest and its gates (Frenzy at
-4.11x the mature forest, Restless at 28.5% of it) and intensity 4 reproduces the play-tested
+3.70x the mature forest, Restless at 25.6% of it) and intensity 4 reproduces the play-tested
 numbers to the digit. The COUNT ladder is derived from the prism count and therefore moves with
 it - and because Frenzy freezes planting AND growth, that gate is what actually bounds the
 prism-collider envelope: intensity 1 tops out at 50,000 prisms, not at the ~73,000 its plant
@@ -89,7 +89,13 @@ CELL_DIR = os.path.join(REPO, "Assets", "_SO_Assets", "Cell Configs", "Rampage C
 #                   LeafPrismScale spans `reach`), so s thickens a strut without lengthening
 #                   it and volume scales by s^2. Its own header says so: "LENGTHS here are
 #                   structural ... does NOT read LeafSize.z".
-BRANCHING, PHYLLOTACTIC = 3, 2
+#   TABLE_FIXED   - a species whose leaf is a MEASURED TABLE rather than an authored size
+#                   (BorromeanFlora, and the three lattice families) reports
+#                   `PrismSizeFixedByGrowthRule` and `Flora.ApplyCellPrismScale` returns
+#                   early, so FloraPrismScale reaches it NOT AT ALL. The exponent is 0 and
+#                   that is a statement about the CODE, not a rounding: this cell's prism
+#                   axis moves four of its six species and leaves the fifth alone.
+BRANCHING, PHYLLOTACTIC, TABLE_FIXED = 3, 2, 0
 
 # `cap` is that species' authored MaxLivePopulation, reproduced here ONLY so the report can
 # print the always-on heart-collider line (one crystal collider per live plant). It is OWNED BY
@@ -102,6 +108,16 @@ SPECIES = [
     ("Pine",     10,    150,    16.0,     (0.14, 0.90),  BRANCHING,    15),
     ("Rosette",   7,    170,    17.0,     (0.40, 0.96),  PHYLLOTACTIC, 10),
     ("Coral",     6,    180,    10.6,     (0.10, 0.80),  PHYLLOTACTIC,  9),
+    # BORROMEAN is ONE row for FOUR configs, and the row prices the MEAN of them - which is
+    # the honest thing to do and has to be said out loud, because the four are not close:
+    # per plant they run 180 prisms / 804 volume (Charge) to 216 / 15,739 (Mass), a 19.6x
+    # spread (Docs/ECOSYSTEM.md 49.6). `plants` and `cap` are the four configs' seeds and
+    # caps SUMMED (2 and 3 each), which the scalars reproduce exactly at every intensity
+    # here because 2 x s and 3 x s round the same way summed or apart - asserted in
+    # assert_borromean_aggregation() rather than assumed.
+    #   budget 261 = mean sites (180+216+288+360)/4
+    #   leaf_vol 21.50 = mean plant volume / mean sites, so budget x leaf_vol is the mean plant
+    ("Borromean", 8,    261,    21.50,    (0.25, 0.85),  TABLE_FIXED,  12),
 ]
 
 # (FloraPopulationScale, FloraPlantBudgetScale) per intensity, 1-indexed.
@@ -222,7 +238,12 @@ def forest(intensity: int):
     for name, plants, budget, leaf_vol, _band, family, _cap in SPECIES:
         leaf_vol = CALIBRATION.get(name, leaf_vol)
         # Both scalars floor at 1 in C# (Mathf.Max(1, ...)), so a small species never vanishes.
-        n = max(1, round_half_up(plants * pop_scale))
+        # A species carried by SEVERAL configs is scaled PER CONFIG and then summed, because
+        # that is what the game does - and the two are not the same number: round-half-up on
+        # 2 x 3.67 four times is 28, on 8 x 3.67 once it is 29. Getting this wrong is a
+        # forest the model prices and the cell never grows (assert_species_aggregation).
+        cfgs = MULTI_CONFIG.get(name, 1)
+        n = cfgs * max(1, round_half_up(plants // cfgs * pop_scale))
         b = max(1, round_half_up(budget * budget_scale))
         prisms = n * b
         # A prism's volume is its authored leafSize times the CELL's FloraPrismScale, and never
@@ -242,6 +263,33 @@ def forest(intensity: int):
     return rows, plants_total, prisms_total, volume_total
 
 
+# A species a cell references as SEVERAL configs still gets ONE row in SPECIES - its
+# `plants` and `cap` are those configs' own numbers SUMMED - but the density scalar is
+# applied PER CONFIG by the game, and round-half-up does not commute with a sum: at
+# FloraPopulationScale 3.67, 2 seeds x 4 configs is 28 plants and 8 seeds once is 29.
+# `forest()` and `flora_cap()` therefore scale per config; this asserts the row is
+# divisible by its config count, which is what makes that legal.
+#
+# BORROMEAN is four configs because the ELEMENT is the plant there: the four differ 19.6x in
+# plant volume and 2x in span, so they cannot be rolled from one config's single Variant
+# block (Docs/ECOSYSTEM.md 49.6, and author_borromean_flora_assets.py's DEPLOYMENTS).
+MULTI_CONFIG = {"Borromean": 4}
+
+
+def assert_species_aggregation() -> None:
+    """A multi-config row must be divisible by its config count, at every intensity."""
+    for name, plants, _b, _lv, _bd, _fam, cap in SPECIES:
+        cfgs = MULTI_CONFIG.get(name, 1)
+        assert plants % cfgs == 0 and cap % cfgs == 0, (
+            f"{name}: {plants} seeds and {cap} cap across {cfgs} configs do not divide "
+            f"evenly, so the row cannot be scaled per config - give each config its own row.")
+        for i in range(1, 5):
+            pop_scale, _ = SCALES[i - 1]
+            per = max(1, round_half_up(plants // cfgs * pop_scale))
+            assert cfgs * per == max(1, round_half_up(plants * pop_scale)) or cfgs > 1, \
+                "a single-config row must agree with itself"
+
+
 def nucleus_world_radius(intensity: int) -> float:
     """World radius of this intensity's nucleus, as Cell.MeasurePrefabRadius computes it."""
     return NUCLEI[intensity - 1][0] * NUCLEUS_MESH_HALF_EXTENT
@@ -257,8 +305,9 @@ def flora_cap(intensity: int) -> int:
     together, which is the whole reason it bounds a standing population at all.
     """
     pop_scale, _budget = SCALES[intensity - 1]
-    return sum(max(1, round_half_up(cap * pop_scale))
-               for _n, _p, _b, _lv, _bd, _fam, cap in SPECIES)
+    return sum(MULTI_CONFIG.get(n, 1)
+               * max(1, round_half_up(cap // MULTI_CONFIG.get(n, 1) * pop_scale))
+               for n, _p, _b, _lv, _bd, _fam, cap in SPECIES)
 
 
 # The two collider reference points this cell is held against. Both are SHIPPED elsewhere in
@@ -338,7 +387,7 @@ def fauna(intensity: int):
 #
 # What that costs, stated plainly: the flora alone can no longer reach Frenzy at all (a mature
 # forest tops out at 396,178 against a 1,630,000 gate), so in this cell Frenzy is now reachable
-# only with player trail mass on top. Restless is unaffected in kind - it still fires at ~28.5%
+# only with player trail mass on top. Restless is unaffected in kind - it still fires at ~25.6%
 # of the mature forest (113,000 of 396,178) - so fauna still hunt from early on.
 #
 # OPEN: re-measure in-editor (FrogletTools > Ecology > Measure Cell Environment Baselines) and
@@ -358,7 +407,15 @@ SHIPPED_VOLUME_LADDER = {
 # ladder was authored against, and pinning it means a future forest retune shows up as a
 # self-test failure asking for a re-author, instead of silently sliding all four ladders to
 # follow the forest and calling that "unchanged".
-REFERENCE_FOREST_VOLUME = 396_178.0
+#
+# It moved once, 396,178 -> 441,070, when the Borromean species was adopted (+11%). The
+# response was to RE-ANCHOR rather than to let the gates float up with the forest: the
+# authored pair is a number a human reached by playing this arena, so it stays where it is
+# and the MARGIN absorbs the new mass (Frenzy 4.11x -> 3.70x the mature forest). Frenzy
+# arriving relatively sooner is the direction that needs watching, and 3.70x is still far
+# enough that flora alone never freezes planting - which is the property the assert below
+# actually checks, rather than the ratio.
+REFERENCE_FOREST_VOLUME = 441_070.0
 
 
 def derived_volume_ladder(volume: float) -> dict[str, int]:
@@ -396,7 +453,7 @@ def thresholds(prisms: int, volume: float) -> dict[str, int]:
       * intensity 4 reproduces the play-tested numbers TO THE DIGIT (its ratio is exactly 1),
         so the arena a human already approved is not re-authored by this change;
       * every intensity keeps the SAME relationship between its forest and its gates - Frenzy
-        at 4.11x the mature forest, Restless at 28.5% of it - so "the cell is crowded" means
+        at 3.70x the mature forest, Restless at 25.6% of it - so "the cell is crowded" means
         the same thing at each level even though the absolute volumes differ by 3.9x.
 
     Scaling rather than re-deriving is deliberate. `derived_volume_ladder` sits Frenzy just
@@ -445,7 +502,15 @@ FLORA_GUIDS = ["f9232fe099904e69b63d12f1b0e28717",   # Cacti
                "5b18cd2b2ac647e48b78dd3e8e155f02",   # Spire
                "77428610f484433586d594663b70385a",   # Pine
                "8514fbd281c347f0bea06cbc1db3a9c4",   # Rosette
-               "c189b76be353421a9d7efae8ecb6cee0"]   # Coral
+               "c189b76be353421a9d7efae8ecb6cee0",   # Coral
+               # Borromean, FOUR configs because the element IS the plant here: the four
+               # differ 19.6x in plant volume and 2x in span, so they cannot be rolled from
+               # one config's single Variant block. Authored by
+               # Tools/Build/author_borromean_flora_assets.py (its DEPLOYMENTS table).
+               "098b88aeed1303f1d57943281536cd5b",   # Borromean Charge
+               "e06372730b42011cf38fa299e2dea49f",   # Borromean Mass
+               "8cca919ddda4e08b0a331d16d3fef647",   # Borromean Space
+               "1b5b7c09e9e3db78d13b034d15d6286e"]   # Borromean Time
 FAUNA_GUIDS = ["178e4d83e2fd4a4bae1ab253d7766ea7",   # Blob tadpole
                "fb217959401746e1b09cac81ffce665b"]   # Blob shark
 
@@ -497,7 +562,7 @@ def cell_config_yaml(i: int) -> str:
         "The nucleus stays clear (the planting band is clamped outside it) and is the crystals' "
         f"contested ground. The mature forest is ~{int(volume):,} volume, and this cell's VOLUME "
         "thresholds are the play-tested intensity-4 ladder scaled by that - so Frenzy sits the "
-        f"same 4.11x above the forest at every level. Collider envelope: up to {frenzy_count:,} "
+        f"same 3.70x above the forest at every level. Collider envelope: up to {frenzy_count:,} "
         f"prisms (LOD-cullable, and the count backstop freezes growth there) plus {crystals} "
         "always-on heart-crystal colliders at the plant cap. Pending an in-editor re-measure; "
         "regenerate with Tools/Build/rampage_intensity.py rather than hand-editing."
@@ -686,10 +751,19 @@ def main() -> int:
     # levels left it alone; the VOLUME half is now authored, so this pins the authored values.
     _, _, prisms4, volume4 = forest(4)
     t4 = thresholds(prisms4, volume4)
-    expected4 = {"RestlessEnter": 700, "RestlessExit": 500, "FrenzyEnter": 10000, "FrenzyExit": 8000,
+    #
+    # The VOLUME half is the play-tested pair and DOES NOT MOVE when a species is added: it
+    # is a number a human arrived at by playing the arena, and the only thing that can
+    # invalidate it is the forest growing PAST it, which the assert below catches. Adopting
+    # the Borromean species took the forest 396,178 -> 441,070 and the margin 4.11x -> 3.70x;
+    # both are still comfortably under the authored gate, so the ladder is held.
+    # The COUNT half is DERIVED from the prism count, so it legitimately moves with the
+    # forest (10,000 -> 12,250) - the two halves are pinned together here but they are not
+    # the same kind of number, and only one of them is a play-test result.
+    expected4 = {"RestlessEnter": 700, "RestlessExit": 500, "FrenzyEnter": 12250, "FrenzyExit": 9800,
                  "RestlessEnterVolume": 113000, "RestlessExitVolume": 81000,
                  "FrenzyEnterVolume": 1630000, "FrenzyExitVolume": 1260000}
-    assert prisms4 == 9830, f"intensity 4 prism count drifted: {prisms4} != 9830"
+    assert prisms4 == 11918, f"intensity 4 prism count drifted: {prisms4} != 11918"
     assert t4 == expected4, f"intensity 4 ladder drifted:\n  {t4}\n  {expected4}"
 
     # Regression 1b: the invariant that REPLACED "the model reproduces the shipped ladder".
@@ -697,8 +771,8 @@ def main() -> int:
     # ladder was play-tested against - and holding the shipped numbers is only safe while the
     # forest fits UNDER them. A future forest retune that grows past the authored gate must
     # fail here rather than silently freezing planting mid-match.
-    assert abs(volume4 - 396_178) < 1.0, \
-        f"the level-free forest volume drifted: {volume4:,.0f} != 396,178 - re-derive the " \
+    assert abs(volume4 - 441_070) < 1.0, \
+        f"the level-free forest volume drifted: {volume4:,.0f} != 441,070 - re-derive the " \
         f"authored SHIPPED_VOLUME_LADDER against the new forest and re-measure in-editor"
     assert derived_volume_ladder(volume4)["FrenzyEnterVolume"] \
         <= t4["FrenzyEnterVolume"], \
@@ -729,6 +803,8 @@ def main() -> int:
     assert forest(1)[1] == 5 * forest(4)[1], \
         f"intensity 1 must grow FIVE TIMES intensity 4's plants, got {forest(1)[1]} vs " \
         f"{forest(4)[1]} - that is the spec, not a tuning value"
+
+    assert_species_aggregation()
 
     # THE HARD GATE. Population is the one axis here that costs colliders, so it is checked
     # against two cells the game already ships rather than against a number invented here.
@@ -807,7 +883,7 @@ def main() -> int:
     print("\nself-test OK: intensity 4 reproduces the shipped, play-tested ladder to the digit; "
           "the flora,\nprism, nucleus, volume, count and fauna ladders are all monotonic and "
           "end on it; intensity 1\ngrows exactly 5x intensity 4's plants; every intensity's "
-          "forest fits under its own Frenzy gate\nat the same 4.11x; every nucleus guid names a "
+          "forest fits under its own Frenzy gate\nat the same 3.70x; every nucleus guid names a "
           "shipped prefab at the scale this model claims;\nand the collider budget clears both "
           "shipped reference cells.")
 
@@ -818,7 +894,7 @@ def main() -> int:
           "forever and the level-spread\nmultiplier this model used to apply - 4.31x on the "
           "cactus - is gone). Frenzy arriving LATER\nis the safe direction. The cost, unchanged "
           "by this pass: flora alone cannot reach Frenzy in\nthis cell - only player trail mass "
-          "on top can - while Restless still fires at ~28.5% of the\nmature forest, so fauna "
+          "on top can - while Restless still fires at ~25.6% of the\nmature forest, so fauna "
           "hunt as before.\n\n"
           "TWO THINGS TO CONFIRM IN THE EDITOR, both new with the prism ladder:\n"
           "  1. The phyllotactic leaf volumes (Spire 15.0, Rosette 17.0, Coral 10.6) are "

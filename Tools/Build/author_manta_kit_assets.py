@@ -23,6 +23,7 @@ The Bloomrush mode set lives in author_bloomrush_assets.py, not here.
 """
 import hashlib
 import os
+import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -123,13 +124,19 @@ FILES = {}
 def build_bloom_prefab() -> str:
     src = open(os.path.join(ROOT, "Assets/_Prefabs/Projectile/AOEExplosion.prefab")).read()
     out = src.replace("m_Name: AOEExplosion", "m_Name: AOEMantaBloom")
-    stale = ("  explosionShipEffectsSO: []\n"
-             "  explosionPrismEffectsSO: []\n")
-    assert stale in out, "AOEExplosion.prefab ExplosionImpactor stale keys moved - re-derive"
-    out = out.replace(
-        stale,
+    # The bloom is the destructive sphere wearing a different effect container. The donor now
+    # authors one of its own (the skyburst's 20-point blast report), and Unity wraps a long
+    # reference over two lines, so the swap is a REGEX over the whole key rather than a literal
+    # match on what the donor happened to say the day this was written.
+    pattern = re.compile(
+        r"^  explosionImpactorDataContainer: \{fileID: \d+, guid: [0-9a-f]+,?\s*\n?\s*type: 2\}\n",
+        re.M)
+    assert pattern.search(out), (
+        "AOEExplosion.prefab no longer authors an explosionImpactorDataContainer - the bloom "
+        "is a copy of that prefab and cannot re-point what is not there. Re-derive.")
+    out = pattern.sub(
         "  explosionImpactorDataContainer: {fileID: 11400000, guid: %s, type: 2}\n"
-        % BLOOM_CONTAINER_GUID)
+        % BLOOM_CONTAINER_GUID, out, count=1)
     assert out.count("explosionImpactorDataContainer") == 1
     return out
 
@@ -137,9 +144,31 @@ def build_bloom_prefab() -> str:
 FILES["Assets/_Prefabs/Projectile/AOEMantaBloom.prefab"] = (build_bloom_prefab(), PREFAB_META.format(guid=BLOOM_PREFAB_GUID))
 
 # ── Effect + container assets ────────────────────────────────────────────────
-FILES["Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"] = (
+# OWNED ELSEWHERE: `debuffMagnitude` belongs to the fleet's combat drain table
+# (Tools/Build/author_combat_debuff_magnitudes.py), which derives every drain from the price
+# Broadside puts on its verb at TEN POINTS TO THE PETAL, per element - a bloom is a 12-point
+# Debuff, so -0.12 on each of the two elements it touches (the four-element cone takes the same
+# -0.12 on each of four). This generator authors the whole file, so it must
+# READ that value back rather than restating it: two generators owning one field means whichever
+# ran last wins, and the loser's --check reports a drift belonging to nobody's change. The
+# consequence, stated: this generator's --check can no longer catch a hand-edit of that one
+# field - the drain table's --check is what does, which is where the value comes from. The
+# fallback is the derived value itself, so a first author (no file on disk) still lands right.
+_BOMB_DEBUFF_ASSET = "Assets/_SO_Assets/Effects/Vessel Explosion Effects/MantaBombDebuffByExplosionEffect.asset"
+
+
+def _live_bomb_debuff_magnitude(default="-1"):
+    try:
+        with open(os.path.join(ROOT, _BOMB_DEBUFF_ASSET), "r", encoding="utf-8") as fh:
+            m = re.search(r"^\s*debuffMagnitude:\s*(-?[\d.]+)\s*$", fh.read(), re.M)
+        return m.group(1) if m else default
+    except OSError:
+        return default
+
+
+FILES[_BOMB_DEBUFF_ASSET] = (
     so_asset("VesselElementalDebuffByExplosionEffectSO", "MantaBombDebuffByExplosionEffect",
-             "  debuffMagnitude: -0.5\n"
+             "  debuffMagnitude: %s\n" % _live_bomb_debuff_magnitude() +
              "  debuffDuration: 4\n"
              "  cooldown: 1\n"
              "  elements:\n"
@@ -264,10 +293,9 @@ MAP_BODY = """  vesselClass: 1
     AbilityLabel: Sting
     AbilityDescription: Charge raises the bomb bay's capacity and its skim-charge rate.
       Both authored on MantaStingConfig.asset (capacityPerChargeLevel, chargeRateAtFullCharge);
-      the map multiplier is pinned to 1 so one element never drives a parameter twice.
+      each parameter carries its own ElementalFloat, so one element can never
+      drive a parameter it was not authored on.
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -278,10 +306,8 @@ MAP_BODY = """  vesselClass: 1
     AbilityLabel: Yastri
     AbilityDescription: Mass grows the trail's prism volume (VesselPrismController.trailVolume
       on Manta.prefab, 1x to 2.5x). The turn itself is deliberately unscaled - Yastri's element
-      shapes what the turn LEAVES, and the map multiplier is pinned to 1.
+      shapes what the turn LEAVES (YawsteryActionSO.turnRateMultiplier is disabled).
     Input: 12
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -291,10 +317,8 @@ MAP_BODY = """  vesselClass: 1
   - Element: 3
     AbilityLabel: Kabloom
     AbilityDescription: Space widens every bomb bloom (MantaStingConfig.asset,
-      blastScaleAtFullSpace 1.6x at level 10; the map multiplier is pinned to 1).
+      blastScaleAtFullSpace 1.6x at level 10).
     Input: 0
-    MultiplierAtFullLevel: 1
-    MinMultiplier: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
@@ -303,11 +327,11 @@ MAP_BODY = """  vesselClass: 1
       detonate freely inside a team fight. Snapshotted per bomb at plant time.
   - Element: 4
     AbilityLabel: Soar
-    AbilityDescription: Time raises the maximum soaring speed - THIS multiplier is the
-      authoring home, read fleet-wide by VesselTransformer.CurrentBoostAmount while boosting.
+    AbilityDescription: Time raises the maximum soaring speed, authored on Manta.prefab's
+      VesselTransformer.BoostSpeedMultiplier (x1 at rest -> x1.3 at level 10, floored at
+      x0.7) and read while boosting. It was a fleet-wide read of this map's own generic
+      multiplier until the element-scaling unification; the numbers are unchanged.
     Input: 13
-    MultiplierAtFullLevel: 1.3
-    MinMultiplier: 0.7
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0

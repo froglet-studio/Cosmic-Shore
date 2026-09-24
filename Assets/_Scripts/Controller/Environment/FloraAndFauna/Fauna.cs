@@ -780,6 +780,12 @@ namespace CosmicShore.Gameplay
             // before the spawner calls Initialize or any predator's first behavior tick), so
             // predation immunity is active from the moment the creature exists.
             _spawnTime = Time.time;
+
+            // Emitter-driven loops (brittlestar / shark / tadpole) must honour the SFX slider:
+            // StudioEventEmitter never sets instance volume itself, so bind it here.
+            if (!TryGetComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>(out _)
+                && GetComponentInChildren<FMODUnity.StudioEventEmitter>(true))
+                gameObject.AddComponent<CosmicShore.Gameplay.Audio.EmitterSfxVolumeBinder>();
         }
 
         protected virtual void Start()

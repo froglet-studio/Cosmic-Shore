@@ -33,12 +33,14 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The InputEvents binding this ability rides (matches the prefab's R_VesselActionHandler map).")]
         public InputEvents Input;
 
-        [Header("Quantitative scaling")]
-        [Tooltip("ElementalScaling multiplier at integer level 10 (normalized 1.0). 1 = no scaling. " +
-                 "Anchored at exactly 1x at the resting level, so authored baselines are untouched at spawn.")]
-        public float MultiplierAtFullLevel = 1.5f;
-        [Tooltip("Floor for the multiplier so deficit levels can't invert or zero the parameter.")]
-        public float MinMultiplier = 0.25f;
+        // NO QUANTITATIVE SCALING LIVES HERE. It used to: MultiplierAtFullLevel + MinMultiplier,
+        // read through a generic handler.Multiplier(element). That addressed an ELEMENT and never
+        // the PARAMETER it scaled, so every reader of that element on that vessel got it and no
+        // vessel could say which number it meant. Measured at removal, across eight hulls: two used
+        // the fleet-wide boost read as intended, FOUR pinned their entry to 1.0 purely to defend
+        // against it, and TWO were silently applying one element twice to one ability. Scaling now
+        // lives in an ElementalFloat on whatever asset or component owns the number.
+        // Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md.
 
         [Header("Qualitative unlock")]
         [Tooltip("Effective integer level at/above which the upgrade unlocks. 5 = all petals white.")]

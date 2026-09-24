@@ -217,6 +217,18 @@ was left describing the retired one): `GunVesselTransformer` keeps a latched `_f
 initial direction from the arrival Course; nothing named `attachDirection` or `SetRideSign`
 ships — those were round 4's names.
 
+**And the seed is COMPOSED, since the Urchin learned to fly backwards**
+(`URCHIN_REVERSE_FLIGHT.md`). `_facingSign` means *does the NOSE agree with the ribbon's
+index-order heading*, and the follower's latched `Direction` is *does TRAVEL agree with it* — the
+same fact only while the vessel is flying nose-first. `SeedTrailRide` now multiplies the two:
+`nose vs index = (travel vs index) × (nose vs travel)`. Uncomposed it is invisible on a forward
+attach and wrong on every reverse one, because a pilot backing into a ribbon is holding the stick
+BACK, the grind reads that as "go opposite my nose", and an uncomposed seed claims the nose already
+points the way they are travelling — so the rail fires them off the way they came in the same
+breath it catches them. That is the exact mirror of the defect the seed was written to fix, which
+is the general shape worth carrying: **a derivation that collapses two facts into one is a
+statement about the cases that existed when it was written.**
+
 **2. Attach snapped the rider to the block's start.** `percentTowardNextBlock = 0` (a 2023
 TODO) — a visible backwards jump at every latch. Now seeded by projecting the vessel's actual
 touch position onto the segment ahead.

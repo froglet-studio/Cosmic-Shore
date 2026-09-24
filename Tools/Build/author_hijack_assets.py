@@ -12,7 +12,7 @@ the scoring rule, the scene, and the registrations.
   - four CellConfigDataSOs, each carrying ITS OWN PhaseThresholds
   - one spawn profile that authors NOTHING (no food web - see HIJACK.md "Why no fauna")
   - the arcade card + scoring rule + objective-icon entry for the new metric
-  - the scene (cloned from MinigamePeelTheCage, mode wiring swapped)
+  - the scene (cloned from MinigameCleave, mode wiring swapped)
   - the registrations (game list, progression, build settings, end-condition target)
 
 THE NUMBERS ARE NOT IN THIS FILE. Every count and threshold is imported from
@@ -83,9 +83,9 @@ EXISTING = {
     "CellConfigDataSO": "01f934d50526431a9392a6ceca1dc33d",
     "SpawnProfileSO":   "e8d8aa5d835249798a256e18f2f7d912",
     # donor scene wiring to swap out (minted deterministically by author_ribcage_assets.py)
-    "PeelTheCageController":       guid("script/RibcageController"),
-    "PeelTheCagePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
-    "PeelTheCageScoringRule":      guid("asset/RibcageScoringRule"),
+    "CleaveController":       guid("script/RibcageController"),
+    "CleavePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
+    "CleaveScoringRule":      guid("asset/RibcageScoringRule"),
     # shared content
     "Prism_prefab":     "ed9defc56162b4b4588e61c20984b6d9",
     "Membrane_prefab":  "6e330f85972faf843b8a128e7166f7b5",
@@ -450,29 +450,29 @@ emit("Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Spawn Profile.as
      asset_meta(G_ASSET["SwitchyardSpawnProfile"]))
 
 
-# ── 6. Scene: clone MinigamePeelTheCage, swap the mode-specific wiring ──────
+# ── 6. Scene: clone MinigameCleave, swap the mode-specific wiring ──────
 # The donor is the closest structural match in the project: a nucleus-less arena cell on
 # IntensityWise configs, players spawned on a computed EQUATORIAL ring outside the structure
 # (which is what this mode wants too - the yard's rails ring the core, so a tetrahedral spread
 # would drop two of four players on a pole where no rail passes), four AI templates, and one
 # omni crystal. The clone swaps the mode identity, the arena, the hull and the spawn radius.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity")
+scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameCleave.unity")
 
 # 6a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["PeelTheCagePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
+scene, n = re.subn(EXISTING["CleavePrismTurnMonitor"], G_SCRIPT["HijackStealTurnMonitor"], scene)
 assert n == 1, f"turn monitor guid appeared {n} times"
 
 # 6b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["PeelTheCageController"], G_SCRIPT["HijackController"], scene)
+scene, n = re.subn(EXISTING["CleaveController"], G_SCRIPT["HijackController"], scene)
 assert n == 1, f"controller guid appeared {n} times"
 
-OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['PeelTheCageScoringRule']}, type: 2}}
+OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['CleaveScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
   progressSampleSeconds: 0.5
   aiRetargetSeconds: 2
-  aiCageRadiusOverride: 0
+  aiArenaRadiusOverride: 0
 """
 NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HijackScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
@@ -488,7 +488,7 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['HijackScoringRule']
 assert OLD_FIELDS in scene, "controller field block not found in donor scene"
 scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-# 6c. The ARENA: swap the donor's five cage configs for the four Switchyard ones. The choice
+# 6c. The ARENA: swap the donor's four Cleave configs for the four Switchyard ones. The choice
 # mode is already IntensityWise, which is the platform's own way to vary a cell by intensity.
 old_cell = re.search(r"  CellConfigs:\n(?:  - \{fileID: 11400000, guid: [0-9a-f]{32}, type: 2\}\n)+"
                      r"  cellTypeChoiceOptions: 1\n", scene)
@@ -593,9 +593,9 @@ BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
 build = read(BUILD_PATH)
 if "MinigameHijack.unity" not in build:
     anchor = re.search(
-        r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage\.unity\n"
+        r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameCleave\.unity\n"
         r"    guid: [0-9a-f]{32}\n)", build)
-    assert anchor, "PeelTheCage scene entry not found in EditorBuildSettings"
+    assert anchor, "Cleave scene entry not found in EditorBuildSettings"
     build = build.replace(anchor.group(1), anchor.group(1) +
                           "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity\n"
                           f"    guid: {G_ASSET['MinigameHijack.unity']}\n")
@@ -655,7 +655,7 @@ for name, g in EXISTING.items():
 
 # the scene must no longer mention the donor's mode-specific guids
 sc = files["Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity"]
-for name in ("PeelTheCageController", "PeelTheCagePrismTurnMonitor", "PeelTheCageScoringRule"):
+for name in ("CleaveController", "CleavePrismTurnMonitor", "CleaveScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
 for name in ("HijackController", "HijackStealTurnMonitor"):

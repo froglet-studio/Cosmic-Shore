@@ -93,6 +93,7 @@ namespace CosmicShore.Gameplay
         readonly HashSet<InputEvents> _heldInputs = new();
         readonly List<InputEvents> _heldScratch = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
+        readonly HashSet<InputEvents> _suppressedInputs = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
         readonly List<ShipActionSO> _runtimeInstances = new();
@@ -104,16 +105,37 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // ONE SUBSCRIPTION, EVER - and the latch is what enforces it, because a C# delegate
+        // happily holds the same handler twice and nothing reports it.
+        //
+        // Three paths subscribe and they are not mutually exclusive: VesselController.Initialize
+        // (every spawn), VesselController.ChangePlayer (a LIVE vessel handed to another player -
+        // the Cellular Duel ownership swap, which Initialize never sees), and every un-pause
+        // (OnToggleInputPaused). A second += therefore makes OnButtonPressed run twice per press,
+        // which sends the press RPC twice, which replays PerformShipControllerActions twice on
+        // every peer.
+        //
+        // That is invisible on almost everything the fleet binds, because a HELD ability started
+        // twice is the same ability held - which is exactly why it went unnoticed. It is NOT
+        // invisible on a one-shot that SPENDS: the Sparrow's skyburst charged the tank twice and
+        // launched two rockets from one pull of the trigger. A duplicate release is equally
+        // silent, so the pair is latched together rather than only the press.
+        bool _subscribedToInputEvents;
+
         void SubscribeToInputEvents()
         {
+            if (_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribedToInputEvents = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribedToInputEvents = false;
         }
 
         void OnDisable()
@@ -399,8 +421,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)
             {
@@ -436,8 +459,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonReleased(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
 
             if (IsSpawned && IsOwner)
             {
@@ -472,6 +496,22 @@ namespace CosmicShore.Gameplay
         }
 
         #region Mute Input
+
+        /// <summary>
+        /// Blanket on/off gate for one input event — unlike <see cref="MuteInput"/> there is no
+        /// timer; the caller owns the release. Used by the Quest Graph flight school to disable
+        /// the action buttons (A/X/B) while only sticks and triggers are being taught. Gated at
+        /// press AND release; engage while the vessel is idle (e.g. right after a transition
+        /// blend) so no held action is left running.
+        /// </summary>
+        public void SetInputSuppressed(InputEvents ie, bool suppressed)
+        {
+            if (suppressed) _suppressedInputs.Add(ie);
+            else _suppressedInputs.Remove(ie);
+        }
+
+        /// <summary>Release every suppression set via <see cref="SetInputSuppressed"/>.</summary>
+        public void ClearSuppressedInputs() => _suppressedInputs.Clear();
 
         bool IsInputMuted(InputEvents ie) =>
             _inputMuteUntil.TryGetValue(ie, out var until) && Time.time < until;

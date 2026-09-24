@@ -57,6 +57,20 @@ namespace CosmicShore.Gameplay
             if (spindle) spindle.AddHealthBlock(this);
         }
 
+        /// <summary>
+        /// A living health prism rides its limb's sway (Docs/ECOSYSTEM.md §47). This is the
+        /// creation stamp and it has to be HERE rather than in <see cref="Initialize"/>:
+        /// Initialize runs before the companion entity exists and, on the assembled-flora
+        /// path, before the prism has been re-parented onto its spindle at local identity —
+        /// baking a basis off a transform that is about to change is how a prism ends up
+        /// swaying in the wrong direction with nothing to explain it.
+        /// </summary>
+        protected override void OnCreationComplete()
+        {
+            base.OnCreationComplete();
+            if (spindle) PrismSway.TryStamp(this, spindle);
+        }
+
         public void Reparent(Transform newParent)
         {
             spindle ??= transform.parent.GetComponent<Spindle>();
@@ -106,6 +120,11 @@ namespace CosmicShore.Gameplay
             OwnerFauna = null;
 
             transform.SetParent(newParent, true);
+
+            // The lifeform is gone; what is left is ordinary cell mass. Stopping the sway
+            // is the visible half of that — a skeleton that went on swaying would read as
+            // a creature nobody could kill (Docs/ECOSYSTEM.md §47).
+            PrismSway.Clear(this);
 
             NotifyPositionChanged();
             if (SpatialIndexId >= 0)

@@ -46,6 +46,28 @@ DECL = re.compile(
 NS = re.compile(r"^\s*namespace\s+([\w.]+)", re.M)
 USING = re.compile(r"^\s*using\s+(?:static\s+)?([\w.]+)\s*;", re.M)
 ALIAS = re.compile(r"^\s*using\s+\w+\s*=", re.M)
+ENUM_BODY = re.compile(r"\benum\s+[A-Z]\w*[^{}]*\{([^{}]*)\}", re.S)
+ENUM_MEMBER = re.compile(r"^\s*(?:\[[^\]]*\]\s*)*([A-Z]\w*)\s*(?:=.*)?$", re.S)
+# A MEMBER DECLARATION: the identifier in DECLARATOR position. Same argument as the enum
+# members above, one level over -- at its own declaration the name is a MEMBER, not a type
+# reference, so a member sharing a type's name elsewhere reads as a missing using for a type
+# the file never mentions (`void Pulse()`, `const string WeeklyChallenge = ...`).
+#
+# METHODS and FIELDS need DIFFERENT suppressions, and conflating them fails one way or the other:
+#   - A method is also written bare at every CALL SITE (`Pulse();`), which is not a declaration,
+#     so blanking only the declaration leaves every call reported. Its NAME goes in `own`.
+#   - A field must NOT go in `own`: `public WidgetSO WidgetSO;` needs a using for WidgetSO, and a
+#     name-set suppression would hide the very reference that needs it. Only the declarator
+#     OCCURRENCE is blanked, leaving the TYPE position reported.
+# Both match the name in DECLARATOR position only, never the TYPE position the regex consumes on
+# the way there. `new` is deliberately NOT a listed modifier: it would let `new Vector3(...)` read
+# as a declaration and blind the gate to the constructor call, which is exactly where a using is
+# needed.
+_MODS = (r"(?:(?:public|private|protected|internal|static|readonly|const|virtual|override|abstract"
+         r"|sealed|extern|async|partial|unsafe|volatile|event|required|ref)[ \t]+)*")
+_HEAD = r"^[ \t]*(?:\[[^\]]*\][ \t]*)*" + _MODS + r"[\w.<>,\[\]\?]+[ \t]+"
+METHOD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?=\()", re.M)
+FIELD_DECL = re.compile(_HEAD + r"([A-Z]\w*)[ \t]*(?==>|=[^=]|;|\{)", re.M)
 # A type mention: an identifier starting uppercase, not preceded by a dot (which would make it a
 # member access or an already-qualified name).
 MENTION = re.compile(r"(?<![\w.])([A-Z]\w{2,})\b")
@@ -139,8 +161,26 @@ def check_file(path, decls):
     # Types this file declares itself are always in scope.
     own = set(DECL.findall(src))
 
+    # So are the MEMBERS of enums it declares. An enum member is written bare at its
+    # declaration (`Prism,`) and is not a type reference at all, so a member that happens to
+    # share a name with a type elsewhere — `PrismRenderOverrideSet.Prism` against the Prism
+    # class — reads as a missing using for a type the file never mentions. A gate that cries
+    # wolf is a gate nobody reads, and this one is scoped to CHANGED files, so the noise
+    # arrives attached to somebody's unrelated edit.
+    for body in ENUM_BODY.findall(src):
+        for member in body.split(","):
+            m = ENUM_MEMBER.match(member)
+            if m:
+                own.add(m.group(1))
+
+    # And so are the METHODS it declares -- by NAME, because a method is written bare at every
+    # call site too. A FIELD or PROPERTY is suppressed only at its declarator OCCURRENCE, so its
+    # own TYPE is still reported. See METHOD_DECL / FIELD_DECL.
+    own.update(METHOD_DECL.findall(src))
+    scan = FIELD_DECL.sub(lambda m: m.group(0)[:m.start(1) - m.start(0)], src)
+
     bad = []
-    for name in sorted(set(MENTION.findall(src))):
+    for name in sorted(set(MENTION.findall(scan))):
         if name in own:
             continue
         where = decls.get(name)
@@ -174,6 +214,26 @@ def self_test():
          "a name in a #region LABEL is not a reference"),
         ("namespace CosmicShore.Gameplay {\n#region WidgetSO section\nclass A { WidgetSO w; }\n#endregion\n}", 1,
          "...but a real reference in the same file is still caught"),
+        ("namespace CosmicShore.Gameplay { enum E { WidgetSO, Other } }", 0,
+         "an enum MEMBER sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay { enum E { Other } class A { WidgetSO w; } }", 1,
+         "...but a real reference beside that enum is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n}\n}", 0,
+         "a METHOD declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void WidgetSO() { }\n    void B() {\n        WidgetSO();\n    }\n}\n}", 0,
+         "...and neither is a CALL to it -- the shape that motivated the split"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public const string WidgetSO = \"x\";\n}\n}", 0,
+         "a CONST declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public int WidgetSO => 1;\n}\n}", 0,
+         "a PROPERTY declaration sharing a type's name is not a reference"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() { }\n    WidgetSO w;\n}\n}", 1,
+         "...but a real reference beside those members is still caught"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    void Ok() {\n        var v = new WidgetSO();\n    }\n}\n}", 1,
+         "a CONSTRUCTOR call is a reference -- `new` must not read as a declaration"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO Field;\n}\n}", 1,
+         "a FIELD's TYPE is a reference even though its name is a declarator"),
+        ("namespace CosmicShore.Gameplay {\nclass A {\n    public WidgetSO WidgetSO;\n}\n}", 1,
+         "a field named after its OWN type still reports the TYPE"),
     ]
     ok = True
     for src, want, label in cases:
@@ -200,15 +260,30 @@ def _git(args):
 
 def working_tree_files():
     """Uncommitted .cs files - a pre-commit run is mostly ABOUT these."""
-    rc, out = _git(["status", "--porcelain"])
+    # -z, because plain `git status --porcelain` QUOTES any path containing a space and this repo
+    # is full of them ("Data Containers", "Skimmer Prism Effects", "Effect Containers", "Cell
+    # Configs"). A quoted path does not end in ".cs", so `endswith(".cs")` dropped every one of
+    # them SILENTLY and the check reported OK over a scope it had narrowed itself -- measured on
+    # the element-scaling branch: 10 of 18 changed files seen, including two of the three files
+    # whose whole edit was adding a `using`. Same disease as the stale-base bug below, so the same
+    # rule applies: a gate must not be able to shrink its own scope by accident. -z never quotes.
+    rc, out = _git(["status", "--porcelain", "-z"])
     if rc != 0:
         return []
-    names = []
-    for line in out.split("\n"):
-        # Porcelain is `XY PATH`; a rename is `R  OLD -> NEW` and only NEW exists to check.
-        path = line[3:].strip()
-        if " -> " in path:
-            path = path.split(" -> ", 1)[1].strip()
+    # With -z each record is `XY PATH`, NUL-separated. A rename/copy emits TWO records --
+    # `R  NEW` then a bare `OLD` -- so the pair is consumed together and only NEW is checked.
+    # (Do not try to spot the bare OLD by looking for an `XY ` prefix: a real path like
+    # "Ab cdef.cs" has a space at index 2 and would be misread as a status line.)
+    recs = [r for r in out.split("\0") if r]
+    names, i = [], 0
+    while i < len(recs):
+        rec = recs[i]
+        i += 1
+        if len(rec) < 4:
+            continue
+        xy, path = rec[:2], rec[3:]
+        if "R" in xy or "C" in xy:
+            i += 1
         if path.endswith(".cs"):
             names.append(path)
     return names
@@ -230,10 +305,12 @@ def changed_files():
     for base in ("origin/bleeding-edge", "bleeding-edge", "HEAD"):
         if _git(["rev-parse", "--verify", "--quiet", base])[0] != 0:
             continue
-        rc, out = _git(["diff", "--name-only", f"{base}...HEAD"])
+        # -z here for the same reason as working_tree_files(): `--name-only` quotes a path with a
+        # space unless core.quotePath is off, and a quoted path silently fails the .cs test.
+        rc, out = _git(["diff", "--name-only", "-z", f"{base}...HEAD"])
         if rc != 0:
             continue
-        names = [n for n in out.split("\n") if n.endswith(".cs")]
+        names = [n for n in out.split("\0") if n.endswith(".cs")]
         extra = [n for n in working_tree_files() if n not in names]
         label = f"{base}...HEAD"
         if extra:

@@ -404,25 +404,13 @@ namespace CosmicShore.UI
         /// (<see cref="suppressGameplayCamera"/>) there is one render again, and it may as well be
         /// the one the player is looking at.</para>
         /// </summary>
-        void AdoptUrpSettings(Camera target)
-        {
-            var source = Camera.main;
-            if (!source) return;
-
-            target.allowHDR = source.allowHDR;
-            target.allowMSAA = source.allowMSAA;
-
-            if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
-
-            var to = target.GetUniversalAdditionalCameraData();
-            if (!to) return;
-
-            to.volumeLayerMask = from.volumeLayerMask;
-            to.renderPostProcessing = matchGameQuality && from.renderPostProcessing;
-            to.antialiasing = matchGameQuality ? from.antialiasing : AntialiasingMode.None;
-            to.antialiasingQuality = from.antialiasingQuality;
-            to.renderShadows = matchGameQuality && from.renderShadows;
-        }
+        void AdoptUrpSettings(Camera target) =>
+            // Routed through the shared helper rather than kept as one of four copies of the same
+            // finding - see OffscreenCameraSetup, which the Serpent's scope window paid for.
+            OffscreenCameraSetup.AdoptGameCameraImage(target,
+                                                     postProcessing: matchGameQuality,
+                                                     antiAliasing: matchGameQuality,
+                                                     shadows: matchGameQuality);
 
         // ── Standing the gameplay camera down ───────────────────────────────
 

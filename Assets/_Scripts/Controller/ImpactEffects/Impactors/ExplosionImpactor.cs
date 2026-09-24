@@ -3,6 +3,7 @@ using CosmicShore.Gameplay;
 using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
@@ -118,6 +119,10 @@ namespace CosmicShore.Gameplay
         // climb every frame a target loiters in the cone. Only vessels that passed the domain /
         // friendly-fire gate are recorded, so the count is "pilots this blast actually debuffed",
         // not "pilots it overlapped".
+        //
+        // It is also the GATE on vessel-effect dispatch, not only the tally - see AcceptImpactee.
+        // A blast lives far longer than the combat-hit latch's window, so nothing else can stop
+        // one detonation paying a re-entering pilot twice.
         private HashSet<int> _vesselsHit;
 
         public bool IsBatchProcessing => _useBatchProcessing;
@@ -193,6 +198,51 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Does this blast SPARE anything it touches? If so it has a passthrough to express, and
+        /// every frame of its sweep publishes a LIT volume so the mass it spares is visibly
+        /// acknowledged rather than looking clipped through.
+        ///
+        /// This REPLACED a 2-second temporary shield applied per prism
+        /// (<c>Prism.ActivateShield(2f, ...)</c>, removed from both this class and its Burst twin
+        /// <c>PrismSpatialIndex.ResolveExplosionHit</c>). The shield was reached for as a visual —
+        /// "the prism armours up instead of the explosion passing through it" — and it carried
+        /// three gameplay side effects nobody had designed: shielded mass is not food and is
+        /// re-filed out of the cell's fauna targeting grids
+        /// (<c>PrismStateManager.SyncAOERegistryShieldState</c>), so a friendly blast blacked out
+        /// its own footprint for the food web and churned the grids twice; and
+        /// <c>ApplyShieldState</c> plays one <c>ShieldActivate</c> SFX per prism. A light says the
+        /// same thing to the player, costs one volume rather than N shield transitions, N timers
+        /// and N shed-debris entities, and says nothing at all to the simulation.
+        /// <c>Docs/LIT.md</c> records the swap and what it costs.
+        ///
+        /// A blast that destroys everything it touches publishes nothing, so every fully
+        /// destructive blast in the game looks exactly as it did.
+        /// </summary>
+        bool SparesWhatItTouches => !affectSelf || !destructive;
+
+        /// <summary>
+        /// Publish this frame's swept volume as a light in the blast's own domain. Keyed on the
+        /// impactor's instance id, so one blast holds one slot for its whole life however many
+        /// frames it sweeps, and the bank fades it out by itself once the blast is destroyed —
+        /// which matters here more than anywhere, because an explosion cannot fade anything
+        /// itself: it is <c>Destroy</c>ed the frame its sweep ends.
+        ///
+        /// It is the one producer that publishes OWN-DOMAIN ONLY, and that is the whole sentence
+        /// rather than a tuning: what this light says is "that blast went through here and SPARED
+        /// this", which is only true of mass the blast declined to touch. Everything else inside
+        /// the volume is being destroyed, so lighting it says the opposite of what is happening —
+        /// and a dying prism's debris, which carries no domain at all, falls outside every gated
+        /// light for free. The two AIM producers stay ungated on purpose: their sentence is about
+        /// mass their owner does NOT own.
+        /// </summary>
+        void PublishLit(in LitVolume volume)
+        {
+            if (!SparesWhatItTouches) return;
+            PrismLit.PublishLight(GetInstanceID(), volume, 1f, explosion.Domain,
+                                  ownDomainOnly: true);
+        }
+
+        /// <summary>
         /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
         /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
         /// center/radius describe this frame's blast sphere (stationary centre,
@@ -212,6 +262,10 @@ namespace CosmicShore.Gameplay
                 // still able to act on crystals and creatures.
                 SweepCrystals(center, radius);
                 SweepLifeformHearts(center, radius);
+
+                // The blast's own volume, this frame. A sphere needs no direction, which is why
+                // LitVolume.Sphere takes none.
+                PublishLit(LitVolume.Sphere(center, radius));
 
                 if (!_useBatchProcessing) return true;
                 var registry = PrismSpatialIndex.Instance;
@@ -255,6 +309,12 @@ namespace CosmicShore.Gameplay
                 float coneSweepRadius = coneReach * (0.5f + Mathf.Max(tanCoreHalfAngle, tanGapePerUnit));
                 Vector3 coneSweepCentre = apex + axis * (coneReach * 0.5f);
                 SweepCrystals(coneSweepCentre, coneSweepRadius);
+
+                // Swept-so-far, not this frame's slab: the light marks everywhere the blast has
+                // reached, so mass it passed through a moment ago stays acknowledged while the
+                // front runs on.
+                PublishLit(LitVolume.Cone(apex, axis, gapeAxis, sliceMax,
+                                          tanCoreHalfAngle, tanGapePerUnit));
                 SweepLifeformHearts(coneSweepCentre, coneSweepRadius);
 
                 if (!_useBatchProcessing) return true;
@@ -313,6 +373,12 @@ namespace CosmicShore.Gameplay
                 // a crystal is, so a mirror that reached one and not the other would be a blast
                 // whose two halves disagree about what they touched.
                 float half = mirrored ? depth : depth * 0.5f;
+
+                // Swept-so-far, and the mirror rides along: a mirrored plate's light claims both
+                // slabs exactly as its query does, so the half that drags mass THROUGH the pilot
+                // is lit too. That half is the one the mirror exists for and the one a player
+                // cannot otherwise read.
+                PublishLit(LitVolume.Cylinder(origin, axis, depth, radius, mirrored));
                 float cylinderSweepRadius = Mathf.Sqrt(half * half + radius * radius);
                 Vector3 cylinderSweepCentre = mirrored ? origin : origin + axis * half;
                 var cylinderNarrowphase = new SweptCylinder(origin, axis, depth, radius, mirrored);
@@ -464,8 +530,19 @@ namespace CosmicShore.Gameplay
                     // friendly-fire gate has been caught by this blast whether or not the firing
                     // vessel happens to author any vessel effects, and the tally is a report of the
                     // blast's reach, not of one container's wiring.
+                    //
+                    // ONE BLAST PAYS A VICTIM ONCE, and the ledger is the GATE rather than only the
+                    // tally. A blast is a trigger that GROWS for its whole duration - three seconds
+                    // on the skyburst's destructive sphere - so a pilot who is swept up, flies out
+                    // and turns back in re-enters the same detonation and raises OnTriggerEnter
+                    // again. VesselCombatHitLatch cannot answer that: its window is half a second,
+                    // which is the anti-spam floor between two DIFFERENT rockets and is deliberately
+                    // much shorter than a blast's life, so past it the second entry would land the
+                    // debuff and the points a second time for one shot. The three missile TIERS are
+                    // the other question and are a separate blast instance each; the latch folds
+                    // those onto one window and pays only the closest.
                     _vesselsHit ??= new HashSet<int>(4);
-                    _vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID());
+                    if (!_vesselsHit.Add(vesselImpactee.Vessel.Transform.GetInstanceID())) break;
 
                     if (!explosionImpactorDataContainer) return;
                     var vesselExplosionEffects = explosionImpactorDataContainer.vesselExplosionEffects;
@@ -744,12 +821,19 @@ namespace CosmicShore.Gameplay
                 // root. It is also the SAME expression the Burst twin uses
                 // (PrismSpatialIndex.ResolveExplosionHit) - these two must not drift, or a
                 // blast pops shields differently with the spatial index up.
-                float impactSpeed = explosion.Impulse.Speed * explosion.Impulse.Inertia;
-                float limit = explosion.Impulse.DebrisSpeedLimit;
+                // The blast is ACCEPTED, not ignored - and since 2026-09 what says so is LIT
+                // (PublishLit above), not a 2-second shield on every prism. See
+                // SparesWhatItTouches for what that swap removed; Docs/LIT.md for why.
+                //
+                // An AUTHORED shield still lands: `shielding` is a real ability (the Sparrow's
+                // CHARGE-5 "Shielded Prisms"), it is PERMANENT rather than timed, and it is a
+                // gameplay grant rather than a stand-in for a visual. Only the timed stand-in
+                // went away.
                 if (shielding && prism.Domain == explosion.Domain)
-                    prism.ActivateShieldFromImpact(impactSpeed, limit);
-                else 
-                    prism.ActivateShield(2f, impactSpeed, limit);
+                {
+                    float impactSpeed = explosion.Impulse.Speed * explosion.Impulse.Inertia;
+                    prism.ActivateShieldFromImpact(impactSpeed, explosion.Impulse.DebrisSpeedLimit);
+                }
                 return;
             }
             

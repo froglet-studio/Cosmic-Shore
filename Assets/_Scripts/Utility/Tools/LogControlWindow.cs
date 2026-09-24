@@ -883,6 +883,11 @@ namespace CosmicShore.Utility
         {
             DrawTabTitle("Quest Debug", Tabs[4].Color);
 
+            // Above the play-mode gate on purpose: this is a PlayerPrefs value, so it is
+            // flippable with the editor stopped, and needing play mode to turn progression
+            // back on is exactly the friction it exists to remove.
+            DrawMasterUnlockGate();
+
             bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
 
             if (!available)
@@ -985,6 +990,8 @@ namespace CosmicShore.Utility
         {
             DrawTabTitle("Vessel Unlock", Tabs[5].Color);
 
+            DrawMasterUnlockGate();
+
             if (!_vesselList)
             {
                 var guids = AssetDatabase.FindAssets("t:SO_VesselList");
@@ -1003,7 +1010,10 @@ namespace CosmicShore.Utility
             {
                 if (vessel == null) continue;
 
-                bool isUnlocked = !vessel.IsLocked;
+                // IsLockedByEntitlement, not IsLocked: this list GRANTS and REVOKES ownership,
+                // and IsLocked reads false for every vessel while the master gate is on - the
+                // rows would all show owned and the toggles would appear to do nothing.
+                bool isUnlocked = !vessel.IsLockedByEntitlement;
                 DrawLogToggle(vessel.Name, isUnlocked, v =>
                 {
                     if (v)
@@ -1261,6 +1271,39 @@ namespace CosmicShore.Utility
             var labelRect = new Rect(rect.x + 12, rect.y, rect.width - 12, rect.height);
             GUI.Label(labelRect, title, _sectionTitleStyle);
             GUILayout.Space(6);
+        }
+
+        /// <summary>
+        /// The MASTER DEVELOPER UNLOCK block. Shown on both the Quest and Vessels tabs because
+        /// the one switch opens both, and drawn ABOVE each tab's play-mode gate because it is a
+        /// PlayerPrefs value that does not need a running game.
+        /// </summary>
+        void DrawMasterUnlockGate()
+        {
+            GUILayout.Space(Pad);
+            DrawSubSectionLabel("Master Developer Unlock");
+
+            bool on = DeveloperUnlockGate.AllUnlocked;
+            DrawLogToggle("Unlock everything (vessels, modes, intensities, hangar)", on,
+                v => DeveloperUnlockGate.AllUnlocked = v);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                on
+                    ? "OPEN - every vessel, game mode and intensity is playable, and the quest graph does not run at all."
+                    : "ENFORCED - real progression is in effect. Locks, the quest graph and the FTUE funnel all apply.",
+                _infoStyle);
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            if (GUILayout.Button($"Reset to shipped default ({(DeveloperUnlockGate.DefaultAllUnlocked ? "open" : "enforced")})",
+                                 GUILayout.Width(260)))
+                DeveloperUnlockGate.ResetToDefault();
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(Pad);
         }
 
         void DrawSubSectionLabel(string title)

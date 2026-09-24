@@ -4,7 +4,7 @@ Paste everything below into a fresh session.
 
 ---
 
-The Rhino locks three shipped game modes — **Astro League**, **Peel the Cage** and **Headlong** —
+The Rhino locks three shipped game modes — **Astro League**, **Cleave** and **Headlong** —
 and its elemental ability map has **one of four slots designed and none of its four level-5
 upgrades authored**. Three modes outsiders will play in the invite build rest on a hull the fleet's
 own contract calls unfinished, and its HUD consequently renders four cards of which three are
@@ -25,7 +25,16 @@ Rhino ability docs in `Assets/_Scripts/Controller/Vessel/R_VesselActions/` —
 | Element | Ability | Level-5 upgrade |
 |---|---|---|
 | Charge | `(open design slot)` — *"Charge mapping not yet designed for the Rhino."* | — |
-| Mass | **Trail Slabs** — *"Mass raises the grown trail slab maximum size."* `MultiplierAtFullLevel: 1.5`, `MinMultiplier: 0.25` | — |
+| Mass | **Trail Slabs** — *"Mass raises the grown trail slab maximum size."* ×1 → ×1.5, floored ×0.25 | — |
+
+> ⚠ **This prompt predates the 2026-09-18 element-scaling unification and its numbers moved
+> HOME, not value.** The map's `MultiplierAtFullLevel` / `MinMultiplier` fields are **deleted**;
+> the Mass curve above now lives in `GrowTrailActionSO.massMaxSizeMultiplier` on
+> `GrowTrailAction.asset`, and the Time slot the table below calls open was filled with **Ramp
+> Spool** (`RampBoostActionSO.timeAccelerationMultiplier`). Do **not** author a scaling field into
+> a map asset when acting on this prompt — put the number on the asset or component that owns it
+> and read it through `EvaluateLive(status)`. Run `python3 Tools/Build/element_ability_table.py
+> Rhino --verbose` for the live state rather than trusting this table.
 | Space | `(open design slot)` | — |
 | Time | `(open design slot)` | — |
 
@@ -46,13 +55,13 @@ from the code and quote the authored numbers:
   full throttle and near-zero stick, and past that it **grades down** rather than switching off,
   lerping toward plain cruise as the stick goes over. Headlong's entire course design is cut against
   that curve — composing the lerp with linear-in-stick turn rate and speed-dependent max turn rate
-  gives a continuous speed/radius trade from **332 u at 1210 u/s** down to **29 u at cruise**.
+  gives a continuous speed/radius trade from **332 u at 1200 u/s** down to **25 u at cruise**.
   `straightnessGraceBand` latches it back to the engage threshold.
 - **The energy sword.** The Rhino's skimmer is a swung blade: `SkimmerSwingKinematics` resolves a
   contact on the **point of the blade that touched**, with the strike speed being that point's true
   velocity, so a swung tip fires an Astro League ball far harder than the hull — with an extra tip
   bonus on top. It is also the one force that breaks a super-shield.
-- **Trail slabs.** The existing Mass scalar, and the reason Peel the Cage's arena reads the way it
+- **Trail slabs.** The existing Mass scalar, and the reason Cleave's arena reads the way it
   does.
 - **Turn-radius convergence.** `RotationThrottleScaler 0.5` gives the Rhino an asymptotic turn
   radius of `180/(π·r)` = **115 u**, where every other hull's grows without bound. This is *why*

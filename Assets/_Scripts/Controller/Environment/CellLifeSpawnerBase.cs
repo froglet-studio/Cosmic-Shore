@@ -301,6 +301,12 @@ namespace CosmicShore.Gameplay
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+
+            // No config reaches this overload, so this newborn is never replicated - but it
+            // still carries the prefab's NetworkObject, and an un-spawned one is a scene-object
+            // index collision waiting for the next joiner. Resolve it here rather than leaving
+            // the hazard parked in an entry point that currently has no callers.
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 
@@ -309,7 +315,8 @@ namespace CosmicShore.Gameplay
         /// instead of rolling randomly. Used by the regulated fauna spawn loop so new
         /// fauna track the live leader rather than producing inconsistent domain mixes.
         /// </summary>
-        public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
+        public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain,
+                                                 Vector3? spawnPosition = null, FaunaConfigurationSO cfg = null)
         {
             if (!host || !faunaPrefab) return null;
 
@@ -329,6 +336,30 @@ namespace CosmicShore.Gameplay
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+
+            // Lineage bind + replication seam, for EVERY producer.
+            //
+            // These used to live in SpawnFaunaBanded, one level up, with a comment asking the
+            // next author not to add a spawn site that skipped it. Three sites did anyway - the
+            // arcade mode preview, the Lifeform Matrix toy and the Wanderway conveyor - because
+            // they legitimately need placement this method already does and had no reason to
+            // suspect a seam lived in a sibling. That is the platform's own rule arriving from a
+            // new direction: A RULE ENFORCED AT ONE PRODUCER CAN ONLY EVER SEE THAT PRODUCER.
+            // Here it is enforced at the one Instantiate every producer reaches, so a fourth
+            // site cannot bypass it by construction.
+            //
+            // What bypassing it COST is Docs/PartySystem/BUGS.md B5: an un-spawned NetworkObject
+            // is adopted by Netcode as an IN-SCENE object, and two of one prefab in one scene
+            // collide in the scene-object index and break synchronization for every LATER
+            // joiner. The preview alone released four of one prefab into Menu_Main.
+            //
+            // AFTER AssignLineage, never before: the lineage bind rolls this individual's
+            // element, and that element is the identity the spawn payload carries to peers.
+            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced); a
+            // newborn with NO config is neutralized, which is the correct reading of "a species
+            // with no config is never replicated".
+            if (cfg) pop.AssignLineage(host, cfg);
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 
@@ -346,6 +377,10 @@ namespace CosmicShore.Gameplay
         // RandomLifeSpawner and the cell was running IntensityWiseLifeSpawner.
         //
         // Both spawners now call SpawnFaunaBanded. Do not add a third spawn site that does not.
+        //
+        // That plea used to cover REPLICATION as well, and three sites broke it (B5). The
+        // replication seam has since moved down into SpawnFaunaWithDomain, where no producer
+        // can miss it; what is left here is genuinely about BANDED PLACEMENT only.
 
         /// <summary>True when this species is penned to a band and needs banded placement.</summary>
         protected static bool IsBanded(FaunaConfigurationSO cfg) => cfg && cfg.BandOuterRadius > 0f;
@@ -463,17 +498,9 @@ namespace CosmicShore.Gameplay
                 position = host.ClampToFaunaContainment(birth, birth);
             }
 
-            var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
-            if (fauna) fauna.AssignLineage(host, cfg);
-
-            // Replication seam. It goes HERE - the one spawn call both spawners share, for
-            // exactly the reason banded placement does (see the warning above): a seam added to
-            // one spawner is dead code in every cell that runs the other. And it goes AFTER
-            // AssignLineage, because the lineage bind is what rolls this individual's element,
-            // and the element is the identity the spawn payload carries to every peer.
-            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced).
-            FaunaNetworkSync.ServerSpawn(fauna);
-            return fauna;
+            // Lineage and replication are SpawnFaunaWithDomain's now (see the seam there), so
+            // this reads as placement only - which is all this method was ever about.
+            return SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position, cfg);
         }
 
         protected float GetControllingVolume(GameDataSO gameData) =>

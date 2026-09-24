@@ -14,15 +14,15 @@ the vector flight model that fixes it, and the numbers.
 
 | | |
 |---|---|
-| Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab, so LT's 0→1 travel is remapped across the whole 0→2 range: no-drift → single → sharp on one trigger |
-| Input (touch) | `OnlyLeftStickAction (12)` → binary, smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
-| Tier 1 | `SquirrelDriftAction` — rotation ×**1.4**, grip **0.5** |
-| Tier 2 | `SquirrelSharpDriftAction` — rotation ×**1.8**, grip **0.25** |
+| Input (gamepad) | **Left trigger**, analog. `singleTriggerDrift: 1` on the prefab and ONE drift action bound, so **the drift amount is how far LT is pulled**: 0 = no drift, full pull = the action's full authored drift, linear in between (`GetTriggerSum` returns raw `LeftTriggerAnalog` when no sharp tier is bound) |
+| Drift sound | `DriftAudioController.singleTriggerDepth: 1` on the prefab — the FMOD `Drift Amount` parameter follows the same LT pull (0 feathered → 1 buried), so the sound gets harder as the drift does; keyboard/touch read 1 |
+| Input (touch) | `OnlyLeftStickAction (12)` → binary (full drift), smoothed by `DRIFT_EASE_SPEED` (12/s ≈ 83 ms ramp) so a tap still reads as an analog pull |
+| Drift action | `SquirrelDriftAction` — at full pull rotation ×**1.8**, grip **0.25** (the old sharp tier's values; the old ×1.4 / 0.5 single tier now sits at ≈ half pull). `SquirrelSharpDriftAction` is no longer bound (2026-09-23) |
 | Right trigger | **NOT free** — `RightStickAction (1)` is `SquirrelTubeAction` (touch: `OnlyRightStickAction (11)`). The Squirrel keeps its two-stick scissor throttle; do not propose a Scarab-style RT accelerator here |
 
 Drift does two things at once: it **multiplies the rotation scalers** (you turn harder) and it
 **lowers grip** (your momentum stops following your nose). Both ramp continuously with trigger
-depth — there is no discrete "drift mode", which is why the tiers interpolate rather than switch.
+depth — there is no discrete "drift mode" and, since 2026-09-23, no tiers either: one action, scaled by the pull.
 
 **Throttle is the two-stick scissor**: `XDiff = (rightStick.x − leftStick.x + 2) / 4`, linear, no
 deadzone, **resting at 0.5** (`GamepadInputStrategy.cs`). Note `BaseInputStrategy.ResetInput` zeroes
@@ -132,6 +132,66 @@ peak `1.25 × 60 = 75.0`, verified.
 
 ---
 
+### 3.5 Minimum throttle has to END in a stop — the exponential never arrives
+
+`StepTowardTarget` is an exponential lerp toward the throttle target, which is the right shape
+everywhere except at the very bottom: **an exponential approaches zero and never lands.** A
+two-thumb flier that authors no floor (`DefaultMinimumSpeed` 0 — Squirrel, Dolphin, Manta, Urchin)
+therefore targets a genuine 0 when the pilot holds the scissor, and then tails off toward it
+forever. From a boosted Dolphin's 347 u/s that tail is seconds long and a couple of hundred units
+of travel, which is what *"it doesn't come to a stop"* looks like from the seat.
+
+`MinimumThrottleBrake` owns that last stretch: **when the commanded target is zero**, the step
+returns the LOWER of what the exponential reached and what a constant rate reached, so the speed
+actually lands on 0.
+
+**MIN, never SUM — and this is the part that is easy to get wrong.** Subtracting the constant rate
+*from* the already-stepped value applies BOTH every frame, which measures **40% under the legacy
+curve half a second into a Squirrel's stop**: not an end on the old deceleration but a different
+one, on every affected hull — including the Squirrel, which was the reference for *correct*
+behaviour when this was asked for. Taking the minimum instead lets the exponential win outright
+while it is the stronger of the two, i.e. above `rate / LERP_AMOUNT` (**20 u/s** on a Squirrel,
+22.7 on a Dolphin, 60 on a Manta), so the whole of the fall the pilot can see is bit-identical to
+what shipped and the constant rate owns only the tail. `MinimumThrottleBrakeTests` pins both
+halves: identical above the crossover, strictly stronger below it. The first cut of this shipped
+the SUM while every test passed, because every test asserted that a stop HAPPENS — which a
+wrongly-composed brake also satisfies.
+
+Three properties make it safe to put in the shared step rather than per vessel:
+
+- **It engages only on a ZERO target**, so two whole classes of vessel are untouched
+  *structurally* rather than by tuning. Every **one-thumb** hull is out because
+  `SingleStickVesselTransformer.ComputeThrottleTarget` is `ThrottleScaler * boost + MinimumSpeed`
+  with no throttle axis in it and so can never be zero; the **Scarab** is out because it overrides
+  `ComputeNoseAcceleration` wholesale and never reaches this step at all (it already brakes to a
+  real stop through its own `coastDragPerSecond`). Any deceleration toward a lower-but-nonzero
+  cruise is bit-identical to before, and so is accelerating away from a stop. A vessel that
+  authors a non-zero `MinimumSpeed` therefore cannot be braked at all — which is why **the Rhino's
+  `DefaultMinimumSpeed` went 10 → 0 in the same pass**: a floor is a speed the pilot cannot give
+  back, so a two-thumb flier that is meant to be able to STOP cannot author one. See below for
+  what that cost.
+- **The rate is the vessel's OWN cruise** (`ThrottleScaler / minimumThrottleBrakeSeconds`, default
+  2 s), not an absolute u/s — so a 180 u/s Manta and a 68 u/s Dolphin stop in the same *time*
+  rather than the fast hull coasting three times as far.
+- **It is in `StepTowardTarget`**, the one step BOTH flight models run through, so the no-drift
+  identity of §3.2 is untouched and the scalar-model hulls get it too. In the vector model it
+  brakes the NOSE component, which outside a drift *is* the whole speed (grip has already snapped
+  the velocity onto the nose); inside a drift it stops feeding the slide without killing it, which
+  is exactly right.
+
+The fleet had already reached this answer twice, per vessel, for the same reason — the Scarab's
+`coastDragPerSecond` and the Urchin's `detachSpeedDecayRate`, the latter authored in so many words
+as a constant rate "rather than an exponential tail that never quite lands". This is that finding
+promoted to the shared path instead of a third copy. The 2 s default is calibrated against the
+Scarab: it sheds its 216 u/s ceiling at 120 u/s², ~1.8 s from the top, and 2 s of cruise lands a
+full-boost Dolphin in ~1.85 s.
+
+**General rule: a target a controller only ever APPROACHES is not a state the controller can
+reach, so any target that is also a promise to the player ("minimum throttle means stopped") needs
+a terminal approach that lands on it.**
+
+---
+
 ## 4. Constraints this had to respect (each was a real trap)
 
 - **The AI's `Course` write survives.** `AIPilot.cs:339` does `VesselStatus.Course = desiredDirection`
@@ -165,10 +225,11 @@ peak `1.25 × 60 = 75.0`, verified.
 | File | Role |
 |---|---|
 | `Controller/Vessel/VesselTransformer.cs` | Both flight models; `vectorFlightModel`, `driftOvershootCeiling`, `driftThrottlePolicy`, `Grip`, `StepTowardTarget`, `ComputeNoseAcceleration`, `ShapeSpeed`, `SyncExternalWrites`, `SetCourseVelocity` |
+| `Controller/Vessel/MinimumThrottleBrake.cs` | §3.5 — the terminal approach that makes a zero throttle target land on an actual stop (`MinimumThrottleBrakeTests`) |
 | `Controller/Vessel/ScarabVesselTransformer.cs` | Acceleration policy only (integrator + ceiling + Snap Dash) — no flight model of its own |
 | `_Prefabs/Spacevessels/Squirrel.prefab` | `vectorFlightModel: 1`, `driftOvershootCeiling: 1.25`, `driftThrottlePolicy: 0` (Live) |
-| `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | tier 1 — ×1.4 / grip 0.5 |
-| `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | tier 2 — ×1.8 / grip 0.25 |
+| `_SO_Assets/VesselActions/Squirrel/SquirrelDriftAction.asset` | the one drift action — ×1.8 / grip 0.25 at full pull |
+| `_SO_Assets/VesselActions/Squirrel/SquirrelSharpDriftAction.asset` | unbound since 2026-09-23 (safe to delete) |
 
 `DriftDamping` was renamed to **`Grip`** (`[FormerlySerializedAs]` migrates the prefabs). It is what
 the field has always meant: the rate at which momentum rotates back onto the nose. It is a
@@ -183,7 +244,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | **Squirrel** | vector | Live | This document. Throttle semantics unchanged — only the direction of thrust |
 | **Scarab** | vector | Live (own policy) | Integrator throttle; overrides `ComputeNoseAcceleration` + `ShapeSpeed` |
-| **Dolphin** | vector | **Locked** | Drift freezes the velocity vector outright (grip 0 + zero thrust), so entering a drift at speed costs nothing. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
+| **Dolphin** | **scalar** | (`Locked`, not consulted) | `Dolphin.prefab` authors `vectorFlightModel: 0`, so its drift freeze is the SCALAR path's `holdSpeedWhileDrifting: 1` — the only vessel in the fleet that sets it — and its `driftThrottlePolicy: Locked` is inert (the policy is vector-only). Same outcome (speed pinned for the drift's duration, entering at speed costs nothing), different mechanism. `DOLPHIN_ENERGY_ECONOMY.md` §2a |
 | Everyone else | scalar | — | Bit-identical to before the flag existed |
 
 ---
@@ -194,9 +255,10 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 |---|---|---|---|
 | `driftOvershootCeiling` | Squirrel.prefab | 1.25 | Max \|v\| during a drift, × the throttle target. 1 = no overshoot |
 | `driftThrottlePolicy` | Squirrel.prefab | Live (0) | Whether thrust acts during a drift. `Locked` (the Dolphin) = no acceleration for the drift's duration |
-| `Mult` / `driftDamping` | drift action SOs | 1.4/0.5, 1.8/0.25 | Rotation multiplier and grip per tier |
+| `Mult` / `driftDamping` | `SquirrelDriftAction` | 1.8/0.25 | Rotation multiplier and grip at full trigger pull |
 | `DefaultThrottleScaler` | Squirrel.prefab | 60 | Scissor throttle's speed scale |
 | `RotationThrottleScaler` | Squirrel.prefab | 0 | Turn rate vs speed — **deliberately 0** |
+| `minimumThrottleBrakeSeconds` | every vessel | 2 | §3.5. Seconds to shed one cruise once the target is ZERO. 0 restores the legacy exponential tail |
 
 ---
 
@@ -209,7 +271,7 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 2. **The identity (the one that must be seen).** Fly with no drift at all — accelerate, brake, turn
    hard, take a danger-prism slow, ride the tube. It must feel *exactly* as it does on `main`. This
    is the claim the whole change rests on; §3.2 proves it in arithmetic, but it has to be seen.
-3. **Analog depth.** Feather LT: convergence should loosen continuously, not snap between tiers.
+3. **Analog depth.** Feather LT: convergence should loosen continuously with pull depth, from none at rest to full at a buried trigger.
 4. **Overshoot binds, but never brakes.** (a) From cruise, hold a long clean drift at full
    throttle: speed may rise above the straight-line cruise and must plateau at 1.25×; drop
    `driftOvershootCeiling` to 1 and confirm the plateau disappears. (b) **The regression that
@@ -222,6 +284,37 @@ serialized values are stale garbage, exactly like `ThrottleScaler`.
 6. **Danger prism while drifting.** Clip a danger prism mid-drift — the slow must land.
 7. **Vessel swap.** Menu freestyle → vessel changer → Squirrel at speed. The new hull inherits the
    speed rather than dropping to a stop.
+8. **Minimum throttle stops the vessel (§3.5, UNFLOWN).** Menu freestyle, on each two-thumb hull in
+   turn — **Dolphin**, Squirrel, Manta, Urchin. Hold the throttle scissor (both sticks full
+   horizontal, opposite directions; keyboard **L + D**) from cruise: the vessel must reach a
+   genuine standstill in **1.40 s**, and from a full boosted 347 u/s in **2.47 s** (both measured
+   off the shipped composition, not estimated). Then check the two things a brake can
+   get wrong: it must read as *settling*, not as hitting a wall, and throttling back up from the
+   stop must be immediately responsive rather than feeling like a stall.
+   - **Decelerating to a lower cruise is NOT braked** — ease the scissor to a mid throttle from
+     top speed and confirm that fall feels exactly as it always did. Only a *minimum* throttle
+     brakes.
+   - **The Rhino is in the list now** — its `DefaultMinimumSpeed` went 10 → 0, so it stops like
+     the rest. Its cruise is correspondingly 50 rather than 60 and its ramp top 1200 rather than
+     1210; both readouts are worth a glance, and `HEADLONG.md` §2 carries the re-derived tables.
+   - **Watch the COUNTDOWN on the three Rhino modes** (Astro League, Peel the Cage, Headlong).
+     A paused `InputController` returns before writing `XDiff`, so the value simply holds — if
+     it holds 0 (a fresh `ResetInput`/`ResetForReplay` before any AI write) the target is now
+     `MinimumSpeed` 0 rather than 10, and the brake brings the hull to a dead stop during the
+     countdown where it used to drift at 10 u/s. That is what the other four two-thumb hulls have
+     always done, so it is a consistency change rather than a regression — but it is the one place
+     the floor removal is visible outside the pilot's own throttle, and it has not been flown.
+     Menu freestyle is NOT exposed: the AI writes a non-zero `XDiff` before handing over, so the
+     enter-freestyle camera blend still cruises forward exactly as before.
+     The thing to watch for is a **Headlong** lap feeling different — it should not: measured over
+     1,600 generated circuits the gate positions are bit-identical and the corner ladder
+     (99/82/65/37% of top speed) is unchanged to the digit, because the only thing that number
+     fed was a safety floor that never binds.
+   - **If the Dolphin's throttle still does nothing after a drift**, the cause is not this: it is
+     the only vessel in the fleet with `holdSpeedWhileDrifting: 1`, and that latch pins the cruise
+     speed for the drift's duration and releases on the drift's RELEASE edge. A missed release
+     leaves the throttle dead at whatever speed was captured, which reads as the same complaint.
+     `IsDriftSpeedHeld` is the thing to watch.
 
 ---
 

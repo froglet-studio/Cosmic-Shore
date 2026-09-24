@@ -20,10 +20,16 @@ namespace CosmicShore.Gameplay
     public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
         [Header("Effect")]
-        [Tooltip("Signed level change applied to an overtaken opponent (negative = debuff)")]
+        [Tooltip("Signed level change applied to an overtaken opponent (negative = debuff). " +
+                 "DERIVED from the price Broadside puts on a Strike, not authored — edit it " +
+                 "with Tools/Build/author_combat_debuff_magnitudes.py, whose --check FAILS on " +
+                 "a hand-edit.")]
         [SerializeField] private float debuffMagnitude = -0.5f;
 
-        [Tooltip("Signed level change applied to an overtaken ally (positive = buff)")]
+        [Tooltip("Signed level change applied to an overtaken ally (positive = buff). MIRRORS " +
+                 "the debuff exactly: this is one mechanic with two branches, and a buff that " +
+                 "outweighed the debuff would make a friendly overtake worth more than an " +
+                 "enemy one costs. Derived by the same script.")]
         [SerializeField] private float buffMagnitude = 0.5f;
 
         [Tooltip("Seconds over which the temporary buff/debuff decays back to baseline")]

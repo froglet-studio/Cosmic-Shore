@@ -11,10 +11,15 @@ namespace CosmicShore.Gameplay.Audio
     /// <summary>
     /// Drives an FMOD drift SFX event for a single vessel (Squirrel by
     /// default - racing/drift class). The event exposes one parameter
-    /// ("Drift Amount" by default):
+    /// ("Drift Amount" by default), and what it means depends on how the
+    /// vessel drifts:
     ///
-    ///   0 = single drift trigger held
-    ///   1 = both drift triggers held
+    ///   Two-trigger drift (default): 0 = single trigger held, 1 = both.
+    ///   Single-trigger drift (<see cref="singleTriggerDepth"/>, the
+    ///   Squirrel): the parameter IS the drift depth - 0 at a feathered
+    ///   left trigger, 1 when it is buried - the same 0..1 pull
+    ///   VesselTransformer scales the drift itself by, so the sound gets
+    ///   harder exactly as the drift does.
     ///
     /// Lifecycle:
     ///   - Drift START (IsDrifting goes true): create + start the FMOD
@@ -102,6 +107,15 @@ namespace CosmicShore.Gameplay.Audio
             "drift detection. Matches GamepadInputStrategy's trigger " +
             "deadzone.")]
         float triggerDeadzone = 0.05f;
+
+        [SerializeField, Tooltip(
+            "Single-trigger drift (VesselTransformer.singleTriggerDrift): the " +
+            "drift_amount parameter follows how far the LEFT trigger is " +
+            "pulled, 0 (just past the deadzone) to 1 (fully pulled), so the " +
+            "sound intensifies as the drift gets harder. Non-analog devices " +
+            "(keyboard, touch) drift at full depth, so they read 1. Takes " +
+            "precedence over the two-trigger modes below.")]
+        bool singleTriggerDepth = false;
 
         [SerializeField, Tooltip(
             "When true, the drift_amount parameter scales smoothly with " +
@@ -468,6 +482,15 @@ namespace CosmicShore.Gameplay.Audio
 
             float left = input.LeftTriggerAnalog;
             float right = input.RightTriggerAnalog;
+
+            if (singleTriggerDepth)
+            {
+                // Mirrors VesselTransformer.GetTriggerSum: only a gamepad
+                // measures the pull; every other device drifts at full depth.
+                if (input.ActiveInputDevice != InputDeviceType.Gamepad)
+                    return 1f;
+                return Mathf.Clamp01((left - triggerDeadzone) / Mathf.Max(1f - triggerDeadzone, 0.0001f));
+            }
 
             bool leftActive = left > triggerDeadzone;
             bool rightActive = right > triggerDeadzone;

@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.CloudSave;
 using Unity.Services.Core;
+
+// The options types live in Unity.Services.CloudSave.Models.Data.Player and are aliased per type
+// rather than imported wholesale, because that namespace's members collide with the deprecated
+// top-level ones (CS0104) - the same convention, for the same reason, as DisplayNameRegistry.cs.
+using PlayerDeleteOptions = Unity.Services.CloudSave.Models.Data.Player.DeleteOptions;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Newtonsoft.Json;
@@ -132,7 +137,12 @@ namespace CosmicShore.Core
 
             try
             {
-                await CloudSaveService.Instance.Data.Player.DeleteAsync(key).AsMainThread();
+                // The options argument is passed EXPLICITLY. Omitting it does not select an
+                // option-less overload - it binds to the deprecated
+                // DeleteAsync(string, Unity.Services.CloudSave.DeleteOptions) through that
+                // overload's default argument, which is where the CS0618 came from.
+                await CloudSaveService.Instance.Data.Player
+                    .DeleteAsync(key, new PlayerDeleteOptions()).AsMainThread();
                 ct.ThrowIfCancellationRequested();
                 _failedKeys.Remove(key);
                 return true;

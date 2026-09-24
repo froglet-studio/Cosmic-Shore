@@ -125,6 +125,17 @@ namespace CosmicShore.Gameplay
 
         [Header("Prism Appearance")]
         [SerializeField] private Vector3 blockScale = new(0.8f, 0.5f, 5f);
+
+        /// <summary>MASS -> turret prism z-stretch: x1 at the resting level, x2.5 at level 10, floored at x0.4.
+        /// Migrated verbatim from the retired ElementalAbilityMapSO generic
+        /// multiplier (atFull 2.5, minMultiplier 0.4) — see
+        /// Docs/ElementalAbilitySystem/ELEMENT_SCALING_UNIFICATION.md. Lives here, on the
+        /// asset that owns the parameter, so it can only ever scale this one number.
+        /// Never bound (this is a ScriptableObject, and BindElementalFloats reflects only
+        /// over ElementalShipComponent MonoBehaviours), so it holds no per-vessel state.
+        /// </summary>
+        [SerializeField] ElementalFloat massPrismStretchMultiplier =
+            ElementalFloat.Multiplier(1f, 2.5f, Element.Mass, 0.4f);
         [SerializeField] private Vector3 rotationOffsetEuler = Vector3.zero;
 
         [Header("Pooling")]
@@ -138,6 +149,10 @@ namespace CosmicShore.Gameplay
         public float ShieldedCollisionDiameter => Mathf.Max(shieldedCollisionDiameter, collisionDiameter);
         public float PlacementImmunitySeconds => placementImmunitySeconds;
         public Vector3 BlockScale => blockScale;
+
+        /// <summary>The live MASS multiplier on the fired prism's long axis.</summary>
+        public float MassPrismStretchMultiplier(IVesselStatus status)
+            => massPrismStretchMultiplier.EvaluateLive(status);
         public Vector3 RotationOffsetEuler => rotationOffsetEuler;
         public PrismType PrismType => prismType;
 
