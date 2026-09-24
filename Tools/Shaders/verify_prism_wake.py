@@ -181,15 +181,15 @@ static float3 normalToWorld(float3 n){ float3 w = mul(n, (float3x3)g_worldToObje
 // warhead's own blast radius and PrismWakeConfig (the front radius is INTEGRATED there, so a pulse
 // keeps travelling at one speed while the round's hit radius grows under it); the shader takes them
 // as given. The defaults are what the shipped config produces for a skyburst at resting Mass —
-// reach 95.2 u, sigma 0.25 of that — so the harness is exercising the numbers the game publishes.
+// reach 95.2 u, sigma 0.45 of that — so the harness is exercising the numbers the game publishes.
 struct Wake {
     float3 U = float3(0,0,0);
-    float front = 45.0f;     // c: where the shell is right now, world units
-    float sigma = 23.8f;     // the front's half-thickness
+    float front = 69.0f;     // c: where the shell is right now, world units
+    float sigma = 42.84f;    // the front's half-thickness
     float reach = 95.2f;     // the warhead's blast radius (carried for tooling; the map ignores it)
     float w = 1.0f;          // eased strength
 };
-static const float AMP = 0.13f;      // PrismWakeConfig.amplitude
+static const float AMP = 0.143f;     // PrismWakeConfig.amplitude (its 90%-of-folding clamp at Q = 1)
 static const float CYCLES = 1.0f;    // PrismWakeConfig.wavesInFront — ONE wavelet
 
 static void setBank(int count, const Wake& a, const Wake& b = Wake(), float amp = AMP, float cycles = CYCLES) {

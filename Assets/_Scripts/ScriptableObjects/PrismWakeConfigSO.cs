@@ -150,6 +150,26 @@ namespace CosmicShore.ScriptableObjects
         public float HalfThicknessFor(float reach) => Mathf.Max(1e-4f, reach * HalfThicknessFraction);
 
         /// <summary>
+        /// The radius the residency pass must sweep for a warhead of this reach — the whole volume
+        /// the map can EVER move a vertex in, plus <see cref="ResidencyMargin"/>.
+        ///
+        /// <para>It is <c>reach + sigma + margin</c> and not <c>reach + margin</c>, because the front
+        /// dies AT the reach and the shell reaches <c>sigma</c> past its own centre: the outermost
+        /// displaced vertex of a pulse's last frame sits at <c>reach + sigma</c>. With the margin
+        /// alone, a prism entering the volume there would be swapped to the dense mesh at a radius
+        /// where its vertices are already displaced, and it would POP — the one thing §4.2's
+        /// invisible-swap contract forbids.</para>
+        ///
+        /// <para><b>The margin is an absolute distance and the shell is a FRACTION of the reach</b>,
+        /// so "margin covers the overshoot" is a coincidence that holds at one authored pair and
+        /// silently stops holding at the next: it was true by 0.2 of a unit at the shipped
+        /// 0.25/24 pair and false by 19 units the first time the shell was thickened. Adding sigma
+        /// makes the contract structural instead — the margin goes back to being a margin.</para>
+        /// </summary>
+        public float ResidencyRadiusFor(float reach) =>
+            reach + HalfThicknessFor(reach) + ResidencyMargin;
+
+        /// <summary>
         /// Where the front sits for a pulse <paramref name="u"/> of the way through its life, in
         /// world units from the round's centre: from the shell's own half-thickness (so it never
         /// straddles the centre — the second half of the no-fold proof) out to the full reach.

@@ -318,20 +318,48 @@ namespace CosmicShore.Tests
                 "PrismWakeConfig.ResidencyMargin is 0 — the mesh swap would happen at exactly the surface the " +
                 "front reaches, so it is a coin toss whether the geometry change is visible.");
 
+            // And the volume it sweeps must COVER every radius the map can move a vertex at. The
+            // front dies AT the reach and the shell reaches sigma past its own centre, so the
+            // outermost displaced vertex of a pulse's last frame is at reach + sigma — and the
+            // margin is an ABSOLUTE distance while the shell is a FRACTION of the reach, so
+            // "the margin covers the overshoot" holds at one authored pair and not the next (it was
+            // true by 0.2 of a unit at 0.25/24 and false by 19 the first time the shell was
+            // thickened). ResidencyRadiusFor adds sigma, which is what makes this structural.
+            foreach (float reach in new[] { 4f, 95.2f, 480f, 2400f })
+            {
+                float sigma = config.HalfThicknessFor(reach);
+                Assert.Greater(config.ResidencyRadiusFor(reach), reach + sigma,
+                    $"at reach {reach} the residency sweep ({config.ResidencyRadiusFor(reach):0.0}) does not cover " +
+                    $"the shell's outer face at its last frame ({reach + sigma:0.0}) — a prism would be swapped to " +
+                    "the dense mesh while its own vertices are already displaced, and it would POP.");
+            }
+
             // The budget. 0 means the ripple only ever runs on the authored 24-triangle prism —
             // the look two rounds of the cradle's history rejected; an unbounded one is the cost
             // nobody signed up for.
             Assert.Greater(config.MaxResidentPrisms, 0,
                 "PrismWakeConfig.MaxResidentPrisms is 0 — nothing is ever swapped, so the ripple runs on the " +
                 "authored 24-triangle prism and reads as facets hinging.");
-            Assert.LessOrEqual(config.MaxResidentPrisms, 96,
-                "PrismWakeConfig.MaxResidentPrisms is above 96 — this is the feature's entire performance budget " +
-                "and 'a handful of prisms at a time' is what makes the high-poly swap affordable at all.");
-
+            // The GPU pays in TRIANGLES, not in prisms, so that is the authority and the prism count
+            // is one half of a trade against the subdivision: the same budget buys a few very smooth
+            // prisms or more slightly coarser ones. The first playtest of the front said it could not
+            // be seen at all, and what a player reads at arena range is how many prisms are MOVING —
+            // so the overtune spent the budget on count (128 x 10) rather than on smoothness
+            // (96 x 12), which is fewer triangles than before, not more.
             long tris = (long)config.MaxResidentPrisms * config.Subdivision * config.Subdivision * 2 * 6;
             Assert.Less(tris, 200000,
                 $"The residency budget is {tris} triangles ({config.MaxResidentPrisms} prisms x subdivision " +
                 $"{config.Subdivision}) — lower MaxResidentPrisms or Subdivision.");
+
+            // And a ceiling on the count itself, because the triangle bound alone would admit a
+            // thousand prisms at subdivision 2 — which is the authored prism with none of the
+            // smoothness the family exists for, and a thousand state changes a frame.
+            Assert.LessOrEqual(config.MaxResidentPrisms, 160,
+                "PrismWakeConfig.MaxResidentPrisms is above 160 — 'a handful of prisms at a time' is what makes " +
+                "the high-poly swap affordable at all, and a swap is a state change on a live prism.");
+            Assert.GreaterOrEqual(config.Subdivision, 8,
+                "PrismWakeConfig.Subdivision below 8 is not enough surface for a smooth map: the front would read " +
+                "as facets hinging, which is the look two rounds of the cradle's history rejected.");
         }
 
         [Test]

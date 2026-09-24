@@ -37,12 +37,14 @@ namespace CosmicShore.Utility
     ///
     /// <para><b>2. Residency (a state change).</b> A prism is 24 triangles, and a deformation is
     /// only as smooth as the surface it moves. So the prisms inside a live wake's own volume are
-    /// swapped to <see cref="HighPolyPrismMesh"/>, the identical solid at ~1,700 triangles,
+    /// swapped to <see cref="HighPolyPrismMesh"/>, the identical solid at ~1,200 triangles,
     /// through the platform's own shared-mesh handoff (<c>Prism.SetRenderMeshOverride</c>). That is
     /// NOT an exception to the clock-material law: a mesh override is FINAL at the instant it is
     /// applied, exactly like a shield engaging — a state change, not an animation — and it is
     /// invisible because the swap happens strictly outside the volume the ripple can move anything
-    /// (<c>PrismWakeConfigSO.ResidencyMargin</c>). The mesh is SHARED, so the resident prisms stay
+    /// (<c>PrismWakeConfigSO.ResidencyRadiusFor</c>, which is <c>reach + sigma + margin</c> — the
+    /// sigma is what makes that structural rather than a coincidence between an absolute margin and
+    /// a shell thickness authored as a fraction of the reach). The mesh is SHARED, so the resident prisms stay
     /// in one instanced batch rather than minting a mesh and a draw call each.</para>
     ///
     /// <para><b>The bank's shape.</b> One slot per wake: the hull's centre and radius, the wake
@@ -360,11 +362,14 @@ namespace CosmicShore.Utility
         /// cost is that residents outside the current shell carry the dense mesh for nothing, which
         /// is the price of a travelling front and is bounded by the budget rather than by the reach.</para>
         ///
-        /// The margin covers the remaining case — a prism entering at the outer edge while the front
-        /// is at the reach — and it is why the effect is better protected than the cradle: the
-        /// shell's two faces are C1-zero (the wavelet's value AND slope vanish at both), so even a
-        /// prism long enough to straddle a face has a displacement there of second order in how far
-        /// it straddles.
+        /// The swept radius is <c>reach + sigma + margin</c>, because the front dies AT the reach and
+        /// the shell reaches <c>sigma</c> past its own centre: the outermost displaced vertex of a
+        /// pulse's last frame is at <c>reach + sigma</c>, and a prism swapped in THERE would pop. The
+        /// margin then covers the remaining case — a prism arriving at that outer edge on the very
+        /// frame the front reaches it — and it is why this effect is better protected than the
+        /// cradle: the shell's two faces are C1-zero (the wavelet's value AND slope vanish at both),
+        /// so even a prism long enough to straddle a face has a displacement there of second order in
+        /// how far it straddles.
         ///
         /// <para><b>The budget is SHARED and split evenly.</b> Each live wake may claim at most its
         /// own share of <see cref="PrismWakeConfigSO.MaxResidentPrisms"/>, so four ships boosting at
@@ -386,7 +391,6 @@ namespace CosmicShore.Utility
                 if (index != null && index.IsAvailable)
                 {
                     var mesh = HighPolyPrismMesh.Get(config.Subdivision);
-                    float margin = config.ResidencyMargin;
 
                     // An even split, at least one each: a wake with no prisms at all would read as
                     // the effect having failed on that ship rather than as the budget being thin.
@@ -398,7 +402,13 @@ namespace CosmicShore.Utility
                         Vector4 shapeSlot = _shape[s];
 
                         var origin = new Vector3(centreSlot.x, centreSlot.y, centreSlot.z);
-                        float queryRadius = shapeSlot.z + margin;
+
+                        // reach + sigma + margin, never reach + margin: the front dies AT the reach
+                        // and the shell reaches sigma past its own centre, so the last frame of a
+                        // pulse displaces vertices out to reach + sigma. See
+                        // PrismWakeConfigSO.ResidencyRadiusFor - the margin is absolute and the shell
+                        // is a fraction of the reach, so the two only ever agree by coincidence.
+                        float queryRadius = config.ResidencyRadiusFor(shapeSlot.z);
                         if (!(queryRadius > 0f)) continue;
 
                         index.QuerySphere(origin, queryRadius, _query);
