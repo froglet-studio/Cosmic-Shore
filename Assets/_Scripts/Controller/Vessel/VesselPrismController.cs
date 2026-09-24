@@ -125,6 +125,9 @@ namespace CosmicShore.Gameplay
         // way to an infinite delay, and the ceiling stops a slow lay leaving a prism collider-less
         // (and therefore un-hittable by ANYONE, since this delay is not owner-scoped) for longer
         // than the self-trail grace would have covered anyway.
+        // Keyed by vessel name so one unwired hull cannot spam a loop that runs per prism.
+        static readonly HashSet<string> _warnedNoSkimmer = new();
+
         const float MinClearanceSpeed = 1f;
         const float MaxClearanceWaitSeconds = 2f;
 
@@ -409,11 +412,25 @@ namespace CosmicShore.Gameplay
             // Note this delay hides the prism from EVERYONE, which is why it stays a geometry
             // correction and is not the lever for self-trail contact: that is owner-scoped and
             // lives in SelfTrailContactConfigSO.
-            prism.waitTime = waitTillOutsideSkimmer
+            //
+            // `skimmer` is a per-vessel serialized reference, and an unwired one used to throw
+            // here — on EVERY spawn, from inside the UniTaskVoid spawn loop, which swallows the
+            // exception and ends the loop. That vessel then lays NOTHING for the rest of its
+            // life, which on screen is a ship flying with no trail: the one symptom that reads
+            // as a missing FEATURE rather than as a missing reference. Degrade to the authored
+            // wait and say so once, by vessel, so the next hull authored without it loses a
+            // clearance delay instead of its whole trail.
+            prism.waitTime = waitTillOutsideSkimmer && skimmer
                 ? Mathf.Min((skimmer.transform.localScale.z + scale.z) /
                             Mathf.Max(vesselStatus.Speed, MinClearanceSpeed),
                             MaxClearanceWaitSeconds)
                 : waitTime;
+
+            if (waitTillOutsideSkimmer && !skimmer && _warnedNoSkimmer.Add(name))
+                CSDebug.LogWarning(
+                    $"[VesselPrismController] '{name}' has waitTillOutsideSkimmer on with no " +
+                    "skimmer assigned — laying prisms with the authored wait instead. Wire the " +
+                    "vessel's near-field Skimmer on this component, or switch the flag off.", this);
 
             if (_dangerMode)
             {

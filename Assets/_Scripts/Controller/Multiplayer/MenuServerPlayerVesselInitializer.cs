@@ -210,6 +210,22 @@ namespace CosmicShore.Gameplay
                     return;
                 }
 
+                // ASK BEFORE DESTROYING. Step 2 despawns the pilot's current ship and step 3
+                // builds the next one — and step 3 can fail (an unregistered class, a prefab
+                // whose VesselStatus claims a different type, no NetworkObject), at which point
+                // the pilot has NO vessel: no hull, no camera target, input still paused by the
+                // swap. The player reads that as the game having FROZEN, and the console says
+                // only "No prefab for vessel type X" — a sentence about an asset, in a session
+                // that was about pressing a button. Refusing here costs the pilot nothing: they
+                // keep the ship they were flying and the changer is free to try another.
+                if (!CanSpawnVesselType(targetClass))
+                {
+                    CSDebug.LogError(
+                        $"[MenuServerVesselInit] Refusing the swap to {targetClass}: no spawnable " +
+                        "prefab. The pilot keeps their current vessel.");
+                    return;
+                }
+
                 // Inherit the outgoing ship's velocity so the swap is seamless - the new vessel
                 // continues at the same speed instead of the post-init dead stop (position + orientation
                 // are inherited via SetPose below). Captured before despawn while the old vessel is valid.

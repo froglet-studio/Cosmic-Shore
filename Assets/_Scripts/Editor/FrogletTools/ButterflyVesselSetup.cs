@@ -465,7 +465,7 @@ namespace CosmicShore.Editor
                 SetArray(customization, "_shipGeometries", new UnityEngine.Object[] { hullGo });
                 Set(impactCollider, "impactorObject", impactor);
                 WireTransformer(transformer);
-                WirePrisms(prisms);
+                WirePrisms(prisms, nearWing ? nearWing.GetComponentInChildren<Skimmer>(true) : null);
                 WireResources(resources);
                 WireActionHandler(actionHandler, registry, fold, spread);
                 WireHud(hud, hudContainer, foldExec, spreadExec);
@@ -547,8 +547,23 @@ namespace CosmicShore.Editor
             Set(t, "restrictedTurnMultiplier", 0f);
         }
 
-        void WirePrisms(VesselPrismController p)
+        void WirePrisms(VesselPrismController p, Skimmer nearWing)
         {
+            // THE POOL. `prismType` selects which PrismFactory pool a laid prism comes from, and
+            // it defaults to 0 — PrismType.Dolphin — so a vessel that never authors it lays
+            // another ship's prisms and nothing says so. The Butterfly takes the Squirrel's, the
+            // same reference two-thumb hull its prism-spawn channel and baseline prism effects
+            // come from, and the one whose trail the Urchin already rides.
+            Set(p, "prismType", (int)PrismType.Squirrel);
+
+            // THE CLEARANCE SKIMMER. Not optional while `waitTillOutsideSkimmer` is on: this is
+            // read per prism, so an unwired one used to throw from inside the spawn loop — which
+            // swallows the exception and ENDS it, leaving the hull flying with no trail for the
+            // rest of its life. VesselPrismController degrades now, but an authored reference is
+            // still the point: the Butterfly's near wing is 26 units of skimmer, so a prism laid
+            // inside it needs the delay more than most of the fleet does.
+            Set(p, "skimmer", nearWing);
+
             // THE PIANO KEYS: wide across (x), thin (y), SHORT along the flight path (z), laid at
             // a wavelength that leaves air between them — so the wake reads as a row of keys
             // rather than a ribbon, and a curve through them reads as a surface.

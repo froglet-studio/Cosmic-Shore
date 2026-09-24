@@ -62,6 +62,34 @@ without raising an error makes every asker either lie or shout**: the ones that 
 reintroduce the silent-omission defect 1.12 exists to prevent, and the ones that shout drown the
 message that would have fixed it.
 
+**A prefab's `vesselType` is its ADDRESS, not a label — and writing it by enum INDEX stores the
+wrong hull.** `VesselPrefabContainer.TryGetShipPrefab` walks `_shipPrefabs` and returns the first
+entry whose `VesselStatus.vesselType` matches, so a wrong value makes one hull unreachable and
+another ambiguous, with nothing reporting either. `SerializedProperty.enumValueIndex` is the
+position in the enum's NAME LIST, not the member's number; the two agree only while an enum is
+zero-based and contiguous, and `VesselClassType` starts at `Any = -1`. Butterfly (13) written as an
+index therefore stored **Scarab (12)** — the prefab was correctly registered in the container the
+whole time and simply answered to the wrong name, so `ToyVesselRoster.ResolveOffered` dropped it
+exactly as it drops an unbuilt hull. Write enums with `intValue`, and run
+`python3 Tools/Build/check_vessel_prefab_container.py`, which asserts every entry is a distinct,
+declared, non-meta class matching its file name.
+
+**A SWAP must prove the target is spawnable BEFORE it despawns the current ship.**
+`MenuServerPlayerVesselInitializer.SwapVesselAsync` despawns, then spawns; a spawn that fails (an
+unresolvable class, no `NetworkObject`) leaves the pilot with no hull, no camera target and input
+still paused — which reads as the game having **FROZEN**, while the console says only "No prefab
+for vessel type X", a sentence about an asset in a session that was about pressing a button. Ask
+`ServerPlayerVesselInitializer.CanSpawnVesselType` first; a refused swap costs the pilot nothing.
+
+**`VesselPrismController.skimmer` is not optional while `waitTillOutsideSkimmer` is on**, and its
+failure mode is the worst shape available: the field is read once PER PRISM from inside the
+`UniTaskVoid` spawn loop, which swallows an exception and ENDS, so an unwired reference means the
+hull lays nothing for the rest of its life — *a ship flying with no trail, which reads as a missing
+FEATURE rather than as a missing reference*. It degrades to the authored wait and warns once per
+vessel now; wire it anyway. Its sibling trap on the same component: **`prismType` defaults to 0,
+which is `PrismType.Dolphin`** — a vessel that never authors it lays another ship's prisms and
+nothing says so.
+
 **BUILDING one from code: four fleet components declare a `[RequireComponent]` naming a type
 Unity CANNOT ADD.** `VesselController` and `ResourceSystem` name `IVesselStatus`, `VesselImpactor`
 names `IVessel` (both interfaces), and `VesselStatus` names `VesselAnimation` (abstract). Unity

@@ -859,6 +859,32 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual void ConfigureDepartedPilotAI(IVessel vessel) { }
 
+        /// <summary>
+        /// Could <see cref="SpawnVesselForPlayer"/> actually produce a vessel of this class?
+        /// Resolves the prefab and its <c>NetworkObject</c> WITHOUT instantiating anything.
+        ///
+        /// <para>It exists for one caller shape: a SWAP, which destroys the pilot's current ship
+        /// before it builds the next one. When the spawn then fails — an unregistered class, a
+        /// prefab whose <c>VesselStatus</c> claims a different type, a missing NetworkObject —
+        /// the pilot is left with no vessel at all: no hull, no camera target, input still paused
+        /// by the swap. That reads to a player as the game having FROZEN, and nothing in the
+        /// console says "swap", because the failure is one LogError about a prefab. Ask first,
+        /// and a refused swap costs the pilot nothing.</para>
+        ///
+        /// <para>Loud on purpose (<c>reportMissing: true</c>): a swap the player asked for and
+        /// cannot have is a fault, not a probe — the quiet form belongs to the rosters that ask
+        /// "which hulls exist on this build" (<c>ToyVesselRoster.ResolveOffered</c>).</para>
+        /// </summary>
+        protected bool CanSpawnVesselType(VesselClassType vesselType)
+        {
+            if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))
+                return false;
+            if (shipPrefabTransform.TryGetComponent(out NetworkObject _)) return true;
+            CSDebug.LogError(
+                $"[ServerPlayerVesselInitializer] Prefab {shipPrefabTransform.name} has no NetworkObject.");
+            return false;
+        }
+
         protected NetworkObject SpawnVesselForPlayer(ulong clientId, Player networkPlayer, VesselClassType vesselType)
         {
             if (!vesselPrefabContainer.TryGetShipPrefab(vesselType, out Transform shipPrefabTransform))

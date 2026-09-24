@@ -216,9 +216,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselPrismController
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  skimmer: {fileID: 0}
+  skimmer: {fileID: 281340694002912670}
   BaseScale: {x: 26, y: 1.2, z: 3.4}
-  prismType: 0
+  prismType: 4
   initialWavelength: 9
   minWavelength: 5
   defaultWaitTime: 0.5
