@@ -458,6 +458,19 @@ namespace CosmicShore.Editor
                 }
 
                 // ---- wiring ----
+                // FIRST: adopt every SHARED CHANNEL the reference hull already subscribes to.
+                // These are SOAP events and config SOs — one asset per channel, fleet-wide — and
+                // the fleet FAILS LOUD on a missing one by policy: R_VesselActionHandler does
+                // `_onButtonPressed.OnRaised += ...` with no guard, so an unwired channel is a
+                // NullReferenceException the first time the vessel subscribes, which happens
+                // INSIDE the swap. The swap's catch then reports a NullReferenceException in
+                // SubscribeToInputEvents and the pilot gets a hull that turns and has no
+                // throttle and no abilities — every symptom pointing at flight code, none at the
+                // six empty fields that caused it. Enumerating them by hand is what let that
+                // happen; a sweep cannot forget one.
+                AdoptSharedAssetReferences(root, SquirrelPrefabPath);
+                Set(root.GetComponent<AIPilot>(), "actionExecutorRegistry", registry);
+
                 WireStatus(status, controller, hud, nearWing, farWing);
                 WireController(controller);
                 Set(cameraCustomizer, "settings", camera);
@@ -763,6 +776,64 @@ namespace CosmicShore.Editor
                         "the Butterfly is NOT in the asset on disk after saving — it cannot " +
                         "replicate; add it by hand in the NetworkManager's prefab list");
             else Note("VERIFIED on disk: DefaultNetworkPrefabs carries the Butterfly.");
+        }
+
+        /// <summary>
+        /// For every component this vessel shares with <paramref name="donorPrefabPath"/>, copy
+        /// each serialized reference that is EMPTY here and points at a PROJECT ASSET there.
+        ///
+        /// <para>The fleet's cross-system wiring is almost entirely SOAP channels and config SOs —
+        /// one asset per channel, referenced identically by every hull — and the platform's policy
+        /// is to FAIL LOUD on a missing one rather than guard it (<c>CLAUDE.md</c>: "Do not add
+        /// if-null guards on ScriptableEvent serialized fields"). That makes an unwired channel an
+        /// immediate NullReferenceException rather than a quiet degradation, which is right; it
+        /// also means a hand-written list of "the references a new vessel needs" is a list that
+        /// costs a playtest every time somebody forgets a line. Six were missing here
+        /// (<c>_onButtonPressed</c>, <c>_onButtonReleased</c>, <c>onAbilityExecuted</c>,
+        /// <c>boostChanged</c>, <c>cellData</c>, <c>OnCellItemsUpdated</c>,
+        /// <c>OnInitializePlayerCamera</c>) and each was invisible until something subscribed.</para>
+        ///
+        /// <para><b>ASSETS ONLY — never a Component or a GameObject.</b> A donor's reference to one
+        /// of its OWN children is a pointer into the donor prefab; copying it would either dangle
+        /// or, worse, make this vessel drive a part of the Squirrel. Those stay explicit
+        /// (<c>AIPilot.actionExecutorRegistry</c>, the skimmers, the HUD view). A field the donor
+        /// also leaves empty is left empty here, so this can only ever copy a decision somebody
+        /// already made.</para>
+        /// </summary>
+        void AdoptSharedAssetReferences(GameObject root, string donorPrefabPath)
+        {
+            var donor = AssetDatabase.LoadAssetAtPath<GameObject>(donorPrefabPath);
+            if (!donor) { Unwired("shared channels", "donor prefab missing: " + donorPrefabPath); return; }
+
+            int adopted = 0;
+            foreach (var component in root.GetComponentsInChildren<Component>(true))
+            {
+                if (!component || component is Transform) continue;
+                var donorComponent = donor.GetComponentInChildren(component.GetType(), true);
+                if (!donorComponent) continue;
+
+                var targetSo = new SerializedObject(component);
+                var donorSo = new SerializedObject(donorComponent);
+                bool dirty = false;
+
+                var it = targetSo.GetIterator();
+                while (it.NextVisible(true))
+                {
+                    if (it.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    if (it.objectReferenceValue) continue;
+                    var from = donorSo.FindProperty(it.propertyPath);
+                    var value = from?.objectReferenceValue;
+                    // A ScriptableObject IS the shared-channel case; a Component or GameObject is
+                    // the donor's own hierarchy and must never travel.
+                    if (value is not ScriptableObject || !EditorUtility.IsPersistent(value)) continue;
+                    it.objectReferenceValue = value;
+                    dirty = true;
+                    adopted++;
+                    Note($"Adopted {component.GetType().Name}.{it.propertyPath} = {value.name}");
+                }
+                if (dirty) targetSo.ApplyModifiedPropertiesWithoutUndo();
+            }
+            Note($"Adopted {adopted} shared channel(s) from {Path.GetFileNameWithoutExtension(donorPrefabPath)}.");
         }
 
         // ─────────────────────────────────────────────────────────────── helpers

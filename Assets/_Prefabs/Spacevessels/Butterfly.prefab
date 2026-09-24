@@ -298,7 +298,7 @@ MonoBehaviour:
   driftOvershootCeiling: 1.25
   driftThrottlePolicy: 0
   Grip: 0
-  boostChanged: {fileID: 0}
+  boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
   ThrottleScaler: 0
   DefaultMinimumSpeed: 12
@@ -336,7 +336,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a58bf4fb65afa704194fe9e28e67d58d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.AIPilot
-  cellData: {fileID: 0}
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   skillLevel: 1
   defaultThrottleHigh: 0.6
   defaultThrottleLow: 0.6
@@ -369,8 +369,8 @@ MonoBehaviour:
   orbitProgressFraction: 0.9
   orbitTargetJumpFraction: 1.6
   abilities: []
-  OnCellItemsUpdated: {fileID: 0}
-  actionExecutorRegistry: {fileID: 0}
+  OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
+  actionExecutorRegistry: {fileID: 2477650502100807006}
 --- !u!114 &1582763074868003461
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -397,7 +397,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.VesselCameraCustomizer
   settings: {fileID: 11400000, guid: 2bd6a6d58dbefa346b5b51b78a9c82a8, type: 2}
-  OnInitializePlayerCamera: {fileID: 0}
+  OnInitializePlayerCamera: {fileID: 11400000, guid: dfc4b3d01080dac408975d4a25c6c1ea, type: 2}
 --- !u!114 &1404834681197234611
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -426,9 +426,9 @@ MonoBehaviour:
   _resourceEventClassActions: []
   _touchActionOverrides: []
   _gamepadActionOverrides: []
-  _onButtonPressed: {fileID: 0}
-  _onButtonReleased: {fileID: 0}
-  onAbilityExecuted: {fileID: 0}
+  _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
+  _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
   _onInputEventBlocked: {fileID: 0}
 --- !u!114 &6896183207398676608
 MonoBehaviour:

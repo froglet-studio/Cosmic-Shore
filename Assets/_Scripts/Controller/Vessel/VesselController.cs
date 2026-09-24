@@ -219,8 +219,19 @@ namespace CosmicShore.Gameplay
         public void SetResourceLevels(ResourceCollection resources) =>
             VesselStatus.ResourceSystem.InitializeElementLevels(resources);
 
-        public void SetShipUp(float angle) =>
-            VesselStatus.OrientationHandle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        /// <summary>
+        /// Roll the visible ship about its own forward axis — the mobile device-orientation path.
+        ///
+        /// <para>The handle is an AUTHORED child (<c>VesselStatus.orientationHandle</c>) and a
+        /// vessel can ship without one, so this used to throw for such a hull — on a phone only,
+        /// on the frame the device was flipped, from a call site that has nothing to say about
+        /// vessel wiring. A hull with no handle simply has nothing to roll.</para>
+        /// </summary>
+        public void SetShipUp(float angle)
+        {
+            var handle = VesselStatus.OrientationHandle;
+            if (handle) handle.transform.localRotation = Quaternion.Euler(0, 0, angle);
+        }
 
         public void DisableSkimmer()
         {

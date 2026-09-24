@@ -62,6 +62,23 @@ without raising an error makes every asker either lie or shout**: the ones that 
 reintroduce the silent-omission defect 1.12 exists to prevent, and the ones that shout drown the
 message that would have fixed it.
 
+**A NEW VESSEL MUST ADOPT THE FLEET'S SHARED CHANNELS, and forgetting one is a
+NullReferenceException in somebody else's code.** The fleet's cross-system wiring is almost
+entirely SOAP events and config SOs — one asset per channel, referenced identically by every hull
+— and the platform FAILS LOUD on a missing one by policy (`R_VesselActionHandler` does
+`_onButtonPressed.OnRaised += ...` with no guard). That is the right call, and its cost is that an
+unwired channel throws at the moment something SUBSCRIBES, which is inside the spawn or the swap:
+the Butterfly shipped with seven empty and what reached the pilot was *a hull that rotates, has no
+throttle and whose triggers do nothing*, while the console blamed
+`R_VesselActionHandler.SubscribeToInputEvents` and `AIPilot.OnEnable` — every symptom pointing at
+flight code, none at the seven empty fields. Copy them from a donor hull rather than listing them
+(`ButterflyVesselSetup.AdoptSharedAssetReferences`), **assets only**: a donor's reference to one of
+its own children is a pointer into the donor prefab, so `Component` and `GameObject` values never
+travel and stay explicit. `python3 Tools/Build/check_vessel_shared_channels.py` is the gate — it
+derives the required set from the fleet (a field is required on a vessel only when it is the ONLY
+carrier leaving it empty and at least two others wire it), so it needs no hand-kept list and names
+all six of the shipped misses by field.
+
 **A prefab's `vesselType` is its ADDRESS, not a label — and writing it by enum INDEX stores the
 wrong hull.** `VesselPrefabContainer.TryGetShipPrefab` walks `_shipPrefabs` and returns the first
 entry whose `VesselStatus.vesselType` matches, so a wrong value makes one hull unreachable and
