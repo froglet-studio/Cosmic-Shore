@@ -105,16 +105,37 @@ namespace CosmicShore.Gameplay
         IVesselStatus vesselStatus;
         bool _subscribedToInputPaused;
 
+        // ONE SUBSCRIPTION, EVER - and the latch is what enforces it, because a C# delegate
+        // happily holds the same handler twice and nothing reports it.
+        //
+        // Three paths subscribe and they are not mutually exclusive: VesselController.Initialize
+        // (every spawn), VesselController.ChangePlayer (a LIVE vessel handed to another player -
+        // the Cellular Duel ownership swap, which Initialize never sees), and every un-pause
+        // (OnToggleInputPaused). A second += therefore makes OnButtonPressed run twice per press,
+        // which sends the press RPC twice, which replays PerformShipControllerActions twice on
+        // every peer.
+        //
+        // That is invisible on almost everything the fleet binds, because a HELD ability started
+        // twice is the same ability held - which is exactly why it went unnoticed. It is NOT
+        // invisible on a one-shot that SPENDS: the Sparrow's skyburst charged the tank twice and
+        // launched two rockets from one pull of the trigger. A duplicate release is equally
+        // silent, so the pair is latched together rather than only the press.
+        bool _subscribedToInputEvents;
+
         void SubscribeToInputEvents()
         {
+            if (_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  += OnButtonPressed;
             _onButtonReleased.OnRaised += OnButtonReleased;
+            _subscribedToInputEvents = true;
         }
 
         void UnsubscribeFromInputEvents()
         {
+            if (!_subscribedToInputEvents) return;
             _onButtonPressed.OnRaised  -= OnButtonPressed;
             _onButtonReleased.OnRaised -= OnButtonReleased;
+            _subscribedToInputEvents = false;
         }
 
         void OnDisable()

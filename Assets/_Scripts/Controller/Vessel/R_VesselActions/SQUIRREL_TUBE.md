@@ -11,13 +11,11 @@ trigger for this ability.
 
 | Input | Gamepad | Touch |
 |---|---|---|
-| Drift (analog: no-drift → single → sharp) | Left trigger | keep-left-finger (`OnlyLeftStickAction`) |
+| Drift (analog: drift amount = trigger pull) | Left trigger | keep-left-finger (`OnlyLeftStickAction`) |
 | Tube (press to place) | Right trigger | keep-right-finger (`OnlyRightStickAction`) |
 
-`VesselTransformer.singleTriggerDrift` (on the Squirrel only) remaps the left trigger's 0-1 travel
-across the full 0-2 drift range so a single trigger spans the light→sharp range the Manta still gets
-from summing both triggers. See `DriftActionSO.playDriftSfx` (off on the sharp tier) so the shared
-drift SFX isn't doubled when both tiers stack on one trigger.
+`VesselTransformer.singleTriggerDrift` puts drift on the left trigger alone. The Squirrel binds one
+drift action to it, so the trigger's 0-1 pull is the drift amount directly (see SQUIRREL_DRIFT.md §1).
 
 The ability fires on the trigger **press** (`Begin`); release (`Commit`) does nothing.
 

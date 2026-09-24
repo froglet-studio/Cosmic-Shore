@@ -121,6 +121,20 @@ namespace CosmicShore.Gameplay
         public float ConeHalfAngleDegrees => config != null ? config.ConeHalfAngleDegrees : 0.5f;
 
         /// <summary>
+        /// How far the round reaches, in world units — the anchor the FLIGHT view's reticle is
+        /// projected at.
+        ///
+        /// <para>The eyepiece does not need it: that camera sits ON the shot's own axis, so the
+        /// cone projects to a circle about the centre of the picture whatever range you pick. The
+        /// gameplay camera does not, so the axis projects to a POINT only where that camera is
+        /// behind the hull and on its line — which is the Serpent's steady state (its authored
+        /// follow offset is a pure <c>(0, 0, -250)</c>) and is NOT true while the camera's
+        /// smoothing is catching up through a turn. Projecting the point the shot actually reaches
+        /// is right in both cases; assuming screen centre is right in one of them.</para>
+        /// </summary>
+        public float RangeUnits => config != null ? config.RangeUnits : 3000f;
+
+        /// <summary>
         /// The firing pilot's domain colour. One resolver for the tracer and the reticle, so the
         /// mark the pilot aims with and the mark the shot leaves can never disagree about whose
         /// shot it was.
@@ -225,10 +239,14 @@ namespace CosmicShore.Gameplay
                 }
                 _ordered.Sort((a, b) => a.distance.CompareTo(b.distance));
 
-                bool pierces = IsPierceUnlocked;
-                int budget = pierces
-                    ? (so.PierceCount <= 0 ? int.MaxValue : so.PierceCount)
-                    : 1;
+                // THE ROUND PIERCES BY DEFAULT. It used to stop at the first prism unless the
+                // Charge-5 upgrade was up, which made an un-upgraded rifle on a twelve-second
+                // cooldown worth exactly one prism - measured by a pilot as "the destruction was
+                // small" in the same breath as the cone being too wide. A sniper round's whole
+                // proposition is the hole it leaves, so the budget is the AUTHORED number and 0
+                // is unlimited; what Charge 5 buys is stated one method down, in what counts as
+                // a target at all.
+                int budget = so.PierceCount <= 0 ? int.MaxValue : so.PierceCount;
 
                 int killed = 0;
                 for (int i = 0; i < _ordered.Count && killed < budget; i++)
@@ -295,10 +313,23 @@ namespace CosmicShore.Gameplay
         bool IsValidTarget(Prism prism)
         {
             if (prism == null || prism.destroyed) return false;
+
             // Never eat your own wall. The Serpent's whole identity is the mass it weaves, and a
             // rifle that cuts through it would make the two abilities fight each other.
             // Domains.Blue is the neutral sentinel and stays hostile to everyone.
-            return prism.Domain != _status.Domain;
+            if (prism.Domain == _status.Domain) return false;
+
+            // ARMOUR IS A TARGET ONLY AT CHARGE 5, and this is what that upgrade now buys. Below
+            // it a super-shielded prism is not a target at all, so the round passes THROUGH it and
+            // carries on to whatever is behind - rather than stopping on mass it cannot break,
+            // which is what an ordinary damage call would do to it silently (Prism.Damage
+            // hard-ignores super-shielded mass, so the round would end its life there having
+            // destroyed nothing). "Pierce" therefore names a CAPABILITY rather than a count: how
+            // many prisms the round goes through is the weapon's own authored budget at every
+            // tier, and what it can go through is the element's.
+            if (!IsPierceUnlocked && prism.prismProperties is { IsSuperShielded: true }) return false;
+
+            return true;
         }
 
         /// <summary>
@@ -327,6 +358,13 @@ namespace CosmicShore.Gameplay
                          devastate: true, debrisSpeedLimit: so.DebrisSpeedLimit);
         }
 
+        /// <summary>
+        /// The Charge-5 <b>Pierce</b> upgrade: whether this round may break SUPER-SHIELDED mass.
+        /// Below it armour is not a target and the round flies past it (see
+        /// <see cref="IsValidTarget"/>); at it, the sanctioned teardown in
+        /// <see cref="DestroyPrism"/> runs and the Serpent is the fleet's second force that can
+        /// take armour off, after the Rhino's energised blade.
+        /// </summary>
         bool IsPierceUnlocked
         {
             get

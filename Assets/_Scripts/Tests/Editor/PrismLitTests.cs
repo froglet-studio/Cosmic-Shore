@@ -33,15 +33,15 @@ namespace CosmicShore.Tests
         [Test]
         public void PeerSlotCount_MatchesTheShaderArrayLength()
         {
-            var m = Regex.Match(ReadHlsl(), @"^#define PRISM_SIGHT_PEER_SLOTS (\d+)\s*$", RegexOptions.Multiline);
+            var m = Regex.Match(ReadHlsl(), @"^#define PRISM_LIT_PEER_SLOTS (\d+)\s*$", RegexOptions.Multiline);
             Assert.IsTrue(m.Success,
-                "PRISM_SIGHT_PEER_SLOTS is not defined in the sight HLSL — the peer arrays are declared at " +
+                "PRISM_LIT_PEER_SLOTS is not defined in the sight HLSL — the peer arrays are declared at " +
                 "that length, so it must exist and must be a literal.");
 
             int shaderSlots = int.Parse(m.Groups[1].Value);
             Assert.AreEqual(shaderSlots, PrismLit.Slots,
                 $"PrismLit.Slots ({PrismLit.Slots}) and the shader's " +
-                $"PRISM_SIGHT_PEER_SLOTS ({shaderSlots}) have drifted. The C# writes fixed-length arrays " +
+                $"PRISM_LIT_PEER_SLOTS ({shaderSlots}) have drifted. The C# writes fixed-length arrays " +
                 "into globals the shader declares at its own length: too few and the tail of the bank is " +
                 "whatever the previous frame left there, too many and Unity rejects the write. They are " +
                 "one number in two files — change both.");
@@ -73,7 +73,7 @@ namespace CosmicShore.Tests
             Assert.GreaterOrEqual(PrismLit.Slots, worstRoster - 1,
                 $"A Dolphin-only mode seats {worstRoster} pilots, so up to {worstRoster - 1} rivals can hold " +
                 $"a sight at once, but the peer bank holds {PrismLit.Slots}. Raise " +
-                "PrismLit.Slots AND PRISM_SIGHT_PEER_SLOTS together, or the extra pilots' " +
+                "PrismLit.Slots AND PRISM_LIT_PEER_SLOTS together, or the extra pilots' " +
                 "marks are silently dropped — and which ones get dropped depends on dictionary order, so " +
                 "different players would see different arenas.");
         }
@@ -86,16 +86,16 @@ namespace CosmicShore.Tests
             // Names, not values: the C# binds these by string through Shader.PropertyToID, so a
             // typo on either side fails SILENTLY - the write goes nowhere and the sight simply
             // never appears for anyone but its holder.
-            string[] arrays = { "_PrismSightPeerApex", "_PrismSightPeerAxis", "_PrismSightPeerGape", "_PrismSightPeerTint", "_PrismSightPeerShape" };
+            string[] arrays = { "_PrismLitPeerApex", "_PrismLitPeerAxis", "_PrismLitPeerGape", "_PrismLitPeerTint", "_PrismLitPeerShape" };
             foreach (var name in arrays)
-                Assert.IsTrue(Regex.IsMatch(hlsl, $@"^float4 {Regex.Escape(name)}\[PRISM_SIGHT_PEER_SLOTS\];\s*$",
+                Assert.IsTrue(Regex.IsMatch(hlsl, $@"^float4 {Regex.Escape(name)}\[PRISM_LIT_PEER_SLOTS\];\s*$",
                                             RegexOptions.Multiline),
-                    $"{name} is not declared as a float4[PRISM_SIGHT_PEER_SLOTS] at file scope in {HlslPath}. " +
+                    $"{name} is not declared as a float4[PRISM_LIT_PEER_SLOTS] at file scope in {HlslPath}. " +
                     "ShaderGraph has no array property type, so these must be declared in the HLSL itself — " +
                     "and outside every CBUFFER, since an array inside UnityPerMaterial breaks SRP batching.");
 
-            Assert.IsTrue(Regex.IsMatch(hlsl, @"^float  _PrismSightPeerCount;\s*$", RegexOptions.Multiline),
-                "_PrismSightPeerCount is not declared in the sight HLSL. It is the master sentinel: " +
+            Assert.IsTrue(Regex.IsMatch(hlsl, @"^float  _PrismLitPeerCount;\s*$", RegexOptions.Multiline),
+                "_PrismLitPeerCount is not declared in the sight HLSL. It is the master sentinel: " +
                 "unpublished globals read as zero and the peer loop must not execute at all.");
         }
 
@@ -178,7 +178,7 @@ namespace CosmicShore.Tests
 
             var gate = Regex.Match(hlsl, @"if \(tag\.y > 0\.0 && tag\.y != Domain\)\s*\n\s*continue;");
             Assert.IsTrue(gate.Success,
-                "The per-light domain gate is gone from " + HlslPath + ". _PrismSightPeerShape[i].y " +
+                "The per-light domain gate is gone from " + HlslPath + ". _PrismLitPeerShape[i].y " +
                 "carries the domain a light is restricted to (0 = no gate) and the prism's own " +
                 "domain arrives as the Domain parameter; without the test, the explosion passthrough " +
                 "lights the opposing-domain mass it is in the middle of destroying.");
