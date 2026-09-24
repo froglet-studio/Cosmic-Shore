@@ -48,9 +48,9 @@ because the generators are closed-form and deterministic on one machine.
 | Records | Every live vessel's position, rotation and speed at `vesselSampleHz` (default 30) |
 | Roster from | `VesselVisionShading.CollectStampedVessels` — a list a PLATFORM LAW keeps correct, so no DI, no scene wiring, no `GameDataSO` |
 | Timebase | `Time.time`, which is exactly what `PrismClock.Now` reads, so P1's prism events already share one clock |
-| Plays back as | Domain-coloured ghost hulls on the shared manually-driven replay camera |
-| Shots | Orbit (frames everything, auto-rotating) and Follow (behind one pilot, distance in units of that hull's own radius) |
-| Transport | Play/pause, ×0.1 to ×8, ±5 s snap, cycle pilot — on screen, no extra key bindings |
+| Plays back as | The fleet's real hulls, in a flat domain fill, inside the **recording area** (§3.1) |
+| Shots | **Free** (flown by hand), **Orbit**, **Chase**, **Static** — §3.2 |
+| Transport | Play/pause, ×0.1 to ×8, ±5 s snap, cycle shot, cycle pilot — on screen and on the pad |
 | Lands in | `<repo>/Recordings/<scene>_<date>_<time>.cstheater` — already git-ignored, never pushed |
 
 **Measured size: 36 bytes per pose.** Four pilots at 30 Hz for five minutes is **1.24 MB**, and
@@ -68,7 +68,23 @@ without spawning it is the B16 trap, where Netcode adopts the stray as an in-sce
 and the *second* one breaks synchronisation for the rest of the session. Harvesting sidesteps it
 by construction rather than by remembering a guard.
 
-Stated cost: a P0 puppet has no jets, no tail, no hull morph and no animation. It is a ghost.
+Stated cost: a P0 puppet has no jets, no tail, no hull morph and no animation. It is a ghost of
+the right *ship*.
+
+**A ghost wears a flat domain fill rather than the ship's own materials.** `VesselModelBuilder`
+records why: a vessel's real materials are dark unlit theme shaders that read as a black blob out
+of their lit context, and the stage is a dark void. The flat fill is what makes four ghosts
+tellable apart at orbit distance. `TheaterConfigSO.liveHullMaterials` shows the authored materials
+instead, for whoever wants to inspect a hull rather than read a match.
+
+**The prefab registry is asked for in three places**, because it lives somewhere different in
+every context the theater can be opened from: the config field, then `Resources`, then the live
+scene's `ServerPlayerVesselInitializer`. Falling through all three is what produced the
+placeholder wedge on the first playtest — the container asset lives at `_SO_Assets/Vessel Prefab
+Container.asset`, not in `Resources`, and nothing had been authored to point at it. It is now
+authored (`Resources/TheaterConfig.asset`), the scene fallback covers a clone that loses it, and
+the miss is reported **by name**: a silent fallback to a proxy reads as *the theater cannot draw
+ships*, which is a much larger and much wronger conclusion than *nothing told it where they are*.
 
 `ToyModelBuilder.NormalizeToRadius` gained one line for this — a target radius of zero or less now
 means **native scale and native pivot**. A toy wants a model normalised into a station of a known
@@ -76,6 +92,77 @@ size; a puppet retracing a recorded flight needs the opposite, because the recor
 relative to the ship's *pivot* and re-centring on the hull's bounds would slide the whole replay
 off by that offset. A non-positive radius previously yielded `scale = 0`, an invisible model,
 which was never what any caller wanted.
+
+### 3.1 The recording area
+
+The place a recording is watched: the live world off the screen, nothing in shot but the ghosts.
+
+**It is a CULLING MASK, not a scene load, and that is the whole design.** A dedicated scene is
+what a theater wants to be, and this project cannot have one cheaply — a local
+`SceneManager.LoadScene` while a NetworkManager is listening races the server's own scene
+management (the MPPM guard in `SceneLoader` exists for exactly that), and every scene in the game,
+Menu_Main included, is running one. So the stage hides the world the one way that touches nothing:
+the replay camera is re-masked onto a `Theater` layer only the puppets are on, and its background
+is painted. Nothing is destroyed, nothing is disabled, no gameplay object learns the theater
+exists, and leaving is four field restores.
+
+Three consequences, stated rather than buried:
+
+- **The match keeps simulating underneath.** Prisms are still laid, fauna still feed, the clock
+  still runs. That is what makes entering and leaving free — you come back to the game you left,
+  mid-flight, rather than to a reloaded one.
+- **The local pilot's input is paused for the duration** (`IsLocalPilot`, never `IsLocalUser` —
+  the legacy single-player spawn path never network-spawns its Player). The theater and the vessel
+  would otherwise both read the same sticks, so the ship coasts instead of flying off while its
+  pilot watches a replay.
+- **A missing layer degrades, it does not fail.** With no `Theater` layer in `TagManager` the stage
+  declines to mask and playback runs over the live world — worse-looking and completely functional.
+  Masking onto a layer that does not exist renders a black screen, and a black screen is
+  indistinguishable from a broken feature. (The layer ships at index 19.)
+
+### 3.2 The four shots
+
+| Shot | What it is |
+|---|---|
+| **Free** | Halo Forge's monitor. Flown by hand; keeps flying while the replay is paused, which is most of what a theater is for |
+| **Orbit** | A vantage circling everything visible, framed to fit it. The default |
+| **Chase** | Behind one pilot and carried by them, so the shot turns as they turn |
+| **Static** | A tripod: parked where it was anchored, turning to keep one pilot in frame |
+
+The free camera's **horizon is locked** — yaw accumulates about world up, pitch is clamped short of
+vertical, no roll. Forge's monitor cannot roll either, and unlike a vessel a camera has no horizon
+of its own to tell a director they are upside down.
+
+Its **speed is in units of the framed action's own radius per second**, so one authored number
+crosses a 200-unit skirmish and a 3,000-unit arena in the same few seconds.
+
+It **reads the devices directly**, the way `ScreenshotGesture` and `OverviewGesture` do, rather
+than going through `IInputStrategy`. The strategies exist to turn sticks into a *vessel's* flight
+parameters — a dual-stick mix, an eased virtual stick, a signed throttle — none of which means
+anything to a camera, and routing through one would make the theater's feel a function of which
+hull the player happens to be flying.
+
+### 3.3 Controls
+
+| | |
+|---|---|
+| **9** | Start / stop recording |
+| **8** | Enter / leave the recording area |
+
+Inside it, on a pad: **left stick** translates, **right stick** looks, **triggers** climb and dive,
+**RB** boost ×4 and **LB** crawl ×0.25, **D-pad left/right** cycles the shot, **D-pad up/down**
+cycles the pilot, **A** play/pause. On keyboard and mouse: **WASD**, **Q/E** dive and climb, hold
+**right mouse** to look (arrow keys without it), **Shift** boost, **Ctrl** crawl.
+
+The pad transport is polled **only** while the recording area is up. Outside it the D-pad and the
+south button belong to whatever is on screen, and a director's shortcut that fires during a match
+is a control the player did not press.
+
+The overlay is **IMGUI on purpose**: it needs no canvas, no prefab and no scene wiring, so it
+exists in every scene the director does — which is the only reason a zero-wire tool can have
+controls at all. It is drawn at 2× through `GUI.matrix` rather than by doubling every rect, so the
+*font* scales with the buttons; a 2× button wearing 1× text reads as a bug. It scales back down on
+a screen too narrow to hold the panel.
 
 ### Platform laws it inherits, with nothing to add
 
@@ -174,8 +261,18 @@ because which subsystem costs what is the decision the config exists to expose:
   absence outside a track's span, the backward-seek claim, and the 36 B/pose constant measured
   against the writer rather than believed.
 - `TheaterRecordingTests` covers the same ground in the edit-mode suite.
-- The five standing out-of-editor gates pass. The three Unity-dependent files parse with **zero
-  syntax-class errors**.
-- **Not opened in Unity.** The recorder, the playback, the puppet build and the camera handover
-  have not been run. A human needs to: press 9 in a match, press 9 again, confirm a file appears in
-  `Recordings/`, press 8, and confirm ghosts move and the camera orbits.
+- **Every theater file now type-checks with zero errors** against a faithful Roslyn stub of each
+  Unity and project API it touches (`Vector3`/`Quaternion`/`Camera`/`GUI`/`Gamepad`, plus
+  `CameraManager`, `IVesselStatus`, `IPlayer`, `VesselModelBuilder`, `VesselPrefabContainer`,
+  `PrismLit`). That is a real compile, not a parse — it catches a missing member, a drifted
+  override and an argument mismatch, which a syntax check structurally cannot.
+- The six standing out-of-editor gates pass.
+- **Still not opened in Unity.** The recorder, the playback, the puppet build, the stage's camera
+  mask and the overlay have not been run. A human needs to: press 9 in a match, press 9 again,
+  confirm a file appears in `Recordings/`, press 8, confirm the world goes dark and real hulls
+  move, fly the free camera, and press 8 again to confirm the world comes back.
+- **The one failure worth watching for** is the stage's camera restore. It holds the gameplay
+  camera's culling mask, and a mask left pointing at an empty layer is a black screen for the rest
+  of the session — so `TheaterStage.Exit` restores the camera first and unconditionally, and
+  `TheaterDirector.OnDestroy` stops playback. If a session ever comes back from the theater to a
+  black screen, that path is where to look.

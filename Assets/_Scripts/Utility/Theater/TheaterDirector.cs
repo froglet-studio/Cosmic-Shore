@@ -10,8 +10,10 @@ namespace CosmicShore.Utility
     /// The theater's one entry point: press <b>9</b> to record a match, <b>8</b> to watch it back.
     ///
     /// <para><b>P0 — vessel ghost recorder.</b> It records every vessel's pose for the whole match
-    /// and replays it as domain-coloured ghosts on a free camera. It records nothing else yet;
-    /// prisms are P1 and everything that moves is P2 (see <c>Docs/THEATER.md</c>).</para>
+    /// and replays the fleet's real hulls as domain-coloured ghosts inside the
+    /// <see cref="TheaterStage"/> — a recording AREA, with the live world masked off the camera and
+    /// four shots to watch it from (free-flying, orbit, chase, static). It records nothing else
+    /// yet; prisms are P1 and everything that moves is P2 (see <c>Docs/THEATER.md</c>).</para>
     ///
     /// <para><b>Outcomes, never inputs.</b> Halo 3's theater replayed controller input against a
     /// deterministic simulation, and this game does not have one: <c>MoveShip</c> integrates in
@@ -32,6 +34,17 @@ namespace CosmicShore.Utility
     [DisallowMultipleComponent]
     public class TheaterDirector : SingletonPersistent<TheaterDirector>
     {
+        /// <summary>
+        /// How much larger the dev overlay is drawn than IMGUI's own 1x. Two, because the team
+        /// asked for it and because the theater is read at arm's length from a desk rather than
+        /// leaned into — every control on it is a deliberate, occasional press.
+        /// </summary>
+        const float OverlayScale = 2f;
+
+        /// <summary>Panel width and row height in LOGICAL units, before <see cref="OverlayScale"/>.</summary>
+        const float PanelWidth = 288f;
+        const float Row = 24f;
+
         TheaterConfigSO _config;
         CameraManager _cameraManager;
         readonly TheaterRecorder _recorder = new();
@@ -65,7 +78,19 @@ namespace CosmicShore.Utility
             // slow-motion celebration is recorded as the slow motion the players saw), unscaled
             // while PLAYING (a paused or slowed game must not crawl the theater).
             if (_recorder.IsRecording) _recorder.Tick(Time.deltaTime);
-            if (_playback.IsPlaying) _playback.Tick(Time.unscaledDeltaTime);
+
+            if (_playback.IsPlaying)
+            {
+                // The pad transport is polled ONLY inside the theater. Outside it the D-pad and the
+                // south button belong to whatever is on screen, and a director's shortcut that
+                // fires during a match is a control the player did not press.
+                TheaterGesture.ReadPadTransport(out int shotStep, out int pilotStep, out bool togglePause);
+                if (shotStep != 0) _playback.CycleShot(shotStep);
+                if (pilotStep != 0) _playback.CycleFollow(pilotStep);
+                if (togglePause) _playback.TogglePause();
+
+                _playback.Tick(Time.unscaledDeltaTime);
+            }
         }
 
         public void ToggleRecording()
@@ -191,42 +216,82 @@ namespace CosmicShore.Utility
             _lastMessageTime = Time.unscaledTime;
         }
 
+        /// <summary>
+        /// The dev overlay. <b>IMGUI on purpose</b>: it needs no canvas, no prefab and no scene
+        /// wiring, so it exists in every scene the director does — which is the only reason a
+        /// zero-wire tool can have controls at all. It is drawn at
+        /// <see cref="OverlayScale"/> through <c>GUI.matrix</c> rather than by doubling every rect,
+        /// so the FONT scales with the buttons; a 2x button wearing 1x text reads as a bug.
+        /// </summary>
         void OnGUI()
         {
             bool showMessage = Time.unscaledTime - _lastMessageTime < 5f;
             if (!_recorder.IsRecording && !_playback.IsPlaying && !showMessage) return;
 
-            const int width = 420;
-            int x = Screen.width - width - 12;
-            int y = 12;
+            // Scale down on a narrow screen rather than letting the panel run off it.
+            float scale = Mathf.Min(OverlayScale, Screen.width / (PanelWidth + 40f));
+            Matrix4x4 restore = GUI.matrix;
+            GUI.matrix = Matrix4x4.Scale(new Vector3(scale, scale, 1f));
+
+            float logicalWidth = Screen.width / scale;
+            float x = logicalWidth - PanelWidth - 12f;
+            float y = 12f;
 
             if (_recorder.IsRecording)
             {
-                GUI.Label(new Rect(x, y, width, 22),
+                GUI.Label(new Rect(x, y, PanelWidth, Row),
                     $"[REC] {_recorder.RecordedSeconds:0.0}s   {_recorder.TrackCount} vessels   " +
                     $"{_recorder.EstimatedBytes / 1024f:0} KB      [9] stop");
-                y += 22;
+                y += Row + 2f;
             }
 
             if (_playback.IsPlaying)
             {
-                GUI.Label(new Rect(x, y, width, 22),
+                string subject = _playback.Shot is TheaterShot.Chase or TheaterShot.Static
+                    ? "  " + _playback.FollowName
+                    : _playback.Shot == TheaterShot.Free ? $"  x{_playback.FreeCameraGear:0.##}" : string.Empty;
+
+                GUI.Label(new Rect(x, y, PanelWidth, Row),
                     $"[THEATER] {_playback.Position:0.0} / {_playback.Duration:0.0}s   " +
                     $"{(_playback.IsPaused ? "PAUSED" : $"x{_playback.Speed:0.##}")}   " +
-                    $"{_playback.Shot}{(_playback.Shot == TheaterShot.Follow ? " " + _playback.FollowName : "")}");
-                y += 24;
+                    $"{_playback.Shot}{subject}");
+                y += Row + 2f;
 
-                if (GUI.Button(new Rect(x, y, 64, 22), _playback.IsPaused ? "Play" : "Pause")) _playback.TogglePause();
-                if (GUI.Button(new Rect(x + 68, y, 44, 22), "-5s")) _playback.Nudge(-5f);
-                if (GUI.Button(new Rect(x + 116, y, 44, 22), "+5s")) _playback.Nudge(5f);
-                if (GUI.Button(new Rect(x + 164, y, 52, 22), "Slower")) _playback.Speed = Mathf.Max(0.1f, _playback.Speed * 0.5f);
-                if (GUI.Button(new Rect(x + 220, y, 52, 22), "Faster")) _playback.Speed = Mathf.Min(8f, _playback.Speed * 2f);
-                if (GUI.Button(new Rect(x + 276, y, 60, 22), "Orbit")) _playback.Shot = TheaterShot.Orbit;
-                if (GUI.Button(new Rect(x + 340, y, 70, 22), "Follow +")) _playback.CycleFollow(1);
-                y += 26;
+                // Transport.
+                float bx = x;
+                if (Button(ref bx, y, 58f, _playback.IsPaused ? "Play" : "Pause")) _playback.TogglePause();
+                if (Button(ref bx, y, 44f, "-5s")) _playback.Nudge(-5f);
+                if (Button(ref bx, y, 44f, "+5s")) _playback.Nudge(5f);
+                if (Button(ref bx, y, 54f, "Slower")) _playback.Speed = Mathf.Max(0.1f, _playback.Speed * 0.5f);
+                if (Button(ref bx, y, 54f, "Faster")) _playback.Speed = Mathf.Min(8f, _playback.Speed * 2f);
+                y += Row + 2f;
+
+                // Shots.
+                bx = x;
+                if (Button(ref bx, y, 48f, "Free")) _playback.Shot = TheaterShot.Free;
+                if (Button(ref bx, y, 50f, "Orbit")) _playback.Shot = TheaterShot.Orbit;
+                if (Button(ref bx, y, 52f, "Chase")) _playback.Shot = TheaterShot.Chase;
+                if (Button(ref bx, y, 54f, "Static")) _playback.Shot = TheaterShot.Static;
+                if (Button(ref bx, y, 50f, "Pilot >")) _playback.CycleFollow(1);
+                y += Row + 4f;
+
+                GUI.Label(new Rect(x, y, PanelWidth, Row * 2f),
+                    "[8] leave   pad: sticks fly, triggers climb, D-pad shot/pilot, A pause\n" +
+                    "kb: WASD + QE, right-mouse look, Shift boost, Ctrl crawl");
+                y += Row * 2f + 4f;
             }
 
-            if (showMessage) GUI.Label(new Rect(x, y, width, 40), _lastMessage);
+            if (showMessage) GUI.Label(new Rect(x, y, PanelWidth, Row * 2f), _lastMessage);
+
+            GUI.matrix = restore;
+        }
+
+        /// <summary>A button in a left-to-right run, advancing the cursor past itself.</summary>
+        static bool Button(ref float x, float y, float width, string label)
+        {
+            bool pressed = GUI.Button(new Rect(x, y, width, Row), label);
+            x += width + 4f;
+            return pressed;
         }
 
         void OnDestroy()

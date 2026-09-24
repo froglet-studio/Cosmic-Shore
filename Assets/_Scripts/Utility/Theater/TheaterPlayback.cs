@@ -9,15 +9,19 @@ namespace CosmicShore.Utility
     /// <summary>How the theater camera is framing the recording.</summary>
     public enum TheaterShot
     {
-        /// <summary>A fixed vantage orbiting the whole recorded action, framed to fit it.</summary>
+        /// <summary>Flown by hand — Halo Forge's monitor. See <see cref="TheaterFreeCamera"/>.</summary>
+        Free,
+        /// <summary>A vantage orbiting the whole recorded action, framed to fit it.</summary>
         Orbit,
-        /// <summary>Behind one pilot, at a distance derived from that hull's own size.</summary>
-        Follow
+        /// <summary>Behind one pilot and carried by them, so the shot turns as they turn.</summary>
+        Chase,
+        /// <summary>A tripod: parked where it was anchored, turning to keep one pilot in frame.</summary>
+        Static
     }
 
     /// <summary>
-    /// Plays a <see cref="TheaterRecording"/> back as domain-coloured ghost vessels on the shared
-    /// manually-driven replay camera.
+    /// Plays a <see cref="TheaterRecording"/> back as ghost vessels on the shared manually-driven
+    /// replay camera, inside the <see cref="TheaterStage"/>.
     ///
     /// <para><b>A puppet is harvested from the prefab ASSET, never instantiated.</b>
     /// <see cref="VesselModelBuilder"/> reads meshes off the prefab without ever waking it, which
@@ -27,7 +31,13 @@ namespace CosmicShore.Utility
     /// the B16 trap (Netcode adopts the stray as an in-scene placed object and the SECOND one
     /// breaks synchronisation for the rest of the session); harvesting sidesteps it by
     /// construction rather than by remembering a guard. The cost, stated plainly: a P0 puppet has
-    /// no jets, no tail, no hull morph and no animation. It is a ghost.</para>
+    /// no jets, no tail, no hull morph and no animation. It is a ghost of the right SHIP.</para>
+    ///
+    /// <para><b>A ghost wears a flat domain fill rather than the ship's own materials</b>, for the
+    /// reason <see cref="VesselModelBuilder"/> records: a vessel's real materials are dark unlit
+    /// theme shaders that read as a black blob out of their lit context, and the theater's stage is
+    /// a dark void. The flat fill is what makes four ghosts tellable apart at orbit distance. Set
+    /// <see cref="TheaterConfigSO.liveHullMaterials"/> to see the authored materials instead.</para>
     ///
     /// <para><b>Seeking backward is free here and will not stay free.</b> A vessel track is
     /// SAMPLED STATE, so any timestamp is a binary search with nothing to rebuild — scrubbing in
@@ -47,6 +57,9 @@ namespace CosmicShore.Utility
         }
 
         readonly List<Puppet> _puppets = new();
+        readonly TheaterStage _stage = new();
+        readonly TheaterFreeCamera _freeCamera = new();
+
         TheaterRecording _recording;
         TheaterConfigSO _config;
         CameraManager _cameraManager;
@@ -55,13 +68,44 @@ namespace CosmicShore.Utility
 
         float _time;
         float _orbitPhase;
+        float _sceneRadius = 100f;
+        Vector3 _freePosition;
+        Vector3 _staticAnchor;
+        bool _staticAnchored;
+        TheaterShot _shot = TheaterShot.Orbit;
 
         public bool IsPlaying { get; private set; }
         public bool IsPaused { get; private set; }
         public float Speed { get; set; } = 1f;
-        public TheaterShot Shot { get; set; } = TheaterShot.Orbit;
 
-        /// <summary>Index into <see cref="TheaterRecording.Tracks"/> the follow shot is riding.</summary>
+        /// <summary>Whether the recording area is up (the live world masked off the camera).</summary>
+        public bool StageIsUp => _stage.IsUp;
+
+        /// <summary>Speed gear the free camera's modifiers are holding, for the overlay.</summary>
+        public float FreeCameraGear => _freeCamera.Gear;
+
+        public TheaterShot Shot
+        {
+            get => _shot;
+            set
+            {
+                if (_shot == value) return;
+
+                // Hand the outgoing shot's pose to the incoming one so a shot change re-frames
+                // rather than teleporting: a free cam seeded from the orbit's own pose starts
+                // exactly where the director was already looking.
+                if (value == TheaterShot.Free && _camera != null)
+                {
+                    _freePosition = _camera.position;
+                    _freeCamera.Seed(_camera.rotation);
+                }
+                if (value == TheaterShot.Static) _staticAnchored = false;
+
+                _shot = value;
+            }
+        }
+
+        /// <summary>Index into <see cref="TheaterRecording.Tracks"/> the subject shots are riding.</summary>
         public int FollowIndex { get; private set; }
 
         public TheaterRecording Recording => _recording;
@@ -90,6 +134,9 @@ namespace CosmicShore.Utility
             IsPaused = false;
             Speed = 1f;
             FollowIndex = 0;
+            _shot = TheaterShot.Orbit;
+            _staticAnchored = false;
+            _freeCamera.Reset();
 
             _root = new GameObject("[TheaterPuppets]");
             BuildPuppets();
@@ -101,6 +148,19 @@ namespace CosmicShore.Utility
             // own camera would fall outside all three.
             _camera = _cameraManager != null ? _cameraManager.BeginManualReplayCamera() : null;
 
+            if (_camera == null)
+            {
+                // Say so once. With no replay rig there is no camera to pose and none to mask, so
+                // the ghosts are drawn from wherever the player is already looking - which is a
+                // real, watchable degradation and an utterly baffling one if nothing names it.
+                CSDebug.LogWarning(
+                    "[Theater] No replay camera in this scene (CameraManager has no end camera), so " +
+                    "the recording is drawn from the live camera and the shots do nothing.");
+            }
+
+            _stage.Enter(ResolveCamera(), _root.transform,
+                _config != null ? _config.stageBackground : new Color(0.03f, 0.04f, 0.06f, 1f));
+
             IsPlaying = true;
             Apply();
             return true;
@@ -108,6 +168,11 @@ namespace CosmicShore.Utility
 
         public void Stop()
         {
+            // The stage comes down FIRST and unconditionally: it holds the camera's culling mask,
+            // and a mask left pointing at an empty layer is a black screen for the rest of the
+            // session — a far worse failure than anything below it.
+            _stage.Exit();
+
             if (_root != null) UnityEngine.Object.Destroy(_root);
             _root = null;
             _puppets.Clear();
@@ -139,12 +204,21 @@ namespace CosmicShore.Utility
         /// <summary>Snap backward (or forward) by a fixed step — the transport the team asked for.</summary>
         public void Nudge(float seconds) => Seek(Position + seconds);
 
+        /// <summary>Change which pilot the Chase and Static shots are watching.</summary>
         public void CycleFollow(int step)
         {
             if (_recording == null || _recording.Tracks.Count == 0) return;
             int n = _recording.Tracks.Count;
             FollowIndex = ((FollowIndex + step) % n + n) % n;
-            Shot = TheaterShot.Follow;
+            _staticAnchored = false;
+            if (_shot is not (TheaterShot.Chase or TheaterShot.Static)) Shot = TheaterShot.Chase;
+        }
+
+        /// <summary>Cycle the shot itself, in the order the overlay lists them.</summary>
+        public void CycleShot(int step)
+        {
+            int count = System.Enum.GetValues(typeof(TheaterShot)).Length;
+            Shot = (TheaterShot)((((int)_shot + step) % count + count) % count);
         }
 
         public void Tick(float unscaledDeltaTime)
@@ -164,6 +238,24 @@ namespace CosmicShore.Utility
             }
 
             _orbitPhase += unscaledDeltaTime;
+
+            // The free camera flies whether or not the recording is running — a paused replay you
+            // can still walk around is most of what a theater is for.
+            if (_shot == TheaterShot.Free && _camera != null)
+            {
+                if (!_freeCamera.IsSeeded)
+                {
+                    _freePosition = _camera.position;
+                    _freeCamera.Seed(_camera.rotation);
+                }
+
+                _freeCamera.Tick(unscaledDeltaTime, _sceneRadius,
+                    _config != null ? _config.freeCameraSpeed : 0.9f,
+                    _config != null ? _config.freeCameraLookSpeed : 140f,
+                    ref _freePosition, out Quaternion freeRotation);
+                _camera.SetPositionAndRotation(_freePosition, freeRotation);
+            }
+
             Apply();
         }
 
@@ -191,33 +283,74 @@ namespace CosmicShore.Utility
                 else framed.Encapsulate(position);
             }
 
-            if (_camera == null) return;
             if (!anyVisible) return;
+            _sceneRadius = Mathf.Max(framed.extents.magnitude, 20f);
 
-            if (Shot == TheaterShot.Follow && TryFollowPose(out Vector3 followPos, out Quaternion followRot))
+            if (_camera == null) return;
+
+            switch (_shot)
             {
-                _camera.SetPositionAndRotation(followPos, followRot);
-                return;
+                // Free is posed in Tick, not here: it must keep flying while the replay is paused,
+                // and Apply only runs against the recording.
+                case TheaterShot.Free:
+                    return;
+                case TheaterShot.Chase when TryChasePose(out Vector3 chasePos, out Quaternion chaseRot):
+                    _camera.SetPositionAndRotation(chasePos, chaseRot);
+                    return;
+                case TheaterShot.Static when TryStaticPose(out Vector3 staticPos, out Quaternion staticRot):
+                    _camera.SetPositionAndRotation(staticPos, staticRot);
+                    return;
+                default:
+                    ApplyOrbit(framed);
+                    return;
             }
-
-            ApplyOrbit(framed);
         }
 
-        bool TryFollowPose(out Vector3 position, out Quaternion rotation)
+        bool TrySubject(out Puppet puppet)
+        {
+            puppet = null;
+            if (FollowIndex < 0 || FollowIndex >= _puppets.Count) return false;
+            var candidate = _puppets[FollowIndex];
+            if (!candidate.Visible || candidate.Model == null) return false;
+            puppet = candidate;
+            return true;
+        }
+
+        bool TryChasePose(out Vector3 position, out Quaternion rotation)
         {
             position = Vector3.zero;
             rotation = Quaternion.identity;
-
-            if (FollowIndex < 0 || FollowIndex >= _puppets.Count) return false;
-            var puppet = _puppets[FollowIndex];
-            if (!puppet.Visible || puppet.Model == null) return false;
+            if (!TrySubject(out var puppet)) return false;
 
             // Distance in units of the HULL'S OWN measured radius, so one authored number frames
             // every ship in a fleet whose sizes span two orders of magnitude.
             float distance = puppet.Radius * (_config != null ? _config.followDistance : 9f);
             Transform t = puppet.Transform;
             position = t.position - t.forward * distance + t.up * (distance * 0.25f);
-            rotation = Quaternion.LookRotation((t.position - position).normalized, Vector3.up);
+            rotation = Quaternion.LookRotation((t.position - position).normalized, t.up);
+            return true;
+        }
+
+        bool TryStaticPose(out Vector3 position, out Quaternion rotation)
+        {
+            position = Vector3.zero;
+            rotation = Quaternion.identity;
+            if (!TrySubject(out var puppet)) return false;
+
+            if (!_staticAnchored)
+            {
+                // Anchor once, off the subject's pose at the moment the shot was chosen — a tripod
+                // planted where the action was, which the subject then flies through and past.
+                float distance = puppet.Radius * (_config != null ? _config.followDistance : 9f);
+                Transform t = puppet.Transform;
+                _staticAnchor = t.position - t.forward * distance + Vector3.up * (distance * 0.4f);
+                _staticAnchored = true;
+            }
+
+            position = _staticAnchor;
+            Vector3 toSubject = puppet.Transform.position - position;
+            if (toSubject.sqrMagnitude < 1e-4f) return false;
+            rotation = Quaternion.LookRotation(toSubject.normalized, Vector3.up);
             return true;
         }
 
@@ -227,10 +360,9 @@ namespace CosmicShore.Utility
             float period = _config != null ? Mathf.Max(1f, _config.orbitSeconds) : 40f;
             float elevation = _config != null ? _config.orbitElevation : 0.35f;
 
-            float radius = Mathf.Max(framed.extents.magnitude, 20f);
             float fov = _cameraManager != null ? _cameraManager.ReplayCameraFieldOfView : 60f;
             float halfTan = Mathf.Max(0.1f, Mathf.Tan(fov * 0.5f * Mathf.Deg2Rad));
-            float distance = radius * margin / halfTan;
+            float distance = _sceneRadius * margin / halfTan;
 
             float angle = (_orbitPhase / period) * Mathf.PI * 2f;
             Vector3 offset = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * distance
@@ -242,10 +374,18 @@ namespace CosmicShore.Utility
                 Quaternion.LookRotation((framed.center - position).normalized, Vector3.up));
         }
 
+        Camera ResolveCamera()
+        {
+            if (_camera == null) return null;
+            var camera = _camera.GetComponent<Camera>();
+            return camera != null ? camera : _camera.GetComponentInChildren<Camera>(true);
+        }
+
         void BuildPuppets()
         {
-            var container = _config != null ? _config.vesselPrefabs : null;
+            var container = ResolveVesselPrefabs();
             var colorSet = PrismLit.ColorSet;
+            bool live = _config != null && _config.liveHullMaterials;
 
             for (int i = 0; i < _recording.Tracks.Count; i++)
             {
@@ -266,7 +406,8 @@ namespace CosmicShore.Utility
                     // Radius 0 = NATIVE scale and native pivot: the recorded pose is relative to the
                     // ship's own origin, so a re-centred model would sit off by the hull's bounds
                     // offset for the whole replay.
-                    VesselModelBuilder.TryBuild(prefab, 0f, color, out model);
+                    if (live) VesselModelBuilder.TryBuildLive(prefab, 0f, null, out model);
+                    else VesselModelBuilder.TryBuild(prefab, 0f, color, out model);
                 }
 
                 if (model == null) model = BuildProxy(color);
@@ -287,9 +428,42 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The stand-in when no <see cref="VesselPrefabContainer"/> is authored on the config: a
-        /// flat wedge that states a POSE unambiguously (long axis forward, a fin so roll reads).
-        /// Deliberately not a sphere — the whole point of a ghost is which way the pilot was facing.
+        /// The fleet's prefab registry, asked for in three places because it lives in a different
+        /// one in every context the theater can be opened from.
+        ///
+        /// <para>The authored config field is the intended answer. <c>Resources</c> is the answer
+        /// for a scene with no spawner. The live scene's <see cref="ServerPlayerVesselInitializer"/>
+        /// is the answer that always works in a game scene and needs nothing authored — and it is
+        /// last because a scene-wide search is the expensive one, not because it is the least
+        /// reliable.</para>
+        ///
+        /// <para>Falling through all three is what produced the placeholder wedge, so the miss is
+        /// reported by name: a silent fallback to a proxy reads as "the theater cannot draw ships",
+        /// which is a much larger and much wronger conclusion than "nothing told it where they
+        /// are".</para>
+        /// </summary>
+        VesselPrefabContainer ResolveVesselPrefabs()
+        {
+            if (_config != null && _config.vesselPrefabs != null) return _config.vesselPrefabs;
+
+            var fromResources = Resources.Load<VesselPrefabContainer>("VesselPrefabContainer");
+            if (fromResources != null) return fromResources;
+
+            var initializer = UnityEngine.Object.FindFirstObjectByType<ServerPlayerVesselInitializer>();
+            if (initializer != null && initializer.VesselPrefabContainer != null)
+                return initializer.VesselPrefabContainer;
+
+            CSDebug.LogWarning(
+                "[Theater] No VesselPrefabContainer reachable, so ghosts are placeholder wedges " +
+                "rather than real hulls. Assign one to Resources/TheaterConfig's 'Vessel Prefabs', " +
+                "or put a copy of the container in a Resources folder.");
+            return null;
+        }
+
+        /// <summary>
+        /// The stand-in when no <see cref="VesselPrefabContainer"/> can be reached: a flat wedge
+        /// that states a POSE unambiguously (long axis forward, a fin so roll reads). Deliberately
+        /// not a sphere — the whole point of a ghost is which way the pilot was facing.
         /// </summary>
         static GameObject BuildProxy(Color color)
         {
