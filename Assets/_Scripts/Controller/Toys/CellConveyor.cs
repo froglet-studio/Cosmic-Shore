@@ -580,7 +580,24 @@ namespace CosmicShore.Gameplay
                 var prisms = retiring.GetComponentsInChildren<Prism>(true);
                 for (int i = 0; i < prisms.Length; i++)
                 {
-                    if (prisms[i]) Destroy(prisms[i].gameObject);
+                    var prism = prisms[i];
+                    if (!prism) continue;
+
+                    // A struck world holds mass from TWO pools, and only one of them was
+                    // handled. Cell.StrikeSatelliteWorld returns the vessel-trail prisms
+                    // (the ones carrying a pool-return delegate) before handing this root
+                    // over - but the AUTHORED ENVIRONMENT and every flora HealthPrism come
+                    // from EnvironmentPrismPool, whose membership is an issued dictionary
+                    // rather than a delegate, so they arrive here still issued. Destroying
+                    // them leaks the issue record and forces the next cell to mint its whole
+                    // environment from scratch: ~10k Instantiate + ~10k Destroy per corridor
+                    // advance, which is most of what the corridor costs. Cell's own swap
+                    // drain (ReleaseRetiredWorld) has always released them; this path was
+                    // written from the mode preview's teardown, which has no environment
+                    // pool to return to, and inherited the omission.
+                    if (!EnvironmentPrismPool.TryRelease(prism))
+                        Destroy(prism.gameObject);
+
                     if ((i + 1) % PrismsPerFrame == 0)
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
@@ -604,7 +621,9 @@ namespace CosmicShore.Gameplay
                 if (cell) prisms += cell.LiveBlockCount;
             }
             return $"cells {_cells.Count} (target {_targetIndex}), tracked prisms {prisms}, " +
-                   $"draining {_drains}, retiring roots {_retiringRoots.Count}, bag {_bag.Count}";
+                   $"draining {_drains}, retiring roots {_retiringRoots.Count}, bag {_bag.Count}, " +
+                   $"env pool {EnvironmentPrismPool.IssuedCount} issued / " +
+                   $"{EnvironmentPrismPool.ParkedCount} parked";
         }
 
         /// <summary>
@@ -646,7 +665,19 @@ namespace CosmicShore.Gameplay
             // Anything a cancelled drain orphaned. Not a scene-unload concern (that sweeps
             // everything anyway) - it is the toybox root being torn down while the scene lives.
             for (int i = 0; i < _retiringRoots.Count; i++)
-                if (_retiringRoots[i]) Destroy(_retiringRoots[i]);
+            {
+                var root = _retiringRoots[i];
+                if (!root) continue;
+
+                // Same two-pool rule as the drain: the environment pool's host is
+                // DontDestroyOnLoad, so returning this mass keeps the pool whole for the
+                // next voyage instead of leaving issue records pointing at dead objects.
+                var orphaned = root.GetComponentsInChildren<Prism>(true);
+                for (int p = 0; p < orphaned.Length; p++)
+                    if (orphaned[p]) EnvironmentPrismPool.TryRelease(orphaned[p]);
+
+                Destroy(root);
+            }
             _retiringRoots.Clear();
         }
     }

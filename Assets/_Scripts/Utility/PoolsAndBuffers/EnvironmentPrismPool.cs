@@ -198,6 +198,26 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// How many prisms this pool has handed out and not had back. It only ever falls
+        /// when a caller releases or forgets one, so a producer that DESTROYS issued mass
+        /// (rather than releasing it) shows up here as a number that only climbs - which is
+        /// the one question a "why did this world lay nothing?" report cannot answer on its
+        /// own. Diagnostic only; nothing branches on it.
+        /// </summary>
+        public static int IssuedCount => s_issued.Count;
+
+        /// <summary>Prisms parked inactive and ready to re-issue, across every prefab.</summary>
+        public static int ParkedCount
+        {
+            get
+            {
+                int n = 0;
+                foreach (var stack in s_stacks.Values) n += stack.Count;
+                return n;
+            }
+        }
+
         public static void ForgetDestroyed(Prism prism)
         {
             if (!prism) return;
