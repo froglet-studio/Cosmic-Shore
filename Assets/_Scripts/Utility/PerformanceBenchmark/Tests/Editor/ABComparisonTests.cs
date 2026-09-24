@@ -255,7 +255,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         }
 
         /// <summary>
-        /// NEGATIVE CONTROL for the drift warning. `renderers hide Spindle` removes ~40k
+        /// NEGATIVE CONTROL for the drift warning. `renderers hide *Spindle` removes tens of thousands of
         /// renderers from arm A BY DESIGN; a warning that compared arms to each other would fire
         /// on every spindle A/B and be ignored. Only the same arm moving over time is drift.
         /// </summary>

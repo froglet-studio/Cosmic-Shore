@@ -97,7 +97,8 @@ block per scenario:
    (c) a **Timeline** screenshot of the render block showing which worker jobs run during the
        main thread's `Idle`,
    (d) `diag <scenario> 15`, pasting the `.txt`, not a screenshot.
-3. For S2 only: `freeze on`, then `ab "renderers hide Spindle" "renderers show" 10 3`, and paste
+3. For S2 only: `freeze on`, then `ab "renderers hide *Spindle" "renderers show" 20 6` (the leading `*` matters — see
+   `Docs/PERFORMANCE_OPTIMIZATION.md` §4.5), and paste
    the one line.
 
 Then stop and wait for the results.

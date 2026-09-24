@@ -94,6 +94,7 @@ bond), which is why the scenario set gains an S6.
 | 09-21 | Refused two proposed material conversions after reading the graphs | Spindles fade by alpha — opaque would make withering pop (continuity law) |
 | 09-22 | **Frame attributed** in the Profiler: draws ~0.2 ms, render-job waiting 14 ms. 15 dead SOAP listeners stripped from 8 prism prefabs. `renderers` census + `renderers hide/show` | ~40k of 45k enabled renderers are spindles; hide test confounded (§4.3) |
 | 09-23 | Merged bleeding-edge (new boot world: Garland); plan re-derived on the merged tree; target + six scenarios confirmed. `freeze` and `ab` console commands | The confounded spindle test can now be re-run in one state (§4.5) |
+| 09-25 | First spindle `ab` hid 5 of ~68k renderers (the lattice spindles wear their own materials); `renderers hide *text` added | An accidental A/A: ±3.9 ms CPU noise at 3 × 10 s in the menu, so the re-run is 6 × 20 s (§4.5) |
 
 ### 2.1 How the picture changed
 
@@ -302,6 +303,18 @@ Three ways to satisfy the rule, simplest first:
   (`ABComparison.cs`) and tested, including two negative controls: pure drift reads as a real
   effect under a fixed A-then-B order and as zero under the counterbalanced one, and a renderer
   count that differs between arms by design raises no warning.
+- **A family's test must hide the FAMILY — check the count before trusting the delta.** The
+  first `ab "renderers hide Spindle" "renderers show" 10 3` in a grown Lattice cell (2026-09-25,
+  on `73e99421b`, ~52k prism entities, ~68k enabled renderers) hid **5** renderers: since §47.7
+  the lattice species' spindles wear `GyroidSpindleMaterial` / `AssemblySpindleMaterial` /
+  `QuasicrystalSpindleMaterial`, which the prefix `Spindle` does not match. Both arms were the same
+  world, and the tool correctly called every delta `(noise)` — which makes the run an accidental
+  A/A test worth keeping: in the menu, with the autopilot camera moving through the forest, 3 × 10 s
+  gives **±3.9 ms** standard error on CPU busy (draws swung 4.3k–19.3k inside one condition). So
+  the spindle test is `ab "renderers hide *Spindle" "renderers show" 20 6`: a leading `*` makes the
+  match a substring, and six 20 s rounds are what it takes to see a few milliseconds through that
+  noise. Run `renderers hide *Spindle` by hand first and confirm it hides thousands, then
+  `renderers show`.
 - **A measurement toggle is not a shipped lever.** `renderers hide` switches renderers off in
   one frame — fine for asking what they cost, never acceptable as the fix. If lever L1 ships, a
   spindle leaves the culling population by FADING (continuity of existence), not by a toggle.
@@ -313,7 +326,7 @@ Three ways to satisfy the rule, simplest first:
 | `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap |
 | `diag [label] [seconds]` | Timed, tagged recording → JSON + TXT |
 | `renderers` | Census: enabled / disabled / visible renderers, by type, top 8 materials |
-| `renderers hide <prefix>` / `renderers show` | Switch off every renderer on a material named `<prefix>*`, then exactly those back on |
+| `renderers hide <prefix>` / `renderers hide *<text>` / `renderers show` | Switch off every renderer whose material name starts with `<prefix>` — or, with a leading `*`, CONTAINS `<text>` — then exactly those back on. Use `*Spindle` for the spindle family: the lattice species wear `GyroidSpindleMaterial`, `AssemblySpindleMaterial` and `QuasicrystalSpindleMaterial`, which the prefix `Spindle` misses |
 | `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
 | `prisms <n>` / `prisms off` | Render-only stress cloud of `n` prism entities |
 | `grid …` / `lab …` / `bench` | Lab scene only: real prism lattice, mixed populations, explosion benchmark |

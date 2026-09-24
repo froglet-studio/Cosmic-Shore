@@ -112,13 +112,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
     /// <summary>
     /// The A/B half of the census: switch OFF every enabled renderer whose shared material name
-    /// starts with a prefix, then switch exactly those back on. A census says who is in the
+    /// matches a pattern, then switch exactly those back on. A census says who is in the
     /// culling population; only removing them says what they COST.
+    ///
+    /// The pattern is a PREFIX (<c>Spindle</c> = names starting "Spindle"), or, with a leading
+    /// <c>*</c>, a SUBSTRING (<c>*Spindle</c> = names containing "Spindle" anywhere). The
+    /// substring form exists because a family can wear several materials: since §47.7 the
+    /// three lattice species' spindles wear <c>GyroidSpindleMaterial</c>,
+    /// <c>AssemblySpindleMaterial</c> and <c>QuasicrystalSpindleMaterial</c>, so the prefix
+    /// <c>Spindle</c> caught 5 renderers of ~68,000 in a grown Lattice cell and an A/B built on
+    /// it compared the world with itself (2026-09-25). A family's test must hide the FAMILY.
     ///
     /// The first reading of the Lattice boot world put ~40,000 of 45,197 enabled renderers on
     /// the eight <c>SpindleMaterial_Phase*</c> variants, with 4,599 visible — so the hypothesis
     /// "culling walks every renderer and most of them are spindles nobody can see" is testable
-    /// in one keystroke: <c>renderers hide Spindle</c>, read CPU, <c>renderers show</c>.
+    /// in one keystroke: <c>renderers hide *Spindle</c>, read CPU, <c>renderers show</c>.
     ///
     /// Diagnostic only, and deliberately blunt: it writes <c>Renderer.enabled</c>, the property
     /// the spindle lifecycle also writes. A spindle that withers while hidden is destroyed as
@@ -132,15 +140,28 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         public static int HiddenCount => s_hidden.Count;
 
-        /// <summary>Pure: does a material name belong to the hidden group? Ordinal, case-insensitive.</summary>
-        public static bool Matches(string materialName, string prefix) =>
-            !string.IsNullOrEmpty(prefix) && materialName != null &&
-            materialName.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+        /// <summary>
+        /// Pure: does a material name belong to the hidden group? Ordinal, case-insensitive.
+        /// <paramref name="pattern"/> is a prefix, or a substring when it starts with <c>*</c>.
+        /// A pattern with nothing after the <c>*</c> matches nothing — "hide everything" is a
+        /// blank screen, not an A/B.
+        /// </summary>
+        public static bool Matches(string materialName, string pattern)
+        {
+            if (materialName == null || string.IsNullOrEmpty(pattern)) return false;
+            if (pattern[0] != '*') return materialName.StartsWith(pattern, StringComparison.OrdinalIgnoreCase);
+            string needle = pattern.Substring(1);
+            return needle.Length > 0 && materialName.IndexOf(needle, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        /// <summary>How a pattern reads in a console answer: <c>Spindle*</c> or <c>*Spindle*</c>.</summary>
+        public static string Describe(string pattern) => string.IsNullOrEmpty(pattern) ? "" : pattern + "*";
 
         public static string Hide(string prefix)
         {
-            if (string.IsNullOrEmpty(prefix)) return "usage: renderers hide <material-name-prefix>   e.g. renderers hide Spindle";
-            if (s_hidden.Count > 0) return $"already hiding {s_hidden.Count:N0} '{s_prefix}*' renderers — 'renderers show' first";
+            if (string.IsNullOrEmpty(prefix) || prefix == "*")
+                return "usage: renderers hide <prefix> | *<substring>   e.g. renderers hide *Spindle";
+            if (s_hidden.Count > 0) return $"already hiding {s_hidden.Count:N0} '{Describe(s_prefix)}' renderers — 'renderers show' first";
 
             var all = UnityEngine.Object.FindObjectsByType<Renderer>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
             // Name each material once, not once per renderer: 40k .name reads are 40k strings.
@@ -157,7 +178,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 s_hidden.Add(r);
             }
             s_prefix = prefix;
-            return $"hid {s_hidden.Count:N0} renderers on '{prefix}*' ({all.Length:N0} scanned). " +
+            return $"hid {s_hidden.Count:N0} renderers on '{Describe(prefix)}' ({all.Length:N0} scanned). " +
                    "Wait ~5 s, read CPU (busy) and Frame Time, then 'renderers show'.";
         }
 
@@ -176,7 +197,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             string prefix = s_prefix;
             s_hidden.Clear();
             s_prefix = null;
-            return $"restored {restored:N0} '{prefix}*' renderers" + (gone > 0 ? $" ({gone:N0} were destroyed while hidden)" : "");
+            return $"restored {restored:N0} '{Describe(prefix)}' renderers" + (gone > 0 ? $" ({gone:N0} were destroyed while hidden)" : "");
         }
 
         /// <summary>Put everything back — a hidden world must never survive the HUD that hid it.</summary>

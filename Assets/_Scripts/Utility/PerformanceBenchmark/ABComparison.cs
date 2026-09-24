@@ -62,7 +62,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         public static string Usage =>
             "usage: ab \"<command A>\" \"<command B>\" [seconds] [rounds]   " +
-            "e.g. ab \"renderers hide Spindle\" \"renderers show\" 10 3   (ab stop cancels)";
+            "e.g. ab \"renderers hide *Spindle\" \"renderers show\" 20 6   (ab stop cancels)";
 
         /// <summary>
         /// Parses the arguments DiagnosticsHUD hands a handler. The console splits on spaces

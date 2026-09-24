@@ -56,6 +56,39 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.IsFalse(RendererHideSwitch.Matches(null, "Spindle"));
             // Prefix, not substring: a snow shard carrying "Spindle" mid-name stays lit.
             Assert.IsFalse(RendererHideSwitch.Matches("GyroidSpindle", "Spindle"));
+            // A bare star is "hide everything" too.
+            Assert.IsFalse(RendererHideSwitch.Matches("SpindleMaterial_Phase3", "*"));
+        }
+
+        /// <summary>
+        /// The lattice species' spindles wear their own materials (§47.7), so the family test in a
+        /// grown Lattice cell needs a substring. NEGATIVE CONTROL: the same names against the plain
+        /// prefix must NOT match - that is the 5-of-68,000 miss this form exists to fix.
+        /// </summary>
+        [TestCase("GyroidSpindleMaterial_Phase3")]
+        [TestCase("AssemblySpindleMaterial_Phase0")]
+        [TestCase("QuasicrystalSpindleMaterial_Phase7")]
+        [TestCase("SpindleMaterial_Phase5")]
+        [TestCase("quadfishspindlematerial")]
+        public void HideSwitch_LeadingStar_MatchesAnywhereInTheName(string materialName)
+        {
+            Assert.IsTrue(RendererHideSwitch.Matches(materialName, "*Spindle"));
+            if (!materialName.StartsWith("Spindle"))
+                Assert.IsFalse(RendererHideSwitch.Matches(materialName, "Spindle"), "the plain prefix must still miss it");
+        }
+
+        [Test]
+        public void HideSwitch_LeadingStar_StillMissesOtherFamilies()
+        {
+            Assert.IsFalse(RendererHideSwitch.Matches("SnowMaterial", "*Spindle"));
+            Assert.IsFalse(RendererHideSwitch.Matches(null, "*Spindle"));
+        }
+
+        [Test]
+        public void HideSwitch_Describe_ShowsTheShapeOfTheMatch()
+        {
+            Assert.AreEqual("Spindle*", RendererHideSwitch.Describe("Spindle"));
+            Assert.AreEqual("*Spindle*", RendererHideSwitch.Describe("*Spindle"));
         }
     }
 }

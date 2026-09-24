@@ -311,7 +311,7 @@ prints in the Console row of the overlay. Full reference and when to use each:
 | `fps uncap` / `fps restore` | Remove / restore the vsync + target-frame-rate cap — a capped frame cannot show a change smaller than its idle time |
 | `diag [label] [seconds]` | Timed, **tagged** recording → `diag_*.json` + `.txt` with averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, renderer census) |
 | `renderers` | Renderer census: enabled / disabled / visible, by type, top 8 materials |
-| `renderers hide <prefix>` / `renderers show` | Switch off every renderer on a material named `<prefix>*`, then exactly those back on |
+| `renderers hide <prefix>` / `renderers hide *<text>` / `renderers show` | Switch off every renderer whose material name starts with `<prefix>` — or, with a leading `*`, CONTAINS `<text>` — then exactly those back on. Use `*Spindle` for the spindle family: the lattice species wear `GyroidSpindleMaterial`, `AssemblySpindleMaterial` and `QuasicrystalSpindleMaterial`, which the prefix `Spindle` misses |
 | `prismpath on\|off\|auto` | Instanced vs legacy prism rendering, live |
 | `prisms <n>` / `prisms off` | Render-only stress cloud of `n` prism entities |
 | `grid …` / `lab …` / `bench` | `PrismGridExplosionTest` scene only: real prism lattice, mixed populations, explosion benchmark |
