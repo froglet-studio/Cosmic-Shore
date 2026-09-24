@@ -21,6 +21,9 @@ namespace CosmicShore.UI
         [Tooltip("Easing curve for slide-out.")]
         public Ease slideOutEase = Ease.InCubic;
 
+        [Tooltip("Extra pixels beyond the toast's own width for the off-screen slide start/end position.")]
+        public float offscreenPadding = 24f;
+
         [Header("Fade")]
         [Tooltip("Duration of the fade-in (overlaps with slide-in).")]
         public float fadeInDuration = 0.25f;
@@ -28,29 +31,26 @@ namespace CosmicShore.UI
         [Tooltip("Duration of the fade-out (overlaps with slide-out).")]
         public float fadeOutDuration = 0.2f;
 
+        [Header("Text Animation")]
+        [Tooltip("Reveal the message with a typewriter effect while the toast slides in.")]
+        public bool useTypewriterText = true;
+
+        [Tooltip("Characters revealed per second during the typewriter effect.")]
+        public float typewriterCharactersPerSecond = 45f;
+
+        [Tooltip("Upper bound on the typewriter reveal so long messages don't crawl.")]
+        public float typewriterMaxDuration = 1.5f;
+
         [Header("Lifetime")]
-        [Tooltip("Seconds the toast stays visible before auto-dismissing.")]
+        [Tooltip("Seconds the toast stays visible (after the intro finishes) before auto-dismissing.")]
         public float autoRemoveDelay = 5f;
 
         [Header("Swipe Dismiss")]
         [Tooltip("Minimum horizontal drag distance (in pixels) to trigger a swipe dismiss.")]
         public float swipeDismissThreshold = 60f;
 
-        [Header("Layout")]
-        [Tooltip("Extra pixels of padding beyond the screen edge for the off-screen start position.")]
-        public float offscreenPadding = 24f;
-
-        [Tooltip("Vertical offset from the top of the screen (in canvas units) for the toast anchor.")]
-        public float topMargin = 120f;
-
-        [Tooltip("Horizontal margin from the left edge when fully visible (in canvas units).")]
-        public float leftMargin = 24f;
-
-        [Tooltip("Spacing between stacked toasts (in canvas units).")]
-        public float stackSpacing = 10f;
-
         [Header("Capacity")]
-        [Tooltip("Maximum number of toasts visible at the same time. Oldest is dismissed when exceeded.")]
+        [Tooltip("Maximum number of toasts visible at the same time. Additional toasts wait in the queue.")]
         public int maxVisible = 3;
 
         [Tooltip("Maximum number of queued toasts. Oldest queued toast is dropped when exceeded.")]

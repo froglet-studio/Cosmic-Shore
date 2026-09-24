@@ -5,7 +5,8 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Static convenience API for showing toast notifications from anywhere in the codebase.
-    /// Auto-creates the ToastNotificationManager singleton if it doesn't exist in the scene.
+    /// Auto-creates the ToastNotificationManager singleton if it doesn't exist in the scene,
+    /// wiring settings, channel, and the authored toast prefab from Resources.
     /// Finds the container by searching for a GameObject named "ToastNotificationContainer".
     /// </summary>
     public static class ToastNotificationAPI
@@ -52,26 +53,9 @@ namespace CosmicShore.UI
             var go = new GameObject("ToastNotificationManager");
             var mgr = go.AddComponent<ToastNotificationManager>();
 
-            // Wire settings from Resources
-            var settings = Resources.Load<ToastNotificationSettingsSO>(SettingsPath);
-            if (settings != null)
-            {
-                var field = typeof(ToastNotificationManager).GetField("settings",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, settings);
-            }
-
-            // Wire channel
-            var channel = Channel;
-            if (channel != null)
-            {
-                var field = typeof(ToastNotificationManager).GetField("channel",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, channel);
-
-                mgr.enabled = false;
-                mgr.enabled = true;
-            }
+            mgr.Configure(
+                Resources.Load<ToastNotificationSettingsSO>(SettingsPath),
+                Channel);
 
             TryAssignContainer(mgr);
 
