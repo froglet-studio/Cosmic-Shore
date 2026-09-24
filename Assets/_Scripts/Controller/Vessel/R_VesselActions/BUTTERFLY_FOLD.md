@@ -138,3 +138,30 @@ far it may reach is a vessel in two places.
 - `ghostBloomSeconds` and the wither/bloom pair are unplayed guesses.
 - An AI never folds: `AIPilot` produces no trigger input and this ability is a placement decision
   with no obvious autopilot policy. Stated rather than stubbed.
+
+## The camera goes with the placement
+
+A pilot cannot choose a place they cannot see. The reach is `MaxRadiusFraction` of the membrane —
+hundreds of units — so a camera left behind the stopped vessel shows the destination as a few
+pixels of ghost against the cell, if it is on screen at all. `VesselPlacementView` frames the ghost
+for the length of the hold, at the vessel's own follow distance and in the vessel's own **rolled**
+frame, which is what keeps the roll-the-world mechanic legible: the frame the sticks address is the
+frame you are looking through. What the hold becomes is *you fly the DESTINATION with the sticks
+and let go when you like where you are*.
+
+Three details are load-bearing.
+
+**The anchor is seeded at the vessel**, so entering the view is a no-op snap rather than a cut; the
+point then sweeps out under the sticks and the camera's ordinary smoothing carries it.
+
+**It is HELD through the wither** and released on the frame the pose is written — which is the frame
+the vessel arrives at the point the camera is already framing. So the teleport costs the camera no
+motion at all: it is already there, looking the right way, and the ship blooms in ahead of it.
+Releasing the anchor at the RELEASE edge instead would swing the camera back to the stationary hull
+for the length of the departure and then swing it out again, which is the one cut this vantage
+exists to avoid.
+
+**Every peer calls it and only the local pilot's machine acts on it.** `VesselPlacementView` is
+keyed on the vessel bound at `VesselController.Initialize`/`ChangePlayer` under `IsLocalPilot`, so
+this executor carries no camera gate of its own to get wrong — an AI Butterfly folds on the server,
+where there is no camera and no ghost, and its `Place` calls are simply ignored.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -30,6 +31,20 @@ namespace CosmicShore.Gameplay
     /// the vessel rolls the frame this executor builds its azimuth and elevation in. That is the
     /// whole "roll the world until the place you want is where your thumbs already are" mechanic,
     /// and it is bought with no new code.</para>
+    ///
+    /// <para><b>The CAMERA goes with the placement, not with the ship.</b> A pilot cannot choose
+    /// a place they cannot see, and the reach is <c>MaxRadiusFraction</c> of the membrane — so a
+    /// camera left behind the stopped vessel shows the destination as a few pixels of ghost, if it
+    /// is on screen at all. <see cref="VesselPlacementView"/> frames the ghost instead, at the
+    /// vessel's own follow distance and in the vessel's own ROLLED frame, which is what keeps the
+    /// roll-the-world mechanic legible: the frame the sticks address is the frame you are looking
+    /// through. Every peer calls it and only the local pilot's machine acts on it, so there is no
+    /// camera gate in this file to get wrong.</para>
+    ///
+    /// <para>The anchor is held through the WITHER and released on the frame the pose is written —
+    /// which is the frame the vessel arrives at the point the camera is already framing. So the
+    /// teleport costs the camera no motion at all: it is already there, looking the right way, and
+    /// the ship blooms in ahead of it.</para>
     ///
     /// <para><b>The trail is penned UP for the duration</b>, through
     /// <c>VesselPrismController.SetSpawnerPaused</c>. Not optional: <c>IsTranslationRestricted</c>
@@ -128,7 +143,14 @@ namespace CosmicShore.Gameplay
             ReleaseInternal(commit: false);
         }
 
-        void OnDestroy() => DestroyGhost();
+        void OnDestroy()
+        {
+            // The camera outlives this vessel — a placement left set would park the player camera
+            // on a point in space for the rest of the match. Keyed, so a teardown arriving after
+            // a swap cannot cancel the incoming hull's own placement.
+            if (_status != null) VesselPlacementView.Clear(_status.Transform);
+            DestroyGhost();
+        }
 
         public void Engage(FoldActionSO so, IVesselStatus status)
         {
@@ -145,6 +167,11 @@ namespace CosmicShore.Gameplay
             _heldSeconds = 0f;
             _ghostPosition = _status.Transform.position;
             _ghostBloom = 0f;
+
+            // Seeded AT the vessel, so entering the placement view is a no-op snap rather than a
+            // cut. The point then sweeps out under the sticks and the camera's ordinary smoothing
+            // carries it.
+            VesselPlacementView.Place(_status.Transform, _ghostPosition);
 
             SetStopped(true);
             _status.VesselPrismController?.SetSpawnerPaused(true);
@@ -163,6 +190,7 @@ namespace CosmicShore.Gameplay
                 {
                     SetStopped(false);
                     _status.VesselPrismController?.SetSpawnerPaused(false);
+                    VesselPlacementView.Clear(_status.Transform);
                 }
                 _animation?.SetFolded(false);
                 DestroyGhost();
@@ -202,6 +230,7 @@ namespace CosmicShore.Gameplay
             {
                 SetStopped(false);
                 _status.VesselPrismController?.SetSpawnerPaused(false);
+                VesselPlacementView.Clear(_status.Transform);
             }
         }
 
@@ -235,6 +264,8 @@ namespace CosmicShore.Gameplay
             Vector3 target = ResolveTarget(so);
             _ghostPosition = Vector3.MoveTowards(
                 _ghostPosition, target, so.GhostTravelSpeed * Time.deltaTime);
+
+            VesselPlacementView.Place(_status.Transform, _ghostPosition);
 
             EnsureGhost();
             _ghostBloom = Mathf.MoveTowards(
@@ -308,6 +339,11 @@ namespace CosmicShore.Gameplay
             var so = _activeSo ? _activeSo : config;
             if (so == null) { Restore(); return; }
 
+            // HELD through the wither. Releasing it here would swing the camera back to the
+            // stationary hull for the length of the departure and then swing it out again when the
+            // pose lands — the one cut this whole vantage exists to avoid.
+            if (_status != null) VesselPlacementView.Place(_status.Transform, _ghostPosition);
+
             float depart = Mathf.Max(0.0001f, so.DepartSeconds);
             _witherPhase -= Time.deltaTime / depart;
             if (_witherPhase > 0f) { ApplyVisualScale(_witherPhase); return; }
@@ -326,11 +362,14 @@ namespace CosmicShore.Gameplay
             }
 
             // The stance and the pen come back the moment the pose is written — the vessel is
-            // flying again, it is simply still blooming in.
+            // flying again, it is simply still blooming in. The camera is handed back on the SAME
+            // frame, and hands back to a vessel that is now standing exactly where the camera was
+            // already looking, so there is nothing to move.
             if (_status != null)
             {
                 SetStopped(false);
                 _status.VesselPrismController?.SetSpawnerPaused(false);
+                VesselPlacementView.Clear(_status.Transform);
             }
         }
 
