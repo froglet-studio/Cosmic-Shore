@@ -32,6 +32,11 @@ namespace CosmicShore.Tests
         const string SourcePath = "Assets/_Scripts/Utility/PrismWakeSource.cs";
         const string CarrierPath = "Assets/_Scripts/Utility/IPrismWakeCarrier.cs";
         const string ProjectilePath = "Assets/_Scripts/Controller/Projectiles/Projectile.cs";
+        const string BlastPath = "Assets/_Scripts/Controller/Projectiles/AOEExplosion.cs";
+        const string DetonatorPath = "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/ProjectileDetonatorSO.cs";
+        const string WarheadPrefab = "Assets/_Prefabs/Projectile/AOEMissileWarhead.prefab";
+        const string ConePath = "Assets/_Scripts/Controller/Projectiles/AOEConicExplosion.cs";
+        const string CylinderPath = "Assets/_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs";
         const string BallPath = "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs";
         const string SkyburstPrefab = "Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab";
 
@@ -65,6 +70,63 @@ namespace CosmicShore.Tests
             Assert.IsTrue(m.Success, $"{serializedDescriptor} block has no m_ObjectId");
             return m.Groups[1].Value;
         }
+
+        /// <summary>
+        /// A C# file with its COMMENTS removed, for the assertions that ban a token.
+        ///
+        /// <para>It exists because of a defect this suite shipped and then hit: a ruling comment that
+        /// NAMES the thing it forbids — "do not re-add an <c>AddComponent&lt;PrismWakeSource&gt;()</c>
+        /// here" — trips an <c>Assert.IsFalse(file.Contains(...))</c> gate, so the gate pressures
+        /// whoever writes the record into describing the ban vaguely, which is the opposite of what a
+        /// ruling record is for. Two of this file's own bans failed on exactly that the first time the
+        /// carrier moved. General rule: <b>a textual gate that forbids a token cannot be allowed to
+        /// read the comment documenting the ban.</b></para>
+        ///
+        /// <para>String and char literals are respected, so a <c>"//"</c> inside one is not mistaken
+        /// for the start of a comment — which matters because a banned token is usually quoted inside
+        /// the very assertion message that bans it.</para>
+        /// </summary>
+        static string CodeOnly(string source)
+        {
+            var sb = new System.Text.StringBuilder(source.Length);
+            for (int i = 0; i < source.Length; i++)
+            {
+                char c = source[i];
+
+                if (c == '"' || c == '\'')
+                {
+                    char quote = c;
+                    sb.Append(c);
+                    for (i++; i < source.Length; i++)
+                    {
+                        sb.Append(source[i]);
+                        if (source[i] == '\\') { if (++i < source.Length) sb.Append(source[i]); continue; }
+                        if (source[i] == quote) break;
+                    }
+                    continue;
+                }
+
+                if (c == '/' && i + 1 < source.Length && source[i + 1] == '/')
+                {
+                    while (i < source.Length && source[i] != '\n') i++;
+                    if (i < source.Length) sb.Append('\n');
+                    continue;
+                }
+
+                if (c == '/' && i + 1 < source.Length && source[i + 1] == '*')
+                {
+                    i += 2;
+                    while (i + 1 < source.Length && !(source[i] == '*' && source[i + 1] == '/')) i++;
+                    i++;
+                    continue;
+                }
+
+                sb.Append(c);
+            }
+            return sb.ToString();
+        }
+
+        static string CodeOf(string path) => CodeOnly(File.ReadAllText(path));
 
         static PrismWakeConfigSO ResolveConfig()
         {
@@ -222,8 +284,7 @@ namespace CosmicShore.Tests
             var config = ResolveConfig();
             Assert.IsTrue(config.IsSane,
                 $"PrismWakeConfig is not sane (amplitude {config.Amplitude}, Q {config.WavesInFront}, " +
-                $"half-thickness {config.HalfThicknessFraction}, pulses/s {config.PulsesPerSecond}): " +
-                "the shader treats that as OFF.");
+                $"half-thickness {config.HalfThicknessFraction}): the shader treats that as OFF.");
             Assert.Greater(config.Amplitude, 0f,
                 "Amplitude is 0 — the shader's second sentinel reads that as off and nothing ripples. " +
                 "Use `enabled` to switch the wake off.");
@@ -363,25 +424,89 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ThePulseClockHasExactlyOneCopy()
+        public void TheFrontHasNoCLOCKOfItsOwn()
         {
+            // The whole simplification the carrier move bought. A detonating blast ALREADY has a
+            // travelling wavefront — its trigger expands from nothing to its full radius over its own
+            // authored duration, and that radius is what its damage pass uses — so the front's
+            // position is READ from the carrier. A rate authored on this side would be a second
+            // answer to a question the blast already answers, and the two would drift: the ripple
+            // would arrive at a prism before or after the blast that is supposed to be causing it.
+            // CodeOnly, not ReadAllText: the comments in all three files legitimately NAME the
+            // clock they are recording the removal of, and a ban that could read them would be
+            // banning the record instead of the code.
+            string wake = CodeOf("Assets/_Scripts/Utility/PrismWake.cs");
+            string cfg  = CodeOf("Assets/_Scripts/ScriptableObjects/PrismWakeConfigSO.cs");
+            string src  = CodeOf(SourcePath);
+
+            Assert.IsFalse(cfg.Contains("pulsesPerSecond"),
+                "PrismWakeConfigSO authors a pulses-per-second again. The front's position is the carrier's own " +
+                "wavefront; a rate here is a second clock for one front and it will drift from the blast.");
+            Assert.IsFalse(wake.Contains("PulseRate"),
+                "PrismWake.PulseRate is back — see above; the publisher must not own a clock the carrier already " +
+                "owns.");
+            Assert.IsFalse(src.Contains("Time.deltaTime * "),
+                "PrismWakeSource integrates something per frame again. The only per-frame integration left is the " +
+                "engage/release ease (MoveTowards); the front's POSITION is read, never advanced.");
+
+            // What the source DOES still own is the mapping into the legal travel band, and that is
+            // what keeps a carrier from breaking the no-fold proof: a blast honestly starts at radius
+            // ZERO, and a front there would straddle its own centre.
             var config = ResolveConfig();
-            // The pulse rate is the one piece of derived geometry left after the sphere replaced the
-            // cylinder: the front's radius comes from the config, the reach comes from the warhead,
-            // and the shell thickness is a fraction of the reach. So the publisher owns ONE number
-            // and there is nothing for it to disagree with the shader about.
-            Assert.AreEqual(config.PulsesPerSecond, PrismWake.PulseRate(config), 1e-6f,
-                "PrismWake.PulseRate is no longer the config's own rate — the pulse clock has two copies.");
-            Assert.Greater(config.PulsesPerSecond, 0f,
-                "PulsesPerSecond is 0 — a front would be born and never travel, so the shell would stand still " +
-                "at the round's own skin.");
+            foreach (float reach in new[] { 4f, 95.2f, 480f, 2400f })
+            {
+                Assert.AreEqual(config.HalfThicknessFor(reach), config.FrontRadiusAt(0f, reach), 1e-4f,
+                    $"at reach {reach} a progress of 0 no longer floors the front at the shell's own " +
+                    "half-thickness — a blast reports progress 0 before it has expanded at all, so the front " +
+                    "would be centred on the blast's own origin and the shell would straddle it.");
+                Assert.AreEqual(reach, config.FrontRadiusAt(1f, reach), 1e-3f,
+                    $"at reach {reach} a progress of 1 no longer puts the front at the full reach — the ripple " +
+                    "would stop short of the volume the blast actually reached.");
+            }
+        }
+
+        [Test]
+        public void TheFirstFrameIsSILENT_SoTheResidencySwapIsInvisible()
+        {
+            // The ordering the whole invisible-swap contract rests on, now that the carrier is a
+            // blast rather than a round in flight. AOEExplosion.Initialize/Detonate run a frame
+            // BEFORE ExplodeAsync's expansion loop does (it awaits its delay first), so the carrier
+            // answers true at progress 0 for exactly one frame — and on that frame the published
+            // strength is the envelope at 0, which is exactly zero. PrismWake.Flush swaps every
+            // prism in the blast's volume to the high-poly mesh on that frame, where the map provably
+            // moves nothing. A carrier that only began answering once it was moving would hand those
+            // prisms the dense mesh with their vertices already displaced, and they would pop.
+            Assert.AreEqual(0f, PrismWakeConfigSO.FrontEnvelope(0f), 0f,
+                "FrontEnvelope(0) is not exactly zero — the residency swap frame would displace vertices.");
+            Assert.AreEqual(0f, PrismWakeConfigSO.FrontEnvelope(1f), 0f,
+                "FrontEnvelope(1) is not exactly zero — the front would blink out at the edge of the blast.");
+
+            string blast = CodeOf(BlastPath);
+            Assert.IsTrue(blast.Contains("_expansion01 = 0f;"),
+                "AOEExplosion.Initialize no longer zeroes _expansion01, so a re-used blast would answer a stale " +
+                "progress on its first frame and the residency swap would happen mid-sweep.");
+            Assert.IsTrue(blast.Contains("_expansion01 = ease;"),
+                "AOEExplosion no longer publishes its eased expansion as the front's progress — the ripple would " +
+                "stop tracking the blast's own wavefront.");
+
+            // And the engage ease must NOT be re-authored: on a 0.15 s detonation it is pure
+            // attenuation, because the envelope's C1 zero at birth already IS the engage.
+            var config = ResolveConfig();
+            Assert.AreEqual(0f, config.EngageSeconds, 1e-6f,
+                "PrismWakeConfig.EngageSeconds is non-zero again. The warhead blast sweeps for 0.15 s and the " +
+                "front's own envelope is already zero — value and slope — at birth, so an engage ease only ever " +
+                "holds the front below full depth for the whole event (at the old 0.15 s it never reached half).");
+            Assert.Greater(config.ReleaseSeconds, 0f,
+                "PrismWakeConfig.ReleaseSeconds is 0. This one earns its keep where the engage does not: a blast " +
+                "cancelled mid-sweep by a turn end freezes with the envelope at full value, and that must fade " +
+                "rather than blink.");
         }
 
         [Test]
         public void NothingButTheHeavyWarheadIsGrantedAFront()
         {
             Assert.IsTrue(File.Exists(VesselControllerPath), $"{VesselControllerPath} is missing.");
-            string vessel = File.ReadAllText(VesselControllerPath);
+            string vessel = CodeOf(VesselControllerPath);
 
             // The wake shipped on every vessel for one playtest and was pulled: a ripple behind
             // every hull is wallpaper, and the high-poly residency budget is SHARED, so a
@@ -395,27 +520,91 @@ namespace CosmicShore.Tests
             // ball is in play for a whole match, so its front was continuous, and a shockwave that
             // never stops is not an event. Its own file records the ruling; this is the gate.
             Assert.IsTrue(File.Exists(BallPath), $"{BallPath} is missing.");
-            string ball = File.ReadAllText(BallPath);
+            string ball = CodeOf(BallPath);
             Assert.IsFalse(ball.Contains("AddComponent<PrismWakeSource>()"),
                 "AstroLeagueBall grants a PrismWakeSource again — a ball is in play for a whole match, so its " +
                 "front would be continuous, which is exactly what got it pulled.");
             Assert.IsFalse(ball.Contains("IPrismWakeCarrier"),
                 "AstroLeagueBall implements IPrismWakeCarrier again — it is not a shockwave carrier.");
 
+            // The MISSILE IN FLIGHT was the third carrier and went the same way one step further
+            // down: a front trailing a travelling object read as a WAKE, which is a texture the round
+            // wears, and the round is in the air for seconds. The front belongs to the thing the round
+            // is carrying.
             Assert.IsTrue(File.Exists(ProjectilePath), $"{ProjectilePath} is missing.");
-            string projectile = File.ReadAllText(ProjectilePath);
-            Assert.IsTrue(projectile.Contains("IPrismWakeCarrier"),
-                "Projectile no longer implements IPrismWakeCarrier — nothing would answer for the round's blast " +
-                "reach, and PrismWakeSource has no fallback (inventing a radius the blast does not have is the " +
-                "one thing a front must never do).");
-            Assert.IsTrue(projectile.Contains("AddComponent<PrismWakeSource>()"),
-                "Projectile no longer grants itself a PrismWakeSource, so nothing publishes the skyburst's front.");
+            string projectile = CodeOf(ProjectilePath);
+            Assert.IsFalse(projectile.Contains("AddComponent<PrismWakeSource>()"),
+                "Projectile grants itself a PrismWakeSource again — a front on the round in flight is a wake, " +
+                "which is what got it moved to the warhead BLAST (Docs/PRISM_ANIMATION.md §4.7.3).");
+            Assert.IsFalse(projectile.Contains("class Projectile : MonoBehaviour, IPrismWakeCarrier"),
+                "Projectile implements IPrismWakeCarrier again — the round in flight is not the carrier; its " +
+                "warhead blast is.");
+
+            // THE ONE CARRIER. The blast answers the capability itself, and it is granted a source at
+            // the single site that knows which of the ~dozen AOEExplosion instances the game spawns
+            // is THE WARHEAD. Both halves are required: a blast that answers and is never granted a
+            // source publishes nothing, and a grant with nothing answering does nothing at all
+            // (PrismWakeSource has no fallback, because inventing a radius the blast does not have is
+            // the one thing a front must never do).
+            Assert.IsTrue(File.Exists(BlastPath), $"{BlastPath} is missing.");
+            string blast = CodeOf(BlastPath);
+            Assert.IsTrue(blast.Contains("AOEExplosion : ElementalShipComponent, IPrismWakeCarrier"),
+                "AOEExplosion no longer implements IPrismWakeCarrier — nothing would answer for the warhead's " +
+                "reach or its wavefront progress, and the front would never publish.");
+            Assert.IsTrue(blast.Contains("public virtual bool TryGetShockwave"),
+                "AOEExplosion.TryGetShockwave is no longer VIRTUAL. It reads MaxScale through the authored " +
+                "collider radius, which is a radius only for a SPHERE — the conic and cylindrical blasts must be " +
+                "able to refuse in code rather than be trusted never to be granted a source.");
+
+            Assert.IsTrue(File.Exists(DetonatorPath), $"{DetonatorPath} is missing.");
+            string detonator = CodeOf(DetonatorPath);
+            Assert.IsTrue(detonator.Contains("AddComponent<PrismWakeSource>()"),
+                "ProjectileDetonatorSO no longer grants the warhead blast a PrismWakeSource, so nothing publishes " +
+                "the skyburst's shockwave front at all.");
+            // The grant must sit INSIDE the warhead branch. One indentation level out and every
+            // blast the detonation spawns gets a front — the prism cairn and the skyburst cone
+            // included, which is four fronts sharing one budget for one detonation.
+            int warheadAt = detonator.IndexOf("proj.WarheadBlast", System.StringComparison.Ordinal);
+            int grantAt   = detonator.IndexOf("AddComponent<PrismWakeSource>()", System.StringComparison.Ordinal);
+            Assert.Greater(warheadAt, 0, "ProjectileDetonatorSO no longer spawns the warhead blast.");
+            Assert.Greater(grantAt, warheadAt,
+                "ProjectileDetonatorSO grants the PrismWakeSource before it reaches the warhead branch — every " +
+                "blast in the detonation would get a front, and they SHARE one residency budget.");
+
+            // The two non-spherical shapes refuse in CODE. A rule enforced by which prefab somebody
+            // dropped a component onto is not enforced by the code.
+            foreach (var path in new[] { ConePath, CylinderPath })
+            {
+                Assert.IsTrue(File.Exists(path), $"{path} is missing.");
+                Assert.IsTrue(CodeOf(path).Contains("public override bool TryGetShockwave"),
+                    $"{path} no longer refuses a shockwave front. Its MaxScale is not a radius — the cone's is a " +
+                    "base diameter across the gape axis and the plate's is a diameter with its length on a " +
+                    "separate dial — so an inherited answer draws a sphere of the wrong size around the wrong " +
+                    "thing.");
+            }
+        }
+
+        [Test]
+        public void TheCarrierBlastTOUCHESNoPrismMass()
+        {
+            // The reason this front is honest rather than a lie, and it is an authored fact rather
+            // than an argument: the warhead's whole payload is aimed at LIVING things (it debuffs
+            // pilots and jousts creatures) and it authors affectsPrisms: 0. So the prisms ripple as
+            // the shockwave crosses them and are still standing afterwards, which is exactly what
+            // happened to them. A blast that DESTROYED the mass it rippled would be saying the same
+            // thing twice, and the ripple would be the less legible of the two.
+            Assert.IsTrue(File.Exists(WarheadPrefab), $"{WarheadPrefab} is missing.");
+            string warhead = File.ReadAllText(WarheadPrefab);
+            Assert.IsTrue(Regex.IsMatch(warhead, @"affectsPrisms:\s*0"),
+                "AOEMissileWarhead.prefab now affects prism MASS. The shockwave front was granted to it because " +
+                "it does not: a blast that destroys what it ripples says the same thing twice, and the ripple " +
+                "would be describing mass that is no longer there (Docs/PRISM_ANIMATION.md §4.7.3).");
         }
 
         [Test]
         public void TheWarheadIsTheDiscriminator_NotAnAuthoredFlag()
         {
-            string projectile = File.ReadAllText(ProjectilePath);
+            string projectile = CodeOf(ProjectilePath);
 
             // THE SPARROW'S TWO MISSILES ARE ONE PREFAB AND ONE POOL, told apart by a per-shot
             // ProjectilePayload — so a prefab bool cannot discriminate them and `leavesWake` had to
@@ -424,8 +613,17 @@ namespace CosmicShore.Tests
             // "gate on the warhead" is the exact discriminator with nothing new authored anywhere —
             // the same no-op argument Projectile.PublishFuzeLit already makes for itself.
             Assert.IsTrue(projectile.Contains("WarheadBlastRadiusMultiplier"),
-                "Projectile.TryGetShockwaveReach no longer reads WarheadBlastRadiusMultiplier — the front would " +
-                "stop being gated on there being a warhead at all.");
+                "Projectile no longer exposes WarheadBlastRadiusMultiplier — the warhead blast is spawned behind " +
+                "that gate, so the front would stop being gated on there being a warhead at all.");
+
+            // The discriminator did not move with the carrier, and that is the point: the warhead
+            // BLAST only ever exists on a heavy shot, because the one site that spawns it is already
+            // fenced by Payload.ArmWarhead through this multiplier. So "the heavy skyburst and nothing
+            // else" still falls out of the weapon rather than out of a bool somebody has to set.
+            string detonatorSrc = CodeOf(DetonatorPath);
+            Assert.IsTrue(detonatorSrc.Contains("proj.WarheadBlastRadiusMultiplier > 0f"),
+                "ProjectileDetonatorSO no longer gates the warhead on its radius multiplier — the base rocket " +
+                "would spawn a warhead blast, and with it a shockwave front it is not supposed to have.");
             Assert.IsFalse(projectile.Contains("leavesWake"),
                 "Projectile carries a `leavesWake` field again. The base and heavy rockets share ONE prefab and " +
                 "ONE pool (ProjectilePayload), so an authored bool grants the front to BOTH — gate on the " +
@@ -455,13 +653,14 @@ namespace CosmicShore.Tests
         {
             Assert.IsTrue(File.Exists(SourcePath), $"{SourcePath} is missing.");
             Assert.IsTrue(File.Exists(CarrierPath), $"{CarrierPath} is missing.");
-            string src = File.ReadAllText(SourcePath);
-            string carrier = File.ReadAllText(CarrierPath);
+            string src = CodeOf(SourcePath);
+            string carrier = CodeOf(CarrierPath);
 
-            Assert.IsTrue(carrier.Contains("TryGetShockwaveReach"),
-                "IPrismWakeCarrier no longer asks for a REACH. It used to ask for a velocity and a radius, and " +
+            Assert.IsTrue(carrier.Contains("bool TryGetShockwave(out float reach, out float progress01)"),
+                "IPrismWakeCarrier no longer asks for a REACH and a PROGRESS. It used to ask for a velocity, and " +
                 "the speed window that came with that is what made the first cut invisible — its engage speed " +
-                "sat above the top speed of the hull that flew it.");
+                "sat above the top speed of the hull that flew it. The progress is what makes the front the " +
+                "blast's OWN wavefront instead of a pulse running beside it.");
             Assert.IsTrue(src.Contains("IPrismWakeCarrier"),
                 "PrismWakeSource no longer resolves a carrier — it would be back to reading one concrete type.");
             Assert.IsFalse(src.Contains("IVesselStatus"),
@@ -481,26 +680,29 @@ namespace CosmicShore.Tests
             // flight has to be dropped on reuse — otherwise the first frame publishes a front from
             // the previous detonation's reach around this launch bay.
             Assert.IsTrue(src.Contains("void OnEnable()"),
-                "PrismWakeSource no longer resets on enable — a pooled carrier would inherit the previous " +
-                "flight's pulse phase and reach.");
+                "PrismWakeSource no longer resets on enable — a pooled carrier would inherit the previous life's " +
+                "progress and reach.");
             Assert.IsTrue(Regex.IsMatch(src, @"void OnEnable\(\)[\s\S]{0,600}?_reach = 0f"),
-                "PrismWakeSource.OnEnable no longer clears its cached reach, so a reissued round would publish " +
-                "the previous detonation's blast radius for a frame.");
-            Assert.IsTrue(Regex.IsMatch(src, @"void OnEnable\(\)[\s\S]{0,600}?_pulse = 0f"),
-                "PrismWakeSource.OnEnable no longer restarts the pulse clock, so a reissued round's first front " +
-                "would appear part-way out instead of at the round's own skin.");
+                "PrismWakeSource.OnEnable no longer clears its cached reach, so a re-used carrier would publish " +
+                "the previous blast's radius for a frame.");
+            Assert.IsTrue(Regex.IsMatch(src, @"void OnEnable\(\)[\s\S]{0,600}?_progress = 0f"),
+                "PrismWakeSource.OnEnable no longer clears its cached progress, so a re-used carrier's first " +
+                "frame would publish a front part-way out — which is a frame with a NON-ZERO strength, and that " +
+                "is the frame the residency pass swaps prisms in on.");
         }
 
         [Test]
         public void TheFrontAndTheFuzeLitSphereAreOnePair()
         {
-            // The two halves of the same weapon and the reason neither duplicates the other: the
-            // armed fuze publishes a LIT SPHERE (Docs/LIT.md) that says WHERE this warhead will go
-            // off, statically, in the shooter's domain colour; the front says HOW FAR, kinetically,
-            // by sweeping out to the warhead's own radius. Two channels of the surface description,
-            // one round. If the lit half is ever dropped the front is the only read left and this
-            // pairing needs re-arguing rather than silently becoming a solo effect.
-            string projectile = File.ReadAllText(ProjectilePath);
+            // The two halves of the same weapon and the reason neither duplicates the other, now
+            // separated in TIME as well as in channel: on the way IN the armed fuze publishes a LIT
+            // SPHERE (Docs/LIT.md) that says WHERE this warhead will go off, statically, in the
+            // shooter's domain colour; WHEN it goes off the blast's own front says HOW FAR,
+            // kinetically, in vertices, by sweeping that same volume. A promise and its payoff, drawn
+            // on the same mass. If the lit half is ever dropped the front is the only read left, and
+            // it arrives too late to be a warning — so this pairing needs re-arguing rather than
+            // silently becoming a solo effect.
+            string projectile = CodeOf(ProjectilePath);
             Assert.IsTrue(projectile.Contains("PublishFuzeLit"),
                 "Projectile no longer publishes its armed fuze as a LIT volume — the shockwave front was " +
                 "designed as the kinetic half of that pair (Docs/PRISM_ANIMATION.md §4.7.3, Docs/LIT.md).");

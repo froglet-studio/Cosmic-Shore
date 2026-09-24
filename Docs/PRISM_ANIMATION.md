@@ -1982,22 +1982,30 @@ cradle".
 
 The cradle's sibling, built with the `/prism-morph` skill the cradle's history produced, and the
 first member of that family chosen from the skill's own candidate list rather than from a bug. Like
-the cradle it moves **vertices**; unlike it, it belongs to no vessel — and, after three playtests,
+the cradle it moves **vertices**; unlike it, it belongs to no vessel — and, after four playtests,
 to exactly one object in the game.
 
-A warhead in flight throws a pulse outward through the mass it is passing: a thin spherical **shell**
-of rippled prisms, born at the round's own skin and travelling out to the exact radius that
-warhead's blast will reach, over and over, all the way in. The shell is not decoration — **it is the
-blast's own reach, drawn on the mass rather than on the HUD**, so a pilot flying at the thing can
-read how far it goes off before it does.
+A **detonating warhead** throws its own wavefront outward through the mass around it: a thin
+spherical **shell** of rippled prisms, born at the shell's own half-thickness and travelling out to
+the exact radius that blast reaches, **once**, as the blast expands. The shell is not decoration —
+**it is the blast's own volume, drawn on the mass rather than on the HUD**.
 
-**It is half of a PAIR, and the pair is the point.** The same round publishes its armed fuze volume
-as a **LIT SPHERE** (`Docs/LIT.md`, `Projectile.PublishFuzeLit`): mass standing where this warhead
-*will* go off, in the shooter's domain colour. That says **WHERE**, statically, in colour. This says
-**HOW FAR**, kinetically, in motion. Two channels of the surface description (colour and vertices),
-one weapon, and neither duplicating the other — which is also the constraint the design was cut
-against: the lit sphere already existed and already answered the static question, so a second static
-read would have been wallpaper on top of information.
+**And it is honest precisely BECAUSE that blast touches no prism mass.** The 10-point warhead
+shockwave is the one blast in the skyburst's detonation whose whole payload is aimed at LIVING things
+— it debuffs pilots and jousts creatures, and it authors `affectsPrisms: 0` — so until now it had no
+expression in the arena at all beyond a translucent sphere flashing for 0.15 s. The prisms ripple as
+the shockwave crosses them and are **still standing afterwards**, which is exactly what happened to
+them. A blast that *destroyed* the mass it rippled would be saying the same thing twice, and the
+ripple would be the less legible of the two.
+
+**It is half of a PAIR, and the pair is the point — now separated in TIME as well as in channel.**
+On the way IN, the round publishes its armed fuze volume as a **LIT SPHERE** (`Docs/LIT.md`,
+`Projectile.PublishFuzeLit`): mass standing where this warhead *will* go off, in the shooter's domain
+colour. That says **WHERE**, statically, in colour. **WHEN** it goes off, the blast's own front says
+**HOW FAR**, kinetically, in vertices. A promise and its payoff, drawn on the same mass. Two channels
+of the surface description, one weapon, and neither duplicating the other — which is also the
+constraint the design was cut against: the lit sphere already existed and already answered the static
+question, so a second static read would have been wallpaper on top of information.
 
 **It belongs to ONE object, and the three playtests are why.** It shipped on every vessel, bound
 where the corridor and the speed tunnel bind, and the verdict was *"in this state this is an awesome
@@ -2006,8 +2014,14 @@ nothing measurable would have produced it: the per-vessel grant was cheap, corre
 structurally un-omittable, and it was still wrong. **An effect this strong is an EVENT, and an event
 that happens continuously behind everyone is a texture.** It then spent one branch on two carriers —
 the Sparrow's skyburst missile and the Scarab's ball — and the ball was pulled for the same reason
-one step down: **a ball is in play for a WHOLE MATCH**, so its ripple was continuous too. What
-survives is the object whose front carries information nobody can get any other way.
+one step down: **a ball is in play for a WHOLE MATCH**, so its ripple was continuous too. Then the
+**missile IN FLIGHT** went the same way, one step further down again, and on a playtest that
+*approved* it — *"this was surprisingly performant when interacting with many prisms. I could see the
+pulses as a **wake** for the travelling heavy prism."* The word is the verdict: a front trailing a
+travelling object is a wake, a wake is a texture, and the round is in the air for seconds. What
+survives is the **detonation** — 0.15 s, once, at the moment the weapon actually does something.
+*Three carriers were each individually good and each wrong for the same reason, which is the whole
+lesson: the question is never "does this look good on the thing", it is "is the thing an EVENT".*
 
 There is a second, quantitative half to the same call: the high-poly residency budget
 (`maxResidentPrisms`) is **shared and split evenly across every live front**, so a per-carrier grant
@@ -2026,22 +2040,73 @@ all, and would have granted the front to the cheap wing rocket as well. What can
 authored **zero on every non-skyburst prefab in the fleet** — so *"the heavy skyburst and nothing
 else"* falls out of the weapon rather than out of a flag somebody has to remember to set. It is the
 same no-op argument `PublishFuzeLit` already makes for itself, which is the tell that the two halves
-belong together. `EnsureWakeSource` reads the AUTHORED multiplier (there is no payload at `Awake`,
-and both variants come out of the same pool); the per-FLIGHT answer belongs to
-`TryGetShockwaveReach`, which the source asks every frame. *General rule: when two variants of one
-thing share a prefab and a pool, a prefab field is not a discriminator — find the gameplay quantity
-that already differs.*
+belong together. **The discriminator did not have to move with the carrier**, which is the cheapest
+part of the whole change: the warhead BLAST only ever exists on a heavy shot, because the one site
+that spawns it (`ProjectileDetonatorSO`) is *already* fenced by that multiplier — so granting the
+front there inherits the gate with nothing new to author and nothing new to keep in step. *General
+rule: when two variants of one thing share a prefab and a pool, a prefab field is not a discriminator
+— find the gameplay quantity that already differs, and then prefer to hang new behaviour off the site
+that already asks it.*
 
-**A carrier is a CAPABILITY, never a type** (`IPrismWakeCarrier`), and it answers with a **REACH**.
-`PrismWakeSource` knows nothing about missiles: it asks whichever component on its own object answers
-that interface. The interface used to ask for a VELOCITY and a radius, and the speed window that came
-with that is what made the first cut invisible (below). A warhead's criterion was never speed — it is
-*am I carrying a blast, and how big is it* — so there is now **no speed window at all**, and
+**A carrier is a CAPABILITY, never a type** (`IPrismWakeCarrier`), and it answers with a **REACH**
+and a **PROGRESS**. `PrismWakeSource` knows nothing about explosions: it asks whichever component on
+its own object answers that interface. The interface used to ask for a VELOCITY, and the speed window
+that came with that is what made the first cut invisible (below). A blast's criterion was never speed
+— it is *is there a blast, and how big is it* — so there is **no speed window at all**, and
 deliberately **no fallback**: with nothing answering, the component does nothing. The cylinder cut
 measured a transform delta when the interface was absent; for a front the equivalent fallback would
 have to invent the one number that must not be invented, a radius the blast does not actually have.
-The reach is asked **every frame** rather than cached, because a skyburst swells up to **20×** in the
-first fifth of its flight as MASS scales it and the warhead swells with it.
+Both are asked **every frame** rather than cached — the progress obviously moves, and the reach is
+live because a carrier is entitled to resize (the previous carrier's warhead radius grew **20×** in
+flight as MASS scaled the round).
+
+**THE FRONT HAS NO CLOCK OF ITS OWN, and that is what the carrier move bought.** A round in flight
+had no wavefront, so the source integrated one at an authored `pulsesPerSecond` — a front leaving the
+round every 0.33 s, forever, all the way in. A detonating blast **already has** a travelling
+spherical front: its trigger volume expands from nothing to its full radius over its own authored
+duration, and `currentRadius = colliderRadius × MaxScale × ease` is the number its damage pass uses.
+So the position is **read** (`AOEExplosion.TryGetShockwave` hands over that same eased fraction) and
+the pulse rate is **retired outright** — field, accessor, `PrismWake.PulseRate` and all. *A rate
+authored beside a clock the carrier already owns is a second answer to one question, and the two
+drift: the ripple would arrive at a prism before or after the blast that is supposed to be causing
+it.* What the source still owns is the mapping into the shell's legal travel band
+(`FrontRadiusAt`, which floors the front at σ) — and that division of labour is load-bearing rather
+than tidy: **a carrier reports a progress, never a radius**, so it cannot hand over a front position
+that breaks the no-fold proof. An expanding blast honestly starts at radius **0**, and a front there
+would straddle its own centre.
+
+**The FIRST FRAME is silent, and the whole invisible-swap contract now rests on it.**
+`AOEExplosion.ExplodeAsync` awaits its delay before its first expansion frame, so the blast exists
+for one frame with its progress still exactly 0 — and `FrontEnvelope(0)` is exactly zero, value and
+slope. That is the frame `PrismWake.Flush` hands every prism in the blast's volume the high-poly
+mesh, and the map provably moves nothing on it. On the travelling carrier this held *statistically*
+(the shell is thin, so a prism swapped in at reach-range was almost always somewhere the front was
+not); here it holds **structurally**, which is strictly better and is why the interface's contract
+says a carrier must answer true at progress 0 *before* its front starts moving. A carrier that only
+began answering once it was moving would hand those prisms the dense mesh with their vertices already
+displaced, and they would pop.
+
+**Two consequences of the swap, stated rather than buried.** The **engage ease is authored 0** — the
+envelope's C1 zero at birth already *is* the engage, and on a 0.15 s event a second one is pure
+attenuation (at the old 0.15 s engage the front never reached half depth). The release ease is kept,
+because a blast cancelled mid-sweep by a turn end freezes with the envelope at full value and that
+must fade rather than blink. And a documented **imprecision is retired by construction**: while the
+carrier was the round, the front was a sphere about a MOVING centre, so a pulse launched a moment
+earlier was re-centred on where the round was *now* — an error no closed-form map can fix without
+per-pulse history. A detonation does not move. *The honest cost in the other direction is TEMPO:*
+the sweep is **0.15 s**, about nine frames at 60 FPS, once per heavy rocket — a hard whump rather
+than a rhythm, and much cheaper than the old continuous draw (the residency set is 128 prisms around
+a stationary point for nine frames instead of churning along a flight path for seconds). If it reads
+as too fast, the dial is the warhead prefab's own `ExplosionDuration`, and moving it is a
+**gameplay** change — it sets how fast the debuff volume reaches a victim, and how much time a victim
+has to leave it — so it wants a playtest rather than a quiet edit.
+
+**The two non-spherical blast shapes refuse in CODE.** `AOEExplosion.TryGetShockwave` reads
+`MaxScale` through the authored collider radius, which is a radius only for a sphere: on
+`AOEConicExplosion` it is the capsule's base diameter across the gape axis, and on
+`AOECylindricalExplosion` the plate's diameter with its length on a separate dial. Both override it
+to return false, rather than being trusted never to be granted a source — *a rule enforced by which
+prefab somebody dropped a component onto is not enforced by the code.*
 
 **Spherical, not cylindrical, and the frame follows the FORCE.** The cylinder framed this about the
 path a fast vessel had just flown, because a wake is about a path. A warhead's force is not about a
@@ -2076,7 +2141,7 @@ complete wavelet rather than one cut off mid-swing.
 which made displacement grow with distance from the path — correct for a 30-unit reach and wrong for
 a 95-unit one, where the outermost mass would move **40 units**. Here the displacement is `σ·A·w·P`,
 **bounded by `σ·A` everywhere**: a front of a given thickness carries a ripple of a given depth,
-which is what a front is. The strain map's one real virtue is kept for free — the round's centre is
+which is what a front is. The strain map's one real virtue is kept for free — the blast's centre is
 still a fixed point, because the shell is born at `c = σ` and so never reaches it.
 
 **NO FOLD is proven, and ONE condition does both halves.** The map folds if the radial stretch
@@ -2115,11 +2180,11 @@ and re-acquire all 128 high-poly overrides 3 times a second. The SOURCE decides 
 having a shockwave, and it calls `Clear`.
 
 **Residency.** `PrismWake` runs the same pass the cradle does, against the front's own volume — and
-**residency is the REACH, not the shell**: the query is a sphere at the round's centre of radius
+**residency is the REACH, not the shell**: the query is a sphere at the blast's centre of radius
 `reach + σ + margin` (`PrismWakeConfigSO.ResidencyRadiusFor`), because the shell is travelling and a
 prism the front has not reached yet must already be carrying the dense mesh when it arrives. **The σ
 in that sum is not padding.** The front dies AT the reach and the shell reaches σ past its own centre,
-so the outermost displaced vertex of a pulse's last frame sits at `reach + σ` — and the margin is an
+so the outermost displaced vertex of the sweep's last frame sits at `reach + σ` — and the margin is an
 ABSOLUTE distance while the shell is a FRACTION of the reach, so "the margin covers the overshoot"
 holds at one authored pair and silently stops holding at the next: it was true by **0.2 of a unit** at
 the first cut's `0.25 / 24 u` pair and false by **19 units** the first time the shell was thickened,
@@ -2155,8 +2220,8 @@ wirer per morph forever, which is a defect amplifier rather than a fix.*
 properties on randomized inputs under a real non-uniform model matrix: identity with no live slot;
 identity outside the shell on **both faces separately** (6,000 vertices inside the inner face and
 6,000 beyond the outer one, counted separately so a support that collapsed on one side cannot pass on
-the other's strength — and the inner half is what makes the round's centre a fixed point); **radial
-purity** (direction from the round held to 1-dot `2.4e−7`, and the displacement measured at most
+the other's strength — and the inner half is what makes the blast's centre a fixed point); **radial
+purity** (direction from the blast held to 1-dot `2.4e−7`, and the displacement measured at most
 **0.890** of `σ·A·w`, which is `max|P|` for `Q = 1` and confirms the bound is real rather than
 generous); **BANDWIDTH** — exactly `4Q−1` sign changes of the displacement along a radial sweep, all
 at the radii `s = j/(2Q)`, over 600 sweeps at `Q = 1..3`, i.e. one wavelet and not a train; **no
@@ -2718,7 +2783,7 @@ Phase C — rogue paths & ecosystem visuals (each is standalone):
 | C15 | `ShapeDrawingManager` shrink-to-outline — per-frame `transform.position`/`localScale` Lerp, no render-bridge / spatial-index sync; **no §5 row**, so every sweep missed it | ✅ 2026-08-25: **resolved by deletion** (Prompt 15), the C4/C10 outcome. Unreachable — GUID `d375b1129a0a4e29b505296c9e510bdc` lived only on its own `.meta` after `MinigameFreestyle.unity` was removed. Exclusive dependents deleted with it: `ShapeDrawingCrystalManager`, `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData` (all GUID-only-on-own-meta). **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events `EventOnShapeGameModeStarted` (`8484be0c8df25b94a9e0ba29131f8dc3`) / `EventOnShapePrismReturnToPool` (`33f47a5e536b78442a7f206db3ad7929`) — still wired on live prism prefabs to `Prism.ReturnToPool`; only the deleted manager `Raise()`d them; **never Raise them**; do not strip the EventListeners. Migrating a path nothing can execute would have shipped an untested clock path. |
 | C16 | A LIVING health prism stands still while the limb it is bolted to bends — the lockup that reads as one creature comes apart | ✅ SHIPPED 2026-09-16 — new `PrismSway` (its own `PrismSway.hlsl`, which `#include`s `SpindleSway.hlsl` so the prism and the limb share the two wave constants rather than each carrying a copy) + `_SwaySpanX`/`_SwaySpanY`/`_SwayAxis`/`_SwayTiming` (Hybrid Per Instance, wired into **both** live-prism graphs by `Tools/Shaders/wire_prism_sway.py`, spliced immediately AFTER `PrismShieldMorph` so the two compose) + `PrismRenderService.StampSway`/`ClearSwayStamp` + `PrismSway` (the bake and the stamp site) + `Prism.OnCreationComplete` (a new one-line virtual — the stamp cannot live in `Initialize`, which runs before the companion entity exists and before `AssembledFlora` has re-parented the prism onto its spindle). The prism reads the LIMB'S OWN shear field evaluated at its own vertices, so the two move together **bit-identically** rather than approximately; `verify_prism_sway.py` T3 asserts exactly that against `SpindleSway`, which is why the limb height is folded into the span BEFORE the sine. Everything stamped is a constant of the attachment, so there is no start time, no duration and no per-frame CPU. A ZERO span is the exact no-op and is the default, so trails, authored environments and the skeleton a dead lifeform leaves behind (`HealthPrism.LeaveAsSkeleton` clears the stamp) are unchanged — which is the feature: **living mass is the mass that moves**. Design, the four proof layers and the instance-data cost: `Docs/ECOSYSTEM.md` §47 |
 | C17 | The Urchin's CRADLE — the mass around a RIDING Urchin drapes onto its hull (a per-frame, per-prism deformation that a per-prism material write would have made a §1 violation) | ✅ SHIPPED 2026-09-16 as the THIRD §4.7 global-uniform citizen (§4.7.2); **RE-CUT 2026-09-22 from a per-triangle rigid motion to a high-poly radial DRAPE** after the per-face and per-wedge cuts were both rejected on look (*"this looks terrible"* → a 10x tone-down → *"really bad to the point i put this down"*) — a deformation is only as smooth as the surface it moves, and 24 triangles is not a surface. Now: `HighPolyPrismMesh` (the identical solid subdivided 16x per face axis, 3,072 tris, SHARED so the swapped prisms still batch) + `PrismCradle`'s residency pass (`Prism.SetRenderMeshOverride` on the nearest prisms within `hullRadius + drapeReach + residencyMargin` — a STATE CHANGE, final at the instant it is applied, like a shield engaging, and budgeted at 24 prisms; it declines any prism already holding an override and only clears one that is still its own) + `PrismCradle.hlsl` (`PrismCradleDeform`, VERTEX stage, 4 slots — the object-space Tangent Vector the wedge cut needed is GONE, the map reads only world position and normal — spliced LAST on both live graphs by `Tools/Shaders/wire_prism_cradle.py`, whose migration is now written against slot DIRECTIONS so it runs in both directions and sweeps the feeder nodes an old signature orphaned) + `PrismCradleSource` (ensured on every Urchin by `GunVesselTransformer.Initialize`, gated on `IsRiding`) + `PrismCradleConfigSO` (`Resources/PrismCradleConfig`: 6 u drape reach, exponent 1.5, max strength **1**, subdivision 16, 24 resident prisms, 2 u residency margin, 0.25 s in / 0.4 s out). The map is ONE line — `p' = U + dir·(d − s·k(s)·w)` — with a falloff C1 at both ends (no seam) and the ANALYTIC inverse-transpose for the normal (the cheap lerp-toward-the-sphere-normal shortcut pops where `n·dir` crosses zero, which is a line down the middle of the ridden prism's side faces). Proven by `Tools/Shaders/verify_prism_cradle.py` (clang++ over the SHIPPED file: identity off/beyond reach, the wrap onto the surface along the outward radial, the lip never past the surface and never folding, radial purity, the normal proven by CONVERGENCE RATE — halving the patch quarters the error, 0.32 → 0.0058 — no seam at the reach, affine in the weight, dominant slot, plus a negative control that PLATEAUS at 0.74 with the radial Jacobian term neutered). Not run in the editor. |
-| C18 | The SHOCKWAVE FRONT — a thin spherical shell of rippled prisms travelling out from a warhead in flight to the exact radius its blast will reach (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-24 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of two float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live fronts, query = a plain sphere at the round's centre of radius `reach + σ + margin`, because residency is the REACH and not the shell: a prism the front has not reached yet must already carry the dense mesh when it arrives — and σ is in that sum because the front dies AT the reach while the shell reaches σ past its own centre, a `margin ≥ σ` coincidence that held by 0.2 of a unit at the first cut and broke by 19 the first time the shell was thickened) + `PrismWakeSource` (which INTEGRATES the pulse clock, so the shell keeps travelling smoothly while the reach grows under it) + `IPrismWakeCarrier` (the capability it asks for a REACH — **granted to ONE object**: the Sparrow's HEAVY skyburst, gated on `Projectile.WarheadBlastRadiusMultiplier`, which is already 0 on the base rocket via `ProjectilePayload` and 0 on every non-skyburst prefab, so the discriminator needed NO authored field — the two rockets are one prefab and one pool, so the previous cut's `leavesWake` bool could not have told them apart at all) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.143 = 90% of the folding bound at Q=1, `wavesInFront` 1, half-thickness 0.45 of the reach, 3 pulses/s, subdivision 10, 128 resident prisms ≈ 153.6k triangles, 24 u margin, 0.15 s in / 0.35 s out — **OVERTUNED to the structural ceiling on its first playtest**, *"i couldn't see it at all"*: both dials went to their bounds (5.45 u peak ripple in a 42.8 u shell, 1.98× the first cut) and the triangle budget was RE-SPENT on count rather than raised, 128×10 = 153.6k against 96×12 = 165.9k, because what could not be seen is prisms MOVING. The first thing checked was not the tuning: the heavy skyburst is the TURRET-STANCE shot (`armWarhead: 0` on the wing variant), so a rocket fired while flying publishes no front at all — correct by design, and the effect's whole discoverability problem). **It is half of a PAIR with the armed fuze's LIT SPHERE** (`Docs/LIT.md`, `Projectile.PublishFuzeLit`): the lit half says WHERE this warhead goes off, statically, in colour; the front says HOW FAR, kinetically, in vertices. Map: `f(r) = r + σ·A·w·(1−s²)²·sin(2πQs)` with `s = (r−c)/σ`, so the amplitude is ABSOLUTE (bounded by σ·A everywhere, where the cylinder's strain would have moved a 95 u reach's outer mass 40 u), the frame is spherical (no `_PrismWakeAxis`, no shear term in the Jacobian), and NO FOLD is ONE condition `A < 1/(2πQ)` DERIVED from the bandwidth. THREE playtests: the fleet grant was pulled (*'awesome effect, but it will be overused as a wake on every vessel'* — an event that happens continuously is a texture), the Scarab ball was pulled for the same reason one step down (a ball is in play for a whole match), and the cylinder's speed window is gone outright (engage 150 against a Squirrel that cruises at 54 — a window that never opens reads exactly like an effect that is too weak). Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file, ten properties: identity off and outside both shell faces separately, radial purity, BANDWIDTH = exactly 4Q−1 sign changes at s = j/(2Q), no fold over 2,160,720 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 5.1e−3 → 8.3e−5, no seam at either face, slot authority bit-exact, plus a negative control that PLATEAUS flat at 0.084 with the Jacobian's RADIAL STRETCH term neutered). Not run in the editor. |
+| C18 | The SHOCKWAVE FRONT — a thin spherical shell of rippled prisms travelling out from a detonating warhead blast to the exact radius that blast reaches (live per-frame data for every prism, so a per-prism material write would have made it a §1 violation) | ✅ SHIPPED 2026-09-24 as the FOURTH §4.7 global-uniform citizen and the SECOND high-poly vertex morph (§4.7.3), built with the `/prism-morph` skill. `PrismWake.hlsl` (`PrismWakeDeform`, VERTEX, 4 slots, a file-scope bank of two float4 arrays + one params vector) + `PrismWake` (the publisher and the residency pass — budget SPLIT EVENLY across live fronts, query = a plain sphere at the blast's centre of radius `reach + σ + margin`, because residency is the REACH and not the shell: a prism the front has not reached yet must already carry the dense mesh when it arrives — and σ is in that sum because the front dies AT the reach while the shell reaches σ past its own centre, a `margin ≥ σ` coincidence that held by 0.2 of a unit at the first cut and broke by 19 the first time the shell was thickened) + `PrismWakeSource` + `IPrismWakeCarrier` (the capability, asking a REACH and a PROGRESS) + `PrismWakeConfigSO` (`Resources/PrismWakeConfig`: amplitude 0.143 = 90% of the folding bound at Q=1, `wavesInFront` 1, half-thickness 0.45 of the reach, subdivision 10, 128 resident prisms ≈ 153.6k triangles, 24 u margin, **0 s in** / 0.35 s out). **GRANTED TO ONE OBJECT — the heavy skyburst's 10-POINT WARHEAD BLAST, at detonation** (`AOEExplosion.TryGetShockwave`, a source added at the one site that knows which blast is the warhead, `ProjectileDetonatorSO`). The blast touches no prism mass at all (`affectsPrisms: 0`, its whole payload aimed at pilots and creatures), which is what makes the ripple honest: the prisms are still standing afterwards, which is what happened to them. **FOUR playtests, and three carriers were each individually good and wrong for one reason** — the fleet grant (*'awesome effect, but it will be overused as a wake on every vessel'*), the Scarab ball (in play for a whole match), and the missile IN FLIGHT, pulled on a playtest that APPROVED it: *'I could see the pulses as a **wake** for the travelling heavy prism'* — the word is the verdict, a front trailing a travelling object is a texture. The question is never *does this look good on the thing*, it is *is the thing an EVENT*. **The front consequently has NO CLOCK of its own**: a blast already has an expanding wavefront (`colliderRadius × MaxScale × ease`, the number its damage pass uses), so the position is READ and `pulsesPerSecond` / `PrismWake.PulseRate` are retired outright — a rate beside a clock the carrier owns is a second answer to one question and the two drift. The carrier reports a PROGRESS, never a radius, so it cannot break the no-fold proof (a blast honestly starts at radius 0). **The FIRST FRAME is silent by construction** — `ExplodeAsync` awaits its delay, so the blast exists one frame at progress 0 where `FrontEnvelope(0)` is exactly 0, which is the frame the residency swap happens on; what held statistically on the travelling carrier now holds structurally. Engage ease → 0 (the envelope's C1 zero at birth IS the engage); the round's moving-centre imprecision is retired (a detonation does not move); the honest cost is TEMPO, a 0.15 s sweep ≈ nine frames at 60 FPS, whose only dial is the warhead prefab's `ExplosionDuration` and that is a GAMEPLAY change. The two non-spherical blast shapes (`AOEConicExplosion`, `AOECylindricalExplosion`) refuse in CODE rather than relying on nobody granting them a source. **It is half of a PAIR with the armed fuze's LIT SPHERE** (`Docs/LIT.md`, `Projectile.PublishFuzeLit`), now separated in time too: the lit half says WHERE on the way in, the front says HOW FAR when it happens. Map: `f(r) = r + σ·A·w·(1−s²)²·sin(2πQs)` with `s = (r−c)/σ`, so the amplitude is ABSOLUTE (bounded by σ·A everywhere, where the cylinder's strain would have moved a 95 u reach's outer mass 40 u), the frame is spherical (no `_PrismWakeAxis`, no shear term in the Jacobian), and NO FOLD is ONE condition `A < 1/(2πQ)` DERIVED from the bandwidth. Spliced BEFORE the cradle on both live graphs by `Tools/Shaders/wire_prism_wake.py` — the cradle must see the rippled position or the drape is undone — which broke three sibling wirers that walked past ONE hard-coded node name and produced `Tools/Shaders/prism_vertex_chain.py`, the structural definition of a vertex morph. Proven by `Tools/Shaders/verify_prism_wake.py` (clang++ over the SHIPPED file, ten properties: identity off and outside both shell faces separately, radial purity, BANDWIDTH = exactly 4Q−1 sign changes at s = j/(2Q), no fold over 2,160,720 samples of the whole authored range, affine in strength, the normal by CONVERGENCE RATE 5.1e−3 → 8.3e−5, no seam at either face, slot authority bit-exact, plus a negative control that PLATEAUS flat with the Jacobian's RADIAL STRETCH term neutered), and the interface/override binding proven by a Roslyn stub compile with a signature-drift control. One gate defect found and fixed on the way: a ruling comment that NAMES the call it forbids trips an `Assert.IsFalse(file.Contains(...))` ban, so the suite's bans now read `CodeOnly(file)` — *a textual gate that forbids a token must not be able to read the comment documenting the ban.* Not run in the editor. |
 
 Phase D — lock-in:
 

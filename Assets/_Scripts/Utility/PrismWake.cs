@@ -6,22 +6,30 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The CPU half of the WAKE — a warhead's SHOCKWAVE FRONT. A round carrying a live warhead
-    /// throws a thin spherical SHELL of rippled prisms outward, over and over, all the way in: born
-    /// at the shell's own half-thickness and dying at exactly the radius that warhead's blast will
-    /// reach. So the front is not decoration — it is the blast's own reach, drawn on the mass rather
-    /// than on the HUD.
+    /// The CPU half of the SHOCKWAVE FRONT. A detonating shockwave blast throws a thin spherical
+    /// SHELL of rippled prisms outward as its own wavefront expands: born at the shell's own
+    /// half-thickness and dying at exactly the radius the blast reaches. So the front is not
+    /// decoration — it is the blast's own volume, drawn on the mass rather than on the HUD.
     ///
-    /// <para><b>It is half of a pair.</b> The same round publishes its armed fuze volume as a LIT
-    /// SPHERE (Docs/LIT.md, <c>Projectile.PublishFuzeLit</c>): mass standing where this warhead WILL
-    /// go off, in the shooter's domain colour. That says WHERE, statically, in colour; this says HOW
-    /// FAR, kinetically, in motion. Two channels of the surface description for one weapon, and
-    /// neither duplicating the other.</para>
+    /// <para><b>The one carrier is the Sparrow's heavy skyburst WARHEAD</b> — the 10-point shockwave
+    /// blast, whose whole payload is aimed at LIVING things (it debuffs pilots, jousts creatures, and
+    /// authors <c>affectsPrisms: 0</c>). That is what makes this front honest rather than a lie: the
+    /// prisms ripple as the shockwave crosses them and are still standing afterwards, which is
+    /// exactly what happened to them. A blast that destroyed the mass it rippled would be saying the
+    /// same thing twice.</para>
     ///
-    /// <para><b>The reach is the WARHEAD'S, never a tuned number.</b> The carrier reports its own
-    /// blast radius live through <c>IPrismWakeCarrier</c>, so the front grows with MASS exactly as
-    /// the warhead does and cannot drift from the thing it describes. Every length in the config is
-    /// a fraction of it.</para>
+    /// <para><b>It is half of a pair.</b> On the way in, the round publishes its armed fuze volume as
+    /// a LIT SPHERE (Docs/LIT.md, <c>Projectile.PublishFuzeLit</c>): mass standing where this warhead
+    /// WILL go off, in the shooter's domain colour. That says WHERE, statically, in colour; this says
+    /// HOW FAR, kinetically, in vertices, at the moment it happens. Two channels of the surface
+    /// description for one weapon, and neither duplicating the other.</para>
+    ///
+    /// <para><b>The reach and the sweep are both the BLAST'S, never tuned numbers.</b> The carrier
+    /// reports its own radius and its own wavefront progress live through <c>IPrismWakeCarrier</c>,
+    /// and both are numbers the blast already holds for gameplay reasons — the radius its damage pass
+    /// uses, and the eased fraction it lerps that radius by. So the front cannot run ahead of or
+    /// behind the volume it is describing, and there is no duration, speed or pulse rate on this side
+    /// to author wrong. Every length in the config is a fraction of the reach.</para>
     ///
     /// It does exactly two things per frame, and they are different KINDS of thing:
     ///
@@ -29,7 +37,7 @@ namespace CosmicShore.Utility
     /// once per frame and nothing else. There is no per-prism animation work of any kind — no
     /// trigger volume, no material writes, no per-instance overrides. The deformation runs on the
     /// GPU in <c>PrismWake.hlsl</c>, wired LAST on the vertex chain of both live-prism graphs.
-    /// "Where is that hull, which way is it pointing, and how far through the wave is it" is live
+    /// "Where is that blast, how far has its front got, and how strong is it" is live
     /// gameplay data that changes every frame for every prism, so it can never be a per-prism
     /// stamp, and a CPU pass that updates each prism's material is exactly what the clock-material
     /// law forbids. The law's sanctioned shape for this case (Docs/PRISM_ANIMATION.md §1, §4.7) is
@@ -47,26 +55,26 @@ namespace CosmicShore.Utility
     /// a shell thickness authored as a fraction of the reach). The mesh is SHARED, so the resident prisms stay
     /// in one instanced batch rather than minting a mesh and a draw call each.</para>
     ///
-    /// <para><b>The bank's shape.</b> One slot per wake: the hull's centre and radius, the wake
-    /// axis and the wave's phase, and the four derived scalars the shader would otherwise have to
-    /// re-derive. Everything a vessel contributes that varies per vessel lives in the slot;
-    /// everything that is a property of the FEEL lives in the params. The centre is sampled HERE,
-    /// in LateUpdate, off the registered Transform — after every transformer's Update has moved
-    /// its vessel — so a hull at 400 u/s is never published a frame stale.</para>
+    /// <para><b>The bank's shape.</b> One slot per front: the blast's centre and its front's
+    /// current radius, and the strength, half-thickness and reach the shader would otherwise have to
+    /// re-derive. Everything a carrier contributes that varies per carrier lives in the slot;
+    /// everything that is a property of the FEEL lives in the params. There is no axis — a sphere has
+    /// none. The centre is sampled HERE, in LateUpdate, off the registered Transform, so a carrier
+    /// that moves is never published a frame stale.</para>
     ///
-    /// <para><b>Not a platform law, and deliberately not local-pilot-gated.</b> A wake is a thing
-    /// OTHER pilots see you leaving behind you — the same argument the vessel tail is built on — so
-    /// every vessel publishes one, on every machine. <c>VesselStatus.Speed</c> and
-    /// <c>VesselStatus.Course</c> both replicate (<c>VesselController.n_Speed</c> / <c>n_Course</c>),
-    /// so a remote replica's wake is driven by the same numbers its owner is driving.</para>
+    /// <para><b>Not a platform law, and deliberately not local-pilot-gated.</b> A shockwave is a
+    /// thing everybody in the arena has a reason to see — the same argument the vessel tail and the
+    /// LIT fuze sphere are built on. It needs no networking of its own either: the warhead blast is
+    /// spawned by every peer's own detonation path, from the round's replicated flight, so each
+    /// machine's front is driven by the blast that machine simulated.</para>
     /// </summary>
     public static class PrismWake
     {
         /// <summary>
-        /// How many vessels can leave a wake at once. Mirrors <c>PRISM_WAKE_SLOTS</c> in
+        /// How many fronts can be live at once. Mirrors <c>PRISM_WAKE_SLOTS</c> in
         /// <c>PrismWake.hlsl</c> — change both together, since the shader's arrays are declared at
-        /// this length. Four is the largest roster any arcade mode seats; <see cref="Flush"/> keeps
-        /// the strongest if it ever overflows.
+        /// this length. Reachable whenever several rockets detonate inside the same 0.15 s, which one
+        /// Sparrow can manage; <see cref="Flush"/> keeps the strongest if it ever overflows.
         /// </summary>
         public const int Slots = 4;
 
@@ -80,16 +88,16 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// One wake, as reported this frame. <see cref="Frame"/> is what makes the bank
-        /// self-cleaning: a source that stops reporting — its vessel destroyed, swapped, slowed
-        /// down, or its scene unloaded — has its slot dropped on the next flush with nothing
-        /// needing to have called <see cref="Clear"/>. A wake that outlives the ship that made it
-        /// is the one failure mode a registry like this actually has.
+        /// self-cleaning: a source that stops reporting — its blast destroyed at the end of its
+        /// sweep, cancelled by a turn end, or its scene unloaded — has its slot dropped on the next
+        /// flush with nothing needing to have called <see cref="Clear"/>. A front that outlives the
+        /// blast that threw it is the one failure mode a registry like this actually has.
         /// </summary>
         struct Source
         {
             public Transform Carrier;
             public float Reach;         // the warhead's own blast radius, world units
-            public float Front;         // where this pulse's shell is right now, world units
+            public float Front;         // where the sweep's shell is right now, world units
             public float Strength;
             public int Frame;
         }
@@ -117,7 +125,7 @@ namespace CosmicShore.Utility
         static PrismWakeConfigSO _config;
         static bool _configResolved;
 
-        /// <summary>True while any vessel is publishing a live wake.</summary>
+        /// <summary>True while anything is publishing a live front.</summary>
         public static bool IsActive => _publishedCount > 0;
 
         /// <summary>How many prisms currently hold the high-poly mesh (diagnostics, tests).</summary>
@@ -148,24 +156,21 @@ namespace CosmicShore.Utility
 
         // ---------------- Derived geometry (ONE copy of each formula) ----------------
         //
-        // The source integrates its pulse phase and the bank packs the shader's slot, and both need
-        // the same arithmetic. It lives on the CONFIG (HalfThicknessFor, FrontRadiusAt,
-        // FrontEnvelope) so there is one copy the publisher, the residency pass and every test read
-        // — the retune that moved one of these and not the other is the failure this shape removes.
+        // The source maps the carrier's reported progress into the shell's legal travel band and the
+        // bank packs the shader's slot, and both need the same arithmetic. It lives on the CONFIG
+        // (HalfThicknessFor, FrontRadiusAt, ResidencyRadiusFor, FrontEnvelope) so there is one copy
+        // the publisher, the residency pass and every test read — the retune that moved one of these
+        // and not the other is the failure this shape removes.
+        //
+        // There is no PulseRate here any more. A front's POSITION is the carrier's own wavefront
+        // (AOEExplosion.TryGetShockwave), so a rate on this side would be a second answer to a
+        // question the blast already answers, and the two would drift.
 
         /// <summary>
-        /// How fast a pulse's phase advances, in pulses per second. It is simply the authored rate:
-        /// a front's travel is expressed as a FRACTION of its life rather than as a speed, so one
-        /// pulse takes the same time to cross a small warhead's reach as a large one's — which is
-        /// what keeps a MASS-swollen round's front readable instead of leisurely.
-        /// </summary>
-        public static float PulseRate(PrismWakeConfigSO config) => config.PulsesPerSecond;
-
-        /// <summary>
-        /// Report a live shockwave. <paramref name="sourceId"/> identifies the reporting round (its
-        /// source component's instance id) so one round can only ever occupy one slot across a pool
-        /// reuse. <paramref name="carrier"/> is sampled at flush time, not now — a round at 240 u/s
-        /// published from Update would be a frame stale by the time anything renders.
+        /// Report a live shockwave. <paramref name="sourceId"/> identifies the reporting carrier
+        /// (its source component's instance id) so one carrier can only ever occupy one slot across a
+        /// pool reuse. <paramref name="carrier"/> is sampled at flush time, not now — a carrier that
+        /// moves would be a frame stale by the time anything renders if it were sampled from Update.
         ///
         /// Must be called every frame (from Update — the flush runs in LateUpdate) while the front
         /// is up; a slot that stops being reported is dropped by the next <see cref="Flush"/>.
@@ -180,12 +185,13 @@ namespace CosmicShore.Utility
                 return;
             }
 
-            // A strength of zero is NOT a reason to drop the slot, and that is deliberate. A front's
-            // own envelope passes through zero at the seam between one pulse and the next (birth and
-            // death are both silent, which is what makes the recycle invisible), and dropping there
-            // would release every resident prism and re-acquire it 1.6 times a second for no visual
-            // difference at all. The shader's own `w > 0` test skips a zero slot for free. The SOURCE
-            // decides when a round stops having a shockwave, and it calls Clear.
+            // A strength of zero is NOT a reason to drop the slot, and on this carrier it is the
+            // load-bearing case rather than an edge one: the envelope is exactly zero on the FIRST
+            // frame, which is the frame the residency pass must swap the prisms in (see
+            // IPrismWakeCarrier). Dropping a zero-strength slot would release every one of them again
+            // immediately and hand them the dense mesh mid-sweep instead, which is precisely the pop
+            // §4.2 forbids. The shader's own `w > 0` test skips a zero slot for free. The SOURCE
+            // decides when a carrier stops having a shockwave, and it calls Clear.
 
             _sources[sourceId] = new Source
             {
@@ -207,14 +213,14 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Pack this frame's reported wakes into the shader's bank and reconcile which prisms hold
         /// the high-poly mesh. Called once per frame from <see cref="Driver"/> in LateUpdate —
-        /// after every source's Update has reported and after the vessels those sources ride have
+        /// after every source's Update has reported and after anything those sources ride has
         /// moved, and before anything renders.
         /// </summary>
         public static void Flush()
         {
             int frame = Time.frameCount;
 
-            // Collect slots nobody reported this frame — and any whose hull was destroyed since.
+            // Collect slots nobody reported this frame — and any whose carrier was destroyed since.
             // Deferred into a list because the dictionary cannot be mutated while it is walked.
             _stale.Clear();
             foreach (var kv in _sources)
@@ -238,10 +244,10 @@ namespace CosmicShore.Utility
                         continue;
                     }
 
-                    // Reachable the moment a fifth rocket is in the air, which one Sparrow can do.
-                    // Evict the WEAKEST rather than whoever the dictionary happened to enumerate
-                    // last: a bank that dropped by enumeration order would show a different set of
-                    // fronts on each machine for the same match.
+                    // Reachable the moment a fifth warhead goes off inside the same 0.15 s, which
+                    // one Sparrow can manage. Evict the WEAKEST rather than whoever the dictionary
+                    // happened to enumerate last: a bank that dropped by enumeration order would show
+                    // a different set of fronts on each machine for the same match.
                     int weakest = 0;
                     for (int i = 1; i < Slots; i++)
                         if (_shape[i].x < _shape[weakest].x)
@@ -278,12 +284,12 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Say, once a second on <see cref="CSLogChannel.PrismRuntime"/>, what the wake is actually
         /// doing — because every way this effect fails looks identical on screen to every other way.
-        /// A speed under the engage threshold, a hull whose measured radius makes the volume tiny,
-        /// a config switched off, an amplitude that is running but too small to see and a spatial
-        /// index that handed back no candidates all present as "nothing is happening", and no
-        /// amount of staring at a ship separates them. The line names the live slot count, each
-        /// slot's strength / radius / reach / train, and how many prisms are carrying the dense
-        /// mesh, so "is it even working" is answered by reading rather than by guessing.
+        /// A rocket fired from the wrong stance so no warhead was ever armed, a config switched
+        /// off, an amplitude that is running but too small to see, and a spatial index that handed
+        /// back no candidates all present as "nothing is happening", and no amount of staring at the
+        /// arena separates them. The line names the live slot count, each slot's strength / front
+        /// radius / reach / shell thickness, and how many prisms are carrying the dense mesh, so "is
+        /// it even working" is answered by reading rather than by guessing.
         ///
         /// It reports the IDLE state too, and with the reason: a system that goes quiet when it has
         /// nothing to say cannot be told apart from one that is not running at all.
@@ -307,7 +313,7 @@ namespace CosmicShore.Utility
             {
                 CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
                     $"[PrismWake] idle: {_sources.Count} source(s) reporting, none with a live " +
-                    "warhead (a base rocket, or a round whose prefab authors no warhead radius).");
+                    "blast (a sweep that has finished, or one cancelled by a turn end).");
                 return;
             }
 
@@ -329,8 +335,8 @@ namespace CosmicShore.Utility
         /// Pack one shockwave. The half-thickness is derived HERE rather than in the shader: it is a
         /// pure function of the reach and the config, the CPU already has both, and deriving it once
         /// means the shell the residency pass makes room for and the shell the shader draws cannot
-        /// fall out of step. The CENTRE is sampled now, at flush time in LateUpdate, after the
-        /// round's own mover has run.
+        /// fall out of step. The CENTRE is sampled now, at flush time in LateUpdate, after anything
+        /// that moves the carrier has run.
         /// </summary>
         static void Write(int slot, in Source src, PrismWakeConfigSO config)
         {
@@ -348,7 +354,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Decide which prisms hold the high-poly mesh this frame and apply the difference.
         ///
-        /// A shockwave's support is a SPHERE of the warhead's own reach, so the query is exactly
+        /// A shockwave's support is a SPHERE of the blast's own reach, so the query is exactly
         /// that sphere grown by the margin and there is no second filtering step — the cylinder's
         /// version needed one because a sphere bounding a cylinder holds a lot of prisms the ripple
         /// could never move, and a sphere bounding a sphere holds none.
@@ -357,23 +363,27 @@ namespace CosmicShore.Utility
         /// volume the front will cross, not for the thin shell the front occupies right now — which
         /// is the point: a prism must already be carrying the dense mesh by the time the shell
         /// arrives at it, and the swap must happen where the map provably cannot have moved a vertex.
-        /// Both are satisfied at once, because the shell is thin: a prism swapped in at reach-range
-        /// while the front is anywhere else is swapped where the displacement is exactly zero. The
-        /// cost is that residents outside the current shell carry the dense mesh for nothing, which
-        /// is the price of a travelling front and is bounded by the budget rather than by the reach.</para>
+        /// <para>On this carrier both are satisfied at once and STRUCTURALLY rather than by the shell
+        /// happening to be elsewhere: the carrier reports progress 0 for a frame before its sweep
+        /// begins, so the whole volume is swapped on a frame whose published strength is exactly zero.
+        /// The cost is that residents the front has not reached yet carry the dense mesh for nothing,
+        /// which is the price of a travelling front and is bounded by the budget rather than by the
+        /// reach — and here it is bounded in TIME too, since the sweep lasts 0.15 s.</para>
         ///
         /// The swept radius is <c>reach + sigma + margin</c>, because the front dies AT the reach and
         /// the shell reaches <c>sigma</c> past its own centre: the outermost displaced vertex of a
-        /// pulse's last frame is at <c>reach + sigma</c>, and a prism swapped in THERE would pop. The
+        /// sweep's last frame is at <c>reach + sigma</c>, and a prism swapped in THERE would pop. The
         /// margin then covers the remaining case — a prism arriving at that outer edge on the very
         /// frame the front reaches it — and it is why this effect is better protected than the
         /// cradle: the shell's two faces are C1-zero (the wavelet's value AND slope vanish at both),
         /// so even a prism long enough to straddle a face has a displacement there of second order in
         /// how far it straddles.
         ///
-        /// <para><b>The budget is SHARED and split evenly.</b> Each live wake may claim at most its
-        /// own share of <see cref="PrismWakeConfigSO.MaxResidentPrisms"/>, so four ships boosting at
-        /// once get a coarser wake each rather than the first one enumerated taking the lot.</para>
+        /// <para><b>The budget is SHARED and split evenly.</b> Each live front may claim at most its
+        /// own share of <see cref="PrismWakeConfigSO.MaxResidentPrisms"/>, so four warheads going off
+        /// at once get a coarser front each rather than the first one enumerated taking the lot. That
+        /// division is the arithmetic behind the design rule that the grant is a design call: a
+        /// second carrier does not add a front, it halves the one that mattered.</para>
         ///
         /// <para><b>The one limitation, stated.</b> The spatial index keys prisms by their CENTRE,
         /// so a prism longer than twice the margin whose centre is outside the volume but whose end
@@ -405,7 +415,7 @@ namespace CosmicShore.Utility
 
                         // reach + sigma + margin, never reach + margin: the front dies AT the reach
                         // and the shell reaches sigma past its own centre, so the last frame of a
-                        // pulse displaces vertices out to reach + sigma. See
+                        // sweep displaces vertices out to reach + sigma. See
                         // PrismWakeConfigSO.ResidencyRadiusFor - the margin is absolute and the shell
                         // is a fraction of the reach, so the two only ever agree by coincidence.
                         float queryRadius = config.ResidencyRadiusFor(shapeSlot.z);
@@ -432,7 +442,7 @@ namespace CosmicShore.Utility
 
                         // QuerySphere is unordered, so without this the dense mesh would go to
                         // whichever prisms the bucket walk happened to reach rather than to the ones
-                        // nearest the round — which is where every front spends its early life.
+                        // nearest the blast — which is where every front spends its early life.
                         _sortOrigin = origin;
                         _candidates.Sort(_byDistance);
 
@@ -519,7 +529,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Shader globals survive play-mode exit in the editor, so a front left live when play
-        /// stopped would otherwise keep rippling mass around a rocket that no longer exists. Publish
+        /// stopped would otherwise keep rippling mass around a blast that no longer exists. Publish
         /// the off state before anything renders — the same guard the occlusion corridor, the Echo
         /// Sight and the cradle install — and install the driver that flushes the bank.
         /// </summary>
@@ -547,7 +557,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// LateUpdate so the bank is packed after every source's Update has reported this frame,
-        /// and after the vessels those sources describe have moved — the same reasoning as the
+        /// and after anything those sources describe has moved — the same reasoning as the
         /// occlusion corridor's publisher.
         /// </summary>
         sealed class Driver : MonoBehaviour

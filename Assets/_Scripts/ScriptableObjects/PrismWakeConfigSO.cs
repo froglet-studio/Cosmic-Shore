@@ -6,17 +6,23 @@ namespace CosmicShore.ScriptableObjects
     /// Tuning for the WAKE — a warhead's SHOCKWAVE FRONT (<c>PrismWake</c>, <c>PrismWake.hlsl</c>,
     /// <c>HighPolyPrismMesh</c>, Docs/PRISM_ANIMATION.md §4.7.3).
     ///
-    /// A round carrying a live warhead throws a thin spherical SHELL of rippled prisms outward,
-    /// over and over, all the way to its target: born at the shell's own half-thickness and dying
-    /// at exactly the radius that warhead's blast will reach. The prisms in that volume are swapped
-    /// to a high-poly copy of the identical solid (<see cref="Subdivision"/>) so the surface
-    /// RIPPLES instead of hinging, and the swap happens where the front is provably zero
-    /// (<see cref="ResidencyMargin"/>) so it is never seen.
+    /// A detonating shockwave blast throws a thin spherical SHELL of rippled prisms outward as its
+    /// own wavefront expands: born at the shell's own half-thickness and dying at exactly the radius
+    /// the blast reaches. The prisms in that volume are swapped to a high-poly copy of the identical
+    /// solid (<see cref="Subdivision"/>) so the surface RIPPLES instead of hinging, and the swap
+    /// happens where the front is provably zero (<see cref="ResidencyMargin"/>) so it is never seen.
     ///
-    /// <para><b>The REACH is not authored here, and that is the design.</b> It is the warhead's own
-    /// blast radius, which the carrier reports live through <c>IPrismWakeCarrier</c> — so the front
-    /// draws the weapon's real reach rather than a number somebody tuned to look like it, it grows
-    /// with MASS exactly as the warhead does, and it cannot drift from the blast it is describing.
+    /// <para><b>There is ONE sweep per blast and it is the blast's own.</b> A shockwave's trigger
+    /// volume already expands from nothing to its full radius on an authored duration, and that
+    /// radius is what its damage pass uses — so the front's position is READ from the carrier rather
+    /// than integrated on a clock here. The pulses-per-second dial the travelling-round cut needed
+    /// went away with that carrier: a rate authored beside a clock the blast already owns is a second
+    /// answer to one question, and the two would drift.</para>
+    ///
+    /// <para><b>The REACH is not authored here either, and that is the design.</b> It is the blast's
+    /// own radius, which the carrier reports live through <c>IPrismWakeCarrier</c> — so the front
+    /// draws the weapon's real reach rather than a number somebody tuned to look like it, it tracks
+    /// the warhead's MASS scaling for free, and it cannot drift from the blast it is describing.
     /// Every length below is therefore a FRACTION of that reach rather than a world distance.</para>
     ///
     /// <para>The deformation itself is a GLOBAL shader uniform written once per frame — there is no
@@ -31,8 +37,10 @@ namespace CosmicShore.ScriptableObjects
     /// actually flew, so the window never opened — which reads on screen exactly like an effect
     /// that is too weak. A warhead's criterion was never speed anyway: it is whether the round is
     /// carrying a warhead at all, which <c>Projectile.WarheadBlastRadiusMultiplier</c> already
-    /// answers (zero on the base rocket, zero on every round in the fleet that is not a skyburst).
-    /// A gate that cannot be authored shut is worth more than one that can be authored wrong.</para>
+    /// answers (zero on the base rocket, zero on every round in the fleet that is not a skyburst) —
+    /// so the warhead blast that answers the capability only ever exists on a heavy shot in the
+    /// first place. A gate that cannot be authored shut is worth more than one that can be authored
+    /// wrong.</para>
     ///
     /// Place the asset at <c>Resources/PrismWakeConfig</c>. With no asset the defaults below
     /// apply, so the feature works out of the box.
@@ -76,13 +84,6 @@ namespace CosmicShore.ScriptableObjects
         [Range(0.05f, 0.45f)]
         [SerializeField] float halfThicknessFraction = 0.25f;
 
-        [Tooltip("How many fronts leave the round per second. Each one travels from the shell's own " +
-                 "half-thickness out to the full reach and dies there; the next is already on its " +
-                 "way. This is the PULSE RATE — raise it and the mass throbs, lower it and each " +
-                 "front is a single readable sweep.")]
-        [Range(0.1f, 8f)]
-        [SerializeField] float pulsesPerSecond = 1.6f;
-
         [Tooltip("Quads per face axis on the high-poly prism the front swaps in: 12 is 1,728 " +
                  "triangles against the authored prism's 24. The mesh is SHARED, so every resident " +
                  "prism still draws in ONE instanced batch whatever this is — the cost is triangles, " +
@@ -103,14 +104,21 @@ namespace CosmicShore.ScriptableObjects
         [Min(0f)]
         [SerializeField] float residencyMargin = 24f;
 
-        [Tooltip("Seconds the effect takes to reach full strength once a round arms its warhead. " +
-                 "A round leaving the bay should not arrive with a front already at full depth.")]
+        [Tooltip("Seconds the effect takes to reach full strength once a carrier arms a blast. " +
+                 "AUTHORED 0 for the shockwave warhead, deliberately: the front's own envelope is " +
+                 "already exactly zero - value AND slope - at birth, which is the whole of what an " +
+                 "engage ease bought on a round leaving its bay, and on a 0.15 s detonation a " +
+                 "second one is pure attenuation (at 0.15 s the front never reached half depth). " +
+                 "It is kept, not deleted, because a future carrier whose front is CONTINUOUS " +
+                 "would want it.")]
         [Min(0f)]
         [SerializeField] float engageSeconds = 0.15f;
 
-        [Tooltip("Seconds the effect takes to fade once the round stops carrying a live warhead — " +
-                 "a detonation, a despawn, a pool return. Continuity of existence: a front eases " +
-                 "out rather than blinking off.")]
+        [Tooltip("Seconds the effect takes to fade once the carrier stops reporting a live blast - " +
+                 "a sweep that finished, a blast cancelled mid-expansion by a turn end, a " +
+                 "teardown. This one EARNS its keep where the engage does not: a cancelled blast " +
+                 "freezes with the envelope at full value, and that must fade rather than blink " +
+                 "(continuity of existence).")]
         [Min(0f)]
         [SerializeField] float releaseSeconds = 0.35f;
 
@@ -135,7 +143,6 @@ namespace CosmicShore.ScriptableObjects
         public float Amplitude => Mathf.Clamp(amplitude, 0f, 0.9f * FoldingAmplitude);
 
         public float HalfThicknessFraction => Mathf.Clamp(halfThicknessFraction, 0.05f, 0.45f);
-        public float PulsesPerSecond => Mathf.Clamp(pulsesPerSecond, 0.1f, 8f);
         public int Subdivision => Mathf.Clamp(subdivision, 2, 32);
         public int MaxResidentPrisms => Mathf.Max(0, maxResidentPrisms);
         public float ResidencyMargin => Mathf.Max(0f, residencyMargin);
@@ -150,12 +157,12 @@ namespace CosmicShore.ScriptableObjects
         public float HalfThicknessFor(float reach) => Mathf.Max(1e-4f, reach * HalfThicknessFraction);
 
         /// <summary>
-        /// The radius the residency pass must sweep for a warhead of this reach — the whole volume
+        /// The radius the residency pass must sweep for a blast of this reach — the whole volume
         /// the map can EVER move a vertex in, plus <see cref="ResidencyMargin"/>.
         ///
         /// <para>It is <c>reach + sigma + margin</c> and not <c>reach + margin</c>, because the front
         /// dies AT the reach and the shell reaches <c>sigma</c> past its own centre: the outermost
-        /// displaced vertex of a pulse's last frame sits at <c>reach + sigma</c>. With the margin
+        /// displaced vertex of the sweep's last frame sits at <c>reach + sigma</c>. With the margin
         /// alone, a prism entering the volume there would be swapped to the dense mesh at a radius
         /// where its vertices are already displaced, and it would POP — the one thing §4.2's
         /// invisible-swap contract forbids.</para>
@@ -170,9 +177,14 @@ namespace CosmicShore.ScriptableObjects
             reach + HalfThicknessFor(reach) + ResidencyMargin;
 
         /// <summary>
-        /// Where the front sits for a pulse <paramref name="u"/> of the way through its life, in
-        /// world units from the round's centre: from the shell's own half-thickness (so it never
-        /// straddles the centre — the second half of the no-fold proof) out to the full reach.
+        /// Where the front sits <paramref name="u"/> of the way through its sweep, in world units
+        /// from the blast's own centre: from the shell's own half-thickness (so it never straddles
+        /// the centre — the second half of the no-fold proof) out to the full reach.
+        ///
+        /// <para>The floor is what makes this the SOURCE's arithmetic rather than the carrier's. A
+        /// carrier reports a progress, never a radius, so it cannot hand over a front position that
+        /// breaks the proof — an expanding blast honestly starts at radius 0, and a front there
+        /// would straddle its own centre.</para>
         /// </summary>
         public float FrontRadiusAt(float u, float reach)
         {
@@ -184,9 +196,11 @@ namespace CosmicShore.ScriptableObjects
         /// A front's own strength envelope over its life, <c>4*S(u)*S(1-u)</c> with S the smoothstep
         /// polynomial: exactly zero — value AND slope — at birth and at the reach, exactly 1 in the
         /// middle. Both ends matter and for different reasons. At the reach it is continuity of
-        /// existence: a front must not blink out at the edge of the blast volume. At BIRTH it is the
-        /// recycle: the next front appears at the shell's half-thickness, where a full-strength
-        /// arrival would pop, and a bump means nothing ever appears or disappears at all.
+        /// existence: a front must not blink out at the edge of the blast volume. At BIRTH it is
+        /// what makes the RESIDENCY SWAP invisible — the carrier reports progress 0 for a frame
+        /// before its sweep begins, so the frame the prisms in the volume are handed the high-poly
+        /// mesh is a frame on which this returns exactly 0 and the map moves nothing. It is also
+        /// why the engage ease is authored 0: this IS the engage, and a second one only attenuates.
         /// </summary>
         public static float FrontEnvelope(float u)
         {
@@ -202,7 +216,6 @@ namespace CosmicShore.ScriptableObjects
             Amplitude >= 0f && Amplitude < FoldingAmplitude &&
             WavesInFront >= 1 &&
             HalfThicknessFraction > 0f && HalfThicknessFraction <= 0.45f &&
-            PulsesPerSecond > 0f &&
             Subdivision >= 2 && Subdivision <= 32 &&
             MaxResidentPrisms >= 0 &&
             ResidencyMargin >= 0f;

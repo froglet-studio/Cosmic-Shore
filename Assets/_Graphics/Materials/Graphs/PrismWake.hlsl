@@ -2,37 +2,40 @@
 // (Docs/PRISM_ANIMATION.md §4.7.3, the FOURTH citizen of §4.7's "global uniform" shape for a
 // prism visual that depends on live gameplay data, and the SECOND that moves VERTICES.)
 //
-// PURPOSE — a SHOCKWAVE FRONT. A warhead in flight throws a pulse outward through the mass it is
-// passing: a thin spherical SHELL of rippled prisms that is born at the round's own skin and
-// travels out to the exact radius that warhead's blast will reach, over and over, all the way in.
-// So the shell is not decoration — it is the blast's own reach, drawn on the mass rather than on
-// the HUD, and the pilot flying at it can read how far the thing goes off before it does.
+// PURPOSE — a SHOCKWAVE FRONT. A detonating warhead throws its own wavefront outward through the
+// mass around it: a thin spherical SHELL of rippled prisms that is born at the shell's own
+// half-thickness and travels out to the exact radius that blast reaches, ONCE, as the blast
+// expands. So the shell is not decoration — it is the blast's own volume, drawn on the mass rather
+// than on the HUD, and it is honest precisely BECAUSE that blast touches no prism mass: the prisms
+// ripple as the shockwave crosses them and are still standing afterwards, which is what happened.
 //
-// IT IS HALF OF A PAIR, and the pair is the point. The same round publishes its armed fuze volume
-// as a LIT SPHERE (Docs/LIT.md, `Projectile.PublishFuzeLit`): mass standing where this warhead
-// WILL go off, in the shooter's domain colour. That says WHERE, statically, in colour. This says
-// HOW FAR, kinetically, in motion — a front sweeping out through the same mass to the warhead's
-// own radius. Two channels of the surface description (colour and vertices), one weapon, and
-// neither one duplicating the other.
+// IT IS HALF OF A PAIR, and the pair is the point. On the way in, the round publishes its armed
+// fuze volume as a LIT SPHERE (Docs/LIT.md, `Projectile.PublishFuzeLit`): mass standing where this
+// warhead WILL go off, in the shooter's domain colour. That says WHERE, statically, in colour. This
+// says HOW FAR, kinetically, in vertices, at the moment it happens. Two channels of the surface
+// description (colour and vertices), one weapon, and neither one duplicating the other.
 //
 // WHY A SPHERE, having been a CYLINDER. The first cut framed this cylindrically about the path a
 // fast VESSEL had just flown, because a wake is about a path — and it was pulled off the fleet
 // after one playtest (an effect strong enough to be an EVENT stops being one when every hull in
-// the match trails one). What is left is a warhead, and a warhead's force is not about a path at
-// all: it is radial about a point, it has a RADIUS the gameplay already authors, and its front
+// the match trails one). What is left is a warhead BLAST, and a blast's force is not about a path
+// at all: it is radial about a point, it has a RADIUS the gameplay already authors, and its front
 // travels outward rather than streaming backward. The frame follows the force, so the frame is a
-// sphere about the round — the cradle's frame (§4.7.2), not the old wake's.
+// sphere about the blast — the cradle's frame (§4.7.2), not the old wake's. (The MISSILE in flight
+// was the intermediate carrier, and it went for the reason the ball did: a front trailing a
+// travelling object is a wake, and a wake is a texture. The blast is the event.)
 //
 // THE UNIFORMS (published by PrismWake.cs once per frame, in LateUpdate, from a frame-stamped
 // registry of live shockwaves):
-//   float4 _PrismWakeCentre[N] — xyz: the round's world centre this frame.
+//   float4 _PrismWakeCentre[N] — xyz: the blast's world centre this frame.
 //                                w:   the FRONT radius c, world units — where the shell is right
-//                                     now. Integrated on the CPU so a pulse keeps travelling at
-//                                     one speed while the round's own radius grows under it.
-//   float4 _PrismWakeShape[N]  — x: eased strength 0..1 (the speed window's ramp x the decay the
-//                                   front takes as it expands).
+//                                     now. READ off the carrier's own expanding wavefront, not
+//                                     integrated: the blast already owns that number (it is what
+//                                     its damage pass uses), so a second clock would only drift.
+//   float4 _PrismWakeShape[N]  — x: eased strength 0..1 (the live-or-not weight x the front's own
+//                                   envelope, which is exactly zero at birth and at the reach).
 //                                y: the front's HALF-THICKNESS sigma, world units.
-//                                z: the reach — the warhead's own blast radius, world units.
+//                                z: the reach — the blast's own final radius, world units.
 //                                   Carried for tooling and residency parity; the MAP does not
 //                                   read it, because the support is |r - c| < sigma and nothing
 //                                   else.
@@ -50,9 +53,9 @@
 // global array's length at its first write for the whole session, keyed on the NAME, and a length
 // that does not change cannot be pinned wrong.
 //
-// THE MAP, in WORLD space and in the spherical frame about the round:
+// THE MAP, in WORLD space and in the spherical frame about the blast:
 //
-//   Let U be the round's centre, p the vertex, q = p - U, r = |q|, r_hat = q/r, and
+//   Let U be the blast's centre, p the vertex, q = p - U, r = |q|, r_hat = q/r, and
 //       s = (r - c) / sigma        (where the vertex sits across the shell, -1 .. 1)
 //
 //       P(s) = (1 - s^2)^2 * sin(2*pi*Q*s)            for |s| < 1, and EXACTLY 0 outside
@@ -118,11 +121,12 @@
 // material swap, no draw call — the high-poly mesh is SHARED.
 //
 // KNOWN IMPRECISIONS, both recorded rather than fixed.
-//   * The front is a SPHERE about the round's current position, and the round is moving, so a
-//     pulse launched a moment ago is re-centred on where the round is NOW rather than on where it
-//     was when the pulse left. Over one pulse's life at the shipped rate that is a fraction of
-//     the shell's own thickness; a true trailing front would need per-pulse history, which no
-//     closed-form map can carry.
+//   * (RETIRED by the carrier move, and worth keeping as a record of what the move bought.) While
+//     the carrier was the round IN FLIGHT, the front was a sphere about a MOVING centre, so a pulse
+//     launched a moment earlier was re-centred on where the round was NOW rather than on where it
+//     left from — an imprecision no closed-form map can fix without per-pulse history. A detonating
+//     blast does not move, so the sphere is about a fixed point for its whole sweep and the
+//     imprecision is gone by construction rather than by tuning.
 //   * Entities Graphics culls by the prism's RenderBounds, which a per-frame global cannot
 //     expand. A vertex can move up to sigma*A, so a prism whose bounds are just off screen can
 //     carry a rippled face that should be on screen and is culled with the prism.
@@ -246,11 +250,11 @@ void PrismWakeDeform_float(float3 Position, float3 Normal,
 
         float4 centreSlot = _PrismWakeCentre[i];
         float front = centreSlot.w;
-        if (!(front > 0.0)) continue;             // no pulse in flight in this slot
+        if (!(front > 0.0)) continue;             // no front in flight in this slot
 
         float3 q = pW - centreSlot.xyz;
         float r = length(q);
-        if (!(r > 1e-4)) continue;                // at the round's own centre: nothing to push
+        if (!(r > 1e-4)) continue;                // at the blast's own centre: nothing to push
 
         float s = (r - front) / sigma;
         if (s <= -1.0 || s >= 1.0) continue;      // outside the shell
@@ -275,7 +279,7 @@ void PrismWakeDeform_float(float3 Position, float3 Normal,
     if (!(bestAuthority > 0.0))
         return;                                   // no front reaches this vertex
 
-    // The map (header): displace the vertex along its own radius from the round by the front's
+    // The map (header): displace the vertex along its own radius from the blast by the front's
     // wavelet, in world units. The centre is a fixed point — the shell never reaches it.
     float aw = amp * bestW;
     float f = bestR + bestSigma * aw * bestP;

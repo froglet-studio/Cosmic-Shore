@@ -12,7 +12,7 @@ using Unity.Profiling;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(MeshRenderer))]
-    public class AOEExplosion : ElementalShipComponent
+    public class AOEExplosion : ElementalShipComponent, IPrismWakeCarrier
     {
         protected const float PI_OVER_TWO = Mathf.PI / 2;
 
@@ -143,6 +143,14 @@ namespace CosmicShore.Gameplay
         /// rather than leave the frozen-at-scale husk the mid-animation case wants.
         /// </summary>
         protected bool _visualComplete;
+
+        /// <summary>
+        /// How far through its single outward sweep this blast's wavefront has got, 0..1 — the
+        /// eased fraction <c>ExplodeAsync</c> is already lerping the scale and the batch radius by.
+        /// Published rather than recomputed because it is the ONE number that says where this
+        /// blast's front is, and a second derivation of it could disagree with the damage pass.
+        /// </summary>
+        float _expansion01;
         private static int s_trailBlocksMask = -1;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
         private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
@@ -234,6 +242,7 @@ namespace CosmicShore.Gameplay
             Material = initStruct.OverrideMaterial;
 
             _visualComplete = false;
+            _expansion01 = 0f;
             if (_triggerCollider) _triggerCollider.enabled = true;
 
             explosionCts = new CancellationTokenSource();
@@ -307,6 +316,48 @@ namespace CosmicShore.Gameplay
             explosionCts = null;
         }
 
+        /// <summary>
+        /// This blast's own expanding wavefront, for anything that DRAWS it — today the prism
+        /// SHOCKWAVE FRONT (<see cref="IPrismWakeCarrier"/>, Docs/PRISM_ANIMATION.md §4.7.3), which
+        /// ripples the mass this blast sweeps past so a blast whose whole payload is aimed at LIVING
+        /// things has a visible expression in the arena at all.
+        ///
+        /// <para><b>Nothing about it is a new number.</b> The reach is the radius the trigger will
+        /// finish at (<c>MaxScale</c> through the authored collider, exactly what
+        /// <c>ExplodeAsync</c>'s batch radius is built from) and the progress is the same eased
+        /// fraction the scale and that radius are lerped by. So a front drawn from this cannot run
+        /// ahead of or behind the volume it is describing, and there is no duration, speed or pulse
+        /// rate to author wrong.</para>
+        ///
+        /// <para><b>It answers TRUE from <c>Initialize</c>, at progress 0, before the sweep has
+        /// begun</b> — and that ordering is load-bearing rather than incidental. <c>ExplodeAsync</c>
+        /// awaits its delay before the first expansion frame, so the blast exists for a frame with
+        /// <c>_expansion01</c> still 0; a source reading it then publishes a live slot at exactly
+        /// zero strength, which is the frame the residency pass swaps prisms to the high-poly mesh
+        /// on. A carrier that only started answering once it was moving would swap them with their
+        /// vertices already displaced, and they would pop.</para>
+        ///
+        /// <para><b>Virtual, because it describes a SPHERE about this object's own origin.</b> The
+        /// conic and cylindrical blasts compute their own geometry and override it to refuse
+        /// outright, rather than being trusted never to be granted a source — a rule enforced by
+        /// which prefab somebody dropped a component onto is not enforced by the code.</para>
+        /// </summary>
+        public virtual bool TryGetShockwave(out float reach, out float progress01)
+        {
+            reach = 0f;
+            progress01 = 0f;
+
+            // Cancelled (a turn end froze it) or done sweeping: there is no front left to draw, and
+            // the source eases out rather than cutting.
+            if (explosionCts == null || _visualComplete) return false;
+
+            reach = _colliderRadius * MaxScale;
+            if (!(reach > 0f)) return false;
+
+            progress01 = Mathf.Clamp01(_expansion01);
+            return true;
+        }
+
         // ... [CalculateImpactVector and ExplodeAsync remain unchanged] ...
 
         public virtual Vector3 CalculateImpactVector(Vector3 impacteePosition)
@@ -375,6 +426,7 @@ namespace CosmicShore.Gameplay
                         float ease = Mathf.Sin(t * PI_OVER_TWO);
 
                         cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
+                        _expansion01 = ease;
 
                         // Batch AOE damage via Burst job over cache-packed prism data
                         // Effective radius = collider radius (local) * localScale
@@ -417,6 +469,7 @@ namespace CosmicShore.Gameplay
                 // excluded), so leaving it on would park an invisible, full-size vessel
                 // hitbox here for the whole drain.
                 _visualComplete = true;
+                _expansion01 = 1f;
                 if (meshRenderer) meshRenderer.enabled = false;
                 if (_triggerCollider) _triggerCollider.enabled = false;
                 while (impactor != null && impactor.HasPendingBatchWork)

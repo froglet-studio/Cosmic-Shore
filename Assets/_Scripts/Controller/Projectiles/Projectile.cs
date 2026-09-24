@@ -11,7 +11,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
-    public class Projectile : MonoBehaviour, IPrismWakeCarrier
+    public class Projectile : MonoBehaviour
     {
         [Inject] AudioSystem audioSystem;
         public Vector3 Velocity { get; set; }
@@ -451,7 +451,6 @@ namespace CosmicShore.Gameplay
 
             CacheTransformRole();
             CaptureTailRest();
-            EnsureWakeSource();
 
             if (chargeField) chargeField.gameObject.SetActive(false);
         }
@@ -1955,54 +1954,20 @@ namespace CosmicShore.Gameplay
 
         #region Wake
 
-        /// <summary>
-        /// This round's half of <see cref="IPrismWakeCarrier"/> — the SHOCKWAVE FRONT
-        /// (Docs/PRISM_ANIMATION.md §4.7.3). It answers with the radius this round's warhead will
-        /// actually go off in, so the front the mass draws is the blast's own reach rather than a
-        /// number tuned to look like it.
-        ///
-        /// <para><b>This is the discriminator, and it needs no authored field.</b>
-        /// <see cref="WarheadBlastRadiusMultiplier"/> is already zero on a flight not carrying its
-        /// warhead — the Sparrow's BASE rocket, whose payload collapses the fuze and the warhead
-        /// together — and the prefab authors zero on every round in the fleet that is not a
-        /// skyburst. So "the heavy skyburst and nothing else" falls out of the weapon rather than
-        /// out of a bool somebody has to remember to set, which matters here more than usual: the
-        /// two rockets are ONE prefab and ONE pool (<see cref="ProjectilePayload"/>), so a prefab
-        /// flag could not have told them apart at all.</para>
-        ///
-        /// <para>Three states report no front, and each eases out rather than cutting:
-        /// <c>_moveCts == null</c> (a round in the pool, or one already stopped),
-        /// <see cref="IsDetonating"/> (the blast itself is arriving — the front's job is over), and
-        /// a zero multiplier (no warhead). The radius is LIVE, because the round swells up to 20x in
-        /// the first fifth of its flight as MASS scales it and the warhead swells with it.</para>
-        /// </summary>
-        public bool TryGetShockwaveReach(out float reach)
-        {
-            reach = 0f;
-            if (_moveCts == null || IsDetonating) return false;
-
-            float multiplier = WarheadBlastRadiusMultiplier;
-            if (multiplier <= 0f) return false;
-
-            reach = HitRadiusWorld * multiplier;
-            return reach > 0f;
-        }
-
-        /// <summary>
-        /// Grants this round its <see cref="PrismWakeSource"/> when its prefab authors a warhead at
-        /// all. Called from <c>Awake</c>, which for a pooled projectile runs exactly once per
-        /// instance, so the component is never added twice and never added to the rounds that could
-        /// never have a front. It reads the AUTHORED multiplier rather than
-        /// <see cref="WarheadBlastRadiusMultiplier"/>, because the payload that decides base-vs-heavy
-        /// does not exist yet at Awake and both variants come out of the same pool — the per-FLIGHT
-        /// answer belongs to <see cref="TryGetShockwaveReach"/>, which the source asks every frame.
-        /// </summary>
-        void EnsureWakeSource()
-        {
-            if (warheadBlastRadiusMultiplier <= 0f) return;
-            if (!TryGetComponent<PrismWakeSource>(out _))
-                gameObject.AddComponent<PrismWakeSource>();
-        }
+        // NO SHOCKWAVE FRONT IS CARRIED HERE, and it is not an oversight. The prism front
+        // (Docs/PRISM_ANIMATION.md §4.7.3) rode the round IN FLIGHT for one playtest: it read well
+        // and it read as a WAKE — pulses trailing a travelling object — which is a texture the
+        // round wears rather than an event. It belongs to the thing the round is carrying, so it
+        // moved to the heavy skyburst's WARHEAD BLAST, whose own expanding sphere is a shockwave
+        // and needs no pulse rate invented for it: the blast answers IPrismWakeCarrier itself
+        // (AOEExplosion.TryGetShockwave) and is granted its source at the one site that knows which
+        // blast is the warhead (ProjectileDetonatorSO). Do not re-add an IPrismWakeCarrier
+        // implementation or an AddComponent<PrismWakeSource>() here.
+        //
+        // What the round DOES still publish on the way in is the other half of the pair: its armed
+        // fuze volume as a LIT SPHERE (Docs/LIT.md, PublishFuzeLit) — where the warhead will go
+        // off, statically, in colour. The front is now what happens WHEN it goes off, kinetically,
+        // in vertices. Two channels, one weapon, neither duplicating the other.
 
         #endregion
 

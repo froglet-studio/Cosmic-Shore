@@ -180,10 +180,13 @@ namespace CosmicShore.Gameplay
             // playtest: it reads beautifully on ONE fast thing crossing open space and reads as
             // wallpaper when every hull in the match trails one, and its high-poly residency is a
             // shared 96-prism budget that a per-vessel grant splits until nothing is smooth. It
-            // now belongs to the two objects a whole arena has a reason to watch — the Sparrow's
-            // skyburst missile and the Scarab's ball — which carry it by implementing
-            // IPrismWakeCarrier. Adding a third carrier is a design call, not a wiring one, so do
-            // not re-add an ensure here.
+            // now belongs to ONE thing a whole arena has a reason to watch, and it took three more
+            // rounds to find it: the Scarab's ball went the same way (in play for a whole match, so
+            // its front was continuous too), and so did the skyburst missile IN FLIGHT (a front
+            // trailing a travelling round is a wake, which is a texture). What is left is the
+            // heavy skyburst's WARHEAD BLAST — 0.15 s, once, when it detonates — which carries it by
+            // implementing IPrismWakeCarrier. Adding a second carrier is a design call, not a wiring
+            // one, so do not re-add an ensure here.
 
             // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
             // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same

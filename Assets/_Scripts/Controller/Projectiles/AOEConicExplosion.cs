@@ -437,5 +437,25 @@ namespace CosmicShore.Gameplay
                 coneContainer = null;
             }
         }
+
+        /// <summary>
+        /// This blast is NOT a sphere about its own origin, so it carries no spherical shockwave
+        /// front (<see cref="IPrismWakeCarrier"/>, Docs/PRISM_ANIMATION.md §4.7.3) and refuses one
+        /// outright. The base implementation reads <c>MaxScale</c> through the authored collider
+        /// radius, which for a cone is not a radius at all — it is the capsule's BASE DIAMETER across the
+        /// gape axis — so an inherited answer would draw a sphere of the wrong size around the wrong
+        /// thing.
+        ///
+        /// <para>It is refused in CODE rather than left to nobody granting this prefab a
+        /// <c>PrismWakeSource</c>, because a rule enforced by which prefab somebody dropped a
+        /// component onto is not enforced by the code. If this shape ever wants a front, it is a
+        /// new map in <c>PrismWake.hlsl</c>, not an answer here.</para>
+        /// </summary>
+        public override bool TryGetShockwave(out float reach, out float progress01)
+        {
+            reach = 0f;
+            progress01 = 0f;
+            return false;
+        }
     }
 }
