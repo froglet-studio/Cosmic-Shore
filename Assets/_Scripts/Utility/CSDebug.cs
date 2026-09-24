@@ -286,6 +286,12 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
+        /// <summary>
+        /// <c>[Theater]</c> — the match recorder and its playback: what started, what was written
+        /// and where, what was loaded. Off by default like every channel.
+        /// </summary>
+        [CSLogChannelLabel("[Theater] match recording and playback")]
+        Theater = 1 << 28,
         All = ~0
     }
 

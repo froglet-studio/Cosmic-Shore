@@ -291,8 +291,21 @@ namespace CosmicShore.Gameplay
         static float SafeDiv(float a, float b) => Mathf.Abs(b) > 1e-6f ? a / b : a;
 
         /// <summary>Recentres child meshes on the model origin and scales so max dimension ≈ radius*2.</summary>
+        /// <summary>
+        /// Centre the harvested model on its own bounds and scale it to <paramref name="targetRadius"/>.
+        ///
+        /// <para>A target of <b>zero or less means NATIVE</b>: keep the source's own scale and its
+        /// own pivot, untouched. Every toy wants a model normalised into a station of a known size,
+        /// but a model standing in for the real object at the real place — a theater puppet
+        /// retracing a recorded flight — needs the opposite, because the recorded pose is relative
+        /// to the ship's PIVOT and re-centring it on the hull's bounds would slide the whole
+        /// replay off by that offset. A non-positive radius used to yield <c>scale = 0</c>, i.e. an
+        /// invisible model, which was never what any caller wanted.</para>
+        /// </summary>
         static void NormalizeToRadius(Transform root, float targetRadius)
         {
+            if (targetRadius <= 0f) return;
+
             var renderers = root.GetComponentsInChildren<Renderer>(true);
             if (renderers.Length == 0) return;
 
