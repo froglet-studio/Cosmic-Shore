@@ -553,7 +553,23 @@ namespace CosmicShore.Gameplay
 
             GameObject retiring = null;
             if (record.Cell) retiring = record.Cell.StrikeSatelliteWorld();
-            if (retiring) _retiringRoots.Add(retiring);
+            if (retiring)
+            {
+                _retiringRoots.Add(retiring);
+
+                // Quiesce the struck world before the drain, which runs over MANY frames.
+                // Cell.StrikeSatelliteWorld re-parents the cell's lifeforms onto this root -
+                // which is NOT under record.Root - so they outlive the Destroy calls below by
+                // the whole length of the drain, and go on running their behaviour coroutines
+                // against a destroyed Cell, a destroyed CellRuntimeDataSO and a spatial index
+                // whose bindings for this cell have already been cleared. Deactivating the
+                // root stops every Update and coroutine under it in one call, so the drain
+                // costs only its own Destroys. The cell is off-screen by the retirement gate,
+                // so nothing is watched popping out and the continuity law is untouched;
+                // Destroy still reaches an inactive object, and GetComponentsInChildren below
+                // already passes includeInactive.
+                retiring.SetActive(false);
+            }
 
             if (record.Root) Destroy(record.Root);
             if (record.Runtime) Destroy(record.Runtime);
