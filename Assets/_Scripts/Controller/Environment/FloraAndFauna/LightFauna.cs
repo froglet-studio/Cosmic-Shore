@@ -466,13 +466,16 @@ namespace CosmicShore.Gameplay
             // crystal), arrived, and its goal direction degenerated to zero — see the
             // degenerate-steering guard below.
             var phase = cell ? cell.Phase : CellPhase.Calm;
+            // Resolve the crystal ONCE per tick. The accessor walks the cell's crystal list
+            // and a cell may hold none at all (a satellite, a bare canvas), so reading it
+            // twice in one expression pays that walk twice for one answer.
+            Transform crystal = cellData ? cellData.CrystalTransform : null;
             Goal = phase switch
             {
                 CellPhase.Restless => cell.GetExplosionTarget(domain) + GoalOrbitOffset,
                 CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
-                _ => ((cellData && cellData.CrystalTransform)
-                       ? cellData.CrystalTransform.position
-                       : (cell ? cell.transform.position : transform.position)) + GoalOrbitOffset,
+                _ => (crystal ? crystal.position
+                              : (cell ? cell.transform.position : transform.position)) + GoalOrbitOffset,
             };
 
             // Voracious exterior: with a nucleus control zone, mass outside the
@@ -519,9 +522,7 @@ namespace CosmicShore.Gameplay
                 // Offset here too: this fallback fires when the resolved goal lands on the
                 // world ORIGIN, which in an origin-centred cell is exactly where the whole
                 // pack would otherwise pile up.
-                Goal = (cellData && cellData.CrystalTransform
-                    ? cellData.CrystalTransform.position
-                    : cell.transform.position) + GoalOrbitOffset;
+                Goal = (crystal ? crystal.position : cell.transform.position) + GoalOrbitOffset;
             }
 
             Vector3 goalDirection = (Goal - transform.position).normalized;

@@ -772,8 +772,8 @@ namespace CosmicShore.Gameplay
             if (config == null || config.rigKind != MenuCameraRigKind.LavaLamp)
                 return target ? target.position : _rigPos + _rigRot * Vector3.forward;
 
-            // TryGetLocalCrystal (not the CrystalTransform property) - the property logs a warning
-            // when the cell has no crystal, which at one call per frame would be a log flood.
+            // TryGetLocalCrystal rather than the CrystalTransform property: this reads once per
+            // frame, and the out-parameter form says "there is no crystal" without a second walk.
             if (config.lavaLampAimAtCrystal && _cellData && _cellData.TryGetLocalCrystal(out var crystal) && crystal)
                 return crystal.transform.position;
 
