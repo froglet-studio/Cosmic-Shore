@@ -28,11 +28,36 @@ namespace CosmicShore.Utility
             return keyboard != null && keyboard.digit9Key.wasPressedThisFrame;
         }
 
-        /// <summary>Play the most recent recording in the output folder, or stop one that is playing.</summary>
+        /// <summary>Enter the recording area with the most recent recording, or leave it.</summary>
         public static bool TogglePlaybackRequestedThisFrame()
         {
             var keyboard = Keyboard.current;
             return keyboard != null && keyboard.digit8Key.wasPressedThisFrame;
+        }
+
+        /// <summary>
+        /// The transport a director holds a PAD for, live only while the recording area is up.
+        ///
+        /// <para>It is the D-pad and the south face button and nothing else, because the two sticks
+        /// and both triggers belong to the free camera and a theater you can fly but not scrub is
+        /// half a tool. These are safe to read unconditionally in the theater for the same reason
+        /// the free camera is: <see cref="TheaterStage"/> has paused the local pilot's input, so
+        /// nothing else on the machine is listening to the pad.</para>
+        /// </summary>
+        public static void ReadPadTransport(out int shotStep, out int pilotStep, out bool togglePause)
+        {
+            shotStep = 0;
+            pilotStep = 0;
+            togglePause = false;
+
+            var pad = Gamepad.current;
+            if (pad == null) return;
+
+            if (pad.dpad.right.wasPressedThisFrame) shotStep += 1;
+            if (pad.dpad.left.wasPressedThisFrame) shotStep -= 1;
+            if (pad.dpad.up.wasPressedThisFrame) pilotStep += 1;
+            if (pad.dpad.down.wasPressedThisFrame) pilotStep -= 1;
+            togglePause = pad.buttonSouth.wasPressedThisFrame;
         }
     }
 }

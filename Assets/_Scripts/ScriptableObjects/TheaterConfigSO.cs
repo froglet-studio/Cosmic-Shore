@@ -87,6 +87,28 @@ namespace CosmicShore.ScriptableObjects
                  "that hull's own measured radius - so one number frames every ship in the fleet.")]
         [Range(2f, 40f)] public float followDistance = 9f;
 
+        [Tooltip("Ghosts wear their ship's OWN authored materials instead of a flat domain fill. " +
+                 "Off by default: a vessel's real materials are dark unlit theme shaders that read " +
+                 "as a black blob out of their lit context, and the theater's stage is a dark void " +
+                 "- the flat fill is what makes four ghosts tellable apart at orbit distance.")]
+        public bool liveHullMaterials = false;
+
+        [Header("Stage")]
+        [Tooltip("What the recording area is drawn against once the live world is masked off the " +
+                 "camera. Dark enough that domain fills carry, not black - a pure black stage and " +
+                 "a camera pointed at nothing look identical.")]
+        public Color stageBackground = new Color(0.03f, 0.04f, 0.06f, 1f);
+
+        [Header("Free camera")]
+        [Tooltip("Top speed of the free camera, in multiples of the framed action's own radius per " +
+                 "second - so one number crosses a 200-unit skirmish and a 3,000-unit arena in the " +
+                 "same few seconds. The shoulders/Shift/Ctrl gear it 4x and 0.25x.")]
+        [Range(0.05f, 4f)] public float freeCameraSpeed = 0.9f;
+
+        [Tooltip("Degrees per second the free camera turns at full stick. The mouse is a delta and " +
+                 "is not scaled by this.")]
+        [Range(20f, 400f)] public float freeCameraLookSpeed = 140f;
+
         /// <summary>
         /// The config in use — the authored asset if there is one, otherwise a code-default
         /// instance minted once. Never returns null, so no caller needs a null branch.
