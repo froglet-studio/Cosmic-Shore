@@ -312,10 +312,36 @@ namespace CosmicShore.Gameplay
         {
             if (!_wakeArmed || _retiring || _hullLost) return;
 
-            if ((transform.position - _lastWakeAt).sqrMagnitude >= _wakeSpacing * _wakeSpacing)
+            // CATCH UP, don't skip. One prism per frame is a rate, and the Ark's speed is not:
+            // it runs fast leaving a cell and slow on the approach, and the corridor's own
+            // builds hitch the frame. A single test per Update lays ONE prism however far the
+            // ship travelled and then moves the mark to where it now is, so every hitch and
+            // every fast stretch silently swallows the prisms that stretch was owed - which
+            // reads exactly as a wake arriving in inconsistent batches with gaps between them.
+            // Stepping the mark by one spacing per prism keeps the wake evenly spaced in
+            // DISTANCE, which is the only thing it was ever meant to be even in.
+            //
+            // The per-frame cap is what keeps that honest: a several-thousand-unit jump (a
+            // teleport, a long stall) must not lay a thousand prisms in one frame to cover
+            // ground nobody watched the ship cross. Past the cap the mark snaps forward, so the
+            // gap is taken deliberately, once, instead of accumulating silently every frame.
+            const int MaxWakePrismsPerTick = 8;
+            float spacingSqr = _wakeSpacing * _wakeSpacing;
+            int laid = 0;
+            while ((transform.position - _lastWakeAt).sqrMagnitude >= spacingSqr)
             {
-                _lastWakeAt = transform.position;
-                LayWakePrism();
+                if (laid >= MaxWakePrismsPerTick)
+                {
+                    _lastWakeAt = transform.position;
+                    break;
+                }
+
+                // Step the mark ALONG the travelled line rather than to the ship: the ship is
+                // already past this prism's place by the time we lay it.
+                Vector3 toShip = transform.position - _lastWakeAt;
+                _lastWakeAt += toShip.normalized * _wakeSpacing;
+                LayWakePrism(_lastWakeAt);
+                laid++;
             }
 
             // Backstop only - a voyage whose corridor is not retiring behind it.
@@ -331,12 +357,15 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void LayWakePrism()
+        /// <param name="at">Where the ship WAS when this prism was owed - not where it is now.
+        /// A catch-up tick lays several in one frame, and laying them all at the live position
+        /// would stack them in one place instead of spacing them along the wake.</param>
+        void LayWakePrism(Vector3 at)
         {
             // Astern and a little below the keel - a wake trails a ship, it does not run
             // through it, and laying inside the hull would put the two in the same grid cell.
             var pose = new SpawnPoint(
-                transform.position - transform.forward * (_wakeScale.z * 1.5f),
+                at - transform.forward * (_wakeScale.z * 1.5f),
                 Quaternion.LookRotation(transform.forward, transform.up),
                 _wakeScale);
 
