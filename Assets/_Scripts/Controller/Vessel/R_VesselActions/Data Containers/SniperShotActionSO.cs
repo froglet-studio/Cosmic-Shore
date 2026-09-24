@@ -67,9 +67,6 @@ namespace CosmicShore.Gameplay
                  "and destroys the prism.")]
         [SerializeField, Min(0)] private int pierceCount;
 
-        [Header("Impact")]
-        [Tooltip("Debris speed the destroyed prism's pieces carry, in world units/second - the " +
-                 "TRUE velocity, on the proportional-debris contract, not a legacy inertia gain.")]
         [Header("Vessel strip (the Serpent's anti-vessel verb)")]
         [Tooltip("Normalized element levels this round strips from EACH element of every opposing " +
                  "pilot inside the cone. 0.1 = one petal, one integer level, one ejected crystal. " +
@@ -87,6 +84,9 @@ namespace CosmicShore.Gameplay
                  "has to author the launch instead.")]
         [SerializeField, Min(0f)] private float vesselEjectSpeed = 45f;
 
+        [Header("Impact")]
+        [Tooltip("Debris speed the destroyed prism's pieces carry, in world units/second - the " +
+                 "TRUE velocity, on the proportional-debris contract, not a legacy inertia gain.")]
         [SerializeField, Min(0f)] private float debrisSpeed = 90f;
 
         [Tooltip("Ceiling on that debris speed. Passed alongside the true-velocity vector so the " +
