@@ -952,12 +952,12 @@ MonoBehaviour:
   waitTillOutsideSkimmer: 0
   shielded: 0
   trailVolume:
-    Enabled: 1
-    Value: 1
+    Enabled: 0
+    Value: 1.35
     Min: 1
     Max: 2.5
-    element: 2
-  massUpgradeShieldsTrail: 1
+    element: 0
+  driftShieldsTrail: 1
   offset: 0
   Gap: 18.5
   MinimumGap: 18.5
@@ -1249,9 +1249,6 @@ MonoBehaviour:
     type: 2}
   squirrelCrystalExplosionEvent: {fileID: 11400000, guid: e9da6bf37f53d1f4db0421348950f8ca,
     type: 2}
-  isDrifting: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
-  isDoubleDrifting: {fileID: 11400000, guid: ef6330095f84f9b46a30db2e12842210, type: 2}
-  driftEnded: {fileID: 11400000, guid: 9869da66befaa04429e5b8c696d421f0, type: 2}
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}

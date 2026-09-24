@@ -17,9 +17,10 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventBoostChanged boostChanged;
         [SerializeField] private ScriptableEventString joustCollisionEvent;
         [SerializeField] private ScriptableEventVesselImpactor squirrelCrystalExplosionEvent;
-        [SerializeField] private ScriptableEventNoParam isDrifting;
-        [SerializeField] private ScriptableEventNoParam isDoubleDrifting;
-        [SerializeField] private ScriptableEventNoParam driftEnded;
+        // The three drift channels (isDrifting / isDoubleDrifting / driftEnded) were removed with
+        // the drift icon juice in the 2026-09 element re-cut: the drift is core flight with no
+        // element, and its readout was sitting on the card that now carries the Boost Ring. The
+        // channels themselves are untouched and still raised by the drift executor.
 
         [Header("Shared Config")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
@@ -36,8 +37,9 @@ namespace CosmicShore.UI
         // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
         // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
         // Sparrow.prefab, so the lookup returned null on every Squirrel and the gauge never moved.
-        // It was removed with the Sparrow's overheat mechanic; the view's SetOverheatHeat /
-        // JuiceOverheat* remain, currently undriven, for a future Squirrel meter.
+        // The view's SetOverheatHeat / JuiceOverheat* are now gone too (2026-09) - an undriven
+        // gauge sitting on an ability card is a lie, not a spare part, and the card it sat on is
+        // the CHARGE card, which now carries the crystal joust.
 
         // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
@@ -90,32 +92,20 @@ namespace CosmicShore.UI
 
             if (boostChanged != null)
                 boostChanged.OnRaised += HandleBoostChanged;
-            if (isDrifting != null)
-                isDrifting.OnRaised += UpdateDrift;
-            if (isDoubleDrifting != null)
-                isDoubleDrifting.OnRaised += UpdateDoubleDrift;
             if (joustCollisionEvent != null)
                 joustCollisionEvent.OnRaised += HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised += HandleSquirrelCrystalExplosion;
-            if (driftEnded != null)
-                driftEnded.OnRaised += OnDriftEnded;
         }
 
         private void OnDisable()
         {
             if (boostChanged != null)
                 boostChanged.OnRaised -= HandleBoostChanged;
-            if (isDrifting != null)
-                isDrifting.OnRaised -= UpdateDrift;
-            if (isDoubleDrifting != null)
-                isDoubleDrifting.OnRaised -= UpdateDoubleDrift;
             if (joustCollisionEvent != null)
                 joustCollisionEvent.OnRaised -= HandleJoustCollision;
             if (squirrelCrystalExplosionEvent != null)
                 squirrelCrystalExplosionEvent.OnRaised -= HandleSquirrelCrystalExplosion;
-            if (driftEnded != null)
-                driftEnded.OnRaised -= OnDriftEnded;
         }
 
         private void HandleBoostChanged(BoostChangedPayload payload)
@@ -192,38 +182,6 @@ namespace CosmicShore.UI
 
             view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
                 Color.white, false);
-        }
-
-        private void UpdateDrift()
-        {
-            if (!view) return;
-            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: false);
-        }
-
-        private void UpdateDoubleDrift()
-        {
-            if (!view || _vesselStatus == null) return;
-            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: true);
-        }
-
-        private void OnDriftEnded()
-        {
-            if (!view) return;
-            view.JuiceDriftEnd();
-        }
-
-        // Drift IS nose-vs-course divergence, so the drift side falls out of the same signed
-        // angle the silhouette rotation uses: nose left of the course = drifting left.
-        private bool IsDriftingLeft()
-        {
-            var ship = _vesselStatus?.ShipTransform;
-            if (!ship) return false;
-
-            var fwd2 = Vector3.ProjectOnPlane(ship.forward, Vector3.up);
-            var course2 = Vector3.ProjectOnPlane(_vesselStatus.Course, Vector3.up);
-            if (fwd2.sqrMagnitude < 1e-6f || course2.sqrMagnitude < 1e-6f) return false;
-
-            return Vector3.SignedAngle(course2, fwd2, Vector3.up) < 0f;
         }
 
         private void HandleSquirrelCrystalExplosion(VesselImpactor vesselImpactor)

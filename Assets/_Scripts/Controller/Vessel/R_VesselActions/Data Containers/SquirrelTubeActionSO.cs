@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.Gameplay
 {
@@ -60,17 +61,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the ability can be used again after it forms. Keep it long.")]
         [SerializeField] private float cooldown = 20f;
 
-        [Header("Elemental (Time)")]
-        [Tooltip("TIME -> cooldown: multiplier on Cooldown at Time level 10 (1 at resting level, " +
-                 "extrapolates into the deficit band so debuffed Time LENGTHENS the cooldown). " +
-                 "Authored here - the generic map Time multiplier stays 1.0 because " +
-                 "VesselTransformer already consumes it for boost speed.")]
-        [SerializeField] private float cooldownMultiplierAtFullTime = 0.5f;
+        [Header("Elemental (Mass)")]
+        [Tooltip("MASS -> cooldown: multiplier on Cooldown at Mass level 10 (1 at resting level, " +
+                 "extrapolates into the deficit band so debuffed Mass LENGTHENS the cooldown). " +
+                 "The ring is this hull's mass-CREATION ability, so Mass owns how often it lays.")]
+        [FormerlySerializedAs("cooldownMultiplierAtFullTime")]
+        [SerializeField] private float cooldownMultiplierAtFullMass = 0.5f;
 
-        [Tooltip("Floor for the Time cooldown multiplier so overcharge can never zero the cooldown.")]
+        [Tooltip("Floor for the Mass cooldown multiplier so overcharge can never zero the cooldown.")]
         [SerializeField] private float minCooldownMultiplier = 0.35f;
 
-        [Tooltip("TIME level-5 'Twin Rings': extra rings added to the tube while the Time " +
+        [Tooltip("MASS level-5 'Twin Rings': extra rings added to the tube while the Mass " +
                  "elemental upgrade is active (per-deploy snapshot).")]
         [SerializeField] private int upgradeExtraRings = 1;
 
@@ -84,7 +85,7 @@ namespace CosmicShore.Gameplay
         public float ForwardOffset => forwardOffset;
         public int SpawnPerFrame => Mathf.Max(1, spawnPerFrame);
         public float Cooldown => Mathf.Max(0f, cooldown);
-        public float CooldownMultiplierAtFullTime => cooldownMultiplierAtFullTime;
+        public float CooldownMultiplierAtFullMass => cooldownMultiplierAtFullMass;
         public float MinCooldownMultiplier => Mathf.Max(0.01f, minCooldownMultiplier);
         public int UpgradeExtraRings => Mathf.Max(0, upgradeExtraRings);
 

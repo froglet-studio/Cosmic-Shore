@@ -3175,7 +3175,6 @@ MonoBehaviour:
   - element: 1
     icon: {fileID: 6559234619875545904}
     upgradedSprite: {fileID: 0}
-    gauge: {fileID: 6390265052795311443}
   - element: 2
     icon: {fileID: 5199230409720723880}
     upgradedSprite: {fileID: 0}
@@ -3185,6 +3184,7 @@ MonoBehaviour:
   - element: 4
     icon: {fileID: 8778855275387912087}
     upgradedSprite: {fileID: 0}
+    gauge: {fileID: 6390265052795311443}
   upgradeHighlightScale: 1.15
   upgradePunchScale: 1.35
   upgradePunchDuration: 0.35
@@ -3193,27 +3193,14 @@ MonoBehaviour:
   colorLerpSpeed: 4
   crystalFlashDuration: 0.5
   fullBoostWhiteMix: 0.3
-  driftButtonIcon: {fileID: 5199230409720723880}
-  normalSprite: {fileID: 21300000, guid: 15d4c0157372e564882ed7a7ea6b0f2b, type: 3}
-  driftingSprite: {fileID: 21300000, guid: 41c9f6e2ec44f0c458351500f1bfacdc, type: 3}
-  doubleDriftingSprite: {fileID: 21300000, guid: 117829e3ccd2f4c439bc98b203359180,
-    type: 3}
-  impactIcon: {fileID: 4425814395415128621}
+  impactIcon: {fileID: 6559234619875545904}
   impactRestColor: {r: 1, g: 1, b: 1, a: 1}
   joustFlashColor: {r: 1, g: 0, b: 0, a: 1}
   crystalFlashColor: {r: 0.4, g: 0.9, b: 1, a: 1}
-  tubeCooldownIcon: {fileID: 8778855275387912087}
-  overheatIcon: {fileID: 6559234619875545904}
-  overheatHighlight: {fileID: 6579145379464768125}
-  overheatHotColor: {r: 1, g: 0.45, b: 0.15, a: 1}
-  overheatFlashColor: {r: 1, g: 0.9, b: 0.6, a: 1}
-  overheatThrobAmount: 0.14
-  overheatThrobDuration: 0.28
+  tubeCooldownIcon: {fileID: 5199230409720723880}
   iconPunchDuration: 0.25
   iconPunchScale: 1.4
   colorTweenDuration: 0.35
-  driftRotationAngle: 45
-  driftRotationDuration: 0.45
 --- !u!224 &7631468186400504090 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,

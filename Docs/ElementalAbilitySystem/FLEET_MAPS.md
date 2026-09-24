@@ -58,7 +58,7 @@ day after the channel it referred to had been deleted.
 |---|---|---|---|
 | Dolphin | 4/4 | 4/4 | 4/4 |
 | Sparrow | 4/4 | 4/4 | 4/4 |
-| Squirrel | 4/4 | 4/4 | 4/4 |
+| Squirrel | 4/4 | **3/4** | 4/4 |  *(Charge scaling is a deliberate hole — see the re-cut below)*
 | Urchin | 4/4 | 4/4 | 4/4 |
 | Manta | 4/4 | 4/4 | 3/4 |
 | Serpent | 3/4 | 3/4 | 2/4 |
@@ -263,7 +263,9 @@ to four loosely-related mechanics:
   TEAM-locked. **Twin Seed is retired** — the yield is one crystal per cycle at every level.
 - **Mass gave up the trail entirely.** `trailVolume` is disabled and `massUpgradeShieldsTrail` is
   off on `Dolphin.prefab`; the Dolphin no longer grows its drift prisms or shields them. (The
-  machinery stays — it is the Squirrel's Heavy Trail — it is simply no longer wired here.)
+  machinery stays. It was the Squirrel's Heavy Trail until the 2026-09-24 re-cut, where the shield
+  half became BASE and the flag was renamed `driftShieldsTrail`; the VOLUME half is now live only
+  on the Manta.)
 - **Space narrowed to REACH only.** It still scales the blast self-similarly through
   `_heightMultiplierAtFullSpace`; what changed is that Charge now moves the capsule diameter on
   top of that, so the three elements own three orthogonal dimensions and none can steal what
@@ -372,7 +374,7 @@ Drive-by: the Time entry's `Input` was `0` (`FullSpeedStraightAction`) while `Co
 rides `Button1Action`. The ability lockup DRAWS each card's control chip from that field, so it was
 a wrong glyph, not a stale comment. Corrected to `6`.
 
-### Squirrel — racer (drift + tube) — APPROVED + SHIPPED
+### Squirrel — racer (drift + tube) — APPROVED + SHIPPED, **RE-CUT 2026-09-24**
 
 The original proposal table below was superseded by Garrett's markup; the shipped design:
 
@@ -384,10 +386,59 @@ The original proposal table below was superseded by Garrett's markup; the shippe
 | Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
 
 Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).
+
+#### The 2026-09-24 re-cut — **SHIPPED**
+
+Every row moved. The organising idea is that each element now owns the thing it is *named* for on
+this hull: **Mass creates mass, Time makes you faster, Charge is the threat you carry into a
+lifeform, Space is how far your steal reaches.**
+
+| Element | Ability | Input | Quantitative (LIVE) | L5 upgrade (LIVE) |
+|---|---|---|---|---|
+| **Charge** | **Crystal Joust** | passive | **NONE — a deliberate hole.** The joust has no elemental parameter yet; it is deferred to the branch that reworks the joust. `element_ability_table.py` therefore reports `NO SCALING` on this row, and that report is CORRECT — do not fill it to green the tool | **Shepherd** (moved from Space) — `SquirrelVesselWitherLifeformByCrystalEffect.allyUpgradeElement: 3 → 1`. The upgrade now sits on the ability it upgrades |
+| **Mass** | **Boost Ring** (moved from Time) | RT | deploy cooldown ×1 → ×0.5 (`SquirrelTubeActionSO.cooldownMultiplierAtFullMass`, renamed with `[FormerlySerializedAs]`) | **Twin Rings** — `IsUpgradeActive(Element.Time)` → `Element.Mass` in `SquirrelTubeActionExecutor` |
+| **Space** | **Steal** | passive | skimmer `Scale` ElementalFloat 15 → 30, **unchanged** — the sphere IS the steal reach, so the number did not have to move with the label | **Iron Grip** (NEW) — a shielded prism is stolen OUTRIGHT and keeps its armour, instead of only being stripped of the shield |
+| **Time** | **Skimming** (moved from Charge) | passive | skim energy per collision ×1 → ×2 (`SkimmerBoostPrismEffectSO.energyMultiplier`, renamed with `[FormerlySerializedAs]`, `element: 1 → 4`) | **Live Wire** — the danger 10× bonus, now element-addressed by the new authored `dangerBonusElement: 4` instead of a hardcoded `Element.Charge` |
+
+**Mass's old row is retired to BASE, not moved.** `trailVolume` is now a fixed **1.35×** on
+`Squirrel.prefab` (`Enabled: 0, Value: 1.35` — `ElementalFloat.EvaluateLive` returns `Value`
+when disabled, so this needed no code), and the shield gate lost its L5 term:
+`massUpgradeShieldsTrail` → **`driftShieldsTrail`** (`[FormerlySerializedAs]`), so **drifting lays
+shielded prisms for every pilot at every level**. The Manta's `turnUpgradeShieldsTrail` branch
+**keeps** its `IsUpgradeActive(Element.Mass)` gate — that is the Manta's shipped level-5 and
+nothing here touches it.
+
+**Four things worth carrying off this branch:**
+
+1. **`superSteal` already existed and nobody passed it.** `PrismTeamManager.Steal`'s third
+   parameter had been in the tree the whole time: `!superSteal && IsShielded` → shed the shield
+   and return, versus a flip that never clears `IsShielded`. Iron Grip is therefore ~6 lines
+   rather than a new mechanic. Super-shielded mass is still refused at every level.
+2. **Both effect assets were already Squirrel-only** — `SkimmerBoostPrismEffect.asset` and
+   `SkimmerStealPrismEffect.asset` are each referenced by exactly ONE container
+   (`SquirrelSkimmerImpactorDataContainer`), *measured*, so rule 8's fork-before-changing was
+   satisfied without forking. Both new element fields still default to the old behaviour, so a
+   second vessel adopting either asset type is unchanged.
+3. **A moved ability drags its HUD gauge with it**, and on this hull every icon carried a second
+   binding: `boostFill` (skim gauge) Charge → **Time**, `tubeCooldownIcon` Time → **Mass**,
+   `impactIcon` (joust + crystal flash) Space → **Charge**. `SetTubeCooldownReady` also had to
+   move its `SetAbilityCooldown(Element.Time, …)` to `Element.Mass` — the veil is addressed by
+   ELEMENT, so a moved ability with an un-moved cooldown call draws its recharge on a stranger's
+   card.
+4. **Two bindings were retired rather than re-homed.** `driftButtonIcon` (the drift sprite/lean)
+   was sitting on the card the Boost Ring now occupies, and the drift is core flight with no
+   element — so it goes, along with its three SOAP subscriptions. `overheatIcon` went with it:
+   `SetOverheatHeat`/`JuiceOverheat*` have had **no callers** since the Sparrow's overheat
+   mechanic was deleted, so that card had been showing a gauge nothing drove. ⚠ **Stated cost:
+   the Squirrel now has no drift readout on the HUD at all** — `ElementalBarsView.JuiceDriftStart`
+   exists, is fully written and is ALSO dead (no callers anywhere), so if drift feedback is wanted
+   back it is one line in `SquirrelVesselHUDController` pointing at the petal flowers instead of
+   at an ability icon.
+
 HUD: the shared upgrade-highlight system (`VesselHUDView.abilityIcons` + base
 `VesselHUDController` subscribing `OnUpgradeStateChanged`) is wired on the Squirrel's four
-icons (boost gauge / drift / impact / tube); other vessels adopt by filling their view's
-`abilityIcons` bindings — no code.
+icons (joust impact / ring cooldown / steal / skim gauge); other vessels adopt by filling their
+view's `abilityIcons` bindings — no code.
 
 ### Urchin — chain spikes + trail rider — APPROVED + SHIPPED (2026-08-15, RE-CUT 2026-08-18)
 
