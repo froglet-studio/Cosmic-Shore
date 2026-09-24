@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7f6c24538d1c4066ae8ac009d518efda, type: 3}
+  m_Name: ButterflySpreadWingsAction
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.SpreadWingsActionSO
+  resourceIndex: 0
+  energyPerSecond: 0.22
+  massUpgradeMakesSpreadFree: 1
+  openWidth01: 1
+  shutWidth01: 0
