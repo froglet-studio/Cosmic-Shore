@@ -139,21 +139,6 @@ namespace CosmicShore.Gameplay
                  "round with no measured body, which keeps the prefab's authored width.")]
         [SerializeField, Range(0f, 3f)] private float tailWidthPerBodyDiameter = 0.4f;
 
-        [Header("Wake")]
-        [Tooltip("Does this round drag a prism WAKE behind it " +
-                 "(Docs/PRISM_ANIMATION.md §4.7.3)? The mass around the path it just flew " +
-                 "ripples on the GPU, with the reach and the train length scaled by this " +
-                 "round's own live hit radius — so a MASS-swollen missile leaves a " +
-                 "proportionally bigger one.\n\n" +
-                 "It is authored per prefab for the same reason the tail above is, and the " +
-                 "answer is the same on every round: the SKYBURST wants one, because it " +
-                 "crosses a whole arena over three seconds and the mass bending around it is " +
-                 "what sells its weight. A bullet does not — 54 of them are alive at once and " +
-                 "54 wakes is wallpaper, on a high-poly residency budget that is SHARED " +
-                 "between every wake in the scene.\n\n" +
-                 "Leave FALSE on every round but the skyburst.")]
-        [SerializeField] private bool leavesWake = false;
-
         [Header("Proximity Fuze")]
         [Tooltip("Detonate EARLY when something worth detonating on comes within this many " +
                  "times the round's own hit radius. 0 (every round but the skyburst) = no fuze; " +
@@ -1971,40 +1956,50 @@ namespace CosmicShore.Gameplay
         #region Wake
 
         /// <summary>
-        /// This round's half of <see cref="IPrismWakeCarrier"/>. It answers with the mover's own
-        /// integrated <see cref="Velocity"/> and the LIVE swept hit radius rather than anything
-        /// measured off the transform, for two reasons the transform cannot cover: the mover
-        /// TELEPORTS (<c>position += Velocity·Δt</c>), so a frame-to-frame delta on a pooled round
-        /// cannot tell a flight step from a reissue somewhere else in the arena; and the round
-        /// swells up to 20x in the first fifth of its flight, so its wake has to grow with it.
+        /// This round's half of <see cref="IPrismWakeCarrier"/> — the SHOCKWAVE FRONT
+        /// (Docs/PRISM_ANIMATION.md §4.7.3). It answers with the radius this round's warhead will
+        /// actually go off in, so the front the mass draws is the blast's own reach rather than a
+        /// number tuned to look like it.
         ///
-        /// <para><c>_moveCts</c> is the flight itself — non-null exactly while the mover is
-        /// running — so a round sitting in the pool, or one that has detonated and been stopped,
-        /// reports no motion and its wake eases out instead of being cut.</para>
+        /// <para><b>This is the discriminator, and it needs no authored field.</b>
+        /// <see cref="WarheadBlastRadiusMultiplier"/> is already zero on a flight not carrying its
+        /// warhead — the Sparrow's BASE rocket, whose payload collapses the fuze and the warhead
+        /// together — and the prefab authors zero on every round in the fleet that is not a
+        /// skyburst. So "the heavy skyburst and nothing else" falls out of the weapon rather than
+        /// out of a bool somebody has to remember to set, which matters here more than usual: the
+        /// two rockets are ONE prefab and ONE pool (<see cref="ProjectilePayload"/>), so a prefab
+        /// flag could not have told them apart at all.</para>
+        ///
+        /// <para>Three states report no front, and each eases out rather than cutting:
+        /// <c>_moveCts == null</c> (a round in the pool, or one already stopped),
+        /// <see cref="IsDetonating"/> (the blast itself is arriving — the front's job is over), and
+        /// a zero multiplier (no warhead). The radius is LIVE, because the round swells up to 20x in
+        /// the first fifth of its flight as MASS scales it and the warhead swells with it.</para>
         /// </summary>
-        public bool TryGetWakeMotion(out Vector3 velocity, out float radius)
+        public bool TryGetShockwaveReach(out float reach)
         {
-            if (!leavesWake || _moveCts == null)
-            {
-                velocity = Vector3.zero;
-                radius = 0f;
-                return false;
-            }
+            reach = 0f;
+            if (_moveCts == null || IsDetonating) return false;
 
-            velocity = Velocity;
-            radius = _sweepRadius;
-            return radius > 0f;
+            float multiplier = WarheadBlastRadiusMultiplier;
+            if (multiplier <= 0f) return false;
+
+            reach = HitRadiusWorld * multiplier;
+            return reach > 0f;
         }
 
         /// <summary>
-        /// Grants this round its <see cref="PrismWakeSource"/> when it is authored to leave one.
-        /// Called from <c>Awake</c>, which for a pooled projectile runs exactly once per instance,
-        /// so the component is never added twice and never added to the 99% of rounds that do not
-        /// want it. The source resolves this component as its carrier on the same call.
+        /// Grants this round its <see cref="PrismWakeSource"/> when its prefab authors a warhead at
+        /// all. Called from <c>Awake</c>, which for a pooled projectile runs exactly once per
+        /// instance, so the component is never added twice and never added to the rounds that could
+        /// never have a front. It reads the AUTHORED multiplier rather than
+        /// <see cref="WarheadBlastRadiusMultiplier"/>, because the payload that decides base-vs-heavy
+        /// does not exist yet at Awake and both variants come out of the same pool — the per-FLIGHT
+        /// answer belongs to <see cref="TryGetShockwaveReach"/>, which the source asks every frame.
         /// </summary>
         void EnsureWakeSource()
         {
-            if (!leavesWake) return;
+            if (warheadBlastRadiusMultiplier <= 0f) return;
             if (!TryGetComponent<PrismWakeSource>(out _))
                 gameObject.AddComponent<PrismWakeSource>();
         }

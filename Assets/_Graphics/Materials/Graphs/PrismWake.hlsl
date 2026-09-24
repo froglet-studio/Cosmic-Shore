@@ -2,112 +2,108 @@
 // (Docs/PRISM_ANIMATION.md §4.7.3, the FOURTH citizen of §4.7's "global uniform" shape for a
 // prism visual that depends on live gameplay data, and the SECOND that moves VERTICES.)
 //
-// PURPOSE. A vessel travelling fast enough drags a travelling ripple through the mass it is
-// passing — most visibly the RAILS of the ribbon it is laying, which run either side of the
-// disturbance. The mass around the ship's recent path swells away from that path and shrinks
-// back toward it in a wave that streams BACKWARD, so the crests sit still in the world and the
-// pilot flies out from under them. Note "around the path" is literal: the map is a strain, the
-// axis is a fixed point, and mass lying exactly ALONG the path is barely moved. It reads as a boat's wake: the faster you go, the more of it
-// there is, and it is a thing other pilots can see you leaving behind you.
+// PURPOSE — a SHOCKWAVE FRONT. A warhead in flight throws a pulse outward through the mass it is
+// passing: a thin spherical SHELL of rippled prisms that is born at the round's own skin and
+// travels out to the exact radius that warhead's blast will reach, over and over, all the way in.
+// So the shell is not decoration — it is the blast's own reach, drawn on the mass rather than on
+// the HUD, and the pilot flying at it can read how far the thing goes off before it does.
 //
-// WHY IT IS A GLOBAL AND NOT A STAMP. "Where is that hull, which way is it pointing, and how
-// far through the wave is it" is live per-frame data — it changes every frame for every prism
-// as the ship flies. It can therefore never be a per-prism stamp (§1: could the GPU have
-// computed this frame's value from what was known when the prism was laid? No — the ship had
-// not arrived yet), and a per-prism CPU pass that writes each prism's material is exactly what
-// the clock-material law exists to prevent. The law's sanctioned shape is a GLOBAL uniform
-// (§4.7): O(1) writes per frame that every prism reads. The residency swap that gives those
-// prisms a surface to ripple is NOT an exception either — a mesh override is a STATE CHANGE,
-// final at the instant it is applied exactly like a shield engaging, not an animation.
+// IT IS HALF OF A PAIR, and the pair is the point. The same round publishes its armed fuze volume
+// as a LIT SPHERE (Docs/LIT.md, `Projectile.PublishFuzeLit`): mass standing where this warhead
+// WILL go off, in the shooter's domain colour. That says WHERE, statically, in colour. This says
+// HOW FAR, kinetically, in motion — a front sweeping out through the same mass to the warhead's
+// own radius. Two channels of the surface description (colour and vertices), one weapon, and
+// neither one duplicating the other.
 //
-// WHY A CYLINDER AND NOT A SPHERE. The cradle (§4.7.2) is spherical because it drapes onto a
-// hull. A wake is about a PATH, so its natural frame is cylindrical about the line the ship
-// just flew down — and that matters for more than tidiness: the trail ribbon is laid ON that
-// line, so a field measured from the ship's CENTRE would have had the ribbon sitting at one
-// roughly-constant distance and rippling as a whole, where a field measured from the AXIS has
-// the ribbon rippling ALONG ITS LENGTH, which is the thing that reads as a wake.
+// WHY A SPHERE, having been a CYLINDER. The first cut framed this cylindrically about the path a
+// fast VESSEL had just flown, because a wake is about a path — and it was pulled off the fleet
+// after one playtest (an effect strong enough to be an EVENT stops being one when every hull in
+// the match trails one). What is left is a warhead, and a warhead's force is not about a path at
+// all: it is radial about a point, it has a RADIUS the gameplay already authors, and its front
+// travels outward rather than streaming backward. The frame follows the force, so the frame is a
+// sphere about the round — the cradle's frame (§4.7.2), not the old wake's.
 //
 // THE UNIFORMS (published by PrismWake.cs once per frame, in LateUpdate, from a frame-stamped
-// registry of vessels above the wake speed):
-//   float4 _PrismWakeCentre[N] — xyz: the hull's world centre this frame. w: its radius,
-//                                carried for tooling and NOT read here — everything the map
-//                                derives from the radius arrives already derived in Shape.
-//   float4 _PrismWakeAxis[N]   — xyz: the unit wake axis, pointing BEHIND the ship (-course).
-//                                w:   the wave's phase in radians, integrated on the CPU so the
-//                                     crests hold still in the world while the ship flies on.
-//   float4 _PrismWakeShape[N]  — x: eased strength 0..1 (the speed window's ramp).
-//                                y: radial reach, world units.
-//                                z: train length behind the ship, world units.
-//                                w: wavenumber k, radians per world unit along the axis.
-//                                All four are DERIVED ON THE CPU from the hull's radius and the
-//                                config, so the shader derives nothing the publisher also
-//                                derives — there is one copy of each formula, not two.
-//   float4 _PrismWakeParams    — (amplitude, radialExponent, liveSlotCount, 0).
+// registry of live shockwaves):
+//   float4 _PrismWakeCentre[N] — xyz: the round's world centre this frame.
+//                                w:   the FRONT radius c, world units — where the shell is right
+//                                     now. Integrated on the CPU so a pulse keeps travelling at
+//                                     one speed while the round's own radius grows under it.
+//   float4 _PrismWakeShape[N]  — x: eased strength 0..1 (the speed window's ramp x the decay the
+//                                   front takes as it expands).
+//                                y: the front's HALF-THICKNESS sigma, world units.
+//                                z: the reach — the warhead's own blast radius, world units.
+//                                   Carried for tooling and residency parity; the MAP does not
+//                                   read it, because the support is |r - c| < sigma and nothing
+//                                   else.
+//                                w: unused, 0.
+//   float4 _PrismWakeParams    — (amplitude, wavesInFront, liveSlotCount, 0).
 //                                liveSlotCount is the MASTER SENTINEL: an unpublished global
 //                                reads as zero, and zero must mean "the loop does not execute".
+//   _PrismWakeAxis is GONE. A sphere has no axis. Nothing writes it and nothing reads it.
 //
 // The arrays are declared at FILE SCOPE, not as graph properties (Shader Graph has no array
 // property type — which is why wiring this needed no property surgery on either graph), and
 // OUTSIDE every CBUFFER: they are per-FRAME globals, and an array inside UnityPerMaterial is
-// what breaks SRP batching.
+// what breaks SRP batching. The bank is still FOUR slots under the same names, which is why this
+// supersession carries none of the pinned-array-length hazard Docs/LIT.md records — Unity pins a
+// global array's length at its first write for the whole session, keyed on the NAME, and a length
+// that does not change cannot be pinned wrong.
 //
-// THE MAP, in WORLD space and in the cylindrical frame about the ship's path:
+// THE MAP, in WORLD space and in the spherical frame about the round:
 //
-//   Let U be the hull centre, â the unit wake axis (behind the ship), p the vertex, and
-//       q = p − U,  x = dot(q, â),  rv = q − x·â,  r = |rv|,  r̂ = rv/r.
-//   x is the distance BEHIND the ship, r the distance OUT from its path. The whole deformation
-//   is one line — every affected vertex is pushed along its own radius from the path by a
-//   dimensionless STRAIN:
+//   Let U be the round's centre, p the vertex, q = p - U, r = |q|, r_hat = q/r, and
+//       s = (r - c) / sigma        (where the vertex sits across the shell, -1 .. 1)
 //
-//       p' = U + x·â + r·(1 + E) · r̂,     E = A · w · g(x/L) · K(r/reach) · sin(ψ − k·x)
+//       P(s) = (1 - s^2)^2 * sin(2*pi*Q*s)            for |s| < 1, and EXACTLY 0 outside
+//       f(r) = r + sigma * A * w * P(s)
+//       p'   = U + f(r) * r_hat
 //
-//   Read it as three factors and it is the wake:
-//     • sin(ψ − k·x) is the wave. ψ is integrated at the ship's own speed, so a crest sits at a
-//       fixed WORLD position and the ship flies out from under it; raise the publisher's travel
-//       factor and the crests stream backward as well.
-//     • g(x/L) is the TRAIN: a bump that is exactly zero — value AND first derivative — at the
-//       ship's own plane and again one train-length behind it. Those two planes are swept
-//       through mass at speed, so a kink at either would read as an invisible wall passing.
-//     • K(r/reach) is the RADIAL falloff: 1 on the path itself, flat there (K'(0) = 0, so the
-//       ribbon does not crease along its own spine), decaying to exactly zero at the reach.
+//   Read it as two factors and it is a shockwave front:
+//     * sin(2*pi*Q*s) is the pulse. Q whole cycles ACROSS THE SHELL and nothing outside it — the
+//       short bandwidth is the whole design. The old cylinder carried a TRAIN of crests filling
+//       its whole support; this carries one wavelet, so what the eye follows is an edge arriving
+//       and passing rather than a standing corrugation.
+//     * (1 - s^2)^2 is the window that makes "and nothing outside it" true to FIRST DERIVATIVE as
+//       well as value: it has a DOUBLE root at both faces, so P and P' both vanish there on the
+//       window's own account, whatever Q is. That matters because the shell's two faces sweep
+//       through mass at speed and a kink at either would read as an invisible wall passing.
+//       Taking Q WHOLE then buys the second derivative as well (the sine vanishes at the faces
+//       too, so P'' does), and buys the honest reason: a whole number of cycles is a complete
+//       wavelet rather than one cut off mid-swing.
 //
-//   WHY A STRAIN AND NOT AN OFFSET. Displacing by a distance D(x,r) along r̂ is the obvious
-//   version and it is singular: r̂ is undefined on the axis, and a vertex at r < D crosses the
-//   path and turns the prism inside out. Scaling r instead makes the axis a FIXED POINT — the
-//   displacement is r·E, which vanishes with r — so the map has no singularity anywhere and
-//   never folds, and the bound that guarantees it is one dimensionless number with no hull
-//   radius in it (see NO FOLD below).
+//   WHY THE AMPLITUDE IS ABSOLUTE AND NOT A STRAIN. The old cylinder scaled r by (1+E), a
+//   dimensionless strain, which made displacement grow with distance from the path — correct for
+//   a 30-unit reach and wrong for a 95-unit one, where the outermost mass would move 40 units.
+//   Here the displacement is sigma*A*w*P, BOUNDED by sigma*A everywhere: a front of a given
+//   thickness carries a ripple of a given depth, which is what a front is. The strain map's one
+//   real virtue is kept for free — the centre is still a fixed point, because P vanishes at the
+//   shell's inner face and the shell never reaches the centre (see NO FOLD).
 //
-//   FALLOFFS. The train is g(u) = 4·S(u)·S(1−u) on u ∈ [0,1] with S the smoothstep polynomial:
-//   exactly 1 at the midpoint, exactly zero with zero slope at both ends. The radial falloff is
-//   K(t) = (1 − S(t))^e, the cradle's own family — 1 and flat at t = 0, zero and flat at t = 1
-//   for e ≥ 1, which is why e is clamped there (below 1 its derivative diverges at the edge).
+//   THE NORMAL is the ANALYTIC inverse-transpose of that map, and it is the CRADLE's shape rather
+//   than the old wake's. A purely radial f(r) has differential diag(a, b, b) in (r_hat, theta,
+//   phi), so there is NO shear term at all — the old one existed only because that wave travelled
+//   along an axis while displacing along a radius, and here the travel IS the radius:
+//       a = f'(r) = 1 + A*w*P'(s)        (radial stretch)
+//       b = f(r)/r                       (both tangential stretches)
+//       n' = r_hat*(n_r/a) + (n - r_hat*n_r)/b
+//   At P == 0 that is n bit for bit, which is what makes the shell's faces seamless.
 //
-//   THE NORMAL is the ANALYTIC inverse-transpose of that map. In the orthonormal cylindrical
-//   frame (â, r̂, θ̂) the differential of p' is
-//       J = [[1, 0, 0], [Rx, b, 0], [0, 0, c]]    (rows â r̂ θ̂, columns x r θ)
-//   with  Rx = r·∂E/∂x   (the SHEAR — the part that is unique to a travelling wave, and the
-//                         part the harness's negative control switches off),
-//         b  = (1+E) + r·∂E/∂r    (radial stretch),
-//         c  = 1 + E              (circumferential stretch, Rr/r).
-//   Inverting and transposing gives three terms and two divisions:
-//       n' = â·(n_a − Rx·n_r/b) + r̂·(n_r/b) + n_θ̂/c.
-//   At E ≡ 0 that is n bit for bit, which is what makes the support boundary seamless.
+//   NO FOLD, BY CONSTRUCTION, AND ONE CONDITION DOES BOTH. The map folds if a <= 0 or b <= 0.
+//     * a > 0  <=>  A*w*|P'(s)| < 1 everywhere, and max|P'| = 2*pi*Q, attained at s = 0. So
+//       A < 1/(2*pi*Q): one dimensionless number, with no radius, no reach and no thickness in
+//       it, so retuning any of those cannot invalidate it. PrismWakeConfigSO derives the clamp
+//       from Q rather than hard-coding it.
+//     * b > 0 follows from a > 0 and needs no second bound. a > 0 means f is strictly increasing,
+//       so on the support f(r) > f(c - sigma) = c - sigma, and the publisher guarantees the front
+//       is born at c >= sigma (the shell never straddles the centre). Hence f > 0, hence b > 0.
+//   The harness measures both rather than trusting the derivation.
 //
-//   NO FOLD, BY CONSTRUCTION. The map folds only if b ≤ 0 or c ≤ 0. Both are bounded by the
-//   amplitude alone:
-//       |E| ≤ A                       so c ≥ 1 − A
-//       |r·∂E/∂r| ≤ A·max|t·K'(t)|    so b ≥ 1 − A(1 + max|t·K'(t)|)
-//   and max|t·K'(t)| over e ∈ [1,6] is 0.889 (attained at e = 1, t = 2/3). So b > 0 for every
-//   A < 1/1.889 = 0.529, which is why PrismWakeConfigSO clamps the amplitude to 0.45 — a proof
-//   that needs no hull radius, no reach and no wavelength, and therefore cannot be invalidated
-//   by retuning any of them. The harness measures it as well as deriving it.
-//
-// SLOT SELECTION. With several vessels boosting at once the slot with the greatest authority
-// (w·g·K) at this vertex wins outright; the others contribute nothing. Summing two cylindrical
-// fields about two different axes is not a cylindrical field about anything, so its normal
-// could not be derived analytically — and the seam between two wakes is a place no shading is
-// right, whereas a hard handover happens where both are weak.
+// SLOT SELECTION. With several shockwaves live the slot with the greatest authority
+// (w * (1-s^2)^2) at this vertex wins outright; the others contribute nothing. Summing two
+// spherical fields about two different centres is not a spherical field about anything, so its
+// normal could not be derived analytically — and the seam between two fronts is a place no
+// shading is right, whereas a hard handover happens where both are weak.
 //
 // MESHES. Nothing here reads a tangent, a UV, an adjacency or a face index: the map is a pure
 // function of world POSITION and world NORMAL, so it is correct on the high-poly copy the
@@ -115,100 +111,79 @@
 // the exploding debris. There is no geometry it can be wrong about — only geometry too coarse
 // to show it, which is what the residency pass exists to fix.
 //
-// COST CONTRACT. A vertex with no wake live executes one integer compare and returns. With one
-// live it costs two matrix transforms in, one loop iteration per live slot (≤ 4), one sincos,
-// two pow and two transforms out. No fragment cost, no extra varying, no texture, no batch
-// split, no material swap, no draw call — the high-poly mesh is SHARED.
+// COST CONTRACT. A vertex with no shockwave live executes one integer compare and returns. With
+// one live it costs two matrix transforms in, one loop iteration per live slot (<= 4), one
+// sincos and two transforms out — one pow FEWER than the cylinder, since both falloffs collapsed
+// into one polynomial window. No fragment cost, no extra varying, no texture, no batch split, no
+// material swap, no draw call — the high-poly mesh is SHARED.
 //
 // KNOWN IMPRECISIONS, both recorded rather than fixed.
-//   • The frame is the ship's CURRENT heading, not its path history. A hard turn swings the
-//     whole train rather than bending it, so a wake laid through a corner reads as straighter
-//     than the corner was. A true path wake needs per-vertex history, which no closed-form map
-//     can carry.
-//   • Entities Graphics culls by the prism's RenderBounds, which a per-frame global cannot
-//     expand. A vertex can move up to A·0.213·reach, so a prism whose bounds are just off
-//     screen can carry a rippled face that should be on screen and is culled with the prism.
+//   * The front is a SPHERE about the round's current position, and the round is moving, so a
+//     pulse launched a moment ago is re-centred on where the round is NOW rather than on where it
+//     was when the pulse left. Over one pulse's life at the shipped rate that is a fraction of
+//     the shell's own thickness; a true trailing front would need per-pulse history, which no
+//     closed-form map can carry.
+//   * Entities Graphics culls by the prism's RenderBounds, which a per-frame global cannot
+//     expand. A vertex can move up to sigma*A, so a prism whose bounds are just off screen can
+//     carry a rippled face that should be on screen and is culled with the prism.
 
 #ifndef PRISM_WAKE_INCLUDED
 #define PRISM_WAKE_INCLUDED
 
-// How many vessels can leave a wake at once. Mirrors PrismWake.Slots in PrismWake.cs — change
-// both together, since the arrays are declared at this length. Four is the largest roster any
-// arcade mode seats; the publisher keeps the strongest (and then the nearest) if it overflows.
+// How many shockwaves can be live at once. Mirrors PrismWake.Slots in PrismWake.cs — change both
+// together, since the arrays are declared at this length (and see the header on why keeping it at
+// four is what makes this supersession free of the pinned-length hazard).
 #ifndef PRISM_WAKE_SLOTS
 #define PRISM_WAKE_SLOTS 4
 #endif
 
-// Floor on the two stretch terms when inverting the Jacobian. The amplitude clamp already
-// proves both are positive (see NO FOLD above); this is the guard that makes "already proves"
+// Floor on the two stretch terms when inverting the Jacobian. The amplitude clamp already proves
+// both are positive (see NO FOLD in the header); this is the guard that makes "already proves"
 // not load-bearing against an asset edited past its own range by hand.
 #ifndef PRISM_WAKE_MIN_STRETCH
 #define PRISM_WAKE_MIN_STRETCH 1e-3
 #endif
 
-// The Jacobian's SHEAR term — the off-diagonal that comes from the wave travelling along the
-// axis, and the one part of this normal that the cradle's spherical map has no analogue for.
-// Shipping value is 1. The harness's negative control rebuilds this file with it at 0 and
-// asserts the derivative test then STOPS converging, so "the analytic normal is what holds
-// that test" is a measured claim rather than an assumed one.
-#ifndef PRISM_WAKE_SHEAR_GAIN
-#define PRISM_WAKE_SHEAR_GAIN 1.0
+// The Jacobian's RADIAL stretch term a = f'(r) — the one that carries the whole derivative of the
+// pulse, and therefore the whole of what makes this normal the map's own. Shipping value is 1. The
+// harness's negative control rebuilds this file with it at 0 (so a collapses to 1, the identity
+// stretch) and asserts the derivative test then STOPS converging, so "the analytic normal is what
+// holds that test" is a measured claim rather than an assumed one.
+#ifndef PRISM_WAKE_RADIAL_GAIN
+#define PRISM_WAKE_RADIAL_GAIN 1.0
 #endif
 
-float4 _PrismWakeCentre[PRISM_WAKE_SLOTS];  // xyz hull centre, w hull radius
-float4 _PrismWakeAxis[PRISM_WAKE_SLOTS];    // xyz unit axis (behind the ship), w phase radians
-float4 _PrismWakeShape[PRISM_WAKE_SLOTS];   // x strength, y reach, z train length, w wavenumber
-float4 _PrismWakeParams;                    // (amplitude, radialExponent, liveSlotCount, 0)
+float4 _PrismWakeCentre[PRISM_WAKE_SLOTS];  // xyz round centre, w front radius c
+float4 _PrismWakeShape[PRISM_WAKE_SLOTS];   // x strength, y half-thickness sigma, z reach, w 0
+float4 _PrismWakeParams;                    // (amplitude, wavesInFront, liveSlotCount, 0)
 
-// The train envelope g(u) and its derivative dg/du, together because every caller needs both
-// (the position wants g, the normal wants g and g'). g = 4·S(u)·S(1−u) is exactly 1 at the
-// midpoint and exactly zero — value and slope — at u = 0 and u = 1. Note S'(u) and S'(1−u) are
-// the SAME polynomial (6u(1−u) is symmetric about ½), which is what collapses the derivative to
-// one product.
-void PrismWakeTrain(float u, out float g, out float dg)
+// The front's wavelet P(s) and its derivative dP/ds, together because every caller needs both
+// (the position wants P, the normal wants P'). P = (1-s^2)^2 * sin(2*pi*Q*s) is exactly zero —
+// value AND slope — at both faces of the shell, because the window has a double root there; a
+// whole Q kills the curvature too. max|P'| = 2*pi*Q exactly, at s = 0, which is the number the
+// amplitude clamp is derived from.
+void PrismWakeFront(float s, float cycles, out float P, out float dP)
 {
-    if (u <= 0.0 || u >= 1.0)
+    if (s <= -1.0 || s >= 1.0)
     {
-        g = 0.0;
-        dg = 0.0;
+        P = 0.0;
+        dP = 0.0;
         return;
     }
-    float v = 1.0 - u;
-    float Su = u * u * (3.0 - 2.0 * u);           // smoothstep(0,1,u)
-    float Sv = v * v * (3.0 - 2.0 * v);           // smoothstep(0,1,1-u)
-    float dS = 6.0 * u * v;                       // S'(u) == S'(1-u)
-    g = 4.0 * Su * Sv;
-    dg = 4.0 * dS * (Sv - Su);
+    float e = 1.0 - s * s;
+    float win = e * e;                            // (1 - s^2)^2
+    float dwin = -4.0 * s * e;                    // d/ds (1 - s^2)^2
+    float k = 6.28318530718 * cycles;             // 2*pi*Q
+    float sn, cs;
+    sincos(k * s, sn, cs);
+    P = win * sn;
+    dP = dwin * sn + win * k * cs;
 }
 
-// The radial falloff K(t) and its derivative dK/dt on t = r/reach. The cradle's own family: 1
-// and FLAT at t = 0 (so the ribbon lying on the path does not crease along its spine) and zero
-// and flat at t = 1 (so the outer edge of the wake has no seam).
-void PrismWakeRadial(float t, float e, out float K, out float dK)
-{
-    if (t <= 0.0)
-    {
-        K = 1.0;
-        dK = 0.0;
-        return;
-    }
-    if (t >= 1.0)
-    {
-        K = 0.0;
-        dK = 0.0;
-        return;
-    }
-    float S = t * t * (3.0 - 2.0 * t);
-    float dS = 6.0 * t * (1.0 - t);
-    float u = 1.0 - S;
-    K = pow(u, e);
-    dK = -e * pow(u, e - 1.0) * dS;
-}
-
-// Position and Normal are OBJECT space. They arrive at the END of the prism vertex chain (after
-// grow, shield morph, jiggle, flight, suction and the cradle). Outputs are object space too —
-// the graph's VertexDescription blocks take object space, and the model matrix is applied after
-// this.
+// Position and Normal are OBJECT space. They arrive in the middle of the prism vertex chain (after
+// grow, shield morph, sway, jiggle, flight and suction, and BEFORE the cradle — the cradle closes
+// mass onto a hull resting on it and must see the rippled position). Outputs are object space too
+// — the graph's VertexDescription blocks take object space, and the model matrix is applied after.
 void PrismWakeDeform_float(float3 Position, float3 Normal,
     out float3 OutPosition, out float3 OutNormal)
 {
@@ -221,10 +196,10 @@ void PrismWakeDeform_float(float3 Position, float3 Normal,
 #else
     int count = (int)_PrismWakeParams.z;
     if (count <= 0)
-        return;                                   // master sentinel: nobody is moving fast enough
+        return;                                   // master sentinel: no shockwave is live
 
     float amp = _PrismWakeParams.x;
-    float expo = max(_PrismWakeParams.y, 1.0);
+    float cycles = max(_PrismWakeParams.y, 1.0);
     if (!(amp > 0.0))
         return;                                   // unpublished / insane amplitude: off
 
@@ -249,15 +224,14 @@ void PrismWakeDeform_float(float3 Position, float3 Normal,
 
     float3 pW = mul(M, float4(Position, 1.0)).xyz;
 
-    // The slot with the greatest authority (w·g·K) at THIS vertex, resolved before anything is
-    // moved. One cylindrical field wins outright — see SLOT SELECTION in the header.
+    // The slot with the greatest authority (w * window) at THIS vertex, resolved before anything
+    // is moved. One spherical field wins outright — see SLOT SELECTION in the header.
     float bestAuthority = 0.0;
-    float bestE = 0.0;
-    float bestEx = 0.0;
-    float bestEr = 0.0;
+    float bestP = 0.0;
+    float bestdP = 0.0;
     float bestR = 0.0;
-    float bestX = 0.0;
-    float3 bestAxis = float3(0.0, 0.0, 1.0);
+    float bestSigma = 0.0;
+    float bestW = 0.0;
     float3 bestRadial = nW;
     float3 bestU = float3(0.0, 0.0, 0.0);
 
@@ -267,67 +241,54 @@ void PrismWakeDeform_float(float3 Position, float3 Normal,
 
         float4 shape = _PrismWakeShape[i];
         float w = saturate(shape.x);
-        float reach = shape.y;
-        float trainLen = shape.z;
-        float waveK = shape.w;
-        if (!(w > 0.0) || !(reach > 0.0) || !(trainLen > 0.0)) continue;
+        float sigma = shape.y;
+        if (!(w > 0.0) || !(sigma > 0.0)) continue;
 
-        float4 axisSlot = _PrismWakeAxis[i];
-        float3 axis = axisSlot.xyz;
-        // A published axis is always unit; 0.25 rejects an unset slot and a NaN without
-        // pretending to renormalise something that carries no direction.
-        if (!(dot(axis, axis) > 0.25)) continue;
+        float4 centreSlot = _PrismWakeCentre[i];
+        float front = centreSlot.w;
+        if (!(front > 0.0)) continue;             // no pulse in flight in this slot
 
-        float3 q = pW - _PrismWakeCentre[i].xyz;
-        float x = dot(q, axis);
-        if (!(x > 0.0) || x >= trainLen) continue; // in front of the ship, or past the train
+        float3 q = pW - centreSlot.xyz;
+        float r = length(q);
+        if (!(r > 1e-4)) continue;                // at the round's own centre: nothing to push
 
-        float3 rv = q - axis * x;
-        float r = length(rv);
-        if (!(r > 1e-4) || r >= reach) continue;   // on the path line, or outside the reach
+        float s = (r - front) / sigma;
+        if (s <= -1.0 || s >= 1.0) continue;      // outside the shell
 
-        float g, dg;
-        PrismWakeTrain(x / trainLen, g, dg);
-        float K, dK;
-        PrismWakeRadial(r / reach, expo, K, dK);
-
-        float authority = w * g * K;
+        float e = 1.0 - s * s;
+        float authority = w * e * e;
         if (authority <= bestAuthority) continue;
 
-        float sn, cs;
-        sincos(axisSlot.w - waveK * x, sn, cs);
-        float aw = amp * w;
+        float P, dP;
+        PrismWakeFront(s, cycles, P, dP);
 
         bestAuthority = authority;
-        bestE  = aw * g * K * sn;
-        bestEx = aw * K * ((dg / trainLen) * sn - g * waveK * cs);
-        bestEr = aw * g * (dK / reach) * sn;
+        bestP = P;
+        bestdP = dP;
         bestR = r;
-        bestX = x;
-        bestAxis = axis;
-        bestRadial = rv / r;
-        bestU = _PrismWakeCentre[i].xyz;
+        bestSigma = sigma;
+        bestW = w;
+        bestRadial = q / r;
+        bestU = centreSlot.xyz;
     }
 
     if (!(bestAuthority > 0.0))
-        return;                                   // no wake reaches this vertex
+        return;                                   // no front reaches this vertex
 
-    // The map (header): scale the vertex's distance from the path by the local strain. The
-    // axis itself is a fixed point, which is what makes the map singularity-free.
-    float stretch = 1.0 + bestE;
-    float3 pNew = bestU + bestAxis * bestX + bestRadial * (bestR * stretch);
+    // The map (header): displace the vertex along its own radius from the round by the front's
+    // wavelet, in world units. The centre is a fixed point — the shell never reaches it.
+    float aw = amp * bestW;
+    float f = bestR + bestSigma * aw * bestP;
+    float3 pNew = bestU + bestRadial * f;
 
-    // The analytic inverse-transpose of that map, in the cylindrical frame.
-    float c = max(stretch, PRISM_WAKE_MIN_STRETCH);
-    float b = max(stretch + bestR * bestEr, PRISM_WAKE_MIN_STRETCH);
-    float shear = bestR * bestEx;
+    // The analytic inverse-transpose of that map, in the spherical frame. No shear term: a purely
+    // radial f(r) has a diagonal differential.
+    float a = max(1.0 + PRISM_WAKE_RADIAL_GAIN * aw * bestdP, PRISM_WAKE_MIN_STRETCH);
+    float b = max(f / bestR, PRISM_WAKE_MIN_STRETCH);
 
-    float na = dot(nW, bestAxis);
     float nr = dot(nW, bestRadial);
-    float3 nt = nW - bestAxis * na - bestRadial * nr;   // the circumferential component
-    float3 nNew = bestAxis * (na - PRISM_WAKE_SHEAR_GAIN * shear * nr / b)
-                + bestRadial * (nr / b)
-                + nt / c;
+    float3 nt = nW - bestRadial * nr;             // the two tangential components together
+    float3 nNew = bestRadial * (nr / a) + nt / b;
     float nNewLenSq = dot(nNew, nNew);
     if (!(nNewLenSq > 1e-12))
         nNew = nW;

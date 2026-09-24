@@ -439,40 +439,53 @@ The family is defined by four axes. A new member is a choice on each:
 - **CRADLE** (Urchin, `Docs/PRISM_ANIMATION.md` §4.7.2) — *hull · drape · riding · 24 × s16*.
   Mass around a riding hull slides along its own radius onto the hull's sphere; inside closes
   over, outside rises to meet.
-- **WAKE** (`Docs/PRISM_ANIMATION.md` §4.7.3) — *carrier · travelling ripple · at speed ·
-  96 × s12*. A fast-moving CARRIER — the Sparrow's skyburst missile, the Scarab's ball — drags a
-  ripple through the mass around its recent path. **Eight things it established that the next
-  member inherits:**
-  (a) **a member need not belong to a vessel at all, and this one was taken OFF the fleet.** It
-  shipped on every vessel, bound where the platform laws bind, and the playtest verdict was
-  *"awesome effect, but it will be overused as a wake on every vessel"* — so ask **who the effect
-  is FOR and how OFTEN it happens** before reaching for a per-vessel gate. See (h), which is the
-  same finding from the budget's side. (b) **Pick the frame from what
-  the effect is ABOUT** — cylindrical about the path, not spherical about the hull, because the
-  trail is laid on that line. (c) **Prefer a dimensionless STRAIN to a displacement**: scaling a
-  coordinate makes its origin a fixed point, so the map is singularity-free and the no-fold bound
-  becomes one number with no geometry in it (`A·(1 + max|t·K'(t)|) < 1`) that a retune of the
-  reach or the wavelength cannot invalidate. (d) A map whose field TRAVELS has an off-diagonal
-  **shear** in its Jacobian that a static map does not — it is the term a "close enough" normal
-  omits, so make it the `#ifndef` dial and let the negative control prove it is load-bearing.
-  (e) **Splice ORDER between two morphs is a real decision and nothing on screen reports it**:
-  the wake runs BEFORE the cradle, because the cradle closes mass onto a hull resting on it and a
-  wake applied after would re-open the hole. Assert both edges.
-  (f) **A strain's fixed point is part of the design, so say where the mass you are aiming at
-  actually IS.** The wake's header claimed it was most visible on the trail, and the trail is laid
-  essentially along the axis — where displacement `r·E` is smallest. The Squirrel happens to lay
-  **two** rails ±9.6 u out, so it works; a single-rail hull would have been in the dead zone, and
-  the reach (`hullRadius × 3` as first authored) could put even those rails outside the falloff
-  entirely. Measure the geometry the effect is aimed at before authoring a reach in hull radii.
-  (g) **An ABSOLUTE window is a claim about the fleet's real numbers, so author it from
-  measurements** (and from the CARRIER'S, once there is one — the shipped window is the ball's own
-  `ballRestSpeed`). The wake's engage speed shipped at 150 u/s against a Squirrel that cruises at 54
-  and tops out at 300, so on the hull the mode flies the effect never ran — and the playtest
-  report was *"too subtle"*, because **a window that never opens is indistinguishable on screen
-  from an effect that is too weak.** Which is why every member of this family should ship with a
+- **SHOCKWAVE FRONT** (`Docs/PRISM_ANIMATION.md` §4.7.3) — *warhead · travelling spherical shell ·
+  while armed · 96 × s12*. A warhead in flight (the Sparrow's HEAVY skyburst, and nothing else)
+  throws a thin shell of rippled prisms outward to the exact radius its blast will go off in. **Ten
+  things it established that the next member inherits:**
+  (a) **a member need not belong to a vessel at all, and this one was taken OFF the fleet, and then
+  off its second carrier.** It shipped on every vessel, bound where the platform laws bind, and the
+  playtest verdict was *"awesome effect, but it will be overused as a wake on every vessel"*; it then
+  spent a branch on two carriers and the ball was pulled for the same reason one step down, because a
+  ball is in play for a WHOLE MATCH. So ask **who the effect is FOR and how OFTEN it happens** before
+  reaching for a per-vessel gate. See (h), which is the same finding from the budget's side.
+  (b) **Pick the frame from what the effect is ABOUT — the frame follows the FORCE.** This was
+  cylindrical about a path while it was a wake (a wake is about a path, and the trail is laid on that
+  line) and is spherical about the round now that it is a blast front, because a warhead's force is
+  radial about a point and has a RADIUS the gameplay already authors. Changing what the effect IS
+  changes the frame, and every frame-specific piece goes with it: an axis array, a Jacobian shear
+  term, a second residency filter.
+  (c) **An amplitude is either a STRAIN or a LENGTH, and which one is a claim about scale.** Scaling
+  a coordinate (`r → r(1+E)`) makes the origin a fixed point, is singularity-free, and bounds the
+  no-fold condition with one dimensionless number — but the displacement then GROWS with the
+  coordinate, which was right at a 30 u reach and would have moved a 95 u reach's outer mass 40 u.
+  A bounded offset (`r → r + σAwP`) keeps the fixed point *by construction of the support* (the
+  shell never reaches the centre) and bounds the displacement instead. Pick by asking what the
+  effect's own scale is.
+  (d) **DERIVE the no-fold bound from the shape's own parameters rather than measuring a constant.**
+  Here `max|P′| = 2πQ` exactly, so `A < 1/(2πQ)` and `PrismWakeConfigSO.FoldingAmplitude` computes
+  the clamp from the bandwidth — raising the bandwidth automatically lowers the allowed amplitude,
+  where a literal clamp would have silently become wrong. And look for a SECOND bound you can make
+  FOLLOW rather than assert: here `b > 0` follows from `a > 0` plus the publisher's guarantee that
+  the front is born at `c = σ`, which makes that birth radius half the proof rather than a taste
+  decision.
+  (e) **The Jacobian's shape follows the frame.** A purely radial map has a diagonal differential and
+  therefore no shear; a map whose field travels along an axis while displacing along a radius has an
+  off-diagonal term. Whichever term carries the derivative of the *interesting* factor is the one a
+  "close enough" normal omits — make THAT the `#ifndef` dial and let the negative control prove it is
+  load-bearing.
+  (f) **Splice ORDER between two morphs is a real decision and nothing on screen reports it**: this
+  runs BEFORE the cradle, because the cradle closes mass onto a hull resting on it and a ripple
+  applied after would re-open the hole. Assert both edges.
+  (g) **An ABSOLUTE window is a claim about the fleet's real numbers, and the right answer may be to
+  have no window at all.** The cylinder's engage speed shipped at 150 u/s against a Squirrel that
+  cruises at 54, so on the hull the mode flies the effect never ran — and the playtest report was
+  *"too subtle"*, because **a window that never opens is indistinguishable on screen from an effect
+  that is too weak.** Re-authoring it from measured speeds was a fix; deleting it was the real one,
+  because a warhead's criterion was never a speed. Every member should still ship with a
   one-line-per-second verbose report on `CSLogChannel.PrismRuntime` naming its live slots, their
-  derived geometry and the resident count, **including the idle case with its reason** — the
-  family's failure modes all render as "nothing is happening" and nothing else separates them.
+  derived geometry and the resident count, **including the idle case with its reason** — the family's
+  failure modes all render as "nothing is happening" and nothing else separates them.
   (h) **THE RESIDENCY BUDGET IS SHARED, so granting a member to N things DIVIDES it rather than
   multiplying the cost** — and that is a different failure from a slow frame. Past a certain
   headcount every instance is back on the authored 24-triangle prism and the effect is silently
@@ -480,6 +493,17 @@ The family is defined by four axes. A new member is a choice on each:
   carries this?" is a design decision the budget also has a vote in, and "a few things that earn
   it" beats "everything, cheaply" for a family whose whole premise is that only a handful of
   prisms can be smooth at a time.
+  (i) **Find the GAMEPLAY QUANTITY that already discriminates, rather than authoring a flag.** The
+  Sparrow's base and heavy rockets are ONE prefab and ONE pool told apart by a per-shot payload, so
+  the first cut's `leavesWake` bool could not tell them apart at all — while
+  `Projectile.WarheadBlastRadiusMultiplier` is already zero on the base rocket and on every
+  non-skyburst prefab in the game. Gating on the weapon costs no authored field and cannot drift.
+  (j) **A member that RECYCLES needs both ends of its own life at zero value AND zero slope**, and
+  the residency publisher must not read that zero as "nothing is live" — this front's strength
+  envelope passes through zero between pulses, and a strength-based slot drop would release and
+  re-acquire all 96 high-poly overrides 1.6 times a second. The SOURCE owns the decision to stop.
+  And note **residency is the effect's REACH, not its current support**: a prism the front has not
+  arrived at yet must already be carrying the dense mesh when it does.
 
 **Candidates — each needs design sign-off before it is built.** These are illustrative shapes
 the machinery already supports, not an approved roster; do not build one because it is listed.
@@ -489,7 +513,11 @@ the machinery already supports, not an approved roster; do not build one because
   consumption is an active force that removes mass while a morph must not.
 - **BLAST BULGE** — *blast front · swell · proximity*. Mass an explosion is about to take swells
   outward along the blast's own axis in the frame before it goes. Must not outlive its prism;
-  the destruction is already a state change and owns the timing.
+  the destruction is already a state change and owns the timing. **Largely SUPERSEDED**: the
+  shockwave front above is this shape, built about the warhead rather than about the detonation, and
+  it covers the anticipation the whole way in rather than for one frame. What is left of this entry
+  is the case the front does not reach — a blast with no flight before it (a mine, the Dolphin's
+  crystal cone) — and it would be a map kind on the existing node, not a new one.
 - **SHIELD SWELL** — *shielding prism · bulge · state flag*. The octahedron engage is already a
   morph of its own mesh; this family's contribution would be the NEIGHBOURS bulging as armour
   engages. Note the ownership interaction in §4.2 — a shielding prism is exactly the case where
@@ -498,9 +526,9 @@ the machinery already supports, not an approved roster; do not build one because
 **Three family-wide rules to carry into any of them:**
 
 1. **One node, many map kinds** — prefer extending the existing morph node with a map kind over
-   splicing a second node into the vertex chain (§5, last bullet). The wake is the sanctioned
-   exception and it shows the cost: a second node is a second slot loop, a second no-fold proof,
-   an explicit order to assert, and — see 3 — a sibling-wirer break.
+   splicing a second node into the vertex chain (§5, last bullet). The shockwave front is the
+   sanctioned exception and it shows the cost: a second node is a second slot loop, a second
+   no-fold proof, an explicit order to assert, and — see 3 — a sibling-wirer break.
 2. **The family shares the mesh, the residency contract and the bank shape.** If a member needs
    to break one of those, that is a fundamentals conversation (`CLAUDE.md ▸ Design Philosophy`),
    not a local exception.
@@ -508,6 +536,6 @@ the machinery already supports, not an approved roster; do not build one because
    the shared definition — a Custom Function node with exactly the four correctly-directed
    Vector3 slots `Position`/`Normal`/`OutPosition`/`OutNormal` — and `walk_past_morphs` is how
    every non-morph wirer reaches the vertex blocks past however many morphs are in the chain.
-   Adding the wake broke three sibling wirers that each walked past ONE hard-coded name; a name
+   Adding the front broke three sibling wirers that each walked past ONE hard-coded name; a name
    list needs one edit per wirer per morph forever, which is a defect amplifier rather than a
    fix. **A new member must use that walk and must not add its name anywhere.**

@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
-    public class AstroLeagueBall : NetworkBehaviour, IPrismWakeCarrier
+    public class AstroLeagueBall : NetworkBehaviour
     {
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
@@ -454,13 +454,13 @@ namespace CosmicShore.Gameplay
             if (trailBlocksLayer >= 0)
                 sphereCol.excludeLayers = 1 << trailBlocksLayer;
 
-            // Every ball is a WAKE carrier (Docs/PRISM_ANIMATION.md §4.7.3) — no authored flag,
-            // because unlike a projectile there is only one kind of ball and a ball crossing the
-            // court IS the thing everyone in the match is watching. Granted here rather than on
-            // the prefab so a forged ball, a nucleus-seeded ball and an Astro League ball all get
-            // one; the source resolves this component as its carrier on the same call.
-            if (!TryGetComponent<PrismWakeSource>(out _))
-                gameObject.AddComponent<PrismWakeSource>();
+            // NO SHOCKWAVE IS GRANTED HERE, and that is the design rather than an omission. A ball
+            // carried one for exactly one branch (Docs/PRISM_ANIMATION.md §4.7.3) and it was pulled
+            // for the same reason the effect came off the fleet one step earlier: a ball is in play
+            // for a WHOLE MATCH, so a ripple following it is continuous, and an effect strong enough
+            // to be an event stops being one the moment it never stops. The high-poly residency
+            // budget is also shared and split evenly, so a ball holding a slot takes it from the
+            // thing whose front actually carries information. Do not re-add an ensure here.
 
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
@@ -1665,34 +1665,6 @@ namespace CosmicShore.Gameplay
 
             VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate,
                 blade != null, bladeT);
-        }
-
-        /// <summary>
-        /// This ball's half of <see cref="IPrismWakeCarrier"/> (Docs/PRISM_ANIMATION.md §4.7.3).
-        ///
-        /// <para>It answers with <see cref="Velocity"/> — the rigidbody's own on the server, the
-        /// replicated <c>n_Velocity</c> on every client — so a peer's wake runs on the numbers the
-        /// simulating machine believes rather than on whatever its interpolated transform did last
-        /// frame. That is the whole reason a carrier exists: <c>RigidbodyInterpolation.Interpolate</c>
-        /// makes a transform delta a smoothed estimate of a velocity the ball already knows.</para>
-        ///
-        /// <para>A ball EMBEDDED in the nucleus reports no motion: it is seeded there and does not
-        /// travel, so a wake around it would be a ripple with nothing moving through it.</para>
-        /// </summary>
-        public bool TryGetWakeMotion(out Vector3 velocity, out float radius)
-        {
-            velocity = Vector3.zero;
-            radius = 0f;
-
-            // The source is granted in Awake and ticks from that frame, which is BEFORE
-            // OnNetworkSpawn — and Velocity branches on IsServer to choose between the rigidbody
-            // and the replicated n_Velocity, neither of which means anything yet. An unspawned
-            // ball is not travelling anywhere, so the honest answer is simply no wake.
-            if (!IsSpawned || n_Embedded.Value || sphereCol == null) return false;
-
-            velocity = Velocity;
-            radius = BallWorldRadius();
-            return radius > 0f;
         }
 
         /// <summary>The ball's world-space radius (collider radius × max lossy scale) - tracks intensity scaling.</summary>

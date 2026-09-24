@@ -6,47 +6,56 @@ shape as verify_prism_cradle.py and verify_prism_sight_composition.py. Nothing h
 transcription of the shader: the file under Assets/ is translated mechanically (HLSL -> C++
 spelling only) and executed under a real non-uniform model matrix.
 
-The wake is a travelling RIPPLE in the cylindrical frame about the line a fast ship just flew
-down. Every vertex inside the train is pushed along its own radius from that line by a
-dimensionless STRAIN; the axis itself is a fixed point.
+The wake is a SHOCKWAVE FRONT — a thin spherical shell about a warhead in flight, travelling out
+to that warhead's own blast radius, over and over, all the way in. Every vertex inside the shell
+is pushed along its own radius from the round by a WAVELET `(1-s^2)^2 * sin(2*pi*Q*s)`, where
+`s = (r - c)/sigma` says where the vertex sits across the shell. Outside the shell nothing moves
+at all, and the round's centre is a fixed point.
 
 What it proves, each on randomized inputs:
 
-  1. IDENTITY with no live slot (count 0): bit-identical pass-through. A match with nobody
-     moving fast enough costs one integer compare and changes nothing.
-  2. IDENTITY OUTSIDE THE SUPPORT, in all three directions separately — in front of the ship
-     (x <= 0), past the end of the train (x >= L), and outside the radial reach (r >= reach).
-     Each is bit-identical, and each is counted, so a support that silently collapsed in one
-     direction cannot pass on the strength of the other two.
-  3. CYLINDRICAL PURITY, which is what makes the analytic normal derivable at all: the vertex
-     keeps its distance ALONG the axis and its direction AROUND it bit for bit, and only its
-     distance FROM the axis changes. The axis is therefore a FIXED POINT — the displacement is
-     r·E and vanishes with r — which is the whole reason this is a strain and not an offset.
-  4. NO FOLD, measured rather than assumed: sweeping r from the axis out to the reach, the
-     image r' is strictly increasing (so b > 0 — two vertices at different radii keep their
-     order and the prism never turns inside out) and strictly positive (so c > 0). The measured
-     strain also never exceeds the amplitude, which is the bound the NO FOLD paragraph in the
-     shipped header derives.
-  5. LINEARITY IN STRENGTH: at fixed geometry the displacement is affine in w, so the eased
-     engage and release are a blend of the MAP and never a differently-shaped wake.
-  6. THE NORMAL IS THE MAP'S DERIVATIVE: a CONVERGENCE test, not a tolerance. Take a tiny
-     triangle in a face's plane, deform its three corners with the face normal exactly as the
-     mesh does, and compare the GEOMETRIC normal of the moved triangle against the normal the
-     shader returns at the centroid. A flat patch of ANY size disagrees with the true surface
-     normal at second order in its size, so a single tolerance only ever measures which patch
-     size was chosen. The claim is that HALVING the patch QUARTERS the error, which is the
-     signature of an exact first derivative and nothing else — test 9 runs the same sweep with
-     the Jacobian's SHEAR term switched off and it plateaus instead.
-  7. NO SEAM AT ANY OF THE THREE SUPPORT BOUNDARIES: sweeping across x = 0, x = L and
-     r = reach, the DISPLACEMENT and the NORMAL are both continuous. Two of those planes are
-     swept through mass at the ship's own speed, so a kink at either would read as an invisible
-     wall passing.
-  8. SLOT AUTHORITY: with two wakes live, the vertex is moved by the one with the greater
-     authority (w·g·K) and by that one ALONE — the result is bit-identical to running that slot
-     on its own. Swapping which is stronger swaps the winner.
-  9. NEGATIVE CONTROL: rebuilt with the Jacobian's SHEAR term neutered (-D override of the
-     file's own #ifndef dial), test 6's error STOPS CONVERGING — it plateaus instead of
-     quartering — so the analytic normal is what holds that test, not luck.
+  1. IDENTITY with no live slot (count 0): bit-identical pass-through. A match with no warhead in
+     the air costs one integer compare and changes nothing.
+  2. IDENTITY OUTSIDE THE SHELL, in both directions separately — inside the inner face
+     (r <= c - sigma) and beyond the outer one (r >= c + sigma). Each is bit-identical and each is
+     counted, so a support that silently collapsed on one side cannot pass on the other's
+     strength. The inner half is what makes the round's centre a fixed point.
+  3. RADIAL PURITY, which is what makes the analytic normal derivable at all: the vertex keeps its
+     DIRECTION from the round bit for bit and only its DISTANCE changes. And that distance changes
+     by at most `sigma * A * w` — the bound the shipped header claims, and the whole reason the
+     amplitude is absolute rather than the old cylinder's strain (a strain would have moved the
+     outermost mass of a 95-unit reach by 40 units).
+  4. BANDWIDTH: the pulse carries EXACTLY Q cycles across the shell and nothing else — measured as
+     4Q-1 sign changes of the displacement along a radial sweep, at the exact radii `s = j/(2Q)`.
+     This is the property the design is FOR: one wavelet arriving and passing, not a standing
+     corrugation filling the whole support the way the cylinder's train did.
+  5. NO FOLD, measured rather than assumed, over the config's whole authored (amplitude, Q) range:
+     sweeping r out through the shell, the image radius f(r) is strictly increasing (so the radial
+     stretch a > 0 — two vertices at different radii keep their order and the prism never turns
+     inside out) and strictly positive (so the tangential stretch b > 0). The shipped header
+     derives both from the single bound A < 1/(2*pi*Q); this measures them.
+  6. LINEARITY IN STRENGTH: at fixed geometry the displacement is affine in w, so the eased engage
+     and release are a blend of the MAP and never a differently-shaped front.
+  7. THE NORMAL IS THE MAP'S DERIVATIVE: a CONVERGENCE test, not a tolerance. Take a tiny triangle
+     in a face's plane, deform its three corners with the face normal exactly as the mesh does, and
+     compare the GEOMETRIC normal of the moved triangle against the normal the shader returns at
+     the centroid. A flat patch of ANY size disagrees with the true surface normal at second order
+     in its size, so a single tolerance only ever measures which patch size was chosen. The claim
+     is that HALVING the patch QUARTERS the error, which is the signature of an exact first
+     derivative and nothing else — test 10 runs the same sweep with the Jacobian's radial stretch
+     term switched off and it plateaus instead.
+  8. NO SEAM AT EITHER FACE OF THE SHELL: sweeping across r = c - sigma and r = c + sigma, the
+     DISPLACEMENT and the NORMAL are both continuous. Both faces are swept through mass at the
+     front's own speed, so a kink at either would read as an invisible wall passing.
+  9. SLOT AUTHORITY: with two fronts live, the vertex is moved by the one with the greater
+     authority (w * window) and by that one ALONE — the result is bit-identical to running that
+     slot on its own. Swapping which is stronger swaps the winner. Summing two spherical fields
+     about two different centres is not a spherical field about anything, so its normal could not
+     be derived analytically at all.
+ 10. NEGATIVE CONTROL: rebuilt with the Jacobian's RADIAL STRETCH term neutered (-D override of
+     the file's own #ifndef dial), test 7's error STOPS CONVERGING — it plateaus instead of
+     quartering — so the analytic normal is what holds that test, not luck. That term carries the
+     entire derivative of the wavelet, so it is exactly what a "close enough" normal would omit.
 
 Exit 0 on pass. Needs clang++; nothing else, and no Unity.
 Usage:  python3 Tools/Shaders/verify_prism_wake.py [--keep]
@@ -100,6 +109,7 @@ static inline float abs(float a){return a<0?-a:a;}
 static inline float3 operator-(float3 a){return float3(-a.x,-a.y,-a.z);}
 static inline float smoothstep(float e0,float e1,float x){float t=saturate((x-e0)/(e1-e0));return t*t*(3.0f-2.0f*t);}
 static inline float3 lerp(float3 a,float3 b,float t){return a+(b-a)*t;}
+static inline float lerp(float a,float b,float t){return a+(b-a)*t;}
 static inline void sincos(float a,float&s,float&c){s=std::sin(a);c=std::cos(a);}
 using std::pow;
 
@@ -138,13 +148,9 @@ float4x4 g_objectToWorld, g_worldToObject;
 static int failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { failures++; printf("FAIL: "); printf(__VA_ARGS__); printf("\n"); } } while (0)
 
-static std::mt19937 rng(20260923);
+static std::mt19937 rng(20260924);
 static float rnd(float a, float b) { return a + (b - a) * (rng() / (float)rng.max()); }
 static float3 rndDir() { for(;;){ float3 v(rnd(-1,1),rnd(-1,1),rnd(-1,1)); float l=length(v); if(l>0.1f) return v/l; } }
-// A random unit vector perpendicular to a — the wake's radial direction for a given axis.
-static float3 perpDir(float3 a) {
-    for(;;){ float3 v = rndDir(); float3 t = v - a * dot(v, a); float l = length(t); if (l > 0.25f) return t / l; }
-}
 
 // ---- model matrix T * R * S and its inverse, built exactly (no numerical inversion) ----
 static void rotationMatrix(float3 axis, float angle, float R[3][3]) {
@@ -171,56 +177,56 @@ static float3 toObject(float3 p){ return mul(g_worldToObject, float4(p,1)).xyz()
 static float3 xformDir(float3 d){ return mul(g_objectToWorld, float4(d,0)).xyz(); }
 static float3 normalToWorld(float3 n){ float3 w = mul(n, (float3x3)g_worldToObject); return w / length(w); }
 
-// One published slot. The four shape numbers are DERIVED ON THE CPU by PrismWake.cs from the
-// hull radius and PrismWakeConfig; the shader takes them as given, so the harness supplies the
-// numbers the shipped config produces for an average hull (radius ~6.7 u) rather than deriving
-// anything of its own.
+// One published shockwave. Every number here is DERIVED ON THE CPU by PrismWake.cs from the
+// warhead's own blast radius and PrismWakeConfig (the front radius is INTEGRATED there, so a pulse
+// keeps travelling at one speed while the round's hit radius grows under it); the shader takes them
+// as given. The defaults are what the shipped config produces for a skyburst at resting Mass —
+// reach 95.2 u, sigma 0.25 of that — so the harness is exercising the numbers the game publishes.
 struct Wake {
     float3 U = float3(0,0,0);
-    float3 axis = float3(0,0,1);
-    float phase = 0.0f;
-    float radius = 6.7f;
-    float w = 1.0f;
-    float reach = 20.1f;     // radius * reachHullRadii (3)
-    float L = 40.2f;         // radius * trainHullRadii (6)
-    float k = 0.39073f;      // 2*pi * wavesPerTrain (2.5) / L
+    float front = 45.0f;     // c: where the shell is right now, world units
+    float sigma = 23.8f;     // the front's half-thickness
+    float reach = 95.2f;     // the warhead's blast radius (carried for tooling; the map ignores it)
+    float w = 1.0f;          // eased strength
 };
-static const float AMP  = 0.25f;
-static const float EXPO = 1.5f;
+static const float AMP = 0.13f;      // PrismWakeConfig.amplitude
+static const float CYCLES = 1.0f;    // PrismWakeConfig.wavesInFront — ONE wavelet
 
-static void setBank(int count, const Wake& a, const Wake& b = Wake(), float amp = AMP, float expo = EXPO) {
+static void setBank(int count, const Wake& a, const Wake& b = Wake(), float amp = AMP, float cycles = CYCLES) {
     const Wake* ws[2] = { &a, &b };
     for (int i = 0; i < 4; i++) {
         bool live = (i < 2) && (i < count);
         if (live) {
-            _PrismWakeCentre[i] = float4(ws[i]->U, ws[i]->radius);
-            _PrismWakeAxis[i]   = float4(ws[i]->axis, ws[i]->phase);
-            _PrismWakeShape[i]  = float4(ws[i]->w, ws[i]->reach, ws[i]->L, ws[i]->k);
+            _PrismWakeCentre[i] = float4(ws[i]->U, ws[i]->front);
+            _PrismWakeShape[i]  = float4(ws[i]->w, ws[i]->sigma, ws[i]->reach, 0.0f);
         } else {
             _PrismWakeCentre[i] = float4(0,0,0,0);
-            _PrismWakeAxis[i]   = float4(0,0,0,0);
             _PrismWakeShape[i]  = float4(0,0,0,0);
         }
     }
-    _PrismWakeParams = float4(amp, expo, (float)count, 0.0f);
+    _PrismWakeParams = float4(amp, cycles, (float)count, 0.0f);
 }
 
-// A wake with a random pose and a randomized (still realistic) shape.
+// The amplitude ceiling PrismWakeConfigSO derives from Q: A < 1/(2*pi*Q) is exactly the no-fold
+// condition, and the asset clamps to 90% of it. The harness never authors an amplitude the config
+// could not have produced, so a pass is a statement about the shipped range.
+static float foldingAmplitude(float cycles) { return 1.0f / (6.28318530718f * max(cycles, 1.0f)); }
+
+// A shockwave with a randomized but realistic shape. The front is born at sigma and dies at the
+// reach (PrismWakeConfigSO.FrontRadiusAt), which is the publisher's guarantee that the shell never
+// straddles the round's centre — the thing that makes b > 0 follow from a > 0.
 static Wake rndWake() {
     Wake k;
-    k.axis = rndDir();
-    k.phase = rnd(0.0f, 6.2831f);
-    k.radius = rnd(3.0f, 12.0f);
+    k.reach = rnd(40.0f, 140.0f);
+    k.sigma = k.reach * rnd(0.05f, 0.45f);
+    k.front = lerp(k.sigma, k.reach, rnd(0.02f, 1.0f));
     k.w = rnd(0.2f, 1.0f);
-    k.reach = k.radius * rnd(2.0f, 4.0f);
-    k.L = k.radius * rnd(4.0f, 8.0f);
-    k.k = 6.2831f * rnd(1.5f, 4.0f) / k.L;
     return k;
 }
-// Put the wake so that the given WORLD point sits at cylindrical coordinates (x, r) in it.
-static void placeAt(Wake& k, float3 pw, float x, float r, float3 rhat) {
-    k.U = pw - k.axis * x - rhat * r;
-}
+// Put the round so the given WORLD point sits at radius r from it, in direction rhat.
+static void placeAt(Wake& k, float3 pw, float r, float3 rhat) { k.U = pw - rhat * r; }
+// The radius at which a vertex sits at shell coordinate s.
+static float radiusAtS(const Wake& k, float s) { return k.front + s * k.sigma; }
 
 // A vertex on one of the prism's six faces, carrying that face's flat normal — the only two
 // things the map reads, on any mesh.
@@ -277,13 +283,13 @@ static bool same(const Out& a, const Out& b) {
         && a.nObj.x == b.nObj.x && a.nObj.y == b.nObj.y && a.nObj.z == b.nObj.z;
 }
 
-// The map's CURVATURE SCALE at a point, used to size the differential patch in test 6. The
-// smallest length over which the field can turn over: the wavelength along the axis, the
-// distance from the axis (the radial frame itself turns on that scale), the reach and the
-// train. Sizing the patch as a fraction of THIS rather than absolutely is what makes the
-// convergence rate a statement about the shader and not about the number somebody picked.
-static float featureScale(const Wake& k, float r) {
-    return min(min(r, 1.0f / k.k), min(k.reach, k.L));
+// The map's CURVATURE SCALE at a point, used to size the differential patch in test 7. The
+// smallest length over which the field can turn over: the wavelet's own length across the shell
+// (sigma / Q) and the distance from the round (the radial frame itself turns on that scale).
+// Sizing the patch as a fraction of THIS rather than absolutely is what makes the convergence rate
+// a statement about the shader and not about the number somebody picked.
+static float featureScale(const Wake& k, float r, float cycles) {
+    return min(r, k.sigma / max(cycles, 1.0f));
 }
 """
 
@@ -299,7 +305,7 @@ int main()
         for (int trial = 0; trial < 150; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             Wake k = rndWake();
-            placeAt(k, toWorld(float3(0,0,0)), k.L * 0.5f, k.reach * 0.3f, perpDir(k.axis));
+            placeAt(k, toWorld(float3(0,0,0)), k.front, rndDir());
             setBank(0, k);
             for (const Vtx& x : vs) { tested++; if (!identical(x, run(x))) bad++; }
         }
@@ -307,56 +313,53 @@ int main()
         printf("1. count 0 -> bit-identical pass-through: %s (%d vertices)\n", bad == 0 ? "ok" : "BROKEN", tested);
     }
 
-    // ---------------- 2. identity outside the support, in all three directions ----------------
+    // ---------------- 2. identity outside the shell, on BOTH faces ----------------
     {
-        int bad[3] = {0,0,0}, tested[3] = {0,0,0};
-        const char* where[3] = { "in front of the ship (x <= 0)",
-                                 "past the end of the train (x >= L)",
-                                 "outside the radial reach (r >= reach)" };
-        for (int trial = 0; trial < 4000; trial++) {
+        int bad[2] = {0,0}, tested[2] = {0,0}, skipped = 0;
+        const char* where[2] = { "inside the inner face (r <= c - sigma)",
+                                 "beyond the outer face (r >= c + sigma)" };
+        for (int trial = 0; trial < 6000; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             Wake k = rndWake();
-            float3 rhat = perpDir(k.axis);
+            float3 rhat = rndDir();
             int f = rng() % 6;
             float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
             float3 c = nrm * 0.5f + u * rnd(-0.45f, 0.45f) + v * rnd(-0.45f, 0.45f);
             float3 cw = toWorld(c);
+            float inner = k.front - k.sigma;
+            if (!(inner > 0.5f)) { skipped++; continue; }   // a front only just born: no interior to sample
 
-            struct Case { float x, r; } cases[3] = {
-                { rnd(-3.0f * k.L, 0.0f),        rnd(0.05f, 0.95f) * k.reach },   // in front
-                { rnd(1.0f, 3.0f) * k.L,         rnd(0.05f, 0.95f) * k.reach },   // past the train
-                { rnd(0.05f, 0.95f) * k.L,       rnd(1.0f, 4.0f) * k.reach },     // past the reach
-            };
-            for (int ci = 0; ci < 3; ci++) {
-                placeAt(k, cw, cases[ci].x, cases[ci].r, rhat);
+            float radii[2] = { rnd(0.02f, 1.0f) * inner,                          // inside
+                               (k.front + k.sigma) * rnd(1.0f, 3.0f) };           // outside
+            for (int ci = 0; ci < 2; ci++) {
+                placeAt(k, cw, radii[ci], rhat);
                 setBank(1, k);
                 Vtx x; x.pObj = c; x.nObj = nrm;
                 tested[ci]++;
                 if (!identical(x, run(x))) bad[ci]++;
             }
         }
-        for (int ci = 0; ci < 3; ci++) {
+        for (int ci = 0; ci < 2; ci++) {
             CHECK(tested[ci] > 3000, "too few samples %s (%d)", where[ci], tested[ci]);
             CHECK(bad[ci] == 0, "a vertex %s was moved (%d of %d)", where[ci], bad[ci], tested[ci]);
         }
-        printf("2. outside the support -> untouched: %d + %d + %d vertices across all three boundaries\n",
-               tested[0], tested[1], tested[2]);
+        printf("2. outside the shell -> untouched: %d inside + %d outside vertices (%d fronts skipped as "
+               "newborn)\n", tested[0], tested[1], skipped);
     }
 
-    // ---------------- 3. cylindrical purity: the axis is a FIXED POINT ----------------
+    // ---------------- 3. radial purity, and the displacement bounded by sigma*A*w ----------------
     {
-        float worstX = 0, worstTheta = 0, worstOverAmp = 0; int tested = 0, moved = 0;
-        for (int trial = 0; trial < 6000; trial++) {
+        float worstTheta = 0, worstOverBound = 0; int tested = 0, moved = 0;
+        for (int trial = 0; trial < 8000; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             Wake k = rndWake();
-            float3 rhat = perpDir(k.axis);
+            float3 rhat = rndDir();
             int f = rng() % 6;
             float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
             float3 c = nrm * 0.5f + u * rnd(-0.45f, 0.45f) + v * rnd(-0.45f, 0.45f);
-            float3 cw = toWorld(c);
-            float x0 = rnd(0.02f, 0.98f) * k.L;
-            float r0 = rnd(0.001f, 0.99f) * k.reach;
-            placeAt(k, cw, x0, r0, rhat);
+            float r0 = radiusAtS(k, rnd(-0.98f, 0.98f));
+            if (!(r0 > 1e-3f)) continue;
+            placeAt(k, toWorld(c), r0, rhat);
             setBank(1, k);
 
             Vtx vx; vx.pObj = c; vx.nObj = nrm;
@@ -366,71 +369,140 @@ int main()
             moved++;
 
             float3 q = o.pW - k.U;
-            float x1 = dot(q, k.axis);
-            float3 rv = q - k.axis * x1;
-            float r1 = length(rv);
-            worstX = max(worstX, abs(x1 - x0) / max(k.L, 1.0f));
-            worstTheta = max(worstTheta, 1.0f - dot(rv / r1, rhat));
-            // The strain the map applied, against the amplitude that is supposed to bound it.
-            worstOverAmp = max(worstOverAmp, abs(r1 / r0 - 1.0f) / (AMP * k.w));
+            float r1 = length(q);
+            worstTheta = max(worstTheta, 1.0f - dot(q / r1, rhat));
+            worstOverBound = max(worstOverBound, abs(r1 - r0) / (k.sigma * AMP * k.w));
         }
-        CHECK(moved > 2000, "too few moved vertices to test purity (%d of %d)", moved, tested);
-        CHECK(worstX < 2e-5f, "the vertex slid ALONG the axis: worst |dx|/L = %g", worstX);
-        CHECK(worstTheta < 1e-5f, "the vertex slid AROUND the axis: worst 1-dot = %g", worstTheta);
-        CHECK(worstOverAmp < 1.0f + 1e-3f, "the strain exceeded the amplitude bound by %gx", worstOverAmp);
-        printf("3. cylindrical purity (%d moved of %d): x held to %.2e of L, theta to 1-dot %.2e, "
-               "strain <= %.4f of A*w\n", moved, tested, worstX, worstTheta, worstOverAmp);
+        CHECK(moved > 3000, "too few moved vertices to test purity (%d of %d)", moved, tested);
+        CHECK(worstTheta < 1e-5f, "the vertex slid SIDEWAYS off its radius: worst 1-dot = %g", worstTheta);
+        CHECK(worstOverBound < 1.0f + 1e-3f,
+              "the displacement exceeded the sigma*A*w bound by %gx — the amplitude is not absolute",
+              worstOverBound);
+        printf("3. radial purity (%d moved of %d): direction held to 1-dot %.2e, displacement <= %.4f of "
+               "sigma*A*w\n", moved, tested, worstTheta, worstOverBound);
     }
 
-    // ---------------- 4. no fold: r' strictly increasing and strictly positive ----------------
+    // ---------------- 4. bandwidth: exactly Q cycles across the shell, and nowhere else ----------------
     {
-        int folded = 0, nonPositive = 0; long samples = 0;
-        float worstStrain = 0, tightestSlope = 1e30f;
-        for (int trial = 0; trial < 600; trial++) {
-            setIdentityModel();                       // the fold is a property of the MAP, not the transform
-            Wake k = rndWake();
-            float3 rhat = perpDir(k.axis);
-            k.U = float3(rnd(-20,20), rnd(-20,20), rnd(-20,20));
-            setBank(1, k, Wake(), rnd(0.05f, 0.45f), rnd(1.0f, 6.0f));   // the config's whole authored range
-            float x = rnd(0.01f, 0.99f) * k.L;
-            const int N = 1500;
-            float prevR = -1e30f, prevIn = 0;
-            for (int i = 0; i <= N; i++) {
-                float r = (float)i / N * k.reach * 1.02f;
-                float3 pw = k.U + k.axis * x + rhat * max(r, 1e-6f);
-                Out o = runAt(pw, float3(0,1,0));
-                float3 q = o.pW - k.U;
-                float r1 = length(q - k.axis * dot(q, k.axis));
-                samples++;
-                if (!(r1 >= 0.0f)) nonPositive++;
-                if (r > 1e-3f) worstStrain = max(worstStrain, abs(r1 / r - 1.0f));
-                if (i > 0) {
-                    float slope = (r1 - prevR) / max(r - prevIn, 1e-12f);
-                    if (slope <= 0.0f) folded++;
-                    tightestSlope = min(tightestSlope, slope);
+        // The design IS the bandwidth: one wavelet arriving and passing, not a train filling the
+        // support. A wavelet of Q cycles changes sign exactly 4Q-1 times strictly inside the shell,
+        // at the radii s = j/(2Q) and nowhere else.
+        //
+        // The harness recovers the displacement by subtracting a large radius from a large radius,
+        // so within a few ULPs of that radius the answer is float arithmetic rather than map — and
+        // near a zero of the wavelet that is exactly where the signal is. Samples inside that GATE
+        // therefore carry no sign information and are skipped; the gate is a statement about float
+        // precision (8 ULPs at the sample radius) and not about the shader. The round sits at the
+        // origin for the same reason: an offset centre only adds cancellation.
+        int wrongCount = 0, wrongPlace = 0, trials = 0;
+        float worstZeroErrAll = 0;
+        for (int Q = 1; Q <= 3; Q++) {
+            for (int trial = 0; trial < 200; trial++) {
+                setIdentityModel();                 // the bandwidth is a property of the MAP
+                Wake k = rndWake();
+                k.w = 1.0f;
+                k.front = lerp(k.sigma, k.reach, rnd(0.3f, 1.0f));   // room for a fine sweep either side
+                k.U = float3(0, 0, 0);
+                // The upper half of the authored amplitude range at this Q, so every lobe of the
+                // wavelet — including the shallow outermost ones — clears the precision gate by a
+                // wide margin. Test 5 covers the range all the way down.
+                float amp = foldingAmplitude((float)Q) * rnd(0.5f, 0.9f);
+                setBank(1, k, Wake(), amp, (float)Q);
+                float3 rhat = rndDir();
+                trials++;
+
+                float gate = 8.0f * 1.1921e-7f * (k.front + k.sigma) + 1e-7f;
+                const int N = 40000;
+                int signChanges = 0, lastSign = 0;
+                float lastS = 0, worstZeroErr = 0;
+                for (int i = 1; i < N; i++) {
+                    float s = -1.0f + 2.0f * i / N;
+                    float r = radiusAtS(k, s);
+                    if (!(r > 1e-3f)) continue;
+                    float3 pw = rhat * r;
+                    Out o = runAt(pw, rhat);        // normal along the radius: irrelevant to position
+                    float d = length(o.pW) - r;
+                    if (abs(d) <= gate) continue;   // inside the precision gate: no sign information
+                    int sg = d > 0.0f ? 1 : -1;
+                    if (lastSign != 0 && sg != lastSign) {
+                        signChanges++;
+                        float mid = 0.5f * (s + lastS);         // the crossing is bracketed here
+                        float j = mid * 2.0f * Q;               // predicted zeros sit at integer j
+                        worstZeroErr = max(worstZeroErr, abs(j - std::round(j)));
+                    }
+                    lastSign = sg; lastS = s;
                 }
-                prevR = r1; prevIn = r;
+                if (signChanges != 4 * Q - 1) wrongCount++;
+                if (worstZeroErr > 0.01f) wrongPlace++;
+                worstZeroErrAll = max(worstZeroErrAll, worstZeroErr);
             }
         }
-        CHECK(samples > 500000, "too few no-fold samples (%ld)", samples);
-        CHECK(nonPositive == 0, "%d samples left the image radius negative (c <= 0)", nonPositive);
-        CHECK(folded == 0, "the map FOLDS in %d places (r' not increasing in r — the prism turns inside out)", folded);
-        CHECK(worstStrain < 0.45f + 1e-3f, "measured strain %g exceeds the config's amplitude ceiling", worstStrain);
-        printf("4. no fold (%ld samples over the whole authored amplitude/exponent range): "
-               "tightest dr'/dr = %.4f, worst |strain| = %.4f\n", samples, tightestSlope, worstStrain);
+        CHECK(trials > 500, "too few bandwidth trials (%d)", trials);
+        CHECK(wrongCount == 0, "%d of %d sweeps did not carry exactly Q cycles across the shell",
+              wrongCount, trials);
+        CHECK(wrongPlace == 0, "%d of %d sweeps put a zero crossing somewhere other than s = j/(2Q) "
+              "(worst |j - round(j)| = %g)", wrongPlace, trials, worstZeroErrAll);
+        printf("4. bandwidth (%d sweeps, Q = 1..3): %d sweeps with a count other than 4Q-1, %d with a "
+               "crossing off s = j/(2Q) (worst %.2e) — one wavelet, not a train\n",
+               trials, wrongCount, wrongPlace, worstZeroErrAll);
     }
 
-    // ---------------- 5. the map is affine in the strength ----------------
+    // ---------------- 5. no fold: f(r) strictly increasing and strictly positive ----------------
+    {
+        int folded = 0, nonPositive = 0; long samples = 0;
+        float worstOverBound = 0, tightestSlope = 1e30f;
+        for (int Q = 1; Q <= 6; Q++) {
+            for (int trial = 0; trial < 120; trial++) {
+                setIdentityModel();                 // the fold is a property of the MAP, not the transform
+                Wake k = rndWake();
+                k.U = float3(rnd(-20,20), rnd(-20,20), rnd(-20,20));
+                // the config's whole authored amplitude range at this Q, up to its own 90% clamp
+                float amp = foldingAmplitude((float)Q) * rnd(0.05f, 0.9f);
+                setBank(1, k, Wake(), amp, (float)Q);
+                float3 rhat = rndDir();
+                const int N = 3000;
+                float prevOut = -1e30f, prevIn = 0;
+                for (int i = 0; i <= N; i++) {
+                    float r = max((float)i / N * (k.front + k.sigma) * 1.05f, 1e-4f);
+                    float3 pw = k.U + rhat * r;
+                    Out o = runAt(pw, rhat);
+                    float r1 = length(o.pW - k.U);
+                    samples++;
+                    if (!(r1 > 0.0f)) nonPositive++;
+                    worstOverBound = max(worstOverBound, abs(r1 - r) / (k.sigma * amp * k.w));
+                    if (i > 0) {
+                        float slope = (r1 - prevOut) / max(r - prevIn, 1e-12f);
+                        if (slope <= 0.0f) folded++;
+                        tightestSlope = min(tightestSlope, slope);
+                    }
+                    prevOut = r1; prevIn = r;
+                }
+            }
+        }
+        CHECK(samples > 2000000, "too few no-fold samples (%ld)", samples);
+        CHECK(nonPositive == 0, "%d samples left the image radius non-positive (b <= 0)", nonPositive);
+        CHECK(folded == 0, "the map FOLDS in %d places (f not increasing in r — the prism turns inside out)", folded);
+        CHECK(worstOverBound < 1.0f + 1e-3f, "displacement exceeded sigma*A*w by %gx", worstOverBound);
+        printf("5. no fold (%ld samples over the config's whole authored amplitude range at Q = 1..6): "
+               "tightest df/dr = %.4f, displacement <= %.4f of sigma*A*w\n",
+               samples, tightestSlope, worstOverBound);
+    }
+
+    // ---------------- 6. the map is affine in the strength ----------------
     {
         float worst = 0, worstAbs = 0; int tested = 0, absSamples = 0;
-        for (int trial = 0; trial < 3000; trial++) {
+        for (int trial = 0; trial < 4000; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             Wake k = rndWake();
-            float3 rhat = perpDir(k.axis);
+            float3 rhat = rndDir();
             int f = rng() % 6;
             float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
             float3 c = nrm * 0.5f + u * rnd(-0.45f, 0.45f) + v * rnd(-0.45f, 0.45f);
-            placeAt(k, toWorld(c), rnd(0.1f, 0.9f) * k.L, rnd(0.1f, 0.9f) * k.reach, rhat);
+            // near a crest of the wavelet, where the displacement is largest and the test has teeth
+            float s = (rng() % 2 ? 0.25f : -0.25f) + rnd(-0.08f, 0.08f);
+            float r0 = radiusAtS(k, s);
+            if (!(r0 > 1e-3f)) continue;
+            placeAt(k, toWorld(c), r0, rhat);
             Vtx vx; vx.pObj = c; vx.nObj = nrm;
             float3 base = toWorld(c);
 
@@ -441,52 +513,53 @@ int main()
             float rh = length(dh * 2.0f - d1), rq = length(dq * 4.0f - d1);
             worstAbs = max(worstAbs, max(rh, rq));
             absSamples++;
-            // A RELATIVE figure is only meaningful where the displacement is larger than the
-            // float noise on a 20-unit world coordinate (~2e-6 u, quadrupled by the w=0.25
-            // extrapolation). Below that the ratio measures the arithmetic, not the map — so the
-            // relative claim is made where the map is visibly doing something, and the absolute
-            // residual above covers every trial including the ones that barely move.
+            // A RELATIVE figure is only meaningful where the displacement is larger than the float
+            // noise on a 20-unit world coordinate (~2e-6 u, quadrupled by the w=0.25 extrapolation).
+            // Below that the ratio measures the arithmetic, not the map — so the relative claim is
+            // made where the map is visibly doing something, and the absolute residual above covers
+            // every trial including the ones that barely move.
             if (!(mag > 0.25f)) continue;
             tested++;
             worst = max(worst, rh / mag);
             worst = max(worst, rq / mag);
         }
-        CHECK(absSamples > 2000, "too few strength samples (%d)", absSamples);
-        CHECK(tested > 800, "too few strength samples with a visible displacement (%d)", tested);
+        CHECK(absSamples > 3000, "too few strength samples (%d)", absSamples);
+        CHECK(tested > 1500, "too few strength samples with a visible displacement (%d)", tested);
         CHECK(worstAbs < 1e-3f, "the displacement is not affine in the strength: worst residual %g u", worstAbs);
         CHECK(worst < 1e-4f, "the displacement is not affine in the strength: worst relative error %g", worst);
-        printf("5. affine in strength (%d trials, %d of them past 0.25 u of travel): half strength is half "
+        printf("6. affine in strength (%d trials, %d of them past 0.25 u of travel): half strength is half "
                "the travel to %.2e u absolute, %.2e relative\n", absSamples, tested, worstAbs, worst);
     }
 
-    // ---------------- 6. the normal is the map's DERIVATIVE ----------------
+    // ---------------- 7. the normal is the map's DERIVATIVE ----------------
     {
         // A tiny triangle in the face's own plane, deformed exactly as the mesh would deform it
         // (all three corners carrying the face normal), against the normal the shader returns at
-        // its centroid. The assertion is the CONVERGENCE RATE: halving the patch must quarter
-        // the error, which is the signature of an exact first derivative and nothing else.
+        // its centroid. The assertion is the CONVERGENCE RATE: halving the patch must quarter the
+        // error, which is the signature of an exact first derivative and nothing else.
         const int LEVELS = 4;
         const float FRACS[LEVELS] = { 0.04f, 0.02f, 0.01f, 0.005f };
         float worst[LEVELS] = { 0, 0, 0, 0 };
         int tested = 0, skipped = 0;
-        for (int trial = 0; trial < 6000; trial++) {
+        for (int trial = 0; trial < 8000; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             Wake k = rndWake();
-            float3 rhat = perpDir(k.axis);
+            float3 rhat = rndDir();
             int f = rng() % 6;
             float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
             float3 c = nrm * 0.5f + u * rnd(-0.45f, 0.45f) + v * rnd(-0.45f, 0.45f);
-            // Well inside the support: the patch is at most 0.04 of the feature scale, so no
-            // corner can straddle a boundary and the test measures the interior derivative.
-            float r0 = rnd(0.08f, 0.90f) * k.reach;
-            placeAt(k, toWorld(c), rnd(0.08f, 0.92f) * k.L, r0, rhat);
+            // Well inside the shell: the patch is at most 0.04 of the feature scale, so no corner
+            // can straddle a face and the test measures the interior derivative.
+            float r0 = radiusAtS(k, rnd(-0.90f, 0.90f));
+            if (!(r0 > 1.0f)) { skipped++; continue; }
+            placeAt(k, toWorld(c), r0, rhat);
             setBank(1, k);
 
             Vtx mid; mid.pObj = c; mid.nObj = nrm;
             Out rm = run(mid);
             if (identical(mid, rm)) { skipped++; continue; }
 
-            float scale = featureScale(k, r0);
+            float scale = featureScale(k, r0, CYCLES);
             float unit = max(length(xformDir(u)), length(xformDir(v)));
 
             float e[LEVELS]; bool usable = true;
@@ -519,33 +592,32 @@ int main()
             CHECK(worst[lv] < 0.40f * worst[lv-1],
                   "halving the patch did not quarter the error (%g -> %g) — the returned normal is "
                   "not the map's derivative", worst[lv-1], worst[lv]);
-        printf("6. analytic normal == d(map) (%d trials, %d skipped): worst 1-dot", tested, skipped);
+        printf("7. analytic normal == d(map) (%d trials, %d skipped): worst 1-dot", tested, skipped);
         for (int lv = 0; lv < LEVELS; lv++) printf("  %.4gxs:%.3g", FRACS[lv], worst[lv]);
         printf("  (quartering => exact derivative)\n");
     }
 
-    // ---------------- 7. no seam at any of the three support boundaries ----------------
+    // ---------------- 8. no seam at either face of the shell ----------------
     {
-        const char* names[3] = { "x = 0 (the ship's own plane)", "x = L (the end of the train)",
-                                 "r = reach (the outer edge)" };
-        float worstDisp[3] = {0,0,0}, worstNrm[3] = {0,0,0};
+        const char* names[2] = { "r = c - sigma (the inner face)", "r = c + sigma (the outer face)" };
+        float worstDisp[2] = {0,0}, worstNrm[2] = {0,0};
         const float step = 0.001f;
-        for (int trial = 0; trial < 60; trial++) {
+        for (int trial = 0; trial < 80; trial++) {
             setIdentityModel();
             Wake k = rndWake();
             k.w = 1.0f;
-            float3 rhat = perpDir(k.axis);
+            k.front = lerp(k.sigma, k.reach, rnd(0.5f, 1.0f));   // both faces well clear of the centre
             k.U = float3(rnd(-10,10), rnd(-10,10), rnd(-10,10));
             setBank(1, k);
+            float3 rhat = rndDir();
             float3 nrm = rndDir();
-            for (int b = 0; b < 3; b++) {
-                float centreX = (b == 0) ? 0.0f : (b == 1 ? k.L : 0.4f * k.L);
-                float centreR = (b == 2) ? k.reach : 0.4f * k.reach;
+            for (int b = 0; b < 2; b++) {
+                float centreR = (b == 0) ? (k.front - k.sigma) : (k.front + k.sigma);
                 bool haveP = false; float3 prevD(0,0,0), prevN(0,0,0);
                 for (int i = -600; i <= 600; i++) {
-                    float x = centreX + ((b < 2) ? i * step : 0.0f);
-                    float r = centreR + ((b == 2) ? i * step : 0.0f);
-                    float3 pw = k.U + k.axis * x + rhat * r;
+                    float r = centreR + i * step;
+                    if (!(r > 1e-3f)) continue;
+                    float3 pw = k.U + rhat * r;
                     Out o = runAt(pw, nrm);
                     float3 disp = o.pW - pw;
                     if (haveP) {
@@ -556,8 +628,8 @@ int main()
                 }
             }
         }
-        for (int b = 0; b < 3; b++) {
-            // A genuine seam is the whole local displacement appearing in one step — order 0.1 u
+        for (int b = 0; b < 2; b++) {
+            // A genuine seam is the whole local displacement appearing in one step — order 1 u
             // here. A continuous field moves by (gradient x step), which these bounds sit well
             // above and a seam sits far beyond.
             CHECK(worstDisp[b] < 0.02f, "displacement seam at %s: %g u of jump across a %g u step",
@@ -565,15 +637,14 @@ int main()
             CHECK(worstNrm[b] < 1e-4f, "normal seam at %s: worst 1-dot between adjacent samples = %g",
                   names[b], worstNrm[b]);
         }
-        printf("7. no seam at the three boundaries: worst adjacent displacement jump %.2e / %.2e / %.2e u, "
-               "normal 1-dot %.2e / %.2e / %.2e\n",
-               worstDisp[0], worstDisp[1], worstDisp[2], worstNrm[0], worstNrm[1], worstNrm[2]);
+        printf("8. no seam at either face: worst adjacent displacement jump %.2e / %.2e u, normal 1-dot "
+               "%.2e / %.2e\n", worstDisp[0], worstDisp[1], worstNrm[0], worstNrm[1]);
     }
 
-    // ---------------- 8. slot authority: one wake wins outright ----------------
+    // ---------------- 9. slot authority: one front wins outright ----------------
     {
         int tested = 0, notExclusive = 0, wrongWinner = 0, noSwap = 0;
-        for (int trial = 0; trial < 2000; trial++) {
+        for (int trial = 0; trial < 3000; trial++) {
             setModel(float3(rnd(-20,20),rnd(-20,20),rnd(-20,20)), rndDir(), rnd(0, 6.28f), SCALE);
             int f = rng() % 6;
             float3 nrm = faceNormal(f), u, v; faceAxes(f, u, v);
@@ -581,12 +652,15 @@ int main()
             float3 cw = toWorld(c);
             Vtx vx; vx.pObj = c; vx.nObj = nrm;
 
-            // A is close to the vertex's own radius (high K) and at full strength; B reaches it
-            // only at the very edge of its reach and is faded. A must win.
+            // A holds the vertex at the MIDDLE of its shell (window 1) at full strength; B holds it
+            // half way out (window 0.5625) and is faded. A must win; flipping the strengths must
+            // flip the winner.
             Wake A = rndWake(); A.w = 1.0f;
-            placeAt(A, cw, 0.5f * A.L, 0.05f * A.reach, perpDir(A.axis));
+            placeAt(A, cw, radiusAtS(A, 0.0f), rndDir());
             Wake B = rndWake(); B.w = 0.05f;
-            placeAt(B, cw, 0.5f * B.L, 0.92f * B.reach, perpDir(B.axis));
+            float rB = radiusAtS(B, 0.5f);
+            if (!(rB > 1e-3f)) continue;
+            placeAt(B, cw, rB, rndDir());
 
             setBank(1, A);            Out onlyA = run(vx);
             setBank(1, B);            Out onlyB = run(vx);
@@ -604,13 +678,13 @@ int main()
             setBank(1, A2); Out onlyA2 = run(vx);
             setBank(1, B2); Out onlyB2 = run(vx);
             setBank(2, B2, A2); Out both2 = run(vx);
-            if (!same(both2, onlyB2) && !same(both2, onlyA2)) noSwap++;
+            if (!same(both2, onlyB2)) noSwap++;
         }
-        CHECK(tested > 1000, "too few authority trials (%d)", tested);
+        CHECK(tested > 1500, "too few authority trials (%d)", tested);
         CHECK(wrongWinner == 0, "%d of %d trials: the slot with the greater authority did not win", wrongWinner, tested);
         CHECK(notExclusive == 0, "%d of %d trials: the result was neither slot alone (the fields SUMMED)", notExclusive, tested);
         CHECK(noSwap == 0, "%d of %d trials: swapping the strengths did not swap the winner", noSwap, tested);
-        printf("8. slot authority (%d trials): the greater w*g*K wins and the loser contributes "
+        printf("9. slot authority (%d trials): the greater w*window wins and the loser contributes "
                "bit-exactly nothing\n", tested);
     }
 
@@ -620,11 +694,11 @@ int main()
 }
 """
 
-# The negative control drives the SAME differential-normal sweep with the Jacobian's SHEAR term
-# neutered via the shipped file's own #ifndef dial. The shear is the off-diagonal that comes
-# from the wave TRAVELLING along the axis — the one part of this normal the cradle's spherical
-# map has no analogue for — so it is exactly the term a "close enough" normal would omit. It
-# must BREAK test 6, otherwise that test was passing by luck.
+# The negative control drives the SAME differential-normal sweep with the Jacobian's RADIAL STRETCH
+# term neutered via the shipped file's own #ifndef dial. That term is a = 1 + A*w*P'(s) — it carries
+# the ENTIRE derivative of the wavelet, so it is exactly what a normal that "looks about right"
+# would omit, and with it at 1 the map is still deformed and the normal is still plausible. It must
+# BREAK test 7, otherwise that test was passing by luck.
 CONTROL_MAIN = COMMON + r"""
 int main()
 {
@@ -633,21 +707,22 @@ int main()
     float worst[LEVELS] = { 0, 0, 0, 0 };
     int tested = 0;
     setIdentityModel();     // the control is about the Jacobian, not the transform stack
-    for (int trial = 0; trial < 4000; trial++) {
+    for (int trial = 0; trial < 6000; trial++) {
         float3 nrm(0,1,0), u(0,0,1), v(1,0,0);         // cross(u, v) == n
         float3 c = nrm * 0.5f + u * rnd(-0.4f, 0.4f) + v * rnd(-0.4f, 0.4f);
         Wake k = rndWake();
         k.w = 1.0f;
-        float3 rhat = perpDir(k.axis);
-        float r0 = rnd(0.08f, 0.90f) * k.reach;
-        placeAt(k, c, rnd(0.08f, 0.92f) * k.L, r0, rhat);
+        float3 rhat = rndDir();
+        float r0 = radiusAtS(k, rnd(-0.90f, 0.90f));
+        if (!(r0 > 1.0f)) continue;
+        placeAt(k, c, r0, rhat);
         setBank(1, k);
 
         Vtx mid; mid.pObj = c; mid.nObj = nrm;
         Out rm = run(mid);
         if (identical(mid, rm)) continue;
 
-        float scale = featureScale(k, r0);
+        float scale = featureScale(k, r0, CYCLES);
         float e[LEVELS]; bool usable = true;
         for (int lv = 0; lv < LEVELS && usable; lv++) {
             float eps = FRACS[lv] * scale;
@@ -669,10 +744,10 @@ int main()
         tested++;
         for (int lv = 0; lv < LEVELS; lv++) worst[lv] = max(worst[lv], e[lv]);
     }
-    printf("shear Jacobian term neutered, %d trials: worst 1-dot", tested);
+    printf("radial Jacobian term neutered, %d trials: worst 1-dot", tested);
     for (int lv = 0; lv < LEVELS; lv++) printf("  %.4gxs:%.3g", FRACS[lv], worst[lv]);
-    // The control FIRES when the error refuses to converge: the finest patch must still be
-    // grossly wrong, and halving must NOT have quartered it.
+    // The control FIRES when the error refuses to converge: the finest patch must still be grossly
+    // wrong, and halving must NOT have quartered it.
     bool plateaus = worst[LEVELS-1] > 0.01f && worst[LEVELS-1] > 0.40f * worst[LEVELS-2];
     printf("  -> %s\n", plateaus ? "PLATEAUS (control fires)" : "converged anyway (control failed)");
     return plateaus ? 0 : 1;
@@ -690,9 +765,16 @@ def translate(src):
     assert "void PrismWakeDeform_float(" in out, "entry point missing"
     assert "float3 Position, float3 Normal," in out, \
         "the entry point's signature is not (Position, Normal) — the harness and the wirer disagree"
-    for name in ("_PrismWakeCentre", "_PrismWakeAxis", "_PrismWakeShape", "_PrismWakeParams",
-                 "PRISM_WAKE_SLOTS", "PRISM_WAKE_MIN_STRETCH", "PRISM_WAKE_SHEAR_GAIN"):
+    for name in ("_PrismWakeCentre", "_PrismWakeShape", "_PrismWakeParams", "PrismWakeFront",
+                 "PRISM_WAKE_SLOTS", "PRISM_WAKE_MIN_STRETCH", "PRISM_WAKE_RADIAL_GAIN"):
         assert name in out, f"{name} missing from the shipped HLSL"
+    # A sphere has no axis. If this array comes back the frame is not spherical any more, and the
+    # whole of what this harness measures (radial purity, the shear-free Jacobian) is about a
+    # different map — so it fails LOUD here rather than passing tests written for the old one.
+    code = "\n".join(l for l in out.splitlines() if not l.lstrip().startswith("//"))
+    assert "_PrismWakeAxis" not in code, \
+        "_PrismWakeAxis is back in the shipped HLSL — the map is no longer spherical and this " \
+        "harness proves the wrong thing"
     return out
 
 
@@ -731,14 +813,14 @@ def main():
             print("\nFAILED", file=sys.stderr)
             return 1
 
-        print("\n9. negative control (Jacobian SHEAR term neutered via -D):")
-        rc = build_and_run(work, CONTROL_MAIN, ["-DPRISM_WAKE_SHEAR_GAIN=0.0"], "control")
+        print("\n10. negative control (Jacobian RADIAL STRETCH term neutered via -D):")
+        rc = build_and_run(work, CONTROL_MAIN, ["-DPRISM_WAKE_RADIAL_GAIN=0.0"], "control")
         if rc is None or rc != 0:
-            print("\nFAILED: the negative control did not fire — the analytic normal's shear "
-                  "term is not what makes test 6 pass", file=sys.stderr)
+            print("\nFAILED: the negative control did not fire — the analytic normal's radial "
+                  "stretch term is not what makes test 7 pass", file=sys.stderr)
             return 1
 
-        print("\nAll wake properties hold for the shipped file.")
+        print("\nAll shockwave-front properties hold for the shipped file.")
         return 0
     finally:
         if keep:

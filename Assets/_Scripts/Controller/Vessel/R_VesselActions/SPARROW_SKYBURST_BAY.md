@@ -494,6 +494,35 @@ creature in the match. If the other reading is wanted, it is a one-field change:
   pilots and kills fauna. Outside the Sparrow modes that is mostly invisible; in Wildlife Liberation
   it is a real new kill source, which is the point.
 
+### The mass DRAWS the warhead's reach — the shockwave front (2026-09-24)
+
+The heavy rocket carries a second read of the same volume, and it is deliberately not a light:
+`Docs/PRISM_ANIMATION.md §4.7.3`'s **shockwave front**, a thin spherical shell of rippled prisms born
+at the round's own skin and travelling out to `warheadBlastRadiusMultiplier × HitRadiusWorld` — the
+exact radius this warhead goes off in — over and over, all the way in. **It is half of a pair with
+the LIT fuze sphere** the armed round already publishes (`PublishFuzeLit`, `Docs/LIT.md`): the lit
+half says WHERE, statically, in the shooter's domain colour; the front says HOW FAR, kinetically, by
+sweeping to it. Colour and vertices, one weapon, neither duplicating the other — and the pilot flying
+at the thing can read how far it goes off before it does.
+
+Three things about it belong here rather than in the prism doc. **It needed no authored field**, and
+could not have used one: the base and heavy rockets are ONE prefab and ONE pool (§"One prefab, a
+per-shot PAYLOAD" below), so the effect's first cut — a `leavesWake` bool on the prefab — would have
+granted it to the wing rocket too. `WarheadBlastRadiusMultiplier` is already `Payload.ArmWarhead ?
+25 : 0` and is authored **zero on every other round in the fleet**, so *"the heavy skyburst and
+nothing else"* falls out of the weapon. That is the same no-op argument `PublishFuzeLit` makes for
+itself one section up, which is the tell that the two halves belong together.
+
+**The reach is asked EVERY frame**, because the round swells up to 20× in the first fifth of its
+flight (§"The missile grows as it travels") and the warhead swells with it — so the shell grows as
+the rocket does, which is the growth curve made visible on the arena instead of only on the round.
+
+**It is the ONLY object in the game granted one.** The effect shipped on every vessel and was pulled
+(*"it will be overused as a wake on every vessel"*), then on the Scarab's ball and was pulled again
+(a ball is in play for a whole match, so its ripple was continuous). The high-poly residency budget
+is SHARED, so a second carrier does not add fronts, it halves this one. Granting another is a design
+call, not a wiring one.
+
 ## TWO rockets out of one bay (2026-09-22)
 
 The bay now holds two different missiles, and which one leaves is decided by whether the Sparrow
@@ -713,6 +742,7 @@ rocket is next; closing it is an ART task (five sprites), not a code one.
 | `_Scripts/Controller/Projectiles/Projectile.cs` | + the TAIL (`tail`, `tailWidthPerBodyDiameter`, `TailMount`/`TailWidth`, and the pooled-round reclaim/release pair); + `flightGrowthTarget` (empty = the root, i.e. every existing round unchanged), `flightGrowthUniform` and `flightGrowthCompleteAt01`; the launch pass rebases a child target off its authored scale so a pooled reissue cannot compound last flight's growth, and re-arms the settled latch |
 | `_Scripts/Controller/Projectiles/RoundGrowthRamp.cs` | The growth SHAPE as a pure function — swell across the whole flight, or swell early and hold — plus the latch that lets a settled round stop writing its transform |
 | `Assets/_SO_Assets/VesselActions/Sparrow/SkyBurstGunAction.asset` | `launchDelaySeconds: 0.2`; `growthFactorAtRestingMass: 20` / `growthFactorAtFullMass: 32` |
+| `Assets/_Graphics/Materials/Graphs/PrismWake.hlsl` + `_Scripts/Utility/PrismWake.cs` / `PrismWakeSource.cs` / `IPrismWakeCarrier.cs` + `_Scripts/ScriptableObjects/PrismWakeConfigSO.cs` | The SHOCKWAVE FRONT (`Docs/PRISM_ANIMATION.md §4.7.3`). `Projectile.TryGetShockwaveReach` answers `HitRadiusWorld × WarheadBlastRadiusMultiplier` every frame and `EnsureWakeSource` grants the component only where the prefab authors a warhead at all — so this is the one round in the game that has one, with no field authored for it |
 | `Assets/_Prefabs/Spacevessels/Components/VesselTail.prefab` | The shared tail, nested here. Also stripped of six dead disabled particle systems in the same pass — they were free on a vessel and would not have been on a 20-deep projectile pool (`Docs/VESSEL_TAIL_AND_JETS.md` §6) |
 | `_Scripts/Controller/Vessel/TailGradient.cs` | The one composition of a tail's colour gradient, shared by `VesselTailAndJets` and `Projectile` so the two cannot drift |
 | `Assets/_Prefabs/Projectile/SkyBurstProjectile.prefab` | `Projectile.flightGrowthTarget` → `MissileVisual`, `flightGrowthUniform: 1`, `flightGrowthCompleteAt01: 0.2`; `SphereCollider` re-authored to the **launch** fit (`r 0.019053`, centred on the model's tip) and re-fitted per frame while the model swells. Visual moved to a `MissileVisual` child: missile mesh + embedded material (+ 2× `BlueBaseOpaqueVesselMaterial` submeshes), rotated X+90° so the nose (+Y in mesh space, the radially-symmetric end) points along flight (+Z), child scale 2 (≈1.7 u world at ProjectileScale 10 — matches the bay missile's world size, armature scale 0.2034 × 8.3-unit mesh). Root scale/collider untouched → the gameplay hit sphere is byte-identical |

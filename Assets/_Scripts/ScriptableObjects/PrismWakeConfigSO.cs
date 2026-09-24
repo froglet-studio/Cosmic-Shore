@@ -3,26 +3,36 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Tuning for the WAKE (<c>PrismWake</c>, <c>PrismWake.hlsl</c>, <c>HighPolyPrismMesh</c>,
-    /// Docs/PRISM_ANIMATION.md §4.7.3).
+    /// Tuning for the WAKE — a warhead's SHOCKWAVE FRONT (<c>PrismWake</c>, <c>PrismWake.hlsl</c>,
+    /// <c>HighPolyPrismMesh</c>, Docs/PRISM_ANIMATION.md §4.7.3).
     ///
-    /// A CARRIER travelling fast enough drags a travelling ripple through the mass around its
-    /// recent path. The prisms in that volume are swapped to a high-poly copy of the identical
-    /// solid (<see cref="Subdivision"/>) so the surface RIPPLES instead of hinging, and the swap
-    /// happens where the wake is provably zero (<see cref="ResidencyMargin"/>) so it is never seen.
+    /// A round carrying a live warhead throws a thin spherical SHELL of rippled prisms outward,
+    /// over and over, all the way to its target: born at the shell's own half-thickness and dying
+    /// at exactly the radius that warhead's blast will reach. The prisms in that volume are swapped
+    /// to a high-poly copy of the identical solid (<see cref="Subdivision"/>) so the surface
+    /// RIPPLES instead of hinging, and the swap happens where the front is provably zero
+    /// (<see cref="ResidencyMargin"/>) so it is never seen.
     ///
-    /// The deformation itself is a GLOBAL shader uniform written once per frame — there is no
+    /// <para><b>The REACH is not authored here, and that is the design.</b> It is the warhead's own
+    /// blast radius, which the carrier reports live through <c>IPrismWakeCarrier</c> — so the front
+    /// draws the weapon's real reach rather than a number somebody tuned to look like it, it grows
+    /// with MASS exactly as the warhead does, and it cannot drift from the blast it is describing.
+    /// Every length below is therefore a FRACTION of that reach rather than a world distance.</para>
+    ///
+    /// <para>The deformation itself is a GLOBAL shader uniform written once per frame — there is no
     /// per-prism animation state and no per-prism cost to pay for widening the reach. What DOES
     /// cost is the residency swap, bounded by <see cref="MaxResidentPrisms"/> and
-    /// <see cref="Subdivision"/>, and that budget is SHARED across every live wake — which is the
-    /// arithmetic behind the design rule that the wake belongs to a FEW carriers (the Sparrow's
-    /// skyburst missile and the Scarab's ball) rather than to every vessel.
+    /// <see cref="Subdivision"/>, and that budget is SHARED across every live front — which is the
+    /// arithmetic behind the design rule that this belongs to a FEW things (today: the Sparrow's
+    /// HEAVY skyburst, and nothing else) rather than to every vessel.</para>
     ///
-    /// The carrier's RADIUS is not here: each carrier answers for its own, live, through
-    /// <c>IPrismWakeCarrier</c>, and the wake's reach and train length are expressed as MULTIPLES
-    /// of it — so a bigger thing leaves a bigger wake with nothing authored per carrier, the same
-    /// object-sized principle the occlusion corridor is built on, and a skyburst's wake grows with
-    /// it as MASS swells the round in flight.
+    /// <para><b>There is deliberately no SPEED window.</b> The first cut gated the effect on the
+    /// carrier's speed and its engage speed was authored above the top speed of the hull the mode
+    /// actually flew, so the window never opened — which reads on screen exactly like an effect
+    /// that is too weak. A warhead's criterion was never speed anyway: it is whether the round is
+    /// carrying a warhead at all, which <c>Projectile.WarheadBlastRadiusMultiplier</c> already
+    /// answers (zero on the base rocket, zero on every round in the fleet that is not a skyburst).
+    /// A gate that cannot be authored shut is worth more than one that can be authored wrong.</para>
     ///
     /// Place the asset at <c>Resources/PrismWakeConfig</c>. With no asset the defaults below
     /// apply, so the feature works out of the box.
@@ -31,162 +41,101 @@ namespace CosmicShore.ScriptableObjects
     public class PrismWakeConfigSO : ScriptableObject
     {
         /// <summary>
-        /// The largest value of |t·K'(t)| over the radial falloff family K(t) = (1−S(t))^e for
-        /// e ∈ [1, 6], attained at e = 1, t = 2/3. It is the only thing besides the amplitude that
-        /// enters the no-fold bound (<see cref="NeverFolds"/>), and it is a property of the
-        /// falloff's SHAPE, so it cannot drift when the reach, the wavelength or the carrier radius
-        /// are retuned. Re-derive it only if <c>PrismWakeRadial</c> changes family.
+        /// Radians per unit of <c>s</c> in the front's wavelet — <c>2*pi</c> per whole cycle. The
+        /// wavelet is <c>P(s) = (1-s^2)^2 * sin(2*pi*Q*s)</c> and its steepest slope is exactly
+        /// <c>2*pi*Q</c>, at <c>s = 0</c> (the window is 1 and flat there, so the sine's own slope
+        /// is the whole of it). That single number is the entire no-fold bound — see
+        /// <see cref="FoldingAmplitude"/>.
         /// </summary>
-        public const float MaxRadialFalloffSlope = 0.889f;
+        public const float TwoPi = 6.2831853071795862f;
 
-        /// <summary>
-        /// The amplitude above which the map can fold (b ≤ 0): 1 / (1 + <see cref="MaxRadialFalloffSlope"/>).
-        /// <see cref="amplitude"/>'s inspector range stops meaningfully short of it on purpose —
-        /// the margin is what lets the falloff's exponent be retuned without re-deriving the bound.
-        /// </summary>
-        public const float FoldingAmplitude = 1f / (1f + MaxRadialFalloffSlope);
-
-        [Header("Wake")]
         [Tooltip("Master switch. Off publishes an empty bank and swaps nothing, which makes the " +
-                 "shader's very first branch return the untouched vertex — prisms then cost exactly " +
-                 "what they cost before this feature existed.")]
+                 "whole effect exactly free rather than merely cheap.")]
         [SerializeField] bool enabled = true;
 
-        [Tooltip("How hard the mass is pushed away from (and pulled back toward) the carrier's path, " +
-                 "as a dimensionless fraction of a vertex's own distance from that path. It is a " +
-                 "STRAIN rather than a distance, which is what makes the path itself a fixed point " +
-                 "and the map singularity-free. The range stops short of 0.529, where the map could " +
-                 "begin to fold the prism inside out — see PrismWake.hlsl's NO FOLD note.")]
-        [Range(0f, 0.45f)]
-        [SerializeField] float amplitude = 0.25f;
-
-        [Tooltip("How tightly the ripple hugs the carrier's path. 1 spreads it evenly out to the " +
-                 "reach; larger keeps it close to the path with a longer flat tail. Clamped at 1 " +
-                 "from below, where the falloff's derivative stops being finite at the outer edge " +
-                 "and the wake gets a visible rim.")]
-        [Range(1f, 6f)]
-        [SerializeField] float radialExponent = 1.5f;
-
-        [Tooltip("How far OUT from the carrier's path the ripple reaches, in multiples of the CARRIER'S " +
-                 "own live radius — so a bigger thing leaves a bigger wake with nothing authored " +
-                 "per carrier, and a skyburst's grows with it as MASS swells the round. At " +
-                 "this distance the displacement, its first derivative and the normal correction " +
-                 "are all exactly zero, so there is no seam where the wake ends.")]
-        [Min(0.25f)]
-        [SerializeField] float reachHullRadii = 3f;
-
-        [Tooltip("How far BEHIND the carrier the wave train runs, in multiples of its radius. " +
-                 "The train's envelope is zero at the carrier's own plane and again at this distance, " +
-                 "value and slope both — those two planes are swept through mass at speed, and a " +
-                 "kink at either would read as an invisible wall passing.")]
-        [Min(0.25f)]
-        [SerializeField] float trainHullRadii = 6f;
-
-        [Tooltip("How many full crests fit in one train. This is the wake's WAVELENGTH, expressed " +
-                 "so that it scales with the carrier: more waves is a finer ripple. Below about 1 the " +
-                 "train holds less than one crest and reads as a single bulge rather than a wake.")]
-        [Range(0.5f, 8f)]
-        [SerializeField] float wavesPerTrain = 2.5f;
-
-        [Tooltip("How fast the crests travel backward, as a multiple of the carrier's own speed. At " +
-                 "exactly 1 a crest sits STILL in the world and the ship flies out from under it, " +
-                 "which is what a boat's wake does; above 1 the crests stream backward as well, " +
-                 "which reads as more energetic. It is never below 1 — a crest that lags the ship " +
-                 "is being dragged along, which reads as an aura rather than a wake.")]
-        [Range(1f, 3f)]
-        [SerializeField] float phaseTravel = 1.35f;
-
-        [Header("Speed window")]
-        [Tooltip("The speed at which a wake starts to appear, world units per second. ABSOLUTE and " +
-                 "carrier-independent, exactly like the speed tunnel's: the same speed on a missile " +
-                 "and on a ball leaves the same wake, so a player learns the cue once, and nothing " +
-                 "is normalised against a carrier's own top speed.\n\n" +
-                 "AUTHOR IT FROM MEASURED SPEEDS. Its first value was 150, chosen without measuring " +
-                 "anything, against a Squirrel that cruises at 54 and tops out at 300 — so on the " +
-                 "hull the mode actually flew, the window never opened and the effect was reported " +
-                 "as \"too subtle\" rather than as absent. A window that never opens is " +
-                 "indistinguishable on screen from an effect that is too weak.")]
+        [Tooltip("How deep the ripple is, as a fraction of the front's own HALF-THICKNESS. Peak " +
+                 "radial displacement is amplitude x halfThickness world units, so a thicker front " +
+                 "carries a deeper ripple — which is what a front is. CLAMPED against folding: the " +
+                 "bound is amplitude < 1/(2*pi*wavesInFront), one dimensionless number with no " +
+                 "radius, reach or thickness in it, so retuning any of those cannot invalidate it.")]
         [Min(0f)]
-        [SerializeField] float engageSpeed = 150f;
+        [SerializeField] float amplitude = 0.14f;
 
-        [Tooltip("The speed at which the wake reaches full strength, world units per second. Must " +
-                 "exceed the engage speed; between the two the strength ramps linearly.")]
-        [Min(1f)]
-        [SerializeField] float fullSpeed = 400f;
+        [Tooltip("Whole wave cycles ACROSS the shell. This is the BANDWIDTH dial and the reason the " +
+                 "effect reads as a front rather than as a corrugation: 1 is a single wavelet — one " +
+                 "crest and one trough arriving and passing — where a high count fills the shell " +
+                 "with a standing train. Whole numbers only: the sine has to vanish at both faces " +
+                 "of the shell, which is what makes them seamless as they sweep through mass.")]
+        [Min(1)]
+        [SerializeField] int wavesInFront = 1;
 
-        [Header("Geometry residency")]
-        [Tooltip("Quads per face axis on the high-poly prism the wake swaps in: 12 is 1,728 " +
-                 "triangles against the authored prism's 24. This is what buys the ripple a surface " +
-                 "to bend — a deformation is only as smooth as the surface it moves. It is lower " +
-                 "than the cradle's 16 because a wake's wavelength spans several prisms, where a " +
-                 "drape's whole curvature sits inside one.")]
+        [Tooltip("The front's HALF-THICKNESS as a fraction of the warhead's reach. 0.25 makes the " +
+                 "shell half the reach thick end to end. It is also the amplitude's unit (above) " +
+                 "and the radius the front is BORN at, so the shell can never straddle the round's " +
+                 "own centre — which is what makes the no-fold proof need only one condition.")]
+        [Range(0.05f, 0.45f)]
+        [SerializeField] float halfThicknessFraction = 0.25f;
+
+        [Tooltip("How many fronts leave the round per second. Each one travels from the shell's own " +
+                 "half-thickness out to the full reach and dies there; the next is already on its " +
+                 "way. This is the PULSE RATE — raise it and the mass throbs, lower it and each " +
+                 "front is a single readable sweep.")]
+        [Range(0.1f, 8f)]
+        [SerializeField] float pulsesPerSecond = 1.6f;
+
+        [Tooltip("Quads per face axis on the high-poly prism the front swaps in: 12 is 1,728 " +
+                 "triangles against the authored prism's 24. The mesh is SHARED, so every resident " +
+                 "prism still draws in ONE instanced batch whatever this is — the cost is triangles, " +
+                 "not draw calls.")]
         [Range(2, 32)]
         [SerializeField] int subdivision = 12;
 
         [Tooltip("Hard ceiling on how many prisms may hold the high-poly mesh at once, per frame, " +
-                 "across every wake in the match. This is the whole performance budget of the " +
-                 "feature: at the default subdivision each resident prism is ~1.7k triangles, so 96 " +
-                 "is ~166k. The budget is SHARED and SPLIT EVENLY — four wakes live at once get a " +
-                 "quarter of it each, so each is coarser, not absent.\n\n" +
-                 "It is also the reason a wake is granted to a FEW carriers rather than to every " +
-                 "vessel: split far enough, every wake is the authored 24-triangle prism again and " +
-                 "the effect is gone from all of them at once.")]
-        [Min(0)]
-        [SerializeField] int maxResidentPrisms = 48;
+                 "ACROSS EVERY LIVE FRONT. The budget is split evenly between them, so this is the " +
+                 "number that makes granting the effect to N things DIVIDE the one that mattered " +
+                 "rather than multiply the cost — and the reason the grant is a design call.")]
+        [Range(0, 256)]
+        [SerializeField] int maxResidentPrisms = 96;
 
-        [Tooltip("Extra world units beyond the wake's own volume at which a prism becomes resident. " +
-                 "It exists so the mesh swap happens strictly OUTSIDE the volume the ripple can " +
-                 "move anything, which is what makes it invisible. Set it above a typical prism's " +
-                 "half-length: the spatial index keys prisms by their CENTRE, so a prism longer than " +
-                 "twice this can swap while one end is already inside the wake.")]
+        [Tooltip("Extra world units beyond the front's own reach at which a prism becomes resident. " +
+                 "It exists so the mesh swap happens where the map provably cannot have moved a " +
+                 "vertex: a prism that entered residency inside a live shell would POP.")]
         [Min(0f)]
-        [SerializeField] float residencyMargin = 12f;
+        [SerializeField] float residencyMargin = 24f;
 
-        [Header("Continuity")]
-        [Tooltip("Seconds the wake takes to reach the strength the speed window asks for. The " +
-                 "window is already smooth in speed, so this is the guard against speed JUMPING — " +
-                 "a launch, a strike, a pool reissue — putting a full wake on screen in one frame.")]
+        [Tooltip("Seconds the effect takes to reach full strength once a round arms its warhead. " +
+                 "A round leaving the bay should not arrive with a front already at full depth.")]
         [Min(0f)]
-        [SerializeField] float engageSeconds = 0.35f;
+        [SerializeField] float engageSeconds = 0.15f;
 
-        [Tooltip("Seconds the wake takes to fade after the carrier drops below the engage speed, " +
-                 "stops, or is retired. Longer than the engage, so a ball settling or a round " +
-                 "finishing its flight reads as the water settling rather than the wake being " +
-                 "switched off (continuity of existence).")]
+        [Tooltip("Seconds the effect takes to fade once the round stops carrying a live warhead — " +
+                 "a detonation, a despawn, a pool return. Continuity of existence: a front eases " +
+                 "out rather than blinking off.")]
         [Min(0f)]
-        [SerializeField] float releaseSeconds = 0.9f;
+        [SerializeField] float releaseSeconds = 0.35f;
 
         public bool Enabled => enabled;
 
-        /// <summary>
-        /// The radial strain's ceiling, dimensionless. Clamped to the inspector range rather than
-        /// merely floored: past <see cref="FoldingAmplitude"/> the map can turn a prism inside out,
-        /// which is not a stronger wake — it is a broken one.
-        /// </summary>
-        public float Amplitude => Mathf.Clamp(amplitude, 0f, 0.45f);
+        /// <summary>Whole cycles across the shell; at least one, or there is no wavelet.</summary>
+        public int WavesInFront => Mathf.Max(1, wavesInFront);
 
         /// <summary>
-        /// The radial falloff's shaping power. Floored at 1 rather than merely clamped positive:
-        /// below 1 the falloff's derivative diverges at the outer edge, which puts a visible rim
-        /// exactly where the wake is supposed to vanish without one.
+        /// The amplitude at which the map first folds: <c>1/(2*pi*Q)</c>. At exactly this value the
+        /// radial stretch <c>a = 1 + A*P'(s)</c> reaches zero at <c>s = 0</c> and the surface turns
+        /// inside out. Derived from <see cref="WavesInFront"/> rather than hard-coded, because the
+        /// bound MOVES when the bandwidth does — a sharper pulse folds at a smaller amplitude, and
+        /// a constant here would be silently wrong the first time somebody raised the cycle count.
         /// </summary>
-        public float RadialExponent => Mathf.Clamp(radialExponent, 1f, 6f);
-
-        public float ReachHullRadii => Mathf.Max(0.25f, reachHullRadii);
-        public float TrainHullRadii => Mathf.Max(0.25f, trainHullRadii);
-        public float WavesPerTrain => Mathf.Clamp(wavesPerTrain, 0.5f, 8f);
-        public float PhaseTravel => Mathf.Clamp(phaseTravel, 1f, 3f);
-
-        public float EngageSpeed => Mathf.Max(0f, engageSpeed);
+        public float FoldingAmplitude => 1f / (TwoPi * WavesInFront);
 
         /// <summary>
-        /// The speed at which the wake is full. Held strictly above <see cref="EngageSpeed"/> so
-        /// <see cref="StrengthForSpeed"/>'s divisor can never be zero — an asset with the two the
-        /// same would otherwise make the ramp a step, which is the one thing the window exists to
-        /// avoid.
+        /// The authored amplitude, held at 90% of <see cref="FoldingAmplitude"/>. The 10% is margin
+        /// against float arithmetic near the bound, not slack to spend.
         /// </summary>
-        public float FullSpeed => Mathf.Max(EngageSpeed + 1f, fullSpeed);
+        public float Amplitude => Mathf.Clamp(amplitude, 0f, 0.9f * FoldingAmplitude);
 
+        public float HalfThicknessFraction => Mathf.Clamp(halfThicknessFraction, 0.05f, 0.45f);
+        public float PulsesPerSecond => Mathf.Clamp(pulsesPerSecond, 0.1f, 8f);
         public int Subdivision => Mathf.Clamp(subdivision, 2, 32);
         public int MaxResidentPrisms => Mathf.Max(0, maxResidentPrisms);
         public float ResidencyMargin => Mathf.Max(0f, residencyMargin);
@@ -194,31 +143,57 @@ namespace CosmicShore.ScriptableObjects
         public float ReleaseSeconds => Mathf.Max(0f, releaseSeconds);
 
         /// <summary>
-        /// The speed window as a 0..1 ramp. The ONE place a speed becomes a wake strength, so the
-        /// publisher, the source and the tests cannot disagree about where a wake starts.
+        /// The front's half-thickness in world units for a warhead of this reach, and the radius the
+        /// front is born at. One method so the publisher, the residency pass and every test read the
+        /// same arithmetic.
         /// </summary>
-        public float StrengthForSpeed(float speed) =>
-            Mathf.Clamp01((speed - EngageSpeed) / (FullSpeed - EngageSpeed));
+        public float HalfThicknessFor(float reach) => Mathf.Max(1e-4f, reach * HalfThicknessFraction);
 
         /// <summary>
-        /// The shape the shader can actually run: a positive amplitude, a falloff it can
-        /// differentiate at both ends, and a volume with extent. The shader treats anything else as
-        /// "off" (its second sentinel), so an insane asset degrades to no wake rather than to a
-        /// division by zero.
+        /// Where the front sits for a pulse <paramref name="u"/> of the way through its life, in
+        /// world units from the round's centre: from the shell's own half-thickness (so it never
+        /// straddles the centre — the second half of the no-fold proof) out to the full reach.
         /// </summary>
+        public float FrontRadiusAt(float u, float reach)
+        {
+            float sigma = HalfThicknessFor(reach);
+            return Mathf.Lerp(sigma, Mathf.Max(sigma, reach), Mathf.Clamp01(u));
+        }
+
+        /// <summary>
+        /// A front's own strength envelope over its life, <c>4*S(u)*S(1-u)</c> with S the smoothstep
+        /// polynomial: exactly zero — value AND slope — at birth and at the reach, exactly 1 in the
+        /// middle. Both ends matter and for different reasons. At the reach it is continuity of
+        /// existence: a front must not blink out at the edge of the blast volume. At BIRTH it is the
+        /// recycle: the next front appears at the shell's half-thickness, where a full-strength
+        /// arrival would pop, and a bump means nothing ever appears or disappears at all.
+        /// </summary>
+        public static float FrontEnvelope(float u)
+        {
+            if (u <= 0f || u >= 1f) return 0f;
+            float v = 1f - u;
+            float su = u * u * (3f - 2f * u);
+            float sv = v * v * (3f - 2f * v);
+            return 4f * su * sv;
+        }
+
+        /// <summary>Is this asset inside every range the map and the proof assume?</summary>
         public bool IsSane =>
-            Amplitude > 0f &&
-            RadialExponent >= 1f &&
-            ReachHullRadii > 0f &&
-            TrainHullRadii > 0f &&
-            FullSpeed > EngageSpeed;
+            Amplitude >= 0f && Amplitude < FoldingAmplitude &&
+            WavesInFront >= 1 &&
+            HalfThicknessFraction > 0f && HalfThicknessFraction <= 0.45f &&
+            PulsesPerSecond > 0f &&
+            Subdivision >= 2 && Subdivision <= 32 &&
+            MaxResidentPrisms >= 0 &&
+            ResidencyMargin >= 0f;
 
         /// <summary>
-        /// The no-fold guarantee, as ONE predicate both an edit-mode test and the offline harness
-        /// call. The map's two stretch terms are c = 1 + E and b = (1 + E) + r·∂E/∂r, and both are
-        /// bounded by the amplitude alone — no carrier radius, no reach, no wavelength — so this
-        /// cannot be invalidated by retuning any of them.
+        /// The no-fold bound, stated as the one comparison the HLSL header derives: the radial
+        /// stretch <c>a = 1 + A*P'(s)</c> stays positive for every vertex, every reach and every
+        /// thickness iff <c>A * 2*pi*Q &lt; 1</c>. Asserted by <c>PrismWakeTests</c> against the
+        /// shipped asset and MEASURED over the whole authored range by
+        /// <c>Tools/Shaders/verify_prism_wake.py</c>.
         /// </summary>
-        public bool NeverFolds => Amplitude * (1f + MaxRadialFalloffSlope) < 1f;
+        public bool NeverFolds => Amplitude * TwoPi * WavesInFront < 1f;
     }
 }

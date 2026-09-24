@@ -6,19 +6,22 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The CPU half of the WAKE: a vessel travelling fast enough drags a travelling ripple through
-    /// the mass around its recent path — most visibly the RAILS of the ribbon it is laying, which
-    /// run either side of the disturbance. Mass near the path swells away from it and shrinks back
-    /// toward it in a wave that streams backward, so the crests hold still in the world and the
-    /// ship flies out from under them.
+    /// The CPU half of the WAKE — a warhead's SHOCKWAVE FRONT. A round carrying a live warhead
+    /// throws a thin spherical SHELL of rippled prisms outward, over and over, all the way in: born
+    /// at the shell's own half-thickness and dying at exactly the radius that warhead's blast will
+    /// reach. So the front is not decoration — it is the blast's own reach, drawn on the mass rather
+    /// than on the HUD.
     ///
-    /// <para><b>"Near the path" means near, not ON it.</b> The map is a STRAIN, so displacement is
-    /// <c>r·E</c> and the axis itself is a fixed point: mass lying exactly along the path barely
-    /// moves, and what ripples is the mass standing off it. That is a good fit for a trail — a
-    /// vessel that lays two rails (the Squirrel's <c>Gap 18.5</c> puts them ±9.6 u out) has its
-    /// ribbon exactly where the strain is strongest — and it is why the REACH has to cover that
-    /// separation: authored too small, the rails sit past the radial falloff, where the wake is
-    /// exactly zero and the ship leaves no visible trace at all.</para>
+    /// <para><b>It is half of a pair.</b> The same round publishes its armed fuze volume as a LIT
+    /// SPHERE (Docs/LIT.md, <c>Projectile.PublishFuzeLit</c>): mass standing where this warhead WILL
+    /// go off, in the shooter's domain colour. That says WHERE, statically, in colour; this says HOW
+    /// FAR, kinetically, in motion. Two channels of the surface description for one weapon, and
+    /// neither duplicating the other.</para>
+    ///
+    /// <para><b>The reach is the WARHEAD'S, never a tuned number.</b> The carrier reports its own
+    /// blast radius live through <c>IPrismWakeCarrier</c>, so the front grows with MASS exactly as
+    /// the warhead does and cannot drift from the thing it describes. Every length in the config is
+    /// a fraction of it.</para>
     ///
     /// It does exactly two things per frame, and they are different KINDS of thing:
     ///
@@ -68,7 +71,8 @@ namespace CosmicShore.Utility
         public const string ConfigResourcePath = "PrismWakeConfig";
 
         static readonly int CentreId = Shader.PropertyToID("_PrismWakeCentre");
-        static readonly int AxisId = Shader.PropertyToID("_PrismWakeAxis");
+        // There is no _PrismWakeAxis any more: a sphere has no axis. The name is left unwritten
+        // rather than repurposed, so nothing can read a stale direction out of it.
         static readonly int ShapeId = Shader.PropertyToID("_PrismWakeShape");
         static readonly int ParamsId = Shader.PropertyToID("_PrismWakeParams");
 
@@ -81,10 +85,9 @@ namespace CosmicShore.Utility
         /// </summary>
         struct Source
         {
-            public Transform Hull;
-            public float Radius;
-            public Vector3 Axis;        // unit, pointing BEHIND the ship
-            public float Phase;         // radians, integrated by the source
+            public Transform Carrier;
+            public float Reach;         // the warhead's own blast radius, world units
+            public float Front;         // where this pulse's shell is right now, world units
             public float Strength;
             public int Frame;
         }
@@ -96,7 +99,6 @@ namespace CosmicShore.Utility
         // so a short write later would silently leave the tail of the previous frame's bank live.
         // Unused slots are zeroed and _PrismWakeParams.z is the real bound.
         static readonly Vector4[] _centre = new Vector4[Slots];
-        static readonly Vector4[] _axis = new Vector4[Slots];
         static readonly Vector4[] _shape = new Vector4[Slots];
         static int _publishedCount;
 
@@ -144,69 +146,57 @@ namespace CosmicShore.Utility
 
         // ---------------- Derived geometry (ONE copy of each formula) ----------------
         //
-        // The source integrates its own phase and the bank packs the shader's slot, and both need
-        // the same three numbers. Deriving them here rather than at each call site is what keeps a
-        // retune of ReachHullRadii or WavesPerTrain from moving one of them and not the other.
-
-        /// <summary>How far OUT from the path the ripple reaches, world units.</summary>
-        public static float ReachFor(float hullRadius, PrismWakeConfigSO config) =>
-            hullRadius * config.ReachHullRadii;
-
-        /// <summary>How far BEHIND the ship the wave train runs, world units.</summary>
-        public static float TrainLengthFor(float hullRadius, PrismWakeConfigSO config) =>
-            hullRadius * config.TrainHullRadii;
-
-        /// <summary>The wave's spatial frequency along the axis, radians per world unit.</summary>
-        public static float WavenumberFor(float hullRadius, PrismWakeConfigSO config)
-        {
-            float length = TrainLengthFor(hullRadius, config);
-            return length > 0f ? 2f * Mathf.PI * config.WavesPerTrain / length : 0f;
-        }
+        // The source integrates its pulse phase and the bank packs the shader's slot, and both need
+        // the same arithmetic. It lives on the CONFIG (HalfThicknessFor, FrontRadiusAt,
+        // FrontEnvelope) so there is one copy the publisher, the residency pass and every test read
+        // — the retune that moved one of these and not the other is the failure this shape removes.
 
         /// <summary>
-        /// How fast this ship's phase advances, radians per second. At <c>PhaseTravel == 1</c> this
-        /// is exactly the rate that holds a crest STILL in the world while the ship flies out from
-        /// under it — the ship covers <c>speed</c> units of axis per second and the wave's argument
-        /// is <c>ψ − k·x</c>, so the two cancel.
+        /// How fast a pulse's phase advances, in pulses per second. It is simply the authored rate:
+        /// a front's travel is expressed as a FRACTION of its life rather than as a speed, so one
+        /// pulse takes the same time to cross a small warhead's reach as a large one's — which is
+        /// what keeps a MASS-swollen round's front readable instead of leisurely.
         /// </summary>
-        public static float PhaseRateFor(float hullRadius, float speed, PrismWakeConfigSO config) =>
-            WavenumberFor(hullRadius, config) * Mathf.Max(0f, speed) * config.PhaseTravel;
+        public static float PulseRate(PrismWakeConfigSO config) => config.PulsesPerSecond;
 
         /// <summary>
-        /// Report a wake. <paramref name="sourceId"/> identifies the reporting vessel (its source
-        /// component's instance id) so one vessel can only ever occupy one slot across a swap or a
-        /// re-initialise. <paramref name="hull"/> is sampled at flush time, not now.
+        /// Report a live shockwave. <paramref name="sourceId"/> identifies the reporting round (its
+        /// source component's instance id) so one round can only ever occupy one slot across a pool
+        /// reuse. <paramref name="carrier"/> is sampled at flush time, not now — a round at 240 u/s
+        /// published from Update would be a frame stale by the time anything renders.
         ///
-        /// Must be called every frame (from Update — the flush runs in LateUpdate) while the wake
+        /// Must be called every frame (from Update — the flush runs in LateUpdate) while the front
         /// is up; a slot that stops being reported is dropped by the next <see cref="Flush"/>.
         /// </summary>
-        public static void Publish(int sourceId, Transform hull, float radius, Vector3 axis,
-            float phase, float strength01)
+        public static void Publish(int sourceId, Transform carrier, float reach, float frontRadius,
+            float strength01)
         {
             strength01 = Mathf.Clamp01(strength01);
-            float axisLenSq = axis.sqrMagnitude;
-            if (hull == null || radius <= 0f || strength01 <= 0.001f || axisLenSq <= 1e-6f)
+            if (carrier == null || reach <= 0f || frontRadius <= 0f)
             {
                 Clear(sourceId);
                 return;
             }
 
+            // A strength of zero is NOT a reason to drop the slot, and that is deliberate. A front's
+            // own envelope passes through zero at the seam between one pulse and the next (birth and
+            // death are both silent, which is what makes the recycle invisible), and dropping there
+            // would release every resident prism and re-acquire it 1.6 times a second for no visual
+            // difference at all. The shader's own `w > 0` test skips a zero slot for free. The SOURCE
+            // decides when a round stops having a shockwave, and it calls Clear.
+
             _sources[sourceId] = new Source
             {
-                Hull = hull,
-                Radius = radius,
-                // Normalised HERE so the shader's slot is always unit and its own axis test can be
-                // a cheap rejection of an unset slot rather than a renormalise of a direction that
-                // may carry no direction at all.
-                Axis = axis / Mathf.Sqrt(axisLenSq),
-                Phase = phase,
+                Carrier = carrier,
+                Reach = reach,
+                Front = frontRadius,
                 Strength = strength01,
                 Frame = Time.frameCount,
             };
         }
 
         /// <summary>
-        /// Drop a wake. Idempotent, and not strictly required — the frame stamp collects an
+        /// Drop a shockwave. Idempotent, and not strictly required — the frame stamp collects an
         /// abandoned slot anyway — but calling it on release retires the wake on the same frame
         /// instead of the next one.
         /// </summary>
@@ -226,7 +216,7 @@ namespace CosmicShore.Utility
             // Deferred into a list because the dictionary cannot be mutated while it is walked.
             _stale.Clear();
             foreach (var kv in _sources)
-                if (kv.Value.Frame != frame || kv.Value.Hull == null)
+                if (kv.Value.Frame != frame || kv.Value.Carrier == null)
                     _stale.Add(kv.Key);
             for (int i = 0; i < _stale.Count; i++)
                 _sources.Remove(_stale[i]);
@@ -246,10 +236,10 @@ namespace CosmicShore.Utility
                         continue;
                     }
 
-                    // Reachable the moment five vessels boost at once, which several modes seat.
+                    // Reachable the moment a fifth rocket is in the air, which one Sparrow can do.
                     // Evict the WEAKEST rather than whoever the dictionary happened to enumerate
                     // last: a bank that dropped by enumeration order would show a different set of
-                    // wakes on each machine for the same match.
+                    // fronts on each machine for the same match.
                     int weakest = 0;
                     for (int i = 1; i < Slots; i++)
                         if (_shape[i].x < _shape[weakest].x)
@@ -262,7 +252,6 @@ namespace CosmicShore.Utility
             for (int i = count; i < Slots; i++)
             {
                 _centre[i] = Vector4.zero;
-                _axis[i] = Vector4.zero;
                 _shape[i] = Vector4.zero;
             }
 
@@ -271,24 +260,17 @@ namespace CosmicShore.Utility
             ReportState(config, enabled, count);
 
             // Nothing to say and nothing said last frame: skip the writes entirely, so a match in
-            // which nobody is moving fast costs this system literally nothing per frame.
+            // which nobody has a rocket in the air costs this system literally nothing per frame.
             if (count == 0 && _publishedCount == 0) return;
 
             Shader.SetGlobalVectorArray(CentreId, _centre);
-            Shader.SetGlobalVectorArray(AxisId, _axis);
             Shader.SetGlobalVectorArray(ShapeId, _shape);
             // z is the shader's MASTER sentinel: 0 means "the loop does not execute".
             Shader.SetGlobalVector(ParamsId,
-                new Vector4(config.Amplitude, config.RadialExponent, count, 0f));
+                new Vector4(config.Amplitude, config.WavesInFront, count, 0f));
             _publishedCount = count;
         }
 
-        /// <summary>
-        /// Pack one wake. The three derived scalars (reach, train length, wavenumber) are computed
-        /// HERE rather than in the shader: they are pure functions of the hull's radius and the
-        /// config, the CPU already has both, and deriving them once means the phase the source
-        /// integrates and the wave the shader draws cannot fall out of step.
-        /// </summary>
         static float _nextReportTime;
 
         /// <summary>
@@ -322,34 +304,41 @@ namespace CosmicShore.Utility
             if (count == 0)
             {
                 CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
-                    $"[PrismWake] idle: {_sources.Count} source(s) reporting, none above the " +
-                    $"engage speed ({config.EngageSpeed:0} u/s -> full at {config.FullSpeed:0}).");
+                    $"[PrismWake] idle: {_sources.Count} source(s) reporting, none with a live " +
+                    "warhead (a base rocket, or a round whose prefab authors no warhead radius).");
                 return;
             }
 
             _report.Clear();
             for (int i = 0; i < count; i++)
-                _report.Append($" [{i}] w={_shape[i].x:0.00} r={_centre[i].w:0.0} " +
-                               $"reach={_shape[i].y:0.0} train={_shape[i].z:0.0}");
+                _report.Append($" [{i}] w={_shape[i].x:0.00} front={_centre[i].w:0.0} " +
+                               $"reach={_shape[i].z:0.0} sigma={_shape[i].y:0.0}");
 
             CSDebug.LogVerbose(CSLogChannel.PrismRuntime,
-                $"[PrismWake] {count} wake(s), amp {config.Amplitude:0.00}, " +
+                $"[PrismWake] {count} shockwave(s), amp {config.Amplitude:0.000} x sigma, " +
+                $"Q={config.WavesInFront}, " +
                 $"{_resident.Count}/{config.MaxResidentPrisms} prisms dense at s={config.Subdivision}:" +
                 _report);
         }
 
         static readonly System.Text.StringBuilder _report = new();
 
+        /// <summary>
+        /// Pack one shockwave. The half-thickness is derived HERE rather than in the shader: it is a
+        /// pure function of the reach and the config, the CPU already has both, and deriving it once
+        /// means the shell the residency pass makes room for and the shell the shader draws cannot
+        /// fall out of step. The CENTRE is sampled now, at flush time in LateUpdate, after the
+        /// round's own mover has run.
+        /// </summary>
         static void Write(int slot, in Source src, PrismWakeConfigSO config)
         {
-            Vector3 p = src.Hull.position;
-            _centre[slot] = new Vector4(p.x, p.y, p.z, src.Radius);
-            _axis[slot] = new Vector4(src.Axis.x, src.Axis.y, src.Axis.z, src.Phase);
+            Vector3 p = src.Carrier.position;
+            _centre[slot] = new Vector4(p.x, p.y, p.z, src.Front);
             _shape[slot] = new Vector4(
                 src.Strength,
-                ReachFor(src.Radius, config),
-                TrainLengthFor(src.Radius, config),
-                WavenumberFor(src.Radius, config));
+                config.HalfThicknessFor(src.Reach),
+                src.Reach,
+                0f);
         }
 
         // ---------------- Residency ----------------
@@ -357,18 +346,25 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Decide which prisms hold the high-poly mesh this frame and apply the difference.
         ///
-        /// A wake's support is a CYLINDER — <c>x ∈ [0, trainLength]</c> behind the ship,
-        /// <c>r ≤ reach</c> out from its path — so the query is the sphere that bounds that
-        /// cylinder grown by the margin, and candidates are then filtered to the grown cylinder
-        /// itself. The two steps matter: the sphere's corners hold a lot of prisms the ripple
-        /// cannot move, and a budget spent on those is a budget not spent on the ones it can.
+        /// A shockwave's support is a SPHERE of the warhead's own reach, so the query is exactly
+        /// that sphere grown by the margin and there is no second filtering step — the cylinder's
+        /// version needed one because a sphere bounding a cylinder holds a lot of prisms the ripple
+        /// could never move, and a sphere bounding a sphere holds none.
         ///
-        /// The margin is what makes the swap invisible rather than merely quick — a prism changes
-        /// geometry only while every one of its vertices is provably unmoved. It is ALSO the one
-        /// place the wake is better protected than the cradle: the support's boundary planes are
-        /// C1-zero (the train envelope's value and slope both vanish at the ship's plane and at the
-        /// train's end, and the radial falloff's at the reach), so even a prism long enough to
-        /// straddle the boundary has a displacement there of second order in how far it straddles.
+        /// <para><b>Residency is the REACH, not the shell.</b> A prism is made resident for the whole
+        /// volume the front will cross, not for the thin shell the front occupies right now — which
+        /// is the point: a prism must already be carrying the dense mesh by the time the shell
+        /// arrives at it, and the swap must happen where the map provably cannot have moved a vertex.
+        /// Both are satisfied at once, because the shell is thin: a prism swapped in at reach-range
+        /// while the front is anywhere else is swapped where the displacement is exactly zero. The
+        /// cost is that residents outside the current shell carry the dense mesh for nothing, which
+        /// is the price of a travelling front and is bounded by the budget rather than by the reach.</para>
+        ///
+        /// The margin covers the remaining case — a prism entering at the outer edge while the front
+        /// is at the reach — and it is why the effect is better protected than the cradle: the
+        /// shell's two faces are C1-zero (the wavelet's value AND slope vanish at both), so even a
+        /// prism long enough to straddle a face has a displacement there of second order in how far
+        /// it straddles.
         ///
         /// <para><b>The budget is SHARED and split evenly.</b> Each live wake may claim at most its
         /// own share of <see cref="PrismWakeConfigSO.MaxResidentPrisms"/>, so four ships boosting at
@@ -399,24 +395,15 @@ namespace CosmicShore.Utility
                     for (int s = 0; s < liveSlots; s++)
                     {
                         Vector4 centreSlot = _centre[s];
-                        Vector4 axisSlot = _axis[s];
                         Vector4 shapeSlot = _shape[s];
 
                         var origin = new Vector3(centreSlot.x, centreSlot.y, centreSlot.z);
-                        var axis = new Vector3(axisSlot.x, axisSlot.y, axisSlot.z);
-                        float reach = shapeSlot.y + margin;
-                        float half = 0.5f * shapeSlot.z;
-                        if (!(reach > 0f) || !(half > 0f)) continue;
+                        float queryRadius = shapeSlot.z + margin;
+                        if (!(queryRadius > 0f)) continue;
 
-                        // The envelope's PEAK plane: where the ripple is strongest, so where the
-                        // surface is most worth having. Also the tightest centre for the query.
-                        Vector3 peak = origin + axis * half;
-                        float queryRadius = Mathf.Sqrt((half + margin) * (half + margin) + reach * reach);
-
-                        index.QuerySphere(peak, queryRadius, _query);
+                        index.QuerySphere(origin, queryRadius, _query);
                         if (_query.Count == 0) continue;
 
-                        float along = shapeSlot.z + margin;
                         _candidates.Clear();
                         for (int i = 0; i < _query.Count; i++)
                         {
@@ -429,20 +416,14 @@ namespace CosmicShore.Utility
                             if (p.RenderMeshOverride != null && !ReferenceEquals(p.RenderMeshOverride, mesh))
                                 continue;
 
-                            // Filter the sphere down to the grown cylinder the ripple can reach.
-                            Vector3 q = p.transform.position - origin;
-                            float x = Vector3.Dot(q, axis);
-                            if (x < -margin || x > along) continue;
-                            if ((q - axis * x).sqrMagnitude > reach * reach) continue;
-
                             _candidates.Add(p);
                         }
                         if (_candidates.Count == 0) continue;
 
                         // QuerySphere is unordered, so without this the dense mesh would go to
-                        // whichever prisms the bucket walk happened to reach — which in a crowded
-                        // trail is not the ones in the thick of the wake.
-                        _sortOrigin = peak;
+                        // whichever prisms the bucket walk happened to reach rather than to the ones
+                        // nearest the round — which is where every front spends its early life.
+                        _sortOrigin = origin;
                         _candidates.Sort(_byDistance);
 
                         int room = Mathf.Min(share, config.MaxResidentPrisms - _wanted.Count);
@@ -518,19 +499,17 @@ namespace CosmicShore.Utility
             for (int i = 0; i < Slots; i++)
             {
                 _centre[i] = Vector4.zero;
-                _axis[i] = Vector4.zero;
                 _shape[i] = Vector4.zero;
             }
             Shader.SetGlobalVectorArray(CentreId, _centre);
-            Shader.SetGlobalVectorArray(AxisId, _axis);
             Shader.SetGlobalVectorArray(ShapeId, _shape);
             Shader.SetGlobalVector(ParamsId, Vector4.zero);
             _publishedCount = 0;
         }
 
         /// <summary>
-        /// Shader globals survive play-mode exit in the editor, so a wake left live when play
-        /// stopped would otherwise keep rippling mass around a ship that no longer exists. Publish
+        /// Shader globals survive play-mode exit in the editor, so a front left live when play
+        /// stopped would otherwise keep rippling mass around a rocket that no longer exists. Publish
         /// the off state before anything renders — the same guard the occlusion corridor, the Echo
         /// Sight and the cradle install — and install the driver that flushes the bank.
         /// </summary>
