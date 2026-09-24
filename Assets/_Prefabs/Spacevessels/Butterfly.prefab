@@ -476,7 +476,7 @@ MonoBehaviour:
   boostMultiplier: 4
   inertia: 1
   _name: Butterfly
-  vesselType: 12
+  vesselType: 13
   _nearFieldSkimmer: {fileID: 281340694002912670}
   _farFieldSkimmer: {fileID: 6085221473828117326}
   orientationHandle: {fileID: 0}

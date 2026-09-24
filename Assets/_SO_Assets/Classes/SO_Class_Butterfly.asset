@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
   m_Name: SO_Class_Butterfly
   m_EditorClassIdentifier: Assembly-CSharp::SO_Vessel
-  Class: 12
+  Class: 13
   Name: Butterfly
   Description: "Slow, wide and quiet. The Butterfly paints broad surfaces through
     the hypersea while everyone else is fighting \u2014 and folds space when it wants

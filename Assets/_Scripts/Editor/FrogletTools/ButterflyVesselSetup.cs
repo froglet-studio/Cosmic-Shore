@@ -139,6 +139,8 @@ namespace CosmicShore.Editor
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
+                if (prefab) VerifyRegistrations(prefab);
+
                 Note(_unwired.Count == 0
                     ? "DONE — every field wired. Use Validate & Push below."
                     : $"DONE with {_unwired.Count} UNWIRED field(s) — fix before pushing.");
@@ -612,7 +614,7 @@ namespace CosmicShore.Editor
             var ev = entry.FindPropertyRelative("InputEvent");
             var actions = entry.FindPropertyRelative("ShipActions");
             if (ev == null || actions == null) { Unwired("InputEventShipActionMapping", "shape changed"); return; }
-            ev.enumValueIndex = (int)input;
+            ev.intValue = (int)input;   // by VALUE — see the note in Set()
             actions.arraySize = 1;
             actions.GetArrayElementAtIndex(0).objectReferenceValue = action;
         }
@@ -710,6 +712,44 @@ namespace CosmicShore.Editor
             Note("Registered in DefaultNetworkPrefabs.");
         }
 
+        /// <summary>
+        /// Re-read both registrations FROM DISK, after the save, and report a miss.
+        ///
+        /// <para>This exists because a registration that did not take is invisible from inside the
+        /// code that made it: <c>ApplyModifiedPropertiesWithoutUndo</c> returns nothing useful, the
+        /// in-memory SerializedObject reports the value it was told, and the ledger records the
+        /// path whether or not anything changed. The Netcode half went missing exactly that way —
+        /// <c>Register</c> ran to completion, recorded <c>DefaultNetworkPrefabs.asset</c>, and the
+        /// file on disk came out with the same 20 entries it went in with, so the vessel could
+        /// never have replicated and nothing said so.</para>
+        ///
+        /// <para>Reading the asset back is the only claim worth making here, because it is the one
+        /// the rest of the game will read.</para>
+        /// </summary>
+        void VerifyRegistrations(GameObject prefab)
+        {
+            var container = AssetDatabase.LoadAssetAtPath<ScriptableObject>(VesselContainerPath);
+            var list = container ? new SerializedObject(container).FindProperty("_shipPrefabs") : null;
+            if (list == null || !ArrayContains(list, prefab.transform))
+                Unwired("Vessel Prefab Container._shipPrefabs",
+                        "the Butterfly is NOT in the asset on disk after saving");
+            else Note("VERIFIED on disk: Vessel Prefab Container carries the Butterfly.");
+
+            var netList = AssetDatabase.LoadAssetAtPath<NetworkPrefabsList>(NetworkPrefabsPath);
+            var prefabs = netList ? new SerializedObject(netList).FindProperty("List") : null;
+            bool found = false;
+            for (int i = 0; prefabs != null && i < prefabs.arraySize && !found; i++)
+            {
+                var p = prefabs.GetArrayElementAtIndex(i).FindPropertyRelative("Prefab");
+                found = p != null && p.objectReferenceValue == prefab;
+            }
+            if (!found)
+                Unwired("DefaultNetworkPrefabs.List",
+                        "the Butterfly is NOT in the asset on disk after saving — it cannot " +
+                        "replicate; add it by hand in the NetworkManager's prefab list");
+            else Note("VERIFIED on disk: DefaultNetworkPrefabs carries the Butterfly.");
+        }
+
         // ─────────────────────────────────────────────────────────────── helpers
 
         /// <summary>
@@ -799,7 +839,16 @@ namespace CosmicShore.Editor
             switch (value)
             {
                 case bool b: p.boolValue = b; break;
-                case int i when p.propertyType == SerializedPropertyType.Enum: p.enumValueIndex = i; break;
+                // An enum is written by VALUE, never by enumValueIndex — which is the position in
+                // the enum's NAME LIST, not the member's number. The two agree only while an enum
+                // is zero-based and contiguous, which is true of Element, InputEvents and
+                // CombatHitClass and FALSE of VesselClassType, whose `Any = -1` shifts every index
+                // down by one. Writing VesselClassType.Butterfly (13) as an index therefore stored
+                // the 14th member, Scarab (12) — so the Butterfly prefab identified as a SCARAB,
+                // the container could not resolve Butterfly at all, and the vessel was silently
+                // absent from the Vessel Changer and the Spawn Matrix. Nothing reports it: the
+                // write succeeds, the field holds a valid member of the right type, and the asset
+                // looks correct in the inspector because the inspector shows what is stored.
                 case int i: p.intValue = i; break;
                 case float f: p.floatValue = f; break;
                 case string s: p.stringValue = s; break;
