@@ -63,6 +63,9 @@ import os
 import sys
 import uuid
 
+# One shared definition of the §4.7 vertex-morph chain this wirer has to look past.
+from prism_vertex_chain import walk_past_morphs
+
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 GRAPHS = [
     "Assets/_Graphics/Materials/Graphs/BlockGraph.shadergraph",
@@ -370,8 +373,13 @@ def validate(docs, expect_wired):
     pos_block = find_block(docs, VERTEX_POSITION_BLOCK)
     assert pos_block, "VertexDescription.Position block missing"
     pos_src = sources.get((pos_block["m_ObjectId"], 0))
+    # Docs/PRISM_ANIMATION.md §4.7 splices vertex MORPHS onto the tail of this chain — the
+    # cradle (§4.7.2), the wake (§4.7.3), and whatever comes next. Walk past any of them: the
+    # vertex they hand the block is the one this node produced. Identified STRUCTURALLY by
+    # prism_vertex_chain, never by name, so the next morph costs no edit here.
+    pos_src = walk_past_morphs(pos_src, "Position", sources, idx)
     assert pos_src == (converge["m_ObjectId"], 3), \
-        "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition"
+        "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition (directly, or through the §4.7 vertex morphs)"
     pos_in = sources.get((converge["m_ObjectId"], 2))
     assert pos_in is not None, \
         "PrismSuctionConverge.Position is unconnected — the original vertex source was dropped"
