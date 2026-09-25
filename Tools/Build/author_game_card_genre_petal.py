@@ -13,24 +13,30 @@ the two cannot drift.
 WHAT IT WRITES
 --------------
 TWO petal children per card - `GenrePetal` and `GenrePetalSecondary`, each a
-RectTransform + CanvasRenderer + Image - in the card's top-right corner, clear of
-GameTitle (which ends at x 0.818) and of the bottom row (AvatarSpace / VesselIcon /
-FavoriteIcon, all at y 0.02-0.298).
+RectTransform + CanvasRenderer + Image - in the card's BOTTOM-LEFT corner at ~87x87 px
+on a 275x203 card, on the same 0.02 margin the existing bottom row uses.
 
-The second sits UNDER the first rather than beside it, and that is the load-bearing
+The second sits ABOVE the first rather than beside it, and that is the load-bearing
 part of the layout: nearly every card has ONE genre, so a horizontal pair would either
 push the primary off its place on every card or leave a gap where the second would be.
-Stacked, a single-genre card draws exactly where it always did and a two-genre card
-grows downward into space nothing else occupies (x 0.838-0.965 is empty from y 0.30 up
-to the first petal).
+Stacked, a single-genre card always draws in the same corner and a two-genre card grows
+upward. At this size two stacked petals are 90% of the card's height, so the second one
+DOES cross the title band - stated rather than designed around, because exactly one
+shipped card (Brood Rush) has a second genre and the Arena roster it belongs to is being
+treated separately anyway.
 
 Both Images ship with NO sprite and `m_Enabled: 0`, because `GameCard.UpdateGenrePetal`
 resolves the art and whether there is any at runtime, and an enabled Image with no
 sprite draws a white quad. `m_RaycastTarget: 0` - they are decoration and must never eat
-the card's own click.
+the card's own click (which matters more here than it did in the corner: the petal now
+lies over AvatarSpace, the party-pick chip row).
 
 fileIDs are DERIVED from the card's own GameObject id, so a re-run is a no-op rather
 than a second copy, and are collision-checked against the file before use.
+
+A petal that is ALREADY wired has its anchors REFRESHED to the table below - a slot the
+tool owns is a slot the tool keeps current, or moving the row means hand-editing 74
+RectTransforms. `--check` reports drift as a failure for the same reason.
 
 Usage:
   python3 Tools/Build/author_game_card_genre_petal.py            # write
@@ -48,12 +54,13 @@ assert (ROOT / "Assets").is_dir(), f"ROOT is wrong: {ROOT}"
 GAMECARD_SCRIPT_GUID = "dbaebc1ed836d1847b41976e206448f5"
 IMAGE_SCRIPT_GUID = "fe87c0e1cc204ed48ad3b37840f39efc"
 
-# Top-right corner of the 275x203 card: ~35x35 px each, clear of the title and the
-# bottom row. The second is stacked directly under the first with a 0.018 gap.
+# Bottom-left corner of the 275x203 card: ~87x87 px each, on the 0.02 margin the bottom
+# row (AvatarSpace / VesselIcon / FavoriteIcon) already uses. The second is stacked
+# directly above the first with a 0.045 gap (the old 3.65 px gap, scaled with the petal).
 # (field name, anchorMin, anchorMax)
 SLOTS = [
-    ("GenrePetal", (0.838, 0.72), (0.965, 0.892)),
-    ("GenrePetalSecondary", (0.838, 0.53), (0.965, 0.702)),
+    ("GenrePetal", (0.02, 0.02), (0.3375, 0.45)),
+    ("GenrePetalSecondary", (0.02, 0.495), (0.3375, 0.925)),
 ]
 
 TARGETS = [
@@ -79,9 +86,13 @@ def derive_ids(field: str, go_id: str, taken: set) -> tuple:
     return tuple(out)
 
 
+def anchor_pair(anchor_min, anchor_max) -> tuple:
+    return (f"{{x: {anchor_min[0]}, y: {anchor_min[1]}}}",
+            f"{{x: {anchor_max[0]}, y: {anchor_max[1]}}}")
+
+
 def petal_blocks(name, anchor_min, anchor_max, go_id_new, rt_id, cr_id, img_id, father_rt) -> str:
-    amin = f"{{x: {anchor_min[0]}, y: {anchor_min[1]}}}"
-    amax = f"{{x: {anchor_max[0]}, y: {anchor_max[1]}}}"
+    amin, amax = anchor_pair(anchor_min, anchor_max)
     return f"""--- !u!1 &{go_id_new}
 GameObject:
   m_ObjectHideFlags: 0
@@ -171,16 +182,22 @@ def process(path: Path, check: bool):
     taken = set(re.findall(r"^--- !u!\d+ &(\d+)", text, re.M))
 
     parts = split_docs(text)
-    # index: GameObject id -> its RectTransform id
-    rt_of_go = {}
-    for part in parts[1:]:
-        m = re.match(r"!u!224 &(\d+)\nRectTransform:", part)
-        if m:
-            g = re.search(r"m_GameObject: \{fileID: (\d+)\}", part)
-            if g:
-                rt_of_go[g.group(1)] = m.group(1)
+    # indexes: GameObject id -> its RectTransform id; RectTransform id -> doc index;
+    # component id -> the GameObject it hangs off.
+    rt_of_go, doc_of_rt, go_of_component = {}, {}, {}
+    for i, part in enumerate(parts[1:], start=1):
+        m = re.match(r"!u!(\d+) &(\d+)\n", part)
+        if not m:
+            continue
+        g = re.search(r"m_GameObject: \{fileID: (\d+)\}", part)
+        if not g:
+            continue
+        go_of_component[m.group(2)] = g.group(1)
+        if m.group(1) == "224":
+            rt_of_go[g.group(1)] = m.group(2)
+            doc_of_rt[m.group(2)] = i
 
-    cards, already, missing = [], 0, []
+    cards, already, missing, drifted = [], 0, [], []
     for i, part in enumerate(parts):
         if not part.startswith("!u!114 &"):
             continue
@@ -189,14 +206,39 @@ def process(path: Path, check: bool):
         g = re.search(r"m_GameObject: \{fileID: (\d+)\}", part)
         if not g:
             continue
-        wanted = [s for s in SLOTS if not re.search(rf"^  {s[0]}: ", part, re.M)]
-        already += len(SLOTS) - len(wanted)
-        if wanted:
-            cards.append((i, g.group(1), wanted))
-            missing.extend(f"{g.group(1)}/{s[0]}" for s in wanted)
+        card_go = g.group(1)
 
-    if check or not cards:
-        return already, missing
+        wanted = []
+        for field, anchor_min, anchor_max in SLOTS:
+            wired = re.search(rf"^  {field}: \{{fileID: (\d+)\}}$", part, re.M)
+            if not wired:
+                wanted.append((field, anchor_min, anchor_max))
+                continue
+            already += 1
+
+            # The slot exists - keep its rect current with the table above.
+            petal_go = go_of_component.get(wired.group(1))
+            petal_rt = rt_of_go.get(petal_go) if petal_go else None
+            doc = doc_of_rt.get(petal_rt) if petal_rt else None
+            if doc is None:
+                drifted.append(f"{card_go}/{field}: unresolvable RectTransform")
+                continue
+
+            amin, amax = anchor_pair(anchor_min, anchor_max)
+            body = parts[doc]
+            fixed = re.sub(r"^  m_AnchorMin: .*$", f"  m_AnchorMin: {amin}", body, count=1, flags=re.M)
+            fixed = re.sub(r"^  m_AnchorMax: .*$", f"  m_AnchorMax: {amax}", fixed, count=1, flags=re.M)
+            if fixed != body:
+                drifted.append(f"{card_go}/{field}")
+                if not check:
+                    parts[doc] = fixed
+
+        if wanted:
+            cards.append((i, card_go, wanted))
+            missing.extend(f"{card_go}/{s[0]}" for s in wanted)
+
+    if check:
+        return already, missing, drifted
 
     new_blocks = []
     for idx, go_id, wanted in cards:
@@ -204,7 +246,7 @@ def process(path: Path, check: bool):
         if father_rt is None:
             raise SystemExit(f"{path}: GameCard GameObject {go_id} has no RectTransform")
 
-        for order, (field, anchor_min, anchor_max) in enumerate(wanted):
+        for field, anchor_min, anchor_max in wanted:
             new_go, new_rt, new_cr, new_img = derive_ids(field, go_id, taken)
 
             # 1) wire the serialized field. The first petal goes straight after VesselIcon so
@@ -241,35 +283,43 @@ def process(path: Path, check: bool):
     if not out.endswith("\n"):
         out += "\n"
 
-    # Insert before the scene-roots document so it stays last, else append.
-    roots = re.search(r"^--- !u!1660057539 &", out, re.M)
-    blob = "".join(new_blocks)
-    out = out[:roots.start()] + blob + out[roots.start():] if roots else out + blob
+    if new_blocks:
+        # Insert before the scene-roots document so it stays last, else append.
+        roots = re.search(r"^--- !u!1660057539 &", out, re.M)
+        blob = "".join(new_blocks)
+        out = out[:roots.start()] + blob + out[roots.start():] if roots else out + blob
 
     path.write_text(out, encoding="utf-8")
-    return already, missing
+    return already, missing, drifted
 
 
 def main():
     check = "--check" in sys.argv
-    problems, total_written, total_present = [], 0, 0
+    problems, total_written, total_present, total_moved = [], 0, 0, 0
 
     for rel in TARGETS:
         path = ROOT / rel
         if not path.exists():
             problems.append(f"missing target: {rel}")
             continue
-        present, missing = process(path, check)
+        present, missing, drifted = process(path, check)
         total_present += present
+        total_moved += len(drifted)
         if check:
             if missing:
                 problems.append(f"{rel}: {len(missing)} petal slot(s) unwired "
                                 f"({', '.join(missing[:6])}"
                                 f"{'...' if len(missing) > 6 else ''})")
-            print(f"  {rel}: {present} slot(s) wired, {len(missing)} missing")
+            if drifted:
+                problems.append(f"{rel}: {len(drifted)} petal slot(s) off the authored rect "
+                                f"({', '.join(drifted[:6])}"
+                                f"{'...' if len(drifted) > 6 else ''})")
+            print(f"  {rel}: {present} slot(s) wired, {len(missing)} missing, "
+                  f"{len(drifted)} drifted")
         else:
             total_written += len(missing)
-            print(f"  {rel}: {present} already wired, {len(missing)} written")
+            print(f"  {rel}: {present} already wired, {len(missing)} written, "
+                  f"{len(drifted)} re-anchored")
 
     if check:
         if problems:
@@ -281,7 +331,8 @@ def main():
               f"{total_present // len(SLOTS)} card(s))")
         return 0
 
-    print(f"\nwrote {total_written} petal object(s); {total_present} already present")
+    print(f"\nwrote {total_written} petal object(s); re-anchored {total_moved}; "
+          f"{total_present} already present")
     return 0
 
 

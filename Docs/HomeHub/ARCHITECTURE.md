@@ -326,8 +326,8 @@ at another roster, so it inherits the memory with the modal.
 
 ### 3.7 The genre petal: one element saying what KIND of game this is
 
-Every card wears an element petal in its top-right corner - card IDENTITY like the hull icon
-beside it, drawn from the moment the grid appears. Four categories, one glance across a grid of
+Every card wears an element petal in its bottom-left corner - card IDENTITY like the hull icon
+opposite it, drawn from the moment the grid appears. Four categories, one glance across a grid of
 twenty-five cards:
 
 | Petal | The card is about | Cards today |
@@ -356,11 +356,18 @@ keeps a new mode from drawing nothing merely because nobody has been asked about
 the ceiling on genres: a badge that needs three is a mode whose genre nobody can state, which is a
 design question rather than a UI one.
 
-**A second genre is drawn UNDER the first, never beside it.** Nearly every card has one, so a
+**A second genre is drawn ABOVE the first, never beside it.** Nearly every card has one, so a
 horizontal pair would either push the primary off its place on every card or leave a hole where
-the second would be. Stacked, a single-genre card draws exactly where it always did and a
-two-genre card grows downward into the one region of the card nothing else occupies
-(x 0.838-0.965 is empty from y 0.30 up to the first petal).
+the second would be. Stacked, a single-genre card always draws in the same corner and a two-genre
+card grows upward.
+
+**Its SIZE is what the layout costs, and both costs are stated rather than designed around.** The
+petal is `~87x87` px on a `275x203` card (x 0.02-0.3375, y 0.02-0.45), on the same 0.02 margin the
+bottom row already uses - so it lies over **AvatarSpace**, the party-pick chip row, which is empty
+on every card nobody in the party has picked and is drawn UNDER the petal when it is not. And two
+stacked petals are 90% of the card's height, so the second one crosses the **title** band: exactly
+one shipped card (Brood Rush) has a second genre, and the Arena roster it belongs to is being
+treated separately. Neither overlap can eat a press - both Images are `m_RaycastTarget: 0`.
 
 **It is a RULE, so it lives in code** (`ModeGenre`, in the extracted `CosmicShore.Data` leaf
 assembly beside the enums it relates) rather than in an authored table an editor can contradict -
