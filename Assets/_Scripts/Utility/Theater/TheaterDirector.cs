@@ -251,9 +251,9 @@ namespace CosmicShore.Utility
 
             if (_playback.IsPlaying)
             {
-                string subject = _playback.Shot is TheaterShot.Chase or TheaterShot.Static
-                    ? "  " + _playback.FollowName
-                    : _playback.Shot == TheaterShot.Free ? $"  x{_playback.FreeCameraGear:0.##}" : string.Empty;
+                string subject = _playback.Shot == TheaterShot.Free
+                    ? $"  x{_playback.CameraGear:0.##}"
+                    : $"  {_playback.FollowName}{(_playback.CameraSteered ? " *" : string.Empty)}";
 
                 GUI.Label(new Rect(x, y, PanelWidth, Row),
                     $"[THEATER] {_playback.Position:0.0} / {_playback.Duration:0.0}s   " +
@@ -272,17 +272,17 @@ namespace CosmicShore.Utility
 
                 // Shots.
                 bx = x;
-                if (Button(ref bx, y, 48f, "Free")) _playback.Shot = TheaterShot.Free;
-                if (Button(ref bx, y, 50f, "Orbit")) _playback.Shot = TheaterShot.Orbit;
-                if (Button(ref bx, y, 52f, "Chase")) _playback.Shot = TheaterShot.Chase;
-                if (Button(ref bx, y, 54f, "Static")) _playback.Shot = TheaterShot.Static;
-                if (Button(ref bx, y, 50f, "Pilot >")) _playback.CycleFollow(1);
+                if (Button(ref bx, y, 46f, "Free")) _playback.SetShotByIndex(0);
+                if (Button(ref bx, y, 48f, "Pilot")) _playback.SetShotByIndex(1);
+                if (Button(ref bx, y, 48f, "Orbit")) _playback.SetShotByIndex(2);
+                if (Button(ref bx, y, 50f, "Chase")) _playback.SetShotByIndex(3);
+                if (Button(ref bx, y, 58f, "Next >")) _playback.CycleFollow(1);
                 y += Row + 4f;
 
                 GUI.Label(new Rect(x, y, PanelWidth, Row * 3f),
-                    "[8] leave   [1-4] shot   [5] next pilot\n" +
-                    "pad: sticks fly, triggers climb, D-pad shot/pilot, A pause\n" +
-                    "kb: WASD + QE, right-mouse look, Shift boost, Ctrl crawl");
+                    "[8] leave   [1-4] shot (again = re-centre)   [5] next pilot\n" +
+                    "following: R-stick orbits, L-stick dollies, triggers lift\n" +
+                    "free: L-stick flies, R-stick looks, triggers climb");
                 y += Row * 3f + 4f;
             }
 
