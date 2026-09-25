@@ -42,7 +42,7 @@ hole, because the next reader cannot tell it from a designed one.
 | Rhino | Time | Ramp Spool | `timeAccelerationMultiplier` ×1 → ×2.5, floored ×0.5 (`RhinoRampBoostAction.asset`) | — |
 | Serpent | Charge | Sniper Shot | `cooldownMultiplierAtFullCharge` 0.45 on `SniperShotAction.asset`, read through `ElementalScaling.Multiplier` in the executor | **Pierce** |
 | Serpent | Space | Scope | `zoomDepthAtFullSpace` 2 on `SniperScopeAction.asset`, same channel | **Deep Focus** |
-| Serpent | Time | Boost Duration | `timeDurationMultiplier` ×1 → ×1.6, floored ×0.25 (`ConsumeBoostAction.asset`) | — |
+| Serpent | Time | Solid Fuel Pellets | `timeDurationMultiplier` ×1 → ×1.6, floored ×0.25 (`ConsumeBoostAction.asset`) — burn DURATION per pellet | — |
 
 The Serpent's two new rows scale through `ElementalScaling.Multiplier(status, element, atFull,
 minMul)` — a per-executor read of an authored endpoint on the ability's own asset — rather than
