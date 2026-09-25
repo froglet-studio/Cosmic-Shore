@@ -328,43 +328,64 @@ at another roster, so it inherits the memory with the modal.
 
 Every card wears an element petal in its top-right corner - card IDENTITY like the hull icon
 beside it, drawn from the moment the grid appears. Four categories, one glance across a grid of
-twenty-odd cards:
+twenty-five cards:
 
 | Petal | The card is about | Cards today |
 |---|---|---|
-| **Time** | a RACE | Scurry, Scarab Scramble, Tollway, Switchback, Headlong, Breakwater, Skein, Redline, Brood Rush, Regatta |
-| **Mass** | MAKING mass, or taking it into your own hands | Hijack |
-| **Space** | DESTROYING mass | Rampage, Cleave, Salvo, Wrecking Ball, Wildlife Liberation, Bloomrush |
+| **Time** | a RACE | Skim Race, Scarab Scramble, Switchback, Headlong, Breakwater, Skein, Redline, Astro League, Regatta |
+| **Mass** | MAKING mass, or taking it into your own hands | Scurry, Tollway, Hijack, *Brood Rush* |
+| **Space** | DESTROYING mass | Rampage, Cleave, Salvo, Wrecking Ball, Wildlife Liberation, Bloomrush, *Brood Rush* |
 | **Charge** | working other PILOTS over | Joust, Dog Fight, The Bends, Undertow, Broadside |
 
-**It is keyed on the METRIC, never on the game mode** - the rule `ObjectiveIconSetSO` is built on
-(`Docs/GAME_MODE_TOPBAR.md` §2), applied one surface over. `ScoringMetric` is already the
-platform's single answer to *what is this mode scored on*, and a mode's genre is not a separate
-fact from that: a mode scored on prisms destroyed IS a destruction mode. So a new mode that picks
-an existing metric gets its badge for free, and there is deliberately no per-mode override - one
-would re-open exactly the divergence `ScoringMetric` exists to close, letting a card advertise a
-genre its own end condition contradicts.
+**It is keyed on the MODE, with the METRIC as the fallback** (`ModeGenre.TryElementsFor`). A
+mode's genre is *usually* predictable from `ScoringMetric` - the rule `ObjectiveIconSetSO` is
+built on (`Docs/GAME_MODE_TOPBAR.md` §2), applied one surface over - because a mode scored on
+prisms destroyed IS a destruction mode. But it is not the SAME fact, and **the places the two part
+company are the reason the table exists at all**:
+
+- **Tollway and Scarab Scramble are both `Goals`** and are not the same kind of game. One is a
+  ball race; the other is acquisition - a toll is paid in mass, every ring that pays raises a
+  255-prism monument on the spot, and the arena ends the match built out of the scoring.
+- **Scurry is `Crystals`**, which reads as a race and is a gather.
+- **Brood Rush is TWO genres.** It contests the nucleus by laying claim mass inside it and tearing
+  the other side's out - MASS *and* SPACE - and a card that could only say one of those would be
+  advertising half the mode.
+
+So the explicit rows win, and any mode with no row falls through to the metric, which is what
+keeps a new mode from drawing nothing merely because nobody has been asked about it yet. Two is
+the ceiling on genres: a badge that needs three is a mode whose genre nobody can state, which is a
+design question rather than a UI one.
+
+**A second genre is drawn UNDER the first, never beside it.** Nearly every card has one, so a
+horizontal pair would either push the primary off its place on every card or leave a hole where
+the second would be. Stacked, a single-genre card draws exactly where it always did and a
+two-genre card grows downward into the one region of the card nothing else occupies
+(x 0.838-0.965 is empty from y 0.30 up to the first petal).
 
 **It is a RULE, so it lives in code** (`ModeGenre`, in the extracted `CosmicShore.Data` leaf
-assembly beside the two enums it relates) rather than in an authored table an editor can
-contradict - the same argument `ToyDefinitionSO.Category` is abstract-and-in-code for.
-`ModeGenreTests` sweeps every `ScoringMetric` member and fails on any that does not classify,
-because an unclassified metric fails SILENTLY at runtime: the card simply draws no petal.
+assembly beside the enums it relates) rather than in an authored table an editor can contradict -
+the same argument `ToyDefinitionSO.Category` is abstract-and-in-code for. `ModeGenreTests` sweeps
+every `ScoringMetric` member, pins every row of the mode table, and - the guard that catches the
+failure nobody would notice - asks the SHIPPED rosters and the SHIPPED preview library exactly
+what `GameCard` asks them, so a card added with no genre fails a test instead of quietly drawing
+nothing.
 
-The metric itself comes from `ModePreviewLibrarySO`, which is where the launch panel's objective
-box already reads it. A mode's `ScoringRuleSO` lives in its own scene, so the preview definition
-is the platform's only pre-scene answer to that question - and it is the SAME answer, mirrored
-per mode. Reading it here rather than adding a second table is what keeps the card, the objective
-box and the goal row saying one thing. The art is the fleet's own
-`ElementalBarsConfigSO.GetPetalSprite` - the petal the vessel HUD flowers and the ability
-lockup's upgrade badge draw - tinted the lockup's level-5 WHITE rather than a per-element colour,
-because **element identity is SHAPE** (that is what the flower is built on) and a second channel
-saying the same thing would only compete with the card art.
+The metric the fallback reads comes from `ModePreviewLibrarySO`, which is where the launch panel's
+objective box already reads it. A mode's `ScoringRuleSO` lives in its own scene, so the preview
+definition is the platform's only pre-scene answer to that question. Reading it here rather than
+adding a second table is what keeps the card, the objective box and the goal row saying one thing
+about the modes whose genre IS their metric. A mode with a row of its own needs no definition at
+all, so a missing one is passed along as a **null** metric rather than short-circuiting - and null
+rather than the enum's zero, because `ScoringMetric.Crystals` is a real answer several cards give.
+The art is the fleet's own `ElementalBarsConfigSO.GetPetalSprite` - the petal the vessel HUD
+flowers and the ability lockup's upgrade badge draw - tinted the lockup's level-5 WHITE rather
+than a per-element colour, because **element identity is SHAPE** (that is what the flower is built
+on) and a second channel saying the same thing would only compete with the card art.
 
 **Maelstrom draws no petal, and that is correct** - it is a session-level meta that draws OTHER
-modes, so it has no genre of its own; it is the one roster card with no preview definition and
-therefore no metric to read. Blank is the honest state here exactly as it is for a vessel with no
-icon.
+modes, so it has no genre of its own; it is the one roster card with no preview definition and no
+row, and therefore nothing to read. Blank is the honest state here exactly as it is for a vessel
+with no icon.
 
 #### The prefab is not what runs
 
@@ -373,13 +394,13 @@ icon.
 Menu_Main** that are not instances of it, and the two `Arcade Screen` prefabs that also hold
 cards are referenced by nothing at all. So editing the prefab asset alone ships a feature that
 renders on no card - `Docs/GAMECANVAS.md` §9's finding, one prefab over.
-`Tools/Build/author_game_card_genre_petal.py` therefore writes the `GenrePetal` child onto every
-live card AND the canonical prefab, so the two cannot drift; `--check` fails on any card missing
-it. Its fileIDs are DERIVED from each card's own GameObject id, so a re-run is a no-op rather
-than a second copy. The Image ships with no sprite and `m_Enabled: 0`, because `GameCard`
-resolves both the art and whether there is any at runtime and an enabled Image with no sprite
-draws a white quad; `m_RaycastTarget: 0`, because it is decoration and must never eat the card's
-own click.
+`Tools/Build/author_game_card_genre_petal.py` therefore writes both petal children onto every
+live card AND the canonical prefab, so the two cannot drift; `--check` fails on any unwired slot.
+Its fileIDs are DERIVED from each card's own GameObject id **and the field name**, so a re-run is
+a no-op rather than a second copy and adding the second slot left the first one's ids
+byte-identical. Both Images ship with no sprite and `m_Enabled: 0`, because `GameCard` resolves
+the art and whether there is any at runtime and an enabled Image with no sprite draws a white
+quad; `m_RaycastTarget: 0`, because they are decoration and must never eat the card's own click.
 
 ## 4. The Toy Box drives the LIVE toys
 
