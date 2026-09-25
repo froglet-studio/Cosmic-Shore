@@ -286,6 +286,17 @@ namespace CosmicShore.Utility
         /// </summary>
         [CSLogChannelLabel("[FTUE] tutorial step flow")]
         FTUE = 1 << 27,
+        /// <summary>
+        /// <c>[FoldGate]</c> — the Butterfly's standing portal pair: where a fold laid its gates,
+        /// who threaded one, and when a pair was replaced.
+        ///
+        /// It exists because a gate's failure modes all read the same on screen ("it did
+        /// nothing"): no pair was placed at all, a pair was placed too short to keep, the pilot's
+        /// domain does not match, or the transit fired on a machine that does not own that
+        /// vessel. One line separates them.
+        /// </summary>
+        [CSLogChannelLabel("[FoldGate] Butterfly fold gate placement and transits")]
+        ButterflyFold = 1 << 28,
         All = ~0
     }
 

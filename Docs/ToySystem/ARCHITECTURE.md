@@ -917,11 +917,15 @@ player has every reason to read as Gold and Jade. Painting the rest Blue is not 
 (that lives on each toy's label, hub, emblem and content) but the thing that makes the domain
 colours mean something when they do appear.
 
-**The one wearer outside the toybox** is the Scarab's placed switch, where the domain colour names
-the domain the switch *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is
-decides who it pays). Nothing in that mode changes a pilot's domain, so the two readings never
-share a screen; it is listed in the test's allow-list with that reason. Do not add a third toybox
-wearer without settling which reading wins. It draws in the **live** per-domain prism material —
+**Two wearers sit outside the toybox**, and both say something about the SWITCH rather than about
+the pilot. The Scarab's placed switch is the first: the domain colour names the domain the switch
+*belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is decides who it pays).
+The Butterfly's **fold gate** is the second, one notch further out: there the colour names **who
+may thread it** (`BUTTERFLY_FOLD.md` § "Every fold leaves a PAIR OF GATES standing"). A gate
+declines a pilot who is not already in its domain and can never put anyone into one, so it is a
+gate on use rather than a grant. Nothing in either case changes a pilot's domain, so the two
+readings never share a screen; both are listed in the test's allow-list with their reason. Do not
+add a toybox wearer without settling which reading wins. It draws in the **live** per-domain prism material —
 the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
 injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
 same door `ScarabCavitationBlast` on that hull already comes through). That let it drop a

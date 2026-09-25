@@ -320,12 +320,30 @@ namespace CosmicShore.Gameplay
             VesselStatus.ResetForPlay();
         }
 
+        /// <summary>
+        /// Put this vessel somewhere. The write travels to every peer, because a teleport that
+        /// only happened on one machine is a vessel in two places.
+        ///
+        /// <para><b>A CLIENT may move its OWN vessel</b>, and that route is the reason this is
+        /// three branches rather than one. <c>SetPose_ClientRpc</c> is a ClientRpc, which only a
+        /// server may send — so every client-owned teleport (the Butterfly's Fold, a fold gate
+        /// transit, the Wanderway's return) reached this method on a party guest, hit the ClientRpc
+        /// and did nothing but log. The owner now asks the server, which broadcasts exactly as
+        /// before.</para>
+        ///
+        /// <para>The SERVER branch is deliberately kept as it was rather than folded into the
+        /// ServerRpc the way the slowed-transform pair is: a ServerRpc invoked on the server is
+        /// still dispatched through the network layer, and every existing caller here is a
+        /// host-side teleport that should not pay a tick for a route it does not need.</para>
+        ///
+        /// <para>A peer that is neither the server nor the owner writes nothing. It is not that
+        /// machine's vessel to move, and it will receive the pose like everybody else.</para>
+        /// </summary>
         public void SetPose(Pose pose)
         {
-            if (IsSpawned)
-                SetPose_ClientRpc(pose);
-            else
-                SetPose_Local(pose);
+            if (!IsSpawned) { SetPose_Local(pose); return; }
+            if (IsServer)   { SetPose_ClientRpc(pose); return; }
+            if (IsOwner)      SetPose_ServerRpc(pose);
         }
 
         public void ChangePlayer(IPlayer player)
@@ -433,6 +451,11 @@ namespace CosmicShore.Gameplay
             AddSlowedShipTransformToGameData_Local();
         void AddSlowedShipTransformToGameData_Local() =>
             gameData?.SlowedShipTransforms.Add(transform);
+
+        // RequireOwnership is left ON: this is the "I am moving MY OWN vessel" route, and the
+        // server already has its own direct branch for moving anybody's.
+        [ServerRpc]
+        void SetPose_ServerRpc(Pose pose) => SetPose_ClientRpc(pose);
 
         [ClientRpc]
         void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);

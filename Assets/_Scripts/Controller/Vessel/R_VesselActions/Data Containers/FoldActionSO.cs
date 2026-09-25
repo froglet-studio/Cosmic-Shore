@@ -66,6 +66,35 @@ namespace CosmicShore.Gameplay
                  "reach everywhere it is always worth something.")]
         [SerializeField, Min(1f)] float upgradeRangeMultiplier = 2f;
 
+        [Header("Gates")]
+        [Tooltip("Mouth radius of each fold gate, world units. It is drawn at exactly this - the " +
+                 "ring IS the trigger volume - so it is simultaneously how big the portal looks " +
+                 "and how precisely you have to fly it.")]
+        [SerializeField, Min(1f)] float gateRadius = 55f;
+
+        [Tooltip("Shortest fold that is worth leaving gates for. A tap-and-release puts both ends " +
+                 "in the same place, which is a portal to where you already are - so below this " +
+                 "NO pair is laid and the previous pair is left standing. One rule covers the " +
+                 "degenerate fold and the case where a peer's replicated pose has not landed yet.")]
+        [SerializeField, Min(1f)] float minGateSeparation = 300f;
+
+        [Tooltip("How far past the far gate's plane a transiting pilot emerges, world units, " +
+                 "along the sense they were already travelling. Clear of the mouth so arriving " +
+                 "never re-threads, and small enough that a gate reads as something you fly " +
+                 "THROUGH rather than something that launches you.")]
+        [SerializeField, Min(0f)] float gateExitClearance = 40f;
+
+        [Tooltip("Seconds a gate takes to bloom in, and to wither away when the next fold " +
+                 "replaces it. Continuity of existence: a portal may not pop into or out of the " +
+                 "world any more than a prism may.")]
+        [SerializeField, Min(0.01f)] float gateBloomSeconds = 0.45f;
+
+        [Tooltip("Longest a peer waits for the replicated arrival pose before it gives up on " +
+                 "laying the destination gate. The owner never waits at all (its pose is local); " +
+                 "a peer that is still late at the deadline lays no pair, which is the same " +
+                 "outcome as a fold too short to keep.")]
+        [SerializeField, Min(0f)] float gateSettleSeconds = 0.75f;
+
         [Header("Feel")]
         [Tooltip("World units per second the ghost eases toward its commanded position. It " +
                  "starts ON the vessel and TRAVELS, so the pilot watches it go rather than " +
@@ -86,6 +115,12 @@ namespace CosmicShore.Gameplay
         public float GhostTravelSpeed => ghostTravelSpeed;
         public float DepartSeconds => departSeconds;
         public float ArriveSeconds => arriveSeconds;
+
+        public float GateRadius => gateRadius;
+        public float MinGateSeparation => minGateSeparation;
+        public float GateExitClearance => gateExitClearance;
+        public float GateBloomSeconds => gateBloomSeconds;
+        public float GateSettleSeconds => gateSettleSeconds;
 
         /// <summary>
         /// The recharge this vessel actually pays, at its live TIME level. Read at USE time, never

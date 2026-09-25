@@ -92,7 +92,7 @@ The map asset (`Assets/Resources/ElementalAbilityMaps/Butterfly.asset`) is the d
 | **Charge** | **Scale Dust** — the wings debuff pilots and wither creature hearts they pass through | passive | **Monarch** — the dust bites twice as deep |
 | **Mass** | **Spread Wings** — hold to widen the wake; costs energy | RT (`RightStickAction`) | **Mural** — the spread is free |
 | **Space** | **Wingreach** — opposing mass passing through the wings dissolves | passive | **Broadwing** — the far-field wings join in |
-| **Time** | **Fold** — hold to stop, place a ghost anywhere in the cell, release to be there | LT (`LeftStickAction`) | **Far Fold** — the open-space fold reaches twice as far |
+| **Time** | **Fold** — hold to stop, reach out along your heading, release to be there; leaves a standing pair of domain gates behind | LT (`LeftStickAction`) | **Far Fold** — the fold reaches twice as far |
 
 ### 3.1 Charge — Scale Dust
 
@@ -149,7 +149,14 @@ changing what a pass does.
 
 ### 3.4 Time — Fold
 
-See **`BUTTERFLY_FOLD.md`**.
+Hold to stop, watch a ghost reach out along the heading you arrived on, release to be there — and
+**every fold leaves a PAIR OF GATES standing**, one where you left and one where you arrived. They
+are domain switches: any vessel of the Butterfly's domain threads either and is at the other, as
+often as it likes, until this Butterfly folds again and the new pair replaces the old one. That is
+what turns the fleet's slowest hull into a team's shortcut rather than a ship that can only ever
+move itself.
+
+See **`BUTTERFLY_FOLD.md`** (§ "Every fold leaves a PAIR OF GATES standing" for the gates).
 
 ## 4. The wake — the piano keys
 
@@ -172,6 +179,50 @@ Time plate.
 The Fold's veil is the ONLY feedback a refused press gets, which is why the controller pushes it
 every frame rather than off an edge.
 
+### 5.1 The row was written and never bound (2026-09-25)
+
+The view and the controller above were complete from the day the hull shipped, and
+`ButterflyHUDVariant.prefab` bound **none** of it: `abilityIcons: []` and
+`wingEnergyGauge: {fileID: 0}`. So all four cards rendered LOCKED and the recharge veil swept over
+a bare plate — which is the Serpent's report one vessel over, and the rule it left behind is that
+an **indicator whose only rendering is its VALUE has no rendering at its extremes**: a veil with
+nothing under it looks identical at "just fired" and at "ready", and identical again to a veil
+nobody is driving.
+
+Two tools close it, and the split is deliberate — art and wiring go stale for different reasons:
+
+| tool | writes |
+|---|---|
+| `Tools/Build/author_butterfly_icon_placeholders.py` | four 128 px PLACEHOLDER silhouettes under `_Graphics/Icons/AbilityIcons/Butterfly/`, the Manta's scheme (`author_manta_icon_placeholders.py`) |
+| `Tools/Build/author_butterfly_ability_row.py` | the four hosts + icons + the wing-meter Image into the HUD variant, and the bindings |
+
+Each icon names the **ACT**, not the vessel — three of the four could otherwise be "a wing" and be
+unreadable at the ~40 px a card draws: a wing shedding motes (Scale Dust), the whole butterfly
+(Spread Wings), a wing with reach arcs (Wingreach), and **two rings with an arrow between them**
+(Fold, drawn as the gates it now leaves). The icon tool asserts each silhouette's coverage into a
+readable band, because a placeholder at 2% is a hairline and one at 60% is a blob and both read as
+no icon at all.
+
+Three things about the wiring are worth keeping:
+
+- **It is authored into the HUD VARIANT, not `Butterfly.prefab`.** `ButterflyHUDView` is an added
+  component on the variant, so the bindings and the objects they point at live together and the
+  vessel prefab needs no instance override — an override there is the Squirrel's Time-icon trap,
+  where a value on the variant had been dead for as long as the override existed.
+- **The meter is bound TWICE, to the same Image, and both are required.** The view WRITES
+  `fillAmount` through `wingEnergyGauge`; the lockup ADOPTS the meter through the binding's own
+  `gauge` field. Bind only the field and the lockup never claims it, so `RetireLegacyChrome`
+  switches it off as an unrecognised child of the host — a correctly-driven meter drawing nothing.
+- **Nothing authored here is a layout decision.** The lockup owns position, pitch, cell size and
+  host scale, and derives each icon's scale as `iconBoxSize / its authored size`; the icons are
+  authored at exactly `iconBoxSize` so that derivation is 1 today and still correct if the style
+  moves.
+
+Binding icons also flips `RetireLegacyHudContent` from "clear the whole root" to "spare what is
+still referenced". Measured: `ButterflyHUDView` references only the new row and the ensured
+`InputDeviceIconSetSwitcher` carries a single float, so nothing from the base HUD is spared and the
+screen is unchanged apart from the row itself.
+
 ## 6. Files
 
 | Role | Path |
@@ -184,7 +235,10 @@ every frame rather than off an edge.
 | Dust (pilot) | `ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselElementalDebuffBySkimmerEffectSO.cs` |
 | Dust (lifeform) | `ImpactEffects/EffectsSO/Skimmer Crystal Effects/SkimmerWitherLifeformByCrystalEffectSO.cs` |
 | The new skimmer arm | `ImpactEffects/EffectsSO/Abstract Effect Types/SkimmerLifeformCrystalEffectSO.cs` |
+| Fold gate | `R_VesselActions/FoldGate.cs`, `R_VesselActions/FoldGateGeometry.cs` |
+| Fold gate offline proof | `Tools/Build/foldgate_harness/` (compiles and RUNS the shipped geometry) |
 | HUD | `UI/Controller/ButterflyHUDController.cs`, `UI/View/ButterflyHUDView.cs` |
+| HUD row + icons (authored) | `Tools/Build/author_butterfly_ability_row.py`, `Tools/Build/author_butterfly_icon_placeholders.py` |
 | Design record | `Assets/Resources/ElementalAbilityMaps/Butterfly.asset` |
 | Asset builder (editor) | `Assets/_Scripts/Editor/FrogletTools/ButterflyVesselSetup.cs` |
 | Offline gate | `Tools/Build/butterfly_hull_harness/run.sh` |
@@ -238,3 +292,10 @@ Run **FrogletTools ▸ Vessels ▸ Create Butterfly Vessel**, read its report, t
   genuine refactor, deliberately **logged and not acted on** inside a new-vessel branch.
 - **No codex entry and no toybox portrait** — `ToyVesselRoster` will pick the hull up through
   `IProceduralHullSource`, but the codex bake has not been re-run.
+- **The four ability icons are PLACEHOLDERS** (§5.1), white silhouettes for the art pass to replace
+  1:1. `upgradedSprite` is empty on all four, so an upgrade is signalled by the card alone.
+- **No card icons.** `SO_Class_Butterfly` authors no `IconActive`/`IconInactive`, so
+  `check_vessel_class_icons.py` is red on this hull. The Scarab's fix
+  (`Tools/Build/render_scarab_card_icons.py`) is the pattern.
+- **A standing fold gate has no HUD marker and no sound**, and an AI never threads one
+  (`BUTTERFLY_FOLD.md` § Follow-ups).

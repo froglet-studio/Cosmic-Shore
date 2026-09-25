@@ -18,6 +18,11 @@ MonoBehaviour:
   reachSpeed: 900
   reachRange: 1800
   upgradeRangeMultiplier: 2
+  gateRadius: 55
+  minGateSeparation: 300
+  gateExitClearance: 40
+  gateBloomSeconds: 0.45
+  gateSettleSeconds: 0.75
   ghostTravelSpeed: 1400
   departSeconds: 0.22
   arriveSeconds: 0.3

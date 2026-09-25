@@ -232,3 +232,173 @@ copied constant is right on the day it is copied and silently stale after the ne
 The drive itself lives in the **controller**, not here — an AI's decision is mode knowledge (how far
 the next ring is) while the numbers are the ability's. That split is why this file gains a query and
 no behaviour.
+
+---
+
+## Every fold leaves a PAIR OF GATES standing (2026-09-25)
+
+A fold now opens **two portals** — one where the vessel left, one where it arrived — and they stay
+open. Any vessel of the Butterfly's **domain** threads either and is at the other, as often as it
+likes. The pair stands until that Butterfly folds again, and the new pair replaces it.
+
+`FoldGate` owns a gate; `FoldActionExecutor` owns the pair.
+
+### Why the Butterfly is the hull that gets this
+
+It is the fleet's slowest ship (55 u/s cruise, 45°/s turn) and it can never out-fly anybody. What
+it can do instead is **leave a shortcut standing that its whole team keeps** — so the Fold stops
+being a movement option the Butterfly spends on itself and becomes the one thing this hull
+contributes to a side. Placing is the Butterfly's alone; *using* is everybody's, provided they are
+already in its domain.
+
+### It is a SWITCH, and it is the second domain-coloured one outside the toybox
+
+A ring you thread is the platform's one word for "this activates something", so a gate is the
+ordinary `ToyFactory.AddSwitchRing` ring drawn at **its own trigger radius** — the ring IS the
+volume, never an advertisement for a bigger one (`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
+
+It wears the placer's DOMAIN, which is reserved: normally a domain-coloured switch is one that
+**hands** you that domain. `ScarabSwitch` was the first exception — there the colour names the
+domain the switch *belongs to* — and a fold gate is the second, one notch further: the colour says
+**who may thread it**. That is a claim about the gate, not about the pilot; a gate never changes
+anyone's domain, it only declines pilots who are not already in it, so the two readings of a
+domain-coloured ring still never share a screen. `ToySwitchVocabularyTests` carries the row.
+
+### Nothing removes a gate but the pilot who placed it
+
+A pair stands until that Butterfly folds again (an **active, explicit player act** — the same class
+of removal as a cell swap, or a Scarab standing one switch too many) or until the vessel that laid
+them is destroyed, at which point nothing is left that could ever replace them. There is **no
+lifespan, no decay and no idle culler here, and there must never be one**: that is the timed culler
+the platform rejects, wearing a portal's costume.
+
+The **arming latch** is not an exception to that, and it is deliberately not a timer. A vessel may
+only be taken by a gate it has been *clear of*. Without it the very first thing every fold does is
+teleport the pilot back: the destination gate is laid AROUND them, so flying out of their own
+arrival ring crosses its plane and sends them home. "You got clear of this gate" is exactly the
+fact that matters, it carries no number of its own (the near zone is the mouth, one exit clearance
+deep), and *a system whose whole rule is that nothing runs on a clock should not gate its own
+detector on one.*
+
+### Why the pair is laid at ARRIVAL, from two replicated positions
+
+Both gates are built **independently on every peer**, like `ScarabSwitch`'s dais, and nothing about
+them is replicated. That only works if every machine agrees on where they go, and the two positions
+chosen are the only two that do:
+
+| end | position | why every peer already agrees |
+|---|---|---|
+| origin | the hull's pose at the moment of the commit | it has been stopped (`IsTranslationRestricted`, replicated) for the whole hold |
+| destination | the hull's pose once the arrival bloom completes | `SetPose` replicates, and the vessel is standing still in it |
+
+The tempting alternative is to derive the destination from the HOLD — `_heldSeconds` does
+accumulate on every peer, and `ResolveTarget` is pure. It is correct on the owner and **tens of
+units out everywhere else**, because the press and the release arrive over the wire: at
+`reachSpeed 900`, 50 ms of jitter is 45 units against a 55-unit mouth. *A quantity every peer can
+compute is not a quantity every peer computes the same.*
+
+A peer waits up to `gateSettleSeconds` for the replicated pose to actually move. If the two ends
+are still inside `minGateSeparation` at that deadline, **no pair is laid and the standing pair is
+left alone** — one branch that covers both the degenerate tap-and-release (a portal to where you
+already are) and the peer whose pose never arrived, because in both cases the honest answer is to
+draw nothing rather than guess.
+
+### Who detects, who moves
+
+Each machine tests **only the vessels it owns**, and the owner writes its own pose — which
+replicates. So a transit needs no new networking, cannot double-fire across peers, and cannot be
+decided for you by somebody else's frame. It is the `ReportFaunaKill_ServerRpc` family's shape with
+the report removed, because `SetPose` already travels.
+
+Two properties are preserved on a transit, and together they are what make a portal predictable
+rather than a shuffle:
+
+- **Where in the mouth you entered is where you leave.** The lateral offset inside one ring is
+  re-applied inside the other, so threading near the rim comes out near the rim.
+- **The side you were heading for is the side you come out on**, one `gateExitClearance` along the
+  shared axis. Momentum reads through the gate and a transit never spits a pilot backwards.
+
+Rotation and speed are untouched. *A gate moves you; it does not fly you.*
+
+Both ends are then **re-seeded at the exit and disarmed**. The re-seed alone is not enough: the far
+gate deposits the pilot one clearance from its own plane, so it has to treat them as somebody
+standing in its mouth — which is what disarming says — until they have flown clear of it.
+
+### A transit is a teleport, and every watcher already knows
+
+`IVessel.SetPose` bumps `VesselTransformer.TeleportCount`, so a gate transit is a jump the mover
+STATES rather than one a watcher has to infer. `GateRaceController` declines any step containing
+one — which means **a gate cannot thread a race ring**, the rule Waystation needed for the Fold,
+covering the gates with nothing added.
+
+### Stated judgement: the vessel is not withered on a transit, the gates flare
+
+The Fold itself withers and blooms the hull because a teleport out of open space is a
+disappearance with nothing to explain it. A gate transit is not that: the pilot flies INTO a
+visible ring and OUT of a visible ring, and **the rings are the continuity**. Withering the hull at
+both ends would also put a quarter-second of dead time on a movement option meant to be flown
+through at speed. If a playtest reads it as a pop, the fix is to route the transit through the
+wither/bloom the Fold already owns — not to add a second one.
+
+The gates themselves obey the law in full: they bloom in over `gateBloomSeconds` and wither away
+over the same when a fold replaces them.
+
+### The platform fix it needed: a CLIENT may move its own vessel
+
+`VesselController.SetPose` sent `SetPose_ClientRpc` unconditionally, and **only a server may send a
+ClientRpc** — so every client-owned teleport reached that method on a party guest, hit the RPC and
+did nothing but log. That was already true of the Fold itself and of the Wanderway's return; the
+gates would have inherited it. `SetPose` is now three branches: not spawned → local; server →
+broadcast, byte-identical to before; owner → ask the server, which broadcasts. A peer that is
+neither writes nothing, because it is not that machine's vessel to move and it will receive the
+pose like everybody else.
+
+The server branch is deliberately kept rather than folded into the ServerRpc the way the
+slowed-transform pair is — a ServerRpc invoked on the server is still dispatched through the
+network layer, and every pre-existing caller is a host-side teleport that should not pay a tick for
+a route it does not need.
+
+### Tuning (all on `ButterflyFoldAction.asset`)
+
+| field | shipped | what it is |
+|---|---|---|
+| `gateRadius` | 55 | mouth radius; the ring is drawn at exactly this |
+| `minGateSeparation` | 300 | shortest fold worth leaving gates for |
+| `gateExitClearance` | 40 | how far past the far plane you emerge, and the depth of the near zone the arming latch reads |
+| `gateBloomSeconds` | 0.45 | bloom in, and wither out when replaced |
+| `gateSettleSeconds` | 0.75 | longest a peer waits for the replicated arrival pose |
+
+### Verification status
+
+Authored headless. **Nothing has been run in the editor.**
+
+What IS proven, by compiling and RUNNING the shipped geometry
+(`Tools/Build/foldgate_harness/`, which takes `FoldGateGeometry.cs` verbatim): seven properties
+with four negative controls, all firing — a pilot flying out of their own arrival gate is not
+taken (and, with the latch removed, would be), flying back in once clear IS taken, every exit
+lands inside the far gate's near zone so disarming there is *sufficient* rather than
+approximately right, lateral offset and travel sense are preserved exactly, a pass just outside
+the rim is never taken while the same flight just inside is, and a round trip is an involution.
+
+The arming latch is the whole reason that harness exists: it is invisible to every textual gate in
+the repo and to a Roslyn type check, and getting it wrong is not a nuance — it is *every fold
+teleports you straight back*, which is exactly what the first cut did.
+
+`FoldGate.cs` additionally type-checks against a Roslyn stub of its API surface, and the standing
+textual gates pass.
+
+**NOT verified:** the ring's appearance and domain paint, the flare, the transit feel, every
+multiplayer path (the client `SetPose` route in particular, and whether `gateSettleSeconds 0.75`
+is long enough for a real peer), whether `minGateSeparation 300` is the right floor against a
+`reachRange` of 1800, and whether teammates being carried off by a gate they flew into by accident
+is a problem in play.
+
+### Follow-ups
+
+- No HUD marker for a standing gate. The Butterfly has no way to see where its own pair is once it
+  has flown away from both ends; `FoldGate.Live` is the roster an objective-arrow-style marker
+  would read.
+- No sound. Both the bloom and the transit want one, and per the FMOD convention each gets its own
+  `EventReference` field rather than a borrowed category.
+- An AI never uses a gate. `AIPilot` steers at objectives and knows nothing about `FoldGate.Live`,
+  so a bot teammate walks past a shortcut its Butterfly left for it.

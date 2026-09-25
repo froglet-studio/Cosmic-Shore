@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -46,6 +47,21 @@ namespace CosmicShore.Gameplay
     /// teleport costs the camera no motion at all: it is already there, looking the right way, and
     /// the ship blooms in ahead of it.</para>
     ///
+    /// <para><b>Every fold leaves a PAIR OF GATES standing</b> — one where the vessel left, one
+    /// where it arrived (<see cref="FoldGate"/>). They are domain switches: any vessel of the
+    /// Butterfly's domain threads either and is at the other, as often as it likes. They stand
+    /// until this Butterfly folds again and the new pair replaces the old one, which is an ACTIVE
+    /// player act and never a clock — there is no lifespan here and there must never be one.
+    /// The Butterfly cannot out-fly anybody; what it can do is leave a shortcut its whole team
+    /// keeps.</para>
+    ///
+    /// <para><b>The pair is laid when the ARRIVAL completes, from two positions every peer already
+    /// agrees on</b> — the vessel's pre-fold pose (it has been stopped and replicated for the whole
+    /// hold) and its post-fold pose (<c>SetPose</c> replicates). Deriving the destination from the
+    /// HOLD instead would work on the owner and be tens of units out on every other machine, because
+    /// the hold's start and end arrive over the wire. Nothing about the gates is replicated, and
+    /// nothing needs to be.</para>
+    ///
     /// <para><b>The trail is penned UP for the duration</b>, through
     /// <c>VesselPrismController.SetSpawnerPaused</c>. Not optional: <c>IsTranslationRestricted</c>
     /// deliberately does NOT write <c>VesselStatus.Speed</c> (so nothing downstream shifts), which
@@ -71,6 +87,12 @@ namespace CosmicShore.Gameplay
                  "applies to a preview as much as to conserved mass.")]
         [SerializeField, Min(0f)] float ghostBloomSeconds = 0.18f;
 
+        // The theme the gates' rings are painted from AND the roster they test for crossings.
+        // Injected rather than serialized because a vessel IS injected on every spawn path
+        // (ServerPlayerVesselInitializer.SpawnVesselForPlayer -> GameObjectInjector.InjectRecursive),
+        // which is the same reasoning PlaceSwitchActionExecutor records for the Scarab's switch.
+        [Inject] GameDataSO _gameData;
+
         IVesselStatus _status;
         FoldActionSO _activeSo;
         ButterflyHullBuilder _hull;
@@ -95,6 +117,16 @@ namespace CosmicShore.Gameplay
         bool  _departing;
         float _arriveTimer;
         bool  _stopped;                // did WE stop the vessel? only then may we un-stop it
+
+        // Gates. The pair this Butterfly currently has standing, plus the pose the last fold left
+        // from — held from the commit until the arrival lands, because the origin gate goes where
+        // the vessel WAS and by then the vessel is somewhere else.
+        FoldGate _gateA, _gateB;
+        Vector3 _gateOrigin;
+        Vector3 _gateAxis = Vector3.forward;
+        bool _awaitingGates;
+        float _gateSettleDeadline;
+        bool _warnedNoGameData;
 
         /// <summary>True while the pilot is holding the Fold. Maintained on every peer — the
         /// closed-wing pose and the stop are things every machine draws.</summary>
@@ -130,8 +162,11 @@ namespace CosmicShore.Gameplay
                 : null;
 
             // A re-init hands this component to a different pilot (the vessel swap, the Cellular
-            // Duel ownership swap). Whatever the last pilot was holding is not this one's.
+            // Duel ownership swap). Whatever the last pilot was holding is not this one's - and
+            // neither are their gates, which belong to the Butterfly that placed them.
             ReleaseInternal(commit: false);
+            _awaitingGates = false;
+            RetireGates(config ? config.GateBloomSeconds : 0.45f);
             _cooldownUntil = float.NegativeInfinity;
         }
 
@@ -150,6 +185,13 @@ namespace CosmicShore.Gameplay
             // a swap cannot cancel the incoming hull's own placement.
             if (_status != null) VesselPlacementView.Clear(_status.Transform);
             DestroyGhost();
+
+            // The gates are this Butterfly's. When the vessel that laid them is destroyed - a
+            // swap, a despawn, the end of a match - the pair closes, because nothing is left that
+            // could ever replace it. Deliberately NOT done in OnDisable: a disabled vessel is a
+            // vessel that may come back, and a gate is not something a pilot loses by blinking.
+            _awaitingGates = false;
+            RetireGates(config ? config.GateBloomSeconds : 0.45f);
         }
 
         public void Engage(FoldActionSO so, IVesselStatus status)
@@ -211,6 +253,14 @@ namespace CosmicShore.Gameplay
                 _cooldownUntil = Time.time + so.ResolveCooldown(_status);
                 _departing = true;
                 _arriveTimer = 0f;
+
+                // Where the ORIGIN gate goes. Captured now because the pose write is a few
+                // frames away and by then this position is not the vessel's any more. Both
+                // readings are replicated state on every peer: the hull has been stopped for the
+                // whole hold, so no machine disagrees about where it stood or which way it faced.
+                Transform hull = _status.Transform;
+                _gateOrigin = hull.position;
+                _gateAxis = hull.forward;
             }
             else
             {
@@ -252,6 +302,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (_awaitingGates) TickGatePlacement();
             if (_departing) { TickDeparture(); return; }
             if (!_held) { TickArrival(); return; }
 
@@ -343,6 +394,12 @@ namespace CosmicShore.Gameplay
                 _status.VesselPrismController?.SetSpawnerPaused(false);
                 VesselPlacementView.Clear(_status.Transform);
             }
+
+            // Arm the gate placement. It cannot happen here: on a PEER the pose has only just
+            // been sent and the replicated transform has not moved yet, so reading it now would
+            // lay the far gate on top of the near one.
+            _awaitingGates = true;
+            _gateSettleDeadline = Time.time + so.GateSettleSeconds;
         }
 
         void TickArrival()
@@ -353,6 +410,95 @@ namespace CosmicShore.Gameplay
             _arriveTimer += Time.deltaTime;
             _witherPhase = Mathf.Clamp01(_arriveTimer / arrive);
             ApplyVisualScale(_witherPhase);
+        }
+
+        // ---- gates --------------------------------------------------------------------------
+
+        /// <summary>
+        /// Lay this fold's pair, once the vessel has actually arrived.
+        ///
+        /// <para><b>The wait is what makes a peer correct.</b> The owner writes the pose locally,
+        /// so it passes the separation test on the very next frame; a peer is waiting for the
+        /// replicated transform to move, and reading it too early would put both gates in the
+        /// same place. Waiting for the SEPARATION rather than for a fixed delay means the test
+        /// and the deadline answer one question between them.</para>
+        ///
+        /// <para><b>A fold too short leaves the old pair standing.</b> Both ends inside
+        /// <c>MinGateSeparation</c> is a portal to where you already are, so no pair is laid —
+        /// and, deliberately, none is REPLACED either. The same branch catches a peer whose pose
+        /// never arrived, which is the honest outcome there too: a peer that cannot tell where the
+        /// far gate goes must draw nothing rather than guess.</para>
+        /// </summary>
+        void TickGatePlacement()
+        {
+            var so = _activeSo ? _activeSo : config;
+            if (so == null || _status == null) { _awaitingGates = false; return; }
+
+            Vector3 destination = _status.Transform.position;
+            bool separated = Vector3.Distance(_gateOrigin, destination) >= so.MinGateSeparation;
+
+            if (!separated)
+            {
+                if (Time.time < _gateSettleDeadline) return;     // still waiting on replication
+                _awaitingGates = false;
+                CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
+                    "[FoldGate] Fold too short to keep - the standing pair is left as it was.");
+                return;
+            }
+
+            _awaitingGates = false;
+            PlaceGates(so, destination);
+        }
+
+        void PlaceGates(FoldActionSO so, Vector3 destination)
+        {
+            if (_gameData == null)
+            {
+                // A gate with no roster tests nothing and a gate with no theme wears no domain
+                // material - both of which read on screen as "the ability did not happen". Say so
+                // once, by name, rather than standing a pair of inert rings in the world.
+                if (!_warnedNoGameData)
+                {
+                    _warnedNoGameData = true;
+                    CSDebug.LogWarning("[FoldGate] No GameDataSO injected on this vessel - fold " +
+                                       "gates cannot be placed. A runtime-created vessel must go " +
+                                       "through GameObjectInjector.InjectRecursive.");
+                }
+                return;
+            }
+
+            // Retired BEFORE the new pair is built, so the two never share a frame and a pilot can
+            // never be looking at four rings wondering which two are live. This removal is caused
+            // by THIS fold - a player pressing a button - which is the only thing that closes a
+            // gate.
+            RetireGates(so.GateBloomSeconds);
+
+            _gateA = BuildGate(so, $"FoldGate::{_status.PlayerName}::A", _gateOrigin);
+            _gateB = BuildGate(so, $"FoldGate::{_status.PlayerName}::B", destination);
+            FoldGate.Pair(_gateA, _gateB);
+
+            CSDebug.LogVerbose(CSLogChannel.ButterflyFold,
+                $"[FoldGate] {_status.PlayerName} ({_status.Domain}) opened a pair " +
+                $"{Vector3.Distance(_gateOrigin, destination):F0}u apart.");
+        }
+
+        FoldGate BuildGate(FoldActionSO so, string name, Vector3 centre)
+        {
+            var go = new GameObject(name);
+            var gate = go.AddComponent<FoldGate>();
+            gate.Build(_status, _gameData.Players, centre, _gateAxis, so.GateRadius,
+                       so.GateExitClearance, so.GateBloomSeconds, _gameData.ThemeManagerData);
+            return gate;
+        }
+
+        /// <summary>Close this Butterfly's standing pair. Only ever called because the pilot
+        /// folded again or because the vessel that placed them is gone - never on a clock.</summary>
+        void RetireGates(float seconds)
+        {
+            if (_gateA) _gateA.Retire(seconds);
+            if (_gateB) _gateB.Retire(seconds);
+            _gateA = null;
+            _gateB = null;
         }
 
         void ApplyVisualScale(float t)
