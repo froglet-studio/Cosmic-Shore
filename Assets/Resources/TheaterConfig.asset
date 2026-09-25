@@ -31,3 +31,4 @@ MonoBehaviour:
   stageBackground: {r: 0.03, g: 0.04, b: 0.06, a: 1}
   freeCameraSpeed: 0.9
   freeCameraLookSpeed: 140
+  subjectDollySpeed: 1.2

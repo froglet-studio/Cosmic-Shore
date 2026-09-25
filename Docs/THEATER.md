@@ -49,7 +49,7 @@ because the generators are closed-form and deterministic on one machine.
 | Roster from | `VesselVisionShading.CollectStampedVessels` — a list a PLATFORM LAW keeps correct, so no DI, no scene wiring, no `GameDataSO` |
 | Timebase | `Time.time`, which is exactly what `PrismClock.Now` reads, so P1's prism events already share one clock |
 | Plays back as | The fleet's real hulls, in a flat domain fill, inside the **recording area** (§3.1) |
-| Shots | **Free** (flown by hand), **Orbit**, **Chase**, **Static** — §3.2 |
+| Shots | **Free** (detached), plus **Pilot** / **Orbit** / **Chase**, all three steerable — §3.2 |
 | Transport | Play/pause, ×0.1 to ×8, ±5 s snap, cycle shot, cycle pilot — on screen and on the pad |
 | Lands in | `<repo>/Recordings/<scene>_<date>_<time>.cstheater` — already git-ignored, never pushed |
 
@@ -135,10 +135,32 @@ by construction rather than by oversight.
 
 | Shot | What it is |
 |---|---|
-| **Free** | Halo Forge's monitor. Flown by hand; keeps flying while the replay is paused, which is most of what a theater is for |
-| **Orbit** | A vantage circling everything visible, framed to fit it. The default |
-| **Chase** | Behind one pilot and carried by them, so the shot turns as they turn |
-| **Static** | A tripod: parked where it was anchored, turning to keep one pilot in frame |
+| **Free** | Halo Forge's monitor. Detached, flown by hand; keeps flying while the replay is paused |
+| **Pilot** | That hull's own authored camera offset, so the replay is framed the way its pilot framed it |
+| **Orbit** | Circling one pilot in WORLD space, so their tumbling does not tumble the shot |
+| **Chase** | Riding one pilot's own frame, so the shot turns and rolls as they do |
+
+**A following camera you cannot steer is a camera you are stuck behind.** The first cut posed each
+of these from the subject alone, which left a director with exactly the vantage the shot's author
+chose. So all three watching shots carry a **yaw, pitch, dolly and lift the player owns**, applied
+on top of the shot's framing: the shot decides where the camera lives, the player decides where it
+looks from. Selecting the shot you are already on re-centres it, so one key both chooses a vantage
+and undoes however far you steered — there is no separate reset to learn.
+
+**The only difference between the three is the BASIS the offsets are measured in**, which is why
+they are one class (`TheaterSubjectCamera`) rather than three. Chase and Pilot ride the subject's
+frame, so a barrel roll rolls the shot. Orbit is measured in world space, so the subject can tumble
+without taking the camera with it — which is the whole reason to want an orbit rather than a chase.
+
+The dolly is **multiplicative** (e-folds per second), so one press moves the same *fraction* of the
+current distance whether the camera is on the hull or a kilometre out. An additive dolly is
+unusable at both ends of a fleet whose sizes span two orders of magnitude.
+
+**Pilot is their vantage, not their picture.** P0 records the vessel, not the camera, so the shot
+reconstructs the offset from `CameraSettingsSO.followOffset` on the hull's own prefab — read off
+the *asset*, which keeps the harvest's whole point intact. The gameplay rig's smoothing and the
+speed tunnel's FOV narrowing are not in the recording and are not reproduced. Recording the local
+camera's own pose would make it exact for one pilot and costs 36 B/sample; it is not done yet.
 
 **A loop restarts the shot, not just the data.** The orbit's phase used to keep accumulating across
 loops, so the same three seconds arrived from a different angle every time and read as a different
@@ -151,11 +173,11 @@ of its own to tell a director they are upside down.
 Its **speed is in units of the framed action's own radius per second**, so one authored number
 crosses a 200-unit skirmish and a 3,000-unit arena in the same few seconds.
 
-It **reads the devices directly**, the way `ScreenshotGesture` and `OverviewGesture` do, rather
-than going through `IInputStrategy`. The strategies exist to turn sticks into a *vessel's* flight
-parameters — a dual-stick mix, an eased virtual stick, a signed throttle — none of which means
-anything to a camera, and routing through one would make the theater's feel a function of which
-hull the player happens to be flying.
+Both cameras **read the devices directly**, the way `ScreenshotGesture` and `OverviewGesture` do,
+rather than going through `IInputStrategy`. The strategies exist to turn sticks into a *vessel's*
+flight parameters — a dual-stick mix, an eased virtual stick, a signed throttle — none of which
+means anything to a camera, and routing through one would make the theater's feel a function of
+which hull the player happens to be flying.
 
 ### 3.3 Controls
 
@@ -163,7 +185,7 @@ hull the player happens to be flying.
 |---|---|
 | **9** | Start / stop recording |
 | **8** | Enter / leave the recording area |
-| **1 2 3 4** | Free / Orbit / Chase / Static (in the theater only) |
+| **1 2 3 4** | Free / Pilot / Orbit / Chase — press again to re-centre (theater only) |
 | **5** | Watch the next pilot (in the theater only) |
 
 The shot keys exist because the first playtest **could not change shot at all** — the buttons were
@@ -171,10 +193,11 @@ being pressed through to the HUD underneath. Hiding the UI fixes that, and a key
 shot you can only reach by clicking is one you cannot reach while flying the free camera with a pad
 in both hands. A key cannot be covered.
 
-Inside it, on a pad: **left stick** translates, **right stick** looks, **triggers** climb and dive,
-**RB** boost ×4 and **LB** crawl ×0.25, **D-pad left/right** cycles the shot, **D-pad up/down**
-cycles the pilot, **A** play/pause. On keyboard and mouse: **WASD**, **Q/E** dive and climb, hold
-**right mouse** to look (arrow keys without it), **Shift** boost, **Ctrl** crawl.
+Inside it, on a pad — **following** a pilot: right stick orbits, left stick dollies in and out,
+triggers lift. **Free**: left stick flies, right stick looks, triggers climb and dive. Either way
+**RB** boosts and **LB** crawls, **D-pad** cycles shot and pilot, **A** is play/pause. On keyboard
+and mouse: **WASD**, **Q/E**, hold **right mouse** to look (arrow keys without it), **Shift**
+boost, **Ctrl** crawl.
 
 The pad transport is polled **only** while the recording area is up. Outside it the D-pad and the
 south button belong to whatever is on screen, and a director's shortcut that fires during a match

@@ -115,9 +115,14 @@ namespace CosmicShore.ScriptableObjects
                  "same few seconds. The shoulders/Shift/Ctrl gear it 4x and 0.25x.")]
         [Range(0.05f, 4f)] public float freeCameraSpeed = 0.9f;
 
-        [Tooltip("Degrees per second the free camera turns at full stick. The mouse is a delta and " +
-                 "is not scaled by this.")]
+        [Tooltip("Degrees per second the camera turns at full stick, free or following. The mouse " +
+                 "is a delta and is not scaled by this.")]
         [Range(20f, 400f)] public float freeCameraLookSpeed = 140f;
+
+        [Tooltip("How fast a following shot dollies in and out, as e-folds per second at full " +
+                 "stick - it is MULTIPLICATIVE, so one press moves the same fraction of the " +
+                 "current distance whether the camera is on the hull or a kilometre out.")]
+        [Range(0.2f, 5f)] public float subjectDollySpeed = 1.2f;
 
         /// <summary>
         /// The config in use — the authored asset if there is one, otherwise a code-default
