@@ -317,6 +317,7 @@ prints in the Console row of the overlay. Full reference and when to use each:
 | `grid …` / `lab …` / `bench` | `PrismGridExplosionTest` scene only: real prism lattice, mixed populations, explosion benchmark |
 | `freeze on` / `freeze off` | Hold ecology PRODUCTION in every cell: no plant grows, is planted or reproduces, no creature is seeded, born or grown. Removes nothing — grazing, predation and starvation go on, so a frozen world can only lose mass. Released automatically on any scene change. `diag` reports record whether it was on |
 | `ab "<A>" "<B>" [seconds] [rounds]` | Run two commands as the two arms of one A/B: counterbalanced rounds (A B, B A, A B …), 3 s settle after each command, a recording per arm, then ONE line of paired deltas (`ab: CPU busy B-A = … ±s.e. · GPU … · frame … · draws … · GC/f … (N rounds, frozen: yes\|no)`) and one `ab_*.json` + `.txt` holding every recording. Defaults 10 s × 3 rounds. The world is left in arm **B**'s state, so put the "put it back" command second. `ab stop` cancels |
+| `prof [label] [frames] [root=<name>] [sort=total\|self\|gc\|calls] [min=<ms>] [mingc=<KB>] [depth=<n>] [top=<n>]` | **Editor only.** Records `frames` Profiler frames (default 180; Record is switched on for the capture and put back after), reads them back and writes `prof_*.json` + `.txt`: the main-thread tree **averaged per captured frame** (`root=` starts it at a named sample, e.g. `root=UpdateScene`; `min`/`mingc` prune rows under both thresholds; `depth` cuts it; siblings sorted by `sort`), the top `top` samples by **self time** summed across every path, the top allocators by **self** GC (the Profiler's GC column is inclusive — ranking it names `PlayerLoop`, not the caller), a busy/wait split for every other thread (worker jobs, render thread), and two whole frames verbatim: the **typical** one (median) and the **spike** (slowest), both picked by `PlayerLoop` time so an Editor repaint cannot be chosen. Editor-only rows are flagged `editorOnly`. `prof stop` cancels. Refuses while `diag`/`ab` run and cannot be an `ab` arm |
 
 **How to read an `ab` line.** `B-A` is the mean of the per-round differences; `±` is its standard
 error (the rounds are the replicates — frames inside one recording are not independent). A delta
@@ -351,6 +352,8 @@ screenshot is one frame.
 | `ab` console command: parsing, schedule, paired statistics, drift/cap warnings (pure) | `ABComparison.cs` |
 | `freeze` console command (drives `Cell.DiagnosticProductionHold`) | `EcologyFreezeSwitch.cs` |
 | Renderer census + `renderers hide/show` | `RendererCensus.cs` |
+| `prof` console command: parsing, per-frame averaging, self-time / self-GC ranking, typical + spike frame pick, report text (pure) | `ProfilerCapture.cs` |
+| `prof`: reads recorded Profiler frames into `ProfilerCapture` (editor-only) | `ProfilerFrameReader.cs` |
 | Customizable hint rules (SO) | `BenchmarkHintRulesSO.cs` |
 | Netcode (NGO) markers + counters | `NetMarkers.cs` |
 | Game-load counters (prisms/VFX/vessels) | `GameLoadSampler.cs` |

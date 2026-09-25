@@ -95,6 +95,7 @@ bond), which is why the scenario set gains an S6.
 | 09-22 | **Frame attributed** in the Profiler: draws ~0.2 ms, render-job waiting 14 ms. 15 dead SOAP listeners stripped from 8 prism prefabs. `renderers` census + `renderers hide/show` | ~40k of 45k enabled renderers are spindles; hide test confounded (§4.3) |
 | 09-23 | Merged bleeding-edge (new boot world: Garland); plan re-derived on the merged tree; target + six scenarios confirmed. `freeze` and `ab` console commands | The confounded spindle test can now be re-run in one state (§4.5) |
 | 09-25 | First spindle `ab` hid 5 of ~68k renderers (the lattice spindles wear their own materials); `renderers hide *text` added | An accidental A/A: ±3.9 ms CPU noise at 3 × 10 s in the menu, so the re-run is 6 × 20 s (§4.5) |
+| 09-25 | S1–S6 `diag`s and the spindle `ab` in S2 + S6; `prof` console command (the Profiler Hierarchy as JSON) | Spindles cost ~+5.3 ms CPU in a grown Lattice; S5 Wildlife Liberation is the worst scenario (50.5 ms) and is not yet attributed — `prof` is how |
 
 ### 2.1 How the picture changed
 
@@ -175,6 +176,11 @@ per scenario in §1. Two questions this answers that no A/B can:
 Also sort the Hierarchy by **GC Alloc** once per scenario: that names the 154.5 KB/frame caller.
 Then `diag <scenario> 15` for averages. **One pass, one tree, one SHA.**
 
+Since 2026-09-25 the Hierarchy half of this is one command, `prof <scenario>` (§4.5): it reads
+180 recorded frames and writes the averaged tree, the top self-time rows, the top allocators, the
+worker/render-thread busy vs wait, and the typical and spike frames as JSON — no screenshots. The
+Timeline view is still the only way to see WHICH worker job the main thread is waiting on.
+
 ### 3.3 Step 2 — the levers we already know about
 
 Ranked by the evidence we had **before** the merge. Each needs Step 1 to confirm it is big in a
@@ -226,7 +232,8 @@ editor window, and screenshots re-typed by hand.
 | Question | Tool | Output |
 |---|---|---|
 | **What is costing the frame?** | **Unity Profiler**, Hierarchy + Timeline, Deep Profile **off** | Names the caller. **Always start here.** |
-| **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** | Names the caller |
+| **Where does the GC come from?** | Profiler Hierarchy, sort by **GC Alloc** — or `prof <label>` (`topGc` ranks by SELF allocation) | Names the caller |
+| **The Hierarchy as text** | `prof <label> [frames] [root=…] [sort=…]` (§4.5) | `prof_*.json`: averaged tree, top self, top GC, threads, typical + spike frame |
 | **What is issuing draws?** | Frame Debugger | Names the shader / object |
 | **Did my change help?** | Two `diag <label> 15` reports of the **same state**, or Benchmark window **Compare** | Averages, not samples |
 | **Is it GPU-bound?** | HUD `Bound` row, after `fps uncap` | |
@@ -272,7 +279,8 @@ Three ways to satisfy the rule, simplest first:
 - **`diag <label> <seconds>`** writes `Documents/CosmicShore Diagnostics/diag_*.json` and a
   `.txt` with averages (`avgGcKbPerFrame`, `avgDraws`, CPU/GPU, `prismPath`, and the renderer
   census taken after sampling).
-- A Profiler Hierarchy screenshot is fine: it is a tree, and there is no text export.
+- **`prof <label>`** is the text export of the Profiler Hierarchy that Unity does not have
+  (§4.5). Screenshots are now only needed for the Timeline view.
 
 ### 4.5 The same-state tools (added 2026-09-23)
 
@@ -315,6 +323,24 @@ Three ways to satisfy the rule, simplest first:
   match a substring, and six 20 s rounds are what it takes to see a few milliseconds through that
   noise. Run `renderers hide *Spindle` by hand first and confirm it hides thousands, then
   `renderers show`.
+- **`prof [label] [frames] [root=<name>] [sort=total|self|gc|calls] [min=<ms>] [mingc=<KB>]
+  [depth=<n>] [top=<n>]`** (added 2026-09-25, Editor only) — the Profiler Hierarchy as JSON. It
+  switches Record on, waits for `frames` new frames (default 180, 10–600), switches Record off so
+  the ring buffer cannot roll, reads every frame back and restores Record to how it found it. The
+  report holds: the main-thread tree **averaged over every captured frame** (a sample absent from a
+  frame counts as 0 there, so a 1-in-10 spike does not read as a steady cost — `presentPct` says
+  how often it ran and `maxTotalMs` how bad it got); `topSelf`, self time summed by NAME across
+  every path; `topGc`, ranked by **self** allocation — the Profiler's GC column is inclusive, so
+  ranking it names `PlayerLoop` rather than the caller; `threads`, busy vs wait for every other
+  thread (sampled every 6th frame), which is where a main-thread `Idle` is explained; and two
+  whole frames, the **typical** (median) and the **spike** (slowest). Those two are picked by
+  `PlayerLoop` time, not the whole frame, because in the Editor the slowest whole frame is usually
+  an Editor repaint — a test proves the whole-frame pick would choose it. Editor-only rows
+  (`EditorLoop`, `EditorOnly*`) are flagged `editorOnly` and left out of the one-line console
+  summary. `root=UpdateScene` starts the tree at that sample; `min`/`mingc` drop rows under BOTH
+  thresholds; `sort` orders siblings. Keep Deep Profile **off** — the report says when it was on,
+  because Deep Profile times every managed call and inflates script cost several-fold. Leave the
+  Profiler window open on the Hierarchy view; the Record button is driven for you.
 - **A measurement toggle is not a shipped lever.** `renderers hide` switches renderers off in
   one frame — fine for asking what they cost, never acceptable as the fix. If lever L1 ships, a
   spindle leaves the culling population by FADING (continuity of existence), not by a toggle.
@@ -332,6 +358,7 @@ Three ways to satisfy the rule, simplest first:
 | `grid …` / `lab …` / `bench` | Lab scene only: real prism lattice, mixed populations, explosion benchmark |
 | `freeze on` / `freeze off` | Hold ecology production in every cell (§4.5); released on scene change |
 | `ab "<A>" "<B>" [seconds] [rounds]` | Counterbalanced A/B of two commands → one line of paired deltas + `ab_*.json`; `ab stop` cancels (§4.5) |
+| `prof [label] [frames] [root=…] [sort=…] [min=…] [mingc=…] [depth=…] [top=…]` | Editor only: record + read back Profiler frames → averaged tree, top self time, top allocators, thread busy/wait, typical + spike frame in `prof_*.json`; `prof stop` cancels (§4.5) |
 
 ---
 

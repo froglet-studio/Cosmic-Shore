@@ -213,6 +213,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             RegisterCommand(RenderersCommand, HandleRenderersCommand);
             RegisterCommand(FreezeCommand, EcologyFreezeSwitch.Handle);
             RegisterCommand(ABComparison.CommandName, HandleABCommand);
+            RegisterCommand(ProfilerCapture.CommandName, HandleProfCommand);
         }
 
         void OnDestroy()
@@ -223,7 +224,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             UnregisterCommand(RenderersCommand);
             UnregisterCommand(FreezeCommand);
             UnregisterCommand(ABComparison.CommandName);
+            UnregisterCommand(ProfilerCapture.CommandName);
             _abStopRequested = true;
+#if UNITY_EDITOR
+            _profStopRequested = true;
+            // The coroutine dies with this object; the Profiler's Record state must not.
+            if (_profRunning) ProfilerFrameReader.Recording = _profWasRecording;
+#endif
             _abAcc = null;
             RendererHideSwitch.ShowIfHidden();
             EcologyFreezeSwitch.ReleaseIfFrozen();
@@ -271,6 +278,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             if (_recording) return $"already recording ({_recFrames} frames so far) — wait, or press Stop";
             if (_abRunning) return "an 'ab' run is in progress — wait for it, or 'ab stop'";
+            if (_profRunning) return "a 'prof' capture is in progress — wait for it, or 'prof stop'";
 
             string label = string.Empty;
             for (int i = 0; i < args.Length; i++)
@@ -364,6 +372,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             if (_abRunning) return "an 'ab' run is already in progress — 'ab stop' to cancel it";
             if (_recording) return "a 'diag' recording is in progress — wait for it first";
+            // The Profiler's recording overhead would land in one arm and not the other.
+            if (_profRunning) return "a 'prof' capture is in progress — wait for it, or 'prof stop'";
             if (!ABComparison.TryParse(args, out var request, out string error)) return error;
 
             foreach (string command in new[] { request.CommandA, request.CommandB })
@@ -371,7 +381,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 string name = ABComparison.CommandNameOf(command);
                 // A run inside a run would sample into one accumulator from two clocks; a diag
                 // inside a run would record over the arm it was meant to measure.
-                if (name == ABComparison.CommandName || name == DiagCommand)
+                if (name == ABComparison.CommandName || name == DiagCommand || name == ProfilerCapture.CommandName)
                     return $"'{name}' cannot be an arm of an A/B";
                 if (!s_commands.ContainsKey(name))
                     return $"unknown command '{name}' in an arm — commands: {string.Join(", ", s_commands.Keys)}";
@@ -485,6 +495,181 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _abRunning = false;
             _abStopRequested = false;
         }
+
+        // ── profiler capture ──────────────────────────────────────────────
+        // `prof [label] [frames] [key=value ...]` records N frames with the Unity Profiler, then
+        // reads them back into ONE report: the averaged hierarchy, the top self-time and
+        // self-allocation rows, the typical and spike frames as trees, and per-thread busy vs
+        // waiting. It replaces four screenshots per scenario. ProfilerCapture (pure, tested)
+        // decides what the report says; ProfilerFrameReader (Editor only) reads the frames.
+#if UNITY_EDITOR
+        bool _profRunning, _profStopRequested, _profWasRecording;
+#else
+        // prof exists only in the Editor; the diag/ab guards that read this stay unconditional.
+        static readonly bool _profRunning = false;
+#endif
+        const string ProfSection = "Profile";
+
+        /// <summary>No time without a new Profiler frame before a capture gives up.</summary>
+        const float ProfStallSeconds = 5f;
+
+        /// <summary>Frames read per rendered frame, so reading 180 frames does not freeze the Editor.</summary>
+        const int ProfFramesPerStep = 8;
+
+        string HandleProfCommand(string[] args)
+        {
+#if UNITY_EDITOR
+            if (args is { Length: 1 } && args[0].Equals("stop", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!_profRunning) return "no 'prof' capture in progress";
+                _profStopRequested = true;
+                return "stopping - whatever was read so far is still saved";
+            }
+            if (_profRunning) return "a 'prof' capture is already in progress — 'prof stop' to cancel it";
+            if (_recording) return "a 'diag' recording is in progress — wait for it first";
+            if (_abRunning) return "an 'ab' run is in progress — wait for it, or 'ab stop'";
+            if (!ProfilerCapture.TryParse(args, out var options, out string error)) return error;
+
+            // Read BEFORE StartCoroutine: it runs RunProf up to its first yield immediately, and
+            // RunProf switches Record on, so asking afterwards would always answer "on".
+            bool wasRecording = ProfilerFrameReader.Recording;
+            StartCoroutine(RunProf(options));
+            return $"prof started: recording {options.frames} Profiler frames, then reading them back" +
+                   (wasRecording ? "" : " (Profiler Record switched ON for the capture)") +
+                   (ProfilerFrameReader.DeepProfiling ? " - WARNING: Deep Profile is on, times will be inflated" : "");
+#else
+            return "prof reads the Unity Editor's Profiler - it only exists in Editor play mode";
+#endif
+        }
+
+#if UNITY_EDITOR
+        IEnumerator RunProf(ProfilerCapture.Options options)
+        {
+            _profRunning = true;
+            _profStopRequested = false;
+            _profWasRecording = ProfilerFrameReader.Recording;
+            if (!_profWasRecording) ProfilerFrameReader.Recording = true;
+
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            var report = new ProfilerCapture.Report
+            {
+                scene = scene,
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture),
+                label = options.label,
+                framesRequested = options.frames,
+                profilerWasRecording = _profWasRecording,
+                deepProfiling = ProfilerFrameReader.DeepProfiling,
+            };
+
+            // 1) Record: wait for N NEW frames, so the capture describes now rather than whatever
+            //    the ring buffer held before the command.
+            int start = ProfilerFrameReader.LastFrame;
+            int target = start + options.frames;
+            int lastSeen = start;
+            float lastProgressAt = Time.unscaledTime;
+            bool completed = true;
+            while (ProfilerFrameReader.LastFrame < target)
+            {
+                if (_profStopRequested || !SameScene(scene)) { completed = false; break; }
+                int now = ProfilerFrameReader.LastFrame;
+                if (now != lastSeen) { lastSeen = now; lastProgressAt = Time.unscaledTime; }
+                else if (Time.unscaledTime - lastProgressAt > ProfStallSeconds)
+                {
+                    completed = false;
+                    report.notes.Add("The Profiler stopped producing frames - open Window > Analysis > Profiler and check Record is on.");
+                    break;
+                }
+                SetStat(ProfSection, "run", $"recording {Mathf.Max(0, now - start)}/{options.frames} frames");
+                yield return null;
+            }
+
+            // 2) Freeze the ring buffer while reading: a buffer still recording would evict the
+            //    frames being read on any machine where reading is slower than playing.
+            ProfilerFrameReader.Recording = false;
+
+            int first = Mathf.Max(start + 1, ProfilerFrameReader.FirstFrame);
+            int last = Mathf.Min(target, ProfilerFrameReader.LastFrame);
+            if (first > start + 1)
+                report.notes.Add($"{first - start - 1} of the captured frames had already left the Profiler's buffer - raise Preferences > Analysis > Profiler > Frame count, or capture fewer frames.");
+
+            var acc = new ProfilerCapture.Accumulator();
+            var threads = new ProfilerCapture.ThreadAccumulator();
+            int step = 0;
+            for (int f = first; f <= last; f++)
+            {
+                if (_profStopRequested) { completed = false; break; }
+                ProfilerFrameReader.ReadMainThread(f, acc);
+                if ((f - first) % ProfilerCapture.ThreadSampleStride == 0)
+                    ProfilerFrameReader.ReadThreads(f, threads);
+
+                if (++step >= ProfFramesPerStep)
+                {
+                    step = 0;
+                    SetStat(ProfSection, "run", $"reading {f - first + 1}/{last - first + 1} frames");
+                    yield return null;
+                }
+            }
+
+            // 3) The two single frames, read as trees once the median and the maximum are known.
+            //    Picked by the game's own PlayerLoop, so an Editor repaint is never "the spike".
+            var series = acc.SelectionSeries;
+            ProfilerCapture.PickTypicalAndSpike(series, out int typicalPos, out int spikePos);
+            ProfilerCapture.FrameNode typicalTree = null, spikeTree = null;
+            if (typicalPos >= 0)
+            {
+                report.typicalFrame = acc.FrameIndices[typicalPos];
+                report.typicalFrameMs = series[typicalPos];
+                typicalTree = ProfilerFrameReader.ReadMainThreadTree(report.typicalFrame, out _);
+            }
+            if (spikePos >= 0)
+            {
+                report.spikeFrame = acc.FrameIndices[spikePos];
+                report.spikeFrameMs = series[spikePos];
+                spikeTree = ProfilerFrameReader.ReadMainThreadTree(report.spikeFrame, out _);
+            }
+
+            ProfilerFrameReader.Recording = _profWasRecording;
+
+            report.completed = completed && acc.FrameCount > 0;
+            ProfilerCapture.Build(report, acc, threads, typicalTree, spikeTree, options);
+            string path = SaveProfReport(report);
+            string line = ProfilerCapture.Summarize(report, path);
+            Debug.Log($"[DiagnosticsHUD] {line}");
+
+            SetStat(ProfSection, "run", report.completed ? "done" : "stopped");
+            SetStat(ProfSection, "result", line);
+            SetStat("Console", "›", line);
+            _lastSavedPath = path;
+            _lastSavedShownAt = Time.unscaledTime;
+            if (_visible) RefreshText();
+
+            _profRunning = false;
+            _profStopRequested = false;
+        }
+
+        string SaveProfReport(ProfilerCapture.Report r)
+        {
+            try
+            {
+                string docs = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                if (string.IsNullOrEmpty(docs)) docs = Application.persistentDataPath;
+                string dir = Path.Combine(docs, OutputFolderName);
+                Directory.CreateDirectory(dir);
+
+                string stamp = DateTime.Now.ToString("yyyyMMdd_HHmmss", System.Globalization.CultureInfo.InvariantCulture);
+                string label = string.IsNullOrEmpty(r.label) ? "" : "_" + Sanitize(r.label);
+                string baseName = $"prof_{Sanitize(r.scene)}{label}_{stamp}";
+                File.WriteAllText(Path.Combine(dir, baseName + ".json"), JsonUtility.ToJson(r, true));
+                File.WriteAllText(Path.Combine(dir, baseName + ".txt"), ProfilerCapture.BuildText(r));
+                return Path.Combine(dir, baseName + ".json");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[DiagnosticsHUD] Could not save profiler capture: {e.Message}");
+                return "(save failed: " + e.Message + ")";
+            }
+        }
+#endif
 
         static bool SameScene(string scene) =>
             UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == scene;
