@@ -66,6 +66,61 @@ did not exist. The base band **[0, 10] is the pot**, and every transfer is a mov
 A consequence worth stating: the deficit band **[−5, 0) is now reachable by transients only** —
 the exact mirror of the overcharge rule (only transients reach 10–15), and for the same reason. A
 permanent loss bottoms out at empty.
+## 2.1 Where the material comes from — and why a fight can produce none
+
+**The pot starts EMPTY, in every mode.** This is the design, confirmed on the playtest report
+below, and it is the direct consequence of *you cannot take what is not there*: a pilot who holds
+nothing yields nothing, however hard they are hit.
+
+Measured, so nobody re-derives it:
+
+- **Nothing seeds a pilot's levels at spawn.** `ElementalComebackSystem.ApplyInitialValues` is the
+  one path that writes base levels at turn start, and every scene's profile authors
+  `InitialMass/Charge/Space/Time: 0` — 21 of the 22 arcade scenes share
+  `AstroLeagueComebackProfile`, and SkimRace's own profile is also all zeros. No arcade card
+  authors `SO_ArcadeGame.StartingElements` either; that field is the **Arena** per-hull handicap
+  (Regatta), and `VesselController.ApplyStartingElements` deliberately leaves a hull with no row
+  at rest rather than writing zeros over it.
+- **The only base-level GAIN in the game is collecting an ELEMENTAL crystal.**
+  `SkimmerAdjustElementLevelByCrystalEffect` is the single live asset of its type, and it is
+  carried by `Resources/ElementalCrystalSet` (so every lifeform heart, and every ejected petal,
+  pays it back on pickup) and by the Wanderway toy. `VesselIncrementLevelByCrystalEffect` and
+  `VesselAdjustLevelByCrystalEffect` exist as assets and are referenced by **nobody**.
+- **An OMNI crystal grants no levels at all.** It runs the vessel's `vesselCrystalEffects`, and on
+  the Sparrow that is `SparrowVesselWardByCrystalEffect` (8 s, warding **every** source) plus
+  haptics. Its skimmer container is empty. So in a mode whose only pickups are omni crystals, the
+  one thing a crystal does to this economy is make you *immune* to it for eight seconds.
+
+### The on-ramp, per mode
+
+A mode has an on-ramp iff its cell configs' spawn profiles list a lifeform — each drops exactly
+one elemental crystal on death (`LifeFormCrystal`). Counts are configs summed across all
+intensities, not live populations.
+
+| Heart source | Modes |
+|---|---|
+| **yes** | Rampage · Wrecking Ball · Bloomrush · The Bends (8 fauna / 36 flora each) · Undertow · Wildlife Liberation (16) · Tollway (12/4) · Dog Fight · Salvo · Broadside (4) · Astro League · Scarab Scramble (3) · Headlong · Redline · Switchback (2) · Brood Rush (1) |
+| **NO** | Breakwater · Cleave · Hijack · Regatta · Skein · SkimRace · Joust · Scurry · Freestyle MP · both Duel for the Cell · both Wildlife Blitz |
+
+So the economy is **structurally inert** in the seven "NO" modes — there is no way for a petal to
+enter that match — and in the "yes" modes it is inert *until somebody hunts*. Both are the rule
+working, not a defect; what they are not is obvious from playing.
+
+### The playtest report this came from
+
+> *"I played a dogfight with the Sparrow and I saw no crystals leave either of our vessels when I
+> was hit or hit them with missiles or guns."*
+
+Correct behaviour, end to end. Both pilots sat at 0, so every hit's `AccrueElementalLoss` returned
+0 petals and `ElementalCrystalEjector` was never reached. Dog Fight *has* an on-ramp — its Boneyard
+scavengers — but a dogfight never uses it, and its crystals are omni.
+
+**The general shape worth carrying: a conserved economy with no starting stake is indistinguishable
+from a broken one.** Every piece can be individually correct and the whole thing still does nothing
+that a player can see, because the clamp that makes it conserve is also what makes it silent. If a
+mode is meant to have a fight over elements in it, its on-ramp has to be something the mode's own
+verb reaches — a heart a dogfighter would actually fly through, or crystals that pay levels —
+rather than a source that exists in the arena and nothing points at.
 
 ## 3. The recovery band: one level per five seconds
 
@@ -187,18 +242,27 @@ SOs are type-checked only by the gates above and by reading.
 
 In-editor verification is recorded in the PR body's **Verification status** section, which the
 `/qa-backlog` scan picks up — `Docs/UNITY_VERIFICATION_CHECKLIST.md` is superseded and new work
-does not get a section there. What a human needs to confirm:
+does not get a section there.
+
+**Step 0, and every step below depends on it: GIVE THE VICTIM SOMETHING TO LOSE.** Pilots spawn
+at resting level 0 in every mode (§2.1), so a fight between two fresh pilots produces no transfer
+at all and that is the clamp working, not a failure. Before testing any of this, have the victim
+kill a lifeform and collect its heart until their flowers are visibly off grey — or test in a mode
+with flora to graze (Rampage, Wrecking Ball, Bloomrush, The Bends). What a human needs to confirm:
 
 1. **A petal visibly changes hands.** Two pilots, opposing domains. Joust one (Squirrel) — the
    victim's flower steps DOWN one colour and the jouster's steps UP, and neither drifts back
    within five seconds.
-2. **A ranged hit ejects.** Shoot a pilot with the Sparrow until a flower steps down: exactly one
-   crystal should leave their hull per step, fly along the shot, slow to a stop and be collectable
-   by anyone (it wears the lime free-for-all colour).
+2. **A ranged hit ejects.** With a victim holding petals (step 0), shoot them with the Sparrow
+   until a flower steps down: exactly one crystal should leave their hull per step, fly along the
+   shot, slow to a stop and be collectable by anyone (it wears the lime free-for-all colour). A
+   bullet is 0.1 of a petal per element, so ten admitted hits step all four flowers at once and
+   eject four crystals; a missile's shockwave tier is a whole petal on each in one go.
 3. **The sink burns.** Ram an OPPOSING domain's danger prism — the flower steps down and stays
    down. Ram YOUR OWN danger trail — the flower dips and recovers.
-4. **A stripped pilot yields nothing.** Drive a victim to level 0 and keep hitting them: no
-   further crystals, no further steps, and the attacker stops being paid.
+4. **A stripped pilot yields nothing.** Drive a victim back to level 0 and keep hitting them: no
+   further crystals, no further steps, and the attacker stops being paid. This is the state every
+   pilot STARTS in, so seeing it at spawn is confirmation rather than a bug (§2.1).
 5. **The Serpent can fight.** Scope + fire through an opposing pilot: their flowers step down and
    crystals leave their hull.
 6. **MPPM two-client**: confirm both peers agree on the flower levels after a joust, and note
