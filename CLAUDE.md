@@ -2242,8 +2242,8 @@ hostile prisms buy a rocket, `ammoPerPrism 0.01` against `SkyBurstGunAction.ammo
 opening one door roughly funds the next and the economy closes with no pickup on the course.
 **ONE new enum value lands in the whole branch**: a station is a switch threaded in order — the same
 fact `ScoringMetric.SwitchesThreaded(9)` already records — so the metric, `SwitchThreadScoring.Credit`,
-`Player.ReportSwitchThreaded_ServerRpc`, `GameDataSO.SwitchTargetCount`, `ScoreDifferenceSource
-.SwitchesThreaded(8)`, the `BestByDomain` lead-runner fold, the goal-stack row and the launch-panel
+`Player.ReportSwitchThreaded_ServerRpc`, `GameDataSO.SwitchTargetCount`, the
+comeback (which reads the rule's `DomainValue`), the `BestByDomain` lead-runner fold, the goal-stack row and the launch-panel
 icon are REUSED verbatim, both metric-9 rows already exist in `ObjectiveIconSet`/`ModeControlsLibrary`
 so the objective row costs no asset edit, and `BreakwaterScoringRule` is a SECOND ASSET on the
 existing `SwitchbackScoringRuleSO`. **"THREAD SWITCHES 3/14" is literally correct rather than a
@@ -2457,8 +2457,8 @@ replay from double-crediting) and the Sparrow warhead's
 Wildlife Liberation records). Counted everywhere, paid only here. **Two stats, one fold, no new
 metric**: `UndertowScoringRuleSO` keeps `metric = CombatPoints` and folds kills in through
 `ScoringRuleSO.DomainValue` — the Switchback seam, so the five domain-score readers agree — at the
-stated cost that the per-player HUD card (`LiveMetric`, not virtual) and the comeback deficit
-(`ScoreDifferenceSource.CombatPoints`) see bends alone; the scoreboard's secondary line carries the
+stated cost that the per-player HUD card (`LiveMetric`, not virtual) sees bends alone (the
+comeback reads `DomainValue` since 2026-09, so it sees both); the scoreboard's secondary line carries the
 breakdown and both raw counts ride the final-score snapshot. A nucleus-less arena forced the two
 scene edits the Bends donor lacked: Wildlife Liberation's own spawn ring (1150, equatorial — the
 donor's "500 outside the nucleus" collapses to 500u inside the middle cage with no nucleus) and
@@ -4138,7 +4138,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 - **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
 - **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
 - **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
-- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for SkimRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
+- **Comeback system**: `ElementalComebackSystem` reads the deficit from the mode's own `ScoringRuleSO.DomainValue` (SkimRace: summed crystals, never Score, which tracks elapsed time equally for all), so comeback buffs scale with the **team** deficit in exactly the quantity the mode scores. There is no per-scene comeback source to author — that setting (`ScoreDifferenceSource`) was retired in 2026-09 after eight cloned scenes shipped reading their donor's stat.
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
 - **Domain-aggregated scoring**: SkimRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` draws those sums as **one centred row divided into a column per domain** — team score over that team's player icons over a 3px team-coloured accent, local domain first, no names (`Docs/GAME_MODE_TOPBAR.md` §2). The layout is chosen by the view's wiring and needs no branch in the HUD: with `domainBarContainer` set, `AllyDomainContainer` and `OpposingDomainsContainer` both resolve to that one transform, so the existing "local first, then opposing in enum order" build lays the columns out; with only the legacy `allyDomainContainer` / `opposingDomainsContainer` pair set, the old two-groups-flanking-a-player-card layout still works; with neither, it falls back to the per-player layout in `PlayerScoreContainer`.
