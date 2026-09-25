@@ -192,3 +192,43 @@ BEFORE the press: you have to finish whatever you were doing on a line that poin
 to go. On the fleet's slowest hull that is a good trade — the fold gives distance for free and
 charges you for the exit line — and it is what `Waystation` is built on. If aiming is ever wanted
 back, it is one prefab field (`restrictedTurnMultiplier`), not a second branch.
+
+## The mode built on it, and the two things it needed from the platform (2026-09-25)
+
+`Waystation(58)` — the Butterfly-only migration race — is cut against *exactly* the one degree of
+freedom the section above left: the heading you leave on. Clusters of rings, laid a fold apart,
+each ending in an **exit gate** that faces the next cluster. Full record:
+`_Scripts/Controller/Arcade/WAYSTATION.md`.
+
+Two things it needed, and both are the platform's rather than the mode's.
+
+### A teleport threads nothing
+
+A fold crosses hundreds of units along its own heading, and in that mode the next cluster's rings
+are on that heading *by construction*, so without a rule a pilot would be paid for every ring their
+jump passed through. `VesselTransformer` therefore carries **`TeleportCount`** — incremented by
+`SetPose` and by `VesselController.Teleport` — and `GateRaceController` declines any step whose
+frame contains one.
+
+**It is a COUNTER rather than a distance, and that is the whole point.** The gate race already had
+a step guard (`maxPlausibleSpeed × Δt × 2 + 5`) meant to reject a respawn, and it fails the *other*
+way round for a teleport: a LONG jump is rejected by accident and a SHORT one is credited. No
+distance threshold can separate "the pilot flew here" from "the pilot was placed here", because
+both are just a position delta. The vessel that MOVED is the only thing that knows, so it says so.
+
+Anything else that places a vessel — an eject, a mode's reposition, a future ability — gets the
+same protection for free by going through `SetPose`, and anything that writes the transform
+directly does not. *If you write a vessel's position without telling it, every system downstream
+that has to tell a jump from a flight is guessing.*
+
+### `R_VesselActionHandler.TryGetBoundAction<T>`
+
+An autopilot in that mode has to hold the Fold, and **how long** is a function of the ability's own
+`reachSpeed`. The existing `TryGetInputForAction<T>` answers *which control* — enough to press a
+one-shot, not enough to time a hold. The new sibling hands back the **action** as well, so the
+mode's controller reads the reach speed off `ButterflyFoldAction.asset` instead of copying it: a
+copied constant is right on the day it is copied and silently stale after the next retune.
+
+The drive itself lives in the **controller**, not here — an AI's decision is mode knowledge (how far
+the next ring is) while the numbers are the ability's. That split is why this file gains a query and
+no behaviour.

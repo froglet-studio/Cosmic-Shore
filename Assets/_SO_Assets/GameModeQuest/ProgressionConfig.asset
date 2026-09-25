@@ -31,6 +31,7 @@ MonoBehaviour:
   - 55
   - 56
   - 57
+  - 58
   firstQuestAlwaysUnlocked: 1
   defaultMaxIntensity: 3
   maxIntensity: 4

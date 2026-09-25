@@ -215,8 +215,13 @@ namespace CosmicShore.Gameplay
         
         public Transform Transform => transform;
 
-        public void Teleport(Transform targetTransform) =>
+        public void Teleport(Transform targetTransform)
+        {
+            // Counted like a SetPose: this writes the transform directly, and anything watching
+            // the vessel's motion has to be able to tell a jump from a fast frame.
+            VesselStatus?.VesselTransformer?.NotifyTeleported();
             ShipHelper.Teleport(transform, targetTransform);
+        }
 
         public void SetResourceLevels(ResourceCollection resources) =>
             VesselStatus.ResourceSystem.InitializeElementLevels(resources);

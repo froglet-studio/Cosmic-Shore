@@ -327,6 +327,50 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
+        /// <summary>
+        /// <see cref="TryGetInputForAction{T}"/>, plus the ACTION itself. The same question with
+        /// one more answer, and the extra answer is what stops a caller duplicating the ability's
+        /// tuning: an autonomous pilot that has to decide HOW LONG to hold a held ability needs
+        /// that ability's own numbers, and reading them off its SO keeps the asset the single
+        /// source of them rather than copying a reach speed into a mode's controller — where it
+        /// would be right on the day it was copied and silently stale after the next retune.
+        ///
+        /// Same sweep order and the same contract as its sibling: false for a vessel that binds no
+        /// such ability, and on false neither out parameter means anything.
+        /// </summary>
+        public bool TryGetBoundAction<T>(out T action, out InputEvents inputEvent) where T : class
+        {
+            if (TryFindAction(_shipControlActions, out action, out inputEvent)) return true;
+            if (TryFindAction(_touchOverrideActions, out action, out inputEvent)) return true;
+            if (TryFindAction(_gamepadOverrideActions, out action, out inputEvent)) return true;
+
+            action = null;
+            inputEvent = default;   // meaningless on false - see TryGetInputForAction
+            return false;
+        }
+
+        static bool TryFindAction<T>(Dictionary<InputEvents, List<ShipActionSO>> map,
+                                     out T action, out InputEvents inputEvent) where T : class
+        {
+            action = null;
+            inputEvent = default;
+            if (map == null) return false;
+
+            foreach (var kv in map)
+            {
+                var list = kv.Value;
+                if (list == null) continue;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] is not T typed) continue;
+                    action = typed;
+                    inputEvent = kv.Key;
+                    return true;
+                }
+            }
+            return false;
+        }
+
         static bool TryFindInput<T>(Dictionary<InputEvents, List<ShipActionSO>> map, out InputEvents inputEvent)
             where T : class
         {

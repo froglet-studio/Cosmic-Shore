@@ -57,6 +57,7 @@ SCENE_FOR_MODE = {
     55: 'MinigameUndertow',
     56: 'MinigameRegatta',
     57: 'MinigameBroadside',
+    58: 'MinigameWaystation',
     8:  'MinigameDuelForTheCell',
     26: 'MinigameWildlifeBlitz',
 }

@@ -24,6 +24,16 @@ leave a surface behind*. Three consequences shape the whole design:
   longest after the Serpent's 250), so the wingspan and the beat carry the read, and every
   animation amplitude is authored against that distance rather than against a mirror.
 
+### Its mode
+
+**`Waystation(58)`** — the Butterfly-only migration race, and the only arcade card this hull flies.
+It is cut against the Fold's single degree of freedom (the heading you leave on, after
+`BUTTERFLY_FOLD.md` "One reach, everywhere"): clusters of rings you weave, laid a fold apart, each
+ending in an exit gate that faces the next cluster. Nothing about the vessel was changed for it —
+the mode needed one platform counter (`VesselTransformer.TeleportCount`, so a teleport threads no
+ring) and one query (`R_VesselActionHandler.TryGetBoundAction<T>`, so an autopilot can time a hold
+off the ability's own asset). See `_Scripts/Controller/Arcade/WAYSTATION.md`.
+
 ## 2. The hull
 
 Procedural, like the Scarab's — there is no Butterfly model in the project, and the three unwired

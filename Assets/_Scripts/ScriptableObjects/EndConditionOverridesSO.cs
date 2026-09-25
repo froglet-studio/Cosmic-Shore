@@ -107,6 +107,13 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
 
+        /// <summary>Waystation course length used when <see cref="waystationRingTarget"/> is 0
+        /// (auto/default) - how many switch rings a pilot must thread, which is also how many are
+        /// LAID. The rings are dealt into CLUSTERS, so this is the total across every cluster and
+        /// the course rounds it up to a whole number of them: what a pilot flies and what their
+        /// goal row counts to are the same authority, asked twice.</summary>
+        public const int DefaultWaystationRingTarget = 24;
+
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
         /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
         /// closed CIRCUIT. 15 is what the arena model sizes every
@@ -231,6 +238,13 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
+        [Tooltip("Waystation: rings in the course, which is both how many a pilot must thread " +
+                 "to finish and how many are laid. They are dealt into CLUSTERS of " +
+                 "RingsPerCluster (per intensity), and the course rounds UP to a whole number " +
+                 "of clusters - a half-built cluster would end the race in the middle of one. " +
+                 "Compared against a domain's LEAD RUNNER, not a sum. 0 = default (24).")]
+        [Min(0)] public int waystationRingTarget = 24;
+
         [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
                  "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
                  "the cell's mass and its phase ladder with it. This is NOT the end-game target " +
@@ -304,6 +318,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int breakwaterStationTargetBuild = 15;
+        [Min(0)] public int waystationRingTargetBuild = 24;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int skeinRingTargetBuild = 24;
@@ -456,6 +471,16 @@ namespace CosmicShore.ScriptableObjects
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
 
+        /// <summary>
+        /// Waystation course length ("thread all N rings"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultWaystationRingTarget"/>. Read twice on purpose - by
+        /// <c>RaceGateTurnMonitor</c> for the target and by <c>WaystationController</c> for how
+        /// many rings to deal into clusters - so the course a pilot flies and the number their
+        /// goal row counts to are the same authority.
+        /// </summary>
+        public int GetWaystationRingTarget() =>
+            waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget;
+
         /// <summary>Skein course length ("thread all N rings"). Read twice on purpose - by
         /// SkeinRingTurnMonitor for the target and by SkeinController for how many to lay.</summary>
         public int GetSkeinRingTarget() =>
@@ -591,6 +616,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Waystation                => waystationRingTarget > 0 ? waystationRingTarget : DefaultWaystationRingTarget,
                 GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Skein                     => skeinRingTarget > 0 ? skeinRingTarget : DefaultSkeinRingTarget,
                 GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
@@ -639,6 +665,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
+            waystationRingTarget == waystationRingTargetBuild &&
             breakwaterStationTarget == breakwaterStationTargetBuild &&
             breakwaterLaps == breakwaterLapsBuild &&
             skeinRingTarget == skeinRingTargetBuild &&
@@ -668,6 +695,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
+            waystationRingTarget = waystationRingTargetBuild;
             breakwaterStationTarget = breakwaterStationTargetBuild;
             breakwaterLaps = breakwaterLapsBuild;
             skeinRingTarget = skeinRingTargetBuild;
@@ -698,6 +726,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
+            waystationRingTargetBuild = waystationRingTarget;
             breakwaterStationTargetBuild = breakwaterStationTarget;
             breakwaterLapsBuild = breakwaterLaps;
             skeinRingTargetBuild = skeinRingTarget;

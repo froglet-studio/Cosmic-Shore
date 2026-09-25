@@ -185,6 +185,9 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Waystation: // clusters of the same rings, threaded in the same
+                                           // order on the same stat - the folds between them
+                                           // change how you GET to a ring, never what counts
                 case GameModes.Switchback: // Score lands only at game end - gates are the live stat
                 case GameModes.Breakwater: // same shape: a station IS a switch threaded in order,
                                            // so it accumulates on the same stat and folds by the
