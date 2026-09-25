@@ -1,344 +1,315 @@
 # Microgame Training — design plan
 
-**Status: PLAN, not built.** Written 2026-09-24 to choose an architecture for teaching players
-*inside* the Mode Preview ("microgame") window. Nothing here has run in the editor. The
-"Game of the Week" rotation itself is a separate thread; this plan only assumes it will name a
-`GameModes` value (and that the week's hull is that card's locked `Vessel`).
+**Status: PLAN, not built.** Revision 2 (2026-09-25) — the five open questions from revision 1 are
+answered and folded in (§1). Nothing here has run in the editor. The Game of the Week rotation is a
+separate thread; this plan only assumes it names one `GameModes` value, whose card locks one hull.
 
 ---
 
-## 0. The ask, restated as requirements
+## 1. Decisions (locked by the product owner, 2026-09-25)
 
-1. A first-time player is railroaded to the **Game of the Week's microgame** and put through a
-   **forced (or semi-forced) training moment** there.
-2. Every **racing** microgame gets a real FTUE, for **every vessel we have or will ever build**.
-3. Every **other** microgame gets a lighter set of instructions + tips.
-4. Light on performance and code, easy to author, and the next vessel/mode must not need a
-   programmer to be covered.
-
-Two facts about the codebase shape every option below:
-
-- **The microgame is already a well-bounded venue.** `ModePreviewSession` owns a satellite arena,
-  a hull swap, a camera loan into `ModePreviewWindow`'s RenderTexture, an input-focus handoff
-  (`ModePreviewWindow.AnyHasFocus`, four gates), and `ModePreviewRunner` — a plain MonoBehaviour
-  that already counts ONE `ScoringMetric` against a baseline and raises
-  `OnObjectiveProgress`. A training layer rides on top of that; it builds none of it.
-- **Racing microgames currently have no race in them.** `Docs/ModePreview/ARCHITECTURE.md §6`:
-  Switchback, Headlong, Redline, Breakwater preview **shell-only** — their rings are solved by the
-  `GateRaceController` at match start, and the satellite has no controller. Skein and Regatta show
-  their rails but no rings. Skim Race is the only race with its track and crystals in the window.
-  **A racing FTUE needs rings in the window first** — that is prerequisite §5, independent of
-  which training paradigm wins.
-
----
-
-## 1. The one decomposition that makes "every vessel ever" tractable
-
-Whatever runs the training, the *content* must not be authored per (mode × vessel) — that is
-~7 races × 11 hulls today and grows multiplicatively. It splits into two independent kinds of
-knowledge, and each is keyed on something the platform already treats as canonical:
-
-| Knowledge | Keyed on | Where it comes from | New vessel/mode cost |
-|---|---|---|---|
-| **How to fly THIS HULL** (its 4 abilities, their controls) | `VesselClassType` | **Derived** from `ElementalAbilityMapSO` — `AbilityLabel`, `AbilityDescription`, `Input` → `InputHintBindingMap` → `ControlGlyphSetSO` glyph. The same chain the ability lockup and the launch panel's controls block already use, so a wrong control label is structurally impossible | **Zero** — a hull with a filled map is taught on day one. An optional authored module adds verbs a map cannot express (the Dolphin's "skim, then fly into a crystal"; the Rhino's ramp) |
-| **How to win THIS MODE** (thread gates in order, lap, boost the straight; or destroy / collect / hit) | `ScoringMetric` family, overridable per `GameModes` | Authored **templates per metric** — the same key `ObjectiveIconSetSO` and the goal stack already use ("never on the game mode") | **Zero** for a mode that reuses a metric (every gate race is `SwitchesThreaded`); one template for a genuinely new metric |
-
-Persist them **separately**. A player who learned the Sparrow in Dog Fight is not re-taught the
-Sparrow in Breakwater — only "thread the stations". A player who learned gate racing in
-Switchback is not re-taught gate racing in Redline — only the Manta. That is what keeps the
-forced moment short enough to stay forced.
-
-This decomposition is the load-bearing part of the plan and is shared by all three options.
-
----
-
-## 2. Three roughly-equal options
-
-### Option A — Extend the Quest Graph into the microgame
-
-Add a `Microgame` `QuestVenue`, new gate nodes (`WaitForGateThreaded`, `WaitForAbility`,
-`WaitForMetricDelta`, `WaitForLapTime`), a `CoachMark` presentation node anchored to the preview
-window, and a **second runner instance** hosted by `ModePreviewSession` rather than Menu_Main.
-
-- **For:** the visual editor, node validation, enable toggles, checkpoint view and Force-Advance
-  already exist; designers already know it; branching (fail → retry port) is native.
-- **Against:**
-  - The runner is a Menu_Main singleton with ~20 scene references and ONE persisted cursor per
-    quest; `QuestRuntimeContext` is menu-shaped (nav buttons, game cards, freestyle events). A
-    microgame runner needs a second context type and a different persistence model
-    (node-by-node UGS resume is wrong for a 60-second drill — you restart a drill, you don't resume
-    it at node 7).
-  - A graph is an authored artifact, so it answers requirement 2 badly: either one graph per
-    (mode × vessel) — the multiplication §1 exists to avoid — or graph "includes" and
-    parameterised nodes, which is a macro system bolted onto a tool that has none.
-  - `DeveloperUnlockGate.AllUnlocked` (default ON) **stands the whole quest graph down**, so in a
-    default checkout nothing would run. Solvable, but it couples drills to a switch whose job is
-    entitlement.
-  - Coroutine-per-node; fine at this scale but it is the heaviest runtime of the three.
-
-### Option B — A linear DRILL layer owned by the preview (new, small)
-
-A **Drill** is an ordered list of **beats**; each beat is a prompt + a completion condition. A
-`DrillComposer` builds the list at arm time from the §1 sources (mode template ⊕ derived vessel
-beats ⊕ optional authored vessel module), minus beats the player has already learned. A plain C#
-`DrillRunner` (sibling of `ModePreviewRunner`, same lifetime) ticks the one active beat.
-
-- **For:** covers every vessel by construction; smallest runtime (one active condition, event-driven
-  where a SOAP channel exists); lives entirely inside the preview's existing lifecycle so focus,
-  teardown, party and satellite rules are inherited, not re-derived; no Menu_Main coupling.
-- **Against:** linear only (a beat can repeat or offer a hint, not branch); needs its own authoring
-  surface (a coverage matrix window, §6) instead of a canvas; the editor Quest Graph's checkpoint /
-  force-advance niceties must be re-provided (cheaply — a drill is a list).
-
-### Option C — Reactive COACHING rules (no sequence at all)
-
-No lesson order: a set of `(trigger condition → tip)` rules evaluated while the player flies —
-"missed gate 2 by >40u → *ease the stick; your turn radius grows with speed*", "8s without
-boosting → *hold RT on the straights*", "hit a danger prism → …". Each tip shows once per
-(player, tip) and a cooldown spaces them.
-
-- **For:** cheapest content per insight, never blocks, excellent for requirement 3 (non-racing tips)
-  and for players who already know the basics; scales by metric/vessel the same way.
-- **Against:** cannot *force* anything — there is no "you must do X before Y", so it fails
-  requirement 1 on its own; tips fire on failure, which is a worse first impression than a guided
-  success.
-
-### Evaluation
-
-| | A — Quest Graph | B — Drill layer | C — Reactive rules |
-|---|---|---|---|
-| Forced first-time moment | ✅ | ✅ | ❌ |
-| Every vessel, zero per-vessel authoring | ⚠ needs a macro/include system | ✅ derived | ✅ derived |
-| Runtime cost | coroutine per node, second runner | one condition object per frame, mostly event-driven | N conditions polled (cap it) |
-| New code | medium — context split, venue, 5–6 nodes, second persistence model | small — runner, composer, ~10 conditions, 1 view | small — rule evaluator, ~10 triggers, 1 view |
-| Authoring ease | best canvas; worst for coverage | list + coverage matrix | list of rules |
-| Coupling risk | Menu_Main runner, `DeveloperUnlockGate`, UGS cursor | preview only | preview only |
-| Branching / remediation | ✅ native | ⚠ retry + hint only | ✅ is all it does |
-
----
-
-## 3. Recommendation: B, with C folded in as a beat kind, bridged to the Quest Graph
-
-**Build the Drill layer (B)** and give its beat model a second kind — **tips** — which are C's
-trigger-driven rules. One system, two kinds of beat, one condition vocabulary, one view.
-**Keep the Quest Graph for what it is good at — the macro journey across the app shell** — and
-connect the two with two nodes. That split mirrors the graph's own venue concept: the graph owns
-"where is the player standing", the drill owns "what is the player doing in the arena".
-
-```
-Quest Graph (app shell)                          Drill layer (inside the preview window)
-───────────────────────                          ─────────────────────────────────────
-... → OpenMicrogame(GameOfTheWeek) ──arms──►  ModePreviewSession.SetDefinition(...)
-                                                  └─ DrillComposer.Compose(mode, hull, progress)
-                                                       → [ mode beats ⊕ vessel beats ⊕ tips ]
-                                                  └─ DrillRunner ticks the active beat
-      WaitForDrill(key) ◄──── completes ────────  DrillProgressStore.MarkLearned(...)
-... → (launch the real game / leaderboard CTA)
-```
-
-Why not A: the per-(mode × vessel) content problem is the hard requirement, and the graph is the
-wrong shape for it; everything the graph would add inside the arena (branching) is better served
-by B's retry/hint plus C's tips. Why not C alone: it cannot force.
-
----
-
-## 4. Architecture (Option B + tips)
-
-### 4.1 Data
-
-```
-DrillBeat  [Serializable, polymorphic via [SerializeReference]]
-  Kind            Step | Tip
-  Prompt          string with tokens: {glyph:Charge} {ability:Space} {vessel} {target} {metric}
-  Anchor          Window | AbilityRow(Element) | ObjectiveArrow | NextGate
-  Condition       IDrillCondition  (completion for a Step, trigger for a Tip)
-  Cue             None | PulseAbilityRow | HighlightNextGate | GhostDemo (later)
-  MinShowSeconds, HintAfterSeconds + HintPrompt, SkipAfterSeconds
-  LearnKey        e.g. "vessel/Manta/Space", "mode/SwitchesThreaded/order" — what completing it teaches
-
-DrillTemplateSO           one per ScoringMetric family (+ optional per-GameModes override)
-                          ordered Step beats + Tip beats for "how to win this mode"
-VesselDrillModuleSO       OPTIONAL, one per VesselClassType: extra verb beats + tips the map
-                          cannot express, and per-element overrides of the derived beat
-DrillLibrarySO            Resources/DrillLibrary — metric→template, mode→override, hull→module,
-                          the forcing policy table (§4.4)
-```
-
-`[SerializeReference]` rather than the Quest Graph's SO sub-assets: a beat is small, owned by one
-list, and never referenced from elsewhere, so a polymorphic field is lighter than an asset per
-beat. (If designers later want beats reusable across templates, promote them to SOs then.)
-
-**Derived vessel beats** (no asset): for each `ElementalAbilityEntry` with `Input != 0`, in
-`VesselHUDView.AbilityDisplayOrder`:
-`Step{ Prompt = "{glyph} — {AbilityLabel}: {AbilityDescription}", Condition = InputPressed(Input),
-Cue = PulseAbilityRow(element), LearnKey = "vessel/{hull}/{element}" }`. Passive abilities
-(`Input 0`) become a Tip with a timer trigger instead of a Step — a player cannot "press" a passive.
-Flight basics (throttle, turn, drift) are ONE shared derived block keyed on
-`IsSingleStickControls` (two schemes, not eleven), learned once per player.
-
-### 4.2 Conditions — one small vocabulary, reused by Steps and Tips
-
-Each is a tiny class implementing `Begin(DrillContext) / bool Evaluate() / End()`. Event-driven
-ones subscribe to channels that already exist; polled ones read one field.
-
-| Condition | Source it reads (existing) |
+| # | Decision |
 |---|---|
-| `Timer(s)` | unscaled time |
-| `InputPressed(InputEvents)` / `InputHeld(e, s)` | the `ScriptableEventInputEvents` the quest runner already uses, filtered to the local vessel |
-| `SpeedAtLeast(u/s)` / `SpeedFraction(of top)` | `VesselStatus.Speed` |
+| D1 | **The first-time flight tutorial LEAVES freestyle.** A brand-new player is walked, forcibly, from first login all the way into the **Game of the Week's microgame** (the Mode Preview window), and taught that ship's basic flight controls there. Once they leave the tutorial they can play the minigame |
+| D2 | **Every microgame run has TWO SECTIONS.** (1) **The Lesson** — forced; teaches the ship's basic controls. **Not skippable the very first time**; after that, skippable after **3 seconds**. (2) **The Mentor** — starts when the Lesson finishes or is skipped; **always open**, even the first time: the player may stay or leave whenever they like |
+| D3 | **The Mentor is CURATED, not reactive.** It offers the most effective tips, tricks and advice **in an authored order that makes sense**, like a tutor or a friend flying alongside — it does not diagnose what the player just did wrong |
+| D4 | **"Racing" = the Time-genre minigames.** A mode is Time-genre because it expresses its vessel's Time controls, which are always movement. The list for now: Skim Race, Switchback, Headlong, Redline, Skein, Breakwater, Regatta. **Source of truth later: the "genre petals"** a parallel branch is adding (categories Mass / Charge / Space / Time) — not on `bleeding-edge` as of `3d9f7660`; switch to it when it lands (§8) |
+| D5 | **Leaderboards are shown only when RELEVANT.** Show a board only when the player is top ten in some grouping that makes sense (world, faction once factions exist, friends, …); otherwise show only their personal best (§6) |
+| D6 | **Architecture: plans B + C combined** — a linear drill layer (B) for the Lesson and a curated tip sequence (C, re-cut from "reactive" to "curated" by D3) for the Mentor, sharing one runner, one condition set and one view |
+
+---
+
+## 2. What already exists, and the one thing that doesn't
+
+- **The microgame is a well-bounded place to put this.** `ModePreviewSession` already owns the
+  preview arena, the hull swap, handing the camera to `ModePreviewWindow`'s RenderTexture, the
+  input-focus handoff (`ModePreviewWindow.AnyHasFocus`, with its four gates), and
+  `ModePreviewRunner`, a plain MonoBehaviour that counts one `ScoringMetric` against a baseline.
+  Training is a layer on top of that and rebuilds none of it.
+- **The racing microgames have no race in them yet.** Switchback, Headlong, Redline and Breakwater
+  preview **shell only**: their rings are built by `GateRaceController` at match start, and the
+  preview has no controller. Skein and Regatta show their rails but no rings. Skim Race is the only
+  race whose track is in the window. The Lesson can teach flight without rings, but the Mentor's
+  racing tips ("take the gate on the inside", "boost the straight") need them. **§7 is a
+  prerequisite for phase 2.**
+
+---
+
+## 3. The flow
+
+```
+first login
+  └─ Menu_Main ready
+      └─ FIRST-RUN RAILROAD (Quest Graph Phase 0, re-cut — §5)
+          ├─ navigation locked to Arcade
+          ├─ Navigate → Arcade → Game of the Week card (auto-selected)
+          ├─ preview armed FORCED: window takes focus by itself on arrival
+          │
+          │   ┌──────────── inside the microgame ─────────────────────────────┐
+          │   │ SECTION 1 — THE LESSON                                         │
+          │   │   first time for this hull: no Skip, focus held, Play disabled │
+          │   │   every later run: Skip appears after 3 s                      │
+          │   │   beats: the hull's flight scheme + its Time (movement) ability│
+          │   │                     ↓ finished or skipped                      │
+          │   │ SECTION 2 — THE MENTOR                                         │
+          │   │   always open; every release route works; Play enabled        │
+          │   │   curated tips, one at a time, in authored order               │
+          │   │   ends at the last tip, or whenever the player leaves          │
+          │   └────────────────────────────────────────────────────────────────┘
+          │
+          └─ WaitForLesson(complete) → navigation unlocked → railroad ends
+```
+
+The railroad is first-login only. Every later preview entry, on any card, runs the same two
+sections through the same runner, just not forced into by navigation.
+
+**"First time" is keyed per HULL.** A Lesson teaches one ship's controls, so the unskippable first
+run happens once per vessel class: the first time a player meets the Manta they sit through the
+Manta's Lesson; their second Manta microgame lets them skip at 3 s; their first Rhino is
+unskippable again. (*Assumption — D2 says "the very first time" without saying first time for
+what. Per-hull follows from what the Lesson teaches; per-player would teach one ship and leave
+every other ship's controls to chance. Easy to change: it is one key.*)
+
+---
+
+## 4. Architecture — one runner, two sections
+
+### 4.1 The decomposition that covers every vessel ever built
+
+The content is never authored per (mode × vessel). It splits by what it teaches, and each half
+is keyed on something the platform already treats as canonical:
+
+| Content | Keyed on | Source | New vessel / mode cost |
+|---|---|---|---|
+| **Lesson** — this ship's basic flight | `VesselClassType` | **Derived**: the flight-scheme block (two schemes fleet-wide, chosen by `IsSingleStickControls`) plus the hull's **Time** ability from `ElementalAbilityMapSO` (`AbilityLabel`, `AbilityDescription`, `Input` → `InputHintBindingMap` → `ControlGlyphSetSO` glyph, the chain the ability lockup already uses, so a control label can never be wrong) | **None** — a hull with a filled ability map has a Lesson on day one |
+| **Mentor** — tips for this ship in this mode | hull tips ⊕ mode tips (per `ScoringMetric` family, overridable per `GameModes`) | **Curated**: authored tip lists. The hull's other three abilities appear as derived "did you know" tips until someone writes better ones | **Near zero** — a new hull gets its derived ability tips; a new mode that reuses a metric gets that family's tips |
+
+Why the Lesson is "flight + Time ability": D1 says the Lesson teaches *basic flight controls*, and
+D4 says the Time ability is the ship's movement ability — so flight plus Time is exactly "how this
+ship moves". Charge, Mass and Space abilities go to the Mentor, where the player can pick them up
+at their own pace.
+
+### 4.2 Data
+
+```
+DrillBeat   [Serializable, polymorphic via [SerializeReference]]
+  Prompt        text with tokens: {glyph:Time} {ability:Time} {vessel} {mode}
+  Anchor        Window | AbilityRow(Element) | ObjectiveArrow | NextGate
+  Cue           None | PulseAbilityRow | HighlightNextGate | GhostDemo (later)
+  LessonStep:   Condition (completion), HintAfterSeconds + HintPrompt
+  MentorTip:    DwellSeconds (how long it stays up), optional Moment condition (§4.4),
+                Priority (orders tips inside the playlist), TipId
+
+LessonTemplateSO   the shared flight-scheme blocks (single-stick / dual-stick), authored once
+TipListSO          an ordered tip list; one per metric family, optional per mode, optional per hull
+DrillLibrarySO     Resources/DrillLibrary: metric→TipListSO, mode→override, hull→TipListSO,
+                   Mentor ordering policy, the Lesson's skip delay (3 s), per-beat pacing defaults
+```
+
+`[SerializeReference]` rather than the Quest Graph's per-node sub-assets: a beat is small, owned
+by one list, and never referenced from anywhere else.
+
+### 4.3 Section 1 — the Lesson (plan B)
+
+A strictly linear list of steps, each one a prompt plus a completion **condition**:
+
+| Condition | Reads (already exists) |
+|---|---|
+| `InputHeld(stick/trigger, s)` / `InputPressed(InputEvents)` | the `ScriptableEventInputEvents` channel the quest runner already uses, filtered to the local vessel |
+| `SpeedAtLeast` / `SpeedFraction` | `VesselStatus.Speed` |
 | `DriftHeld(s)` | `VesselStatus.IsDrifting` (as `QuestWaitForDriftNode`) |
+| `AbilityActivated(Element)` | the vessel's action-handler start event, resolved through the ability map |
 | `Skims(n)` | `ScriptableEventBoostChanged` (as `QuestWaitForSkimNode`) |
-| `MetricDelta(metric, n)` | `ScoringMetrics.Read` against a baseline — lifted from `ModePreviewRunner` |
-| `GateThreaded(n)` / `LapCompleted` / `GateMissed(by u)` | the preview gate course, §5 |
-| `AbilityActivated(Element)` | the vessel's action handler start event (resolved through the map) |
-| `NoInputFor(s)` / `NoBoostFor(s)` | tip triggers — the negative of the above |
+| `Timer(s)` | unscaled time |
 
-Only the ACTIVE step's condition plus a capped set of armed tips (say ≤ 6, evaluated round-robin,
-one per frame) are live. No per-frame allocation. Cost is noise next to the satellite arena the
-preview is already running.
+A composed Lesson (single-stick hull, e.g. Sparrow):
+1. "Move the mouse / {glyph:stick} to steer." → `InputHeld(stick, 1.0)`
+2. "Throttle up." → `SpeedFraction(0.8)`
+3. "{glyph:Time} — {ability:Time}: {description}" → `AbilityActivated(Time)`, pulsing the
+   ability row
+4. *(if the hull drifts)* "Hold both triggers to drift." → `DriftHeld(0.75)`
 
-### 4.3 Runtime
+Four or five steps, about 30 s for a player who does as asked. Only the active step's condition
+is live.
 
-- `DrillRunner` (plain MonoBehaviour beside `ModePreviewRunner`, created by the session) — starts
-  on the tap-in arrival, stops on every existing exit route (release, card change, launch, strike).
-  It never writes `GameDataSO` and never replicates: the preview is local by design and so is the
-  drill. A party guest gets tips, never a forced drill (§4.4).
-- `DrillComposer` — pure function `(mode, hull, DrillProgress, policy) → List<DrillBeat>`; edit-mode
-  testable, and the same function drives the authoring matrix (§6), so what the tool shows is what
-  runs.
-- `DrillCoachView` — one panel overlaid on the preview window rect in the arcade modal: prompt
-  line, the control glyph chip (drawn from `ControlGlyphSetSO` exactly as the lockup draws it),
-  step pips, a Skip affordance. Anchors reuse surfaces that exist: the launch panel's controls-block
-  rows already light when a control is held — `PulseAbilityRow` drives that same row; the
-  objective arrow already points at the next gate.
-- `DrillProgressStore` — a set of learned `LearnKey`s + seen tip ids + best practice-lap time per
-  (mode, hull). PlayerPrefs mirror + one Cloud Save key through the existing repository pattern
-  (`LocalCloudDataCache` gives offline for free). Deliberately NOT the quest cursor.
+### 4.4 Section 2 — the Mentor (plan C, curated)
 
-### 4.4 The forcing ladder
+**A playlist, not a rule engine.** The Mentor composes one ordered list:
 
-| Level | When | Behaviour |
-|---|---|---|
-| **Forced** | First ever preview entry (solo, not in a party), or when the Quest Graph's `OpenMicrogame` node asks | Window auto-focuses on arrival (no tap needed); outside-tap / Escape / Start release routes are suppressed; the card's Play button is disabled until the drill's Steps complete; **Skip appears after N seconds** (accessibility + the "I already know this" player), and a skip records the keys as *seen*, not *learned* |
-| **Guided** | New mode or new hull for this player | Steps run with prompts; every release route works; leaving pauses the drill and re-entering resumes at the current step |
-| **Tips** | Everything already learned, and every non-racing mode by default | No steps; tips fire from their triggers, once each |
+```
+[ hull tips (curated, then derived ability tips) ]
+    ⊕ [ mode tips for this card's metric family ]
+    ⊕ [ advanced tips: element upgrades, the Game of the Week board ]
+    − tips this player has already seen (moved to the END, not dropped)
+```
 
-Forced suppression is one flag read by the existing release path in `ModePreviewWindow`
-(`WantsRelease`) — it adds no new gate, it holds an existing one shut. The ordering rule the
-session already records (a teardown that runs while the app is LEAVING must forfeit its restore)
-applies unchanged.
+and shows them one at a time. "An order that makes sense" is authored as **tiers** — *basics of
+this ship → how to win this mode → how to win it faster* — with `Priority` ordering inside a
+tier. Seen tips go to the back rather than disappearing, so a returning player hears something new
+first and the Mentor never goes silent.
 
-### 4.5 What a racing drill looks like (worked example: Manta in Redline)
+**Pacing is the whole feel of the Mentor**, because it is what makes it a friend and not a
+billboard:
+- A tip stays up for its `DwellSeconds` (default ~6 s) and the next one arrives after a quiet gap
+  (default ~8 s). The player never has to dismiss anything; a "next" affordance exists for readers.
+- **An optional `Moment` condition** lets a tip *wait for a good time* to say its piece — "boost
+  on the straights" waits until the ship is actually at speed, and "take the gate on the inside"
+  waits until a gate is ahead. This changes **when** a tip is said, never **which** tip is said,
+  so the Mentor stays curated rather than reactive (D3). A Moment that doesn't come within ~20 s
+  lets the tip go anyway.
+- The Mentor ends when the list is exhausted (a closing line pointing at Play) or when the player
+  leaves; re-entering resumes where it left off.
 
-Composed for a brand-new player, ~60–90 s:
+This reuses plan C's machinery (conditions + one view) with its trigger model replaced by a
+playlist, which is how B and C combine without becoming two systems.
 
-1. *(flight basics, shared, one-stick block)* "Push {glyph:stick} to turn." → `InputHeld(stick, 1s)`
-2. "Thread the first gate — follow the arrow." → `GateThreaded(1)`, cue `HighlightNextGate`
-3. *(derived, Manta Time)* "{glyph:LT}+{glyph:RT} — Soar: …" → `AbilityActivated(Time)`
-4. *(Redline template)* "Ease one trigger to carve the corner." → `GateThreaded(3)`, hint after 12 s
-5. *(gate-race template)* "Finish the lap." → `LapCompleted`
-6. Result card: "Practice lap 0:47 · this week's best 0:39 — beat it on the leaderboard" → Play.
+### 4.5 Runtime pieces
 
-For a player who already knows the Manta, the same card composes to 2, 4, 5, 6.
-For a player who knows gate racing but not the Manta: 1 (if never learned), 3, 5, 6.
+| Piece | Job |
+|---|---|
+| `DrillComposer` | Pure function `(mode, hull, progress) → (lessonSteps, mentorTips)`. Edit-mode testable; the authoring window (§9) calls the same function, so what the tool shows is what runs |
+| `DrillRunner` | Plain MonoBehaviour beside `ModePreviewRunner`, same lifetime; created by the session, starts at tap-in, stops on every existing exit route. Runs the Lesson, then the Mentor. Never writes `GameDataSO`, never replicates (the preview is local by design) |
+| `DrillCoachView` | One panel over the preview window rect: prompt line, the control glyph chip (drawn from `ControlGlyphSetSO` exactly as the lockup draws it), Lesson step pips, a Skip button that appears only when allowed, the Mentor's "next". Anchors reuse surfaces that already exist: the launch panel's controls block already lights a row when its control is held, and `PulseAbilityRow` drives that same row |
+| `DrillProgressStore` | Hulls whose Lesson was **completed** (the per-hull first-time key), tip ids **seen**, best practice lap per (mode, hull). PlayerPrefs mirror plus one Cloud Save key through the existing repository pattern (`LocalCloudDataCache` makes it work offline). Deliberately NOT the quest cursor |
 
-Step 6 is the bridge to the Game of the Week: the practice-lap time from the drill is a real
-number to beat, which is the most direct activation available.
+**Forcing uses gates that already exist.** While the Lesson is unskippable, `ModePreviewWindow`'s
+own release test (`WantsRelease`) is held shut by one flag, and the card's Play button is
+disabled. The moment the Mentor starts, both open (D1: "once the player leaves the tutorial they
+should be able to play the minigame"). **In a party, the Lesson is never forced**: a guest cannot
+be held in a window while the host launches, so a guest gets the Lesson skippable from the start.
+
+**Performance:** one live Lesson condition, or one pending Mentor moment, at any time;
+event-driven wherever a SOAP channel exists; no per-frame allocation. That is negligible next to
+the preview arena the window is already running.
 
 ---
 
-## 5. Prerequisite — put the race in the racing microgames
+## 5. The first-login railroad
 
-Independent of the paradigm, and the largest single piece of work:
+Flight school is retired from freestyle (D1), so the Quest Graph's Phase 0 shrinks to a router:
 
-1. **Lift course construction out of the controller.** `GateRaceController.BuildCourse(seed,
-   gateCount, inner, outer)` is `protected abstract` on a NetworkBehaviour. The course generators
-   behind it are already pure (`SwitchbackCourse`, `HeadlongCircuit`/`RedlineCourse`,
-   `SkeinCourse`, `RegattaCourse`, Breakwater's builder — all have edit-mode tests). Introduce a
-   per-mode `IRaceCourseSource` (the controller and the preview both call it) so there is ONE
-   course definition per mode.
-2. **`ModePreviewGateCourse`** — stands `RaceGateRing`s in the satellite from a local seed, tests
+```
+P0 (new):  WaitMenuReady → LockNavigation(Arcade only)
+           → OpenMicrogame(source: GameOfTheWeek, forced: true)
+           → WaitForLesson(hull of that card)
+           → LockNavigation(unlock) → PhaseEnd
+```
+
+Two new nodes: `QuestOpenMicrogameNode` (navigate → select the card → arm the preview forced) and
+`QuestWaitForLessonNode` (completes when `DrillProgressStore` marks that hull's Lesson done). The
+existing flight-school nodes (`EnterFreestyle`, `WaitForInput`, `WaitForDrift`, `WaitForSkim`,
+`ExitFreestyle`) stay in the codebase for other uses but leave the Main Quest. The later phases
+(the Crystal Capture funnel, the unlocks) need re-deciding against the Game of the Week, which is
+the separate thread.
+
+**A conflict to resolve before this can run:** `DeveloperUnlockGate.AllUnlocked` (default ON)
+stops the whole quest graph, so in a default checkout the railroad never fires. Recommended fix:
+the gate should switch off the nodes that apply *locks* (LockModes, SetArcadeConstraints,
+LockNavigation), not the runner itself; the railroad's routing is not an entitlement. Independently
+of the graph, the preview's own "first time on this hull" rule still forces the Lesson, so the
+Lesson itself does not depend on the graph running.
+
+---
+
+## 6. Relevance-gated leaderboards (D5)
+
+The Mentor's closing line and the post-lap result card use one resolver:
+
+```
+LeaderboardRelevance.Resolve(player, board) →
+    for each grouping in [World, Faction*, Friends, …]:
+        if player's rank in grouping ≤ 10           → show that grouping's top ten, player highlighted
+    best-ranked qualifying grouping wins; ties → the narrowest grouping (friends before world)
+    none qualifies                                   → Personal Best only
+```
+
+(*Faction once factions exist.*) One query per grouping for the player's own rank (UGS returns
+rank with the player's score), only when a result screen actually needs it — never per frame, and
+cached for the session. It generalises past this feature (any result screen, the weekly
+challenge panel), so it belongs in its own small service beside
+`WeeklyChallengeLeaderboardService` rather than inside the drill code. "Near" the top (D5 says "on
+or near") needs a number; proposed **top 10, or within 10% of tenth place's time**, tunable in
+config.
+
+---
+
+## 7. Prerequisite — put the race in the racing microgames
+
+1. **Move course construction out of the controller.** `GateRaceController.BuildCourse(seed,
+   gateCount, inner, outer)` is `protected abstract` on a NetworkBehaviour, but the generators
+   behind it are already standalone code with edit-mode tests (`SwitchbackCourse`,
+   `HeadlongCircuit`/`RedlineCourse`, `SkeinCourse`, `RegattaCourse`, Breakwater's builder). A
+   per-mode `IRaceCourseSource` that both the controller and the preview call gives ONE course
+   definition per mode.
+2. **`ModePreviewGateCourse`** stands `RaceGateRing`s in the preview arena from a local seed, tests
    crossings with the existing pure `RaceGateRing.CrossedMouth(prev, cur)`, and raises
-   `GateThreaded`/`LapCompleted`/`GateMissed`. Local only; rings retire with the strike.
-3. The preview objective for gate races becomes `SwitchesThreaded` with a real target, so the
-   launch panel's objective box counts gates like every other mode.
-4. `ModePreviewDefinitionSO` gains nothing new beyond a flag; the course is derived from the mode.
-
-This also retires the "OPEN-ENDED" note on four preview definitions and makes the racing cards
-honest previews even for players who skip training.
+   `GateThreaded` / `LapCompleted` for the Mentor's Moment conditions and the practice-lap time.
+   Local only; the rings retire with the arena.
+3. Gate-race preview objectives become `SwitchesThreaded` with a real target, so the launch
+   panel's objective box counts gates like every other mode, and the four "OPEN-ENDED" preview
+   notes retire.
 
 ---
 
-## 6. Authoring tool
+## 8. Racing = Time genre: until the genre petals land
 
-**FrogletTools ▸ Game Modes ▸ Microgame Drills** — master/detail, following `Docs/TOOLING.md`:
-
-- **Coverage matrix**: modes × hulls. Each cell is `DrillComposer.Compose(...)` for a brand-new
-  player, coloured by status (✅ full, ⚠ derived-only, ❌ empty or unresolvable). This is the answer
-  to "every vessel we will ever build": a new hull appears as a new column and is ✅/⚠ the moment
-  its ability map exists.
-- **Detail**: the composed beat list with each token resolved (actual glyph, actual ability name),
-  per-source colour (template / derived / module), and inline editing of the template or module
-  the beat came from.
-- **Simulate as**: choose a learned-key set ("knows gate racing", "knows the Sparrow") and see the
-  composed drill — the dedupe logic made visible.
-- **Validate**: every token resolves; every `InputPressed` has a glyph for both pad and keyboard;
-  every condition's signal exists in a preview (e.g. `MetricDelta(Crystals)` on a card whose
-  preview mints no crystals is an error); every Forced drill has ≥1 Step and a Skip time.
-- It is a READER + SO editor; it writes only the drill SOs, recorded through
-  `FrogletToolChangeLedger` per the tool contract.
-
-**Gates (CI-style, no editor):** an edit-mode `DrillCoverageTests` asserting every playable hull ×
-every racing mode composes ≥ N Steps with all tokens resolved — the fleet-wide guarantee, so a new
-vessel with an empty ability map fails a test rather than shipping a silent microgame.
+Until the genre-petal branch merges, the Time-genre list is the constant in D4, held in
+`DrillLibrarySO` (not hard-coded). When the petals land, `DrillLibrarySO` switches to reading each
+card's genre, and a test asserts the two agree for one release before the constant is deleted.
+Being Time-genre changes only the **Mentor's** content (racing tips, the practice lap, the Game of
+the Week board); the Lesson is the same for every mode, because it teaches the ship, not the game.
+Non-racing microgames get exactly the same two sections, with their metric family's tips.
 
 ---
 
-## 7. Quest Graph bridge (two nodes)
+## 9. Authoring tool and gates
 
-- `QuestOpenMicrogameNode` — Navigate to Arcade → select the card (`Fixed mode` or
-  `GameOfTheWeek` source) → arm the preview with `forced: true`. Venue: Gameplay.
-- `QuestWaitForDrillNode` — completes when the drill for (mode, hull) reports done or skipped;
-  ports `Completed` / `Skipped` so the graph can branch its follow-up dialogue.
+**FrogletTools ▸ Game Modes ▸ Microgame Drills** (following `Docs/TOOLING.md`):
+- **Lesson tab**: one row per hull — the composed Lesson with every token resolved (the actual
+  glyph and ability name). A hull whose Time slot is an open design slot, or whose Time ability
+  has no input, is flagged: it cannot have a Lesson step 3.
+- **Mentor tab**: modes × hulls; each cell is the composed playlist, coloured by source (hull /
+  mode / advanced / derived), with inline editing of the TipListSO a tip came from, and a
+  **"simulate as"** control (tips already seen) that shows the reordering.
+- **Validate**: every token resolves; every control has both a pad and a keyboard glyph; every
+  Moment condition's signal exists in that card's preview (a gate Moment on a card with no rings
+  is an error until §7 lands).
+- It writes only the drill assets, each recorded through `FrogletToolChangeLedger` per the tool
+  contract.
 
-Note the conflict to resolve: `DeveloperUnlockGate.AllUnlocked` (default ON) stands the quest
-graph down. The railroad needs either that default flipped or the drill's forced entry triggered
-without the graph (the `DrillProgressStore`'s "first ever preview" rule in §4.4 does exactly this,
-so the forced moment works even with the graph off).
+**Test:** `DrillCoverageTests` (edit mode) asserts every playable hull composes a Lesson of at
+least three steps with every token resolved, and every playable card composes a Mentor list of at
+least N tips. A new vessel with an empty ability map fails a test instead of shipping a silent
+microgame.
+
+**Analytics:** `drill_lesson` `{hull, outcome: completed|skipped, seconds, first_time}` and
+`drill_mentor` `{mode, hull, tips_shown, left_at_tip}`. The second answers "how long do people
+stay with the Mentor", which is the tuning question for its pacing. Keep parameters few: UGS
+schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`).
 
 ---
 
-## 8. Analytics
-
-Per beat: `drill_beat` with `{mode, hull, beat_id, outcome: completed|skipped|hinted, seconds}`,
-plus `drill_complete` with the practice-lap time. Fold into existing parameters where possible —
-UGS schema rows are permanent and capped (`Docs/Analytics/DATA_ARCHITECTURE.md`). This is what
-answers "where do new players drop out of the Game of the Week funnel".
-
----
-
-## 9. Phasing
+## 10. Phasing
 
 | Phase | Scope | Proves |
 |---|---|---|
-| 1 | §5 gate course in previews for Switchback + Redline (one open chain, one circuit) | the race exists in the window |
-| 2 | `DrillRunner`, `DrillComposer`, 6 conditions, `DrillCoachView`, gate-race template, derived vessel beats, `DrillProgressStore`; Guided level only | composition + dedupe on two modes × all hulls |
-| 3 | Forced level + Skip; Quest Graph bridge nodes; practice-lap result card | the railroad end to end |
-| 4 | Remaining races (Headlong, Breakwater, Skein, Regatta, Skim Race); tips kind + metric templates for non-racing modes | coverage |
-| 5 | Authoring window + coverage test + analytics | the "every vessel ever" guarantee |
-| later | `GhostDemo` cue (AI flies the beat once before handing over — reuses the preview's own autopilot) | show-don't-tell |
+| 1 | `DrillRunner`, `DrillComposer`, `DrillCoachView`, `DrillProgressStore`; the Lesson with derived beats; unskippable-first-time + 3 s skip; Play gating | every hull has a Lesson |
+| 2 | §7 gate course in previews (Switchback + Redline first) | the race is in the window |
+| 3 | The Mentor: TipListSOs for the gate-race family, pacing, Moment conditions, resume | the curated tutor |
+| 4 | Quest Graph P0 railroad + the `DeveloperUnlockGate` fix; the Game of the Week source | first login → Lesson, end to end |
+| 5 | Remaining races; tip lists for non-racing families; relevance-gated leaderboards (§6); practice-lap result | coverage |
+| 6 | Authoring window, coverage test, analytics; switch D4's list to genre petals | the "every vessel ever" guarantee |
+| later | `GhostDemo` cue (the preview's own autopilot flies a step once before handing over) | show, don't tell |
 
 ---
 
-## 10. Open questions for the team
+## 11. Still open
 
-1. **Does Forced disable the card's Play button**, or only hold the window focus? (Disabling Play is
-   the stronger railroad; it also blocks a party host from launching over a guest's drill — hence
-   forced only when solo.)
-2. **Skip time** — a fixed 10 s, or after the first Step?
-3. **Are flight basics taught in the microgame or kept in freestyle** (the old Quest Graph P0
-   flight school)? The plan assumes the microgame, since that is where players now land first.
-4. **Which modes count as "racing"** for the Game of the Week? Assumed: Skim Race, Switchback,
-   Headlong, Redline, Skein, Breakwater, Regatta (all time-scored).
-5. **Practice-lap time vs the real leaderboard** — show the week's best from the weekly
-   leaderboard service, or only the player's own best?
+1. **Per-hull "first time"** (§3) — confirm, or should it be once per player?
+2. **Mentor pacing defaults** — ~6 s on screen, ~8 s gap, ~20 s Moment timeout. Real numbers want
+   one playtest.
+3. **Does the Lesson include drift** on hulls that have it, or is drift a Mentor tip? The plan
+   includes it (it is movement); it adds ~5 s.
+4. **What happens to Main Quest phases 1–5** (the Crystal Capture funnel and the unlock chain) now
+   that first login goes to the Game of the Week — separate thread, but they currently assume P0
+   ended in freestyle.
