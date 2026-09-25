@@ -91,6 +91,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Tolerance, in fuel, below a whole pellet that still counts as one. Shared by the
+        /// burn gate and the HUD so the pips can never read "refilling" on a pellet a press would burn.</summary>
+        public const float FuelEpsilon = 0.0001f;
+
         /// <summary>Pellets in the tank right now, fractional - 2.6 is two ready and one 60% refilled.</summary>
         public float PelletsHeld
         {
@@ -98,7 +102,7 @@ namespace CosmicShore.Gameplay
             {
                 float cost = PelletCost;
                 if (cost <= 0f || !TryGetFuel(out var fuel)) return 0f;
-                return fuel.CurrentAmount / cost;
+                return (fuel.CurrentAmount + FuelEpsilon) / cost;
             }
         }
 
@@ -148,7 +152,7 @@ namespace CosmicShore.Gameplay
             }
 
             if (!TryGetFuel(out var fuel)) return;
-            if (fuel.CurrentAmount + 0.0001f < cost) return;   // no whole pellet in the tank
+            if (fuel.CurrentAmount + FuelEpsilon < cost) return;   // no whole pellet in the tank
 
             _resources.ChangeResourceAmount(so.ResourceIndex, -cost);
 
@@ -172,9 +176,12 @@ namespace CosmicShore.Gameplay
         {
             if (_burnEndTimes.Count == 0) return;
 
+            // A plain backwards sweep rather than RemoveAll: a lambda capturing `now` would
+            // allocate a delegate every frame a pellet burns.
             float now = Time.time;
             int before = _burnEndTimes.Count;
-            _burnEndTimes.RemoveAll(end => end <= now);
+            for (int i = before - 1; i >= 0; i--)
+                if (_burnEndTimes[i] <= now) _burnEndTimes.RemoveAt(i);
             if (_burnEndTimes.Count == before) return;
 
             ApplyMultiplier();

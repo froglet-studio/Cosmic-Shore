@@ -356,6 +356,25 @@ replica's cosmetic roll passes a null transformer and never touches it), and the
 advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
 owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.
 
+## Serpent fuel-pellet follow-ups (opened by `cece/epic-planck-1snjtc`)
+
+Measured 2026-09-25 while restoring Solid Fuel Pellets (`R_VesselActions/SERPENT_FUEL_PELLETS.md`).
+Logged, not acted on — none of these is the subject of that branch.
+
+- **Dead legacy `VesselActions/ConsumeBoostAction.cs`** (`class ConsumeBoostAction : ShipAction`,
+  guid `c8f865735b87b6a43a367be3280d8332`) — the old magazine version of this ability. **0** asset
+  references to its guid across `.prefab`/`.asset`/`.unity`, **0** code references to the type.
+  Salvage check before deleting: it carries nothing the new executor lacks. Proposal: delete it and
+  its `.meta`.
+- **Orphaned Seed Wall readout** — `SerpentVesselHUDView.shieldIcon` / `shieldIconsByCount` /
+  `SetShieldCount` and the controller's shield-resource path now have no target on any shipped HUD
+  (`shieldIcon` nulled on `Serpent.prefab` so the lockup would not resurrect the old art). Decide
+  when the Mass slot is designed: delete, or re-home if the wall returns.
+- **`ConsumeBoostActionExecutor.boostChanged` is unwired** on `Serpent.prefab`
+  (`boostChanged: {fileID: 0}`), so `RaiseBoostChanged` is a no-op there. Either wire it (if a HUD
+  wants the multiplier) or remove the field. Not changed: it was already unwired before the branch.
+- **Time L5 is an open design slot** for the Serpent — needs design markup, nothing invented.
+
 ## Phase 5 — Element scaling unification (SHIPPED 2026-09-18)
 
 Full record: **`ELEMENT_SCALING_UNIFICATION.md`**. The generic per-element multiplier
