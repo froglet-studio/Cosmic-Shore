@@ -709,6 +709,25 @@ every time: *"I don't see the pip."*
 get.* Before you change one, ask what a pilot could say if it went wrong, and whether that sentence
 would point at one thing. If it would not, split the change.
 
+### 4.ab Retuning a vessel's SPEED or TURN constants moves a MODE, not just the hull
+
+A game mode cut against a vessel's own geometry holds a **compile-time copy** of that vessel's
+numbers, and nothing tells you it is there. The Rhino is the worked example (2026-09-25: top speed
+to 70% via `RhinoRampBoostAction.maxBoostMultiplier` 24 -> 16.8, `RotationThrottleScaler` 0.5 ->
+0.2). That one prefab + asset edit had to be carried into:
+
+- `HeadlongCircuitSettings` (`RhinoMaxBoostMultiplier`, `RhinoRotationThrottleScaler`) — held in
+  step by `RhinoRampGradingTests`, which fails if you change one side only;
+- `HeadlongCircuitTests`' flat-out constants — and, because the flat-out circle nearly DOUBLED in a
+  fixed shell, the ladder itself (level 1's `CornerRadiusFactor` 0.62 -> 0.75 to stay hairpin-free);
+- `Tools/Build/regatta_course_measurements.json`'s `sourceHash`, which hashes `HeadlongCircuit.cs`
+  (shared by Regatta's course) — `author_regatta_assets.py --check` goes red on any edit there even
+  when every measurement is byte-identical.
+
+Grep the vessel's constant NAMES and its numbers across `_Scripts/Controller/Arcade/` and
+`Tools/Build/` before calling a retune done; a mode whose course was proven against the old curve
+is now a different mode, and the doc's measured ladder is the first thing to go stale.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,

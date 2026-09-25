@@ -20,12 +20,54 @@ only** — the rejection covers NORMAL damage gating, not the hardened-target ri
 | Normal prism | any | Explodes, debris thrown at the **contact velocity** (below) |
 | Shielded prism | any | Shield pops, prism survives (standard `Prism.Damage` semantics) |
 | **Super-shielded prism** | **ENERGIZED** | **POPPED**: `DeactivateShields()` (stellation shatter + SFX) then `Damage(devastate: true)` (animated explode-out, unrestorable) — the sanctioned mass-conserving teardown, same sequence as `AstroLeagueArena.ClearEdgeLining`. `Prism.Damage` alone hard-ignores super-shielded prisms, which is why the shields must drop first. |
-| **Super-shielded prism** | not energized | **BounceBack** recoil + a dim **denied spark** at the contact point (teaches the ritual without rewarding the hit) |
+| **Super-shielded prism** | not energized | **BINDS** — no recoil, no spin. The blade sticks in the armour: a dim **denied spark**, the prism **jiggles**, a **punish thud**, and while the blade stays inside the vessel's **rotation rate is dragged down** and the pilot feels a **grind** (§ "Binding"). The prism survives. |
 
 `popRequiresEnergizedBlade` (default **on** — the ritual IS the design) replaces v2's
 `destroySuperShielded`: flip it off on the asset to restore the v2 ungated pop as a designer
 A/B. With no sword state present (a non-Rhino skimmer reusing the asset) the blade can never be
-energized, so super-shielded prisms always bounce — the pre-sword baseline.
+energized, so super-shielded prisms always bind (the entry beat plays; the drag needs the
+Rhino's driver, so a non-Rhino skimmer gets the jiggle and the thud and nothing else).
+
+## Binding (a NON-energized blade inside super-shielded mass)
+
+Shipped 2026-09-25, replacing the `BounceBack` recoil. The recoil threw the ship back along its
+course and spun it (`ModifyVelocity` + `GentleSpinShip`), so a slash that grazed armour cost the
+pilot their LINE — the one thing a Rhino is built to hold. It now answers the way a Squirrel's hull
+answers armour — the mass deflects (the jiggle), the pilot feels it — and adds the sword-specific
+half: the blade is IN something, so it drags.
+
+| Beat | Who | What |
+|---|---|---|
+| Entry | `RhinoSkimmerDamagePrismEffectSO` (fires once per contact entry) | denied spark · `Prism.AbsorbSuperShieldHit(contactSpeed)` (the deflection jiggle, sized by the speed the blade struck at) · `HapticController.PlayPunish()` |
+| While inside | `ShieldSkimmerScaleDriver.UpdateBind` (per frame) | rotation rate eases to `bindTurnRateMultiplier` (0.3) · every bound prism re-jiggles each `bindJiggleIntervalSeconds` (0.2 s) · `HapticController.PlayBind` grind each `bindHapticIntervalSeconds` (0.1 s) |
+| Exit | the same driver | rotation rate eases back to 1 at `bindReleaseRate` — the armour letting go, not a snap |
+
+Four things that make it correct rather than approximately correct:
+
+- **"Inside" is the shell tier's live pair set, not a second copy.** The shell tier
+  (`PrismShellContactManager`) dispatches a pair ONCE on entry, so the driver reads
+  `CollectSuperShieldedContactsForOwner(skimmerImpactor, …)` every frame — the exact set its exit
+  sweep maintains, against the exact stellated shape (a blade threaded between spikes is not
+  bound). A private enter/exit ledger would need its own exit test and could disagree with this
+  one. Under the A/B `ForceLegacyBoxInteraction` there is no pair set and the blade never binds.
+- **The drag is `VesselTransformer.ExternalTurnRateMultiplier`**, folded into `TurnScalar`
+  (pitch/yaw) AND a new `RollScalar` in all three `Roll()` bodies — a sword sweeps with any
+  rotation, so "held" means every axis. It is a one-writer property (the driver writes it while
+  the drag is non-trivial and hands it back at exactly 1), `ResetTransformer` clears it, and the
+  driver's `OnDisable` releases it, so neither an interrupted bind nor a vessel swap can strand a
+  slowed turn. It also lowers `MaxTurnRateDegreesPerSecond`, so an AI Rhino's reachability test
+  sees the drag honestly.
+- **An energized blade never binds** — it pops on entry, and the ignition edge re-dispatches the
+  standing contacts, so anything still in the pair set on an energized frame is about to pop.
+- **Nothing about the prism changes but photons.** `AbsorbSuperShieldHit` is the one super-shield
+  gate: invulnerability, collider, volume, spatial registration and state flags are untouched.
+
+The old recoil is kept behind `recoilWhenDenied` on the damage effect (default **off**) as an A/B.
+
+**Stated cost:** a pilot who parks the blade in armour now turns at 30% until they back out, where
+the recoil used to eject them for free. That is the point — but it also means an AI Rhino that
+drives its blade into a super-shielded lining turns slower there, which its reachability test
+already accounts for.
 
 Consequence to be aware of: super-shielded prisms are used as track/arena lining (Skim Race,
 Astro League edge). An energized Rhino can carve those — deliberately a *paid, windowed* act now
@@ -363,6 +405,7 @@ On `RhinoShieldSwipeConfig.asset`: `stanceSumThreshold` 1.5 · `stanceCenterEpsi
 
 On `RhinoSkimmerDamagePrismEffect.asset`: `inertia` 70 · `popRequiresEnergizedBlade` 1 ·
 `energyPerPrism` 0.04 · `energyPerSuperShieldedPrism` 0.12 · bounce params
+`recoilWhenDenied` 0 (the bind is shipped; on = the legacy recoil below) · legacy recoil params
 (`bounceSpeedMultiplier` 0.85 / `minBounceSpeed` 10 / `bounceDurationSeconds` 0.35 — a FIXED
 recoil window; the old `accelScale` passed `Time.deltaTime` into the modifier's duration, making
 the shove ~4× stronger at 30 fps than 120 fps) · plus the
@@ -383,7 +426,11 @@ scale) · `maxScale` 120 · `prismGrowSpeed` 30 · `shrinkSpeed` 10 · `energize
 0.7 · tracer size is NOT here — it is authored on the five `RhinoSwordBladeTracer*`
 TrailRenderers (hairline: `widthMultiplier` 0.5, `time` 0.15) · `hitFlashAmount` 0.35 · `popFlashAmount` 1 · `flashDecaySeconds` 0.35 · `flashColor`
 (2,2,2) · `popShakeIntensity` 1.2 / `popShakeDuration` 0.25 · `burstShakeMaxIntensity` 2.5 /
-`burstShakeDuration` 0.4. (`prismMaxScale` remains only so the Sparrow full-auto
+`burstShakeDuration` 0.4 · binding: `bindTurnRateMultiplier` 0.3 / `bindEngageRate` 8 /
+`bindReleaseRate` 4 / `bindJiggleIntervalSeconds` 0.2 / `bindJiggleImpactSpeed` 90 /
+`bindHapticIntervalSeconds` 0.1 / `bindHapticStrength` 0.7 — all seven are C# initializers today
+(the asset predates them and carries no keys, so the initializer IS the shipped value until the
+asset is next saved in the editor). (`prismMaxScale` remains only so the Sparrow full-auto
 `ApplyMaxSizeDebuff` keeps its historical meaning. The v2 tracer keys — `tracersEnabled`,
 `tracerMaterial`, `tracerWidth`, `tracerTimeSeconds` — are retired: the tracer is an authored
 TrailRenderer in `Rhino.prefab` now; tune its persistence, taper curve and material on the
@@ -409,11 +456,19 @@ On `RhinoSwordCrystalBurstEffect.asset`: `minExplosionScale` 60 · `maxExplosion
    after ~1 s of rising anticipation arcs the blade IGNITES: white-hot + a crackle burst along
    the whole blade, energy dips by 0.1. Release the stance — the blade stays lit ~5 s, cools,
    and can't re-charge for ~5 s more. Holding the stance keeps it lit indefinitely.
-5. **Super-shield, not energized:** slash a super-shielded (Stella-Octangula) prism — the Rhino
-   recoils (bounce) with a dim spark; the prism survives.
+5. **Super-shield, not energized — the BIND:** slash into a super-shielded (Stella-Octangula)
+   prism (the Skim Race track lining or any super-shielded arena mass) with a gamepad. Expect:
+   **no** shove and **no** spin — the ship keeps its line; a dim spark, the prism visibly
+   jiggles on contact AND keeps shuddering while the blade stays in it; one heavy thud on entry
+   then a low repeating grind on the pad; turning/rolling drops to roughly a third while inside
+   and eases back when the blade comes out. The prism survives. Tune on
+   `ShieldSkimmerScaleConfig` (`bindTurnRateMultiplier` first). A bare desktop editor has no
+   motors — judge the haptics with a pad.
+5b. **A/B:** tick `recoilWhenDenied` on `RhinoSkimmerDamagePrismEffect.asset` — the old recoil
+   returns exactly; untick to restore the bind.
 6. **Super-shield, energized:** same prism with the blade lit — it pops on contact (24-face
    shatter + explode-out), big blade flash + short camera shake, energy banks 0.12.
-7. **The resting-prism edge:** park the blade against a super-shielded prism (bounce), then
+7. **The resting-prism edge:** park the blade inside a super-shielded prism (bound), then
    energize while still touching — the prism must pop the instant ignition lands, no re-approach
    needed.
 8. **Crystal:** with partial vs full energy, sword-collect an elemental crystal — blade bursts

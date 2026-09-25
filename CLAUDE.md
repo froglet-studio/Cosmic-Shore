@@ -1336,7 +1336,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
 - **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations). Desktop has TWO schemes and which one you get is decided by the VESSEL: `KeyboardInputStrategy` (dual-WASD) for a two-stick hull, and `SingleStickMouseInputStrategy` — the mouse as the single stick — for a **one-thumb** hull (`IsSingleStickControls`: Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike, Scarab), which reads only `EasedLeftJoystickPosition` and so gets nothing from the dual-stick mix. See `_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`
 - **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. **FMOD is the only audio middleware in the project**: the `Assets/Wwise/` fossil of an earlier evaluation (14 orphan `.meta`, 0 asset files, 0 references) was **deleted 12 Sep 2026**, and **five** prose sites went with it. Three described live FMOD objects as Wwise (`GameModePrefabKitSO`'s tooltip for `CORE/AudioSystem.prefab`, `CanvasUpgraderCodeScan`'s excluded-trees comment, `BOOTSTRAP_AUDIT.md`'s AudioSystem row) and **two never named the vendor at all** — `VesselAbilityRowWirer`'s `using Object` comment cited the deleted `InterfaceReference.cs` as the repo's alias convention, and `check_vendor_tree_references.py` offered `--tree Assets/Wwise` as its usage example. General rule: **a deleted SDK goes on looking present for as long as anything still describes the project in its terms** — so a removal sweeps the prose as well as the guids, and that sweep is the half no reference check can find. Its corollary is why the count went from two to five: **the residue a grep for the VENDOR'S NAME finds is only the residue that mentions it**, and a citation of a deleted FILE is the worse kind, because it is offered as evidence. Sweep the deleted paths and type names too. `Docs/THIRD_PARTY_REGISTER.md` §0 row 8.
-- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Cleave's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
+- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Cleave's two progress-milestone rungs today), **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays, and **one bind grind** fenced to the Rhino's non-energized blade held inside super-shielded mass; the two textures sit at the BOTTOM of the priority order (`alert > punish > skim > spray = bind`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
@@ -1709,15 +1709,19 @@ throttle and near-zero stick, and past that it does not switch off — it GRADES
 boost multiplier toward plain cruise as the stick goes over (`RampBoostActionSO.MultiplierFor`,
 `RHINO_RAMP_BOOST.md`). Composing that one lerp with two formulas that were already there — turn
 rate is linear in stick, and max turn rate grows with speed — gives a continuous speed/radius
-trade from **332 u at 1200 u/s** down to **25 u at cruise**, so a corner is an OPTIMISATION (the
+trade from **622 u at 840 u/s** down to **29 u at cruise** (332 u at 1200 u/s before the
+2026-09-25 Rhino retune — top speed to 70%, `RotationThrottleScaler` 0.5 → 0.2 — which nearly
+doubled the flat-out circle in a fixed shell and made every level harder; level 1's safety floor
+went 0.62 → 0.75 to keep it hairpin-free, `RHINO_RAMP_BOOST.md`), so a corner is an OPTIMISATION (the
 largest speed whose radius fits, traded against how long the following straight is) rather than
 a binary classification. Before the grading there were exactly two points on that curve and
 therefore one decision per corner, which a play test reported as nothing to master; authoring
 `straightnessGraceBand` back to the engage threshold restores that latch exactly. It is the
-Rhino's mode because its turn radius **converges** with speed (`RotationThrottleScaler 0.5`,
-asymptote `180/(pi*r)` = 115 u) where every other hull's grows without bound. **Intensity is
-what MIX of corners a lap asks for** — a median lap costs speed on 1 / 1 / 2 / 3 of its 8
-corners, its hardest corner taking a pilot to 99% / 82% / 65% / **37%** of top speed — and level
+Rhino's mode because its turn radius **converges** with speed (`RotationThrottleScaler` 0.2,
+asymptote `180/(pi*r)` = 287 u; 115 u at the pre-retune 0.5) where every other hull's grows without bound. **Intensity is
+what MIX of corners a lap asks for** — a median lap costs speed on 2 / 4 / 4 / 5 of its 8
+corners, its hardest corner taking a pilot to 92% / 66% / 47% / **34%** of top speed (measured
+after the 2026-09-25 retune; 1 / 1 / 2 / 3 and 99 / 82 / 65 / 37% before it) — and level
 4 spends its whole 360-degree turning budget on three corners, so it is a TRIANGLE with gates
 down its sides: three braking zones and three long straights to wind the ramp back up. **A FLOOR
 IS A PERMISSION, NOT A DEMAND**, and that is the finding worth carrying: the first ladder
