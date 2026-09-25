@@ -165,8 +165,7 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
     toy's paintings list is ever emptied the procedural fallback resets saved progress on its
     first write (totalStrokes mismatch, by design). Acceptable while the committed
     `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
-  - *`BillboardLabel` one-LateUpdate-per-label* (~20 in the full toybox): fold into a single
-    manager iterating a static list if the profiler pass flags it (pole-degeneracy guard is in).
+  - ~~*`BillboardLabel` one-LateUpdate-per-label*~~ - moot: toys carry no text (2026-09-25).
   - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
     xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
   - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math
@@ -544,10 +543,8 @@ unchanged by this work.
   the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
   falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
   changes, re-check the icon.
-- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
-  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
-  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
-  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+- **Emblem vs. the ring.** The pair that has to keep clearing each other is **emblem outer
+  (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22 (there is no label any more to clear either).
   If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
 
 ## The switch (rings) — known-remaining follow-ups

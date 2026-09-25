@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
         public bool IsRunning => _running;
 
         /// <param name="onEnded">Raised after the run ends by ANY route (return station, overview
-        /// button, a second pass through the toy) so the Wanderway toy can re-sync its label
+        /// button, a second pass through the toy) so the Wanderway toy can re-sync its look
         /// instead of polling.</param>
         public void Configure(ConveyorConfig cfg, ToyContext context, MicrosceneConveyor conveyor,
             System.Action onEnded = null)
@@ -311,13 +311,13 @@ namespace CosmicShore.Gameplay
             // nothing.
             var placement = new ToyPlacement(at, ReturnLookTarget(at), body, body * 2.2f);
             var go = ToyFactory.CreateRoot("Wanderway_Return", transform, placement,
-                _cfg.ReturnStationColor, "RETURN\n<size=60%>fly through to end the wander</size>");
+                _cfg.ReturnStationColor);
 
             _returnToy = go.AddComponent<WanderwayReturnToy>();
             _returnToy.Configure(() => End(returnToCell: true));
             // Only the radius is ours - the ring's colour is the switch vocabulary's, and ending a
             // wander is NEUTRAL (it hands you back your cell, not a domain). The station's own
-            // colour still lives on its body and label.
+            // colour still lives on its body.
             _returnToy.ConfigureSwitchRing(placement.TriggerRadius);
             _returnToy.Initialize(null, _context, placement);
             _returnTarget = at;
@@ -349,8 +349,8 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 dir = toVessel.normalized;
                 // Straight above/below the station, world-up is colinear with the look direction
-                // and LookRotation's implicit up degenerates (the guard BillboardLabel carries for
-                // the same reason). Roll itself is invisible here - a torus is symmetric about its
+                // and LookRotation's implicit up degenerates (ToyFactory.CreateBareRoot guards a
+                // toy at a pole for the same reason). Roll itself is invisible here - a torus is symmetric about its
                 // own axis - so swapping the hint costs nothing.
                 Vector3 up = Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
                 t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(dir, up), k);

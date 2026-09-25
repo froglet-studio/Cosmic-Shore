@@ -503,10 +503,17 @@ it is the ring itself carrying the meaning in its shader (see "The switch"). The
 `SwapToySetCoordinator.SlotsWearSwitchRing` exemption is deleted with it; what the coordinator
 carries now is `SlotRingRadius`, the same neighbour clamp every matrix station uses.
 
-**Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
-is unchanged, only the height moved). They come off once the ring-distance legibility pass
-confirms each toy is identifiable without them — a separate, gated change, and now a more likely
-one, since the ring carries the far read the label used to.
+**Toys carry NO text** (2026-09-25, prompter-directed). Every world label is gone — toy roots,
+matrix stations, domain slots, painting stations and their stroke / SHARE / REPAINT gates, the
+Wanderway return station, the Arkway dinghy, the Ark's hull readout and the pole switches — and
+with them `ToyFactory.AddLabel`, `AddRingedLabel`, `SwitchRingLabelHeight` and `BillboardLabel`,
+so a new toy cannot grow one back without re-adding the builder. The switch ring and the icon do
+the lift in the world; the **Toy Box menu** is where a player learns a toy's name
+(`ToyDefinitionSO.DisplayName`, and every variant's `ToyShellOption.Label`, both still live — they
+are the menu's text). Stated costs: the painting's two completion gates are told apart by colour
+alone (SHARE is cyan, REPAINT wears the gallery accent), and the Ark's hull fraction is read off
+the hull itself losing prisms. The one exception is `ArkwayVoyageHud`, the screen-space leash
+COUNTDOWN — a warning with a clock on it, not a name on a toy.
 
 ### Layout tuning (matrix scale & distance)
 
@@ -690,8 +697,8 @@ painting in miniature (`MiniaturePaintingBuilder`: 5 SIGNATURE strokes — see "
 tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
 stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
 tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
-vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
-`BillboardLabel`, facing the camera each frame so text reads from any approach.
+vertical tiers — a wall of masterpieces. No station or gate carries text (see "Toys carry NO
+text").
 
 Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 12–16 are
 **baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
@@ -1340,7 +1347,9 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 The **poles** are not part of the ring. After placing the toys the controller builds two larger
 `ToyboxPoleSwitch`es at `center +/- up * radius` - today's activity above, shuffle below - which
 are the world face of the Toy Box's two top buttons (`Docs/HomeHub/ARCHITECTURE.md` §4.0.6). They
-are not toys, have no definition, and do not register with the app shell.
+are not toys, have no definition, and do not register with the app shell. Threading the north one
+TAKES you to today's activity: it starts it and puts your vessel in front of the ring it asks you
+to thread next (`ToyShellOption.Arrival`).
 
 ## Toybox & unlock state
 

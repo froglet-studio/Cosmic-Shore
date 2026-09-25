@@ -1,14 +1,13 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Builds the runtime pieces of a <see cref="Toy"/>: a trigger-collider root, a tinted sphere
-    /// body or a mini vessel model, and a world-space label. Visuals are procedural so toys work
+    /// body or a mini vessel model. No text - a toy is read by its ring and icon. Visuals are procedural so toys work
     /// with zero prefab authoring.
     ///
     /// Continuity-of-existence law: pieces are created at full size here; the <see cref="Toy"/> base
@@ -16,17 +15,19 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class ToyFactory
     {
-        /// <summary>Composite: bare root + sphere body + label. Used by single toys (e.g. painting).</summary>
-        public static GameObject CreateRoot(string toyName, Transform parent, ToyPlacement placement, Color accent, string label)
+        /// <summary>
+        /// Composite: bare root + sphere body. Used by single toys (e.g. painting). There is no
+        /// label: a freestyle toy carries NO text - its switch ring and its icon say what it does,
+        /// and the Toy Box menu is where a player learns its name.
+        /// </summary>
+        public static GameObject CreateRoot(string toyName, Transform parent, ToyPlacement placement, Color accent)
         {
             var root = CreateBareRoot(toyName, parent, placement.Position, placement.LookTarget, placement.TriggerRadius);
             var body = new GameObject("Body");
             body.transform.SetParent(root.transform, false);
             AddSphereBody(body.transform, placement.BodyRadius, accent);
             // The switch ring itself is drawn by Toy.Initialize off the trigger collider (one
-            // implementation, every toy) - the label only needs to know how big it will be so it
-            // can hang clear above the rim.
-            AddRingedLabel(root.transform, label, accent, placement.TriggerRadius, placement.BodyRadius);
+            // implementation, every toy).
             return root;
         }
 
@@ -418,30 +419,8 @@ namespace CosmicShore.Gameplay
             => Mathf.Min(triggerRadius, Mathf.Max(1f, stationSpacing) * MaxRingSpacingFraction);
 
         /// <summary>
-        /// Height at which a label clears a switch ring of <paramref name="ringRadius"/> for text
-        /// of <paramref name="fontSize"/>. TMP anchors world text at its MIDDLE and toy labels run
-        /// to two lines (the second at 60%), so half a block is 0.8 x fontSize - clearing that plus
-        /// the ring's own tube is what keeps text off the rim.
-        /// </summary>
-        public static float SwitchRingLabelHeight(float ringRadius, float fontSize)
-            => ringRadius * (1f + RingTubeFraction) + fontSize * 0.85f;
-
-        /// <summary>
-        /// A label sized for content <paramref name="contentRadius"/> across, hung clear above that
-        /// station's switch ring. Font size is unchanged from the pre-ring layout
-        /// (<c>contentRadius x 1.425</c>, i.e. the old <c>1.9 x radius</c> offset x 0.75); only the
-        /// height moves, so the far read is exactly what it was.
-        /// </summary>
-        public static TMP_Text AddRingedLabel(Transform parent, string text, Color color,
-            float ringRadius, float contentRadius)
-        {
-            float fontSize = Mathf.Max(8f, contentRadius * 1.425f);
-            return AddLabel(parent, text, color, SwitchRingLabelHeight(ringRadius, fontSize), fontSize);
-        }
-
-        /// <summary>
-        /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring, hub,
-        /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
+        /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring and
+        /// hub (no text - see <see cref="CreateRoot"/>), and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
         /// the standard bloom-in + local-user + freestyle gating + re-arm).
         ///
         /// <para><paramref name="signal"/> is what the RING says (see <see cref="ToySwitchSignal"/>):
@@ -452,7 +431,7 @@ namespace CosmicShore.Gameplay
         /// a gate can say "this changes your domain" without also claiming to start a stroke.</para>
         /// </summary>
         public static GameObject CreateGate(string gateName, Transform parent, Vector3 position,
-            Vector3 flightDirection, float ringRadius, Color color, string label,
+            Vector3 flightDirection, float ringRadius, Color color,
             bool hubIsCone, ToySwitchSignal signal, Domains domain,
             ToyDefinitionSO definition, ToyContext context, System.Action<SwapToy> onActivated)
         {
@@ -462,8 +441,6 @@ namespace CosmicShore.Gameplay
                             SwitchMaterial(Theme(context), signal, domain));
             else
                 AddSphereBody(root.transform, ringRadius * 0.16f, color);
-            // 0.79 x the ring reproduces the pre-ring font exactly (old offset 1.5R x 0.75).
-            AddRingedLabel(root.transform, label, color, ringRadius, ringRadius * 0.79f);
 
             var toy = root.AddComponent<SwapToy>();
             if (onActivated != null) toy.Activated += onActivated;
@@ -738,56 +715,6 @@ namespace CosmicShore.Gameplay
                 Domains.Blue => new Color(0.40f, 0.50f, 1.00f),
                 _ => Color.gray,
             };
-        }
-
-        /// <summary>
-        /// Adds a world-space TMP label above the body. Returns the text so callers can
-        /// recolor/retext it. <paramref name="fontSize"/> defaults to the historic
-        /// <c>0.75 x upOffset</c>; pass it explicitly when the height is set by something other
-        /// than legibility (a label hung above a switch ring - see <see cref="AddRingedLabel"/>),
-        /// or the text grows with the clearance it needed.
-        /// </summary>
-        public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset,
-            float fontSize = 0f)
-        {
-            // 3D TextMeshPro uses a RectTransform - create it up front so AddComponent is safe.
-            var go = new GameObject("Label", typeof(RectTransform));
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = Vector3.up * upOffset;
-
-            var tmp = go.AddComponent<TextMeshPro>();
-            tmp.text = text;
-            tmp.fontSize = fontSize > 0f ? fontSize : Mathf.Max(8f, upOffset * 0.75f);
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = color;
-            if (TMP_Settings.defaultFontAsset) tmp.font = TMP_Settings.defaultFontAsset;
-            go.AddComponent<BillboardLabel>(); // every toy label reads from all sides
-            return tmp;
-        }
-    }
-
-    /// <summary>
-    /// Faces its transform away from the main camera each LateUpdate so world-space toy text is
-    /// readable from every approach direction. Cheap: one rotation write per frame; re-resolves
-    /// the camera only when the cached one dies (scene loads).
-    /// </summary>
-    public class BillboardLabel : MonoBehaviour
-    {
-        Camera _cam;
-
-        void LateUpdate()
-        {
-            if (!_cam) _cam = Camera.main;
-            if (!_cam) return;
-            // Forward points AWAY from the camera - TextMeshPro's readable face looks at the viewer.
-            Vector3 away = transform.position - _cam.transform.position;
-            if (away.sqrMagnitude < 1e-6f) return;
-            // Directly above/below a label, world-up is colinear with the view direction and
-            // LookRotation's implicit up degenerates (the text rolls wildly) - use the camera's up.
-            Vector3 up = Mathf.Abs(Vector3.Dot(away.normalized, Vector3.up)) > 0.98f
-                ? _cam.transform.up
-                : Vector3.up;
-            transform.rotation = Quaternion.LookRotation(away, up);
         }
     }
 }

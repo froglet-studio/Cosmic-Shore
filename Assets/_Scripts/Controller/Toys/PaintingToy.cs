@@ -1,14 +1,14 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One "connect the dots" painting station. Its label shows the painting's name and live progress;
-    /// flying through it starts (or resumes) the painting's <see cref="PaintingRunner"/> at a fixed
+    /// One "connect the dots" painting station. It carries no text - the station IS the painting in
+    /// miniature, and its name and progress live in the Toy Box menu. Flying through it starts (or
+    /// resumes) the painting's <see cref="PaintingRunner"/> at a fixed
     /// world anchor - a monument-in-progress you can leave and come back to (across vessel swaps,
     /// other paintings, other game modes, and sessions - the saved drawing state regrows). Re-flying
     /// the toy while a run is active benches/resumes it ("put the brush down"); once a masterpiece
@@ -27,7 +27,6 @@ namespace CosmicShore.Gameplay
         PaintingDefinitionSO _painting;
         Vector3 _anchorPosition;
         Quaternion _anchorRotation;
-        TMP_Text _label;
         Transform _runParent;
 
         PaintingRunner _runner;
@@ -43,19 +42,17 @@ namespace CosmicShore.Gameplay
         static readonly System.Collections.Generic.Dictionary<string, PaintingRunner> ActiveRuns = new();
 
         public void Configure(PaintingDefinitionSO painting, Vector3 anchorPosition, Quaternion anchorRotation,
-            TMP_Text label, Transform runParent = null)
+            Transform runParent = null)
         {
             _painting = painting;
             _anchorPosition = anchorPosition;
             _anchorRotation = anchorRotation;
-            _label = label;
             _runParent = runParent;
         }
 
         protected override void OnInitialized()
         {
             AdoptLiveRun();
-            RefreshLabel();
         }
 
         /// <summary>Re-attach to this painting's run if one survived a matrix fold.</summary>
@@ -68,7 +65,6 @@ namespace CosmicShore.Gameplay
                 return;
             }
             _runner = live;
-            _runner.ProgressChanged += RefreshLabel;
             _runner.Finished += HandleRunnerFinished;
         }
 
@@ -77,9 +73,8 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
 
             // The run keeps going without us (it is parented outside the matrix) - just stop
-            // driving a label that is about to be destroyed.
+            // listening for its end.
             if (!_runner) return;
-            _runner.ProgressChanged -= RefreshLabel;
             _runner.Finished -= HandleRunnerFinished;
         }
 
@@ -95,7 +90,6 @@ namespace CosmicShore.Gameplay
             {
                 if (!_runner.IsCelebrating)
                     _runner.ToggleBench();
-                RefreshLabel();
                 return;
             }
 
@@ -109,7 +103,6 @@ namespace CosmicShore.Gameplay
                 // Finished masterpiece - offer the choice gates instead of acting immediately.
                 if (!_shareGate && !_repaintGate)
                     SpawnCompletionChoices();
-                RefreshLabel();
                 return;
             }
 
@@ -122,9 +115,7 @@ namespace CosmicShore.Gameplay
 
             _runner = CreateRun(_painting, Definition, Context, _anchorPosition, _anchorRotation,
                                 _runParent ? _runParent : transform.parent, resumeFromStroke);
-            _runner.ProgressChanged += RefreshLabel;
             _runner.Finished += HandleRunnerFinished;
-            RefreshLabel();
         }
 
         /// <summary>
@@ -166,7 +157,6 @@ namespace CosmicShore.Gameplay
             // The runner destroys itself right after this - drop it and re-label from the store.
             if (_painting != null) ActiveRuns.Remove(_painting.PaintingId);
             _runner = null;
-            RefreshLabel();
         }
 
         protected override void Update()
@@ -200,7 +190,7 @@ namespace CosmicShore.Gameplay
             // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
             return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
-                ChoiceGateRadius, color, text, hubIsCone: false,
+                ChoiceGateRadius, color, hubIsCone: false,
                 ToySwitchSignal.Neutral, Domains.Blue, Definition, Context, _ => onChosen());
         }
 
@@ -228,40 +218,6 @@ namespace CosmicShore.Gameplay
             if (_repaintGate) ToyFactory.ScaleOutAndDestroy(_repaintGate, ChoiceDespawnSeconds).Forget();
             _shareGate = null;
             _repaintGate = null;
-        }
-
-        // ── Label ────────────────────────────────────────────────────────────
-
-        void RefreshLabel()
-        {
-            if (!_label || _painting == null) return;
-
-            _painting.EnsureStrokes();
-            int total = Mathf.Max(1, _painting.Strokes.Count);
-
-            if (_runner)
-            {
-                int pct = Mathf.RoundToInt(100f * _runner.StrokesCompleted / Mathf.Max(1, _runner.StrokeCount));
-                _label.text = _runner.IsCelebrating
-                    ? $"{_painting.DisplayName}\nMASTERPIECE"
-                    : _runner.IsBenched
-                        ? $"{_painting.DisplayName}\n{pct}% - PAUSED"
-                        : $"{_painting.DisplayName}\n{pct}%";
-                return;
-            }
-
-            int done = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
-            int times = PaintingProgressStore.GetTimesCompleted(_painting.PaintingId);
-            if (done >= total)
-                _label.text = _shareGate || _repaintGate
-                    ? $"{_painting.DisplayName}\nSHARE it or REPAINT?"
-                    : $"{_painting.DisplayName}\nCOMPLETE - fly through for options";
-            else if (done > 0)
-                _label.text = $"{_painting.DisplayName}\nresume {Mathf.RoundToInt(100f * done / total)}%";
-            else
-                _label.text = times > 0
-                    ? $"{_painting.DisplayName}\npainted ×{times}"
-                    : _painting.DisplayName;
         }
     }
 }

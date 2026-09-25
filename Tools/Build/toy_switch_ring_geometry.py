@@ -6,10 +6,12 @@ volume, drawn at its own radius*. That is enforced in code -- `Toy.Initialize` r
 `SphereCollider`. What code CANNOT enforce is the layout consequence: a ring must
 
   1. enclose its own station's content (a ring inside its own ship is not a ring around it),
-  2. clear its own label (`ToyFactory.AddRingedLabel` hangs the text above the rim), and
-  3. not interpenetrate its neighbour's ring in a matrix.
+  2. not interpenetrate its neighbour's ring in a matrix, and
+  3. carry NO TEXT - toys are read by their ring and icon, and the Toy Box menu is where a player
+     learns their names (Docs/ToySystem/ARCHITECTURE.md, "Toys carry NO text"). Checked as the
+     absence of any TextMeshPro type in the toy sources, so a label cannot quietly grow back.
 
-(3) is what `ToyFactory.MaxRingSpacingFraction` exists to hold, and all three move whenever a
+(2) is what `ToyFactory.MaxRingSpacingFraction` exists to hold, and (1)-(2) move whenever a
 station radius, a matrix spacing, or the toybox's body/trigger radii are retuned -- in DATA, where
 no compiler sees it. So this script re-derives them from the SHIPPED constants and the SHIPPED
 authored assets rather than from numbers pasted into a doc.
@@ -31,6 +33,16 @@ ROOT = Path(__file__).resolve().parents[2]
 TOY_FACTORY = ROOT / "Assets/_Scripts/Controller/Toys/ToyFactory.cs"
 TOYBOX_CONTROLLER = ROOT / "Assets/_Scripts/Controller/Toys/ToyboxController.cs"
 ASSET_DIR = ROOT / "Assets/_SO_Assets/Toys"
+
+# Everything a freestyle toy is built from. ArkwayVoyageHud is the one exempt file: it is the
+# screen-space leash COUNTDOWN (a warning with a clock on it), not text on a toy.
+NO_TEXT_SOURCES = [
+    ROOT / "Assets/_Scripts/Controller/Toys",
+    ROOT / "Assets/_Scripts/ScriptableObjects/Toys",
+    ROOT / "Assets/_Scripts/Controller/Environment/Ark.cs",
+]
+NO_TEXT_EXEMPT = {"ArkwayVoyageHud.cs"}
+TEXT_TYPES = re.compile(r"\b(TMP_Text|TextMeshPro|TextMeshProUGUI|TextMesh|UnityEngine\.UI\.Text)\b")
 
 # `CreateBareRoot(..., radius * 1.6f)` is the shared station trigger factor, repeated at every
 # station builder. A VARIANT station uses the plain `StationRadius` like the species and hangar
@@ -79,13 +91,11 @@ def main() -> int:
     tube = const(factory, "RingTubeFraction")
     clamp = const(factory, "MaxRingSpacingFraction")
 
-    # AddRingedLabel: fontSize = contentRadius * K; height = ringOuter + fontSize * H.
-    font_k = float(re.search(r"contentRadius \* ([0-9.]+)f", factory).group(1))
-    label_h = float(re.search(r"fontSize \* ([0-9.]+)f", factory).group(1))
-
     ctl = read(TOYBOX_CONTROLLER)
     body_r = float(re.search(r"float toyBodyRadius = ([0-9.]+)f", ctl).group(1))
     trigger_r = float(re.search(r"float toyTriggerRadius = ([0-9.]+)f", ctl).group(1))
+    pole_body_r = float(re.search(r"float poleBodyRadius = ([0-9.]+)f", ctl).group(1))
+    pole_trigger_r = float(re.search(r"float poleTriggerRadius = ([0-9.]+)f", ctl).group(1))
 
     cell = asset("Toy_CellSelector")
     vessel = asset("Toy_VesselChanger")
@@ -116,26 +126,23 @@ def main() -> int:
     fallback_r = float(re.search(r"float fallbackRadius = ([0-9.]+)f", ctl).group(1))
     domain_sp = 2.0 * fallback_r * math.sin(math.radians(angle_deg) / 2.0)
 
-    # (label, content radius, trigger radius, spacing or None, label-font basis or None)
-    #
-    # The last field exists because the two are not always the same question: a ring must ENCLOSE
-    # what is drawn inside it, while its label is sized for the distance the STATION is read from.
-    # They coincide everywhere except the Domain Changer, whose station is toy-root sized (so its
-    # text is) while the only thing inside its ring is a hub half that across.
+    # (site, content radius, trigger radius, spacing or None)
     SITES = [
-        ("toy root", body_r, trigger_r, None, None),
-        ("Domain Changer slot", domain_hub, trigger_r, domain_sp, body_r),
-        ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp, None),
-        ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp, None),
+        ("toy root", body_r, trigger_r, None),
+        # ToyboxPoleSwitch: today's activity / shuffle, one at each pole - never a neighbour.
+        ("pole switch", pole_body_r, pole_trigger_r, None),
+        ("Domain Changer slot", domain_hub, trigger_r, domain_sp),
+        ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp),
+        ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp),
         ("Lifeform kingdom station",
          life_r * LIFEFORM_KINGDOM_FACTOR,
-         life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp, None),
+         life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
         # The hangar row uses the species station's exact geometry (same radius, same spacing), so
         # it is listed rather than re-derived - if the two ever diverge, this row is where it shows.
-        ("Lifeform species station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
-        ("Lifeform hangar station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
-        ("Lifeform variant station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
-        ("Painting gallery station", paint_r, paint_r * STATION_TRIGGER_FACTOR, paint_sp, None),
+        ("Lifeform species station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
+        ("Lifeform hangar station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
+        ("Lifeform variant station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
+        ("Painting gallery station", paint_r, paint_r * STATION_TRIGGER_FACTOR, paint_sp),
     ]
 
     # ToyEmblem's outer extent, the one thing that must fit INSIDE a toy root's ring.
@@ -144,33 +151,37 @@ def main() -> int:
     sat = const(emblem_src, "SatelliteRadiusBodies")
     emblem_outer = (orbit + sat) * body_r
 
-    print(f"tube {tube}  clamp {clamp}  font x{font_k}  label +{label_h}xfont  "
+    print(f"tube {tube}  clamp {clamp}  "
           f"body {body_r}  trigger {trigger_r}  emblem outer {emblem_outer:.1f}\n")
-    header = f"{'site':<26}{'ring':>8}{'inner':>8}{'outer':>8}{'content':>9}{'label':>8}{'gap':>8}"
+    header = f"{'site':<26}{'ring':>8}{'inner':>8}{'outer':>8}{'content':>9}{'gap':>8}"
     print(header)
     print("-" * len(header))
 
     failures = []
-    for name, content, trigger, spacing, label_basis in SITES:
+    for name, content, trigger, spacing in SITES:
         ring = trigger if spacing is None else min(trigger, max(1.0, spacing) * clamp)
         inner, outer = ring * (1 - tube), ring * (1 + tube)
-        font = max(8.0, (content if label_basis is None else label_basis) * font_k)
-        label = outer + font * label_h
-        # A two-line label (line 2 at 60%) is 1.6 x font tall, TMP-anchored at its middle.
-        label_bottom = label - 0.8 * font
         gap = (spacing - 2 * outer) if spacing else float("inf")
 
         print(f"{name:<26}{ring:>8.1f}{inner:>8.1f}{outer:>8.1f}{content:>9.1f}"
-              f"{label:>8.1f}{'' if spacing is None else f'{gap:>8.1f}'}")
+              f"{'' if spacing is None else f'{gap:>8.1f}'}")
 
         if inner <= content:
             failures.append(f"{name}: ring inner {inner:.1f} does not enclose content {content:.1f}")
-        if label_bottom <= outer:
-            failures.append(f"{name}: label bottom {label_bottom:.1f} sits on the ring (outer {outer:.1f})")
         if spacing is not None and gap <= 0:
             failures.append(f"{name}: rings interpenetrate ({gap:.1f} between neighbours)")
         if name == "toy root" and emblem_outer >= inner:
             failures.append(f"{name}: emblem outer {emblem_outer:.1f} collides with ring inner {inner:.1f}")
+
+    for src in NO_TEXT_SOURCES:
+        files = [src] if src.is_file() else sorted(src.rglob("*.cs"))
+        for f in files:
+            if f.name in NO_TEXT_EXEMPT:
+                continue
+            for n, line in enumerate(read(f).splitlines(), 1):
+                code = line.split("//", 1)[0]
+                if TEXT_TYPES.search(code):
+                    failures.append(f"{f.relative_to(ROOT)}:{n}: a toy carries text ({code.strip()})")
 
     print()
     if failures:
@@ -179,7 +190,7 @@ def main() -> int:
         print(f"\n{len(failures)} failure(s). See Docs/ToySystem/ARCHITECTURE.md, 'The switch'.")
         return 1 if args.check else 0
 
-    print("PASS  every ring encloses its content, clears its own label, and clears its neighbours.")
+    print("PASS  every ring encloses its content and clears its neighbours, and no toy carries text.")
     return 0
 
 

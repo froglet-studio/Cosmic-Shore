@@ -5431,7 +5431,11 @@ ones.
   duplicated). **A toy is activated by a SWITCH** (below): every toy root and every
   choice a toy unfolds into is drawn inside one continuous ring at the radius of its
   own trigger collider, **in the prism shader**, so "how do I use this?" is answered by
-  the shape and "what will it do?" by the material. Drawn by
+  the shape and "what will it do?" by the material. **A toy carries NO TEXT** — no name, no
+  label, no progress readout: the ring and the icon do the lift in the world, and the Toy Box menu
+  is where a player learns what a toy is called (`ToyFactory` no longer has a label builder, and
+  `Tools/Build/toy_switch_ring_geometry.py --check` fails on any TextMeshPro type in a toy source).
+  Drawn by
   `Toy.Initialize` from that collider — not by each toy's builder — so a toy authored
   tomorrow wears one; one explicit opt-out (`Toy.ConfigureSwitchRing`): a smaller radius
   where a matrix's stations, or the domain changer's slots, would otherwise interpenetrate. A toy imposes

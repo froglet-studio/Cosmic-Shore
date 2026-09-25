@@ -513,14 +513,29 @@ shuffle at the south** (`ToyboxPoleSwitch`, `placePoleSwitches`, body 55 / trigg
 toy's 22 / 42, all on the controller). They sit OFF the equator because they are not toys - each
 one presses OTHER toys - and a switch among the six would read as a seventh; on the axis the ring
 turns about they read as belonging to the whole ring. Bigger for the arcade's reason: its two top
-buttons are bigger than its cards.
+buttons are bigger than its cards. They carry **no text** (no toy does - `Docs/ToySystem` "Toys
+carry NO text"): the body says which is which, CTA lime for the activity, white for shuffle.
 
 They call exactly what the cards call - `DailyToyActivity.Today` + `TryClaim`, `ToyShuffle.Plan` +
-`ApplyAsync` - so the world and the menu can never name two different activities or pay twice. Two
-differences, both forced by where the player is: the daily switch **applies** the activity rather
-than selecting it (you are already flying, so there is no entry step and no second press to wait
-for; the claim still lands AFTER the apply, so an activity that failed to start pays nothing), and
-each switch's label is the card's two lines on a billboard above its ring, refreshed once a second.
+`ApplyAsync` - so the world and the menu can never name two different activities or pay twice.
+
+**The daily switch TAKES you to the activity.** Starting a painting from a switch at the pole used
+to build its first gate beside the gallery, a cell away, where the player could not see it. So a
+shell option can now answer **`ToyShellOption.Arrival`** - the ring the player threads next and the
+way through it, resolved AFTER the press because the press is what builds the ring - and the pole
+puts the vessel in front of it, facing through, at the Navigate stand-off (2.4 ring radii) plus
+1.5 s of the vessel's own speed (a fresh gate blooms for 1.2 s and cannot fire until it has, and a
+fast hull needs room to see it). The painting gallery answers with its live run's start gate or
+ride checkpoint (`PaintingRunner.TryGetArrival`, read off the stroke's points, not the ring object,
+which is scale 0 while it blooms), or with the gallery itself when there is no run to fly to. A
+wander or a voyage answers nothing, because they happen wherever the player already is - starting
+one IS taking you there. Two ordering rules: the arrival is asked FIRST, and an activity already
+under way is flown to rather than pressed again (a second press PAUSES a painting and ENDS a
+wander); and the claim lands after the start, so an activity that failed to start pays nothing.
+An arrival is deliberately not `WorldAnchor`: an anchor is where an option LIVES, an arrival is
+where its play HAPPENS. Stated gap: the menu card's Start does not use it yet - it enters freestyle
+and starts the painting where it stands, and teleporting after the enter-freestyle blend is the
+hard cut `ToyConfigureModal.Navigate` was written to avoid.
 
 Three rules they keep. They are **not** `IToyShellSurface`, or they would appear as cards in their
 own grid and could be dealt to themselves by the shuffle. They have **no `ToyDefinitionSO`**,
