@@ -2024,6 +2024,7 @@ It cancelled nothing, for two independent reasons:
   **down before reading the volume**; `PrismScaleAnimator.GetCurrentVolume()` gates on
   `enabled` and returns 0 once it is off, so `Mathf.Max(0f, 1f)` pins
   `prismProperties.volume` to **exactly 1 for every prism** at the moment of the divide.
+  *(2026-09: that divide is now deleted and the death volume is read correctly, for the stats.)*
 
 So creature debris was scaled by an unrelated quantity. The multiply is gone; debris now leaves
 at the creature's own speed. **No ecology invariant is touched** — this is destruction VFX
